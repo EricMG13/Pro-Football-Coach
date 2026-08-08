@@ -131,6 +131,13 @@ public struct GameSimulator {
     /// The play-by-play so far. Empty unless `retainPlays` was set.
     public var playLog: [PlayEvent] { plays }
 
+    /// Live score. Read from the running totals rather than the current situation, which is
+    /// scoped to whoever has the ball and goes stale the moment possession changes.
+    public var liveHomeScore: Int { homeStats.points }
+    public var liveAwayScore: Int { awayStats.points }
+    public var currentQuarter: Int { quarter }
+    public var clockRemaining: Int { clock }
+
     /// Plays the whole game. Kept as a thin wrapper over `advance` so that a single code path
     /// serves bulk simulation and interactive play alike, and every existing test exercises the
     /// same machinery the arcade uses.
@@ -397,7 +404,12 @@ public struct GameSimulator {
         case .punt:
             return executePunt(offenseIsHome: offenseIsHome, situation: situation, rng: &rng)
         case .fieldGoal:
-            return executeFieldGoal(offenseIsHome: offenseIsHome, situation: situation, rng: &rng)
+            return executeFieldGoal(
+                offenseIsHome: offenseIsHome,
+                situation: situation,
+                execution: execution,
+                rng: &rng
+            )
         case .kneel:
             burnClock(seconds: 42)
             addTeamStats(offenseIsHome: offenseIsHome) { $0.plays += 1; $0.rushingYards -= 1 }
@@ -504,7 +516,12 @@ public struct GameSimulator {
                 situation: situation,
                 description: outcome.description + " Touchdown!"
             )
-            attemptTry(offenseIsHome: offenseIsHome, situation: situation, rng: &rng)
+            attemptTry(
+                offenseIsHome: offenseIsHome,
+                situation: situation,
+                execution: execution,
+                rng: &rng
+            )
             return DriveOutcome(end: .touchdown, nextYardLine: LeagueRules.touchbackYardLine)
         }
 
@@ -554,13 +571,18 @@ public struct GameSimulator {
     private mutating func executeFieldGoal(
         offenseIsHome: Bool,
         situation: GameSituation,
+        execution: PlayExecution = .neutral,
         rng: inout SeededRandom
     ) -> DriveOutcome {
         let offense = offenseIsHome ? home : away
         let distance = situation.fieldGoalDistance
         let kicker = availableStarter(team: offense, position: .k)
         let blocked = rng.chance(PlayMatrix.blockRate)
-        let probability = PlayCaller.kickerFieldGoalProbability(team: offense, distance: distance)
+        let probability = min(
+            0.995,
+            max(0.01, PlayCaller.kickerFieldGoalProbability(team: offense, distance: distance)
+                + execution.kickModifier)
+        )
         let good = !blocked && rng.chance(probability)
 
         if let kicker {
@@ -654,6 +676,7 @@ public struct GameSimulator {
     private mutating func attemptTry(
         offenseIsHome: Bool,
         situation: GameSituation,
+        execution: PlayExecution = .neutral,
         rng: inout SeededRandom
     ) {
         let offense = offenseIsHome ? home : away
@@ -677,7 +700,7 @@ public struct GameSimulator {
 
         let kicker = availableStarter(team: offense, position: .k)
         let probability = kicker.map {
-            min(0.995, 0.94 + Double($0.ratings[.kickAccuracy] - 70) * 0.0015)
+            min(0.995, 0.94 + Double($0.ratings[.kickAccuracy] - 70) * 0.0015 + execution.kickModifier)
         } ?? 0.90
         let good = !rng.chance(PlayMatrix.blockRate) && rng.chance(probability)
         if let kicker {

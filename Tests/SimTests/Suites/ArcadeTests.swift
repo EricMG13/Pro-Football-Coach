@@ -115,6 +115,56 @@ func runArcadeTests() {
         }
     }
 
+    suite("Kicking execution") {
+        test("a clean strike makes more kicks than a scuffed one") {
+            let league = LeagueFactory.makeDefaultLeague(seed: 730, userTeamIndex: 0, coach: .stub())
+            let kicking = league.teams[0]
+            let defending = league.teams[1]
+
+            func makeRate(_ execution: PlayExecution, seed: UInt64) -> Double {
+                var made = 0
+                let attempts = 400
+                for index in 0..<attempts {
+                    var simulator = GameSimulator(
+                        home: kicking, away: defending, week: 1, year: 2026, kind: .conference,
+                        scheduledGameID: UUID(), options: .init(retainPlays: true)
+                    )
+                    var rng = SeededRandom(seed: seed &+ UInt64(index))
+                    // Play the whole game with this execution on every snap; field goals are
+                    // attempted by the ordinary fourth-down logic.
+                    while simulator.advance(rng: &rng, execution: execution) {}
+                    let record = simulator.finish(rng: &rng)
+                    let lines = record.playerStats.values
+                    let attemptsMade = lines.reduce(0) { $0 + $1.fieldGoalsAttempted }
+                    let successes = lines.reduce(0) { $0 + $1.fieldGoalsMade }
+                    if attemptsMade > 0 { made += successes * 100 / attemptsMade }
+                }
+                return Double(made) / Double(attempts)
+            }
+
+            let clean = makeRate(PlayExecution(kicking: 1), seed: 5_000)
+            let scuffed = makeRate(PlayExecution(kicking: -1), seed: 5_000)
+            expect(
+                clean > scuffed,
+                "a well-struck kick should go in more often: \(clean) vs \(scuffed)"
+            )
+        }
+
+        test("kick execution cannot make a kicker infallible or hopeless") {
+            let perfect = PlayExecution(kicking: 1)
+            let awful = PlayExecution(kicking: -1)
+            expect(abs(perfect.kickModifier) <= 0.18, "kick swing is capped")
+            expect(abs(awful.kickModifier) <= 0.18, "kick swing is capped")
+        }
+
+        test("the meter scores a centred pair best") {
+            let centred = ArcadeInput.kickQuality(power: 0.5, aim: 0.5)
+            let edge = ArcadeInput.kickQuality(power: 0.0, aim: 1.0)
+            expect(centred > edge)
+            expect(centred <= 1 && edge >= -1)
+        }
+    }
+
     suite("Execution in the simulation") {
         /// Plays the same snap many times with a given execution and reports how often it worked.
         func completionRate(_ execution: PlayExecution, seed: UInt64) -> Double {
@@ -294,6 +344,34 @@ func runInteractiveGameTests() {
             expectEqual(played.homeScore, simulated.homeScore)
             expectEqual(played.awayScore, simulated.awayScore)
             expectEqual(played.plays.count, simulated.plays.count)
+        }
+
+        test("the scoreboard follows the teams, not whoever has the ball") {
+            var game = makeGame(seed: 830)
+            game.simulateRemainder()
+            guard let record = game.record else { return expect(false, "no record") }
+            // home is the user's team in this fixture.
+            expectEqual(game.userScore, record.score(for: home.id), "user score should track the user's team")
+            expectEqual(game.opponentScore, record.score(for: away.id), "opponent score mismatch")
+        }
+
+        test("live score keeps up as the game is played") {
+            var game = makeGame(seed: 831)
+            var snaps = 0
+            var sawPoints = false
+            while game.state != .finished, snaps < 400 {
+                snaps += 1
+                game.advanceUntilUserTurn()
+                if game.userScore + game.opponentScore > 0 { sawPoints = true }
+                guard case .awaitingUserPlay = game.state else { break }
+                game.playUserSnap(call: .shortPass, execution: PlayExecution(accuracy: 0.6, timing: 0.6))
+            }
+            game.simulateRemainder()
+            expect(sawPoints, "no points were ever visible while the game was being played")
+            expect(
+                game.userScore + game.opponentScore > 0,
+                "the finished game scored nothing at all"
+            )
         }
 
         test("the random stream is handed back so the league can carry on") {

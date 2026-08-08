@@ -17,11 +17,19 @@ public struct PlayExecution: Sendable, Equatable {
     public var timing: Double
     /// -1...1. Ball-carrier decisions after the catch or handoff.
     public var running: Double
+    /// -1...1. How cleanly a placekick was struck.
+    public var kicking: Double
 
-    public init(accuracy: Double = 0, timing: Double = 0, running: Double = 0) {
+    public init(
+        accuracy: Double = 0,
+        timing: Double = 0,
+        running: Double = 0,
+        kicking: Double = 0
+    ) {
         self.accuracy = Self.clamp(accuracy)
         self.timing = Self.clamp(timing)
         self.running = Self.clamp(running)
+        self.kicking = Self.clamp(kicking)
     }
 
     private static func clamp(_ value: Double) -> Double {
@@ -51,6 +59,9 @@ public struct PlayExecution: Sendable, Equatable {
 
     /// Chance the carrier coughs it up, raised by reckless running.
     public var fumbleMultiplier: Double { running < -0.5 ? 1.6 : 1.0 }
+
+    /// Make-probability shift on a placekick, at most ±18 points.
+    public var kickModifier: Double { kicking * 0.18 }
 
     public var isNeutral: Bool { self == .neutral }
 }

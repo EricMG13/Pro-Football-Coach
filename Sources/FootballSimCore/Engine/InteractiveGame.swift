@@ -18,6 +18,7 @@ public struct InteractiveGame {
     private var simulator: GameSimulator
     private var rng: SeededRandom
     private let userTeamID: UUID
+    private let homeTeamID: UUID
     private(set) public var record: GameRecord?
     /// Plays emitted so far, so the caller can render the log as it fills.
     private(set) public var plays: [PlayEvent] = []
@@ -49,6 +50,7 @@ public struct InteractiveGame {
         )
         self.rng = rng
         self.userTeamID = userTeamID
+        self.homeTeamID = home.id
     }
 
     /// The random stream, handed back so the league can carry on from where the game left it.
@@ -57,6 +59,19 @@ public struct InteractiveGame {
     public var situation: GameSituation { simulator.currentSituation }
 
     public var isUserOnOffense: Bool { simulator.offenseTeamID == userTeamID }
+
+    /// Live scores tied to the teams themselves, so a scoreboard's labels stay put when
+    /// possession changes hands.
+    public var userScore: Int {
+        homeTeamID == userTeamID ? simulator.liveHomeScore : simulator.liveAwayScore
+    }
+
+    public var opponentScore: Int {
+        homeTeamID == userTeamID ? simulator.liveAwayScore : simulator.liveHomeScore
+    }
+
+    public var quarter: Int { simulator.currentQuarter }
+    public var clockRemaining: Int { simulator.clockRemaining }
 
     public var state: State {
         if simulator.isComplete { return .finished }

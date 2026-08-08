@@ -81,6 +81,7 @@ struct ArcadeFieldView: View {
             switch model.phase {
             case .callingPlay: playbook(model)
             case .live: liveControls(model)
+            case .kicking: kickMeter(model)
             case .showingResult(let summary): resultCard(model, summary: summary)
             case .opponentBall: opponentCard(model)
             case .finished: finishedCard(model)
@@ -97,7 +98,7 @@ struct ArcadeFieldView: View {
         let situation = model.situation
         return HStack(spacing: Layout.medium) {
             VStack(spacing: 2) {
-                Text("\(situation.offenseScore)")
+                Text("\(model.userScore)")
                     .font(.system(.title, design: .rounded, weight: .heavy))
                     .monospacedDigit()
                 Text("YOU").font(.caption2.weight(.bold)).opacity(0.8)
@@ -105,15 +106,19 @@ struct ArcadeFieldView: View {
             .frame(maxWidth: .infinity)
 
             VStack(spacing: 2) {
-                Text(clockLabel(situation))
+                Text(clockLabel(quarter: model.quarter, seconds: model.clockRemaining))
                     .font(.headline.monospacedDigit())
-                Text("\(ordinal(situation.down)) & \(situation.distance)")
-                    .font(.caption)
-                    .opacity(0.85)
+                Text(
+                    model.isUserOnOffense
+                        ? "\(ordinal(situation.down)) & \(situation.distance)"
+                        : "Opposition ball"
+                )
+                .font(.caption)
+                .opacity(0.85)
             }
 
             VStack(spacing: 2) {
-                Text("\(situation.defenseScore)")
+                Text("\(model.opponentScore)")
                     .font(.system(.title, design: .rounded, weight: .heavy))
                     .monospacedDigit()
                 Text("OPP").font(.caption2.weight(.bold)).opacity(0.8)
@@ -260,6 +265,65 @@ struct ArcadeFieldView: View {
                     .buttonStyle(.bordered)
                 }
             }
+
+            // Fourth down is a decision, so the kicking options only appear when they are one.
+            if model.situation.down == 4 {
+                HStack(spacing: Layout.small) {
+                    if model.isInFieldGoalRange {
+                        Button { model.snap(.fieldGoal) } label: {
+                            Label("Field Goal · \(model.fieldGoalDistance) yds", systemImage: "figure.australian.football")
+                                .font(.caption.weight(.medium))
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    Button { model.snap(.punt) } label: {
+                        Label("Punt", systemImage: "arrow.up.forward")
+                            .font(.caption.weight(.medium))
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+        }
+        .padding(Layout.medium)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
+    }
+
+    /// The two-tap kick: a power bar, then an aim arrow. Both are sweeps you have to stop in the
+    /// middle, which is the whole skill of it.
+    private func kickMeter(_ model: ArcadeGameModel) -> some View {
+        VStack(spacing: Layout.medium) {
+            Text(model.meterStage == .power ? "Tap to set power" : "Tap to set aim")
+                .font(.subheadline.weight(.semibold))
+
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.secondary.opacity(0.2))
+                    // The sweet spot is the middle; hitting it is what a good kick is.
+                    Capsule()
+                        .fill(Color.green.opacity(0.35))
+                        .frame(width: proxy.size.width * 0.18)
+                        .offset(x: proxy.size.width * 0.41)
+                    Capsule()
+                        .fill(model.meterStage == .power ? Color.blue : Color.orange)
+                        .frame(width: 6)
+                        .offset(x: proxy.size.width * model.meterValue - 3)
+                }
+            }
+            .frame(height: 26)
+
+            Button { model.tapMeter() } label: {
+                Text(model.meterStage == .power ? "Set Power" : "Kick")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 50)
+            }
+            .buttonStyle(.borderedProminent)
+
+            Text("\(model.fieldGoalDistance)-yard attempt")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
         .padding(Layout.medium)
         .frame(maxWidth: .infinity)
@@ -344,9 +408,9 @@ struct ArcadeFieldView: View {
         .background(.bar)
     }
 
-    private func clockLabel(_ situation: GameSituation) -> String {
-        let quarter = situation.quarter <= 4 ? "Q\(situation.quarter)" : "OT"
-        return "\(quarter) \(Format.clock(situation.clockSeconds))"
+    private func clockLabel(quarter: Int, seconds: Int) -> String {
+        let label = quarter <= 4 ? "Q\(quarter)" : "OT"
+        return "\(label) \(Format.clock(seconds))"
     }
 
     private func ordinal(_ value: Int) -> String {

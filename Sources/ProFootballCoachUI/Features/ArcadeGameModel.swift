@@ -27,6 +27,8 @@ final class ArcadeGameModel {
         case callingPlay
         /// Ball is snapped; the player is aiming or deciding to hand off.
         case live
+        /// Lining up a placekick: first the power tap, then the aim tap.
+        case kicking
         /// Showing what just happened.
         case showingResult(String)
         case opponentBall
@@ -41,6 +43,14 @@ final class ArcadeGameModel {
     private(set) var heldSeconds: Double = 0
     private(set) var selectedCall: OffensivePlay = .shortPass
     private var pocketTask: Task<Void, Never>?
+    private var meterTask: Task<Void, Never>?
+
+    /// 0...1 sweep position of whichever kick meter is running.
+    private(set) var meterValue: Double = 0
+    private(set) var meterStage: MeterStage = .power
+    private(set) var capturedPower: Double = 0.5
+
+    enum MeterStage: Equatable { case power, aim }
 
     let userTeamID: UUID
     private let quarterback: Player?
@@ -65,6 +75,10 @@ final class ArcadeGameModel {
     }
 
     var situation: GameSituation { game.situation }
+    var userScore: Int { game.userScore }
+    var opponentScore: Int { game.opponentScore }
+    var quarter: Int { game.quarter }
+    var clockRemaining: Int { game.clockRemaining }
     var record: GameRecord? { game.record }
     var plays: [PlayEvent] { game.plays }
 
@@ -95,10 +109,27 @@ final class ArcadeGameModel {
         }
     }
 
+    /// Whether a placekick is a sensible option from here — used to decide what the playbook
+    /// offers, so the kicking screen is never a dead end.
+    var isUserOnOffense: Bool { game.isUserOnOffense }
+
+    var isInFieldGoalRange: Bool { situation.isInFieldGoalRange }
+
+    var fieldGoalDistance: Int { situation.fieldGoalDistance }
+
     /// Snaps the ball. Routes are drawn to suit the call so aiming means something different on
     /// a screen than on a go route.
     func snap(_ call: OffensivePlay) {
         selectedCall = call
+
+        if call == .fieldGoal {
+            beginKick()
+            return
+        }
+        if call == .punt {
+            resolve(call: .punt, execution: .neutral)
+            return
+        }
         guard call.isPass else {
             // Runs need no aiming; the carrier decision is the whole play.
             resolve(call: call, execution: PlayExecution(running: 0.35))
@@ -118,6 +149,53 @@ final class ArcadeGameModel {
     func beginAiming() {
         guard phase == .live, pocketTask == nil else { return }
         startPocketClock()
+    }
+
+    // MARK: - Kicking
+
+    /// Starts the two-tap meter: a bar sweeps for power, then an arrow sweeps for aim.
+    private func beginKick() {
+        phase = .kicking
+        meterStage = .power
+        startMeter()
+    }
+
+    private func startMeter() {
+        meterTask?.cancel()
+        meterValue = 0
+        meterTask = Task { [weak self] in
+            let step = 0.016
+            var rising = true
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(step))
+                guard let self, self.phase == .kicking else { return }
+                // A bar that bounces rather than wrapping keeps the timing readable.
+                let speed = self.meterStage == .power ? 1.5 : 2.1
+                self.meterValue += (rising ? 1 : -1) * step * speed
+                if self.meterValue >= 1 { self.meterValue = 1; rising = false }
+                if self.meterValue <= 0 { self.meterValue = 0; rising = true }
+            }
+        }
+    }
+
+    private func stopMeter() {
+        meterTask?.cancel()
+        meterTask = nil
+    }
+
+    /// Takes the current tap. The first sets power, the second sets aim and strikes the ball.
+    func tapMeter() {
+        guard phase == .kicking else { return }
+        switch meterStage {
+        case .power:
+            capturedPower = meterValue
+            meterStage = .aim
+            startMeter()
+        case .aim:
+            let quality = ArcadeInput.kickQuality(power: capturedPower, aim: meterValue)
+            stopMeter()
+            resolve(call: .fieldGoal, execution: PlayExecution(kicking: quality))
+        }
     }
 
     /// Runs the pass protection down in real time from the moment the ball is snapped.
@@ -181,6 +259,7 @@ final class ArcadeGameModel {
 
     private func resolve(call: OffensivePlay, execution: PlayExecution) {
         stopPocketClock()
+        stopMeter()
         lastPlays = game.playUserSnap(call: call, execution: execution)
         receivers = []
         let summary = lastPlays.last?.description ?? "The play is over."
