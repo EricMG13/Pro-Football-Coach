@@ -61,10 +61,12 @@ public struct TeamSnapshot {
         return value
     }
 
-    public mutating func weightedRating(_ weights: [Position: Double]) -> Double {
-        // Sorted for a stable floating-point summation order, same reasoning as Ratings.overall.
-        weights.sorted { $0.key.rawValue < $1.key.rawValue }
-            .reduce(0.0) { $0 + unitRating($1.key) * $1.value }
+    /// Weighted blend of unit ratings. The weights arrive in a fixed order, which keeps the
+    /// floating-point summation stable — see the note on `Ratings.overall`.
+    public mutating func weightedRating(_ weights: PlayMatrix.UnitWeights) -> Double {
+        var total = 0.0
+        for entry in weights { total += unitRating(entry.position) * entry.weight }
+        return total
     }
 
     public func coordinatorBonus(_ role: StaffRole) -> Double {

@@ -170,6 +170,8 @@ public struct GameSimulator {
             break
         }
 
+        creditAppearances()
+
         return GameRecord(
             id: rng.uuid(),
             scheduledGameID: scheduledGameID,
@@ -185,6 +187,16 @@ public struct GameSimulator {
             injuries: injuries,
             overtimePeriods: overtimePeriods
         )
+    }
+
+    /// Credits an appearance to everyone who dressed and stayed healthy. Linemen never record
+    /// a counting stat, so without this their player cards would read zero games for a career.
+    private mutating func creditAppearances() {
+        for team in [home, away] {
+            for player in team.activeRoster where player.isHealthy && !unavailable.contains(player.id) {
+                recordPlayerStat(player.id) { $0.gamesPlayed += 1 }
+            }
+        }
     }
 
     // MARK: - Drives

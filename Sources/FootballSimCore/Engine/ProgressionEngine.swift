@@ -125,7 +125,7 @@ public enum ProgressionEngine {
             }
         } else if player.age <= peak.upperBound {
             // Prime: small moves either way.
-            change = rng.gaussian(mean: 0.4 * (1 + staffBonus), sd: 1.6)
+            change = rng.gaussian(mean: 0.15 * (1 + staffBonus), sd: 1.6)
             if player.has(.lateBloomer) { change += 0.9 }
             if rng.chance(0.03), player.overall < ceiling - 4 {
                 change += Double(rng.int(in: 3...6))

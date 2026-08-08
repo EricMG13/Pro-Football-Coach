@@ -292,7 +292,9 @@ public enum PlayResolver {
             }
             return Outcome(
                 category: .turnover,
-                yards: max(0, yards),
+                // Same figure the carrier's line carries: clamping only one side of this made
+                // team rushing yards disagree with the sum of its players'.
+                yards: yards,
                 isTurnover: true,
                 description: "\(carrier?.name ?? "The runner") fumbles — recovered by \(defender?.name ?? "the defense").",
                 statDeltas: deltas,

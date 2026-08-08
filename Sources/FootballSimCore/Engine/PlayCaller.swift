@@ -70,94 +70,96 @@ public enum PlayCaller {
         // Situations with only one sane answer come first.
         if let forced = forcedCall(situation: situation, team: team, rng: &rng) { return forced }
 
-        var weights: [OffensivePlay: Double] = [
-            .insideRun: 1.00,
-            .outsideRun: 0.62,
-            .shortPass: 1.30,
-            .deepPass: 0.42,
-            .playAction: 0.50,
-            .screen: 0.32,
-        ]
+        // Index order matches `callOrder` below; using an array rather than a dictionary keeps
+        // the selection deterministic without sorting, and avoids allocating on every snap.
+        var weights: [Double] = [1.00, 0.62, 1.30, 0.42, 0.50, 0.32]
 
         // Down and distance.
         switch situation.down {
         case 1:
-            weights[.insideRun]! *= 1.35
-            weights[.outsideRun]! *= 1.20
-            weights[.playAction]! *= 1.30
-            weights[.deepPass]! *= 0.95
+            weights[0] *= 1.35
+            weights[1] *= 1.20
+            weights[4] *= 1.30
+            weights[3] *= 0.95
         case 2:
             if situation.distance >= 8 {
-                weights[.shortPass]! *= 1.25
-                weights[.deepPass]! *= 1.15
+                weights[2] *= 1.25
+                weights[3] *= 1.15
             } else {
-                weights[.insideRun]! *= 1.25
+                weights[0] *= 1.25
             }
         case 3:
             if situation.distance <= 2 {
-                weights[.insideRun]! *= 2.4
-                weights[.deepPass]! *= 0.35
-                weights[.screen]! *= 0.4
+                weights[0] *= 2.4
+                weights[3] *= 0.35
+                weights[5] *= 0.4
             } else if situation.distance >= 8 {
-                weights[.insideRun]! *= 0.20
-                weights[.outsideRun]! *= 0.25
-                weights[.shortPass]! *= 1.35
-                weights[.deepPass]! *= 1.60
-                weights[.screen]! *= 1.10
+                weights[0] *= 0.20
+                weights[1] *= 0.25
+                weights[2] *= 1.35
+                weights[3] *= 1.60
+                weights[5] *= 1.10
             } else {
-                weights[.shortPass]! *= 1.40
-                weights[.insideRun]! *= 0.55
+                weights[2] *= 1.40
+                weights[0] *= 0.55
             }
         default:
-            weights[.insideRun]! *= 1.6
-            weights[.shortPass]! *= 1.2
+            weights[0] *= 1.6
+            weights[2] *= 1.2
         }
 
         // Scheme identity — a power-run team and an air-raid team should not call alike.
         switch team.offensiveScheme {
         case .powerRun:
-            weights[.insideRun]! *= 1.55
-            weights[.outsideRun]! *= 1.25
-            weights[.deepPass]! *= 0.75
+            weights[0] *= 1.55
+            weights[1] *= 1.25
+            weights[3] *= 0.75
         case .vertical:
-            weights[.deepPass]! *= 1.85
-            weights[.playAction]! *= 1.25
-            weights[.insideRun]! *= 0.80
+            weights[3] *= 1.85
+            weights[4] *= 1.25
+            weights[0] *= 0.80
         case .spread:
-            weights[.shortPass]! *= 1.35
-            weights[.screen]! *= 1.55
-            weights[.insideRun]! *= 0.75
+            weights[2] *= 1.35
+            weights[5] *= 1.55
+            weights[0] *= 0.75
         case .westCoast:
-            weights[.shortPass]! *= 1.45
-            weights[.screen]! *= 1.20
-            weights[.deepPass]! *= 0.85
+            weights[2] *= 1.45
+            weights[5] *= 1.20
+            weights[3] *= 0.85
         case .balanced:
             break
         }
 
         // Clock context: chasing points means throwing, protecting a lead means running.
         if situation.isTwoMinuteDrill && situation.scoreDifferential < 0 {
-            weights[.insideRun]! *= 0.12
-            weights[.outsideRun]! *= 0.20
-            weights[.deepPass]! *= 1.9
-            weights[.shortPass]! *= 1.4
+            weights[0] *= 0.12
+            weights[1] *= 0.20
+            weights[3] *= 1.9
+            weights[2] *= 1.4
         } else if situation.quarter >= 4 && situation.scoreDifferential > 8 {
-            weights[.insideRun]! *= 1.9
-            weights[.outsideRun]! *= 1.3
-            weights[.deepPass]! *= 0.4
+            weights[0] *= 1.9
+            weights[1] *= 1.3
+            weights[3] *= 0.4
         }
 
         // Compressed field: no room for deep routes.
         if situation.yardsToGoal <= 10 {
-            weights[.deepPass]! *= 0.15
-            weights[.insideRun]! *= 1.35
+            weights[3] *= 0.15
+            weights[0] *= 1.35
         }
 
         // A weak coordinator drifts toward a coin flip; a good one plays the percentages.
         let sharpness = max(0.25, min(1.5, coordinatorQuality))
-        let shaped = weights.mapValues { pow($0, sharpness * 1.4) }
-        return weightedPick(shaped, &rng) ?? .shortPass
+        for index in weights.indices { weights[index] = pow(weights[index], sharpness * 1.4) }
+        return weightedPick(callOrder, weights, &rng) ?? .shortPass
     }
+
+    /// Fixed call order that `weights` indexes into.
+    private static let callOrder: [OffensivePlay] =
+        [.insideRun, .outsideRun, .shortPass, .deepPass, .playAction, .screen]
+
+    private static let defenseOrder: [DefensivePlay] =
+        [.base, .blitz, .nickel, .dime, .contain, .prevent]
 
     /// Calls that the situation dictates: kneel-downs, kicks, and desperation fourth downs.
     private static func forcedCall(
@@ -250,60 +252,54 @@ public enum PlayCaller {
         coordinatorQuality: Double = 0.8,
         rng: inout SeededRandom
     ) -> DefensivePlay {
-        var weights: [DefensivePlay: Double] = [
-            .base: 1.00,
-            .blitz: 0.42,
-            .nickel: 0.85,
-            .dime: 0.30,
-            .contain: 0.45,
-            .prevent: 0.05,
-        ]
+        // Index order matches `defenseOrder`.
+        var weights: [Double] = [1.00, 0.42, 0.85, 0.30, 0.45, 0.05]
 
         switch situation.down {
         case 1:
-            weights[.base]! *= 1.5
-            weights[.contain]! *= 1.2
-            weights[.dime]! *= 0.4
+            weights[0] *= 1.5
+            weights[4] *= 1.2
+            weights[3] *= 0.4
         case 2:
-            if situation.distance >= 8 { weights[.nickel]! *= 1.3 }
+            if situation.distance >= 8 { weights[2] *= 1.3 }
         case 3:
             if situation.distance <= 2 {
-                weights[.base]! *= 1.8
-                weights[.contain]! *= 1.5
-                weights[.dime]! *= 0.2
+                weights[0] *= 1.8
+                weights[4] *= 1.5
+                weights[3] *= 0.2
             } else if situation.distance >= 8 {
-                weights[.nickel]! *= 1.5
-                weights[.dime]! *= 2.0
-                weights[.blitz]! *= 1.4
-                weights[.base]! *= 0.4
+                weights[2] *= 1.5
+                weights[3] *= 2.0
+                weights[1] *= 1.4
+                weights[0] *= 0.4
             } else {
-                weights[.nickel]! *= 1.4
-                weights[.blitz]! *= 1.2
+                weights[2] *= 1.4
+                weights[1] *= 1.2
             }
         default:
-            weights[.base]! *= 1.4
-            weights[.contain]! *= 1.3
+            weights[0] *= 1.4
+            weights[4] *= 1.3
         }
 
         switch team.defensiveScheme {
-        case .threeFour: weights[.blitz]! *= 1.45
-        case .nickelBase: weights[.nickel]! *= 1.55; weights[.base]! *= 0.7
-        case .fourThree: weights[.base]! *= 1.2
+        case .threeFour: weights[1] *= 1.45
+        case .nickelBase: weights[2] *= 1.55; weights[0] *= 0.7
+        case .fourThree: weights[0] *= 1.2
         }
 
         // Protecting a lead late: keep everything in front.
         if situation.quarter >= 4, situation.scoreDifferential <= -9, situation.clockSeconds < 240 {
-            weights[.prevent]! *= 14
-            weights[.blitz]! *= 0.4
+            weights[5] *= 14
+            weights[1] *= 0.4
         }
         if situation.isRedZone {
-            weights[.prevent]! *= 0.05
-            weights[.blitz]! *= 1.25
+            weights[5] *= 0.05
+            weights[1] *= 1.25
         }
 
         let sharpness = max(0.25, min(1.5, coordinatorQuality))
-        let shaped = weights.mapValues { pow($0, sharpness * 1.4) }
-        return weightedPick(shaped, &rng) ?? .base
+        for index in weights.indices { weights[index] = pow(weights[index], sharpness * 1.4) }
+        return weightedPick(defenseOrder, weights, &rng) ?? .base
     }
 
     /// Tempo the offense should be playing at, given the clock and the scoreboard.
@@ -315,16 +311,18 @@ public enum PlayCaller {
         return .normal
     }
 
-    private static func weightedPick<T>(_ weights: [T: Double], _ rng: inout SeededRandom) -> T? {
-        let total = weights.values.reduce(0, +)
-        guard total > 0 else { return nil }
-        // Sort for determinism: dictionary iteration order is not stable across runs.
-        let ordered = weights.sorted { String(describing: $0.key) < String(describing: $1.key) }
+    private static func weightedPick<T>(
+        _ options: [T],
+        _ weights: [Double],
+        _ rng: inout SeededRandom
+    ) -> T? {
+        let total = weights.reduce(0, +)
+        guard total > 0, options.count == weights.count else { return nil }
         var roll = rng.double01() * total
-        for (key, weight) in ordered {
-            roll -= weight
-            if roll <= 0 { return key }
+        for index in options.indices {
+            roll -= weights[index]
+            if roll <= 0 { return options[index] }
         }
-        return ordered.last?.key
+        return options.last
     }
 }

@@ -293,6 +293,80 @@ public enum OffseasonEngine {
         }
     }
 
+    /// Alternates shedding salary and filling holes until both are satisfied.
+    ///
+    /// The two pull against each other — cutting for cap room empties roster spots, and filling
+    /// them costs money — so a single pass of either leaves teams illegal. Replacements come in
+    /// at the league minimum, which is always cheaper than whoever was cut, so this converges.
+    public static func settleRostersAndCap(_ league: inout League, passes: Int = 3) {
+        for _ in 0..<passes {
+            for team in league.teams {
+                CapEngine.enforceCapCompliance(teamID: team.id, in: &league)
+            }
+            fillRosters(&league)
+            let illegal = league.teams.contains { CapEngine.capSpace(for: $0, in: league) < 0 }
+            if !illegal { return }
+        }
+    }
+
+    /// Brings every roster back up to the full complement, signing the best available free
+    /// agents first and generating fringe players only when the market has run dry.
+    ///
+    /// Without this, retirements and expiring contracts bleed a few players from every roster
+    /// each year and a decade later the league is fielding forty-man teams.
+    public static func fillRosters(_ league: inout League) {
+        for teamIndex in league.teams.indices {
+            while league.teams[teamIndex].activeRoster.count < LeagueRules.activeRosterSize {
+                let team = league.teams[teamIndex]
+                // Prefer whichever position the team is thinnest at.
+                let neediest = Position.allCases.max { lhs, rhs in
+                    FreeAgencyEngine.positionalNeed(for: lhs, on: team)
+                        < FreeAgencyEngine.positionalNeed(for: rhs, on: team)
+                } ?? .wr
+
+                let candidates = league.freeAgents
+                    .filter { $0.position == neediest }
+                    .sorted { $0.overall > $1.overall }
+
+                if let best = candidates.first,
+                   CapEngine.sign(
+                       playerID: best.id,
+                       to: team.id,
+                       contract: ContractPricer.minimumContract(age: best.age),
+                       in: &league
+                   ) {
+                    continue
+                }
+
+                // Market is empty at that position: bring in a fringe professional.
+                var filler = PlayerFactory.make(
+                    position: neediest,
+                    age: league.rng.int(in: 22...29),
+                    targetOverall: league.rng.int(in: 50...63),
+                    year: league.year,
+                    rng: &league.rng
+                )
+                filler.contract = ContractPricer.minimumContract(age: filler.age)
+                league.teams[teamIndex].roster.append(filler)
+            }
+
+            while league.teams[teamIndex].practiceSquad.count < LeagueRules.practiceSquadSize {
+                var prospect = PlayerFactory.make(
+                    position: league.rng.pick(Position.allCases.filter { !$0.isSpecialist }),
+                    age: league.rng.int(in: 21...24),
+                    targetOverall: league.rng.int(in: 48...60),
+                    year: league.year,
+                    rng: &league.rng
+                )
+                prospect.isOnPracticeSquad = true
+                prospect.contract = ContractPricer.minimumContract(age: prospect.age)
+                league.teams[teamIndex].roster.append(prospect)
+            }
+
+            league.teams[teamIndex].autoSortDepthChart()
+        }
+    }
+
     /// Every team re-signs the expiring players it wants to keep, before the market opens.
     public static func runReSigning(_ league: inout League) {
         for teamIndex in league.teams.indices {
@@ -361,10 +435,11 @@ public enum OffseasonEngine {
             ProgressionEngine.runTrainingCamp(&league)
 
         case .rosterCutdown:
+            // Order matters: shedding salary releases players, so the cap has to be settled
+            // before rosters are filled back up, or teams start the season short-handed.
+            settleRostersAndCap(&league)
             runCutdown(&league)
-            for team in league.teams {
-                CapEngine.enforceCapCompliance(teamID: team.id, in: &league)
-            }
+            settleRostersAndCap(&league)
             FreeAgencyEngine.replenishStreetFreeAgents(&league)
             startNextSeason(&league)
             return stage

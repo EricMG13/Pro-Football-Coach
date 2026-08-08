@@ -179,9 +179,11 @@ func runGameSimulatorTests() {
         test("team passing yards equal the sum of receiving yards") {
             var rng = SeededRandom(seed: 55)
             for _ in 0..<12 {
-                let home = league.teams[rng.int(in: 0...31)]
-                var away = league.teams[rng.int(in: 0...31)]
-                if away.id == home.id { away = league.teams[(rng.int(in: 0...30) + 1) % 32] }
+                let homeIndex = rng.int(in: 0...31)
+                let home = league.teams[homeIndex]
+                // Offset guarantees a different opponent; picking again could repeat the index
+                // and have a team play itself, which makes the stat comparison meaningless.
+                let away = league.teams[(homeIndex + rng.int(in: 1...31)) % 32]
                 var simulator = GameSimulator(
                     home: home, away: away, week: 1, year: 2026,
                     kind: .conference, scheduledGameID: UUID(), options: .init(retainPlays: true)

@@ -156,19 +156,19 @@ public enum PlayMatrix {
             PlayProfile(meanYards: 4.1, yardsSD: 4.8, fumbleRate: 0.010,
                         explosiveRate: 0.048, explosiveBonusYards: 21)
         case .shortPass:
-            PlayProfile(completionRate: 0.715, meanYards: 6.6, yardsSD: 4.4,
+            PlayProfile(completionRate: 0.690, meanYards: 6.6, yardsSD: 4.4,
                         sackRate: 0.052, interceptionRate: 0.020, fumbleRate: 0.004,
                         explosiveRate: 0.040, explosiveBonusYards: 16)
         case .deepPass:
-            PlayProfile(completionRate: 0.430, meanYards: 19.5, yardsSD: 8.5,
+            PlayProfile(completionRate: 0.415, meanYards: 19.5, yardsSD: 8.5,
                         sackRate: 0.098, interceptionRate: 0.048, fumbleRate: 0.003,
                         explosiveRate: 0.125, explosiveBonusYards: 30)
         case .playAction:
-            PlayProfile(completionRate: 0.640, meanYards: 10.2, yardsSD: 6.6,
+            PlayProfile(completionRate: 0.620, meanYards: 10.2, yardsSD: 6.6,
                         sackRate: 0.082, interceptionRate: 0.026, fumbleRate: 0.004,
                         explosiveRate: 0.075, explosiveBonusYards: 19)
         case .screen:
-            PlayProfile(completionRate: 0.800, meanYards: 5.4, yardsSD: 6.0,
+            PlayProfile(completionRate: 0.780, meanYards: 5.4, yardsSD: 6.0,
                         sackRate: 0.022, interceptionRate: 0.014, fumbleRate: 0.006,
                         explosiveRate: 0.055, explosiveBonusYards: 18)
         case .twoPointConversion:
@@ -243,25 +243,45 @@ public enum PlayMatrix {
         }
     }
 
-    /// Which offensive unit rating matters against which defensive one, per play type.
+    /// Which units decide a play, as (position, weight) pairs.
+    ///
+    /// Arrays rather than dictionaries, held as constants rather than rebuilt: the simulator
+    /// asks for these on every snap, and allocating two dictionaries per play was the single
+    /// largest cost in bulk season simulation.
+    public typealias UnitWeights = [(position: Position, weight: Double)]
+
+    private static let insideRunWeights: (UnitWeights, UnitWeights) = (
+        [(.ol, 0.60), (.rb, 0.30), (.te, 0.10)],
+        [(.dl, 0.60), (.lb, 0.34), (.s, 0.06)]
+    )
+    private static let outsideRunWeights: (UnitWeights, UnitWeights) = (
+        [(.ol, 0.38), (.rb, 0.46), (.te, 0.16)],
+        [(.dl, 0.34), (.lb, 0.42), (.s, 0.14), (.cb, 0.10)]
+    )
+    private static let shortPassWeights: (UnitWeights, UnitWeights) = (
+        [(.qb, 0.40), (.wr, 0.26), (.te, 0.16), (.ol, 0.18)],
+        [(.cb, 0.34), (.lb, 0.30), (.s, 0.20), (.dl, 0.16)]
+    )
+    private static let deepPassWeights: (UnitWeights, UnitWeights) = (
+        [(.qb, 0.44), (.wr, 0.34), (.ol, 0.22)],
+        [(.cb, 0.46), (.s, 0.32), (.dl, 0.22)]
+    )
+    private static let playActionWeights: (UnitWeights, UnitWeights) = (
+        [(.qb, 0.40), (.wr, 0.24), (.te, 0.14), (.ol, 0.22)],
+        [(.cb, 0.30), (.s, 0.24), (.lb, 0.24), (.dl, 0.22)]
+    )
+    private static let fallbackWeights: (UnitWeights, UnitWeights) = ([(.ol, 1.0)], [(.dl, 1.0)])
+
     public static func matchupWeights(
         for play: OffensivePlay
-    ) -> (offense: [Position: Double], defense: [Position: Double]) {
+    ) -> (offense: UnitWeights, defense: UnitWeights) {
         switch play {
-        case .insideRun:
-            return ([.ol: 0.60, .rb: 0.30, .te: 0.10], [.dl: 0.60, .lb: 0.34, .s: 0.06])
-        case .outsideRun:
-            return ([.ol: 0.38, .rb: 0.46, .te: 0.16], [.dl: 0.34, .lb: 0.42, .s: 0.14, .cb: 0.10])
-        case .shortPass, .screen:
-            return ([.qb: 0.40, .wr: 0.26, .te: 0.16, .ol: 0.18],
-                    [.cb: 0.34, .lb: 0.30, .s: 0.20, .dl: 0.16])
-        case .deepPass:
-            return ([.qb: 0.44, .wr: 0.34, .ol: 0.22], [.cb: 0.46, .s: 0.32, .dl: 0.22])
-        case .playAction, .twoPointConversion:
-            return ([.qb: 0.40, .wr: 0.24, .te: 0.14, .ol: 0.22],
-                    [.cb: 0.30, .s: 0.24, .lb: 0.24, .dl: 0.22])
-        default:
-            return ([.ol: 1.0], [.dl: 1.0])
+        case .insideRun: insideRunWeights
+        case .outsideRun: outsideRunWeights
+        case .shortPass, .screen: shortPassWeights
+        case .deepPass: deepPassWeights
+        case .playAction, .twoPointConversion: playActionWeights
+        default: fallbackWeights
         }
     }
 

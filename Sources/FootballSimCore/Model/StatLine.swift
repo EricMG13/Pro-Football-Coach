@@ -126,6 +126,97 @@ public struct StatLine: Codable, Sendable, Equatable {
     public var isEmpty: Bool { self == StatLine() }
 }
 
+// A season stores one line per player per team, and most of those lines are nearly all zeros —
+// an offensive lineman records an appearance and nothing else. Writing all twenty-eight fields
+// regardless made a ten-season save several times larger than it needed to be, so encoding
+// skips zeros and decoding treats a missing key as zero.
+extension StatLine {
+    private enum CodingKeys: String, CodingKey {
+        case passAttempts = "pa", completions = "cmp", passingYards = "py"
+        case passingTouchdowns = "ptd", interceptionsThrown = "int", sacksTaken = "skT"
+        case carries = "car", rushingYards = "ry", rushingTouchdowns = "rtd"
+        case targets = "tgt", receptions = "rec", receivingYards = "recy"
+        case receivingTouchdowns = "rectd"
+        case tackles = "tkl", sacks = "sk", interceptions = "intD", passesDefended = "pd"
+        case forcedFumbles = "ff", fumbleRecoveries = "fr"
+        case fieldGoalsMade = "fgm", fieldGoalsAttempted = "fga"
+        case extraPointsMade = "xpm", extraPointsAttempted = "xpa", longestFieldGoal = "lfg"
+        case punts = "pnt", puntYards = "pty", fumbles = "fum", gamesPlayed = "gp"
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        func value(_ key: CodingKeys) throws -> Int {
+            try container.decodeIfPresent(Int.self, forKey: key) ?? 0
+        }
+        self.init()
+        passAttempts = try value(.passAttempts)
+        completions = try value(.completions)
+        passingYards = try value(.passingYards)
+        passingTouchdowns = try value(.passingTouchdowns)
+        interceptionsThrown = try value(.interceptionsThrown)
+        sacksTaken = try value(.sacksTaken)
+        carries = try value(.carries)
+        rushingYards = try value(.rushingYards)
+        rushingTouchdowns = try value(.rushingTouchdowns)
+        targets = try value(.targets)
+        receptions = try value(.receptions)
+        receivingYards = try value(.receivingYards)
+        receivingTouchdowns = try value(.receivingTouchdowns)
+        tackles = try value(.tackles)
+        sacks = try value(.sacks)
+        interceptions = try value(.interceptions)
+        passesDefended = try value(.passesDefended)
+        forcedFumbles = try value(.forcedFumbles)
+        fumbleRecoveries = try value(.fumbleRecoveries)
+        fieldGoalsMade = try value(.fieldGoalsMade)
+        fieldGoalsAttempted = try value(.fieldGoalsAttempted)
+        extraPointsMade = try value(.extraPointsMade)
+        extraPointsAttempted = try value(.extraPointsAttempted)
+        longestFieldGoal = try value(.longestFieldGoal)
+        punts = try value(.punts)
+        puntYards = try value(.puntYards)
+        fumbles = try value(.fumbles)
+        gamesPlayed = try value(.gamesPlayed)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        func write(_ value: Int, _ key: CodingKeys) throws {
+            guard value != 0 else { return }
+            try container.encode(value, forKey: key)
+        }
+        try write(passAttempts, .passAttempts)
+        try write(completions, .completions)
+        try write(passingYards, .passingYards)
+        try write(passingTouchdowns, .passingTouchdowns)
+        try write(interceptionsThrown, .interceptionsThrown)
+        try write(sacksTaken, .sacksTaken)
+        try write(carries, .carries)
+        try write(rushingYards, .rushingYards)
+        try write(rushingTouchdowns, .rushingTouchdowns)
+        try write(targets, .targets)
+        try write(receptions, .receptions)
+        try write(receivingYards, .receivingYards)
+        try write(receivingTouchdowns, .receivingTouchdowns)
+        try write(tackles, .tackles)
+        try write(sacks, .sacks)
+        try write(interceptions, .interceptions)
+        try write(passesDefended, .passesDefended)
+        try write(forcedFumbles, .forcedFumbles)
+        try write(fumbleRecoveries, .fumbleRecoveries)
+        try write(fieldGoalsMade, .fieldGoalsMade)
+        try write(fieldGoalsAttempted, .fieldGoalsAttempted)
+        try write(extraPointsMade, .extraPointsMade)
+        try write(extraPointsAttempted, .extraPointsAttempted)
+        try write(longestFieldGoal, .longestFieldGoal)
+        try write(punts, .punts)
+        try write(puntYards, .puntYards)
+        try write(fumbles, .fumbles)
+        try write(gamesPlayed, .gamesPlayed)
+    }
+}
+
 /// Team-level totals for one game.
 public struct TeamGameStats: Codable, Sendable, Equatable {
     public var points = 0

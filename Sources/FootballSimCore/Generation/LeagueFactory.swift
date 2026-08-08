@@ -20,10 +20,10 @@ public enum LeagueFactory {
         /// Target overall for a starter on this team.
         var starterTarget: ClosedRange<Int> {
             switch self {
-            case .contender: 82...88
-            case .solid: 75...81
-            case .mediocre: 68...74
-            case .rebuilding: 61...67
+            case .contender: 83...89
+            case .solid: 77...83
+            case .mediocre: 71...77
+            case .rebuilding: 65...71
             }
         }
 
@@ -126,7 +126,7 @@ public enum LeagueFactory {
                 if slot < starters {
                     falloff = slot * 2
                 } else {
-                    falloff = starters * 2 + (slot - starters + 1) * 5
+                    falloff = starters * 2 + (slot - starters + 1) * 3
                 }
                 let base = rng.int(in: tier.starterTarget)
                 let target = (base - falloff).clampedToRating()
@@ -146,7 +146,7 @@ public enum LeagueFactory {
         // Practice squad: young, cheap, mostly projects.
         for _ in 0..<LeagueRules.practiceSquadSize {
             let position = rng.pick(Position.allCases.filter { !$0.isSpecialist })
-            let target = (rng.int(in: tier.starterTarget) - rng.int(in: 16...24)).clampedToRating()
+            let target = (rng.int(in: tier.starterTarget) - rng.int(in: 11...17)).clampedToRating()
             var player = PlayerFactory.make(
                 position: position,
                 age: rng.int(in: 21...24),
