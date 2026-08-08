@@ -29,6 +29,8 @@ final class ArcadeGameModel {
         case live
         /// Lining up a placekick: first the power tap, then the aim tap.
         case kicking
+        /// The ball is away and the carrier has a moment to decide how hard to run.
+        case carrying
         /// Showing what just happened.
         case showingResult(String)
         case opponentBall
@@ -44,6 +46,13 @@ final class ArcadeGameModel {
     private(set) var selectedCall: OffensivePlay = .shortPass
     private var pocketTask: Task<Void, Never>?
     private var meterTask: Task<Void, Never>?
+    private var carryTask: Task<Void, Never>?
+
+    /// The call and execution waiting on the carrier's decision.
+    private var pendingCall: OffensivePlay?
+    private var pendingExecution: PlayExecution = .neutral
+    /// 0...1 of the decision window remaining.
+    private(set) var carryFraction: Double = 1
 
     /// 0...1 sweep position of whichever kick meter is running.
     private(set) var meterValue: Double = 0
@@ -257,7 +266,70 @@ final class ArcadeGameModel {
         resolve(call: selectedCall, execution: PlayExecution(accuracy: -0.6, timing: -1))
     }
 
+    // MARK: - Carrying
+
+    /// Hands the play to the carrier for a moment before the engine resolves it.
+    ///
+    /// The choice is made while the ball is still in the air, so it is a decision under
+    /// uncertainty rather than a reaction to a known outcome — you commit to how hard your man
+    /// attacks the catch without yet knowing whether he has it.
+    private func beginCarry(call: OffensivePlay, execution: PlayExecution) {
+        pendingCall = call
+        pendingExecution = execution
+        carryFraction = 1
+        phase = .carrying
+        carryTask?.cancel()
+        // A pass is already in the air, so that decision has to be quick. A run has not started
+        // until the carrier commits, so it gets room to be an actual choice rather than a
+        // reflex test bolted onto the play call.
+        // Untuned against real hands: these two numbers are the first thing to adjust once
+        // somebody has actually played a quarter with a thumb rather than a test harness.
+        let window = call.isRun ? 3.5 : 2.5
+        carryTask = Task { [weak self] in
+            let step = 0.05
+            var elapsed = 0.0
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(step))
+                guard let self, self.phase == .carrying else { return }
+                elapsed += step
+                self.carryFraction = Swift.max(0, 1 - elapsed / window)
+                if self.carryFraction <= 0 {
+                    // No decision is itself a decision: he takes what is there.
+                    self.decideCarry(0)
+                    return
+                }
+            }
+        }
+    }
+
+    /// -1 goes down cleanly, +1 fights for everything.
+    func decideCarry(_ aggression: Double) {
+        guard phase == .carrying, let call = pendingCall else { return }
+        carryTask?.cancel()
+        carryTask = nil
+        var execution = pendingExecution
+        execution = PlayExecution(
+            accuracy: execution.accuracy,
+            timing: execution.timing,
+            running: Swift.min(1, Swift.max(-1, execution.running + aggression)),
+            kicking: execution.kicking
+        )
+        pendingCall = nil
+        finishPlay(call: call, execution: execution)
+    }
+
     private func resolve(call: OffensivePlay, execution: PlayExecution) {
+        stopPocketClock()
+        stopMeter()
+        // Kicks and punts have no carrier; everything else gets the decision window.
+        guard call.isPass || call.isRun else {
+            finishPlay(call: call, execution: execution)
+            return
+        }
+        beginCarry(call: call, execution: execution)
+    }
+
+    private func finishPlay(call: OffensivePlay, execution: PlayExecution) {
         stopPocketClock()
         stopMeter()
         lastPlays = game.playUserSnap(call: call, execution: execution)
@@ -272,6 +344,9 @@ final class ArcadeGameModel {
     }
 
     func simulateRest() {
+        carryTask?.cancel()
+        stopPocketClock()
+        stopMeter()
         game.simulateRemainder()
         phase = .finished
     }

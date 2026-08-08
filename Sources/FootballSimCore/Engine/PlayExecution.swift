@@ -15,7 +15,8 @@ public struct PlayExecution: Sendable, Equatable {
     public var accuracy: Double
     /// -1...1. Release timing against the pass rush. Negative is holding the ball too long.
     public var timing: Double
-    /// -1...1. Ball-carrier decisions after the catch or handoff.
+    /// -1 (go down cleanly) to 1 (fight for every yard). One axis, because in football it is
+    /// one decision: the yards you chase and the ball security you give up are the same choice.
     public var running: Double
     /// -1...1. How cleanly a placekick was struck.
     public var kicking: Double
@@ -57,8 +58,10 @@ public struct PlayExecution: Sendable, Equatable {
     /// Extra yards after the catch or on a run, at most ±3.5.
     public var yardsModifier: Double { running * 3.5 }
 
-    /// Chance the carrier coughs it up, raised by reckless running.
-    public var fumbleMultiplier: Double { running < -0.5 ? 1.6 : 1.0 }
+    /// Chance the carrier coughs it up. Rises only as he fights for extra yards — going down
+    /// cleanly is the safe end of the axis, which is what makes it a real trade-off rather than
+    /// a free choice.
+    public var fumbleMultiplier: Double { 1 + Swift.max(0, running) * 0.6 }
 
     /// Make-probability shift on a placekick, at most ±18 points.
     public var kickModifier: Double { kicking * 0.18 }

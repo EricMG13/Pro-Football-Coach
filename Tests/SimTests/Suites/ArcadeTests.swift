@@ -115,6 +115,57 @@ func runArcadeTests() {
         }
     }
 
+    suite("Carrying the ball") {
+        test("fighting for yards gains more but exposes the ball") {
+            let fight = PlayExecution(running: 1)
+            let secure = PlayExecution(running: -1)
+
+            expect(fight.yardsModifier > secure.yardsModifier, "fighting should gain more")
+            expect(
+                fight.fumbleMultiplier > secure.fumbleMultiplier,
+                "fighting should carry more fumble risk — otherwise it is a free choice"
+            )
+            expectEqual(secure.fumbleMultiplier, 1, "going down cleanly should be the safe end")
+            expectEqual(PlayExecution.neutral.fumbleMultiplier, 1)
+        }
+
+        test("ball security never becomes a coin flip") {
+            for value in stride(from: -1.0, through: 1.0, by: 0.1) {
+                let multiplier = PlayExecution(running: value).fumbleMultiplier
+                expect(multiplier >= 1 && multiplier <= 1.6, "running \(value) gave \(multiplier)")
+            }
+        }
+
+        test("the choice actually moves fumbles in a played game") {
+            let league = LeagueFactory.makeDefaultLeague(seed: 760, userTeamIndex: 0, coach: .stub())
+            var offense = TeamSnapshot(team: league.teams[0])
+            var defense = TeamSnapshot(team: league.teams[1])
+
+            func fumbleRate(_ execution: PlayExecution, seed: UInt64) -> Double {
+                var rng = SeededRandom(seed: seed)
+                var turnovers = 0
+                let attempts = 20_000
+                for _ in 0..<attempts {
+                    let outcome = PlayResolver.resolve(
+                        call: .insideRun, defensiveCall: .base, tempo: .normal,
+                        offense: &offense, defense: &defense,
+                        situation: GameSituation(down: 1, distance: 10, yardLine: 40),
+                        homeFieldForOffense: false, execution: execution, rng: &rng
+                    )
+                    if outcome.isTurnover { turnovers += 1 }
+                }
+                return Double(turnovers) / Double(attempts)
+            }
+
+            let fighting = fumbleRate(PlayExecution(running: 1), seed: 6_100)
+            let securing = fumbleRate(PlayExecution(running: -1), seed: 6_100)
+            expect(
+                fighting > securing,
+                "fighting fumbled \(fighting) of the time, securing \(securing) — the trade-off is not real"
+            )
+        }
+    }
+
     suite("Kicking execution") {
         test("a clean strike makes more kicks than a scuffed one") {
             let league = LeagueFactory.makeDefaultLeague(seed: 730, userTeamIndex: 0, coach: .stub())

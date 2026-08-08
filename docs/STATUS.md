@@ -30,7 +30,7 @@ If `xcodebuild` reports no simulator destinations, the iOS platform component is
 swift build && swift run -c release SimTests
 ```
 
-**198 tests, ~12,920 assertions, all passing.** Runtime about 100 seconds, dominated by the
+**201 tests, ~12,950 assertions, all passing.** Runtime about 100 seconds, dominated by the
 ten-season soak.
 
 ## Complete and tested
@@ -52,7 +52,7 @@ ten-season soak.
 | Scenarios (Cap Hell, Expansion, Aging Legend) | Done, each verified to leave a legal league |
 | Record book and Hall of Fame | Done: seeded marks, live record chasing, enshrinement on retirement |
 | Draft day, played pick by pick | Done: AI picks resolve automatically, the board stops when you are on the clock |
-| On the Field: call plays, drag to aim, throw under pressure, fourth-down kicks | Done and played on device — a 51-yard field goal made through the two-tap meter, resolved by the same engine as a simmed game |
+| On the Field: call plays, drag to aim, throw under pressure, fourth-down kicks, carrier decision | Play calling, aiming and the kick meter played on device — a 51-yard field goal made through the meter. The carrier window resolves correctly but its UI has not been seen (see gap 3) |
 | Re-signing your own expiring players | Done: asking price, acceptance odds and a three-round negotiation |
 | Save / load, backup recovery, version refusal | Done, and forward-compatible: unknown-field defaults mean an older save still opens |
 | Accessibility of rating colours | Done: every tier verified at 4.5:1 on card, page and chip tint in both themes, with the tier spoken to VoiceOver |
@@ -65,9 +65,12 @@ Ordered by how much they would be missed.
 1. **Practice squad elevation** and in-season street free-agent signing are engine-supported but
    not surfaced.
 2. **Tutorial and trophy room** are not built.
-3. **On the Field** covers play calling, drag-to-aim passing, the pass rush, fourth-down
-   decisions and the two-tap kick meter. Carrier control after the catch is the last piece;
-   `ArcadeInput.carrierPlay` already scores it, so it needs the gesture rather than engine work.
+3. **The arcade's timed windows have not been hand-played.** The pass rush, the carrier decision
+   and the kick meter all open windows of a few seconds. Driving the simulator through tooling
+   has a round trip far longer than any of them, so while the state machine is verified — plays
+   do enter and leave those phases and resolve correctly — nobody has yet seen the carrier
+   buttons on screen or pressed one. The window durations are guesses and are the first thing to
+   tune with a real thumb.
 
 ## Deliberate design decisions worth knowing
 

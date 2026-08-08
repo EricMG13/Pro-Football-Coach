@@ -82,6 +82,7 @@ struct ArcadeFieldView: View {
             case .callingPlay: playbook(model)
             case .live: liveControls(model)
             case .kicking: kickMeter(model)
+            case .carrying: carrierChoice(model)
             case .showingResult(let summary): resultCard(model, summary: summary)
             case .opponentBall: opponentCard(model)
             case .finished: finishedCard(model)
@@ -197,6 +198,13 @@ struct ArcadeFieldView: View {
                         aimPoint = value.location
                     }
                     .onEnded { value in
+                        if model.phase == .carrying {
+                            // Up the screen is downfield, so up means fight for more.
+                            let vertical = value.translation.height
+                            if abs(vertical) > 24 { model.decideCarry(vertical < 0 ? 0.8 : -0.8) }
+                            aimPoint = nil
+                            return
+                        }
                         guard model.phase == .live else { return }
                         defer { aimPoint = nil }
                         // Converts the release point back into yards and a sideline offset.
@@ -284,6 +292,56 @@ struct ArcadeFieldView: View {
                     }
                     .buttonStyle(.bordered)
                 }
+            }
+        }
+        .padding(Layout.medium)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
+    }
+
+    /// The moment after the ball is away: fight for extra yards, or go down with it.
+    ///
+    /// Both options are live for a second and a half, and letting the window close is itself a
+    /// choice — he takes what is there. Swiping up or down on the field does the same thing, so
+    /// the decision works one-handed without hunting for a button.
+    private func carrierChoice(_ model: ArcadeGameModel) -> some View {
+        VStack(spacing: Layout.small) {
+            HStack {
+                Text("Ball's away")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("swipe up to fight, down to secure")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.secondary.opacity(0.2))
+                    Capsule()
+                        .fill(Color.orange)
+                        .frame(width: proxy.size.width * model.carryFraction)
+                }
+            }
+            .frame(height: 6)
+            .accessibilityLabel("Time left to decide")
+
+            HStack(spacing: Layout.small) {
+                Button { model.decideCarry(0.8) } label: {
+                    Label("Fight for Yards", systemImage: "figure.run")
+                        .font(.caption.weight(.medium))
+                        .frame(maxWidth: .infinity, minHeight: 46)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+
+                Button { model.decideCarry(-0.8) } label: {
+                    Label("Secure It", systemImage: "shield.fill")
+                        .font(.caption.weight(.medium))
+                        .frame(maxWidth: .infinity, minHeight: 46)
+                }
+                .buttonStyle(.bordered)
             }
         }
         .padding(Layout.medium)
