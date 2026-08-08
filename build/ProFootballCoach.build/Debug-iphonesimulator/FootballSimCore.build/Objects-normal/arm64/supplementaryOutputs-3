@@ -1,0 +1,30 @@
+{
+  "/Users/ericguei/Documents/Pro-Football-Coach/Sources/FootballSimCore/Engine/OffseasonEngine.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/OffseasonEngine.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/OffseasonEngine.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/OffseasonEngine.dia",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/OffseasonEngine.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/OffseasonEngine.swiftdeps"
+  },
+  "/Users/ericguei/Documents/Pro-Football-Coach/Sources/FootballSimCore/Engine/PlayCaller.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayCaller.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayCaller.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayCaller.dia",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayCaller.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayCaller.swiftdeps"
+  },
+  "/Users/ericguei/Documents/Pro-Football-Coach/Sources/FootballSimCore/Engine/PlayResolver.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayResolver.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayResolver.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayResolver.dia",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayResolver.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayResolver.swiftdeps"
+  },
+  "/Users/ericguei/Documents/Pro-Football-Coach/Sources/FootballSimCore/Engine/ProgressionEngine.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/ProgressionEngine.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/ProgressionEngine.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/ProgressionEngine.dia",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/ProgressionEngine.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/ProgressionEngine.swiftdeps"
+  }
+}

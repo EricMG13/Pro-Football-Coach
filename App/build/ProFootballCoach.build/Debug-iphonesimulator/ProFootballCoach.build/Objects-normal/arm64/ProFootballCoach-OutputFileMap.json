@@ -1,0 +1,19 @@
+{
+  "" : {
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/App/build/ProFootballCoach.build/Debug-iphonesimulator/ProFootballCoach.build/Objects-normal/arm64/ProFootballCoach-primary.dia",
+    "emit-module-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/App/build/ProFootballCoach.build/Debug-iphonesimulator/ProFootballCoach.build/Objects-normal/arm64/ProFootballCoach-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/App/build/ProFootballCoach.build/Debug-iphonesimulator/ProFootballCoach.build/Objects-normal/arm64/ProFootballCoach-primary-emit-module.dia",
+    "pch" : "/Users/ericguei/Documents/Pro-Football-Coach/App/build/ProFootballCoach.build/Debug-iphonesimulator/ProFootballCoach.build/Objects-normal/arm64/ProFootballCoach-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/App/build/ProFootballCoach.build/Debug-iphonesimulator/ProFootballCoach.build/Objects-normal/arm64/ProFootballCoach-primary.swiftdeps"
+  },
+  "/Users/ericguei/Documents/Pro-Football-Coach/App/ProFootballCoachApp.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/App/build/ProFootballCoach.build/Debug-iphonesimulator/ProFootballCoach.build/Objects-normal/arm64/ProFootballCoachApp.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/App/build/ProFootballCoach.build/Debug-iphonesimulator/ProFootballCoach.build/Objects-normal/arm64/ProFootballCoachApp.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/App/build/ProFootballCoach.build/Debug-iphonesimulator/ProFootballCoach.build/Objects-normal/arm64/ProFootballCoachApp.dia",
+    "index-unit-output-path" : "/ProFootballCoach.build/Debug-iphonesimulator/ProFootballCoach.build/Objects-normal/arm64/ProFootballCoachApp.o",
+    "llvm-bc" : "/Users/ericguei/Documents/Pro-Football-Coach/App/build/ProFootballCoach.build/Debug-iphonesimulator/ProFootballCoach.build/Objects-normal/arm64/ProFootballCoachApp.bc",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/App/build/ProFootballCoach.build/Debug-iphonesimulator/ProFootballCoach.build/Objects-normal/arm64/ProFootballCoachApp.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/App/build/ProFootballCoach.build/Debug-iphonesimulator/ProFootballCoach.build/Objects-normal/arm64/ProFootballCoachApp.swiftdeps",
+    "swiftmodule" : "/Users/ericguei/Documents/Pro-Football-Coach/App/build/ProFootballCoach.build/Debug-iphonesimulator/ProFootballCoach.build/Objects-normal/arm64/ProFootballCoachApp~partial.swiftmodule"
+  }
+}

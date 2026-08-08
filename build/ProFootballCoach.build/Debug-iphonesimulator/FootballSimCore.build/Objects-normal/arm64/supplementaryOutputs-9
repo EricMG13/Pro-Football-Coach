@@ -1,0 +1,23 @@
+{
+  "/Users/ericguei/Documents/Pro-Football-Coach/Sources/FootballSimCore/Rules/PlayMatrix.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayMatrix.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayMatrix.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayMatrix.dia",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayMatrix.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/PlayMatrix.swiftdeps"
+  },
+  "/Users/ericguei/Documents/Pro-Football-Coach/Sources/FootballSimCore/Rules/Scenario.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/Scenario.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/Scenario.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/Scenario.dia",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/Scenario.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/Scenario.swiftdeps"
+  },
+  "/Users/ericguei/Documents/Pro-Football-Coach/Sources/FootballSimCore/Rules/TeamTable.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/TeamTable.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/TeamTable.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/TeamTable.dia",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/TeamTable.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/TeamTable.swiftdeps"
+  }
+}

@@ -1,0 +1,12 @@
+Target dependency graph (5 targets)
+Target 'ProFootballCoach' in project 'ProFootballCoach'
+➜ Explicit dependency on target 'FootballSimCore' in project 'ProFootballCoach'
+➜ Explicit dependency on target 'ProFootballCoachUI' in project 'ProFootballCoach'
+Target 'ProFootballCoachUI' in project 'ProFootballCoach'
+➜ Explicit dependency on target 'ProFootballCoachUI' in project 'ProFootballCoach'
+➜ Explicit dependency on target 'FootballSimCore' in project 'ProFootballCoach'
+Target 'ProFootballCoachUI' in project 'ProFootballCoach'
+➜ Explicit dependency on target 'FootballSimCore' in project 'ProFootballCoach'
+Target 'FootballSimCore' in project 'ProFootballCoach'
+➜ Explicit dependency on target 'FootballSimCore' in project 'ProFootballCoach'
+Target 'FootballSimCore' in project 'ProFootballCoach' (no dependencies)

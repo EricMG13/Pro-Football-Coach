@@ -61,11 +61,12 @@ struct ArcadeGameView: View {
     }
 
     private func teamScore(_ team: Team?, _ score: Int) -> some View {
-        HStack(spacing: Layout.tight) {
-            if let team { TeamBadge(team: team, size: 26) }
+        HStack(spacing: Layout.small) {
+            if let team { TeamBadge(team: team, size: 28) }
             Text("\(score)")
                 .font(.system(.title2, design: .rounded, weight: .heavy))
                 .foregroundStyle(.white)
+                .monospacedDigit()
         }
         .frame(maxWidth: .infinity)
     }

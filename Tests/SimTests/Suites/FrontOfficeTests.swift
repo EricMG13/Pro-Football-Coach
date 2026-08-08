@@ -345,16 +345,18 @@ func runFrontOfficeTests() {
 
             var prospects = DraftClassFactory.makeClass(year: league.year + 1, rng: &league.rng)
             let picks = TradeEngine.makePicks(for: league)
-            let rosterBefore = league.teams.reduce(0) { $0 + $1.roster.count }
+            let idsBefore = Set(league.teams.flatMap { $0.roster.map(\.id) })
             DraftEngine.runDraft(&league, prospects: &prospects, picks: picks)
-            let rosterAfter = league.teams.reduce(0) { $0 + $1.roster.count }
+            let idsAfter = Set(league.teams.flatMap { $0.roster.map(\.id) })
 
             expectEqual(
-                rosterAfter - rosterBefore,
+                idsAfter.count - idsBefore.count,
                 LeagueRules.draftPickCount,
                 "every pick should produce a rookie"
             )
-            let rookies = league.teams.flatMap(\.roster).filter { $0.draftOrigin?.year == league.year }
+            // Identify draftees by who is newly on a roster. Filtering on draft year would also
+            // catch generated players who happen to have entered the league the same year.
+            let rookies = league.teams.flatMap(\.roster).filter { !idsBefore.contains($0.id) }
             expect(
                 rookies.allSatisfy { $0.contract?.isRookieDeal ?? false },
                 "a drafted rookie is not on a rookie contract"

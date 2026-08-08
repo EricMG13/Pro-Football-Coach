@@ -1,0 +1,23 @@
+{
+  "/Users/ericguei/Documents/Pro-Football-Coach/Sources/FootballSimCore/Support/CodingSupport.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/CodingSupport.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/CodingSupport.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/CodingSupport.dia",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/CodingSupport.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/CodingSupport.swiftdeps"
+  },
+  "/Users/ericguei/Documents/Pro-Football-Coach/Sources/FootballSimCore/Support/FootballSimCore.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/FootballSimCore.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/FootballSimCore.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/FootballSimCore.dia",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/FootballSimCore.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/FootballSimCore.swiftdeps"
+  },
+  "/Users/ericguei/Documents/Pro-Football-Coach/Sources/FootballSimCore/Support/SeededRandom.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/SeededRandom.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/SeededRandom.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/SeededRandom.dia",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/SeededRandom.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/SeededRandom.swiftdeps"
+  }
+}

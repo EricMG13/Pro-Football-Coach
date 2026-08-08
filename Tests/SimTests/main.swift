@@ -2,6 +2,7 @@
 runSeededRandomTests()
 runModelTests()
 runGenerationTests()
+runDraftOriginTests()
 runGameSimulatorTests()
 runSeasonTests()
 runFrontOfficeTests()

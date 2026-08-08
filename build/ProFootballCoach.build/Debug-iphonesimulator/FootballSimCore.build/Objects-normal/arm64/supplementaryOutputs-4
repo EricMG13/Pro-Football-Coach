@@ -1,0 +1,30 @@
+{
+  "/Users/ericguei/Documents/Pro-Football-Coach/Sources/FootballSimCore/Engine/RecordsBook.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/RecordsBook.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/RecordsBook.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/RecordsBook.dia",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/RecordsBook.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/RecordsBook.swiftdeps"
+  },
+  "/Users/ericguei/Documents/Pro-Football-Coach/Sources/FootballSimCore/Engine/ScheduleGenerator.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/ScheduleGenerator.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/ScheduleGenerator.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/ScheduleGenerator.dia",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/ScheduleGenerator.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/ScheduleGenerator.swiftdeps"
+  },
+  "/Users/ericguei/Documents/Pro-Football-Coach/Sources/FootballSimCore/Engine/SeasonEngine.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/SeasonEngine.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/SeasonEngine.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/SeasonEngine.dia",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/SeasonEngine.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/SeasonEngine.swiftdeps"
+  },
+  "/Users/ericguei/Documents/Pro-Football-Coach/Sources/FootballSimCore/Engine/StandingsCalculator.swift" : {
+    "const-values" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/StandingsCalculator.swiftconstvalues",
+    "dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/StandingsCalculator.d",
+    "diagnostics" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/StandingsCalculator.dia",
+    "object" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/StandingsCalculator.o",
+    "swift-dependencies" : "/Users/ericguei/Documents/Pro-Football-Coach/build/ProFootballCoach.build/Debug-iphonesimulator/FootballSimCore.build/Objects-normal/arm64/StandingsCalculator.swiftdeps"
+  }
+}

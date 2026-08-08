@@ -296,3 +296,59 @@ func runGenerationTests() {
         }
     }
 }
+
+func runDraftOriginTests() {
+    suite("Generated draft history") {
+        let league = LeagueFactory.makeDefaultLeague(seed: 500, userTeamIndex: 0, coach: .stub())
+
+        test("every generated player has a draft origin") {
+            let missing = league.teams
+                .flatMap(\.activeRoster)
+                .filter { $0.draftOrigin == nil }
+            expectEqual(missing.count, 0, "\(missing.count) player(s) have no draft history")
+        }
+
+        test("draft years line up with how long a player has been in the league") {
+            for player in league.teams.flatMap(\.activeRoster) {
+                guard let origin = player.draftOrigin else { continue }
+                expectEqual(
+                    origin.year,
+                    league.year - player.yearsPro,
+                    "\(player.name) drafted \(origin.year) but has \(player.yearsPro) years in"
+                )
+            }
+        }
+
+        test("rounds stay inside the draft and stars skew early") {
+            var earlyRoundSum = 0, earlyCount = 0
+            var lateRoundSum = 0, lateCount = 0
+            for player in league.teams.flatMap(\.activeRoster) {
+                guard let origin = player.draftOrigin, !origin.isUndrafted else { continue }
+                expect(
+                    origin.round >= 1 && origin.round <= LeagueRules.draftRounds,
+                    "\(player.name) drafted in round \(origin.round)"
+                )
+                expect(
+                    origin.pickInRound >= 1 && origin.pickInRound <= LeagueRules.teamCount,
+                    "\(player.name) pick \(origin.pickInRound) out of range"
+                )
+                if player.overall >= 82 { earlyRoundSum += origin.round; earlyCount += 1 }
+                if player.overall <= 62 { lateRoundSum += origin.round; lateCount += 1 }
+            }
+            guard earlyCount > 0, lateCount > 0 else { return expect(false, "no sample") }
+            let starAverage = Double(earlyRoundSum) / Double(earlyCount)
+            let fringeAverage = Double(lateRoundSum) / Double(lateCount)
+            expect(
+                starAverage < fringeAverage,
+                "stars averaged round \(starAverage), fringe players \(fringeAverage)"
+            )
+        }
+
+        test("some players are undrafted, but not most of them") {
+            let all = league.teams.flatMap(\.activeRoster)
+            let undrafted = all.filter { $0.draftOrigin?.isUndrafted ?? false }
+            let share = Double(undrafted.count) / Double(all.count)
+            expectIn(share, 0.02...0.35, "share of undrafted players")
+        }
+    }
+}

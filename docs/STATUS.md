@@ -11,15 +11,26 @@ The machine this was built on has the Swift 6.3 command line tools but **not** f
 1. Neither XCTest nor swift-testing ships with the Command Line Tools, so the suite runs as an
    executable target with a small hand-rolled harness (`Tests/SimTests/TestKit.swift`). It
    reports real pass/fail counts and exits non-zero on failure.
-2. Both library targets — engine *and* SwiftUI — build for macOS as well as iOS, so the entire
-   codebase is compile-verified from the command line. The iOS app target itself is a thin
-   `@main` shell that has not been launched on a simulator.
+2. Both library targets — engine *and* SwiftUI — build for macOS as well as iOS, so the whole
+   codebase is compile-verified from the command line even without Xcode.
+
+The app has since been built and run on an iPhone simulator under Xcode 26.6. The full path
+was exercised by hand: menu → four-step wizard → franchise created → season kicked off →
+week 1 played through the play-by-play → box score → app relaunched → save loaded → team,
+depth chart and player card. To build the Xcode project:
+
+```bash
+brew install xcodegen && xcodegen generate --spec App/project.yml
+```
+
+If `xcodebuild` reports no simulator destinations, the iOS platform component is missing —
+`xcodebuild -downloadPlatform iOS` installs it.
 
 ```bash
 swift build && swift run -c release SimTests
 ```
 
-**161 tests, ~4,060 assertions, all passing.** Runtime about 100 seconds, dominated by the
+**165 tests, ~8,900 assertions, all passing.** Runtime about 100 seconds, dominated by the
 ten-season soak.
 
 ## Complete and tested
@@ -43,19 +54,16 @@ ten-season soak.
 | Draft day, played pick by pick | Done: AI picks resolve automatically, the board stops when you are on the clock |
 | Re-signing your own expiring players | Done: asking price, acceptance odds and a three-round negotiation |
 | Save / load, backup recovery, version refusal | Done |
-| SwiftUI app: menu, wizard, season hub, schedule, standings, news, team, depth chart, player cards, stats, front office, draft board, coach, offseason pipeline, both play modes | Written and compile-verified; not yet exercised on a simulator |
+| SwiftUI app: menu, wizard, season hub, schedule, standings, news, team, depth chart, player cards, stats, front office, draft board, coach, offseason pipeline, both play modes | Built and run on an iPhone simulator; core path walked by hand |
 
 ## Known gaps
 
 Ordered by how much they would be missed.
 
-1. **Nothing has run on a device or simulator.** Every view compiles and the state layer is
-   tested, but no screen has been seen. This is the first thing to do on a machine with Xcode:
-   `xcodegen generate --spec App/project.yml`, then run.
-2. **Practice squad elevation** and in-season street free-agent signing are engine-supported but
+1. **Practice squad elevation** and in-season street free-agent signing are engine-supported but
    not surfaced.
-3. **Tutorial and trophy room** are not built.
-4. **On the Field** is a field view over the resolved game rather than the full arcade control
+2. **Tutorial and trophy room** are not built.
+3. **On the Field** is a field view over the resolved game rather than the full arcade control
    scheme in `06-PLAYED-GAME-MODE.md`. Drag-to-aim passing, carrier control and the kick meter
    are the remaining work, and the engine already exposes what they need.
 

@@ -123,11 +123,11 @@ struct LiveGameView: View {
             VStack(spacing: 2) {
                 Text(isFinished ? "FINAL" : (shown?.clockLabel ?? "Q1 15:00"))
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
-                if !isFinished, let shown, shown.down > 0 {
+                    .foregroundStyle(.white)
+                if !isFinished, let shown, shown.down > 0, shown.clockSeconds > 0 {
                     Text("\(ordinal(shown.down)) & \(shown.distance)")
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.white.opacity(0.8))
                 }
             }
             scoreColumn(app.league?.team(id: record.homeTeamID), homeScore)
@@ -138,14 +138,16 @@ struct LiveGameView: View {
     }
 
     private func scoreColumn(_ team: Team?, _ score: Int) -> some View {
-        VStack(spacing: 4) {
-            if let team { TeamBadge(team: team, size: 36) }
-            Text(team?.abbreviation ?? "—")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.white)
+        VStack(spacing: 6) {
+            if let team {
+                TeamBadge(team: team, size: 40)
+            } else {
+                Text("—").font(.caption.weight(.bold)).foregroundStyle(.white)
+            }
             Text("\(score)")
                 .font(.system(.title, design: .rounded, weight: .heavy))
                 .foregroundStyle(.white)
+                .monospacedDigit()
         }
         .frame(maxWidth: .infinity)
     }
@@ -168,14 +170,18 @@ struct LiveGameView: View {
                 HStack(spacing: Layout.small) {
                     Button("Next Play") { advance(by: 1, in: record) }
                         .buttonStyle(.borderedProminent)
+                        .frame(maxWidth: .infinity)
                     Button("Drive") { advance(by: 8, in: record) }
                         .buttonStyle(.bordered)
+                        .frame(maxWidth: .infinity)
                     Button("Quarter") { advance(by: 35, in: record) }
                         .buttonStyle(.bordered)
+                        .frame(maxWidth: .infinity)
                 }
             }
         }
         .padding(Layout.medium)
+        .frame(maxWidth: .infinity)
         .background(.bar)
     }
 
@@ -256,6 +262,15 @@ struct GameReportView: View {
     private var teamStats: some View {
         VStack(spacing: Layout.tight) {
             SectionHeader("Team Statistics")
+            HStack {
+                Text(away?.abbreviation ?? "Away")
+                    .frame(width: 50, alignment: .leading)
+                Spacer()
+                Text(home?.abbreviation ?? "Home")
+                    .frame(width: 50, alignment: .trailing)
+            }
+            .font(.caption.weight(.bold))
+            .foregroundStyle(.secondary)
             comparisonRow("Total yards", record.awayStats.totalYards, record.homeStats.totalYards)
             comparisonRow("Passing", record.awayStats.passingYards, record.homeStats.passingYards)
             comparisonRow("Rushing", record.awayStats.rushingYards, record.homeStats.rushingYards)

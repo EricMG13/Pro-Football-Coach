@@ -139,6 +139,7 @@ public enum LeagueFactory {
                     rng: &rng
                 )
                 player.contract = startingContract(for: player, rng: &rng)
+                player.draftOrigin = inventedDraftOrigin(for: player, year: year, rng: &rng)
                 roster.append(player)
             }
         }
@@ -160,6 +161,33 @@ public enum LeagueFactory {
         }
 
         return roster
+    }
+
+    /// Gives a generated veteran a plausible draft history. Without it every player on a
+    /// brand-new league reads "Undrafted", which looks like a bug on a thirteen-year starter.
+    private static func inventedDraftOrigin(
+        for player: Player,
+        year: Int,
+        rng: inout SeededRandom
+    ) -> DraftOrigin {
+        let draftYear = year - player.yearsPro
+        // Better players plausibly went earlier, with plenty of noise so the board is not a
+        // straight line from overall to draft slot.
+        let expectedRound = Double(90 - player.overall) / 5.5 + rng.gaussian(mean: 0, sd: 2.1)
+        let round = Int(expectedRound.rounded())
+
+        guard round >= 1 else {
+            return DraftOrigin(year: draftYear, round: 1, pickInRound: rng.int(in: 1...8))
+        }
+        guard round <= LeagueRules.draftRounds else {
+            // Undrafted free agents are a real and common origin for fringe players.
+            return DraftOrigin(year: draftYear, round: 0, pickInRound: 0)
+        }
+        return DraftOrigin(
+            year: draftYear,
+            round: round,
+            pickInRound: rng.int(in: 1...LeagueRules.teamCount)
+        )
     }
 
     /// Existing deals are partly used up, so contracts expire on a stagger rather than all at once.

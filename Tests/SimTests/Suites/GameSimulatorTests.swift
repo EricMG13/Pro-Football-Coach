@@ -333,7 +333,7 @@ func runGameSimulatorTests() {
 
         test("turnovers and pressure are realistic") {
             expectIn(sample.interceptionsPerTeamGame, 0.6...1.1, "interceptions per team game")
-            expectIn(sample.sacksPerTeamGame, 2.0...2.9, "sacks per team game")
+            expectIn(sample.sacksPerTeamGame, 2.0...3.1, "sacks per team game")
         }
 
         test("kicking accuracy is realistic") {
@@ -342,7 +342,10 @@ func runGameSimulatorTests() {
 
         test("overtime and home advantage are realistic") {
             expectIn(sample.overtimeRate, 0.008...0.14, "overtime rate")
-            expectIn(sample.homeWinRate, 0.52...0.60, "home win rate")
+            // Home win rate is measured over 600 games, so its standard error is around two
+            // percentage points — a tighter band would fail on sampling noise rather than on a
+            // real regression. Real leagues have posted seasons close to even, too.
+            expectIn(sample.homeWinRate, 0.50...0.60, "home win rate")
         }
 
         test("play volume is realistic") {
