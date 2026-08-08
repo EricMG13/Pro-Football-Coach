@@ -107,11 +107,19 @@ public final class AppState {
 
     public func load(id: UUID) {
         do {
-            let loaded = try store.load(id: id)
+            var loaded = try store.load(id: id)
+            // A franchise saved before goals were persisted comes back without any. Rather than
+            // leave it permanently goal-less, set this season's objectives on the way in.
+            if loaded.seasonGoals.isEmpty, !loaded.phase.isOffseason {
+                var rng = loaded.rng
+                loaded.seasonGoals = CoachEngine.makeSeasonGoals(for: loaded, rng: &rng)
+                loaded.rng = rng
+            }
             league = loaded
             saveID = id
             saveName = saves.first { $0.id == id }?.name ?? "Franchise"
             draftPicks = TradeEngine.makePicks(for: loaded)
+            persist()
         } catch {
             lastError = "That save could not be opened."
         }
