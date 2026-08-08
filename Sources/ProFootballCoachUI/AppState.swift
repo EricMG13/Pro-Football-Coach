@@ -42,9 +42,11 @@ public final class AppState {
     public var isBusy = false
 
     private let store: SaveStore
+    private let queue: SaveQueue
 
     public init(store: SaveStore = SaveStore()) {
         self.store = store
+        self.queue = SaveQueue(store: store)
         saves = store.list()
     }
 
@@ -110,23 +112,31 @@ public final class AppState {
             var loaded = try store.load(id: id)
             // A franchise saved before goals were persisted comes back without any. Rather than
             // leave it permanently goal-less, set this season's objectives on the way in.
+            var seededGoals = false
             if loaded.seasonGoals.isEmpty, !loaded.phase.isOffseason {
                 var rng = loaded.rng
                 loaded.seasonGoals = CoachEngine.makeSeasonGoals(for: loaded, rng: &rng)
                 loaded.rng = rng
+                seededGoals = true
             }
             league = loaded
             saveID = id
             saveName = saves.first { $0.id == id }?.name ?? "Franchise"
             draftPicks = TradeEngine.makePicks(for: loaded)
-            persist()
+            // Only write if opening actually changed something. Re-encoding an untouched 3 MB
+            // franchise on every open is pure cost, and it is a write on the riskiest path.
+            if seededGoals { persist() }
         } catch {
-            lastError = "That save could not be opened."
+            lastError = "That save could not be opened. The file has not been changed."
         }
     }
 
     public func closeFranchise() {
+        // persist() snapshots the franchise before these fields are cleared, so the write in
+        // flight is still the franchise being closed.
         persist()
+        let queue = self.queue
+        Task { await queue.flush() }
         league = nil
         saveID = nil
         draftSession = nil
@@ -138,15 +148,29 @@ public final class AppState {
         saves = store.list()
     }
 
-    /// Writes the current franchise to disk. Called after every state-changing action.
+    /// Queues the current franchise for writing. Returns immediately: the encode, the backup
+    /// rotation and the atomic write all happen on `SaveQueue`'s executor, never on the main
+    /// actor. Called after every state-changing action.
     public func persist() {
         guard let league, let saveID else { return }
-        do {
-            _ = try store.save(league, id: saveID, name: saveName)
-            saves = store.list()
-        } catch {
-            lastError = "Could not save: \(error.localizedDescription)"
+        let snapshot = SaveQueue.Snapshot(league: league, id: saveID, name: saveName)
+        Task {
+            await queue.enqueue(snapshot)
+            await queue.flush()
+            saves = await queue.list()
+            if let failure = await queue.takeError() { lastError = failure }
         }
+    }
+
+    /// Waits for every queued write to land. Call before closing a franchise or backgrounding.
+    public func flush() async {
+        await queue.flush()
+        saves = await queue.list()
+        if let failure = await queue.takeError() { lastError = failure }
+    }
+
+    public func refreshSaves() async {
+        saves = await queue.list()
     }
 
     private func autosave() {
