@@ -1,0 +1,24 @@
+name: ProFootballCoach
+options:
+  bundleIdPrefix: com.ericmg
+  deploymentTarget: { iOS: "17.0" }
+  createIntermediateGroups: true
+packages:
+  ProFootballCoach:
+    path: ..
+targets:
+  ProFootballCoach:
+    type: application
+    platform: iOS
+    sources: [.]
+    dependencies:
+      - package: ProFootballCoach
+        product: FootballSimCore
+      - package: ProFootballCoach
+        product: ProFootballCoachUI
+    settings:
+      base:
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        SWIFT_VERSION: "5.10"
+        TARGETED_DEVICE_FAMILY: "1,2"
