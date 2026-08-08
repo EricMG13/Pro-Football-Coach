@@ -58,6 +58,25 @@ public struct SeededRandom: Codable, Sendable, Equatable {
         return result
     }
 
+    /// A UUID drawn from the seeded stream. Entity identities have to come from here rather
+    /// than `UUID()`, or two runs of the same seed produce leagues that differ only by id —
+    /// which breaks save comparison and every determinism guarantee built on it.
+    public mutating func uuid() -> UUID {
+        let high = next()
+        let low = next()
+        var bytes = [UInt8]()
+        bytes.reserveCapacity(16)
+        for shift in stride(from: 56, through: 0, by: -8) { bytes.append(UInt8((high >> UInt64(shift)) & 0xFF)) }
+        for shift in stride(from: 56, through: 0, by: -8) { bytes.append(UInt8((low >> UInt64(shift)) & 0xFF)) }
+        // Stamp version 4 / RFC-4122 variant bits so these read as ordinary random UUIDs.
+        bytes[6] = (bytes[6] & 0x0F) | 0x40
+        bytes[8] = (bytes[8] & 0x3F) | 0x80
+        return UUID(uuid: (
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+            bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
+        ))
+    }
+
     /// Box-Muller transform. Sim outcomes are built from these: most plays land near the
     /// mean, with the tails supplying the occasional explosive play or disaster.
     public mutating func gaussian(mean: Double, sd: Double) -> Double {
