@@ -34,6 +34,7 @@ struct ScenarioPickerView: View {
                                     .foregroundStyle(.orange)
                             }
                             .padding(.vertical, 2)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }

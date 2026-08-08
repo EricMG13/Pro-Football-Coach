@@ -196,6 +196,8 @@ struct FreeAgencyView: View {
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                     }
+                    // Without this the gap between the name and the price is not tappable.
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
@@ -229,6 +231,7 @@ struct OfferSheet: View {
 
     @State private var years = 3
     @State private var salaryMillions: Double = 0
+    @State private var toPracticeSquad = false
     @State private var message: String?
 
     var body: some View {
@@ -245,6 +248,13 @@ struct OfferSheet: View {
                     }
                     SummaryRow(label: "He is asking", value: Format.money(asking))
                     SummaryRow(label: "Total value", value: Format.money(Int(salaryMillions * 1_000_000) * years))
+                    Toggle("Sign to practice squad", isOn: $toPracticeSquad)
+                    if toPracticeSquad {
+                        Text("He develops without taking an active roster spot, and any team can "
+                             + "sign him away.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Section("Interest") {
@@ -262,7 +272,7 @@ struct OfferSheet: View {
                 }
 
                 Section {
-                    Button("Sign Player") { submit() }
+                    Button(toPracticeSquad ? "Sign to Practice Squad" : "Sign Player") { submit() }
                         .disabled(interest < 0.45)
                 }
             }
@@ -289,11 +299,29 @@ struct OfferSheet: View {
     }
 
     private func submit() {
-        if app.sign(playerID: player.id, contract: contract) {
+        if app.sign(playerID: player.id, contract: contract, practiceSquad: toPracticeSquad) {
             dismiss()
         } else {
-            message = "Not enough cap space or roster room for that contract."
+            message = refusalReason
         }
+    }
+
+    /// The sign call only reports success, so work out which door was shut and say so.
+    private var refusalReason: String {
+        guard let league = app.league, let team = league.userTeam else {
+            return "That signing could not be completed."
+        }
+        if toPracticeSquad, team.practiceSquad.count >= LeagueRules.practiceSquadSize {
+            return "The practice squad is full."
+        }
+        if !toPracticeSquad, team.activeRoster.count >= LeagueRules.activeRosterSize {
+            return "The active roster is full. Release a player or send one down first."
+        }
+        if !CapEngine.canAfford(contract, team: team, in: league) {
+            let over = contract.capHit(inYear: 0) - CapEngine.capSpace(for: team, in: league)
+            return "That contract is \(Format.money(over)) over the cap."
+        }
+        return "That signing could not be completed."
     }
 }
 
@@ -371,6 +399,7 @@ struct TradeCenterView: View {
                 Spacer()
                 Text(player.position.abbreviation).font(.caption).foregroundStyle(.secondary)
             }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

@@ -220,6 +220,7 @@ struct SeasonHubView: View {
                 Image(systemName: "chevron.right").foregroundStyle(.tertiary)
             }
             .card()
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
