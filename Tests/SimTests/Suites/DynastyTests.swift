@@ -412,3 +412,71 @@ func runLegacyTests() {
         }
     }
 }
+
+/// The head coach's own place in the carousel: he can be sacked, he can move, and the career
+/// never dead-ends. The engine had job offers from the start but nothing called them, so a
+/// coach could sit through a decade of 2-15 seasons and keep his desk.
+func runCoachCarouselTests() {
+    suite("Coaching carousel") {
+        test("a failing coach loses the job and gets offers") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 611, userTeamIndex: 0, coach: .stub())
+            league.coach.jobSecurity = 0
+            let oldTeam = league.userTeamID
+
+            let betweenJobs = CoachEngine.settleHeadCoachJob(&league)
+
+            expect(betweenJobs, "a coach on zero security should lose the job")
+            expect(!league.jobOffers.isEmpty, "a career must never dead-end with zero offers")
+            expectEqual(league.userTeamID, oldTeam, "he does not move until he accepts")
+
+            let offer = league.jobOffers[0]
+            CoachEngine.accept(offer: offer, in: &league)
+            expectEqual(league.userTeamID, offer.teamID, "accepting an offer moves the coach")
+            expect(league.jobOffers.isEmpty, "accepting clears the rest of the offers")
+            expectEqual(league.coach.teamsCoached, 2, "the second job should be counted")
+            expectEqual(league.coach.contractYearsElapsed, 0, "a new deal starts at year zero")
+            expect(league.coach.jobSecurity > 12, "a new job comes with a clean slate")
+        }
+
+        test("a secure coach is extended rather than moved") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 612, userTeamIndex: 0, coach: .stub())
+            league.coach.jobSecurity = 80
+            league.coach.contractYears = 1
+            league.coach.contractYearsElapsed = 0
+            let team = league.userTeamID
+
+            let betweenJobs = CoachEngine.settleHeadCoachJob(&league)
+
+            expect(!betweenJobs, "a winning coach whose deal expires should be re-signed")
+            expectEqual(league.userTeamID, team, "he stays where he is")
+            expect(league.coach.contractYearsRemaining > 1, "the extension should add years")
+        }
+
+        test("firing can be switched off") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 613, userTeamIndex: 0, coach: .stub())
+            league.settings.coachFiringEnabled = false
+            league.coach.jobSecurity = 0
+            league.coach.contractYears = 5
+            league.coach.contractYearsElapsed = 0
+
+            expect(
+                !CoachEngine.settleHeadCoachJob(&league),
+                "with firing off, a bad season should not cost the job"
+            )
+            expect(league.jobOffers.isEmpty, "no offers when the coach is not going anywhere")
+        }
+
+        test("an offer survives a save") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 614, userTeamIndex: 0, coach: .stub())
+            league.coach.jobSecurity = 0
+            CoachEngine.settleHeadCoachJob(&league)
+
+            let data = try JSONEncoder.stable().encode(league)
+            let restored = try JSONDecoder.stable().decode(League.self, from: data)
+            expectEqual(
+                restored.jobOffers, league.jobOffers,
+                "a coach who is between jobs must still be between jobs after a reload"
+            )
+        }
+    }
+}

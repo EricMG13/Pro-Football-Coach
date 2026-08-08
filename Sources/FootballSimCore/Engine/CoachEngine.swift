@@ -349,7 +349,7 @@ public enum CoachEngine {
     }
 
     /// An offer of a head-coaching job.
-    public struct JobOffer: Sendable, Identifiable {
+    public struct JobOffer: Codable, Sendable, Identifiable, Equatable {
         public let id: UUID
         public let teamID: UUID
         public let teamName: String
@@ -363,6 +363,83 @@ public enum CoachEngine {
             self.salary = salary
             self.years = years
         }
+    }
+
+    /// Takes a job, moving the coach and his career with him.
+    ///
+    /// Everything a franchise screen reads off the coach — his cap sheet, his depth chart, his
+    /// goals — hangs off `userTeamID`, so this is the one place it moves.
+    public static func accept(offer: JobOffer, in league: inout League) {
+        league.userTeamID = offer.teamID
+        league.coach.salary = offer.salary
+        league.coach.contractYears = offer.years
+        league.coach.contractYearsElapsed = 0
+        league.coach.jobSecurity = 55
+        league.coach.teamsCoached += 1
+        league.jobOffers = []
+        league.news.append(
+            NewsItem(
+                id: league.rng.uuid(),
+                year: league.year,
+                week: 0,
+                category: .staff,
+                headline: "\(league.coach.name) takes over at \(offer.teamName)",
+                body: "A \(offer.years)-year deal worth "
+                    + "\(offer.salary / 1_000_000) million a season.",
+                teamIDs: [offer.teamID]
+            )
+        )
+    }
+
+    /// Runs the head coach's own year in the carousel: ages his deal, decides whether he keeps
+    /// the job, and puts offers on the table when he does not.
+    ///
+    /// Returns true if he is between jobs afterwards.
+    @discardableResult
+    public static func settleHeadCoachJob(_ league: inout League) -> Bool {
+        league.coach.contractYearsElapsed += 1
+        let expired = league.coach.contractYearsRemaining <= 0
+        let sacked = league.settings.coachFiringEnabled && league.coach.jobSecurity <= 12
+
+        guard sacked || expired else { return false }
+
+        // A secure coach whose deal ran out is simply re-signed where he is; nobody sacks a
+        // winner over paperwork.
+        if expired, !sacked, league.coach.jobSecurity >= 55 {
+            league.coach.contractYears = 3
+            league.coach.contractYearsElapsed = 0
+            league.news.append(
+                NewsItem(
+                    id: league.rng.uuid(),
+                    year: league.year,
+                    week: 0,
+                    category: .staff,
+                    headline: "\(league.coach.name) signs an extension",
+                    body: "Three more years to finish the job."
+                )
+            )
+            return false
+        }
+
+        let team = league.userTeam?.fullName ?? "his club"
+        league.news.append(
+            NewsItem(
+                id: league.rng.uuid(),
+                year: league.year,
+                week: 0,
+                category: .hotSeat,
+                headline: sacked
+                    ? "\(team) part company with \(league.coach.name)"
+                    : "\(league.coach.name) leaves \(team) as his contract expires",
+                body: sacked
+                    ? "The owner has run out of patience."
+                    : "Both sides are free to look elsewhere."
+            )
+        )
+        var rng = league.rng
+        league.jobOffers = jobOffers(for: league, rng: &rng)
+        league.rng = rng
+        return true
     }
 
     /// Jobs available to this coach.

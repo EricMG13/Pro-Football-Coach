@@ -340,6 +340,9 @@ public struct League: Codable, Sendable {
     public var scoutingPoints: Int
     /// This year's draft board, populated when the draft stage begins.
     public var draftClass: [DraftProspect]
+    /// Head-coaching jobs on the table. Non-empty means the coach is between jobs and the
+    /// franchise cannot go on until he picks one.
+    public var jobOffers: [CoachEngine.JobOffer]
 
     public init(
         version: Int = League.currentVersion,
@@ -361,7 +364,8 @@ public struct League: Codable, Sendable {
         hallOfFame: [HallOfFamer] = [],
         seasonGoals: [CoachEngine.SeasonGoal] = [],
         scoutingPoints: Int = LeagueRules.scoutingPointsPerSeason,
-        draftClass: [DraftProspect] = []
+        draftClass: [DraftProspect] = [],
+        jobOffers: [CoachEngine.JobOffer] = []
     ) {
         self.version = version
         self.rng = rng
@@ -383,12 +387,13 @@ public struct League: Codable, Sendable {
         self.seasonGoals = seasonGoals
         self.scoutingPoints = scoutingPoints
         self.draftClass = draftClass
+        self.jobOffers = jobOffers
     }
 
     private enum CodingKeys: String, CodingKey {
         case version, rng, year, phase, teams, schedule, results, standings, freeAgents
         case news, userTeamID, coach, settings, history, salaryCap, deadMoney
-        case hallOfFame, seasonGoals, scoutingPoints, draftClass
+        case hallOfFame, seasonGoals, scoutingPoints, draftClass, jobOffers
     }
 
     /// Decoded field by field so saves written before a field existed still load. Season goals,
@@ -419,6 +424,9 @@ public struct League: Codable, Sendable {
         scoutingPoints = try container.decodeIfPresent(Int.self, forKey: .scoutingPoints)
             ?? LeagueRules.scoutingPointsPerSeason
         draftClass = try container.decodeIfPresent([DraftProspect].self, forKey: .draftClass) ?? []
+        jobOffers = try container.decodeIfPresent(
+            [CoachEngine.JobOffer].self, forKey: .jobOffers
+        ) ?? []
     }
 
     public func team(id: UUID) -> Team? { teams.first { $0.id == id } }

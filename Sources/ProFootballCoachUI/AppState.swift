@@ -212,7 +212,14 @@ public final class AppState {
 
     // MARK: - Offseason
 
+    /// Takes a head-coaching job and clears the rest of the offers.
+    public func accept(offer: CoachEngine.JobOffer) {
+        mutate { CoachEngine.accept(offer: offer, in: &$0) }
+    }
+
     public func advanceOffseasonStage() {
+        // A coach between jobs has no team to run, so the offseason waits for him to pick one.
+        guard league?.jobOffers.isEmpty ?? true else { return }
         guard league != nil else { return }
         var prospects = draftClass
         var picks = draftPicks

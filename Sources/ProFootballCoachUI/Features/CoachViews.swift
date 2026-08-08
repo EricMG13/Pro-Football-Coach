@@ -346,14 +346,30 @@ struct HistoryView: View {
 struct OffseasonHubCard: View {
     @Environment(AppState.self) private var app
     @State private var showingDraft = false
+    @State private var showingOffers = false
 
     private var currentStage: OffseasonStage? {
         guard case .offseason(let raw) = app.league?.phase else { return nil }
         return OffseasonStage(rawValue: raw)
     }
 
+    private var offers: [CoachEngine.JobOffer] { app.league?.jobOffers ?? [] }
+
     var body: some View {
         VStack(alignment: .leading, spacing: Layout.small) {
+            // Being out of work outranks the pipeline: there is no team to run until he signs.
+            if !offers.isEmpty {
+                SectionHeader("You Are Out of Work")
+                Text("Nothing else moves until you take a job.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button { showingOffers = true } label: {
+                    Label("See Your Offers (\(offers.count))", systemImage: "envelope.open.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                Divider().padding(.vertical, Layout.tight)
+            }
             SectionHeader("Offseason")
             ForEach(OffseasonStage.allCases, id: \.self) { stage in
                 let isCurrent = stage == currentStage
@@ -410,6 +426,11 @@ struct OffseasonHubCard: View {
         }
         .card()
         .fullScreenCoverCompat(item: draftBinding) { _ in DraftDayView() }
+        .sheet(isPresented: $showingOffers) { JobOffersSheet() }
+        .onChange(of: offers.count) { _, count in
+            // Surface the decision the moment it lands rather than waiting to be found.
+            if count > 0 { showingOffers = true }
+        }
     }
 
     /// `fullScreenCover(item:)` needs something Identifiable; a flag is all this needs to carry.
@@ -423,4 +444,47 @@ struct OffseasonHubCard: View {
 
 struct DraftRoomToken: Identifiable {
     let id = UUID()
+}
+
+
+/// The jobs on the table when a coach is out of work.
+struct JobOffersSheet: View {
+    @Environment(AppState.self) private var app
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Text("Your last job is over. Pick where you go next — the list is never "
+                         + "empty, so a career can always continue.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(app.league?.jobOffers ?? []) { offer in
+                    Button {
+                        app.accept(offer: offer)
+                        dismiss()
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(offer.teamName).font(.subheadline.weight(.medium))
+                                Text("\(offer.years) years")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Text("\(Format.money(offer.salary))/yr")
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .navigationTitle("Job Offers")
+        }
+        .interactiveDismissDisabled()
+    }
 }

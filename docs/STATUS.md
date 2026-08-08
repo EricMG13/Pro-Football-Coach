@@ -30,7 +30,7 @@ If `xcodebuild` reports no simulator destinations, the iOS platform component is
 swift build && swift run -c release SimTests
 ```
 
-**209 tests, 13,156 assertions, all passing.** Runtime about 100 seconds, dominated by the
+**213 tests, 13,170 assertions, all passing.** Runtime about 100 seconds, dominated by the
 ten-season soak.
 
 ## Complete and tested
@@ -58,6 +58,7 @@ ten-season soak.
 | Trophy room | Done: titles, conference finals and your players' awards, with a career line that counts the season in progress |
 | Street free agency, in season | Done: the free-agent board is open all year, with a practice-squad option on the offer sheet and a refusal that names the door that shut — roster full, squad full, or the amount over the cap |
 | Practice squad: call up, send down | Done: `CapEngine.elevate` / `demote` with a positional floor, seven tests, swipe actions on the depth chart. Both refusal paths seen on device |
+| The coach's own career: sacked, extended, re-hired | Done. The engine could always produce job offers but nothing called them, so a coach could sit through a decade of losing seasons and keep his desk. The carousel now settles his job in the same window as his assistants': zero-ish security or an expired deal without the results to back it puts him on the market, a secure coach is extended where he is, and the offers persist through a save so being out of work survives a reload |
 | Save size after ten seasons | 2.3 MB, inside the plan's 5 MB budget and asserted by the soak. It was 8.3 MB: the free-agent pool and the news feed both grew without limit, reaching nine thousand unsigned players and eight thousand stories. Both are now bounded, which also stops every free-agency scan getting slower each year |
 | Save / load, backup recovery, version refusal | Done, and forward-compatible: unknown-field defaults mean an older save still opens |
 | Light and dark, small screen and large | Walked on an iPhone 17 Pro Max and an iPhone 17e, both appearances. The control tint is now lifted for the dark scheme: a bordered button draws its label in the tint over a wash of the same tint, so a navy team was rendering its own buttons dark-on-dark. A test checks every team's lifted tint against the dark page at 4.5:1 |

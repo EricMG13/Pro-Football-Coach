@@ -411,6 +411,8 @@ public enum OffseasonEngine {
 
         case .coachingCarousel:
             runCoachingCarousel(&league)
+            // The user's own job is settled in the same window his assistants' are.
+            CoachEngine.settleHeadCoachJob(&league)
 
         case .retirements:
             let retired = processRetirements(&league)
@@ -561,6 +563,11 @@ public enum OffseasonEngine {
         var guardCounter = 0
         while league.phase.isOffseason && guardCounter < OffseasonStage.allCases.count + 2 {
             advanceStage(&league, prospects: &prospects, picks: &picks)
+            // Nobody is here to choose, so the coach takes the best job on the table. The
+            // interactive game stops and asks instead.
+            if let best = league.jobOffers.max(by: { $0.salary < $1.salary }) {
+                CoachEngine.accept(offer: best, in: &league)
+            }
             guardCounter += 1
         }
     }
