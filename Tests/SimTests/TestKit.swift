@@ -30,6 +30,21 @@ enum TestKit {
         }
     }
 
+    /// Runs an async test body to completion by blocking the calling thread.
+    ///
+    /// Only safe for work that does NOT require the main actor — it blocks the main thread, so a
+    /// `@MainActor` body would deadlock. `SaveQueue` is a plain actor for exactly this reason.
+    static func testAsync(_ name: String, _ body: @escaping @Sendable () async throws -> Void) {
+        currentTest = name
+        testsRun += 1
+        let done = DispatchSemaphore(value: 0)
+        Task {
+            do { try await body() } catch { record("threw \(error)") }
+            done.signal()
+        }
+        done.wait()
+    }
+
     /// Core assertion. Records a failure with suite/test context instead of trapping,
     /// so one bad expectation doesn't hide the rest of the suite.
     static func expect(
@@ -118,6 +133,9 @@ enum TestKit {
 
 func suite(_ name: String, _ body: () -> Void) { TestKit.suite(name, body) }
 func test(_ name: String, _ body: () throws -> Void) { TestKit.test(name, body) }
+func testAsync(_ name: String, _ body: @escaping @Sendable () async throws -> Void) {
+    TestKit.testAsync(name, body)
+}
 func expect(
     _ condition: Bool,
     _ message: @autoclosure () -> String = "",
