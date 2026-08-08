@@ -456,6 +456,11 @@ public enum OffseasonEngine {
             runCutdown(&league)
             settleRostersAndCap(&league)
             FreeAgencyEngine.replenishStreetFreeAgents(&league)
+            // Last thing before the new year, so retirements and cuts have all landed and the
+            // set of players still in the league is final. Order matters: the market closes
+            // first, so the players it sends home are pruned from the archive too.
+            closeTheMarket(&league)
+            pruneDepartedPlayers(from: &league)
             startNextSeason(&league)
             return stage
         }
@@ -487,6 +492,54 @@ public enum OffseasonEngine {
                 userRecord: league.standings[league.userTeamID]
             )
         )
+    }
+
+    /// Sends home the free agents nobody is going to sign, and trims the news feed.
+    ///
+    /// Both of these grow without limit otherwise: every cut and every expiring contract adds a
+    /// free agent forever, and every signing adds a story. After ten seasons that is nine
+    /// thousand unsigned players and eight thousand headlines, which is most of the save file
+    /// and a scan that gets slower every year. Keeping the best of the pool is also truer to
+    /// the sport — a 30-year-old who went unsigned for three straight seasons has retired,
+    /// whether or not the game says so.
+    private static func closeTheMarket(_ league: inout League) {
+        let stillPlaying = league.freeAgents
+            .filter { $0.age < LeagueRules.freeAgentRetirementAge }
+            .sorted { $0.overall > $1.overall }
+        league.freeAgents = Array(stillPlaying.prefix(LeagueRules.freeAgentPoolLimit))
+
+        if league.news.count > LeagueRules.newsFeedLimit {
+            league.news = Array(league.news.suffix(LeagueRules.newsFeedLimit))
+        }
+    }
+
+    /// Drops archived stat lines for players who have left the league entirely.
+    ///
+    /// A season's archive holds a line for every player who took a snap, so ten years of it is
+    /// most of the save file. Once a player is retired he is on nobody's roster and in no free
+    /// agent pool, and the only screens that still name him — the record book and the Hall of
+    /// Fame — keep their own copy of what he did. His archived lines are dead weight, and the
+    /// save has to stay small enough to write on every week advance.
+    private static func pruneDepartedPlayers(from league: inout League) {
+        var living = Set<UUID>()
+        for team in league.teams {
+            for player in team.roster { living.insert(player.id) }
+        }
+        for player in league.freeAgents { living.insert(player.id) }
+
+        league.history = league.history.map { season in
+            let kept = season.playerStats.filter { living.contains($0.key) }
+            guard kept.count != season.playerStats.count else { return season }
+            return SeasonSummary(
+                year: season.year,
+                championTeamID: season.championTeamID,
+                runnerUpTeamID: season.runnerUpTeamID,
+                standings: season.standings,
+                playerStats: kept,
+                awards: season.awards,
+                userRecord: season.userRecord
+            )
+        }
     }
 
     /// Rolls the calendar over into the next league year.

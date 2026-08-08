@@ -10,6 +10,15 @@ public enum LeagueRules {
     public static let practiceSquadSize = 16
     public static var fullRosterSize: Int { activeRosterSize + practiceSquadSize }
 
+    /// How many unsigned players the league carries between seasons. Without a ceiling the pool
+    /// grows by every cut and every expiring contract forever — nine thousand of them after ten
+    /// seasons — which bloats the save and makes every free-agency scan slower each year.
+    public static let freeAgentPoolLimit = 400
+    /// An unsigned player this old has run out of league.
+    public static let freeAgentRetirementAge = 36
+    /// How many stories the feed keeps. A decade of every signing in the league is not a feed.
+    public static let newsFeedLimit = 500
+
     public static let ratingFloor = 40
     public static let ratingCeiling = 99
     public static var ratingRange: ClosedRange<Int> { ratingFloor...ratingCeiling }

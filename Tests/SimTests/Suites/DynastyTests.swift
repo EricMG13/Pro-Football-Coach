@@ -260,7 +260,31 @@ func runDynastyTests() {
             expect(data == reencoded, "a ten-season save did not survive a round trip")
             // Saves have to stay small enough to write on every week advance.
             let megabytes = Double(data.count) / 1_000_000
-            expect(megabytes < 12, "save file grew to \(String(format: "%.1f", megabytes)) MB")
+            // The plan's definition of done sets 5 MB, and the save is written on every week
+            // advance, so this is a budget rather than a curiosity.
+            expect(
+                megabytes < 5,
+                "save file grew to \(String(format: "%.2f", megabytes)) MB"
+            )
+        }
+
+        test("the league does not hoard players or headlines") {
+            // Both of these once grew without limit — nine thousand unsigned players and eight
+            // thousand stories after ten seasons, which was three quarters of the save file.
+            expect(
+                league.freeAgents.count <= LeagueRules.freeAgentPoolLimit,
+                "free agent pool is \(league.freeAgents.count)"
+            )
+            expect(
+                league.news.count <= LeagueRules.newsFeedLimit,
+                "news feed is \(league.news.count) items"
+            )
+            expect(
+                !league.freeAgents.contains { $0.age >= LeagueRules.freeAgentRetirementAge },
+                "an unsigned player past the retirement age is still on the market"
+            )
+            // Trimming the market must not empty it: teams sign from this pool all season.
+            expect(league.freeAgents.count > 100, "the market was trimmed to nothing")
         }
     }
 }
