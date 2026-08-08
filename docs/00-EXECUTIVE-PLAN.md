@@ -16,13 +16,14 @@
 | 02 | `02-GAME-DESIGN.md` | **Canon.** All gameplay rules and numbers |
 | 03 | `03-ARCHITECTURE.md` | Stack, module layout, data model, engine principles, testing |
 | 04 | `04-SCREENS-UI.md` | Every screen, field-by-field, + college→pro conversion map |
-| 05 | `05-IMPLEMENTATION-PLAN.md` | Phases P0–P8; P0–P1 task-by-task with code; per-phase plan protocol for the rest |
+| 05 | `05-IMPLEMENTATION-PLAN.md` | Phases P0–P8 (+4B); P0–P1 task-by-task with code; per-phase plan protocol for the rest |
+| 06 | `06-PLAYED-GAME-MODE.md` | "On the Field" arcade mode: controls, ratings→gameplay mapping, presentation, legal |
 
 ## Scope
 
-**V1 =** 32-team fictional league · 17-game season + 14-team playoffs (12/16 options) · live play-by-play with two-way play-calling + quick sim · full salary cap (proration, guarantees, dead money, rookie scale) · re-sign/FA/trades/cuts · 7-round draft with scouting fog + UDFA · progression/regression + training camp · injuries · 9-category stats, career stats, records, awards, HoF · news engine · coach RPG (XP, 4 skill trees, goals, job security, firing/job market) · trophy room · 3 scenarios · save slots + checkpoints + autosave · tutorial · light/dark.
+**V1 =** 32-team fictional league · 17-game season + 14-team playoffs (12/16 options) · live play-by-play with two-way play-calling + quick sim · **"On the Field" arcade mode: control offensive snaps/kicks/returns, Retro-Bowl-style feel with original presentation (doc 06)** · full salary cap (proration, guarantees, dead money, rookie scale) · re-sign/FA/trades/cuts · 7-round draft with scouting fog + UDFA · progression/regression + training camp · injuries · **hireable OC/DC/STC coordinators with staff budget + poaching** · 9-category stats, career stats, records, awards, HoF · news engine · coach RPG (XP, 4 skill trees, goals, job security, firing/job market) · trophy room · 3 scenarios · save slots + checkpoints + autosave · tutorial · light/dark.
 
-**Not v1** (ordered backlog): custom league editor + JSON import/export (v1.5 — data model ready day 1), weather, comp picks, restructures/June-1, named coordinators, Game Center leaderboards, multiplayer/commissioner, iPad layout, monetization.
+**Not v1** (ordered backlog): custom league editor + JSON import/export (v1.5 — data model ready day 1), controllable post-snap defense, dynamic difficulty, coordinator career mode, weather, comp picks, restructures/June-1, position coaches, Game Center leaderboards, multiplayer/commissioner, iPad layout, monetization.
 
 ## Phase map (details + gates in `05`)
 
@@ -33,6 +34,7 @@
 | P2 Game engine | Full play-by-play sim of one game, box scores, calibration tests green |
 | P3 Season loop | Schedule gen, weekly advance, standings/tiebreakers, playoffs, power rankings, basic news; Season/Schedule/Standings screens |
 | P4 Live game UI | Field view, coin toss, play-calling, quick-sim tiers, live box score, win prob, game report |
+| P4B On the Field | SpriteKit arcade mode per doc 06: drag-aim passing, carrier control, kick meter, animated defense resolution |
 | P5 Team & stats UI | Depth chart, player cards, injuries, stats suite, team overview |
 | P6 Front office | Cap engine, contracts, re-sign, free agency, trades, cuts (engine + UI) |
 | P7 Draft & offseason | Scouting, draft class gen, draft day, UDFA; 10-stage offseason incl. camp/progression, retirements, awards, HoF, records |
@@ -51,7 +53,8 @@ Suggested per-phase kickoff prompt: *"Read CLAUDE.md and docs/. Execute Phase N 
 
 ## Risks & mitigations
 
-- **Sim realism is the product.** Mitigation: calibration test suite with hard statistical bands (P2 gate) + seeded determinism so tuning is reproducible.
+- **Sim realism is the product.** Mitigation: calibration test suite with hard statistical bands incl. believability + mode-parity checks (P2 gate) + seeded determinism so tuning is reproducible.
+- **Stability is the #1 complaint driver in the reference app** (34% of reviews: save corruption ~season 8, end-of-game clock hangs, softlocks). Mitigation: rolling save backups, exhaustive end-of-game state-machine tests, no-dead-end carousel invariant, 10-season unattended soak gates.
 - **Scope creep toward Madden.** Mitigation: v1 list above is closed; anything new goes to backlog, not scope.
 - **Cap math correctness** (dead money, proration). Mitigation: property tests ("cap never negative", "sum of hits = contract value") in P6 gate.
 - **Solo-dev asset load** (32 logos). Mitigation: geometric/SF-Symbol-composed logos generated in code, no image assets.

@@ -28,6 +28,7 @@
 | P2 | 1,000-game calibration suite inside bands (`02` §4); single game < 20 ms |
 | P3 | 10 simmed seasons: schedule/standings/playoff invariants green; week advance < 150 ms |
 | P4 | Full game playable by hand; quick-sim tiers work; box score matches engine totals |
+| P4B | On-the-Field game playable one-thumb at 60 fps; stat-mapping tests green; box score == event log; mode parity (XP/injuries/news) |
 | P5 | Depth chart edits persist + affect sim; stats suite matches box-score aggregates |
 | P6 | Cap property tests green (no negative space, dead-money identity); AI FA/trades keep 31 teams legal across 5 seasons |
 | P7 | 10-season soak: drafts/offseasons complete, league OVR distribution stable (no inflation/collapse) |
@@ -354,7 +355,7 @@ final class LeagueFactoryTests: XCTestCase {
 
 **Interfaces — Produces:** `GameSimulator.simulate(home: Team, away: Team, rules: LeagueSettings, rng: inout SeededRandom, retainPlays: Bool) -> GameRecord`; `PlayEvent { drive, quarter, clock, description, teamID, involved: [UUID], type }`; `enum OffensiveCall/DefensiveCall` per `02` §4; `StatLine` (all box-score fields, position-relevant).
 **Key algorithms:** unit ratings from starters via depth chart; play matrix table (`OffensiveCall × DefensiveCall → (meanYards, sd, sackP, intP, fumbleP, bigPlayTail)`); clock model; AI playcaller (situation → call distribution); 4th-down EV chart; FG curve; injuries per `02` §3; win-prob logistic; OT rules.
-**Gate tests:** determinism (same seed → identical `GameRecord`); stat-conservation (team pass yards == Σ receiver yards == Σ QB pass yards); calibration over 1,000 games between random league teams: all bands `02` §4; performance `measure` < 20 ms/game (retainPlays false).
+**Gate tests:** determinism (same seed → identical `GameRecord`); stat-conservation (team pass yards == Σ receiver yards == Σ QB pass yards); calibration over 1,000 games between random league teams: all bands `02` §4 **including believability bands and mode parity (retainPlays true/false byte-identical outcomes for same seed)**; **end-of-game state-machine suite: expiring-TD awards the try, kneel-out math, untimed downs, OT caps, clock never sticks at 0:00 with play continuing**; performance `measure` < 20 ms/game (retainPlays false).
 
 # Phase 3 — Season loop (spec)
 
@@ -367,6 +368,13 @@ final class LeagueFactoryTests: XCTestCase {
 **Files:** `Features/GameCenter/` (LiveGameView, FieldView, PlaybookView, PlayLogView, WinProbBar, CoinTossDialog, QuickSimSheet, BoxScoreSheet, GameReportSheet) + `LiveGameViewModel` bridging `AsyncStream<PlayEvent>`.
 **Spec:** `04` §5–6 exactly; engine already emits everything (P2). User calls both sides when possessing/defending; Suggested banner = AI call; Simulate button = AI-vs-AI for one play; quick-sim runs engine to target then re-streams. XP toast stub (records XP into `CoachProfile` for P8).
 **Gate:** hand-play a full game; totals equal engine `GameRecord`; all quick-sim targets land exactly; 60 fps scroll on iPhone SE-class simulator.
+
+# Phase 4B — On the Field arcade mode (spec)
+
+**Files:** `Features/OnTheField/` (FieldScene.swift SpriteKit `SKScene`, OnTheFieldView (SpriteView host + HUD), AimController, CarrierController, KickMeterView, DefenseResolutionView, SpriteFactory, FatigueModel), `Engine/GameSimulator+Interactive.swift` (public state machine: expose `GameSituation`, accept externally-resolved `PlayEvent` for one play, resume sim).
+**Spec:** `06-PLAYED-GAME-MODE.md` in full — control model §3, ratings mapping table §4 (implement as pure functions with unit tests: arc length, scatter radius, pocket timer, sweep speed), coordinator hooks §6, presentation rules §7 (landscape only in-game, original sprite style, team colors), cut lines §8.
+**Key architecture rule:** arcade layer resolves ONLY the user-controlled play's outcome and returns a `PlayEvent` + `StatLine` delta to the engine's state machine; clock, downs, penalties, scoring, OT, and all defensive/AI possessions stay in `FootballSimCore`. No rule logic duplicated in the app target.
+**Gate:** phase-gate table row P4B; targeted tests: QB accuracy 99 → scatter < 1 yd & full arc; accuracy 60 → ≤ 2/3 arc; OL unit 55 → pocket ≤ 2.5 s, 90 → ≥ 4.2 s; kick accuracy sweep-speed monotonic; fatigue reduces carrier top speed ≥ 8% after 15 touches; box score equals accumulated events; 60 fps on A15-class simulator; portrait↔landscape transition clean; XP/injury/news identical to Call-the-Plays for same results.
 
 # Phase 5 — Team & stats UI (spec)
 
@@ -382,9 +390,9 @@ final class LeagueFactoryTests: XCTestCase {
 
 # Phase 7 — Draft & offseason (spec)
 
-**Files:** `Engine/DraftClassFactory.swift`, `Engine/ScoutingEngine.swift`, `Engine/DraftEngine.swift`, `Engine/ProgressionEngine.swift`, `Engine/RetirementEngine.swift`, `Engine/AwardsEngine.swift`, `Engine/OffseasonEngine.swift` (10-stage orchestrator per `02` §5), `Engine/RecordsBook.swift`, `Engine/HallOfFame.swift`; app `Features/Draft/`, `Features/Offseason/OffseasonHubView`, `Features/Awards/`, `Features/HallOfFame/`.
-**Spec:** `02` §3 (curve/retirement), §5, §8, §11. Scouting fog = stored per-user `ScoutingReport` (range, revealed flags); draft order reverse standings w/ playoff adjustment; AI need×BPA×personality; pick trades live; UDFA; camp reveal with ▲▼; awards + All-League voting; records seeded then chased; season summary → `history`.
-**Gate:** 10-season soak — league mean OVR stays 72–78 every year (no inflation/collapse), age pyramid stable, every offseason completes unattended, draft classes hit steal/bust quotas, HoF inducts by year 6+.
+**Files:** `Engine/DraftClassFactory.swift`, `Engine/ScoutingEngine.swift`, `Engine/DraftEngine.swift`, `Engine/ProgressionEngine.swift`, `Engine/RetirementEngine.swift`, `Engine/AwardsEngine.swift`, `Engine/StaffEngine.swift` (coordinator market/poaching per `02` §10), `Engine/OffseasonEngine.swift` (10-stage orchestrator per `02` §5), `Engine/RecordsBook.swift`, `Engine/HallOfFame.swift`; app `Features/Draft/`, `Features/Offseason/OffseasonHubView`, `Features/Staff/`, `Features/Awards/`, `Features/HallOfFame/`.
+**Spec:** `02` §3 (curve/retirement), §5, §8, §10 (coordinators), §11. Scouting fog = stored per-user `ScoutingReport` (range, revealed flags); draft order reverse standings w/ playoff adjustment; AI need×BPA×personality; pick trades live; UDFA; camp reveal with ▲▼ (coordinator dev bonuses applied); coordinator market at carousel stage (hire/renew/poach, staff budget); awards + All-League voting; records seeded then chased; season summary → `history`. Note: `StaffMember` model + unit-rating/suggest-quality hooks land earlier (P2 reads staff bonuses if present, default nil) — P7 adds the market/lifecycle.
+**Gate:** 10-season soak — league mean OVR stays 72–78 every year (no inflation/collapse), age pyramid stable, every offseason completes unattended, draft classes hit steal/bust quotas, HoF inducts by year 6+, **AI teams keep rebuilding (top-5 team churn: no team stays top-5 by OVR 8+ straight years), carousel no-dead-end invariant holds (fired/expired user coach always has ≥1 path), save+backup round-trips clean every season boundary**.
 
 # Phase 8 — Coach RPG, scenarios, ship (spec)
 

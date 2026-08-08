@@ -68,6 +68,45 @@ Searched all CCD sessions: no prior football/iOS/game sessions exist — the pro
 
 Modern iOS has a polished college sim (the reference app) but **no modern pro football management sim**: the 2016 PFC is abandoned Android-era, and its successor is Steam-only in late 2026. A SwiftUI pro sim that pairs the reference app's proven UX with the cap/draft/trade depth the community has been requesting for years fills a real, validated gap. Ship v1 focused (fixed 32-team league, full cap, playcalling, coach RPG), keep the community-content pipeline (league JSON) as the v1.5 growth hook.
 
+## G. Retro Bowl mechanics research (for doc 06)
+
+Sources: Wikipedia, official store pages, retro-bowl fan wiki (CC-BY-SA, cross-verified), Poki, Pocket Gamer/Pocket Tactics reviews, Rob's mechanics guides. Key verified facts driving `06-PLAYED-GAME-MODE.md`:
+
+- **Offense-only control**: player controls offensive snaps, FG/XP kick meter (two taps: power bar, sweeping aim arrow vs wind), and kick returns (mobile paywalls returns behind $0.99 IAP); own kickoffs/punts and the entire defense are simulated — opponent drives resolve as rapid text boxes. No onside kicks; sudden-death OT.
+- **Throwing**: drag back from QB = aim with dotted landing arc, release = throw; second-finger tap toggles lob ↔ bullet; **QB Accuracy controls how much of the arc is rendered**, Arm Strength caps distance (~15→25+ yds), Stamina degrades arm over a game. No free pocket movement: throw, scramble (drag forward), or tap-handoff.
+- **Carrier control**: auto-run upfield at stat speed; swipe up/down jukes (lane-based), swipe forward dive, swipe back stall; **no sprint button, no spin** — stiff-arms auto-trigger from Strength.
+- **Player model**: exactly 4 attributes per position + star rating + hidden potential + condition + morale (7 tiers; low morale → fumbles/missed tackles); injuries rolled post-game weighted by usage/condition/age.
+- **Plays**: no playbook — one dealt hybrid run/pass play per snap; audibles reroll it, count = QB level (1–5). Most-criticized design choice.
+- **Meta→field**: coordinators (star-rated, with traits like Physio/Motivator/Scout) passively boost their side; facilities (stadium/training/rehab, levels 1–10, decay) move XP/morale/condition; salary cap ~$150M; Coaching Credits currency; fan-approval fail-state.
+- **Structure/feel**: 1/2/3-min quarters, full game 5–10 min; landscape side-scroll pixel presentation; difficulty Easy→Extreme (Extreme = stat cheat) + Dynamic (auto-tunes); snow slows players, wind deflects kicks.
+- **Community consensus**: loved — one-thumb skill throw, always-on-offense pacing, stats you can *feel*, franchise loop. Complained — defense is a dice-roll you watch, no real play-calling, too easy for veterans, FG meter disproportionately hard, returns paywalled. Retro Bowl College kept the engine, added college meta (recruiting, GPA, 250 teams, 12-team playoff).
+- **Our responses** (doc 06): keep full playbook (their #1 strategy complaint), animate defensive possessions with your playcall instead of text boxes (#1 overall complaint), difficulty via AI reaction/closing not stat cheats, returns free, original presentation (no scanlines/CRT framing, our palette+fonts).
+
+## H. Reference-app user comments mined (App Store + r/cfbsimulator, Aug 2026)
+
+App = "CFB Simulator" (id 6752640167), 4.78★/625 US ratings; 86 reviews + full subreddit archive (395 posts, 1,312 comments) analyzed. Solo dev replies to 42% of posts, median 2.2 h — responsiveness itself earns 5★ reviews and IAP purchases. IAP: God Mode $3.99, scenario packs $2.99, **paid checkpoint tokens (= crash insurance)**.
+
+**Complaint/request league table (→ what our design does):**
+
+| Rank | Theme (share) | Our answer |
+|---|---|---|
+| 1 | **Crashes/save corruption/softlocks** — 34% of reviews; corruption ~season 8; end-of-game clock hangs, double-sim injuries, endless OT; users buy checkpoint tokens as crash insurance | Stability is a feature: atomic writes + rolling backup + migration fixtures (03 §5), soak-test gates (05 P7), hardened end-of-game state machine called out as top risk (00), **checkpoints free** |
+| 2 | **Job-market dead ends** — contract expiry with zero offers = dead save | Invariant in 02 §10: carousel always yields ≥1 offer or explicit "unemployed year" path; poaching + proactive applications |
+| 3 | **Sim believability** — "90 OVR struggling vs 76", late-game difficulty collapse, stat oddities (safeties, blocked kicks 10× too common, no long TDs, dead Q4, TE unused); **watched vs simmed games diverge** (dev-confirmed weighting bug; community meta = "watch games to get good results") | **One engine, one distribution** — parity test simmed-vs-played-retention in P2 gate; extended calibration bands (02 §4); AI teams rebuild so year-10 stays hard |
+| 4 | **History/records/HoF** — top-upvoted request class; college dev blocked by save bloat ("100s of MB") | Records/HoF in v1; storage plan: aggregates in history, play-by-play trimmed (03 §9) |
+| 5 | **Staff management** — hire/fire OC/DC/ST, scheme fit, start-as-coordinator | Coordinators v1 (02 §10); coordinator career mode backlog |
+| 6 | Recruiting UX friction (filters, sort, undo, interest %) — loop itself loved | Same list-UX lessons applied to FA/draft/scouting screens (04 §11–12) |
+| 7 | **Modding = community engine** (~86 posts share league JSONs via raw URLs); want in-app browser | JSON import/export v1.5; in-app community browser added to backlog |
+| 8 | Stats presentation (benchmark: Pocket GM 3), prediction lines | Stats suite + records + spread pills in v1 |
+| 9 | **Game-day control suite**: clock management/tempo ("chew clock"), smarter AI EV decisions, XP-after-expiring-TD sequencing, usage sliders, sit/play injured | Tempo toggle + fixed sequencing added to 02 §4; EV-driven AI; usage sliders backlog |
+| 10 | Immersion: reacting social feed (signature feature), press conferences, awards | News engine v1; social-style feed + pressers = backlog candidates |
+
+**Pro-version demand:** explicit but low-volume ("I hope you guys make a pro version!!", direct Reddit ask to dev, Pocket GM 3 cited twice as the pro benchmark, users hacking NFL leagues into the college app via custom JSON). Dev's family has **no pro title** — lane confirmed empty.
+
+**Arcade-mode reality check:** in this community *nobody* requested joystick/arcade play — they want coach-brain control, speed options, trustworthy outcomes. Retro-style demand lives in a different (much larger, more casual) market. Hence doc 06's positioning: On-the-Field is one of three modes, never required, and the sim/playcall paths must stay first-class.
+
+**Meta-lessons to copy:** ship fast + changelog posts to community, TestFlight beta, polls, answer within hours; monetize (if ever) via editor + scenario packs, never ads, never paid crash insurance.
+
 ## F. Legal guardrails
 
 - No NFL/NFLPA/NCAA marks, team names, logos, or real player names/likenesses. All 32 teams fictional (naming table in GDD).

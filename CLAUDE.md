@@ -20,6 +20,7 @@ It is the professional-league successor to a college football simulator the owne
 | `docs/03-ARCHITECTURE.md` | Tech stack, module layout, data model, sim engine design, persistence |
 | `docs/04-SCREENS-UI.md` | Screen-by-screen UI spec |
 | `docs/05-IMPLEMENTATION-PLAN.md` | Phased task breakdown; Phase 1 fully specified |
+| `docs/06-PLAYED-GAME-MODE.md` | "On the Field" arcade mode (controls, ratings mapping, presentation, legal) |
 
 If a gameplay question isn't answered in `02-GAME-DESIGN.md`, add the answer there first, then implement.
 

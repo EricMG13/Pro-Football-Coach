@@ -50,17 +50,19 @@ Each team: city, name, 3-letter abbrev, primary/secondary colors, geometric logo
 - **Clock:** realistic burn per play type + hurry-up/kill-clock automatically by score+time; timeouts (3/half) user-controlled + AI logic.
 - **Penalties:** ~11 combined/game, weighted types (hold, PI w/ spot foul, false start, offsides); accept/decline auto by expected value.
 - **4th downs & kicks:** AI uses simple EV chart (go/FG/punt by distance-to-go, field position, score, time). FG% curve from KickAccuracy/Power vs distance (~85% league avg; 50+ yd ≈ 60%).
-- **Playcalls:** Offense — Inside Run, Outside Run, Short Pass, Deep Pass, Play Action, Screen (+FG, Punt, Kneel, Spike, 2-pt). Defense — Base, Blitz, Nickel, Dime, Contain, Prevent. "Suggested" banner = coordinator AI pick; Coordinators-enabled setting can auto-call.
+- **Playcalls:** Offense — Inside Run, Outside Run, Short Pass, Deep Pass, Play Action, Screen (+FG, Punt, Kneel, Spike, 2-pt, **Onside Kick** after scores). Defense — Base, Blitz, Nickel, Dime, Contain, Prevent (+Hands Team vs expected onside). **Tempo toggle** on offense: Normal / Hurry-Up / Chew Clock (affects play clock burn + slight efficiency tradeoffs); AI uses it correctly late. "Suggested" banner = OC/DC AI pick (quality scales with coordinator rating); auto-call toggle available.
+- **Sequencing correctness (hard requirements from reference-app bug mining):** TD as time expires still awards the try; end-of-game state machine (0:00 edge cases, kneel-outs, untimed downs after defensive penalty, OT caps) gets exhaustive unit tests — this is the #1 crash locus in the reference app. OT is capped (max 2 OT regular season → tie; playoffs repeat until decided).
+- **Game modes:** every user game offers Quick Sim, Call the Plays (this engine, text/2D), or **On the Field** (arcade control of offensive snaps/kicks/returns — full spec `06-PLAYED-GAME-MODE.md`). All modes emit identical records; calibration bands apply to engine-resolved games only.
 - **Win probability:** logistic on (score diff, time remaining, possession, field position, pregame ratings edge) — updated per play, shown live.
 - **Player of the Game**, box scores per position group, drive-grouped play log with clock stamps and tappable player names.
-- **Calibration bands (asserted by tests, per simulated season):** team PPG 20–26 · pass yds/team/gm 195–240 · rush 100–130 · comp% 61–67 · INT/gm 0.7–1.0 · sacks/gm 2.0–2.9 · FG% 82–88 · ~8% of games OT · home win% 54–58%.
+- **Calibration bands (asserted by tests, per simulated season):** team PPG 20–26 · pass yds/team/gm 195–240 · rush 100–130 · comp% 61–67 · INT/gm 0.7–1.0 · sacks/gm 2.0–2.9 · FG% 82–88 · ~8% of games OT · home win% 54–58%. **Believability bands (added from reference-app complaint mining):** Q4 scoring share 22–30% of points · plays of 25+ yds: 3–6/game · TDs of 40+ yds: ~0.5/game · safeties ≤ 0.03/game · blocked kicks ≤ 2% · TE target share 15–25% of team targets · no single receiver > 40% of targets (barring extreme roster) · **ratings predictiveness: 12+ OVR gap → favorite wins ≥ 72%** · **mode parity: retainPlays true vs false produces statistically identical distributions (same seeds, same aggregate outcomes — one engine, one truth).**
 
 ## 5. Season calendar
 
 Preseason (3 wks, optional) → Weeks 1–18 (17 games + bye; trade deadline end of Wk 9; weekly awards, power rankings, injuries heal, weekly training XP) → Playoffs (4 rounds) → Offseason stages, in order:
 
 1. **Season Review** — goals scored, XP granted, awards ceremony, All-League teams
-2. **Coaching Carousel** — AI firings/hirings; user fired if job security hits 0 (unless disabled) → job-offer list (reputation-gated); voluntary Team Search at this stage only
+2. **Coaching Carousel** — AI firings/hirings; user fired if job security hits 0 (unless disabled) → job-offer list (reputation-gated); voluntary Team Search at this stage only; **coordinator market** (hire/renew OC/DC/STC from generated pool, poaching resolves — §10)
 3. **Retirements** + HoF inductions
 4. **Re-sign window** — your expiring contracts; AI teams re-sign theirs
 5. **Franchise Tag** (optional toggle, 1 tag = 120% of position top-5 avg salary, 1 yr)
@@ -98,7 +100,18 @@ Preseason (3 wks, optional) → Weeks 1–18 (17 games + bye; trade deadline end
 - Constraints: post-trade cap legality both sides (dead money applies), roster min/max, no trades weeks 10–18 (deadline end of week 9) or during playoffs.
 - AI-to-AI trades happen at deadline + draft (2–6/season) → news. AI sends user offers for tradeblock'd players.
 
-## 10. Coach RPG (carried from college, re-skinned)
+## 10. Coach RPG & staff (carried from college, re-skinned)
+
+### Coordinators (v1-light staff system)
+
+Three hireable slots: **OC, DC, STC.** Each `StaffMember` = name, age, rating 40–99, scheme specialty, salary, contract years (1–3), 0–1 trait (Developer +camp XP ·  Motivator +morale · Recruiter-of-Coaches cheaper hires). Effects:
+
+1. **Unit ratings:** OC adds +0…+3 to offense unit, DC to defense, STC to special teams (linear from rating 60→95; scheme mismatch with team scheme halves it).
+2. **Suggested-play quality:** playcall AI accuracy scales with the relevant coordinator's rating (visible in Call-the-Plays and On-the-Field modes). OC ≥ 80 grants +1 audible in On-the-Field.
+3. **Development:** OC/DC add up to +15% camp XP for their side's players.
+4. **Poaching pipeline:** coordinators earn hidden HC-candidacy score from team success; top ones get hired away at the coaching carousel (news story, succession pressure).
+
+**Staff budget:** owner-set $14–30M/yr by patience/reputation. Hiring happens at offseason stage 2 (carousel): generated market pool, offers = salary + years; AI teams compete (reputation-weighted). Firing mid-contract owes remaining salary against staff budget. AI teams always staff all three slots. The old "Enable Coordinators" toggle now governs **auto-call only** — staff always exists.
 
 - **XP:** win +40 · division win +10 bonus · playoff win +80 · Championship +200 · weekly goals ticking (see below) · season goals 80–100 · draft steal hits +50. Level = XP/100 compounding ×1.15/level; +1 Skill Point per level.
 - **Skill trees (4 branches × 6 nodes; costs 1/2/3/4/5/6 SP; linear chains):**
@@ -107,7 +120,7 @@ Preseason (3 wks, optional) → Weeks 1–18 (17 games + bye; trade deadline end
   - **Offense:** Scheme Guru I/II (offense unit +1/+2), Red-Zone Package (RZ TD% +5), Two-Minute Drill (hurry-up +10%), Explosive Plays (fat-tail ×1.15), Fourth-Down Analytics (better suggested calls)
   - **Defense:** mirror of Offense (unit +1/+2, 3rd-down stop +5%, Turnover Chain (takeaway +10%), Blitz Architect, Bend-Don't-Break)
 - **Coach finances:** salary from contract ($1.5–12M/yr scaling with reputation); cash is score/flavor (v1: no spend sink — displayed + leaderboard; `ponytail:` spending (houses/donations) only if users ask).
-- **Contract & job security:** 0–100%; moves on results vs owner expectations (patience-scaled). <20% = hot seat news; 0% = fired at carousel (unless disabled). Fired/retired → job offers filtered by reputation.
+- **Contract & job security:** 0–100%; moves on results vs owner expectations (patience-scaled). <20% = hot seat news; 0% = fired at carousel (unless disabled). Fired/retired → job offers filtered by reputation. **No-dead-end invariant (reference-app lesson): the carousel ALWAYS yields ≥1 offer (floor: a rebuilding team takes a flyer) or an explicit "sit out a year" option that re-enters the market with a reputation tick — a save can never softlock on unemployment.** Contract expiry mid-success → extension negotiation before market.
 - **Seasonal goals (owner-assigned, 4–6/season, XP-bearing):** templates — "Win N+ games", "Make playoffs", "Win division", "Top-10 offense/defense", "Rookie class avg +3 OVR by camp", "Stay under cap with $5M+ space", "Beat rival twice". END-OF-SEASON chip where applicable.
 - **Retire → Legacy screen:** career grade (titles, win%, playoff record, HoF players drafted), permanent leaderboard entry.
 
@@ -133,4 +146,4 @@ Config-driven (modified league JSON + goal set) — no bespoke engine paths.
 
 ## 14. Explicitly out of v1 (design debt, ordered by community demand)
 
-Custom league creator + JSON import/export (v1.5 — architecture supports from day one) · weather · compensatory picks · in-season IR/designated-return · contract restructures/June-1 cuts · coordinators as hireable named staff · multiplayer/leaderboards beyond Game Center basic · expansion drafts · relocation.
+Custom league creator + JSON import/export (v1.5 — architecture supports from day one) · **in-app community league browser** (kills the "go to Reddit for files" friction) · weather · compensatory picks · in-season IR/designated-return · contract restructures/June-1 cuts · position coaches & staff skill trees (coordinators themselves ARE v1, §10) · coordinator career mode (start as OC/DC) · controllable post-snap defense in On-the-Field · dynamic difficulty · per-player usage sliders · social-media-style reacting feed + AI press conferences (news engine covers v1) · multiplayer/leaderboards beyond Game Center basic · expansion drafts · relocation. Monetization if ever: editor + scenario packs, never ads, never paid crash insurance (checkpoints stay free).

@@ -100,7 +100,7 @@ Money = `Int` dollars. Ratings = `Int` 40–99. IDs = `UUID`.
 ## 5. Persistence
 
 - `SaveStore` writes each dynasty as one JSON file in `Application Support/Saves/<uuid>.json` + a small `<uuid>.meta.json` (team, year, coach name, timestamp) for the Load Game list without decoding full saves.
-- Atomic writes (`.atomic`), autosave after every advanced week and after every offseason step.
+- Atomic writes (`.atomic`), autosave after every advanced week and after every offseason step, **plus a rolling `.bak` of the previous good save — corruption of the reference app's saves (~season 8) is its #1 complaint; load falls back to `.bak` with a toast rather than dying. Checkpoints are free** (reference app sells them as crash insurance — we out-position by being reliable).
 - `SaveMigrator` switches on `version` and upgrades old JSON dictionaries before decode. Every format change bumps `version` and adds a migration + test fixture.
 - League sharing (later phase): export/import `LeagueTemplate` JSON (teams, colors, conferences — no rosters) mirroring the reference app's community-league pipeline.
 

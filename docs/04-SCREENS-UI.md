@@ -35,12 +35,15 @@ Preseason state variant: hero "KICKOFF OUTLOOK" (rating, projected record, divis
 ## 4. Matchup Preview (sheet)
 Hero gradient card both team colors: WEEK chip, logos, records, HOME/AWAY. "Team Comparison": Overall with spread chip; bar-meter cards Offense / Defense / Special Teams with "Home +N"/"Away +N" chips. "Team Stats" side-by-side cards (PPG, YPG, pass/rush splits, takeaways). "Key Matchup" row (best WR vs best CB etc.). Injury notes. Setting toggles spread ↔ win-probability display.
 
-## 5. Live Game (push, core screen)
+## 4B. Pre-game mode picker + On the Field
+Pre-game sheet gains a mode row: **Quick Sim · Call the Plays · On the Field** (cards with 1-line descriptions; remembers last choice). On-the-Field screen spec lives in `06-PLAYED-GAME-MODE.md` §3/§7 (landscape SpriteKit field, HUD scoreboard, aim arc, kick meter, animated defense resolution). Halftime sheet allows switching down-stack only.
+
+## 5. Live Game — Call the Plays (push, core screen)
 - **Coin toss dialog:** both full team names, quarter graphic, Heads/Tails.
 - **Scoreboard card:** team rows (logo, record, 3 timeout dots, quarter score boxes in team colors), state row "Q1 15:00 · 1st & 10 · NYE 25".
 - **Last Play box:** text with team-colored tappable player names.
 - **Field graphic:** horizontal 2D field, end zones in home colors, yard numbers, midfield logo, ball marker + direction arrow, blue LOS + yellow first-down line.
-- **Playbook card** (possession-aware): offense sets (Inside Run · Outside Run · Short Pass · Deep Pass · Play Action · Screen; situational: FG, Punt, QB Kneel, Spike, 2-pt) / defense sets (Base · Blitz · Nickel · Dime · Contain · Prevent). Green "Suggested: X" banner (coordinator suggestion; auto-call toggle if Coordinators enabled). 4th-down decision prompts.
+- **Playbook card** (possession-aware): offense sets (Inside Run · Outside Run · Short Pass · Deep Pass · Play Action · Screen; situational: FG, Punt, QB Kneel, Spike, 2-pt, Onside Kick) / defense sets (Base · Blitz · Nickel · Dime · Contain · Prevent · Hands Team). **Tempo chip row: Normal / Hurry-Up / Chew Clock.** Green "Suggested: X" banner (OC/DC suggestion; auto-call toggle). 4th-down decision prompts with EV hint.
 - **Play Log:** grouped by drive, newest first, clock stamps.
 - **Win Probability:** two-color stacked bar, live.
 - **Bottom bar:** Simulate · Timeout · Stats (live box score sheet).
@@ -75,6 +78,7 @@ Hub rows with badges:
 - **Free Agency:** (offseason) market list with filters by POS, sort by OVR/age/ask; bid sheet = years+salary sliders, interest meter (money, contender status, role, reputation), daily AI signings ticker. In-season: street free agents (cheap fill-ins).
 - **Trades:** trade center — pick partner team (AI need hints), asset pickers both sides (players + picks 2 drafts out), value meter (Decline / Close / Accept), counter-offers; deadline week banner. AI-initiated offers arrive as news/inbox items.
 - **Draft:** see §12.
+- **Staff:** three coordinator cards (OC/DC/STC): name, rating, scheme chip (match ✓ / mismatch ⚠ halves bonus), trait chip, salary, years left; staff-budget bar; hire/renew actions live only during carousel stage (otherwise informational + "expiring" badges). Vacancy card if poached.
 - **Team Finances (light):** owner expectation card ("Make playoffs within 2 years"), job security %.
 
 ## 12. Draft Suite (offseason phase screens)
