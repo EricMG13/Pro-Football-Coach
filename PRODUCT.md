@@ -29,6 +29,8 @@ Modern iOS has a polished *college* football sim; it has no modern *pro* footbal
 
 Fully offline. No backend, no accounts, no network, no analytics, no ads. Saves are local JSON slots in Application Support with a versioned `saveFormatVersion`, rolling backups, weekly autosave, and manual checkpoints.
 
+Distribution is **TestFlight and personal use — no public App Store release is planned.** Confirmed, not assumed. Nothing here is designed to App Review, store metadata, age rating, or screenshot requirements; if that changes, this line changes first. The fictional-identity rule under Brand Commitments is unaffected — it is a standing project rule, not a store requirement.
+
 The season is a calendar the player walks through: preseason → 17-game regular season → 14-team playoffs → a ten-stage offseason (review, coaching carousel, retirements, re-signing, tags, free agency, draft, training camp, cutdown, preseason). The league runs all 31 AI teams through every stage; a news feed narrates it.
 
 ## Capabilities and Constraints
@@ -38,9 +40,10 @@ The season is a calendar the player walks through: preseason → 17-game regular
 - Simulation engine is a standalone Swift package (`FootballSimCore`): pure logic, no UI imports, deterministic under a seeded RNG, unit- and calibration-tested. The SwiftUI layer never contains game rules.
 - Gameplay constants live in `LeagueRules.swift`; no inline magic numbers.
 - iOS 17 minimum, Swift 5.10+, SwiftUI, `@Observable` view models, zero third-party dependencies.
+- **iPhone only, confirmed.** Compact width is the only target; iPad and regular-width layouts are backlog, not scope. Layouts stay single-column and need no size-class branching.
 - No image assets for team identity — 32 logos are composed geometrically in code.
 - Performance and durability targets that shape design: week advance under 150 ms, saves under 5 MB, ten simulated seasons with no crash or calibration drift.
-- **Undecided:** monetization. v1 ships no in-app purchase and the franchise editor is free; whether a later IAP exists is explicitly deferred.
+- **Undecided, and confirmed as still open:** monetization. v1 ships no in-app purchase and the franchise editor is free; whether a later IAP exists is deferred. Do not design paywalls, upgrade prompts, or locked features against a guess — this stays open until it is answered here.
 - **Not in v1** (backlog, not scope): custom league editor with JSON import/export, controllable post-snap defense, weather, restructures, position coaches, Game Center leaderboards, multiplayer, iPad layout.
 
 ## Brand Commitments

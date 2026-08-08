@@ -43,7 +43,10 @@ public enum CapEngine {
         else { return 0 }
 
         var player = league.teams[teamIndex].roster.remove(at: playerIndex)
-        let dead = player.isOnPracticeSquad ? 0 : (player.contract?.deadMoneyIfCutNow() ?? 0)
+        // Dead money follows the contract, never the practice-squad flag. A practice-squad deal
+        // carries no bonus and no guarantee, so this is still zero for anyone genuinely on one —
+        // but flagging a $30M veteran no longer erases what the club owes him.
+        let dead = player.contract?.deadMoneyIfCutNow() ?? 0
         league.deadMoney[teamID, default: 0] += dead
 
         player.contract = nil
@@ -51,7 +54,8 @@ public enum CapEngine {
         // Morale takes a knock from being released; it recovers if someone signs him.
         player.morale = max(20, player.morale - 10)
         league.freeAgents.append(player)
-        league.teams[teamIndex].autoSortDepthChart()
+        // `depthOrder` drops names that are no longer on the roster, so a release does not need
+        // to rebuild the chart — and rebuilding it would throw away the user's own ordering.
         return dead
     }
 
@@ -72,10 +76,17 @@ public enum CapEngine {
         let limit = practiceSquad ? LeagueRules.practiceSquadSize : LeagueRules.activeRosterSize
         let current = practiceSquad ? team.practiceSquad.count : team.activeRoster.count
         guard current < limit else { return false }
-        guard canAfford(contract, team: team, in: league) else { return false }
+
+        // The practice squad pays practice-squad money. Honouring a negotiated salary here would
+        // let a club park a star on the squad for a stipend and keep his real number off the cap.
+        let candidate = league.freeAgents[freeAgentIndex]
+        let terms = practiceSquad
+            ? ContractPricer.minimumContract(age: candidate.age)
+            : contract
+        guard canAfford(terms, team: team, in: league) else { return false }
 
         var player = league.freeAgents.remove(at: freeAgentIndex)
-        player.contract = contract
+        player.contract = terms
         player.isOnPracticeSquad = practiceSquad
         player.morale = min(95, player.morale + 8)
         league.teams[teamIndex].roster.append(player)
@@ -91,13 +102,17 @@ public enum CapEngine {
         case wouldLeavePositionShort(Position)
         case notOnPracticeSquad
         case alreadyOnPracticeSquad
+        /// He is under a real contract; the practice squad pays a stipend.
+        case contractTooLarge(Int)
+        case noCapRoom(Int)
     }
+
+    /// The most a deal can be worth and still belong on the practice squad.
+    public static var practiceSquadContractCeiling: Int { LeagueRules.minimumSalaryVeteran }
 
     /// Promotes a practice-squad player onto the active roster.
     ///
-    /// Cap space is not checked: a practice-squad contract is already on the books and a
-    /// promotion swaps that charge for a league-minimum one, which is a rounding error against
-    /// the cap and never the reason a team cannot call somebody up.
+    /// A promotion swaps the stipend for the player's real cap hit, so it has to be paid for.
     /// Returns nil on success, or why the move was refused.
     @discardableResult
     public static func elevate(
@@ -113,24 +128,33 @@ public enum CapEngine {
         guard league.teams[teamIndex].activeRoster.count < LeagueRules.activeRosterSize
         else { return .activeRosterFull }
 
-        league.teams[teamIndex].roster[playerIndex].isOnPracticeSquad = false
         // Promotion means a real contract, not the practice-squad stipend.
-        if league.teams[teamIndex].roster[playerIndex].contract == nil {
-            let age = league.teams[teamIndex].roster[playerIndex].age
-            league.teams[teamIndex].roster[playerIndex].contract =
-                ContractPricer.minimumContract(age: age)
+        let age = league.teams[teamIndex].roster[playerIndex].age
+        let deal = league.teams[teamIndex].roster[playerIndex].contract
+            ?? ContractPricer.minimumContract(age: age)
+        // The stipend stops and the deal starts, so the club has to have room for the difference.
+        let extra = deal.capHit(inYear: 0) - LeagueRules.practiceSquadSalary
+        let room = capSpace(for: league.teams[teamIndex], in: league)
+        if league.settings.salaryCapEnabled, extra > room {
+            return .noCapRoom(extra - room)
         }
+
+        league.teams[teamIndex].roster[playerIndex].isOnPracticeSquad = false
+        league.teams[teamIndex].roster[playerIndex].contract = deal
         league.teams[teamIndex].roster[playerIndex].morale = min(
             100, league.teams[teamIndex].roster[playerIndex].morale + 10
         )
-        league.teams[teamIndex].autoSortDepthChart()
+        // The depth chart is not re-sorted: the user set that order by hand on the same screen
+        // these moves are made from, and `depthOrder` slots a new name in on its own.
         return nil
     }
 
     /// Sends an active player down to the practice squad.
     ///
     /// Refused if it would leave a position below the minimum the team needs to field a unit —
-    /// the same floor cutdown and cap compliance respect.
+    /// the same floor cutdown and cap compliance respect — or if the player is under a real
+    /// contract. A practice-squad player is charged a stipend, so without that second rule a
+    /// club could wipe a thirty-million-dollar cap hit by swiping a row.
     /// Returns nil on success, or why the move was refused.
     @discardableResult
     public static func demote(
@@ -145,11 +169,16 @@ public enum CapEngine {
         guard league.teams[teamIndex].practiceSquad.count < LeagueRules.practiceSquadSize
         else { return .practiceSquadFull }
 
+        // The positional floor is checked first because it is the more fundamental refusal: no
+        // contract, however small, makes it legal to field a team without a kicker.
         let remaining = league.teams[teamIndex].activeRoster
             .filter { $0.position == player.position && $0.id != playerID }
             .count
         guard remaining >= player.position.minimumRosterCount
         else { return .wouldLeavePositionShort(player.position) }
+
+        let hit = player.contract?.currentCapHit ?? 0
+        guard hit <= practiceSquadContractCeiling else { return .contractTooLarge(hit) }
 
         guard let playerIndex = league.teams[teamIndex].roster.firstIndex(where: { $0.id == playerID })
         else { return .playerNotFound }
@@ -157,7 +186,7 @@ public enum CapEngine {
         league.teams[teamIndex].roster[playerIndex].morale = max(
             15, league.teams[teamIndex].roster[playerIndex].morale - 12
         )
-        league.teams[teamIndex].autoSortDepthChart()
+        // Not re-sorted, for the same reason as a promotion: the order is the user's.
         return nil
     }
 

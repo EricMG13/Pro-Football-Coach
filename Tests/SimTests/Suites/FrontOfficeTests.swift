@@ -680,3 +680,116 @@ func runRosterMoveTests() {
         }
     }
 }
+
+/// The practice squad is charged a stipend, which makes it the obvious place to hide a real
+/// contract. Every one of these was reachable with one swipe before the rules below existed.
+func runPracticeSquadCapTests() {
+    suite("Practice squad cannot launder the cap") {
+        test("a player on a real contract cannot be sent down") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 720, userTeamIndex: 0, coach: .stub())
+            let team = league.userTeam!
+            let expensive = team.activeRoster
+                .filter { ($0.contract?.currentCapHit ?? 0) > CapEngine.practiceSquadContractCeiling }
+                .max { ($0.contract?.currentCapHit ?? 0) < ($1.contract?.currentCapHit ?? 0) }!
+            // Make room so the squad size cannot be the reason it is refused.
+            let spare = team.practiceSquad[0]
+            CapEngine.cut(playerID: spare.id, from: team.id, in: &league)
+
+            let before = CapEngine.capSpent(for: league.userTeam!)
+            let refusal = CapEngine.demote(playerID: expensive.id, on: team.id, in: &league)
+
+            switch refusal {
+            case .contractTooLarge: break
+            default: expect(false, "expected contractTooLarge, got \(String(describing: refusal))")
+            }
+            expectEqual(
+                CapEngine.capSpent(for: league.userTeam!), before,
+                "a refused demotion must not move a single dollar"
+            )
+        }
+
+        test("a demotion and release cannot erase dead money") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 721, userTeamIndex: 0, coach: .stub())
+            let team = league.userTeam!
+            let guaranteed = team.activeRoster.first { ($0.contract?.deadMoneyIfCutNow() ?? 0) > 0 }!
+            let owed = guaranteed.contract!.deadMoneyIfCutNow()
+
+            // The exploit: park him, then release him for nothing.
+            CapEngine.demote(playerID: guaranteed.id, on: team.id, in: &league)
+            let dead = CapEngine.cut(playerID: guaranteed.id, from: team.id, in: &league)
+
+            expectEqual(dead, owed, "the club still owes what it guaranteed")
+            expectEqual(
+                league.deadMoney[team.id] ?? 0, owed,
+                "dead money must land on the books whatever flag the player carried"
+            )
+        }
+
+        test("a genuine practice squad release still costs nothing") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 722, userTeamIndex: 0, coach: .stub())
+            let team = league.userTeam!
+            let squadPlayer = team.practiceSquad[0]
+
+            let dead = CapEngine.cut(playerID: squadPlayer.id, from: team.id, in: &league)
+
+            expectEqual(dead, 0, "a practice-squad deal carries no guarantee to pay out")
+        }
+
+        test("a practice squad signing is paid practice squad money") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 723, userTeamIndex: 0, coach: .stub())
+            let team = league.userTeam!
+            CapEngine.cut(playerID: team.practiceSquad[0].id, from: team.id, in: &league)
+            let target = league.freeAgents.max { $0.overall < $1.overall }!
+            let silly = Contract.flat(years: 4, salary: 30_000_000)
+
+            let signed = CapEngine.sign(
+                playerID: target.id, to: team.id, contract: silly, practiceSquad: true, in: &league
+            )
+
+            expect(signed, "the signing itself should go through")
+            let onSquad = league.team(id: team.id)!.roster.first { $0.id == target.id }!
+            expect(
+                (onSquad.contract?.currentCapHit ?? 0) <= CapEngine.practiceSquadContractCeiling,
+                "a squad deal must be squad money, not the number that was typed in"
+            )
+        }
+
+        test("calling a player up has to be paid for") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 724, userTeamIndex: 0, coach: .stub())
+            let team = league.userTeam!
+            CapEngine.cut(playerID: team.activeRoster.last!.id, from: team.id, in: &league)
+            // Spend the cap down to nothing.
+            league.salaryCap = CapEngine.capSpent(
+                for: league.userTeam!, deadMoney: league.deadMoney[team.id] ?? 0
+            )
+
+            let refusal = CapEngine.elevate(
+                playerID: league.userTeam!.practiceSquad[0].id, on: team.id, in: &league
+            )
+
+            switch refusal {
+            case .noCapRoom: break
+            default: expect(false, "expected noCapRoom, got \(String(describing: refusal))")
+            }
+        }
+
+        test("a roster move leaves the hand-set depth chart alone") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 725, userTeamIndex: 0, coach: .stub())
+            let teamID = league.userTeamID
+            // Put the worst quarterback on top, the way a user dragging rows would.
+            let quarterbacks = league.userTeam!.depthOrder(for: .qb, healthyOnly: false)
+            let index = league.teams.firstIndex { $0.id == teamID }!
+            league.teams[index].depthChart[.qb] = quarterbacks.reversed().map(\.id)
+            let chosenStarter = quarterbacks.last!.id
+
+            let squadPlayer = league.userTeam!.practiceSquad.first { $0.position != .qb }!
+            CapEngine.cut(playerID: league.userTeam!.activeRoster.last!.id, from: teamID, in: &league)
+            CapEngine.elevate(playerID: squadPlayer.id, on: teamID, in: &league)
+
+            expectEqual(
+                league.userTeam!.depthOrder(for: .qb, healthyOnly: false).first?.id, chosenStarter,
+                "a call-up at another position must not re-sort the quarterbacks"
+            )
+        }
+    }
+}

@@ -369,6 +369,11 @@ public final class AppState {
             "That would leave you short at \(position.displayName)."
         case .notOnPracticeSquad: "He is already on the active roster."
         case .alreadyOnPracticeSquad: "He is already on the practice squad."
+        case .contractTooLarge(let hit):
+            "He is on a \(Format.money(hit)) deal. The practice squad pays a stipend — "
+                + "release him if you want him off the books."
+        case .noCapRoom(let short):
+            "Calling him up costs \(Format.money(short)) more than you have in space."
         }
     }
 

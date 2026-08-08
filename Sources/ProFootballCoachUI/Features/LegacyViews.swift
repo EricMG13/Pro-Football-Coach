@@ -280,11 +280,16 @@ struct TrophyRoomView: View {
         .card()
     }
 
-    /// Career totals only absorb a season once it ends, so fold the year in progress in here —
-    /// otherwise a coach in November is told he has never taken charge of a game.
+    /// Career totals only absorb a season at the season review, so fold the year in progress in
+    /// here — otherwise a coach in November is told he has never taken charge of a game.
+    ///
+    /// Only while the season is genuinely live, though: `updateJobSecurity` books it at the
+    /// first offseason stage while `league.standings` still holds it, so folding it in after
+    /// that counted the same year twice.
     private func careerRecord(_ league: League) -> String {
         let coach = league.coach
-        let season = league.record(for: league.userTeamID)
+        let live = league.phase.isRegularSeason || league.phase.isPlayoffs
+        let season = live ? league.record(for: league.userTeamID) : TeamRecord()
         let wins = coach.careerWins + season.wins
         let losses = coach.careerLosses + season.losses
         let ties = coach.careerTies + season.ties
@@ -295,27 +300,46 @@ struct TrophyRoomView: View {
         return "\(record) · \(String(format: "%.1f", percentage))%"
     }
 
-    private var userTeamID: UUID? { app.league?.userTeamID }
+    /// The seasons this coach was actually in charge for, each with the club he ran.
+    ///
+    /// Filtering on the *current* team would be wrong the moment he changes jobs: it would hand
+    /// him his new employer's old trophies and take away the ones he won. Seasons archived
+    /// before the carousel existed carry no club, so they fall back to the current one.
+    private var tenure: [(year: Int, teamID: UUID)] {
+        guard let league = app.league else { return [] }
+        return league.history.map { ($0.year, $0.coachedTeamID ?? league.userTeamID) }
+    }
+
+    private func coachedTeam(in year: Int) -> UUID? {
+        tenure.first { $0.year == year }?.teamID
+    }
 
     private var titles: [Int] {
-        guard let userTeamID, let history = app.league?.history else { return [] }
-        return history.filter { $0.championTeamID == userTeamID }.map(\.year).sorted(by: >)
+        guard let history = app.league?.history else { return [] }
+        return history
+            .filter { $0.championTeamID != nil && $0.championTeamID == coachedTeam(in: $0.year) }
+            .map(\.year)
+            .sorted(by: >)
     }
 
     /// Both finalists won their conference, so reaching the final is the title.
     private var conferenceTitles: [Int] {
-        guard let userTeamID, let history = app.league?.history else { return [] }
+        guard let history = app.league?.history else { return [] }
         return history
-            .filter { $0.championTeamID == userTeamID || $0.runnerUpTeamID == userTeamID }
+            .filter { season in
+                guard let team = coachedTeam(in: season.year) else { return false }
+                return season.championTeamID == team || season.runnerUpTeamID == team
+            }
             .map(\.year)
             .sorted(by: >)
     }
 
     private var awards: [SeasonAward] {
-        guard let userTeamID, let history = app.league?.history else { return [] }
+        guard let history = app.league?.history else { return [] }
         return history
-            .flatMap(\.awards)
-            .filter { $0.teamID == userTeamID }
+            .flatMap { season in
+                season.awards.filter { $0.teamID != nil && $0.teamID == coachedTeam(in: season.year) }
+            }
             .sorted { $0.year > $1.year }
     }
 }

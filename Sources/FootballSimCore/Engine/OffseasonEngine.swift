@@ -31,7 +31,10 @@ public enum OffseasonEngine {
         }
 
         league.freeAgents.removeAll { player in
-            if shouldRetire(player, rng: &league.rng) {
+            // An unsigned player this old has run out of league. Retiring him here rather than
+            // deleting him at cutdown means he still gets a Hall of Fame hearing and a send-off.
+            if player.age >= LeagueRules.freeAgentRetirementAge
+                || shouldRetire(player, rng: &league.rng) {
                 retired.append(player)
                 return true
             }
@@ -281,7 +284,10 @@ public enum OffseasonEngine {
             roster += practiceSquad.map {
                 var player = $0
                 player.isOnPracticeSquad = true
-                if player.contract == nil {
+                // A practice-squad player is on a practice-squad deal. Carrying a real contract
+                // down here would leave a big number on the books charged at the stipend rate.
+                let hit = player.contract?.currentCapHit ?? 0
+                if player.contract == nil || hit > CapEngine.practiceSquadContractCeiling {
                     player.contract = ContractPricer.minimumContract(age: player.age)
                 }
                 return player
@@ -491,7 +497,8 @@ public enum OffseasonEngine {
                 standings: league.standings,
                 playerStats: playerStats,
                 awards: awards,
-                userRecord: league.standings[league.userTeamID]
+                userRecord: league.standings[league.userTeamID],
+                coachedTeamID: league.userTeamID
             )
         )
     }
@@ -505,10 +512,11 @@ public enum OffseasonEngine {
     /// the sport — a 30-year-old who went unsigned for three straight seasons has retired,
     /// whether or not the game says so.
     private static func closeTheMarket(_ league: inout League) {
-        let stillPlaying = league.freeAgents
-            .filter { $0.age < LeagueRules.freeAgentRetirementAge }
-            .sorted { $0.overall > $1.overall }
-        league.freeAgents = Array(stillPlaying.prefix(LeagueRules.freeAgentPoolLimit))
+        // Nobody is aged out here — that is a retirement, and it happens at the retirements
+        // stage where the Hall of Fame is watching. This only caps the size of the pool, and it
+        // cuts from the bottom, where the players are ones no club was going to call anyway.
+        let ranked = league.freeAgents.sorted { $0.overall > $1.overall }
+        league.freeAgents = Array(ranked.prefix(LeagueRules.freeAgentPoolLimit))
 
         if league.news.count > LeagueRules.newsFeedLimit {
             league.news = Array(league.news.suffix(LeagueRules.newsFeedLimit))
@@ -528,6 +536,11 @@ public enum OffseasonEngine {
             for player in team.roster { living.insert(player.id) }
         }
         for player in league.freeAgents { living.insert(player.id) }
+        // The record book is recomputed from these very rows, so anyone who still holds a mark
+        // has to be kept or the book would quietly go backwards the year he leaves.
+        for record in RecordsBook.current(in: league) {
+            if let holder = record.holderID { living.insert(holder) }
+        }
 
         league.history = league.history.map { season in
             let kept = season.playerStats.filter { living.contains($0.key) }
@@ -539,7 +552,8 @@ public enum OffseasonEngine {
                 standings: season.standings,
                 playerStats: kept,
                 awards: season.awards,
-                userRecord: season.userRecord
+                userRecord: season.userRecord,
+                coachedTeamID: season.coachedTeamID
             )
         }
     }
@@ -548,7 +562,10 @@ public enum OffseasonEngine {
     private static func startNextSeason(_ league: inout League) {
         league.year += 1
         league.coach.age += 1
-        league.coach.contractYearsElapsed += 1
+        // The contract clock is not ticked here. `CoachEngine.settleHeadCoachJob` owns it, and
+        // it runs earlier in this same offseason — ticking in both places aged every deal two
+        // years per season and threw a coach out of a three-year contract after two.
+        
         CapEngine.advanceSalaryCap(in: &league)
         // The finished season's per-player totals were folded into `history` during the season
         // review, so the game records themselves can go — that is what keeps saves small.

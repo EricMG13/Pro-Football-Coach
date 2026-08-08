@@ -35,11 +35,15 @@ public struct LeagueRecord: Sendable, Equatable, Identifiable {
     public let value: Int
     public let year: Int
 
-    public init(kind: Kind, holderName: String, value: Int, year: Int) {
+    /// Who set it, when that is known. The seeded historical marks have no player behind them.
+    public let holderID: UUID?
+
+    public init(kind: Kind, holderName: String, value: Int, year: Int, holderID: UUID? = nil) {
         self.kind = kind
         self.holderName = holderName
         self.value = value
         self.year = year
+        self.holderID = holderID
     }
 }
 
@@ -84,7 +88,11 @@ public enum RecordsBook {
                         let total = value(kind, in: league.careerStats(for: player.id))
                         if total > best.value {
                             best = LeagueRecord(
-                                kind: kind, holderName: player.name, value: total, year: league.year
+                                kind: kind,
+                                holderName: player.name,
+                                value: total,
+                                year: league.year,
+                                holderID: player.id
                             )
                         }
                     }
@@ -96,17 +104,33 @@ public enum RecordsBook {
                         let total = value(kind, in: league.seasonStats(for: player.id))
                         if total > best.value {
                             best = LeagueRecord(
-                                kind: kind, holderName: player.name, value: total, year: league.year
+                                kind: kind,
+                                holderName: player.name,
+                                value: total,
+                                year: league.year,
+                                holderID: player.id
                             )
                         }
                     }
                 }
                 for season in league.history {
-                    for (playerID, line) in season.playerStats {
+                    // Sorted, not raw dictionary order: Swift randomises that per process, and
+                    // two players tied on a mark would otherwise hand the record to whichever
+                    // one the hash seed happened to visit first. The prune reads this list to
+                    // decide whose stat lines to keep, so the whole save would stop being
+                    // reproducible from its seed.
+                    for (playerID, line) in season.playerStats
+                        .sorted(by: { $0.key.uuidString < $1.key.uuidString }) {
                         let total = value(kind, in: line)
                         guard total > best.value else { continue }
                         let name = league.findPlayer(id: playerID)?.player.name ?? "A former player"
-                        best = LeagueRecord(kind: kind, holderName: name, value: total, year: season.year)
+                        best = LeagueRecord(
+                            kind: kind,
+                            holderName: name,
+                            value: total,
+                            year: season.year,
+                            holderID: playerID
+                        )
                     }
                 }
             }

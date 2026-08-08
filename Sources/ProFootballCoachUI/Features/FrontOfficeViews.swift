@@ -250,8 +250,9 @@ struct OfferSheet: View {
                     SummaryRow(label: "Total value", value: Format.money(Int(salaryMillions * 1_000_000) * years))
                     Toggle("Sign to practice squad", isOn: $toPracticeSquad)
                     if toPracticeSquad {
-                        Text("He develops without taking an active roster spot, and any team can "
-                             + "sign him away.")
+                        Text("Squad money — \(Format.money(contract.currentCapHit)) a year, "
+                             + "whatever the slider says. He develops without taking a roster "
+                             + "spot, and any club can sign him away.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -284,8 +285,12 @@ struct OfferSheet: View {
         }
     }
 
+    /// What he would actually be paid. A practice-squad deal is squad money whatever the slider
+    /// says, so the interest below is measured against the real terms and a good player refuses.
     private var contract: Contract {
-        Contract.flat(years: years, salary: Int(salaryMillions * 1_000_000))
+        toPracticeSquad
+            ? ContractPricer.minimumContract(age: player.age)
+            : Contract.flat(years: years, salary: Int(salaryMillions * 1_000_000))
     }
 
     private var interest: Double {

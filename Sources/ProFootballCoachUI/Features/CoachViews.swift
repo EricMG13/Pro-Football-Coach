@@ -131,11 +131,13 @@ struct CoachView: View {
             )
             Divider()
             SummaryRow(label: "Career record", value: coach.recordDescription)
-            if let league = app.league {
+            if let league = app.league,
+               league.phase.isRegularSeason || league.phase.isPlayoffs {
                 let season = league.record(for: league.userTeamID)
                 if season.wins + season.losses + season.ties > 0 {
-                    // Career totals only absorb a year once it ends, so the season in progress
-                    // needs its own line or the screen reads as 0-0 in November.
+                    // Career totals only absorb a year at the season review, so the year in
+                    // progress needs its own line or the screen reads as 0-0 in November. Once
+                    // the review has run, the career total already contains it.
                     SummaryRow(label: "This season", value: season.description)
                 }
             }

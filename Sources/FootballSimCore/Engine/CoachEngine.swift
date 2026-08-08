@@ -403,9 +403,14 @@ public enum CoachEngine {
 
         guard sacked || expired else { return false }
 
+        // A coach who cannot be fired cannot be shown the door by the calendar either. Without
+        // this, switching the setting off still evicted him the moment his deal ran out.
+        let secureEnoughToStay = league.coach.jobSecurity >= 55
+            || !league.settings.coachFiringEnabled
+
         // A secure coach whose deal ran out is simply re-signed where he is; nobody sacks a
         // winner over paperwork.
-        if expired, !sacked, league.coach.jobSecurity >= 55 {
+        if expired, !sacked, secureEnoughToStay {
             league.coach.contractYears = 3
             league.coach.contractYearsElapsed = 0
             league.news.append(

@@ -8,6 +8,23 @@ import Foundation
 public struct SeededRandom: Codable, Sendable, Equatable {
     private var state: UInt64
 
+    /// A seed derived from identifiers rather than from `hashValue`.
+    ///
+    /// `UUID.hashValue` is salted with a per-process random seed, so anything derived from it
+    /// changes between launches. Using it to seed a generator makes the league unreproducible
+    /// from its own seed, which is the one guarantee this type exists to provide.
+    public static func seed(from identifiers: UUID...) -> UInt64 {
+        var value: UInt64 = 0xCBF2_9CE4_8422_2325
+        for identifier in identifiers {
+            withUnsafeBytes(of: identifier.uuid) { bytes in
+                for byte in bytes {
+                    value = (value ^ UInt64(byte)) &* 0x0000_0100_0000_01B3
+                }
+            }
+        }
+        return value
+    }
+
     public init(seed: UInt64) {
         state = seed
     }

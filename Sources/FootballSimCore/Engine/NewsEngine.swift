@@ -71,7 +71,11 @@ public enum NewsEngine {
     private static func standoutLine(record: GameRecord, league: League) -> String? {
         var best: (name: String, line: String, score: Int)?
 
-        for (playerID, stats) in record.playerStats {
+        // Sorted rather than raw dictionary order, which Swift randomises per process: two
+        // players tied on the same score would otherwise give different headlines on different
+        // launches, and the headline is written into the save.
+        for (playerID, stats) in record.playerStats
+            .sorted(by: { $0.key.uuidString < $1.key.uuidString }) {
             guard let (player, _) = league.findPlayer(id: playerID) else { continue }
             var score = 0
             var description = ""

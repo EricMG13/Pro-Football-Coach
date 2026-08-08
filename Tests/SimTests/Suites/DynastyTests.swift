@@ -279,9 +279,23 @@ func runDynastyTests() {
                 league.news.count <= LeagueRules.newsFeedLimit,
                 "news feed is \(league.news.count) items"
             )
+            // The age purge runs at the retirements stage; training camp then ages everyone by
+            // one afterwards, so a single year over the line is expected and two is not.
+            // The age purge runs at the retirements stage; training camp then ages everyone by
+            // one afterwards, so a year over the line is expected and two is not.
+            let oldest = league.freeAgents.map(\.age).max() ?? 0
             expect(
-                !league.freeAgents.contains { $0.age >= LeagueRules.freeAgentRetirementAge },
-                "an unsigned player past the retirement age is still on the market"
+                oldest < LeagueRules.freeAgentRetirementAge + 2,
+                "oldest unsigned player is \(oldest), past the retirement age of "
+                    + "\(LeagueRules.freeAgentRetirementAge)"
+            )
+            expect(
+                !league.hallOfFame.isEmpty,
+                "ten seasons of retirements should have enshrined somebody"
+            )
+            expect(
+                !league.hallOfFame.isEmpty,
+                "ten seasons of retirements should have enshrined somebody"
             )
             // Trimming the market must not empty it: teams sign from this pool all season.
             expect(league.freeAgents.count > 100, "the market was trimmed to nothing")
@@ -476,6 +490,143 @@ func runCoachCarouselTests() {
             expectEqual(
                 restored.jobOffers, league.jobOffers,
                 "a coach who is between jobs must still be between jobs after a reload"
+            )
+        }
+    }
+}
+
+/// The coach's contract clock and who his trophies belong to. Both were wrong in ways only a
+/// second or third season would reveal: the clock ran double, and the trophy case followed the
+/// employer rather than the man.
+func runCoachTenureTests() {
+    suite("Coach tenure") {
+        test("a three-year deal lasts three seasons, not one and a half") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 810, userTeamIndex: 0, coach: .stub())
+            league.coach.contractYears = 3
+            league.coach.contractYearsElapsed = 0
+            // Job security high enough that nothing but the calendar can move him.
+            league.coach.jobSecurity = 90
+
+            var remaining: [Int] = []
+            for _ in 1...3 {
+                SeasonEngine.startSeason(&league)
+                SeasonEngine.simulateToOffseason(&league)
+                OffseasonEngine.runFullOffseason(&league)
+                remaining.append(league.coach.contractYearsRemaining)
+            }
+
+            // Year one leaves two, year two leaves one, year three triggers the extension that
+            // a secure coach earns — never two years burned in a single offseason.
+            expectEqual(remaining[0], 2, "after one season")
+            expectEqual(remaining[1], 1, "after two seasons")
+            expect(remaining[2] >= 2, "a secure coach is extended rather than run out of contract")
+        }
+
+        test("with firing switched off the calendar cannot evict him either") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 811, userTeamIndex: 0, coach: .stub())
+            league.settings.coachFiringEnabled = false
+            league.coach.jobSecurity = 5
+            league.coach.contractYears = 1
+            league.coach.contractYearsElapsed = 0
+            let team = league.userTeamID
+
+            let betweenJobs = CoachEngine.settleHeadCoachJob(&league)
+
+            expect(!betweenJobs, "a coach who cannot be fired cannot be timed out")
+            expectEqual(league.userTeamID, team, "he stays where he is")
+            expect(league.jobOffers.isEmpty, "and there is nothing to choose between")
+        }
+
+        test("an archived season remembers which club the coach was running") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 812, userTeamIndex: 0, coach: .stub())
+            let firstClub = league.userTeamID
+            SeasonEngine.startSeason(&league)
+            SeasonEngine.simulateToOffseason(&league)
+            OffseasonEngine.runFullOffseason(&league)
+
+            expectEqual(
+                league.history.first?.coachedTeamID, firstClub,
+                "the first season belongs to the club he was actually at"
+            )
+
+            // Move him, then play another year.
+            let elsewhere = league.teams.first { $0.id != firstClub }!
+            CoachEngine.accept(
+                offer: .init(
+                    teamID: elsewhere.id, teamName: elsewhere.fullName,
+                    salary: 4_000_000, years: 4
+                ),
+                in: &league
+            )
+            SeasonEngine.startSeason(&league)
+            SeasonEngine.simulateToOffseason(&league)
+            OffseasonEngine.runFullOffseason(&league)
+
+            expectEqual(league.history.count, 2, "two seasons archived")
+            expectEqual(
+                league.history[0].coachedTeamID, firstClub,
+                "the old season must not be re-attributed to the new employer"
+            )
+            expectEqual(
+                league.history[1].coachedTeamID, elsewhere.id,
+                "the new season belongs to the new club"
+            )
+        }
+    }
+}
+
+/// The save has to come back byte for byte from its seed. Anything that reads a Dictionary in
+/// iteration order and then writes the answer into the league breaks that, and Swift randomises
+/// that order per process — so this only fails on some launches, which is the worst kind.
+func runDeterminismUnderOffseasonTests() {
+    suite("Offseason determinism") {
+        test("two identical leagues stay identical through three offseasons") {
+            func play(seed: UInt64) throws -> Data {
+                var league = LeagueFactory.makeDefaultLeague(
+                    seed: seed, userTeamIndex: 0, coach: .stub()
+                )
+                for _ in 1...3 {
+                    SeasonEngine.startSeason(&league)
+                    SeasonEngine.simulateToOffseason(&league)
+                    OffseasonEngine.runFullOffseason(&league)
+                }
+                return try JSONEncoder.stable().encode(league)
+            }
+
+            let first = try play(seed: 909)
+            let second = try play(seed: 909)
+            expect(first == second, "the same seed produced two different leagues")
+        }
+
+        // Running the league twice inside one process cannot catch the worst kind of
+        // non-determinism, because the thing that varies — Swift's hash seed — is fixed for the
+        // life of a process. `UUID.hashValue` looks like a stable identifier and is not, and one
+        // use of it in the free-agent market was enough to make every launch produce a different
+        // league from the same save seed. Reading the source is the only cheap guard.
+        test("no engine code seeds anything from a hash value") {
+            let engine = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()   // Suites
+                .deletingLastPathComponent()   // SimTests
+                .deletingLastPathComponent()   // Tests
+                .deletingLastPathComponent()   // package root
+                .appendingPathComponent("Sources/FootballSimCore")
+            var offenders: [String] = []
+            let files = FileManager.default.enumerator(atPath: engine.path)?
+                .compactMap { $0 as? String }
+                .filter { $0.hasSuffix(".swift") } ?? []
+            expect(!files.isEmpty, "found no engine sources to scan at \(engine.path)")
+            for file in files {
+                let text = (try? String(contentsOfFile: engine.appendingPathComponent(file).path,
+                                        encoding: .utf8)) ?? ""
+                for (number, line) in text.split(separator: "\n", omittingEmptySubsequences: false)
+                    .enumerated() where line.contains(".hashValue") && !line.contains("//") {
+                    offenders.append("\(file):\(number + 1)")
+                }
+            }
+            expect(
+                offenders.isEmpty,
+                "hashValue is salted per process; these lines make the league unreproducible: "
+                    + offenders.joined(separator: ", ")
             )
         }
     }

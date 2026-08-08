@@ -129,7 +129,10 @@ public enum FreeAgencyEngine {
         }
         guard appetite > 0.2 else { return nil }
 
-        var rng = SeededRandom(seed: UInt64(truncatingIfNeeded: player.id.hashValue ^ team.id.hashValue))
+        // Seeded from the identifiers' bytes, never their `hashValue`: Swift salts hashing per
+        // process, so the old version handed every launch a different free-agent market and the
+        // same save seed stopped reproducing the same league.
+        var rng = SeededRandom(seed: SeededRandom.seed(from: player.id, team.id))
         let ask = ContractPricer.askingSalary(
             for: player,
             teamReputation: team.reputation,

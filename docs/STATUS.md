@@ -31,14 +31,14 @@ If `xcodebuild` reports no simulator destinations, the iOS platform component is
 swift build && swift run -c release SimTests
 ```
 
-**213 tests, 13,170 assertions, all passing.** Runtime about 100 seconds, dominated by the
+**224 tests, 13,226 assertions, all passing.** Runtime about 100 seconds, dominated by the
 ten-season soak.
 
 ## Complete and tested
 
 | Area | State |
 |---|---|
-| Deterministic RNG, seeded UUIDs | Done. Same seed reproduces a league byte for byte |
+| Deterministic RNG, seeded UUIDs | Done, and now true across processes as well as within one. The AI's free-agent bidding seeded a generator from `UUID.hashValue`, which Swift salts per launch, so the same save seed produced a different league every time the app started — the in-process determinism test could never see it. Seeds are derived from identifier bytes, and a test scans the engine sources so no future line can reintroduce it |
 | Player / contract / team / league model | Done, including cap, proration and dead money |
 | League generation (32 teams, tiers, staff) | Done |
 | Game simulation | Done: drives, downs, clock, kicks, overtime, injuries, box scores |
@@ -58,6 +58,7 @@ ten-season soak.
 | First-run tutorial | Done: five cards on the job, shown once when a franchise opens and reopenable from the Coach tab |
 | Trophy room | Done: titles, conference finals and your players' awards, with a career line that counts the season in progress |
 | Street free agency, in season | Done: the free-agent board is open all year, with a practice-squad option on the offer sheet and a refusal that names the door that shut — roster full, squad full, or the amount over the cap |
+| Practice squad cannot launder the cap | A practice-squad player is charged a stipend, which made the squad the obvious place to hide a contract. Sending a signed veteran down wiped his cap hit, releasing him afterwards erased his dead money, and a "practice squad" free-agent offer was validated against the cap and then never charged. A squad place now requires squad money, dead money follows the contract rather than a flag, and a call-up is paid for |
 | Practice squad: call up, send down | Done: `CapEngine.elevate` / `demote` with a positional floor, seven tests, swipe actions on the depth chart. Both refusal paths seen on device |
 | The coach's own career: sacked, extended, re-hired | Done. The engine could always produce job offers but nothing called them, so a coach could sit through a decade of losing seasons and keep his desk. The carousel now settles his job in the same window as his assistants': zero-ish security or an expired deal without the results to back it puts him on the market, a secure coach is extended where he is, and the offers persist through a save so being out of work survives a reload |
 | Save size after ten seasons | 2.3 MB, inside the plan's 5 MB budget and asserted by the soak. It was 8.3 MB: the free-agent pool and the news feed both grew without limit, reaching nine thousand unsigned players and eight thousand stories. Both are now bounded, which also stops every free-agency scan getting slower each year |

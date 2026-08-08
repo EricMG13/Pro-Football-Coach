@@ -69,16 +69,32 @@ public struct TeamTheme: Sendable {
         )
     }
 
-    /// Lifts a hex toward white until it clears 4.5:1 against the dark page background.
+    /// Lifts a hex toward white until it clears 4.5:1 against the dark surface it is drawn on.
     /// Returns the input untouched when it already does.
-    public static func legibleOnDark(_ hex: String, background: String = "#0B0B0F") -> String {
+    ///
+    /// The default is the grouped card, not the page: cards are lighter than the page in dark
+    /// mode, so they are the harder target, and they are where the buttons actually sit. The
+    /// wash a bordered button paints behind its own label is lighter still, which is why the
+    /// lift is measured against the composited surface rather than the bare card.
+    public static func legibleOnDark(_ hex: String, background: String = darkCard) -> String {
         var mix = 0.0
         var candidate = hex
-        while mix <= 0.9, contrastRatio(candidate, background) < 4.5 {
+        while mix <= 0.95, contrastRatio(candidate, surface(for: candidate, over: background)) < 4.5 {
             mix += 0.05
             candidate = blend(hex, toward: "#FFFFFF", amount: mix)
         }
         return candidate
+    }
+
+    /// The app's dark surfaces, matching `systemGroupedBackground` and its secondary.
+    public static let darkCard = "#1C1C1E"
+    public static let darkPage = "#000000"
+    /// How much of the tint a `.bordered` button paints behind its own label.
+    public static let controlWashAlpha = 0.15
+
+    /// What a tinted label is really drawn on: its own colour, washed over the card.
+    public static func surface(for tint: String, over background: String) -> String {
+        blend(background, toward: tint, amount: controlWashAlpha)
     }
 
     private static func channels(_ hex: String) -> [Double] {

@@ -223,6 +223,10 @@ public struct SeasonSummary: Codable, Sendable, Equatable {
     public let playerStats: [UUID: StatLine]
     public let awards: [SeasonAward]
     public let userRecord: TeamRecord?
+    /// The club the user was coaching that year. Written at archive time because the coach can
+    /// change jobs, and a trophy belongs to the season it was won in, not to whoever employs
+    /// him now. Optional so saves written before the carousel existed still load.
+    public let coachedTeamID: UUID?
 
     public init(
         year: Int,
@@ -231,7 +235,8 @@ public struct SeasonSummary: Codable, Sendable, Equatable {
         standings: [UUID: TeamRecord],
         playerStats: [UUID: StatLine],
         awards: [SeasonAward] = [],
-        userRecord: TeamRecord? = nil
+        userRecord: TeamRecord? = nil,
+        coachedTeamID: UUID? = nil
     ) {
         self.year = year
         self.championTeamID = championTeamID
@@ -240,6 +245,7 @@ public struct SeasonSummary: Codable, Sendable, Equatable {
         self.playerStats = playerStats
         self.awards = awards
         self.userRecord = userRecord
+        self.coachedTeamID = coachedTeamID
     }
 }
 
