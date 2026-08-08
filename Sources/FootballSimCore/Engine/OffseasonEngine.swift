@@ -413,7 +413,22 @@ public enum OffseasonEngine {
             runCoachingCarousel(&league)
 
         case .retirements:
-            processRetirements(&league)
+            let retired = processRetirements(&league)
+            // Career totals are still readable at this point, so enshrinement happens here.
+            let inducted = HallOfFame.induct(retiring: retired, league: league)
+            league.hallOfFame.append(contentsOf: inducted)
+            for member in inducted {
+                league.news.append(
+                    NewsItem(
+                        id: league.rng.uuid(),
+                        year: league.year,
+                        week: 0,
+                        category: .award,
+                        headline: "\(member.name) is elected to the Hall of Fame",
+                        body: member.careerSummary
+                    )
+                )
+            }
 
         case .reSigning:
             CapEngine.rolloverContracts(in: &league)

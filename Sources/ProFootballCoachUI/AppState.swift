@@ -18,6 +18,8 @@ public final class AppState {
     public var seasonGoals: [CoachEngine.SeasonGoal] = []
     public var scoutingPoints: Int = LeagueRules.scoutingPointsPerSeason
 
+    /// Identifier of the scenario this franchise started under, if any.
+    public var activeScenario: String?
     public var autosaveEnabled = true
     public var lastError: String?
     public var isBusy = false
@@ -64,6 +66,26 @@ public final class AppState {
         league = new
         saveID = UUID()
         self.saveName = saveName.isEmpty ? "\(new.userTeam?.name ?? "New") Franchise" : saveName
+        persist()
+    }
+
+    /// Starts a franchise under a scenario's altered starting conditions.
+    public func startScenario(
+        _ scenario: Scenario,
+        teamIndex: Int,
+        coach: CoachProfile,
+        settings: LeagueSettings,
+        seed: UInt64 = UInt64.random(in: UInt64.min...UInt64.max)
+    ) {
+        startNewFranchise(
+            teamIndex: teamIndex,
+            coach: coach,
+            settings: settings,
+            saveName: scenario.name,
+            seed: seed
+        )
+        mutate { scenario.apply(&$0) }
+        activeScenario = scenario.id
         persist()
     }
 

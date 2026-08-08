@@ -332,6 +332,8 @@ public struct League: Codable, Sendable {
     public var salaryCap: Int
     /// Dead money each team carries this year from cuts and trades.
     public var deadMoney: [UUID: Int]
+    /// Players enshrined after their careers ended.
+    public var hallOfFame: [HallOfFamer]
 
     public init(
         version: Int = League.currentVersion,
@@ -349,7 +351,8 @@ public struct League: Codable, Sendable {
         settings: LeagueSettings = LeagueSettings(),
         history: [SeasonSummary] = [],
         salaryCap: Int = LeagueRules.salaryCapYearOne,
-        deadMoney: [UUID: Int] = [:]
+        deadMoney: [UUID: Int] = [:],
+        hallOfFame: [HallOfFamer] = []
     ) {
         self.version = version
         self.rng = rng
@@ -367,6 +370,7 @@ public struct League: Codable, Sendable {
         self.history = history
         self.salaryCap = salaryCap
         self.deadMoney = deadMoney
+        self.hallOfFame = hallOfFame
     }
 
     public func team(id: UUID) -> Team? { teams.first { $0.id == id } }

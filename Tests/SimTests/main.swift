@@ -6,6 +6,7 @@ runGameSimulatorTests()
 runSeasonTests()
 runFrontOfficeTests()
 runDynastyTests()
+runLegacyTests()
 runPersistenceTests()
 
 TestKit.finish()

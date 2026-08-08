@@ -19,7 +19,7 @@ The machine this was built on has the Swift 6.3 command line tools but **not** f
 swift build && swift run -c release SimTests
 ```
 
-**145 tests, ~3,900 assertions, all passing.** Runtime about 100 seconds, dominated by the
+**152 tests, ~4,000 assertions, all passing.** Runtime about 100 seconds, dominated by the
 ten-season soak.
 
 ## Complete and tested
@@ -38,6 +38,8 @@ ten-season soak.
 | Progression, retirement, awards, coaching carousel | Done |
 | Coach career: XP, skill trees, goals, job security | Done |
 | Ten-season soak | Done: ratings, ages, roster sizes, cap legality, churn and save size all hold |
+| Scenarios (Cap Hell, Expansion, Aging Legend) | Done, each verified to leave a legal league |
+| Record book and Hall of Fame | Done: seeded marks, live record chasing, enshrinement on retirement |
 | Save / load, backup recovery, version refusal | Done |
 | SwiftUI app: menu, wizard, season hub, schedule, standings, news, team, depth chart, player cards, stats, front office, draft board, coach, offseason pipeline, both play modes | Written and compile-verified; not yet exercised on a simulator |
 
@@ -48,18 +50,14 @@ Ordered by how much they would be missed.
 1. **Nothing has run on a device or simulator.** Every view compiles and the state layer is
    tested, but no screen has been seen. This is the first thing to do on a machine with Xcode:
    `xcodegen generate --spec App/project.yml`, then run.
-2. **Scenarios** (Cap Hell, Expansion Franchise, Aging Legend) are specified in
-   `02-GAME-DESIGN.md` §12 but not implemented.
-3. **Records book and Hall of Fame** are specified but not built. Career statistics accumulate
-   correctly, so the data they need is already there.
-4. **Re-sign negotiation UI.** The engine re-signs for AI teams and the free-agency offer sheet
+2. **Re-sign negotiation UI.** The engine re-signs for AI teams and the free-agency offer sheet
    exists; the user's own expiring contracts are visible but not yet negotiable in the UI.
-5. **Draft-day UI.** Scouting and the board are built; the user's picks are currently made by
+3. **Draft-day UI.** Scouting and the board are built; the user's picks are currently made by
    the same AI selection the other 31 teams use when the draft stage runs.
-6. **Practice squad elevation** and in-season street free-agent signing are engine-supported but
+4. **Practice squad elevation** and in-season street free-agent signing are engine-supported but
    not surfaced.
-7. **Tutorial and trophy room** are not built.
-8. **On the Field** is a field view over the resolved game rather than the full arcade control
+5. **Tutorial and trophy room** are not built.
+6. **On the Field** is a field view over the resolved game rather than the full arcade control
    scheme in `06-PLAYED-GAME-MODE.md`. Drag-to-aim passing, carrier control and the kick meter
    are the remaining work, and the engine already exposes what they need.
 

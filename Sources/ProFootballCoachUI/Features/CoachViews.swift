@@ -28,6 +28,19 @@ struct CoachView: View {
                         NavigationLink { HistoryView() } label: {
                             row("Franchise History", "clock.arrow.circlepath", .orange, badge: nil)
                         }
+                        Divider().padding(.leading, 52)
+                        NavigationLink { RecordsView() } label: {
+                            row("Record Book", "list.number", .indigo, badge: nil)
+                        }
+                        Divider().padding(.leading, 52)
+                        NavigationLink { HallOfFameView() } label: {
+                            row(
+                                "Hall of Fame",
+                                "star.circle.fill",
+                                .yellow,
+                                badge: league.hallOfFame.isEmpty ? nil : "\(league.hallOfFame.count)"
+                            )
+                        }
                     }
                     .card()
 

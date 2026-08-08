@@ -264,3 +264,127 @@ func runDynastyTests() {
         }
     }
 }
+
+func runLegacyTests() {
+    suite("Records and Hall of Fame") {
+        test("the record book is seeded so year one has marks to chase") {
+            let league = LeagueFactory.makeDefaultLeague(seed: 300, userTeamIndex: 0, coach: .stub())
+            let records = RecordsBook.current(in: league)
+            expectEqual(records.count, LeagueRecord.Kind.allCases.count)
+            expect(records.allSatisfy { $0.value > 0 }, "a record has no value")
+            expect(records.allSatisfy { !$0.holderName.isEmpty }, "a record has no holder")
+        }
+
+        test("a monstrous season takes over the record") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 301, userTeamIndex: 0, coach: .stub())
+            let seeded = RecordsBook.current(in: league)
+                .first { $0.kind == .passingYardsSeason }!
+
+            // Fabricate a season nobody could match.
+            let quarterback = league.teams[0].starters(at: .qb)[0]
+            var line = StatLine()
+            line.passingYards = seeded.value + 1_000
+            var stats = TeamGameStats()
+            stats.points = 30
+            league.results.append(
+                GameRecord(
+                    scheduledGameID: UUID(), week: 1, year: league.year, kind: .conference,
+                    homeTeamID: league.teams[0].id, awayTeamID: league.teams[1].id,
+                    homeStats: stats, awayStats: TeamGameStats(),
+                    playerStats: [quarterback.id: line]
+                )
+            )
+
+            let updated = RecordsBook.current(in: league).first { $0.kind == .passingYardsSeason }!
+            expectEqual(updated.holderName, quarterback.name, "the record should change hands")
+            expectEqual(updated.value, seeded.value + 1_000)
+        }
+
+        test("only genuinely great careers are enshrined") {
+            let league = LeagueFactory.makeDefaultLeague(seed: 302, userTeamIndex: 0, coach: .stub())
+            let journeyman = TestFixtures.player(position: .rb, rating: 68, age: 33)
+            var modest = StatLine()
+            modest.rushingYards = 3_400
+            expect(
+                HallOfFame.score(player: journeyman, career: modest) < HallOfFame.inductionThreshold,
+                "a journeyman should not reach the Hall of Fame"
+            )
+
+            let great = TestFixtures.player(position: .qb, rating: 92, age: 39)
+            var monumental = StatLine()
+            monumental.passingYards = 62_000
+            monumental.passingTouchdowns = 430
+            expect(
+                HallOfFame.score(player: great, career: monumental, championships: 2)
+                    >= HallOfFame.inductionThreshold,
+                "an all-time career should be enshrined"
+            )
+            expect(!HallOfFame.summary(for: great, career: monumental).isEmpty)
+            _ = league
+        }
+    }
+
+    suite("Scenarios") {
+        test("every scenario applies cleanly and leaves a legal league") {
+            for scenario in Scenario.all {
+                var league = LeagueFactory.makeDefaultLeague(
+                    seed: 310, userTeamIndex: 6, coach: .stub()
+                )
+                scenario.apply(&league)
+
+                guard let team = league.userTeam else {
+                    expect(false, "\(scenario.name) lost the user team")
+                    continue
+                }
+                for position in Position.allCases {
+                    expect(
+                        team.activeRoster.filter { $0.position == position }.count
+                            >= position.minimumRosterCount,
+                        "\(scenario.name) left \(position.abbreviation) short"
+                    )
+                }
+                expect(
+                    team.roster.allSatisfy { $0.contract != nil },
+                    "\(scenario.name) left a player unsigned"
+                )
+                expect(
+                    !league.news.isEmpty,
+                    "\(scenario.name) should explain itself in the feed"
+                )
+            }
+        }
+
+        test("cap hell really is a cap problem") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 311, userTeamIndex: 3, coach: .stub())
+            let before = CapEngine.capSpace(for: league.userTeam!, in: league)
+            Scenario.capHell.apply(&league)
+            let after = CapEngine.capSpace(for: league.userTeam!, in: league)
+            expect(after < before, "cap hell should cost cap space")
+            expect(league.deadMoney[league.userTeamID] ?? 0 > 0, "cap hell should carry dead money")
+        }
+
+        test("an expansion roster is young and cheap") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 312, userTeamIndex: 5, coach: .stub())
+            Scenario.expansion.apply(&league)
+            let team = league.userTeam!
+            let averageAge = Double(team.roster.reduce(0) { $0 + $1.age }) / Double(team.roster.count)
+            expect(averageAge < 26, "expansion roster average age \(averageAge)")
+            expect(
+                CapEngine.capSpace(for: team, in: league) > 0,
+                "an expansion team should have cap room"
+            )
+        }
+
+        test("the aging legend is a genuine star with a short window") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 313, userTeamIndex: 8, coach: .stub())
+            Scenario.agingLegend.apply(&league)
+            let quarterback = league.userTeam!.starters(at: .qb)[0]
+            expect(quarterback.overall >= 90, "the legend should be elite: \(quarterback.overall)")
+            expect(quarterback.age >= 37, "the legend should be old: \(quarterback.age)")
+            expect(
+                (quarterback.contract?.yearsRemaining ?? 0) <= 2,
+                "the window should be short"
+            )
+        }
+    }
+}

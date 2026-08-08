@@ -56,6 +56,7 @@ struct MainMenuView: View {
     @Environment(AppState.self) private var app
     @State private var showingNewGame = false
     @State private var showingLoad = false
+    @State private var showingScenarios = false
 
     var body: some View {
         NavigationStack {
@@ -82,6 +83,15 @@ struct MainMenuView: View {
                                 : "\(app.saves.count) saved franchise\(app.saves.count == 1 ? "" : "s")"
                         ) { showingLoad = true }
                         .disabled(app.saves.isEmpty)
+
+                        Divider().padding(.leading, 60)
+
+                        menuRow(
+                            icon: "flag.checkered",
+                            tint: .orange,
+                            title: "Scenarios",
+                            subtitle: "Preset challenges with a single objective"
+                        ) { showingScenarios = true }
                     }
                     .card()
 
@@ -96,6 +106,7 @@ struct MainMenuView: View {
             .navigationTitle("")
             .sheet(isPresented: $showingNewGame) { NewFranchiseWizard() }
             .sheet(isPresented: $showingLoad) { LoadFranchiseView() }
+            .sheet(isPresented: $showingScenarios) { ScenarioPickerView() }
         }
     }
 
