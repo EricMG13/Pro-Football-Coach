@@ -128,5 +128,17 @@ func runPersistenceTests() {
             }
             expect(refused, "a future-version save should not be decoded blindly")
         }
+
+        test("a file with no version field is unreadable rather than a crash") {
+            let garbage = #"{"teams":[]}"#.data(using: .utf8)!
+            do {
+                _ = try SaveMigrator.migrate(data: garbage, decoder: JSONDecoder.stable())
+                expect(false, "a versionless file must throw")
+            } catch SaveMigrator.MigrationError.unreadable {
+                expect(true)
+            } catch {
+                expect(false, "wrong error: \(error)")
+            }
+        }
     }
 }

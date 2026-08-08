@@ -148,15 +148,23 @@ public enum SaveMigrator {
         case futureVersion(Int)
     }
 
-    /// Every format change bumps `League.currentVersion` and adds a step here.
-    public static func migrate(data: Data, decoder: JSONDecoder) throws -> League {
-        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let version = object["version"] as? Int
-        else { throw MigrationError.unreadable }
+    /// Just the version, decoded without materialising the whole franchise.
+    private struct VersionProbe: Decodable { let version: Int }
 
-        guard version <= League.currentVersion else { throw MigrationError.futureVersion(version) }
+    /// Every format change bumps `League.currentVersion` and adds a step here.
+    ///
+    /// The version is read with a one-field probe rather than `JSONSerialization`, which
+    /// previously built a full dictionary of a multi-megabyte save purely to read one integer —
+    /// so every open parsed the file twice.
+    public static func migrate(data: Data, decoder: JSONDecoder) throws -> League {
+        guard let probe = try? decoder.decode(VersionProbe.self, from: data) else {
+            throw MigrationError.unreadable
+        }
+        guard probe.version <= League.currentVersion else {
+            throw MigrationError.futureVersion(probe.version)
+        }
         // Version 1 is the current shape, so there is nothing to upgrade yet. Future versions
-        // rewrite `object` step by step here before it is re-serialised and decoded.
+        // rewrite the payload step by step here before it is decoded.
         return try decoder.decode(League.self, from: data)
     }
 }
