@@ -27,7 +27,7 @@ let package = Package(
         // swift-testing both require full Xcode, so the suite runs as an executable.
         .executableTarget(
             name: "SimTests",
-            dependencies: ["FootballSimCore"],
+            dependencies: ["FootballSimCore", "ProFootballCoachUI"],
             path: "Tests/SimTests"
         ),
     ],

@@ -1,0 +1,545 @@
+import SwiftUI
+import FootballSimCore
+
+/// Team overview: identity, ratings, and the way into the roster.
+struct TeamView: View {
+    @Environment(AppState.self) private var app
+    @Environment(\.teamTheme) private var theme
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: Layout.medium) {
+                if let team = app.userTeam, let league = app.league {
+                    header(team, league: league)
+                    ratings(team)
+
+                    VStack(spacing: 0) {
+                        NavigationLink { DepthChartView() } label: {
+                            navRow("Depth Chart & Roster", "person.3.sequence.fill", .blue)
+                        }
+                        Divider().padding(.leading, 52)
+                        NavigationLink { InjuryReportView() } label: {
+                            navRow(
+                                team.injuredPlayers.isEmpty
+                                    ? "Injury Report — everyone is healthy"
+                                    : "Injury Report — \(team.injuredPlayers.count) out",
+                                "cross.case.fill",
+                                .red
+                            )
+                        }
+                        Divider().padding(.leading, 52)
+                        NavigationLink { StatsView() } label: {
+                            navRow("League Statistics", "chart.bar.fill", .green)
+                        }
+                        Divider().padding(.leading, 52)
+                        NavigationLink { StaffView() } label: {
+                            navRow("Coaching Staff", "person.2.badge.gearshape.fill", .purple)
+                        }
+                    }
+                    .card()
+                }
+            }
+            .padding(Layout.medium)
+        }
+        .background(Color.pageBackground)
+        .navigationTitle("Team")
+    }
+
+    private func header(_ team: Team, league: League) -> some View {
+        VStack(spacing: Layout.small) {
+            TeamBadge(team: team, size: 68)
+            Text(team.fullName)
+                .font(.system(.title2, design: .rounded, weight: .bold))
+                .foregroundStyle(.white)
+            Text("\(team.conference.displayName) · \(team.division.displayName)")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.8))
+            HStack(spacing: Layout.small) {
+                Chip(league.record(for: team.id).description, color: .white, filled: false)
+                Chip("Reputation \(team.reputation)", color: .white)
+                Chip(team.stadiumName, color: .white)
+            }
+            .foregroundStyle(.white)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(Layout.large)
+        .background(theme.gradient)
+        .clipShape(RoundedRectangle(cornerRadius: Layout.cardRadius, style: .continuous))
+    }
+
+    private func ratings(_ team: Team) -> some View {
+        VStack(spacing: Layout.small) {
+            ratingBar("Offense", team.offenseRating)
+            ratingBar("Defense", team.defenseRating)
+            ratingBar("Special Teams", team.specialTeamsRating)
+            Divider()
+            HStack {
+                Text("Schemes").foregroundStyle(.secondary)
+                Spacer()
+                Chip(team.offensiveScheme.displayName, color: .orange)
+                Chip(team.defensiveScheme.displayName, color: .teal)
+            }
+            .font(.subheadline)
+        }
+        .card()
+    }
+
+    private func ratingBar(_ label: String, _ value: Double) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(label).font(.subheadline)
+                Spacer()
+                Text(Format.rating(value))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RatingPalette.color(for: value))
+            }
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.secondary.opacity(0.15))
+                    Capsule()
+                        .fill(RatingPalette.color(for: value))
+                        .frame(width: proxy.size.width * min(1, max(0, (value - 40) / 59)))
+                }
+            }
+            .frame(height: 6)
+        }
+    }
+
+    private func navRow(_ title: String, _ icon: String, _ tint: Color) -> some View {
+        HStack(spacing: Layout.medium) {
+            Image(systemName: icon).foregroundStyle(tint).frame(width: 24)
+            Text(title).font(.subheadline)
+            Spacer()
+            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+        }
+        .padding(.vertical, Layout.small)
+        .contentShape(Rectangle())
+    }
+}
+
+/// Roster by position, in depth order, reorderable.
+struct DepthChartView: View {
+    @Environment(AppState.self) private var app
+    @State private var showingPracticeSquad = false
+
+    var body: some View {
+        List {
+            if let team = app.userTeam {
+                Section {
+                    HStack {
+                        Text("Active roster")
+                        Spacer()
+                        Text("\(team.activeRoster.count)/\(LeagueRules.activeRosterSize)")
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Text("Practice squad")
+                        Spacer()
+                        Text("\(team.practiceSquad.count)/\(LeagueRules.practiceSquadSize)")
+                            .foregroundStyle(.secondary)
+                    }
+                    Toggle("Show practice squad", isOn: $showingPracticeSquad)
+                    Button("Auto-Sort by Rating") { app.autoSortDepthChart() }
+                }
+
+                ForEach(Position.displayOrder, id: \.self) { position in
+                    let players = showingPracticeSquad
+                        ? team.roster.filter { $0.position == position && $0.isOnPracticeSquad }
+                        : team.depthOrder(for: position, healthyOnly: false)
+                    if !players.isEmpty {
+                        Section {
+                            ForEach(Array(players.enumerated()), id: \.element.id) { index, player in
+                                NavigationLink {
+                                    PlayerCardView(player: player)
+                                } label: {
+                                    PlayerRow(
+                                        player: player,
+                                        depthIndex: showingPracticeSquad ? nil : index,
+                                        starterCount: position.starterCount
+                                    )
+                                }
+                            }
+                            .onMove { source, destination in
+                                guard !showingPracticeSquad else { return }
+                                app.moveDepthChart(position: position, from: source, to: destination)
+                            }
+                        } header: {
+                            HStack {
+                                Text("\(position.displayName)")
+                                Spacer()
+                                Text("\(players.count)")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("Depth Chart")
+        // EditButton is iOS-only; the package also builds for macOS so the whole UI stays
+        // compile-checked without Xcode.
+        #if os(iOS)
+        .toolbar { EditButton() }
+        #endif
+    }
+}
+
+struct PlayerRow: View {
+    let player: Player
+    var depthIndex: Int?
+    var starterCount: Int = 1
+
+    private var roleChip: (String, Color)? {
+        guard let depthIndex else { return nil }
+        if depthIndex < starterCount { return ("STARTER", .green) }
+        if depthIndex < starterCount * 2 { return ("BACKUP", .orange) }
+        return nil
+    }
+
+    var body: some View {
+        HStack(spacing: Layout.small) {
+            Text("\(player.overall)")
+                .font(.subheadline.monospacedDigit().weight(.bold))
+                .foregroundStyle(RatingPalette.color(for: player.overall))
+                .frame(width: 32)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: Layout.tight) {
+                    Text(player.name).font(.subheadline)
+                    if !player.isHealthy {
+                        Image(systemName: "cross.case.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.red)
+                    }
+                }
+                HStack(spacing: Layout.tight) {
+                    Text("\(player.position.abbreviation) · \(player.age)y · \(player.yearsPro)yr pro")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            if let roleChip {
+                Chip(roleChip.0, color: roleChip.1)
+            }
+            if let contract = player.contract {
+                Text(Format.money(contract.currentCapHit))
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+/// One player, everything about him.
+struct PlayerCardView: View {
+    @Environment(AppState.self) private var app
+    let player: Player
+    @State private var confirmingCut = false
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: Layout.medium) {
+                identity
+                basics
+                if let contract = player.contract { contractCard(contract) }
+                statsCard
+                attributes
+                if !player.traits.isEmpty { traitsCard }
+                if isOnUserTeam { actions }
+            }
+            .padding(Layout.medium)
+        }
+        .background(Color.pageBackground)
+        .navigationTitle(player.name)
+        .alert("Release \(player.name)?", isPresented: $confirmingCut) {
+            Button("Release", role: .destructive) { app.cut(playerID: player.id) }
+            Button("Keep", role: .cancel) {}
+        } message: {
+            Text(cutMessage)
+        }
+    }
+
+    private var isOnUserTeam: Bool {
+        app.userTeam?.player(id: player.id) != nil
+    }
+
+    private var cutMessage: String {
+        guard let contract = player.contract else { return "He is not under contract." }
+        let dead = contract.deadMoneyIfCutNow()
+        let saving = contract.capSavingsIfCutNow()
+        return dead > 0
+            ? "This leaves \(Format.money(dead)) of dead money and \(saving >= 0 ? "frees" : "costs") \(Format.money(abs(saving))) of cap space."
+            : "This frees \(Format.money(saving)) of cap space."
+    }
+
+    private var identity: some View {
+        VStack(spacing: Layout.tight) {
+            Text("\(player.overall)")
+                .font(.system(size: 44, weight: .heavy, design: .rounded))
+                .foregroundStyle(RatingPalette.color(for: player.overall))
+            Text(player.name).font(.title3.weight(.semibold))
+            HStack(spacing: Layout.tight) {
+                Chip(player.position.abbreviation, color: .blue, filled: true)
+                Chip("#\(player.jersey)", color: .secondary)
+                Chip("Potential \(player.potential.rawValue)", color: potentialColor)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .card()
+    }
+
+    private var potentialColor: Color {
+        switch player.potential {
+        case .aPlus, .a: .purple
+        case .bPlus, .b: .blue
+        case .cPlus, .c: .green
+        case .d: .orange
+        case .f: .red
+        }
+    }
+
+    private var basics: some View {
+        VStack(spacing: Layout.tight) {
+            SummaryRow(label: "Age", value: "\(player.age)")
+            SummaryRow(label: "Years pro", value: "\(player.yearsPro)")
+            SummaryRow(label: "Height", value: Format.height(player.heightInches))
+            SummaryRow(label: "Weight", value: "\(player.weightPounds) lbs")
+            SummaryRow(label: "College", value: player.college)
+            SummaryRow(label: "Drafted", value: player.draftOrigin?.label ?? "Undrafted")
+            SummaryRow(label: "Morale", value: "\(player.morale)")
+            if !player.isHealthy {
+                SummaryRow(label: "Injury", value: "\(player.injuryWeeksRemaining) week(s) out")
+            }
+        }
+        .card()
+    }
+
+    private func contractCard(_ contract: Contract) -> some View {
+        VStack(spacing: Layout.tight) {
+            SectionHeader("Contract")
+            SummaryRow(label: "Years left", value: "\(contract.yearsRemaining) of \(contract.years)")
+            SummaryRow(label: "Cap hit", value: Format.money(contract.currentCapHit))
+            SummaryRow(label: "Average per year", value: Format.money(contract.averagePerYear))
+            SummaryRow(label: "Signing bonus", value: Format.money(contract.signingBonus))
+            SummaryRow(label: "Guaranteed years", value: "\(contract.guaranteedYears)")
+            SummaryRow(label: "Dead money if cut", value: Format.money(contract.deadMoneyIfCutNow()))
+        }
+        .card()
+    }
+
+    private var statsCard: some View {
+        VStack(spacing: Layout.tight) {
+            SectionHeader("This Season")
+            if let league = app.league {
+                let line = league.seasonStats(for: player.id)
+                if line.isEmpty {
+                    Text("No statistics yet.").font(.caption).foregroundStyle(.secondary)
+                } else {
+                    ForEach(statRows(line), id: \.0) { row in
+                        SummaryRow(label: row.0, value: row.1)
+                    }
+                }
+            }
+        }
+        .card()
+    }
+
+    /// Only the lines that matter for this position, so a lineman's card isn't full of zeros.
+    private func statRows(_ line: StatLine) -> [(String, String)] {
+        var rows: [(String, String)] = [("Games", "\(line.gamesPlayed)")]
+        switch player.position {
+        case .qb:
+            rows += [
+                ("Passing yards", "\(line.passingYards)"),
+                ("Touchdowns", "\(line.passingTouchdowns)"),
+                ("Interceptions", "\(line.interceptionsThrown)"),
+                ("Completion %", Format.percent(line.completionPercentage)),
+                ("Passer rating", String(format: "%.1f", line.passerRating)),
+            ]
+        case .rb:
+            rows += [
+                ("Rushing yards", "\(line.rushingYards)"),
+                ("Carries", "\(line.carries)"),
+                ("Yards per carry", String(format: "%.1f", line.yardsPerCarry)),
+                ("Rushing TDs", "\(line.rushingTouchdowns)"),
+                ("Receptions", "\(line.receptions)"),
+            ]
+        case .wr, .te:
+            rows += [
+                ("Receptions", "\(line.receptions)"),
+                ("Receiving yards", "\(line.receivingYards)"),
+                ("Yards per catch", String(format: "%.1f", line.yardsPerReception)),
+                ("Touchdowns", "\(line.receivingTouchdowns)"),
+                ("Targets", "\(line.targets)"),
+            ]
+        case .dl, .lb, .cb, .s:
+            rows += [
+                ("Tackles", "\(line.tackles)"),
+                ("Sacks", "\(line.sacks)"),
+                ("Interceptions", "\(line.interceptions)"),
+                ("Passes defended", "\(line.passesDefended)"),
+                ("Forced fumbles", "\(line.forcedFumbles)"),
+            ]
+        case .k:
+            rows += [
+                ("Field goals", "\(line.fieldGoalsMade)/\(line.fieldGoalsAttempted)"),
+                ("Field goal %", Format.percent(line.fieldGoalPercentage)),
+                ("Extra points", "\(line.extraPointsMade)/\(line.extraPointsAttempted)"),
+                ("Longest", "\(line.longestFieldGoal)"),
+            ]
+        case .p:
+            rows += [
+                ("Punts", "\(line.punts)"),
+                ("Punt yards", "\(line.puntYards)"),
+                ("Average", String(format: "%.1f", line.averagePunt)),
+            ]
+        case .ol:
+            break
+        }
+        return rows
+    }
+
+    private var attributes: some View {
+        VStack(alignment: .leading, spacing: Layout.small) {
+            SectionHeader("Attributes")
+            let columns = [GridItem(.flexible()), GridItem(.flexible())]
+            LazyVGrid(columns: columns, spacing: Layout.small) {
+                ForEach(player.position.attributes, id: \.self) { attribute in
+                    let value = player.ratings[attribute]
+                    VStack(spacing: 2) {
+                        Text("\(value)")
+                            .font(.headline.monospacedDigit())
+                            .foregroundStyle(RatingPalette.color(for: value))
+                        Text(attribute.displayName)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, Layout.small)
+                    .background(
+                        RoundedRectangle(cornerRadius: Layout.chipRadius)
+                            .fill(Color.secondary.opacity(0.08))
+                    )
+                }
+            }
+        }
+        .card()
+    }
+
+    private var traitsCard: some View {
+        VStack(alignment: .leading, spacing: Layout.small) {
+            SectionHeader("Traits")
+            ForEach(player.traits, id: \.self) { trait in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(trait.displayName).font(.subheadline.weight(.medium))
+                    Text(trait.detail).font(.caption).foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .card()
+    }
+
+    private var actions: some View {
+        Button(role: .destructive) {
+            confirmingCut = true
+        } label: {
+            Label("Release Player", systemImage: "person.badge.minus")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+    }
+}
+
+struct InjuryReportView: View {
+    @Environment(AppState.self) private var app
+
+    var body: some View {
+        List {
+            if let injured = app.userTeam?.injuredPlayers, !injured.isEmpty {
+                ForEach(injured.sorted { $0.injuryWeeksRemaining > $1.injuryWeeksRemaining }) { player in
+                    NavigationLink { PlayerCardView(player: player) } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(player.name).font(.subheadline)
+                                Text(player.position.displayName)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Chip("\(player.injuryWeeksRemaining) wk", color: .red, filled: true)
+                        }
+                    }
+                }
+            } else {
+                EmptyStateView(
+                    icon: "checkmark.seal.fill",
+                    title: "Everyone is healthy",
+                    message: "No players are currently on the injury report."
+                )
+            }
+        }
+        .navigationTitle("Injury Report")
+    }
+}
+
+struct StaffView: View {
+    @Environment(AppState.self) private var app
+
+    var body: some View {
+        List {
+            if let team = app.userTeam {
+                Section {
+                    HStack {
+                        Text("Staff budget")
+                        Spacer()
+                        Text(Format.money(team.staffBudget)).foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Text("Committed")
+                        Spacer()
+                        Text(Format.money(team.staff.reduce(0) { $0 + $1.salary }))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                ForEach(StaffRole.allCases, id: \.self) { role in
+                    Section(role.displayName) {
+                        if let member = team.staff(role) {
+                            VStack(alignment: .leading, spacing: Layout.tight) {
+                                HStack {
+                                    Text(member.name).font(.headline)
+                                    Spacer()
+                                    Text("\(member.rating)")
+                                        .font(.headline.monospacedDigit())
+                                        .foregroundStyle(RatingPalette.color(for: member.rating))
+                                }
+                                HStack(spacing: Layout.tight) {
+                                    if member.matchesScheme(
+                                        offense: team.offensiveScheme,
+                                        defense: team.defensiveScheme
+                                    ) {
+                                        Chip("Scheme fit", color: .green)
+                                    } else {
+                                        Chip("Scheme mismatch", color: .orange)
+                                    }
+                                    if let trait = member.trait { Chip(trait.displayName, color: .purple) }
+                                    Chip("\(member.contractYears)yr", color: .secondary)
+                                }
+                                Text("\(Format.money(member.salary)) per year · age \(member.age)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.vertical, 2)
+                        } else {
+                            Text("Vacancy").foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("Coaching Staff")
+    }
+}
