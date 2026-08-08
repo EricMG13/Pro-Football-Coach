@@ -1,7 +1,8 @@
 # Build Status
 
-Last updated at the end of the initial build session. This is the honest picture of what
-exists, what is verified, and what is still on the list.
+Every phase gate in `05-IMPLEMENTATION-PLAN.md` and every line of the definition of done in
+`00-EXECUTIVE-PLAN.md` is met. This is the honest picture of what exists, what is verified, and
+the one thing left that no amount of tooling can settle.
 
 ## How this was verified
 
