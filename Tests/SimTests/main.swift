@@ -17,6 +17,7 @@ runCoachTenureTests()
 runDeterminismUnderOffseasonTests()
 runLegacyTests()
 runPersistenceTests()
+runSaveQueueTests()
 runDesignSystemTests()
 runTeamTintTests()
 
