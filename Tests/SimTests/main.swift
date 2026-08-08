@@ -3,5 +3,6 @@ runSeededRandomTests()
 runModelTests()
 runGenerationTests()
 runGameSimulatorTests()
+runSeasonTests()
 
 TestKit.finish()
