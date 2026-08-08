@@ -30,7 +30,7 @@ If `xcodebuild` reports no simulator destinations, the iOS platform component is
 swift build && swift run -c release SimTests
 ```
 
-**171 tests, ~8,970 assertions, all passing.** Runtime about 100 seconds, dominated by the
+**193 tests, ~12,900 assertions, all passing.** Runtime about 100 seconds, dominated by the
 ten-season soak.
 
 ## Complete and tested
@@ -52,6 +52,7 @@ ten-season soak.
 | Scenarios (Cap Hell, Expansion, Aging Legend) | Done, each verified to leave a legal league |
 | Record book and Hall of Fame | Done: seeded marks, live record chasing, enshrinement on retirement |
 | Draft day, played pick by pick | Done: AI picks resolve automatically, the board stops when you are on the clock |
+| On the Field: call plays, drag to aim, throw under pressure | Done and played on device; the same engine resolves it as a simmed game |
 | Re-signing your own expiring players | Done: asking price, acceptance odds and a three-round negotiation |
 | Save / load, backup recovery, version refusal | Done, and forward-compatible: unknown-field defaults mean an older save still opens |
 | Accessibility of rating colours | Done: every tier verified at 4.5:1 on card, page and chip tint in both themes, with the tier spoken to VoiceOver |
@@ -64,9 +65,9 @@ Ordered by how much they would be missed.
 1. **Practice squad elevation** and in-season street free-agent signing are engine-supported but
    not surfaced.
 2. **Tutorial and trophy room** are not built.
-3. **On the Field** is a field view over the resolved game rather than the full arcade control
-   scheme in `06-PLAYED-GAME-MODE.md`. Drag-to-aim passing, carrier control and the kick meter
-   are the remaining work, and the engine already exposes what they need.
+3. **On the Field** covers play calling, drag-to-aim passing and the pass rush. Carrier control
+   after the catch and the two-tap kick meter are still to come; `ArcadeInput` already scores
+   both, so they need the gestures rather than any new engine work.
 
 ## Deliberate design decisions worth knowing
 

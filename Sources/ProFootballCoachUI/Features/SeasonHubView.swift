@@ -52,7 +52,10 @@ struct SeasonHubView: View {
         }
         .fullScreenCoverCompat(item: $playMode) { mode in
             if let game = app.nextGame {
-                LiveGameView(game: game, arcade: mode == .onField)
+                switch mode {
+                case .onField: ArcadeFieldView(game: game)
+                case .callPlays: LiveGameView(game: game, arcade: false)
+                }
             }
         }
     }
