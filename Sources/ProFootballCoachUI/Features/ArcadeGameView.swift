@@ -19,8 +19,6 @@ struct ArcadeGameView: View {
     @Binding var revealedPlays: Int
     let onFinish: () -> Void
 
-    @State private var autoPlaying = false
-
     private var currentPlay: PlayEvent? {
         guard revealedPlays > 0, revealedPlays <= record.plays.count else {
             return record.plays.first

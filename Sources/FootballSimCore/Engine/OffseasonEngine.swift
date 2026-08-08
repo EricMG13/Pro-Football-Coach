@@ -480,8 +480,8 @@ public enum OffseasonEngine {
         league.coach.age += 1
         league.coach.contractYearsElapsed += 1
         CapEngine.advanceSalaryCap(in: &league)
-        // Play-by-play from finished seasons is dropped; the box scores stay.
-        league.results = league.results.map { $0.compacted() }
+        // The finished season's per-player totals were folded into `history` during the season
+        // review, so the game records themselves can go — that is what keeps saves small.
         league.results = []
         league.phase = .preseason
     }

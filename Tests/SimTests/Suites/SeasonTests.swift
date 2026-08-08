@@ -166,6 +166,49 @@ func runSeasonTests() {
             )
         }
 
+        test("every playoff format resolves to a single champion") {
+            for format in PlayoffFormat.allCases {
+                var settings = LeagueSettings()
+                settings.playoffFormat = format
+                var league = LeagueFactory.makeDefaultLeague(
+                    seed: 452, userTeamIndex: 0, coach: .stub(), settings: settings
+                )
+                SeasonEngine.startSeason(&league)
+                SeasonEngine.simulateToOffseason(&league)
+
+                expect(
+                    league.phase.isOffseason,
+                    "\(format.displayName) never reached the offseason"
+                )
+                expect(
+                    SeasonEngine.champion(of: league) != nil,
+                    "\(format.displayName) crowned no champion"
+                )
+
+                // Every round must halve the field cleanly: one championship game, and each
+                // conference reduced to exactly one finalist.
+                let finals = league.results.filter { $0.kind == .championship }
+                expectEqual(finals.count, 1, "\(format.displayName) championship games")
+
+                let played = league.results.filter { $0.kind.isPlayoff }
+                expect(
+                    played.allSatisfy { !$0.isTie },
+                    "\(format.displayName) produced a tied playoff game"
+                )
+
+                // Nobody should appear in a round after losing.
+                var eliminated = Set<UUID>()
+                for record in played.sorted(by: { $0.week < $1.week }) {
+                    expect(
+                        !eliminated.contains(record.homeTeamID)
+                            && !eliminated.contains(record.awayTeamID),
+                        "\(format.displayName): an eliminated team played again"
+                    )
+                    if let loser = record.loserID { eliminated.insert(loser) }
+                }
+            }
+        }
+
         test("advancing a week is fast enough to feel instant") {
             var league = LeagueFactory.makeDefaultLeague(seed: 46, userTeamIndex: 0, coach: .stub())
             SeasonEngine.startSeason(&league)
