@@ -54,6 +54,8 @@ ten-season soak.
 | Draft day, played pick by pick | Done: AI picks resolve automatically, the board stops when you are on the clock |
 | On the Field: call plays, drag to aim, throw under pressure, fourth-down kicks, carrier decision | Play calling, aiming and the kick meter played on device — a 51-yard field goal made through the meter. The carrier window resolves correctly but its UI has not been seen (see gap 3) |
 | Re-signing your own expiring players | Done: asking price, acceptance odds and a three-round negotiation |
+| First-run tutorial | Done: five cards on the job, shown once when a franchise opens and reopenable from the Coach tab |
+| Trophy room | Done: titles, conference finals and your players' awards, with a career line that counts the season in progress |
 | Street free agency, in season | Done: the free-agent board is open all year, with a practice-squad option on the offer sheet and a refusal that names the door that shut — roster full, squad full, or the amount over the cap |
 | Practice squad: call up, send down | Done: `CapEngine.elevate` / `demote` with a positional floor, seven tests, swipe actions on the depth chart. Both refusal paths seen on device |
 | Save / load, backup recovery, version refusal | Done, and forward-compatible: unknown-field defaults mean an older save still opens |
@@ -64,8 +66,7 @@ ten-season soak.
 
 Ordered by how much they would be missed.
 
-1. **Tutorial and trophy room** are not built.
-2. **The arcade's timed windows have not been hand-played.** The pass rush, the carrier decision
+1. **The arcade's timed windows have not been hand-played.** The pass rush, the carrier decision
    and the kick meter all open windows of a few seconds. Driving the simulator through tooling
    has a round trip far longer than any of them, so while the state machine is verified — plays
    do enter and leave those phases and resolve correctly — nobody has yet seen the carrier

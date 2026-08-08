@@ -159,3 +159,163 @@ struct HallOfFameView: View {
         .navigationTitle("Hall of Fame")
     }
 }
+
+/// Everything the coach has actually won, in one cabinet.
+///
+/// The record book and the Hall of Fame are league-wide; this screen is deliberately selfish —
+/// only silverware this coach and this team earned appears here, because that is the thing a
+/// franchise player wants to look at after a title.
+struct TrophyRoomView: View {
+    @Environment(AppState.self) private var app
+    @Environment(\.teamTheme) private var theme
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: Layout.medium) {
+                if let league = app.league {
+                    career(league)
+                    if titles.isEmpty && conferenceTitles.isEmpty && awards.isEmpty {
+                        EmptyStateView(
+                            icon: "trophy",
+                            title: "The case is empty",
+                            message: "Win a title, take a conference, or coach a player to an "
+                                + "award and it will be waiting here."
+                        )
+                        .card()
+                    } else {
+                        if !titles.isEmpty { trophyCase }
+                        if !conferenceTitles.isEmpty { conferenceCase }
+                        if !awards.isEmpty { awardCase }
+                    }
+                }
+            }
+            .padding(Layout.medium)
+        }
+        .background(Color.pageBackground)
+        .navigationTitle("Trophy Room")
+    }
+
+    private func career(_ league: League) -> some View {
+        VStack(spacing: Layout.small) {
+            Image(systemName: titles.isEmpty ? "shield" : "trophy.fill")
+                .font(.system(size: 44))
+                .foregroundStyle(titles.isEmpty ? .white.opacity(0.7) : .yellow)
+            Text(league.coach.name)
+                .font(.system(.title2, design: .rounded, weight: .bold))
+                .foregroundStyle(.white)
+            Text(careerRecord(league))
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.85))
+            HStack(spacing: Layout.small) {
+                Chip("\(league.coach.championships) titles", color: .white)
+                Chip("\(league.coach.playoffAppearances) playoffs", color: .white)
+                Chip(
+                    league.coach.teamsCoached == 1 ? "1 team" : "\(league.coach.teamsCoached) teams",
+                    color: .white,
+                    filled: false
+                )
+            }
+            .foregroundStyle(.white)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(Layout.large)
+        .background(theme.gradient)
+        .clipShape(RoundedRectangle(cornerRadius: Layout.cardRadius, style: .continuous))
+    }
+
+    private var trophyCase: some View {
+        VStack(alignment: .leading, spacing: Layout.small) {
+            SectionHeader("Championships")
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: Layout.small)],
+                      spacing: Layout.small) {
+                ForEach(titles, id: \.self) { year in
+                    VStack(spacing: 4) {
+                        Image(systemName: "trophy.fill")
+                            .font(.title)
+                            .foregroundStyle(.yellow)
+                        Text(String(year)).font(.subheadline.weight(.semibold))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, Layout.small)
+                    .background(Color.secondary.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
+        }
+        .card()
+    }
+
+    private var conferenceCase: some View {
+        VStack(alignment: .leading, spacing: Layout.small) {
+            SectionHeader("Conference Titles")
+            ForEach(conferenceTitles, id: \.self) { year in
+                HStack {
+                    Image(systemName: "flag.fill").foregroundStyle(.orange)
+                    Text(String(year)).font(.subheadline)
+                    Spacer()
+                    Text(titles.contains(year) ? "Won the final" : "Lost the final")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .card()
+    }
+
+    private var awardCase: some View {
+        VStack(alignment: .leading, spacing: Layout.small) {
+            SectionHeader("Your Players' Awards")
+            ForEach(Array(awards.enumerated()), id: \.offset) { _, award in
+                HStack {
+                    Image(systemName: "rosette").foregroundStyle(.purple)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(award.playerName).font(.subheadline)
+                        Text(award.kind.displayName).font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Text(String(award.year)).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                }
+            }
+        }
+        .card()
+    }
+
+    /// Career totals only absorb a season once it ends, so fold the year in progress in here —
+    /// otherwise a coach in November is told he has never taken charge of a game.
+    private func careerRecord(_ league: League) -> String {
+        let coach = league.coach
+        let season = league.record(for: league.userTeamID)
+        let wins = coach.careerWins + season.wins
+        let losses = coach.careerLosses + season.losses
+        let ties = coach.careerTies + season.ties
+        let games = wins + losses + ties
+        guard games > 0 else { return "No games coached yet" }
+        let percentage = Double(wins) / Double(games) * 100
+        let record = ties > 0 ? "\(wins)-\(losses)-\(ties)" : "\(wins)-\(losses)"
+        return "\(record) · \(String(format: "%.1f", percentage))%"
+    }
+
+    private var userTeamID: UUID? { app.league?.userTeamID }
+
+    private var titles: [Int] {
+        guard let userTeamID, let history = app.league?.history else { return [] }
+        return history.filter { $0.championTeamID == userTeamID }.map(\.year).sorted(by: >)
+    }
+
+    /// Both finalists won their conference, so reaching the final is the title.
+    private var conferenceTitles: [Int] {
+        guard let userTeamID, let history = app.league?.history else { return [] }
+        return history
+            .filter { $0.championTeamID == userTeamID || $0.runnerUpTeamID == userTeamID }
+            .map(\.year)
+            .sorted(by: >)
+    }
+
+    private var awards: [SeasonAward] {
+        guard let userTeamID, let history = app.league?.history else { return [] }
+        return history
+            .flatMap(\.awards)
+            .filter { $0.teamID == userTeamID }
+            .sorted { $0.year > $1.year }
+    }
+}

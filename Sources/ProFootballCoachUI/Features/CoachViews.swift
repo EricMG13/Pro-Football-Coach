@@ -7,6 +7,7 @@ struct CoachView: View {
     @Environment(\.teamTheme) private var theme
     @State private var showingSkills = false
     @State private var showingGoals = false
+    @State private var showingTutorial = false
     @State private var confirmingExit = false
 
     var body: some View {
@@ -27,6 +28,21 @@ struct CoachView: View {
                         Divider().padding(.leading, 52)
                         NavigationLink { HistoryView() } label: {
                             row("Franchise History", "clock.arrow.circlepath", .orange, badge: nil)
+                        }
+                        Divider().padding(.leading, 52)
+                        Button { showingTutorial = true } label: {
+                            row("How to Coach", "questionmark.circle", .teal, badge: nil)
+                        }
+                        Divider().padding(.leading, 52)
+                        NavigationLink { TrophyRoomView() } label: {
+                            row(
+                                "Trophy Room",
+                                "trophy.fill",
+                                .yellow,
+                                badge: league.coach.championships > 0
+                                    ? "\(league.coach.championships)"
+                                    : nil
+                            )
                         }
                         Divider().padding(.leading, 52)
                         NavigationLink { RecordsView() } label: {
@@ -70,6 +86,7 @@ struct CoachView: View {
         .navigationTitle("Coach")
         .sheet(isPresented: $showingSkills) { SkillTreeSheet() }
         .sheet(isPresented: $showingGoals) { SeasonGoalsSheet() }
+        .sheet(isPresented: $showingTutorial) { TutorialView() }
         .alert("Return to the main menu?", isPresented: $confirmingExit) {
             Button("Save and Exit") { app.closeFranchise() }
             Button("Stay", role: .cancel) {}
@@ -114,6 +131,14 @@ struct CoachView: View {
             )
             Divider()
             SummaryRow(label: "Career record", value: coach.recordDescription)
+            if let league = app.league {
+                let season = league.record(for: league.userTeamID)
+                if season.wins + season.losses + season.ties > 0 {
+                    // Career totals only absorb a year once it ends, so the season in progress
+                    // needs its own line or the screen reads as 0-0 in November.
+                    SummaryRow(label: "This season", value: season.description)
+                }
+            }
             SummaryRow(label: "Championships", value: "\(coach.championships)")
             SummaryRow(label: "Playoff appearances", value: "\(coach.playoffAppearances)")
         }

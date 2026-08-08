@@ -25,6 +25,7 @@ public struct RootView: View {
 /// preseason and the offseason are not cluttered with screens that have nothing to show.
 struct FranchiseShell: View {
     @Environment(AppState.self) private var app
+    @State private var showingTutorial = false
 
     var body: some View {
         TabView {
@@ -42,6 +43,12 @@ struct FranchiseShell: View {
 
             NavigationStack { CoachView() }
                 .tabItem { Label("Coach", systemImage: "figure.american.football") }
+        }
+        .sheet(isPresented: $showingTutorial) { TutorialView() }
+        .onAppear {
+            guard !TutorialPrompt.hasBeenSeen else { return }
+            TutorialPrompt.hasBeenSeen = true
+            showingTutorial = true
         }
     }
 
