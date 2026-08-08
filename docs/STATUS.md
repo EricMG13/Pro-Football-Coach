@@ -66,12 +66,16 @@ ten-season soak.
 
 Ordered by how much they would be missed.
 
-1. **The arcade's timed windows have not been hand-played.** The pass rush, the carrier decision
-   and the kick meter all open windows of a few seconds. Driving the simulator through tooling
-   has a round trip far longer than any of them, so while the state machine is verified — plays
-   do enter and leave those phases and resolve correctly — nobody has yet seen the carrier
-   buttons on screen or pressed one. The window durations are guesses and are the first thing to
-   tune with a real thumb.
+1. **The arcade's carrier window is still untuned.** Two of the three timed inputs are now
+   verified on device. Release timing is measurable exactly, because the pass rush starts when
+   the player begins aiming rather than at the snap: a timed touch path held for one second
+   against a three-second pocket produced a clean-timing completion. The carrier decision was
+   seen and used — "Ball's away", the draining bar, Fight for Yards and Secure It — by
+   temporarily widening the window to thirty seconds; the same throw that resolves for ten yards
+   on no decision went for twelve when told to fight, which is the yardage modifier arriving as
+   designed. What that build also measured is why the shipped durations remain guesses: the
+   tooling round trip is about seven seconds, against a live window of 2.5 seconds for a pass
+   and 3.5 for a run. Those two numbers need a real thumb, and nothing short of one will do.
 
 ## Deliberate design decisions worth knowing
 
