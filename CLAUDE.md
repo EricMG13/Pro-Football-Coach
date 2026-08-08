@@ -21,6 +21,7 @@ It is the professional-league successor to a college football simulator the owne
 | `docs/04-SCREENS-UI.md` | Screen-by-screen UI spec |
 | `docs/05-IMPLEMENTATION-PLAN.md` | Phased task breakdown; Phase 1 fully specified |
 | `docs/06-PLAYED-GAME-MODE.md` | "On the Field" arcade mode (controls, ratings mapping, presentation, legal) |
+| `.impeccable.md` | Design context: users, brand voice, aesthetic direction, design principles. **Read before any UI work** |
 
 If a gameplay question isn't answered in `02-GAME-DESIGN.md`, add the answer there first, then implement.
 

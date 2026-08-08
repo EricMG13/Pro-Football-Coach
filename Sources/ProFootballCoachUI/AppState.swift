@@ -12,11 +12,25 @@ public final class AppState {
     public private(set) var saveName: String = "My Franchise"
     public private(set) var saves: [SaveMeta] = []
 
-    /// Season-long extras that hang off the league rather than living inside it.
-    public var draftClass: [DraftProspect] = []
+    /// Draft picks are derivable from the league, so they are rebuilt on load rather than stored.
     public var draftPicks: [DraftPick] = []
-    public var seasonGoals: [CoachEngine.SeasonGoal] = []
-    public var scoutingPoints: Int = LeagueRules.scoutingPointsPerSeason
+
+    /// Season goals, the scouting budget and the draft board are part of the franchise, so they
+    /// read and write straight through to the league and survive a save.
+    public var seasonGoals: [CoachEngine.SeasonGoal] {
+        get { league?.seasonGoals ?? [] }
+        set { mutate { $0.seasonGoals = newValue } }
+    }
+
+    public var scoutingPoints: Int {
+        get { league?.scoutingPoints ?? 0 }
+        set { mutate { $0.scoutingPoints = newValue } }
+    }
+
+    public var draftClass: [DraftProspect] {
+        get { league?.draftClass ?? [] }
+        set { mutate { $0.draftClass = newValue } }
+    }
 
     /// Live draft, present only while the draft stage is being played out.
     public private(set) var draftSession: DraftSession?
@@ -59,13 +73,12 @@ public final class AppState {
             settings: settings
         )
         var rng = new.rng
-        seasonGoals = CoachEngine.makeSeasonGoals(for: new, rng: &rng)
+        new.seasonGoals = CoachEngine.makeSeasonGoals(for: new, rng: &rng)
         new.rng = rng
+        new.scoutingPoints = CoachEngine.scoutingPoints(for: new.coach)
+        new.draftClass = []
 
         draftPicks = TradeEngine.makePicks(for: new)
-        draftClass = []
-        scoutingPoints = CoachEngine.scoutingPoints(for: new.coach)
-
         league = new
         saveID = UUID()
         self.saveName = saveName.isEmpty ? "\(new.userTeam?.name ?? "New") Franchise" : saveName
@@ -99,7 +112,6 @@ public final class AppState {
             saveID = id
             saveName = saves.first { $0.id == id }?.name ?? "Franchise"
             draftPicks = TradeEngine.makePicks(for: loaded)
-            scoutingPoints = CoachEngine.scoutingPoints(for: loaded.coach)
         } catch {
             lastError = "That save could not be opened."
         }
@@ -109,8 +121,7 @@ public final class AppState {
         persist()
         league = nil
         saveID = nil
-        draftClass = []
-        seasonGoals = []
+        draftSession = nil
     }
 
     public func delete(id: UUID) {
@@ -155,20 +166,21 @@ public final class AppState {
     }
 
     public func kickOffSeason() {
-        mutate { SeasonEngine.startSeason(&$0) }
-        if let league {
+        mutate { league in
+            SeasonEngine.startSeason(&league)
             var rng = league.rng
-            seasonGoals = CoachEngine.makeSeasonGoals(for: league, rng: &rng)
-            mutate { $0.rng = rng }
+            league.seasonGoals = CoachEngine.makeSeasonGoals(for: league, rng: &rng)
+            league.rng = rng
         }
     }
 
     private func refreshGoals() {
-        guard var league, !seasonGoals.isEmpty else { return }
-        var goals = seasonGoals
-        CoachEngine.settleGoals(&goals, league: &league)
-        seasonGoals = goals
-        self.league = league
+        mutate { league in
+            guard !league.seasonGoals.isEmpty else { return }
+            var goals = league.seasonGoals
+            CoachEngine.settleGoals(&goals, league: &league)
+            league.seasonGoals = goals
+        }
     }
 
     /// The user's next scheduled game, if there is one.
@@ -203,11 +215,13 @@ public final class AppState {
         draftPicks = picks
 
         // A new league year resets the coaching season.
-        if let league, league.phase == .preseason {
-            var rng = league.rng
-            seasonGoals = CoachEngine.makeSeasonGoals(for: league, rng: &rng)
-            scoutingPoints = CoachEngine.scoutingPoints(for: league.coach)
-            mutate { $0.rng = rng }
+        if league?.phase == .preseason {
+            mutate { league in
+                var rng = league.rng
+                league.seasonGoals = CoachEngine.makeSeasonGoals(for: league, rng: &rng)
+                league.scoutingPoints = CoachEngine.scoutingPoints(for: league.coach)
+                league.rng = rng
+            }
         }
     }
 
@@ -216,14 +230,13 @@ public final class AppState {
     /// Opens a live draft if one is not already running.
     public func beginDraftIfNeeded() {
         guard draftSession == nil, var league else { return }
-        if draftClass.isEmpty {
-            draftClass = DraftClassFactory.makeClass(year: league.year + 1, rng: &league.rng)
+        if league.draftClass.isEmpty {
+            league.draftClass = DraftClassFactory.makeClass(year: league.year + 1, rng: &league.rng)
             draftPicks = TradeEngine.makePicks(for: league)
-            self.league = league
         }
-        var session = DraftSession(league: league, prospects: draftClass, picks: draftPicks)
+        var session = DraftSession(league: league, prospects: league.draftClass, picks: draftPicks)
         session.advanceToUserPick(league: &league)
-        draftClass = session.prospects
+        league.draftClass = session.prospects
         draftSession = session
         self.league = league
         autosave()
@@ -261,14 +274,15 @@ public final class AppState {
     public func completeDraftStage() {
         if let session = draftSession, !session.isFinished { finishDraft() }
         draftSession = nil
-        draftClass = []
+        mutate { $0.draftClass = [] }
         advanceOffseasonStage()
     }
 
     private func commit(session: DraftSession, league: League) {
+        var updated = league
+        updated.draftClass = session.prospects
         draftSession = session
-        draftClass = session.prospects
-        self.league = league
+        self.league = updated
         autosave()
     }
 

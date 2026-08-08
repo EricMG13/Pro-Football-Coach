@@ -10,5 +10,6 @@ runInteractiveDraftTests()
 runDynastyTests()
 runLegacyTests()
 runPersistenceTests()
+runDesignSystemTests()
 
 TestKit.finish()

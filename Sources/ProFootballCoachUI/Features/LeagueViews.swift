@@ -93,7 +93,7 @@ struct PowerRankingsCard: View {
                     Spacer()
                     Text(Format.rating(row.team.overallRating))
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(RatingPalette.color(for: row.team.overallRating))
+                        .ratingStyle(row.team.overallRating)
                 }
                 .padding(.vertical, 2)
             }

@@ -396,13 +396,13 @@ struct MatchupPreviewSheet: View {
             HStack {
                 Text(Format.rating(awayValue))
                     .font(.headline.monospacedDigit())
-                    .foregroundStyle(RatingPalette.color(for: awayValue))
+                    .ratingStyle(awayValue)
                 Spacer()
                 Text(label).font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 Text(Format.rating(homeValue))
                     .font(.headline.monospacedDigit())
-                    .foregroundStyle(RatingPalette.color(for: homeValue))
+                    .ratingStyle(homeValue)
             }
             GeometryReader { proxy in
                 let total = max(1, awayValue + homeValue)

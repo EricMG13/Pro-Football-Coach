@@ -30,7 +30,7 @@ If `xcodebuild` reports no simulator destinations, the iOS platform component is
 swift build && swift run -c release SimTests
 ```
 
-**165 tests, ~8,900 assertions, all passing.** Runtime about 100 seconds, dominated by the
+**171 tests, ~8,970 assertions, all passing.** Runtime about 100 seconds, dominated by the
 ten-season soak.
 
 ## Complete and tested
@@ -53,7 +53,8 @@ ten-season soak.
 | Record book and Hall of Fame | Done: seeded marks, live record chasing, enshrinement on retirement |
 | Draft day, played pick by pick | Done: AI picks resolve automatically, the board stops when you are on the clock |
 | Re-signing your own expiring players | Done: asking price, acceptance odds and a three-round negotiation |
-| Save / load, backup recovery, version refusal | Done |
+| Save / load, backup recovery, version refusal | Done, and forward-compatible: unknown-field defaults mean an older save still opens |
+| Accessibility of rating colours | Done: every tier verified at 4.5:1 on card, page and chip tint in both themes, with the tier spoken to VoiceOver |
 | SwiftUI app: menu, wizard, season hub, schedule, standings, news, team, depth chart, player cards, stats, front office, draft board, coach, offseason pipeline, both play modes | Built and run on an iPhone simulator; core path walked by hand |
 
 ## Known gaps

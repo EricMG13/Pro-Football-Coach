@@ -183,7 +183,7 @@ struct FreeAgencyView: View {
                     HStack {
                         Text("\(player.overall)")
                             .font(.subheadline.monospacedDigit().weight(.bold))
-                            .foregroundStyle(RatingPalette.color(for: player.overall))
+                            .ratingStyle(player.overall)
                             .frame(width: 32)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(player.name).font(.subheadline)
@@ -366,7 +366,7 @@ struct TradeCenterView: View {
                     .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                 Text("\(player.overall)")
                     .font(.caption.monospacedDigit().weight(.bold))
-                    .foregroundStyle(RatingPalette.color(for: player.overall))
+                    .ratingStyle(player.overall)
                 Text(player.name).font(.subheadline)
                 Spacer()
                 Text(player.position.abbreviation).font(.caption).foregroundStyle(.secondary)
@@ -429,7 +429,7 @@ struct DraftBoardView: View {
                         HStack {
                             Text(prospect.scoutedRange)
                                 .font(.subheadline.monospacedDigit().weight(.bold))
-                                .foregroundStyle(RatingPalette.color(for: prospect.midpoint))
+                                .ratingStyle(prospect.midpoint)
                                 .frame(width: 62, alignment: .leading)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(prospect.name).font(.subheadline)

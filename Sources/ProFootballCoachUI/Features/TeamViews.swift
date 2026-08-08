@@ -91,7 +91,7 @@ struct TeamView: View {
                 Spacer()
                 Text(Format.rating(value))
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RatingPalette.color(for: value))
+                    .ratingStyle(value)
             }
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
@@ -199,7 +199,7 @@ struct PlayerRow: View {
         HStack(spacing: Layout.small) {
             Text("\(player.overall)")
                 .font(.subheadline.monospacedDigit().weight(.bold))
-                .foregroundStyle(RatingPalette.color(for: player.overall))
+                .ratingStyle(player.overall)
                 .frame(width: 32)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -278,7 +278,7 @@ struct PlayerCardView: View {
         VStack(spacing: Layout.tight) {
             Text("\(player.overall)")
                 .font(.system(size: 44, weight: .heavy, design: .rounded))
-                .foregroundStyle(RatingPalette.color(for: player.overall))
+                .ratingStyle(player.overall)
             Text(player.name).font(.title3.weight(.semibold))
             HStack(spacing: Layout.tight) {
                 Chip(player.position.abbreviation, color: .blue, filled: true)
@@ -411,7 +411,7 @@ struct PlayerCardView: View {
                     VStack(spacing: 2) {
                         Text("\(value)")
                             .font(.headline.monospacedDigit())
-                            .foregroundStyle(RatingPalette.color(for: value))
+                            .ratingStyle(value)
                         Text(attribute.displayName)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
@@ -514,7 +514,7 @@ struct StaffView: View {
                                     Spacer()
                                     Text("\(member.rating)")
                                         .font(.headline.monospacedDigit())
-                                        .foregroundStyle(RatingPalette.color(for: member.rating))
+                                        .ratingStyle(member.rating)
                                 }
                                 HStack(spacing: Layout.tight) {
                                     if member.matchesScheme(

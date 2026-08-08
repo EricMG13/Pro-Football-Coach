@@ -32,6 +32,50 @@ func runPersistenceTests() {
             )
         }
 
+        test("season goals and the scouting budget survive a save") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 210, userTeamIndex: 3, coach: .stub())
+            var rng = SeededRandom(seed: 4)
+            league.seasonGoals = CoachEngine.makeSeasonGoals(for: league, rng: &rng)
+            league.scoutingPoints = 85
+            league.draftClass = DraftClassFactory.makeClass(year: league.year + 1, rng: &rng)
+            expect(!league.seasonGoals.isEmpty, "fixture should have goals")
+
+            let id = UUID()
+            _ = try store.save(league, id: id, name: "Goals")
+            let restored = try store.load(id: id)
+
+            expectEqual(
+                restored.seasonGoals.count,
+                league.seasonGoals.count,
+                "season goals were lost on load"
+            )
+            expectEqual(restored.seasonGoals.first?.description, league.seasonGoals.first?.description)
+            expectEqual(restored.scoutingPoints, 85, "scouting budget was lost on load")
+            expectEqual(
+                restored.draftClass.count,
+                league.draftClass.count,
+                "the draft board was lost on load"
+            )
+        }
+
+        test("a save written before those fields existed still loads") {
+            // Strip the newer keys the way an older save file would not have had them.
+            let league = LeagueFactory.makeDefaultLeague(seed: 211, userTeamIndex: 0, coach: .stub())
+            var object = try JSONSerialization.jsonObject(
+                with: JSONEncoder.stable().encode(league)
+            ) as! [String: Any]
+            object.removeValue(forKey: "seasonGoals")
+            object.removeValue(forKey: "scoutingPoints")
+            object.removeValue(forKey: "draftClass")
+            object.removeValue(forKey: "hallOfFame")
+            let data = try JSONSerialization.data(withJSONObject: object)
+
+            let restored = try SaveMigrator.migrate(data: data, decoder: JSONDecoder.stable())
+            expectEqual(restored.teams.count, LeagueRules.teamCount, "an older save failed to load")
+            expect(restored.seasonGoals.isEmpty)
+            expectEqual(restored.scoutingPoints, LeagueRules.scoutingPointsPerSeason)
+        }
+
         test("saves are listed with readable metadata") {
             let league = LeagueFactory.makeDefaultLeague(seed: 201, userTeamIndex: 0, coach: .stub())
             let id = UUID()

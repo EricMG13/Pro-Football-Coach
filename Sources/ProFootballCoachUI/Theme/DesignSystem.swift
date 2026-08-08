@@ -14,6 +14,19 @@ public enum Layout {
 }
 
 public extension Color {
+    /// Resolves to a different hex per theme. Two fixed colours rather than one with an opacity
+    /// adjustment, because no single hue clears 4.5:1 against both a white card and a near-black
+    /// one — the light and dark ends of a band have to be picked independently.
+    init(light: String, dark: String) {
+        #if canImport(UIKit)
+        self.init(uiColor: UIColor { traits in
+            UIColor(Color(hex: traits.userInterfaceStyle == .dark ? dark : light))
+        })
+        #else
+        self.init(hex: light)
+        #endif
+    }
+
     /// Builds a colour from a `#RRGGBB` string, falling back to grey on anything unparseable.
     init(hex: String) {
         let cleaned = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
@@ -67,20 +80,89 @@ public extension EnvironmentValues {
     }
 }
 
-/// Rating colour bands, shared by every screen that shows an overall so the same number always
-/// reads the same way.
-public enum RatingPalette {
-    public static func color(for rating: Int) -> Color {
-        switch rating {
-        case 90...: .purple
-        case 84..<90: .blue
-        case 74..<84: .green
-        case 64..<74: .orange
-        default: .red
+/// Rating bands, shared by every screen that shows an overall so the same number always reads
+/// the same way.
+///
+/// The colours are hand-picked rather than SwiftUI system colours. `.green` and `.orange` as
+/// text on a white card measure 2.2:1 — less than half the 4.5:1 the project commits to, and
+/// the worst contrast in the app. Every hex below is verified against the card, the page and
+/// the 14 % `Chip` tint in both themes by `DesignSystemTests`; change one and the test says so.
+///
+/// Clearing 4.5:1 on white forces all five bands dark, which leaves them near-isoluminant —
+/// hue ends up doing all the visual work. The rating itself is always drawn alongside, and
+/// `label` carries the band to VoiceOver, so the tier is never colour-only.
+public enum RatingTier: String, CaseIterable, Sendable {
+    case elite, star, starter, rotational, fringe
+
+    public init(rating: Int) {
+        self = switch rating {
+        case 90...: .elite
+        case 84..<90: .star
+        case 74..<84: .starter
+        case 64..<74: .rotational
+        default: .fringe
         }
     }
 
-    public static func color(for rating: Double) -> Color { color(for: Int(rating.rounded())) }
+    /// Spoken after the rating by VoiceOver. Deliberately not a letter grade — the player card
+    /// already shows Potential as A+…F and a second letter scale would read as the same scale.
+    public var label: String {
+        switch self {
+        case .elite: "elite"
+        case .star: "star"
+        case .starter: "starter"
+        case .rotational: "rotational"
+        case .fringe: "fringe"
+        }
+    }
+
+    public var lightHex: String {
+        switch self {
+        case .elite: "#6B4BC4"
+        case .star: "#1665C0"
+        case .starter: "#22661F"
+        case .rotational: "#8A5000"
+        case .fringe: "#AB2A1E"
+        }
+    }
+
+    public var darkHex: String {
+        switch self {
+        case .elite: "#C3A6FF"
+        case .star: "#6BB3FF"
+        case .starter: "#67D77A"
+        case .rotational: "#F5A93C"
+        case .fringe: "#FF8A80"
+        }
+    }
+
+    public var color: Color { Color(light: lightHex, dark: darkHex) }
+}
+
+public enum RatingPalette {
+    public static func tier(for rating: Int) -> RatingTier { RatingTier(rating: rating) }
+
+    public static func tier(for rating: Double) -> RatingTier {
+        RatingTier(rating: Int(rating.rounded()))
+    }
+
+    public static func color(for rating: Int) -> Color { tier(for: rating).color }
+
+    public static func color(for rating: Double) -> Color { tier(for: rating).color }
+}
+
+public extension View {
+    /// Tints a displayed rating and tells VoiceOver which band it falls in. The colour is a
+    /// scanning aid; the spoken tier is what makes the band available without it.
+    ///
+    /// Set as an accessibility *value* rather than a label so the visible text — which may be a
+    /// scouted range ("68–84") or a one-decimal average — is still what gets read first.
+    func ratingStyle(_ rating: Int) -> some View {
+        foregroundStyle(RatingPalette.color(for: rating))
+            .accessibilityValue(RatingTier(rating: rating).label)
+    }
+
+    func ratingStyle(_ rating: Double) -> some View { ratingStyle(Int(rating.rounded())) }
 }
 
 /// A white rounded card — the app's primary container.

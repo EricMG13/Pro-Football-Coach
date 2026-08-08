@@ -334,6 +334,12 @@ public struct League: Codable, Sendable {
     public var deadMoney: [UUID: Int]
     /// Players enshrined after their careers ended.
     public var hallOfFame: [HallOfFamer]
+    /// The owner's objectives for this season.
+    public var seasonGoals: [CoachEngine.SeasonGoal]
+    /// Scouting budget left for this draft cycle.
+    public var scoutingPoints: Int
+    /// This year's draft board, populated when the draft stage begins.
+    public var draftClass: [DraftProspect]
 
     public init(
         version: Int = League.currentVersion,
@@ -352,7 +358,10 @@ public struct League: Codable, Sendable {
         history: [SeasonSummary] = [],
         salaryCap: Int = LeagueRules.salaryCapYearOne,
         deadMoney: [UUID: Int] = [:],
-        hallOfFame: [HallOfFamer] = []
+        hallOfFame: [HallOfFamer] = [],
+        seasonGoals: [CoachEngine.SeasonGoal] = [],
+        scoutingPoints: Int = LeagueRules.scoutingPointsPerSeason,
+        draftClass: [DraftProspect] = []
     ) {
         self.version = version
         self.rng = rng
@@ -371,6 +380,45 @@ public struct League: Codable, Sendable {
         self.salaryCap = salaryCap
         self.deadMoney = deadMoney
         self.hallOfFame = hallOfFame
+        self.seasonGoals = seasonGoals
+        self.scoutingPoints = scoutingPoints
+        self.draftClass = draftClass
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case version, rng, year, phase, teams, schedule, results, standings, freeAgents
+        case news, userTeamID, coach, settings, history, salaryCap, deadMoney
+        case hallOfFame, seasonGoals, scoutingPoints, draftClass
+    }
+
+    /// Decoded field by field so saves written before a field existed still load. Season goals,
+    /// the scouting budget and the draft board were once held only in memory, which silently
+    /// discarded them whenever a franchise was reopened.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decode(Int.self, forKey: .version)
+        rng = try container.decode(SeededRandom.self, forKey: .rng)
+        year = try container.decode(Int.self, forKey: .year)
+        phase = try container.decode(SeasonPhase.self, forKey: .phase)
+        teams = try container.decode([Team].self, forKey: .teams)
+        schedule = try container.decode([ScheduledGame].self, forKey: .schedule)
+        results = try container.decode([GameRecord].self, forKey: .results)
+        standings = try container.decode([UUID: TeamRecord].self, forKey: .standings)
+        freeAgents = try container.decode([Player].self, forKey: .freeAgents)
+        news = try container.decode([NewsItem].self, forKey: .news)
+        userTeamID = try container.decode(UUID.self, forKey: .userTeamID)
+        coach = try container.decode(CoachProfile.self, forKey: .coach)
+        settings = try container.decode(LeagueSettings.self, forKey: .settings)
+        history = try container.decode([SeasonSummary].self, forKey: .history)
+        salaryCap = try container.decode(Int.self, forKey: .salaryCap)
+        deadMoney = try container.decode([UUID: Int].self, forKey: .deadMoney)
+        hallOfFame = try container.decodeIfPresent([HallOfFamer].self, forKey: .hallOfFame) ?? []
+        seasonGoals = try container.decodeIfPresent(
+            [CoachEngine.SeasonGoal].self, forKey: .seasonGoals
+        ) ?? []
+        scoutingPoints = try container.decodeIfPresent(Int.self, forKey: .scoutingPoints)
+            ?? LeagueRules.scoutingPointsPerSeason
+        draftClass = try container.decodeIfPresent([DraftProspect].self, forKey: .draftClass) ?? []
     }
 
     public func team(id: UUID) -> Team? { teams.first { $0.id == id } }

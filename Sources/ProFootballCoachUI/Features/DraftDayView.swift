@@ -96,7 +96,7 @@ struct DraftDayView: View {
                     HStack(spacing: Layout.small) {
                         Text(prospect.scoutedRange)
                             .font(.caption.monospacedDigit().weight(.bold))
-                            .foregroundStyle(RatingPalette.color(for: prospect.midpoint))
+                            .ratingStyle(prospect.midpoint)
                             .frame(width: 56, alignment: .leading)
 
                         VStack(alignment: .leading, spacing: 2) {
@@ -164,7 +164,7 @@ struct DraftDayView: View {
                         Spacer()
                         Text("\(pick.rating)")
                             .font(.headline.monospacedDigit())
-                            .foregroundStyle(RatingPalette.color(for: pick.rating))
+                            .ratingStyle(pick.rating)
                     }
                 }
             }
@@ -255,7 +255,7 @@ struct ReSignView: View {
                         HStack {
                             Text("\(player.overall)")
                                 .font(.subheadline.monospacedDigit().weight(.bold))
-                                .foregroundStyle(RatingPalette.color(for: player.overall))
+                                .ratingStyle(player.overall)
                                 .frame(width: 32)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(player.name).font(.subheadline)
