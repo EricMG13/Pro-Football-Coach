@@ -82,8 +82,14 @@ public struct Contract: Codable, Sendable, Equatable {
     public func deadMoneyIfCutNow() -> Int {
         guard yearsElapsed < years else { return 0 }
         var dead = 0
-        for year in yearsElapsed..<prorationYears { dead += bonusProration(inYear: year) }
-        for year in yearsElapsed..<guaranteedYears { dead += salaryPerYear[year] }
+        // Both bounds are clamped: a deal can easily be further along than its guarantee runs
+        // (three years elapsed, one year guaranteed), and the raw range would be invalid.
+        for year in yearsElapsed..<max(yearsElapsed, prorationYears) {
+            dead += bonusProration(inYear: year)
+        }
+        for year in yearsElapsed..<max(yearsElapsed, guaranteedYears) {
+            dead += salaryPerYear[year]
+        }
         return dead
     }
 

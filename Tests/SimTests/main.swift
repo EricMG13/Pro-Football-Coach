@@ -4,5 +4,6 @@ runModelTests()
 runGenerationTests()
 runGameSimulatorTests()
 runSeasonTests()
+runFrontOfficeTests()
 
 TestKit.finish()

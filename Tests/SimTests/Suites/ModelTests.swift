@@ -183,6 +183,23 @@ func runModelTests() {
             expect(aged.aged().isExpired)
         }
 
+        test("dead money survives a deal past its guarantee") {
+            // Three years played, only one guaranteed: the naive range here is 3..<1, which
+            // traps at runtime. This crashed the whole app before it was fixed.
+            var contract = Contract(
+                years: 4,
+                salaryPerYear: [5_000_000, 5_000_000, 5_000_000, 5_000_000],
+                signingBonus: 4_000_000,
+                guaranteedYears: 1
+            )
+            contract.yearsElapsed = 3
+            expectEqual(contract.deadMoneyIfCutNow(), 1_000_000, "only the final proration year remains")
+
+            var noBonus = Contract.flat(years: 3, salary: 2_000_000, guaranteedYears: 1)
+            noBonus.yearsElapsed = 2
+            expectEqual(noBonus.deadMoneyIfCutNow(), 0)
+        }
+
         test("out-of-range years contribute nothing") {
             let contract = Contract.flat(years: 2, salary: 1_000_000)
             expectEqual(contract.capHit(inYear: 5), 0)

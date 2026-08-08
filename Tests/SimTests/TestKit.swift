@@ -20,6 +20,9 @@ enum TestKit {
     static func test(_ name: String, _ body: () throws -> Void) {
         currentTest = name
         testsRun += 1
+        if ProcessInfo.processInfo.environment["TRACE_TESTS"] != nil {
+            FileHandle.standardError.write(Data("→ \(suiteName) › \(name)\n".utf8))
+        }
         do {
             try body()
         } catch {
