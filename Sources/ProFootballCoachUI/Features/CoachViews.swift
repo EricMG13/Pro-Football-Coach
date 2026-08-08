@@ -320,6 +320,7 @@ struct HistoryView: View {
 /// The offseason pipeline, shown as ordered stages on the season tab.
 struct OffseasonHubCard: View {
     @Environment(AppState.self) private var app
+    @State private var showingDraft = false
 
     private var currentStage: OffseasonStage? {
         guard case .offseason(let raw) = app.league?.phase else { return nil }
@@ -347,17 +348,54 @@ struct OffseasonHubCard: View {
                 }
             }
 
-            Button {
-                app.advanceOffseasonStage()
-            } label: {
-                Label(
-                    currentStage.map { "Run \($0.displayName)" } ?? "Advance",
-                    systemImage: "forward.fill"
-                )
-                .frame(maxWidth: .infinity)
+            // The draft and the re-sign window are decisions, not steps to click past, so
+            // they open their own screens rather than resolving behind the advance button.
+            switch currentStage {
+            case .draft:
+                Button { showingDraft = true } label: {
+                    Label("Enter the Draft Room", systemImage: "person.badge.plus")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+            case .reSigning:
+                NavigationLink { ReSignView() } label: {
+                    Label("Re-Sign Your Players", systemImage: "signature")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                Button {
+                    app.advanceOffseasonStage()
+                } label: {
+                    Label("Done Re-Signing", systemImage: "forward.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+            default:
+                Button {
+                    app.advanceOffseasonStage()
+                } label: {
+                    Label(
+                        currentStage.map { "Run \($0.displayName)" } ?? "Advance",
+                        systemImage: "forward.fill"
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.borderedProminent)
         }
         .card()
+        .fullScreenCoverCompat(item: draftBinding) { _ in DraftDayView() }
     }
+
+    /// `fullScreenCover(item:)` needs something Identifiable; a flag is all this needs to carry.
+    private var draftBinding: Binding<DraftRoomToken?> {
+        Binding(
+            get: { showingDraft ? DraftRoomToken() : nil },
+            set: { showingDraft = $0 != nil }
+        )
+    }
+}
+
+struct DraftRoomToken: Identifiable {
+    let id = UUID()
 }

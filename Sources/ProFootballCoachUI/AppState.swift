@@ -18,6 +18,9 @@ public final class AppState {
     public var seasonGoals: [CoachEngine.SeasonGoal] = []
     public var scoutingPoints: Int = LeagueRules.scoutingPointsPerSeason
 
+    /// Live draft, present only while the draft stage is being played out.
+    public private(set) var draftSession: DraftSession?
+
     /// Identifier of the scenario this franchise started under, if any.
     public var activeScenario: String?
     public var autosaveEnabled = true
@@ -206,6 +209,87 @@ public final class AppState {
             scoutingPoints = CoachEngine.scoutingPoints(for: league.coach)
             mutate { $0.rng = rng }
         }
+    }
+
+    // MARK: - Draft
+
+    /// Opens a live draft if one is not already running.
+    public func beginDraftIfNeeded() {
+        guard draftSession == nil, var league else { return }
+        if draftClass.isEmpty {
+            draftClass = DraftClassFactory.makeClass(year: league.year + 1, rng: &league.rng)
+            draftPicks = TradeEngine.makePicks(for: league)
+            self.league = league
+        }
+        var session = DraftSession(league: league, prospects: draftClass, picks: draftPicks)
+        session.advanceToUserPick(league: &league)
+        draftClass = session.prospects
+        draftSession = session
+        self.league = league
+        autosave()
+    }
+
+    public func advanceDraftToUserPick() {
+        guard var session = draftSession, var league else { return }
+        session.advanceToUserPick(league: &league)
+        commit(session: session, league: league)
+    }
+
+    @discardableResult
+    public func selectInDraft(prospectID: UUID) -> CompletedPick? {
+        guard var session = draftSession, var league else { return nil }
+        let pick = session.select(prospectID: prospectID, league: &league)
+        commit(session: session, league: league)
+        return pick
+    }
+
+    @discardableResult
+    public func autoPickForUser() -> CompletedPick? {
+        guard var session = draftSession, var league else { return nil }
+        let pick = session.autoPickForUser(league: &league)
+        commit(session: session, league: league)
+        return pick
+    }
+
+    public func finishDraft() {
+        guard var session = draftSession, var league else { return }
+        session.finish(league: &league)
+        commit(session: session, league: league)
+    }
+
+    /// Closes out the draft stage and moves the offseason on.
+    public func completeDraftStage() {
+        if let session = draftSession, !session.isFinished { finishDraft() }
+        draftSession = nil
+        draftClass = []
+        advanceOffseasonStage()
+    }
+
+    private func commit(session: DraftSession, league: League) {
+        draftSession = session
+        draftClass = session.prospects
+        self.league = league
+        autosave()
+    }
+
+    // MARK: - Re-signing
+
+    /// Offers an extension. The roll happens here so a marginal offer stays a gamble.
+    public func reSign(playerID: UUID, contract: Contract, chance: Double) -> Bool {
+        guard var league, let teamID = league.userTeam?.id else { return false }
+        var rng = league.rng
+        let accepted = rng.chance(chance)
+        league.rng = rng
+        guard accepted else {
+            self.league = league
+            return false
+        }
+        let signed = ReSignEngine.reSign(
+            playerID: playerID, to: teamID, contract: contract, in: &league
+        )
+        self.league = league
+        if signed { autosave() }
+        return signed
     }
 
     // MARK: - Roster actions

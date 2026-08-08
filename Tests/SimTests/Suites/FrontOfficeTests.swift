@@ -366,3 +366,182 @@ func runFrontOfficeTests() {
         }
     }
 }
+
+func runInteractiveDraftTests() {
+    suite("DraftSession") {
+        /// A league that has finished a season, so a real draft order exists.
+        func preparedLeague(seed: UInt64) -> League {
+            var league = LeagueFactory.makeDefaultLeague(seed: seed, userTeamIndex: 0, coach: .stub())
+            SeasonEngine.startSeason(&league)
+            SeasonEngine.simulateToOffseason(&league)
+            return league
+        }
+
+        test("the session stops when the user is on the clock") {
+            var league = preparedLeague(seed: 400)
+            let prospects = DraftClassFactory.makeClass(year: league.year + 1, rng: &league.rng)
+            let picks = TradeEngine.makePicks(for: league)
+            var session = DraftSession(league: league, prospects: prospects, picks: picks)
+
+            session.advanceToUserPick(league: &league)
+            expect(session.isUserOnTheClock, "the session should stop on the user's pick")
+            expect(!session.isFinished, "the draft should not be over yet")
+            expect(
+                session.completed.allSatisfy { $0.teamID != league.userTeamID },
+                "the AI made a pick for the user"
+            )
+        }
+
+        test("the user's selection lands on their roster on a rookie deal") {
+            var league = preparedLeague(seed: 401)
+            let prospects = DraftClassFactory.makeClass(year: league.year + 1, rng: &league.rng)
+            let picks = TradeEngine.makePicks(for: league)
+            var session = DraftSession(league: league, prospects: prospects, picks: picks)
+            session.advanceToUserPick(league: &league)
+
+            let rosterBefore = league.userTeam!.roster.count
+            let wanted = session.prospects.max { $0.trueOverall < $1.trueOverall }!
+            let pick = session.select(prospectID: wanted.id, league: &league)
+
+            expect(pick != nil, "the selection was refused")
+            expectEqual(pick?.playerID, wanted.player.id)
+            expectEqual(league.userTeam!.roster.count, rosterBefore + 1)
+
+            let rookie = league.userTeam!.player(id: wanted.player.id)
+            expect(rookie != nil, "the pick never reached the roster")
+            expect(rookie?.contract?.isRookieDeal == true, "a draft pick must be on a rookie deal")
+            expectEqual(rookie?.draftOrigin?.year, league.year)
+            expect(
+                !session.prospects.contains { $0.id == wanted.id },
+                "a drafted prospect is still on the board"
+            )
+        }
+
+        test("a completed session drafts every pick exactly once") {
+            var league = preparedLeague(seed: 402)
+            let prospects = DraftClassFactory.makeClass(year: league.year + 1, rng: &league.rng)
+            let picks = TradeEngine.makePicks(for: league)
+            var session = DraftSession(league: league, prospects: prospects, picks: picks)
+
+            var guardCounter = 0
+            while !session.isFinished, guardCounter < LeagueRules.draftPickCount + 10 {
+                guardCounter += 1
+                if session.isUserOnTheClock {
+                    session.autoPickForUser(league: &league)
+                } else {
+                    session.advanceToUserPick(league: &league)
+                }
+            }
+
+            expectEqual(
+                session.completed.count,
+                LeagueRules.draftPickCount,
+                "every pick in the draft should have been used"
+            )
+            let players = session.completed.map(\.playerID)
+            expectEqual(Set(players).count, players.count, "a prospect was drafted twice")
+
+            // Pick numbering must be continuous and rounds in order.
+            expectEqual(session.completed.map(\.overall), Array(1...session.completed.count))
+            expect(
+                zip(session.completed, session.completed.dropFirst())
+                    .allSatisfy { $0.round <= $1.round },
+                "rounds went backwards"
+            )
+        }
+
+        test("finishing early still fills every roster spot") {
+            var league = preparedLeague(seed: 403)
+            let prospects = DraftClassFactory.makeClass(year: league.year + 1, rng: &league.rng)
+            let picks = TradeEngine.makePicks(for: league)
+            var session = DraftSession(league: league, prospects: prospects, picks: picks)
+            session.finish(league: &league)
+
+            expect(session.isFinished)
+            expect(session.prospects.isEmpty, "undrafted players were left in limbo")
+            expectEqual(session.completed.count, LeagueRules.draftPickCount)
+        }
+
+        test("war-room grades reflect where a player was expected to go") {
+            let pick = CompletedPick(
+                id: UUID(), round: 4, pickInRound: 1, overall: 97, teamID: UUID(),
+                playerID: UUID(), playerName: "Test", position: .wr, rating: 78
+            )
+            expectEqual(DraftSession.grade(for: pick, expectedRound: 7), "Steal")
+            expectEqual(DraftSession.grade(for: pick, expectedRound: 4), "On the board")
+            expectEqual(DraftSession.grade(for: pick, expectedRound: 1), "Reach")
+        }
+    }
+
+    suite("Re-signing") {
+        test("a fair offer is likely and a lowball is not") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 410, userTeamIndex: 0, coach: .stub())
+            let team = league.userTeam!
+            let player = team.activeRoster.first { $0.position == .wr }!
+
+            let asking = ReSignEngine.askingSalary(for: player, team: team, league: league)
+            let fair = ReSignEngine.acceptance(
+                player: player, offer: .flat(years: 3, salary: asking), team: team, league: league
+            )
+            let lowball = ReSignEngine.acceptance(
+                player: player, offer: .flat(years: 3, salary: asking / 3), team: team, league: league
+            )
+            expect(fair > lowball, "a fair offer should beat a lowball")
+            expect(fair > 0.5, "a market-rate offer should usually be accepted: \(fair)")
+            expect(lowball < 0.4, "a third of market value should usually be refused: \(lowball)")
+            _ = league
+        }
+
+        test("loyal players are cheaper to keep than mercenaries") {
+            let league = LeagueFactory.makeDefaultLeague(seed: 411, userTeamIndex: 0, coach: .stub())
+            let team = league.userTeam!
+            let loyal = TestFixtures.player(position: .te, rating: 80, traits: [.loyal])
+            let mercenary = TestFixtures.player(position: .te, rating: 80, traits: [.mercenary])
+            let offer = Contract.flat(
+                years: 3,
+                salary: ReSignEngine.askingSalary(for: loyal, team: team, league: league)
+            )
+            expect(
+                ReSignEngine.acceptance(player: loyal, offer: offer, team: team, league: league)
+                    > ReSignEngine.acceptance(player: mercenary, offer: offer, team: team, league: league),
+                "loyalty should make a player easier to keep"
+            )
+        }
+
+        test("re-signing puts a player back under contract and respects the cap") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 412, userTeamIndex: 0, coach: .stub())
+            let teamID = league.userTeamID
+            let player = league.userTeam!.activeRoster.first { $0.contract?.isExpiring ?? false }
+                ?? league.userTeam!.activeRoster[0]
+
+            let absurd = Contract.flat(years: 3, salary: 800_000_000)
+            expect(
+                !ReSignEngine.reSign(playerID: player.id, to: teamID, contract: absurd, in: &league),
+                "an unaffordable extension was accepted"
+            )
+
+            let sensible = Contract.flat(years: 2, salary: 2_000_000)
+            expect(
+                ReSignEngine.reSign(playerID: player.id, to: teamID, contract: sensible, in: &league),
+                "a sensible extension was refused"
+            )
+            let updated = league.userTeam!.player(id: player.id)
+            expectEqual(updated?.contract?.years, 2)
+            expectEqual(updated?.contract?.yearsRemaining, 2)
+        }
+
+        test("the expiring list finds the players whose deals are up") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 413, userTeamIndex: 0, coach: .stub())
+            CapEngine.rolloverContracts(in: &league)
+            let expiring = ReSignEngine.expiring(for: league.userTeam!)
+            expect(
+                expiring.allSatisfy { $0.contract == nil || ($0.contract?.isExpiring ?? false) },
+                "a player with years left appeared on the expiring list"
+            )
+            expect(
+                zip(expiring, expiring.dropFirst()).allSatisfy { $0.overall >= $1.overall },
+                "the expiring list should lead with the best players"
+            )
+        }
+    }
+}
