@@ -45,6 +45,7 @@ public enum PlayResolver {
         defense: inout TeamSnapshot,
         situation: GameSituation,
         homeFieldForOffense: Bool,
+        execution: PlayExecution = .neutral,
         rng: inout SeededRandom
     ) -> Outcome {
         let profile = PlayMatrix.profile(for: call)
@@ -61,11 +62,13 @@ public enum PlayResolver {
         return call.isPass
             ? resolvePass(
                 call: call, profile: profile, adjustment: adjustment, delta: delta, tempo: tempo,
-                offense: &offense, defense: &defense, situation: situation, rng: &rng
+                offense: &offense, defense: &defense, situation: situation,
+                execution: execution, rng: &rng
             )
             : resolveRun(
                 call: call, profile: profile, adjustment: adjustment, delta: delta, tempo: tempo,
-                offense: &offense, defense: &defense, situation: situation, rng: &rng
+                offense: &offense, defense: &defense, situation: situation,
+                execution: execution, rng: &rng
             )
     }
 
@@ -80,6 +83,7 @@ public enum PlayResolver {
         offense: inout TeamSnapshot,
         defense: inout TeamSnapshot,
         situation: GameSituation,
+        execution: PlayExecution,
         rng: inout SeededRandom
     ) -> Outcome {
         guard let quarterback = offense.player(.qb, slot: 0) else {
@@ -89,7 +93,10 @@ public enum PlayResolver {
 
         // Protection quality decides how often the play never gets started.
         let protection = (offense.unitRating(.ol) - defense.unitRating(.dl)) * 0.004
-        let sackChance = max(0.005, profile.sackRate * adjustment.sackMultiplier - protection)
+        let sackChance = max(
+            0.005,
+            profile.sackRate * adjustment.sackMultiplier * execution.sackMultiplier - protection
+        )
         if rng.chance(sackChance) {
             let loss = -rng.int(in: 3...9)
             let sacker = pickDefender(&defense, shares: PlayMatrix.sackShares, rng: &rng)
@@ -122,11 +129,14 @@ public enum PlayResolver {
             + adjustment.completionDelta
             + delta * PlayMatrix.completionPerRatingPoint
             + accuracyEdge + receiverEdge + coverageEdge
+            + execution.completionModifier
         completionChance = min(0.94, max(0.08, completionChance))
 
         let interceptionChance = max(
             0.002,
-            profile.interceptionRate * adjustment.interceptionMultiplier
+            profile.interceptionRate
+                * adjustment.interceptionMultiplier
+                * execution.interceptionMultiplier
                 - Double(quarterback.ratings[.awareness] - 70) * 0.00035
         )
 
@@ -189,14 +199,14 @@ public enum PlayResolver {
             adjustment: adjustment,
             delta: delta,
             tempo: tempo,
-            call: .shortPass,
+            call: call,
             rng: &rng
         )
         // Yards after catch belong to the receiver's legs.
         if let receiver {
             let elusiveness = Double(receiver.ratings[.breakTackle] - 70) * 0.05
                 + Double(receiver.ratings[.speed] - 70) * 0.04
-            yards += Int(elusiveness.rounded())
+            yards += Int((elusiveness + execution.yardsModifier).rounded())
         }
         yards = clampToField(yards: yards, situation: situation, allowLoss: true)
 
@@ -245,6 +255,7 @@ public enum PlayResolver {
         offense: inout TeamSnapshot,
         defense: inout TeamSnapshot,
         situation: GameSituation,
+        execution: PlayExecution,
         rng: inout SeededRandom
     ) -> Outcome {
         let carrier = pickCarrier(&offense, rng: &rng)
@@ -260,7 +271,7 @@ public enum PlayResolver {
             let burst = Double(carrier.ratings[.breakTackle] - 70) * 0.035
                 + Double(carrier.ratings[.vision] - 70) * 0.030
                 + Double(carrier.ratings[.speed] - 70) * 0.020
-            yards += Int(burst.rounded())
+            yards += Int((burst + execution.yardsModifier).rounded())
         }
         yards = clampToField(yards: yards, situation: situation, allowLoss: true)
 
@@ -278,7 +289,8 @@ public enum PlayResolver {
         // Fumble: the defence takes it away rather than the offence merely dropping it.
         let fumbleChance = max(
             0.001,
-            profile.fumbleRate - (carrier.map { Double($0.ratings[.strength] - 70) * 0.00008 } ?? 0)
+            profile.fumbleRate * execution.fumbleMultiplier
+                - (carrier.map { Double($0.ratings[.strength] - 70) * 0.00008 } ?? 0)
         )
         if rng.chance(fumbleChance) {
             let defender = pickDefender(&defense, shares: PlayMatrix.tackleShares, rng: &rng)

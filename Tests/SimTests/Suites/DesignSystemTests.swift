@@ -53,6 +53,23 @@ func runDesignSystemTests() {
             expectEqual(RatingPalette.tier(for: 73.6), .starter, "73.6 rounds up")
         }
 
+        // Both parsers here and in `Color(hex:)` fall back silently — to black and to grey
+        // respectively — so a typo'd hex would sail through the contrast check below and then
+        // render grey on device. Validate the format itself.
+        test("tier hexes are well formed") {
+            for tier in RatingTier.allCases {
+                for hex in [tier.lightHex, tier.darkHex] {
+                    expect(hex.hasPrefix("#"), "\(tier) hex \(hex) must be #-prefixed")
+                    let digits = hex.dropFirst()
+                    expectEqual(digits.count, 6, "\(tier) hex \(hex) must be 6 digits")
+                    expect(
+                        digits.allSatisfy(\.isHexDigit),
+                        "\(tier) hex \(hex) contains a non-hex character"
+                    )
+                }
+            }
+        }
+
         test("every tier clears WCAG AA on every surface it is drawn on") {
             for tier in RatingTier.allCases {
                 for (theme, hex, surfaces) in [
