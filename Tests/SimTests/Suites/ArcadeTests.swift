@@ -202,3 +202,141 @@ func runArcadeTests() {
         }
     }
 }
+
+func runInteractiveGameTests() {
+    let league = LeagueFactory.makeDefaultLeague(seed: 800, userTeamIndex: 0, coach: .stub())
+    let home = league.teams[0]
+    let away = league.teams[5]
+
+    func makeGame(seed: UInt64, userIsHome: Bool = true) -> InteractiveGame {
+        InteractiveGame(
+            home: home,
+            away: away,
+            userTeamID: userIsHome ? home.id : away.id,
+            week: 1,
+            year: 2026,
+            kind: .conference,
+            scheduledGameID: UUID(),
+            settings: LeagueSettings(),
+            neutralSite: false,
+            rng: SeededRandom(seed: seed)
+        )
+    }
+
+    suite("InteractiveGame") {
+        test("stepping to the user's turn stops with them on offence") {
+            var game = makeGame(seed: 810)
+            game.advanceUntilUserTurn()
+            if case .awaitingUserPlay = game.state {
+                expect(game.isUserOnOffense, "state says the user is up but possession disagrees")
+            } else if game.state == .finished {
+                expect(false, "a fresh game should not already be over")
+            }
+        }
+
+        test("a hand-played game reaches a legal final score") {
+            var game = makeGame(seed: 811)
+            var snaps = 0
+            while game.state != .finished, snaps < 400 {
+                snaps += 1
+                game.advanceUntilUserTurn()
+                guard case .awaitingUserPlay = game.state else { break }
+                game.playUserSnap(call: .shortPass, execution: PlayExecution(accuracy: 0.5, timing: 0.5))
+            }
+            game.simulateRemainder()
+
+            guard let record = game.record else { return expect(false, "no record was produced") }
+            expect(record.homeScore >= 0 && record.awayScore >= 0, "negative score")
+            expect(record.homeScore != 1 && record.awayScore != 1, "1 is not a reachable score")
+            expect(!record.plays.isEmpty, "a played game recorded no plays")
+            expect(record.playerStats.count > 50, "box score is too thin: \(record.playerStats.count)")
+        }
+
+        test("playing every snap with neutral execution matches the simulated game exactly") {
+            // The engine draws its own call either way, so a player who calls what the AI would
+            // have called, and executes it neutrally, must land on the identical game. This is
+            // the guarantee that watching and simming cannot diverge.
+            var simulated = GameSimulator(
+                home: home, away: away, week: 1, year: 2026, kind: .conference,
+                scheduledGameID: UUID(), options: .init(retainPlays: true)
+            )
+            var rngA = SeededRandom(seed: 812)
+            let reference = simulated.run(rng: &rngA)
+
+            var stepped = GameSimulator(
+                home: home, away: away, week: 1, year: 2026, kind: .conference,
+                scheduledGameID: UUID(), options: .init(retainPlays: true)
+            )
+            var rngB = SeededRandom(seed: 812)
+            var steps = 0
+            while stepped.advance(rng: &rngB), steps < 5_000 { steps += 1 }
+            let byHand = stepped.finish(rng: &rngB)
+
+            expectEqual(byHand.homeScore, reference.homeScore, "home score diverged")
+            expectEqual(byHand.awayScore, reference.awayScore, "away score diverged")
+            expectEqual(byHand.plays.count, reference.plays.count, "play count diverged")
+            expectEqual(byHand.homeStats.totalYards, reference.homeStats.totalYards)
+            expectEqual(byHand.overtimePeriods, reference.overtimePeriods)
+        }
+
+        test("simulating the remainder from the start equals a straight simulation") {
+            var game = makeGame(seed: 813)
+            game.simulateRemainder()
+            guard let played = game.record else { return expect(false, "no record") }
+
+            var reference = GameSimulator(
+                home: home, away: away, week: 1, year: 2026, kind: .conference,
+                scheduledGameID: UUID(), options: .init(retainPlays: true)
+            )
+            var rng = SeededRandom(seed: 813)
+            let simulated = reference.run(rng: &rng)
+
+            expectEqual(played.homeScore, simulated.homeScore)
+            expectEqual(played.awayScore, simulated.awayScore)
+            expectEqual(played.plays.count, simulated.plays.count)
+        }
+
+        test("the random stream is handed back so the league can carry on") {
+            var game = makeGame(seed: 814)
+            let before = game.currentRNG
+            game.simulateRemainder()
+            expect(game.currentRNG != before, "the game consumed no randomness at all")
+        }
+
+        test("a user who plays well scores more than one who plays badly") {
+            func scoreWithExecution(_ execution: PlayExecution, seed: UInt64) -> Int {
+                var total = 0
+                for offset in 0..<6 {
+                    var game = makeGame(seed: seed &+ UInt64(offset))
+                    var snaps = 0
+                    while game.state != .finished, snaps < 400 {
+                        snaps += 1
+                        game.advanceUntilUserTurn()
+                        guard case .awaitingUserPlay(let situation) = game.state else { break }
+                        // Call something sane so the comparison is about execution, not tactics.
+                        let call: OffensivePlay = situation.distance >= 7 ? .shortPass : .insideRun
+                        game.playUserSnap(call: call, execution: execution)
+                    }
+                    game.simulateRemainder()
+                    total += game.record?.score(for: home.id) ?? 0
+                }
+                return total
+            }
+
+            let sharp = scoreWithExecution(PlayExecution(accuracy: 1, timing: 1, running: 1), seed: 820)
+            let sloppy = scoreWithExecution(PlayExecution(accuracy: -1, timing: -1, running: -1), seed: 820)
+            expect(
+                sharp > sloppy,
+                "good play scored \(sharp) across six games, bad play \(sloppy) — skill should tell"
+            )
+        }
+
+        test("stepping cannot run away with itself") {
+            var game = makeGame(seed: 815)
+            // A caller that never supplies a snap must still terminate rather than spin.
+            let produced = game.advanceUntilUserTurn(limit: 50)
+            expect(produced.count <= 50, "more plays than steps taken")
+            expect(game.state != .finished || game.record != nil, "finished without a record")
+        }
+    }
+}

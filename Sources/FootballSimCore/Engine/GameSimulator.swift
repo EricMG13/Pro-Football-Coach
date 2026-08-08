@@ -101,77 +101,95 @@ public struct GameSimulator {
     // MARK: - Game loop
 
     /// Plays the whole game and returns the finished record.
+    /// Where the game currently is. The nested loops that used to drive a game are hoisted into
+    /// this so a caller can advance one snap at a time — which is what lets the arcade mode hand
+    /// control to the player for their own offence without a second copy of the rules.
+    private enum Stage {
+        case notStarted, regulation, overtimeSetup, overtime, finished
+    }
+
+    private var stage: Stage = .notStarted
+    private var offenseIsHome = false
+    private var secondHalfReceiverIsHome = false
+    private var nextYardLine = LeagueRules.touchbackYardLine
+    private var situation = GameSituation()
+    private var driveActive = false
+    private var driveSnaps = 0
+    private var overtimePossessions = 0
+
+    /// The team on offence for the next snap.
+    public var offenseTeamID: UUID { offenseIsHome ? home.id : away.id }
+
+    /// Down, distance, clock and field position for the next snap.
+    public var currentSituation: GameSituation { situation }
+
+    public var isComplete: Bool { stage == .finished }
+
+    /// False before the coin toss, so a caller can tell "waiting to start" from "user's ball".
+    public var hasStarted: Bool { stage != .notStarted }
+
+    /// The play-by-play so far. Empty unless `retainPlays` was set.
+    public var playLog: [PlayEvent] { plays }
+
+    /// Plays the whole game. Kept as a thin wrapper over `advance` so that a single code path
+    /// serves bulk simulation and interactive play alike, and every existing test exercises the
+    /// same machinery the arcade uses.
     public mutating func run(rng: inout SeededRandom) -> GameRecord {
-        // Coin toss: the winner receives, so the other side gets the second-half kickoff.
-        var offenseIsHome = rng.chance(0.5)
-        let secondHalfReceiverIsHome = !offenseIsHome
+        while advance(rng: &rng) {}
+        return finish(rng: &rng)
+    }
 
-        var yardLine = LeagueRules.touchbackYardLine
-        recordPlay(
-            offenseIsHome: offenseIsHome,
-            category: .kickoff,
-            yards: 0,
-            situation: GameSituation(quarter: 1, clockSeconds: clock, yardLine: yardLine),
-            description: "\(offenseIsHome ? home.abbreviation : away.abbreviation) receives the opening kickoff."
-        )
+    /// Advances the game by one snap, or by one transition between drives, quarters or overtime
+    /// periods. Returns false once the game is over.
+    ///
+    /// `userCall` and `execution` apply only to the very next snap, and only if that snap is a
+    /// scrimmage play. Passing nothing gives exactly the simulated game.
+    @discardableResult
+    public mutating func advance(
+        rng: inout SeededRandom,
+        userCall: OffensivePlay? = nil,
+        execution: PlayExecution = .neutral
+    ) -> Bool {
+        switch stage {
+        case .notStarted:
+            performCoinToss(rng: &rng)
+            return true
 
-        while quarter <= 4 {
-            let outcome = runDrive(offenseIsHome: offenseIsHome, startingYardLine: yardLine, rng: &rng)
-            switch outcome.end {
-            case .endOfGame:
-                break
-            case .endOfHalf:
-                // Second half: whoever did not receive the opening kick gets the ball.
-                offenseIsHome = secondHalfReceiverIsHome
-                yardLine = LeagueRules.touchbackYardLine
-            case .safety:
-                // The team that conceded the safety kicks it back.
-                yardLine = 40
-            case .touchdown, .fieldGoal:
-                offenseIsHome.toggle()
-                yardLine = kickoffResult(rng: &rng)
-            case .punt, .turnover, .downs:
-                offenseIsHome.toggle()
-                yardLine = outcome.nextYardLine
+        case .regulation:
+            if !driveActive { beginDrive() }
+            if let outcome = takeSnap(userCall: userCall, execution: execution, rng: &rng) {
+                driveActive = false
+                applyRegulationTransition(outcome, rng: &rng)
             }
-            if quarter > 4 { break }
-        }
+            return stage != .finished
 
-        // Overtime. Regular season plays one period and accepts a tie; playoffs go until settled.
-        while homeStats.points == awayStats.points {
-            let isPlayoff = kind.isPlayoff
-            if !isPlayoff && overtimePeriods >= LeagueRules.regularSeasonOvertimePeriods { break }
-            overtimePeriods += 1
-            quarter = 4 + overtimePeriods
-            clock = LeagueRules.overtimeLengthSeconds
-            homeTimeouts = 2
-            awayTimeouts = 2
-            var overtimeOffenseIsHome = rng.chance(0.5)
-            var possessionsPlayed = 0
-            var startingLine = LeagueRules.touchbackYardLine
+        case .overtimeSetup:
+            beginOvertimePeriodIfNeeded(rng: &rng)
+            return stage != .finished
 
-            // Both teams get a possession unless the first one scores a touchdown.
-            while clock > 0 {
-                let outcome = runDrive(
-                    offenseIsHome: overtimeOffenseIsHome,
-                    startingYardLine: startingLine,
-                    rng: &rng
-                )
-                possessionsPlayed += 1
-                if outcome.end == .touchdown { break }
-                if homeStats.points != awayStats.points && possessionsPlayed >= 2 { break }
-                if outcome.end == .endOfHalf || outcome.end == .endOfGame { break }
-                overtimeOffenseIsHome.toggle()
-                startingLine = outcome.end == .punt || outcome.end == .turnover || outcome.end == .downs
-                    ? outcome.nextYardLine
-                    : kickoffResult(rng: &rng)
+        case .overtime:
+            if !driveActive {
+                // The inner loop of a period is bounded by its own clock.
+                guard clock > 0 else {
+                    stage = .overtimeSetup
+                    return true
+                }
+                beginDrive()
             }
-            if isPlayoff && homeStats.points == awayStats.points { continue }
-            break
-        }
+            if let outcome = takeSnap(userCall: userCall, execution: execution, rng: &rng) {
+                driveActive = false
+                applyOvertimeTransition(outcome, rng: &rng)
+            }
+            return stage != .finished
 
+        case .finished:
+            return false
+        }
+    }
+
+    /// Builds the finished record. Safe to call once the game is complete.
+    public mutating func finish(rng: inout SeededRandom) -> GameRecord {
         creditAppearances()
-
         return GameRecord(
             id: rng.uuid(),
             scheduledGameID: scheduledGameID,
@@ -187,6 +205,86 @@ public struct GameSimulator {
             injuries: injuries,
             overtimePeriods: overtimePeriods
         )
+    }
+
+    // MARK: - Stage transitions
+
+    private mutating func performCoinToss(rng: inout SeededRandom) {
+        // The winner receives, so the other side gets the second-half kickoff.
+        offenseIsHome = rng.chance(0.5)
+        secondHalfReceiverIsHome = !offenseIsHome
+        nextYardLine = LeagueRules.touchbackYardLine
+        recordPlay(
+            offenseIsHome: offenseIsHome,
+            category: .kickoff,
+            yards: 0,
+            situation: GameSituation(quarter: 1, clockSeconds: clock, yardLine: nextYardLine),
+            description: "\(offenseIsHome ? home.abbreviation : away.abbreviation) receives the opening kickoff."
+        )
+        stage = .regulation
+    }
+
+    private mutating func applyRegulationTransition(_ outcome: DriveOutcome, rng: inout SeededRandom) {
+        switch outcome.end {
+        case .endOfGame:
+            break
+        case .endOfHalf:
+            // Second half: whoever did not receive the opening kick gets the ball.
+            offenseIsHome = secondHalfReceiverIsHome
+            nextYardLine = LeagueRules.touchbackYardLine
+        case .safety:
+            // The team that conceded the safety kicks it back.
+            nextYardLine = 40
+        case .touchdown, .fieldGoal:
+            offenseIsHome.toggle()
+            nextYardLine = kickoffResult(rng: &rng)
+        case .punt, .turnover, .downs:
+            offenseIsHome.toggle()
+            nextYardLine = outcome.nextYardLine
+        }
+        if quarter > 4 { stage = .overtimeSetup }
+    }
+
+    private mutating func beginOvertimePeriodIfNeeded(rng: inout SeededRandom) {
+        // A decided game is over; a tied one only continues if the format allows another period.
+        guard homeStats.points == awayStats.points else {
+            stage = .finished
+            return
+        }
+        guard kind.isPlayoff || overtimePeriods < LeagueRules.regularSeasonOvertimePeriods else {
+            stage = .finished
+            return
+        }
+
+        overtimePeriods += 1
+        quarter = 4 + overtimePeriods
+        clock = LeagueRules.overtimeLengthSeconds
+        homeTimeouts = 2
+        awayTimeouts = 2
+        offenseIsHome = rng.chance(0.5)
+        overtimePossessions = 0
+        nextYardLine = LeagueRules.touchbackYardLine
+        driveActive = false
+        stage = .overtime
+    }
+
+    private mutating func applyOvertimeTransition(_ outcome: DriveOutcome, rng: inout SeededRandom) {
+        overtimePossessions += 1
+
+        // A touchdown ends it; otherwise both sides get a possession before a lead settles it.
+        if outcome.end == .touchdown
+            || (homeStats.points != awayStats.points && overtimePossessions >= 2)
+            || outcome.end == .endOfHalf
+            || outcome.end == .endOfGame {
+            stage = .overtimeSetup
+            return
+        }
+
+        offenseIsHome.toggle()
+        switch outcome.end {
+        case .punt, .turnover, .downs: nextYardLine = outcome.nextYardLine
+        default: nextYardLine = kickoffResult(rng: &rng)
+        }
     }
 
     /// Credits an appearance to everyone who dressed and stayed healthy. Linemen never record
@@ -207,48 +305,68 @@ public struct GameSimulator {
         let nextYardLine: Int
     }
 
-    private mutating func runDrive(
-        offenseIsHome: Bool,
-        startingYardLine: Int,
-        rng: inout SeededRandom
-    ) -> DriveOutcome {
+    private mutating func beginDrive() {
         driveNumber += 1
-        var situation = GameSituation(
+        driveSnaps = 0
+        driveActive = true
+        situation = GameSituation(
             quarter: quarter,
             clockSeconds: clock,
             down: 1,
             distance: LeagueRules.firstDownYards,
-            yardLine: startingYardLine,
+            yardLine: nextYardLine,
             offenseScore: offenseIsHome ? homeStats.points : awayStats.points,
             defenseScore: offenseIsHome ? awayStats.points : homeStats.points,
             offenseTimeouts: offenseIsHome ? homeTimeouts : awayTimeouts,
             defenseTimeouts: offenseIsHome ? awayTimeouts : homeTimeouts,
             isOvertime: overtimePeriods > 0
         )
+    }
 
-        // A drive cannot legally exceed a few dozen snaps; the bound is a safety net, not a rule.
-        for _ in 0..<40 {
-            if clock <= 0 {
-                let ended = advanceQuarter()
-                if ended { return DriveOutcome(end: .endOfGame, nextYardLine: 25) }
-                if quarter == 3 { return DriveOutcome(end: .endOfHalf, nextYardLine: 25) }
-                if overtimePeriods > 0 { return DriveOutcome(end: .endOfHalf, nextYardLine: 25) }
-                situation.quarter = quarter
-            }
-            situation.clockSeconds = clock
-            situation.offenseScore = offenseIsHome ? homeStats.points : awayStats.points
-            situation.defenseScore = offenseIsHome ? awayStats.points : homeStats.points
-
-            let result = runPlay(offenseIsHome: offenseIsHome, situation: &situation, rng: &rng)
-            if let end = result { return end }
+    /// One iteration of a drive: handles an expired clock, then plays a snap. Returns a drive
+    /// outcome when the possession ends, or nil to keep going.
+    private mutating func takeSnap(
+        userCall: OffensivePlay?,
+        execution: PlayExecution,
+        rng: inout SeededRandom
+    ) -> DriveOutcome? {
+        // A drive cannot legally run forever; the bound is a safety net, not a rule.
+        guard driveSnaps < 40 else {
+            return DriveOutcome(end: .punt, nextYardLine: 100 - situation.yardLine)
         }
-        return DriveOutcome(end: .punt, nextYardLine: 100 - situation.yardLine)
+        driveSnaps += 1
+
+        if clock <= 0 {
+            let ended = advanceQuarter()
+            if ended { return DriveOutcome(end: .endOfGame, nextYardLine: 25) }
+            if quarter == 3 { return DriveOutcome(end: .endOfHalf, nextYardLine: 25) }
+            if overtimePeriods > 0 { return DriveOutcome(end: .endOfHalf, nextYardLine: 25) }
+            situation.quarter = quarter
+        }
+        situation.clockSeconds = clock
+        situation.offenseScore = offenseIsHome ? homeStats.points : awayStats.points
+        situation.defenseScore = offenseIsHome ? awayStats.points : homeStats.points
+
+        // Copied through a local because `situation` is now stored on self, and passing it
+        // inout to a mutating method would be overlapping access to the same value.
+        var pending = situation
+        let outcome = runPlay(
+            offenseIsHome: offenseIsHome,
+            situation: &pending,
+            userCall: userCall,
+            execution: execution,
+            rng: &rng
+        )
+        situation = pending
+        return outcome
     }
 
     /// Executes one snap. Returns a drive outcome when the possession ends.
     private mutating func runPlay(
         offenseIsHome: Bool,
         situation: inout GameSituation,
+        userCall: OffensivePlay? = nil,
+        execution: PlayExecution = .neutral,
         rng: inout SeededRandom
     ) -> DriveOutcome? {
         let offense = offenseIsHome ? home : away
@@ -258,12 +376,15 @@ public struct GameSimulator {
         let defensiveCoordinatorQuality = defense.staff(.defensiveCoordinator)?.playCallQuality ?? 0.7
 
 
-        let call = PlayCaller.offensiveCall(
+        // The AI call is drawn either way so the random stream is identical whether or not a
+        // player is steering — a game must not diverge just because someone took the controls.
+        let simulatedCall = PlayCaller.offensiveCall(
             situation: situation,
             team: offense,
             coordinatorQuality: offensiveCoordinatorQuality,
             rng: &rng
         )
+        let call = userCall ?? simulatedCall
         let defensiveCall = PlayCaller.defensiveCall(
             situation: situation,
             team: defense,
@@ -311,6 +432,7 @@ public struct GameSimulator {
             defensiveCall: defensiveCall,
             tempo: tempo,
             situation: &situation,
+            execution: execution,
             rng: &rng
         )
     }
@@ -323,6 +445,7 @@ public struct GameSimulator {
         defensiveCall: DefensivePlay,
         tempo: Tempo,
         situation: inout GameSituation,
+        execution: PlayExecution = .neutral,
         rng: inout SeededRandom
     ) -> DriveOutcome? {
         let defense = offenseIsHome ? away : home
@@ -332,13 +455,13 @@ public struct GameSimulator {
             outcome = PlayResolver.resolve(
                 call: call, defensiveCall: defensiveCall, tempo: tempo,
                 offense: &homeSnapshot, defense: &awaySnapshot, situation: situation,
-                homeFieldForOffense: !options.neutralSite, rng: &rng
+                homeFieldForOffense: !options.neutralSite, execution: execution, rng: &rng
             )
         } else {
             outcome = PlayResolver.resolve(
                 call: call, defensiveCall: defensiveCall, tempo: tempo,
                 offense: &awaySnapshot, defense: &homeSnapshot, situation: situation,
-                homeFieldForOffense: false, rng: &rng
+                homeFieldForOffense: false, execution: execution, rng: &rng
             )
         }
 
