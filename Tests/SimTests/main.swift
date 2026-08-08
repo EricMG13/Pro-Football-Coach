@@ -2,5 +2,6 @@
 runSeededRandomTests()
 runModelTests()
 runGenerationTests()
+runGameSimulatorTests()
 
 TestKit.finish()

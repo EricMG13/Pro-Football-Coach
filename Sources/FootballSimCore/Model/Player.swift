@@ -101,10 +101,16 @@ public struct Ratings: Codable, Sendable, Equatable {
     }
 
     /// Weighted mean over the position's attributes, rounded to an integer 40...99.
+    ///
+    /// Accumulates in the position's declared attribute order rather than by iterating the
+    /// weights dictionary: floating-point addition isn't associative, so a different summation
+    /// order can land on the other side of a rounding boundary and silently make an overall
+    /// — and therefore a whole generated league — non-reproducible.
     public func overall(for position: Position) -> Int {
         let weights = LeagueRules.overallWeights(for: position)
-        let total = weights.reduce(0.0) { sum, entry in
-            sum + Double(self[entry.key]) * entry.value
+        var total = 0.0
+        for attribute in position.attributes {
+            total += Double(self[attribute]) * (weights[attribute] ?? 0)
         }
         return Int(total.rounded()).clampedToRating()
     }
