@@ -30,7 +30,7 @@ If `xcodebuild` reports no simulator destinations, the iOS platform component is
 swift build && swift run -c release SimTests
 ```
 
-**201 tests, ~12,950 assertions, all passing.** Runtime about 100 seconds, dominated by the
+**208 tests, 13,152 assertions, all passing.** Runtime about 100 seconds, dominated by the
 ten-season soak.
 
 ## Complete and tested
@@ -59,6 +59,7 @@ ten-season soak.
 | Street free agency, in season | Done: the free-agent board is open all year, with a practice-squad option on the offer sheet and a refusal that names the door that shut — roster full, squad full, or the amount over the cap |
 | Practice squad: call up, send down | Done: `CapEngine.elevate` / `demote` with a positional floor, seven tests, swipe actions on the depth chart. Both refusal paths seen on device |
 | Save / load, backup recovery, version refusal | Done, and forward-compatible: unknown-field defaults mean an older save still opens |
+| Light and dark, small screen and large | Walked on an iPhone 17 Pro Max and an iPhone 17e, both appearances. The control tint is now lifted for the dark scheme: a bordered button draws its label in the tint over a wash of the same tint, so a navy team was rendering its own buttons dark-on-dark. A test checks every team's lifted tint against the dark page at 4.5:1 |
 | Accessibility of rating colours | Done: every tier verified at 4.5:1 on card, page and chip tint in both themes, with the tier spoken to VoiceOver |
 | SwiftUI app: menu, wizard, season hub, schedule, standings, news, team, depth chart, player cards, stats, front office, draft board, coach, offseason pipeline, both play modes | Built and run on an iPhone simulator; core path walked by hand |
 

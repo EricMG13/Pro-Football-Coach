@@ -14,5 +14,6 @@ runDynastyTests()
 runLegacyTests()
 runPersistenceTests()
 runDesignSystemTests()
+runTeamTintTests()
 
 TestKit.finish()

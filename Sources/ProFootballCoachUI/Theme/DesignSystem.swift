@@ -47,14 +47,62 @@ public extension Color {
 public struct TeamTheme: Sendable {
     public let primary: Color
     public let secondary: Color
+    /// The colour controls are tinted with. Same identity as `primary` on a light background,
+    /// lightened on a dark one: a bordered button draws its label in the tint over a faint wash
+    /// of the same tint, so a navy or maroon team turns its own buttons into dark-on-dark.
+    public let tint: Color
 
-    public init(primary: Color, secondary: Color) {
+    public init(primary: Color, secondary: Color, tint: Color? = nil) {
         self.primary = primary
         self.secondary = secondary
+        self.tint = tint ?? primary
     }
 
     public init(colors: TeamColors) {
-        self.init(primary: Color(hex: colors.primaryHex), secondary: Color(hex: colors.secondaryHex))
+        self.init(
+            primary: Color(hex: colors.primaryHex),
+            secondary: Color(hex: colors.secondaryHex),
+            tint: Color(
+                light: colors.primaryHex,
+                dark: TeamTheme.legibleOnDark(colors.primaryHex)
+            )
+        )
+    }
+
+    /// Lifts a hex toward white until it clears 4.5:1 against the dark page background.
+    /// Returns the input untouched when it already does.
+    public static func legibleOnDark(_ hex: String, background: String = "#0B0B0F") -> String {
+        var mix = 0.0
+        var candidate = hex
+        while mix <= 0.9, contrastRatio(candidate, background) < 4.5 {
+            mix += 0.05
+            candidate = blend(hex, toward: "#FFFFFF", amount: mix)
+        }
+        return candidate
+    }
+
+    private static func channels(_ hex: String) -> [Double] {
+        let cleaned = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
+        let value = UInt32(cleaned, radix: 16) ?? 0
+        return [(value >> 16) & 0xFF, (value >> 8) & 0xFF, value & 0xFF].map { Double($0) / 255 }
+    }
+
+    private static func blend(_ hex: String, toward target: String, amount: Double) -> String {
+        let (from, to) = (channels(hex), channels(target))
+        let mixed = (0..<3).map { UInt32(((from[$0] * (1 - amount)) + to[$0] * amount) * 255) }
+        return String(format: "#%02X%02X%02X", mixed[0], mixed[1], mixed[2])
+    }
+
+    /// WCAG 2.2 §1.4.3, kept here so the palette can check itself without a test target.
+    public static func contrastRatio(_ a: String, _ b: String) -> Double {
+        func luminance(_ hex: String) -> Double {
+            let linear = channels(hex).map {
+                $0 <= 0.03928 ? $0 / 12.92 : pow(($0 + 0.055) / 1.055, 2.4)
+            }
+            return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+        }
+        let (high, low) = (max(luminance(a), luminance(b)), min(luminance(a), luminance(b)))
+        return (high + 0.05) / (low + 0.05)
     }
 
     /// Neutral identity used before a team has been chosen.

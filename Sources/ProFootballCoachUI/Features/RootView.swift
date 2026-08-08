@@ -17,7 +17,7 @@ public struct RootView: View {
         }
         .environment(app)
         .environment(\.teamTheme, app.theme)
-        .tint(app.theme.primary)
+        .tint(app.theme.tint)
     }
 }
 

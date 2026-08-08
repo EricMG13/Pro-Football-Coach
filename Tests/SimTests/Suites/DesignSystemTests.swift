@@ -1,4 +1,5 @@
 import Foundation
+import FootballSimCore
 import ProFootballCoachUI
 
 // Contrast maths, run against the palette's own hex strings so these assertions test the
@@ -101,5 +102,39 @@ func runDesignSystemTests() {
             let hexes = RatingTier.allCases.flatMap { [$0.lightHex, $0.darkHex] }
             expectEqual(Set(hexes).count, hexes.count, "no two tiers may share a colour")
         }
+    }
+}
+
+/// Every team's control tint has to be readable on the dark page, because a bordered button
+/// draws its label in the tint over a wash of the same tint. A navy team was rendering
+/// dark-on-dark before `legibleOnDark` existed.
+public func runTeamTintTests() {
+    suite("Team tint legibility") {
+        let league = LeagueFactory.makeDefaultLeague(seed: 4_242, userTeamIndex: 0, coach: .stub())
+        for team in league.teams {
+            let tint = TeamTheme.legibleOnDark(team.colors.primaryHex)
+            expect(
+                TeamTheme.contrastRatio(tint, "#0B0B0F") >= 4.5,
+                "\(team.fullName) tint \(tint) must clear 4.5:1 on the dark page"
+            )
+        }
+
+        // A colour that already clears the bar is left exactly as the team chose it.
+        let bright = "#F5C542"
+        expect(
+            TeamTheme.legibleOnDark(bright) == bright,
+            "a light hex should pass through untouched"
+        )
+
+        // And the light scheme keeps the real identity, however dark it is.
+        let navy = "#0B1F3A"
+        expect(
+            TeamTheme.legibleOnDark(navy) != navy,
+            "a near-black hex must be lifted for the dark scheme"
+        )
+        expect(
+            TeamTheme.contrastRatio(navy, "#FFFFFF") >= 4.5,
+            "the untouched hex is still the one used on a light background"
+        )
     }
 }
