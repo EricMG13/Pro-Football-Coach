@@ -54,6 +54,7 @@ ten-season soak.
 | Draft day, played pick by pick | Done: AI picks resolve automatically, the board stops when you are on the clock |
 | On the Field: call plays, drag to aim, throw under pressure, fourth-down kicks, carrier decision | Play calling, aiming and the kick meter played on device — a 51-yard field goal made through the meter. The carrier window resolves correctly but its UI has not been seen (see gap 3) |
 | Re-signing your own expiring players | Done: asking price, acceptance odds and a three-round negotiation |
+| Practice squad: call up, send down | Done: `CapEngine.elevate` / `demote` with a positional floor, seven tests, swipe actions on the depth chart. Both refusal paths seen on device |
 | Save / load, backup recovery, version refusal | Done, and forward-compatible: unknown-field defaults mean an older save still opens |
 | Accessibility of rating colours | Done: every tier verified at 4.5:1 on card, page and chip tint in both themes, with the tier spoken to VoiceOver |
 | SwiftUI app: menu, wizard, season hub, schedule, standings, news, team, depth chart, player cards, stats, front office, draft board, coach, offseason pipeline, both play modes | Built and run on an iPhone simulator; core path walked by hand |
@@ -62,8 +63,9 @@ ten-season soak.
 
 Ordered by how much they would be missed.
 
-1. **Practice squad elevation** and in-season street free-agent signing are engine-supported but
-   not surfaced.
+1. **In-season street free-agent signing** is engine-supported but not surfaced. Practice-squad
+   moves now are: swipe a player on the depth chart to call him up or send him down, and a
+   refused move says why (roster full, squad full, or it would leave a position short).
 2. **Tutorial and trophy room** are not built.
 3. **The arcade's timed windows have not been hand-played.** The pass rush, the carrier decision
    and the kick meter all open windows of a few seconds. Driving the simulator through tooling

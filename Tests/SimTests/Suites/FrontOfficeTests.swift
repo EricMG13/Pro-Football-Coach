@@ -547,3 +547,136 @@ func runInteractiveDraftTests() {
         }
     }
 }
+
+func runRosterMoveTests() {
+    suite("Practice squad moves") {
+        /// A league whose user team has a free active spot, so promotions are legal.
+        func leagueWithRoom(seed: UInt64) -> League {
+            var league = LeagueFactory.makeDefaultLeague(seed: seed, userTeamIndex: 0, coach: .stub())
+            // Cut a receiver: deep enough that the position stays above its floor.
+            let spare = league.teams[0].activeRoster
+                .filter { $0.position == .wr }
+                .sorted { $0.overall < $1.overall }[0]
+            CapEngine.cut(playerID: spare.id, from: league.teams[0].id, in: &league)
+            return league
+        }
+
+        test("a promotion moves a player up and gives him a real contract") {
+            var league = leagueWithRoom(seed: 900)
+            let teamID = league.teams[0].id
+            let prospect = league.teams[0].practiceSquad[0]
+            let activeBefore = league.teams[0].activeRoster.count
+
+            let refusal = CapEngine.elevate(playerID: prospect.id, on: teamID, in: &league)
+            expect(refusal == nil, "promotion was refused: \(String(describing: refusal))")
+
+            let promoted = league.team(id: teamID)?.player(id: prospect.id)
+            expect(promoted?.isOnPracticeSquad == false, "he is still on the practice squad")
+            expect(promoted?.contract != nil, "a promoted player needs a contract")
+            expectEqual(league.team(id: teamID)?.activeRoster.count, activeBefore + 1)
+            expect(
+                (promoted?.morale ?? 0) > prospect.morale,
+                "being called up should lift a player"
+            )
+        }
+
+        test("a full active roster refuses a promotion") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 901, userTeamIndex: 0, coach: .stub())
+            let teamID = league.teams[0].id
+            let prospect = league.teams[0].practiceSquad[0]
+            expectEqual(
+                CapEngine.elevate(playerID: prospect.id, on: teamID, in: &league),
+                .activeRosterFull,
+                "a 53-man roster should have no room"
+            )
+        }
+
+        test("only practice-squad players can be promoted") {
+            var league = leagueWithRoom(seed: 902)
+            let teamID = league.teams[0].id
+            let starter = league.teams[0].activeRoster[0]
+            expectEqual(
+                CapEngine.elevate(playerID: starter.id, on: teamID, in: &league),
+                .notOnPracticeSquad
+            )
+        }
+
+        test("sending a player down works and dents his morale") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 903, userTeamIndex: 0, coach: .stub())
+            let teamID = league.teams[0].id
+            // Free a practice-squad slot first.
+            let spare = league.teams[0].practiceSquad[0]
+            CapEngine.cut(playerID: spare.id, from: teamID, in: &league)
+
+            // Pick a position carrying more than its minimum.
+            guard let victim = league.team(id: teamID)?.activeRoster.first(where: { player in
+                (league.team(id: teamID)?.activeRoster.filter { $0.position == player.position }.count ?? 0)
+                    > player.position.minimumRosterCount
+            }) else { return expect(false, "no position with spare depth") }
+
+            let refusal = CapEngine.demote(playerID: victim.id, on: teamID, in: &league)
+            expect(refusal == nil, "demotion was refused: \(String(describing: refusal))")
+            let sentDown = league.team(id: teamID)?.player(id: victim.id)
+            expect(sentDown?.isOnPracticeSquad == true, "he did not go down")
+            expect((sentDown?.morale ?? 100) < victim.morale, "being sent down should sting")
+        }
+
+        test("a demotion that would leave a position short is refused") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 904, userTeamIndex: 0, coach: .stub())
+            let teamID = league.teams[0].id
+            let spare = league.teams[0].practiceSquad[0]
+            CapEngine.cut(playerID: spare.id, from: teamID, in: &league)
+
+            // Cut kickers down to the bare minimum, then try to send the last one down.
+            let kicker = league.team(id: teamID)!.activeRoster.first { $0.position == .k }!
+            expectEqual(
+                CapEngine.demote(playerID: kicker.id, on: teamID, in: &league),
+                .wouldLeavePositionShort(.k),
+                "a team cannot send its only kicker down"
+            )
+        }
+
+        test("a full practice squad refuses a demotion") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 905, userTeamIndex: 0, coach: .stub())
+            let teamID = league.teams[0].id
+            guard let victim = league.team(id: teamID)?.activeRoster.first(where: { player in
+                (league.team(id: teamID)?.activeRoster.filter { $0.position == player.position }.count ?? 0)
+                    > player.position.minimumRosterCount
+            }) else { return expect(false, "no position with spare depth") }
+            expectEqual(
+                CapEngine.demote(playerID: victim.id, on: teamID, in: &league),
+                .practiceSquadFull
+            )
+        }
+
+        test("moves never break the roster's own rules") {
+            var league = leagueWithRoom(seed: 906)
+            let teamID = league.teams[0].id
+            // Shuffle players up and down repeatedly; the roster must stay legal throughout.
+            for _ in 0..<12 {
+                if let up = league.team(id: teamID)?.practiceSquad.first {
+                    _ = CapEngine.elevate(playerID: up.id, on: teamID, in: &league)
+                }
+                if let down = league.team(id: teamID)?.activeRoster.last {
+                    _ = CapEngine.demote(playerID: down.id, on: teamID, in: &league)
+                }
+                guard let team = league.team(id: teamID) else { break }
+                expect(
+                    team.activeRoster.count <= LeagueRules.activeRosterSize,
+                    "active roster overflowed to \(team.activeRoster.count)"
+                )
+                expect(
+                    team.practiceSquad.count <= LeagueRules.practiceSquadSize,
+                    "practice squad overflowed to \(team.practiceSquad.count)"
+                )
+                for position in Position.allCases {
+                    expect(
+                        team.activeRoster.filter { $0.position == position }.count
+                            >= position.minimumRosterCount,
+                        "\(position.abbreviation) fell below its minimum"
+                    )
+                }
+            }
+        }
+    }
+}

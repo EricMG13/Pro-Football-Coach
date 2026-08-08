@@ -83,6 +83,84 @@ public enum CapEngine {
         return true
     }
 
+    /// Why a roster move was refused, so the interface can say something better than "no".
+    public enum RosterMoveError: Error, Equatable {
+        case playerNotFound
+        case activeRosterFull
+        case practiceSquadFull
+        case wouldLeavePositionShort(Position)
+        case notOnPracticeSquad
+        case alreadyOnPracticeSquad
+    }
+
+    /// Promotes a practice-squad player onto the active roster.
+    ///
+    /// Cap space is not checked: a practice-squad contract is already on the books and a
+    /// promotion swaps that charge for a league-minimum one, which is a rounding error against
+    /// the cap and never the reason a team cannot call somebody up.
+    /// Returns nil on success, or why the move was refused.
+    @discardableResult
+    public static func elevate(
+        playerID: UUID,
+        on teamID: UUID,
+        in league: inout League
+    ) -> RosterMoveError? {
+        guard let teamIndex = league.teams.firstIndex(where: { $0.id == teamID }),
+              let playerIndex = league.teams[teamIndex].roster.firstIndex(where: { $0.id == playerID })
+        else { return .playerNotFound }
+        guard league.teams[teamIndex].roster[playerIndex].isOnPracticeSquad
+        else { return .notOnPracticeSquad }
+        guard league.teams[teamIndex].activeRoster.count < LeagueRules.activeRosterSize
+        else { return .activeRosterFull }
+
+        league.teams[teamIndex].roster[playerIndex].isOnPracticeSquad = false
+        // Promotion means a real contract, not the practice-squad stipend.
+        if league.teams[teamIndex].roster[playerIndex].contract == nil {
+            let age = league.teams[teamIndex].roster[playerIndex].age
+            league.teams[teamIndex].roster[playerIndex].contract =
+                ContractPricer.minimumContract(age: age)
+        }
+        league.teams[teamIndex].roster[playerIndex].morale = min(
+            100, league.teams[teamIndex].roster[playerIndex].morale + 10
+        )
+        league.teams[teamIndex].autoSortDepthChart()
+        return nil
+    }
+
+    /// Sends an active player down to the practice squad.
+    ///
+    /// Refused if it would leave a position below the minimum the team needs to field a unit —
+    /// the same floor cutdown and cap compliance respect.
+    /// Returns nil on success, or why the move was refused.
+    @discardableResult
+    public static func demote(
+        playerID: UUID,
+        on teamID: UUID,
+        in league: inout League
+    ) -> RosterMoveError? {
+        guard let teamIndex = league.teams.firstIndex(where: { $0.id == teamID }),
+              let player = league.teams[teamIndex].roster.first(where: { $0.id == playerID })
+        else { return .playerNotFound }
+        guard !player.isOnPracticeSquad else { return .alreadyOnPracticeSquad }
+        guard league.teams[teamIndex].practiceSquad.count < LeagueRules.practiceSquadSize
+        else { return .practiceSquadFull }
+
+        let remaining = league.teams[teamIndex].activeRoster
+            .filter { $0.position == player.position && $0.id != playerID }
+            .count
+        guard remaining >= player.position.minimumRosterCount
+        else { return .wouldLeavePositionShort(player.position) }
+
+        guard let playerIndex = league.teams[teamIndex].roster.firstIndex(where: { $0.id == playerID })
+        else { return .playerNotFound }
+        league.teams[teamIndex].roster[playerIndex].isOnPracticeSquad = true
+        league.teams[teamIndex].roster[playerIndex].morale = max(
+            15, league.teams[teamIndex].roster[playerIndex].morale - 12
+        )
+        league.teams[teamIndex].autoSortDepthChart()
+        return nil
+    }
+
     /// Advances every contract a year, expiring the finished ones into free agency, and
     /// clears the year's dead money.
     public static func rolloverContracts(in league: inout League) {

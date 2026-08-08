@@ -121,6 +121,7 @@ struct TeamView: View {
 struct DepthChartView: View {
     @Environment(AppState.self) private var app
     @State private var showingPracticeSquad = false
+    @State private var refusal: String?
 
     var body: some View {
         List {
@@ -140,6 +141,13 @@ struct DepthChartView: View {
                     }
                     Toggle("Show practice squad", isOn: $showingPracticeSquad)
                     Button("Auto-Sort by Rating") { app.autoSortDepthChart() }
+                    Text(
+                        showingPracticeSquad
+                            ? "Swipe a player right to call him up."
+                            : "Swipe a player right to send him to the practice squad."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
 
                 ForEach(Position.displayOrder, id: \.self) { position in
@@ -158,6 +166,23 @@ struct DepthChartView: View {
                                         starterCount: position.starterCount
                                     )
                                 }
+                                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                    if player.isOnPracticeSquad {
+                                        Button {
+                                            refusal = app.elevate(playerID: player.id)
+                                        } label: {
+                                            Label("Call Up", systemImage: "arrow.up.circle.fill")
+                                        }
+                                        .tint(.green)
+                                    } else {
+                                        Button {
+                                            refusal = app.demote(playerID: player.id)
+                                        } label: {
+                                            Label("Send Down", systemImage: "arrow.down.circle")
+                                        }
+                                        .tint(.orange)
+                                    }
+                                }
                             }
                             .onMove { source, destination in
                                 guard !showingPracticeSquad else { return }
@@ -175,6 +200,14 @@ struct DepthChartView: View {
             }
         }
         .navigationTitle("Depth Chart")
+        .alert(
+            "Can't make that move",
+            isPresented: Binding(get: { refusal != nil }, set: { if !$0 { refusal = nil } })
+        ) {
+            Button("OK", role: .cancel) { refusal = nil }
+        } message: {
+            Text(refusal ?? "")
+        }
         // EditButton is iOS-only; the package also builds for macOS so the whole UI stays
         // compile-checked without Xcode.
         #if os(iOS)

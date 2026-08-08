@@ -332,6 +332,39 @@ public final class AppState {
         return signed
     }
 
+    /// Promotes a practice-squad player. Returns a sentence to show if the move was refused.
+    @discardableResult
+    public func elevate(playerID: UUID) -> String? {
+        guard var current = league, let teamID = current.userTeam?.id else { return nil }
+        let refusal = CapEngine.elevate(playerID: playerID, on: teamID, in: &current)
+        league = current
+        if refusal == nil { autosave() }
+        return refusal.map(Self.describe)
+    }
+
+    /// Sends an active player down. Returns a sentence to show if the move was refused.
+    @discardableResult
+    public func demote(playerID: UUID) -> String? {
+        guard var current = league, let teamID = current.userTeam?.id else { return nil }
+        let refusal = CapEngine.demote(playerID: playerID, on: teamID, in: &current)
+        league = current
+        if refusal == nil { autosave() }
+        return refusal.map(Self.describe)
+    }
+
+    private static func describe(_ error: CapEngine.RosterMoveError) -> String {
+        switch error {
+        case .playerNotFound: "That player is no longer on the roster."
+        case .activeRosterFull:
+            "The active roster is full. Send somebody down or release a player first."
+        case .practiceSquadFull: "The practice squad is full."
+        case .wouldLeavePositionShort(let position):
+            "That would leave you short at \(position.displayName)."
+        case .notOnPracticeSquad: "He is already on the active roster."
+        case .alreadyOnPracticeSquad: "He is already on the practice squad."
+        }
+    }
+
     public func autoSortDepthChart() {
         mutate { league in
             guard var team = league.userTeam else { return }
