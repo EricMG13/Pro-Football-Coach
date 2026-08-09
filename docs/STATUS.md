@@ -11,13 +11,15 @@ The honest picture: what exists, what is verified, what is not.
 **The spec package is complete. P0 has started — first increment written, not yet compiled.**
 
 The v4 brief (`docs/reviews/2026-08-09-spec-prompt-v4.md`) has been executed: research, design,
-architecture, plan, decisions and the build prompt all exist and are internally consistent. Phase P0
-of `docs/05-IMPLEMENTATION-PLAN.md` has not started. It is no longer blocked: the owner's machine
-now runs the gates (D11 below).
+architecture, plan, decisions and the build prompt all exist and are internally consistent. P0 of
+`docs/05-IMPLEMENTATION-PLAN.md` is under way: the first increment is written and awaiting a
+`verify.sh` run.
 
 The previous build's source is still in the tree (`Sources/`, `Tests/`, `App/`). Under Tier C it has
-**no authority**. It has not been deleted, because deleting it is P0's business and P0 has not run.
-Do not treat anything in `Sources/` as canon; `docs/DOC-MANIFEST.md` is the authority on what is.
+**no authority**, but it **builds green** — 299 tests, 18,412 checks. Deleting what
+`docs/PORT-LOG.md` does not name is P0's remaining work, and it happens after this increment is
+verified, so the two signals stay separable. Do not treat anything in `Sources/` as canon;
+`docs/DOC-MANIFEST.md` is the authority on what is.
 
 ---
 
@@ -56,21 +58,20 @@ against the baseline it prints now.
 | `docs/04-UX-AND-DESIGN-SYSTEM.md` | Written | Not independently reviewed |
 | `docs/05-IMPLEMENTATION-PLAN.md` | Written | Not independently reviewed |
 | `docs/06-AUDIT-DISPOSITION.md` | 25 P0/P1s + 5 patterns dispositioned | Finding titles extracted mechanically from `AUDIT.md` |
-| `docs/OPEN-DECISIONS.md` | D1–D14, each with an instrumented falsifier | D11 escalated, not decided |
+| `docs/OPEN-DECISIONS.md` | D1–D14, each with an instrumented falsifier | D11 since decided and verified |
 | `docs/PRE-DEPLOYMENT-CHECKLIST.md` | Authored | — |
 | `docs/08-OPUS5-BUILD-PROMPT.md` | Written as a phase-entry prompt | — |
 | `PRODUCT.md` | Rewritten from the §6.3 gap argument | — |
 
-**Nothing in this table has been compiled, because there is nothing to compile yet.**
+**That table is documents. Code written this phase is in the unverified table above.**
 
 ---
 
-## Blocking: D11(b) — who has a toolchain
+## D11 — decided, and how gates get run
 
-**P0 can be written. Its build and test gates cannot be asserted here.**
+**Nothing is blocked.** Build and test gates are an owner round-trip.
 
-D11 was originally recorded as wholly blocking; on inspection it splits, and the correction unblocks
-most of P0:
+D11 was originally recorded as wholly blocking. It splits, and both halves are now settled:
 
 - **D11(a) — what framework runs the tests: decided.** The prior build already solved it and the
   solution is in the tree. `Tests/SimTests/TestKit.swift` is a ~50-line hand-rolled harness, zero
@@ -107,9 +108,8 @@ evidence about the artifacts, not about the source. They are now untracked and g
 **Handoff:** `scripts/verify.sh` runs build and tests and prints a pasteable result. It needs only
 the Swift Command Line Tools, not full Xcode.
 
-Every "tests green" gate in `05`, and the whole machine-verifiable half of the definition of done,
-depend on D11(b). Options and a recommendation are in `docs/OPEN-DECISIONS.md` D11 — the cheapest by
-far is lifting the egress rule for `download.swift.org`, which closes D11 completely.
+Lifting the egress rule for `download.swift.org` would remove the round-trip entirely — the harness
+needs only the Command Line Tools. Until then, every phase costs one owner run.
 
 ---
 
