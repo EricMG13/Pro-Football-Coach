@@ -107,7 +107,7 @@ Player stats stay outside `Player` (folded from `results` + `history`) — but f
 - **Pure.** Engines are caseless enums of static funcs over `inout League`. No singletons, no `Date()`, no ambient state.
 - **One engine, one truth.** Quick Sim, Call the Plays, and On the Field run the same `GameSimulator`; retaining the play log cannot change a result (asserted).
 - **Stepwise.** `GameSimulator.advance(rng:userCall:execution:)` resolves exactly one snap or transition, so all three modes drive the same state machine at different granularities.
-- **Speed.** A full week (16 games) simulates in <150 ms on an A15; a season <5 s. Non-user games run with `retainPlays: false`.
+- **Speed.** Budgets and their measurement basis live in §6.6 and are stated once there — do not restate them elsewhere. Non-user games run with `retainPlays: false`.
 
 ## 5. The presentation pipeline (the architectural addition)
 

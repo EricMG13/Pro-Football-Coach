@@ -31,7 +31,7 @@ Six falsifiable pillars govern every design and build decision (full tests and t
 
 1. **Every advance lands a story.** Each week-advance surfaces at least one narrative card with a face, a number, and a consequence; an unresolved hook is always within three weeks.
 2. **Nothing pays in silence.** Every consequence the player caused is witnessed — a staged reveal or a card with its cause attached.
-3. **The advance is faster than doubt.** Week advance under 150 ms; a fast session under three minutes; a full played game under eight; management interstitials under one.
+3. **The advance is faster than doubt.** The week advance stays inside its budget (sim-only under 150 ms on the dev Mac; end-to-end under 350 ms on device — the numbers and their measurement basis live in `03-ARCHITECTURE.md` §6.6). A fast session runs under three minutes, a full played game under eight, management interstitials under one.
 4. **Numbers are staged, never dumped.** Every headline number has a staging spec — sequence, sound, haptic, Reduce Motion variant.
 5. **Every number has a face.** No faceless cards; featured players carry arcs; every player has a permanent career ledger.
 6. **Losing opens a chapter.** Every failure state routes to a named next arc. No dead ends, ever.
@@ -56,7 +56,7 @@ The season is a calendar the player walks through: preseason → 17-game regular
 - iOS 17 minimum, Swift 5.10+, SwiftUI, `@Observable` view models, zero third-party dependencies.
 - **iPhone only, confirmed.** Compact width is the only target; iPad and regular-width layouts are backlog, not scope.
 - No image assets for team identity — 32 marks are composed geometrically in code.
-- Performance and durability targets that shape design: week advance under 150 ms, saves under 5 MB, ten simulated seasons with no crash or calibration drift, persistence off the main actor.
+- Performance and durability targets that shape design: the week advance inside its budget (`03-ARCHITECTURE.md` §6.6), saves under 5 MB, ten simulated seasons with no crash or calibration drift, persistence off the main actor.
 - **Undecided, and confirmed as still open:** monetization. v1 ships no in-app purchase and the franchise editor is free; whether a later IAP exists is deferred. Do not design paywalls or locked features against a guess.
 - **Not in v1** (backlog, not scope): custom league editor with JSON import/export, controllable post-snap defense, weather, restructures, position coaches, Game Center leaderboards, multiplayer, iPad layout.
 

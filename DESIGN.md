@@ -211,7 +211,7 @@ Single-column scroll of cards inside the safe area; spacing scale `tight 6 / sma
 - 44pt touch minimum (§6).
 - Reduce Motion: every named motion and staging spec carries its RM variant (§2.2); haptics and sound are never gated on Reduce Motion (unrelated setting).
 - VoiceOver: stat rows read as sentences; staged reveals post announcements; custom meters expose label *and* value; haptic/SFX user toggles in Settings.
-- Persistence and rendering honor the perf budgets: advance <150ms end-to-end, saves off the main actor (AUDIT P0 is an architecture requirement now).
+- Persistence and rendering honor the performance budgets in `03-ARCHITECTURE.md` §6.6 (the single source for those numbers), and saves never block the main actor — the audit's P0 is an architecture requirement now.
 
 ## 9. Do / Don't
 

@@ -1,4 +1,10 @@
-# 00 — Executive Plan: Pro Football Coach (iOS)
+# 00 — Executive Plan: Pro Football Coach (iOS) — SUPERSEDED
+
+> **This document is v1-era and has no authority.** Its phase map (P0–P8 + 4B), scope list, and
+> definition of done are superseded by `05-IMPLEMENTATION-PLAN.md` (P0–P10 with per-phase gates)
+> and the canon it references. It is kept only as a record of how the project was originally
+> framed. For the current program, start at `08-OPUS5-BUILD-PROMPT.md`.
+
 
 **Goal:** Ship a native SwiftUI pro-football franchise simulator for iOS — the professional-league successor to the college sim in the reference screenshots — built clean-room, offline, with real cap/draft/trade depth and live play-calling.
 
