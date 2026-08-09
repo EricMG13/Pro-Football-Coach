@@ -94,10 +94,10 @@ All three plans expand phases of the archived implementation plan against code T
 Files created by this deliverable, which have no pre-rebuild predecessor: `docs/DOC-MANIFEST.md`
 (this file) and `docs/archive/README.md` (a no-authority banner over the archive folder).
 
-## 4. Canon paths not yet written
+## 4. Canon paths
 
-`CLAUDE.md` lists these as canon. None of them exists yet. A missing file here means *not yet
-authored*, not *lost* — nothing was archived from any of these paths.
+All of these now exist. Nothing was archived from any of these paths — they are new files, written
+during the v4 execution.
 
 | Path | Deliverable | Owns |
 |---|---|---|
@@ -110,7 +110,7 @@ authored*, not *lost* — nothing was archived from any of these paths.
 | `docs/05-IMPLEMENTATION-PLAN.md` | 8 | Phased build with per-phase gates |
 | `docs/PRE-DEPLOYMENT-CHECKLIST.md` | 8 | What must be true before a build goes out. Authored, never regenerated — no such file has ever existed here |
 | `docs/06-AUDIT-DISPOSITION.md` | 9 | The 25 P0/P1s and the five systemic patterns, converted into named tests |
-| `docs/OPEN-DECISIONS.md` | 10 | The D1–D13 register, each with an instrumented falsifier |
+| `docs/OPEN-DECISIONS.md` | 10 | The D1–D14 register, each with an instrumented falsifier. D14 (build order and league size) was added during execution because P2 fixes *that* both tiers ship, not which is built first. **D11 is ESCALATED** |
 | `docs/08-OPUS5-BUILD-PROMPT.md` | 11 | The phase-entry prompt. **Owns mission and definition of done** |
 
 There is deliberately no `docs/00-*` and no `docs/07-*`. `00` was the old executive plan and is not
