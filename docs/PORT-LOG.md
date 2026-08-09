@@ -249,3 +249,18 @@ owes this file three things, written back here in the same phase:**
 
 P3 is the phase that designs per-matchup resolution, and it is the phase that should read
 `SnapKernel` back out of history before deciding how much of that geometry to rebuild.
+
+**Done in P0.**
+
+- **Deletion commit:** `37b10c3` — `git show 37b10c3` retrieves any deleted file;
+  `git show 37b10c3^:Sources/FootballSimCore/Arcade/SnapKernel.swift` retrieves one directly.
+- **Files removed:** 88 of 93 tracked (72 of 74 under `Sources/`, 16 of 19 under `Tests/`), 25,579
+  lines. Full list: `git show --stat 37b10c3`.
+- **Suite before:** 324 tests, 18,631 checks. **After:** 11 tests, 16 checks. The difference is the
+  90 arcade tests plus every suite covering the discarded model, engine, generation, persistence and
+  UI. What remains is `SeededRandomTests` alone; P0's later tasks add three suites back.
+
+The plan document `docs/plans/2026-08-09-p0-foundation.md` recorded the starting state as 299 tests /
+18,412 checks over 88 tracked files, measured 2026-08-09. Re-measuring at the top of P0 found 324 /
+18,631 over 93 files. The plan told the executing session to re-run rather than trust it, which is
+why the numbers above are the measured ones and not the written ones.
