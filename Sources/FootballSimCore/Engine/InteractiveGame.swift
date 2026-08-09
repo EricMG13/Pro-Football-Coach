@@ -81,7 +81,11 @@ public struct InteractiveGame {
     /// Runs the engine forward until the user's offence is back on the field, the game ends, or
     /// `limit` snaps have passed. Returns the plays produced along the way.
     @discardableResult
-    public mutating func advanceUntilUserTurn(limit: Int = 400) -> [PlayEvent] {
+    public mutating func advanceUntilUserTurn(
+        limit: Int = 400,
+        read: DefensiveInput = .none,
+        pausingOnOpponentSnaps: Bool = false
+    ) -> [PlayEvent] {
         let before = plays.count
         var steps = 0
         while steps < limit {
@@ -89,9 +93,45 @@ public struct InteractiveGame {
             if simulator.isComplete { break }
             // Stop *before* taking the user's snap so they get to call it.
             if isUserOnOffense, simulator.hasStarted { break }
-            guard simulator.advance(rng: &rng) else { break }
+            // The read only ever applies to a snap the opposition is taking; kickoffs, the
+            // user's own plays and clock administration are untouched by it.
+            let applied: DefensiveInput? = isUserOnOffense ? nil : read
+            let countBefore = plays.count
+            guard simulator.advance(rng: &rng, defensiveRead: applied) else { break }
             captureNewPlays()
+
+            // Hand back after each snap the opposition takes, so a caller that wants to show
+            // the drive can show it a play at a time. Without this the whole possession
+            // resolves inside one call and there is nothing left to watch — which is exactly
+            // the text-box treatment the arcade mode exists to replace.
+            if pausingOnOpponentSnaps,
+               plays.count > countBefore,
+               let latest = plays.last,
+               latest.offenseTeamID != userTeamID,
+               Self.isWatchable(latest.category) {
+                break
+            }
         }
+        finishIfComplete()
+        return Array(plays.dropFirst(before))
+    }
+
+    /// Steps a single snap of the opposition's drive, with the user's defensive read applied.
+    ///
+    /// The read is scored inside the simulator, once the offense's call has been drawn — a shade
+    /// that anticipates a deep shot is worth nothing against a draw, so it cannot be priced any
+    /// earlier. It becomes an ordinary `PlayExecution` with its sign flipped, which is why there
+    /// is no second resolution path and no second set of calibration bands. Returns the plays
+    /// that snap produced, or nothing if it is not the opposition's ball.
+    @discardableResult
+    public mutating func advanceOpponentSnap(read: DefensiveInput = .none) -> [PlayEvent] {
+        guard !simulator.isComplete, !isUserOnOffense else { return [] }
+        let before = plays.count
+        guard simulator.advance(rng: &rng, defensiveRead: read) else {
+            finishIfComplete()
+            return []
+        }
+        captureNewPlays()
         finishIfComplete()
         return Array(plays.dropFirst(before))
     }
@@ -119,6 +159,21 @@ public struct InteractiveGame {
         }
         captureNewPlays()
         finishIfComplete()
+    }
+
+    /// Whether a play is worth stopping to show. Clock administration and timeouts are not
+    /// plays anybody wants to watch resolve on a field.
+    ///
+    /// `.kickoff` is excluded deliberately, and it is the one that matters: the coin toss is
+    /// recorded under that category, so treating it as watchable would stop the game before it
+    /// had started and hand the field an animation of a coin landing. Kicks away are simulated
+    /// in this mode anyway, per `06-PLAYED-GAME-MODE.md` §3.
+    public static func isWatchable(_ category: PlayCategory) -> Bool {
+        switch category {
+        case .administrative, .timeout, .penalty, .injury, .kickoff: false
+        case .run, .pass, .sack, .punt, .fieldGoal, .extraPoint, .turnover,
+             .touchdown, .twoPointConversion, .kneel, .spike: true
+        }
     }
 
     private mutating func captureNewPlays() {

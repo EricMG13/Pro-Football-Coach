@@ -36,6 +36,40 @@ let darkSurfaces = ["card": "#1C1C1E", "page": "#000000"]
 func runDesignSystemTests() {
     suite("DesignSystem") {
 
+        test("openness reads on the turf it is drawn on") {
+            // The ring over a receiver is the arcade's most-read UI element. It sits on dark
+            // green in both themes, so it gets checked against the turf rather than a card.
+            for tier in OpennessTier.allCases {
+                let ratio = contrast(tier.fieldHex, OpennessTier.turfHex)
+                expect(
+                    ratio >= 4.5,
+                    "\(tier.rawValue) on turf is \(String(format: "%.2f", ratio)):1"
+                )
+            }
+        }
+
+        test("openness reads as text on every surface, both themes") {
+            for tier in OpennessTier.allCases {
+                for (name, surface) in lightSurfaces {
+                    let ratio = contrast(tier.lightHex, surface)
+                    expect(ratio >= 4.5, "\(tier.rawValue) on light \(name): \(ratio)")
+                }
+                for (name, surface) in darkSurfaces {
+                    let ratio = contrast(tier.darkHex, surface)
+                    expect(ratio >= 4.5, "\(tier.rawValue) on dark \(name): \(ratio)")
+                }
+            }
+        }
+
+        test("the three openness states are told apart by more than colour") {
+            // Shape-coded on the field, spoken to VoiceOver. A player who cannot separate the
+            // hues still has two other channels.
+            expectEqual(Set(OpennessTier.allCases.map(\.label)).count, 3)
+            expectEqual(OpennessTier(.open), .open)
+            expectEqual(OpennessTier(.contested), .contested)
+            expectEqual(OpennessTier(.covered), .covered)
+        }
+
         test("rating tiers split at the documented band boundaries") {
             let expected: [(Int, RatingTier)] = [
                 (40, .fringe), (63, .fringe),

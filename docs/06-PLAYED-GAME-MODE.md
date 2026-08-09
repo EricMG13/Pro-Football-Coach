@@ -1,95 +1,226 @@
 # 06 — Played-Game Mode ("On the Field")
 
-Arcade on-field play for user games. Mechanics research only from the genre (`docs/research/R1b`); all art, names, layouts, sounds, and framing are original (§9). This mode **joins, never replaces** the other two, and it is never required and never advantaged (OD-2, confirmed at gate 1).
+Arcade on-field gameplay for user-played games, inspired by Retro Bowl's *feel* and the 2D
+match-view convention of management sims (mechanics only — original art, names, layouts; see
+legal note §9). Research basis: `01-RESEARCH.md` §G. This mode joins, not replaces, the existing
+modes. **Revision 2 (all-22):** the abstract aim-and-throw view shipped in 4B is superseded by a
+live all-22 2D field — every player on screen, moving, with the ratings driving what you see and
+what your thumb can do. Build plan: `plans/2026-08-09-arcade-all22.md` (Phase 4C).
 
 ## 1. Three ways to play any game
 
 | Mode | What it is | Who it's for |
 |---|---|---|
-| **Quick Sim** | The engine resolves everything | Season grinders; the fast session |
-| **Call the Plays** | You call offense *and* defense each down; engine resolves; text/2D play-by-play | The core strategy path — a hero surface (`04-SCREENS-UI.md` §6) |
-| **On the Field** | You control offensive snaps, kicks, and returns; defense is your playcall plus fast animated resolution | The casual arcade audience — a different market than this community (R1b RB-34; `01-RESEARCH.md` §H) |
+| **Quick Sim** | Engine resolves everything (existing) | Season grinders |
+| **Call the Plays** | Text/2D drive view, you call offense+defense playcalls, engine resolves (existing P4) | Strategy players |
+| **On the Field** | You *control* offensive snaps, kicks, returns on a live all-22 field; defense = your playcall, watched in the same view (timed inputs 4C.3, one controlled defender v2) | Action players |
 
-Chosen on the pre-game sheet; switchable at halftime downward only (Field → Plays → Sim). All three feed the identical `GameRecord` / `StatLine` / event pipeline — box scores, chronicle cards, records, and XP work unchanged. **One engine, one truth** is asserted by test (`03-ARCHITECTURE.md` §6.1).
+Choice made on the pre-game screen; switchable at halftime (downgrade only: Field → Plays → Sim).
+All three feed the identical `GameRecord`/`StatLine` pipeline — box scores, stats, news, XP work
+unchanged, and from the rebuild forward that pipeline also carries the chronicle's events
+(`03-ARCHITECTURE.md` §5), so a played game narrates itself exactly like a simmed one.
 
-## 2. Design pillars
+**Standing ruling (OD-2, confirmed at gate 1):** On the Field is never required and never
+advantaged. Call the Plays is the core strategy path and a hero surface (`04-SCREENS-UI.md` §6);
+the fast session's immediacy comes from the management game, not from this mode.
 
-1. **One thumb, no menus between snaps.** Snap-to-whistle in seconds; a full game inside the 8-minute budget (`PRODUCT.md` pillar 3).
-2. **Ratings visibly matter in-hand.** Arc length, throw range, juke success, and pocket time all read from existing attributes (§4). Upgrading the roster must *feel* different.
-3. **The simulated half shows its receipts.** Defensive possessions resolve with inspectable causality — your call, its effect, the box-score delta (`02-GAME-DESIGN.md` §4; RB-40). A five-star defense that fails must show why. This is the mode's single most important correction to the genre.
-4. **Session parity.** Injuries, fatigue, morale, coach skills, promises, and the chronicle all flow through unchanged.
+## 2. Design pillars (and where we beat the inspiration)
 
-## 3. Control model
+1. **One thumb, no menus between snaps.** Portrait, vertical field. Snap-to-whistle loop in
+   seconds; full game 6–12 min.
+2. **Ratings visibly matter in-hand** — openness windows, pocket life, throw projector, juke
+   snappiness all read from existing attributes (§4). Upgrading your roster must *feel* different.
+3. **The field tells the truth.** All 22 players are real positions computed from real ratings;
+   the indicators never lie about the geometry, and the animation never contradicts the outcome
+   the engine resolved (§5). No theatre.
+4. **Fix the genre's three known complaints** (from Retro Bowl community research):
+   - *"Defense is a dice-roll text box"* → defensive possessions render as watchable all-22
+     resolution of your playcall (Base/Blitz/Nickel/Dime/Contain/Prevent) — skippable, tactical —
+     then ramp to participatory: timed defensive inputs in 4C.3, a controlled defender in v2.
+   - *"No real play-calling"* → full offensive playbook kept (Inside Run, Outside Run, Short
+     Pass, Deep Pass, Play Action, Screen). Your call shapes the formation, routes and blocking
+     you then execute. Audible = re-deal variation within the same call family.
+   - *"Too easy / dumb difficulty"* → difficulty scales **defender reaction delay + closing-speed
+     multiplier + AI coverage discipline**, never stat cheats. Dynamic difficulty option post-v1.
+5. **Session parity with management layer:** injuries, fatigue, morale, coach skills, promises and
+   the chronicle all flow through unchanged (`02-GAME-DESIGN.md` §6, §11) — a promise kept or
+   broken on this field lands the same card it would have from a simmed game.
 
-**You control:** every offensive snap; FG/XP kicks; kick and punt returns; two-point attempts; the go/kick/punt choice.
-**Simulated (animated, never a bare text box):** your kickoffs and punts away, all defensive plays after your playcall, the OT toss.
+## 3. The all-22 field
 
-Per-snap flow:
-1. Pick a playcall, or accept the suggested one in a tap. Pre-snap shows routes, the back's path, and the defensive front; a QB with Awareness ≥80 also gets a coverage-shell hint.
-2. **Audible** re-deals the play variation. Audibles per game = 1 + (QB Awareness − 60)/10, clamped 1–4, +1 with an OC rated ≥80.
-3. Ball snaps on first input. From the pocket: **drag back to aim** (dotted landing arc), **release to throw**; a second-finger tap toggles lob ↔ bullet; **drag forward to scramble**; **tap the back's ring to hand off**.
-4. **Carrier control** (RB, WR after the catch, scrambling QB, returner): auto-runs upfield at stat speed; **swipe up/down to cut between lanes**, **forward to dive** (guaranteed short lunge, ends the play), **back to stall**. Stiff-arms trigger automatically from BreakTackle/Strength. No sprint button — speed is a stat, not a reflex.
-5. Pass rush is a timer (§4). Hold too long and the sack lands.
-6. Fourth down and end-of-half surface the **StakesPanel**: Go / FG / Punt with **true engine percentages** (`02-GAME-DESIGN.md` §4 presentation contract — never a fudged or flattering number), plus the coach's recommendation whose quality scales with Fourth-Down Analytics.
-7. **Kick meter:** two taps — power, then a sweeping aim arrow, with wind shown. Sweep speed falls with KickAccuracy; range comes from KickPower (max 66 yds); both degrade slightly late from fatigue.
-8. Opponent possession: fast animated resolution (~3–8 s per drive, tap to skip, "watch full" replays at readable speed) — with the receipts of pillar 3 available on the drive.
-9. Quarter/half/OT per `02-GAME-DESIGN.md` §4. Sim-with-takeover is available at any point (R1b RB-33).
+**View:** portrait, top-down, you attack up-screen. Camera shows ~45 yards and follows the ball.
+All 22 players are team-colored discs with position tags; ball is its own marker. The rest of the
+app stays portrait too — nothing rotates (supersedes the landscape spec of revision 1; rationale
+in `AUDIT.md` orientation findings).
 
-Returns: catch, steer with cuts; swipe back inside your own end zone to kneel for the touchback.
+**You control:** every offensive snap; FG/XP kicks; kick/punt returns; 2-pt attempts; go/kick/punt
+choice. **Watched (not text):** your kickoffs/punts away, defensive plays (after your playcall),
+OT coin toss.
 
-## 4. Ratings → on-field mapping
+**Per-snap flow (offense):**
+1. Pick playcall (or the Suggested one — one tap; quality from OC rating). Pre-snap you see your
+   formation, route stems, RB path, and the defensive front; QB `awareness ≥ 80` also reveals the
+   coverage shell hint.
+2. **Audible** re-deals the variation (routes/protection/QB depth). Audibles per game =
+   1 + (QB awareness − 60)/10, clamped 1–4, +1 if OC rating ≥ 80 (§6).
+3. Ball snaps on first input. Receivers run live routes against live coverage; each eligible
+   target carries an **openness indicator** (§4). The pocket collapses visibly — rushers win
+   their duels and converge; a sack-warning flash (lead time from QB awareness) precedes the hit.
+4. From the pocket: **drag back = aim** the projector — dotted arc (visibility per accuracy), a
+   **landing scatter ring** at the aim point (honest about the placement roll to come), throw
+   distance capped by arm (§4); **release = throw**; second-finger tap toggles **lob ↔ bullet**;
+   **drag forward = scramble** (QB becomes carrier, can slide); **tap RB ring = handoff**.
+5. **Carrier control** (RB, WR after catch, scrambling QB, returner): auto-runs upfield at stat
+   speed; **swipe left/right = juke** between lanes; **swipe up = dive** (guaranteed short lunge,
+   ends play); **swipe down = stall** (let blocks form / bait divers; QB: slide). Stiff-arms
+   auto-trigger from BreakTackle/Strength on contact. No sprint button — speed is a stat, not a
+   reflex.
+6. Run plays: blocking opens visible lanes (widths from line duels, §4); a suggested-lane
+   highlight (quality from RB Vision) marks the crease; steer with jukes.
+7. 4th down / end-half prompt: the **StakesPanel** (`DESIGN.md` §7) — Go / FG / Punt, each with
+   its **true engine probability**, never a flattering or fudged one (`02-GAME-DESIGN.md` §4
+   presentation contract), plus the coach's recommendation whose quality is gated by the
+   Fourth-Down Analytics skill.
+8. **Kick meter** (carried over from 4B, unchanged): two taps — power bar, sweeping aim arrow;
+   wind icon to aim against. Sweep speed ↓ with KickAccuracy, range from KickPower (max 66 yds),
+   both degrade slightly late-game (fatigue).
+9. Quarter/half/OT per league rules (`02` §4). Quick Sim sheet still available mid-game.
 
-Uses existing attributes only; adds no persistent stats.
+**Defensive possessions — the ramp:**
+
+| Stage | What you do |
+|---|---|
+| 4C.1 (v1) | Call the defense, watch all 22 resolve it: outcome-conditioned choreography of the engine's resolved play, 2–3× speed, tap to skip, "watch full" replays at readable speed |
+| 4C.3 | + timed inputs, each engine-checked and capped (§5): pre-snap **coverage shade** (boundary/field/deep/box), a **break-on-the-ball** tap in a timing window at the AI QB's release (centered = INT/PBU bonus; early = play-action vulnerability), a **commit-tackle** prompt on runs (fill the lane for a TFL vs. overrun your gap) |
+| v2 | Control one defender (LB/S): your disc replaces his AI; proximity at the catch/contact points feeds the same capped modifiers |
+
+**Returns:** catch, steer with jukes; swipe down inside your own end zone = touchback kneel.
+
+## 4. Ratings → on-field mapping (existing attributes only — no new persistent stats)
 
 | Attribute | In-hand effect |
 |---|---|
-| QB ThrowAccuracy | Share of the aiming arc rendered (100 → full; 60 → last third invisible) + landing scatter 0.5–2.5 yds |
-| QB ThrowPower | Max distance 18→32 yds + bullet velocity |
-| QB Awareness | Coverage hint (≥80), audible count, sack-warning timing |
-| WR/TE/RB Catch | Completion on imperfect placement; contested-catch roll vs coverage; drop floor |
-| RouteRunning | Separation quality vs coverage |
-| Speed / Agility | Carrier and defender speed; cut window and lane-change snappiness |
-| BreakTackle (+Strength) | Auto stiff-arm and broken-tackle odds on contact |
-| OL PassBlock (unit) | Pocket timer 2.2 s (55 unit) → 4.5 s (90 unit); RunBlock opens lane width |
-| DL/LB/CB/S ratings | Drive-sim inputs on defense; live chaser closing speed, reaction delay, tackle and coverage quality |
-| K/P Power + Accuracy | Meter range, sweep speed, wind sensitivity |
-| Morale | ±1 effective tier on Catch/Tackle at extremes |
-| In-game fatigue (transient) | Heavy-usage carriers lose top speed late; recovers between drives; Iron Man halves it, age >30 amplifies |
-| Traits | Clutch (+3 effective OVR in a one-score Q4), Boom-Bust (scatter ×1.4, big-play burst) |
-| **Star ability** (90+ players) | The named ability's stated effect applies here exactly as in the sim, with the same visible counter (`02-GAME-DESIGN.md` §3) |
+| QB ThrowAccuracy | % of aiming arc rendered (100 → full dotted arc; 60 → last third invisible) + **scatter ring** radius 0.5 yd (99) → 2.5 yd (40), grown by throw distance (×1.0 ≤10 yd → ×1.6 at 30 yd) and pressure (×1.5 while collapsing) |
+| QB ThrowPower | Max throw distance 18→32 yd + bullet flight speed (weak arms let deep windows close mid-flight) |
+| QB Awareness | Indicator reveal latency 0.9 s (40) → 0.15 s (99); pre-snap coverage-shell hint (≥80); audible count; sack-warning flash lead 0.2–0.6 s |
+| WR/TE/RB RouteRunning vs CB/S/LB Coverage | Live separation — route crispness and cut sharpness vs. coverage tightness. This duel *is* the openness indicator's input |
+| WR/TE/RB Catch vs Coverage | Completion on imperfect placement; contested-catch roll on orange/red targets; drop/fumble floor |
+| Speed / Agility | Disc movement speed / juke window & lane-change snappiness — for all 22, both sides |
+| BreakTackle (+Strength) | Auto stiff-arm & broken-tackle roll on each contact event |
+| OL PassBlock vs DL PassRush (per-matchup) | Each rusher's breakthrough time is a duel roll; pocket life = earliest breakthrough. Unit-level anchors preserved: 2.2 s mean (55 unit) → 4.5 s (90 unit). Blitzers rush sooner but vacate coverage — earlier green windows behind them |
+| OL RunBlock vs DL/LB BlockShed | Visible lane widths on run plays; RB Vision sets suggested-lane highlight quality |
+| DL/LB/CB/S ratings on your defense | Drive-sim inputs (engine) + how your watched defense moves; on offense they drive chaser quality: closing speed (Speed), reaction delay (Awareness, inverted), dive-tackle success (Tackle), coverage tightness (Coverage) |
+| K/P Power+Accuracy | Meter range + arrow sweep speed + wind sensitivity |
+| Morale | ±1 effective tier on Catch/Tackle at extremes (existing `02` §3 rule, surfaced here) |
+| Injury status | Injured mid-game → next man up from depth chart, toast shown |
+| **In-game fatigue** (transient, not persisted) | Heavy-usage carriers lose top speed late (recovers between drives; Iron Man halves, age > 30 amplifies). Resets postgame |
+| Traits | Clutch (+3 effective OVR in Q4 one-score — affects scatter/speed/windows), Boom-Bust (scatter ×1.4 but big-play speed burst), others per `02` §3 |
+| **Star ability** (Elite, 90+) | The player's one named ability applies here exactly as it does in the sim, with the same visible activation condition and the same counter, shown on the field as a labeled state — never a hidden modifier (`02-GAME-DESIGN.md` §3) |
 
-Difficulty scales **only** defender reaction delay, closing multiplier, and coverage discipline — never stat inflation (R1b RB-15).
+**Openness indicator (honest colors, awareness sets timing):** each eligible receiver shows
+green (**open**: separation ≥ 3.0 yd, not closing fast), orange (**maybe**: 1.5–3.0 yd, *or*
+open but a defender is closing > 4 yd/s), red (**covered**: < 1.5 yd). Colors always tell the
+truth about the geometry *right now* — a low-awareness QB never sees a false green; he sees the
+truth **late** (reveal latency above), so reading the field yourself is how you play a bad
+passer. Shape-coded as well as color-coded (solid / half / hollow ring) for color-blind players;
+VoiceOver announces open/contested/covered.
 
-## 5. Outcome integrity
+Difficulty setting scales *only* defender reaction delay, closing multiplier, and AI coverage
+discipline. Player-skill ceiling stays high; stats set the floor.
 
-- Arcade plays emit the same events, stat lines, and chronicle entries as engine plays.
-- **Calibration bands exclude user-played games** — manual play may outperform the sim; that is the fun. Counterweights: owner goals and job security do not scale down, and difficulty is the dial.
-- Determinism: player input necessarily breaks seed-reproducibility for played games. All non-input rolls still draw from `league.rng`, and sim-only games stay fully deterministic (`03-ARCHITECTURE.md` §6.1).
-- Anti-degenerate guard: repeating a successful call ≥4× shades the coverage against it.
+## 5. Outcome integrity & balance
 
-## 6. Presentation and feel
+- **Geometry grades, engine decides.** The spatial layer (`SnapKernel`, pure Swift in
+  `FootballSimCore`) turns positions and input into *graded execution* — separation taken,
+  placement error, release timing, pursuit beaten — fed through `PlayExecution`. Every
+  probability lives in an engine formula; every roll draws from `League.rng`. The spatial layer
+  never invents dice. The animation then renders what the engine resolved.
+- **Reconciliation invariant (tested):** the play you watch ends exactly where the emitted
+  `PlayEvent` says — spot, result, scorer. Choreographed plays (opponent drives, kicks away) are
+  generated *from* the resolved event and cannot contradict it.
+- **Skill ceiling — moderate (decided):** user execution can swing completion ±20 points, yards
+  ±6, kick make ±18 points, defensive timed inputs ±10 points combined. All caps are named
+  constants in `ArcadeTuning`. A sharp thumb meaningfully beats the sim with the same roster; a
+  60-OVR QB still cannot play like a 90 — the roster remains the long game. (Supersedes 4B's
+  ±12% ceilings.)
+- **Scripted-thumbs soak (tested):** a perfect-input bot and a neutral-input bot each play
+  hundreds of kernel snaps; the EV gap must sit inside the design band, and perfect play on a 90
+  roster must beat perfect play on a 60 roster — stats floor verified, ceiling bounded.
+- **Determinism:** `SnapKernel(players, calls, seed, InputTrace)` is a pure function — same
+  inputs, same result — so the whole spatial layer is testable headless. Live user input breaks
+  seed-reproducibility for played games by design; sim-only games remain fully deterministic.
+- Arcade plays emit the same `PlayEvent`/`StatLine` records as engine plays; box scores stay
+  consistent. **Calibration tests exclude user-played games** — manual play may outperform the
+  sim (that's the fun). Counterweights: goals/job-security expectations don't scale down;
+  difficulty setting; the records book flags nothing (a stat is a stat).
+- Anti-degenerate guards: AI defense adapts within a game (repeat the same deep-pass call ≥4×
+  successfully → coverage shades it, catch prob −8%); OT and clock rules identical across modes.
 
-Primetime applies here in full (`DESIGN.md`) — this mode is not a visual exception:
+## 6. Coach, coordinators, meta hooks
 
-- **ScoreStrip** is the same component, with occasion accent and identity chip.
-- **Staging:** scores, finals, and records use the §2.3 grammar; the final-score staging is identical to the other modes.
-- **Channels:** haptics on catches, hits, kicks and the meter; sound per the six-effect kit. `.championship` and `fanfare` remain tier-4 only.
-- **Reduce Motion:** the field's ball motion, camera follow, and celebration motion all carry RM variants; meaning persists in sound, haptics, and text.
-- **Accessibility is construction, not polish** — the v1 arcade shipped a bare drag gesture with no accessibility element, which made an entire advertised mode unplayable under VoiceOver. Required here: the field is a labeled element exposing situation as its value; each receiver is an element with a label; `accessibilityAction` entries throw to each receiver; the kick meter exposes label *and* value and announces the sweet spot; every control is ≥44×44pt.
-- Original expression only: our marks, our palette, our type, our animations. No scanlines, no CRT framing, no borrowed trade dress.
+- **Coach skill tree** (existing `02` §10) applies live: Offense/Defense unit nodes modify the
+  same unit numbers the field reads; Explosive Plays widens the big-play tail on AI-resolved
+  parts; Red-Zone Package tightens scatter inside the 20; Fourth-Down Analytics upgrades the
+  Go/FG/Punt EV hint; Defense nodes strengthen your watched defense.
+- **Coordinators (`02` §10):** OC rating adds +1 audible at ≥80 and raises Suggested-play
+  quality; DC rating raises defensive playcall AI (when auto-called) and drive-sim strength; STC
+  boosts return blocking + kick-meter forgiveness. Scheme mismatch halves these bonuses.
+- **XP:** identical earn rates to Call-the-Plays mode (no farming incentive).
 
-## 7. Orientation
+## 7. Presentation (original expression — inspired feel, distinct look)
 
-Landscape for this scene only; the rest of the app is portrait-locked. The scene requests its own geometry on appear and releases it on disappear — v1 declared three orientations globally and every portrait screen rotated into a broken layout (`docs/AUDIT.md`). The layout must survive rotation *and* iPhone SE height: the field is proportional, never a fixed 300pt block, and the control bar is laid out before the field takes the remainder.
+- **Portrait everywhere.** The app locks portrait (per `AUDIT.md`); the field is vertical,
+  top-down, camera follows the ball. One thumb reaches everything.
+- **Tech: SwiftUI `Canvas` + `TimelineView`** — not SpriteKit. ~23 moving entities is trivial
+  canvas load, it keeps the macOS compile-verification path alive, ships zero assets, and stays
+  inside the app's existing rendering idiom. Logical sim ticks at a fixed 30 Hz decoupled from
+  render; renderer interpolates.
+- Our own modern-flat style: team-colored discs with position tags in **our palette**, our fonts
+  (SF rounded scoreboard), soft shadows/gradients matching the app's card UI. No pixel-art
+  pastiche, no scanlines, no faux-CRT framing — distinct from every inspiration.
+- **Accessibility:** indicators shape-coded as well as colored; all interactive field states
+  exposed to VoiceOver — the assistive path is the *watch + timed decisions* control variant with
+  labeled buttons (target list with openness states, fight/secure), so the mode is fully playable
+  without gestures. Reduce Motion: decorative motion (celebrations, ball-slide flourishes) stops;
+  state changes present instantly.
+- **Primetime applies here in full** (`DESIGN.md`) — this mode is not a visual exception. The
+  **ScoreStrip** is the same component with the same occasion accent (§2.7). Scores, finals and
+  records resolve through the §2.3 staging grammar — anticipate, hold, resolve, settle — with the
+  identical treatment a simmed final gets. Feedback speaks the shared semantic vocabulary: the
+  six-sound kit (`tick`, `card`, `up`, `down`, `sting-final`, `fanfare`) and the haptic events
+  (`.reveal`, `.positive`, `.negative`, `.stakes`, `.milestone`) of §2.4–2.5, fired by the single
+  staging owner, never by the field view itself. `fanfare` and `.championship` stay tier-4 only —
+  winning a regular-season game on the field does not borrow the title celebration.
+- Sound: light original SFX (crowd swell, hit thud, whistle); haptics on catches/tackles/kicks.
+  Mute respects silent switch, and both channels have user toggles.
 
-## 8. Scope and phasing
+## 8. Scope & phasing
 
-- Its own phase in `05-IMPLEMENTATION-PLAN.md`, after the Call-the-Plays surface (whose event and box-score plumbing it renders) and after the witness layer exists.
-- **Tech:** SpriteKit (`SKScene` in `SpriteView`) — native, zero dependencies. Arcade code lives in the UI target and *reads* engine types but never forks rules: situation state comes from the simulator's public state machine; the arcade resolves only the controlled play's outcome and feeds it back as an event.
-- **Not in v1:** controllable post-snap defense, weather, dynamic difficulty. Returns are in, free.
-- **Phase gate:** a full game playable one-thumb inside 8 minutes; the ratings-mapping table verified by targeted tests (99-accuracy QB scatter <1 yd; 55-unit OL pocket <2.5 s); box score equals the event log; 60 fps on an A15; portrait↔landscape transitions clean; VoiceOver playable end-to-end; parity of XP, injuries, and chronicle cards with the other modes.
-- **Carried unknown:** the carrier-decision window (2.5 s pass / 3.5 s run) is an unvalidated guess — the tooling round trip is ~7 s against a live window of seconds, so only device play with a real thumb settles it. Tuning it is a gate item for this phase, not a design question (`07-SALVAGE.md` §D).
+- **Phase 4C**, three stages — plan with tasks, tests and constants:
+  `docs/plans/2026-08-09-arcade-all22.md`. Stage 1: spatial substrate in `FootballSimCore`
+  (TDD). Stage 2: renderer + offensive control, watchable defense, portrait lock + arcade audit
+  fixes. Stage 3: defensive timed inputs.
+- **v1 cut lines:** no steered defender post-snap (4C.3 timed inputs only — v2: control one
+  defender), no weather, no dynamic difficulty, no zoom toggle, returns ON (not paywalled —
+  genre complaint). Onside kicks exist as an engine playcall (`02` §4) — the kick itself is
+  choreographed like other kicks away, recovery shown as animation. Call-the-Plays adopting the
+  watch renderer is a v2 candidate (one renderer, three modes).
+- **Audience positioning (from `01` §H):** the management-sim community explicitly does NOT ask
+  for arcade play. On-the-Field targets the far larger casual arcade market instead. Therefore:
+  never required, never advantaged in XP, Call-the-Plays and Quick Sim remain first-class, and
+  the mode picker defaults to the player's last choice.
+- **Gate (4C):** full game playable one-thumb in portrait; stat mapping verified by targeted
+  kernel tests (99-accuracy scatter < 1 yd; 55-unit pocket < 2.5 s mean; indicator honesty
+  invariant; reconciliation invariant; scripted-thumbs EV bands); box score equals event log;
+  60 fps on A15; XP/injury/news parity with other modes; VoiceOver path playable end-to-end.
 
-## 9. Legal guardrails
+## 9. Legal guardrails (extends `01-RESEARCH.md` §F)
 
-Reimplemented *mechanic ideas* (uncopyrightable): offense-only control, drag-aim and release, lob/bullet toggle, lane-based cuts, dive and stall, auto stiff-arms, the two-tap kick meter, hybrid-play audibles. **Never copied:** any real game's marks, sprites, palette, fonts, animations, screen compositions, sounds, team names, or the ensemble of its trade dress. Research material used to understand mechanics never ships in the app.
+Reimplemented *mechanic ideas* (uncopyrightable): offense-only control, drag-aim + release
+throw, lob/bullet toggle, lane-based jukes/dive/stall, auto stiff-arms, two-tap kick meter,
+hybrid-play audibles, fatigue/morale dials, and the top-down dots-on-a-pitch match view — a
+genre convention (Football Manager et al.). **Never copy:** "Retro Bowl"/New Star/"Football
+Manager"/Sports Interactive marks, sprites, palette, fonts, animations, screen compositions,
+sounds, team names, or any game's ensemble trade dress (no scanlines, no faux-CRT framing, no
+FM UI skin — our palette, proportions, fonts). Fan-wiki text used for research is CC-BY-SA —
+none of it ships in the app.

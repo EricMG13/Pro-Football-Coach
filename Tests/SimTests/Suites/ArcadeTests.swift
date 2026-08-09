@@ -31,10 +31,19 @@ func runArcadeTests() {
             expect(good.interceptionMultiplier < 1 && bad.interceptionMultiplier > 1)
             expect(good.yardsModifier > 0 && bad.yardsModifier < 0)
 
-            // Skill must not outweigh the roster: a perfect snap is worth at most 12 points of
-            // completion probability and three and a half yards.
-            expect(good.completionModifier <= 0.12, "completion swing is capped")
-            expect(good.yardsModifier <= 3.5, "yardage swing is capped")
+            // Skill must not outweigh the roster. The ceiling widened when the mode moved to a
+            // live all-22 field — controlling every player asks more of the hands than aiming a
+            // throw did — but it is still a ceiling, and it is still short of "thumbs beat
+            // scouting". The numbers live in ArcadeTuning so this test and the design agree.
+            expect(
+                good.completionModifier <= ArcadeTuning.completionSwing,
+                "completion swing is capped"
+            )
+            expect(good.yardsModifier <= ArcadeTuning.yardsSwing, "yardage swing is capped")
+            expect(
+                ArcadeTuning.completionSwing <= 0.25 && ArcadeTuning.yardsSwing <= 7,
+                "the cap itself must stay modest: the roster is the long game"
+            )
         }
     }
 
