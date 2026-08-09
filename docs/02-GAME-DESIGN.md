@@ -1,149 +1,485 @@
-# 02 — Game Design Document: Pro Football Coach
+# 02 — Game Design: Pro Football Coach
 
-The gameplay source of truth. UI belongs in `04-SCREENS-UI.md`; code shape in `03-ARCHITECTURE.md`. Every tunable number here lands in `LeagueRules.swift` as a named constant.
+The game. Canon for gameplay: if a mechanic is not here, it is not agreed, and it gets written here
+before it gets built.
 
-## 1. Vision & pillars
+Evidence is in `01-RESEARCH.md`. Decisions and their falsifiers are in `OPEN-DECISIONS.md`. The
+match engine that implements §3 is in `03-MATCH-ENGINE.md`.
 
-Run a pro football franchise for decades: call the plays on Sunday, run the front office all week. Text/2D sim — depth over graphics, sessions in minutes, dynasties over years.
+---
 
-1. **Every down is a decision.** Play-calling matters; a game takes 3–10 minutes, or 10 seconds simmed.
-2. **The cap is the boss fight.** College's constraint was recruiting; pro's is money. Contracts, dead money, and the draft are the long game.
-3. **Stories emerge from numbers.** Busts, steals, dynasties, cap hell — the sim generates them; news + records surface them.
-4. **Respect the player's time.** Advance a week in two taps; nothing grinds.
+## 1. Vision
 
-## 2. League structure
+> You are a football coach. You start at a college programme nobody rates, and if you are good
+> enough, you finish in the pro league. One save, one career, one coach.
 
-- **32 fictional teams** (original names/logos; never NFL marks), 2 conferences × 4 divisions × 4:
+Three pillars, each of which is a constraint on everything below:
 
-| Liberty Conference | Frontier Conference |
+1. **The week is the game.** Not the offseason, not the draft — the seven days between kickoffs.
+   This is a direct response to §6.0b, which measured the prior build's in-season week at *one*
+   branching decision, and to §6.2, where the genre's best-reviewed title is criticised for
+   "pretty limited in-game decisions".
+2. **You coach, you never play.** No direct control of any athlete, ever. Your inputs are a game
+   plan, personnel, tempo, and the calls a coach actually makes on a Sunday.
+3. **It remembers.** Rivalries, records, grudges, the player you developed from a two-star, the
+   programme that fired you. A career that accumulates is the thing FM players are actually
+   attached to (§6.1), and it is nearly free to build if designed in from the start.
+
+**The anti-goal.** A better-looking version of what came before: a beautiful, deep, deterministic
+simulation with an empty Tuesday. Everything in §3 exists to prevent it.
+
+---
+
+## 2. The shape of a career
+
+One save. One coach. A career runs:
+
+```
+College tier                                        Pro tier
+──────────────────────────────────────────────────  ─────────────────────────────
+Low-major programme → build → win → get noticed  →  Coordinator or head coach offer
+   recruiting, portal, NIL, eligibility               draft, cap, free agency, trades
+   ~134 programmes, 12 + championship + playoff       32 teams, 17 + bye + playoffs
+```
+
+The promotion is **the** narrative arc of v1, not a v2 addition (P2). Details in §7.
+
+---
+
+## 3. Gate zero — the agency model
+
+> **Agency density versus season throughput.**
+
+This is the most consequential decision in the project. It is resolved with arithmetic, and the
+arithmetic is shown.
+
+### 3.1 The budget
+
+P4 fixes a full season at **6–8 hours**. Working figure **7 h = 420 min**.
+
+A season is ~20 in-season weeks in both tiers (college: 12 games + conference championship +
+playoff ≈ 16–17 weeks with byes; pro: 17 games + bye + playoffs ≈ 21 weeks). The offseason is real
+time and gets a real allocation: **60 min**.
+
+```
+420 min − 60 min offseason = 360 min ÷ 20 weeks = 18 minutes per week, inclusive of the match
+```
+
+**18 min/week is the number every option below has to survive.** It is tighter than the brief's
+own 21 min because the offseason has been priced rather than folded in.
+
+### 3.2 Terms, declared rather than assumed
+
+| Term | Value | Note |
+|---|---|---|
+| **Snaps** | Pro **130**/game (65 offensive + 65 defensive). College **150–180**, working figure **170** | This is snaps your team is on the field for |
+| **Does the player call defence?** | **No, not per snap.** Defensive identity is set in the game plan and adjusted at drive boundaries | This is the single largest lever in the whole calculation — calling both sides doubles the decision surface |
+| **Decision time** | 8 s per discrete in-match intervention | Includes reading the situation, not just the tap |
+| **Presentation time** | **1.2 s per snap** at default speed; 5 s per snap at full fidelity | The load-bearing number. See §3.5 |
+| **Attention share** | **1.0** | There is exactly one game per week that is yours. The other ~15 (pro) or ~65 (college) are simulated off-screen and never watched. Attention share here is a *presentation-speed* choice, not a game-skipping one |
+| **Season length** | Pro 21 weeks, college 16–17 | Both near 20 |
+
+### 3.3 The options considered
+
+**Option A — every-snap play-calling, both sides of the ball.**
+
+```
+130 snaps × (4 s decide + 5 s watch) = 1,170 s = 19.5 min/game   (pro)
+170 snaps × 9 s                      = 1,530 s = 25.5 min/game   (college)
+```
+
+The match alone exceeds the 18-minute weekly budget before a single management decision. To fit, the
+attention share must fall to ~0.5 and week management must compress to ~4 min — i.e. you build a
+match mode that is skipped half the time, wrapped around a management game with nothing in it.
+**Rejected on arithmetic.**
+
+**Option A′ — every-snap play-calling, offence only.**
+
+```
+ 65 × 9 s =  585 s =  9.8 min/game  (pro)     → 8.2 min left for the week
+ 90 × 9 s =  810 s = 13.5 min/game  (college) → 4.5 min left for the week
+```
+
+Pro survives; **college fails**, and college is the tier the budget must be derived from. It also
+concedes half the sport: the defence becomes a dice-roll you watch, which is precisely Retro Bowl's
+most-cited complaint (§G) and the reference app's rank-3 complaint class (§H). **Rejected.**
+
+**Option B — pure spectate, halftime and weekly adjustment only.**
+
+```
+130 × 6 s = 13.0 min/game watching, ~2 decisions
+```
+
+72% of the weekly budget spent to deliver almost no agency. This is the "better-looking bland
+application" the brief warns about, made literal. **Rejected.**
+
+**Option C — situational call-ins, coordinator AI handles the rest.**
+
+```
+12 call-ins × 10 s = 2.0 min decisions
+118 snaps × 1.2 s  = 2.4 min compressed presentation
+ 12 snaps × 6 s    = 1.2 min at full fidelity
+                   ≈ 5.6 min/game
+```
+
+Survives the arithmetic. Its defect is **narrative, not numeric**: the player never sets a plan, so
+every decision arrives cold. You are a fireman, not a coach — and there is no way to be *right in
+advance*, which is where a coaching game's satisfaction actually lives. **Rejected, but its
+call-in mechanic is absorbed into D.**
+
+**Option D — the Sideline Model. CHOSEN.**
+
+Pre-match game plan (set during the week) + drive-level watching + discrete high-leverage
+interventions + in-drive adjustments + opt-in snap-level fidelity.
+
+### 3.4 The chosen model, priced
+
+**Pro:**
+
+| Term | Working | Minutes |
+|---|---|---|
+| Baseline presentation | 130 snaps × 1.2 s | 2.6 |
+| Discrete interventions | 14 × 8 s | 1.9 |
+| Opt-in full-fidelity drives | 2 drives × 6 snaps × 5 s | 1.0 |
+| Possession changes, scores, halftime | — | 0.7 |
+| **Match total** | | **6.2** |
+| Week management | game plan 3 · development 2 · roster & injury 2 · inbox 1 | 8.0 |
+| **Week total** | | **14.2** vs 18 budget |
+
+**College — the binding case:**
+
+| Term | Working | Minutes |
+|---|---|---|
+| Baseline presentation | 170 snaps × 1.2 s | 3.4 |
+| Discrete interventions | 16 × 8 s | 2.1 |
+| Opt-in full-fidelity drives | 2 × 6 × 5 s | 1.0 |
+| Transitions | — | 0.7 |
+| **Match total** | | **7.2** |
+| Week management | game plan 3 · **recruiting 3** · development 2 · roster 1 · inbox 1 | 10.0 |
+| **Week total** | | **17.2** vs 18 budget |
+
+**Season check:**
+
+```
+College: 16 wk × 17.2 = 275 min + 60 offseason = 5.6 h   ✓ inside 6–8 h
+Pro:     21 wk × 14.2 = 298 min + 60 offseason = 6.0 h   ✓ inside 6–8 h
+```
+
+College clears the weekly budget by **48 seconds**. That is not comfortable, and it is stated
+plainly rather than rounded away: **the college week is the design's tightest constraint, and
+recruiting is the term most likely to break it.** D13 (content volume) and D3 (off-screen model)
+both inherit that pressure.
+
+### 3.5 Sensitivity — the number the whole model rests on
+
+Everything above depends on **1.2 s of compressed animation per snap** being watchable and
+comprehensible. It is assumption **A3** and it has never been tested on a device.
+
+| If a snap really needs… | College match | College week | College season + offseason |
+|---|---|---|---|
+| 1.2 s (design target) | 7.2 min | 17.2 min | 5.6 h ✓ |
+| 2.0 s | 9.5 min | 19.5 min | 6.2 h ✓ |
+| 3.0 s | 12.3 min | 22.3 min | 6.9 h ✓ (at the edge) |
+| 6.0 s (the naive figure) | 22.5 min | 32.5 min | **9.3 h ✗ fails P4** |
+
+The model degrades gracefully to ~3 s/snap and **breaks outright at 6 s**. So the design's real
+requirement is not "build a 2D field" — it is **build a 2D field that reads at roughly 1 second per
+snap**, which is a legibility problem (§6.5), not a rendering one. If the owner's play session finds
+the floor is above 3 s, the fallback is stated in `OPEN-DECISIONS.md` D1: drop the default
+presentation to **drive-summary** granularity, where the unit animated is the drive's decisive play
+rather than every snap.
+
+### 3.6 Week-level throughput
+
+Against the §6.0a threshold of **≥5 meaningful decisions per week** (the prior build measured 1–3):
+
+| Decision | Count | Meaningful because |
+|---|---|---|
+| Offensive identity vs this opponent | 1 | Trades expected yards against turnover risk |
+| Defensive identity — what you take away | 1 | You cannot stop everything; choosing is the game |
+| Practice focus | 1 | Development vs sharpness vs health, and it compounds over a season |
+| Snap allocation at a contested spot | 1 | Veteran now vs rookie development |
+| Availability calls on injured players | 0–2 | Play him hurt and risk the rest of the season |
+| Inbox — recruiting contacts, trade feelers, staff | 1–3 | Real trade-offs with real costs |
+| **In-match interventions** | **14–16** | 4th downs, timeouts, tempo, adjustments, aggression |
+
+**Management decisions: 5–9. In-match: 14–16.** Clears the threshold with room, and — critically —
+the decisions are spread across the week rather than stacked in the offseason.
+
+### 3.7 What the player actually does during a match
+
+| Layer | When | Examples |
+|---|---|---|
+| **Game plan** (set during the week) | Before kickoff | Run/pass lean, tempo, blitz rate, coverage shell, what to take away, 4th-down aggression, red-zone identity |
+| **Drive-boundary adjustment** | Between possessions | Change the shell, dial pressure up, go tempo, switch a matchup |
+| **Discrete high-leverage calls** | When they arise | 4th down, timeouts, clock management, two-point, challenge, kick or go, sit an injured starter |
+| **In-drive adjustment** | When the opponent shifts | The AI tells you *what changed*; you decide whether to answer it |
+| **Fidelity control** | Any time | Key moments / drive / snap-level, and a speed slider — FM Mobile's solved answer to this exact problem (§6.1) |
+
+**You never choose the individual play.** The coordinator calls it, from your plan. When you dislike
+what he is calling, you change the plan — that is the loop. This is the single decision that makes
+130 snaps affordable, and it is the one most likely to be argued with; the falsifier is in
+`OPEN-DECISIONS.md` D1.
+
+---
+
+## 4. The weekly loop
+
+```
+        ┌──────────────────────────────────────────────────────┐
+        │  MONDAY   review · injuries · development · inbox     │
+        │  TUESDAY  scout the opponent · build the game plan    │
+        │  THURSDAY practice focus · availability · personnel   │
+        │  SATURDAY / SUNDAY  the match                         │
+        └──────────────────────────────────────────────────────┘
+```
+
+The days are a **presentation of grouping**, not four separate screens to march through — the whole
+week is one hub, and a player who wants to advance fast presses one button. But the grouping is what
+makes 5–9 decisions feel like a week rather than a form.
+
+**Fast paths are first-class, not an afterthought** (§H: "speed options"):
+
+| Path | Cost | For |
+|---|---|---|
+| Full | ~15 min | The default |
+| Key moments only | ~4 min | Most weeks, most players |
+| Instant result | ~10 s | Bye weeks, blowouts, the tenth season |
+| Delegate the week | ~30 s | Coordinator sets the plan; you review |
+
+Delegation is a **real** option that costs you something: a delegated plan is competent and generic,
+and against a good opponent generic loses. That is the jeopardy that makes the fast path a choice
+rather than a free win.
+
+---
+
+## 5. The college tier
+
+~134 programmes. 12 regular-season games + conference championship + a 12-team playoff.
+
+### 5.1 Roster and eligibility
+
+| Rule | Value |
 |---|---|
-| **East:** New York Empire, Boston Harbormen, Philadelphia Founders, Washington Sentinels | **East:** Baltimore Admirals, Cincinnati Riverhawks, Indianapolis Racers, Nashville Rhythm |
-| **North:** Chicago Blizzard, Detroit Motors, Cleveland Forge, Pittsburgh Ironmen | **North:** Minneapolis Loons, Milwaukee Barons, Denver Summit, Salt Lake Peaks |
-| **South:** Miami Tides, Atlanta Firebirds, Charlotte Aviators, New Orleans Revelers | **South:** Phoenix Scorchers, San Antonio Defenders, Las Vegas Highrollers, Oklahoma City Twisters |
-| **West:** Dallas Lonestars, Houston Wildcatters, Kansas City Stampede, St. Louis Archers | **West:** Los Angeles Stars, San Diego Armada, San Francisco Fog, Seattle Evergreens |
+| Scholarship limit | 85 |
+| Total roster | 105 including walk-ons |
+| Eligibility | 4 seasons of play within 5 years |
+| Redshirt | 1 per career; ≤4 games played preserves it |
+| Class progression | FR → RS FR → SO → … → RS SR |
 
-Each team: city, name, 3-letter abbrev, primary/secondary colors, geometric logo (SF-Symbol-composed or simple shapes), stadium name, AI GM personality (`winNow / balanced / rebuilder / capHawk`), owner patience (1–5), franchise **Reputation 1–100** (drives FA interest + coach-job desirability; moves with success).
+### 5.2 Recruiting
 
-- **Schedule (17 games / 18 weeks + bye):** 6 division games (home/away × 3 rivals), 4 vs a rotating division in-conference, 4 vs a rotating division cross-conference, 2 same-place finishers vs remaining in-conference divisions, 1 cross-conference same-place extra (17th, alternates home). Bye weeks 5–14. Preseason: 3 optional games (no injuries by default, stats discarded, rookies get camp XP boost if played).
-- **Playoffs (default "REALISTIC" 14):** 7 seeds/conference; #1 bye; wild-card round 2v7, 3v6, 4v5; reseed each round; Conference Championships; **Continental Championship** (neutral site). Options: 12 or 16 teams.
-- **Standings tiebreakers (ordered):** head-to-head → division record → conference record → points for. (`ponytail:` common-games/SoV omitted; add if users notice.)
+The system most likely to eat the week's budget, so it is designed around a **cap on attention, not
+a cap on depth**.
 
-## 3. Players
+- **Interest, not points.** Each recruit has a hidden interest score in your programme, moved by
+  contact, campus visits, playing time promises, your record, scheme fit, distance from home, and
+  NIL. The player sees a coarse band (Cold / Warm / Leaning / Committed), not a number.
+- **A weekly budget of contacts**, not an unlimited list. Typically 5–8 actions/week, which is what
+  keeps recruiting inside its 3-minute slice of the college week (§3.4).
+- **A board of ~25 targets**, filtered and sorted; the AI manages the tail.
+- **Signing day** is an event with an outcome you watch, not a form you submit.
+- **The counter-design to FC:CD's complaint** (§6.2: "recruiting lacks real variation and can become
+  boring"): recruits have *stories* — a legacy whose father played for your rival, a local kid you
+  can lose by neglect, a five-star who will only come if you promise a starting job you may not be
+  able to keep. Promises are tracked and broken promises cost you, which turns recruiting from an
+  optimisation into a series of small bets.
 
-- **Positions & roster template (53 active + 16 practice squad):** QB3, RB4, WR6, TE3, OL9, DL8, LB7, CB6, S5, K1, P1 (target counts; min 1 per position enforced at cutdown).
-- **Identity:** generated name (weighted first/last banks incl. international), age 21–40, height/weight by position distribution, college (fictional bank — reuse the college game's naming flavor: "Palmetto State", "Port City" etc. as alma maters — original, and a nice nod), draft origin, jersey #, seeded diverse cartoon avatar.
-- **Attributes (40–99):** core Speed, Strength, Agility, Awareness (K/P: Awareness only) + position set:
-  - QB: ThrowPower, ThrowAccuracy · RB: Catch, BreakTackle, Vision · WR: Catch, RouteRunning, BreakTackle · TE: + BlockShed · OL: RunBlock, PassBlock · DL: Tackle, BlockShed, PassRush · LB: Tackle, Coverage, BlockShed · CB/S: Coverage, Tackle · K: KickPower, KickAccuracy · P: PuntPower, PuntAccuracy
-- **OVR:** per-position weighted mean (weights table in `LeagueRules`; e.g. QB = .30 ThrowAccuracy, .20 ThrowPower, .25 Awareness, .10 Agility, .10 Speed, .05 Strength — all positions defined in code, sum 1.0).
-- **Potential:** letter A+…F (hidden dev ceiling + speed multiplier ×1.6…×0.6). Fully visible for your roster; **scouting-fogged for prospects**.
-- **Traits (0–2 per player, 25% of players):** Clutch (+3 effective OVR in Q4 within one score), Injury Prone (×1.6 injury odds), Iron Man (×0.5), Locker-room Leader (+morale aura), Mercenary (money-only FA decisions), Loyal (−20% ask to re-sign), Late Bloomer (dev ×1.3 after 26), Boom-Bust (play variance ×1.4).
-- **Morale (0–100):** inputs — winning, role vs OVR (starter/backup), contract satisfaction, team reputation. Effects: ±3 effective OVR at extremes; low morale FA discount to leave, re-sign ask +.
-- **Ages & curve:** development to peak, plateau, decline. Peak windows: QB 26–32, RB 23–27, WR/CB 24–29, OL/DL/LB/TE/S 25–30, K/P 25–36. Post-peak: −1…−3 OVR/yr accelerating; Speed/Agility decay first.
-- **Injuries:** per-play chance scaled by position + fatigue + Injury Prone; severity tiers (1–2 wks / 3–6 / 8+ / season). In-game: player out, next man up from depth chart. IR slot optional v1: cut = simple. League average ~2.5 significant injuries/team/season.
-- **Retirement:** probability from age + OVR decline + injuries (QB/K play longest); farewell news; HoF scoring on career stats/accolades, induction 5 seasons later.
+### 5.3 The transfer portal
 
-## 4. Game simulation (play-by-play)
+Two-way and load-bearing for jeopardy: win and you gain from it; lose or bury a good player on the
+bench and he leaves. Portal windows open after the regular season and after spring. A player whose
+promised playing time did not materialise enters the portal **at a much higher rate** — the direct
+mechanical consequence of §5.2's promises.
 
-- **Loop:** coin toss → drives → plays until 0:00 ×4 (OT: modified sudden death, both teams possess unless first score TD; playoff untied repeats).
-- **Play resolution:** offense playcall (user or AI) × defense playcall → matchup table (e.g. Deep Pass vs Blitz: big-play ↑, sack ↑; vs Prevent: completion ↓ but check-down yards). Outcome = base(playType) + k·(unitOff − unitDef) + situational modifiers (scheme familiarity, home field +1.5 net pts equivalent, weather v1.5) + seeded noise (mixture: mostly modest gains, fat tail for explosives). Produces yards, clock burn, events (sack, INT, fumble, penalty, injury, TD).
-- **Units:** Offense rating = weighted position group OVRs vs Defense rating likewise; special teams from K/P + returner speed.
-- **Clock:** realistic burn per play type + hurry-up/kill-clock automatically by score+time; timeouts (3/half) user-controlled + AI logic.
-- **Penalties:** ~11 combined/game, weighted types (hold, PI w/ spot foul, false start, offsides); accept/decline auto by expected value.
-- **4th downs & kicks:** AI uses simple EV chart (go/FG/punt by distance-to-go, field position, score, time). FG% curve from KickAccuracy/Power vs distance (~85% league avg; 50+ yd ≈ 60%).
-- **Playcalls:** Offense — Inside Run, Outside Run, Short Pass, Deep Pass, Play Action, Screen (+FG, Punt, Kneel, Spike, 2-pt, **Onside Kick** after scores). Defense — Base, Blitz, Nickel, Dime, Contain, Prevent (+Hands Team vs expected onside). **Tempo toggle** on offense: Normal / Hurry-Up / Chew Clock (affects play clock burn + slight efficiency tradeoffs); AI uses it correctly late. "Suggested" banner = OC/DC AI pick (quality scales with coordinator rating); auto-call toggle available.
-- **Sequencing correctness (hard requirements from reference-app bug mining):** TD as time expires still awards the try; end-of-game state machine (0:00 edge cases, kneel-outs, untimed downs after defensive penalty, OT caps) gets exhaustive unit tests — this is the #1 crash locus in the reference app. OT is capped (max 2 OT regular season → tie; playoffs repeat until decided).
-- **Game modes:** every user game offers Quick Sim, Call the Plays (this engine, text/2D), or **On the Field** (arcade control of offensive snaps/kicks/returns — full spec `06-PLAYED-GAME-MODE.md`). All modes emit identical records; calibration bands apply to engine-resolved games only.
-- **Win probability:** logistic on (score diff, time remaining, possession, field position, pregame ratings edge) — updated per play, shown live.
-- **Player of the Game**, box scores per position group, drive-grouped play log with clock stamps and tappable player names.
-- **Calibration bands (asserted by tests, per simulated season):** team PPG 20–26 · pass yds/team/gm 195–240 · rush 100–130 · comp% 61–67 · INT/gm 0.7–1.0 · sacks/gm 2.0–2.9 · FG% 82–88 · ~8% of games OT · home win% 54–58%. **Believability bands (added from reference-app complaint mining):** Q4 scoring share 22–30% of points · plays of 25+ yds: 3–6/game · TDs of 40+ yds: ~0.5/game · safeties ≤ 0.03/game · blocked kicks ≤ 2% · TE target share 15–25% of team targets · no single receiver > 40% of targets (barring extreme roster) · **ratings predictiveness: 12+ OVR gap → favorite wins ≥ 72%** · **mode parity: retainPlays true vs false produces statistically identical distributions (same seeds, same aggregate outcomes — one engine, one truth).**
+### 5.4 NIL
 
-## 5. Season calendar
+A programme-level pool, not a salary cap: you allocate to positions and to individuals, it moves
+recruiting interest and portal retention, and it is bounded by programme prestige and booster
+support. It is deliberately *not* a second salary cap — the pro tier already has one, and doubling
+it would make the two tiers feel identical.
 
-Preseason (3 wks, optional) → Weeks 1–18 (17 games + bye; trade deadline end of Wk 9; weekly awards, power rankings, injuries heal, weekly training XP) → Playoffs (4 rounds) → Offseason stages, in order:
+---
 
-1. **Season Review** — goals scored, XP granted, awards ceremony, All-League teams
-2. **Coaching Carousel** — AI firings/hirings; user fired if job security hits 0 (unless disabled) → job-offer list (reputation-gated); voluntary Team Search at this stage only; **coordinator market** (hire/renew OC/DC/STC from generated pool, poaching resolves — §10)
-3. **Retirements** + HoF inductions
-4. **Re-sign window** — your expiring contracts; AI teams re-sign theirs
-5. **Franchise Tag** (optional toggle, 1 tag = 120% of position top-5 avg salary, 1 yr)
-6. **Free Agency** — 3 waves (see §7)
-7. **Draft** — 7 rounds × 32 + UDFA (see §8)
-8. **Training Camp** — progression reveal (▲▼ arrows, breakout stories)
-9. **Cutdown** — to 53 + 16 PS (auto-suggest respects position minimums + cap)
-10. **Preseason games** → next season kickoff; cap year rolls, contracts tick down
+## 6. The pro tier
 
-## 6. Salary cap & contracts
+32 teams, 2 conferences × 4 divisions × 4 teams. 17 games + 1 bye + playoffs.
 
-- **Cap:** $260M year 1, grows 5–8%/yr (seeded). All 53 + PS count (no top-51 rule — `ponytail:` simplification, note in UI).
-- **Contract:** years (1–5), salary/yr array (flat or +5%/yr riser), signing bonus (prorated evenly over years, max 5), guaranteed years count. Cap hit = salary + bonus proration. **Dead money on cut/trade** = remaining proration + remaining guaranteed salary (all accelerates into current year; `ponytail:` no June-1 split).
-- **Rookie scale (slotted, 4 yrs):** R1P1 $9.5M/yr declining smoothly to R7P32 $0.9M/yr (table in code); R1 has team option yr-5 at position-avg (toggle; default on).
-- **Minimum salary:** $0.9M (age <26) / $1.2M vet. Practice squad $0.25M each.
-- **Re-sign ask model:** market value = f(OVR, age vs peak, position premium (QB 2.2× > WR/CB/DL ~1.2× > RB/S ~0.9× > K/P 0.35×), recent production, morale, Loyal/Mercenary traits, team success). Negotiation: sliders for years/salary/bonus; accept-probability meter; each failed lowball −5 morale; walk risk after 3 rounds.
-- **Cap floor for AI:** AI teams must spend ≥ 89% cap across 3 years — keeps FA market liquid.
+Carried forward from the prior build's design, which was calibrated and soak-tested and is the most
+reusable design knowledge in the repo (`archive/02-GAME-DESIGN-pro-only.md`, `STATUS.md`):
 
-## 7. Free agency
+| System | Shape |
+|---|---|
+| Roster | 53 active + 16 practice squad |
+| Salary cap | Hard cap, year-one $260M, growth 5–8%/yr |
+| Contracts | Proration ≤5 years, guarantees, dead money, rookie scale |
+| Practice squad | Stipend-funded, with a positional floor. **A squad place requires squad money; dead money follows the contract, not a flag; a call-up is paid for.** These three rules exist because their absence made the squad a cap-laundering machine in the prior build |
+| Draft | 7 rounds, scouting fog, tradeable picks |
+| Free agency | Open market plus in-season street free agency |
+| Trades | Deadline at week 9 |
 
-- Wave structure: 3 waves per offseason (each = 1 "day"): stars sign early. AI bids from need + cap + personality. Offer = years/salary/bonus; **interest meter** = money (55%) + contender status (20%) + role/depth-chart fit (15%) + franchise reputation (10%), Mercenary/Loyal skew. Losing bids generate news ("Stars sign CB Ryan Evans, 4 yrs $72M").
-- In-season street FA pool: unsigned leftovers, OVR mostly <72, 1-yr min deals; signing needs cap space + roster spot.
+**Cap hell is real but bounded**: accelerated proration can leave a team briefly over the cap because
+it cannot be cut away. The soak allows a small overage and fails on a large one.
 
-## 8. Draft & scouting
+---
 
-- **Class generation:** 224 draftable + ~80 UDFA pool. OVR bell curve by round expectation with noise; potential letters correlated to draft slot but with engineered **steals** (~6/class: R4+ with A/B potential) and **busts** (~5/class: R1–2 with D/F). Position distribution matches roster needs league-wide. Rookie ages 21–23.
-- **Scouting fog:** unscouted prospects show OVR *range* (±8) + hidden potential. **Scouting points:** 120/season (skill tree +). Costs: narrow range −3 (10 pts), reveal potential (25 pts), full report (40 pts: exact OVR + traits). Weekly in-season scouting screen + full access during draft stage.
-- **Draft day:** snake-free standard order = reverse record (SoS tiebreak), playoff teams by exit round, champion 32nd. 7 rounds. AI picks = need × best-available × personality (rebuilder drafts younger/high potential). **Pick trades** live during draft (value chart: JJ-style — pick 1 = 3000 pts … pick 224 ≈ 2; future picks −20%/yr out). War-room grade toast per pick; class grades in news next morning.
-- **UDFA:** quick-sign list post-draft, min deals, PS-eligible.
+## 7. The promotion arc (D5)
 
-## 9. Trades
+The v1 feature that nothing else in the market has.
 
-- Assets: players + picks (current + next 2 drafts). **Trade value:** player = f(OVR curve by age, potential, position premium, contract quality (cheap > fair > albatross), morale); pick = chart value × (1 − uncertainty discount).
-- AI accept when received ≥ 105% of given (personality-adjusted: winNow overpays for vets, rebuilder for picks); counter-offers within 15% gap; 3-round negotiation max.
-- Constraints: post-trade cap legality both sides (dead money applies), roster min/max, no trades weeks 10–18 (deadline end of week 9) or during playoffs.
-- AI-to-AI trades happen at deadline + draft (2–6/season) → news. AI sends user offers for tradeblock'd players.
+### 7.1 What triggers an offer
 
-## 10. Coach RPG & staff (carried from college, re-skinned)
+A **reputation** score, accumulated from: wins above programme expectation, conference and national
+titles, players developed and drafted, and the prestige of the programme you did it at. Pro teams
+have their own coaching needs; when your reputation clears a team's bar and they have a vacancy,
+an offer appears in the carousel.
 
-### Coordinators (v1-light staff system)
+Offers arrive first as **coordinator** roles at good teams and **head coach** roles at bad ones —
+the real choice, and a genuinely hard one: coordinate for a contender, or rebuild a disaster with
+your name on the door.
 
-Three hireable slots: **OC, DC, STC.** Each `StaffMember` = name, age, rating 40–99, scheme specialty, salary, contract years (1–3), 0–1 trait (Developer +camp XP ·  Motivator +morale · Recruiter-of-Coaches cheaper hires). Effects:
+### 7.2 What carries across
 
-1. **Unit ratings:** OC adds +0…+3 to offense unit, DC to defense, STC to special teams (linear from rating 60→95; scheme mismatch with team scheme halves it).
-2. **Suggested-play quality:** playcall AI accuracy scales with the relevant coordinator's rating (visible in Call-the-Plays and On-the-Field modes). OC ≥ 80 grants +1 audible in On-the-Field.
-3. **Development:** OC/DC add up to +15% camp XP for their side's players.
-4. **Poaching pipeline:** coordinators earn hidden HC-candidacy score from team success; top ones get hired away at the coaching carousel (news story, succession pressure).
+| Carries | Does not carry |
+|---|---|
+| Reputation (converted, not reset) | Your roster, obviously |
+| Scheme identity and its mastery level | Recruiting relationships |
+| Staff who accept the move — and some will not | Programme facilities and boosters |
+| Your record, trophies, and the players you developed — permanently, in the almanac | NIL pool |
 
-**Staff budget:** owner-set $14–30M/yr by patience/reputation. Hiring happens at offseason stage 2 (carousel): generated market pool, offers = salary + years; AI teams compete (reputation-weighted). Firing mid-contract owes remaining salary against staff budget. AI teams always staff all three slots. The old "Enable Coordinators" toggle now governs **auto-call only** — staff always exists.
+**Players you developed appear in the pro league.** The three-star you turned into a first-round pick
+shows up on someone's roster, and you can trade for him. This is the single highest-value payoff of
+a unified save and it costs almost nothing to build, because the same player model spans both tiers.
 
-- **XP:** win +40 · division win +10 bonus · playoff win +80 · Championship +200 · weekly goals ticking (see below) · season goals 80–100 · draft steal hits +50. Level = XP/100 compounding ×1.15/level; +1 Skill Point per level.
-- **Skill trees (4 branches × 6 nodes; costs 1/2/3/4/5/6 SP; linear chains):**
-  - **Scouting:** Sharper Eye I/II (fog ±6/±4), Extra Scouts (+40 pts), Combine Insider (free potential on R1 grades), Sleeper Radar (steals flagged ★), Draft-Day Trader (AI accepts at 102%)
-  - **Development:** Position Coaches I/II (camp XP +10%/+20%), Vet Mentors (decline −1/yr slower), Youth Program (age <25 dev ×1.15), Breakout Culture (+1 breakout/camp), Iron Regimen (injury odds −15%)
-  - **Offense:** Scheme Guru I/II (offense unit +1/+2), Red-Zone Package (RZ TD% +5), Two-Minute Drill (hurry-up +10%), Explosive Plays (fat-tail ×1.15), Fourth-Down Analytics (better suggested calls)
-  - **Defense:** mirror of Offense (unit +1/+2, 3rd-down stop +5%, Turnover Chain (takeaway +10%), Blitz Architect, Bend-Don't-Break)
-- **Coach finances:** salary from contract ($1.5–12M/yr scaling with reputation); cash is score/flavor (v1: no spend sink — displayed + leaderboard; `ponytail:` spending (houses/donations) only if users ask).
-- **Contract & job security:** 0–100%; moves on results vs owner expectations (patience-scaled). <20% = hot seat news; 0% = fired at carousel (unless disabled). Fired/retired → job offers filtered by reputation. **No-dead-end invariant (reference-app lesson): the carousel ALWAYS yields ≥1 offer (floor: a rebuilding team takes a flyer) or an explicit "sit out a year" option that re-enters the market with a reputation tick — a save can never softlock on unemployment.** Contract expiry mid-success → extension negotiation before market.
-- **Seasonal goals (owner-assigned, 4–6/season, XP-bearing):** templates — "Win N+ games", "Make playoffs", "Win division", "Top-10 offense/defense", "Rookie class avg +3 OVR by camp", "Stay under cap with $5M+ space", "Beat rival twice". END-OF-SEASON chip where applicable.
-- **Retire → Legacy screen:** career grade (titles, win%, playoff record, HoF players drafted), permanent leaderboard entry.
+### 7.3 Is the move one-way?
 
-## 11. Meta systems
+**No.** Getting fired in the pro league puts college jobs back in your carousel, at a prestige
+matching your (now damaged) reputation. A one-way door would make the college tier a tutorial; a
+two-way door makes it a place you can end up, which is a much better story and a much better
+failure state (§8).
 
-- **News engine:** templated items with team colors/logos — game recaps, injuries, signings (amounts), trades, milestones (400-yd games), streaks, hot seat, awards, retirements, draft grades. 6–12 items/week league-wide; user-team items pinned first.
-- **Awards:** weekly Players of the Week (per conference O/D/ST); season MVP, OPOY, DPOY, OROY, DROY, Coach of Year (voting = weighted stats + team success); All-League 1st/2nd; All-Rookie.
-- **Records book:** single-game/season/career, franchise + league, seeded with fictional historical records that current players chase (news when broken).
-- **Trophy Room (10):** Champion · Conference Champion · Division Title · Playoff Berth · #1 Seed · Undefeated Regular Season · Draft Gem (R5+ → All-League) · 21+ Comeback · Dynasty (3 titles/5 yrs) · Perfect Season (undefeated + title).
-- **Previous Seasons archive:** per year — standings, playoff bracket, awards, your record, champion.
-- **Checkpoints:** manual restore points (max 5, ring buffer), plus autosave.
+---
 
-## 12. Scenarios (v1 ships 3)
+## 8. Difficulty, jeopardy and failure (D8)
 
-1. **Cap Hell** — contender roster (88 OVR) but −$38M effective space next year, aging core. Goal: title within 3 yrs without bottoming out.
-2. **Expansion Franchise** — new 33rd-team fiction implemented as a stripped 60-OVR roster + extra picks (2 per round, 2 drafts). Goal: playoffs by yr 4.
-3. **Aging Legend** — 38-yo 96-OVR QB, 2-yr window, thin roster behind him. Goal: win it all before he retires (retirement forced at yr 3).
-Config-driven (modified league JSON + goal set) — no bespoke engine paths.
+**What losing looks like.** Job security is a visible band (Safe / Warm / Hot / Gone), moved by
+results against expectation, not by raw record. Winning 8 games at a programme expected to win 4 is
+a good year; winning 8 where 11 was expected is not.
 
-## 13. Difficulty & settings
+**Getting fired.** End of season, with warning: the band moves through the year and the athletic
+director or GM says so, in the inbox, before it happens.
 
-- Trade difficulty (AI acceptance 100/105/112%), owner patience, coach-firing toggle, injuries toggle, playoff format, franchise tag toggle, prediction display (spread ↔ win %), confirm-advance, injury popups. Tutorial overlay on first launch, replayable.
+**The non-negotiable, carried from the prior build**: *the carousel can never dead-end.* A coach
+whose contract expires always has at least one offer or an explicit "year out of the game" path.
+This exact situation soft-locks saves in the reference app and is its **rank-2 complaint class**
+(§H). It is an invariant with a test (`03-MATCH-ENGINE.md` §9).
 
-## 14. Explicitly out of v1 (design debt, ordered by community demand)
+**Difficulty comes from AI quality, never from stat cheats.** This is D10 and it is also a direct
+response to §6.2's rubber-band complaint about FC:CD — "anti-upset cheese", games that feel decided
+against you. Higher difficulty means opponents scheme better, adjust faster and exploit your
+tendencies harder. **It never means their players get better ratings than the ones shown.** A
+difficulty setting that lies about ratings is the one thing that would break the trust the whole
+design rests on.
 
-Custom league creator + JSON import/export (v1.5 — architecture supports from day one) · **in-app community league browser** (kills the "go to Reddit for files" friction) · weather · compensatory picks · in-season IR/designated-return · contract restructures/June-1 cuts · position coaches & staff skill trees (coordinators themselves ARE v1, §10) · coordinator career mode (start as OC/DC) · controllable post-snap defense in On-the-Field · dynamic difficulty · per-player usage sliders · social-media-style reacting feed + AI press conferences (news engine covers v1) · multiplayer/leaderboards beyond Game Center basic · expansion drafts · relocation. Monetization if ever: editor + scenario packs, never ads, never paid crash insurance (checkpoints stay free).
+---
+
+## 9. Onboarding — the first fifteen minutes (D9)
+
+By the end of them, the player has understood **four things**, and the sequence exists to teach
+exactly those:
+
+| Minute | What happens | What it teaches |
+|---|---|---|
+| 0–2 | Pick a programme from three, each with a one-line situation ("rebuild", "win now", "keep the seat warm") | Expectation is the thing you're judged against |
+| 2–5 | Meet your roster through *three players*, not 85 — a star, a project, a problem | People, not spreadsheets |
+| 5–9 | Build one game plan against a scouted opponent, with the trade-off stated in plain language | **The week is the game** |
+| 9–14 | Play the match at default fidelity, with 3–4 interventions surfaced as they arise | You steer, you don't play |
+| 14–15 | The result, and one consequence — a recruit's interest moves | Everything connects |
+
+No tutorial modal wall. The first week *is* the tutorial, with a coach-assistant voice in the inbox
+that stops appearing once the player stops needing it. Replayable from settings.
+
+---
+
+## 10. Staff
+
+Head coach (you) + offensive coordinator + defensive coordinator + special teams + position coaches
++ (college) a recruiting coordinator.
+
+Coordinators matter because of D1: **your coordinator calls the plays inside your plan.** A good OC
+executes your intent; a bad one drifts from it under pressure. That gives the staff market real
+stakes and makes "why did he call that" a mechanic rather than a bug.
+
+Staff have: a scheme they know, a development specialty, a recruiting/scouting rating, and ambition —
+good ones leave for head-coaching jobs, which is both a loss and a badge.
+
+---
+
+## 11. Fictional identity (D6)
+
+Original IP is a **design opportunity**, not a compliance tax. College football's emotional payload
+is rivalry, tradition and place, and it has to be manufactured.
+
+- **Regional geography.** Programmes sit in a fictional map with real-feeling regional character —
+  distance matters for recruiting, and neighbours become rivals naturally.
+- **Archetypes, not one-offs.** Each programme is built from a small set of authored archetypes
+  (state flagship, private academic, service academy, commuter school, small-town powerhouse) that
+  determine prestige ceiling, recruiting reach, facilities, fan expectation and tone.
+- **Rivalries seed and then accumulate.** Each starts from geography and conference; then the save
+  writes its own history — the year you lost on a blocked kick becomes a line the game remembers
+  and brings up. **This is the mechanic that makes season 8 better than season 1**, and it is cheap:
+  it is a record of things that already happened.
+- **Traditions have mechanical consequence.** A trophy game, a rivalry week that moves recruiting
+  interest, a home-field tradition worth a real edge. A tradition with no mechanic is set dressing.
+- **Conference politics.** Realignment happens; programmes get invited and dropped, and being the
+  one left behind is a real, survivable disaster.
+
+**Both legal tests apply to every generated name and colour pair** (see `CLAUDE.md`), and they run
+in the generation phase's gate.
+
+---
+
+## 12. Content volume (D13)
+
+The difference between a two-week and a two-month task, so it is budgeted here rather than
+discovered later.
+
+| Content | Authored | Generated | Authoring budget |
+|---|---|---|---|
+| Programme archetypes | 8 | — | 6 h |
+| Programmes (~134) | ~24 anchor programmes with hand-written identity | ~110 from archetype × region | 20 h |
+| Conferences | 10, authored | — | 4 h |
+| Traditions | 20 authored, assigned by archetype | — | 8 h |
+| Rivalry seeds | — | Generated from geography + conference | 2 h (rules) |
+| Rivalry history | — | **Accumulated from actual play** | 0 |
+| Name banks (first/last/city/mascot) | Curated lists + blocklist | Combined at runtime | 12 h |
+| Pro teams (32) | All 32 authored | — | 10 h |
+| News/story templates | ~120 | Filled at runtime | 14 h |
+| **Total** | | | **~76 h** |
+
+That is roughly **two solo working weeks of authoring**, spread across phases rather than paid up
+front. The 24 anchor programmes carry the identity load; the other 110 exist to make the league feel
+big and are allowed to be thinner.
+
+---
+
+## 13. Explicitly out of v1
+
+Ordered by likely demand. Each is out because it costs week-budget or scope, not because it is bad.
+
+1. **Any direct control of a player.** Permanently out — it is a Tier A constraint, not a backlog item.
+2. Custom league / roster JSON import-export (architecture stays ready; §H rank 7 wants it)
+3. Coordinator-only career start (§H rank 5)
+4. Press conferences and a social feed (§H rank 10)
+5. Online leaderboards, any networking
+6. iPad and landscape
+7. Commissioner / god mode editing
+8. Multiple simultaneous saves beyond 3 slots
+
+---
+
+## 14. Numbers that live in code, not here
+
+Everything in this document that is a constant belongs in `LeagueRules.swift` (pro) and
+`CollegeRules.swift` (college): roster sizes, cap figures, week counts, playoff shapes, eligibility
+clocks, recruiting contact budgets, portal windows. **A magic number at a call site is a defect.**
