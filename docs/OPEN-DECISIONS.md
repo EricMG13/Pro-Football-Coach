@@ -13,4 +13,12 @@ Owner decisions for the rebuild program. Each entry: decision, status, date, and
 ## Open
 
 - **OD-5 — Citation verification pass.** Independent spot-check of Medium/Low-confidence dossier findings was skipped at owner instruction during gate 1. The gate-3 adversarial pass independently re-verified the load-bearing *source* claims (and corrected several), so the residual risk is confined to research citations that no later document depends on numerically. **Owner to schedule or waive.**
-- **OD-6 — Phase 4C test status.** The all-22 arcade work now compiles (first build, 2026-08-09), but `swift run -c release SimTests` was not completed in that session — the release build was killed for memory. **Run the suite before trusting 4C**, per its own note in `docs/STATUS.md`.
+- **OD-6 — Phase 4C test status. Largely resolved 2026-08-09.** The suite ran in a debug build: **324 tests, 18,631 checks, one failure.** Phase 4C compiles and its ~1,100 lines of arcade tests pass, so the multi-agent review that stood in for a compiler held up. The single failure is a performance assertion, not a correctness one:
+
+  `SeasonTests.swift:218` — "advancing a week is fast enough to feel instant: 398 ms per week exceeds the 150 ms budget."
+
+  **This is the same defect the gate-3 verification found in the docs, now confirmed in the code.** Two things are true and both need action:
+  1. **The test has no build-configuration guard.** 398 ms is an *unoptimized debug* measurement; the 150 ms budget assumes release. A performance gate that silently runs under debug produces a meaningless failure — and, worse, would produce a meaningless *pass* if the budget were loose. It must skip with an explicit notice outside release builds.
+  2. **The budget itself is still unverified on device.** `03-ARCHITECTURE.md` §6.6 now states the honest basis (sim-only <150 ms on the dev Mac, end-to-end <350 ms on an A15), but no one has measured the A15 number. Until someone does, treat it as a target, not a gate.
+
+  **Remaining for OD-6:** re-run in release (`swift run -c release SimTests`) on a machine with enough memory — the earlier attempt was OOM-killed — and add the configuration guard.

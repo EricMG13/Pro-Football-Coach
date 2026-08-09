@@ -10,7 +10,10 @@ Distribution is TestFlight and personal use (`PRODUCT.md`), so nothing here is w
 
 - [ ] **`swift build` green** on the shipping toolchain.
 - [ ] **`swift run SimTests` green**, all suites, self-registered (no suite exists that the runner never calls).
-- [ ] **Phase 4C verified.** The all-22 arcade compiles as of 2026-08-09 but its suite has not been run against it (OD-6). Run it.
+- [x] **Phase 4C exercised.** 324 tests / 18,631 checks green in debug (2026-08-09) — one perf assertion failed, see below.
+- [ ] **Suite green in release.** `swift run -c release SimTests` with no failures. The debug run's single failure is `SeasonTests.swift:218` (398 ms/week against a 150 ms budget) — an unoptimized measurement against a release-scale budget.
+- [ ] **Performance tests guard their build configuration.** A perf gate that runs under debug is noise; it must skip with an explicit notice outside release.
+- [ ] **The week-advance budget measured on an A15**, not inferred. `03-ARCHITECTURE.md` §6.6 states the target; nobody has verified it on device.
 - [ ] **Both source scanners green**, each with its planted-offender self-test: no `.hashValue` seeding, no `UUID()`/`Date()` as argument or assignment in `Engine/`/`Generation/`.
 - [ ] **No unresolved blocking item in `docs/OPEN-DECISIONS.md`.**
 
