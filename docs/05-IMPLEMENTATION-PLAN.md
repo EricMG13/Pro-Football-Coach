@@ -46,11 +46,17 @@ Until D11 is answered:
 ## Phases
 
 ### P0 — Foundation
-Module skeleton per `03b` §1; seeded RNG as a value type; the hierarchical seed derivation contract;
-the three source-scanning tests (no SwiftUI in the engine, no `hashValue` in seeding, no design-token
-literals in views); the save envelope with a version readable without a full parse; the test harness
-D11 selects.
-**Gates:** G1, G2, G4, G6. **Blocked on D11 before starting.**
+Module skeleton per `03b` §1; the ported `SeededRandom` and `CodingSupport` plus the hierarchical
+seed derivation contract from `03` §3; the three source-scanning tests (no SwiftUI in the engine, no
+`hashValue` in seeding, no design-token literals in views) gathered into one contract suite; the save
+envelope with a version readable without a full parse; the ported `TestKit` harness; and the removal
+of everything in `Sources/` not named in `docs/PORT-LOG.md`, in one legible commit.
+**Gates:** G1, G2, G4, G6.
+
+**Not blocked on D11 — partially.** D11(a), *what framework runs the tests*, is decided: the ported
+harness. D11(b), *who has a toolchain to run it*, is still escalated. So P0's code can be written and
+reviewed now; **G1 and G2 cannot be asserted** until (b) is answered, and anything written stays
+recorded in `docs/STATUS.md` as unverified — never compiled.
 
 ### P1 — Model and rules
 Player, contract, programme, team, staff, league. Both rules modules — every constant that `02` and

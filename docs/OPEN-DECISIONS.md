@@ -402,11 +402,28 @@ is directly a test. Falsified when a bar fails.
 
 ---
 
-## D11 — Test strategy under the real toolchain — **ESCALATED**
+## D11 — Test strategy under the real toolchain — **PARTLY DECIDED, PARTLY ESCALATED**
 
-**This is a blocking owner question. Do not build past it.**
+> **Amended after inspecting the repo.** D11 was first written as wholly blocking. That was wrong,
+> and the correction matters because it unblocks most of P0. The question decomposes:
+>
+> **(a) What framework runs the tests? — DECIDED, from evidence.** The prior build already solved
+> this and the solution is in the tree: `Tests/SimTests/TestKit.swift` is a ~50-line hand-rolled
+> harness with real exit codes and zero dependencies, run as an executable target via
+> `swift build && swift run -c release SimTests`. It carried 224 tests and 13,226 assertions. It
+> needs only the Swift Command Line Tools — **not full Xcode** — because neither XCTest nor
+> swift-testing ships outside Xcode. Port it (see `docs/PORT-LOG.md`).
+>
+> **(b) Who actually runs it? — ESCALATED.** This is the real open question, and no amount of
+> design resolves it.
 
-The problem is established three times over in the research and solved nowhere:
+Verified in this container, not assumed: `swift`, `swiftc`, `xcodebuild`, `xcrun` and `simctl` are
+all absent; `download.swift.org` returns **403 on CONNECT** through the egress proxy; Ubuntu's
+`swift` packages are the unrelated OpenStack object store; there is no Docker daemon
+(`/var/run/docker.sock` does not exist). There is no sanctioned route to a toolchain from inside an
+agent environment, and routing around the policy is forbidden.
+
+So the remaining question is purely operational:
 
 - This container has no `swift`, no `swiftc`, no `xcodebuild`, no `xcrun`, no `simctl` (verified).
 - `docs/STATUS.md` records the same historically, plus `download.swift.org` refused by egress policy
@@ -418,27 +435,28 @@ The problem is established three times over in the research and solved nowhere:
 Every "tests green" gate in `05` and the entire machine-verifiable half of the definition of done
 depend on the answer.
 
-**What the owner must decide:**
+**What the owner must decide — pick one:**
 
-1. Is a Swift toolchain going to be available in agent environments — via a lifted egress rule, a
-   pre-baked container image, or a self-hosted runner? If yes, XCTest or swift-testing becomes
-   available and the question mostly dissolves.
-2. If not, does the owner's Xcode machine become the CI — agents write, the owner runs, results come
-   back as the gate? That is workable but it makes every phase gate a synchronous human step, and
-   `05` must be sequenced around it.
-3. If neither, the fallback is the prior build's hand-rolled harness as an executable target, and
-   **the package must state plainly that phase gates are asserted against a harness the agent cannot
-   run** — which is not a gate, it is a promise.
+1. **Lift the egress rule for `download.swift.org`**, or supply a pre-baked image with the Swift
+   Command Line Tools. Cheapest by far: the harness already runs on Command Line Tools alone, so
+   this makes every machine gate agent-assertable and D11 closes completely.
+2. **The owner's Xcode machine becomes the CI.** Agents write, the owner runs `swift build &&
+   swift run -c release SimTests` at phase boundaries, results come back as the gate. Workable, but
+   every phase gate becomes a synchronous human step and `05` must batch phases around it.
+3. **Neither.** Then phase gates are asserted against a harness no agent can run, which is not a
+   gate but a promise — and the package must say so in those words.
 
-**Recommendation, if the owner wants one:** option 2. It is the only one that makes "tests green"
-mean anything without infrastructure work, and it matches the machine/owner split the definition of
-done already uses. `05` should then batch phases so the owner runs the suite at phase boundaries
-rather than continuously.
+**Recommendation: option 1, falling back to option 2.** Option 1 is a one-line policy change that
+removes a permanent tax from every future phase. Option 2 works today without anyone's permission.
+Option 3 is how Phase 4C shipped uncompiled.
 
-**Falsifier — instrument: none possible until decided.** That is what makes it blocking.
+**Falsifier — instrument: for (a), the harness itself.** It ran 224 tests and 13,226 assertions in
+about 100 seconds; if a ported harness cannot reproduce that, (a) was wrong. For (b) there is no
+instrument, which is exactly what makes it an owner question rather than a design question.
 
-**Cost of reversal: high and increasing.** Every phase built before this is answered may be built
-against a gate that cannot run.
+**Cost of reversal: low for (a)** — the harness is ~50 lines and swapping it for swift-testing later
+is mechanical. **High and increasing for (b)** — every phase built before it is answered may be
+built against a gate nobody can run.
 
 ---
 

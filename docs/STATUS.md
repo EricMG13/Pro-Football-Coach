@@ -43,9 +43,20 @@ Do not treat anything in `Sources/` as canon; `docs/DOC-MANIFEST.md` is the auth
 
 ---
 
-## Blocking: D11 — test strategy under the real toolchain
+## Blocking: D11(b) — who has a toolchain
 
-**P0 cannot start until the owner decides this.**
+**P0 can be written. Its build and test gates cannot be asserted here.**
+
+D11 was originally recorded as wholly blocking; on inspection it splits, and the correction unblocks
+most of P0:
+
+- **D11(a) — what framework runs the tests: decided.** The prior build already solved it and the
+  solution is in the tree. `Tests/SimTests/TestKit.swift` is a ~50-line hand-rolled harness, zero
+  dependencies, real exit codes, run as an executable target via `swift build && swift run -c release
+  SimTests`. It needs only the Command Line Tools, not full Xcode. It carried 224 tests and 13,226
+  assertions. Ported per `docs/PORT-LOG.md`.
+- **D11(b) — who actually has a toolchain to run it: still escalated.** This is an owner question and
+  no design resolves it.
 
 Verified in this container, not assumed:
 
@@ -54,14 +65,17 @@ swift: NOT FOUND    swiftc: NOT FOUND    xcodebuild: NOT FOUND
 xcrun: NOT FOUND    simctl: NOT FOUND    uname: Linux
 ```
 
-The historical record is the same: no agent environment in this project has had a Swift toolchain,
-neither XCTest nor swift-testing ships with the Command Line Tools, and `download.swift.org` is
-refused by the organisation's egress policy with a 403 on `CONNECT`. **Phase 4C of the previous
-build shipped having never been compiled as a direct result** — and the failure was not the missing
-toolchain, it was claiming otherwise.
+Every sanctioned route was tested this session, not assumed: `download.swift.org` returns **403 on
+CONNECT** through the egress proxy; Ubuntu 24.04's `swift` packages are the unrelated OpenStack
+object store; there is no Docker daemon (`/var/run/docker.sock` does not exist). Routing around the
+policy is forbidden, so there is no way to obtain a toolchain from inside an agent environment.
+
+**Phase 4C of the previous build shipped having never been compiled as a direct result** — and the
+failure was not the missing toolchain, it was claiming otherwise.
 
 Every "tests green" gate in `05`, and the whole machine-verifiable half of the definition of done,
-depend on the answer. The options and a recommendation are in `docs/OPEN-DECISIONS.md` D11.
+depend on D11(b). Options and a recommendation are in `docs/OPEN-DECISIONS.md` D11 — the cheapest by
+far is lifting the egress rule for `download.swift.org`, which closes D11 completely.
 
 ---
 

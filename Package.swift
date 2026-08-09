@@ -7,8 +7,9 @@ import PackageDescription
 //                        even when building without full Xcode; the iOS app target is a
 //                        thin @main shell in App/ generated from project.yml)
 //
-// Tests use swift-testing (bundled with the toolchain) rather than XCTest so the suite
-// runs from the command line without a full Xcode install.
+// Tests run through a hand-rolled harness (Tests/SimTests/TestKit.swift) as an executable
+// target: neither XCTest nor swift-testing ships with the Swift Command Line Tools — both
+// live inside Xcode — so this is what lets the suite run from the command line.
 let package = Package(
     name: "ProFootballCoach",
     platforms: [.iOS(.v17), .macOS(.v14)],
