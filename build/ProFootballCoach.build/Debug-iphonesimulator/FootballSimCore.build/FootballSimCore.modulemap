@@ -1,4 +1,0 @@
-module FootballSimCore {
-header "FootballSimCore-Swift.h"
-export *
-}

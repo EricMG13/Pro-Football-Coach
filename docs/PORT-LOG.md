@@ -115,10 +115,35 @@ resolution — protection duels, route-versus-coverage, run lanes. That is a des
 `SnapKernel`.
 
 **Why it is still discarded:** it was written to serve a thumb, not a coach. Its outputs are shaped
-for input timing and aiming (`DefensiveInputs`, `Pocket`, the timed-window tuning in `ArcadeTuning`),
-and `STATUS.md` records that **none of it was ever compiled** — Phase 4C shipped unverified. Porting
-unverified code into the foundation of a rebuild inherits an unknown defect surface at the worst
-possible layer.
+for input timing and aiming (`DefensiveInputs`, `Pocket`, the timed-window tuning in `ArcadeTuning`).
+And it has **never been compiled** — which is no longer an inference from `STATUS.md` but a measured
+fact:
+
+> The repository carried 70 MB of committed Xcode build products
+> (`build/Debug-iphonesimulator/`, an `arm64-apple-ios-simulator` build of both library targets).
+> Symbol counts in `FootballSimCore.o` (3.9 MB) and, independently, in the 926 KB `.swiftmodule`:
+>
+> | Symbol | `.o` | `.swiftmodule` |
+> |---|---|---|
+> | `SeededRandom` | 570 | 35 |
+> | `GameSimulator` | 409 | 22 |
+> | `PlayCaller` | 61 | — |
+> | `LeagueFactory` | — | 7 |
+> | **`SnapKernel`** | **0** | **0** |
+> | **`Choreographer`** | **0** | **0** |
+> | **`RunLanes`** | **0** | **0** |
+> | **`Openness`** | **0** | **0** |
+> | **`Pocket`** | **0** | **0** |
+>
+> Ten source files are tracked under `Sources/FootballSimCore/Arcade/`. None of them appears in the
+> last artifact a compiler produced, while the rest of the engine does. Phase 4C was added after the
+> last build that worked.
+
+Porting code no compiler has ever seen into the foundation of a rebuild inherits an unknown defect
+surface at the worst possible layer.
+
+*(Those artifacts have since been untracked and gitignored — they were stale, 70 MB, and actively
+misleading about what had been built.)*
 
 **What is salvaged instead:** the *model*, not the code. `03` §1's matchup table is the same idea
 expressed for a coach-facing engine, and the honesty invariant — the field measures, the engine owns

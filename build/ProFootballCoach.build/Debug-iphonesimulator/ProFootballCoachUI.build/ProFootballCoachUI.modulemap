@@ -1,4 +1,0 @@
-module ProFootballCoachUI {
-header "ProFootballCoachUI-Swift.h"
-export *
-}

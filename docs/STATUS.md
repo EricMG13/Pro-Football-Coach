@@ -73,6 +73,16 @@ policy is forbidden, so there is no way to obtain a toolchain from inside an age
 **Phase 4C of the previous build shipped having never been compiled as a direct result** — and the
 failure was not the missing toolchain, it was claiming otherwise.
 
+**This is now measured, not remembered.** The repo carried 70 MB of committed Xcode build products.
+Symbol counts in both the 3.9 MB `FootballSimCore.o` and, independently, the 926 KB `.swiftmodule`
+show `SeededRandom`, `GameSimulator`, `PlayCaller` and `LeagueFactory` present — and **zero symbols
+from any of the ten tracked files in `Sources/FootballSimCore/Arcade/`**. The arcade layer was added
+after the last build that succeeded. Detail in `docs/PORT-LOG.md`; the artifacts are now untracked
+and gitignored.
+
+**Handoff:** `scripts/verify.sh` runs build and tests and prints a pasteable result. It needs only
+the Swift Command Line Tools, not full Xcode.
+
 Every "tests green" gate in `05`, and the whole machine-verifiable half of the definition of done,
 depend on D11(b). Options and a recommendation are in `docs/OPEN-DECISIONS.md` D11 — the cheapest by
 far is lifting the egress rule for `download.swift.org`, which closes D11 completely.
