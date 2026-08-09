@@ -211,7 +211,17 @@ struct ScheduleView: View {
                         .sorted { $0.week < $1.week }
 
                     ForEach(games) { game in
-                        row(game, league: league)
+                        if let result = league.result(for: game.id) {
+                            NavigationLink { GameReportView(record: result) } label: {
+                                row(game, league: league)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            NavigationLink { MatchupPreviewSheet(game: game) } label: {
+                                row(game, league: league)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                     if games.isEmpty {
                         EmptyStateView(
@@ -224,7 +234,7 @@ struct ScheduleView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Color.pageBackground)
+        .background(Broadcast.page)
         .navigationTitle("Schedule")
     }
 
@@ -234,16 +244,19 @@ struct ScheduleView: View {
         let opponent = league.team(id: opponentID)
         let result = league.result(for: game.id)
 
-        return HStack(spacing: Layout.medium) {
+        return HStack(alignment: .center, spacing: Layout.medium) {
             VStack(spacing: 2) {
-                Text("WK")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.white.opacity(0.8))
+                Text("Wk")
+                    .font(.labelFont)
+                    .foregroundStyle(.white.opacity(0.85))
                 Text("\(game.week)")
-                    .font(.headline)
+                    .font(.figureFont)
                     .foregroundStyle(.white)
             }
-            .frame(width: 42, height: 42)
+            // Minimum rather than fixed: at accessibility text sizes a 42pt box clipped the
+            // week number on the one screen that is nothing but week numbers.
+            .frame(minWidth: 42, minHeight: 42)
+            .padding(.horizontal, Layout.tight)
             .background(RoundedRectangle(cornerRadius: 10).fill(theme.primary))
 
             VStack(alignment: .leading, spacing: 3) {
@@ -251,12 +264,12 @@ struct ScheduleView: View {
                     Text(isHome ? "vs" : "@").foregroundStyle(.secondary)
                     Text(opponent?.fullName ?? "TBD").fontWeight(.medium)
                 }
-                .font(.subheadline)
+                .font(.bodyFont)
                 HStack(spacing: Layout.tight) {
-                    Chip(game.kind.label, color: game.kind == .division ? .blue : .teal)
+                    Stamp(game.kind.label, color: Broadcast.muted)
                     if let opponent {
-                        Chip("OVR \(Int(opponent.overallRating))",
-                             color: RatingPalette.color(for: opponent.overallRating))
+                        Stamp("\(Int(opponent.overallRating)) ovr",
+                              color: RatingPalette.color(for: opponent.overallRating))
                     }
                 }
             }
@@ -267,11 +280,16 @@ struct ScheduleView: View {
                 let won = result.didWin(league.userTeamID)
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("\(result.score(for: league.userTeamID))-\(result.opponentScore(for: league.userTeamID))")
-                        .font(.subheadline.weight(.semibold).monospacedDigit())
-                    Chip(won ? "W" : (result.isTie ? "T" : "L"), color: won ? .green : .red, filled: true)
+                        .font(.figureFont)
+                        .lineLimit(1)
+                    Stamp(
+                        won ? "Won" : (result.isTie ? "Tied" : "Lost"),
+                        hex: won ? RatingTier.starter.lightHex : RatingTier.fringe.lightHex,
+                        filled: true
+                    )
                 }
             } else {
-                Chip(isHome ? "HOME" : "AWAY", color: .secondary)
+                Stamp(isHome ? "Home" : "Away", color: Broadcast.muted)
             }
         }
         .padding(Layout.small)

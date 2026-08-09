@@ -381,6 +381,8 @@ struct TradeCenterView: View {
     var body: some View {
         List {
             Section("Trade Partner") {
+                // Switching partner used to leave both sides' selections in place, so a package
+                // could be assembled from players who were never on the table.
                 Picker("Team", selection: $partnerID) {
                     Text("Choose a team").tag(UUID?.none)
                     ForEach(otherTeams) { team in
@@ -414,10 +416,17 @@ struct TradeCenterView: View {
                     .disabled(partnerID == nil || (sending.isEmpty && receiving.isEmpty))
                 if let verdict {
                     Text(verdict)
-                        .font(.subheadline)
-                        .foregroundStyle(verdict.hasPrefix("Accepted") ? .green : .orange)
+                        .font(.bodyFont)
+                        .foregroundStyle(Broadcast.ink)
                 }
             }
+        }
+        // Switching partner used to leave both sides' selections in place, so a package could be
+        // assembled from players who were never on the table.
+        .onChange(of: partnerID) { _, _ in
+            sending.removeAll()
+            receiving.removeAll()
+            verdict = nil
         }
         .navigationTitle("Trade Center")
     }
