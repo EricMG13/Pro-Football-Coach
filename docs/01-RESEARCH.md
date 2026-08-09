@@ -62,6 +62,7 @@ community it serves**, and the conflict is named at the point of use.
 | 6.3 | The market gap, argued as an output | Two | Derived from 6.0–6.2, 6.5 | Complete |
 | 6.4 | Statistical calibration targets, both tiers | Two | Repo-primary + search-layer | Complete; college gaps named, not guessed |
 | 6.5 | 2D match presentation without direct control | Two | Search-layer + two READMEs read in full | Complete; four items unrun |
+| 6.6 | Football Manager UI reference read (owner-supplied screenshots) | Two | **Primary (18 screenshots)**, provenance unverified | Complete; settles AS-6.5-07 against the assumption |
 
 ### What each Part Two section is *for*
 
@@ -90,7 +91,9 @@ community it serves**, and the conflict is named at the point of use.
 ### Standing caveats that apply to the whole of Part Two
 
 1. **No competing product was installed or played, on any platform, by anyone.** Nothing in Part Two
-   is a play impression of any competitor.
+   is a play impression of any competitor. **Amended 2026-08-09 by §6.6:** still true of *played*,
+   no longer true of *seen* — §6.6 reads eighteen owner-supplied Football Manager screenshots
+   directly. Everything outside §6.6 remains unsighted.
 2. **No page was read in full** except two GitHub READMEs (§6.5) and the repository's own source.
    `WebFetch` is refused by the egress proxy for every domain this research needed. All external
    content arrived through the search-summarisation layer. Every bracketed quotation must be
@@ -237,7 +240,7 @@ work that was not done, not claims that were made.
 | AS-6.5-04 | ASSUMPTION | A legible two-digit numbered circle needs ~20–22 pt diameter at 11 pt font. Typographic rule of thumb, not tested. | The Class-1 mark budget. | Test on device at the smallest Dynamic Type size. |
 | AS-6.5-05 | ASSUMPTION | The dwell defaults in §6.5 §9 (1.2–2.5 s resolution, 0.8 s post-play, 0.6 s flashed). **Proposals to be tuned against an owner timing protocol, not findings.** | The presentation-time term in the §4 arithmetic — the single term most likely to blow P4. | Owner timing protocol with a stated threshold. |
 | AS-6.5-06 | ASSUMPTION | The 25/105 high-leverage split in §6.5 §9's second budget. Illustrative arithmetic; the real number is an output of D1's leverage filter. | The season-time budget. | Falls out of D1 once the leverage filter is specified. |
-| AS-6.5-07 | ASSUMPTION | That FM's 2D pitch on mobile is displayed vertically. The vertical-orientation evidence is about FM26's **desktop** 2D camera. FMM being 2D top-down is sourced; its *orientation on a phone* is not. | The single precedent for portrait orientation. | Open FMM on a phone. |
+| AS-6.5-07 | **SETTLED — against the assumption** (§6.6 §2) | FM Mobile draws its pitch **landscape**, full-bleed, goals at the screen edges; the device is rotated for the match. There is no portrait precedent in FM. | The claimed precedent is withdrawn. `04` §5.2's vertical field survives on field-ratio geometry alone (1 : 2.25 gridiron versus 1 : 1.55 pitch) — corrected in place there. | Settled by direct observation of two owner-supplied FM Mobile captures. Residual: both read `FM23 MOBILE`, so this is FMM23, not the current SKU — see §6.6 §2. |
 | AS-6.5-08 | UNVERIFIED | Apple's 44 × 44 pt minimum touch target. Long-standing HIG guidance; `developer.apple.com` returns no readable body through the proxy. | D12's touch-target floor. | Read the HIG on an unrestricted machine. |
 | AS-6.5-09 | UNVERIFIED | Apple's exact HIG wording on Reduce Motion, including whether cross-fade is recommended in those words. Same cause. | D12's Reduce Motion contract. | Same. |
 | AS-6.5-10 | UNVERIFIED | The precise SwiftUI API surface for suppressing `TimelineView` scheduling under Reduce Motion. The environment key is documented; the "assert on a seam" test in §6.5 §7.1 is written that way *because* SwiftUI internals could not be verified as observable. | How the Reduce Motion test is written — the mechanism, not the requirement. | Write the test against a real toolchain. |
@@ -7318,3 +7321,169 @@ camera), §6.2 (877.5 pt, 68.4 yd, 7.3125 pt/yd), §6.3 (8.4 pt line spacing, 3.
 **Mobile football titles referenced**
 - https://apps.apple.com/us/app/retro-bowl/id1478902583
 - https://apps.apple.com/us/app/nfl-retro-bowl-26/id6476767864
+
+---
+
+## §6.6 — Football Manager UI reference read (owner-supplied screenshots)
+
+Added 2026-08-09. Research input to `docs/04-UX-AND-DESIGN-SYSTEM.md` and to phases P12–P14 of
+`docs/05-IMPLEMENTATION-PLAN.md`. This section reads **interface structure only** — what information
+is grouped with what, and what the player is asked to do with it. It takes no visual expression from
+the source. See §7 for the boundary this section is written inside.
+
+### 1. What the evidence is
+
+Eighteen screenshots supplied by the owner and reviewed in full. They are **not committed to this
+repository** — they are third-party copyrighted captures, and the repo has no business holding
+30 MB of them. They live outside the tree; this section is the durable artefact.
+
+| Group | Count | What it is |
+|---|---|---|
+| FM26 desktop, apparently live builds | 12 | Player report ×2, portal/home, calendar, in-game glossary overlay, squad overview + bookmark manager, match-day overview, finances, set-piece designer, squad table, training, data hub |
+| FM Mobile (sideline boards read `FM23 MOBILE`) | 2 | In-match pitch; in-match goal event |
+| FM25 design-file mocks, watermarked `Work in Progress — taken from FM25 design files and not from a game build` | 3 | Player last-5-matches, redesigned portal, redesigned match day |
+| Marked `NON-FINAL CAPTURE` | 1 | Tactics planner |
+
+**Grade: primary visual evidence, provenance unverified.** These are real captures of a real product,
+which is a stronger grade than anything else in Part Two. But four of the eighteen are explicitly
+non-shipping design material, and for the other fourteen this document cannot say whether they came
+from a retail build, a press kit or a beta. Read structural claims as sound and "this is what players
+actually use today" claims as one grade weaker.
+
+**Amends standing caveat 1.** Part Two's caveat *"No competing product was installed or played, on
+any platform, by anyone"* still holds — nothing here was played. But it is no longer true that no
+competitor was *seen*. This section is direct observation of a competitor's interface; the rest of
+Part Two is not.
+
+### 2. What it settles
+
+**AS-6.5-07 is settled, and it goes the other way.** The register assumed FM's 2D pitch on mobile
+was displayed vertically, and named that as *"the single precedent for portrait orientation"*. The two
+FM Mobile captures show the pitch drawn **landscape, full-bleed, left-to-right, goals at the screen
+edges** — the device is rotated for the match. There is no portrait precedent here.
+
+**One residual, named rather than glossed.** The sideline boards in both captures read `FM23 MOBILE`,
+so this is settled for **FMM23**, not for the current SKU. §6.1 establishes that FM26 Mobile is the
+one edition that did *not* move to the new engine, which makes an orientation change across those
+three years unlikely — but unlikely is not observed. The residual only matters if someone later wants
+to reinstate a portrait precedent; it cannot resurrect one, because a precedent this document has not
+seen is not a precedent it may cite.
+
+This does **not** overturn `04` §5.2's vertical field, for a reason worth stating: the two sports have
+opposite field ratios. A soccer pitch is roughly 1 : 1.55 (68 × 105 m) and an American football field
+is roughly 1 : 2.25 (53.3 × 120 yd). Landscape is the natural fit for the first and the wrong fit for
+the second. The decision survives — but it now rests on **geometry alone**, with no shipping
+precedent behind it, and `04` §5.2 has been corrected to say so.
+
+### 3. Patterns that transfer
+
+Each names where it lands.
+
+1. **No analytical chart without a verdict.** Every *analytical* surface pairs its graphic with a
+   plain-language judgement — a pill (*performing much better than average*) plus two or three
+   sentences naming which numbers are outliers and in which direction. The analytics screen does it
+   eight times on one page: a summary paragraph, three radar cards, four scatter cards, each with a
+   verdict pill and its own prose. The tactics overview repeats it in miniature.
+   **Stated precisely, because the loose version is wrong:** the *financial* screens do not do this —
+   they carry figures, directional arrows and a compliance flag, with no prose judgement. So the
+   pattern is not "never a naked chart"; it is that **wherever the product expects the player to
+   form a judgement, it states the judgement first** and lets the chart be the evidence.
+   → `04` §4: a READOUT that cannot state its own verdict is wallpaper, and this is the test that
+   catches it.
+2. **The suggestion with two buttons.** In-match, the assistant proposes a specific substitution in a
+   short sentence with **Do it** and **Ignore** beneath it. It converts watching into deciding at
+   almost no interface cost, and it needs no direct control of play.
+   → `04` §3 `CallInCard`; `05` P13. This is the closest thing in the reference set to our call-in
+   model, and it is the shape to copy: a named proposal, one-tap accept, explicit dismiss.
+3. **Ambient field, foregrounded event.** The mobile match keeps all 22 as plain numbered dots and
+   never tries to make the field itself carry the story. The story arrives as a **lower-third card**
+   (scorer portrait, number, name, event, one-line descriptor) and a **one-line commentary banner**.
+   → `04` §5: `LowerThird` is a real component we did not have. Our directed-attention rule is the
+   stronger version of the same instinct; the card is how the moment gets named.
+4. **Progress marks in the match header.** The mobile match header carries a row of nine small marks
+   beside the clock, the first filled. **This is an inference, not a reading** — from a still, it
+   could be highlights remaining, match periods, or a page indicator. It is carried forward because
+   the *idea* is sound on its own, not because the source is proven to do it.
+   → `05` P13. Under drive-granularity default, show how many key moments remain.
+5. **Role tokens on the pitch.** Tactics tiles carry a short role code (`CFD`, `DLP`, `FB`) beside
+   the number; the set-piece designer gives every instruction a letter-number token (`B0`, `C0`,
+   `E1`) that maps a draggable list row to a labelled dot on a mini pitch. Assignment information
+   reaches a small pitch without portraits or long labels, and the list-to-dot mapping is legible.
+   → `04` §3 (a `Chip` variant, not a new component); `05` P14 depth chart and scheme.
+6. **Two-value opposed bars** for team-versus-team stats (shots, possession, xG) — one shared track,
+   value at each end. Reads at a glance where a two-column table does not.
+   → `04` §3 `OpposedBar`.
+7. **Form as a five-bar sparkline**, and last-five-matches as a rating line threaded across five
+   result columns. Dense, small, instant.
+   → `04` §3 `Sparkline`; `05` P14 player card.
+8. **Constraint pressure shown, not tabulated.** The wage panel puts spend over budget on one line
+   with the ratio stated (`101.8%`), figure and ratio in a negative state, the track reading full and
+   capped. The breach registers before the numbers are read.
+   → `04` §3 `Meter` gets a defined over-capacity state — ours draws past the track, which the
+   source does not, because a full-but-capped bar cannot show *how far* over you are and a cap
+   overage needs that. `05` P14 cap, scholarship and contact-budget surfaces.
+9. **The agenda as commitments with a cost.** The redesigned home lists the day's obligations as
+   checkboxes with time-to-event beside each (*attend press conference — 1h*), not as news.
+   → `04` §4 Inbox, `05` P12. The week should show what it will cost, not only what happened.
+10. **Status glyph columns.** Squad rows carry a small fixed vocabulary of state chips — injured,
+    tired, wants a transfer — plus condition and morale icons.
+    → `04` §4 roster. **Inverted for our screen size**: at most three glyphs, and each must be one
+    that changes a decision. See §4.3.
+11. **Tappable glossary with cross-links.** Terms open a definition panel that links to related
+    terms and to the screens where they matter.
+    → **A candidate for `05` P15 (D9), deliberately not committed there.** The cheap version is a
+    definition sheet for the twenty terms our own UI uses, reachable by long-press. The expensive
+    version is the reference set's content volume, which is not a v1 shape. Raise it when D9 is
+    answered; do not add it to the plan before then.
+
+### 4. Patterns that must not transfer
+
+#### 4.1 Visual expression (legal)
+
+FM's look is FM's trade dress: the near-black blue-violet ground, magenta section headings, the
+violet primary action, the condensed italic display face, the gradient advance button. None of it
+comes across, and our token system means no view can name a hue anyway. Neither does any label
+verbatim — the section names, panel names and attribute names in these captures are their copy, not
+a vocabulary to borrow. The crests, club names and player names in the captures are real-world marks
+and NIL; they are blocklist material at most, never inspiration. `CLAUDE.md`'s guardrail governs, and
+this section exists inside it.
+
+#### 4.2 Density
+
+These are 16:9 desktop screens running three and four columns, eight-column attribute blocks and
+fifteen-column tables. A straight port to a 390 pt portrait screen is the failure mode, and it is a
+failure this project has already made once — `docs/AUDIT.md` is the record. Every pattern in §3 is
+adopted as a *relationship between pieces of information*, never as a layout.
+
+#### 4.3 Navigation scale — the anti-lesson
+
+Two of the captures are, read honestly, symptoms. One is a **bookmark manager** offering 6 of 12 pins
+across roughly thirty destinations. The other is a redesigned home with a **"search for tiles"**
+field. A product needs a search box over its own navigation only when its navigation has outgrown
+being navigable.
+
+→ **Constraint for `04` §4:** if this game ever needs a search field over its own screens, or a
+user-configurable shortcut manager, the information architecture has failed. Five tabs, and every
+destination reachable in at most two taps from its tab root.
+
+#### 4.4 Orientation
+
+Owner-fixed: portrait only. The mobile match rotates the device; we cannot, and per §2 we should not
+want to.
+
+### 5. What this does not settle
+
+- **AS-6.5-11 (Retro Bowl's orientation) remains unrun**, and remains the highest-value missing data
+  point — it is the most-played football game on the platform and the only one whose field ratio
+  matches ours.
+- **AS-6.5-12 (does any shipping title animate all 22 in 2D)**: the mobile captures show all 22 as
+  dots, but soccer, and this is a screenshot, not motion. Not evidence about animation.
+- **Nothing about feel.** No capture tells you what any of this is like in the hand, how long a
+  screen takes to parse, or whether the match holds attention. Caveat 1 still governs.
+- **Nothing about our engine.** Soccer's continuous flow versus American football's per-snap surface
+  is the non-transferability argument in §6.1, and none of it is weakened or strengthened here.
+
+### 6. Sources
+
+The eighteen files are owner-supplied captures held outside this repository. No URL; no page was
+fetched for this section. Product context for the SKUs referenced sits in §6.1 and its source list.

@@ -119,20 +119,32 @@ retrofitting one.
 
 ### P12 — The week loop
 Inbox, opponent report, game plan, practice allocation, aftermath. The core management week.
+The week opens on **commitments with a cost** — what each item will take, not only what happened
+(`04` §4, `01` §6.6 §3.9). The opponent report is the first surface to carry a generated **verdict**,
+and it is the one that proves the mechanism before P14 depends on it.
 **Gates:** G1, G2, G3, G4.
 
 ### P13 — The match view
 Vertical field, directed attention (at most three foregrounded marks), drive-level default with snap
 animation on call-ins, the choreographer pinned to recorded outcomes, Reduce Motion as a discrete
-state sequence, per-snap VoiceOver sentences.
+state sequence, per-snap VoiceOver sentences. Plus `LowerThird` for the named moment, the
+remaining-key-moments indicator in the header, and the call-in as a **named proposal with one-tap
+accept and explicit dismiss** (`04` §5, `01` §6.6 §3.2–3.4).
 **Gates:** G1, G2, G3, G4, plus the render-cannot-change-outcome assertion and the 16.7 ms frame
 ceiling.
+**Owner walkthrough owes an orientation read.** The vertical field now rests on geometry with no
+shipping precedent (`04` §5.2). The script must ask the owner, explicitly, whether the field reads
+as a football field on a phone — it is the one presentation question no test in this plan can answer.
 **→ Milestone M1: G8.**
 
 ### P14 — Remaining feature surfaces
 Team, roster, player card, staff, scheme; recruiting board / front office; league readouts; career
-and record book.
-**Gates:** G1, G2, G3, G4.
+and record book. Roster rows carry **at most three status glyphs**, each one that changes a decision
+(`01` §6.6 §3.10). Player card uses `Sparkline` for form; team comparisons use `OpposedBar`; cap,
+scholarship and contact budgets use `Meter`'s over-capacity state. Scheme and depth chart put
+assignment codes on the field as `Chip`s rather than labels.
+**Gates:** G1, G2, G3, G4, plus **every READOUT states a generated verdict** — `04` §4. A readout
+that ships without one is a P1, not a polish item.
 
 ### P15 — Onboarding (D9)
 The first fifteen minutes, taught through the first real week.
