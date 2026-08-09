@@ -163,10 +163,15 @@ public struct InteractiveGame {
 
     /// Whether a play is worth stopping to show. Clock administration and timeouts are not
     /// plays anybody wants to watch resolve on a field.
-    static func isWatchable(_ category: PlayCategory) -> Bool {
+    ///
+    /// `.kickoff` is excluded deliberately, and it is the one that matters: the coin toss is
+    /// recorded under that category, so treating it as watchable would stop the game before it
+    /// had started and hand the field an animation of a coin landing. Kicks away are simulated
+    /// in this mode anyway, per `06-PLAYED-GAME-MODE.md` §3.
+    public static func isWatchable(_ category: PlayCategory) -> Bool {
         switch category {
-        case .administrative, .timeout, .penalty, .injury: false
-        case .run, .pass, .sack, .punt, .fieldGoal, .extraPoint, .kickoff, .turnover,
+        case .administrative, .timeout, .penalty, .injury, .kickoff: false
+        case .run, .pass, .sack, .punt, .fieldGoal, .extraPoint, .turnover,
              .touchdown, .twoPointConversion, .kneel, .spike: true
         }
     }

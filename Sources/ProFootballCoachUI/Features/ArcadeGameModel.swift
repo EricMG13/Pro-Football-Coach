@@ -313,8 +313,15 @@ final class ArcadeGameModel {
         // The snap the player is here to watch is the opposition's, not the extra point that
         // may have followed it. Setting the phase only once there is something to show keeps the
         // UI from parking in `watchingDefense` with an empty field.
+        // The same predicate the engine paused on. Two copies of "is this worth showing" drift:
+        // the first pair did, and the model went looking for something to animate, found the
+        // coin toss sitting in front of the snap it was meant to show, and drew four seconds of
+        // nothing instead of the play that actually happened.
+        //
+        // `.first` rather than `.last`: one engine step can record a snap, a touchdown and the
+        // try that followed, and the snap is the one the player is here to watch.
         let watchable = lastPlays.first {
-            $0.offenseTeamID != userTeamID && $0.category != .administrative
+            $0.offenseTeamID != userTeamID && InteractiveGame.isWatchable($0.category)
         }
         guard let event = watchable ?? lastPlays.last else {
             // Nothing came back — an administrative step, or overtime being set up. Keep going

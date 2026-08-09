@@ -421,7 +421,7 @@ struct ArcadeFieldView: View {
                     // A ternary cannot pick a button style: .bordered and .borderedProminent
                     // are different types and will not unify. Selection is carried by the tint.
                     .buttonStyle(.bordered)
-                    .tint(model.defensiveCall == call ? theme.primary : Color.secondary)
+                    .tint(model.defensiveCall == call ? theme.tint : Color.secondary)
                 }
             }
             // The read. A tilt is a guess: right is worth something, wrong costs the same, and
@@ -436,7 +436,7 @@ struct ArcadeFieldView: View {
                             .frame(maxWidth: .infinity, minHeight: 32)
                     }
                     .buttonStyle(.bordered)
-                    .tint(model.defensiveRead.shade == shade ? theme.primary : Color.secondary)
+                    .tint(model.defensiveRead.shade == shade ? theme.tint : Color.secondary)
                     .accessibilityLabel("Shade \(shade.displayName)")
                 }
             }
