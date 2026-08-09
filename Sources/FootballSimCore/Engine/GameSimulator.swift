@@ -155,7 +155,8 @@ public struct GameSimulator {
     public mutating func advance(
         rng: inout SeededRandom,
         userCall: OffensivePlay? = nil,
-        execution: PlayExecution = .neutral
+        execution: PlayExecution = .neutral,
+        defensiveRead: DefensiveInput? = nil
     ) -> Bool {
         switch stage {
         case .notStarted:
@@ -164,7 +165,9 @@ public struct GameSimulator {
 
         case .regulation:
             if !driveActive { beginDrive() }
-            if let outcome = takeSnap(userCall: userCall, execution: execution, rng: &rng) {
+            if let outcome = takeSnap(
+                userCall: userCall, execution: execution, defensiveRead: defensiveRead, rng: &rng
+            ) {
                 driveActive = false
                 applyRegulationTransition(outcome, rng: &rng)
             }
@@ -183,7 +186,9 @@ public struct GameSimulator {
                 }
                 beginDrive()
             }
-            if let outcome = takeSnap(userCall: userCall, execution: execution, rng: &rng) {
+            if let outcome = takeSnap(
+                userCall: userCall, execution: execution, defensiveRead: defensiveRead, rng: &rng
+            ) {
                 driveActive = false
                 applyOvertimeTransition(outcome, rng: &rng)
             }
@@ -335,6 +340,7 @@ public struct GameSimulator {
     private mutating func takeSnap(
         userCall: OffensivePlay?,
         execution: PlayExecution,
+        defensiveRead: DefensiveInput? = nil,
         rng: inout SeededRandom
     ) -> DriveOutcome? {
         // A drive cannot legally run forever; the bound is a safety net, not a rule.
@@ -362,6 +368,7 @@ public struct GameSimulator {
             situation: &pending,
             userCall: userCall,
             execution: execution,
+            defensiveRead: defensiveRead,
             rng: &rng
         )
         situation = pending
@@ -374,6 +381,7 @@ public struct GameSimulator {
         situation: inout GameSituation,
         userCall: OffensivePlay? = nil,
         execution: PlayExecution = .neutral,
+        defensiveRead: DefensiveInput? = nil,
         rng: inout SeededRandom
     ) -> DriveOutcome? {
         let offense = offenseIsHome ? home : away
@@ -399,6 +407,15 @@ public struct GameSimulator {
             rng: &rng
         )
         let tempo = PlayCaller.tempo(situation: situation)
+
+        // A defensive read can only be scored once the offense's call is known — anticipating
+        // a deep shot is worth nothing against a draw. It is resolved here, after the call is
+        // drawn and before anything is rolled, and it replaces the execution rather than adding
+        // to it: the two never coexist, because a read belongs to the side without the ball.
+        var execution = execution
+        if let defensiveRead, userCall == nil {
+            execution = DefensiveInputs.execution(input: defensiveRead, against: call)
+        }
 
         switch call {
         case .punt:

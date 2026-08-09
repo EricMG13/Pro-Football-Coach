@@ -416,6 +416,24 @@ struct ArcadeFieldView: View {
                     .buttonStyle(model.defensiveCall == call ? .borderedProminent : .bordered)
                 }
             }
+            // The read. A tilt is a guess: right is worth something, wrong costs the same, and
+            // neither is worth as much as a snap you play with the ball in your hands.
+            HStack(spacing: Layout.tight) {
+                ForEach(CoverageShade.allCases, id: \.self) { shade in
+                    Button { model.setShade(shade) } label: {
+                        Text(shade.displayName)
+                            .font(.caption2)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                            .frame(maxWidth: .infinity, minHeight: 32)
+                    }
+                    .buttonStyle(
+                        model.defensiveRead.shade == shade ? .borderedProminent : .bordered
+                    )
+                    .accessibilityLabel("Shade \(shade.displayName)")
+                }
+            }
+
             Button("Skip Ahead") { model.skipToNextUserSnap() }
                 .buttonStyle(.bordered)
                 .frame(maxWidth: .infinity)

@@ -67,9 +67,43 @@ ten-season soak.
 | Accessibility of rating colours | Done: every tier verified at 4.5:1 on card, page and chip tint in both themes, with the tier spoken to VoiceOver |
 | SwiftUI app: menu, wizard, season hub, schedule, standings, news, team, depth chart, player cards, stats, front office, draft board, coach, offseason pipeline, both play modes | Built and run on an iPhone simulator; core path walked by hand |
 
+## Phase 4C — the all-22 arcade field — is written but NOT compiled
+
+This is the one thing on this page that has never been near a compiler, and it should be read
+as unverified until it has.
+
+The session that wrote it had no Swift toolchain: `swift` is absent from the container, Ubuntu's
+archive carries only the unrelated OpenStack "swift" packages, there is no Docker daemon, and
+`download.swift.org` is refused by the organisation's egress policy (a `403` on `CONNECT`, which
+the proxy's own documentation says to report rather than route around). So neither
+`swift build` nor `swift run -c release SimTests` was run against any of it.
+
+What stood in for the compiler was a multi-agent adversarial review: independent passes for
+symbol and signature existence, for `mutating`/initialisation/access-control rules, for pattern
+matching and closure inference, and for runtime correctness, each finding then handed to a
+separate agent whose brief was to refute it. That catches a great deal and it is not the same
+thing as a build. **Before trusting any of Phase 4C, run the two commands at the top of this
+file on a machine that has the tools.**
+
+What was added, all of it under that caveat:
+
+| Area | State |
+|---|---|
+| `SnapKernel` and the spatial layer | Written: formations, routes vs live coverage, per-matchup protection duels, run lanes, carrier pursuit, openness. Pure, seeded, headless-testable |
+| Grades → `PlayExecution` | Written. The engine still owns every probability; the field only measures |
+| Execution ceilings | Widened to ±20 points of completion and ±6 yards, moved into `ArcadeTuning` and asserted rather than trusted |
+| `Choreographer` | Written: engine-resolved plays become all-22 motion whose last frame is pinned to the recorded yardage |
+| Defensive reads | Written: shade, timed break, run commit — scored inside the simulator once the offence's call is drawn, capped at ±10 points combined |
+| `FieldCanvas` renderer, model, shell view | Written, never run |
+| Tests | ~60 new cases across three suites, including the honesty, reconciliation and fidelity invariants and a scripted-thumbs balance soak. Never executed |
+| Portrait lock | `App/project.yml` now declares portrait only, which is the root cause behind the audit's landscape findings |
+
 ## Known gaps
 
 Ordered by how much they would be missed.
+
+0. **Phase 4C has not been compiled or run** — see the section above. Everything below predates
+   it and was verified normally.
 
 1. **The arcade's carrier window is still untuned.** Two of the three timed inputs are now
    verified on device. Release timing is measurable exactly, because the pass rush starts when

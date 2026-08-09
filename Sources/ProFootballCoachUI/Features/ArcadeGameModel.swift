@@ -30,6 +30,9 @@ final class ArcadeGameModel {
     private(set) var lastPlays: [PlayEvent] = []
     private(set) var selectedCall: OffensivePlay = .shortPass
     private(set) var defensiveCall: DefensivePlay = .base
+    /// The read carried into the opposition's next snap. Persisted between drives, because a
+    /// coach's tendency is a standing instruction rather than something re-entered every play.
+    private(set) var defensiveRead = DefensiveInput()
 
     /// The snap being played right now, if any.
     private(set) var kernel: SnapKernel?
@@ -115,7 +118,7 @@ final class ArcadeGameModel {
     }
 
     private func advanceToUserTurn() {
-        lastPlays = game.advanceUntilUserTurn()
+        lastPlays = game.advanceUntilUserTurn(read: defensiveRead)
         switch game.state {
         case .finished:
             phase = .finished
@@ -292,6 +295,24 @@ final class ArcadeGameModel {
     }
 
     func setDefensiveCall(_ call: DefensivePlay) { defensiveCall = call }
+
+    /// Tilts the coverage before the opposition's next snap.
+    func setShade(_ shade: CoverageShade) {
+        defensiveRead = DefensiveInput(
+            shade: shade,
+            breakError: defensiveRead.breakError,
+            committedToTackle: defensiveRead.committedToTackle
+        )
+    }
+
+    /// Commits to the run fit, or hangs back. Nil leaves it to the defender.
+    func setRunCommit(_ committed: Bool?) {
+        defensiveRead = DefensiveInput(
+            shade: defensiveRead.shade,
+            breakError: defensiveRead.breakError,
+            committedToTackle: committed
+        )
+    }
 
     private func playChoreography(speed: Double) {
         stopClock()
