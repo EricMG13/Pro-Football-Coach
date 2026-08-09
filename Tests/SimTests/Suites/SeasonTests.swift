@@ -215,7 +215,15 @@ func runSeasonTests() {
             let start = Date()
             for _ in 1...LeagueRules.seasonWeeks { SeasonEngine.advanceWeek(&league) }
             let msPerWeek = Date().timeIntervalSince(start) * 1000 / Double(LeagueRules.seasonWeeks)
+            // The budget is a release-build number. Unoptimised Swift runs this several times
+            // slower, so asserting it in debug reports a failure that means nothing — and would
+            // report a pass that means nothing if the budget were ever loosened. Measure in both
+            // configurations, gate only in release.
+            #if DEBUG
+            print("  ⏱  week advance: \(String(format: "%.0f", msPerWeek)) ms (debug — budget not enforced)")
+            #else
             expect(msPerWeek < 150, "\(String(format: "%.0f", msPerWeek)) ms per week exceeds the 150 ms budget")
+            #endif
         }
 
         test("injuries are applied and heal over time") {
