@@ -21,7 +21,7 @@ enum TestKit {
         currentTest = name
         testsRun += 1
         if ProcessInfo.processInfo.environment["TRACE_TESTS"] != nil {
-            FileHandle.standardError.write(Data("→ \(suiteName) › \(name)\n".utf8))
+            FileHandle.standardError.write(Data("> \(suiteName) / \(name)\n".utf8))
         }
         do {
             try body()
@@ -118,19 +118,19 @@ enum TestKit {
     private static func record(_ detail: String) {
         let label = "\(suiteName) › \(currentTest)"
         failedTests.insert(label)
-        failures.append("  ✗ \(label): \(detail)")
+        failures.append("  FAIL \(label): \(detail)")
     }
 
     /// Prints the summary and terminates with a conventional exit code.
     static func finish() -> Never {
         print("\n\(testsRun) tests, \(checks) checks")
         if failures.isEmpty {
-            print("✅ all passed")
+            print("all passed")
             exit(0)
         }
-        print("❌ \(failedTests.count) failing test(s), \(failures.count) failed check(s):")
+        print("\(failedTests.count) failing test(s), \(failures.count) failed check(s):")
         for failure in failures.prefix(60) { print(failure) }
-        if failures.count > 60 { print("  … \(failures.count - 60) more") }
+        if failures.count > 60 { print("  ... \(failures.count - 60) more") }
         exit(1)
     }
 }
