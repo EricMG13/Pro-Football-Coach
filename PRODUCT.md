@@ -1,81 +1,161 @@
-# Product
+# PRODUCT
 
-<!-- impeccable:product-schema 1 -->
+Product truth: who this is for, what it is, what it will not be. Gameplay canon is
+`docs/02-GAME-DESIGN.md`; the evidence behind everything here is `docs/01-RESEARCH.md`.
 
-## Platform
+---
 
-ios
+## 1. The product in one sentence
 
-## Users
+> A native iPhone career simulator where you coach a football programme from a college job nobody
+> wants to the pro league, one save, one career — and where **the week between games is the game**.
 
-Football management-sim players on iPhone. The core audience is the community orphaned by the *Football Coach* / *Pro Football Coach* lineage (r/FootballCoach): the Android originals were abandoned in 2019 and the developer's successor, *Pro Football Dynasty*, is Steam-only. They have been asking for an iOS pro sim for years. They are genre-literate — they read a dead-money figure and argue with it.
+---
 
-Two usage shapes, no mode switch between them:
+## 2. Who it is for
 
-- **Fast:** phone in hand, one-handed, a few minutes. Advance the week, check standings, close the app.
-- **Deep:** an hour inside free agency, the draft, or the cap sheet.
+**Primary — the coach-sim player who has no phone to play on.** They play Football Coach: College
+Dynasty, Draft Day Sports or Front Office Football on a desktop, or the one good college sim on iOS.
+They want depth, believable outcomes and a career that accumulates. They are not asking for
+joystick control — the reference app's community, mined across 395 posts and 1,312 comments, asked
+for *coach-brain control, speed options and trustworthy outcomes*, and **nobody requested arcade
+play** (`01-RESEARCH.md` §H).
 
-The job: run a franchise and build something that lasts across a decade of seasons — make the call, see the consequence, live with it.
+**Secondary — the Football Manager player who likes American football.** They already accept that
+the manager genre is menu-driven and watched, and they will recognise the loop instantly. What they
+will not accept is a match they cannot affect.
 
-## Product Purpose
+**Not the target:** the Retro Bowl audience. That is a much larger, much more casual market, it
+wants direct control, and this product does not offer it. Chasing both produces a game that is
+second-best at each.
 
-A native, offline pro-football franchise simulator: sim or play games, manage a 53-man roster plus a 16-player practice squad, run the salary cap, draft, trade, negotiate contracts, and build a dynasty. Success is a player who onboards through the wizard, survives a full offseason, and starts season two with a coherent roster and cap — then keeps going.
+---
 
-## Positioning
+## 3. Positioning — the gap, argued
 
-Modern iOS has a polished *college* football sim; it has no modern *pro* football management sim. The 2016 Android incumbent is abandoned and shipped contracts without a real cap by its own author's admission; the desktop successor is Steam-only. This pairs the proven mobile UX formula with the cap, draft, and trade depth the community has requested for years, plus live two-way play-calling and an "On the Field" arcade mode.
+Argued in full at `01-RESEARCH.md` §6.3. The short version, with each clause carrying its evidence:
 
-## Operating Context
+| Claim | Evidence |
+|---|---|
+| **The mobile lane is empty on the pro side** | Every credible modern competitor — DDS, FC:CD, FOF, Pro Football Dynasty — is Windows desktop. The pro-side mobile entries were abandoned in 2019 |
+| **The genre's best game is criticised for having too few in-game decisions** | FC:CD sits at ~95% positive and its negative reviews say it reads as a *recruiting* simulator with "pretty limited in-game decisions" |
+| **The same defect is measurable in our own prior build** | Its in-season week offered **one** branching decision: how to watch the game |
+| **The reliability bar is on the floor** | 34% of the reference app's reviews concern crashes, save corruption around season 8 and softlocks — users buy checkpoint tokens as crash insurance. DDS's own forum leads with crashes and freezes |
+| **Nobody spans college and pro in one save** | FC:CD is college-only; DDS ships two separate products; Pro Football Dynasty offers a college-save *import* — the seam this design removes |
 
-Fully offline. No backend, no accounts, no network, no analytics, no ads. Saves are local JSON slots in Application Support with a versioned `saveFormatVersion`, rolling backups, weekly autosave, and manual checkpoints.
+**So the product is:** dense in-season weeks · a match you watch at your own speed and steer from the
+sideline · one career across both tiers · and **it does not break**.
 
-Distribution is **TestFlight and personal use — no public App Store release is planned.** Confirmed, not assumed. Nothing here is designed to App Review, store metadata, age rating, or screenshot requirements; if that changes, this line changes first. The fictional-identity rule under Brand Commitments is unaffected — it is a standing project rule, not a store requirement.
+That last clause is the cheapest to win and the most valuable. It is not invention, it is
+engineering discipline, and it is where the competitive set is weakest.
 
-The season is a calendar the player walks through: preseason → 17-game regular season → 14-team playoffs → a ten-stage offseason (review, coaching carousel, retirements, re-signing, tags, free agency, draft, training camp, cutdown, preseason). The league runs all 31 AI teams through every stage; a news feed narrates it.
+---
 
-## Capabilities and Constraints
+## 4. What makes it good, and what would make it fail
 
-- Fixed fictional league: 32 teams, 2 conferences × 4 divisions × 4 teams.
-- Ratings are 40–99 integers. Money is integer dollars — no floating-point currency.
-- Simulation engine is a standalone Swift package (`FootballSimCore`): pure logic, no UI imports, deterministic under a seeded RNG, unit- and calibration-tested. The SwiftUI layer never contains game rules.
-- Gameplay constants live in `LeagueRules.swift`; no inline magic numbers.
-- iOS 17 minimum, Swift 5.10+, SwiftUI, `@Observable` view models, zero third-party dependencies.
-- **iPhone only, confirmed.** Compact width is the only target; iPad and regular-width layouts are backlog, not scope. Layouts stay single-column and need no size-class branching.
-- No image assets for team identity — 32 logos are composed geometrically in code.
-- Performance and durability targets that shape design: week advance under 150 ms, saves under 5 MB, ten simulated seasons with no crash or calibration drift.
-- **Undecided, and confirmed as still open:** monetization. v1 ships no in-app purchase and the franchise editor is free; whether a later IAP exists is deferred. Do not design paywalls, upgrade prompts, or locked features against a guess — this stays open until it is answered here.
-- **Not in v1** (backlog, not scope): custom league editor with JSON import/export, controllable post-snap defense, weather, restructures, position coaches, Game Center leaderboards, multiplayer, iPad layout.
+**The four mechanisms engagement actually comes from** (§6.1 — none of them is "depth"):
 
-## Brand Commitments
+1. **Jeopardy** — the match can go wrong while you watch, and you can do something about it.
+2. **Ownership** — you developed that player from a two-star; he is *yours*.
+3. **Emergent narrative** — a career that writes its own history and brings it up later.
+4. **Information asymmetry** — scouting, fog, tendencies. Knowing something the AI doesn't, and
+   sometimes being wrong.
 
-Name: **Pro Football Coach**. Tagline: "Run the franchise. Call every down."
+Depth is the substrate these run on, not a substitute for them.
 
-Voice is **confident, plainspoken, durable** — a good coordinator explaining a decision. Short declaratives, real numbers, no hype. "Cutting Reyes leaves $6.2M dead through 2028," never "Uh oh! That's a big cap hit!" Sentence case; no exclamation marks in system copy; no marketing language. A professional instrument that happens to be fun, not a toy with spreadsheets attached.
+**The failure mode, named so it can be watched for:** *a better-looking bland application.* A
+beautiful, deep, deterministic simulation with an empty Tuesday. The prior build had 224 tests, a
+full salary cap and a ten-season soak that held, and it still felt like an app — because the depth
+was almost all in the offseason. Every design decision in `02` is checked against this.
 
-Binding legal constraint: **every team name, city pairing, logo, player name, and mark is fictional and original.** No real league's or college's names, marks, or players appear anywhere. The reference app that inspired the information architecture is design inspiration only — a clean-room rule forbids copying its UI assets, strings, or source, and the open-source ancestor is CC-NonCommercial and must not be read or reused.
+---
 
-## Evidence on Hand
+## 5. Constraints — settled, not open
 
-- Design and planning canon in `docs/`: executive plan, research, game design, architecture, screen spec, implementation plan, played-game mode, build status.
-- Working implementation: `Sources/FootballSimCore` (engine), `Sources/ProFootballCoachUI` (SwiftUI layer), a hand-rolled test harness with ~13,000 assertions.
-- Community evidence for demand is real and cited in `docs/01-RESEARCH.md` (store reviews, subreddit requests, abandoned-app history).
-- **No real assets exist:** no logos, no photography, no licensed marks, no testimonials, no user research beyond public community signal, no shipped-app metrics. Future work must not fabricate any of these.
+| # | Constraint |
+|---|---|
+| P1 | iOS 17+, Swift, SwiftUI. **iPhone only, portrait only.** Offline. **Zero third-party dependencies.** The match is SwiftUI `Canvas` + `TimelineView` — no SpriteKit, no Metal |
+| P2 | **Unified college→pro career.** One save, one coach. The promotion arc is a v1 feature |
+| P3 | TestFlight → **paid premium** on the App Store. **No IAP, no ads, no subscriptions, no analytics, no accounts** |
+| P4 | **A full season is completable in 6–8 hours.** Priced out in `02` §3 |
+| P5 | Solo developer plus AI agents. **No playtest cohort, no QA, no telemetry** |
 
-## Product Principles
+**What P3 and P5 cost, stated honestly.** No analytics means no behavioural data, ever — every
+falsifier in `OPEN-DECISIONS.md` must therefore be a test the machine can run or a play session the
+owner can run, and "we would notice if players disliked it" is not available as a fallback. No IAP
+means the reference app's revenue model — God Mode, scenario packs, paid checkpoint tokens — is
+closed to us. That is a deliberate trade: **paid checkpoint tokens are crash insurance sold to
+players, and a product that does not corrupt saves does not need to sell it.**
 
-1. **The simulation is the product.** Believable numbers outrank everything else; the interface exists to make consequences legible. Calibration bands are a product requirement, not a test detail.
-2. **Never lose a dynasty.** Save corruption around season eight was the single largest complaint against the incumbent. Durability is a feature the player must be able to feel.
-3. **Serve the two-minute session and the one-hour session with the same screens.** Depth lives behind a tap, never behind a mode.
-4. **Say the number, then say what it means.** State the fact and its consequence together, in the player's terms. Never make the player do arithmetic the engine already did.
-5. **Everything original.** Fictional identity is a hard boundary, not a style choice.
+---
 
-## Accessibility & Inclusion
+## 6. Brand commitments
 
-Committed to WCAG AA as the working floor, and to native iOS accessibility as a construction requirement rather than an audit item:
+- **Everything is fictional and original.** No real league, programme, conference, stadium, player
+  or coach identity, no real-name roster files, no importer aimed at them, no wink in the store
+  listing. Two parts of this are enforced by tests — name collision and colour trade dress; the rest
+  is a review checklist and is described as one.
+- **Difficulty never lies.** Higher difficulty means the AI schemes better and adjusts faster. It
+  never means opponents get better ratings than the ones displayed. The genre's most damaging
+  complaint is "anti-upset cheese" — the sense of having been *decided against* — and it destroys
+  trust in every number in the game.
+- **One engine, one truth.** Watched, key-moments and instant games run the identical simulation. A
+  test asserts that retaining the play-by-play cannot change a result. Where the reference app got
+  this wrong, its community's meta became "watch your games to get good results", which is a
+  simulation confessing it does not believe itself.
+- **No dead ends.** A coach whose contract expires always has at least one offer or an explicit year
+  out. This exact situation soft-locks saves in the reference app.
+- **Saves do not corrupt.** Atomic writes, a rolling backup, migration fixtures, and a 20-season
+  soak that asserts it.
 
-- Every screen survives Dynamic Type at XXXL without truncation or overlap.
-- 4.5:1 contrast for text in both light and dark themes, verified against the actual surfaces a value is drawn on rather than assumed.
-- 44pt minimum touch targets.
-- Meaningful VoiceOver labels on stat rows and metadata chips — a box-score row reads as a sentence, not nine loose numbers.
-- Reduce Motion honored on every transition and celebration.
-- No state may be conveyed by color alone; every color-coded value carries a number, word, or symbol as well.
+---
+
+## 7. Accessibility bar
+
+Not an audit item — a **construction requirement with tests**, because the prior build wrote these
+same commitments down and scored **1/4** against them. The full contract, with the test enforcing
+each line, is `docs/04-UX-AND-DESIGN-SYSTEM.md` §3.
+
+- 4.5:1 contrast for all text in both themes, **measured against the actual composited surface**
+- Every screen survives Dynamic Type at XXXL without truncation or overlap
+- Reduce Motion honoured on **every** animation — the match becomes stepped rather than animated,
+  and stays fully playable that way
+- 44pt minimum touch targets
+- A box-score row reads as a sentence, not nine loose numbers
+- **No gesture-only interaction anywhere.** Every intervention is a real, labelled button
+
+The rule that makes this different from last time: **a test that asserts a property for some members
+of a category must cover all of them, or name its exclusions at the assertion site.** The prior
+build's contrast suite was rigorous and narrow, and its coverage boundary silently became the
+quality boundary.
+
+---
+
+## 8. Scope
+
+### v1
+
+Both tiers, the promotion arc, the Sideline Model match with its fidelity controls, recruiting and
+the portal and NIL, the full pro cap and draft and free agency and trades, staff, development, the
+carousel, records and the hall of fame, rivalries that accumulate, three save slots, settings, and
+the first-run experience described in `02` §9.
+
+### Explicitly later
+
+Ordered by likely demand. Each is out because it costs week-budget or scope, not because it is bad:
+
+1. Custom league / roster JSON import-export — the community-content culture is real (§H rank 7) and
+   the architecture stays ready for it
+2. Coordinator-only career start (§H rank 5)
+3. Press conferences and a reacting social feed (§H rank 10)
+4. iPad and landscape
+5. Commissioner / editor modes
+6. More than three save slots
+
+### Never
+
+**Direct control of a player.** It is a Tier A constraint, not a backlog item. And on the evidence,
+the previous build's arcade layer was not satisfying a demand for tactility — it was the only place
+in the app where an input changed an outcome within ten seconds. It was **substituting for weekly
+agency** (§6.0c). Fix the week and the substitute is not needed. Leave the week empty and no amount
+of tactility will save it.
