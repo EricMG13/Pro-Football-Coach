@@ -46,7 +46,7 @@ Status values:
 
 | Path | Status | Notes |
 |---|---|---|
-| `docs/AUDIT.md` | RETAINED | A **UI-layer** audit of 17 files that explicitly excludes the engine, iPad, size classes and App Store review. It is evidence about *craft*, not about why the game was boring — do not cite 9/20 as a diagnosis of blandness. Its most transferable content is `## Patterns & Systemic Issues`. Dispositioned in `docs/06-AUDIT-DISPOSITION.md`. |
+| `docs/AUDIT.md` | RETAINED | A **UI-layer** audit of 17 files that explicitly excludes the engine, iPad, size classes and App Store review. It is evidence about *craft*, not about why the game was boring — do not cite 9/20 as a diagnosis of blandness. Its most transferable content is `## Patterns & Systemic Issues`. Dispositioned in `docs/06-AUDIT-DISPOSITION.md`. **Its internal path citations are as of 2026-08-09 and point at documents since archived** — they are left intact because rewriting a record of the past is worse than a stale link. |
 | `docs/STATUS.md` | RETAINED | The honest state of the prior build: 224 tests, 13,226 assertions, the ten-season soak, the calibration bands, the cross-process determinism bug, the save-growth lesson, and Phase 4C's never-compiled status. Rewritten forward as the rebuild proceeds; the historical section is preserved. |
 
 ## Archived — abandoned product, kept for history

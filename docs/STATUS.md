@@ -1,8 +1,50 @@
 # Build Status
 
-Every phase gate in `05-IMPLEMENTATION-PLAN.md` and every line of the definition of done in
-`00-EXECUTIVE-PLAN.md` is met. This is the honest picture of what exists, what is verified, and
-the one thing left that no amount of tooling can settle.
+## Current state — 2026-08-09
+
+**The project has pivoted.** It is no longer a pro-only franchise sim with a direct-control arcade
+mode; it is a **unified college→pro career simulator in which the player never controls an athlete**
+(`docs/DOC-MANIFEST.md`, `docs/08-OPUS5-BUILD-PROMPT.md`).
+
+| | |
+|---|---|
+| **Spec package** | Complete. Canon rewritten; anti-canon archived |
+| **Rebuild code** | **None written.** Phase P0 has not started |
+| **Existing `Sources/`, `Tests/`, `App/`** | **Tier C — no authority.** Retained as evidence, not as a foundation |
+| **Next action** | An Opus 5 session per `docs/08-OPUS5-BUILD-PROMPT.md`, entering at **P0 — Foundations** |
+
+### Owner actions outstanding
+
+Three blocking questions are at the top of `docs/OPEN-DECISIONS.md`:
+
+1. **B1 — run the engagement post-mortem** (`01-RESEARCH.md` §6.0a): six weeks with a stopwatch,
+   thresholds fixed in advance. The single most consequential decision in the project (D1) currently
+   rests on arithmetic and inference because **the build could not be played in the spec session** —
+   no `swift`, no Xcode, no simulator, and `download.swift.org` refused by egress. Needed **before
+   P7 closes**.
+2. **B2 — confirm the calibration-source licensing posture**, or take it to counsel.
+3. **B3 — run `/impeccable audit` once** so `04b-AUDIT-RUBRIC.md`'s anchors can be made verbatim
+   rather than reconstructed. Every phase gate cites that rubric.
+
+### Verification reality
+
+No part of the spec package has been compiled, because there is nothing to compile yet. The rules
+that will govern this from P0 onward are in `CLAUDE.md` (*Honesty about verification*) and D11: the
+suite runs as an executable target with a hand-rolled harness, and anything not compiled is named
+here as **unverified** rather than described as done.
+
+---
+
+# Historical — the prior build (pro-only, superseded)
+
+Everything below describes the **abandoned product** and is retained as Tier B evidence. Its
+calibration bands, soak invariants, determinism fix, save-growth lesson and practice-squad rules are
+carried forward as knowledge into `docs/03-MATCH-ENGINE.md` and `docs/02-GAME-DESIGN.md`. Its code
+is not.
+
+Every phase gate in the prior `05-IMPLEMENTATION-PLAN.md` and every line of the definition of done in
+the prior `00-EXECUTIVE-PLAN.md` was met. This is the honest picture of what existed, what was
+verified, and the one thing left that no amount of tooling could settle.
 
 ## How this was verified
 
