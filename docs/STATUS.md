@@ -12,7 +12,8 @@ The honest picture: what exists, what is verified, what is not.
 
 The v4 brief (`docs/reviews/2026-08-09-spec-prompt-v4.md`) has been executed: research, design,
 architecture, plan, decisions and the build prompt all exist and are internally consistent. Phase P0
-of `docs/05-IMPLEMENTATION-PLAN.md` has not started, and it is **blocked** — see D11 below.
+of `docs/05-IMPLEMENTATION-PLAN.md` has not started. It is no longer blocked: the owner's machine
+now runs the gates (D11 below).
 
 The previous build's source is still in the tree (`Sources/`, `Tests/`, `App/`). Under Tier C it has
 **no authority**. It has not been deleted, because deleting it is P0's business and P0 has not run.
@@ -53,10 +54,12 @@ most of P0:
 - **D11(a) — what framework runs the tests: decided.** The prior build already solved it and the
   solution is in the tree. `Tests/SimTests/TestKit.swift` is a ~50-line hand-rolled harness, zero
   dependencies, real exit codes, run as an executable target via `swift build && swift run -c release
-  SimTests`. It needs only the Command Line Tools, not full Xcode. It carried 224 tests and 13,226
-  assertions. Ported per `docs/PORT-LOG.md`.
-- **D11(b) — who actually has a toolchain to run it: still escalated.** This is an owner question and
-  no design resolves it.
+  SimTests`. It needs only the Command Line Tools, not full Xcode. **Verified green.** Ported per
+  `docs/PORT-LOG.md`.
+- **D11(b) — who runs it: answered in practice.** The owner installed Swift 6.3.3 via swiftly on
+  macOS and ran `scripts/verify.sh` green. That is D11 option 2: the owner's machine is the CI.
+  Agent environments still have no toolchain, so every build/test gate is an owner round-trip until
+  the egress rule for `download.swift.org` is lifted.
 
 Verified in this container, not assumed:
 
@@ -70,15 +73,15 @@ CONNECT** through the egress proxy; Ubuntu 24.04's `swift` packages are the unre
 object store; there is no Docker daemon (`/var/run/docker.sock` does not exist). Routing around the
 policy is forbidden, so there is no way to obtain a toolchain from inside an agent environment.
 
-**Phase 4C of the previous build shipped having never been compiled as a direct result** — and the
-failure was not the missing toolchain, it was claiming otherwise.
+**Correction, 2026-08-09.** This file previously said Phase 4C shipped never having been compiled,
+and I extended that claim using symbol counts from committed build artifacts. **The claim is false
+for the current tree.** Verified on the owner's machine (Swift 6.3.3): `swift build` green,
+`Choreographer.swift` — an `Arcade/` file — compiles, and the suite runs **299 tests, 18,412 checks,
+all passing** in 71.7 s.
 
-**This is now measured, not remembered.** The repo carried 70 MB of committed Xcode build products.
-Symbol counts in both the 3.9 MB `FootballSimCore.o` and, independently, the 926 KB `.swiftmodule`
-show `SeededRandom`, `GameSimulator`, `PlayCaller` and `LeagueFactory` present — and **zero symbols
-from any of the ten tracked files in `Sources/FootballSimCore/Arcade/`**. The arcade layer was added
-after the last build that succeeded. Detail in `docs/PORT-LOG.md`; the artifacts are now untracked
-and gitignored.
+The artifacts were an Xcode iOS-simulator build predating the arcade code. Stale artifacts are
+evidence about the artifacts, not about the source. They are now untracked and gitignored, and
+`docs/PORT-LOG.md` records the reasoning error and the revised disposition.
 
 **Handoff:** `scripts/verify.sh` runs build and tests and prints a pasteable result. It needs only
 the Swift Command Line Tools, not full Xcode.
@@ -128,7 +131,7 @@ Stated plainly so nothing here is mistaken for more than it is.
 
 ## What the previous build was
 
-Retained as Tier B evidence, not as a mandate. Its engine was calibrated, had 224 tests and 13,226
+Retained as Tier B evidence, not as a mandate. Its engine was calibrated, now has 299 tests and 18,412
 assertions, a ten-season soak, cross-process determinism (fixed the hard way — `UUID.hashValue` is
 salted per launch), and bounded save growth (8.3 MB → 2.3 MB). Its UI scored 9/20. Its management
 week contained one mandatory decision.

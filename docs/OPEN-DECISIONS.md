@@ -1,4 +1,4 @@
-# Open Decisions — D1–D13
+# Open Decisions — D1–D14
 
 The decision register required by `docs/reviews/2026-08-09-spec-prompt-v4.md` §5. Every decision
 carries: options considered, the choice, the reason, **a falsifier that names its instrument**, and
@@ -24,7 +24,7 @@ assumptions, cheap to change. `ESCALATED` — blocking owner question, do not bu
 | D8 | Difficulty, jeopardy and failure | DECIDED |
 | D9 | Onboarding and first session | DECIDED |
 | D10 | AI quality | DECIDED |
-| D11 | Test strategy under the real toolchain | **ESCALATED** |
+| D11 | Test strategy under the real toolchain | DECIDED — harness verified green on the owner's machine |
 | D12 | Accessibility contract | DECIDED (REVERSIBLE) |
 | D13 | Content volume | DECIDED |
 | D14 | Build order and league size | DECIDED (REVERSIBLE) — added in v4 execution |
@@ -402,7 +402,7 @@ is directly a test. Falsified when a bar fails.
 
 ---
 
-## D11 — Test strategy under the real toolchain — **PARTLY DECIDED, PARTLY ESCALATED**
+## D11 — Test strategy under the real toolchain — **DECIDED**
 
 > **Amended after inspecting the repo.** D11 was first written as wholly blocking. That was wrong,
 > and the correction matters because it unblocks most of P0. The question decomposes:
@@ -410,7 +410,8 @@ is directly a test. Falsified when a bar fails.
 > **(a) What framework runs the tests? — DECIDED, from evidence.** The prior build already solved
 > this and the solution is in the tree: `Tests/SimTests/TestKit.swift` is a ~50-line hand-rolled
 > harness with real exit codes and zero dependencies, run as an executable target via
-> `swift build && swift run -c release SimTests`. It carried 224 tests and 13,226 assertions. It
+> `swift build && swift run -c release SimTests`. **Verified 2026-08-09 on the owner's machine
+> (Swift 6.3.3): build green, 299 tests, 18,412 checks, all passed, 71.7 s.** It
 > needs only the Swift Command Line Tools — **not full Xcode** — because neither XCTest nor
 > swift-testing ships outside Xcode. Port it (see `docs/PORT-LOG.md`).
 >
@@ -450,8 +451,8 @@ depend on the answer.
 removes a permanent tax from every future phase. Option 2 works today without anyone's permission.
 Option 3 is how Phase 4C shipped uncompiled.
 
-**Falsifier — instrument: for (a), the harness itself.** It ran 224 tests and 13,226 assertions in
-about 100 seconds; if a ported harness cannot reproduce that, (a) was wrong. For (b) there is no
+**Falsifier — instrument: for (a), the harness itself.** It has now run 299 tests and 18,412 checks
+green on Swift 6.3.3; if a ported harness cannot reproduce that, (a) was wrong. For (b) there is no
 instrument, which is exactly what makes it an owner question rather than a design question.
 
 **Cost of reversal: low for (a)** — the harness is ~50 lines and swapping it for swift-testing later

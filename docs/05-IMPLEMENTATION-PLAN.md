@@ -53,10 +53,14 @@ envelope with a version readable without a full parse; the ported `TestKit` harn
 of everything in `Sources/` not named in `docs/PORT-LOG.md`, in one legible commit.
 **Gates:** G1, G2, G4, G6.
 
-**Not blocked on D11 — partially.** D11(a), *what framework runs the tests*, is decided: the ported
-harness. D11(b), *who has a toolchain to run it*, is still escalated. So P0's code can be written and
-reviewed now; **G1 and G2 cannot be asserted** until (b) is answered, and anything written stays
-recorded in `docs/STATUS.md` as unverified — never compiled.
+**No longer blocked.** D11 is decided: the ported harness, run on the owner's machine
+(`./scripts/verify.sh`), verified green at 299 tests / 18,412 checks on Swift 6.3.3. G1 and G2 are
+assertable — as an owner round-trip, since agent environments still have no toolchain. Anything an
+agent writes between round-trips stays recorded in `docs/STATUS.md` as unverified until a run
+covers it.
+
+**Sequencing note:** the current tree builds clean and its suite is green. Run `verify.sh` before and
+after the deletion so the phase can tell what it broke from what was already broken.
 
 ### P1 — Model and rules
 Player, contract, programme, team, staff, league. Both rules modules — every constant that `02` and

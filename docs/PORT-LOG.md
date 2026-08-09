@@ -54,7 +54,7 @@ conformance, save bytes churn between runs and no byte-level determinism test ca
 Neither XCTest nor swift-testing ships with the Swift Command Line Tools — both live inside Xcode.
 The harness is ~50 lines, has zero dependencies, reports real pass/fail counts, exits non-zero on
 failure, and runs as an executable target via `swift build && swift run -c release SimTests`. It
-carried 224 tests and 13,226 assertions in about 100 seconds.
+ran **299 tests and 18,412 checks, all passing, on Swift 6.3.3** (verified 2026-08-09).
 
 **Changes on port:** keep the assertion API surface; drop `testAsync`'s semaphore if the new engine
 has no async surface (it is documented as deadlock-prone against `@MainActor` and the new engine is
@@ -96,16 +96,15 @@ Tier C's default, applied deliberately rather than by silence.
 | `Model/` (Player, Team, League, Contract, Staff, …) | Pro-only by construction: 32 teams, divisions, cap. The new model is college-first with ~134 programmes, scholarships, eligibility clocks and NIL. Reshaping costs more than writing. |
 | `Rules/` | Same — `LeagueRules`, `TeamTable` and `Scenario` encode the old scope. The rules-module *pattern* survives; the contents do not. |
 | `Engine/GameSimulator`, `PlayCaller`, `PlayMatrix` | D2 chose hybrid assignment/leverage resolution with per-matchup causality the UI can narrate. The prior simulator resolves plays without that structure, so the thing `04`'s match view needs most is exactly what it cannot supply. |
-| `Arcade/` (SnapKernel, Choreographer, Routes, Coverage, Pocket, RunLanes, Openness, …) | The mission forbids direct control. **But see the note below — this is the discard that deserves the most scrutiny.** |
+| `Arcade/` — **input layer only** (`DefensiveInputs`, `ArcadeTuning` timing windows) | Exists to serve a thumb: input timing, aiming, reaction windows. The mission forbids the thing they serve. **The spatial matchup layer is now ported, not discarded — see below.** |
 | `Generation/` | Pro-only name banks and league factory. D6's endogenous identity (archetypes, map, traditions, rivalries) is a different system. |
 | All of `Sources/ProFootballCoachUI/` | 9/20 on the rubric, and `04` rebuilds the design system from zero with a contract the old layer cannot satisfy. |
 
-### The arcade discard, examined properly
+### The arcade layer, re-examined after the build ran
 
-This is the largest single discard and the one most likely to be wrong, so it gets more than a table
-row.
+This was the largest single discard and the one I flagged as most likely to be wrong. It was.
 
-**What is being thrown away:** `SnapKernel` and its spatial layer — formations, routes against live
+**What was going to be thrown away:** `SnapKernel` and its spatial layer — formations, routes against live
 coverage, per-matchup protection duels, run lanes, carrier pursuit, openness scoring. Pure, seeded,
 headless-testable, with the engine still owning every probability and the field only measuring.
 
@@ -114,10 +113,24 @@ previous build's decision volume**, and D2's chosen architecture needs *exactly*
 resolution — protection duels, route-versus-coverage, run lanes. That is a description of
 `SnapKernel`.
 
-**Why it is still discarded:** it was written to serve a thumb, not a coach. Its outputs are shaped
-for input timing and aiming (`DefensiveInputs`, `Pocket`, the timed-window tuning in `ArcadeTuning`).
-And it has **never been compiled** — which is no longer an inference from `STATUS.md` but a measured
-fact:
+**Why the original discard argument collapsed.** This section previously rested on two legs: that the
+code serves a thumb rather than a coach, and that it had never been compiled. **The second leg is
+false, and it was my error.** On 2026-08-09 the suite was run on the owner's machine (Swift 6.3.3):
+
+```
+[5/7] Compiling FootballSimCore Choreographer.swift
+Build of product 'SimTests' complete! (71.74s)
+299 tests, 18412 checks — all passed
+```
+
+`Choreographer.swift` is an `Arcade/` file. The layer compiles, and `ArcadeTests`,
+`ArcadeFieldTests` and `ArcadeWatchTests` are in the passing suite.
+
+The inference that produced the wrong claim is recorded below as a caution, because the failure mode
+generalises: **stale build artifacts are evidence about the artifacts, not about the source.**
+
+> The repository carried 70 MB of committed Xcode build products
+> (`build/Debug-iphonesimulator/`, an `arm64-apple-ios-simulator` build of both library targets).
 
 > The repository carried 70 MB of committed Xcode build products
 > (`build/Debug-iphonesimulator/`, an `arm64-apple-ios-simulator` build of both library targets).
@@ -135,15 +148,33 @@ fact:
 > | **`Openness`** | **0** | **0** |
 > | **`Pocket`** | **0** | **0** |
 >
-> Ten source files are tracked under `Sources/FootballSimCore/Arcade/`. None of them appears in the
-> last artifact a compiler produced, while the rest of the engine does. Phase 4C was added after the
-> last build that worked.
+> Ten source files are tracked under `Sources/FootballSimCore/Arcade/`. None of them appears in that
+> artifact, while the rest of the engine does.
 
-Porting code no compiler has ever seen into the foundation of a rebuild inherits an unknown defect
-surface at the worst possible layer.
+All of that is accurate and none of it supports the conclusion I drew. The artifacts were an Xcode
+iOS-simulator build that predated the arcade code; the correct reading is that *those artifacts are
+stale*, which is why they are now untracked and gitignored. The source itself compiles clean.
 
-*(Those artifacts have since been untracked and gitignored — they were stale, 70 MB, and actively
-misleading about what had been built.)*
+### The revised disposition: split the layer
+
+With the safety argument gone, this is a design call, and on design grounds the honest answer is not
+a clean discard. D2 needs per-matchup resolution — protection duels, route-versus-coverage, run
+lanes, openness — and that is exactly what `SnapKernel` computes, in compiled and tested form.
+
+| Component | Disposition |
+|---|---|
+| `SnapKernel`, `Routes`, `Coverage`, `Pocket`, `RunLanes`, `Openness`, `Formations`, `FieldGeometry` | **Port as the spatial matchup layer.** Pure, seeded, headless, with the engine still owning every probability and the field only measuring. This is `03` §1's stage 2 already built. |
+| `Choreographer` | **Evaluate for the match view.** `04` §5.2 needs motion pinned to a recorded outcome, which is a choreographer's job. Its arcade-specific presentation goes; the structure may not have to. |
+| `DefensiveInputs`, the timed-window tuning in `ArcadeTuning` | **Discard.** These exist to serve a thumb: input timing, aiming, reaction windows. The mission forbids the thing they serve. |
+
+**What this costs:** P3 in `docs/05-IMPLEMENTATION-PLAN.md` gets smaller and better-founded, and the
+matchup table in `03` §1.2 should be checked against what `SnapKernel` actually computes rather than
+written from scratch.
+
+**What to watch:** the ported layer was built to feed an arcade presentation, so its outputs may be
+shaped for animation rather than for narration. `04` §5.3 needs *the matchup that decided the play*
+as a first-class output. If that is not cleanly available, the port is a rewrite wearing a port's
+clothes — check before committing to it in P3.
 
 **What is salvaged instead:** the *model*, not the code. `03` §1's matchup table is the same idea
 expressed for a coach-facing engine, and the honesty invariant — the field measures, the engine owns
