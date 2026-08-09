@@ -22,6 +22,7 @@ runSaveQueueTests()
 runDesignSystemTests()
 runBroadcastTests()
 runExperienceTests()
+runDepthHonestyTests()
 runMatchupOddsTests()
 runTeamTintTests()
 

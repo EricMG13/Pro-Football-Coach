@@ -203,3 +203,45 @@ func runExperienceTests() {
         }
     }
 }
+
+/// The depth chart is the one screen whose job is saying who plays. These pin the engine's own
+/// answer so the interface cannot drift away from it again.
+func runDepthHonestyTests() {
+    suite("Depth honesty") {
+
+        test("an injured man at the top of the chart does not start") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 7_700, userTeamIndex: 0, coach: .stub())
+            guard var team = league.userTeam else { expect(false, "need a team"); return }
+            let position = Position.qb
+            guard let first = team.depthOrder(for: position, healthyOnly: false).first else {
+                expect(false, "need a quarterback"); return
+            }
+
+            // Injure the man sitting first on the chart.
+            if let index = team.roster.firstIndex(where: { $0.id == first.id }) {
+                team.roster[index].injuryWeeksRemaining = 3
+            }
+            league.update(team)
+            guard let updated = league.userTeam else { expect(false, "team vanished"); return }
+
+            let starters = updated.starters(at: position)
+            expect(
+                !starters.contains { $0.id == first.id },
+                "the engine must not start an injured player"
+            )
+            expect(!starters.isEmpty, "somebody has to take the snaps")
+            expect(
+                starters.allSatisfy(\.isHealthy),
+                "every starter the engine picks must be available"
+            )
+
+            // The chart still lists him first — which is exactly why the row cannot read its
+            // role off the index.
+            expectEqual(
+                updated.depthOrder(for: position, healthyOnly: false).first?.id,
+                first.id,
+                "the chart order itself is unchanged"
+            )
+        }
+    }
+}

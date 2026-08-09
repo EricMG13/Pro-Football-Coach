@@ -342,23 +342,58 @@ public final class AppState {
 
     // MARK: - Re-signing
 
+    /// What happened to an extension offer. A refusal by the player and a refusal by the cap are
+    /// different events and used to be indistinguishable — both arrived as `false` and the screen
+    /// reported "Turned down", so a coach could spend three rounds negotiating against a wall.
+    public enum ReSignOutcome: Equatable, Sendable {
+        case signed
+        /// The player said no. Another offer may work.
+        case rejected
+        /// The offer cannot be made at all, with the reason to show.
+        case blocked(String)
+    }
+
     /// Offers an extension. The roll happens here so a marginal offer stays a gamble.
-    public func reSign(playerID: UUID, contract: Contract, chance: Double) -> Bool {
-        guard var league, let teamID = league.userTeam?.id else { return false }
+    ///
+    /// Affordability is checked *before* the roll. Rolling first meant a cap-blocked offer still
+    /// consumed a chance, and the coach could re-submit the identical terms for a fresh one —
+    /// a free re-roll on every deal the cap was never going to allow.
+    public func reSign(playerID: UUID, contract: Contract, chance: Double) -> ReSignOutcome {
+        guard var league, let team = league.userTeam else {
+            return .blocked("There is no franchise to sign him to.")
+        }
+
+        guard CapEngine.canAfford(contract, team: team, in: league) else {
+            let short = contract.currentCapHit - CapEngine.capSpace(for: team, in: league)
+            return .blocked(
+                "That deal is \(Format.money(max(0, short))) more than you have in cap space."
+            )
+        }
+
+        let isPromotion = team.roster.first { $0.id == playerID }?.isOnPracticeSquad == true
+            && contract.currentCapHit > CapEngine.practiceSquadContractCeiling
+        if isPromotion, team.activeRoster.count >= LeagueRules.activeRosterSize {
+            return .blocked("A deal that size needs an active roster place, and yours is full.")
+        }
+
         var rng = league.rng
         let accepted = rng.chance(chance)
         league.rng = rng
         guard accepted else {
             self.league = league
-            return false
+            return .rejected
         }
+
         let signed = ReSignEngine.reSign(
-            playerID: playerID, to: teamID, contract: contract, in: &league
+            playerID: playerID, to: teamID(of: league), contract: contract, in: &league
         )
         self.league = league
-        if signed { autosave() }
-        return signed
+        guard signed else { return .blocked("That deal could not be registered.") }
+        autosave()
+        return .signed
     }
+
+    private func teamID(of league: League) -> UUID { league.userTeamID }
 
     // MARK: - Roster actions
 

@@ -150,6 +150,12 @@ struct DepthChartView: View {
                     .foregroundStyle(.secondary)
                 }
 
+                // Who the engine will actually field, which is not the chart order: depthOrder
+                // puts the healthy first, so an injured man at the top of the chart does not play.
+                let startingIDs = Set(
+                    Position.displayOrder.flatMap { team.starters(at: $0) }.map(\.id)
+                )
+
                 ForEach(Position.displayOrder, id: \.self) { position in
                     let players = showingPracticeSquad
                         ? team.roster.filter { $0.position == position && $0.isOnPracticeSquad }
@@ -163,7 +169,8 @@ struct DepthChartView: View {
                                     PlayerRow(
                                         player: player,
                                         depthIndex: showingPracticeSquad ? nil : index,
-                                        starterCount: position.starterCount
+                                        starterCount: position.starterCount,
+                                        startsOnSunday: startingIDs.contains(player.id)
                                     )
                                 }
                                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -220,11 +227,21 @@ struct PlayerRow: View {
     let player: Player
     var depthIndex: Int?
     var starterCount: Int = 1
+    /// Whether the engine will actually field him, rather than where he sits on the chart.
+    var startsOnSunday: Bool = false
 
+    /// The role chip used to read straight off the chart index, so an injured QB1 showed a red
+    /// cross and a green STARTER at the same time while the sim started QB2. It reports the
+    /// engine's own choice now, and says so when a man is on the chart but unavailable.
     private var roleChip: (String, Color)? {
-        guard let depthIndex else { return nil }
-        if depthIndex < starterCount { return ("STARTER", .green) }
-        if depthIndex < starterCount * 2 { return ("BACKUP", .orange) }
+        guard depthIndex != nil else { return nil }
+        if !player.isHealthy {
+            return startsOnSunday ? nil : ("Out", Color(hex: RatingTier.fringe.lightHex))
+        }
+        if startsOnSunday { return ("Starter", Color(hex: RatingTier.starter.lightHex)) }
+        if let depthIndex, depthIndex < starterCount * 2 {
+            return ("Backup", Color(hex: RatingTier.rotational.lightHex))
+        }
         return nil
     }
 
@@ -254,7 +271,7 @@ struct PlayerRow: View {
             Spacer()
 
             if let roleChip {
-                Chip(roleChip.0, color: roleChip.1)
+                Stamp(roleChip.0, color: roleChip.1)
             }
             if let contract = player.contract {
                 Text(Format.money(contract.currentCapHit))
