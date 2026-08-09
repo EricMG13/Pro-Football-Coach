@@ -21,6 +21,7 @@ runPersistenceTests()
 runSaveQueueTests()
 runDesignSystemTests()
 runAlmanacTests()
+runMatchupOddsTests()
 runTeamTintTests()
 
 TestKit.finish()
