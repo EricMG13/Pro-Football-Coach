@@ -24,7 +24,7 @@ struct DraftDayView: View {
                 }
                 footer
             }
-            .background(Almanac.page)
+            .background(Broadcast.page)
             .navigationTitle("Draft Day")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

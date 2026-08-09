@@ -10,9 +10,8 @@ struct DivisionStandingsCard: View {
             ForEach(Conference.allCases, id: \.self) { conference in
                 VStack(alignment: .leading, spacing: Layout.small) {
                     Text(conference.displayName)
-                        .font(.almanacTitle)
-                        .foregroundStyle(Almanac.ink)
-                    Rule(.heavy)
+                        .font(.titleFont)
+                        .foregroundStyle(Broadcast.ink)
 
                     ForEach(Division.allCases, id: \.self) { division in
                         if let league = app.league {
@@ -39,18 +38,17 @@ struct DivisionStandingsCard: View {
     ) -> some View {
         VStack(spacing: 0) {
             HStack {
-                Text(division.displayName.uppercased())
-                    .font(.almanacLabel)
-                    .tracking(1.0)
-                    .foregroundStyle(Almanac.muted)
+                Text(division.displayName)
+                    .font(.labelFont)
+                    .foregroundStyle(Broadcast.muted)
                 Spacer()
                 Text("W–L")
-                    .font(.almanacLabel)
-                    .foregroundStyle(Almanac.muted)
+                    .font(.labelFont)
+                    .foregroundStyle(Broadcast.muted)
                     .frame(width: 52, alignment: .trailing)
                 Text("DIV")
-                    .font(.almanacLabel)
-                    .foregroundStyle(Almanac.muted)
+                    .font(.labelFont)
+                    .foregroundStyle(Broadcast.muted)
                     .frame(width: 44, alignment: .trailing)
             }
             .padding(.bottom, Layout.tight)
@@ -60,20 +58,21 @@ struct DivisionStandingsCard: View {
             ForEach(Array(rows.enumerated()), id: \.element.team.id) { index, row in
                 let isUser = row.team.id == league.userTeamID
                 HStack(spacing: Layout.small) {
-                    TeamBadge(team: row.team, size: 22)
+                    TeamMark(team: row.team, size: 24)
                     Text(row.team.name)
-                        .font(.almanacBody)
-                        .foregroundStyle(Almanac.ink)
-                        .fontWeight(isUser ? .bold : .regular)
+                        .font(.bodyFont)
+                        .foregroundStyle(Broadcast.ink)
+                        .fontWeight(isUser ? .semibold : .regular)
                         .lineLimit(1)
+                    if index == 0 { Stamp("1st", color: Broadcast.muted) }
                     Spacer(minLength: Layout.tight)
                     Text(row.record.description)
-                        .font(.almanacFigure)
-                        .foregroundStyle(Almanac.ink)
+                        .font(.figureFont)
+                        .foregroundStyle(Broadcast.ink)
                         .frame(width: 52, alignment: .trailing)
                     Text(row.record.divisionDescription)
-                        .font(.almanacFigure)
-                        .foregroundStyle(Almanac.muted)
+                        .font(.figureFont)
+                        .foregroundStyle(Broadcast.muted)
                         .frame(width: 44, alignment: .trailing)
                 }
                 .padding(.vertical, Layout.tight)
@@ -86,9 +85,10 @@ struct DivisionStandingsCard: View {
                 )
 
                 // The division leader is the line that matters; draw it.
-                if index == 0 { Rule(.heavy) } else if index < rows.count - 1 { Rule() }
+                if index < rows.count - 1 { Rule() }
             }
         }
+        .card()
         .padding(.bottom, Layout.small)
     }
 }
@@ -114,31 +114,30 @@ struct PowerRankingsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Layout.small) {
             Text("Power Rankings")
-                .font(.almanacTitle)
-                .foregroundStyle(Almanac.ink)
-            Rule(.heavy)
+                .font(.titleFont)
+                .foregroundStyle(Broadcast.ink)
 
             ForEach(ranked, id: \.team.id) { row in
                 let isUser = row.team.id == app.league?.userTeamID
                 HStack(spacing: Layout.small) {
                     Text("\(row.index)")
-                        .font(.almanacFigure)
-                        .foregroundStyle(Almanac.muted)
+                        .font(.figureFont)
+                        .foregroundStyle(Broadcast.muted)
                         .frame(width: 30, alignment: .trailing)
-                    TeamBadge(team: row.team, size: 26)
+                    TeamMark(team: row.team, size: 28)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(row.team.fullName)
-                            .font(.almanacBody)
-                            .foregroundStyle(Almanac.ink)
+                            .font(.bodyFont)
+                            .foregroundStyle(Broadcast.ink)
                             .fontWeight(isUser ? .bold : .regular)
                             .lineLimit(1)
                         Text(app.league.map { $0.record(for: row.team.id).description } ?? "")
-                            .font(.almanacLabel)
-                            .foregroundStyle(Almanac.muted)
+                            .font(.labelFont)
+                            .foregroundStyle(Broadcast.muted)
                     }
                     Spacer(minLength: Layout.tight)
                     Text(Format.rating(row.team.overallRating))
-                        .font(.almanacFigure)
+                        .font(.figureFont)
                         .ratingStyle(row.team.overallRating)
                 }
                 .padding(.vertical, Layout.tight)
@@ -160,9 +159,8 @@ struct NewsFeedCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Layout.small) {
             Text("Around the League")
-                .font(.almanacTitle)
-                .foregroundStyle(Almanac.ink)
-            Rule(.heavy)
+                .font(.titleFont)
+                .foregroundStyle(Broadcast.ink)
 
             let items = Array((app.league?.news ?? []).suffix(40).reversed())
             if items.isEmpty {
@@ -176,17 +174,17 @@ struct NewsFeedCard: View {
                     HStack(alignment: .top, spacing: Layout.small) {
                         Image(systemName: item.category.iconName)
                             .font(.caption)
-                            .foregroundStyle(Almanac.muted)
+                            .foregroundStyle(Broadcast.muted)
                             .frame(width: 22)
                             .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.headline)
-                                .font(.almanacBody)
-                                .foregroundStyle(Almanac.ink)
+                                .font(.bodyFont)
+                                .foregroundStyle(Broadcast.ink)
                             if !item.body.isEmpty {
                                 Text(item.body)
-                                    .font(.almanacLabel)
-                                    .foregroundStyle(Almanac.muted)
+                                    .font(.labelFont)
+                                    .foregroundStyle(Broadcast.muted)
                             }
                         }
                         Spacer(minLength: 0)

@@ -33,7 +33,7 @@ struct FrontOfficeView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Almanac.page)
+        .background(Broadcast.page)
         .navigationTitle("Front Office")
     }
 
@@ -41,18 +41,17 @@ struct FrontOfficeView: View {
     /// who no longer play here.
     private var capCard: some View {
         VStack(alignment: .leading, spacing: Layout.small) {
-            Text("The Ledger")
-                .font(.almanacTitle)
-                .foregroundStyle(Almanac.ink)
-            Rule(.heavy)
+            Text("Salary Cap")
+                .font(.titleFont)
+                .foregroundStyle(Broadcast.ink)
 
             LedgerRow("Cap space") {
                 Text(Format.signedMoney(app.capSpace))
-                    .foregroundStyle(app.capSpace >= 0 ? Almanac.ink : Color(hex: RatingTier.fringe.lightHex))
+                    .foregroundStyle(app.capSpace >= 0 ? Broadcast.ink : Color(hex: RatingTier.fringe.lightHex))
             }
             Rule()
             LedgerRow("Salary cap") {
-                Text(Format.money(app.league?.salaryCap ?? 0)).foregroundStyle(Almanac.ink)
+                Text(Format.money(app.league?.salaryCap ?? 0)).foregroundStyle(Broadcast.ink)
             }
 
             if let league = app.league, let team = league.userTeam {
@@ -60,23 +59,24 @@ struct FrontOfficeView: View {
                 let dead = league.deadMoney[team.id] ?? 0
                 Rule()
                 LedgerRow("Committed to the roster") {
-                    Text(Format.money(spent - dead)).foregroundStyle(Almanac.ink)
+                    Text(Format.money(spent - dead)).foregroundStyle(Broadcast.ink)
                 }
                 Rule()
                 LedgerRow("Dead money") {
                     Text(Format.money(dead))
-                        .foregroundStyle(dead > 0 ? Color(hex: RatingTier.fringe.lightHex) : Almanac.muted)
+                        .foregroundStyle(dead > 0 ? Color(hex: RatingTier.fringe.lightHex) : Broadcast.muted)
                 }
-                Rule(.heavy)
+                Rule()
 
                 // Say the number, then say what it means.
                 Text(capSentence(space: app.capSpace, dead: dead))
-                    .font(.almanacBody)
-                    .foregroundStyle(app.capSpace < 0 ? Almanac.ink : Almanac.muted)
+                    .font(.bodyFont)
+                    .foregroundStyle(app.capSpace < 0 ? Broadcast.ink : Broadcast.muted)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityLabel(capSentence(space: app.capSpace, dead: dead))
             }
         }
+        .card()
     }
 
     /// The consequence, in the coach's terms. Over the cap is a deadline, not a red number.
@@ -94,26 +94,26 @@ struct FrontOfficeView: View {
 
     private var ownerCard: some View {
         VStack(alignment: .leading, spacing: Layout.small) {
-            Text("The Owner")
-                .font(.almanacTitle)
-                .foregroundStyle(Almanac.ink)
-            Rule(.heavy)
+            Text("Ownership")
+                .font(.titleFont)
+                .foregroundStyle(Broadcast.ink)
 
             if let league = app.league, let team = league.userTeam {
                 LedgerRow("Patience") {
-                    Text(patienceWord(team.ownerPatience)).foregroundStyle(Almanac.ink)
+                    Text(patienceWord(team.ownerPatience)).foregroundStyle(Broadcast.ink)
                 }
                 Rule()
                 LedgerRow("Job security") {
-                    Text("\(league.coach.jobSecurity)%").foregroundStyle(Almanac.ink)
+                    Text("\(league.coach.jobSecurity)%").foregroundStyle(Broadcast.ink)
                 }
                 Rule()
                 Text(securitySentence(league.coach.jobSecurity))
-                    .font(.almanacBody)
-                    .foregroundStyle(Almanac.muted)
+                    .font(.bodyFont)
+                    .foregroundStyle(Broadcast.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .card()
     }
 
     /// Patience was drawn as repeated bullet glyphs, which say nothing to a screen reader and

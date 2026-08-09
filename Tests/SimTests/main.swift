@@ -20,7 +20,7 @@ runLegacyTests()
 runPersistenceTests()
 runSaveQueueTests()
 runDesignSystemTests()
-runAlmanacTests()
+runBroadcastTests()
 runMatchupOddsTests()
 runTeamTintTests()
 

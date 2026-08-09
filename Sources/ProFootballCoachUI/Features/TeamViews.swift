@@ -41,7 +41,7 @@ struct TeamView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Almanac.page)
+        .background(Broadcast.page)
         .navigationTitle("Team")
     }
 
@@ -284,7 +284,7 @@ struct PlayerCardView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Almanac.page)
+        .background(Broadcast.page)
         .navigationTitle(player.name)
         .alert("Release \(player.name)?", isPresented: $confirmingCut) {
             Button("Release", role: .destructive) { app.cut(playerID: player.id) }
@@ -316,12 +316,12 @@ struct PlayerCardView: View {
         VStack(alignment: .leading, spacing: Layout.small) {
             HStack(alignment: .firstTextBaseline) {
                 Text(player.name)
-                    .font(.almanacDisplay)
-                    .foregroundStyle(Almanac.ink)
+                    .font(.displayFont)
+                    .foregroundStyle(Broadcast.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: Layout.small)
                 Text("\(player.overall)")
-                    .font(.almanacDisplay)
+                    .font(.displayFont)
                     .ratingStyle(player.overall)
             }
 
@@ -331,11 +331,11 @@ struct PlayerCardView: View {
                 Stamp("Potential \(player.potential.rawValue)")
             }
 
-            Rule(.heavy)
+            Rule()
 
             Text(dossier)
-                .font(.almanacBody)
-                .foregroundStyle(Almanac.muted)
+                .font(.bodyFont)
+                .foregroundStyle(Broadcast.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

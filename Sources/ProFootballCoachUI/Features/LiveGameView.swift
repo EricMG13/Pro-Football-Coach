@@ -34,7 +34,7 @@ struct LiveGameView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .background(Almanac.page)
+            .background(Broadcast.page)
             .inlineTitleCompat()
             .navigationTitle(title)
             .toolbar {
@@ -135,8 +135,8 @@ struct LiveGameView: View {
                         calls(for: situation)
                     } else {
                         Text("The opposition has the ball.")
-                            .font(.almanacBody)
-                            .foregroundStyle(Almanac.muted)
+                            .font(.bodyFont)
+                            .foregroundStyle(Broadcast.muted)
                     }
 
                     driveLog(live)
@@ -158,11 +158,10 @@ struct LiveGameView: View {
                 scoreSide(away, score: userIsHome ? live.opponentScore : live.userScore)
                 VStack(spacing: 2) {
                     Text("Q\(live.quarter)")
-                        .font(.almanacLabel)
-                        .tracking(1.2)
+                        .font(.labelFont)
                         .foregroundStyle(.white.opacity(0.85))
                     Text(Format.clock(live.clockRemaining))
-                        .font(.almanacFigure)
+                        .font(.figureFont)
                         .foregroundStyle(.white)
                 }
                 scoreSide(home, score: userIsHome ? live.userScore : live.opponentScore)
@@ -182,11 +181,10 @@ struct LiveGameView: View {
     private func scoreSide(_ team: Team?, score: Int) -> some View {
         VStack(spacing: 2) {
             Text(team?.abbreviation ?? "—")
-                .font(.almanacLabel)
-                .tracking(1.0)
+                .font(.labelFont)
                 .foregroundStyle(.white.opacity(0.85))
             Text("\(score)")
-                .font(.almanacDisplay)
+                .font(.displayFont)
                 .foregroundStyle(.white)
         }
         .frame(maxWidth: .infinity)
@@ -194,13 +192,12 @@ struct LiveGameView: View {
 
     private func consequence(_ play: PlayEvent) -> some View {
         VStack(alignment: .leading, spacing: Layout.tight) {
-            Text("LAST PLAY")
-                .font(.almanacLabel)
-                .tracking(1.2)
-                .foregroundStyle(Almanac.muted)
+            Text("Last play")
+                .font(.labelFont)
+                .foregroundStyle(Broadcast.muted)
             Text(play.description)
-                .font(.almanacBody)
-                .foregroundStyle(Almanac.ink)
+                .font(.bodyFont)
+                .foregroundStyle(Broadcast.ink)
                 .fixedSize(horizontal: false, vertical: true)
             Rule()
         }
@@ -210,11 +207,11 @@ struct LiveGameView: View {
     private func situationLine(_ situation: GameSituation) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Layout.small) {
             Text("\(ordinal(situation.down)) & \(situation.distance)")
-                .font(.almanacTitle)
-                .foregroundStyle(Almanac.ink)
+                .font(.titleFont)
+                .foregroundStyle(Broadcast.ink)
             Text(fieldPosition(situation))
-                .font(.almanacBody)
-                .foregroundStyle(Almanac.muted)
+                .font(.bodyFont)
+                .foregroundStyle(Broadcast.muted)
             Spacer(minLength: 0)
         }
         .accessibilityElement(children: .combine)
@@ -235,10 +232,9 @@ struct LiveGameView: View {
         let suggested = suggestion(for: situation)
 
         return VStack(alignment: .leading, spacing: Layout.small) {
-            Text("YOUR CALL")
-                .font(.almanacLabel)
-                .tracking(1.2)
-                .foregroundStyle(Almanac.muted)
+            Text("Your call")
+                .font(.labelFont)
+                .foregroundStyle(Broadcast.muted)
 
             LazyVGrid(
                 columns: [GridItem(.flexible(), spacing: Layout.small),
@@ -252,10 +248,9 @@ struct LiveGameView: View {
 
             if situation.down == 4 {
                 Rule()
-                Text("FOURTH DOWN")
-                    .font(.almanacLabel)
-                    .tracking(1.2)
-                    .foregroundStyle(Almanac.muted)
+                Text("Fourth down")
+                    .font(.labelFont)
+                    .foregroundStyle(Broadcast.muted)
                 HStack(spacing: Layout.small) {
                     callButton(.fieldGoal, isSuggested: false)
                     callButton(.punt, isSuggested: false)
@@ -278,12 +273,12 @@ struct LiveGameView: View {
         Button { call(play) } label: {
             VStack(spacing: 2) {
                 Text(play.displayName)
-                    .font(.almanacBody)
-                    .foregroundStyle(Almanac.ink)
+                    .font(.bodyFont)
+                    .foregroundStyle(Broadcast.ink)
                 if isSuggested {
                     Text("the coordinator likes this")
-                        .font(.almanacLabel)
-                        .foregroundStyle(Almanac.muted)
+                        .font(.labelFont)
+                        .foregroundStyle(Broadcast.muted)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -292,7 +287,7 @@ struct LiveGameView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 3, style: .continuous)
                     .stroke(
-                        isSuggested ? Almanac.ink : Almanac.rule,
+                        isSuggested ? Broadcast.ink : Broadcast.rule,
                         lineWidth: isSuggested ? 1.5 : 0.8
                     )
             )
@@ -306,19 +301,18 @@ struct LiveGameView: View {
 
     private func driveLog(_ live: InteractiveGame) -> some View {
         VStack(alignment: .leading, spacing: Layout.tight) {
-            Rule(.heavy)
-            Text("THE DRIVE")
-                .font(.almanacLabel)
-                .tracking(1.2)
-                .foregroundStyle(Almanac.muted)
+            Rule()
+            Text("The drive")
+                .font(.labelFont)
+                .foregroundStyle(Broadcast.muted)
             ForEach(Array(live.plays.suffix(12).reversed())) { play in
                 VStack(alignment: .leading, spacing: 2) {
                     Text(play.description)
-                        .font(.almanacBody)
-                        .foregroundStyle(Almanac.ink)
+                        .font(.bodyFont)
+                        .foregroundStyle(Broadcast.ink)
                     Text("\(play.clockLabel) · \(play.awayScore)–\(play.homeScore)")
-                        .font(.almanacLabel)
-                        .foregroundStyle(Almanac.muted)
+                        .font(.labelFont)
+                        .foregroundStyle(Broadcast.muted)
                 }
                 .padding(.vertical, 2)
                 .accessibilityElement(children: .combine)
@@ -340,15 +334,15 @@ struct LiveGameView: View {
         return ScrollView {
             VStack(spacing: Layout.large) {
                 VStack(spacing: Layout.small) {
-                    Text("FINAL")
-                        .font(.almanacLabel)
+                    Text("Final")
+                        .font(.labelFont)
                         .tracking(2.0)
                         .foregroundStyle(.white.opacity(0.85))
                     Text(won ? "You won" : (record.isTie ? "A tie" : "You lost"))
-                        .font(.almanacDisplay)
+                        .font(.displayFont)
                         .foregroundStyle(.white)
                     Text("\(mine)–\(theirs)")
-                        .font(.almanacDisplay)
+                        .font(.displayFont)
                         .foregroundStyle(.white)
                 }
                 .frame(maxWidth: .infinity)

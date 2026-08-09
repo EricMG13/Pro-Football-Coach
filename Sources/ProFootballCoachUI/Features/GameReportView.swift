@@ -26,7 +26,7 @@ struct GameReportView: View {
     private var finalScore: some View {
         VStack(spacing: Layout.small) {
             HStack {
-                Text("FINAL").font(.caption.weight(.heavy)).foregroundStyle(.secondary)
+                Text("Final").font(.caption.weight(.heavy)).foregroundStyle(.secondary)
                 if record.wentToOvertime {
                     Chip("OT\(record.overtimePeriods > 1 ? "\(record.overtimePeriods)" : "")", color: .orange)
                 }

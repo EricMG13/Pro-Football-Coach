@@ -92,14 +92,12 @@ struct MainMenuView: View {
                     VStack(spacing: 0) {
                         menuRow(
                             icon: "play.circle.fill",
-                            tint: .green,
                             title: "New Franchise",
                             subtitle: "Take over a team and build a dynasty"
                         ) { showingNewGame = true }
 
                         menuRow(
                             icon: "folder.fill",
-                            tint: .blue,
                             title: "Load Franchise",
                             subtitle: app.saves.isEmpty
                                 ? "No saved franchises yet"
@@ -109,20 +107,19 @@ struct MainMenuView: View {
 
                         menuRow(
                             icon: "flag.checkered",
-                            tint: .orange,
                             title: "Scenarios",
                             subtitle: "Preset challenges with a single objective"
                         ) { showingScenarios = true }
                     }
 
                     Text("Every team, player and league in this game is fictional.")
-                        .font(.almanacLabel)
-                        .foregroundStyle(Almanac.muted)
+                        .font(.labelFont)
+                        .foregroundStyle(Broadcast.muted)
                         .multilineTextAlignment(.center)
                 }
                 .padding(Layout.medium)
             }
-            .background(Almanac.page)
+            .background(Broadcast.page)
             .navigationTitle("")
             .sheet(isPresented: $showingNewGame) { NewFranchiseWizard() }
             .sheet(isPresented: $showingLoad) { LoadFranchiseView() }
@@ -133,42 +130,40 @@ struct MainMenuView: View {
     /// The almanac's own cover, and — once a franchise exists — the front page of your league.
     private var header: some View {
         VStack(alignment: .leading, spacing: Layout.small) {
-            Text("PRO FOOTBALL COACH")
-                .font(.almanacLabel)
-                .tracking(1.6)
-                .foregroundStyle(Almanac.muted)
+            Text("Pro Football Coach")
+                .font(.labelFont)
+                .foregroundStyle(Broadcast.muted)
 
             Text("The Franchise Almanac")
-                .font(.almanacDisplay)
-                .foregroundStyle(Almanac.ink)
+                .font(.displayFont)
+                .foregroundStyle(Broadcast.ink)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text("Run the franchise. Call every down.")
-                .font(.almanacBody)
-                .foregroundStyle(Almanac.muted)
+                .font(.bodyFont)
+                .foregroundStyle(Broadcast.muted)
 
-            Rule(.heavy)
+            Rule()
 
             if let latest = app.saves.first {
                 // The most recent franchise is the standing headline, not a row buried in a sheet.
                 Button { app.load(id: latest.id) } label: {
                     VStack(alignment: .leading, spacing: Layout.tight) {
-                        Text("WHERE YOU LEFT OFF")
-                            .font(.almanacLabel)
-                            .tracking(1.2)
-                            .foregroundStyle(Almanac.muted)
+                        Text("Where you left off")
+                            .font(.labelFont)
+                            .foregroundStyle(Broadcast.muted)
                         HStack(alignment: .firstTextBaseline, spacing: Layout.small) {
                             Text(latest.teamName)
-                                .font(.almanacTitle)
-                                .foregroundStyle(Almanac.ink)
+                                .font(.titleFont)
+                                .foregroundStyle(Broadcast.ink)
                             Spacer(minLength: 0)
                             Text(String(latest.year))
-                                .font(.almanacFigure)
-                                .foregroundStyle(Almanac.ink)
+                                .font(.figureFont)
+                                .foregroundStyle(Broadcast.ink)
                         }
                         Text("\(latest.phaseLabel) · \(latest.coachName)")
-                            .font(.almanacLabel)
-                            .foregroundStyle(Almanac.muted)
+                            .font(.labelFont)
+                            .foregroundStyle(Broadcast.muted)
                         Rule()
                     }
                     .contentShape(Rectangle())
@@ -188,7 +183,6 @@ struct MainMenuView: View {
     /// meaning, against the system's own rule that colour is only used where it means something.
     private func menuRow(
         icon: String,
-        tint: Color,
         title: String,
         subtitle: String,
         action: @escaping () -> Void
@@ -198,20 +192,20 @@ struct MainMenuView: View {
                 HStack(alignment: .firstTextBaseline, spacing: Layout.small) {
                     Image(systemName: icon)
                         .font(.caption)
-                        .foregroundStyle(Almanac.muted)
+                        .foregroundStyle(Broadcast.muted)
                         .frame(width: 20)
                         .accessibilityHidden(true)
                     Text(title)
-                        .font(.almanacTitle)
-                        .foregroundStyle(Almanac.ink)
+                        .font(.titleFont)
+                        .foregroundStyle(Broadcast.ink)
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
                         .font(.caption)
-                        .foregroundStyle(Almanac.muted)
+                        .foregroundStyle(Broadcast.muted)
                 }
                 Text(subtitle)
-                    .font(.almanacLabel)
-                    .foregroundStyle(Almanac.muted)
+                    .font(.labelFont)
+                    .foregroundStyle(Broadcast.muted)
                     .padding(.leading, 28)
                 Rule()
             }
@@ -249,10 +243,12 @@ struct LoadFranchiseView: View {
                                         .foregroundStyle(.white)
                                 )
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(save.name).font(.headline)
+                                Text(save.name)
+                                    .font(.titleFont)
+                                    .foregroundStyle(Broadcast.ink)
                                 Text("\(save.teamName) · \(String(save.year)) · \(save.phaseLabel)")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .font(.labelFont)
+                                    .foregroundStyle(Broadcast.muted)
                             }
                             Spacer()
                         }
@@ -266,12 +262,15 @@ struct LoadFranchiseView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Broadcast.page)
             .navigationTitle("Load Franchise")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
                 }
             }
+            .preferredColorScheme(app.appearance.colorScheme)
             .alert(
                 "Delete \(pendingDelete?.name ?? "this franchise")?",
                 isPresented: Binding(

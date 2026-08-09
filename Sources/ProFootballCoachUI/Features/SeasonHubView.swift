@@ -46,7 +46,7 @@ struct SeasonHubView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Almanac.page)
+        .background(Broadcast.page)
         .inlineTitleCompat()
         .navigationTitle("")
         .sheet(isPresented: $showingPreview) {
@@ -78,31 +78,24 @@ struct SeasonHubView: View {
     /// heavy rule. No card — the page is the surface.
     private var masthead: some View {
         VStack(alignment: .leading, spacing: Layout.tight) {
-            Text(app.userTeam?.fullName.uppercased() ?? "THE LEAGUE")
-                .font(.almanacLabel)
-                .tracking(1.2)
-                .foregroundStyle(Almanac.muted)
+            HStack(spacing: Layout.small) {
+                if let team = app.userTeam { TeamMark(team: team, size: 34) }
+                Text(app.userTeam?.fullName ?? "The League")
+                    .font(.titleFont)
+                    .foregroundStyle(Broadcast.ink)
+                Spacer(minLength: 0)
+            }
 
             // Year and record share the top line; the phase gets its own so a long label like
             // "Conference Championships" cannot wrap and shove the record out of alignment.
-            HStack(alignment: .firstTextBaseline) {
-                Text(String(app.league?.year ?? 0))
-                    .font(.almanacDisplay)
-                    .foregroundStyle(Almanac.ink)
-                Spacer(minLength: Layout.small)
+            HStack(spacing: Layout.tight) {
+                Stamp(String(app.league?.year ?? 0), color: theme.primary)
+                Stamp(app.league?.phase.label ?? "", color: Broadcast.muted)
+                Spacer(minLength: 0)
                 if let record = userRecord {
-                    Text(record.description)
-                        .font(.almanacFigure)
-                        .foregroundStyle(Almanac.ink)
+                    Stamp(record.description, color: theme.primary, filled: true)
                 }
             }
-
-            Text(app.league?.phase.label ?? "")
-                .font(.almanacTitle)
-                .foregroundStyle(Almanac.muted)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Rule(.heavy)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(mastheadReading)
@@ -164,18 +157,19 @@ struct SeasonHubView: View {
     /// The week's story. This is one of the seven earned editions: on gameday the page takes the
     /// franchise's colour plate, because this is the moment the almanac is written about.
     private func matchupCard(_ game: ScheduledGame) -> some View {
-        VStack(alignment: .leading, spacing: Layout.medium) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("WEEK \(game.week)")
-                    .font(.almanacLabel)
-                    .tracking(1.2)
+        BroadcastBand {
+            HStack(spacing: Layout.tight) {
+                Text("Week \(game.week)")
+                    .font(.labelFont)
+                    .foregroundStyle(.white)
+                Text("·").foregroundStyle(.white.opacity(0.6))
+                Text(game.homeTeamID == app.league?.userTeamID ? "Home" : "Away")
+                    .font(.labelFont)
                     .foregroundStyle(.white.opacity(0.85))
-                Spacer()
-                Text(game.homeTeamID == app.league?.userTeamID ? "AT HOME" : "ON THE ROAD")
-                    .font(.almanacLabel)
-                    .tracking(1.2)
-                    .foregroundStyle(.white.opacity(0.85))
+                Spacer(minLength: 0)
             }
+        } content: {
+            VStack(alignment: .leading, spacing: Layout.medium) {
 
             if let league = app.league,
                let home = league.team(id: game.homeTeamID),
@@ -183,15 +177,15 @@ struct SeasonHubView: View {
                 HStack(alignment: .center, spacing: Layout.small) {
                     editionTeam(away, league: league)
                     Text("at")
-                        .font(.almanacBody)
-                        .foregroundStyle(.white.opacity(0.7))
+                        .font(.bodyFont)
+                        .foregroundStyle(Broadcast.muted)
                     editionTeam(home, league: league)
                 }
                 .frame(maxWidth: .infinity)
 
                 Text(MatchupOdds.summary(home: home, away: away, userTeamID: league.userTeamID))
-                    .font(.almanacBody)
-                    .foregroundStyle(.white)
+                    .font(.bodyFont)
+                    .foregroundStyle(Broadcast.ink)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -201,8 +195,8 @@ struct SeasonHubView: View {
                     Text("The full preview")
                     Image(systemName: "chevron.right").font(.caption2)
                 }
-                .font(.almanacLabel)
-                .foregroundStyle(.white.opacity(0.9))
+                .font(.labelFont)
+                .foregroundStyle(theme.tint)
                 .padding(.vertical, Layout.small)
                 .contentShape(Rectangle())
             }
@@ -215,7 +209,6 @@ struct SeasonHubView: View {
                         .frame(minHeight: 30)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.white.opacity(0.25))
 
                 HStack(spacing: Layout.small) {
                     Button { playMode = .onField } label: {
@@ -232,26 +225,25 @@ struct SeasonHubView: View {
                     }
                     .buttonStyle(.bordered)
                 }
-                .tint(.white.opacity(0.9))
+            }
             }
         }
-        .padding(Layout.medium)
-        .frame(maxWidth: .infinity)
-        .background(theme.gradient)
-        .clipShape(RoundedRectangle(cornerRadius: Layout.cardRadius, style: .continuous))
     }
 
     private func editionTeam(_ team: Team, league: League) -> some View {
         VStack(spacing: Layout.tight) {
-            TeamBadge(team: team, size: 44)
+            TeamMark(team: team, size: 46)
             Text(team.name)
-                .font(.almanacTitle)
-                .foregroundStyle(.white)
+                .font(.titleFont)
+                .foregroundStyle(Broadcast.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-            Text("\(league.record(for: team.id).description) · \(Int(team.overallRating)) ovr")
-                .font(.almanacLabel)
-                .foregroundStyle(.white.opacity(0.8))
+            HStack(spacing: 4) {
+                Text(league.record(for: team.id).description)
+                    .font(.labelFont)
+                    .foregroundStyle(Broadcast.muted)
+                Stamp("\(Int(team.overallRating))", color: RatingPalette.color(for: team.overallRating))
+            }
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
@@ -281,30 +273,29 @@ struct SeasonHubView: View {
     private func lastGameCard(_ record: GameRecord) -> some View {
         let won = record.didWin(app.league?.userTeamID ?? UUID())
         let outcome = won ? "Won" : (record.isTie ? "Tied" : "Lost")
-        let tier: Color = won ? Almanac.ink : Almanac.muted
+        let tier: Color = won
+            ? Color(hex: RatingTier.starter.lightHex)
+            : Color(hex: RatingTier.fringe.lightHex)
 
         return NavigationLink {
             GameReportView(record: record)
         } label: {
-            VStack(alignment: .leading, spacing: Layout.tight) {
-                Text("LAST WEEK")
-                    .font(.almanacLabel)
-                    .tracking(1.2)
-                    .foregroundStyle(Almanac.muted)
-                HStack(alignment: .firstTextBaseline, spacing: Layout.small) {
-                    Text(outcome)
-                        .font(.almanacTitle)
-                        .foregroundStyle(tier)
+            HStack(spacing: Layout.small) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Last week")
+                        .font(.labelFont)
+                        .foregroundStyle(Broadcast.muted)
                     Text(scoreline(record))
-                        .font(.almanacFigure)
-                        .foregroundStyle(Almanac.ink)
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(Almanac.muted)
+                        .font(.figureFont)
+                        .foregroundStyle(Broadcast.ink)
                 }
-                Rule()
+                Spacer(minLength: 0)
+                Stamp(outcome, color: tier, filled: true)
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(Broadcast.muted)
             }
+            .card()
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -365,8 +356,8 @@ struct MatchupLede: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Layout.small) {
             Text(MatchupOdds.summary(home: home, away: away, userTeamID: userTeamID))
-                .font(.almanacBody)
-                .foregroundStyle(Almanac.ink)
+                .font(.bodyFont)
+                .foregroundStyle(Broadcast.ink)
                 .fixedSize(horizontal: false, vertical: true)
 
             Rule()
@@ -386,12 +377,12 @@ struct MatchupLede: View {
     private func figure(_ label: String, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Layout.tight) {
             Text(label.uppercased())
-                .font(.almanacLabel)
+                .font(.labelFont)
                 .tracking(0.6)
-                .foregroundStyle(Almanac.muted)
+                .foregroundStyle(Broadcast.muted)
             Text(value)
-                .font(.almanacFigure)
-                .foregroundStyle(Almanac.ink)
+                .font(.figureFont)
+                .foregroundStyle(Broadcast.ink)
         }
     }
 

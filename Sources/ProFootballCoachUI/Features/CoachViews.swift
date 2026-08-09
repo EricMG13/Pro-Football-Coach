@@ -87,7 +87,7 @@ struct CoachView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Almanac.page)
+        .background(Broadcast.page)
         .navigationTitle("Coach")
         .sheet(isPresented: $showingSkills) { SkillTreeSheet() }
         .sheet(isPresented: $showingGoals) { SeasonGoalsSheet() }
@@ -219,7 +219,7 @@ struct SkillTreeSheet: View {
                     }
                 }
             }
-            .background(Almanac.page)
+            .background(Broadcast.page)
             .navigationTitle("Skill Tree")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
@@ -307,7 +307,7 @@ struct SeasonGoalsSheet: View {
                 }
                 .padding(Layout.medium)
             }
-            .background(Almanac.page)
+            .background(Broadcast.page)
             .navigationTitle("Season Goals")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
@@ -370,7 +370,7 @@ struct HistoryView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Almanac.page)
+        .background(Broadcast.page)
         .navigationTitle("History")
     }
 
@@ -380,27 +380,27 @@ struct HistoryView: View {
 
         return VStack(alignment: .leading, spacing: Layout.small) {
             Text(club?.fullName ?? "Between jobs")
-                .font(.almanacTitle)
-                .foregroundStyle(Almanac.ink)
+                .font(.titleFont)
+                .foregroundStyle(Broadcast.ink)
             HStack(spacing: Layout.small) {
                 Text(chapter.span)
-                    .font(.almanacLabel)
-                    .tracking(1.0)
-                    .foregroundStyle(Almanac.muted)
+                    .font(.labelFont)
+                    .foregroundStyle(Broadcast.muted)
                 Text("\(chapter.wins)–\(chapter.losses)")
-                    .font(.almanacFigure)
-                    .foregroundStyle(Almanac.ink)
+                    .font(.figureFont)
+                    .foregroundStyle(Broadcast.ink)
                 if titles > 0 {
                     Stamp(titles == 1 ? "1 title" : "\(titles) titles")
                 }
                 Spacer(minLength: 0)
             }
-            Rule(.heavy)
+            Rule()
 
             ForEach(chapter.seasons, id: \.year) { season in
                 seasonLine(season)
             }
         }
+        .card()
         .accessibilityElement(children: .contain)
     }
 
@@ -411,27 +411,27 @@ struct HistoryView: View {
         return VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .firstTextBaseline, spacing: Layout.small) {
                 Text(String(season.year))
-                    .font(.almanacFigure)
-                    .foregroundStyle(Almanac.muted)
+                    .font(.figureFont)
+                    .foregroundStyle(Broadcast.muted)
                 Text(season.userRecord?.description ?? "—")
-                    .font(.almanacBody)
-                    .foregroundStyle(Almanac.ink)
+                    .font(.bodyFont)
+                    .foregroundStyle(Broadcast.ink)
                 Spacer(minLength: 0)
                 if wonIt {
                     Text("Champions")
-                        .font(.almanacBody)
-                        .foregroundStyle(Almanac.ink)
+                        .font(.bodyFont)
+                        .foregroundStyle(Broadcast.ink)
                 } else if let champion {
                     Text(champion.name)
-                        .font(.almanacLabel)
-                        .foregroundStyle(Almanac.muted)
+                        .font(.labelFont)
+                        .foregroundStyle(Broadcast.muted)
                         .lineLimit(1)
                 }
             }
             ForEach(season.awards, id: \.kind.rawValue) { award in
                 Text("\(award.kind.displayName): \(award.playerName)")
-                    .font(.almanacLabel)
-                    .foregroundStyle(Almanac.muted)
+                    .font(.labelFont)
+                    .foregroundStyle(Broadcast.muted)
             }
             Rule()
         }
