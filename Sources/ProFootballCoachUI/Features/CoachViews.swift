@@ -8,6 +8,7 @@ struct CoachView: View {
     @State private var showingSkills = false
     @State private var showingGoals = false
     @State private var showingTutorial = false
+    @State private var showingSettings = false
     @State private var confirmingExit = false
 
     var body: some View {
@@ -32,6 +33,10 @@ struct CoachView: View {
                         Divider().padding(.leading, 52)
                         Button { showingTutorial = true } label: {
                             row("How to Coach", "questionmark.circle", .teal, badge: nil)
+                        }
+                        Divider().padding(.leading, 52)
+                        Button { showingSettings = true } label: {
+                            row("Settings", "gearshape.fill", .gray, badge: nil)
                         }
                         Divider().padding(.leading, 52)
                         NavigationLink { TrophyRoomView() } label: {
@@ -87,6 +92,7 @@ struct CoachView: View {
         .sheet(isPresented: $showingSkills) { SkillTreeSheet() }
         .sheet(isPresented: $showingGoals) { SeasonGoalsSheet() }
         .sheet(isPresented: $showingTutorial) { TutorialView() }
+        .sheet(isPresented: $showingSettings) { SettingsView() }
         .alert("Return to the main menu?", isPresented: $confirmingExit) {
             Button("Save and Exit") { app.closeFranchise() }
             Button("Stay", role: .cancel) {}
@@ -132,7 +138,9 @@ struct CoachView: View {
             Divider()
             SummaryRow(label: "Career record", value: coach.recordDescription)
             if let league = app.league,
-               league.phase.isRegularSeason || league.phase.isPlayoffs {
+               league.phase.isRegularSeason
+                || league.phase.isPlayoffs
+                || league.phase == .offseason(stage: OffseasonStage.seasonReview.rawValue) {
                 let season = league.record(for: league.userTeamID)
                 if season.wins + season.losses + season.ties > 0 {
                     // Career totals only absorb a year at the season review, so the year in
@@ -486,7 +494,15 @@ struct JobOffersSheet: View {
                 }
             }
             .navigationTitle("Job Offers")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    // Nothing is lost by closing: the offers stay on the league until one is
+                    // accepted, and the Coach tab re-opens this sheet.
+                    Button("Later") { dismiss() }
+                }
+            }
         }
+        // Kept: a stray swipe should not decide a career. The button above is the way out.
         .interactiveDismissDisabled()
     }
 }

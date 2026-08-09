@@ -38,6 +38,18 @@ public final class AppState {
     /// Identifier of the scenario this franchise started under, if any.
     public var activeScenario: String?
     public var autosaveEnabled = true
+
+    /// Appearance preference. Persisted outside the franchise, because it belongs to the person
+    /// rather than to any one dynasty.
+    public var appearance: AppAppearance {
+        get {
+            AppAppearance(rawValue: UserDefaults.standard.string(forKey: Self.appearanceKey) ?? "")
+                ?? .system
+        }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: Self.appearanceKey) }
+    }
+
+    private static let appearanceKey = "pfc.appearance"
     public var lastError: String?
     public var isBusy = false
 

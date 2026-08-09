@@ -20,6 +20,7 @@ runLegacyTests()
 runPersistenceTests()
 runSaveQueueTests()
 runDesignSystemTests()
+runAlmanacTests()
 runTeamTintTests()
 
 TestKit.finish()

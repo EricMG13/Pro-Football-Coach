@@ -288,7 +288,12 @@ struct TrophyRoomView: View {
     /// that counted the same year twice.
     private func careerRecord(_ league: League) -> String {
         let coach = league.coach
-        let live = league.phase.isRegularSeason || league.phase.isPlayoffs
+        // The championship flips the phase straight to the season review, which is where the
+        // career totals are booked — so between those two moments the season is finished and
+        // still uncounted, and the coach must not lose a year he just played.
+        let live = league.phase.isRegularSeason
+            || league.phase.isPlayoffs
+            || league.phase == .offseason(stage: OffseasonStage.seasonReview.rawValue)
         let season = live ? league.record(for: league.userTeamID) : TeamRecord()
         let wins = coach.careerWins + season.wins
         let losses = coach.careerLosses + season.losses

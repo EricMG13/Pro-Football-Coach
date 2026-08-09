@@ -30,13 +30,17 @@ enum TestKit {
         }
     }
 
-    /// Runs an async test body to completion by blocking the calling thread.
+    /// Runs an async test body to completion.
     ///
-    /// Only safe for work that does NOT require the main actor — it blocks the main thread, so a
-    /// `@MainActor` body would deadlock. `SaveQueue` is a plain actor for exactly this reason.
+    /// Never use this for `@MainActor` work: it blocks the calling thread waiting on the
+    /// semaphore, so a hop back to the main actor would deadlock. Actor-isolated and detached
+    /// work is fine, which is all the async surface this project has.
     static func testAsync(_ name: String, _ body: @escaping @Sendable () async throws -> Void) {
         currentTest = name
         testsRun += 1
+        if ProcessInfo.processInfo.environment["TRACE_TESTS"] != nil {
+            FileHandle.standardError.write(Data("→ \(suiteName) › \(name)\n".utf8))
+        }
         let done = DispatchSemaphore(value: 0)
         Task {
             do { try await body() } catch { record("threw \(error)") }

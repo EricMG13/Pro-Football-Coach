@@ -4,6 +4,7 @@ import FootballSimCore
 /// Entry point. Shows the menu until a franchise is loaded, then the tabbed franchise shell.
 public struct RootView: View {
     @State private var app = AppState()
+    @Environment(\.scenePhase) private var scenePhase
 
     public init() {}
 
@@ -18,6 +19,23 @@ public struct RootView: View {
         .environment(app)
         .environment(\.teamTheme, app.theme)
         .tint(app.theme.tint)
+        .preferredColorScheme(app.appearance.colorScheme)
+        .alert(
+            "Something went wrong",
+            isPresented: Binding(
+                get: { app.lastError != nil },
+                set: { if !$0 { app.lastError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { app.lastError = nil }
+        } message: {
+            Text(app.lastError ?? "")
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // A dynasty must never be lost to a write that did not finish before the app left
+            // the foreground.
+            if phase != .active { Task { await app.flush() } }
+        }
     }
 }
 
@@ -164,6 +182,7 @@ struct MainMenuView: View {
 struct LoadFranchiseView: View {
     @Environment(AppState.self) private var app
     @Environment(\.dismiss) private var dismiss
+    @State private var pendingDelete: SaveMeta?
 
     var body: some View {
         NavigationStack {
@@ -171,7 +190,9 @@ struct LoadFranchiseView: View {
                 ForEach(app.saves) { save in
                     Button {
                         app.load(id: save.id)
-                        dismiss()
+                        // Only leave if the franchise actually opened. Dismissing regardless
+                        // would take the failure alert down with the sheet, unseen.
+                        if app.league != nil { dismiss() }
                     } label: {
                         HStack(spacing: Layout.medium) {
                             Circle()
@@ -179,7 +200,7 @@ struct LoadFranchiseView: View {
                                 .frame(width: 34, height: 34)
                                 .overlay(
                                     Text(save.teamAbbreviation)
-                                        .font(.system(size: 10, weight: .heavy))
+                                        .font(.caption2.weight(.heavy))
                                         .foregroundStyle(.white)
                                 )
                             VStack(alignment: .leading, spacing: 2) {
@@ -190,11 +211,14 @@ struct LoadFranchiseView: View {
                             }
                             Spacer()
                         }
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                }
-                .onDelete { offsets in
-                    for index in offsets { app.delete(id: app.saves[index].id) }
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) { pendingDelete = save } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
                 }
             }
             .navigationTitle("Load Franchise")
@@ -202,6 +226,23 @@ struct LoadFranchiseView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
                 }
+            }
+            .alert(
+                "Delete \(pendingDelete?.name ?? "this franchise")?",
+                isPresented: Binding(
+                    get: { pendingDelete != nil },
+                    set: { if !$0 { pendingDelete = nil } }
+                ),
+                presenting: pendingDelete
+            ) { save in
+                Button("Delete", role: .destructive) {
+                    app.delete(id: save.id)
+                    pendingDelete = nil
+                }
+                Button("Keep", role: .cancel) { pendingDelete = nil }
+            } message: { save in
+                Text("\(save.teamName), \(String(save.year)), \(save.phaseLabel). "
+                     + "This cannot be undone.")
             }
         }
     }

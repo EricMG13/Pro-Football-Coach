@@ -183,7 +183,7 @@ public enum RatingTier: String, CaseIterable, Sendable {
     public var lightHex: String {
         switch self {
         case .elite: "#6B4BC4"
-        case .star: "#1665C0"
+        case .star: "#155CB0"
         case .starter: "#22661F"
         case .rotational: "#8A5000"
         case .fringe: "#AB2A1E"
