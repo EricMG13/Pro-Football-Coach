@@ -1214,8 +1214,12 @@ declaring P0 done. **An adversarial review must never be reported as a build.**
 
 Things noticed while writing it that are **not** P0's business and must not be done here:
 
-1. **`App/build/` and a stray nested `Pro-Football-Coach/` directory** (untracked, with its own
-   `.git`) sit in the working tree. Neither is tracked. Not P0's scope; raise with the owner.
+1. **`App/build/`** sits untracked in the working tree. Not P0's scope.
+   *(The nested `Pro-Football-Coach/` directory was originally noted here as "untracked" — that was
+   wrong. It was a **gitlink**, mode `160000`, staged as a submodule with no `.gitmodules`, so every
+   clone got an empty directory that could not be initialised. It had been on `origin/main` since
+   `4ebf7eb`. Removed from the index before the push; the on-disk clone was left alone and the path
+   is now gitignored.)*
 2. **`03b` §3's "no save path reachable from the main actor" test** has no home yet — there is no
    `SimulationActor` until later. It belongs to the phase that adds one.
 3. **Gzip for the save body** is D7's business. The envelope's flags byte reserves the bit.

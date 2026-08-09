@@ -10,3 +10,7 @@ xcuserdata/
 # Xcode build products. These were committed once (70 MB) and went stale:
 # the last compiled module predates Sources/FootballSimCore/Arcade/ entirely.
 build/
+
+# An accidental gitlink pointed here: a nested clone of this same repo was staged as a
+# submodule (mode 160000) with no .gitmodules, so clones got an uninitialisable empty directory.
+Pro-Football-Coach/
