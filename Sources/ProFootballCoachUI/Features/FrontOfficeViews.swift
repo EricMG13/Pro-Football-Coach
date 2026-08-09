@@ -244,6 +244,7 @@ struct FreeAgencyView: View {
         .sheet(item: $offering) { player in
             OfferSheet(player: player, asking: askingPrice(player))
         }
+        .appearanceAware()
     }
 
     private var filtered: [Player] {

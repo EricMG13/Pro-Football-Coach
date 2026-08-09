@@ -90,9 +90,13 @@ struct CoachView: View {
         .background(Broadcast.page)
         .navigationTitle("Coach")
         .sheet(isPresented: $showingSkills) { SkillTreeSheet() }
+        .appearanceAware()
         .sheet(isPresented: $showingGoals) { SeasonGoalsSheet() }
+        .appearanceAware()
         .sheet(isPresented: $showingTutorial) { TutorialView() }
+        .appearanceAware()
         .sheet(isPresented: $showingSettings) { SettingsView() }
+        .appearanceAware()
         .alert("Return to the main menu?", isPresented: $confirmingExit) {
             Button("Save and Exit") { app.closeFranchise() }
             Button("Stay", role: .cancel) {}
@@ -104,7 +108,7 @@ struct CoachView: View {
     private func profile(_ coach: CoachProfile) -> some View {
         VStack(spacing: Layout.tight) {
             Image(systemName: "figure.american.football")
-                .font(.system(size: 40))
+                .font(.system(.largeTitle, weight: .semibold))
                 .foregroundStyle(.white)
             Text(coach.name)
                 .font(.system(.title2, design: .rounded, weight: .bold))
@@ -243,7 +247,7 @@ struct SkillTreeSheet: View {
                 } else {
                     VStack(spacing: 0) {
                         Text("\(node.cost)").font(.subheadline.weight(.bold))
-                        Text("SP").font(.system(size: 8))
+                        Text("SP").font(.caption2)
                     }
                     .foregroundStyle(.secondary)
                 }
@@ -528,7 +532,9 @@ struct OffseasonHubCard: View {
         }
         .card()
         .fullScreenCoverCompat(item: draftBinding) { _ in DraftDayView() }
+        .appearanceAware()
         .sheet(isPresented: $showingOffers) { JobOffersSheet() }
+        .appearanceAware()
         .onChange(of: offers.count) { _, count in
             // Surface the decision the moment it lands rather than waiting to be found.
             if count > 0 { showingOffers = true }

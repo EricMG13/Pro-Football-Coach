@@ -28,6 +28,33 @@ public enum Broadcast {
 
     /// The wash a chip paints behind its own label. Kept in one place so every chip agrees.
     public static let chipTint = 0.14
+
+    /// Darkens a fill until white on it clears 4.5:1.
+    ///
+    /// A filled chip takes whatever colour the call site had to hand, and the call sites hand it
+    /// `.orange`, `.yellow`, `.green` — which measure as low as 1.4:1 under white. Rather than
+    /// audit 36 of them, the component refuses to render an unreadable fill.
+    public static func legibleFill(_ hex: String) -> String {
+        var candidate = hex
+        var mix = 0.0
+        while mix <= 0.9, TeamTheme.contrastRatio(candidate, "#FFFFFF") < 4.5 {
+            mix += 0.05
+            candidate = blend(hex, toward: "#000000", amount: mix)
+        }
+        return candidate
+    }
+
+    private static func channels(_ hex: String) -> [Double] {
+        let cleaned = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
+        let value = UInt32(cleaned, radix: 16) ?? 0
+        return [(value >> 16) & 0xFF, (value >> 8) & 0xFF, value & 0xFF].map { Double($0) / 255 }
+    }
+
+    private static func blend(_ hex: String, toward target: String, amount: Double) -> String {
+        let (from, to) = (channels(hex), channels(target))
+        let mixed = (0..<3).map { UInt32(((from[$0] * (1 - amount)) + to[$0] * amount) * 255) }
+        return String(format: "#%02X%02X%02X", mixed[0], mixed[1], mixed[2])
+    }
 }
 
 // MARK: - Voice
@@ -67,17 +94,30 @@ public struct Rule: View {
 
 /// A chip: one piece of metadata, capsule, label at full strength over a wash of its own colour.
 ///
-/// Tinted rather than filled by default. The filled variant put white on a raw colour and was the
-/// worst contrast in the app; here `filled` is opt-in and takes a colour dark enough for it.
+/// Tinted by default. `filled` puts white on the colour, which is how the old component reached
+/// 1.41:1 — so a filled chip built from a known hex darkens that hex until white clears 4.5:1
+/// rather than trusting whatever the call site had to hand.
 public struct Stamp: View {
     let text: String
     var color: Color
     var filled: Bool
+    /// The fill's own hex, when the caller knows it. Only a hex can be corrected; a semantic
+    /// colour like `.secondary` has no fixed value to measure.
+    var fillHex: String?
 
     public init(_ text: String, color: Color = .accentColor, filled: Bool = false) {
         self.text = text
         self.color = color
         self.filled = filled
+        self.fillHex = nil
+    }
+
+    /// Builds a chip from a known colour, so a filled one can be made legible.
+    public init(_ text: String, hex: String, filled: Bool = false) {
+        self.text = text
+        self.filled = filled
+        self.fillHex = hex
+        self.color = filled ? Color(hex: Broadcast.legibleFill(hex)) : Color(hex: hex)
     }
 
     public var body: some View {
@@ -142,6 +182,23 @@ public struct BroadcastBand<Content: View, Body: View>: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: Layout.cardRadius, style: .continuous))
     }
+}
+
+/// Carries the chosen appearance into a sheet.
+///
+/// `preferredColorScheme` on the root does not reach a sheet: it is presented outside that
+/// hierarchy. Applying it where the sheet is presented keeps every one of them honest without
+/// each sheet body having to remember.
+public struct AppearanceAware: ViewModifier {
+    @Environment(AppState.self) private var app
+
+    public func body(content: Content) -> some View {
+        content.preferredColorScheme(app.appearance.colorScheme)
+    }
+}
+
+public extension View {
+    func appearanceAware() -> some View { modifier(AppearanceAware()) }
 }
 
 // MARK: - Motion

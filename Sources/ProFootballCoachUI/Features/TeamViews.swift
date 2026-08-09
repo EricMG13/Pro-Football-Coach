@@ -47,7 +47,7 @@ struct TeamView: View {
 
     private func header(_ team: Team, league: League) -> some View {
         VStack(spacing: Layout.small) {
-            TeamBadge(team: team, size: 68)
+            TeamMark(team: team, size: 68)
             Text(team.fullName)
                 .font(.system(.title2, design: .rounded, weight: .bold))
                 .foregroundStyle(.white)

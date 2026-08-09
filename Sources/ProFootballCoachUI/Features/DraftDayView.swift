@@ -278,6 +278,7 @@ struct ReSignView: View {
         .sheet(item: $negotiating) { player in
             NegotiationSheet(player: player)
         }
+        .appearanceAware()
     }
 
     private var expiring: [Player] {

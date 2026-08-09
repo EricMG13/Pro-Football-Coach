@@ -76,6 +76,25 @@ func runBroadcastTests() {
             }
         }
 
+        // The filled chip was the app's worst contrast: white on a raw system colour, as low as
+        // 1.41:1. Any hex handed to a filled chip must come back dark enough for white.
+        test("a filled chip is darkened until white on it is readable") {
+            let awkward = ["#F5A93C", "#67D77A", "#FFD60A", "#C3A6FF", "#FF8A80"]
+            for hex in awkward {
+                let corrected = Broadcast.legibleFill(hex)
+                let ratio = broadcastContrast(corrected, "#FFFFFF")
+                expect(
+                    ratio >= 4.5,
+                    "white on \(hex) corrected to \(corrected) is \(String(format: "%.2f", ratio)):1"
+                )
+            }
+        }
+
+        test("a fill that is already dark enough is left alone") {
+            let deep = "#14294B"
+            expectEqual(Broadcast.legibleFill(deep), deep, "a legible fill passes through")
+        }
+
         test("the tiers stay distinguishable without colour") {
             let labels = RatingTier.allCases.map(\.label)
             expectEqual(Set(labels).count, RatingTier.allCases.count, "labels must be unique")

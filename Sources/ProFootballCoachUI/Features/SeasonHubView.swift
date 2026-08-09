@@ -52,6 +52,7 @@ struct SeasonHubView: View {
         .sheet(isPresented: $showingPreview) {
             if let game = app.nextGame { MatchupPreviewSheet(game: game) }
         }
+        .appearanceAware()
         .confirmationDialog(
             "Sim this week?",
             isPresented: $confirmingSimWeek,
@@ -70,12 +71,12 @@ struct SeasonHubView: View {
                 }
             }
         }
+        .appearanceAware()
     }
 
     // MARK: - Cards
 
-    /// The front page's masthead: the edition's date line and the franchise's record, over a
-    /// heavy rule. No card — the page is the surface.
+    /// The page head: the club's mark and name, then the year, phase and record as chips.
     private var masthead: some View {
         VStack(alignment: .leading, spacing: Layout.tight) {
             HStack(spacing: Layout.small) {
@@ -154,8 +155,7 @@ struct SeasonHubView: View {
         .background(RoundedRectangle(cornerRadius: 14).fill(.white.opacity(0.16)))
     }
 
-    /// The week's story. This is one of the seven earned editions: on gameday the page takes the
-    /// franchise's colour plate, because this is the moment the almanac is written about.
+    /// The week's story, and the surface that earns the colour band.
     private func matchupCard(_ game: ScheduledGame) -> some View {
         BroadcastBand {
             HStack(spacing: Layout.tight) {
@@ -345,8 +345,8 @@ struct SeasonHubView: View {
 /// The week's lede: one authored sentence, then the numbers behind it.
 ///
 /// Replaces the LINE / WIN % / EDGE pill row carried over from the reference app — three numbers
-/// the reader had to assemble into a meaning. The Almanac states the meaning first, in the
-/// coordinator's voice, and keeps the figures underneath it where they can be checked.
+/// the reader had to assemble into a meaning. This states the meaning first, in the
+/// coordinator's voice, and keeps the figures underneath where they can be checked.
 struct MatchupLede: View {
     let home: Team
     let away: Team

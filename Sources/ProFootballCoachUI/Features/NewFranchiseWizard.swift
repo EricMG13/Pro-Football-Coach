@@ -306,8 +306,7 @@ struct NewFranchiseWizard: View {
 /// Where you are in the founding, said rather than dotted.
 ///
 /// This was a row of accent capsules that widened on the current step — the reference app's
-/// onboarding signature, and the exact capsule shape `Stamp` was squared off to avoid. The
-/// almanac numbers its steps and rules underneath them.
+/// onboarding signature. This numbers its steps and rules underneath them instead.
 struct StepIndicator: View {
     let current: Int
     let total: Int

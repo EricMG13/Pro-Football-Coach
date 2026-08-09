@@ -323,8 +323,7 @@ struct LiveGameView: View {
 
     // MARK: - The final whistle
 
-    /// One of the seven earned editions: the result takes the whole page, in the winner's colours,
-    /// consequence first.
+    /// The result takes the whole page, in the winner's colours, consequence first.
     private func finalWhistle(_ record: GameRecord) -> some View {
         let userID = app.league?.userTeamID ?? UUID()
         let won = record.didWin(userID)

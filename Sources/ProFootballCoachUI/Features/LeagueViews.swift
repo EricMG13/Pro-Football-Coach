@@ -29,8 +29,7 @@ struct DivisionStandingsCard: View {
         }
     }
 
-    /// A division as a printed table: tracked column heads, a hairline under them, one row per
-    /// team, and the division leader separated by the rule beneath them.
+    /// A division table: column heads, a hairline under them, one row per team, leader marked.
     private func divisionTable(
         division: Division,
         rows: [TeamStanding],
@@ -238,7 +237,7 @@ struct ScheduleView: View {
         return HStack(spacing: Layout.medium) {
             VStack(spacing: 2) {
                 Text("WK")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.caption2.weight(.bold))
                     .foregroundStyle(.white.opacity(0.8))
                 Text("\(game.week)")
                     .font(.headline)

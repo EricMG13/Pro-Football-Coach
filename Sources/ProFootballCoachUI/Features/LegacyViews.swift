@@ -207,7 +207,7 @@ struct TrophyRoomView: View {
     private func career(_ league: League) -> some View {
         VStack(spacing: Layout.small) {
             Image(systemName: titles.isEmpty ? "shield" : "trophy.fill")
-                .font(.system(size: 44))
+                .font(.system(.largeTitle, weight: .semibold))
                 .foregroundStyle(titles.isEmpty ? .white.opacity(0.7) : .yellow)
             Text(league.coach.name)
                 .font(.system(.title2, design: .rounded, weight: .bold))

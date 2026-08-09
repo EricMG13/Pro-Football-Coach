@@ -3,15 +3,37 @@ import FootballSimCore
 
 /// Enough to list a save without decoding the whole league.
 public struct SaveMeta: Codable, Identifiable, Sendable, Equatable {
+    private enum CodingKeys: String, CodingKey {
+        case id, name, teamName, teamAbbreviation, primaryHex, secondaryHex, coachName, year
+        case phaseLabel, updatedAt
+    }
+
     public let id: UUID
     public var name: String
     public var teamName: String
     public var teamAbbreviation: String
     public var primaryHex: String
+    /// The club's second colour, so a save row can draw the real mark rather than a plain disc.
+    public var secondaryHex: String
     public var coachName: String
     public var year: Int
     public var phaseLabel: String
     public var updatedAt: Date
+
+    /// Decoded field by field so save lists written before the second colour existed still load.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        teamName = try container.decode(String.self, forKey: .teamName)
+        teamAbbreviation = try container.decode(String.self, forKey: .teamAbbreviation)
+        primaryHex = try container.decode(String.self, forKey: .primaryHex)
+        secondaryHex = try container.decodeIfPresent(String.self, forKey: .secondaryHex) ?? "#FFFFFF"
+        coachName = try container.decode(String.self, forKey: .coachName)
+        year = try container.decode(Int.self, forKey: .year)
+        phaseLabel = try container.decode(String.self, forKey: .phaseLabel)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+    }
 
     public init(
         id: UUID,
@@ -19,6 +41,7 @@ public struct SaveMeta: Codable, Identifiable, Sendable, Equatable {
         teamName: String,
         teamAbbreviation: String,
         primaryHex: String,
+        secondaryHex: String = "#FFFFFF",
         coachName: String,
         year: Int,
         phaseLabel: String,
@@ -29,6 +52,7 @@ public struct SaveMeta: Codable, Identifiable, Sendable, Equatable {
         self.teamName = teamName
         self.teamAbbreviation = teamAbbreviation
         self.primaryHex = primaryHex
+        self.secondaryHex = secondaryHex
         self.coachName = coachName
         self.year = year
         self.phaseLabel = phaseLabel
@@ -113,6 +137,7 @@ public struct SaveStore: Sendable {
             teamName: team?.fullName ?? "Unknown",
             teamAbbreviation: team?.abbreviation ?? "—",
             primaryHex: team?.colors.primaryHex ?? "#333333",
+            secondaryHex: team?.colors.secondaryHex ?? "#FFFFFF",
             coachName: league.coach.name,
             year: league.year,
             phaseLabel: league.phase.label,

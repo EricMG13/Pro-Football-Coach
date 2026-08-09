@@ -41,7 +41,7 @@ struct GameReportView: View {
 
     private func quarterRow(team: Team?, stats: TeamGameStats, isWinner: Bool) -> some View {
         HStack(spacing: Layout.small) {
-            if let team { TeamBadge(team: team, size: 28) }
+            if let team { TeamMark(team: team, size: 28) }
             Text(team?.abbreviation ?? "—")
                 .font(.subheadline.weight(isWinner ? .bold : .regular))
             Spacer()

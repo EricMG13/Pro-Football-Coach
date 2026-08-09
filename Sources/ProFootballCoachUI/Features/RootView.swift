@@ -63,6 +63,7 @@ struct FranchiseShell: View {
                 .tabItem { Label("Coach", systemImage: "figure.american.football") }
         }
         .sheet(isPresented: $showingTutorial) { TutorialView() }
+        .appearanceAware()
         .onAppear {
             guard !TutorialPrompt.hasBeenSeen else { return }
             TutorialPrompt.hasBeenSeen = true
@@ -122,19 +123,18 @@ struct MainMenuView: View {
             .background(Broadcast.page)
             .navigationTitle("")
             .sheet(isPresented: $showingNewGame) { NewFranchiseWizard() }
+            .appearanceAware()
             .sheet(isPresented: $showingLoad) { LoadFranchiseView() }
+            .appearanceAware()
             .sheet(isPresented: $showingScenarios) { ScenarioPickerView() }
+            .appearanceAware()
         }
     }
 
-    /// The almanac's own cover, and — once a franchise exists — the front page of your league.
+    /// The cover, and — once a franchise exists — the front page of your league.
     private var header: some View {
         VStack(alignment: .leading, spacing: Layout.small) {
             Text("Pro Football Coach")
-                .font(.labelFont)
-                .foregroundStyle(Broadcast.muted)
-
-            Text("The Franchise Almanac")
                 .font(.displayFont)
                 .foregroundStyle(Broadcast.ink)
                 .fixedSize(horizontal: false, vertical: true)
@@ -152,7 +152,13 @@ struct MainMenuView: View {
                         Text("Where you left off")
                             .font(.labelFont)
                             .foregroundStyle(Broadcast.muted)
-                        HStack(alignment: .firstTextBaseline, spacing: Layout.small) {
+                        HStack(alignment: .center, spacing: Layout.small) {
+                            TeamMark(
+                                abbreviation: latest.teamAbbreviation,
+                                primaryHex: latest.primaryHex,
+                                secondaryHex: latest.secondaryHex,
+                                size: 34
+                            )
                             Text(latest.teamName)
                                 .font(.titleFont)
                                 .foregroundStyle(Broadcast.ink)
@@ -234,14 +240,12 @@ struct LoadFranchiseView: View {
                         if app.league != nil { dismiss() }
                     } label: {
                         HStack(spacing: Layout.medium) {
-                            Circle()
-                                .fill(Color(hex: save.primaryHex))
-                                .frame(width: 34, height: 34)
-                                .overlay(
-                                    Text(save.teamAbbreviation)
-                                        .font(.caption2.weight(.heavy))
-                                        .foregroundStyle(.white)
-                                )
+                            TeamMark(
+                                abbreviation: save.teamAbbreviation,
+                                primaryHex: save.primaryHex,
+                                secondaryHex: save.secondaryHex,
+                                size: 34
+                            )
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(save.name)
                                     .font(.titleFont)
