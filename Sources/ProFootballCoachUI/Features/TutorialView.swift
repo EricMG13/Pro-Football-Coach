@@ -7,13 +7,14 @@ import FootballSimCore
 /// Coach tab. Deliberately short — five cards, each pointing at a real screen — because a wall
 /// of rules before kickoff is the fastest way to lose somebody.
 struct TutorialView: View {
+    @Environment(AppState.self) private var app
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var page = 0
 
     private struct Card: Identifiable {
         let id = UUID()
         let icon: String
-        let tint: Color
         let title: String
         let body: String
     }
@@ -21,7 +22,6 @@ struct TutorialView: View {
     private let cards: [Card] = [
         .init(
             icon: "sportscourt.fill",
-            tint: .green,
             title: "Your week",
             body: "The Season tab is the loop. Each week you either simulate the game or play it "
                 + "yourself — both run the same engine, so neither is the easy way out. Between "
@@ -29,7 +29,6 @@ struct TutorialView: View {
         ),
         .init(
             icon: "person.3.fill",
-            tint: .blue,
             title: "The roster is the team",
             body: "Fifty-three active players and sixteen on the practice squad. Swipe a player "
                 + "on the depth chart to call him up or send him down, and drag to reorder who "
@@ -37,7 +36,6 @@ struct TutorialView: View {
         ),
         .init(
             icon: "dollarsign.circle.fill",
-            tint: .orange,
             title: "The cap is the constraint",
             body: "Every contract counts against the cap, and cutting a player leaves dead money "
                 + "behind. Front Office is where you sign free agents, trade, and see exactly "
@@ -45,7 +43,6 @@ struct TutorialView: View {
         ),
         .init(
             icon: "gamecontroller.fill",
-            tint: .purple,
             title: "Playing a game",
             body: "Call the play, drag to aim the throw, release before the pocket collapses. "
                 + "Your quarterback's accuracy decides how much room a sloppy pass gets, so good "
@@ -53,7 +50,6 @@ struct TutorialView: View {
         ),
         .init(
             icon: "figure.american.football",
-            tint: .red,
             title: "Your career",
             body: "The owner sets goals every season and your job security moves with them. Hit "
                 + "them and you level up, earn skill points, and get offers from better teams. "
@@ -66,24 +62,30 @@ struct TutorialView: View {
             VStack(spacing: Layout.medium) {
                 TabView(selection: $page) {
                     ForEach(Array(cards.enumerated()), id: \.element.id) { index, card in
-                        VStack(spacing: Layout.large) {
-                            Spacer(minLength: Layout.large)
-                            Image(systemName: card.icon)
-                                .font(.system(size: 64))
-                                .foregroundStyle(card.tint)
-                            Text(card.title)
-                                .font(.system(.title, design: .rounded, weight: .bold))
-                                .multilineTextAlignment(.center)
-                            Text(card.body)
-                                .font(.body)
-                                .multilineTextAlignment(.center)
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, Layout.large)
-                            Spacer()
+                        VStack(alignment: .leading, spacing: Layout.medium) {
+                            Spacer(minLength: Layout.small)
                             Text("\(index + 1) of \(cards.count)")
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
+                                .font(.labelFont)
+                                .foregroundStyle(Broadcast.muted)
+                            HStack(alignment: .firstTextBaseline, spacing: Layout.small) {
+                                Image(systemName: card.icon)
+                                    .font(.caption)
+                                    .foregroundStyle(Broadcast.muted)
+                                    .accessibilityHidden(true)
+                                Text(card.title)
+                                    .font(.displayFont)
+                                    .foregroundStyle(Broadcast.ink)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Rule()
+                            Text(card.body)
+                                .font(.bodyFont)
+                                .foregroundStyle(Broadcast.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 0)
                         }
+                        .padding(.horizontal, Layout.medium)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, Layout.large)
                         .tag(index)
                     }
@@ -96,17 +98,18 @@ struct TutorialView: View {
                     if page == cards.count - 1 {
                         dismiss()
                     } else {
-                        withAnimation { page += 1 }
+                        // The page slide is decorative; a reader who asked for less motion gets
+                        // the next card without it.
+                        if reduceMotion { page += 1 } else { withAnimation { page += 1 } }
                     }
                 }
-                .font(.headline)
+                .font(.titleFont)
                 .frame(maxWidth: .infinity)
-                .padding(Layout.medium)
-                .background(Color.accentColor)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: Layout.cardRadius, style: .continuous))
+                .frame(minHeight: 44)
+                .buttonStyle(.borderedProminent)
                 .padding(Layout.medium)
             }
+            .background(Broadcast.page)
             .navigationTitle("How to Coach")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -115,6 +118,7 @@ struct TutorialView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Skip") { dismiss() } }
             }
         }
+        .preferredColorScheme(app.appearance.colorScheme)
     }
 }
 

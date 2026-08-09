@@ -37,21 +37,44 @@ public final class AppState {
 
     /// Identifier of the scenario this franchise started under, if any.
     public var activeScenario: String?
+
+    /// The scenario's objective, so the mode's whole win condition is not left to memory. It was
+    /// written once at start and read nowhere.
+    public var activeScenarioObjective: String? {
+        guard let activeScenario else { return nil }
+        return Scenario.all.first { $0.id == activeScenario }?.objective
+    }
     public var autosaveEnabled = true
 
     /// Appearance preference. Persisted outside the franchise, because it belongs to the person
     /// rather than to any one dynasty.
-    public var appearance: AppAppearance {
-        get {
-            AppAppearance(rawValue: UserDefaults.standard.string(forKey: Self.appearanceKey) ?? "")
-                ?? .system
-        }
-        set { UserDefaults.standard.set(newValue.rawValue, forKey: Self.appearanceKey) }
+    ///
+    /// Stored, then mirrored to `UserDefaults` on change — not computed over it. `@Observable`
+    /// only tracks stored properties, so a computed accessor wrote the choice to disk without
+    /// ever telling the root view to re-evaluate `preferredColorScheme`: the segmented control
+    /// moved, the setting survived a relaunch, and the app stayed light either way.
+    public var appearance: AppAppearance = AppAppearance(
+        rawValue: UserDefaults.standard.string(forKey: AppState.appearanceKey) ?? ""
+    ) ?? .system {
+        didSet { UserDefaults.standard.set(appearance.rawValue, forKey: Self.appearanceKey) }
     }
 
-    private static let appearanceKey = "pfc.appearance"
+    fileprivate static let appearanceKey = "pfc.appearance"
     public var lastError: String?
     public var isBusy = false
+
+    /// Something the coach just earned, waiting to be shown once. Every RPG payoff in the game
+    /// used to happen in silence: goals settled, levels rose and skill points appeared with no
+    /// moment attached to any of it.
+    public struct Payoff: Identifiable, Equatable, Sendable {
+        public let id = UUID()
+        public let title: String
+        public let detail: String
+    }
+
+    public private(set) var pendingPayoff: Payoff?
+
+    public func clearPayoff() { pendingPayoff = nil }
 
     private let store: SaveStore
     private let queue: SaveQueue
@@ -219,12 +242,48 @@ public final class AppState {
     }
 
     private func refreshGoals() {
+        guard let before = league?.coach else { return }
+        var completed: [CoachEngine.SeasonGoal] = []
+
         mutate { league in
             guard !league.seasonGoals.isEmpty else { return }
             var goals = league.seasonGoals
-            CoachEngine.settleGoals(&goals, league: &league)
+            completed = CoachEngine.settleGoals(&goals, league: &league)
             league.seasonGoals = goals
         }
+
+        guard let after = league?.coach else { return }
+        announce(completed: completed, before: before, after: after)
+    }
+
+    /// Turns what just changed on the coach into one thing worth showing. The completed-goals
+    /// return value was already there and was being discarded at the call site.
+    private func announce(
+        completed: [CoachEngine.SeasonGoal],
+        before: CoachProfile,
+        after: CoachProfile
+    ) {
+        let levelsGained = after.level - before.level
+
+        if levelsGained > 0 {
+            let points = after.skillPoints - before.skillPoints
+            pendingPayoff = Payoff(
+                title: "Level \(after.level)",
+                detail: points == 1
+                    ? "One skill point to spend."
+                    : "\(points) skill points to spend."
+            )
+            return
+        }
+
+        guard let goal = completed.first else { return }
+        pendingPayoff = Payoff(
+            title: "Goal met",
+            detail: completed.count == 1
+                ? "\(goal.description). +\(goal.experienceReward) XP."
+                : "\(goal.description), and \(completed.count - 1) more. "
+                    + "+\(completed.reduce(0) { $0 + $1.experienceReward }) XP."
+        )
     }
 
     /// The user's next scheduled game, if there is one.
@@ -339,23 +398,58 @@ public final class AppState {
 
     // MARK: - Re-signing
 
+    /// What happened to an extension offer. A refusal by the player and a refusal by the cap are
+    /// different events and used to be indistinguishable — both arrived as `false` and the screen
+    /// reported "Turned down", so a coach could spend three rounds negotiating against a wall.
+    public enum ReSignOutcome: Equatable, Sendable {
+        case signed
+        /// The player said no. Another offer may work.
+        case rejected
+        /// The offer cannot be made at all, with the reason to show.
+        case blocked(String)
+    }
+
     /// Offers an extension. The roll happens here so a marginal offer stays a gamble.
-    public func reSign(playerID: UUID, contract: Contract, chance: Double) -> Bool {
-        guard var league, let teamID = league.userTeam?.id else { return false }
+    ///
+    /// Affordability is checked *before* the roll. Rolling first meant a cap-blocked offer still
+    /// consumed a chance, and the coach could re-submit the identical terms for a fresh one —
+    /// a free re-roll on every deal the cap was never going to allow.
+    public func reSign(playerID: UUID, contract: Contract, chance: Double) -> ReSignOutcome {
+        guard var league, let team = league.userTeam else {
+            return .blocked("There is no franchise to sign him to.")
+        }
+
+        guard CapEngine.canAfford(contract, team: team, in: league) else {
+            let short = contract.currentCapHit - CapEngine.capSpace(for: team, in: league)
+            return .blocked(
+                "That deal is \(Format.money(max(0, short))) more than you have in cap space."
+            )
+        }
+
+        let isPromotion = team.roster.first { $0.id == playerID }?.isOnPracticeSquad == true
+            && contract.currentCapHit > CapEngine.practiceSquadContractCeiling
+        if isPromotion, team.activeRoster.count >= LeagueRules.activeRosterSize {
+            return .blocked("A deal that size needs an active roster place, and yours is full.")
+        }
+
         var rng = league.rng
         let accepted = rng.chance(chance)
         league.rng = rng
         guard accepted else {
             self.league = league
-            return false
+            return .rejected
         }
+
         let signed = ReSignEngine.reSign(
-            playerID: playerID, to: teamID, contract: contract, in: &league
+            playerID: playerID, to: teamID(of: league), contract: contract, in: &league
         )
         self.league = league
-        if signed { autosave() }
-        return signed
+        guard signed else { return .blocked("That deal could not be registered.") }
+        autosave()
+        return .signed
     }
+
+    private func teamID(of league: League) -> UUID { league.userTeamID }
 
     // MARK: - Roster actions
 

@@ -225,6 +225,78 @@ public enum PlayCaller {
         return situation.isInFieldGoalRange && fieldGoalChance > 0.5 ? .fieldGoal : .punt
     }
 
+    /// What the coordinator would do on fourth down, and the numbers behind it.
+    ///
+    /// The expected-value comparison already existed for the AI; the user was offered a kick and
+    /// a punt with nothing to judge them by, on the down coaches are actually remembered for.
+    public struct FourthDownAdvice: Sendable, Equatable {
+        public enum Call: Sendable, Equatable { case go, kick, punt }
+
+        public let call: Call
+        /// Chance of picking up the first down.
+        public let conversionChance: Double
+        /// Chance the kicker makes it, or zero when it is out of range.
+        public let fieldGoalChance: Double
+        /// One sentence, in the coordinator's voice.
+        public let sentence: String
+    }
+
+    public static func fourthDownAdvice(
+        situation: GameSituation,
+        team: Team
+    ) -> FourthDownAdvice {
+        let conversionChance = max(0.15, 0.72 - Double(situation.distance) * 0.055)
+        let fieldGoalChance = situation.isInFieldGoalRange
+            ? kickerFieldGoalProbability(team: team, distance: situation.fieldGoalDistance)
+            : 0
+
+        let trailing = situation.scoreDifferential < 0
+        let desperate = situation.quarter == 4 && trailing && situation.clockSeconds <= 300
+        let mustScore = desperate && situation.scoreDifferential < -8
+
+        let goValue = conversionChance * (situation.isRedZone ? 5.2 : 4.0)
+        let kickValue = fieldGoalChance * 3.0
+        let puntValue = situation.yardLine >= 60 ? 0.9 : 1.6
+
+        let call: FourthDownAdvice.Call
+        if situation.yardLine < 45, !mustScore, situation.distance > 1 {
+            call = .punt
+        } else if mustScore, situation.yardsToGoal > 5 {
+            call = .go
+        } else if kickValue >= goValue, kickValue >= puntValue {
+            call = .kick
+        } else if goValue > puntValue, goValue > kickValue {
+            call = .go
+        } else {
+            call = situation.isInFieldGoalRange && fieldGoalChance > 0.5 ? .kick : .punt
+        }
+
+        let conversion = Int((conversionChance * 100).rounded())
+        let sentence: String
+        switch call {
+        case .go:
+            sentence = mustScore
+                ? "You are out of time to trade points. Go."
+                : "Fourth and \(situation.distance) converts about \(conversion)% of the time. "
+                    + "That beats what a kick is worth here."
+        case .kick:
+            sentence = "From \(situation.fieldGoalDistance) yards he makes this about "
+                + "\(Int((fieldGoalChance * 100).rounded()))% of the time. Take the points."
+        case .punt:
+            sentence = situation.yardLine < 45
+                ? "Too deep in your own end to gamble. Punt it away."
+                : "Fourth and \(situation.distance) at this range is a coin flip you do not need. "
+                    + "Punt and back them up."
+        }
+
+        return FourthDownAdvice(
+            call: call,
+            conversionChance: conversionChance,
+            fieldGoalChance: fieldGoalChance,
+            sentence: sentence
+        )
+    }
+
     private static func runOrPassForShortYardage(
         team: Team,
         rng: inout SeededRandom

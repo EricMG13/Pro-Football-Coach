@@ -24,7 +24,7 @@ struct DraftDayView: View {
                 }
                 footer
             }
-            .background(Color.pageBackground)
+            .background(Broadcast.page)
             .navigationTitle("Draft Day")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -278,6 +278,7 @@ struct ReSignView: View {
         .sheet(item: $negotiating) { player in
             NegotiationSheet(player: player)
         }
+        .appearanceAware()
     }
 
     private var expiring: [Player] {
@@ -377,11 +378,16 @@ struct NegotiationSheet: View {
         rounds += 1
         // Rolling against the acceptance chance rather than gating on it keeps a negotiation
         // a negotiation: a marginal offer might work, and might not.
-        if app.reSign(playerID: player.id, contract: offer, chance: acceptance) {
+        switch app.reSign(playerID: player.id, contract: offer, chance: acceptance) {
+        case .signed:
             dismiss()
-        } else if rounds >= 3 {
+        case .blocked(let reason):
+            // Not a rejection: he never got to answer, so it does not cost a round.
+            rounds -= 1
+            message = reason
+        case .rejected where rounds >= 3:
             message = "He has ended talks and will test the market."
-        } else {
+        case .rejected:
             message = "Turned down. Try again with better terms."
         }
     }

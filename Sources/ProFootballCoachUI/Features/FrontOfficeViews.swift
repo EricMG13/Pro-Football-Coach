@@ -33,72 +33,110 @@ struct FrontOfficeView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Color.pageBackground)
+        .background(Broadcast.page)
         .navigationTitle("Front Office")
     }
 
+    /// The ledger: what you have, what you have spent, and what you are still paying players
+    /// who no longer play here.
     private var capCard: some View {
         VStack(alignment: .leading, spacing: Layout.small) {
-            SectionHeader("Salary Cap")
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Space").font(.caption).foregroundStyle(.secondary)
-                    Text(Format.signedMoney(app.capSpace))
-                        .font(.system(.title2, design: .rounded, weight: .bold))
-                        .foregroundStyle(app.capSpace >= 0 ? .green : .red)
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("Cap").font(.caption).foregroundStyle(.secondary)
-                    Text(Format.money(app.league?.salaryCap ?? 0)).font(.headline)
-                }
+            Text("Salary Cap")
+                .font(.titleFont)
+                .foregroundStyle(Broadcast.ink)
+
+            LedgerRow("Cap space") {
+                Text(Format.signedMoney(app.capSpace))
+                    .foregroundStyle(app.capSpace >= 0 ? Broadcast.ink : Color(hex: RatingTier.fringe.lightHex))
+            }
+            Rule()
+            LedgerRow("Salary cap") {
+                Text(Format.money(app.league?.salaryCap ?? 0)).foregroundStyle(Broadcast.ink)
             }
 
             if let league = app.league, let team = league.userTeam {
                 let spent = CapEngine.capSpent(for: team, deadMoney: league.deadMoney[team.id] ?? 0)
                 let dead = league.deadMoney[team.id] ?? 0
-                GeometryReader { proxy in
-                    let width = proxy.size.width
-                    let spentFraction = min(1, Double(spent) / Double(max(1, league.salaryCap)))
-                    let deadFraction = min(1, Double(dead) / Double(max(1, league.salaryCap)))
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color.secondary.opacity(0.15))
-                        Capsule().fill(Color.accentColor).frame(width: width * spentFraction)
-                        Capsule().fill(Color.red).frame(width: width * deadFraction)
-                    }
+                Rule()
+                LedgerRow("Committed to the roster") {
+                    Text(Format.money(spent - dead)).foregroundStyle(Broadcast.ink)
                 }
-                .frame(height: 10)
+                Rule()
+                LedgerRow("Dead money") {
+                    Text(Format.money(dead))
+                        .foregroundStyle(dead > 0 ? Color(hex: RatingTier.fringe.lightHex) : Broadcast.muted)
+                }
+                Rule()
 
-                HStack {
-                    Label(Format.money(spent - dead), systemImage: "person.fill")
-                    Spacer()
-                    Label("\(Format.money(dead)) dead", systemImage: "xmark.circle")
-                        .foregroundStyle(dead > 0 ? .red : .secondary)
-                }
-                .font(.caption)
+                // Say the number, then say what it means.
+                Text(capSentence(space: app.capSpace, dead: dead))
+                    .font(.bodyFont)
+                    .foregroundStyle(app.capSpace < 0 ? Broadcast.ink : Broadcast.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityLabel(capSentence(space: app.capSpace, dead: dead))
             }
         }
         .card()
+    }
+
+    /// The consequence, in the coach's terms. Over the cap is a deadline, not a red number.
+    private func capSentence(space: Int, dead: Int) -> String {
+        if space < 0 {
+            return "You are \(Format.money(-space)) over. That has to be cleared before the season "
+                + "opens — release someone, restructure, or the league does it for you."
+        }
+        if dead > 0 {
+            return "\(Format.money(dead)) of that is dead money: players you are still paying who "
+                + "play somewhere else. \(Format.money(space)) is yours to spend."
+        }
+        return "\(Format.money(space)) to spend, and nothing owed to anyone who has left."
     }
 
     private var ownerCard: some View {
         VStack(alignment: .leading, spacing: Layout.small) {
-            SectionHeader("Ownership")
+            Text("Ownership")
+                .font(.titleFont)
+                .foregroundStyle(Broadcast.ink)
+
             if let league = app.league, let team = league.userTeam {
-                SummaryRow(label: "Owner patience", value: String(repeating: "●", count: team.ownerPatience))
-                SummaryRow(label: "Job security", value: "\(league.coach.jobSecurity)%")
-                ProgressView(value: Double(league.coach.jobSecurity), total: 100)
-                    .tint(securityColor(league.coach.jobSecurity))
+                LedgerRow("Patience") {
+                    Text(patienceWord(team.ownerPatience)).foregroundStyle(Broadcast.ink)
+                }
+                Rule()
+                LedgerRow("Job security") {
+                    Text("\(league.coach.jobSecurity)%").foregroundStyle(Broadcast.ink)
+                }
+                Rule()
+                Text(securitySentence(league.coach.jobSecurity))
+                    .font(.bodyFont)
+                    .foregroundStyle(Broadcast.muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .card()
     }
 
-    private func securityColor(_ value: Int) -> Color {
+    /// Patience was drawn as repeated bullet glyphs, which say nothing to a screen reader and
+    /// nothing to anyone who has not counted them.
+    private func patienceWord(_ value: Int) -> String {
         switch value {
-        case ..<25: .red
-        case ..<55: .orange
-        default: .green
+        case ...1: "Thin"
+        case 2: "Short"
+        case 3: "Even"
+        case 4: "Long"
+        default: "Deep"
+        }
+    }
+
+    /// The thresholds that actually govern the career, said out loud rather than left as a bar.
+    private func securitySentence(_ value: Int) -> String {
+        switch value {
+        case ..<25:
+            "The owner is listening to other names. Below 12 and the decision is made for you."
+        case ..<55:
+            "You are being watched. A run of wins settles this; another bad month does not."
+        default:
+            "Nobody is asking about your job. Keep it there and the extension writes itself."
         }
     }
 
@@ -206,6 +244,7 @@ struct FreeAgencyView: View {
         .sheet(item: $offering) { player in
             OfferSheet(player: player, asking: askingPrice(player))
         }
+        .appearanceAware()
     }
 
     private var filtered: [Player] {
@@ -342,6 +381,8 @@ struct TradeCenterView: View {
     var body: some View {
         List {
             Section("Trade Partner") {
+                // Switching partner used to leave both sides' selections in place, so a package
+                // could be assembled from players who were never on the table.
                 Picker("Team", selection: $partnerID) {
                     Text("Choose a team").tag(UUID?.none)
                     ForEach(otherTeams) { team in
@@ -375,10 +416,17 @@ struct TradeCenterView: View {
                     .disabled(partnerID == nil || (sending.isEmpty && receiving.isEmpty))
                 if let verdict {
                     Text(verdict)
-                        .font(.subheadline)
-                        .foregroundStyle(verdict.hasPrefix("Accepted") ? .green : .orange)
+                        .font(.bodyFont)
+                        .foregroundStyle(Broadcast.ink)
                 }
             }
+        }
+        // Switching partner used to leave both sides' selections in place, so a package could be
+        // assembled from players who were never on the table.
+        .onChange(of: partnerID) { _, _ in
+            sending.removeAll()
+            receiving.removeAll()
+            verdict = nil
         }
         .navigationTitle("Trade Center")
     }

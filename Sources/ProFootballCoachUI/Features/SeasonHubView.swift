@@ -9,6 +9,7 @@ struct SeasonHubView: View {
     @State private var segment = Segment.standings
     @State private var showingPreview = false
     @State private var playMode: PlayMode?
+    @State private var confirmingSimWeek = false
 
     enum Segment: String, CaseIterable {
         case standings = "Standings"
@@ -24,7 +25,28 @@ struct SeasonHubView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Layout.medium) {
-                phaseCard
+                masthead
+
+                if let objective = app.activeScenarioObjective {
+                    HStack(alignment: .top, spacing: Layout.small) {
+                        Image(systemName: "target")
+                            .font(.caption)
+                            .foregroundStyle(theme.tint)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Your objective")
+                                .font(.labelFont)
+                                .foregroundStyle(Broadcast.muted)
+                            Text(objective)
+                                .font(.bodyFont)
+                                .foregroundStyle(Broadcast.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .card()
+                    .accessibilityElement(children: .combine)
+                }
 
                 if let league = app.league {
                     if league.phase.isOffseason {
@@ -45,38 +67,67 @@ struct SeasonHubView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Color.pageBackground)
-        .navigationTitle(app.league?.phase.label ?? "Season")
+        .background(Broadcast.page)
+        .inlineTitleCompat()
+        .navigationTitle("")
         .sheet(isPresented: $showingPreview) {
             if let game = app.nextGame { MatchupPreviewSheet(game: game) }
+        }
+        .appearanceAware()
+        .confirmationDialog(
+            "Sim this week?",
+            isPresented: $confirmingSimWeek,
+            titleVisibility: .visible
+        ) {
+            Button("Sim the week", role: .destructive) { app.advanceWeek() }
+            Button("Go back", role: .cancel) {}
+        } message: {
+            Text("Your game is played for you and the result stands. You cannot replay it.")
         }
         .fullScreenCoverCompat(item: $playMode) { mode in
             if let game = app.nextGame {
                 switch mode {
                 case .onField: ArcadeFieldView(game: game)
-                case .callPlays: LiveGameView(game: game, arcade: false)
+                case .callPlays: LiveGameView(game: game)
                 }
             }
         }
+        .appearanceAware()
     }
 
     // MARK: - Cards
 
-    private var phaseCard: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(String(app.league?.year ?? 0)) Season")
-                    .font(.headline)
-                Text(app.league?.phase.label ?? "")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+    /// The page head: the club's mark and name, then the year, phase and record as chips.
+    private var masthead: some View {
+        VStack(alignment: .leading, spacing: Layout.tight) {
+            HStack(spacing: Layout.small) {
+                if let team = app.userTeam { TeamMark(team: team, size: 34) }
+                Text(app.userTeam?.fullName ?? "The League")
+                    .font(.titleFont)
+                    .foregroundStyle(Broadcast.ink)
+                Spacer(minLength: 0)
             }
-            Spacer()
-            if let record = userRecord {
-                Chip(record.description, color: theme.primary, filled: true)
+
+            // Year and record share the top line; the phase gets its own so a long label like
+            // "Conference Championships" cannot wrap and shove the record out of alignment.
+            HStack(spacing: Layout.tight) {
+                Stamp(String(app.league?.year ?? 0), color: theme.primary)
+                Stamp(app.league?.phase.label ?? "", color: Broadcast.muted)
+                Spacer(minLength: 0)
+                if let record = userRecord {
+                    Stamp(record.description, color: theme.primary, filled: true)
+                }
             }
         }
-        .card()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(mastheadReading)
+    }
+
+    private var mastheadReading: String {
+        let team = app.userTeam?.fullName ?? "The league"
+        let phase = app.league?.phase.label ?? ""
+        let record = userRecord.map { ", \($0.description)" } ?? ""
+        return "\(team). \(String(app.league?.year ?? 0)) \(phase)\(record)."
     }
 
     private var preseasonCard: some View {
@@ -125,69 +176,102 @@ struct SeasonHubView: View {
         .background(RoundedRectangle(cornerRadius: 14).fill(.white.opacity(0.16)))
     }
 
+    /// The week's story, and the surface that earns the colour band.
     private func matchupCard(_ game: ScheduledGame) -> some View {
-        VStack(spacing: Layout.medium) {
-            HStack {
-                Chip("Week \(game.week)", color: theme.primary, filled: true)
-                Spacer()
-                Chip(game.homeTeamID == app.league?.userTeamID ? "HOME" : "AWAY", color: .orange)
+        BroadcastBand {
+            HStack(spacing: Layout.tight) {
+                Text("Week \(game.week)")
+                    .font(.labelFont)
+                    .foregroundStyle(.white)
+                Text("·").foregroundStyle(.white.opacity(0.6))
+                Text(game.homeTeamID == app.league?.userTeamID ? "Home" : "Away")
+                    .font(.labelFont)
+                    .foregroundStyle(.white.opacity(0.85))
+                Spacer(minLength: 0)
             }
+        } content: {
+            VStack(alignment: .leading, spacing: Layout.medium) {
 
             if let league = app.league,
                let home = league.team(id: game.homeTeamID),
                let away = league.team(id: game.awayTeamID) {
-                HStack(spacing: Layout.medium) {
-                    teamColumn(away, league: league)
-                    Text("@").font(.headline).foregroundStyle(.secondary)
-                    teamColumn(home, league: league)
+                HStack(alignment: .center, spacing: Layout.small) {
+                    editionTeam(away, league: league)
+                    Text("at")
+                        .font(.bodyFont)
+                        .foregroundStyle(Broadcast.muted)
+                    editionTeam(home, league: league)
                 }
+                .frame(maxWidth: .infinity)
 
-                MatchupPredictionRow(home: home, away: away, showSpread: league.settings.showPredictionLine)
+                Text(MatchupOdds.summary(home: home, away: away, userTeamID: league.userTeamID))
+                    .font(.bodyFont)
+                    .foregroundStyle(Broadcast.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             Button { showingPreview = true } label: {
-                Text("Tap for full matchup preview")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: Layout.tight) {
+                    Text("The full preview")
+                    Image(systemName: "chevron.right").font(.caption2)
+                }
+                .font(.labelFont)
+                .foregroundStyle(theme.tint)
+                .padding(.vertical, Layout.small)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
 
             VStack(spacing: Layout.small) {
+                Button { playMode = .callPlays } label: {
+                    Label("Call the Plays", systemImage: "list.clipboard")
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 30)
+                }
+                .buttonStyle(.borderedProminent)
+
                 HStack(spacing: Layout.small) {
-                    Button {
-                        app.advanceWeek()
-                    } label: {
-                        Label("Sim Week", systemImage: "forward.fill")
+                    Button { playMode = .onField } label: {
+                        Label("On the Field", systemImage: "gamecontroller.fill")
                             .frame(maxWidth: .infinity)
+                            .frame(minHeight: 30)
                     }
                     .buttonStyle(.bordered)
 
-                    Button { playMode = .callPlays } label: {
-                        Label("Call the Plays", systemImage: "list.clipboard")
+                    Button { confirmingSimWeek = true } label: {
+                        Label("Sim", systemImage: "forward.fill")
                             .frame(maxWidth: .infinity)
+                            .frame(minHeight: 30)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.bordered)
                 }
-                Button { playMode = .onField } label: {
-                    Label("On the Field", systemImage: "gamecontroller.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .tint(.orange)
+            }
             }
         }
-        .card()
     }
 
-    private func teamColumn(_ team: Team, league: League) -> some View {
-        VStack(spacing: 4) {
-            TeamBadge(team: team, size: 44)
-            Text(team.abbreviation).font(.subheadline.weight(.bold))
-            Text(league.record(for: team.id).description)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            Chip("OVR \(Int(team.overallRating))", color: RatingPalette.color(for: team.overallRating))
+    private func editionTeam(_ team: Team, league: League) -> some View {
+        VStack(spacing: Layout.tight) {
+            TeamMark(team: team, size: 46)
+            Text(team.name)
+                .font(.titleFont)
+                .foregroundStyle(Broadcast.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            HStack(spacing: 4) {
+                Text(league.record(for: team.id).description)
+                    .font(.labelFont)
+                    .foregroundStyle(Broadcast.muted)
+                Stamp("\(Int(team.overallRating))", color: RatingPalette.color(for: team.overallRating))
+            }
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "\(team.fullName), \(league.record(for: team.id).description), "
+                + "overall \(Int(team.overallRating))"
+        )
     }
 
     private var byeCard: some View {
@@ -205,24 +289,38 @@ struct SeasonHubView: View {
         .card()
     }
 
+    /// Last week's result, written as a line of the record rather than boxed in a card with a
+    /// coloured pill. The outcome is a word, so it survives without colour.
     private func lastGameCard(_ record: GameRecord) -> some View {
-        NavigationLink {
+        let won = record.didWin(app.league?.userTeamID ?? UUID())
+        let outcome = won ? "Won" : (record.isTie ? "Tied" : "Lost")
+        let tier: Color = won
+            ? Color(hex: RatingTier.starter.lightHex)
+            : Color(hex: RatingTier.fringe.lightHex)
+
+        return NavigationLink {
             GameReportView(record: record)
         } label: {
-            HStack {
+            HStack(spacing: Layout.small) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Your Last Game").font(.caption).foregroundStyle(.secondary)
-                    Text(scoreline(record)).font(.headline)
+                    Text("Last week")
+                        .font(.labelFont)
+                        .foregroundStyle(Broadcast.muted)
+                    Text(scoreline(record))
+                        .font(.figureFont)
+                        .foregroundStyle(Broadcast.ink)
                 }
-                Spacer()
-                let won = record.didWin(app.league?.userTeamID ?? UUID())
-                Chip(won ? "WIN" : (record.isTie ? "TIE" : "LOSS"), color: won ? .green : .red, filled: true)
-                Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+                Spacer(minLength: 0)
+                Stamp(outcome, color: tier, filled: true)
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(Broadcast.muted)
             }
             .card()
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Last week: \(outcome), \(scoreline(record)). Opens the game report.")
     }
 
     // MARK: - Segments
@@ -265,45 +363,73 @@ struct SeasonHubView: View {
     }
 }
 
-/// Spread and win-probability pills shown on the matchup card.
-struct MatchupPredictionRow: View {
+/// The week's lede: one authored sentence, then the numbers behind it.
+///
+/// Replaces the LINE / WIN % / EDGE pill row carried over from the reference app — three numbers
+/// the reader had to assemble into a meaning. This states the meaning first, in the
+/// coordinator's voice, and keeps the figures underneath where they can be checked.
+struct MatchupLede: View {
     let home: Team
     let away: Team
+    let userTeamID: UUID
     let showSpread: Bool
 
-    private var edge: Double {
-        home.overallRating + Double(PlayMatrix.homeFieldRatingBonus) - away.overallRating
-    }
-
-    /// Logistic map from rating edge to win probability.
-    private var homeWinProbability: Double {
-        1 / (1 + pow(2.718_281_8, -edge * 0.16))
-    }
-
     var body: some View {
-        HStack(spacing: Layout.small) {
-            if showSpread {
-                pill(
-                    "LINE",
-                    edge >= 0
-                        ? "\(home.abbreviation) -\(String(format: "%.1f", edge * 0.55))"
-                        : "\(away.abbreviation) -\(String(format: "%.1f", -edge * 0.55))",
-                    .blue
-                )
+        VStack(alignment: .leading, spacing: Layout.small) {
+            Text(MatchupOdds.summary(home: home, away: away, userTeamID: userTeamID))
+                .font(.bodyFont)
+                .foregroundStyle(Broadcast.ink)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Rule()
+
+            HStack(alignment: .firstTextBaseline, spacing: Layout.medium) {
+                if showSpread {
+                    figure("Line", spreadLabel)
+                }
+                figure("Win", "\(Int((winProbabilityForReader * 100).rounded()))%")
+                Spacer(minLength: 0)
             }
-            pill("WIN %", "\(Int(homeWinProbability * 100))%", homeWinProbability > 0.5 ? .green : .red)
-            pill("EDGE", edge >= 0 ? "+\(Int(edge))" : "\(Int(edge))", edge >= 0 ? .green : .red)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func figure(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Layout.tight) {
+            Text(label.uppercased())
+                .font(.labelFont)
+                .tracking(0.6)
+                .foregroundStyle(Broadcast.muted)
+            Text(value)
+                .font(.figureFont)
+                .foregroundStyle(Broadcast.ink)
         }
     }
 
-    private func pill(_ label: String, _ value: String, _ color: Color) -> some View {
-        VStack(spacing: 2) {
-            Text(label).font(.caption2).foregroundStyle(.secondary)
-            Text(value).font(.subheadline.weight(.semibold)).foregroundStyle(color)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, Layout.tight)
-        .background(RoundedRectangle(cornerRadius: Layout.chipRadius).fill(Color.secondary.opacity(0.10)))
+    /// Always stated from the reader's side when they are playing, so "62%" never silently means
+    /// the opponent.
+    private var winProbabilityForReader: Double {
+        let homeProbability = MatchupOdds.homeWinProbability(home: home, away: away)
+        return home.id == userTeamID ? homeProbability : 1 - homeProbability
+    }
+
+    private var spreadLabel: String {
+        let spread = MatchupOdds.spread(home: home, away: away)
+        let favourite = spread >= 0 ? home : away
+        return "\(favourite.abbreviation) −\(String(format: "%.1f", abs(spread)))"
+    }
+}
+
+/// `navigationBarTitleDisplayMode` is iOS-only; the package also type-checks on macOS.
+extension View {
+    @ViewBuilder
+    func inlineTitleCompat() -> some View {
+        #if os(iOS)
+        navigationBarTitleDisplayMode(.inline)
+        #else
+        self
+        #endif
     }
 }
 

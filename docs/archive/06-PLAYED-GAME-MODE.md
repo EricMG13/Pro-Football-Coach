@@ -17,7 +17,12 @@ what your thumb can do. Build plan: `plans/2026-08-09-arcade-all22.md` (Phase 4C
 
 Choice made on the pre-game screen; switchable at halftime (downgrade only: Field → Plays → Sim).
 All three feed the identical `GameRecord`/`StatLine` pipeline — box scores, stats, news, XP work
-unchanged.
+unchanged, and from the rebuild forward that pipeline also carries the chronicle's events
+(`03-ARCHITECTURE.md` §5), so a played game narrates itself exactly like a simmed one.
+
+**Standing ruling (OD-2, confirmed at gate 1):** On the Field is never required and never
+advantaged. Call the Plays is the core strategy path and a hero surface (`04-SCREENS-UI.md` §6);
+the fast session's immediacy comes from the management game, not from this mode.
 
 ## 2. Design pillars (and where we beat the inspiration)
 
@@ -37,7 +42,9 @@ unchanged.
      you then execute. Audible = re-deal variation within the same call family.
    - *"Too easy / dumb difficulty"* → difficulty scales **defender reaction delay + closing-speed
      multiplier + AI coverage discipline**, never stat cheats. Dynamic difficulty option post-v1.
-5. **Session parity with management layer:** injuries, fatigue, morale, coach skills all flow.
+5. **Session parity with management layer:** injuries, fatigue, morale, coach skills, promises and
+   the chronicle all flow through unchanged (`02-GAME-DESIGN.md` §6, §11) — a promise kept or
+   broken on this field lands the same card it would have from a simmed game.
 
 ## 3. The all-22 field
 
@@ -70,8 +77,10 @@ OT coin toss.
    reflex.
 6. Run plays: blocking opens visible lanes (widths from line duels, §4); a suggested-lane
    highlight (quality from RB Vision) marks the crease; steer with jukes.
-7. 4th down / end-half prompt: Go / FG / Punt with EV hint (quality gated by Fourth-Down
-   Analytics coach skill).
+7. 4th down / end-half prompt: the **StakesPanel** (`DESIGN.md` §7) — Go / FG / Punt, each with
+   its **true engine probability**, never a flattering or fudged one (`02-GAME-DESIGN.md` §4
+   presentation contract), plus the coach's recommendation whose quality is gated by the
+   Fourth-Down Analytics skill.
 8. **Kick meter** (carried over from 4B, unchanged): two taps — power bar, sweeping aim arrow;
    wind icon to aim against. Sweep speed ↓ with KickAccuracy, range from KickPower (max 66 yds),
    both degrade slightly late-game (fatigue).
@@ -106,6 +115,7 @@ OT coin toss.
 | Injury status | Injured mid-game → next man up from depth chart, toast shown |
 | **In-game fatigue** (transient, not persisted) | Heavy-usage carriers lose top speed late (recovers between drives; Iron Man halves, age > 30 amplifies). Resets postgame |
 | Traits | Clutch (+3 effective OVR in Q4 one-score — affects scatter/speed/windows), Boom-Bust (scatter ×1.4 but big-play speed burst), others per `02` §3 |
+| **Star ability** (Elite, 90+) | The player's one named ability applies here exactly as it does in the sim, with the same visible activation condition and the same counter, shown on the field as a labeled state — never a hidden modifier (`02-GAME-DESIGN.md` §3) |
 
 **Openness indicator (honest colors, awareness sets timing):** each eligible receiver shows
 green (**open**: separation ≥ 3.0 yd, not closing fast), orange (**maybe**: 1.5–3.0 yd, *or*
@@ -173,8 +183,16 @@ discipline. Player-skill ceiling stays high; stats set the floor.
   labeled buttons (target list with openness states, fight/secure), so the mode is fully playable
   without gestures. Reduce Motion: decorative motion (celebrations, ball-slide flourishes) stops;
   state changes present instantly.
+- **Primetime applies here in full** (`DESIGN.md`) — this mode is not a visual exception. The
+  **ScoreStrip** is the same component with the same occasion accent (§2.7). Scores, finals and
+  records resolve through the §2.3 staging grammar — anticipate, hold, resolve, settle — with the
+  identical treatment a simmed final gets. Feedback speaks the shared semantic vocabulary: the
+  six-sound kit (`tick`, `card`, `up`, `down`, `sting-final`, `fanfare`) and the haptic events
+  (`.reveal`, `.positive`, `.negative`, `.stakes`, `.milestone`) of §2.4–2.5, fired by the single
+  staging owner, never by the field view itself. `fanfare` and `.championship` stay tier-4 only —
+  winning a regular-season game on the field does not borrow the title celebration.
 - Sound: light original SFX (crowd swell, hit thud, whistle); haptics on catches/tackles/kicks.
-  Mute respects silent switch.
+  Mute respects silent switch, and both channels have user toggles.
 
 ## 8. Scope & phasing
 

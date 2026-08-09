@@ -332,8 +332,9 @@ public extension View {
     func card() -> some View { modifier(CardBackground()) }
 }
 
-/// A small pill used for every piece of metadata in the app: week numbers, positions,
-/// home and away, contract years.
+/// The metadata pill. Kept as the name three dozen call sites already use; the rendering is
+/// `Stamp`, so those sites inherit its verified tint and its self-correcting fill rather than
+/// each carrying a colour nobody measured.
 public struct Chip: View {
     let text: String
     var color: Color = .secondary
@@ -345,16 +346,7 @@ public struct Chip: View {
         self.filled = filled
     }
 
-    public var body: some View {
-        Text(text)
-            .font(.caption2.weight(.semibold))
-            .padding(.horizontal, Layout.small)
-            .padding(.vertical, 4)
-            .foregroundStyle(filled ? Color.white : color)
-            .background(
-                Capsule().fill(filled ? color : color.opacity(0.14))
-            )
-    }
+    public var body: some View { Stamp(text, color: color, filled: filled) }
 }
 
 /// Section header with an optional trailing accessory.

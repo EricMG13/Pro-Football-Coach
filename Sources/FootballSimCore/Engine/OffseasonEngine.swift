@@ -464,10 +464,18 @@ public enum OffseasonEngine {
             FreeAgencyEngine.fillRosterHoles(&league)
 
         case .draft:
-            prospects = DraftClassFactory.makeClass(year: league.year + 1, rng: &league.rng)
+            // Draft the board the coach has been scouting all season. This used to replace it
+            // outright, which threw away every point spent on it — and, once the class was drawn
+            // at kickoff, minted a second class of players into the league.
+            if prospects.isEmpty {
+                prospects = DraftClassFactory.makeClass(year: league.year + 1, rng: &league.rng)
+            }
             picks = TradeEngine.makePicks(for: league)
             DraftEngine.runDraft(&league, prospects: &prospects, picks: picks)
             DraftEngine.signUndrafted(&league, prospects: &prospects)
+            // The class has been consumed. Leaving the remainder behind would carry the same
+            // ageing prospects into next year's board and keep re-signing them.
+            prospects = []
 
         case .trainingCamp:
             ProgressionEngine.runTrainingCamp(&league)
@@ -590,7 +598,10 @@ public enum OffseasonEngine {
 
     /// Runs the entire offseason unattended — used by soak tests and by simming ahead.
     public static func runFullOffseason(_ league: inout League) {
-        var prospects: [DraftProspect] = []
+        // Start from the league's own board — the class drawn at kickoff and scouted all season.
+        // A detached local array left that class unconsumed on the league while the draft minted
+        // a second one, which is how ageing prospects piled up year after year.
+        var prospects: [DraftProspect] = league.draftClass
         var picks: [DraftPick] = []
         var guardCounter = 0
         while league.phase.isOffseason && guardCounter < OffseasonStage.allCases.count + 2 {
@@ -602,5 +613,6 @@ public enum OffseasonEngine {
             }
             guardCounter += 1
         }
+        league.draftClass = prospects
     }
 }

@@ -15,6 +15,7 @@ struct NewFranchiseWizard: View {
     @State private var settings = LeagueSettings()
     @State private var saveName = ""
     @State private var search = ""
+    @State private var confirmingCancel = false
 
     private var selectedEntry: TeamTable.Entry { TeamTable.entries[teamIndex] }
 
@@ -22,6 +23,7 @@ struct NewFranchiseWizard: View {
         NavigationStack {
             VStack(spacing: 0) {
                 StepIndicator(current: step, total: 4)
+                    .padding(.horizontal, Layout.medium)
                     .padding(.vertical, Layout.small)
 
                 Group {
@@ -35,14 +37,35 @@ struct NewFranchiseWizard: View {
 
                 footer
             }
-            .background(Color.pageBackground)
+            .background(Broadcast.page)
+            .scrollContentBackground(.hidden)
             .navigationTitle(title)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") { confirmingCancel = true }
                 }
             }
         }
+        // Founding a franchise is four steps of input. A stray downward swipe used to throw all
+        // of it away without a word.
+        .interactiveDismissDisabled(hasEnteredSomething)
+        .confirmationDialog(
+            "Leave without starting?",
+            isPresented: $confirmingCancel,
+            titleVisibility: .visible
+        ) {
+            Button("Discard", role: .destructive) { dismiss() }
+            Button("Keep setting up", role: .cancel) {}
+        } message: {
+            Text("Your team, coach and rules are not saved until you start the franchise.")
+        }
+        // A sheet sits outside the root's hierarchy, so the chosen appearance does not reach it.
+        .preferredColorScheme(app.appearance.colorScheme)
+    }
+
+    /// Anything worth warning about before a dismissal throws it away.
+    private var hasEnteredSomething: Bool {
+        step > 0 || !coachName.isEmpty || !saveName.isEmpty
     }
 
     private var title: String {
@@ -77,20 +100,25 @@ struct NewFranchiseWizard: View {
                                     HStack(spacing: Layout.medium) {
                                         TeamBadge(
                                             abbreviation: entry.abbreviation,
-                                            primaryHex: entry.primaryHex
+                                            primaryHex: entry.primaryHex,
+                                            secondaryHex: entry.secondaryHex
                                         )
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text("\(entry.city) \(entry.name)").font(.headline)
+                                            Text("\(entry.city) \(entry.name)")
+                                                .font(.titleFont)
+                                                .foregroundStyle(Broadcast.ink)
                                             Text(entry.stadium)
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
+                                                .font(.labelFont)
+                                                .foregroundStyle(Broadcast.muted)
                                         }
-                                        Spacer()
-                                        if teamIndex == index {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .foregroundStyle(.green)
-                                        }
+                                        Spacer(minLength: Layout.tight)
+                                        if teamIndex == index { Stamp("Chosen") }
                                     }
+                                    .accessibilityElement(children: .combine)
+                                    .accessibilityLabel(
+                                        "\(entry.city) \(entry.name), \(entry.stadium)"
+                                            + (teamIndex == index ? ". Chosen." : "")
+                                    )
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -116,14 +144,21 @@ struct NewFranchiseWizard: View {
                     } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(option.displayName).font(.headline)
-                                Text(option.detail).font(.caption).foregroundStyle(.secondary)
+                                Text(option.displayName)
+                                    .font(.titleFont)
+                                    .foregroundStyle(Broadcast.ink)
+                                Text(option.detail)
+                                    .font(.labelFont)
+                                    .foregroundStyle(Broadcast.muted)
                             }
-                            Spacer()
-                            if background == option {
-                                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                            }
+                            Spacer(minLength: Layout.tight)
+                            if background == option { Stamp("Chosen") }
                         }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(
+                            "\(option.displayName). \(option.detail)"
+                                + (background == option ? " Chosen." : "")
+                        )
                     }
                     .buttonStyle(.plain)
                 }
@@ -172,31 +207,57 @@ struct NewFranchiseWizard: View {
     private var confirmStep: some View {
         ScrollView {
             VStack(spacing: Layout.medium) {
-                VStack(spacing: Layout.small) {
-                    TeamBadge(
-                        abbreviation: selectedEntry.abbreviation,
-                        primaryHex: selectedEntry.primaryHex,
-                        size: 64
-                    )
-                    Text("\(selectedEntry.city) \(selectedEntry.name)")
-                        .font(.system(.title2, design: .rounded, weight: .bold))
-                    Text("\(selectedEntry.conference.displayName) · \(selectedEntry.division.displayName)")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .card()
+                VStack(alignment: .leading, spacing: Layout.small) {
+                    Text("The appointment")
+                        .font(.labelFont)
+                        .foregroundStyle(Broadcast.muted)
 
-                VStack(spacing: Layout.small) {
-                    SummaryRow(label: "Coach", value: coachName)
-                    SummaryRow(label: "Age", value: "\(age)")
-                    SummaryRow(label: "Background", value: background.displayName)
-                    SummaryRow(label: "Playoffs", value: settings.playoffFormat.displayName)
-                    SummaryRow(label: "Trades", value: settings.tradeDifficulty.displayName)
-                    SummaryRow(label: "Salary cap", value: settings.salaryCapEnabled ? "On" : "Off")
-                    SummaryRow(label: "Injuries", value: settings.injuriesEnabled ? "On" : "Off")
+                    HStack(spacing: Layout.medium) {
+                        TeamBadge(
+                            abbreviation: selectedEntry.abbreviation,
+                            primaryHex: selectedEntry.primaryHex,
+                            secondaryHex: selectedEntry.secondaryHex,
+                            size: 56
+                        )
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(selectedEntry.city) \(selectedEntry.name)")
+                                .font(.displayFont)
+                                .foregroundStyle(Broadcast.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Text("\(selectedEntry.conference.displayName) · \(selectedEntry.division.displayName)")
+                                .font(.labelFont)
+                                .foregroundStyle(Broadcast.muted)
+                        }
+                        Spacer(minLength: 0)
+                    }
+
+                    Rule()
+
+                    LedgerRow("Coach") { Text(coachName).foregroundStyle(Broadcast.ink) }
+                    Rule()
+                    LedgerRow("Age") { Text("\(age)").foregroundStyle(Broadcast.ink) }
+                    Rule()
+                    LedgerRow("Background") {
+                        Text(background.displayName).foregroundStyle(Broadcast.ink)
+                    }
+                    Rule()
+                    LedgerRow("Playoffs") {
+                        Text(settings.playoffFormat.displayName).foregroundStyle(Broadcast.ink)
+                    }
+                    Rule()
+                    LedgerRow("Trades") {
+                        Text(settings.tradeDifficulty.displayName).foregroundStyle(Broadcast.ink)
+                    }
+                    Rule()
+                    LedgerRow("Salary cap") {
+                        Text(settings.salaryCapEnabled ? "On" : "Off").foregroundStyle(Broadcast.ink)
+                    }
+                    Rule()
+                    LedgerRow("Injuries") {
+                        Text(settings.injuriesEnabled ? "On" : "Off").foregroundStyle(Broadcast.ink)
+                    }
+                    Rule()
                 }
-                .card()
             }
             .padding(Layout.medium)
         }
@@ -242,19 +303,38 @@ struct NewFranchiseWizard: View {
     }
 }
 
+/// Where you are in the founding, said rather than dotted.
+///
+/// This was a row of accent capsules that widened on the current step — the reference app's
+/// onboarding signature. This numbers its steps and rules underneath them instead.
 struct StepIndicator: View {
     let current: Int
     let total: Int
 
     var body: some View {
-        HStack(spacing: Layout.small) {
-            ForEach(0..<total, id: \.self) { index in
-                Capsule()
-                    .fill(index <= current ? Color.accentColor : Color.secondary.opacity(0.25))
-                    .frame(width: index == current ? 26 : 10, height: 6)
-                    .animation(.snappy, value: current)
+        VStack(alignment: .leading, spacing: Layout.tight) {
+            Text("Step \(current + 1) of \(total)")
+                .font(.labelFont)
+                .foregroundStyle(Broadcast.muted)
+
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Rectangle()
+                        .fill(Broadcast.rule)
+                        .frame(height: 1.5)
+                    Rectangle()
+                        .fill(Broadcast.ink)
+                        .frame(
+                            width: proxy.size.width * (Double(current + 1) / Double(total)),
+                            height: 1.5
+                        )
+                        .motionAware(.snappy, value: current)
+                }
             }
+            .frame(height: 1.5)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Step \(current + 1) of \(total)")
     }
 }
 
@@ -272,32 +352,41 @@ struct SummaryRow: View {
     }
 }
 
-/// Circular team mark built from colour and abbreviation — no image assets to ship.
+/// The franchise badge. Delegates to `TeamMark`, which draws the club's motif from its own two
+/// colours — kept as a thin shim because every screen already calls `TeamBadge`.
 struct TeamBadge: View {
     let abbreviation: String
     let primaryHex: String
+    let secondaryHex: String
     var size: CGFloat = 34
 
     var body: some View {
-        Circle()
-            .fill(Color(hex: primaryHex))
-            .frame(width: size, height: size)
-            .overlay(
-                Text(abbreviation)
-                    .font(.system(size: size * 0.32, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.white)
-                    .minimumScaleFactor(0.6)
-                    .padding(2)
-            )
+        TeamMark(
+            abbreviation: abbreviation,
+            primaryHex: primaryHex,
+            secondaryHex: secondaryHex,
+            size: size
+        )
     }
 
-    init(abbreviation: String, primaryHex: String, size: CGFloat = 34) {
+    init(
+        abbreviation: String,
+        primaryHex: String,
+        secondaryHex: String = "#FFFFFF",
+        size: CGFloat = 34
+    ) {
         self.abbreviation = abbreviation
         self.primaryHex = primaryHex
+        self.secondaryHex = secondaryHex
         self.size = size
     }
 
     init(team: Team, size: CGFloat = 34) {
-        self.init(abbreviation: team.abbreviation, primaryHex: team.colors.primaryHex, size: size)
+        self.init(
+            abbreviation: team.abbreviation,
+            primaryHex: team.colors.primaryHex,
+            secondaryHex: team.colors.secondaryHex,
+            size: size
+        )
     }
 }

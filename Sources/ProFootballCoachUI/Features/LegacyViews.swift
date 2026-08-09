@@ -18,23 +18,29 @@ struct ScenarioPickerView: View {
                     ForEach(Scenario.all) { scenario in
                         Button { chosen = scenario } label: {
                             VStack(alignment: .leading, spacing: Layout.tight) {
-                                HStack {
-                                    Text(scenario.name).font(.headline)
-                                    Spacer()
-                                    if chosen?.id == scenario.id {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundStyle(.green)
-                                    }
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text(scenario.name)
+                                        .font(.titleFont)
+                                        .foregroundStyle(Broadcast.ink)
+                                    Spacer(minLength: Layout.tight)
+                                    if chosen?.id == scenario.id { Stamp("Chosen") }
                                 }
                                 Text(scenario.summary)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                Label(scenario.objective, systemImage: "target")
-                                    .font(.caption)
-                                    .foregroundStyle(.orange)
+                                    .font(.bodyFont)
+                                    .foregroundStyle(Broadcast.ink)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text(scenario.objective)
+                                    .font(.labelFont)
+                                    .foregroundStyle(Broadcast.muted)
                             }
                             .padding(.vertical, 2)
                             .contentShape(Rectangle())
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel(
+                                "\(scenario.name). \(scenario.summary) Objective: "
+                                    + "\(scenario.objective)."
+                                    + (chosen?.id == scenario.id ? " Chosen." : "")
+                            )
                         }
                         .buttonStyle(.plain)
                     }
@@ -59,11 +65,14 @@ struct ScenarioPickerView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Broadcast.page)
             .navigationTitle("Scenarios")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             }
         }
+        .preferredColorScheme(app.appearance.colorScheme)
     }
 
     private func start() {
@@ -191,14 +200,14 @@ struct TrophyRoomView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Color.pageBackground)
+        .background(Broadcast.page)
         .navigationTitle("Trophy Room")
     }
 
     private func career(_ league: League) -> some View {
         VStack(spacing: Layout.small) {
             Image(systemName: titles.isEmpty ? "shield" : "trophy.fill")
-                .font(.system(size: 44))
+                .font(.system(.largeTitle, weight: .semibold))
                 .foregroundStyle(titles.isEmpty ? .white.opacity(0.7) : .yellow)
             Text(league.coach.name)
                 .font(.system(.title2, design: .rounded, weight: .bold))

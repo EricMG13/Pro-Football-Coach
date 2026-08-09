@@ -24,6 +24,8 @@ struct ArcadeFieldView: View {
 
     let game: ScheduledGame
 
+    @State private var confirmingSim = false
+
     var body: some View {
         NavigationStack {
             Group {
@@ -55,6 +57,16 @@ struct ArcadeFieldView: View {
             } message: {
                 Text("The result will be decided for you. This cannot be undone.")
             }
+        }
+        .confirmationDialog(
+            "Hand the rest to the engine?",
+            isPresented: $confirmingSim,
+            titleVisibility: .visible
+        ) {
+            Button("Sim to final", role: .destructive) { finishGame() }
+            Button("Keep playing", role: .cancel) {}
+        } message: {
+            Text("The rest of the game is resolved for you and the week moves on.")
         }
         .onAppear(perform: setUp)
     }

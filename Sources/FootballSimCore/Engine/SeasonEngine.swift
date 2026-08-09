@@ -22,6 +22,21 @@ public enum SeasonEngine {
         league.results = []
         league.standings = Dictionary(uniqueKeysWithValues: league.teams.map { ($0.id, TeamRecord()) })
         league.phase = .regularSeason(week: 1)
+
+        // Next spring's class is drawn now, so scouting has a board to work on all season. It
+        // used to be created only when the draft room opened, which put the entire scouting
+        // economy — a coach skill branch, three costed actions, the fog ranges — behind the one
+        // door that made it pointless.
+        //
+        // It draws from its own stream rather than the league's. Consuming league.rng here would
+        // shift every simulated game that follows, and the class is a fixture of the year, not an
+        // outcome of it. The seed is stable across launches and unique per franchise and year.
+        if league.draftClass.isEmpty {
+            var classRNG = SeededRandom(
+                seed: SeededRandom.seed(from: league.userTeamID) &+ UInt64(league.year)
+            )
+            league.draftClass = DraftClassFactory.makeClass(year: league.year + 1, rng: &classRNG)
+        }
         league.news.append(
             NewsItem(
                 id: league.rng.uuid(),
@@ -76,6 +91,7 @@ public enum SeasonEngine {
             league.results.append(record)
             StandingsCalculator.apply(record: record, to: &league)
             applyInjuries(record.injuries, to: &league)
+            payCoachIfUserGame(record, in: &league, isPlayoff: false)
             played.append(record)
         }
 
@@ -92,6 +108,31 @@ public enum SeasonEngine {
         }
 
         return WeekReport(week: week, results: played, newsItems: news, phaseAfter: league.phase)
+    }
+
+    /// Pays the coach for their own result. Wins were worth nothing until now: the event table
+    /// existed from the first commit and no caller ever reached it.
+    private static func payCoachIfUserGame(
+        _ record: GameRecord,
+        in league: inout League,
+        isPlayoff: Bool
+    ) {
+        guard record.involves(league.userTeamID) else { return }
+        guard let winnerID = record.winnerID else { return }
+        let opponentID = record.homeTeamID == league.userTeamID
+            ? record.awayTeamID
+            : record.homeTeamID
+        let isDivisional = league.team(id: opponentID).map { opponent in
+            opponent.conference == league.userTeam?.conference
+                && opponent.division == league.userTeam?.division
+        } ?? false
+
+        CoachEngine.awardForResult(
+            win: winnerID == league.userTeamID,
+            isDivisional: isDivisional,
+            isPlayoff: isPlayoff,
+            in: &league
+        )
     }
 
     // MARK: - Playoffs
@@ -155,6 +196,7 @@ public enum SeasonEngine {
             guard let record else { continue }
             league.results.append(record)
             applyInjuries(record.injuries, to: &league)
+            payCoachIfUserGame(record, in: &league, isPlayoff: true)
             played.append(record)
         }
 
@@ -163,6 +205,10 @@ public enum SeasonEngine {
         if let currentRound = PlayoffRound(rawValue: round), currentRound == .championship {
             if let final = played.first, let championID = final.winnerID,
                let champion = league.team(id: championID) {
+                // The title is the largest single payout in the game and nothing ever paid it.
+                if championID == league.userTeamID {
+                    CoachEngine.award(.championship, to: &league.coach)
+                }
                 news.append(
                     NewsItem(
                         id: league.rng.uuid(),

@@ -6,51 +6,89 @@ struct DivisionStandingsCard: View {
     @Environment(AppState.self) private var app
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Layout.medium) {
+        VStack(alignment: .leading, spacing: Layout.large) {
             ForEach(Conference.allCases, id: \.self) { conference in
-                Text(conference.displayName).font(.headline)
-                ForEach(Division.allCases, id: \.self) { division in
-                    if let league = app.league {
-                        let rows = StandingsCalculator.divisionStandings(
-                            conference: conference, division: division, in: league
-                        )
-                        VStack(spacing: 0) {
-                            HStack {
-                                Text(division.displayName)
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                Text("W-L").font(.caption2).foregroundStyle(.tertiary)
-                                    .frame(width: 46, alignment: .trailing)
-                                Text("DIV").font(.caption2).foregroundStyle(.tertiary)
-                                    .frame(width: 40, alignment: .trailing)
-                            }
-                            .padding(.bottom, 4)
+                VStack(alignment: .leading, spacing: Layout.small) {
+                    Text(conference.displayName)
+                        .font(.titleFont)
+                        .foregroundStyle(Broadcast.ink)
 
-                            ForEach(rows, id: \.team.id) { row in
-                                HStack {
-                                    TeamBadge(team: row.team, size: 24)
-                                    Text(row.team.name)
-                                        .font(.subheadline)
-                                        .fontWeight(row.team.id == league.userTeamID ? .bold : .regular)
-                                    Spacer()
-                                    Text(row.record.description)
-                                        .font(.caption.monospacedDigit())
-                                        .frame(width: 46, alignment: .trailing)
-                                    Text(row.record.divisionDescription)
-                                        .font(.caption.monospacedDigit())
-                                        .foregroundStyle(.secondary)
-                                        .frame(width: 40, alignment: .trailing)
-                                }
-                                .padding(.vertical, 3)
-                            }
+                    ForEach(Division.allCases, id: \.self) { division in
+                        if let league = app.league {
+                            divisionTable(
+                                division: division,
+                                rows: StandingsCalculator.divisionStandings(
+                                    conference: conference, division: division, in: league
+                                ),
+                                league: league
+                            )
                         }
-                        .padding(.bottom, Layout.small)
                     }
                 }
             }
         }
+    }
+
+    /// A division table: column heads, a hairline under them, one row per team, leader marked.
+    private func divisionTable(
+        division: Division,
+        rows: [TeamStanding],
+        league: League
+    ) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(division.displayName)
+                    .font(.labelFont)
+                    .foregroundStyle(Broadcast.muted)
+                Spacer()
+                Text("W–L")
+                    .font(.labelFont)
+                    .foregroundStyle(Broadcast.muted)
+                    .frame(width: 52, alignment: .trailing)
+                Text("DIV")
+                    .font(.labelFont)
+                    .foregroundStyle(Broadcast.muted)
+                    .frame(width: 44, alignment: .trailing)
+            }
+            .padding(.bottom, Layout.tight)
+
+            Rule()
+
+            ForEach(Array(rows.enumerated()), id: \.element.team.id) { index, row in
+                let isUser = row.team.id == league.userTeamID
+                HStack(spacing: Layout.small) {
+                    TeamMark(team: row.team, size: 24)
+                    Text(row.team.name)
+                        .font(.bodyFont)
+                        .foregroundStyle(Broadcast.ink)
+                        .fontWeight(isUser ? .semibold : .regular)
+                        .lineLimit(1)
+                    if index == 0 { Stamp("1st", color: Broadcast.muted) }
+                    Spacer(minLength: Layout.tight)
+                    Text(row.record.description)
+                        .font(.figureFont)
+                        .foregroundStyle(Broadcast.ink)
+                        .frame(width: 52, alignment: .trailing)
+                    Text(row.record.divisionDescription)
+                        .font(.figureFont)
+                        .foregroundStyle(Broadcast.muted)
+                        .frame(width: 44, alignment: .trailing)
+                }
+                .padding(.vertical, Layout.tight)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(
+                    "\(index + 1). \(row.team.fullName)"
+                        + "\(isUser ? ", your team" : ""), "
+                        + "\(row.record.description) overall, "
+                        + "\(row.record.divisionDescription) in the division"
+                )
+
+                // The division leader is the line that matters; draw it.
+                if index < rows.count - 1 { Rule() }
+            }
+        }
         .card()
+        .padding(.bottom, Layout.small)
     }
 }
 
@@ -74,31 +112,43 @@ struct PowerRankingsCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Layout.small) {
-            SectionHeader("Power Rankings")
+            Text("Power Rankings")
+                .font(.titleFont)
+                .foregroundStyle(Broadcast.ink)
+
             ForEach(ranked, id: \.team.id) { row in
+                let isUser = row.team.id == app.league?.userTeamID
                 HStack(spacing: Layout.small) {
                     Text("\(row.index)")
-                        .font(.caption.monospacedDigit().weight(.bold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 24, alignment: .trailing)
-                    TeamBadge(team: row.team, size: 26)
+                        .font(.figureFont)
+                        .foregroundStyle(Broadcast.muted)
+                        .frame(width: 30, alignment: .trailing)
+                    TeamMark(team: row.team, size: 28)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(row.team.fullName)
-                            .font(.subheadline)
-                            .fontWeight(row.team.id == app.league?.userTeamID ? .bold : .regular)
+                            .font(.bodyFont)
+                            .foregroundStyle(Broadcast.ink)
+                            .fontWeight(isUser ? .bold : .regular)
+                            .lineLimit(1)
                         Text(app.league.map { $0.record(for: row.team.id).description } ?? "")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .font(.labelFont)
+                            .foregroundStyle(Broadcast.muted)
                     }
-                    Spacer()
+                    Spacer(minLength: Layout.tight)
                     Text(Format.rating(row.team.overallRating))
-                        .font(.caption.weight(.semibold))
+                        .font(.figureFont)
                         .ratingStyle(row.team.overallRating)
                 }
-                .padding(.vertical, 2)
+                .padding(.vertical, Layout.tight)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(
+                    "Number \(row.index), \(row.team.fullName)\(isUser ? ", your team" : ""), "
+                        + "\(app.league.map { $0.record(for: row.team.id).description } ?? ""), "
+                        + "overall \(Format.rating(row.team.overallRating))"
+                )
+                if row.index < ranked.count { Rule() }
             }
         }
-        .card()
     }
 }
 
@@ -107,7 +157,10 @@ struct NewsFeedCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Layout.small) {
-            SectionHeader("Around the League")
+            Text("Around the League")
+                .font(.titleFont)
+                .foregroundStyle(Broadcast.ink)
+
             let items = Array((app.league?.news ?? []).suffix(40).reversed())
             if items.isEmpty {
                 EmptyStateView(
@@ -116,24 +169,31 @@ struct NewsFeedCard: View {
                     message: "Headlines appear once the season is under way."
                 )
             } else {
-                ForEach(items) { item in
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     HStack(alignment: .top, spacing: Layout.small) {
                         Image(systemName: item.category.iconName)
-                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                            .foregroundStyle(Broadcast.muted)
                             .frame(width: 22)
+                            .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(item.headline).font(.subheadline)
+                            Text(item.headline)
+                                .font(.bodyFont)
+                                .foregroundStyle(Broadcast.ink)
                             if !item.body.isEmpty {
-                                Text(item.body).font(.caption).foregroundStyle(.secondary)
+                                Text(item.body)
+                                    .font(.labelFont)
+                                    .foregroundStyle(Broadcast.muted)
                             }
                         }
-                        Spacer()
+                        Spacer(minLength: 0)
                     }
-                    .padding(.vertical, 2)
+                    .padding(.vertical, Layout.tight)
+                    .accessibilityElement(children: .combine)
+                    if index < items.count - 1 { Rule() }
                 }
             }
         }
-        .card()
     }
 }
 
@@ -151,7 +211,17 @@ struct ScheduleView: View {
                         .sorted { $0.week < $1.week }
 
                     ForEach(games) { game in
-                        row(game, league: league)
+                        if let result = league.result(for: game.id) {
+                            NavigationLink { GameReportView(record: result) } label: {
+                                row(game, league: league)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            NavigationLink { MatchupPreviewSheet(game: game) } label: {
+                                row(game, league: league)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                     if games.isEmpty {
                         EmptyStateView(
@@ -164,7 +234,7 @@ struct ScheduleView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Color.pageBackground)
+        .background(Broadcast.page)
         .navigationTitle("Schedule")
     }
 
@@ -174,16 +244,19 @@ struct ScheduleView: View {
         let opponent = league.team(id: opponentID)
         let result = league.result(for: game.id)
 
-        return HStack(spacing: Layout.medium) {
+        return HStack(alignment: .center, spacing: Layout.medium) {
             VStack(spacing: 2) {
-                Text("WK")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.8))
+                Text("Wk")
+                    .font(.labelFont)
+                    .foregroundStyle(.white.opacity(0.85))
                 Text("\(game.week)")
-                    .font(.headline)
+                    .font(.figureFont)
                     .foregroundStyle(.white)
             }
-            .frame(width: 42, height: 42)
+            // Minimum rather than fixed: at accessibility text sizes a 42pt box clipped the
+            // week number on the one screen that is nothing but week numbers.
+            .frame(minWidth: 42, minHeight: 42)
+            .padding(.horizontal, Layout.tight)
             .background(RoundedRectangle(cornerRadius: 10).fill(theme.primary))
 
             VStack(alignment: .leading, spacing: 3) {
@@ -191,12 +264,12 @@ struct ScheduleView: View {
                     Text(isHome ? "vs" : "@").foregroundStyle(.secondary)
                     Text(opponent?.fullName ?? "TBD").fontWeight(.medium)
                 }
-                .font(.subheadline)
+                .font(.bodyFont)
                 HStack(spacing: Layout.tight) {
-                    Chip(game.kind.label, color: game.kind == .division ? .blue : .teal)
+                    Stamp(game.kind.label, color: Broadcast.muted)
                     if let opponent {
-                        Chip("OVR \(Int(opponent.overallRating))",
-                             color: RatingPalette.color(for: opponent.overallRating))
+                        Stamp("\(Int(opponent.overallRating)) ovr",
+                              color: RatingPalette.color(for: opponent.overallRating))
                     }
                 }
             }
@@ -207,11 +280,16 @@ struct ScheduleView: View {
                 let won = result.didWin(league.userTeamID)
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("\(result.score(for: league.userTeamID))-\(result.opponentScore(for: league.userTeamID))")
-                        .font(.subheadline.weight(.semibold).monospacedDigit())
-                    Chip(won ? "W" : (result.isTie ? "T" : "L"), color: won ? .green : .red, filled: true)
+                        .font(.figureFont)
+                        .lineLimit(1)
+                    Stamp(
+                        won ? "Won" : (result.isTie ? "Tied" : "Lost"),
+                        hex: won ? RatingTier.starter.lightHex : RatingTier.fringe.lightHex,
+                        filled: true
+                    )
                 }
             } else {
-                Chip(isHome ? "HOME" : "AWAY", color: .secondary)
+                Stamp(isHome ? "Home" : "Away", color: Broadcast.muted)
             }
         }
         .padding(Layout.small)
