@@ -95,7 +95,7 @@ FM's one-more-turn runs on 40–60 fixtures plus windows; a pro football season 
 ### T8 — Rebuild governance: the parity floor and the visible new answer
 
 Rebuilds are judged against the predecessor's full feature list (FM-20: shipping below parity read as the series' soul removed; MAD-19/MAD-20: the community keeps removal ledgers for decades), big-bang rewrites of working games have a documented failure anatomy (FM-24–FM-30: scope stacking, hollow UI rebuild, feel discovered dead too late; MAD-20: Connected Careers as the canonical feature purge; FM-30: SI had failed this way before, in 2003), and a same-formula successor earns no attention (RB-22).
-**Ruling:** the rebuild ships **mechanics parity or better** with v1 — a parity ledger is maintained in `docs/07-SALVAGE.md` and checked at every phase gate; the visible new answer is the presentation/narrative layer. Process rulings, binding on the build plan: one transformation per phase (FM-29); a cold-play fun gate at every phase close — one uninstructed hour, because that instrument caught what months of milestone tracking missed (FM-27); navigation primitives (search, back, where-am-I, persistent sort) as a per-screen checklist (FM-26, FM-18); no public feature announcements ahead of certainty (MAD-16's acknowledgment-plus-deferral lesson; FM-31: honesty was load-bearing for SI's survival).
+**Ruling:** the rebuild ships **mechanics parity or better** with v1 — a parity ledger is maintained in `docs/07-SALVAGE.md` and checked at every phase gate; the visible new answer is the presentation/narrative layer. Process rulings, binding on the build plan: one transformation per phase (FM-29); a cold-play fun gate at every phase close — we set it at one uninstructed hour, which is our own choice of dose; the evidence is that a couple of hours with a real build caught what months of milestone tracking had missed (FM-27); navigation primitives (search, back, where-am-I, persistent sort) as a per-screen checklist (FM-26, FM-18); no public feature announcements ahead of certainty (MAD-16's acknowledgment-plus-deferral lesson; FM-31: honesty was load-bearing for SI's survival).
 
 ---
 
@@ -170,7 +170,7 @@ Consolidated from the four dossiers' preliminary tables; conflicts resolved. Ver
 
 | Ruling | Element | Trace |
 |---|---|---|
-| STEAL | Cold-play fun gate per phase (one uninstructed hour) | FM-27 |
+| STEAL | Cold-play fun gate per phase — one uninstructed hour (`NOVEL` dose; FM's own was ~two) | FM-27 |
 | STEAL | Navigation-primitive checklist per screen | FM-26, FM-18 |
 | STEAL | Parity ledger vs v1 mechanics, checked per gate | FM-20, MAD-19, MAD-20 |
 | STEAL | Retention-curve honesty: playtest instruments over launch vanity metrics | FM-21, FM-23 |

@@ -62,7 +62,7 @@ The through-line this dossier documents: Madden is loved for its connective tiss
 
 ## 4. Where it fails — the failure literature
 
-**MAD-14** The standing diagnosis of modern Madden franchise failure is precise: seasons feel "lifeless and sterile" because *nothing mediates between games* — each is a one-off exhibition. The "no juice" critique argues a franchise needs either a hardcore FM-style management identity or a story/presentation identity, and scattered small features achieve neither. The failure mode is missing connective tissue between games, not bad football. [S13][S24]
+**MAD-14** The standing diagnosis of modern Madden franchise failure is precise: seasons feel "lifeless and sterile and uninteresting" and "every game feels like a one-off exhibition game" because *nothing mediates between games* [S75]. (Citation corrected 2026-08-09 by the OD-5 spot-check: [S13] carries the substance — "how lifeless franchise mode feels" — but the verbatim quoted phrasing is from a separate Operation Sports piece, now cited as [S75].) The "no juice" critique argues a franchise needs either a hardcore FM-style management identity or a story/presentation identity, and scattered small features achieve neither. The failure mode is missing connective tissue between games, not bad football. [S13][S24]
 
 **MAD-15** #FixMaddenFranchise ignited on June 30, 2020, when Madden 21's Gridiron Notes offered eight patch-level franchise bullets — simple fixes that could have been in a patch — and hit the No. 1 US Twitter trend within a day while key developers stayed silent and EA skipped its promotional stream. The detonation trigger was maintenance dressed up as features; never let the flagship mode's changelog read like patch notes. [S32][S31]
 
@@ -317,3 +317,4 @@ Merged and deduplicated across both lenses (74 lens citations, 4 cross-lens dupl
 - [S72] EA Sports Madden NFL 26 review roundup — ESPN — https://africa.espn.com/gaming/story/_/id/45986814/ea-sports-madden-nfl-26-review-roundup — review
 - [S73] SOFTDRINKTV on X: Madden weighed down by old code, franchise navigation pain — https://x.com/softdrinktv/status/1910899130571919540 — social post
 - [S74] DON'T FALL FOR IT? Our Take on SoftDrinkTV's Madden 26 Breakdown — 2K Online Franchise — https://2kolf.com/dont-fall-for-it-our-take-on-softdrinktvs-madden-26-breakdown/ — critical-analysis
+- [S75] What Are Your Thoughts On Madden's Franchise Mode As We Head Towards Madden 24? — Operation Sports — https://www.operationsports.com/what-are-your-thoughts-on-maddens-franchise-mode-as-we-head-towards-madden-24/ — critical-analysis (added 2026-08-09 by the OD-5 spot-check as the source of MAD-14's quoted phrasing)
