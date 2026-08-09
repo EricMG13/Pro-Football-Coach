@@ -105,6 +105,38 @@ Tier C's default, applied deliberately rather than by silence.
 This is the largest single discard and the one most likely to be wrong, so it gets more than a table
 row.
 
+> **UPDATE 2026-08-09 — the experiment at the foot of this section was run, and two of its three
+> reasons did not survive.**
+>
+> This section ended by saying: *"the cheap experiment is to compile `Arcade/` first, once a
+> toolchain exists, and see what falls out."* A toolchain exists. It was run.
+>
+> **`Arcade/` compiles, and its tests pass.** `swift build` compiles all ten files under
+> `Sources/FootballSimCore/Arcade/` — the build log names `Choreographer.swift` directly.
+> `Tests/SimTests/main.swift` registers `runArcadeTests()`, `runArcadeFieldTests()` and
+> `runArcadeWatchTests()`; they carry **90 of the suite's tests** (29 + 48 + 13) and they are inside
+> the `299 tests, 18412 checks, all passed` result.
+>
+> So of the three reasons given below:
+>
+> | Reason | Status |
+> |---|---|
+> | Written to serve a thumb, not a coach — `DefensiveInputs`, `Pocket`, timed-window tuning | **Stands.** Mission-level, and on its own sufficient. |
+> | "It has never been compiled" → unknown defect surface | **False.** It compiles. |
+> | "Phase 4C was added after the last build that worked" | **False as an inference about the code.** The 70 MB artifact was stale; the code was not. The symbol table below is evidence about that *artifact*, and nothing more. |
+>
+> **The discard still holds, on the first reason alone** — the mission forbids direct control, and no
+> compile result changes that. But it must be justified that way and not by the other two, and one
+> consequence deserves the owner's attention rather than being buried: D2 needs per-matchup
+> resolution (protection duels, route-versus-coverage, run lanes) and `04` §5.3 needs a sack drawn as
+> *the protection duel that lost*. `SnapKernel` is a working, tested implementation of exactly that
+> geometry. Whether the right move is "rewrite the model for a coach-facing engine" or "port the
+> spatial layer and strip the input layer" is now a live question with evidence on both sides, where
+> before it was settled by a fact that turned out to be wrong.
+>
+> Nothing below is deleted; it is the reasoning the decision was made against, and the symbol table
+> remains true of the artifact it describes.
+
 **What is being thrown away:** `SnapKernel` and its spatial layer — formations, routes against live
 coverage, per-matchup protection duels, run lanes, carrier pursuit, openness scoring. Pure, seeded,
 headless-testable, with the engine still owning every probability and the field only measuring.
@@ -149,9 +181,12 @@ misleading about what had been built.)*
 expressed for a coach-facing engine, and the honesty invariant — the field measures, the engine owns
 every probability, rendering cannot change a result — is carried forward explicitly as a test.
 
-**If the owner disagrees**, the cheap experiment is to compile `Arcade/` first, once a toolchain
+~~**If the owner disagrees**, the cheap experiment is to compile `Arcade/` first, once a toolchain
 exists, and see what falls out. Until something has compiled it, porting it is a bet on code no
-machine has ever checked.
+machine has ever checked.~~
+
+**Run 2026-08-09. It compiles; 90 tests pass. See the update box at the head of this section.** The
+bet is no longer on unchecked code, so the discard is now carried by the mission constraint alone.
 
 ---
 
@@ -160,3 +195,21 @@ machine has ever checked.
 `Sources/` is still in the tree. Deleting it is P0's business and P0 has not run — and deleting 90
 files is not something to do silently. P0 should remove everything not named in the ported list
 above, in one commit, so the diff is legible.
+
+### The deletion commit must leave a retrieval address — **owner decision, 2026-08-09**
+
+Asked and answered: `Arcade/` is **deleted in P0**, and the discard is carried by the mission
+constraint alone (see the update box above — the "never compiled" reason is false). It is deleted
+rather than quarantined because a non-canon path in the tree is how a cold builder builds the wrong
+game, which is the whole reason `docs/DOC-MANIFEST.md` exists.
+
+Deleting working, tested code is only safe if it stays findable. **P0's deletion commit therefore
+owes this file three things, written back here in the same phase:**
+
+1. The **commit SHA** of the deletion, so `git show <sha>` retrieves any file.
+2. The **file list** removed, so nobody has to guess what was there.
+3. The **suite counts before and after** — currently `299 tests, 18412 checks`, of which 90 tests are
+   arcade — so a shrinking suite is a stated number rather than a silence.
+
+P3 is the phase that designs per-matchup resolution, and it is the phase that should read
+`SnapKernel` back out of history before deciding how much of that geometry to rebuild.
