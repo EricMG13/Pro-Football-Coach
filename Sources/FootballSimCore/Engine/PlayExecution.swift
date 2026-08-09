@@ -46,25 +46,35 @@ public struct PlayExecution: Sendable, Equatable {
     // poor one, but a 60-rated quarterback must not throw like a 90 because someone is good with
     // their thumbs — the roster is what the management half of the game is about.
 
-    /// Completion probability shift, at most ±12 points.
-    public var completionModifier: Double { accuracy * 0.12 }
+    /// Completion probability shift, capped by `ArcadeTuning.completionSwing`.
+    public var completionModifier: Double { accuracy * ArcadeTuning.completionSwing }
 
     /// Sack probability multiplier. Getting rid of the ball early genuinely helps.
-    public var sackMultiplier: Double { timing < 0 ? 1 + (-timing * 0.8) : 1 - (timing * 0.35) }
+    public var sackMultiplier: Double {
+        timing < 0
+            ? 1 + (-timing * ArcadeTuning.sackTimingPenalty)
+            : 1 - (timing * ArcadeTuning.sackTimingReward)
+    }
 
     /// Interception multiplier. A badly placed ball is the one that gets picked off.
-    public var interceptionMultiplier: Double { accuracy < 0 ? 1 + (-accuracy * 0.9) : 1 - (accuracy * 0.3) }
+    public var interceptionMultiplier: Double {
+        accuracy < 0
+            ? 1 + (-accuracy * ArcadeTuning.interceptionPlacementPenalty)
+            : 1 - (accuracy * ArcadeTuning.interceptionPlacementReward)
+    }
 
-    /// Extra yards after the catch or on a run, at most ±3.5.
-    public var yardsModifier: Double { running * 3.5 }
+    /// Extra yards after the catch or on a run, capped by `ArcadeTuning.yardsSwing`.
+    public var yardsModifier: Double { running * ArcadeTuning.yardsSwing }
 
     /// Chance the carrier coughs it up. Rises only as he fights for extra yards — going down
     /// cleanly is the safe end of the axis, which is what makes it a real trade-off rather than
     /// a free choice.
-    public var fumbleMultiplier: Double { 1 + Swift.max(0, running) * 0.6 }
+    public var fumbleMultiplier: Double {
+        1 + Swift.max(0, running) * ArcadeTuning.fumbleAggressionPenalty
+    }
 
-    /// Make-probability shift on a placekick, at most ±18 points.
-    public var kickModifier: Double { kicking * 0.18 }
+    /// Make-probability shift on a placekick, capped by `ArcadeTuning.kickSwing`.
+    public var kickModifier: Double { kicking * ArcadeTuning.kickSwing }
 
     public var isNeutral: Bool { self == .neutral }
 }
@@ -131,6 +141,59 @@ public enum ArcadeInput {
         return Swift.min(1, Swift.max(-1, 1 - (powerError * 0.6 + aimError * 1.4)))
     }
 
-    /// Converts a kick-meter score into a make-probability shift, at most ±18 points.
-    public static func kickModifier(quality: Double) -> Double { quality * 0.18 }
+    /// Converts a kick-meter score into a make-probability shift.
+    public static func kickModifier(quality: Double) -> Double { quality * ArcadeTuning.kickSwing }
+
+    /// Turns what happened on the 2D field into what the engine understands.
+    ///
+    /// This is the join the whole all-22 design rests on: the spatial layer measures — how far
+    /// off the ball landed, whether the man was open when it left, how many tacklers the carrier
+    /// beat, which lane he took — and the engine still decides. Nothing below returns a yard or
+    /// a probability; they return the same centred -1...1 axes a thumbless player scores zero on.
+    public static func execution(from grades: SnapGrades, quarterback: Athlete?) -> PlayExecution {
+        // A trace with nothing in it must grade to neutral, or "play nothing, get the simulated
+        // game" stops being true and every calibration band drifts.
+        guard !grades.isNeutral else { return .neutral }
+
+        return PlayExecution(
+            accuracy: placementScore(grades: grades, quarterback: quarterback),
+            timing: grades.releaseTiming,
+            running: carryScore(grades: grades),
+            kicking: 0
+        )
+    }
+
+    /// Scores where the ball actually arrived, against the tolerance the passer earns.
+    ///
+    /// Throwing at a covered man is charged here rather than in the engine, because the engine
+    /// cannot see coverage at the moment of release — only the field can. A perfect ball into a
+    /// red window is still a bad decision, and it should read like one.
+    static func placementScore(grades: SnapGrades, quarterback: Athlete?) -> Double {
+        guard grades.ending == .thrown else {
+            // Pressured, thrown away, or never thrown: placement is not what happened.
+            return grades.ending == .pressured ? -0.6 : 0
+        }
+        let rating = Double(quarterback?.throwAccuracy ?? 70)
+        let tolerance = ArcadeTuning.curve(rating, at40: 2.0, at99: 6.0)
+        let error = grades.placementErrorYards / Swift.max(0.5, tolerance)
+        var score = Swift.min(1, Swift.max(-1, 1 - error))
+
+        switch grades.targetOpenness {
+        case .open: break
+        case .contested: score -= 0.35
+        case .covered: score -= 0.8
+        }
+        return Swift.min(1, Swift.max(-1, score))
+    }
+
+    /// Scores the run after the catch or handoff: tacklers beaten, the lane taken, and how hard
+    /// the carrier was told to fight for it.
+    static func carryScore(grades: SnapGrades) -> Double {
+        var score = Double(grades.pursuitBeaten) * 0.3
+        // Lane quality is 0...1 with 0.5 meaning "as good as the AI would have picked", so it
+        // has to be recentred before it can join a -1...1 axis.
+        score += (grades.laneQuality - 0.5) * 0.6
+        score += grades.aggression * 0.5
+        return Swift.min(1, Swift.max(-1, score))
+    }
 }

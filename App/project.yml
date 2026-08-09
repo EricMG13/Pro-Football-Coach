@@ -19,7 +19,11 @@ targets:
     settings:
       base:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        # Portrait only. The audit's landscape findings all traced back to this one line: every
+        # screen was rotatable and two of them lost their controls off the bottom edge when they
+        # were. The arcade mode was the reason landscape was declared, and its all-22 field is
+        # now a vertical, one-thumb surface — so nothing in the app wants the other orientation.
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_CFBundleDisplayName: "Pro Football Coach"
         SWIFT_VERSION: "5.10"
         TARGETED_DEVICE_FAMILY: "1,2"

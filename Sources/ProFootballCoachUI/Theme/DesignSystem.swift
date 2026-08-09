@@ -203,6 +203,74 @@ public enum RatingTier: String, CaseIterable, Sendable {
     public var color: Color { Color(light: lightHex, dark: darkHex) }
 }
 
+/// The three things an openness indicator can say, and the two palettes it says them in.
+///
+/// Two palettes because the indicator is drawn on two very different grounds: over dark turf,
+/// where it can be bright and saturated, and as text on a card, where `.green` measures 2.2:1
+/// and is the exact failure `RatingTier` above exists to avoid. The text hexes are the tier
+/// hexes for that reason — already verified against card, page and chip tint in both themes.
+///
+/// Colour is never the only channel. The field draws a solid ring for open, a broken ring for
+/// contested and a thin one for covered, and `label` carries the state to VoiceOver.
+public enum OpennessTier: String, CaseIterable, Sendable {
+    case open, contested, covered
+
+    public init(_ state: OpennessState) {
+        self = switch state {
+        case .open: .open
+        case .contested: .contested
+        case .covered: .covered
+        }
+    }
+
+    public var label: String {
+        switch self {
+        case .open: "open"
+        case .contested: "contested"
+        case .covered: "covered"
+        }
+    }
+
+    public var lightHex: String {
+        switch self {
+        case .open: "#22661F"
+        case .contested: "#8A5000"
+        case .covered: "#AB2A1E"
+        }
+    }
+
+    public var darkHex: String {
+        switch self {
+        case .open: "#67D77A"
+        case .contested: "#F5A93C"
+        case .covered: "#FF8A80"
+        }
+    }
+
+    /// For text and chips, where the ground is a card or the page.
+    public var textColor: Color { Color(light: lightHex, dark: darkHex) }
+
+    /// For the ring drawn over turf, which is dark in both themes and takes the bright end.
+    ///
+    /// Reds are the awkward case: 4.5:1 against turf needs a relative luminance around 0.55, and
+    /// no saturated red gets near it — pure red manages 2.0:1. So "covered" is a light salmon
+    /// rather than the red the eye expects, and the thin ring it is drawn as does the rest of
+    /// the work. All three sit near 5:1 rather than on the 4.5 line, so a small palette tweak
+    /// cannot silently drop one under it.
+    public var fieldHex: String {
+        switch self {
+        case .open: "#5BE889"
+        case .contested: "#FFD166"
+        case .covered: "#FFB8C4"
+        }
+    }
+
+    public var fieldColor: Color { Color(hex: fieldHex) }
+
+    /// The turf both themes draw, and what the field palette is verified against.
+    public static let turfHex = "#225C31"
+}
+
 public enum RatingPalette {
     public static func tier(for rating: Int) -> RatingTier { RatingTier(rating: rating) }
 
