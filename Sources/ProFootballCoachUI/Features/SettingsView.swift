@@ -66,5 +66,9 @@ struct SettingsView: View {
                 }
             }
         }
+        // A sheet is presented outside the root view's hierarchy, so the appearance set there
+        // does not reach it. Without this, changing the setting left the very sheet you changed
+        // it in still wearing the old one.
+        .preferredColorScheme(app.appearance.colorScheme)
     }
 }

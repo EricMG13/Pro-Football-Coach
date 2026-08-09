@@ -278,3 +278,6 @@ Tracked against `docs/AUDIT.md`; each is owned by a redesign phase in
 - Contrast failures inherited from the old skin's filled chips, gradient hero text and raw system
   colours are superseded rather than fixed: those components cease to exist as their surfaces are
   rebuilt.
+- Sheets do not inherit the root's `preferredColorScheme`. `SettingsView` sets it itself; the
+  other sheets (wizard, load, scenarios, player card, negotiation) still follow the system
+  appearance rather than the chosen one.
