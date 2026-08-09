@@ -1,11 +1,14 @@
 import SwiftUI
 import FootballSimCore
 
-/// Plays a single game.
+/// Call the Plays — the game played one snap at a time, with the user calling their own offence.
 ///
-/// Both play modes live here because the rules must not fork: the engine resolves the game
-/// either way, and the mode only changes how it is presented and how much the user steers.
-/// "On the Field" is a separate presentation (`ArcadeFieldView`) over the same engine.
+/// This screen used to resolve the entire game in `onAppear` and then replay the finished log at
+/// whatever pace the reader clicked through. The app's own subtitle is "Run the franchise. Call
+/// every down", and the genre has been asking for play-calling since the KushDingies fork, so a
+/// replay viewer wearing the name was the single worst thing in the product. It drives
+/// `InteractiveGame` now: the engine owns every rule, and it pauses when the user's offence is on
+/// the field.
 struct LiveGameView: View {
     @Environment(AppState.self) private var app
     @Environment(\.dismiss) private var dismiss
@@ -13,172 +16,369 @@ struct LiveGameView: View {
 
     let game: ScheduledGame
 
-    @State private var record: GameRecord?
-    @State private var revealedPlays = 0
-    @State private var isFinished = false
+    @State private var live: InteractiveGame?
+    @State private var lastPlays: [PlayEvent] = []
+    @State private var confirmingSimToEnd = false
 
     var body: some View {
         NavigationStack {
             Group {
-                if let record {
-                    liveFeed(record)
+                if let live {
+                    if live.state == .finished, let record = live.record {
+                        finalWhistle(record)
+                    } else {
+                        callSheet(live)
+                    }
                 } else {
                     ProgressView("Kickoff…")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .background(Color.pageBackground)
+            .background(Almanac.page)
+            .inlineTitleCompat()
             .navigationTitle(title)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(isFinished ? "Done" : "Sim to End") {
-                        if isFinished {
-                            finish()
-                        } else {
-                            revealedPlays = record?.plays.count ?? 0
-                            isFinished = true
-                        }
-                    }
+                    Button("Sim to Final") { confirmingSimToEnd = true }
+                        .disabled(live?.state == .finished)
                 }
             }
         }
-        .onAppear(perform: play)
+        .confirmationDialog(
+            "Hand the rest to the engine?",
+            isPresented: $confirmingSimToEnd,
+            titleVisibility: .visible
+        ) {
+            Button("Sim to final", role: .destructive) { simulateRemainder() }
+            Button("Keep calling", role: .cancel) {}
+        } message: {
+            Text("The rest of the game is resolved for you. The result stands.")
+        }
+        .onAppear(perform: begin)
     }
 
     private var title: String {
         guard let league = app.league,
               let home = league.team(id: game.homeTeamID),
               let away = league.team(id: game.awayTeamID) else { return "Game" }
-        return "\(away.abbreviation) @ \(home.abbreviation)"
+        return "\(away.abbreviation) at \(home.abbreviation)"
     }
 
-    /// Runs the game once, up front, keeping the play-by-play so it can be revealed at the
-    /// pace the user chooses. The result is identical whichever mode they picked.
-    private func play() {
-        guard record == nil, let league = app.league else { return }
-        var rng = league.rng
-        let result = GameSimulator.simulate(game: game, in: league, rng: &rng, retainPlays: true)
-        app.mutate { $0.rng = rng }
-        record = result
+    // MARK: - Driving the engine
+
+    private func begin() {
+        guard live == nil, let league = app.league,
+              let home = league.team(id: game.homeTeamID),
+              let away = league.team(id: game.awayTeamID) else { return }
+
+        var started = InteractiveGame(
+            home: home,
+            away: away,
+            userTeamID: league.userTeamID,
+            week: game.week,
+            year: league.year,
+            kind: game.kind,
+            scheduledGameID: game.id,
+            settings: league.settings,
+            neutralSite: game.isNeutralSite,
+            rng: league.rng
+        )
+        lastPlays = started.advanceUntilUserTurn()
+        live = started
+        commitRNG()
     }
 
-    private func finish() {
-        if let record { app.advanceWeek(userGameResult: record) }
+    private func call(_ play: OffensivePlay) {
+        guard var current = live else { return }
+        lastPlays = current.playUserSnap(call: play, execution: .neutral)
+        if current.state != .finished {
+            lastPlays += current.advanceUntilUserTurn()
+        }
+        live = current
+        commitRNG()
+    }
+
+    private func simulateRemainder() {
+        guard var current = live else { return }
+        current.simulateRemainder()
+        live = current
+        commitRNG()
+    }
+
+    /// The game borrows the league's random stream, so hand back where it got to. Otherwise a
+    /// reloaded franchise would replay the same numbers.
+    private func commitRNG() {
+        guard let live else { return }
+        let stream = live.currentRNG
+        app.mutate { $0.rng = stream }
+    }
+
+    private func finish(_ record: GameRecord) {
+        app.advanceWeek(userGameResult: record)
         dismiss()
     }
 
-    // MARK: - Play-by-play feed
+    // MARK: - The call sheet
 
-    private func liveFeed(_ record: GameRecord) -> some View {
+    private func callSheet(_ live: InteractiveGame) -> some View {
         VStack(spacing: 0) {
-            scoreboard(record)
+            scoreBug(live)
 
-            List {
-                Section {
-                    ForEach(visiblePlays(record).reversed()) { play in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(play.description).font(.subheadline)
-                            HStack(spacing: Layout.tight) {
-                                Text(play.clockLabel)
-                                if play.down > 0 {
-                                    Text("· \(ordinal(play.down)) & \(play.distance)")
-                                }
-                                Spacer()
-                                Text("\(play.awayScore)-\(play.homeScore)").monospacedDigit()
-                            }
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                        }
-                        .padding(.vertical, 1)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Layout.medium) {
+                    if let latest = lastPlays.last ?? live.plays.last {
+                        consequence(latest)
                     }
-                } header: {
-                    Text(isFinished ? "Final — full play-by-play" : "Play-by-play")
-                }
-            }
 
-            controls(record)
+                    if case .awaitingUserPlay(let situation) = live.state {
+                        situationLine(situation)
+                        calls(for: situation)
+                    } else {
+                        Text("The opposition has the ball.")
+                            .font(.almanacBody)
+                            .foregroundStyle(Almanac.muted)
+                    }
+
+                    driveLog(live)
+                }
+                .padding(Layout.medium)
+            }
         }
     }
 
-    private func visiblePlays(_ record: GameRecord) -> [PlayEvent] {
-        Array(record.plays.prefix(max(1, revealedPlays)))
-    }
+    /// The score bug: both franchises in their own colours, the clock, and the ball.
+    private func scoreBug(_ live: InteractiveGame) -> some View {
+        let league = app.league
+        let home = league?.team(id: game.homeTeamID)
+        let away = league?.team(id: game.awayTeamID)
+        let userIsHome = league?.userTeamID == game.homeTeamID
 
-    private func scoreboard(_ record: GameRecord) -> some View {
-        let shown = visiblePlays(record).last
-        let homeScore = isFinished ? record.homeScore : (shown?.homeScore ?? 0)
-        let awayScore = isFinished ? record.awayScore : (shown?.awayScore ?? 0)
-
-        return HStack(spacing: Layout.large) {
-            scoreColumn(app.league?.team(id: record.awayTeamID), awayScore)
-            VStack(spacing: 2) {
-                Text(isFinished ? "FINAL" : (shown?.clockLabel ?? "Q1 15:00"))
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.white)
-                if !isFinished, let shown, shown.down > 0, shown.clockSeconds > 0 {
-                    Text("\(ordinal(shown.down)) & \(shown.distance)")
-                        .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.8))
+        return VStack(spacing: Layout.tight) {
+            HStack(alignment: .center, spacing: Layout.medium) {
+                scoreSide(away, score: userIsHome ? live.opponentScore : live.userScore)
+                VStack(spacing: 2) {
+                    Text("Q\(live.quarter)")
+                        .font(.almanacLabel)
+                        .tracking(1.2)
+                        .foregroundStyle(.white.opacity(0.85))
+                    Text(Format.clock(live.clockRemaining))
+                        .font(.almanacFigure)
+                        .foregroundStyle(.white)
                 }
+                scoreSide(home, score: userIsHome ? live.userScore : live.opponentScore)
             }
-            scoreColumn(app.league?.team(id: record.homeTeamID), homeScore)
         }
         .padding(Layout.medium)
         .frame(maxWidth: .infinity)
         .background(theme.gradient)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "\(away?.name ?? "Away") \(userIsHome ? live.opponentScore : live.userScore), "
+                + "\(home?.name ?? "Home") \(userIsHome ? live.userScore : live.opponentScore). "
+                + "Quarter \(live.quarter), \(Format.clock(live.clockRemaining)) remaining."
+        )
     }
 
-    private func scoreColumn(_ team: Team?, _ score: Int) -> some View {
-        VStack(spacing: 6) {
-            if let team {
-                TeamBadge(team: team, size: 40)
-            } else {
-                Text("—").font(.caption.weight(.bold)).foregroundStyle(.white)
-            }
+    private func scoreSide(_ team: Team?, score: Int) -> some View {
+        VStack(spacing: 2) {
+            Text(team?.abbreviation ?? "—")
+                .font(.almanacLabel)
+                .tracking(1.0)
+                .foregroundStyle(.white.opacity(0.85))
             Text("\(score)")
-                .font(.system(.title, design: .rounded, weight: .heavy))
+                .font(.almanacDisplay)
                 .foregroundStyle(.white)
-                .monospacedDigit()
         }
         .frame(maxWidth: .infinity)
     }
 
-    private func controls(_ record: GameRecord) -> some View {
-        VStack(spacing: Layout.small) {
-            if isFinished {
-                NavigationLink { GameReportView(record: record) } label: {
-                    Label("Full Box Score", systemImage: "doc.text.magnifyingglass")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
+    private func consequence(_ play: PlayEvent) -> some View {
+        VStack(alignment: .leading, spacing: Layout.tight) {
+            Text("LAST PLAY")
+                .font(.almanacLabel)
+                .tracking(1.2)
+                .foregroundStyle(Almanac.muted)
+            Text(play.description)
+                .font(.almanacBody)
+                .foregroundStyle(Almanac.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            Rule()
+        }
+        .accessibilityElement(children: .combine)
+    }
 
-                Button { finish() } label: {
-                    Label("Finish Week", systemImage: "checkmark.circle.fill")
-                        .frame(maxWidth: .infinity)
+    private func situationLine(_ situation: GameSituation) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Layout.small) {
+            Text("\(ordinal(situation.down)) & \(situation.distance)")
+                .font(.almanacTitle)
+                .foregroundStyle(Almanac.ink)
+            Text(fieldPosition(situation))
+                .font(.almanacBody)
+                .foregroundStyle(Almanac.muted)
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "\(ordinal(situation.down)) and \(situation.distance), \(fieldPosition(situation))"
+        )
+    }
+
+    private func fieldPosition(_ situation: GameSituation) -> String {
+        let yard = situation.yardLine
+        if yard == 50 { return "at midfield" }
+        return yard < 50 ? "on your own \(yard)" : "on their \(100 - yard)"
+    }
+
+    /// The call sheet proper. The coordinator's suggestion is marked, not pre-selected — the
+    /// point of the screen is that the call is yours.
+    private func calls(for situation: GameSituation) -> some View {
+        let suggested = suggestion(for: situation)
+
+        return VStack(alignment: .leading, spacing: Layout.small) {
+            Text("YOUR CALL")
+                .font(.almanacLabel)
+                .tracking(1.2)
+                .foregroundStyle(Almanac.muted)
+
+            LazyVGrid(
+                columns: [GridItem(.flexible(), spacing: Layout.small),
+                          GridItem(.flexible(), spacing: Layout.small)],
+                spacing: Layout.small
+            ) {
+                ForEach(OffensivePlay.standardCalls, id: \.self) { play in
+                    callButton(play, isSuggested: play == suggested)
                 }
-                .buttonStyle(.borderedProminent)
-            } else {
+            }
+
+            if situation.down == 4 {
+                Rule()
+                Text("FOURTH DOWN")
+                    .font(.almanacLabel)
+                    .tracking(1.2)
+                    .foregroundStyle(Almanac.muted)
                 HStack(spacing: Layout.small) {
-                    Button("Next Play") { advance(by: 1, in: record) }
-                        .buttonStyle(.borderedProminent)
-                        .frame(maxWidth: .infinity)
-                    Button("Drive") { advance(by: 8, in: record) }
-                        .buttonStyle(.bordered)
-                        .frame(maxWidth: .infinity)
-                    Button("Quarter") { advance(by: 35, in: record) }
-                        .buttonStyle(.bordered)
-                        .frame(maxWidth: .infinity)
+                    callButton(.fieldGoal, isSuggested: false)
+                    callButton(.punt, isSuggested: false)
                 }
             }
         }
-        .padding(Layout.medium)
-        .frame(maxWidth: .infinity)
-        .background(.bar)
     }
 
-    private func advance(by count: Int, in record: GameRecord) {
-        revealedPlays = min(record.plays.count, revealedPlays + count)
-        if revealedPlays >= record.plays.count { isFinished = true }
+    /// What the offensive coordinator would call. Marked on the sheet, never pre-selected — the
+    /// whole point of the screen is that the call is the user's.
+    private func suggestion(for situation: GameSituation) -> OffensivePlay? {
+        guard let league = app.league,
+              let offense = league.team(id: league.userTeamID) else { return nil }
+        // A throwaway stream: this is a hint, and it must not consume the game's randomness.
+        var rng = SeededRandom(seed: UInt64(situation.down &* 31 &+ situation.distance))
+        return PlayCaller.offensiveCall(situation: situation, team: offense, rng: &rng)
+    }
+
+    private func callButton(_ play: OffensivePlay, isSuggested: Bool) -> some View {
+        Button { call(play) } label: {
+            VStack(spacing: 2) {
+                Text(play.displayName)
+                    .font(.almanacBody)
+                    .foregroundStyle(Almanac.ink)
+                if isSuggested {
+                    Text("the coordinator likes this")
+                        .font(.almanacLabel)
+                        .foregroundStyle(Almanac.muted)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 52)
+            .padding(.vertical, Layout.tight)
+            .overlay(
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .stroke(
+                        isSuggested ? Almanac.ink : Almanac.rule,
+                        lineWidth: isSuggested ? 1.5 : 0.8
+                    )
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(
+            isSuggested ? "\(play.displayName). Your coordinator's suggestion." : play.displayName
+        )
+    }
+
+    private func driveLog(_ live: InteractiveGame) -> some View {
+        VStack(alignment: .leading, spacing: Layout.tight) {
+            Rule(.heavy)
+            Text("THE DRIVE")
+                .font(.almanacLabel)
+                .tracking(1.2)
+                .foregroundStyle(Almanac.muted)
+            ForEach(Array(live.plays.suffix(12).reversed())) { play in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(play.description)
+                        .font(.almanacBody)
+                        .foregroundStyle(Almanac.ink)
+                    Text("\(play.clockLabel) · \(play.awayScore)–\(play.homeScore)")
+                        .font(.almanacLabel)
+                        .foregroundStyle(Almanac.muted)
+                }
+                .padding(.vertical, 2)
+                .accessibilityElement(children: .combine)
+                Rule()
+            }
+        }
+    }
+
+    // MARK: - The final whistle
+
+    /// One of the seven earned editions: the result takes the whole page, in the winner's colours,
+    /// consequence first.
+    private func finalWhistle(_ record: GameRecord) -> some View {
+        let userID = app.league?.userTeamID ?? UUID()
+        let won = record.didWin(userID)
+        let mine = record.score(for: userID)
+        let theirs = record.opponentScore(for: userID)
+
+        return ScrollView {
+            VStack(spacing: Layout.large) {
+                VStack(spacing: Layout.small) {
+                    Text("FINAL")
+                        .font(.almanacLabel)
+                        .tracking(2.0)
+                        .foregroundStyle(.white.opacity(0.85))
+                    Text(won ? "You won" : (record.isTie ? "A tie" : "You lost"))
+                        .font(.almanacDisplay)
+                        .foregroundStyle(.white)
+                    Text("\(mine)–\(theirs)")
+                        .font(.almanacDisplay)
+                        .foregroundStyle(.white)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(Layout.large)
+                .background(theme.gradient)
+                .clipShape(RoundedRectangle(cornerRadius: Layout.cardRadius, style: .continuous))
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(
+                    "Final. \(won ? "You won" : (record.isTie ? "A tie" : "You lost")), "
+                        + "\(mine) to \(theirs)."
+                )
+
+                VStack(spacing: Layout.small) {
+                    NavigationLink { GameReportView(record: record) } label: {
+                        Text("The full box score")
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 30)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button { finish(record) } label: {
+                        Text("Finish the week")
+                            .frame(maxWidth: .infinity)
+                            .frame(minHeight: 30)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+            .padding(Layout.medium)
+        }
     }
 
     private func ordinal(_ value: Int) -> String {
@@ -188,230 +388,5 @@ struct LiveGameView: View {
         case 3: "3rd"
         default: "4th"
         }
-    }
-}
-
-/// Post-game report: quarter scores, team comparison and per-position box score.
-struct GameReportView: View {
-    @Environment(AppState.self) private var app
-    let record: GameRecord
-    @State private var showingHome = true
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: Layout.medium) {
-                finalScore
-                teamStats
-                boxScore
-            }
-            .padding(Layout.medium)
-        }
-        .background(Color.pageBackground)
-        .navigationTitle("Game Report")
-    }
-
-    private var home: Team? { app.league?.team(id: record.homeTeamID) }
-    private var away: Team? { app.league?.team(id: record.awayTeamID) }
-
-    private var finalScore: some View {
-        VStack(spacing: Layout.small) {
-            HStack {
-                Text("FINAL").font(.caption.weight(.heavy)).foregroundStyle(.secondary)
-                if record.wentToOvertime {
-                    Chip("OT\(record.overtimePeriods > 1 ? "\(record.overtimePeriods)" : "")", color: .orange)
-                }
-                Spacer()
-            }
-            quarterRow(team: away, stats: record.awayStats, isWinner: record.winnerID == record.awayTeamID)
-            Divider()
-            quarterRow(team: home, stats: record.homeStats, isWinner: record.winnerID == record.homeTeamID)
-        }
-        .card()
-    }
-
-    private func quarterRow(team: Team?, stats: TeamGameStats, isWinner: Bool) -> some View {
-        HStack(spacing: Layout.small) {
-            if let team { TeamBadge(team: team, size: 28) }
-            Text(team?.abbreviation ?? "—")
-                .font(.subheadline.weight(isWinner ? .bold : .regular))
-            Spacer()
-            ForEach(Array(stats.quarterPoints.enumerated()), id: \.offset) { _, points in
-                Text("\(points)")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .frame(width: 22)
-            }
-            Text("\(stats.points)")
-                .font(.title3.monospacedDigit().weight(.bold))
-                .frame(width: 40, alignment: .trailing)
-            if isWinner {
-                Image(systemName: "crown.fill").foregroundStyle(.yellow).font(.caption)
-            }
-        }
-    }
-
-    private var teamStats: some View {
-        VStack(spacing: Layout.tight) {
-            SectionHeader("Team Statistics")
-            HStack {
-                Text(away?.abbreviation ?? "Away")
-                    .frame(width: 50, alignment: .leading)
-                Spacer()
-                Text(home?.abbreviation ?? "Home")
-                    .frame(width: 50, alignment: .trailing)
-            }
-            .font(.caption.weight(.bold))
-            .foregroundStyle(.secondary)
-            comparisonRow("Total yards", record.awayStats.totalYards, record.homeStats.totalYards)
-            comparisonRow("Passing", record.awayStats.passingYards, record.homeStats.passingYards)
-            comparisonRow("Rushing", record.awayStats.rushingYards, record.homeStats.rushingYards)
-            comparisonRow("First downs", record.awayStats.firstDowns, record.homeStats.firstDowns)
-            comparisonRow("Turnovers", record.awayStats.turnovers, record.homeStats.turnovers)
-            comparisonRow("Sacks", record.awayStats.sacks, record.homeStats.sacks)
-        }
-        .card()
-    }
-
-    private func comparisonRow(_ label: String, _ awayValue: Int, _ homeValue: Int) -> some View {
-        HStack {
-            Text("\(awayValue)").font(.subheadline.monospacedDigit()).frame(width: 50, alignment: .leading)
-            Spacer()
-            Text(label).font(.caption).foregroundStyle(.secondary)
-            Spacer()
-            Text("\(homeValue)").font(.subheadline.monospacedDigit()).frame(width: 50, alignment: .trailing)
-        }
-    }
-
-    private var boxScore: some View {
-        VStack(alignment: .leading, spacing: Layout.small) {
-            Picker("", selection: $showingHome) {
-                Text(away?.abbreviation ?? "Away").tag(false)
-                Text(home?.abbreviation ?? "Home").tag(true)
-            }
-            .pickerStyle(.segmented)
-
-            let team = showingHome ? home : away
-            if let team {
-                ForEach(Position.displayOrder, id: \.self) { position in
-                    let lines = team.roster
-                        .filter { $0.position == position }
-                        .compactMap { player -> (Player, StatLine)? in
-                            guard let line = record.playerStats[player.id], !line.isEmpty,
-                                  line != contributionOnlyAppearance(line) else { return nil }
-                            return (player, line)
-                        }
-                    if !lines.isEmpty {
-                        Text(position.displayName)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                        ForEach(lines, id: \.0.id) { player, line in
-                            HStack {
-                                Text(player.name).font(.caption)
-                                Spacer()
-                                Text(summary(line, position: position))
-                                    .font(.caption.monospacedDigit())
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        .card()
-    }
-
-    /// A line containing only an appearance is not worth a box-score row.
-    private func contributionOnlyAppearance(_ line: StatLine) -> StatLine {
-        var blank = StatLine()
-        blank.gamesPlayed = line.gamesPlayed
-        return blank
-    }
-
-    private func summary(_ line: StatLine, position: Position) -> String {
-        switch position {
-        case .qb:
-            return "\(line.completions)/\(line.passAttempts), \(line.passingYards) yds, \(line.passingTouchdowns) TD, \(line.interceptionsThrown) INT"
-        case .rb:
-            return "\(line.carries) car, \(line.rushingYards) yds, \(line.rushingTouchdowns) TD"
-        case .wr, .te:
-            return "\(line.receptions) rec, \(line.receivingYards) yds, \(line.receivingTouchdowns) TD"
-        case .dl, .lb, .cb, .s:
-            return "\(line.tackles) tkl, \(line.sacks) sk, \(line.interceptions) INT"
-        case .k:
-            return "\(line.fieldGoalsMade)/\(line.fieldGoalsAttempted) FG, \(line.extraPointsMade)/\(line.extraPointsAttempted) XP"
-        case .p:
-            return "\(line.punts) punts, \(String(format: "%.1f", line.averagePunt)) avg"
-        case .ol:
-            return "\(line.gamesPlayed) gp"
-        }
-    }
-}
-
-/// Pre-game comparison of the two teams.
-struct MatchupPreviewSheet: View {
-    @Environment(AppState.self) private var app
-    @Environment(\.dismiss) private var dismiss
-    let game: ScheduledGame
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: Layout.medium) {
-                    if let league = app.league,
-                       let home = league.team(id: game.homeTeamID),
-                       let away = league.team(id: game.awayTeamID) {
-                        compare("Overall", away.overallRating, home.overallRating, away: away, home: home)
-                        compare("Offense", away.offenseRating, home.offenseRating, away: away, home: home)
-                        compare("Defense", away.defenseRating, home.defenseRating, away: away, home: home)
-                        compare("Special Teams", away.specialTeamsRating, home.specialTeamsRating, away: away, home: home)
-                    }
-                }
-                .padding(Layout.medium)
-            }
-            .background(Color.pageBackground)
-            .navigationTitle("Matchup")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
-            }
-        }
-    }
-
-    private func compare(
-        _ label: String,
-        _ awayValue: Double,
-        _ homeValue: Double,
-        away: Team,
-        home: Team
-    ) -> some View {
-        VStack(spacing: Layout.tight) {
-            HStack {
-                Text(Format.rating(awayValue))
-                    .font(.headline.monospacedDigit())
-                    .ratingStyle(awayValue)
-                Spacer()
-                Text(label).font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                Text(Format.rating(homeValue))
-                    .font(.headline.monospacedDigit())
-                    .ratingStyle(homeValue)
-            }
-            GeometryReader { proxy in
-                let total = max(1, awayValue + homeValue)
-                HStack(spacing: 2) {
-                    Capsule()
-                        .fill(Color(hex: away.colors.primaryHex))
-                        .frame(width: proxy.size.width * awayValue / total)
-                    Capsule().fill(Color(hex: home.colors.primaryHex))
-                }
-            }
-            .frame(height: 8)
-            let edge = homeValue - awayValue
-            Text(edge >= 0
-                 ? "\(home.abbreviation) +\(String(format: "%.1f", edge))"
-                 : "\(away.abbreviation) +\(String(format: "%.1f", -edge))")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-        .card()
     }
 }
