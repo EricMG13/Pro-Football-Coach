@@ -24,5 +24,6 @@ runSaveQueueTests()
 runDesignSystemTests()
 runAlmanacTests()
 runTeamTintTests()
+runContractTests()
 
 TestKit.finish()

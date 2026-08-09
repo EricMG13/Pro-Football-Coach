@@ -8,7 +8,7 @@ The honest picture: what exists, what is verified, what is not.
 
 ## Where the project actually is
 
-**The spec package is complete. No line of the rebuild has been written.**
+**The spec package is complete. P0 has started — first increment written, not yet compiled.**
 
 The v4 brief (`docs/reviews/2026-08-09-spec-prompt-v4.md`) has been executed: research, design,
 architecture, plan, decisions and the build prompt all exist and are internally consistent. Phase P0
@@ -18,6 +18,27 @@ now runs the gates (D11 below).
 The previous build's source is still in the tree (`Sources/`, `Tests/`, `App/`). Under Tier C it has
 **no authority**. It has not been deleted, because deleting it is P0's business and P0 has not run.
 Do not treat anything in `Sources/` as canon; `docs/DOC-MANIFEST.md` is the authority on what is.
+
+---
+
+## Unverified — written, no compiler has seen it
+
+Per `CLAUDE.md`: an agent environment has no toolchain, so these are recorded here until a
+`./scripts/verify.sh` run covers them.
+
+| File | What it is |
+|---|---|
+| `Sources/FootballSimCore/Support/SeedDerivation.swift` | `SeedPath` — the hierarchical seed contract from `03` §3 (league → season → week → game → drive → snap) |
+| `Tests/SimTests/Suites/ContractTests.swift` | The three source scans from `03b` §1, plus seed-derivation tests |
+| `Tests/SimTests/main.swift` | One line registering `runContractTests()` |
+
+Deliberately additive: the tree was green at 299 tests / 18,412 checks, and a small diff means the
+next run gives a clean signal about what P0 added rather than a tangle.
+
+**One of these is expected to print rather than pass/fail.** The design-token scan reports a baseline
+count instead of asserting, because the view layer it scans is the one `04` replaces wholesale —
+failing today would only measure code already condemned. It becomes an assertion at P11, judged
+against the baseline it prints now.
 
 ---
 

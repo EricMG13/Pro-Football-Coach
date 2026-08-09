@@ -81,19 +81,18 @@ unknown-field defaults for forward compatibility.
 
 ---
 
-## 5. Test architecture (D11) — **blocked pending an owner decision**
+## 5. Test architecture (D11)
 
-**D11 is decided.** The runner is the hand-rolled harness below, run by `./scripts/verify.sh` on the
-owner's machine — verified green on Swift 6.3.3 (299 tests, 18,412 checks). The constraints that
-forced that choice, and that still shape every phase gate:
+**D11 is decided.** The runner is a hand-rolled harness in an executable target, invoked by
+`./scripts/verify.sh` — verified green on Swift 6.3.3 (299 tests, 18,412 checks). The constraints
+that forced that choice, and that still shape every phase gate:
 
-- Agent environments have had no `swift`, no `swiftc`, no `xcodebuild`, no `xcrun`, no `simctl`, and
-  `download.swift.org` refused by egress policy.
-- Neither XCTest nor swift-testing ships with the Swift Command Line Tools, which is why the prior
-  build ran its suite as an executable target with a hand-rolled harness.
-- Phase 4C shipped never having been compiled as a direct result.
+- Agent environments have no `swift`, `swiftc`, `xcodebuild`, `xcrun` or `simctl`, and
+  `download.swift.org` is refused by egress policy.
+- Neither XCTest nor swift-testing ships with the Swift Command Line Tools, so an executable target
+  is the only thing that runs outside Xcode.
 
-**Until D11 is answered, this section specifies the structure but not the runner:**
+Suite layout:
 
 ```
 Tests/
@@ -103,10 +102,9 @@ Tests/
   ContractTests/      accessibility contract, design tokens, legal tests
 ```
 
-Every phase gate in `05` that says "tests green" is asserted against whatever D11 selects. If D11
-lands on the hand-rolled harness with no agent-side toolchain, then **the agent cannot run the
-gates**, and `05` must sequence phases so the owner runs them at phase boundaries. That is a
-scheduling consequence, not a detail.
+Because agent environments have no toolchain, "tests green" in `05` is an **owner round-trip**: the
+agent writes, the owner runs `verify.sh`, the output is the gate. That is a scheduling consequence,
+not a detail — phases are sized so a round-trip is worth making.
 
 ---
 

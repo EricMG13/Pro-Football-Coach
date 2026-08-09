@@ -56,18 +56,20 @@ Done is split, because this environment cannot reach half of it.
   open, in what order, what should be true at each step — and hand it over.
 - The D1 timing protocol, the D9 onboarding protocol, the D6 identity protocol.
 
-**If there is no Swift toolchain** — and there frequently is not; `swift` and `xcodebuild` have been
-absent from every agent environment in this project's history, and `download.swift.org` is refused by
-egress policy — then:
+**You almost certainly have no Swift toolchain.** `swift` and `xcodebuild` have been absent from every
+agent environment in this project's history, and `download.swift.org` is refused by egress policy.
+Never route around that policy to fetch one. So:
 
 - Write the code anyway, to the same standard.
-- Record it in `docs/STATUS.md` as **unverified — never compiled**, naming the files.
+- Record it in `docs/STATUS.md` as **unverified**, naming the files.
 - **Never say "build green", "tests pass" or "verified" about anything a compiler has not seen.**
-  Phase 4C of the previous build shipped uncompiled; the failure was not the missing toolchain, it
-  was the claim.
-- A phase gate that depends on a build then becomes an **escalation**, not a judgement call.
+- Ask the owner to run `./scripts/verify.sh` and wait for the output. That is the gate. A phase gate
+  that depends on a build is an **owner round-trip**, not an escalation and not a judgement call.
 
-Never route around the egress policy to fetch a toolchain.
+**Do not infer build state from artifacts.** A committed build product is evidence about the
+artifact, not about the source — a stale one missing a directory's symbols does not mean that
+directory fails to compile. This project has already made that error once; `docs/PORT-LOG.md` keeps
+the record.
 
 ---
 
