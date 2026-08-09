@@ -1,19 +1,26 @@
 import SwiftUI
 import FootballSimCore
+#if canImport(UIKit)
+import UIKit
+#endif
 
-/// The on-field mode: call a play, then throw it yourself.
+/// "On the Field" — the all-22 mode.
 ///
-/// Aiming is the whole interaction. You drag back from the quarterback, a trajectory arc grows
-/// toward where the ball will land, and you release. How much of that arc you can see is set by
-/// your quarterback's accuracy rating, so a poor passer genuinely leaves you guessing — which is
-/// the point where the roster and the controls meet.
+/// Portrait, vertical field, one thumb. You drag back from the quarterback to aim and release to
+/// throw; you swipe to juke, dive or go down. Every player on the field is a real position
+/// computed from real ratings, and the indicator over a receiver tells the truth about his
+/// separation — a limited passer is told about it late, which is the difference you feel when
+/// you upgrade the position.
 struct ArcadeFieldView: View {
     @Environment(AppState.self) private var app
     @Environment(\.dismiss) private var dismiss
     @Environment(\.teamTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var model: ArcadeGameModel?
-    @State private var aimPoint: CGPoint?
+    @State private var aimPoint: FieldPoint?
+    @State private var showsQuitConfirmation = false
+    @State private var showsTargetList = false
 
     let game: ScheduledGame
 
@@ -31,9 +38,22 @@ struct ArcadeFieldView: View {
             .navigationTitle("On the Field")
             .navigationBarTitleDisplayModeCompat()
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Sim to Final") { finishGame() }
+                // The destructive action is deliberately not in the cancellation slot: the
+                // top-left corner is where a player taps to back out, and it used to hand the
+                // rest of their game to the simulator with no way back.
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Sim to Final") { showsQuitConfirmation = true }
                 }
+            }
+            .confirmationDialog(
+                "Hand the rest of this game to the simulator?",
+                isPresented: $showsQuitConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Sim to Final", role: .destructive) { finishGame() }
+                Button("Keep Playing", role: .cancel) {}
+            } message: {
+                Text("The result will be decided for you. This cannot be undone.")
             }
         }
         .onAppear(perform: setUp)
@@ -64,7 +84,6 @@ struct ArcadeFieldView: View {
 
     private func commit(_ model: ArcadeGameModel) {
         guard let record = model.record else { return dismiss() }
-        // Hand the stream back so the rest of the league carries on from where this game left it.
         app.mutate { $0.rng = model.game.currentRNG }
         app.advanceWeek(userGameResult: record)
         dismiss()
@@ -77,21 +96,17 @@ struct ArcadeFieldView: View {
         VStack(spacing: 0) {
             scoreboard(model)
             field(model)
+                .frame(maxHeight: .infinity)
 
             switch model.phase {
             case .callingPlay: playbook(model)
             case .live: liveControls(model)
             case .kicking: kickMeter(model)
-            case .carrying: carrierChoice(model)
             case .showingResult(let summary): resultCard(model, summary: summary)
-            case .opponentBall: opponentCard(model)
+            case .watchingDefense: defenseCard(model)
             case .finished: finishedCard(model)
             }
-
-            Spacer(minLength: 0)
         }
-        // Pin to the top: without this the stack centres itself and leaves a band of empty
-        // space under the navigation bar on a tall phone.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
@@ -130,130 +145,93 @@ struct ArcadeFieldView: View {
         .padding(Layout.medium)
         .frame(maxWidth: .infinity)
         .background(theme.gradient)
-    }
-
-    /// The playing surface, and the aiming gesture that lives on it.
-    private func field(_ model: ArcadeGameModel) -> some View {
-        GeometryReader { proxy in
-            let size = proxy.size
-            // The view shows 40 yards of field ahead of the line of scrimmage.
-            let yardsShown = 40.0
-            let scrimmageY = size.height * 0.78
-
-            let quarterbackPoint = fieldPoint(
-                depth: -4, lateral: 0, size: size, scrimmageY: scrimmageY, yardsShown: yardsShown
-            )
-
-            ZStack {
-                turf(size: size, scrimmageY: scrimmageY, yardsShown: yardsShown, situation: model.situation)
-
-                ForEach(model.receivers) { receiver in
-                    let spot = fieldPoint(
-                        depth: receiver.depth, lateral: receiver.lateral,
-                        size: size, scrimmageY: scrimmageY, yardsShown: yardsShown
-                    )
-                    ZStack {
-                        Circle()
-                            .fill(theme.primary)
-                            .frame(width: 22, height: 22)
-                            .overlay(Circle().stroke(.white, lineWidth: 2))
-                        Text(receiver.position.abbreviation)
-                            .font(.system(size: 8, weight: .heavy))
-                            .foregroundStyle(.white)
-                    }
-                    .position(spot)
-                }
-
-                if model.phase == .live {
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 18, height: 18)
-                        .overlay(Circle().stroke(theme.primary, lineWidth: 3))
-                        .position(quarterbackPoint)
-
-                    if let aimPoint {
-                        TrajectoryArc(
-                            from: quarterbackPoint,
-                            to: aimPoint,
-                            visibleFraction: model.visibleArcFraction
-                        )
-                        .stroke(
-                            .white.opacity(0.9),
-                            style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [6, 7])
-                        )
-                        Circle()
-                            .strokeBorder(.white, lineWidth: 3)
-                            .frame(width: 26, height: 26)
-                            .position(aimPoint)
-                    }
-                }
-            }
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
-                        guard model.phase == .live else { return }
-                        // The rush starts when the player starts aiming, not at the snap.
-                        model.beginAiming()
-                        aimPoint = value.location
-                    }
-                    .onEnded { value in
-                        if model.phase == .carrying {
-                            // Up the screen is downfield, so up means fight for more.
-                            let vertical = value.translation.height
-                            if abs(vertical) > 24 { model.decideCarry(vertical < 0 ? 0.8 : -0.8) }
-                            aimPoint = nil
-                            return
-                        }
-                        guard model.phase == .live else { return }
-                        defer { aimPoint = nil }
-                        // Converts the release point back into yards and a sideline offset.
-                        let depth = (scrimmageY - value.location.y) / (size.height * 0.72) * yardsShown
-                        let lateral = (value.location.x / size.width - 0.5) / 0.42
-                        model.throwBall(atDepth: depth, lateral: lateral)
-                    }
-            )
-        }
-        .frame(height: 300)
-        .clipShape(RoundedRectangle(cornerRadius: Layout.chipRadius))
-        .padding(Layout.small)
-    }
-
-    /// Projects a spot on the field — yards downfield and how far toward a sideline — onto the
-    /// view. One place so the aiming gesture and the drawn routes cannot disagree.
-    private func fieldPoint(
-        depth: Double,
-        lateral: Double,
-        size: CGSize,
-        scrimmageY: CGFloat,
-        yardsShown: Double
-    ) -> CGPoint {
-        CGPoint(
-            x: size.width * (0.5 + lateral * 0.42),
-            y: scrimmageY - (depth / yardsShown) * (size.height * 0.72)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "\(model.userScore) to \(model.opponentScore), "
+                + "\(clockLabel(quarter: model.quarter, seconds: model.clockRemaining))"
         )
     }
 
-    private func turf(size: CGSize, scrimmageY: CGFloat, yardsShown: Double, situation: GameSituation) -> some View {
-        ZStack {
-            Rectangle().fill(Color(red: 0.15, green: 0.40, blue: 0.21))
-
-            // A yard line every five yards, brighter every ten.
-            ForEach(Array(stride(from: -5, through: Int(yardsShown), by: 5)), id: \.self) { yard in
-                let y = scrimmageY - (Double(yard) / yardsShown) * (size.height * 0.72)
-                Rectangle()
-                    .fill(.white.opacity(yard % 10 == 0 ? 0.35 : 0.18))
-                    .frame(height: yard % 10 == 0 ? 2 : 1)
-                    .position(x: size.width / 2, y: y)
+    /// The playing surface, and every gesture that lives on it.
+    private func field(_ model: ArcadeGameModel) -> some View {
+        GeometryReader { proxy in
+            let size = proxy.size
+            ZStack {
+                if let frame = model.currentFrame {
+                    FieldCanvas(
+                        frame: frame,
+                        teamColor: theme.primary,
+                        opponentColor: Color.white.opacity(0.55),
+                        yardsToGain: model.situation.distance,
+                        showsIndicators: model.phase == .live
+                    )
+                } else {
+                    RoundedRectangle(cornerRadius: Layout.chipRadius)
+                        .fill(Color(hex: OpennessTier.turfHex))
+                }
             }
-
-            // Line of scrimmage and the line to gain.
-            Rectangle().fill(.blue).frame(height: 3)
-                .position(x: size.width / 2, y: scrimmageY)
-            let toGain = scrimmageY - (Double(situation.distance) / yardsShown) * (size.height * 0.72)
-            Rectangle().fill(.yellow).frame(height: 3)
-                .position(x: size.width / 2, y: toGain)
+            .contentShape(Rectangle())
+            .gesture(fieldGesture(model, size: size))
+            // The canvas draws shapes, which VoiceOver cannot read. The target list is the
+            // equivalent path, and it is a real way to play rather than a consolation.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Field")
+            .accessibilityValue(accessibilitySummary(model))
+            .accessibilityHint("Use the receivers list below to throw.")
         }
+        .padding(Layout.small)
+    }
+
+    private func fieldGesture(_ model: ArcadeGameModel, size: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                guard model.phase == .live else { return }
+                guard let frame = model.currentFrame else { return }
+                if case .carrying = frame.phase { return }
+                model.beginAiming()
+                let point = fieldPoint(from: value.location, size: size, frame: frame)
+                aimPoint = point
+                model.aim(at: point)
+            }
+            .onEnded { value in
+                guard model.phase == .live, let frame = model.currentFrame else { return }
+                defer { aimPoint = nil }
+
+                if case .carrying = frame.phase {
+                    // Carrier control: sideways jukes, up to dive, down to go down.
+                    let dx = value.translation.width
+                    let dy = value.translation.height
+                    if abs(dx) > abs(dy), abs(dx) > 20 {
+                        model.juke(dx > 0 ? 1 : -1)
+                    } else if dy < -24 {
+                        model.dive()
+                    } else if dy > 24 {
+                        model.stall()
+                    }
+                    return
+                }
+
+                // A short flick forward from the pocket is a scramble, not a throw.
+                if value.translation.height < -70, abs(value.translation.width) < 40 {
+                    model.scramble()
+                    return
+                }
+                model.release()
+            }
+    }
+
+    /// Turns a touch into a spot on the field, using the same camera the canvas drew with.
+    private func fieldPoint(from location: CGPoint, size: CGSize, frame: FieldFrame) -> FieldPoint {
+        let window = ArcadeTuning.cameraWindowYards
+        let camera = max(-8, frame.ballPoint.depth - window * 0.3)
+        let depth = camera + (1 - location.y / max(1, size.height)) * window
+        let lateral = (location.x / max(1, size.width) - 0.5) / 0.46
+        return FieldPoint(depth: depth, lateral: min(1, max(-1, lateral)))
+    }
+
+    private func accessibilitySummary(_ model: ArcadeGameModel) -> String {
+        let open = model.targets.filter { $0.state == .open }.count
+        return "\(model.targets.count) receivers, \(open) open"
     }
 
     // MARK: - Controls
@@ -263,7 +241,10 @@ struct ArcadeFieldView: View {
             Text("Call the play")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: Layout.small) {
+            LazyVGrid(
+                columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
+                spacing: Layout.small
+            ) {
                 ForEach(OffensivePlay.standardCalls, id: \.self) { call in
                     Button { model.snap(call) } label: {
                         Text(call.displayName)
@@ -274,14 +255,16 @@ struct ArcadeFieldView: View {
                 }
             }
 
-            // Fourth down is a decision, so the kicking options only appear when they are one.
             if model.situation.down == 4 {
                 HStack(spacing: Layout.small) {
                     if model.isInFieldGoalRange {
                         Button { model.snap(.fieldGoal) } label: {
-                            Label("Field Goal · \(model.fieldGoalDistance) yds", systemImage: "figure.australian.football")
-                                .font(.caption.weight(.medium))
-                                .frame(maxWidth: .infinity, minHeight: 44)
+                            Label(
+                                "Field Goal · \(model.fieldGoalDistance) yds",
+                                systemImage: "figure.australian.football"
+                            )
+                            .font(.caption.weight(.medium))
+                            .frame(maxWidth: .infinity, minHeight: 44)
                         }
                         .buttonStyle(.borderedProminent)
                     }
@@ -299,49 +282,49 @@ struct ArcadeFieldView: View {
         .background(.bar)
     }
 
-    /// The moment after the ball is away: fight for extra yards, or go down with it.
-    ///
-    /// Both options are live for a second and a half, and letting the window close is itself a
-    /// choice — he takes what is there. Swiping up or down on the field does the same thing, so
-    /// the decision works one-handed without hunting for a button.
-    private func carrierChoice(_ model: ArcadeGameModel) -> some View {
+    private func liveControls(_ model: ArcadeGameModel) -> some View {
         VStack(spacing: Layout.small) {
             HStack {
-                Text("Ball's away")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                Text(statusLabel(model))
+                    .font(.caption.weight(model.currentFrame?.sackWarningActive == true ? .bold : .regular))
+                    .foregroundStyle(
+                        model.currentFrame?.sackWarningActive == true ? Color.warningText : .secondary
+                    )
                 Spacer()
-                Text("swipe up to fight, down to secure")
+                if model.audiblesRemaining > 0 {
+                    Button("Audible (\(model.audiblesRemaining))") { model.audible() }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                }
+                Button("Hand Off") { model.handOff() }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+            }
+
+            // The gesture-free way to play the snap. Every receiver, what he is doing, and
+            // whether he is open — spoken, tappable, and exactly as authoritative as the field.
+            if showsTargetList || UIAccessibilityIsVoiceOverRunningCompat() {
+                ForEach(model.targets, id: \.player.id) { target in
+                    Button { model.throwTo(target.player.id) } label: {
+                        HStack {
+                            Text(target.player.athlete.name)
+                                .font(.caption.weight(.medium))
+                            Spacer()
+                            Text(target.state.displayName)
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(color(for: target.state))
+                        }
+                        .frame(minHeight: 36)
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityLabel("\(target.player.athlete.name), \(target.state.displayName)")
+                    .accessibilityHint("Throws to him.")
+                }
+            } else {
+                Button("Show Receivers") { showsTargetList = true }
+                    .buttonStyle(.borderless)
+                    .controlSize(.small)
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
-
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.secondary.opacity(0.2))
-                    Capsule()
-                        .fill(Color.orange)
-                        .frame(width: proxy.size.width * model.carryFraction)
-                }
-            }
-            .frame(height: 6)
-            .accessibilityLabel("Time left to decide")
-
-            HStack(spacing: Layout.small) {
-                Button { model.decideCarry(0.8) } label: {
-                    Label("Fight for Yards", systemImage: "figure.run")
-                        .font(.caption.weight(.medium))
-                        .frame(maxWidth: .infinity, minHeight: 46)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.orange)
-
-                Button { model.decideCarry(-0.8) } label: {
-                    Label("Secure It", systemImage: "shield.fill")
-                        .font(.caption.weight(.medium))
-                        .frame(maxWidth: .infinity, minHeight: 46)
-                }
-                .buttonStyle(.bordered)
             }
         }
         .padding(Layout.medium)
@@ -349,8 +332,18 @@ struct ArcadeFieldView: View {
         .background(.bar)
     }
 
-    /// The two-tap kick: a power bar, then an aim arrow. Both are sweeps you have to stop in the
-    /// middle, which is the whole skill of it.
+    private func color(for state: OpennessState) -> Color {
+        OpennessTier(state).textColor
+    }
+
+    private func statusLabel(_ model: ArcadeGameModel) -> String {
+        guard let frame = model.currentFrame else { return "Read the routes" }
+        if case .carrying = frame.phase { return "Swipe to juke, up to dive, down to go down" }
+        if case .ballInAir = frame.phase { return "In the air…" }
+        if frame.sackWarningActive { return "Pressure — get rid of it" }
+        return "Drag to aim, release to throw"
+    }
+
     private func kickMeter(_ model: ArcadeGameModel) -> some View {
         VStack(spacing: Layout.medium) {
             Text(model.meterStage == .power ? "Tap to set power" : "Tap to set aim")
@@ -359,7 +352,6 @@ struct ArcadeFieldView: View {
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.secondary.opacity(0.2))
-                    // The sweet spot is the middle; hitting it is what a good kick is.
                     Capsule()
                         .fill(Color.green.opacity(0.35))
                         .frame(width: proxy.size.width * 0.18)
@@ -371,6 +363,7 @@ struct ArcadeFieldView: View {
                 }
             }
             .frame(height: 26)
+            .accessibilityLabel(model.meterStage == .power ? "Power meter" : "Aim meter")
 
             Button { model.tapMeter() } label: {
                 Text(model.meterStage == .power ? "Set Power" : "Kick")
@@ -388,39 +381,6 @@ struct ArcadeFieldView: View {
         .background(.bar)
     }
 
-    private func liveControls(_ model: ArcadeGameModel) -> some View {
-        VStack(spacing: Layout.small) {
-            HStack {
-                Text(pressureLabel(model))
-                    .font(.caption.weight(model.pocketFraction < 0.3 ? .bold : .regular))
-                    .foregroundStyle(model.pocketFraction < 0.3 ? .red : .secondary)
-                Spacer()
-                Button("Hand Off") { model.handOff() }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-            }
-            // Pressure bar: when it empties, the rush gets there.
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.secondary.opacity(0.2))
-                    Capsule()
-                        .fill(model.pocketFraction < 0.3 ? Color.red : Color.green)
-                        .frame(width: proxy.size.width * model.pocketFraction)
-                }
-            }
-            .frame(height: 8)
-            .accessibilityLabel("Pass protection remaining")
-        }
-        .padding(Layout.medium)
-        .frame(maxWidth: .infinity)
-        .background(.bar)
-    }
-
-    private func pressureLabel(_ model: ArcadeGameModel) -> String {
-        if model.heldSeconds == 0 { return "Read the routes, then drag to aim" }
-        return model.pocketFraction < 0.3 ? "Pressure — get rid of it" : "Release to throw"
-    }
-
     private func resultCard(_ model: ArcadeGameModel, summary: String) -> some View {
         VStack(spacing: Layout.small) {
             Text(summary)
@@ -433,15 +393,31 @@ struct ArcadeFieldView: View {
         .padding(Layout.medium)
         .frame(maxWidth: .infinity)
         .background(.bar)
+        .accessibilityElement(children: .contain)
     }
 
-    private func opponentCard(_ model: ArcadeGameModel) -> some View {
+    /// The opposition's snap, watched rather than read. This is the genre's loudest complaint,
+    /// answered: your call, their play, resolved on the same field you attack on.
+    private func defenseCard(_ model: ArcadeGameModel) -> some View {
         VStack(spacing: Layout.small) {
-            Text("The opposition has the ball.")
-                .font(.subheadline)
+            Text("Their ball — \(model.defensiveCall.displayName)")
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
-            Button("Watch the Drive") { model.continueAfterResult() }
-                .buttonStyle(.borderedProminent)
+            LazyVGrid(
+                columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
+                spacing: Layout.small
+            ) {
+                ForEach(DefensivePlay.allCases, id: \.self) { call in
+                    Button { model.setDefensiveCall(call) } label: {
+                        Text(call.displayName)
+                            .font(.caption2.weight(.medium))
+                            .frame(maxWidth: .infinity, minHeight: 36)
+                    }
+                    .buttonStyle(model.defensiveCall == call ? .borderedProminent : .bordered)
+                }
+            }
+            Button("Skip Ahead") { model.skipToNextUserSnap() }
+                .buttonStyle(.bordered)
                 .frame(maxWidth: .infinity)
         }
         .padding(Layout.medium)
@@ -481,6 +457,15 @@ struct ArcadeFieldView: View {
     }
 }
 
+/// VoiceOver detection that also type-checks on macOS, where the package is compile-verified.
+func UIAccessibilityIsVoiceOverRunningCompat() -> Bool {
+    #if os(iOS)
+    return UIAccessibility.isVoiceOverRunning
+    #else
+    return false
+    #endif
+}
+
 extension View {
     /// `navigationBarTitleDisplayMode` is iOS-only; the package type-checks on macOS too.
     @ViewBuilder
@@ -490,30 +475,5 @@ extension View {
         #else
         self
         #endif
-    }
-}
-
-/// The dotted flight path, drawn only as far as the quarterback's accuracy lets you see.
-struct TrajectoryArc: Shape {
-    let from: CGPoint
-    let to: CGPoint
-    let visibleFraction: Double
-
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let clamped = min(1, max(0.1, visibleFraction))
-        let steps = 28
-        let lastVisible = Int(Double(steps) * clamped)
-        // A shallow parabola so the throw reads as a ball in the air rather than a laser.
-        let lift = min(90, hypot(to.x - from.x, to.y - from.y) * 0.28)
-
-        for step in 0...lastVisible {
-            let t = Double(step) / Double(steps)
-            let x = from.x + (to.x - from.x) * t
-            let y = from.y + (to.y - from.y) * t - lift * sin(.pi * t)
-            let point = CGPoint(x: x, y: y)
-            if step == 0 { path.move(to: point) } else { path.addLine(to: point) }
-        }
-        return path
     }
 }

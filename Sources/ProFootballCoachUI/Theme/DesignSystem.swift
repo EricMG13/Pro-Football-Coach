@@ -203,6 +203,68 @@ public enum RatingTier: String, CaseIterable, Sendable {
     public var color: Color { Color(light: lightHex, dark: darkHex) }
 }
 
+/// The three things an openness indicator can say, and the two palettes it says them in.
+///
+/// Two palettes because the indicator is drawn on two very different grounds: over dark turf,
+/// where it can be bright and saturated, and as text on a card, where `.green` measures 2.2:1
+/// and is the exact failure `RatingTier` above exists to avoid. The text hexes are the tier
+/// hexes for that reason — already verified against card, page and chip tint in both themes.
+///
+/// Colour is never the only channel. The field draws a solid ring for open, a broken ring for
+/// contested and a thin one for covered, and `label` carries the state to VoiceOver.
+public enum OpennessTier: String, CaseIterable, Sendable {
+    case open, contested, covered
+
+    public init(_ state: OpennessState) {
+        self = switch state {
+        case .open: .open
+        case .contested: .contested
+        case .covered: .covered
+        }
+    }
+
+    public var label: String {
+        switch self {
+        case .open: "open"
+        case .contested: "contested"
+        case .covered: "covered"
+        }
+    }
+
+    public var lightHex: String {
+        switch self {
+        case .open: "#22661F"
+        case .contested: "#8A5000"
+        case .covered: "#AB2A1E"
+        }
+    }
+
+    public var darkHex: String {
+        switch self {
+        case .open: "#67D77A"
+        case .contested: "#F5A93C"
+        case .covered: "#FF8A80"
+        }
+    }
+
+    /// For text and chips, where the ground is a card or the page.
+    public var textColor: Color { Color(light: lightHex, dark: darkHex) }
+
+    /// For the ring drawn over turf, which is dark in both themes and takes the bright end.
+    public var fieldHex: String {
+        switch self {
+        case .open: "#4BE07C"
+        case .contested: "#FFB53D"
+        case .covered: "#FF7A68"
+        }
+    }
+
+    public var fieldColor: Color { Color(hex: fieldHex) }
+
+    /// The turf both themes draw, and what the field palette is verified against.
+    public static let turfHex = "#225C31"
+}
+
 public enum RatingPalette {
     public static func tier(for rating: Int) -> RatingTier { RatingTier(rating: rating) }
 
