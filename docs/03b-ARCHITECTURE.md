@@ -83,7 +83,9 @@ unknown-field defaults for forward compatibility.
 
 ## 5. Test architecture (D11) — **blocked pending an owner decision**
 
-`docs/OPEN-DECISIONS.md` D11 is escalated and unresolved. The facts:
+**D11 is decided.** The runner is the hand-rolled harness below, run by `./scripts/verify.sh` on the
+owner's machine — verified green on Swift 6.3.3 (299 tests, 18,412 checks). The constraints that
+forced that choice, and that still shape every phase gate:
 
 - Agent environments have had no `swift`, no `swiftc`, no `xcodebuild`, no `xcrun`, no `simctl`, and
   `download.swift.org` refused by egress policy.

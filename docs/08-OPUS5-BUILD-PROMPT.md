@@ -97,9 +97,8 @@ encode a design decision only in code. `docs/02-GAME-DESIGN.md` is the gameplay 
 
 ## Escalation triggers — stop and ask the owner
 
-1. **A blocking `docs/OPEN-DECISIONS.md` item stands in the phase's way.** As of writing, **D11
-   (test strategy under the real toolchain) is ESCALATED and unresolved, and P0 is blocked on it.**
-   Every "tests green" gate depends on the answer. Do not invent one.
+1. **A blocking `docs/OPEN-DECISIONS.md` item stands in the phase's way.** As of writing there is
+   none — D11 is decided and P0 is unblocked. Do not invent an answer to one that reopens.
 2. **Canon contradicts itself.** Two RETAINED documents disagree on a decision.
 3. **A gate fails repeatedly** — three genuine attempts at the same gate without progress.
 4. **A phase cannot be verified** because the toolchain is absent and the gate requires a build.

@@ -110,7 +110,7 @@ during the v4 execution.
 | `docs/05-IMPLEMENTATION-PLAN.md` | 8 | Phased build with per-phase gates |
 | `docs/PRE-DEPLOYMENT-CHECKLIST.md` | 8 | What must be true before a build goes out. Authored, never regenerated — no such file has ever existed here |
 | `docs/06-AUDIT-DISPOSITION.md` | 9 | The 25 P0/P1s and the five systemic patterns, converted into named tests |
-| `docs/OPEN-DECISIONS.md` | 10 | The D1–D14 register, each with an instrumented falsifier. D14 (build order and league size) was added during execution because P2 fixes *that* both tiers ship, not which is built first. **D11 is ESCALATED** |
+| `docs/OPEN-DECISIONS.md` | 10 | The D1–D14 register, each with an instrumented falsifier. D14 (build order and league size) was added during execution because P2 fixes *that* both tiers ship, not which is built first |
 | `docs/08-OPUS5-BUILD-PROMPT.md` | 11 | The phase-entry prompt. **Owns mission and definition of done** |
 | `docs/PORT-LOG.md` | — | Tier C's symmetric justification: what is ported from the prior build and why, what is discarded and why. Added during execution |
 

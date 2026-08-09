@@ -415,8 +415,10 @@ is directly a test. Falsified when a bar fails.
 > needs only the Swift Command Line Tools — **not full Xcode** — because neither XCTest nor
 > swift-testing ships outside Xcode. Port it (see `docs/PORT-LOG.md`).
 >
-> **(b) Who actually runs it? — ESCALATED.** This is the real open question, and no amount of
-> design resolves it.
+> **(b) Who actually runs it? — ANSWERED 2026-08-09.** The owner installed Swift 6.3.3 via swiftly
+> on macOS and ran `scripts/verify.sh` green (299 tests, 18,412 checks). Option 2 below: the owner's
+> machine is the CI. Agent environments still have no toolchain, so build and test gates are an
+> owner round-trip.
 
 Verified in this container, not assumed: `swift`, `swiftc`, `xcodebuild`, `xcrun` and `simctl` are
 all absent; `download.swift.org` returns **403 on CONNECT** through the egress proxy; Ubuntu's

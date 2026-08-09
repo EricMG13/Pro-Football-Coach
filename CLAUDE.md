@@ -64,7 +64,7 @@ prose as if it were a test.
 | `docs/04b-AUDIT-RUBRIC.md` | The audit rubric: five dimensions, 0–4 anchors, P0–P3 severities |
 | `docs/05-IMPLEMENTATION-PLAN.md` | Phased build with per-phase gates |
 | `docs/06-AUDIT-DISPOSITION.md` | Disposition of the prior audit's P0/P1s and systemic patterns |
-| `docs/OPEN-DECISIONS.md` | Decision register D1–D14, each with an instrumented falsifier. **D11 is ESCALATED** |
+| `docs/OPEN-DECISIONS.md` | Decision register D1–D14, each with an instrumented falsifier |
 | `docs/08-OPUS5-BUILD-PROMPT.md` | Phase-entry prompt. **Owns mission and definition of done** |
 | `docs/PRE-DEPLOYMENT-CHECKLIST.md` | What must be true before a build goes out |
 | `PRODUCT.md` | Positioning, audience, market gap, v1 scope |
@@ -105,10 +105,16 @@ Agent environments frequently have **no `swift` and no `xcodebuild`**, and the e
 `download.swift.org`. Never route around that policy to fetch a toolchain. When it is absent:
 
 - Write the code anyway, to the same standard.
-- Record it in `docs/STATUS.md` as **unverified — never compiled**, naming the files.
-- Never say "build green", "tests pass" or "verified" about anything a compiler has not seen. Phase
-  4C of the prior build shipped uncompiled; the failure was not the missing toolchain, it was the
-  claim. A phase gate that depends on a build is then an escalation, not a judgement call.
+- Record it in `docs/STATUS.md` as **unverified**, naming the files.
+- Never say "build green", "tests pass" or "verified" about anything a compiler has not seen.
+- Ask the owner to run `./scripts/verify.sh` and wait for the output. That is the gate — Swift 6.3.3
+  on their machine, verified green. A phase gate that depends on a build is an owner round-trip, not
+  a judgement call.
+
+**A caution about inferring build state.** Committed build artifacts are evidence about the
+artifacts, not about the source: a stale Xcode product missing a directory's symbols does not mean
+that directory fails to compile. This session made exactly that error and `docs/PORT-LOG.md` keeps
+the record. When the question is "does this compile", the only answer is a compiler.
 
 ## Tech stack (owner-fixed — do not relitigate)
 
