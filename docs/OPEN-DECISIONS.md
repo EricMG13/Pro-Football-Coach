@@ -24,7 +24,7 @@ assumptions, cheap to change. `ESCALATED` — blocking owner question, do not bu
 | D8 | Difficulty, jeopardy and failure | DECIDED |
 | D9 | Onboarding and first session | DECIDED |
 | D10 | AI quality | DECIDED |
-| D11 | Test strategy under the real toolchain | **ESCALATED** |
+| D11 | Test strategy under the real toolchain | **DECIDED 2026-08-09** — gates ran green on the owner's machine |
 | D12 | Accessibility contract | DECIDED (REVERSIBLE) |
 | D13 | Content volume | DECIDED |
 | D14 | Build order and league size | DECIDED (REVERSIBLE) — added in v4 execution |
@@ -402,7 +402,28 @@ is directly a test. Falsified when a bar fails.
 
 ---
 
-## D11 — Test strategy under the real toolchain — **PARTLY DECIDED, PARTLY ESCALATED**
+## D11 — Test strategy under the real toolchain — **DECIDED 2026-08-09**
+
+> **Closed by running it.** Both halves are now answered, and the second was answered by fact rather
+> than by choosing from the options below.
+>
+> **(a) What framework runs the tests:** the ported `TestKit` harness, as reasoned below.
+>
+> **(b) Who runs it:** the session does. The machine hosting this work has **Swift 6.3.3, Xcode
+> 26.6** and booted simulators; `./scripts/verify.sh` was executed directly and returned `swift build`
+> green in 6.91 s and `299 tests, 18412 checks, all passed`. That is **option 2's route reaching
+> option 1's outcome** — the owner's Xcode machine is the CI, but because agent sessions run *on* it,
+> no phase gate becomes a synchronous human step.
+>
+> **The condition, stated so it is not lost:** this holds while sessions run on the owner's Mac. A
+> session in a sandboxed agent container has no toolchain, and every rule in `CLAUDE.md` for that
+> case applies again unchanged. An agent asserts G1/G2 only after actually running the gates in the
+> session that claims them — never by citing this entry.
+>
+> **What the green suite is and is not evidence of:** it covers the *prior* build, most of which P0
+> deletes. It proves the gate mechanism works on this machine. It proves nothing about the rebuild.
+>
+> The original analysis is retained below unedited; the container case will recur.
 
 > **Amended after inspecting the repo.** D11 was first written as wholly blocking. That was wrong,
 > and the correction matters because it unblocks most of P0. The question decomposes:

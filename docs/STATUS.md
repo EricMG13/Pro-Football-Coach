@@ -12,7 +12,7 @@ The honest picture: what exists, what is verified, what is not.
 
 The v4 brief (`docs/reviews/2026-08-09-spec-prompt-v4.md`) has been executed: research, design,
 architecture, plan, decisions and the build prompt all exist and are internally consistent. Phase P0
-of `docs/05-IMPLEMENTATION-PLAN.md` has not started, and it is **blocked** — see D11 below.
+of `docs/05-IMPLEMENTATION-PLAN.md` has not started. **It is no longer blocked** — see D11 below.
 
 The previous build's source is still in the tree (`Sources/`, `Tests/`, `App/`). Under Tier C it has
 **no authority**. It has not been deleted, because deleting it is P0's business and P0 has not run.
@@ -34,7 +34,7 @@ Do not treat anything in `Sources/` as canon; `docs/DOC-MANIFEST.md` is the auth
 | `docs/04-UX-AND-DESIGN-SYSTEM.md` | Written | Not independently reviewed |
 | `docs/05-IMPLEMENTATION-PLAN.md` | Written | Not independently reviewed |
 | `docs/06-AUDIT-DISPOSITION.md` | 25 P0/P1s + 5 patterns dispositioned | Finding titles extracted mechanically from `AUDIT.md` |
-| `docs/OPEN-DECISIONS.md` | D1–D14, each with an instrumented falsifier | D11 escalated, not decided |
+| `docs/OPEN-DECISIONS.md` | D1–D14, each with an instrumented falsifier | D11 **closed 2026-08-09** by running the gates; the rest undecided as marked |
 | `docs/PRE-DEPLOYMENT-CHECKLIST.md` | Authored | — |
 | `docs/08-OPUS5-BUILD-PROMPT.md` | Written as a phase-entry prompt | — |
 | `PRODUCT.md` | Rewritten from the §6.3 gap argument | — |
@@ -43,9 +43,40 @@ Do not treat anything in `Sources/` as canon; `docs/DOC-MANIFEST.md` is the auth
 
 ---
 
-## Blocking: D11(b) — who has a toolchain
+## D11(b) — who has a toolchain — **CLOSED 2026-08-09**
 
-**P0 can be written. Its build and test gates cannot be asserted here.**
+**The gates ran. Build green; 299 tests, 18,412 checks, all passed.** The machine that hosts this
+session has the toolchain the earlier entries below could not find:
+
+```
+swift 6.3.3 (swiftlang-6.3.3.1.3)   Xcode 26.6 (17F113)
+xcode-select: /Applications/Xcode.app/Contents/Developer
+simctl: iPhone 17 / 17 Pro / 17 Pro Max / 17e / Air available, two booted
+```
+
+`./scripts/verify.sh` — written as an owner handoff — was run directly by the session: `swift build`
+complete in 6.91 s, `swift run -c release SimTests` reporting `299 tests, 18412 checks, all passed`.
+
+**Three things this does and does not mean.**
+
+1. **G1 and G2 are agent-assertable from here.** Not by the egress-policy change D11 recommends, but
+   because the session runs on the owner's Mac rather than in the sandboxed container the entries
+   below describe. Same outcome as D11 option 1, reached by option 2's route, and without option 2's
+   synchronous human step.
+2. **This is not evidence the rebuild works.** Those 299 tests cover the *previous* build — arcade,
+   dynasty, front office — most of which P0 deletes. What is verified is the **gate mechanism**: the
+   harness compiles, runs, and reports real exit codes on this machine. Nothing about the rebuild is
+   verified, because the rebuild does not exist.
+3. **It re-escalates if the environment changes.** A session in a sandboxed agent container has none
+   of the above, and the rules in `CLAUDE.md` for that case still stand in full. The claim is
+   "verified on this machine, this session", never "verified everywhere".
+
+The record of the container investigation is kept below, unedited, because it is what the decision
+was made against and because the container case will recur.
+
+---
+
+### The original finding, retained
 
 D11 was originally recorded as wholly blocking; on inspection it splits, and the correction unblocks
 most of P0:
@@ -55,10 +86,11 @@ most of P0:
   dependencies, real exit codes, run as an executable target via `swift build && swift run -c release
   SimTests`. It needs only the Command Line Tools, not full Xcode. It carried 224 tests and 13,226
   assertions. Ported per `docs/PORT-LOG.md`.
-- **D11(b) — who actually has a toolchain to run it: still escalated.** This is an owner question and
-  no design resolves it.
+- **D11(b) — who actually has a toolchain to run it: ~~still escalated~~ closed, see above.** It was
+  an owner question, and the answer turned out to be operational: the owner's machine is where the
+  sessions run.
 
-Verified in this container, not assumed:
+Verified in the container this was originally written in, not assumed:
 
 ```
 swift: NOT FOUND    swiftc: NOT FOUND    xcodebuild: NOT FOUND
@@ -84,8 +116,9 @@ and gitignored.
 the Swift Command Line Tools, not full Xcode.
 
 Every "tests green" gate in `05`, and the whole machine-verifiable half of the definition of done,
-depend on D11(b). Options and a recommendation are in `docs/OPEN-DECISIONS.md` D11 — the cheapest by
-far is lifting the egress rule for `download.swift.org`, which closes D11 completely.
+depended on D11(b). They no longer do — see the top of this section. Lifting the egress rule for
+`download.swift.org` remains the right fix **if the build ever moves back into a container**; it is
+no longer on the critical path.
 
 ---
 

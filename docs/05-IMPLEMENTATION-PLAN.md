@@ -15,8 +15,8 @@ Every phase gates on **G1–G4**. Engine phases add **G5–G7**. Milestones add 
 
 | Gate | Requirement |
 |---|---|
-| **G1 Build green** | Compiles. If no toolchain is available, the phase is **not** green — see the D11 note below. |
-| **G2 Tests green** | The full suite passes, by whatever mechanism D11 selects. |
+| **G1 Build green** | `swift build` clean. Asserted only by having run it in the session that claims it — see the D11 note below. |
+| **G2 Tests green** | `swift run -c release SimTests` passes in full. Same rule: run it, or do not claim it. |
 | **G3 Surface audit** | Touched surfaces score **≥17/20 with zero P0/P1** against `docs/04b-AUDIT-RUBRIC.md`, scored on the three **local** dimensions (Accessibility, Performance, Appearance & Theming). |
 | **G4 Scope** | The diff contains what the phase specifies and nothing else. No opportunistic refactors. |
 | **G5 Calibration** | All bands in `03` §5 hold under TOST. |
@@ -27,19 +27,24 @@ Every phase gates on **G1–G4**. Engine phases add **G5–G7**. Milestones add 
 **Legal gates run on every phase that touches generation:** the name-collision test and the
 trade-dress ΔE test.
 
-### The D11 problem, stated where it bites
+### D11, where it bites — **resolved 2026-08-09, conditionally**
 
-`docs/OPEN-DECISIONS.md` **D11 is escalated and unresolved.** No agent environment in this project's
-history has had a Swift toolchain, and Phase 4C of the previous build shipped never having been
-compiled as a direct result.
+`docs/OPEN-DECISIONS.md` **D11 is closed.** The gates were run: Swift 6.3.3 and Xcode 26.6 are
+present on the machine hosting these sessions, `./scripts/verify.sh` returns a green build and
+`299 tests, 18412 checks, all passed`. **G1 and G2 are agent-assertable.**
 
-Until D11 is answered:
+Three rules survive the closure, and they are the ones that matter:
 
-- **G1 and G2 cannot be asserted by an agent.** An agent that writes code without a compiler records
-  it in `docs/STATUS.md` as **unverified — never compiled**, naming the files, and does not claim the
-  phase is done.
-- A phase whose only outstanding gates are G1/G2 is **blocked on the owner**, not complete.
-- An adversarial review is not a build and must never be reported as one.
+- **Run it, or do not claim it.** G1/G2 are asserted by the session that ran them, with the command
+  output in hand. Citing D11, this plan, or a previous session's green run is not an assertion.
+- **If the session has no toolchain, the old rules apply unchanged.** A sandboxed agent container has
+  no `swift`. An agent that writes code without a compiler records it in `docs/STATUS.md` as
+  **unverified — never compiled**, naming the files, and does not claim the phase is done. A phase
+  whose only outstanding gates are G1/G2 is then blocked on the owner, not complete.
+- **An adversarial review is not a build** and must never be reported as one.
+
+Phase 4C of the previous build shipped never having been compiled. The toolchain being present now
+removes the excuse, not the failure mode.
 
 ---
 
@@ -53,10 +58,13 @@ envelope with a version readable without a full parse; the ported `TestKit` harn
 of everything in `Sources/` not named in `docs/PORT-LOG.md`, in one legible commit.
 **Gates:** G1, G2, G4, G6.
 
-**Not blocked on D11 — partially.** D11(a), *what framework runs the tests*, is decided: the ported
-harness. D11(b), *who has a toolchain to run it*, is still escalated. So P0's code can be written and
-reviewed now; **G1 and G2 cannot be asserted** until (b) is answered, and anything written stays
-recorded in `docs/STATUS.md` as unverified — never compiled.
+**Not blocked.** D11 is closed in both halves — the ported harness runs the tests, and the session
+runs the harness. P0 asserts all four of its gates for real.
+
+P0 carries one baseline obligation the other phases do not: the suite is green today at **299 tests,
+18,412 checks** against the *previous* build. P0 deletes most of what those cover. The phase must
+therefore state, at its close, the new count and what was removed — a suite that shrinks silently is
+how a coverage boundary becomes a quality boundary, which is the failure `CLAUDE.md` names.
 
 ### P1 — Model and rules
 Player, contract, programme, team, staff, league. Both rules modules — every constant that `02` and
