@@ -289,7 +289,9 @@ struct ArcadeFieldView: View {
                 Text(statusLabel(model))
                     .font(.caption.weight(model.currentFrame?.sackWarningActive == true ? .bold : .regular))
                     .foregroundStyle(
-                        model.currentFrame?.sackWarningActive == true ? Color.warningText : .secondary
+                        model.currentFrame?.sackWarningActive == true
+                            ? OpennessTier.covered.textColor
+                            : Color.secondary
                     )
                 Spacer()
                 if model.audiblesRemaining > 0 {

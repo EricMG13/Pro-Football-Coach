@@ -66,17 +66,25 @@ public enum Choreographer {
 
         // Whoever the engine says touched the ball is who the animation follows. Falling back to
         // a plausible body keeps a play with a thin stat line watchable rather than empty.
-        let carrier = pickCarrier(
-            event: event, offense: offensePlayers, isPass: isPass, rng: &rng
-        )
-        let carrierLateral = carrier?.point.lateralYards ?? 0
+        //
+        // A sack is the exception and has to be: the man carrying the ball is the passer, and he
+        // is going backwards. Handing it to a receiver would draw him sprinting to a negative
+        // yard line, which is not a thing that happens.
+        let isSack = event.category == .sack
+        let carrier = isSack
+            ? offensePlayers.first { $0.role == .quarterback }
+            : pickCarrier(event: event, offense: offensePlayers, isPass: isPass, rng: &rng)
+        // Captured when he takes the ball rather than at the snap: a receiver has run a route by
+        // then, and freezing his alignment would teleport him back to the line to catch it.
+        var carrierLateral = carrier?.point.lateralYards ?? 0
+        var hasTakenBall = false
 
         var frames: [FieldFrame] = []
         var elapsed = 0.0
         let dt = ArcadeTuning.secondsPerTick
         // The throw goes out a third of the way through a passing play; a run starts moving at
         // once. Everything after that is the ball travelling to the number the engine chose.
-        let releaseAt = isPass ? total * 0.34 : 0.12
+        let releaseAt = isPass ? total * 0.34 : (isSack ? total * 0.55 : 0.12)
         var routeLeg: [UUID: Int] = [:]
 
         while elapsed <= total {
@@ -86,10 +94,16 @@ public enum Choreographer {
             for index in offensePlayers.indices {
                 let id = offensePlayers[index].id
                 if id == carrier?.id, elapsed >= releaseAt {
+                    if !hasTakenBall {
+                        carrierLateral = offensePlayers[index].point.lateralYards
+                        hasTakenBall = true
+                    }
                     let carryProgress = total > releaseAt
                         ? Swift.min(1, (elapsed - releaseAt) / (total - releaseAt))
                         : 1
-                    let startDepth = isPass ? offensePlayers[index].point.depth : 0
+                    // A sack drags the passer back from wherever he had dropped to; a run starts
+                    // at the line; a catch starts wherever the receiver caught it.
+                    let startDepth = (isPass || isSack) ? offensePlayers[index].point.depth : 0
                     let depth = startDepth + (targetDepth - startDepth) * carryProgress
                     offensePlayers[index].point = FieldPoint.yards(
                         depth: depth, lateralYards: carrierLateral

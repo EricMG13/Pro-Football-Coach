@@ -136,8 +136,20 @@ final class ArcadeGameModel {
         advanceToUserTurn()
     }
 
+    /// Guards the one path that can call itself: a watched snap that turns out to have nothing
+    /// to show asks for the next one. The engine always makes progress, so this should never
+    /// bite — but "should never" is how a spin lock gets shipped.
+    private var advanceDepth = 0
+
     private func advanceToUserTurn() {
-        lastPlays = game.advanceUntilUserTurn(read: defensiveRead)
+        guard advanceDepth < 8 else { return }
+        advanceDepth += 1
+        defer { advanceDepth -= 1 }
+
+        // Pausing on each opposition snap is what makes the drive watchable. Without it the
+        // whole possession resolves inside one call and this method only ever sees a finished
+        // drive — which is how the watch-the-defense path came to be unreachable the first time.
+        lastPlays = game.advanceUntilUserTurn(read: defensiveRead, pausingOnOpponentSnaps: true)
         switch game.state {
         case .finished:
             phase = .finished
@@ -297,9 +309,19 @@ final class ArcadeGameModel {
 
     /// Builds the animation for the opposition's snap from the play the engine already resolved.
     private func beginWatchingDefense() {
-        phase = .watchingDefense
         choreography = []
-        guard let event = lastPlays.last else { return }
+        // The snap the player is here to watch is the opposition's, not the extra point that
+        // may have followed it. Setting the phase only once there is something to show keeps the
+        // UI from parking in `watchingDefense` with an empty field.
+        let watchable = lastPlays.first {
+            $0.offenseTeamID != userTeamID && $0.category != .administrative
+        }
+        guard let event = watchable ?? lastPlays.last else {
+            // Nothing came back — an administrative step, or overtime being set up. Keep going
+            // rather than stranding the player on a blank field.
+            return advanceToUserTurn()
+        }
+        phase = .watchingDefense
         let played = Choreographer.play(
             event: event,
             offense: OffensivePersonnel(team: opponent),
@@ -339,6 +361,12 @@ final class ArcadeGameModel {
         guard !frames.isEmpty else { return }
         guard !prefersReducedMotion else {
             currentFrame = frames.last
+            // Nothing is animating, so nothing will call this for us.
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(0.8))
+                guard let self, self.phase == .watchingDefense else { return }
+                self.advanceToUserTurn()
+            }
             return
         }
         clockTask = Task { [weak self] in
@@ -348,15 +376,27 @@ final class ArcadeGameModel {
                 guard self.phase == .watchingDefense else { return }
                 self.currentFrame = frame
             }
+            guard let self, !Task.isCancelled, self.phase == .watchingDefense else { return }
+            // The play is over; go straight to the next one rather than waiting to be asked.
+            self.advanceToUserTurn()
         }
     }
 
-    /// Skips the rest of the animation. The outcome is already decided, so this costs nothing.
+    /// Skips the rest of the opposition's drive. The outcome is already decided, so this costs
+    /// nothing but the watching.
+    ///
+    /// Deliberately not `advanceToUserTurn()`: that pauses on the *next* opposition snap and
+    /// starts animating it, which would make the button skip one play rather than the drive.
     func skipToNextUserSnap() {
         stopClock()
         choreography = []
         currentFrame = nil
-        advanceToUserTurn()
+        lastPlays = game.advanceUntilUserTurn(read: defensiveRead)
+        switch game.state {
+        case .finished: phase = .finished
+        case .awaitingUserPlay: phase = .callingPlay
+        case .simulating: phase = .callingPlay
+        }
     }
 
     // MARK: - Kicking
@@ -414,8 +454,9 @@ final class ArcadeGameModel {
         phase = .finished
     }
 
-    deinit {
-        clockTask?.cancel()
-        meterTask?.cancel()
-    }
+    // No `deinit` cancelling the timers. Under `@Observable` the macro rewrites stored properties
+    // into computed ones that touch the observation registrar, and reaching them from `deinit` on
+    // a `@MainActor` class is exactly the isolation corner nobody wants to be standing in. It buys
+    // nothing anyway: both loops capture `self` weakly and return the moment it is gone, so a
+    // dismissed game stops on its next tick.
 }

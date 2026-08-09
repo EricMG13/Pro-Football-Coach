@@ -251,11 +251,17 @@ public enum OpennessTier: String, CaseIterable, Sendable {
     public var textColor: Color { Color(light: lightHex, dark: darkHex) }
 
     /// For the ring drawn over turf, which is dark in both themes and takes the bright end.
+    ///
+    /// Reds are the awkward case: 4.5:1 against turf needs a relative luminance around 0.55, and
+    /// no saturated red gets near it — pure red manages 2.0:1. So "covered" is a light salmon
+    /// rather than the red the eye expects, and the thin ring it is drawn as does the rest of
+    /// the work. All three sit near 5:1 rather than on the 4.5 line, so a small palette tweak
+    /// cannot silently drop one under it.
     public var fieldHex: String {
         switch self {
-        case .open: "#4BE07C"
-        case .contested: "#FFB53D"
-        case .covered: "#FF7A68"
+        case .open: "#5BE889"
+        case .contested: "#FFD166"
+        case .covered: "#FFB8C4"
         }
     }
 

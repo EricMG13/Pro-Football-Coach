@@ -83,7 +83,8 @@ public struct InteractiveGame {
     @discardableResult
     public mutating func advanceUntilUserTurn(
         limit: Int = 400,
-        read: DefensiveInput = .none
+        read: DefensiveInput = .none,
+        pausingOnOpponentSnaps: Bool = false
     ) -> [PlayEvent] {
         let before = plays.count
         var steps = 0
@@ -95,8 +96,21 @@ public struct InteractiveGame {
             // The read only ever applies to a snap the opposition is taking; kickoffs, the
             // user's own plays and clock administration are untouched by it.
             let applied: DefensiveInput? = isUserOnOffense ? nil : read
+            let countBefore = plays.count
             guard simulator.advance(rng: &rng, defensiveRead: applied) else { break }
             captureNewPlays()
+
+            // Hand back after each snap the opposition takes, so a caller that wants to show
+            // the drive can show it a play at a time. Without this the whole possession
+            // resolves inside one call and there is nothing left to watch — which is exactly
+            // the text-box treatment the arcade mode exists to replace.
+            if pausingOnOpponentSnaps,
+               plays.count > countBefore,
+               let latest = plays.last,
+               latest.offenseTeamID != userTeamID,
+               Self.isWatchable(latest.category) {
+                break
+            }
         }
         finishIfComplete()
         return Array(plays.dropFirst(before))
@@ -145,6 +159,16 @@ public struct InteractiveGame {
         }
         captureNewPlays()
         finishIfComplete()
+    }
+
+    /// Whether a play is worth stopping to show. Clock administration and timeouts are not
+    /// plays anybody wants to watch resolve on a field.
+    static func isWatchable(_ category: PlayCategory) -> Bool {
+        switch category {
+        case .administrative, .timeout, .penalty, .injury: false
+        case .run, .pass, .sack, .punt, .fieldGoal, .extraPoint, .kickoff, .turnover,
+             .touchdown, .twoPointConversion, .kneel, .spike: true
+        }
     }
 
     private mutating func captureNewPlays() {
