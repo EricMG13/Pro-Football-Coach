@@ -5,14 +5,13 @@ import FootballSimCore
 ///
 /// Both play modes live here because the rules must not fork: the engine resolves the game
 /// either way, and the mode only changes how it is presented and how much the user steers.
-/// "On the Field" adds the arcade field view on top of the same simulation.
+/// "On the Field" is a separate presentation (`ArcadeFieldView`) over the same engine.
 struct LiveGameView: View {
     @Environment(AppState.self) private var app
     @Environment(\.dismiss) private var dismiss
     @Environment(\.teamTheme) private var theme
 
     let game: ScheduledGame
-    let arcade: Bool
 
     @State private var record: GameRecord?
     @State private var revealedPlays = 0
@@ -22,15 +21,7 @@ struct LiveGameView: View {
         NavigationStack {
             Group {
                 if let record {
-                    if arcade && !isFinished {
-                        ArcadeGameView(
-                            record: record,
-                            revealedPlays: $revealedPlays,
-                            onFinish: { isFinished = true }
-                        )
-                    } else {
-                        liveFeed(record)
-                    }
+                    liveFeed(record)
                 } else {
                     ProgressView("Kickoff…")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)

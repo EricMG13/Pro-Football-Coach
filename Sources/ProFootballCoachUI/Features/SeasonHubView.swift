@@ -54,7 +54,7 @@ struct SeasonHubView: View {
             if let game = app.nextGame {
                 switch mode {
                 case .onField: ArcadeFieldView(game: game)
-                case .callPlays: LiveGameView(game: game, arcade: false)
+                case .callPlays: LiveGameView(game: game)
                 }
             }
         }

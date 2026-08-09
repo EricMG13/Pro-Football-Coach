@@ -8,6 +8,7 @@ import FootballSimCore
 /// of rules before kickoff is the fastest way to lose somebody.
 struct TutorialView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var page = 0
 
     private struct Card: Identifiable {
@@ -96,7 +97,9 @@ struct TutorialView: View {
                     if page == cards.count - 1 {
                         dismiss()
                     } else {
-                        withAnimation { page += 1 }
+                        // The page slide is decorative; a reader who asked for less motion gets
+                        // the next card without it.
+                        if reduceMotion { page += 1 } else { withAnimation { page += 1 } }
                     }
                 }
                 .font(.headline)

@@ -252,7 +252,7 @@ struct StepIndicator: View {
                 Capsule()
                     .fill(index <= current ? Color.accentColor : Color.secondary.opacity(0.25))
                     .frame(width: index == current ? 26 : 10, height: 6)
-                    .animation(.snappy, value: current)
+                    .motionAware(.snappy, value: current)
             }
         }
     }

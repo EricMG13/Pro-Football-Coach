@@ -41,15 +41,18 @@ public final class AppState {
 
     /// Appearance preference. Persisted outside the franchise, because it belongs to the person
     /// rather than to any one dynasty.
-    public var appearance: AppAppearance {
-        get {
-            AppAppearance(rawValue: UserDefaults.standard.string(forKey: Self.appearanceKey) ?? "")
-                ?? .system
-        }
-        set { UserDefaults.standard.set(newValue.rawValue, forKey: Self.appearanceKey) }
+    ///
+    /// Stored, then mirrored to `UserDefaults` on change — not computed over it. `@Observable`
+    /// only tracks stored properties, so a computed accessor wrote the choice to disk without
+    /// ever telling the root view to re-evaluate `preferredColorScheme`: the segmented control
+    /// moved, the setting survived a relaunch, and the app stayed light either way.
+    public var appearance: AppAppearance = AppAppearance(
+        rawValue: UserDefaults.standard.string(forKey: AppState.appearanceKey) ?? ""
+    ) ?? .system {
+        didSet { UserDefaults.standard.set(appearance.rawValue, forKey: Self.appearanceKey) }
     }
 
-    private static let appearanceKey = "pfc.appearance"
+    fileprivate static let appearanceKey = "pfc.appearance"
     public var lastError: String?
     public var isBusy = false
 
