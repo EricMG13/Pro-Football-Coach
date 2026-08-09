@@ -242,7 +242,12 @@ public enum OffseasonEngine {
                 if keep.count < LeagueRules.activeRosterSize {
                     keep.append(player)
                     countByPosition[player.position] = current + 1
-                } else if practiceSquad.count < LeagueRules.practiceSquadSize {
+                } else if practiceSquad.count < LeagueRules.practiceSquadSize,
+                          (player.contract?.currentCapHit ?? 0)
+                              <= CapEngine.practiceSquadContractCeiling {
+                    // Only stipend-sized deals go down. A man on a real contract is released
+                    // instead, so what the club still owes him lands on the books as dead money
+                    // rather than being quietly written off.
                     practiceSquad.append(player)
                 }
             }
@@ -286,16 +291,26 @@ public enum OffseasonEngine {
                 player.isOnPracticeSquad = true
                 // A practice-squad player is on a practice-squad deal. Carrying a real contract
                 // down here would leave a big number on the books charged at the stipend rate.
-                let hit = player.contract?.currentCapHit ?? 0
-                if player.contract == nil || hit > CapEngine.practiceSquadContractCeiling {
+                if player.contract == nil {
                     player.contract = ContractPricer.minimumContract(age: player.age)
                 }
                 return player
             }
 
+            // Everyone who made neither list is released rather than deleted, so what the club
+            // still owes lands on its books and the player lands in the market. Silently
+            // dropping him was free cap relief and a career that ended mid-air.
+            let kept = Set(roster.map(\.id))
+            let released = team.roster.filter { !kept.contains($0.id) }
+
             team.roster = roster
             team.autoSortDepthChart()
             league.teams[teamIndex] = team
+
+            for player in released {
+                league.teams[teamIndex].roster.append(player)
+                CapEngine.cut(playerID: player.id, from: team.id, in: &league)
+            }
         }
     }
 

@@ -793,3 +793,43 @@ func runPracticeSquadCapTests() {
         }
     }
 }
+
+/// Re-signing was the fourth door into the same room: a negotiated contract written onto a
+/// player who still carried the practice-squad flag would have been charged at the stipend.
+func runReSignSquadTests() {
+    suite("Re-signing cannot hide a contract on the squad") {
+        test("a squad player given real money takes a real roster place") {
+            var league = LeagueFactory.makeDefaultLeague(seed: 730, userTeamIndex: 0, coach: .stub())
+            let team = league.userTeam!
+            // Open an active spot so the promotion has somewhere to go.
+            CapEngine.cut(playerID: team.activeRoster.last!.id, from: team.id, in: &league)
+            let squadPlayer = league.userTeam!.practiceSquad[0]
+            // A generated league is not cap-compliant until an offseason settles it, so give the
+            // club room; the cap is not what this test is about.
+            league.salaryCap = CapEngine.capSpent(for: league.userTeam!) + 50_000_000
+            let real = Contract.flat(years: 4, salary: 6_000_000)
+            let before = CapEngine.capSpent(for: league.userTeam!)
+
+            let signed = ReSignEngine.reSign(
+                playerID: squadPlayer.id, to: team.id, contract: real, in: &league
+            )
+
+            expect(signed, "the club can afford him, so the deal should go through")
+            let after = league.userTeam!.roster.first { $0.id == squadPlayer.id }!
+            expect(!after.isOnPracticeSquad, "real money means a real roster place")
+            expect(
+                CapEngine.capSpent(for: league.userTeam!) >= before + 5_000_000,
+                "the cap has to feel a six-million-dollar deal"
+            )
+        }
+
+        test("the re-sign list does not offer practice squad players") {
+            let league = LeagueFactory.makeDefaultLeague(seed: 731, userTeamIndex: 0, coach: .stub())
+            let listed = ReSignEngine.expiring(for: league.userTeam!)
+            expect(
+                !listed.contains { $0.isOnPracticeSquad },
+                "squad men are on stipends and are not negotiated with"
+            )
+        }
+    }
+}

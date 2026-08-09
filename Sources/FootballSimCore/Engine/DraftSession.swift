@@ -256,17 +256,29 @@ public enum ReSignEngine {
         else { return false }
         guard CapEngine.canAfford(contract, team: league.teams[teamIndex], in: league) else { return false }
 
+        // A real contract means a real roster place. Leaving the flag on would charge a
+        // negotiated deal at the practice-squad stipend, which is the same laundering hole the
+        // cap engine closes on every other door into this state. Checked before anything is
+        // written, so a refusal leaves the player exactly as he was.
+        let promoting = league.teams[teamIndex].roster[playerIndex].isOnPracticeSquad
+            && contract.currentCapHit > CapEngine.practiceSquadContractCeiling
+        if promoting {
+            guard league.teams[teamIndex].activeRoster.count < LeagueRules.activeRosterSize
+            else { return false }
+        }
+
         league.teams[teamIndex].roster[playerIndex].contract = contract
+        if promoting { league.teams[teamIndex].roster[playerIndex].isOnPracticeSquad = false }
         league.teams[teamIndex].roster[playerIndex].morale = min(
             100, league.teams[teamIndex].roster[playerIndex].morale + 6
         )
-        league.teams[teamIndex].autoSortDepthChart()
         return true
     }
 
-    /// Players on a team whose deals are up.
+    /// Players on a team whose deals are up. Practice-squad men are not negotiated with — they
+    /// are on stipends, and the squad refills itself at cutdown.
     public static func expiring(for team: Team) -> [Player] {
-        team.roster
+        team.activeRoster
             .filter { $0.contract == nil || ($0.contract?.isExpiring ?? false) }
             .sorted { $0.overall > $1.overall }
     }
