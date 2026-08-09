@@ -25,17 +25,36 @@ note "toolchain"
 if ! command -v swift >/dev/null 2>&1; then
     echo "swift not found on PATH."
     echo "This script must run where the toolchain is installed."
+    echo "With swiftly: source ~/.swiftly/env.sh   (or open a new shell)"
     exit 127
 fi
 swift --version 2>&1 | head -2
+
+# The package targets iOS 17 / macOS 14 and the UI target imports SwiftUI, so a
+# host build needs the macOS SDK. swiftly supplies the compiler, not the SDK.
+if [ "$(uname)" = "Darwin" ] && ! xcrun --show-sdk-path >/dev/null 2>&1; then
+    echo
+    echo "No macOS SDK found. Install the Command Line Tools first:"
+    echo "  xcode-select --install"
+    exit 127
+fi
 
 note "build"
 if swift build 2>&1 | tee /tmp/pfc-build.log; then
     ok "swift build"
 else
     bad "swift build — see /tmp/pfc-build.log"
+    # A red build is expected at least once: Sources/FootballSimCore/Arcade/ has never
+    # been compiled (no arcade symbol appears in the last artifact any compiler produced).
+    # Grouping errors by directory says immediately whether that is where they live.
+    note "errors by directory"
+    grep -oE '^[^ :]+\.swift:[0-9]+:[0-9]+: error:' /tmp/pfc-build.log 2>/dev/null \
+        | sed -E 's|/[^/]+\.swift.*||' | sort | uniq -c | sort -rn | head -20
+    note "first 20 errors"
+    grep -E ': error:' /tmp/pfc-build.log 2>/dev/null | head -20
+    printf '\ntotal errors: %s\n' "$(grep -cE ': error:' /tmp/pfc-build.log 2>/dev/null || echo 0)"
     echo
-    echo "Build failed, so tests were not run. Paste the log back."
+    echo "Tests were not run. Paste the two sections above back into the session."
     exit 1
 fi
 
