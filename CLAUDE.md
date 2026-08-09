@@ -1,54 +1,66 @@
 # CLAUDE.md — Pro Football Coach (iOS)
 
-Instructions for Claude (Opus 5) building this project. Read this first, every session.
+Standing rules for the build. Read first, every session. **This file owns standing rules; `docs/08-OPUS5-BUILD-PROMPT.md` owns the mission and the definition of done.** Where they overlap, the build prompt states *what to achieve*, this file states *how to work*.
 
 ## What this project is
 
-A text-based **pro football management simulator** for iOS (SwiftUI, offline, no backend). The player is a head coach / GM of a fictional pro team: sim games, manage rosters, draft, sign free agents, handle the salary cap, trade, win championships, build a dynasty across seasons.
+A text-first **pro football management simulator** for iPhone (SwiftUI, offline, no backend). The player is a head coach / GM of a fictional 32-team pro league: sim or play games, manage rosters, draft, sign free agents, run the salary cap, trade, win championships, build a dynasty across decades — with the league narrating it back.
 
-It is the professional-league successor to a college football simulator the owner admires (screenshots and full screen inventory in `docs/`). College mechanics (recruiting, redshirts, 4-year eligibility) are replaced by pro mechanics (draft, contracts, cap, free agency, trades).
+This is a **ground-up rebuild** of a working v1 that was judged mechanically complete but bland. The rebuild is a hybrid of three references, researched in `docs/research/`: pro-football grounding and broadcast presentation, fast-session immediacy and star attachment, and analytical depth with emergent narrative. The engine's validated behavior survives as acceptance specifications; its code does not survive by default.
 
-**Legal guardrail:** All team names, city names, logos, player names, and branding are fictional and original. Never use NFL/NCAA team names, logos, or real player names. Never copy UI assets or text from the reference app — it is design inspiration, not source material.
+**Legal guardrail (binding):** every team name, city pairing, mark, player name, broadcast identity, and string is fictional and original. Never use real league, college, network, or player names. The reference apps are mechanics research only — never copy protected expression, assets, strings, trade dress, or source. The open-source ancestor is CC-NonCommercial: never read or reuse it.
 
-## Documents (read before coding anything)
+## Canon (the only sources of truth)
 
-| Doc | Purpose |
+| Doc | Role |
 |---|---|
-| `docs/00-EXECUTIVE-PLAN.md` | Master plan: vision, scope, phase sequence, execution process |
-| `docs/01-RESEARCH.md` | Reference-app screen inventory, game-family research, community wishlist |
-| `docs/02-GAME-DESIGN.md` | The game design document — rules, systems, numbers. Source of truth for gameplay |
-| `docs/03-ARCHITECTURE.md` | Tech stack, module layout, data model, sim engine design, persistence |
-| `docs/04-SCREENS-UI.md` | Screen-by-screen UI spec |
-| `docs/05-IMPLEMENTATION-PLAN.md` | Phased task breakdown; Phase 1 fully specified |
-| `docs/06-PLAYED-GAME-MODE.md` | "On the Field" arcade mode (controls, ratings mapping, presentation, legal) |
-| `PRODUCT.md` | Product truth: users, purpose, positioning, constraints, brand commitments, accessibility bar |
-| `DESIGN.md` | The visual system: tokens, colour ladder, typography, components, do's and don'ts. **Read before any UI work** |
+| `PRODUCT.md` | Product truth: users, purpose, the six Experience Pillars, constraints, brand, accessibility floor |
+| `DESIGN.md` | The Primetime design system — **including the Time Layer** (motion, sound, haptics, number staging, celebrations). Read before any UI work |
+| `docs/02-GAME-DESIGN.md` | Gameplay canon — rules, systems, numbers |
+| `docs/03-ARCHITECTURE.md` | Module layout, data model, engine acceptance specs, persistence, presentation pipeline |
+| `docs/04-SCREENS-UI.md` | Every screen: emotional job first, then fields |
+| `docs/05-IMPLEMENTATION-PLAN.md` | Phases and per-phase gates |
+| `docs/design/mockups/` | **Visual canon** — approved frames for the three hero surfaces |
+| `docs/design/briefs/` | Per-screen design briefs (00-system is the locked foundation) |
+| `docs/research/R1a–R1d`, `R2-synthesis.md` | Evidence base and the binding rulings/pillars every decision traces to |
+| `docs/OPEN-DECISIONS.md` | Owner decisions — resolved and open |
+| `docs/07-SALVAGE.md` | Justified ports from the old code (silence means rewrite) |
 
-If a gameplay question isn't answered in `02-GAME-DESIGN.md`, add the answer there first, then implement.
+Everything else in the repo is history, not authority.
 
 ## Process (non-negotiable)
 
-These mirror the owner's established workflow from prior projects: plan → build small → adversarial review → verify → commit.
-
-1. **One phase at a time.** Before starting a phase, run the `superpowers:writing-plans` skill against the phase's spec section in `05-IMPLEMENTATION-PLAN.md` to produce a bite-sized task plan (Phase 1's is already written). Save to `docs/plans/`.
-2. **TDD for all engine code** (`superpowers:test-driven-development`). The sim engine is pure Swift with no UI dependency — every mechanic gets a failing test first. UI views may be built without unit tests but must compile and be exercised in the simulator.
-3. **Frequent small commits.** One task = one commit. Conventional Commits format.
-4. **Adversarial review at phase end.** Run `adversarial-reviewer` (or `/code-review`) on the phase's diff before declaring it done. Fix confirmed findings before moving on.
-5. **Verification before completion** (`superpowers:verification-before-completion`): build must succeed, all tests pass, and the feature must be demonstrated in the iOS simulator before a phase closes.
-6. **Debugging:** use `superpowers:systematic-debugging` — no guess-fixes.
+1. **Doc-first amendment rule.** A gameplay question not answered in `02-GAME-DESIGN.md` gets answered there *before* it is implemented. UI questions go to `04-SCREENS-UI.md`; visual/feel questions to `DESIGN.md`. Never encode an unwritten rule in Swift.
+2. **One phase at a time**, in plan order. Before starting a phase, expand its spec with `superpowers:writing-plans` into a task plan under `docs/plans/`.
+3. **TDD for all engine code** (`superpowers:test-driven-development`). The engine is pure Swift with no UI dependency — every mechanic gets a failing test first.
+4. **One task = one commit**, Conventional Commits format.
+5. **Adversarial review at phase end** (`adversarial-reviewer` or `/code-review`) on the phase diff. Fix confirmed findings before advancing.
+6. **Verification before completion** (`superpowers:verification-before-completion`): build green, tests green, feature demonstrated in the iOS simulator.
+7. **Cold-play gate at every phase close:** one uninstructed session actually playing what exists, asking only "is this fun and does it pull?" This instrument exists because milestone tracking has historically missed a dead build until far too late (`docs/research/R1c` FM-27).
+8. **Debugging:** `superpowers:systematic-debugging` — no guess-fixes.
+9. **Parity ledger:** the rebuild ships v1's mechanics or better. Check `docs/07-SALVAGE.md` and the parity list each gate; deletion without replacement is the genre's cardinal sin.
+10. **Scope guard:** build what the plan specifies. No unrequested refactors, tidying, or "while I'm here" improvements beyond the task — especially at high effort.
 
 ## Tech stack (decided — don't relitigate)
 
-- Swift 5.10+ / SwiftUI, iOS 17 minimum, Xcode 16+
-- Architecture: `@Observable` view models, unidirectional data flow, no third-party dependencies
-- Sim engine: standalone Swift Package (`FootballSimCore`) — pure logic, deterministic under a seeded RNG (`SeededRandom`), fully unit-tested, zero `import SwiftUI`
-- Persistence: `Codable` JSON save slots in Application Support; versioned `saveFormatVersion` field for migration
-- No network, no accounts, no analytics, no ads
+- Swift 5.10+ / SwiftUI, iOS 17 minimum, Xcode 16+, zero third-party dependencies.
+- `@Observable` view models, unidirectional data flow, stock SwiftUI controls.
+- Sim engine: standalone Swift package (`FootballSimCore`) — pure logic, deterministic under a seeded RNG, fully unit-tested, zero `import SwiftUI`.
+- Persistence: `Codable` JSON save slots in Application Support, versioned `saveFormatVersion`, rolling backups. **Writes never block the main actor.**
+- No network, no accounts, no analytics, no ads.
 
 ## Conventions
 
-- Fictional league: **32 teams, 2 conferences × 4 divisions × 4 teams** (naming tables in `02-GAME-DESIGN.md`)
-- Ratings are 40–99 ints; money is integer dollars (`Int`, no floating-point currency)
-- Season calendar, cap rules, draft order logic: all constants live in `FootballSimCore/Sources/.../LeagueRules.swift`, never inline magic numbers
-- Files small and focused; split by responsibility (model / engine / feature-view)
-- Player-facing copy: short, plain, no lorem ipsum — real strings from `04-SCREENS-UI.md`
+- 32 teams, 2 conferences × 4 divisions × 4 (table in `02-GAME-DESIGN.md`).
+- Ratings are 40–99 `Int`; money is integer dollars — no floating-point currency.
+- All tunable constants live in `LeagueRules.swift`. No inline magic numbers, and no literal spacing, radius, duration, or color in a view — tokens only.
+- Files small and focused; split by responsibility (model / engine / feature view).
+- Player-facing copy comes from the canon docs and follows the two-voice rule: the system voice is plainspoken with no exclamation marks; the fictional press has personality. Never lorem ipsum.
+- Every design or gameplay decision traces to research, the pillars, or the locked system — or is marked `NOVEL` with its reasoning.
+
+## Escalate to the owner (stop and ask) when
+
+- An item in `docs/OPEN-DECISIONS.md` blocks progress.
+- Canon contradicts itself and the conflict cannot be resolved by the doc-first rule.
+- A phase gate fails repeatedly (three attempts) on the same criterion.
+- A change would remove or reduce a shipped mechanic, or breach the legal guardrail, the offline constraint, or the accessibility floor.

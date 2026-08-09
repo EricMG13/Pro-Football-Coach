@@ -99,6 +99,7 @@ Staging specs — each headline moment ships with this table filled in; these ar
 | Camp reveal (OVR/potential) | Player face + "Camp report" | Arrow + new rating `count` | What changed and why | haptic `.positive`/`.negative` |
 | Record broken | "League record" banner, `hold` | Old mark strikes, new mark `count` | Holder + season context | sound `sting-final` (record variant), haptic `.milestone` |
 | Award | Nominee context | Winner reveal after `hold` | Career ledger line appended | sound `card` |
+| Skill unlock | Node cost + what it changes | Node lights, SP counter `count` down | The effect in one line | haptic `.positive` |
 | Contract signed | Ask vs offer recap | Years/money `stagger` | Cap line + morale effect | haptic `.positive` |
 
 The total is withheld until resolve for the biggest reveals (ADJ-35). Live win-probability is **not** shown as an always-on figure; swing charts appear retrospectively at half and final (ADJ-36, R2 T5).
@@ -158,7 +159,7 @@ Copy inside celebrations stays declarative — the number and what it means; the
 
 ### 2.7 The occasion system
 
-Presentation skins keyed to the schedule (MAD-04: calendar structure converted into perceived occasion): **standard / division rival / marquee (game of the week) / playoffs / championship**. Marquee designation is schedule-derived — computed from standings stakes and rivalry, presentation-only, no scheduling mechanic (`NOVEL` derivation rule; MAD-04 covers the skin swap itself). A skin varies: score-strip accent, game-card header treatment, sting variant, and the fictional broadcast identity named on the card. All show identities are original and fictional (legal guardrail; network-lookalikes explicitly avoided — R2 §3).
+Presentation skins keyed to the calendar (MAD-04: calendar structure converted into perceived occasion): **standard / division rival / marquee (game of the week) / draft night / playoffs / championship**. Draft night is the offseason's occasion — the stage owns the whole screen, gold accent, its own broadcast identity chip (02-GAME-DESIGN §8). Marquee designation is schedule-derived — computed from standings stakes and rivalry, presentation-only, no scheduling mechanic (`NOVEL` derivation rule; MAD-04 covers the skin swap itself). A skin varies: score-strip accent, game-card header treatment, sting variant, and the fictional broadcast identity named on the card. All show identities are original and fictional (legal guardrail; network-lookalikes explicitly avoided — R2 §3).
 
 ## 3. Voice
 
@@ -197,7 +198,8 @@ Single-column scroll of cards inside the safe area; spacing scale `tight 6 / sma
 - **StakesPanel** — pre-resolution odds/risk display for decisions (4th down, blitz, trade verdict): shows true numbers (R2 T5) with `.stakes` haptic (ADJ-34).
 - **StagedFigure** — wrapper implementing §2.3 for any headline number.
 - **LedgerRow** — label left, figure right, baselines aligned; the career-ledger row (Pillar P5).
-- **Chip** — metadata pill only, never a control; label over 14% wash of a *vetted* color.
+- **Chip** — metadata pill only, **never a control**. Category filters, scope switchers, and segment pickers use stock controls (`Picker` segmented/menu, or bordered buttons at 44×44pt) — the audit's sub-44pt chip-as-button class is banned by construction.
+- **SwingChart** — retrospective win-probability shape (half and final only): a filled area chart with the lead axis labeled, key swing moments marked with a caption line each ("14–0 → 14–10, Reyes 41-yd TD"). Never live. Never color-alone — each marker carries its text. Stock construction: `Canvas` or stacked `Path`s.
 - **TeamMark** — club mark drawn from the club's two colors; no image assets.
 - **EmptyState** — icon + headline + sentence; every listable surface has one (AUDIT positive, kept).
 - Controls are stock SwiftUI. Reinventing them is the most common native slop (AUDIT positive, kept).

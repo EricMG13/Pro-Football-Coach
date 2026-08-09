@@ -23,6 +23,29 @@ The six Experience Pillars in `PRODUCT.md` are binding on every system here (fal
 
 Each team: city, name, 3-letter abbrev, primary/secondary colors, geometric mark, stadium name, AI GM personality (`winNow / balanced / rebuilder / capHawk`), owner patience (1–5), franchise **Reputation 1–100**.
 
+**Club colors** *(new — required by the design system's One Band Rule; every primary is verified ≥4.5:1 against white label text, minimum in this table 9.31:1, asserted by test)*:
+
+| Team | Abbr | Primary | Secondary | Team | Abbr | Primary | Secondary |
+|---|---|---|---|---|---|---|---|
+| New York Empire | NYE | #14294B | #C9A227 | Baltimore Admirals | BAL | #1B2C55 | #7E5AA6 |
+| Boston Harbormen | BOS | #0E3B2E | #C8CFD4 | Cincinnati Riverhawks | CIN | #2A2A2A | #E06A25 |
+| Philadelphia Founders | PHI | #2E2A5E | #D4A64A | Indianapolis Racers | IND | #10365C | #CFD4D8 |
+| Washington Sentinels | WAS | #4A1D2E | #B8963E | Nashville Rhythm | NSH | #3B2A1E | #E8C56B |
+| Chicago Blizzard | CHI | #1C3F5B | #DCE6EC | Minneapolis Loons | MIN | #1E3B5C | #D8C27A |
+| Detroit Motors | DET | #23303A | #C25A2E | Milwaukee Barons | MIL | #2B3B2E | #C29A5B |
+| Cleveland Forge | CLE | #3A2417 | #E0722A | Denver Summit | DEN | #26364A | #E4762B |
+| Pittsburgh Ironmen | PIT | #262626 | #E3B23C | Salt Lake Peaks | SLC | #2F3E52 | #DCE4EA |
+| Miami Tides | MIA | #0B4F52 | #E86A9A | Phoenix Scorchers | PHX | #6B1F1A | #E8A33D |
+| Atlanta Firebirds | ATL | #5C1A1A | #E2A13B | San Antonio Defenders | SA | #2E2E33 | #C0A062 |
+| Charlotte Aviators | CHA | #1A3A63 | #A9B7C4 | Las Vegas Highrollers | LV | #3A1F3F | #D9B94C |
+| New Orleans Revelers | NOR | #3D2A5E | #C9A227 | Oklahoma City Twisters | OKC | #24404A | #C9CED2 |
+| Dallas Lonestars | DAL | #16304F | #B0B7BD | Los Angeles Stars | LA | #2B2F6B | #E0C15A |
+| Houston Wildcatters | HOU | #1E3B34 | #D9A441 | San Diego Armada | SD | #123A52 | #C97F3E |
+| Kansas City Stampede | KC | #5B1E24 | #D7A13E | San Francisco Fog | SF | #3A464D | #D97B4A |
+| St. Louis Archers | STL | #2C2A57 | #C0562F | Seattle Evergreens | SEA | #10402F | #93C4A6 |
+
+Rule: any future club's primary must clear 4.5:1 against white, verified by test before it ships (DESIGN.md coverage law). Secondaries are used for marks, accent rules, and motif trim — never as label backgrounds without their own measurement.
+
 - **Schedule (17 games / 18 weeks + bye)** — v1 formula unchanged. Preseason: 3 optional games.
 - **Playoffs:** default 14-team (7 seeds/conference, #1 bye, reseed); 12/16 options. **Continental Championship** at a neutral site.
 - **Tiebreakers (ordered):** head-to-head → division record → conference record → points for.
@@ -62,6 +85,19 @@ Structure *(v1, carried)*: Preseason (3 wks, optional) → Weeks 1–18 (trade d
 
 **The two-beat week** *(new — R2 T7)*: every regular-season week has two stops, each a real session:
 1. **Midweek beat:** injury report; **gameplan ritual** — opponent tendency card → focus pick with explicit pros AND cons → practice intensity/reps tradeoff (development vs fatigue/injury risk) (MAD-08/MAD-09/MAD-43: every step a tradeoff, nothing pure-reward); a press dilemma when one is queued (§11).
+
+   **The six gameplan focuses** *(new; each states its pro and its con, both real)*:
+
+   | Focus | Pro | Con |
+   |---|---|---|
+   | Establish the run | Run efficiency +, clock burn + | Pass explosiveness −, comeback ability − |
+   | Air it out | Explosive pass rate +, scoring variance + | Sack risk +, turnover risk + |
+   | Protect the quarterback | Sack rate −, QB injury odds − | Deep completion −, tempo − |
+   | Blitz-heavy | Sack rate +, takeaway odds + | Explosive plays allowed + |
+   | Bend, don't break | Explosive plays allowed −, red-zone stop + | Time of possession −, yards allowed + |
+   | Special teams emphasis | FG range +, return yards +, block odds + | One unit's practice reps forfeited (offense or defense, player's choice) |
+
+   Focus applies for one game and is visible to the opponent's AI in later weeks (tendency memory feeds the opponent tendency card — the loop closes on itself).
 2. **Gameday beat:** play/sim the game → aftermath cards (result staging, consequence cards, hook updates).
 Advancing collapses both beats gracefully for fast sessions — a single advance plays midweek defaults and sims, still landing all cards (Pillar P3; blocking rules §11).
 
@@ -71,7 +107,15 @@ Advancing collapses both beats gracefully for fast sessions — a single advance
 
 Cap $260M year 1, +5–8%/yr seeded; all 53 + PS count. Contract model (years, salary array, prorated signing bonus, guarantees), dead money acceleration, rookie scale (slotted, 4 yrs + R1 option), minimum salaries, practice-squad stipends and the no-cap-laundering rules, re-sign ask model, negotiation (3 rounds, accept-probability meter — true odds), AI cap floor ≥89% over 3 years. All unchanged.
 
-**Promises** *(new — MAD-10/MAD-45 grammar)*: negotiations and press moments can create recorded commitments (role, contention, extension timing). A promise persists visibly (hooks rail), and breaking it lands a delayed morale/trust consequence with real downside. Promise volume is scarce — at most a handful active per season — so each one binds.
+**Promises** *(new — MAD-10/MAD-45 grammar)*: negotiations and press moments can create recorded commitments. A promise persists visibly (hooks rail), and breaking it lands a delayed morale/trust consequence with real downside. **Maximum 3 active per season**, so each one binds.
+
+| Promise | Made at | Kept when | Broken cost |
+|---|---|---|---|
+| "You're the starter" | Negotiation, press dilemma | Player starts ≥80% of remaining games | −25 morale, trade demand odds +, locker-room ripple on featured teammates |
+| "We'll contend this year" | Negotiation, owner meeting | Team makes the playoffs | −15 morale team-wide for featured players, re-sign ask + |
+| "We'll extend you next offseason" | Negotiation | Extension offered in the next re-sign window | −30 morale, walk-risk +, agent hostility (ask +15%) |
+| "You'll get the ball" (skill players) | Press dilemma | Target/carry share ≥ position norm | −20 morale, public gripe card |
+| "No trade this season" | Trade-block conversation | Player not traded before the deadline | −40 morale on trade, reputation − |
 
 ## 7. Free agency *(v1, carried)*
 
@@ -82,7 +126,8 @@ Three waves, interest meter (money 55 / contender 20 / role 15 / reputation 10, 
 Class generation (224 + UDFA, engineered steals ~6 and busts ~5), scouting fog (OVR ranges ±8), scouting points economy, draft order, AI pick logic, pick trades with value chart, UDFA — unchanged.
 
 - **Graded predictions** *(new — R1c §7.3, FM-38)*: every scout report is a recorded prediction (range, potential read, comparison line). Post-hoc, the save grades them — a scouting accuracy ledger accumulates ("Your board hit on 7 of 11 top-100 calls"). Expertise becomes provable inside the sandbox; the offline substitute for FM's real-world validation.
-- **Draft night** *(new staging — MAD-45, FM-08)*: draft day is the season's Christmas — full occasion treatment, pick-reveal staging (DESIGN §2.3), war-room grade toasts, hyped-prospect fall/rise cards. Systems unchanged; the event is staged.
+- **Draft night** *(new staging — MAD-45, FM-08)*: draft day is the season's Christmas — its own occasion tier (DESIGN §2.7), pick-reveal staging (DESIGN §2.3), war-room grade toasts, hyped-prospect fall/rise cards. Systems unchanged; the event is staged.
+- **War-room grade** *(new)*: a five-word ladder, never a letter (letters belong to Potential): **Steal · Good value · Fair · Reach · Head-scratcher**. Computed from board position vs pick slot, positional need, and potential read. Grades are opinions with a stated reason line ("Two spots ahead of our board, but the only starting-caliber tackle left"), and the season-end scouting accuracy ledger grades the grader.
 
 ## 9. Trades *(v1, carried)*
 
@@ -91,6 +136,8 @@ Value model, personality-adjusted acceptance (105% band), counter-offers, deadli
 ## 10. Coach RPG & staff *(v1, carried)*
 
 Coordinators (OC/DC/STC: ratings, schemes, traits, budget, poaching pipeline), coach XP (wins/goals/playoffs — outcome-based, not stat-farmable), levels, 4 skill trees (Scouting/Development/Offense/Defense, v1 nodes), coach finances, job security, seasonal owner goals, retire→legacy. Unchanged.
+
+**Job security ladder** *(new — the % always carries its word, per the never-color-alone rule)*: 0–19 **On the hot seat** · 20–39 **Under pressure** · 40–59 **Warm seat** · 60–79 **Stable** · 80–100 **Secure**. The word appears wherever the figure does; hot-seat entry fires a card and a hooks-rail entry.
 
 **No-dead-end invariant** *(v1, carried — now also a presentation requirement, Pillar P6)*: the carousel always yields ≥1 offer or an explicit sit-out-a-year arc. The rebuild adds: every failure state is *announced as a chapter* — hot-seat arc cards, firing aftermath card naming the next path, rebuild-mode framing for bad rosters. Losing opens a chapter, never a dead end (ADJ-39/45; community complaint #2).
 
@@ -121,11 +168,21 @@ Replaces v1's "news engine" section. One pipe: everything the sim does that the 
 
 **Permanence surfaces** *(v1 records/HoF/archive carried + new)*: records book with live chases, Hall of Fame, previous-seasons archive, career ledgers (§3) — plus **season retrospective**: at season end, a staged recap (record, road, star ledger lines, what's next) exportable as a local image/text artifact (ADJ-46; no network).
 
+**Stat categories** *(v1, carried — the nine)*: Passing · Rushing · Receiving · Tackles · Sacks · Interceptions · Passes Defended · Kicking · Punting. Each with per-category sort, direction, Min-G filter, week/season scope.
+
+**Trophy room** *(v1, carried — the ten)*: Champion · Conference Champion · Division Title · Playoff Berth · #1 Seed · Undefeated Regular Season · Draft Gem (R5+ pick → All-League) · Comeback (21+ points) · Dynasty (3 titles in 5 years) · Perfect Season (undefeated + title). Completed challenge templates enter the same room as an eleventh group.
+
 **Challenge templates** *(new — FM-34)*: named long-horizon challenges selectable at franchise creation or adopted mid-save (Dynasty: 3 titles in 5 years · Homegrown: title with ≥80% drafted roster · The Long Rebuild: worst roster to champion). Tracked progress chip; completion enters the trophy room.
 
 ## 12. Scenarios *(v1, carried — exactly three)*
 
-Cap Hell · Expansion Franchise · Aging Legend, with v1 parameters (Cap Hell: −$38M effective space next year). Config-driven, no bespoke engine paths. ("Draft King" from old 04 is backlog, not v1.)
+Config-driven, no bespoke engine paths. ("Draft King" from old 04 is backlog, not v1.)
+
+| Scenario | Setup | Goal |
+|---|---|---|
+| **Cap Hell** | Contender roster (~88 team OVR), −$38M effective space next league year, core aged 30+, two albatross contracts with heavy dead money | A title within 3 seasons without a bottom-out rebuild |
+| **Expansion Franchise** | Stripped roster averaging 60 OVR, no player above 74; two extra picks per round for two drafts; $45M cap space; Reputation 25 | Playoffs by year 4 |
+| **Aging Legend** | 38-year-old, 96-OVR QB with a forced retirement at the end of year 3; roster behind him averages 68; one first-round pick already traded | Win the championship before he retires |
 
 ## 13. Difficulty & settings *(v1, carried + amendments)*
 
