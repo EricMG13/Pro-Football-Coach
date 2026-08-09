@@ -22,9 +22,10 @@ This is a **ground-up rebuild** of a working v1 that was judged mechanically com
 | `docs/05-IMPLEMENTATION-PLAN.md` | Phases and per-phase gates |
 | `docs/design/mockups/` | **Visual canon** — approved frames for the three hero surfaces |
 | `docs/design/briefs/` | Per-screen design briefs (00-system is the locked foundation) |
-| `docs/research/R1a–R1d`, `R2-synthesis.md` | Evidence base and the binding rulings/pillars every decision traces to |
-| `docs/OPEN-DECISIONS.md` | Owner decisions — resolved and open |
-| `docs/07-SALVAGE.md` | Justified ports from the old code (silence means rewrite) |
+| `docs/research/R1a–R1d`, `R2-synthesis.md` | Evidence base and the binding rulings/pillars every decision traces to. **Cite finding IDs when justifying a design choice** |
+| `docs/OPEN-DECISIONS.md` | Owner decisions — resolved and open. **A blocking open item stops the run** |
+| `docs/07-SALVAGE.md` | Justified ports from the old code (silence means rewrite); the parity ledger, checked every gate |
+| `docs/06-PLAYED-GAME-MODE.md` | On the Field — the all-22 field, its control model and gates |
 
 Everything else in the repo is history, not authority.
 
@@ -32,7 +33,7 @@ Everything else in the repo is history, not authority.
 
 1. **Doc-first amendment rule.** A gameplay question not answered in `02-GAME-DESIGN.md` gets answered there *before* it is implemented. UI questions go to `04-SCREENS-UI.md`; visual/feel questions to `DESIGN.md`. Never encode an unwritten rule in Swift.
 2. **One phase at a time**, in plan order. Before starting a phase, expand its spec with `superpowers:writing-plans` into a task plan under `docs/plans/`.
-3. **TDD for all engine code** (`superpowers:test-driven-development`). The engine is pure Swift with no UI dependency — every mechanic gets a failing test first.
+3. **TDD for all engine code** (`superpowers:test-driven-development`). The engine is pure Swift with no UI dependency — every mechanic gets a failing test first. UI is not exempt from testing: views carry the design-system and presentation suites of `03-ARCHITECTURE.md` §9 (contrast coverage, staging specs, the P2 state-to-witness matrix). Only per-view snapshot tests are optional.
 4. **One task = one commit**, Conventional Commits format.
 5. **Adversarial review at phase end** (`adversarial-reviewer` or `/code-review`) on the phase diff. Fix confirmed findings before advancing.
 6. **Verification before completion** (`superpowers:verification-before-completion`): build green, tests green, feature demonstrated in the iOS simulator.

@@ -149,10 +149,15 @@ discipline. Player-skill ceiling stays high; stats set the floor.
 - **Determinism:** `SnapKernel(players, calls, seed, InputTrace)` is a pure function — same
   inputs, same result — so the whole spatial layer is testable headless. Live user input breaks
   seed-reproducibility for played games by design; sim-only games remain fully deterministic.
-- Arcade plays emit the same `PlayEvent`/`StatLine` records as engine plays; box scores stay
-  consistent. **Calibration tests exclude user-played games** — manual play may outperform the
-  sim (that's the fun). Counterweights: goals/job-security expectations don't scale down;
-  difficulty setting; the records book flags nothing (a stat is a stat).
+- Arcade plays emit the same `PlayEvent`/`StatLine` records as engine plays **and the same
+  `LeagueEvent`s into the chronicle** (`03-ARCHITECTURE.md` §5.1), so a played game narrates
+  itself exactly like a simmed one; box scores stay consistent. **Calibration tests exclude
+  user-played games** — user skill is an input the bands do not model, so manual play may
+  outperform the sim (that's the fun). This is the one sanctioned exception to
+  `PRODUCT.md`'s one-engine-one-truth rule, which otherwise binds absolutely: *engine-resolved*
+  games, simmed or watched, must produce statistically identical results. Counterweights: the
+  bounded skill ceiling above; goals and job-security expectations don't scale down; difficulty
+  setting; the records book flags nothing (a stat is a stat).
 - Anti-degenerate guards: AI defense adapts within a game (repeat the same deep-pass call ≥4×
   successfully → coverage shades it, catch prob −8%); OT and clock rules identical across modes.
 
@@ -176,8 +181,10 @@ discipline. Player-skill ceiling stays high; stats set the floor.
   inside the app's existing rendering idiom. Logical sim ticks at a fixed 30 Hz decoupled from
   render; renderer interpolates.
 - Our own modern-flat style: team-colored discs with position tags in **our palette**, our fonts
-  (SF rounded scoreboard), soft shadows/gradients matching the app's card UI. No pixel-art
-  pastiche, no scanlines, no faux-CRT framing — distinct from every inspiration.
+  (SF rounded scoreboard). **Flat, per `DESIGN.md` §1 and §7 — no shadows, no gradients on body
+  surfaces, and team colour never under body text** (the One Band Rule holds here too: the field
+  is the band, the HUD panels stay neutral). No pixel-art pastiche, no scanlines, no faux-CRT
+  framing — distinct from every inspiration.
 - **Accessibility:** indicators shape-coded as well as colored; all interactive field states
   exposed to VoiceOver — the assistive path is the *watch + timed decisions* control variant with
   labeled buttons (target list with openness states, fight/secure), so the mode is fully playable

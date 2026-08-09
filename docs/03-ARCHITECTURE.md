@@ -8,7 +8,8 @@ How the software is shaped. Gameplay rules live in `02-GAME-DESIGN.md`; feel and
 
 | Decision | Choice | Why |
 |---|---|---|
-| UI | SwiftUI, iOS 17+, stock controls | The genre is lists, cards, and staged numbers; no game engine needed |
+| UI | SwiftUI, iOS 17+, stock controls | The genre is lists, cards, and staged numbers |
+| Arcade rendering | SwiftUI `Canvas` + `TimelineView` — **not** SpriteKit | ~23 moving entities is trivial canvas load, it ships zero assets, keeps the macOS compile-verification path alive, and stays inside the app's existing rendering idiom (06 §7) |
 | Language | Swift 6 toolchain, Swift 5 language mode (as today), strict concurrency on the engine | Catches sim/UI data races without a full Swift 6 migration in phase 1 |
 | State | `@Observable` + unidirectional flow | Native, no dependency |
 | Dependencies | **None** | Everything needed is stdlib/Foundation/SwiftUI/CoreHaptics/AVFAudio |
@@ -28,7 +29,14 @@ Package.swift
 │   │                           OffseasonEngine, CapEngine, ContractPricer, TradeEngine,
 │   │                           FreeAgencyEngine, DraftEngine, ProgressionEngine,
 │   │                           ScheduleGenerator, StandingsCalculator, CoachEngine,
-│   │                           RecordsBook, MatchupOdds
+│   │                           RecordsBook, MatchupOdds,
+│   │                           GameplanEngine (focus effects + tendency memory, 02 §5),
+│   │                           ScoutingEngine (fog, reports, accuracy grading, 02 §8),
+│   │                           AbilityResolver (star abilities + counters, 02 §3),
+│   │                           FeaturedSelector (foreground set derivation, 02 §3)
+│   ├── Arcade/                 the all-22 spatial layer: SnapKernel, FieldGeometry,
+│   │                           Formations, Routes, RunLanes, Openness, Pocket, Coverage,
+│   │                           Choreographer, DefensiveInputs (pure; see 06 §5)
 │   ├── Chronicle/              *** NEW — the witness layer's engine half ***
 │   │                           LeagueEvent, EventKind, Salience, Chronicle,
 │   │                           StoryHook, HookLedger, CareerLedger, Storyteller
@@ -42,7 +50,8 @@ Package.swift
 │   ├── DesignSystem/           Tokens, RatingTier, TeamTheme, components (Card, FeedCard,
 │   │                           ScoreStrip, StakesPanel, StagedFigure, LedgerRow,
 │   │                           DataTable, SwingChart, Chip, TeamMark, EmptyState)
-│   ├── Features/               one folder per screen family (per 04-SCREENS-UI)
+│   ├── Features/               one folder per screen family (per 04-SCREENS-UI), including
+│   │                           OnTheField/ — FieldCanvas renderer + control surfaces (06)
 │   └── Persistence/            SaveStore, SaveQueue, SaveMigrator
 └── Tests/                      engine suites, presentation suites, design-system suites,
                                 acceptance suites (§6), soak
@@ -76,6 +85,13 @@ struct League: Codable, Sendable {
     var hooks: HookLedger            // active storylines with deadlines (Pillar P1)
     var promises: [Promise]          // max 3 active (02 §6)
     var ledgers: [Player.ID: CareerLedger]   // permanent, append-only (Pillar P5)
+
+    // NEW — homes for the systems 02 declares; each would otherwise be state with nowhere to live
+    var gameplans: [Team.ID: Gameplan]        // the week's focus + reps (02 §5)
+    var tendencies: TendencyMemory            // what each team has shown; feeds the opponent card
+    var featured: [Team.ID: [Player.ID]]      // the foreground set, derived each week and persisted
+    var scoutReports: [Player.ID: ScoutReport] // recorded predictions the save later grades (02 §8)
+    var challenges: [ChallengeProgress]        // named long-horizon templates (02 §11)
 }
 ```
 
@@ -104,9 +120,19 @@ engine mutation ──emits──▶ [LeagueEvent] ──Storyteller──▶ [C
       └─ CareerLedger appends                                                          (haptics, sound)
 ```
 
-**5.1 `LeagueEvent` (engine, `Chronicle/`).** Every engine action that changes something a player could care about returns events alongside its result. Not optional, not opt-in: engine entry points return `(League, [LeagueEvent])` or append to an `inout Chronicle`. Event kinds cover the sources in 02 §11 (game results, injuries, development, cap/contract, promises, fragility, milestones, records, hooks, league news, phase transitions). Each event carries: kind, involved player/team IDs, magnitude, the numbers it needs, and a cause reference — **cause is mandatory** (the consequence-with-story law, 02 §11; an event that cannot name its cause is a bug, enforced by a test).
+**5.1 `LeagueEvent` (engine, `Chronicle/`).** Every engine action that changes something a player could care about emits events alongside its result.
 
-**5.2 `Storyteller` (engine).** Pure function: `(Chronicle, League, inout SeededRandom) -> [Card]`. Scores each event for salience (user-team relevance, featured-player involvement, magnitude, hook advancement, rarity), selects 3–7 per week, and matches each to an author-written template by state (ADJ-48 matching-not-assembling), casting a press voice. Deterministic — the same save produces the same narration, which also makes narration testable.
+**One signature, stated once:** engines keep the `inout League` model of §4 and return their events as a discardable result — the shape `SeasonEngine.advanceWeek(_ league: inout League, …) -> WeekReport` already uses and which already works. Extend that report to carry `[LeagueEvent]`; do **not** introduce a `(League, [LeagueEvent])` return, and do **not** pass `inout Chronicle` separately — `chronicle` is nested inside `League`, so `f(&league, chronicle: &league.chronicle)` is overlapping access to the same variable: a compile error for a local and an exclusivity trap for a stored property.
+
+Event kinds cover the sources in 02 §11 (game results, injuries, development, cap/contract, promises, fragility, milestones, records, hooks, league news, phase transitions). Each event carries: kind, involved player/team IDs, magnitude, the numbers it needs, and a cause reference — **cause is mandatory** (the consequence-with-story law, 02 §11; an event that cannot name its cause is a bug, enforced by a test).
+
+**5.2 `Storyteller` (engine).** Pure function: `(Chronicle, League, inout SeededRandom) -> [Narration]`.
+
+**It returns `Narration`, not `Card`.** `Narration` is an engine-side value (kind, cast IDs, the numbers, the chosen template id, the voice); `CardModel` in `Presentation/` is the UI's projection of it. The engine cannot name a UI type — the package dependency runs UI→Core, and a `Card` in the engine's signature would make it circular, which SwiftPM rejects.
+
+**It never draws from `league.rng`.** Narration takes a *derived* stream — `SeededRandom(seed: SeededRandom.seed(from: league.userTeamID) &+ UInt64(week))`, the pattern already used for draft-class generation — because how often the UI narrates would otherwise advance the same stream the simulator draws from, and §6.1's byte-identical-season guarantee would fail for reasons unrelated to the sim. This is the same defect class as the `retainPlays` parity risk.
+
+The function scores each event for salience (user-team relevance, featured-player involvement, magnitude, hook advancement, rarity), selects 3–7 per week, and matches each to an author-written template by state (ADJ-48 matching-not-assembling). Deterministic, and therefore testable.
 
 **5.3 `HookLedger` (engine).** Tracks active storylines with deadlines and maintains the **horizon invariant**: at any week, at least one hook resolves within three weeks (Pillar P1). The ledger *schedules* — when the horizon would go empty, it promotes a candidate (record pace, contract clock, streak, job security, milestone watch). Soak-asserted.
 
@@ -116,7 +142,9 @@ engine mutation ──emits──▶ [LeagueEvent] ──Storyteller──▶ [C
 
 **5.6 `Channels` (UI).** `HapticsService` (Core Haptics, semantic events per `DESIGN.md` §2.5, lazy engine start, capability-gated once, stopped on background, user toggle, injected as an optional seam so tests pass `nil`) and `SoundService` (preloaded `.caf` PCM, `.ambient` + `.mixWithOthers` session, silent-switch respected, user toggle, 8–12 variants per repeated sound). Both speak the same semantic event enum; game code fires meaning, the services decide channels. Neither is ever the sole carrier of state — VoiceOver announcements accompany staged reveals.
 
-**5.7 Reduce Motion.** A build-time-checked contract: every named motion in `DESIGN.md` §2.2 has an RM variant, and `StagingDirector` selects it from `@Environment(\.accessibilityReduceMotion)` at one site. Haptics and sound are never gated on Reduce Motion.
+**5.7 Reduce Motion.** Every named motion in `DESIGN.md` §2.2 has an RM variant, and `StagingDirector` selects it at one site.
+
+The director is a long-lived service, not a `View`, so it **cannot** read `@Environment(\.accessibilityReduceMotion)` — that is a `DynamicProperty` which resolves only during a view update and silently yields `false` everywhere else, which would leave Reduce Motion permanently off with no visible failure. The director reads `UIAccessibility.isReduceMotionEnabled` and observes `UIAccessibility.reduceMotionStatusDidChangeNotification`. A test flips the flag and asserts the RM variant is chosen. Haptics and sound are never gated on Reduce Motion.
 
 ## 6. Engine acceptance specifications
 
@@ -125,7 +153,8 @@ The behavioral contract from the validated v1 (`docs/STATUS.md`) restated as spe
 **6.1 Determinism**
 - Same seed + same inputs ⇒ byte-identical `League` after a full season.
 - Determinism holds **across processes**: a save produces the same league on a fresh launch (v1's cross-process bug came from `UUID.hashValue`).
-- A source-scanning test forbids `UUID()` and `Date()` inside `FootballSimCore`.
+- A source-scanning test forbids `UUID()` and `Date()` as an **argument or assignment** inside `Engine/` and `Generation/`. It permits `= UUID()` as a default parameter on `Model/` initialisers, since twelve of the thirteen existing sites are exactly that and are legitimate. The one real leak it must catch is `GameSimulator.swift:867`, which mints `PlayEvent(id: UUID(), …)` at a call site.
+- The scanner must be better than v1's. That one (`DynastyTests.swift:605`) matches `line.contains(".hashValue") && !line.contains("//")`, so any offending line with a trailing comment is silently exempt — and it never looks for `UUID()` at all, which is why the leak above survives a green suite. The new scanner strips comments properly and ships a self-test proving it fails on a planted offender.
 - `retainPlays: true` vs `false` produces identical results (mode parity).
 - Narration is deterministic: the same save produces the same cards.
 
@@ -144,7 +173,7 @@ The behavioral contract from the validated v1 (`docs/STATUS.md`) restated as spe
 | Home win rate | 50–60% |
 | Plays per team-game | 55–72 |
 
-**6.3 Believability bands** (added because the sibling community's complaints were about *plausibility*, not averages)
+**6.3 Believability bands.** Provenance, stated precisely because two docs previously disagreed: these eight gates are **carried** — the values are the ones v1's `"Calibration"` suite already asserts (`GameSimulatorTests.swift`), not newly invented here. `STATUS.md` describes them in prose without numbers, which is why 02 §4's "source: STATUS.md" is imprecise; the numeric source is the test suite. Their *rationale* is the sibling community's plausibility complaints (`01-RESEARCH.md` §H), which is why they exist alongside the averages rather than inside them.
 
 | Metric | Band |
 |---|---|
@@ -155,7 +184,7 @@ The behavioral contract from the validated v1 (`docs/STATUS.md`) restated as spe
 | TE target share | 15–26% |
 | RB target share | 10–28% |
 | Max single-receiver target share | ≤ 45% |
-| Ratings predictiveness | 12+ OVR gap ⇒ favorite wins ≥72% |
+| Ratings predictiveness | Best vs worst team in a fresh league, home field alternated: favorite wins ≥72% over 400 games — **and the test must additionally assert the gap it ran at is ≥12 OVR**, which v1 printed in the failure message but never checked |
 
 **6.4 Cap legality invariants**
 - No team exceeds the cap outside the sanctioned dead-money overage (≤ cap/20), at any point in a ten-season run.
@@ -167,16 +196,29 @@ The behavioral contract from the validated v1 (`docs/STATUS.md`) restated as spe
 - Ten seasons complete; ten champions; no crash.
 - Average OVR per year within 62–76, drift across the decade < 6.
 - Average age per year within 23–30.
-- Churn: no team in the top five all ten years; ≥3 distinct champions.
-- Cap legal every year; cap grows.
+- Churn: no team in the top five all ten years; **≥12 distinct teams reach the top five across the decade**; ≥3 distinct champions.
+- Cap legal **at the end of every season — asserted inside the loop, not after it**. v1 checked only the final year's teams, so a blow-out in year four that recovered by year ten passed green.
+- Cap grows.
 - Save round-trips byte-identically and stays < 5 MB.
 - Bounded growth: free agents ≤ 400, chronicle and news bounded, oldest free agent < 38.
 - **New (witness layer):** zero silent weeks — every week produces ≥1 card; the hook horizon never empties (≥1 hook within 3 weeks in ≥95% of weeks); no card lacks a face or a cause; template repetition stays under the perceptual-uniqueness bar (no template fires twice within 10 weeks for standout events).
+- **New (Pillar P6):** the soak seed is chosen to force at least one firing. Every fired or expired-contract path yields ≥1 job offer or an explicit sit-out-year arc, **and** a chapter card fires for it — the invariant is engine *and* presentation, since a dead end the player is never told about is still a dead end.
 
-**6.6 Performance budgets**
-- Week advance end-to-end (sim + chronicle + persist enqueue) < 150 ms on an A15.
-- No main-actor file I/O, ever. Persistence is an actor; the UI observes a write-state, and a failed write surfaces to the user (v1 captured save errors into a field no view ever read).
+**6.7 Staging and craft gates** (Pillar P4 and the craft-debt payment)
+- Every moment in `DESIGN.md` §2.3's staging table has a spec, and each of the three hero surfaces (gameday, season hub, player card) has a stated first-render treatment. A test asserts the table and the surface list stay in sync — a headline number with no staging spec fails the build.
+- Every touched surface re-audits at **≥17/20 with zero P0/P1** against the audit's rubric (baseline 9/20). This is the mechanism by which craft debt is actually paid, and no phase closes without it.
+
+**6.6 Performance and session budgets**
+
+Machine budgets — stated on an honest measurement basis. The audit measured a v1 week advance at ~265 ms (105 ms sim + 160 ms of double autosave) **on a Mac**, and notes an iPhone is meaningfully slower; the only existing perf test permits 20 ms/game, i.e. 320 ms/week. So:
+- Sim-only week (16 games): < 150 ms on the dev Mac, asserted in CI at < 9 ms per game.
+- Week advance end-to-end (sim + chronicle + narration + persist enqueue): < 350 ms on an A15, **measured on device before this number is treated as final**.
+- No main-actor file I/O, ever. Persistence is an actor; the UI observes a write-state. v1's real defect here is `isBusy` — declared and never written or read — so a 250–350 ms load froze the UI with no indication. (Its `lastError` *is* surfaced, via a RootView alert; the weakness is that it is only populated on the persist/flush paths.)
 - No per-render league folds: season and career stat aggregates are cached and invalidated on mutation.
+
+Session budgets — timed by walkthrough at every phase gate, because Pillar P3 is a session pillar, not a latency budget:
+- Fast session (open → advance → read → close), one-handed: ≤ 3 min.
+- Full played game: ≤ 8 min. Gameplan sheet: ≤ 60 s. Management interstitial: ≤ 1 min.
 
 ## 7. Persistence
 
@@ -189,7 +231,7 @@ The behavioral contract from the validated v1 (`docs/STATUS.md`) restated as spe
 ## 8. Concurrency
 
 - `League` is `Sendable` value state; sim runs off-main via `Task.detached` for multi-week and multi-season work; results are reassigned on the main actor.
-- `AppState` is `@MainActor` and owns **the single mutation funnel** — `mutate` is the only path that assigns `league`. v1 had six methods bypassing it; a test asserts the funnel is the sole assignment site.
+- `AppState` is `@MainActor` and owns **the single mutation funnel** — `mutate` is the only path that assigns `league`. v1 bypasses it at **eleven sites across ten methods** (`startNewFranchise`, `load`, `closeFranchise`, `delete`, `beginDraftIfNeeded`, `commit(session:)`, `reSign` ×2, `sign`, `elevate`, `demote`). Four of those exist to *return an outcome*, not out of carelessness — so the funnel needs a value-returning variant, `mutate<T>(_ change: (inout League) -> T) -> T`, or those call sites have nowhere to go. A test asserts the funnel is the sole assignment site.
 - Live game streams through the stepwise simulator; the arcade's ticking values live in their own small views so a 60 Hz meter cannot invalidate the whole screen (v1 rebuilt the entire game view 62 times a second).
 - Timing-critical loops derive from wall-clock deltas, not accumulated fixed steps.
 
@@ -197,7 +239,8 @@ The behavioral contract from the validated v1 (`docs/STATUS.md`) restated as spe
 
 - **Engine:** TDD, one suite per engine, plus property checks (cap never illegal, schedule well-formed, draft order correct). The v1 harness (a hand-rolled TestKit, because XCTest is absent from the Command Line Tools) is retained *as a fallback*; prefer swift-testing when the toolchain in use provides it. Suites must self-register — v1's manual `main.swift` list is a silent-skip hazard.
 - **Acceptance:** §6 as its own suite, run every phase.
-- **Presentation:** the `Storyteller` is pure and therefore unit-tested — salience selection, template matching, no-faceless-card, cause-present, determinism. Coverage tests assert every `EventKind` has at least one template and one witnessing surface (Pillar P2 enforced mechanically).
+- **Presentation:** the `Storyteller` is pure and therefore unit-tested — salience selection, template matching, no-faceless-card, cause-present, determinism.
+- **The P2 coverage matrix enumerates *state*, not events.** Asserting "every `EventKind` has a template" is circular: it proves the events the engine already declares get narrated, while a cap hit, morale move, development tick, or job-security swing that never emits an event in the first place passes silently — which is precisely the program's largest diagnosed failure. The matrix therefore enumerates mutable, player-visible `League` state (cap, morale, development, job security, records, roster status, contract status) and CI fails when a mutation site touches such state without emitting an event. Same family as the §6.1 source scanner.
 - **Design system:** the coverage law — every color pairing in the token set is contrast-tested against its real composited surface in both themes; every team primary tested against white; a test fails the build when a new pairing is introduced without a test.
 - **UI:** compiled and exercised in the simulator each phase; the cold-play gate is human, not automated.
 
@@ -205,6 +248,8 @@ The behavioral contract from the validated v1 (`docs/STATUS.md`) restated as spe
 
 Multiplayer, iCloud sync, Game Center, widgets, iPad layout, monetization, Android. Nothing above blocks them.
 
-## 11. Open architecture decisions
+## 11. Traceability and open decisions
 
-- **OD-4 (from gate 1):** whether the `Storyteller` uses salience-matched templates (v1 floor) or a Wildermyth-style casting engine with typed roles and re-voicing. Decide with template-library sizing math in hand — the sizing question (how many templates survive a ten-season soak without perceptual repetition) is itself an input, and §6.5's repetition assertion is how it gets measured.
+Every decision above traces to `docs/research/` findings, the R2 rulings and pillars, the locked design system, or the source survey of v1 — or is marked `NOVEL` with reasoning. The presentation pipeline (§5) is the architectural expression of R2's witness-debt verdict; §6 is the validated behavioral contract restated; §8's funnel and §7's off-main persistence pay audit findings.
+
+- **OD-4 — closed.** The `Storyteller` ships **salience-matched templates** in v1, matching what 02 §11 already rules and 02 §14 already backlogs. §6.5's repetition assertion is the revisit trigger: if template repetition breaches the perceptual-uniqueness bar during the soak, escalate to a casting engine with typed roles and re-voicing. It is no longer a blocker.
