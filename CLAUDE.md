@@ -1,54 +1,144 @@
 # CLAUDE.md — Pro Football Coach (iOS)
 
-Instructions for Claude (Opus 5) building this project. Read this first, every session.
+Standing rules for every session working in this repo. Read this first, every time.
+
+**This file owns standing rules only:** what the project is, the document map, process, tech stack,
+conventions, the legal guardrail. **It does not own the mission or the definition of done** — those
+live in `docs/08-OPUS5-BUILD-PROMPT.md`. The two must not conflict; if they appear to, that is a
+defect to escalate to the owner, not to resolve by picking a winner.
+
+The rebuild is governed by `docs/reviews/2026-08-09-spec-prompt-v4.md`. Where an older document in
+this repo disagrees with it, the older document is wrong.
 
 ## What this project is
 
-A text-based **pro football management simulator** for iOS (SwiftUI, offline, no backend). The player is a head coach / GM of a fictional pro team: sim games, manage rosters, draft, sign free agents, handle the salary cap, trade, win championships, build a dynasty across seasons.
+A **unified college→pro football coaching career simulator** for iPhone. One save, one coach: you
+start in the college game and get promoted to the pro league. The promotion arc is a v1 feature, not
+a sequel.
 
-It is the professional-league successor to a college football simulator the owner admires (screenshots and full screen inventory in `docs/`). College mechanics (recruiting, redshirts, 4-year eligibility) are replaced by pro mechanics (draft, contracts, cap, free agency, trades).
+The player is a coach, never a player. There is **no direct control of players during play** — no
+arcade mode, no throwing passes. The match is watched in a 2D view and shaped by preparation and
+decisions. What the player does instead of pressing buttons is the project's central design problem;
+`docs/02-GAME-DESIGN.md` resolves it and `docs/OPEN-DECISIONS.md` records why.
 
-**Legal guardrail:** All team names, city names, logos, player names, and branding are fictional and original. Never use NFL/NCAA team names, logos, or real player names. Never copy UI assets or text from the reference app — it is design inspiration, not source material.
+Distribution is TestFlight then paid premium. No IAP, ads, subscriptions, analytics, accounts, or
+network of any kind.
 
-## Documents (read before coding anything)
+## Legal guardrail (absolute)
+
+All schools, teams, conferences, cities, stadiums, players, coaches, marks, logos, colours, fight
+songs, traditions and broadcast identities are **fictional and original**. Never use real
+school/team/player/conference names or logos. Reference titles are mechanics research only — never
+copy protected expression, art, text, audio or UI.
+
+College football raises this bar: school identity, trade dress and player NIL are among the most
+aggressively enforced IP in sport. Any route around it — bundled "community" real-name files, a
+roster importer pointed at a scraped source, a wink in the store listing — is out of scope and must
+not be proposed. If a feature only works with real identities, say so and propose an original
+substitute. Flag anything borderline for the owner to take to counsel; never resolve it yourself.
+
+**Two of these are tests, and they must stay green:**
+
+1. **Name collision test** — no generated school, team, city, conference, stadium, player or coach
+   name matches an entry in the maintained blocklist of real ones, at any seed, across N generated
+   leagues.
+2. **Trade dress test** — no generated primary/secondary colour pair falls within the stated ΔE of a
+   real programme's known pair.
+
+Everything else in this guardrail is a review checklist item, not an assertion. Do not describe
+prose as if it were a test.
+
+## Documents
+
+`docs/DOC-MANIFEST.md` is the authority on what is canon. **A document not listed there as
+`RETAINED` carries no authority**, whatever path it sits at. Files under `docs/archive/` are history.
 
 | Doc | Purpose |
 |---|---|
-| `docs/00-EXECUTIVE-PLAN.md` | Master plan: vision, scope, phase sequence, execution process |
-| `docs/01-RESEARCH.md` | Reference-app screen inventory, game-family research, community wishlist |
-| `docs/02-GAME-DESIGN.md` | The game design document — rules, systems, numbers. Source of truth for gameplay |
-| `docs/03-ARCHITECTURE.md` | Tech stack, module layout, data model, sim engine design, persistence |
-| `docs/04-SCREENS-UI.md` | Screen-by-screen UI spec |
-| `docs/05-IMPLEMENTATION-PLAN.md` | Phased task breakdown; Phase 1 fully specified |
-| `docs/06-PLAYED-GAME-MODE.md` | "On the Field" arcade mode (controls, ratings mapping, presentation, legal) |
-| `PRODUCT.md` | Product truth: users, purpose, positioning, constraints, brand commitments, accessibility bar |
-| `DESIGN.md` | The visual system: tokens, colour ladder, typography, components, do's and don'ts. **Read before any UI work** |
+| `docs/DOC-MANIFEST.md` | What is canon, what is superseded, what is archived |
+| `docs/01-RESEARCH.md` | Reference research, competitive set, community signal, calibration sources |
+| `docs/02-GAME-DESIGN.md` | The game: core loop, agency model, both tiers, promotion arc, systems, stakes |
+| `docs/03-MATCH-ENGINE.md` | Play resolution, seeding contract, off-screen model, calibration harness, soak |
+| `docs/03b-ARCHITECTURE.md` | Module layout, engine/UI boundary, save architecture, test architecture |
+| `docs/04-UX-AND-DESIGN-SYSTEM.md` | Design system, screens, match view, the accessibility contract |
+| `docs/04b-AUDIT-RUBRIC.md` | The audit rubric: five dimensions, 0–4 anchors, P0–P3 severities |
+| `docs/05-IMPLEMENTATION-PLAN.md` | Phased build with per-phase gates |
+| `docs/06-AUDIT-DISPOSITION.md` | Disposition of the prior audit's P0/P1s and systemic patterns |
+| `docs/OPEN-DECISIONS.md` | Decision register D1–D13, each with an instrumented falsifier |
+| `docs/08-OPUS5-BUILD-PROMPT.md` | Phase-entry prompt. **Owns mission and definition of done** |
+| `docs/PRE-DEPLOYMENT-CHECKLIST.md` | What must be true before a build goes out |
+| `PRODUCT.md` | Positioning, audience, market gap, v1 scope |
+| `docs/STATUS.md` | Honest state of the build: what exists, what is verified, what is not |
+| `docs/AUDIT.md` | Prior UI audit — evidence about craft, retained read-only |
 
-If a gameplay question isn't answered in `02-GAME-DESIGN.md`, add the answer there first, then implement.
+**Doc-first amendment rule:** a gameplay question not answered in canon gets answered in canon
+first, then implemented. Never encode a design decision only in code.
 
 ## Process (non-negotiable)
 
-These mirror the owner's established workflow from prior projects: plan → build small → adversarial review → verify → commit.
+Plan → build small → adversarial review → verify → commit.
 
-1. **One phase at a time.** Before starting a phase, run the `superpowers:writing-plans` skill against the phase's spec section in `05-IMPLEMENTATION-PLAN.md` to produce a bite-sized task plan (Phase 1's is already written). Save to `docs/plans/`.
-2. **TDD for all engine code** (`superpowers:test-driven-development`). The sim engine is pure Swift with no UI dependency — every mechanic gets a failing test first. UI views may be built without unit tests but must compile and be exercised in the simulator.
-3. **Frequent small commits.** One task = one commit. Conventional Commits format.
-4. **Adversarial review at phase end.** Run `adversarial-reviewer` (or `/code-review`) on the phase's diff before declaring it done. Fix confirmed findings before moving on.
-5. **Verification before completion** (`superpowers:verification-before-completion`): build must succeed, all tests pass, and the feature must be demonstrated in the iOS simulator before a phase closes.
-6. **Debugging:** use `superpowers:systematic-debugging` — no guess-fixes.
+1. **One phase at a time.** Before starting a phase, run `superpowers:writing-plans` against that
+   phase's section of `docs/05-IMPLEMENTATION-PLAN.md` to produce a bite-sized task plan. Save it to
+   `docs/plans/`. Execute one phase, then stop.
+2. **TDD for all engine code** (`superpowers:test-driven-development`). The engine is pure Swift with
+   no UI dependency — every mechanic gets a failing test first. Views need not have unit tests but
+   must compile.
+3. **Frequent small commits.** One task = one commit, Conventional Commits format.
+4. **Adversarial review at phase end.** Run `adversarial-reviewer` (or `/code-review`) on the phase
+   diff before declaring the phase done. Fix confirmed findings first. An adversarial review is
+   **not** a build and must never be reported as one.
+5. **Verification before completion** (`superpowers:verification-before-completion`). The agent
+   asserts the machine gates: build green, tests green, calibration bands, cross-process
+   determinism, the soak, the two legal tests, touched surfaces ≥17/20 with zero P0/P1 against
+   `04b`. Simulator demonstration is an **owner** action — hand off a written walkthrough script,
+   never claim it happened.
+6. **Debugging:** `superpowers:systematic-debugging`. No guess-fixes.
+7. **Scope guard.** Build what the plan specifies. No unrequested refactors, no opportunistic
+   rewrites of code the phase does not touch.
+8. **Delegation cap.** At most 6 concurrent subagents, no nested delegation, and no subagent is the
+   sole verifier of its own work.
 
-## Tech stack (decided — don't relitigate)
+### When there is no Swift toolchain
 
-- Swift 5.10+ / SwiftUI, iOS 17 minimum, Xcode 16+
-- Architecture: `@Observable` view models, unidirectional data flow, no third-party dependencies
-- Sim engine: standalone Swift Package (`FootballSimCore`) — pure logic, deterministic under a seeded RNG (`SeededRandom`), fully unit-tested, zero `import SwiftUI`
-- Persistence: `Codable` JSON save slots in Application Support; versioned `saveFormatVersion` field for migration
-- No network, no accounts, no analytics, no ads
+Agent environments frequently have **no `swift` and no `xcodebuild`**, and the egress policy refuses
+`download.swift.org`. Never route around that policy to fetch a toolchain. When it is absent:
+
+- Write the code anyway, to the same standard.
+- Record it in `docs/STATUS.md` as **unverified — never compiled**, naming the files.
+- Never say "build green", "tests pass" or "verified" about anything a compiler has not seen. Phase
+  4C of the prior build shipped uncompiled; the failure was not the missing toolchain, it was the
+  claim. A phase gate that depends on a build is then an escalation, not a judgement call.
+
+## Tech stack (owner-fixed — do not relitigate)
+
+- iOS 17+, Swift 5.10+, SwiftUI. **iPhone-only, portrait-only.** Offline. **Zero third-party
+  dependencies.**
+- The 2D match view renders in **SwiftUI `Canvas` + `TimelineView`**. No SpriteKit, no Metal.
+- **Strict engine/UI separation.** The simulation runs headless and contains zero `import SwiftUI`.
+- **Determinism.** A given seed plus a given input state reproduces a match exactly, **across
+  processes and app launches**. Seeds derive from identifier *bytes*, never from `hashValue`: the
+  prior build seeded from `UUID.hashValue`, which is salted per launch, so one save produced a
+  different league every app start and no in-process test could see it. A source-scanning test
+  forbids reintroduction.
+- Module layout, persistence format and test mechanism are decided in `docs/03b-ARCHITECTURE.md`
+  (D7, D11). Do not assume the prior build's answers.
 
 ## Conventions
 
-- Fictional league: **32 teams, 2 conferences × 4 divisions × 4 teams** (naming tables in `02-GAME-DESIGN.md`)
-- Ratings are 40–99 ints; money is integer dollars (`Int`, no floating-point currency)
-- Season calendar, cap rules, draft order logic: all constants live in `FootballSimCore/Sources/.../LeagueRules.swift`, never inline magic numbers
-- Files small and focused; split by responsibility (model / engine / feature-view)
-- Player-facing copy: short, plain, no lorem ipsum — real strings from `04-SCREENS-UI.md`
+- **Coverage boundary ≠ quality boundary.** From `docs/AUDIT.md`: *"The defect is not ignorance of
+  contrast; it is that the test's coverage boundary became the quality boundary."* A test that
+  checks a class of surfaces must enumerate that class **by construction**, so a new surface is
+  covered the day it is added rather than the day someone remembers it. Spot-check tests over
+  hand-listed instances are a defect, not coverage.
+- League structure for both tiers lives in `docs/02-GAME-DESIGN.md` — never hard-coded in prose here.
+- Ratings are 40–99 `Int`. Money is integer dollars (`Int`) — no floating-point currency.
+- Rules constants (calendar, cap, eligibility, scholarships, draft order, playoff formats) live in a
+  single rules module per tier. Never inline a magic number.
+- A design-token literal in a view is a defect: spacings, radii, colours and font sizes come from the
+  design system in `docs/04-UX-AND-DESIGN-SYSTEM.md`.
+- Every collection that can grow across seasons has a stated bound. Unbounded free-agent pools and
+  news feeds took the prior build's saves to 8.3 MB; bounding them brought it to 2.3 MB.
+- Files small and focused, split by responsibility (model / engine / feature view).
+- Player-facing copy is short and plain, from `docs/04-UX-AND-DESIGN-SYSTEM.md`. No lorem ipsum.
+- No emoji in code, UI copy, commits or docs.
