@@ -27,6 +27,27 @@ struct SeasonHubView: View {
             VStack(spacing: Layout.medium) {
                 masthead
 
+                if let objective = app.activeScenarioObjective {
+                    HStack(alignment: .top, spacing: Layout.small) {
+                        Image(systemName: "target")
+                            .font(.caption)
+                            .foregroundStyle(theme.tint)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Your objective")
+                                .font(.labelFont)
+                                .foregroundStyle(Broadcast.muted)
+                            Text(objective)
+                                .font(.bodyFont)
+                                .foregroundStyle(Broadcast.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .card()
+                    .accessibilityElement(children: .combine)
+                }
+
                 if let league = app.league {
                     if league.phase.isOffseason {
                         OffseasonHubCard()

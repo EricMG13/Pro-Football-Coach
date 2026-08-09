@@ -245,3 +245,64 @@ func runDepthHonestyTests() {
         }
     }
 }
+
+/// Fourth down is the down coaches are remembered for, and the screen used to offer a kick and a
+/// punt with nothing to judge them by.
+func runFourthDownTests() {
+    suite("Fourth down") {
+        let league = LeagueFactory.makeDefaultLeague(seed: 6_400, userTeamIndex: 0, coach: .stub())
+        let team = league.userTeam!
+
+        test("deep in your own end it says punt") {
+            let situation = GameSituation(
+                quarter: 1, clockSeconds: 700, down: 4, distance: 8, yardLine: 20
+            )
+            let advice = PlayCaller.fourthDownAdvice(situation: situation, team: team)
+            expectEqual(advice.call, .punt, "own 20, fourth and 8")
+            expect(!advice.sentence.isEmpty, "advice must say something")
+        }
+
+        test("in range with a makeable kick it says kick") {
+            let situation = GameSituation(
+                quarter: 3, clockSeconds: 400, down: 4, distance: 9, yardLine: 80
+            )
+            let advice = PlayCaller.fourthDownAdvice(situation: situation, team: team)
+            expectEqual(advice.call, .kick, "their 20, fourth and 9")
+            expect(advice.fieldGoalChance > 0, "a kick recommendation needs a real chance")
+        }
+
+        test("two scores down late it stops trading points") {
+            let situation = GameSituation(
+                quarter: 4, clockSeconds: 120, down: 4, distance: 6, yardLine: 70,
+                offenseScore: 10, defenseScore: 24
+            )
+            let advice = PlayCaller.fourthDownAdvice(situation: situation, team: team)
+            expectEqual(advice.call, .go, "fourteen down with two minutes left")
+        }
+
+        test("the odds quoted are real probabilities") {
+            for distance in 1...15 {
+                let situation = GameSituation(
+                    quarter: 2, clockSeconds: 300, down: 4, distance: distance, yardLine: 65
+                )
+                let advice = PlayCaller.fourthDownAdvice(situation: situation, team: team)
+                expectIn(advice.conversionChance, 0.0...1.0, "conversion at \(distance)")
+                expectIn(advice.fieldGoalChance, 0.0...1.0, "field goal at \(distance)")
+                expect(advice.sentence.hasSuffix("."), "a sentence ends in a full stop")
+            }
+        }
+
+        test("shorter to go is never harder to convert") {
+            var previous = 0.0
+            for distance in stride(from: 15, through: 1, by: -1) {
+                let situation = GameSituation(
+                    quarter: 2, clockSeconds: 300, down: 4, distance: distance, yardLine: 65
+                )
+                let chance = PlayCaller.fourthDownAdvice(situation: situation, team: team)
+                    .conversionChance
+                expect(chance >= previous, "fourth and \(distance) converts less than a longer one")
+                previous = chance
+            }
+        }
+    }
+}

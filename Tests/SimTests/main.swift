@@ -23,6 +23,7 @@ runDesignSystemTests()
 runBroadcastTests()
 runExperienceTests()
 runDepthHonestyTests()
+runFourthDownTests()
 runMatchupOddsTests()
 runTeamTintTests()
 

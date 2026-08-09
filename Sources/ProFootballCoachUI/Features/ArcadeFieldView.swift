@@ -17,6 +17,8 @@ struct ArcadeFieldView: View {
 
     let game: ScheduledGame
 
+    @State private var confirmingSim = false
+
     var body: some View {
         NavigationStack {
             Group {
@@ -32,9 +34,19 @@ struct ArcadeFieldView: View {
             .navigationBarTitleDisplayModeCompat()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Sim to Final") { finishGame() }
+                    Button("Sim to Final") { confirmingSim = true }
                 }
             }
+        }
+        .confirmationDialog(
+            "Hand the rest to the engine?",
+            isPresented: $confirmingSim,
+            titleVisibility: .visible
+        ) {
+            Button("Sim to final", role: .destructive) { finishGame() }
+            Button("Keep playing", role: .cancel) {}
+        } message: {
+            Text("The rest of the game is resolved for you and the week moves on.")
         }
         .onAppear(perform: setUp)
     }

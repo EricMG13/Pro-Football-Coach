@@ -37,6 +37,13 @@ public final class AppState {
 
     /// Identifier of the scenario this franchise started under, if any.
     public var activeScenario: String?
+
+    /// The scenario's objective, so the mode's whole win condition is not left to memory. It was
+    /// written once at start and read nowhere.
+    public var activeScenarioObjective: String? {
+        guard let activeScenario else { return nil }
+        return Scenario.all.first { $0.id == activeScenario }?.objective
+    }
     public var autosaveEnabled = true
 
     /// Appearance preference. Persisted outside the franchise, because it belongs to the person
@@ -55,6 +62,19 @@ public final class AppState {
     fileprivate static let appearanceKey = "pfc.appearance"
     public var lastError: String?
     public var isBusy = false
+
+    /// Something the coach just earned, waiting to be shown once. Every RPG payoff in the game
+    /// used to happen in silence: goals settled, levels rose and skill points appeared with no
+    /// moment attached to any of it.
+    public struct Payoff: Identifiable, Equatable, Sendable {
+        public let id = UUID()
+        public let title: String
+        public let detail: String
+    }
+
+    public private(set) var pendingPayoff: Payoff?
+
+    public func clearPayoff() { pendingPayoff = nil }
 
     private let store: SaveStore
     private let queue: SaveQueue
@@ -222,12 +242,48 @@ public final class AppState {
     }
 
     private func refreshGoals() {
+        guard let before = league?.coach else { return }
+        var completed: [CoachEngine.SeasonGoal] = []
+
         mutate { league in
             guard !league.seasonGoals.isEmpty else { return }
             var goals = league.seasonGoals
-            CoachEngine.settleGoals(&goals, league: &league)
+            completed = CoachEngine.settleGoals(&goals, league: &league)
             league.seasonGoals = goals
         }
+
+        guard let after = league?.coach else { return }
+        announce(completed: completed, before: before, after: after)
+    }
+
+    /// Turns what just changed on the coach into one thing worth showing. The completed-goals
+    /// return value was already there and was being discarded at the call site.
+    private func announce(
+        completed: [CoachEngine.SeasonGoal],
+        before: CoachProfile,
+        after: CoachProfile
+    ) {
+        let levelsGained = after.level - before.level
+
+        if levelsGained > 0 {
+            let points = after.skillPoints - before.skillPoints
+            pendingPayoff = Payoff(
+                title: "Level \(after.level)",
+                detail: points == 1
+                    ? "One skill point to spend."
+                    : "\(points) skill points to spend."
+            )
+            return
+        }
+
+        guard let goal = completed.first else { return }
+        pendingPayoff = Payoff(
+            title: "Goal met",
+            detail: completed.count == 1
+                ? "\(goal.description). +\(goal.experienceReward) XP."
+                : "\(goal.description), and \(completed.count - 1) more. "
+                    + "+\(completed.reduce(0) { $0 + $1.experienceReward }) XP."
+        )
     }
 
     /// The user's next scheduled game, if there is one.

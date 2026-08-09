@@ -246,14 +246,26 @@ struct LiveGameView: View {
                 }
             }
 
-            if situation.down == 4 {
+            if situation.down == 4, let advice = fourthDownAdvice(for: situation) {
                 Rule()
-                Text("Fourth down")
-                    .font(.labelFont)
-                    .foregroundStyle(Broadcast.muted)
+                VStack(alignment: .leading, spacing: Layout.tight) {
+                    HStack(spacing: Layout.tight) {
+                        Text("Fourth down")
+                            .font(.labelFont)
+                            .foregroundStyle(Broadcast.muted)
+                        Stamp(adviceLabel(advice.call), color: theme.tint)
+                        Spacer(minLength: 0)
+                    }
+                    Text(advice.sentence)
+                        .font(.bodyFont)
+                        .foregroundStyle(Broadcast.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .accessibilityElement(children: .combine)
+
                 HStack(spacing: Layout.small) {
-                    callButton(.fieldGoal, isSuggested: false)
-                    callButton(.punt, isSuggested: false)
+                    callButton(.fieldGoal, isSuggested: advice.call == .kick)
+                    callButton(.punt, isSuggested: advice.call == .punt)
                 }
             }
         }
@@ -261,6 +273,21 @@ struct LiveGameView: View {
 
     /// What the offensive coordinator would call. Marked on the sheet, never pre-selected — the
     /// whole point of the screen is that the call is the user's.
+    /// The coordinator's read on fourth down. Deterministic, so it can be shown without
+    /// consuming the game's randomness.
+    private func fourthDownAdvice(for situation: GameSituation) -> PlayCaller.FourthDownAdvice? {
+        guard let league = app.league, let team = league.userTeam else { return nil }
+        return PlayCaller.fourthDownAdvice(situation: situation, team: team)
+    }
+
+    private func adviceLabel(_ call: PlayCaller.FourthDownAdvice.Call) -> String {
+        switch call {
+        case .go: "He would go"
+        case .kick: "He would kick"
+        case .punt: "He would punt"
+        }
+    }
+
     private func suggestion(for situation: GameSituation) -> OffensivePlay? {
         guard let league = app.league,
               let offense = league.team(id: league.userTeamID) else { return nil }

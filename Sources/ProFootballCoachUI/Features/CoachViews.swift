@@ -555,6 +555,21 @@ struct DraftRoomToken: Identifiable {
 }
 
 
+/// One line on what a club is: how good the roster is, and whether the cap lets you fix it.
+func offerVerdict(_ club: Team, in league: League) -> String {
+    let space = CapEngine.capSpace(for: club, in: league)
+    let strength: String
+    switch club.overallRating {
+    case 78...: strength = "A roster ready to win now"
+    case 72..<78: strength = "A decent roster"
+    default: strength = "A rebuild"
+    }
+    let money = space < 0
+        ? "and \(Format.money(-space)) over the cap"
+        : "with \(Format.money(space)) of room"
+    return "\(strength) \(money)."
+}
+
 /// The jobs on the table when a coach is out of work.
 struct JobOffersSheet: View {
     @Environment(AppState.self) private var app
@@ -574,17 +589,36 @@ struct JobOffersSheet: View {
                         app.accept(offer: offer)
                         dismiss()
                     } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(offer.teamName).font(.subheadline.weight(.medium))
-                                Text("\(offer.years) years")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                        HStack(spacing: Layout.small) {
+                            if let club = app.league?.team(id: offer.teamID) {
+                                TeamMark(team: club, size: 34)
                             }
-                            Spacer()
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(offer.teamName).font(.titleFont)
+                                HStack(spacing: Layout.tight) {
+                                    Text("\(offer.years) years")
+                                        .font(.labelFont)
+                                        .foregroundStyle(Broadcast.muted)
+                                    if let club = app.league?.team(id: offer.teamID) {
+                                        Stamp(
+                                            "\(Int(club.overallRating)) ovr",
+                                            color: RatingPalette.color(for: club.overallRating)
+                                        )
+                                    }
+                                }
+                                // What you are actually walking into, not just what it pays.
+                                if let club = app.league?.team(id: offer.teamID),
+                                   let league = app.league {
+                                    Text(offerVerdict(club, in: league))
+                                        .font(.labelFont)
+                                        .foregroundStyle(Broadcast.muted)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            Spacer(minLength: Layout.tight)
                             Text("\(Format.money(offer.salary))/yr")
-                                .font(.caption.monospacedDigit())
-                                .foregroundStyle(.secondary)
+                                .font(.figureFont)
+                                .foregroundStyle(Broadcast.ink)
                         }
                         .contentShape(Rectangle())
                     }

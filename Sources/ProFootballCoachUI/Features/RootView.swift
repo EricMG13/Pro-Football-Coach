@@ -31,6 +31,17 @@ public struct RootView: View {
         } message: {
             Text(app.lastError ?? "")
         }
+        .alert(
+            app.pendingPayoff?.title ?? "",
+            isPresented: Binding(
+                get: { app.pendingPayoff != nil },
+                set: { if !$0 { app.clearPayoff() } }
+            )
+        ) {
+            Button("Good") { app.clearPayoff() }
+        } message: {
+            Text(app.pendingPayoff?.detail ?? "")
+        }
         .onChange(of: scenePhase) { _, phase in
             // A dynasty must never be lost to a write that did not finish before the app left
             // the foreground.
