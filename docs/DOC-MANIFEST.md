@@ -64,10 +64,41 @@ builder build the wrong game.
 | `docs/AUDIT.md` | `RETAINED` | Tier B evidence. A UI-layer audit of the discarded view code, so it is evidence about *craft*, not about why the game was boring. Its `Patterns & Systemic Issues` section, and the line *"the test's coverage boundary became the quality boundary"*, are design inputs for the rebuild. Read-only; dispositioned, not edited. | `docs/AUDIT.md`; disposition in `docs/06-AUDIT-DISPOSITION.md` |
 | `docs/STATUS.md` | `RETAINED` | Tier B evidence and the live status document. Holds the calibration bands, the soak invariants, the bounded-save-growth lesson, the toolchain reality that D11 must answer to, and the record of Phase 4C shipping uncompiled. The builder keeps writing to it. | `docs/STATUS.md` |
 
+### `docs/` — the branch reconciliation, added 2026-08-09
+
+**Why these were not in the table above.** This manifest was written on a branch, against the tree it
+could see. `main` had meanwhile carried the *earlier* hybrid-rebuild program — a pro-only, 32-team
+game with a played-game mode — twenty-two commits further on. Merging the two put twenty-nine files
+at canonical `docs/` paths that this manifest classified nowhere, which under its own rule means they
+carried no authority while sitting exactly where a cold builder would look. That is the failure this
+file exists to prevent, so they are classified here and moved.
+
+Owner decision, 2026-08-09: **superseded — archive it.** Nothing is deleted.
+
+| Path | Classification | Reason | Where its role lives now |
+|---|---|---|---|
+| `docs/07-SALVAGE.md` | `ARCHIVED-TO docs/archive/07-SALVAGE.md` | The earlier program's salvage ledger, written against the pro-only v1. v4 re-does the same job in both directions — a logged reason to port *and* a logged reason to discard — from the current mission. | `docs/PORT-LOG.md` |
+| `docs/research/R1a-madden-franchise.md` | `ARCHIVED-TO docs/archive/research/` | Reference dossier for the earlier program. Its ground is re-covered from the current scope, with per-claim sourcing and a standing-caveat register the dossiers do not carry. | `docs/01-RESEARCH.md` §6.2A |
+| `docs/research/R1b-retro-bowl.md` | `ARCHIVED-TO docs/archive/research/` | Same. | `docs/01-RESEARCH.md` §6.2B |
+| `docs/research/R1c-football-manager.md` | `ARCHIVED-TO docs/archive/research/` | Same, and narrower than what replaced it: §6.1 separates FM Mobile from desktop FM, which conflating is the main error in this area. | `docs/01-RESEARCH.md` §6.1, §6.6 |
+| `docs/research/R1d-adjacent-and-feel.md` | `ARCHIVED-TO docs/archive/research/` | Same. | `docs/01-RESEARCH.md` §6.2A, §6.2B |
+| `docs/research/R2-synthesis.md` | `ARCHIVED-TO docs/archive/research/` | Produced the six Experience Pillars and the parity rule, both written for the pro-only scope. The market argument it asserts is re-derived as an *output* in §6.3 rather than assumed. | `docs/01-RESEARCH.md` §6.3; `PRODUCT.md` |
+| `docs/design/briefs/00-system.md` … `07-coach.md` (8 files) | `ARCHIVED-TO docs/archive/design/briefs/` | Per-screen briefs for the pro-only screen set, including front office and draft surfaces shaped by a 32-team league with no college tier. The design system they build on is the Primetime/Broadcast skin, which `04` replaces from zero. | `docs/04-UX-AND-DESIGN-SYSTEM.md` §4 |
+| `docs/design/mockups/*.dc.html`, `02-hub-storyboard-selection.png` (12 files) | `ARCHIVED-TO docs/archive/design/mockups/` | Twelve owner-approved frames — real signed-off evidence, and the reason this row says archived rather than deleted. They are approvals of a **different product's** screens under a design system `04` does not inherit, so they cannot be canon; they remain readable as evidence of what the owner liked. | `docs/04-UX-AND-DESIGN-SYSTEM.md`; the approvals themselves carry no authority over the new screen set |
+| `docs/OPEN-DECISIONS.md` (main's) | `ARCHIVED-TO docs/archive/OPEN-DECISIONS-rebuild-gates.md` | **Not an older version of the file at that path — a different document that shares it.** Main's is the OD-1…OD-6 owner-decision log from the three signed-off rebuild gates; v4's is the D1–D14 register. The OD rulings are real owner decisions and are preserved under their own name rather than lost to a conflict resolution. | `docs/OPEN-DECISIONS.md` (D1–D14) is canon; the OD log is history |
+| `docs/PRE-DEPLOYMENT-CHECKLIST.md` (main's) | `ARCHIVED-TO docs/archive/PRE-DEPLOYMENT-CHECKLIST-broadcast.md` | Same situation. Main's is the outstanding-work list from the Broadcast skin critique (8 assessors, 87 issues) against a tree that P0 deletes. Retained as evidence about craft, like `AUDIT.md`. | `docs/PRE-DEPLOYMENT-CHECKLIST.md` (v4's) |
+
+**Three of main's canonical files were already classified above and needed no new row** —
+`DESIGN.md`, `docs/03-ARCHITECTURE.md` and `docs/04-SCREENS-UI.md` were archived on this branch
+before the merge, and the merge kept them archived rather than resurrecting them. Verified, not
+assumed.
+
 ### `docs/plans/`
 
 All three plans expand phases of the archived implementation plan against code Tier C discards.
-`docs/plans/` itself stays, empty: `CLAUDE.md` requires each new phase plan to be written there.
+`docs/plans/` itself stays: `CLAUDE.md` requires each new phase plan to be written there. It now
+holds `docs/plans/2026-08-09-p0-foundation.md`, written against P0 of the current implementation
+plan — the first plan in this directory that belongs to the rebuild rather than to what it replaced.
 
 | Path | Classification | Reason | Where its role lives now |
 |---|---|---|---|
@@ -87,9 +118,20 @@ All three plans expand phases of the archived implementation plan against code T
 | Classification | Count |
 |---|---|
 | `SUPERSEDED-BY` (rewritten in place) | 2 |
-| `ARCHIVED-TO docs/archive/` | 11 |
+| `ARCHIVED-TO docs/archive/` — original pass | 11 |
+| `ARCHIVED-TO docs/archive/` — branch reconciliation, 2026-08-09 | 28 |
 | `RETAINED` | 5 |
-| **Total pre-existing documents** | **18** |
+| **Total documents classified** | **46** |
+
+Measured after the reconciliation, not asserted: `docs/archive/` holds **40 tracked files**
+(12 markdown at its root, 20 under `design/`, 5 under `research/`, 3 under `plans/`), and canonical
+`docs/` holds **15 markdown files** plus `plans/`, `reviews/` and `archive/`. Every one of those 15
+appears in a table above.
+
+```bash
+git ls-files docs | grep -c '^docs/[^/]*\.md$'   # expect 15
+git ls-files docs/archive | wc -l                # expect 40
+```
 
 Files created by this deliverable, which have no pre-rebuild predecessor: `docs/DOC-MANIFEST.md`
 (this file) and `docs/archive/README.md` (a no-authority banner over the archive folder).
