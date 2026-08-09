@@ -50,8 +50,10 @@ prose as if it were a test.
 
 ## Documents
 
-`docs/DOC-MANIFEST.md` is the authority on what is canon. **A document not listed there as
-`RETAINED` carries no authority**, whatever path it sits at. Files under `docs/archive/` are history.
+`docs/DOC-MANIFEST.md` is the authority on what is canon. Its rule has **two limbs, and quoting only
+the first inverts it**: a document carries authority if it is listed there as `RETAINED` **or** is
+one of the canon documents listed in its §4. **Anything else carries none**, whatever path it sits
+at. Files under `docs/archive/` are history.
 
 | Doc | Purpose |
 |---|---|
@@ -64,7 +66,7 @@ prose as if it were a test.
 | `docs/04b-AUDIT-RUBRIC.md` | The audit rubric: five dimensions, 0–4 anchors, P0–P3 severities |
 | `docs/05-IMPLEMENTATION-PLAN.md` | Phased build with per-phase gates |
 | `docs/06-AUDIT-DISPOSITION.md` | Disposition of the prior audit's P0/P1s and systemic patterns |
-| `docs/OPEN-DECISIONS.md` | Decision register D1–D14, each with an instrumented falsifier. **D11 is ESCALATED** |
+| `docs/OPEN-DECISIONS.md` | Decision register D1–D14, each with an instrumented falsifier. **D11 closed 2026-08-09** |
 | `docs/08-OPUS5-BUILD-PROMPT.md` | Phase-entry prompt. **Owns mission and definition of done** |
 | `docs/PRE-DEPLOYMENT-CHECKLIST.md` | What must be true before a build goes out |
 | `PRODUCT.md` | Positioning, audience, market gap, v1 scope |

@@ -91,17 +91,17 @@ unknown-field defaults for forward compatibility.
 
 ---
 
-## 5. Test architecture (D11) — **blocked pending an owner decision**
+## 5. Test architecture (D11) — **decided 2026-08-09**
 
-`docs/OPEN-DECISIONS.md` D11 is escalated and unresolved. The facts:
+**The runner:** the ported `TestKit` harness, run as an executable target —
+`swift build && swift run -c release SimTests`, wrapped by `./scripts/verify.sh`. Neither XCTest nor
+swift-testing ships with the Swift Command Line Tools; both live inside Xcode. The harness needs
+neither.
 
-- Agent environments have had no `swift`, no `swiftc`, no `xcodebuild`, no `xcrun`, no `simctl`, and
-  `download.swift.org` refused by egress policy.
-- Neither XCTest nor swift-testing ships with the Swift Command Line Tools, which is why the prior
-  build ran its suite as an executable target with a hand-rolled harness.
-- Phase 4C shipped never having been compiled as a direct result.
+**Who runs it:** the session does. The machine hosting this work has Swift 6.3.3 and Xcode 26.6, and
+the gates were run rather than reasoned about. See `docs/OPEN-DECISIONS.md` D11 for the full closure.
 
-**Until D11 is answered, this section specifies the structure but not the runner:**
+**The structure:**
 
 ```
 Tests/
@@ -111,10 +111,15 @@ Tests/
   ContractTests/      accessibility contract, design tokens, legal tests
 ```
 
-Every phase gate in `05` that says "tests green" is asserted against whatever D11 selects. If D11
-lands on the hand-rolled harness with no agent-side toolchain, then **the agent cannot run the
-gates**, and `05` must sequence phases so the owner runs them at phase boundaries. That is a
-scheduling consequence, not a detail.
+**The condition, which outlives the closure.** Agent environments *have* had no `swift`, no
+`swiftc`, no `xcodebuild`, no `xcrun` and no `simctl`, with `download.swift.org` refused by egress
+policy — and Phase 4C shipped never having been compiled as a direct result. That case has not
+disappeared; it is simply not the case here. So the rule is behavioural, not environmental:
+
+- **Assert "tests green" only by having run them in the session that claims it.** Citing D11, this
+  section, or a previous session's green run is not an assertion.
+- A session without a toolchain records what it wrote in `docs/STATUS.md` as **unverified — never
+  compiled**, naming the files, and does not claim the phase is done.
 
 ---
 

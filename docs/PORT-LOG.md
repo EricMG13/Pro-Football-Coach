@@ -91,6 +91,35 @@ These are Tier B: the numbers and methods transfer, the implementation does not.
 | Save-size work | The lesson, not the code: unbounded free-agent pools and news feeds took saves to 8.3 MB; bounding them brought it to 2.3 MB. D7 gives every growable collection a stated bound. |
 | Cap laundering defences | The **attack**, which a rewrite would have to rediscover: practice squad as a place to hide a contract, dead money erased by release, an offer validated against the cap and never charged. |
 | Carousel invariant | A coach whose contract expires always has at least one offer or an explicit year out. Without it, saves soft-lock. |
+| `Generation/NameBank.swift` | **A worked example of the legal guardrail failing quietly.** See below — this is the most useful thing in the file, and it is why P2's collision test is a gate rather than a checklist item. |
+
+### The name bank, as evidence for P2
+
+Found by a pre-push audit on 2026-08-09. `Sources/FootballSimCore/Generation/NameBank.swift` is
+deleted by P0 along with the rest of `Generation/`, so nothing here is a patch request. It is
+recorded because it demonstrates, in shipped code, exactly how `CLAUDE.md`'s guardrail fails when it
+is prose rather than a test.
+
+**Two failures, both under a comment asserting the opposite.**
+
+1. The file header states *"Everything here is invented or generic — no real player is referenced."*
+   The generator takes a cross product of ~60 first names and ~60 last names, all drawn from the same
+   naming pool professional football actually draws from. A cross product of plausible names
+   **cannot** guarantee that claim, and does not. The defect is not the collision — it is the
+   unconditional assertion, with nothing checking it.
+2. `colleges` is commented *"Fictional alma maters"* and contains **Delta State**, **Pine Bluff**,
+   **Western Reserve**, **Whitewater**, **Old Dominion Tech** and **Rockford** — real NCAA
+   football-playing institutions or a one-word variant of one. These strings render on a player card
+   as the player's college, which is product content, not research.
+
+**What P2 must take from it:**
+
+- The collision test enumerates the **generated output**, not the source arrays. Reading a list and
+  judging it fictional is what produced both failures above.
+- Every generated field that reaches a surface is in scope — player name, coach name, and **college
+  or alma mater**, which is the field that slipped here.
+- A comment asserting compliance is not compliance. Where the guardrail is claimed in a doc comment,
+  the same claim must be a named assertion in the legal suite, or the comment comes out.
 
 ---
 

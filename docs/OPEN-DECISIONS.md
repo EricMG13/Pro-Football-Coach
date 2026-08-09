@@ -1,4 +1,4 @@
-# Open Decisions — D1–D13
+# Open Decisions — D1–D14
 
 The decision register required by `docs/reviews/2026-08-09-spec-prompt-v4.md` §5. Every decision
 carries: options considered, the choice, the reason, **a falsifier that names its instrument**, and

@@ -2,8 +2,11 @@
 
 What must be true before a build goes out, to TestFlight or to the App Store.
 
-**Authored, not regenerated.** No prior version of this file existed in the repo; the v3 brief asked
-for a regeneration of something that was never there.
+**Authored, not regenerated.** No prior version existed *on the branch this was written against*;
+the v3 brief asked for a regeneration of something that was not there. The 2026-08-09 merge made the
+absolute form of that claim false: `main` carried a different checklist, from the Broadcast-skin
+critique, now at `docs/archive/PRE-DEPLOYMENT-CHECKLIST-broadcast.md`. This file does not inherit
+from it.
 
 Nothing here is a judgement call. Each item is either machine-checked or owner-checked, and the
 owner-checked ones are owner-checked because no agent in this project's environment can reach them.

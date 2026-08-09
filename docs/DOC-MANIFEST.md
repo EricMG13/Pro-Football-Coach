@@ -6,7 +6,7 @@ This file is the authority on what is canon in this repo. Every document that ex
 rebuild appears in the table below exactly once, classified and given a reason.
 
 **The rule: a document not listed here as `RETAINED`, or written as one of the new canon documents
-listed in [§4](#4-canon-paths-not-yet-written), carries no authority — whatever path it sits at.**
+listed in [§4](#4-canon-paths), carries no authority — whatever path it sits at.**
 Files under `docs/archive/` are history, not specification.
 
 This exists because a cold builder used to open `README.md`, read "Start here:
@@ -47,7 +47,7 @@ builder build the wrong game.
 |---|---|---|---|
 | `CLAUDE.md` | `SUPERSEDED-BY CLAUDE.md` | Rewritten in place as Deliverable 0. The old text asserted a pro-only scope, "College mechanics are replaced by pro mechanics", a 32-team league shape, and a doc map pointing at the arcade mode — all now false. Not archived: every session loads this file, so it must never be absent. | `CLAUDE.md` (current) |
 | `README.md` | `SUPERSEDED-BY README.md` | Rewritten in place by this deliverable. Its "Start here" pointed at `docs/00-EXECUTIVE-PLAN.md`, and its one-line description sold a pro-only franchise sim. | `README.md` (current) |
-| `PRODUCT.md` | `ARCHIVED-TO docs/archive/PRODUCT.md` | Positioning is built on a pro-only product and explicitly sells the "On the Field" arcade mode the mission forbids; its market-gap claim predates the research that must now produce it (§6.3 of the brief). | New `PRODUCT.md` — Deliverable 7 |
+| `PRODUCT.md` | `ARCHIVED-TO docs/archive/PRODUCT.md`, and the later gate-2 rewrite to `docs/archive/PRODUCT-primetime.md` | Positioning is built on a pro-only product and explicitly sells the "On the Field" arcade mode the mission forbids; its market-gap claim predates the research that must now produce it (§6.3 of the brief). | New `PRODUCT.md` — Deliverable 7 |
 | `DESIGN.md` | `ARCHIVED-TO docs/archive/DESIGN.md` | The design system gets exactly one home, and it is not this file. Its tokens describe the "Coordinator's Clipboard" visual world, which the archived Almanac plan had already superseded, on a screen inventory that no longer applies. Explicitly **not** maintained in parallel. | `docs/04-UX-AND-DESIGN-SYSTEM.md` — Deliverable 5 |
 
 ### `docs/`
@@ -68,8 +68,10 @@ builder build the wrong game.
 
 **Why these were not in the table above.** This manifest was written on a branch, against the tree it
 could see. `main` had meanwhile carried the *earlier* hybrid-rebuild program — a pro-only, 32-team
-game with a played-game mode — twenty-two commits further on. Merging the two put twenty-nine files
-at canonical `docs/` paths that this manifest classified nowhere, which under its own rule means they
+game with a played-game mode — twenty-two commits further on. Merging the two put files
+at canonical `docs/` paths that this manifest classified nowhere — 26 moved by `git mv`, plus two
+saved under new archive names, plus `PRODUCT.md`, whose main-side revision existed in no file and had
+to be recovered from history separately, which under its own rule means they
 carried no authority while sitting exactly where a cold builder would look. That is the failure this
 file exists to prevent, so they are classified here and moved.
 
@@ -85,7 +87,7 @@ Owner decision, 2026-08-09: **superseded — archive it.** Nothing is deleted.
 | `docs/research/R2-synthesis.md` | `ARCHIVED-TO docs/archive/research/` | Produced the six Experience Pillars and the parity rule, both written for the pro-only scope. The market argument it asserts is re-derived as an *output* in §6.3 rather than assumed. | `docs/01-RESEARCH.md` §6.3; `PRODUCT.md` |
 | `docs/design/briefs/00-system.md` … `07-coach.md` (8 files) | `ARCHIVED-TO docs/archive/design/briefs/` | Per-screen briefs for the pro-only screen set, including front office and draft surfaces shaped by a 32-team league with no college tier. The design system they build on is the Primetime/Broadcast skin, which `04` replaces from zero. | `docs/04-UX-AND-DESIGN-SYSTEM.md` §4 |
 | `docs/design/mockups/*.dc.html`, `02-hub-storyboard-selection.png` (12 files) | `ARCHIVED-TO docs/archive/design/mockups/` | Twelve owner-approved frames — real signed-off evidence, and the reason this row says archived rather than deleted. They are approvals of a **different product's** screens under a design system `04` does not inherit, so they cannot be canon; they remain readable as evidence of what the owner liked. | `docs/04-UX-AND-DESIGN-SYSTEM.md`; the approvals themselves carry no authority over the new screen set |
-| `docs/OPEN-DECISIONS.md` (main's) | `ARCHIVED-TO docs/archive/OPEN-DECISIONS-rebuild-gates.md` | **Not an older version of the file at that path — a different document that shares it.** Main's is the OD-1…OD-6 owner-decision log from the three signed-off rebuild gates; v4's is the D1–D14 register. The OD rulings are real owner decisions and are preserved under their own name rather than lost to a conflict resolution. | `docs/OPEN-DECISIONS.md` (D1–D14) is canon; the OD log is history |
+| `docs/OPEN-DECISIONS.md` (main's) | `ARCHIVED-TO docs/archive/OPEN-DECISIONS-rebuild-gates.md` | **Not an older version of the file at that path — a different document that shares it.** Main's is the **OD-1…OD-5** owner-decision log from the three signed-off rebuild gates, two of its entries still open; v4's is the D1–D14 register. The OD rulings are real owner decisions and are preserved under their own name rather than lost to a conflict resolution. | `docs/OPEN-DECISIONS.md` (D1–D14) is canon; the OD log is history |
 | `docs/PRE-DEPLOYMENT-CHECKLIST.md` (main's) | `ARCHIVED-TO docs/archive/PRE-DEPLOYMENT-CHECKLIST-broadcast.md` | Same situation. Main's is the outstanding-work list from the Broadcast skin critique (8 assessors, 87 issues) against a tree that P0 deletes. Retained as evidence about craft, like `AUDIT.md`. | `docs/PRE-DEPLOYMENT-CHECKLIST.md` (v4's) |
 
 **Three of main's canonical files were already classified above and needed no new row** —
@@ -123,14 +125,15 @@ plan — the first plan in this directory that belongs to the rebuild rather tha
 | `RETAINED` | 5 |
 | **Total documents classified** | **46** |
 
-Measured after the reconciliation, not asserted: `docs/archive/` holds **40 tracked files**
-(12 markdown at its root, 20 under `design/`, 5 under `research/`, 3 under `plans/`), and canonical
-`docs/` holds **15 markdown files** plus `plans/`, `reviews/` and `archive/`. Every one of those 15
-appears in a table above.
+Measured after the reconciliation, not asserted: `docs/archive/` holds **41 tracked files**
+(13 markdown at its root, 20 under `design/`, 5 under `research/`, 3 under `plans/`), and canonical
+`docs/` holds **15 markdown files** plus `plans/`, `reviews/` and `archive/`. **Fourteen of those 15
+appear in a table in §2 or §4.** The fifteenth is this file, which classifies the others and is named
+in §3's closing line rather than classifying itself.
 
 ```bash
 git ls-files docs | grep -c '^docs/[^/]*\.md$'   # expect 15
-git ls-files docs/archive | wc -l                # expect 40
+git ls-files docs/archive | wc -l                # expect 41
 ```
 
 Files created by this deliverable, which have no pre-rebuild predecessor: `docs/DOC-MANIFEST.md`
@@ -138,8 +141,16 @@ Files created by this deliverable, which have no pre-rebuild predecessor: `docs/
 
 ## 4. Canon paths
 
-All of these now exist. Nothing was archived from any of these paths — they are new files, written
-during the v4 execution.
+All of these now exist. **Five of them replaced a document that was archived from the same path** —
+`02-GAME-DESIGN.md`, `05-IMPLEMENTATION-PLAN.md`, `PRODUCT.md`, `PRE-DEPLOYMENT-CHECKLIST.md` and
+`OPEN-DECISIONS.md` each have an `ARCHIVED-TO` row in §2 above. The rest are genuinely new. An
+earlier version of this preamble said nothing was archived from any of these paths; that was wrong,
+and it mattered, because it invited a reader to conclude the archive held no earlier version of a
+file it does hold.
+
+**These paths carry authority.** §2's `RETAINED` mark is one route to authority; being listed in this
+table is the other. A restatement of the rule that mentions only `RETAINED` strips authority from
+every document below, which is the opposite of what this manifest is for.
 
 | Path | Deliverable | Owns |
 |---|---|---|
@@ -150,14 +161,15 @@ during the v4 execution.
 | `docs/04b-AUDIT-RUBRIC.md` | 6 | Five dimensions, 0–4 anchors, P0–P3 severities, which dimensions are global |
 | `PRODUCT.md` | 7 | Positioning, audience, the market-gap argument, v1 scope |
 | `docs/05-IMPLEMENTATION-PLAN.md` | 8 | Phased build with per-phase gates |
-| `docs/PRE-DEPLOYMENT-CHECKLIST.md` | 8 | What must be true before a build goes out. Authored, never regenerated — no such file has ever existed here |
+| `docs/PRE-DEPLOYMENT-CHECKLIST.md` | 8 | What must be true before a build goes out. Authored fresh against the v4 scope. A **different** checklist existed on the pre-merge `main` — the Broadcast-critique outstanding-work list — now at `docs/archive/PRE-DEPLOYMENT-CHECKLIST-broadcast.md` |
 | `docs/06-AUDIT-DISPOSITION.md` | 9 | The 25 P0/P1s and the five systemic patterns, converted into named tests |
-| `docs/OPEN-DECISIONS.md` | 10 | The D1–D14 register, each with an instrumented falsifier. D14 (build order and league size) was added during execution because P2 fixes *that* both tiers ship, not which is built first. **D11 is ESCALATED** |
+| `docs/OPEN-DECISIONS.md` | 10 | The D1–D14 register, each with an instrumented falsifier. D14 (build order and league size) was added during execution because P2 fixes *that* both tiers ship, not which is built first. **D11 closed 2026-08-09 — the gates were run** |
 | `docs/08-OPUS5-BUILD-PROMPT.md` | 11 | The phase-entry prompt. **Owns mission and definition of done** |
 | `docs/PORT-LOG.md` | — | Tier C's symmetric justification: what is ported from the prior build and why, what is discarded and why. Added during execution |
 
 There is deliberately no `docs/00-*` and no `docs/07-*`. `00` was the old executive plan and is not
-replaced; `07` never existed.
+replaced. `07` **did** exist — the earlier program's salvage ledger — and is archived to
+`docs/archive/07-SALVAGE.md`; `docs/PORT-LOG.md` does that job now. Neither number is reused.
 
 ## 5. Required edits inside retained documents
 
@@ -177,16 +189,28 @@ dropped silently.
 ## 6. Dangling references, knowingly left alone
 
 - Retained and archived documents link to paths that moved. `docs/AUDIT.md` cites `DESIGN.md` and
-  `docs/04-SCREENS-UI.md`; `docs/STATUS.md` cites `00-EXECUTIVE-PLAN.md` and
-  `05-IMPLEMENTATION-PLAN.md`; `docs/01-RESEARCH.md` §G cites doc 06. All of those targets now live
+  `docs/04-SCREENS-UI.md`; `docs/STATUS.md` no longer cites `00-EXECUTIVE-PLAN.md` at all, and its
+  `05-IMPLEMENTATION-PLAN.md` references now resolve to the **current** canon file rather than the
+  archived one — so that pair is listed here for history, not as a live dangling reference.
+  `docs/01-RESEARCH.md` §G cites doc 06. All of those targets now live
   under `docs/archive/`. The links are **not** repaired: a historical record that has been quietly
   edited stops being a record. Resolve them by prefixing `docs/archive/`.
 - `docs/01-RESEARCH.md` §A says the screen inventory was compiled from "all 68 screenshots in this
   folder". **No image files have ever been committed to this repository.** The tables in §A are the
   only surviving record of those screenshots; treat them as the primary artefact, and do not go
   looking for images that are not there.
-- The empty directory `Pro-Football-Coach/` at the repository root is a stray, contains nothing, and
-  is not tracked by git.
+- `Pro-Football-Coach/` at the repository root was **not** what an earlier version of this bullet
+  claimed. It was not empty, it did not contain nothing, and it was not untracked: it was a **tracked
+  gitlink** (mode `160000`) pointing at commit `a8fbcee` of this same repository, with no
+  `.gitmodules` to resolve it — so every clone got a directory it could not initialise and
+  `git submodule status` failed. On disk it holds a nested clone whose working tree is a **full copy
+  of the anti-canon**, including `docs/06-PLAYED-GAME-MODE.md`. The gitlink was removed from the
+  index on 2026-08-09 and the path is gitignored; the nested clone on disk was left alone, and it
+  carries no authority — nothing inside it is canon, whatever path it sits at.
+
+  **This bullet was wrong for as long as it existed, and that is why nobody fixed the gitlink**: the
+  archival pass read it, saw "not tracked by git", and moved on. A false entry in the section whose
+  whole job is enumerating what is broken is worse than no entry.
 
 ## 7. What about the source tree?
 

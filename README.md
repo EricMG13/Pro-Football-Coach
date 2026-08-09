@@ -9,55 +9,65 @@ mode, no throwing passes. Matches are watched in a 2D view and shaped by roster 
 identity, opponent preparation, staff and in-game decisions. Every school, team, conference, city,
 stadium, player and coach is fictional and original.
 
-> **Status: ground-up rebuild in progress.** The design and planning package is being authored now.
+> **Status: the spec package is complete. No line of the rebuild has been written.**
+>
+> Every canon document listed below exists. Phase **P0** is planned
+> ([`docs/plans/2026-08-09-p0-foundation.md`](docs/plans/2026-08-09-p0-foundation.md)) and has not
+> been executed.
+>
 > The code under `Sources/`, `Tests/` and `App/` is the *previous* build — a pro-only franchise sim
-> with an arcade mode — and carries **no authority** over the rebuild. Do not treat it as a
-> specification, and do not assume any of it survives.
+> with an arcade mode — and carries **no authority** over the rebuild. P0's first task deletes most
+> of it. Do not treat it as a specification.
+>
+> [`docs/STATUS.md`](docs/STATUS.md) is the honest picture and takes precedence over this paragraph.
 
 ## Start here
 
-1. **[`docs/DOC-MANIFEST.md`](docs/DOC-MANIFEST.md)** — what is canon, what was archived and why,
-   and which canon documents have not been written yet. Read this before opening anything else in
-   `docs/`. A document not marked `RETAINED` there carries no authority, whatever path it sits at.
+1. **[`docs/DOC-MANIFEST.md`](docs/DOC-MANIFEST.md)** — what is canon, what was archived and why.
+   Read this before opening anything else in `docs/`. Its rule has two limbs, and quoting only the
+   first inverts it: a document carries authority if it is marked `RETAINED` **or** is one of the
+   canon documents listed in its §4. Anything else carries none, whatever path it sits at.
 2. **[`CLAUDE.md`](CLAUDE.md)** — standing rules for every session: process, tech stack, conventions,
    the legal guardrail.
 3. **[`docs/reviews/2026-08-09-spec-prompt-v4.md`](docs/reviews/2026-08-09-spec-prompt-v4.md)** — the
    governing brief. Owner parameters, authority tiers, the core design problem, the deliverable list.
    Where any other document disagrees with it, the other document is wrong.
 
-Once the package is complete, `docs/08-OPUS5-BUILD-PROMPT.md` becomes the entry point for a build
-session: it owns the mission and the definition of done, and it runs one phase at a time.
+For a build session, **[`docs/08-OPUS5-BUILD-PROMPT.md`](docs/08-OPUS5-BUILD-PROMPT.md)** is the
+entry point: it owns the mission and the definition of done, and it runs one phase at a time.
 
 ## Document map
 
 `docs/DOC-MANIFEST.md` is the authority; this table is the short version.
 
-| Doc | Purpose | State |
-|---|---|---|
-| [`docs/DOC-MANIFEST.md`](docs/DOC-MANIFEST.md) | Canon, superseded, archived | Written |
-| [`CLAUDE.md`](CLAUDE.md) | Standing rules for every session | Written |
-| [`docs/01-RESEARCH.md`](docs/01-RESEARCH.md) | Reference research, competitive set, community signal, calibration sources | Retained, being extended |
-| [`docs/AUDIT.md`](docs/AUDIT.md) | Prior UI audit — evidence about craft | Retained, read-only |
-| [`docs/STATUS.md`](docs/STATUS.md) | Honest state of the build: what exists, what is verified, what is not | Retained, live |
-| `docs/02-GAME-DESIGN.md` | The game: core loop, agency model, both tiers, promotion arc, systems, stakes | Not yet written |
-| `docs/03-MATCH-ENGINE.md` | Play resolution, seeding contract, off-screen model, calibration harness, soak | Not yet written |
-| `docs/03b-ARCHITECTURE.md` | Module layout, engine/UI boundary, save architecture, test architecture | Not yet written |
-| `docs/04-UX-AND-DESIGN-SYSTEM.md` | Design system, screens, match view, accessibility contract | Not yet written |
-| `docs/04b-AUDIT-RUBRIC.md` | Audit rubric: five dimensions, 0–4 anchors, P0–P3 severities | Not yet written |
-| `docs/05-IMPLEMENTATION-PLAN.md` | Phased build with per-phase gates | Not yet written |
-| `docs/06-AUDIT-DISPOSITION.md` | Prior audit's P0/P1s and systemic patterns, converted into tests | Not yet written |
-| `docs/OPEN-DECISIONS.md` | Decision register D1–D13, each with an instrumented falsifier | Not yet written |
-| `docs/PRE-DEPLOYMENT-CHECKLIST.md` | What must be true before a build goes out | Not yet written |
-| `docs/08-OPUS5-BUILD-PROMPT.md` | Phase-entry prompt. Owns mission and definition of done | Not yet written |
-| `PRODUCT.md` | Positioning, audience, market gap, v1 scope | Not yet written |
-| [`docs/archive/`](docs/archive/) | History. No authority, nothing here is a specification | Archived |
+| Doc | Purpose |
+|---|---|
+| [`docs/DOC-MANIFEST.md`](docs/DOC-MANIFEST.md) | Canon, superseded, archived |
+| [`CLAUDE.md`](CLAUDE.md) | Standing rules for every session |
+| [`docs/01-RESEARCH.md`](docs/01-RESEARCH.md) | Reference research, competitive set, community signal, calibration sources |
+| [`docs/02-GAME-DESIGN.md`](docs/02-GAME-DESIGN.md) | The game: core loop, agency model, both tiers, promotion arc, systems, stakes |
+| [`docs/03-MATCH-ENGINE.md`](docs/03-MATCH-ENGINE.md) | Play resolution, seeding contract, off-screen model, calibration harness, soak |
+| [`docs/03b-ARCHITECTURE.md`](docs/03b-ARCHITECTURE.md) | Module layout, engine/UI boundary, save architecture, test architecture |
+| [`docs/04-UX-AND-DESIGN-SYSTEM.md`](docs/04-UX-AND-DESIGN-SYSTEM.md) | Design system, screens, match view, accessibility contract |
+| [`docs/04b-AUDIT-RUBRIC.md`](docs/04b-AUDIT-RUBRIC.md) | Audit rubric: five dimensions, 0–4 anchors, P0–P3 severities |
+| [`docs/05-IMPLEMENTATION-PLAN.md`](docs/05-IMPLEMENTATION-PLAN.md) | Phased build with per-phase gates |
+| [`docs/06-AUDIT-DISPOSITION.md`](docs/06-AUDIT-DISPOSITION.md) | Prior audit's P0/P1s and systemic patterns, converted into tests |
+| [`docs/08-OPUS5-BUILD-PROMPT.md`](docs/08-OPUS5-BUILD-PROMPT.md) | Phase-entry prompt. Owns mission and definition of done |
+| [`docs/OPEN-DECISIONS.md`](docs/OPEN-DECISIONS.md) | Decision register D1–D14, each with an instrumented falsifier |
+| [`docs/PORT-LOG.md`](docs/PORT-LOG.md) | What survives from the previous build, with a logged reason both ways |
+| [`docs/PRE-DEPLOYMENT-CHECKLIST.md`](docs/PRE-DEPLOYMENT-CHECKLIST.md) | What must be true before a build goes out |
+| [`docs/STATUS.md`](docs/STATUS.md) | Honest state of the build: what exists, what is verified, what is not |
+| [`docs/AUDIT.md`](docs/AUDIT.md) | Prior UI audit — evidence about craft, retained read-only |
+| [`PRODUCT.md`](PRODUCT.md) | Positioning, audience, market gap, v1 scope |
+| [`docs/archive/`](docs/archive/) | History. No authority, nothing here is a specification |
 
 ## Non-negotiables
 
 - **Fictional and original IP only.** No real school, team, conference, player or coach names, no
   real logos, colours, fight songs or broadcast identities. No importer, no "community" real-name
-  files, no wink in the store listing. Two of these are shipping tests: a name-collision test against
-  a blocklist, and a trade-dress test on generated colour pairs.
+  files, no wink in the store listing. Two of these become shipping tests — a name-collision test
+  against a blocklist, and a trade-dress test on generated colour pairs. Neither exists yet; both are
+  gates on the generation phase (P2).
 - **Determinism.** A given seed plus a given input state reproduces a match exactly, across processes
   and app launches. Seeds derive from identifier bytes, never from `hashValue`.
 - **Offline, single-player.** No network, no accounts, no analytics, no ads, no IAP, no subscriptions.
@@ -77,29 +87,27 @@ session: it owns the mission and the definition of done, and it runs one phase a
 | `Sources/ProFootballCoachUI/` | Prior SwiftUI feature layer (views + view models) |
 | `Tests/SimTests/` | Prior test suite and its hand-rolled harness |
 | `App/` | Thin `@main` iOS shell + `project.yml` for Xcode project generation |
+| `scripts/verify.sh` | Runs both machine gates and prints a pasteable result |
 
-Everything under `Sources/`, `Tests/` and `App/` is the previous implementation and is retained as
-readable prior art only. `build/` and `App/build/` are committed Xcode build output, not source.
+Everything under `Sources/`, `Tests/` and `App/` is the previous implementation, retained as readable
+prior art only until P0 removes it.
 
-## Building the previous implementation
-
-These instructions describe the code as it stands today. The rebuild's project structure, test
-mechanism and toolchain policy are decided in `docs/03b-ARCHITECTURE.md`; until that lands, do not
-assume these commands are the long-term answer.
-
-Both library targets — engine *and* SwiftUI — build for macOS as well as iOS, so the codebase is
-compile-verified from the command line without full Xcode:
+## Building
 
 ```bash
-swift build
+./scripts/verify.sh
 ```
 
-Neither XCTest nor swift-testing ships with the Swift Command Line Tools, so the suite is an
-**executable target** with a hand-rolled harness (`Tests/SimTests/TestKit.swift`). It reports real
-pass/fail counts and exits non-zero on failure:
+That is the gate: `swift build`, then the suite. Pass `--build` for the build alone.
+
+Both library targets — engine *and* SwiftUI — build for macOS as well as iOS, so the codebase is
+compile-verified from the command line without full Xcode. Neither XCTest nor swift-testing ships
+with the Swift Command Line Tools, so the suite is an **executable target** with a hand-rolled
+harness (`Tests/SimTests/TestKit.swift`); it reports real pass/fail counts and exits non-zero on
+failure. The two commands underneath are:
 
 ```bash
-swift run -c release SimTests
+swift build && swift run -c release SimTests
 ```
 
 To build and run the iOS app you need full Xcode and
@@ -112,6 +120,7 @@ xcodegen generate --spec App/project.yml && open ProFootballCoach.xcodeproj
 If `xcodebuild` reports no simulator destinations, the iOS platform component is missing:
 `xcodebuild -downloadPlatform iOS` installs it.
 
-Agent environments frequently have **no `swift` and no `xcodebuild`**. When the toolchain is absent,
-code is written to the same standard and recorded in `docs/STATUS.md` as **unverified — never
-compiled**. Nothing is ever reported as "build green" or "tests pass" that a compiler has not seen.
+**On claiming a green build.** Agent environments frequently have no `swift` and no `xcodebuild`.
+Where the toolchain is absent, code is written to the same standard and recorded in
+`docs/STATUS.md` as **unverified — never compiled**, naming the files. Nothing is reported as "build
+green" or "tests pass" that a compiler has not seen in the session making the claim.

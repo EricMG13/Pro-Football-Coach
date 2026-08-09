@@ -155,7 +155,17 @@ Stated plainly so nothing here is mistaken for more than it is.
    for a season, 22 of 24 skill nodes inert. The play-session protocol is written but needs the owner
    and a running build.
 6. **Most of the design documents have not been independently reviewed.** Only `01-RESEARCH.md` went
-   through an adversarial critic.
+   through an adversarial critic — and a pre-push audit on 2026-08-09 (five lenses, every finding
+   independently refuted before being accepted) confirmed 23 defects across the package, of which
+   three were blockers. All 23 are fixed; the lesson is that the package had not been re-read against
+   the tree after it was written.
+7. **The legal guardrail is currently violated in shipped code, and P0 removes the violation.**
+   `Sources/FootballSimCore/Generation/NameBank.swift` declares its college list "Fictional alma
+   maters" while containing real NCAA institutions, and asserts "no real player is referenced" for a
+   name cross product that cannot guarantee it. This is on the public repository now. It is not
+   patched, because P0 deletes `Generation/` entirely; it is recorded in `docs/PORT-LOG.md` as the
+   worked example P2's collision test exists to catch. **If P0 slips, this becomes a patch, not a
+   note.**
 
 ---
 
