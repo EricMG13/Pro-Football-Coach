@@ -97,7 +97,11 @@ struct League: Codable, Sendable {
 
 Money = `Int` dollars. Ratings = `Int` 40–99. IDs = `UUID`, **always minted from the seeded RNG** (`rng.uuid()`), never `UUID()`.
 
-This is a live determinism hazard in v1, and its shape matters: `id: UUID = UUID()` is a *default parameter value* on at least nine model and engine initializers (`Player`, `Team`, `League`, `Staff`, three in `GameRecord` including `PlayEvent`, `TradeEngine`, `CoachEngine`). Any call site that omits the argument silently mints an unseeded ID, and the determinism tests cannot see it because they compare scores and stats, not identities. The new rule: **no default-valued `UUID()` parameters anywhere in the engine** — IDs are always passed explicitly from the seeded stream — enforced by a source-scanning test in the same family as the one guarding seed derivation.
+This is a live determinism hazard in v1, and its shape matters: `id: UUID = UUID()` is a *default parameter value* on at least nine model and engine initializers. Any call site that omits the argument silently mints an unseeded ID, and the determinism tests cannot see it because they compare scores and stats, not identities.
+
+**The rule, stated once** (§6.1's scanner enforces exactly this, and nothing else):
+- In `Engine/`, `Generation/`, `Chronicle/`, and `Arcade/`: no `UUID()` or `Date()` at all — not as an argument, not as an assignment, not as a default parameter value. IDs come from the seeded stream, passed explicitly.
+- In `Model/`: `id: UUID = UUID()` is permitted on initializers, because a scanner cannot distinguish a default from a call and twelve of v1's thirteen sites are exactly this and are legitimate. The guarantee is upheld on the other side: every engine construction site passes `rng.uuid()` explicitly, which is what the scanner checks.
 
 Player stats stay outside `Player` (folded from `results` + `history`) — but folding is now cached (§7), because v1's fold-per-render was a measured performance defect.
 
@@ -153,12 +157,12 @@ The behavioral contract from the validated v1 (`docs/STATUS.md`) restated as spe
 **6.1 Determinism**
 - Same seed + same inputs ⇒ byte-identical `League` after a full season.
 - Determinism holds **across processes**: a save produces the same league on a fresh launch (v1's cross-process bug came from `UUID.hashValue`).
-- A source-scanning test forbids `UUID()` and `Date()` as an **argument or assignment** inside `Engine/` and `Generation/`. It permits `= UUID()` as a default parameter on `Model/` initialisers, since twelve of the thirteen existing sites are exactly that and are legitimate. The one real leak it must catch is `GameSimulator.swift:867`, which mints `PlayEvent(id: UUID(), …)` at a call site.
+- A source-scanning test enforces the §3 rule. Against v1's tree it must flag **five** offenders, all in `Engine/`: the genuine call-site leak at `GameSimulator.swift:884` (`PlayEvent(id: UUID(), …)`), plus default-valued `id: UUID = UUID()` at `TradeEngine.swift:14`, `CoachEngine.swift:212` and `:409`, and `DraftEngine.swift:19`. P0 fixes all five.
 - The scanner must be better than v1's. That one (`DynastyTests.swift:605`) matches `line.contains(".hashValue") && !line.contains("//")`, so any offending line with a trailing comment is silently exempt — and it never looks for `UUID()` at all, which is why the leak above survives a green suite. The new scanner strips comments properly and ships a self-test proving it fails on a planted offender.
 - `retainPlays: true` vs `false` produces identical results (mode parity).
 - Narration is deterministic: the same save produces the same cards.
 
-**6.2 Calibration bands** (per simulated season, asserted over a ≥600-game sample)
+**6.2 Calibration bands** — league averages, aggregated over **≥600 games** (a 32-team season is 272, so this is roughly three seasons' worth of sampled matchups, which is how v1's suite draws them)
 
 | Metric | Band |
 |---|---|

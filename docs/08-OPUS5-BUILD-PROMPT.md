@@ -26,7 +26,8 @@ Read all of these before writing code, in this order:
 10. `docs/05-IMPLEMENTATION-PLAN.md` — the phases and their gates. This is your work order.
 11. `docs/07-SALVAGE.md` — what may be ported from the old code and what must be rewritten. **Silence means rewrite.**
 12. `docs/06-PLAYED-GAME-MODE.md` — the On the Field arcade mode.
-13. `docs/OPEN-DECISIONS.md` — owner decisions, resolved and open.
+13. `docs/09-CRAFT-RUBRIC.md` — how a surface is scored for the craft gate.
+14. `docs/OPEN-DECISIONS.md` — owner decisions, resolved and open.
 
 Nothing else in the repository has design authority. Old source is reference material: harvest edge cases and hard-won fixes from it, never structure.
 
@@ -36,7 +37,7 @@ Work the phases of `docs/05-IMPLEMENTATION-PLAN.md` in order, P0 through P10. Fo
 
 1. Expand the phase spec into a task plan with `superpowers:writing-plans`; save it to `docs/plans/`.
 2. Execute task by task, TDD for all engine code. One task, one commit, Conventional Commits.
-3. Close the phase only when **every** gate is green — the nine universal gates plus that phase's specific gates. Engine phases additionally gate on the calibration bands, believability bands, cap invariants, cross-process determinism, and the soak.
+3. Close the phase when every **machine gate** is green and every **owner gate** has been prepared and queued (`05` §Gates). Do not self-certify an owner gate, and do not block on one — queue it and continue. The acceptance-spec matrix in `05` says which §6 specs gate which phase; you do not have to guess what counts as an "engine phase".
 4. Run an adversarial review on the phase diff before declaring it done; fix confirmed findings.
 5. Demonstrate the phase in the iOS simulator. Demonstrated, not described.
 
@@ -76,10 +77,11 @@ You are done when **all** of these hold:
 
 1. Every phase gate in `docs/05-IMPLEMENTATION-PLAN.md` is green, P0 through P10.
 2. Every item in `docs/PRE-DEPLOYMENT-CHECKLIST.md` is checked.
-3. The definition of done is demonstrated in the simulator: a new player onboards through the wizard, plays or sims a full season, survives an entire offseason, and starts season two with a coherent roster and cap — on device, both appearances.
+3. The definition of done is demonstrated **in the iOS Simulator**: a new player onboards through the wizard, plays or sims a full season, survives an entire offseason, and starts season two with a coherent roster and cap — both appearances.
 4. Ten simulated seasons run with no crash, bands holding, saves under 5 MB, week advance inside budget, and **no silent weeks**.
+5. Every queued owner gate is listed for the owner with the evidence they need to judge it. You reach done with those *queued*, not cleared — clearing them requires a human and a device, and the run does not wait.
 
-Report honestly at the end: what is built, what is verified, what is not, and anything you had to decide that canon did not cover.
+Report honestly at the end: what is built, what is verified, what is not, what is queued for the owner, and anything you had to decide that canon did not cover.
 
 ## The bar
 

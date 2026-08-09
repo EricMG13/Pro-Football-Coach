@@ -67,7 +67,14 @@ ten-season soak.
 | Accessibility of rating colours | Done: every tier verified at 4.5:1 on card, page and chip tint in both themes, with the tier spoken to VoiceOver |
 | SwiftUI app: menu, wizard, season hub, schedule, standings, news, team, depth chart, player cards, stats, front office, draft board, coach, offseason pipeline, both play modes | Built and run on an iPhone simulator; core path walked by hand |
 
-## Phase 4C — the all-22 arcade field — is written but NOT compiled
+## Phase 4C — the all-22 arcade field — COMPILED AND GREEN (updated 2026-08-09)
+
+> **Superseded note.** The section below was written before Phase 4C had ever met a compiler. It has
+> since been built and tested on a real toolchain: `swift run -c release SimTests` returns **324
+> tests, 18,631 checks, all passed**. The multi-agent review described below held up. The caveat is
+> retained as a record of how the work was produced, not as a live warning.
+
+## (historical) Phase 4C was written but NOT compiled
 
 This is the one thing on this page that has never been near a compiler, and it should be read
 as unverified until it has.

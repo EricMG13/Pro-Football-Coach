@@ -4,19 +4,56 @@ Phased build for the rebuild. Each phase is independently shippable to TestFligh
 
 Expand each phase into a task plan with `superpowers:writing-plans` before starting it; save to `docs/plans/`. One task, one commit.
 
-## Universal gates (every phase, no exceptions)
+## Migration strategy — read before P0
+
+The rebuild happens **in place, phase by phase, on a tree that stays green.** v1's code is not deleted up front and the new code is not written in a parallel target. The rule that makes this work:
+
+**A v1 file lives until the phase that replaces it, and that phase replaces it and all of its callers together.** `docs/07-SALVAGE.md` §A lists what is ported; §B lists what is rewritten; **the `Model/` layer (`League`, `Player`, `Team`, `Contract`, `GameRecord`, `StatLine`, `Position`, `Staff`) is rewritten in P1 together with every call site it breaks** — that is P1's real size, and the plan says so rather than letting "silence means rewrite" decide a twelve-thousand-line question by omission.
+
+Two consequences the builder must plan for:
+
+- **P1 is large.** Rewriting the model touches `Engine/`, `Arcade/`, the UI layer, and the test suites in one phase. Do it as one mechanical migration commit per consumer directory, keeping the build green at each step, rather than one heroic commit.
+- **`Arcade/` is current code, not v1 debt** (`07-SALVAGE.md` §E). P1 updates it to the new model types; it is *not* rewritten until P9, and its behaviour must not change in P1. Its tests are the check.
+
+If a phase genuinely cannot keep the tree green, stop and ask the owner before proceeding — do not leave the build red across phases.
+
+## Gates
+
+Gates come in two kinds, because this plan is executed unattended and four of them cannot be closed by an agent.
+
+### Machine gates — the agent closes these
 
 1. **Build green.** `swift build` succeeds.
-2. **Tests green.** `swift run SimTests` passes, including every acceptance spec in `03-ARCHITECTURE.md` §6 that the phase has reached.
-3. **Craft gate.** Every surface the phase touched re-audits at **≥17/20 with zero P0/P1** against the `/impeccable audit` rubric (baseline 9/20). This is how craft debt is actually paid.
-4. **Cold-play gate.** One uninstructed hour actually playing what exists, asking only: is this fun, and does it pull? This instrument exists because milestone tracking historically missed a dead build until far too late (R1c FM-27).
-5. **Session budgets timed** (`03` §6.6): fast session ≤3 min one-handed, played game ≤8 min, interstitial ≤1 min, gameplan sheet ≤60 s — whichever the phase has built.
-6. **Parity ledger checked** (`07-SALVAGE.md`): nothing v1 shipped has silently disappeared.
-7. **Adversarial review** on the phase diff; confirmed findings fixed before the phase closes.
-8. **Demonstrated in the simulator.** Not described — demonstrated.
-9. **Doc-first honoured:** no rule was implemented that canon does not state.
+2. **Tests green.** The suite passes, including every acceptance spec in `03-ARCHITECTURE.md` §6 that the phase has reached (see the matrix below).
+3. **Session budgets timed** where measurable in the simulator (`03` §6.6): fast session ≤3 min, played game ≤8 min, interstitial ≤1 min, gameplan sheet ≤60 s — whichever the phase has built.
+4. **Parity ledger checked** (`07-SALVAGE.md` §F): no row moved to `dropped` without an owner decision.
+5. **Adversarial review** on the phase diff; confirmed findings fixed.
+6. **Doc-first honoured:** no rule was implemented that canon does not state.
+7. **Simulator demonstration.** The agent runs the app in the iOS Simulator and captures evidence. (Distinct from gate O3 below, which is device work.)
 
-Engine phases additionally gate on: **calibration bands** (§6.2), **believability bands** (§6.3), **cap invariants** (§6.4), **cross-process determinism** (§6.1), and **the ten-season soak** (§6.5).
+### Owner gates — the agent prepares, queues, and moves on
+
+The agent **does not self-certify these** and **does not block on them.** It records the phase as `owner-review pending`, appends the item to a queue in the phase notes, and continues to the next phase. **All queued owner gates must clear before P10 closes.**
+
+- **O1 — Craft gate.** Every surface the phase touched re-audits at **≥17/20 with zero P0/P1** against the rubric in `docs/09-CRAFT-RUBRIC.md`. The 9/20 baseline is historical: it was measured against a UI layer this rebuild replaces.
+- **O2 — Cold-play gate.** One uninstructed hour actually playing what exists, asking only: is this fun, and does it pull? (`NOVEL` dose; the FM evidence behind it is ~two hours.)
+- **O3 — Device measurement.** The week-advance end-to-end budget and 60 fps on an A15 (`03` §6.6). Until measured, those numbers are targets, not gates.
+- **O4 — Device thumb-tuning.** P9 only: the carrier and decision windows (`07-SALVAGE.md` §D).
+
+### Which acceptance specs gate which phase
+
+A §6 spec gates from the phase that builds its subject, and is re-run at every later phase. "Engine phases" is not a category the builder has to guess at:
+
+| Phase | Adds to the gate |
+|---|---|
+| P1 | Cross-process determinism (§6.1); club-colour contrast |
+| P2 | + calibration bands (§6.2), believability bands (§6.3), mode parity, end-of-game state machine |
+| P3 | + witness-layer assertions over **three** seasons (§6.5's card/hook/face/cause items) |
+| P7 | + cap invariants (§6.4), including all four practice-squad doors |
+| P8 | + the **full ten-season soak** (§6.5) including the P6 firing-and-chapter-card assertion |
+| P9 | + the arcade gate in `06` §8 |
+
+Phases not listed add no new acceptance specs but re-run every spec already in force.
 
 ---
 
@@ -24,12 +61,13 @@ Engine phases additionally gate on: **calibration bands** (§6.2), **believabili
 
 Repo housekeeping and the harness the rest depends on.
 
-- Delete the nested duplicate `Pro-Football-Coach/` directory (an old doc copy, not code).
-- Test harness with **self-registering suites** — v1's hand-listed `main.swift` lets a written-but-unlisted suite pass by never running. Prefer swift-testing where the toolchain provides it; keep the hand-rolled harness only as the documented fallback.
+- **Decide the test harness once, and propagate the command everywhere.** v1's hand-listed `main.swift` lets a written-but-unlisted suite pass by never running, which is the defect to fix. The toolchain in use (Swift 6.3+) bundles swift-testing, which gives self-registration for free — so migrate to it, convert `SimTests` from an `.executableTarget` to a `.testTarget`, and **update every reference to the run command from `swift run SimTests` to `swift test`**: this plan, `docs/PRE-DEPLOYMENT-CHECKLIST.md`, `README.md`, and `Package.swift`'s own comments, which currently contradict each other on this exact point. If the toolchain turns out not to provide it, keep the hand-rolled harness, add self-registration to it, and leave the command as-is — but say which was chosen in the phase notes.
 - The two source scanners from `03` §6.1, each with a self-test that fails on a planted offender: no `.hashValue` seeding (comment-stripped, unlike v1's), and no `UUID()`/`Date()` as argument or assignment in `Engine/`/`Generation/`.
+- **Fix the five known offenders in the same task**, red-then-green: `GameSimulator.swift:884` (a real call-site leak — the one §6.1 names), and the default-valued `id: UUID = UUID()` in `TradeEngine.swift:14`, `CoachEngine.swift:212` and `:409`, and `DraftEngine.swift:19`. This is sanctioned by the scope guard's defect exception — a scanner that ships green against known offenders is theatre.
+- Delete the nested duplicate `Pro-Football-Coach/` directory (an old doc copy, not code).
 - CI-shaped script that runs build + tests + scanners in one command.
 
-**Gate:** universal 1–2, 7–9. A planted offender fails each scanner.
+**Gate:** machine gates 1–2, 5–7. A planted offender fails each scanner, and the five real offenders are gone. (No owner gates: P0 produces nothing playable, so O1 and O2 do not apply.)
 
 ## P1 — Model, RNG, generation
 

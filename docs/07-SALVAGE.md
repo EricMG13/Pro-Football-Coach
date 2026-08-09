@@ -64,6 +64,45 @@ Three things it changes for this program:
 2. **It is unverified.** `swift build` succeeds as of 2026-08-09 — its first compile — but the suite has not been run against it. See OD-6.
 3. **It must still re-earn the Primetime and witness-layer rules** during its phase: staging through `StagingDirector`, the six-sound/eight-haptic vocabularies rather than its own ad-hoc set, flat surfaces rather than the gradients its §7 currently describes, and chronicle events emitted for its plays.
 
+## F. Parity ledger
+
+The instrument for the parity gate. Derived from v1's 29 registered test suites and `docs/STATUS.md` §"Complete and tested" — one row per shipped mechanic. **A row may only move to `dropped` by an owner decision recorded in `OPEN-DECISIONS.md`.** Update `Rebuild phase` and `Status` at each gate.
+
+| v1 mechanic | v1 evidence (suite) | Rebuild phase | Status |
+|---|---|---|---|
+| Seeded RNG, cross-process determinism | SeededRandom, DeterminismUnderOffseason | P1 | carried |
+| Player / contract / team / league model | Model, Generation | P1 | carried |
+| League & roster generation, draft origins | Generation, DraftOrigin | P1 | carried |
+| Play-by-play game simulation | GameSimulator | P2 | carried |
+| Calibration & believability bands | GameSimulator (Calibration) | P2 | carried |
+| Schedule generation, standings, tiebreakers | Season | P3 | carried |
+| Weekly loop, playoffs, phase transitions | Season | P3 | carried |
+| News feed | (NewsEngine, no suite) | P3 | **replaced** by the chronicle/Storyteller |
+| Salary cap, dead money, proration | FrontOffice | P7 | carried |
+| Practice squad moves & anti-laundering | RosterMove, PracticeSquadCap, ReSignSquad | P7 | carried |
+| Re-signing & negotiation | FrontOffice, ReSignSquad | P7 | carried |
+| Free agency waves & interest | FrontOffice | P7 | carried |
+| Trades & value chart | FrontOffice | P7 | carried |
+| Depth chart honesty | DepthHonesty | P6 | carried |
+| Fourth-down decisions & advice | FourthDown | P2/P5 | carried |
+| Matchup odds | MatchupOdds | P5 | carried |
+| Draft class, scouting fog, AI picks | InteractiveDraft | P8 | carried |
+| Interactive draft session | InteractiveDraft | P8 | carried |
+| Progression, camp, retirements | Dynasty | P8 | carried |
+| Awards, records book, Hall of Fame | Legacy | P8 | carried |
+| Coach XP, skill trees, goals | Experience | P8 | carried |
+| Coaching carousel & no-dead-end invariant | CoachCarousel | P8 | carried |
+| Coach tenure (clock, trophies, firing toggle) | CoachTenure | P8 | carried |
+| Ten-season soak | Dynasty | P8 | carried |
+| Scenarios (3) | Legacy | P10 | carried |
+| Save/load, backup, migration | Persistence | P1/P7 | carried |
+| Coalescing save queue | SaveQueue | P1 | carried (S-05) |
+| Rating ladder & contrast discipline | DesignSystem, Broadcast, TeamTint | P4 | carried (S-07/S-08/S-12) |
+| Interactive game (watch + takeover) | InteractiveGame | P5 | carried |
+| Arcade all-22 field, kernel, watch mode | Arcade, ArcadeField, ArcadeWatch | P9 | current code (§E) |
+
+One deliberate replacement above: v1's `NewsEngine` is not carried, because the witness layer subsumes it (§B). That is a replacement, not a drop — the *capability* survives and grows.
+
 ## D. Open salvage questions
 
 - **The arcade's carrier-window durations** (2.5 s pass / 3.5 s run) remain unvalidated guesses — the tooling round trip is ~7 s against a live window of seconds, so only a real thumb on a device can settle them. Carried as a phase gate item for the On the Field phase, not a salvage decision.

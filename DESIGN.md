@@ -187,7 +187,7 @@ SF Pro; text styles only — no hard-coded point sizes anywhere (AUDIT class: te
 
 ## 6. Layout
 
-Single-column scroll of cards inside the safe area; spacing scale `tight 6 / small 10 / medium 16 / large 24`; rows target 52pt. **Touch floor: every tappable surface ≥44×44pt** — both dimensions — via `minWidth`/`minHeight` + `contentShape`, including chip-shaped buttons (AUDIT class; HIG). **Click budgets:** every deep screen's spec states its taps-to-information budget (routine fact ≤2 taps from its surface's root — R2 T1, FM-19). Fixed-width frames around scaling text are banned — gutters use `@ScaledMetric` with `minimumScaleFactor` backstop (AUDIT class; the `TeamBadge` pattern generalized). Portrait-locked app; the arcade scene alone opts into landscape (AUDIT orientation class).
+Single-column scroll of cards inside the safe area; spacing scale `tight 6 / small 10 / medium 16 / large 24`; rows target 52pt. **Touch floor: every tappable surface ≥44×44pt** — both dimensions — via `minWidth`/`minHeight` + `contentShape`, including chip-shaped buttons (AUDIT class; HIG). **Click budgets:** every deep screen's spec states its taps-to-information budget (routine fact ≤2 taps from its surface's root — R2 T1, FM-19). Fixed-width frames around scaling text are banned — gutters use `@ScaledMetric` with `minimumScaleFactor` backstop (AUDIT class; the `TeamBadge` pattern generalized). **Portrait-locked app-wide; nothing rotates, including On the Field** — the all-22 field is a vertical, one-thumb surface (`06-PLAYED-GAME-MODE.md` §3), which is what removed the audit's entire orientation failure class.
 
 ## 7. Components
 

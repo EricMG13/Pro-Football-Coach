@@ -44,7 +44,7 @@ Each team: city, name, 3-letter abbrev, primary/secondary colors, geometric mark
 | Kansas City Stampede | KC | #5B1E24 | #D7A13E | San Francisco Fog | SF | #3A464D | #D97B4A |
 | St. Louis Archers | STL | #2C2A57 | #C0562F | Seattle Evergreens | SEA | #10402F | #93C4A6 |
 
-Rule: any future club's primary must clear 4.5:1 against white, verified by test before it ships (DESIGN.md coverage law). Secondaries are used for marks, accent rules, and motif trim — never as label backgrounds without their own measurement.
+Rule: any future club's primary must clear 4.5:1 against white, verified by test before it ships (DESIGN.md coverage law). **A club's secondary must clear 1.6:1 against its own primary** — two colours can differ in hue and still share a luminance, which makes a mark vanish into itself (`07-SALVAGE.md` S-12). Secondaries are used for marks, accent rules, and motif trim — never as label backgrounds without their own measurement.
 
 - **Schedule (17 games / 18 weeks + bye)** — v1 formula unchanged. Preseason: 3 optional games.
 - **Playoffs:** default 14-team (7 seeds/conference, #1 bye, reseed); 12/16 options. **Continental Championship** at a neutral site.
@@ -171,6 +171,29 @@ Replaces v1's "news engine" section. One pipe: everything the sim does that the 
 **Stat categories** *(v1, carried — the nine)*: Passing · Rushing · Receiving · Tackles · Sacks · Interceptions · Passes Defended · Kicking · Punting. Each with per-category sort, direction, Min-G filter, week/season scope.
 
 **Trophy room** *(v1, carried — the ten)*: Champion · Conference Champion · Division Title · Playoff Berth · #1 Seed · Undefeated Regular Season · Draft Gem (R5+ pick → All-League) · Comeback (21+ points) · Dynasty (3 titles in 5 years) · Perfect Season (undefeated + title). Completed challenge templates enter the same room as an eleventh group.
+
+### New persisted types — shapes and bounds
+
+Stated here so P1 does not have to invent them in Swift (doc-first rule). All numbers land in `LeagueRules.swift` as named constants; all are `NOVEL` defaults chosen to be tunable, and the soak is what validates them.
+
+| Type | Shape | Bound / default |
+|---|---|---|
+| `Chronicle` | A bounded ring of `LeagueEvent` + one `SeasonSpine` per year. The **spine** is the season's retained narrative skeleton: the handful of beats that stay after the ring evicts detail (opener, first loss, streaks, the trade, the injury, clinch, exit) | ring 240 events; spine ≤12 beats/season |
+| `LeagueEvent` | kind, week, involved player/team IDs, magnitude 0–1, the numbers it carries, mandatory cause reference | — |
+| `StoryHook` | kind, subject IDs, deadline week, progress, resolution state | ≤3 visible on the rail; unlimited tracked |
+| `HookLedger` | the active set + the promotion rule: on every advance, if no hook resolves within 3 weeks, promote the highest-magnitude candidate (record pace → contract clock → streak → job security → milestone watch, in that priority order) | horizon 3 weeks |
+| `Promise` | kind, subject, made-at week, kept-when predicate, broken cost | ≤3 active/season (§6) |
+| `CareerLedger` | append-only: season lines, transactions, injuries, awards, records, milestones | unbounded but compact; no play-by-play |
+| `Gameplan` | focus, practice intensity, reps split; one per team per week | current week + last 4 retained |
+| `TendencyMemory` | per team: rolling counts of play families and focuses shown | last 6 games |
+| `ScoutReport` | prospect ID, predicted range, predicted potential, comparison line, week issued, later grade | one per scouted prospect |
+| `ChallengeProgress` | template ID, started season, progress, completion | — |
+
+**Salience scoring** (the Storyteller's selection rule, `03` §5.2): `0.35 ×` user-team relevance `+ 0.25 ×` featured-player involvement `+ 0.20 ×` magnitude `+ 0.15 ×` hook advancement `+ 0.05 ×` rarity. Take the top-scoring events above a `0.40` floor, minimum 3 and maximum 7 per week. If fewer than 3 clear the floor, lower the floor until 3 do — Pillar P1 forbids a silent week.
+
+**Template pool sizing** (the number `02` §11 previously deferred to gate 3): **≥8 templates per standout `EventKind`**, ≥3 per routine kind, each with per-voice variants. The soak's no-repeat-within-10-weeks assertion (`03` §6.5) is what proves the number is enough; if it fails, add templates before considering a casting engine (OD-4).
+
+**Featured-player arc events:** ≥2 per team per season in the soak — the concrete value for Pillar P5's `≥N` (R2 §4).
 
 **Challenge templates** *(new — FM-34)*: named long-horizon challenges selectable at franchise creation or adopted mid-save (Dynasty: 3 titles in 5 years · Homegrown: title with ≥80% drafted roster · The Long Rebuild: worst roster to champion). Tracked progress chip; completion enters the trophy room.
 

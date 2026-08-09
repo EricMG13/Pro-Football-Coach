@@ -26,18 +26,19 @@ This is a **ground-up rebuild** of a working v1 that was judged mechanically com
 | `docs/OPEN-DECISIONS.md` | Owner decisions — resolved and open. **A blocking open item stops the run** |
 | `docs/07-SALVAGE.md` | Justified ports from the old code (silence means rewrite); the parity ledger, checked every gate |
 | `docs/06-PLAYED-GAME-MODE.md` | On the Field — the all-22 field, its control model and gates |
+| `docs/09-CRAFT-RUBRIC.md` | The scale behind the craft gate — how a surface is scored |
 
 Everything else in the repo is history, not authority.
 
 ## Process (non-negotiable)
 
 1. **Doc-first amendment rule.** A gameplay question not answered in `02-GAME-DESIGN.md` gets answered there *before* it is implemented. UI questions go to `04-SCREENS-UI.md`; visual/feel questions to `DESIGN.md`. Never encode an unwritten rule in Swift.
-2. **One phase at a time**, in plan order. Before starting a phase, expand its spec with `superpowers:writing-plans` into a task plan under `docs/plans/`.
+2. **One phase at a time**, in plan order. Before starting a phase, expand its spec with `superpowers:writing-plans` into a task plan under `docs/plans/`. Existing files there are v1-era and are not phase plans for this rebuild.
 3. **TDD for all engine code** (`superpowers:test-driven-development`). The engine is pure Swift with no UI dependency — every mechanic gets a failing test first. UI is not exempt from testing: views carry the design-system and presentation suites of `03-ARCHITECTURE.md` §9 (contrast coverage, staging specs, the P2 state-to-witness matrix). Only per-view snapshot tests are optional.
 4. **One task = one commit**, Conventional Commits format.
 5. **Adversarial review at phase end** (`adversarial-reviewer` or `/code-review`) on the phase diff. Fix confirmed findings before advancing.
 6. **Verification before completion** (`superpowers:verification-before-completion`): build green, tests green, feature demonstrated in the iOS simulator.
-7. **Cold-play gate at every phase close:** one uninstructed session actually playing what exists, asking only "is this fun and does it pull?" This instrument exists because milestone tracking has historically missed a dead build until far too late (`docs/research/R1c` FM-27).
+7. **Cold-play gate at every phase close:** one uninstructed hour actually playing what exists (our dose; the FM evidence behind it is ~two hours), asking only "is this fun and does it pull?" This instrument exists because milestone tracking has historically missed a dead build until far too late (`docs/research/R1c` FM-27).
 8. **Debugging:** `superpowers:systematic-debugging` — no guess-fixes.
 9. **Parity ledger:** the rebuild ships v1's mechanics or better. Check `docs/07-SALVAGE.md` and the parity list each gate; deletion without replacement is the genre's cardinal sin.
 10. **Scope guard:** build what the plan specifies. No unrequested refactors, tidying, or "while I'm here" improvements beyond the task — especially at high effort.

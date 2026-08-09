@@ -2,7 +2,7 @@
 
 Every screen in Pro Football Coach. **Each screen states its emotional job before its fields** — the job is the acceptance test; the fields serve it. Visual and staging language is `DESIGN.md` (Primetime) and is not restated here; hero-surface layouts follow the approved mockup canon in `docs/design/mockups/`. Per-screen Claude Design briefs live in `docs/design/briefs/` and inherit the locked system by reference.
 
-Global rules binding every screen: platform physics (DESIGN §8) · click budgets stated per deep screen (routine fact ≤2 taps from its surface root) · every changing figure is a tabular numeral with `count` · no faceless narrative cards · stock controls · portrait-only except On the Field.
+Global rules binding every screen: platform physics (DESIGN §8) · click budgets stated per deep screen (routine fact ≤2 taps from its surface root) · every changing figure is a tabular numeral with `count` · no faceless narrative cards · stock controls · portrait-only app-wide, nothing rotates.
 
 **Navigation skeleton** *(v1, carried)*
 - Pre-dynasty: Main Menu → New Game Wizard (4-step) | Load Game | Scenarios | Settings
@@ -40,8 +40,8 @@ Occasion header, records, prediction chip · unit bar comparisons with edge chip
 **Job: tension you can feel between snaps — every down a decision with visible stakes.**
 Score strip (occasion accent, timeouts, clock) · situation line · field position bar · last-play press-voice line · play panel (6 calls, Suggested, tempo row) · 4th-down/2-pt states swap in the **StakesPanel** (true odds + recommendation, `[HAP stakes]`) · drive log and live box score one tap away · Quick-Sim sheet (speeds, sim-to targets, takeover interrupts — RB-33) · halftime: replay-your-half card + swing chart (broadcast slot 3) · final: score staging → Game Report. Exit rules: leading slot is a real cancel (sim-to-end lives in the trailing confirmation slot — AUDIT fix carried as law).
 
-## 6B. On the Field (full-screen, landscape) *(mode spec: 06-PLAYED-GAME-MODE.md)*
-**Job: the same stakes, in your thumb.** Presentation per doc 06 §7 with Primetime staging for scores/finals; scoreboard uses ScoreStrip; all records identical to other modes. Landscape opt-in for this scene only.
+## 6B. On the Field (full-screen, portrait) *(mode spec: 06-PLAYED-GAME-MODE.md)*
+**Job: the same stakes, in your thumb.** Presentation per doc 06 §7 with Primetime staging for scores/finals; scoreboard uses ScoreStrip; all records identical to other modes. Portrait like everything else — the all-22 field is vertical (06 §3).
 
 ## 7. Game Report + Box Score (sheets)
 **Job: the verdict, then the receipts.**

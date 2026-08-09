@@ -9,7 +9,7 @@ Distribution is TestFlight and personal use (`PRODUCT.md`), so nothing here is w
 ## A. Blocking — the run stops
 
 - [ ] **`swift build` green** on the shipping toolchain.
-- [ ] **`swift run SimTests` green**, all suites, self-registered (no suite exists that the runner never calls).
+- [ ] **Suite green**, all suites, self-registered (no suite exists that the runner never calls). The run command is whatever P0 settled on — `swift test` if the swift-testing migration happened, `swift run SimTests` otherwise; P0's phase notes say which.
 - [x] **Suite green in release.** `swift run -c release SimTests` — 324 tests, 18,631 checks, all passed (2026-08-09). Includes Phase 4C's full arcade suite.
 - [x] **Performance tests guard their build configuration.** `SeasonTests.swift` measures in both configurations and asserts only in release.
 - [ ] **Re-run on every phase close.** The number above is a point-in-time result, not a standing guarantee.
@@ -77,10 +77,10 @@ Distribution is TestFlight and personal use (`PRODUCT.md`), so nothing here is w
 ## H. Ship gates
 
 - [ ] Definition of done demonstrated on device: wizard → full season → full offseason → season two, both appearances.
-- [ ] `/impeccable audit` ≥17/20 with zero P0/P1 across the app.
+- [ ] Craft gate ≥17/20 with zero P0/P1 across the app, scored against `docs/09-CRAFT-RUBRIC.md`.
 - [ ] Cold-play hour on the finished build: it is fun, and it pulls.
 - [ ] Parity ledger clean — nothing v1 shipped has silently disappeared (`07-SALVAGE.md`).
-- [ ] Every phase gate in `05-IMPLEMENTATION-PLAN.md` green.
+- [ ] Every machine gate in `05-IMPLEMENTATION-PLAN.md` green, and **every queued owner gate (O1–O4) cleared** — these accumulate across phases and all must land before ship.
 
 ---
 
