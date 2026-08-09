@@ -20,12 +20,35 @@ Every phase gates on **G1–G4**. Engine phases add **G5–G7**. Milestones add 
 | **G3 Surface audit** | Touched surfaces score **≥17/20 with zero P0/P1** against `docs/04b-AUDIT-RUBRIC.md`, scored on the three **local** dimensions (Accessibility, Performance, Appearance & Theming). |
 | **G4 Scope** | The diff contains what the phase specifies and nothing else. No opportunistic refactors. |
 | **G5 Calibration** | All bands in `03` §5 hold under TOST. |
-| **G6 Determinism** | Same seed reproduces exactly, **across processes**; the `hashValue` source scan passes. |
-| **G7 Soak** | The 20-season soak passes every assertion in `03` §6. |
+| **G6 Determinism** | Same seed reproduces exactly, **across processes**; **both** determinism source scans pass — no `hashValue`, and no ambient `UUID()`/`Date()` (`03` §3.5). |
+| **G7 Soak** | The 20-season soak passes every assertion in `03` §6 **that the phase's scope can reach** — see the note below. |
 | **G8 Milestone audit** | The two **global** rubric dimensions (Adaptivity, Platform Conformance) score ≥17/20 combined-with-local across the whole app. |
 
 **Legal gates run on every phase that touches generation:** the name-collision test and the
 trade-dress ΔE test.
+
+### G7 is tier-scoped, because the unscoped version is impossible in order
+
+Corrected 2026-08-09. `03` §6 defines the soak across **both** tiers — it asserts cap legality for
+every pro team *and* scholarship legality for every college programme. P7 builds college systems and
+P8 builds the cap. So a P7 that gates on the unscoped soak gates on assertions about systems that do
+not exist yet, and can never go green.
+
+G7 therefore means **the soak at the scope the phase has built**:
+
+| Phase | G7 means |
+|---|---|
+| P7 | 20 seasons, college only. Scholarship, eligibility, roster, ratings, churn, save size. |
+| P8 | 20 seasons, both tiers. The cap assertions come live here. |
+| P9 | 20 seasons, both tiers, plus the career and carousel invariants the phase adds. |
+| P16 | The full soak at full scale, every assertion in `03` §6, no exclusions. **This is the one that counts.** |
+
+A phase that skips an assertion must name it in `docs/STATUS.md` and name the phase that turns it on.
+A silently narrowed soak is the coverage-boundary failure `CLAUDE.md` warns about, wearing a gate's
+clothes.
+
+*Found by a cold-reader grill on the parallel `rebuild/spec-package` branch, which hit the identical
+defect in that branch's plan — "the soak needs systems from P3 and P8". The shape transfers.*
 
 ### D11, where it bites — **resolved 2026-08-09, conditionally**
 
@@ -52,8 +75,10 @@ removes the excuse, not the failure mode.
 
 ### P0 — Foundation
 Module skeleton per `03b` §1; the ported `SeededRandom` and `CodingSupport` plus the hierarchical
-seed derivation contract from `03` §3; the three source-scanning tests (no SwiftUI in the engine, no
-`hashValue` in seeding, no design-token literals in views) gathered into one contract suite; the save
+seed derivation contract from `03` §3; the **four** source-scanning tests (no SwiftUI in the engine,
+no `hashValue` in seeding, no ambient `UUID()`/`Date()` in the engine, no design-token literals in
+views), each comment-stripping and each with a self-test that fails on a planted offender, gathered
+into one contract suite; the save
 envelope with a version readable without a full parse; the ported `TestKit` harness; and the removal
 of everything in `Sources/` not named in `docs/PORT-LOG.md`, in one legible commit.
 **Gates:** G1, G2, G4, G6.

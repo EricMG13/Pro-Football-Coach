@@ -82,12 +82,41 @@ Non-negotiable (Tier A):
    different league every app start, and no in-process test could see it.
 3. A **source-scanning test** fails the build if `hashValue` appears in any seeding path.
 4. RNG is a value type, passed explicitly. No global or ambient randomness anywhere in the engine.
-5. Seed derivation is hierarchical and stable: `leagueSeed -> seasonSeed -> weekSeed -> gameSeed ->
+5. **No ambient `UUID()` or `Date()` in the engine.** Identities come from `rng.uuid()`, off the
+   seeded stream; time comes from the simulated calendar. A second source-scanning test enforces it.
+6. Seed derivation is hierarchical and stable: `leagueSeed -> seasonSeed -> weekSeed -> gameSeed ->
    driveSeed -> snapSeed`, each derived by a documented mixing function over the parent seed and the
    identifier bytes.
 
 **Tests:** same seed twice in-process; same seed across two separate process invocations, compared
-by hash of the full play-by-play; the source scan.
+by hash of the full play-by-play; both source scans.
+
+### Why clause 5 is here, and what it costs to omit
+
+Added 2026-08-09. Clause 4 already forbade ambient randomness, but nothing enforced it, and clause 3
+looks for the wrong thing — the previous build's determinism leak was **not** a `hashValue`. It was
+`GameSimulator.swift:884` minting `PlayEvent(id: UUID(), ...)` at a call site, plus default-valued
+`id: UUID = UUID()` on four engine initialisers. Five real offenders, and the suite was green,
+because the scanner never looked for `UUID()` at all. The determinism tests could not see it either:
+they compare scores and stats, not identities.
+
+**The scan's rule, stated precisely so it is implementable:**
+
+- **Forbidden in `Engine/`, `Generation/`, `AI/` and `Abstracted/`:** `UUID()` or `Date()` as an
+  argument or an assignment. Every construction site passes an identity from the seeded stream.
+- **Permitted in `Model/`:** `id: UUID = UUID()` as a *default parameter value* on an initialiser. A
+  source scan cannot distinguish a default from a call, and the prior build's own evidence is that
+  twelve of thirteen such sites were legitimate. The guarantee is upheld on the other side instead —
+  engine construction passes `rng.uuid()` explicitly, which is exactly what the scan checks.
+
+**And a defect in the scanner itself, inherited if it is ported verbatim.** The prior build's scan
+(`DynastyTests.swift:605`) matched `line.contains(".hashValue") && !line.contains("//")` — so **any
+offending line with a trailing comment was silently exempt**. A scan must strip comments properly and
+ship with a self-test that fails on a planted offender, or it is a green light rather than a gate.
+
+*Source: a cold-reader grill run against the parallel `rebuild/spec-package` branch (commit
+`81af3e2`), which found this class against that branch's spec. The finding is scope-independent, so
+it is adopted here. That branch is unmerged; see `docs/DOC-MANIFEST.md`.*
 
 ---
 

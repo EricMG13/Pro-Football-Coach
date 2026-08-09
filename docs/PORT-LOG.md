@@ -67,9 +67,16 @@ XCTest and swift-testing both require full Xcode. The second is correct. Fixed i
 ### 4. The `hashValue` source-scanning test — port the idea, relocate it
 
 Currently buried in `Tests/SimTests/Suites/DynastyTests.swift:603–628`, which is the wrong home for a
-build-wide invariant. `03b` §1 requires three source scans (no SwiftUI in the engine, no `hashValue`
-in seeding, no design-token literals in views). Port this one as the template and put all three in a
-dedicated contract suite.
+build-wide invariant. `03b` §1 requires four source scans (no SwiftUI in the engine, no `hashValue`
+in seeding, no ambient `UUID()`/`Date()` in the engine, no design-token literals in views). Put all
+four in a dedicated contract suite.
+
+**Port the idea, not the implementation.** This scan has two defects that each shipped green against
+real violations, documented in `03` §3.5: it matches
+`line.contains(".hashValue") && !line.contains("//")`, so a trailing comment disables it; and it
+never looks for `UUID()`, which is how a call-site `PlayEvent(id: UUID(), ...)` and four
+default-valued engine initialisers survived a green suite. The replacement strips comments and ships
+a self-test that fails on a planted offender.
 
 ---
 

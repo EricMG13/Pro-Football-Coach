@@ -29,10 +29,20 @@ App/                      thin @main shell + project.yml
 Tests/                    see §5
 ```
 
-**The boundary is enforced by test, not by convention.** A source-scanning test fails the build if
-`import SwiftUI`, `import UIKit`, or any UI type appears anywhere under `FootballSimCore/`. The same
-scan enforces the determinism rule (no `hashValue` in seeding paths) and the design-token rule (no
-literal spacing, radius, colour or font size in a view).
+**The boundary is enforced by test, not by convention.** **Four** source-scanning tests fail the
+build:
+
+| Scan | Rule | Root |
+|---|---|---|
+| Engine boundary | no `import SwiftUI` / `UIKit` / `AppKit`, no UI type | `FootballSimCore/` |
+| Seeding | no `hashValue` | `FootballSimCore/` |
+| Ambient randomness | no `UUID()` or `Date()` as argument or assignment; `id: UUID = UUID()` permitted as a default parameter in `Model/` only (`03` §3.5) | `Engine/`, `Generation/`, `AI/`, `Abstracted/` |
+| Design tokens | no literal spacing, radius, colour or font size | `ProFootballCoachUI/` |
+
+**Every scan strips comments properly and ships a self-test that fails on a planted offender.** The
+prior build's scan exempted any offending line carrying a trailing comment, and never looked for
+`UUID()` at all — which is how five real determinism leaks survived a green suite (`03` §3.5). A scan
+that has never failed is not known to be a scan.
 
 That last one is the direct structural answer to `AUDIT.md`'s systemic pattern 2, which counted 43
 literal spacings, 25 literal radii and 9–10 hard-coded font sizes against `DESIGN.md`'s own written

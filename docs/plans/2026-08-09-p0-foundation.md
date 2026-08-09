@@ -6,7 +6,7 @@
 
 **Goal:** Strip the repository to the four things `docs/PORT-LOG.md` justifies keeping, then build the
 foundation every later phase inherits: the module skeleton, the hierarchical seeding contract, the
-three source-scanning contract tests, and a save envelope whose version is readable without a full
+four source-scanning contract tests, and a save envelope whose version is readable without a full
 parse.
 
 **Architecture:** One SwiftPM package, two library targets and one executable test target.
@@ -70,7 +70,7 @@ What P0 leaves behind. Everything not on this list is deleted in Task 1.
 | `Tests/SimTests/main.swift` | Suite registration |
 | `Tests/SimTests/Suites/SeededRandomTests.swift` | Kept as-is. Verified self-contained: it imports only Foundation and FootballSimCore and touches no deleted type |
 | `Tests/SimTests/Suites/SeedDerivationTests.swift` | **New.** Including the golden vectors |
-| `Tests/SimTests/Suites/ContractTests.swift` | **New.** The three source scans |
+| `Tests/SimTests/Suites/ContractTests.swift` | **New.** The four source scans, comment-stripping, each self-tested |
 | `Tests/SimTests/Suites/SaveEnvelopeTests.swift` | **New.** |
 | `App/project.yml`, `App/ProFootballCoachApp.swift` | The thin shell |
 | `scripts/verify.sh` | The gate runner |
@@ -608,11 +608,20 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 4: The contract suite — three source scans
+### Task 4: The contract suite — four source scans
 
 `docs/03b-ARCHITECTURE.md` §1: the boundary is enforced by test, not by convention. `PORT-LOG.md` §4
-says to port the existing `hashValue` scan as the template and gather all three in one place, because
-a build-wide invariant buried in `DynastyTests.swift` was the wrong home.
+says to port the existing `hashValue` scan as the template and gather them in one place, because a
+build-wide invariant buried in `DynastyTests.swift` was the wrong home.
+
+**Port the idea, not the implementation.** The existing scan has two defects, both of which shipped
+green against real violations, and both of which this task must not inherit (`03` §3.5):
+
+1. It matches `line.contains(".hashValue") && !line.contains("//")` — so **any offending line with a
+   trailing comment is silently exempt.** The scan below strips the comment portion instead.
+2. **It never looks for `UUID()` at all**, which is why five real determinism leaks survived a green
+   suite — a call-site `PlayEvent(id: UUID(), ...)` plus four default-valued engine initialisers.
+   Hence the fourth scan.
 
 **Files:**
 - Create: `Tests/SimTests/Suites/ContractTests.swift`
@@ -653,7 +662,16 @@ private func swiftFiles(under relativePath: String) -> [(path: String, text: Str
     }
 }
 
-/// Every non-comment line matching `predicate`, as "path:line".
+/// Every line whose *code* matches `predicate`, as "path:line".
+///
+/// The comment portion is stripped before the predicate runs, rather than the whole line being
+/// skipped when it contains "//". The prior build's scan did the latter, so `foo.hashValue // ok`
+/// was silently exempt — a scan you can disable with a trailing comment is not a gate.
+///
+/// ponytail: naive "//" split, so a "//" inside a string literal truncates the line early. Harmless
+/// for these four patterns — none of them can appear in a URL or path string — and the failure mode
+/// is a false negative on a line no real offender occupies. Revisit only if a pattern ever needs to
+/// match inside string content.
 private func offendingLines(
     in files: [(path: String, text: String)],
     where predicate: (String) -> Bool
@@ -661,9 +679,9 @@ private func offendingLines(
     var offenders: [String] = []
     for file in files {
         for (index, line) in file.text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard !trimmed.hasPrefix("//") else { continue }
-            if predicate(String(line)) { offenders.append("\(file.path):\(index + 1)") }
+            let code = String(line).components(separatedBy: "//").first ?? ""
+            guard !code.trimmingCharacters(in: .whitespaces).isEmpty else { continue }
+            if predicate(code) { offenders.append("\(file.path):\(index + 1)") }
         }
     }
     return offenders
@@ -700,6 +718,41 @@ func runContractTests() {
                 offenders.isEmpty,
                 "hashValue is salted per process; these lines make the league unreproducible: "
                     + offenders.joined(separator: ", ")
+            )
+        }
+
+        test("the engine mints no ambient identity or timestamp") {
+            // 03 section 3.4 forbids ambient randomness; nothing enforced it, and clause 3 looks for
+            // the wrong thing. The prior build's determinism leak was not a hashValue at all: it was
+            // PlayEvent(id: UUID(), ...) at GameSimulator.swift:884, plus default-valued
+            // id: UUID = UUID() on four engine initialisers. Five offenders, suite green, because
+            // no scan looked. The determinism tests could not see it either — they compare scores
+            // and stats, not identities.
+            //
+            // Model/ is exempt by design (03 section 3.5): a scan cannot tell a default parameter
+            // from a call, and twelve of the prior build's thirteen such sites were legitimate. The
+            // guarantee is upheld on the other side — engine construction passes rng.uuid().
+            let engineRoots = ["Engine", "Generation", "AI", "Abstracted"]
+            let engine = swiftFiles(under: "Sources/FootballSimCore")
+                .filter { file in engineRoots.contains { file.path.contains("/\($0)/") } }
+            // P0 has no engine directories with sources yet, so this scan has nothing to walk. That
+            // is stated rather than hidden: the assertion below turns real the moment P3 adds a file
+            // under Engine/, and it fails loudly if the roots are ever renamed out from under it.
+            let rootsExist = engineRoots.allSatisfy { name in
+                FileManager.default.fileExists(atPath: URL(fileURLWithPath: #filePath)
+                    .deletingLastPathComponent().deletingLastPathComponent()
+                    .deletingLastPathComponent().deletingLastPathComponent()
+                    .appendingPathComponent("Sources/FootballSimCore/\(name)").path)
+            }
+            expect(rootsExist, "an engine directory named in 03b section 1 is missing; the scan "
+                             + "would silently cover nothing")
+            let offenders = offendingLines(in: engine) { line in
+                line.contains("UUID()") || line.contains("Date()")
+            }
+            expect(
+                offenders.isEmpty,
+                "identities come from rng.uuid() and time from the simulated calendar (03 "
+                    + "section 3.5): " + offenders.joined(separator: ", ")
             )
         }
 
@@ -776,35 +829,56 @@ Delete the `import SwiftUI` line, then:
 
 Expected: build PASS, all three contract tests passing, `2 passed, 0 failed`.
 
-- [ ] **Step 5: Prove the other two scans the same way**
+- [ ] **Step 5: Prove the other three scans the same way**
 
-Repeat Step 3's method twice more, one at a time, reverting each before the next:
+Repeat Step 3's method three more times, one at a time, reverting each before the next. **A scan that
+has never failed is not known to be a scan**, and two of these exist specifically because the prior
+build's version shipped green against real violations.
 
-1. Add `let x = UUID().hashValue` inside a function in `SeedDerivation.swift`. Expect the hashValue
-   scan to fail naming that line. Revert.
-2. Add `.padding(16)` to the `Text` in `Sources/ProFootballCoachUI/Placeholder.swift`. Expect the
-   design-token scan to fail naming that line. Revert.
+1. **hashValue.** Add `let x = someUUID.hashValue` inside a function in `SeedDerivation.swift`.
+   Expect a failure naming that line. Revert.
+2. **hashValue with a trailing comment** — the defect being fixed. Add
+   `let x = someUUID.hashValue // deliberate` and expect it to fail **anyway**. The prior build's
+   scan passed on exactly this. If it passes here, `offendingLines` is not stripping comments.
+   Revert.
+3. **Ambient identity.** Create `Sources/FootballSimCore/Engine/Probe.swift` containing
+   `let leak = UUID()` inside a function. Expect a failure naming it. Delete the file.
+4. **Design token.** Add `.padding(16)` to the `Text` in `Placeholder.swift`. Expect a failure
+   naming that line. Revert.
 
-After both reverts, run `./scripts/verify.sh` and expect green.
+After all four reverts, run `./scripts/verify.sh` and expect green.
+
+**Step 3 plus this step are the point of the task.** Four scans that have each been watched failing
+are a gate; four scans that have only ever passed are a green light.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add Tests/SimTests/Suites/ContractTests.swift Tests/SimTests/main.swift
-git commit -m "test: the three build-wide source scans, in one contract suite
+git commit -m "test: the four build-wide source scans, in one contract suite
 
-No UI import in the engine, no hashValue in the engine, no design-token
-literal in a view. Ported from the scan that was buried in DynastyTests, which
-was the wrong home for a property of the whole tree.
+No UI import in the engine, no hashValue, no ambient UUID()/Date() in the
+engine, no design-token literal in a view. Gathered from the scan that was
+buried in DynastyTests, which was the wrong home for a property of the whole
+tree.
+
+The idea is ported; the implementation is not. The prior scan had two defects
+that each shipped green against real violations. It matched
+line.contains(\".hashValue\") && !line.contains(\"//\"), so a trailing comment
+disabled it. And it never looked for UUID() at all, which is how five real
+determinism leaks survived a green suite: a call-site PlayEvent(id: UUID(), ...)
+plus four default-valued engine initialisers. The determinism tests could not
+see them either, because they compare scores and stats, not identities.
+
+So this version strips the comment portion rather than skipping the line, and
+adds the ambient-identity scan. Model/ stays exempt by design: a scan cannot
+tell a default parameter from a call, and the guarantee is upheld on the other
+side, where engine construction passes rng.uuid() explicitly.
 
 Each scan enumerates its file set by walking a directory and asserts the set is
-non-empty first, so it cannot pass vacuously. AUDIT.md's lesson is that the
-test's coverage boundary became the quality boundary; a scan over a
-hand-written file list covers the files someone remembered.
-
-All three were verified by deliberately introducing a violation and watching
-them fail before being reverted. A scan that has never failed is not known to
-be a scan.
+non-empty, so none can pass vacuously. All four were verified by introducing a
+violation and watching them fail before reverting — including the trailing
+comment case specifically.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
