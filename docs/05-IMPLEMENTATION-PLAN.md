@@ -118,6 +118,17 @@ programmes including recruiting AI cost.
 **This is the phase that tests D14's fallback.** If the 2.0 s ceiling cannot be met at 134, reduce
 the programme count here — before anything is tuned around it — rather than loosening the ceiling.
 
+**`PerformanceBudgetTests` must assert only in release, and must measure in both.** `03` §7's budgets
+assume an optimised build. A perf gate that asserts under `-Onone` reports a meaningless failure —
+and, worse, would report a meaningless *pass* if the budget were ever loosened to accommodate it. The
+prior build learned this concretely: its week-advance test asserted 150 ms and measured 398 ms in
+debug, with no build-configuration guard. Measure both configurations, print both, assert on release.
+*(Lesson taken from `adf5af1` on the unmerged `rebuild/spec-package` branch.)*
+
+**And the budgets are Mac numbers until a device says otherwise.** `03` §7 derives them for an
+iPhone 12-class device; nothing has measured them on one. A green `PerformanceBudgetTests` on an
+Apple-silicon Mac is necessary and not sufficient, and `docs/STATUS.md` says so.
+
 ### P6 — Season structure
 Schedule generation both tiers, standings, tiebreakers, conference championships, brackets, awards.
 **Gates:** G1, G2, G4, G6.
