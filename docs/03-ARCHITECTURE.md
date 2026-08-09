@@ -79,7 +79,9 @@ struct League: Codable, Sendable {
 }
 ```
 
-Money = `Int` dollars. Ratings = `Int` 40–99. IDs = `UUID`, **always minted from the seeded RNG** (`rng.uuid()`), never `UUID()` — v1 leaked determinism by constructing `PlayEvent(id: UUID(), …)`, and a source-scanning test must forbid bare `UUID()` in the engine (the same shape of test that already guards seed derivation).
+Money = `Int` dollars. Ratings = `Int` 40–99. IDs = `UUID`, **always minted from the seeded RNG** (`rng.uuid()`), never `UUID()`.
+
+This is a live determinism hazard in v1, and its shape matters: `id: UUID = UUID()` is a *default parameter value* on at least nine model and engine initializers (`Player`, `Team`, `League`, `Staff`, three in `GameRecord` including `PlayEvent`, `TradeEngine`, `CoachEngine`). Any call site that omits the argument silently mints an unseeded ID, and the determinism tests cannot see it because they compare scores and stats, not identities. The new rule: **no default-valued `UUID()` parameters anywhere in the engine** — IDs are always passed explicitly from the seeded stream — enforced by a source-scanning test in the same family as the one guarding seed derivation.
 
 Player stats stay outside `Player` (folded from `results` + `history`) — but folding is now cached (§7), because v1's fold-per-render was a measured performance defect.
 
