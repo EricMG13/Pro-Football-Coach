@@ -486,13 +486,22 @@ public struct SnapKernel {
         return player.point
     }
 
+    /// Whether the ball is out of the passer's hands, which is when coverage stops playing the
+    /// route and starts playing the ball.
+    ///
+    /// A plain property rather than an immediately-applied closure: inside a `mutating` method
+    /// `self` is `inout`, and a closure that reads it there is exactly the shape Swift refuses
+    /// to capture. Not worth finding out which way the compiler jumps.
+    private var ballIsLoose: Bool {
+        switch phase {
+        case .ballInAir, .carrying: true
+        case .presnap, .dropback, .complete: false
+        }
+    }
+
     private mutating func moveDefense(dt: Double) {
         let offense = offensePlayers
-        let loose: Bool = {
-            if case .ballInAir = phase { return true }
-            if case .carrying = phase { return true }
-            return false
-        }()
+        let loose = ballIsLoose
 
         for index in players.indices {
             guard players[index].side == .defense else { continue }

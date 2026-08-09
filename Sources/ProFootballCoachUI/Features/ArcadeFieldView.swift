@@ -72,6 +72,7 @@ struct ArcadeFieldView: View {
             game: game,
             league: league
         )
+        created.prefersReducedMotion = reduceMotion
         created.start()
         model = created
     }
@@ -304,10 +305,10 @@ struct ArcadeFieldView: View {
             // The gesture-free way to play the snap. Every receiver, what he is doing, and
             // whether he is open — spoken, tappable, and exactly as authoritative as the field.
             if showsTargetList || UIAccessibilityIsVoiceOverRunningCompat() {
-                ForEach(model.targets, id: \.player.id) { target in
-                    Button { model.throwTo(target.player.id) } label: {
+                ForEach(model.targets) { target in
+                    Button { model.throwTo(target.id) } label: {
                         HStack {
-                            Text(target.player.athlete.name)
+                            Text(target.name)
                                 .font(.caption.weight(.medium))
                             Spacer()
                             Text(target.state.displayName)
@@ -317,7 +318,9 @@ struct ArcadeFieldView: View {
                         .frame(minHeight: 36)
                     }
                     .buttonStyle(.bordered)
-                    .accessibilityLabel("\(target.player.athlete.name), \(target.state.displayName)")
+                    .accessibilityLabel(
+                        "\(target.name), \(target.position.displayName), \(target.state.displayName)"
+                    )
                     .accessibilityHint("Throws to him.")
                 }
             } else {
@@ -413,7 +416,10 @@ struct ArcadeFieldView: View {
                             .font(.caption2.weight(.medium))
                             .frame(maxWidth: .infinity, minHeight: 36)
                     }
-                    .buttonStyle(model.defensiveCall == call ? .borderedProminent : .bordered)
+                    // A ternary cannot pick a button style: .bordered and .borderedProminent
+                    // are different types and will not unify. Selection is carried by the tint.
+                    .buttonStyle(.bordered)
+                    .tint(model.defensiveCall == call ? theme.primary : Color.secondary)
                 }
             }
             // The read. A tilt is a guess: right is worth something, wrong costs the same, and
@@ -427,9 +433,8 @@ struct ArcadeFieldView: View {
                             .minimumScaleFactor(0.7)
                             .frame(maxWidth: .infinity, minHeight: 32)
                     }
-                    .buttonStyle(
-                        model.defensiveRead.shade == shade ? .borderedProminent : .bordered
-                    )
+                    .buttonStyle(.bordered)
+                    .tint(model.defensiveRead.shade == shade ? theme.primary : Color.secondary)
                     .accessibilityLabel("Shade \(shade.displayName)")
                 }
             }

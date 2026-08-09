@@ -2,6 +2,14 @@ import SwiftUI
 import Observation
 import FootballSimCore
 
+/// One receiver as the controls list shows him: who he is, and whether he is open.
+struct ArcadeTarget: Identifiable, Equatable {
+    let id: UUID
+    let name: String
+    let position: Position
+    let state: OpennessState
+}
+
 /// Drives "On the Field": owns the game, the snap currently being played, and the animation
 /// clock that steps both.
 ///
@@ -56,6 +64,10 @@ final class ArcadeGameModel {
     private var meterTask: Task<Void, Never>?
     private var choreography: [FieldFrame] = []
     private var carrierTouches = 0
+    /// When Reduce Motion is on, watched drives present their outcome instead of animating to it.
+    /// The play still resolves identically — only the motion is dropped, which is the distinction
+    /// the setting actually asks for.
+    var prefersReducedMotion = false
 
     init(team: Team, opponent: Team, isHome: Bool, game: ScheduledGame, league: League) {
         self.team = team
@@ -101,13 +113,20 @@ final class ArcadeGameModel {
         quarter >= 4 && abs(userScore - opponentScore) <= 8
     }
 
-    /// The eligible receivers, with what the quarterback currently believes about each. This is
-    /// also the VoiceOver path: the mode has to be playable without seeing the field at all.
-    var targets: [(player: FieldedPlayer, state: OpennessState)] {
+    /// The eligible receivers, with what the quarterback currently believes about each.
+    ///
+    /// A named struct rather than a tuple because this list is the mode's assistive path: it is
+    /// driven by `ForEach`, and Swift has no key paths into tuple elements to identify rows with.
+    var targets: [ArcadeTarget] {
         guard let kernel else { return [] }
         return kernel.offensePlayers.compactMap { player in
             guard case .receiver = player.role else { return nil }
-            return (player, kernel.indicator(for: player.id) ?? .contested)
+            return ArcadeTarget(
+                id: player.id,
+                name: player.athlete.name,
+                position: player.athlete.position,
+                state: kernel.indicator(for: player.id) ?? .contested
+            )
         }
     }
 
@@ -318,6 +337,10 @@ final class ArcadeGameModel {
         stopClock()
         let frames = choreography
         guard !frames.isEmpty else { return }
+        guard !prefersReducedMotion else {
+            currentFrame = frames.last
+            return
+        }
         clockTask = Task { [weak self] in
             for frame in frames {
                 try? await Task.sleep(for: .seconds(ArcadeTuning.secondsPerTick / speed))

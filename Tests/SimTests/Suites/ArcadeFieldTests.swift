@@ -760,21 +760,41 @@ func runArcadeFieldTests() {
     // MARK: - Balance
 
     suite("Scripted thumbs") {
-        /// A bot that throws early to whoever the indicator likes best.
-        func perfectTrace() -> InputTrace {
+        /// Where the slot receiver actually lines up, read off the formation rather than typed
+        /// in. A hard-coded aim point silently stops being a good throw the moment somebody
+        /// touches the split table — which is exactly how the first version of this test came to
+        /// be aiming at eleven yards of empty grass and calling it perfect play.
+        func slotStem(_ offenseTeam: Team, call: OffensivePlay = .shortPass) -> FieldPoint {
+            let players = Formations.offense(
+                for: call, personnel: FieldFixtures.offense(offenseTeam)
+            )
+            let eligibles = players.filter {
+                if case .receiver = $0.role { return true } else { return false }
+            }
+            guard eligibles.count > 2 else {
+                return FieldPoint.yards(depth: 7.5, lateralYards: 0)
+            }
+            // The third eligible is the slot: against a base call the two corners take the two
+            // widest receivers, so he is the man the read is supposed to find.
+            return FieldPoint.yards(depth: 7.5, lateralYards: eligibles[2].point.lateralYards)
+        }
+
+        /// A bot that finds the open man and throws on time.
+        func perfectTrace(_ offenseTeam: Team) -> InputTrace {
             InputTrace([
                 TracedAction(time: 0.5, action: .beginAim),
-                TracedAction(time: 0.55, action: .aim(FieldPoint.yards(depth: 7, lateralYards: -6))),
+                TracedAction(time: 0.55, action: .aim(slotStem(offenseTeam))),
                 TracedAction(time: 0.75, action: .release),
                 TracedAction(time: 1.2, action: .juke(direction: 1)),
             ])
         }
 
         /// Mean completion-probability shift a bot earns across many snaps.
-        func meanCompletionShift(rating: Int, trace: InputTrace, samples: Int = 120) -> Double {
+        func meanCompletionShift(rating: Int, plays: Bool, samples: Int = 120) -> Double {
             let offenseTeam = FieldFixtures.team(rating: rating)
             let defenseTeam = FieldFixtures.team(rating: 75, name: "D", abbreviation: "DEF")
             let personnel = FieldFixtures.offense(offenseTeam)
+            let trace = plays ? perfectTrace(offenseTeam) : .none
             var total = 0.0
             for index in 0..<samples {
                 var kernel = FieldFixtures.kernel(
@@ -789,8 +809,8 @@ func runArcadeFieldTests() {
         }
 
         test("playing well beats not playing, by a bounded amount") {
-            let played = meanCompletionShift(rating: 75, trace: perfectTrace())
-            let untouched = meanCompletionShift(rating: 75, trace: .none)
+            let played = meanCompletionShift(rating: 75, plays: true)
+            let untouched = meanCompletionShift(rating: 75, plays: false)
             expectClose(untouched, 0, 0.0001, "an untouched snap must be worth exactly nothing")
             expect(played > untouched, "playing the snap should be worth something: \(played)")
             expect(
@@ -801,8 +821,8 @@ func runArcadeFieldTests() {
 
         test("perfect hands on a poor roster still trail perfect hands on a good one") {
             // The floor the whole management half of the game rests on.
-            let onGreat = meanCompletionShift(rating: 90, trace: perfectTrace())
-            let onPoor = meanCompletionShift(rating: 55, trace: perfectTrace())
+            let onGreat = meanCompletionShift(rating: 90, plays: true)
+            let onPoor = meanCompletionShift(rating: 55, plays: true)
             expect(
                 onGreat > onPoor,
                 "a 90 roster played perfectly earned \(onGreat), a 55 earned \(onPoor)"
@@ -810,9 +830,12 @@ func runArcadeFieldTests() {
         }
 
         test("execution can never exceed the caps, whatever the trace") {
+            let offenseTeam = FieldFixtures.team(rating: 99)
+            let defenseTeam = FieldFixtures.team(rating: 40, name: "D", abbreviation: "DEF")
             let traces: [InputTrace] = [
                 .none,
-                perfectTrace(),
+                perfectTrace(offenseTeam),
+                // Deliberately terrible: aimed out of bounds and held until the rush arrives.
                 InputTrace([
                     TracedAction(time: 0.1, action: .beginAim),
                     TracedAction(time: 0.2, action: .aim(FieldPoint.yards(depth: 30, lateralYards: 20))),
@@ -821,8 +844,6 @@ func runArcadeFieldTests() {
                 InputTrace([TracedAction(time: 0.1, action: .handOff(gapIndex: 2))]),
                 InputTrace([TracedAction(time: 0.1, action: .scramble)]),
             ]
-            let offenseTeam = FieldFixtures.team(rating: 99)
-            let defenseTeam = FieldFixtures.team(rating: 40, name: "D", abbreviation: "DEF")
             let personnel = FieldFixtures.offense(offenseTeam)
             for (index, trace) in traces.enumerated() {
                 var kernel = FieldFixtures.kernel(
