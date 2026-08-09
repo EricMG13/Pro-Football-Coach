@@ -27,19 +27,22 @@ Every phase gates on **G1–G4**. Engine phases add **G5–G7**. Milestones add 
 **Legal gates run on every phase that touches generation:** the name-collision test and the
 trade-dress ΔE test.
 
-### The D11 problem, stated where it bites
+### How G1 and G2 actually get asserted
 
-`docs/OPEN-DECISIONS.md` **D11 is escalated and unresolved.** No agent environment in this project's
-history has had a Swift toolchain, and Phase 4C of the previous build shipped never having been
-compiled as a direct result.
+**D11 is decided.** The suite is an executable target with a hand-rolled harness, run by
+`./scripts/verify.sh` on the owner's machine. Verified green on Swift 6.3.3: build clean, 299 tests,
+18,412 checks, 71.7 s.
 
-Until D11 is answered:
+Agent environments still have **no** toolchain — `download.swift.org` is refused by egress policy —
+so G1 and G2 are an **owner round-trip**, not something an agent can assert on its own:
 
-- **G1 and G2 cannot be asserted by an agent.** An agent that writes code without a compiler records
-  it in `docs/STATUS.md` as **unverified — never compiled**, naming the files, and does not claim the
-  phase is done.
-- A phase whose only outstanding gates are G1/G2 is **blocked on the owner**, not complete.
+- An agent writes, then asks for a `verify.sh` run and waits for the output.
+- Between round-trips, anything written is recorded in `docs/STATUS.md` as **unverified**, naming the
+  files. Never "build green" or "tests pass" about code no compiler has seen.
 - An adversarial review is not a build and must never be reported as one.
+
+Lifting the egress rule for `download.swift.org` removes the round-trip entirely; the harness needs
+only the Command Line Tools.
 
 ---
 
