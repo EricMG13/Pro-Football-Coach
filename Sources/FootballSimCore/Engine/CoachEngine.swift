@@ -100,6 +100,26 @@ public enum CoachEngine {
         }
     }
 
+    /// Pays the coach for a result. The event table existed from the start and nothing ever
+    /// called it, so wins, division wins, playoff runs and titles were all worth nothing.
+    public static func awardForResult(
+        win: Bool,
+        isDivisional: Bool,
+        isPlayoff: Bool,
+        in league: inout League
+    ) {
+        guard win else { return }
+        let event: ExperienceEvent
+        if isPlayoff {
+            event = .playoffWin
+        } else if isDivisional {
+            event = .divisionWin
+        } else {
+            event = .win
+        }
+        award(event, to: &league.coach)
+    }
+
     /// Awards experience and levels the coach up, handing out a skill point per level.
     public static func award(_ event: ExperienceEvent, to coach: inout CoachProfile) {
         coach.experience += event.points
@@ -180,6 +200,9 @@ public enum CoachEngine {
         public let experienceReward: Int
         public let isEndOfSeason: Bool
         public let kind: Kind
+        /// Whether this goal's experience has already been handed over. Goals settle every week,
+        /// so without this a goal that stays complete pays again every single settle.
+        public var hasPaidOut: Bool
 
         public enum Kind: String, Codable, Sendable {
             case wins, playoffs, divisionTitle, topOffense, topDefense, capSpace, championship
@@ -192,7 +215,8 @@ public enum CoachEngine {
             progress: Int = 0,
             experienceReward: Int,
             isEndOfSeason: Bool,
-            kind: Kind
+            kind: Kind,
+            hasPaidOut: Bool = false
         ) {
             self.id = id
             self.description = description
@@ -201,6 +225,30 @@ public enum CoachEngine {
             self.experienceReward = experienceReward
             self.isEndOfSeason = isEndOfSeason
             self.kind = kind
+            self.hasPaidOut = hasPaidOut
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case id, description, target, progress, experienceReward, isEndOfSeason, kind
+            case hasPaidOut
+        }
+
+        /// Decoded field by field so franchises saved before the flag existed still load.
+        ///
+        /// A goal that arrives already complete from such a save is assumed paid: it was, on the
+        /// week it completed, and possibly on every week since. Assuming otherwise would hand out
+        /// the reward one more time on the next settle.
+        public init(from decoder: any Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            id = try container.decode(UUID.self, forKey: .id)
+            description = try container.decode(String.self, forKey: .description)
+            target = try container.decode(Int.self, forKey: .target)
+            progress = try container.decode(Int.self, forKey: .progress)
+            experienceReward = try container.decode(Int.self, forKey: .experienceReward)
+            isEndOfSeason = try container.decode(Bool.self, forKey: .isEndOfSeason)
+            kind = try container.decode(Kind.self, forKey: .kind)
+            hasPaidOut = try container.decodeIfPresent(Bool.self, forKey: .hasPaidOut)
+                ?? (progress >= target)
         }
 
         public var isComplete: Bool { progress >= target }
@@ -312,7 +360,9 @@ public enum CoachEngine {
                 goals[index].progress = SeasonEngine.champion(of: league)?.id == team.id ? 1 : 0
             }
 
-            if goals[index].isComplete {
+            // Only the settle that first completes a goal pays it.
+            if goals[index].isComplete, !goals[index].hasPaidOut {
+                goals[index].hasPaidOut = true
                 award(.goalCompleted(goals[index].experienceReward), to: &league.coach)
                 completed.append(goals[index])
             }
