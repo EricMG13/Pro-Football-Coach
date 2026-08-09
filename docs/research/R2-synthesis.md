@@ -2,7 +2,7 @@
 
 **Program:** Pro Football Coach rebuild — synthesis over evidence dossiers R1a (Madden, MAD-01–46), R1b (Retro Bowl, RB-01–42), R1c (Football Manager, FM-01–38), R1d (adjacent games, feel & narrative literature, ADJ-01–48), plus local evidence: `docs/AUDIT.md`, `docs/STATUS.md`, `PRODUCT.md`, `docs/01-RESEARCH.md`.
 **Date:** 2026-08-09
-**Status:** Awaiting owner sign-off (gate 1 of 3). The pillars in §4 decide the rebuild's character; nothing downstream starts until they are approved.
+**Status:** SIGNED OFF at gate 1 (owner, 2026-08-09) — pillars approved; OD-1/OD-2/OD-3 resolved as recommended, OD-4 deferred to gate 3 (see `docs/OPEN-DECISIONS.md`). Design-system work authorized.
 **Traceability:** every ruling cites dossier finding IDs or local documents; decisions with no evidentiary parent are marked `NOVEL` with reasoning. Novel is a first-class origin here, not a defect.
 
 ---
@@ -70,7 +70,7 @@ Retro Bowl fuses everything into one currency and backgrounds the cap (RB-05, RB
 ### T3 — Broadcast presentation vs the plainspoken voice
 
 The apparent conflict between "no exclamation marks" and celebration choreography dissolves on the evidence: an actual broadcast is itself confident and plainspoken — its drama is produced by *staging*: pacing, cutaways, a stat graphic fired at the earned moment with a 20-second read cap (ADJ-36), numbers resolved sequentially with weight (ADJ-35), presentation skins that mark marquee occasions (MAD-04).
-**Ruling:** the game's identity register is **the broadcast, done in text**: system copy stays sober and declarative; drama is carried by staging, timing, sound, and haptics, never by hype adjectives. Celebrations are broadcast events (title card, staged numbers, haptic sequence), and their copy still says the number. **Voice amendment (needs owner sign-off, OD-1):** in-fiction media voices — the beat writer, the columnist, the radio host — get personality license the system voice does not have (FM-03: the feed's texture comes from many in-fiction voices; MAD-06/07: the loved media features were voiced). The system never exclaims; the fictional press may.
+**Ruling:** the game's identity register is **the broadcast, done in text**: system copy stays sober and declarative; drama is carried by staging, timing, sound, and haptics, never by hype adjectives. Celebrations are broadcast events (title card, staged numbers, haptic sequence), and their copy still says the number. **Voice amendment (OD-1 — approved at gate 1, 2026-08-09):** in-fiction media voices — the beat writer, the columnist, the radio host — get personality license the system voice does not have (FM-03: the feed's texture comes from many in-fiction voices; MAD-06/07: the loved media features were voiced). The system never exclaims; the fictional press may.
 
 ### T4 — Emergence vs authored narrative
 

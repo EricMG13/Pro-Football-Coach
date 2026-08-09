@@ -6,7 +6,7 @@ The gameplay source of truth. UI belongs in `04-SCREENS-UI.md`; code shape in `0
 
 Run a pro football franchise for decades: call the plays on Sunday, run the front office all week. Text/2D sim — depth over graphics, sessions in minutes, dynasties over years.
 
-1. **Every down is a decision.** Play-calling matters; a game takes 3–10 minutes, or 10 seconds simmed.
+1. **Every down is a decision.** Play-calling matters; a game takes 3–8 minutes (binding budget: PRODUCT.md pillar 3), or 10 seconds simmed.
 2. **The cap is the boss fight.** College's constraint was recruiting; pro's is money. Contracts, dead money, and the draft are the long game.
 3. **Stories emerge from numbers.** Busts, steals, dynasties, cap hell — the sim generates them; news + records surface them.
 4. **Respect the player's time.** Advance a week in two taps; nothing grinds.
@@ -31,7 +31,7 @@ Each team: city, name, 3-letter abbrev, primary/secondary colors, geometric logo
 ## 3. Players
 
 - **Positions & roster template (53 active + 16 practice squad):** QB3, RB4, WR6, TE3, OL9, DL8, LB7, CB6, S5, K1, P1 (target counts; min 1 per position enforced at cutdown).
-- **Identity:** generated name (weighted first/last banks incl. international), age 21–40, height/weight by position distribution, college (fictional bank — reuse the college game's naming flavor: "Palmetto State", "Port City" etc. as alma maters — original, and a nice nod), draft origin, jersey #, seeded diverse cartoon avatar.
+- **Identity:** generated name (weighted first/last banks incl. international), age 21–40, height/weight by position distribution, college (independently generated fictional bank — clean-room rule: no name may be sourced from or match the reference app's strings), draft origin, jersey #, seeded diverse cartoon avatar.
 - **Attributes (40–99):** core Speed, Strength, Agility, Awareness (K/P: Awareness only) + position set:
   - QB: ThrowPower, ThrowAccuracy · RB: Catch, BreakTackle, Vision · WR: Catch, RouteRunning, BreakTackle · TE: + BlockShed · OL: RunBlock, PassBlock · DL: Tackle, BlockShed, PassRush · LB: Tackle, Coverage, BlockShed · CB/S: Coverage, Tackle · K: KickPower, KickAccuracy · P: PuntPower, PuntAccuracy
 - **OVR:** per-position weighted mean (weights table in `LeagueRules`; e.g. QB = .30 ThrowAccuracy, .20 ThrowPower, .25 Awareness, .10 Agility, .10 Speed, .05 Strength — all positions defined in code, sum 1.0).
@@ -53,7 +53,7 @@ Each team: city, name, 3-letter abbrev, primary/secondary colors, geometric logo
 - **Playcalls:** Offense — Inside Run, Outside Run, Short Pass, Deep Pass, Play Action, Screen (+FG, Punt, Kneel, Spike, 2-pt, **Onside Kick** after scores). Defense — Base, Blitz, Nickel, Dime, Contain, Prevent (+Hands Team vs expected onside). **Tempo toggle** on offense: Normal / Hurry-Up / Chew Clock (affects play clock burn + slight efficiency tradeoffs); AI uses it correctly late. "Suggested" banner = OC/DC AI pick (quality scales with coordinator rating); auto-call toggle available.
 - **Sequencing correctness (hard requirements from reference-app bug mining):** TD as time expires still awards the try; end-of-game state machine (0:00 edge cases, kneel-outs, untimed downs after defensive penalty, OT caps) gets exhaustive unit tests — this is the #1 crash locus in the reference app. OT is capped (max 2 OT regular season → tie; playoffs repeat until decided).
 - **Game modes:** every user game offers Quick Sim, Call the Plays (this engine, text/2D), or **On the Field** (arcade control of offensive snaps/kicks/returns — full spec `06-PLAYED-GAME-MODE.md`). All modes emit identical records; calibration bands apply to engine-resolved games only.
-- **Win probability:** logistic on (score diff, time remaining, possession, field position, pregame ratings edge) — updated per play, shown live.
+- **Win probability:** logistic on (score diff, time remaining, possession, field position, pregame ratings edge) — computed per play. **Superseded presentation (DESIGN.md §2.3, R2 T5): never shown as an always-on live figure; surfaces as retrospective swing charts at half and final, and as per-decision true odds in the StakesPanel.**
 - **Player of the Game**, box scores per position group, drive-grouped play log with clock stamps and tappable player names.
 - **Calibration bands (asserted by tests, per simulated season):** team PPG 20–26 · pass yds/team/gm 195–240 · rush 100–130 · comp% 61–67 · INT/gm 0.7–1.0 · sacks/gm 2.0–2.9 · FG% 82–88 · ~8% of games OT · home win% 54–58%. **Believability bands (added from reference-app complaint mining):** Q4 scoring share 22–30% of points · plays of 25+ yds: 3–6/game · TDs of 40+ yds: ~0.5/game · safeties ≤ 0.03/game · blocked kicks ≤ 2% · TE target share 15–25% of team targets · no single receiver > 40% of targets (barring extreme roster) · **ratings predictiveness: 12+ OVR gap → favorite wins ≥ 72%** · **mode parity: retainPlays true vs false produces statistically identical distributions (same seeds, same aggregate outcomes — one engine, one truth).**
 

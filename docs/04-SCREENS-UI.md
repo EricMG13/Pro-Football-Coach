@@ -45,7 +45,7 @@ Pre-game sheet gains a mode row: **Quick Sim · Call the Plays · On the Field**
 - **Field graphic:** horizontal 2D field, end zones in home colors, yard numbers, midfield logo, ball marker + direction arrow, blue LOS + yellow first-down line.
 - **Playbook card** (possession-aware): offense sets (Inside Run · Outside Run · Short Pass · Deep Pass · Play Action · Screen; situational: FG, Punt, QB Kneel, Spike, 2-pt, Onside Kick) / defense sets (Base · Blitz · Nickel · Dime · Contain · Prevent · Hands Team). **Tempo chip row: Normal / Hurry-Up / Chew Clock.** Green "Suggested: X" banner (OC/DC suggestion; auto-call toggle). 4th-down decision prompts with EV hint.
 - **Play Log:** grouped by drive, newest first, clock stamps.
-- **Win Probability:** two-color stacked bar, live.
+- **Win Probability:** superseded by DESIGN.md §2.3 (R2 T5) — no always-on live bar; retrospective swing charts at half and final; per-decision odds live in the StakesPanel.
 - **Bottom bar:** Simulate · Timeout · Stats (live box score sheet).
 - **Quick Sim action sheet:** speed chips Slow/Normal/Fast/Instant; Sim to Next Possession / to end of Q / to Halftime / to End of Game.
 - End: Game Report sheet; XP toast ("+40 XP — Win").
