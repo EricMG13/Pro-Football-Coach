@@ -41,7 +41,7 @@ struct TeamView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Color.pageBackground)
+        .background(Almanac.page)
         .navigationTitle("Team")
     }
 
@@ -284,7 +284,7 @@ struct PlayerCardView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Color.pageBackground)
+        .background(Almanac.page)
         .navigationTitle(player.name)
         .alert("Release \(player.name)?", isPresented: $confirmingCut) {
             Button("Release", role: .destructive) { app.cut(playerID: player.id) }
@@ -307,20 +307,79 @@ struct PlayerCardView: View {
             : "This frees \(Format.money(saving)) of cap space."
     }
 
+    /// The dossier head: the name in the record's own voice, the figure that matters, and one
+    /// sentence of provenance built from what the engine already knows about him.
+    ///
+    /// The overall used to be a hard-coded 44pt, which was the one number on the screen that
+    /// refused to scale with Dynamic Type — on a page that exists to show it.
     private var identity: some View {
-        VStack(spacing: Layout.tight) {
-            Text("\(player.overall)")
-                .font(.system(size: 44, weight: .heavy, design: .rounded))
-                .ratingStyle(player.overall)
-            Text(player.name).font(.title3.weight(.semibold))
-            HStack(spacing: Layout.tight) {
-                Chip(player.position.abbreviation, color: .blue, filled: true)
-                Chip("#\(player.jersey)", color: .secondary)
-                Chip("Potential \(player.potential.rawValue)", color: potentialColor)
+        VStack(alignment: .leading, spacing: Layout.small) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(player.name)
+                    .font(.almanacDisplay)
+                    .foregroundStyle(Almanac.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: Layout.small)
+                Text("\(player.overall)")
+                    .font(.almanacDisplay)
+                    .ratingStyle(player.overall)
             }
+
+            HStack(spacing: Layout.tight) {
+                Stamp(player.position.abbreviation)
+                Stamp("#\(player.jersey)")
+                Stamp("Potential \(player.potential.rawValue)")
+            }
+
+            Rule(.heavy)
+
+            Text(dossier)
+                .font(.almanacBody)
+                .foregroundStyle(Almanac.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity)
-        .card()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "\(player.name), \(player.position.displayName), number \(player.jersey). "
+                + "Overall \(player.overall), \(RatingTier(rating: player.overall).label). "
+                + "Potential \(player.potential.rawValue). \(dossier)"
+        )
+    }
+
+    /// One line of scouting, assembled from facts the engine already holds. No invention.
+    private var dossier: String {
+        let tenure: String
+        switch player.yearsPro {
+        case 0: tenure = "A rookie"
+        case 1: tenure = "Second-year \(player.position.displayName.lowercased())"
+        default: tenure = "\(ordinalYear(player.yearsPro + 1))-year \(player.position.displayName.lowercased())"
+        }
+
+        let origin: String
+        if let draft = player.draftOrigin {
+            origin = draft.isUndrafted
+                ? "signed as an undrafted free agent out of \(player.college)"
+                : "taken in round \(draft.round) of the \(String(draft.year)) draft out of \(player.college)"
+        } else {
+            origin = "out of \(player.college)"
+        }
+
+        return "\(tenure), \(origin). Age \(player.age)."
+    }
+
+    private func ordinalYear(_ value: Int) -> String {
+        switch value {
+        case 3: "Third"
+        case 4: "Fourth"
+        case 5: "Fifth"
+        case 6: "Sixth"
+        case 7: "Seventh"
+        case 8: "Eighth"
+        case 9: "Ninth"
+        case 10: "Tenth"
+        default: "\(value)th"
+        }
     }
 
     private var potentialColor: Color {

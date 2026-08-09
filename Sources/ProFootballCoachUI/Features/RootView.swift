@@ -97,8 +97,6 @@ struct MainMenuView: View {
                             subtitle: "Take over a team and build a dynasty"
                         ) { showingNewGame = true }
 
-                        Divider().padding(.leading, 60)
-
                         menuRow(
                             icon: "folder.fill",
                             tint: .blue,
@@ -109,8 +107,6 @@ struct MainMenuView: View {
                         ) { showingLoad = true }
                         .disabled(app.saves.isEmpty)
 
-                        Divider().padding(.leading, 60)
-
                         menuRow(
                             icon: "flag.checkered",
                             tint: .orange,
@@ -118,16 +114,15 @@ struct MainMenuView: View {
                             subtitle: "Preset challenges with a single objective"
                         ) { showingScenarios = true }
                     }
-                    .card()
 
                     Text("Every team, player and league in this game is fictional.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .font(.almanacLabel)
+                        .foregroundStyle(Almanac.muted)
                         .multilineTextAlignment(.center)
                 }
                 .padding(Layout.medium)
             }
-            .background(Color.pageBackground)
+            .background(Almanac.page)
             .navigationTitle("")
             .sheet(isPresented: $showingNewGame) { NewFranchiseWizard() }
             .sheet(isPresented: $showingLoad) { LoadFranchiseView() }
@@ -135,23 +130,62 @@ struct MainMenuView: View {
         }
     }
 
+    /// The almanac's own cover, and — once a franchise exists — the front page of your league.
     private var header: some View {
-        VStack(spacing: Layout.small) {
-            Image(systemName: "football.fill")
-                .font(.system(size: 56))
-                .foregroundStyle(.orange)
-                .padding(Layout.large)
-                .background(Circle().fill(Color.cardFill))
-            Text("Pro Football Coach")
-                .font(.system(.largeTitle, design: .rounded, weight: .heavy))
-                .multilineTextAlignment(.center)
+        VStack(alignment: .leading, spacing: Layout.small) {
+            Text("PRO FOOTBALL COACH")
+                .font(.almanacLabel)
+                .tracking(1.6)
+                .foregroundStyle(Almanac.muted)
+
+            Text("The Franchise Almanac")
+                .font(.almanacDisplay)
+                .foregroundStyle(Almanac.ink)
+                .fixedSize(horizontal: false, vertical: true)
+
             Text("Run the franchise. Call every down.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .font(.almanacBody)
+                .foregroundStyle(Almanac.muted)
+
+            Rule(.heavy)
+
+            if let latest = app.saves.first {
+                // The most recent franchise is the standing headline, not a row buried in a sheet.
+                Button { app.load(id: latest.id) } label: {
+                    VStack(alignment: .leading, spacing: Layout.tight) {
+                        Text("WHERE YOU LEFT OFF")
+                            .font(.almanacLabel)
+                            .tracking(1.2)
+                            .foregroundStyle(Almanac.muted)
+                        HStack(alignment: .firstTextBaseline, spacing: Layout.small) {
+                            Text(latest.teamName)
+                                .font(.almanacTitle)
+                                .foregroundStyle(Almanac.ink)
+                            Spacer(minLength: 0)
+                            Text(String(latest.year))
+                                .font(.almanacFigure)
+                                .foregroundStyle(Almanac.ink)
+                        }
+                        Text("\(latest.phaseLabel) · \(latest.coachName)")
+                            .font(.almanacLabel)
+                            .foregroundStyle(Almanac.muted)
+                        Rule()
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    "Continue \(latest.teamName), \(String(latest.year)), \(latest.phaseLabel), "
+                        + "coached by \(latest.coachName)"
+                )
+            }
         }
-        .padding(.top, Layout.large)
+        .padding(.top, Layout.medium)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// A line of the contents page. The icons were three decorative rainbow glyphs carrying no
+    /// meaning, against the system's own rule that colour is only used where it means something.
     private func menuRow(
         icon: String,
         tint: Color,
@@ -160,22 +194,33 @@ struct MainMenuView: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: Layout.medium) {
-                Image(systemName: icon)
-                    .font(.title2)
-                    .foregroundStyle(tint)
-                    .frame(width: 36)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.headline)
-                    Text(subtitle).font(.caption).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: Layout.tight) {
+                HStack(alignment: .firstTextBaseline, spacing: Layout.small) {
+                    Image(systemName: icon)
+                        .font(.caption)
+                        .foregroundStyle(Almanac.muted)
+                        .frame(width: 20)
+                        .accessibilityHidden(true)
+                    Text(title)
+                        .font(.almanacTitle)
+                        .foregroundStyle(Almanac.ink)
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(Almanac.muted)
                 }
-                Spacer()
-                Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+                Text(subtitle)
+                    .font(.almanacLabel)
+                    .foregroundStyle(Almanac.muted)
+                    .padding(.leading, 28)
+                Rule()
             }
-            .padding(.vertical, Layout.small)
+            .padding(.vertical, Layout.tight)
+            .frame(minHeight: 52)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(title). \(subtitle)")
     }
 }
 

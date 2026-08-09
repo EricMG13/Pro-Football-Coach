@@ -191,7 +191,7 @@ struct TrophyRoomView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Color.pageBackground)
+        .background(Almanac.page)
         .navigationTitle("Trophy Room")
     }
 

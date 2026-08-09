@@ -87,7 +87,7 @@ struct CoachView: View {
             }
             .padding(Layout.medium)
         }
-        .background(Color.pageBackground)
+        .background(Almanac.page)
         .navigationTitle("Coach")
         .sheet(isPresented: $showingSkills) { SkillTreeSheet() }
         .sheet(isPresented: $showingGoals) { SeasonGoalsSheet() }
@@ -219,7 +219,7 @@ struct SkillTreeSheet: View {
                     }
                 }
             }
-            .background(Color.pageBackground)
+            .background(Almanac.page)
             .navigationTitle("Skill Tree")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
@@ -307,7 +307,7 @@ struct SeasonGoalsSheet: View {
                 }
                 .padding(Layout.medium)
             }
-            .background(Color.pageBackground)
+            .background(Almanac.page)
             .navigationTitle("Season Goals")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
