@@ -320,35 +320,127 @@ struct SeasonGoalsSheet: View {
 struct HistoryView: View {
     @Environment(AppState.self) private var app
 
+    /// Consecutive seasons at one club, newest chapter first. `coachedTeamID` is written at
+    /// archive time precisely so a career can be told as chapters rather than a flat list of
+    /// years — a run at one club is the unit a coach actually remembers.
+    private struct Chapter: Identifiable {
+        let teamID: UUID?
+        let seasons: [SeasonSummary]
+        var id: String { "\(teamID?.uuidString ?? "none")-\(seasons.first?.year ?? 0)" }
+
+        var wins: Int { seasons.reduce(0) { $0 + ($1.userRecord?.wins ?? 0) } }
+        var losses: Int { seasons.reduce(0) { $0 + ($1.userRecord?.losses ?? 0) } }
+        var span: String {
+            guard let first = seasons.last?.year, let last = seasons.first?.year else { return "" }
+            return first == last ? String(first) : "\(String(first))–\(String(last))"
+        }
+    }
+
+    private var chapters: [Chapter] {
+        guard let history = app.league?.history, !history.isEmpty else { return [] }
+        var result: [Chapter] = []
+        var run: [SeasonSummary] = []
+        for season in history.reversed() {
+            if let previous = run.first, previous.coachedTeamID != season.coachedTeamID {
+                result.append(Chapter(teamID: previous.coachedTeamID, seasons: run))
+                run = []
+            }
+            run.append(season)
+        }
+        if let previous = run.first {
+            result.append(Chapter(teamID: previous.coachedTeamID, seasons: run))
+        }
+        return result
+    }
+
     var body: some View {
-        List {
-            if let history = app.league?.history, !history.isEmpty {
-                ForEach(history.reversed(), id: \.year) { season in
-                    Section(String(season.year)) {
-                        if let championID = season.championTeamID,
-                           let champion = app.league?.team(id: championID) {
-                            HStack {
-                                Image(systemName: "trophy.fill").foregroundStyle(.yellow)
-                                Text(champion.fullName).font(.subheadline.weight(.medium))
-                            }
-                        }
-                        if let record = season.userRecord {
-                            SummaryRow(label: "Your record", value: record.description)
-                        }
-                        ForEach(season.awards, id: \.kind.rawValue) { award in
-                            SummaryRow(label: award.kind.displayName, value: award.playerName)
-                        }
+        ScrollView {
+            VStack(alignment: .leading, spacing: Layout.large) {
+                if chapters.isEmpty {
+                    EmptyStateView(
+                        icon: "clock.arrow.circlepath",
+                        title: "No history yet",
+                        message: "Completed seasons are archived here."
+                    )
+                } else {
+                    ForEach(chapters) { chapter in
+                        chapterView(chapter)
                     }
                 }
-            } else {
-                EmptyStateView(
-                    icon: "clock.arrow.circlepath",
-                    title: "No history yet",
-                    message: "Completed seasons are archived here."
-                )
+            }
+            .padding(Layout.medium)
+        }
+        .background(Almanac.page)
+        .navigationTitle("History")
+    }
+
+    private func chapterView(_ chapter: Chapter) -> some View {
+        let club = chapter.teamID.flatMap { app.league?.team(id: $0) }
+        let titles = chapter.seasons.filter { $0.championTeamID == chapter.teamID }.count
+
+        return VStack(alignment: .leading, spacing: Layout.small) {
+            Text(club?.fullName ?? "Between jobs")
+                .font(.almanacTitle)
+                .foregroundStyle(Almanac.ink)
+            HStack(spacing: Layout.small) {
+                Text(chapter.span)
+                    .font(.almanacLabel)
+                    .tracking(1.0)
+                    .foregroundStyle(Almanac.muted)
+                Text("\(chapter.wins)–\(chapter.losses)")
+                    .font(.almanacFigure)
+                    .foregroundStyle(Almanac.ink)
+                if titles > 0 {
+                    Stamp(titles == 1 ? "1 title" : "\(titles) titles")
+                }
+                Spacer(minLength: 0)
+            }
+            Rule(.heavy)
+
+            ForEach(chapter.seasons, id: \.year) { season in
+                seasonLine(season)
             }
         }
-        .navigationTitle("History")
+        .accessibilityElement(children: .contain)
+    }
+
+    private func seasonLine(_ season: SeasonSummary) -> some View {
+        let champion = season.championTeamID.flatMap { app.league?.team(id: $0) }
+        let wonIt = season.championTeamID != nil && season.championTeamID == season.coachedTeamID
+
+        return VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: Layout.small) {
+                Text(String(season.year))
+                    .font(.almanacFigure)
+                    .foregroundStyle(Almanac.muted)
+                Text(season.userRecord?.description ?? "—")
+                    .font(.almanacBody)
+                    .foregroundStyle(Almanac.ink)
+                Spacer(minLength: 0)
+                if wonIt {
+                    Text("Champions")
+                        .font(.almanacBody)
+                        .foregroundStyle(Almanac.ink)
+                } else if let champion {
+                    Text(champion.name)
+                        .font(.almanacLabel)
+                        .foregroundStyle(Almanac.muted)
+                        .lineLimit(1)
+                }
+            }
+            ForEach(season.awards, id: \.kind.rawValue) { award in
+                Text("\(award.kind.displayName): \(award.playerName)")
+                    .font(.almanacLabel)
+                    .foregroundStyle(Almanac.muted)
+            }
+            Rule()
+        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "\(String(season.year)), \(season.userRecord?.description ?? "no record")."
+                + (wonIt ? " Champions." : "")
+        )
     }
 }
 
