@@ -16,9 +16,25 @@ from string import Formatter
 class LeagueProgramme:
     name: str
     region: str
+    x: int
+    y: int
+    market_size: int
     reach: str
     talent: str
     rivalry: str
+
+
+@dataclass(frozen=True)
+class LifecycleBadge:
+    label: str
+    current: bool
+
+
+@dataclass(frozen=True)
+class BroadcastOccasion:
+    house: str
+    escalation: str
+    label: str
 
 
 @dataclass(frozen=True)
@@ -90,7 +106,19 @@ class ScenarioFixture:
         if include_tokens:
             projection["tokens"] = dict(self.tokens)
         if include_programmes:
-            projection["programmes"] = [programme.__dict__ for programme in self.programmes]
+            projection["programmes"] = [
+                {
+                    "name": programme.name,
+                    "region": programme.region,
+                    "x": programme.x,
+                    "y": programme.y,
+                    "marketSize": programme.market_size,
+                    "reach": programme.reach,
+                    "talent": programme.talent,
+                    "rivalry": programme.rivalry,
+                }
+                for programme in self.programmes
+            ]
         return projection
 
 
@@ -157,15 +185,22 @@ SHARED_COLLEGE_FACTS = {
     "opponent_abbreviation": "WEX",
     "conference": "Northstar Conference",
     "college_record": "7-2",
-    "week": "Week 10",
+    "week_number": "10",
     "coordinator": "Nico Sorrell",
     "plan": "Balanced pressure",
-    "plan_cost": "Deep passing loses 6 practice reps",
+    "deep_pass_rep_cost": "6",
     "player": "Ronan Ashfield-Pell",
     "player_short": "R. Ashfield-Pell",
     "player_rating": "84",
     "board_alternative": "Marlowe State",
 }
+
+SHARED_COLLEGE_DERIVED = (
+    ("week", "Week {week_number}"),
+    ("plan_commitment", "Commit to {plan} for Saturday"),
+    ("plan_cost", "Deep passing loses {deep_pass_rep_cost} practice reps"),
+    ("plan_cost_short", "−{deep_pass_rep_cost} deep-pass reps"),
+)
 
 COLLEGE_TOKENS = {
     "team.primary": "#14294B",
@@ -244,15 +279,31 @@ def _league_programmes() -> tuple[LeagueProgramme, ...]:
         "Stags",
         "Watch",
     )
+    region_centres = (
+        (145, 135),
+        (370, 105),
+        (620, 125),
+        (850, 155),
+        (165, 455),
+        (405, 520),
+        (650, 455),
+        (845, 530),
+    )
     programmes: list[LeagueProgramme] = []
     for index in range(134):
-        region = regions[index % len(regions)]
+        region_index = index % len(regions)
+        region = regions[region_index]
+        regional_index = index // len(regions)
         root = roots[index % len(roots)]
         identity = identities[(index // len(roots)) % len(identities)]
+        centre_x, centre_y = region_centres[region_index]
         programmes.append(
             LeagueProgramme(
                 name=f"{root} {identity}",
                 region=region,
+                x=centre_x + (regional_index * 43) % 151 - 75,
+                y=centre_y + (regional_index * 67) % 131 - 65,
+                market_size=1 + (index * 11 + regional_index * 3) % 5,
                 reach=("National", "Regional", "Local")[index % 3],
                 talent=("Deep", "Balanced", "Developing")[(index * 5 + index // 7) % 3],
                 rivalry=("Primary", "Secondary", "None")[(index * 7 + index // 5) % 3],
@@ -274,20 +325,21 @@ FIXTURES: dict[str, ScenarioFixture] = {
             board_third="Northcross",
             first_stakeholder="Elian Sorrell",
         ),
-        derived_facts=(("plan_commitment", "Commit to {plan} for Saturday"),),
+        derived_facts=SHARED_COLLEGE_DERIVED,
         tokens=_tokens(COLLEGE_TOKENS),
     ),
     "college-week": ScenarioFixture(
         name="college-week",
         facts=_facts(
             SHARED_COLLEGE_FACTS,
-            opponent_record="8-1",
+            opponent_wins="8",
+            opponent_losses="1",
             verdict="Their run front is the weakness",
             evidence="They allow 5.1 yards a carry; the league average is 4.2",
             recruit="Tavian Quell",
             recruit_cost="18 of 60 weekly contacts",
         ),
-        derived_facts=(("plan_commitment", "Commit to {plan} for Saturday"),),
+        derived_facts=SHARED_COLLEGE_DERIVED + (("opponent_record", "{opponent_wins}-{opponent_losses}"),),
         tokens=_tokens(COLLEGE_TOKENS),
         programmes=_league_programmes(),
     ),
@@ -299,17 +351,20 @@ FIXTURES: dict[str, ScenarioFixture] = {
             away_score="20",
             clock="3:12",
             situation="3rd and 7",
-            field_position="Wexmoor 34",
+            field_position_yard="34",
             direction="Attacking right",
             call="Inside zone",
+            call_duration="18 seconds",
             call_cost="Passing tendency rises next drive",
+            rivalry_name="The Iron Lantern",
+            rivalry_meeting="67th meeting",
             last_save_time="14:32",
             final_home_score="24",
         ),
-        derived_facts=(
+        derived_facts=SHARED_COLLEGE_DERIVED + (
             ("last_save", "{week}, {last_save_time}"),
             ("match_result", "{college_programme} {final_home_score}, {college_opponent} {away_score}"),
-            ("plan_commitment", "Commit to {plan} for Saturday"),
+            ("field_position", "{college_opponent} {field_position_yard}"),
         ),
         tokens=_tokens(COLLEGE_TOKENS),
     ),
@@ -342,9 +397,8 @@ FIXTURES: dict[str, ScenarioFixture] = {
             SHARED_PRO_FACTS,
             decline_cost="The offer closes this week",
         ),
-        derived_facts=(
+        derived_facts=SHARED_COLLEGE_DERIVED + (
             ("promotion_cost", "Leave {college_programme} after the bowl"),
-            ("plan_commitment", "Commit to {plan} for Saturday"),
         ),
         tokens=_tokens(PRO_TOKENS),
     ),
@@ -356,7 +410,7 @@ FIXTURES: dict[str, ScenarioFixture] = {
             arrival_week="Preseason, Week 1",
             owner_voice="Stabilise the cap before you chase the division",
         ),
-        derived_facts=(("plan_commitment", "Commit to {plan} for Saturday"),),
+        derived_facts=SHARED_COLLEGE_DERIVED,
         tokens=_tokens(PRO_TOKENS),
     ),
 }
@@ -365,7 +419,18 @@ FIXTURES: dict[str, ScenarioFixture] = {
 FLOW_STATES: dict[str, frozenset[str]] = {
     "accessibility": frozenset({"ax5-inbox", "ax5-game-plan"}),
     "appearance": frozenset({"dark-floor", "light-floor", "dark-ceiling", "light-ceiling"}),
-    "broadcast": frozenset({"college-regular", "college-elimination", "college-final", "pro-regular", "pro-final"}),
+    "broadcast": frozenset(
+        {
+            "college-regular",
+            "college-rivalry",
+            "college-conference-championship",
+            "college-playoff",
+            "college-final",
+            "pro-regular",
+            "pro-elimination",
+            "pro-final",
+        }
+    ),
     "career": frozenset({"job-security", "job-security-ax5"}),
     "components": frozenset({"state-inventory"}),
     "draft": frozenset({"live-pick", "background-paused", "foreground-resumed", "user-selection", "expiry-auto-pick"}),
@@ -493,12 +558,50 @@ LIVE_FLOW_STATES = frozenset(
         ("system", "advancing-week"),
         ("components", "state-inventory"),
         ("broadcast", "college-regular"),
-        ("broadcast", "college-elimination"),
+        ("broadcast", "college-rivalry"),
+        ("broadcast", "college-conference-championship"),
+        ("broadcast", "college-playoff"),
         ("broadcast", "college-final"),
         ("broadcast", "pro-regular"),
+        ("broadcast", "pro-elimination"),
         ("broadcast", "pro-final"),
     }
 )
+
+
+MATCH_LIFECYCLE: dict[str, LifecycleBadge] = {
+    "live": LifecycleBadge("LIVE", True),
+    "awaiting-input": LifecycleBadge("DECISION", True),
+    "background-paused": LifecycleBadge("PAUSED", False),
+    "foreground-resumed": LifecycleBadge("RESUMED", True),
+    "resolved-deferred": LifecycleBadge("RESOLVED", False),
+    "exit": LifecycleBadge("EXIT", False),
+    "resumable-return": LifecycleBadge("RESUME", False),
+    "aftermath": LifecycleBadge("FINAL", False),
+}
+
+
+DRAFT_LIFECYCLE: dict[str, LifecycleBadge] = {
+    "live-pick": LifecycleBadge("ON CLOCK", True),
+    "background-paused": LifecycleBadge("PAUSED", False),
+    "foreground-resumed": LifecycleBadge("RESUMED", True),
+    "user-selection": LifecycleBadge("SELECTED", False),
+    "expiry-auto-pick": LifecycleBadge("AUTO-PICK", False),
+}
+
+
+BROADCAST_OCCASIONS: dict[str, BroadcastOccasion] = {
+    "college-regular": BroadcastOccasion("college", "regular", "SATURDAY"),
+    "college-conference-championship": BroadcastOccasion("college", "elimination", "CONFERENCE CHAMPIONSHIP"),
+    "college-playoff": BroadcastOccasion("college", "elimination", "PLAYOFF"),
+    "college-final": BroadcastOccasion("college", "final", "NATIONAL CHAMPIONSHIP"),
+    "pro-regular": BroadcastOccasion("pro", "regular", "SUNDAY"),
+    "pro-elimination": BroadcastOccasion("pro", "elimination", "PLAYOFF"),
+    "pro-final": BroadcastOccasion("pro", "final", "LEAGUE CHAMPIONSHIP"),
+}
+
+
+BROADCAST_RIVALRY = BroadcastOccasion("college", "regular", "RIVALRY WEEK")
 
 
 BANNED_FRAME_VOCABULARY = (
