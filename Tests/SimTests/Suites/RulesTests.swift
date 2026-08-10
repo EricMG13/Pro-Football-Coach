@@ -66,6 +66,15 @@ func runRulesTests() {
     }
 
     suite("College rules") {
+        test("college first-down restarts are a tier-specific clock rule") {
+            expect(CollegeClockRules.clockStopsOnFirstDownInsideTwoMinutes,
+                   "college must stop the clock after an inside-two-minute first down")
+            expect(!ProClockRules.clockStopsOnFirstDownInsideTwoMinutes,
+                   "pro must keep the clock running after an inside-two-minute first down")
+            expectEqual(CollegeClockRules.readyForPlaySeconds, 18,
+                        "college's ready-for-play charge must stay at the documented 18 seconds")
+        }
+
         test("the league is 134 programmes in 10 conferences") {
             expectEqual(CollegeRules.programmeCount, 134)
             expectEqual(CollegeRules.conferenceCount, 10)

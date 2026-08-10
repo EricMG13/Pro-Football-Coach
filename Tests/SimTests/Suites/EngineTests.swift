@@ -939,6 +939,12 @@ func runGameLoopTests() {
                            preSnapSeconds: play.preSnapSeconds, outcome: play.outcome,
                            callInTriggers: [])
             } != base, "the fingerprint ignores the call-in triggers")
+            expect(rebuilt { play in
+                PlayRecord(situation: play.situation, offensiveCall: play.offensiveCall,
+                           defensiveCall: play.defensiveCall,
+                           preSnapSeconds: play.preSnapSeconds + 1, outcome: play.outcome,
+                           callInTriggers: play.callInTriggers)
+            } != base, "the fingerprint ignores pre-snap clock charges")
             expect(GameRecord(homeScore: game.homeScore, awayScore: game.awayScore,
                               drives: game.drives, tier: .college).playByPlayFingerprint != base,
                    "the fingerprint ignores the tier")
@@ -970,6 +976,96 @@ func runGameLoopTests() {
                                                    from: try SaveEnvelope.encode(game))
             expectEqual(restored, game)
             expectEqual(restored.playByPlayFingerprint, game.playByPlayFingerprint)
+        }
+
+        test("a schema-1 save without pre-snap charges remains readable") {
+            let game = GameEngine.play(tier: .college, home: home, away: away, seed: 99)
+            let currentEnvelope = try SaveEnvelope.encode(game)
+            let header = Data(currentEnvelope.prefix(SaveEnvelope.headerLength))
+            let body = try JSONSerialization.jsonObject(
+                with: currentEnvelope.dropFirst(SaveEnvelope.headerLength)
+            )
+
+            func removingPreSnapSeconds(from value: Any) -> Any {
+                if var object = value as? [String: Any] {
+                    object.removeValue(forKey: "preSnapSeconds")
+                    return object.mapValues(removingPreSnapSeconds)
+                }
+                if let array = value as? [Any] {
+                    return array.map(removingPreSnapSeconds)
+                }
+                return value
+            }
+
+            var legacyEnvelope = header
+            legacyEnvelope.append(try JSONSerialization.data(
+                withJSONObject: removingPreSnapSeconds(from: body), options: [.sortedKeys]
+            ))
+            expectEqual(try SaveEnvelope.schemaVersion(ofHeader: legacyEnvelope),
+                        SaveEnvelope.currentSchemaVersion,
+                        "the fixture must retain the schema-1 header")
+
+            let restored = try SaveEnvelope.decode(GameRecord.self, from: legacyEnvelope)
+            let expected = GameRecord(
+                homeScore: game.homeScore,
+                awayScore: game.awayScore,
+                drives: game.drives.map { drive in
+                    DriveRecord(
+                        offense: drive.offense,
+                        plays: drive.plays.map { play in
+                            PlayRecord(
+                                situation: play.situation,
+                                offensiveCall: play.offensiveCall,
+                                defensiveCall: play.defensiveCall,
+                                preSnapSeconds: 0,
+                                outcome: play.outcome,
+                                callInTriggers: play.callInTriggers
+                            )
+                        },
+                        ending: drive.ending,
+                        pointsScored: drive.pointsScored,
+                        startYardLine: drive.startYardLine
+                    )
+                },
+                tier: game.tier
+            )
+            expectEqual(restored, expected,
+                        "legacy schema-1 body did not preserve game data with zero pre-snap charges")
+            expect(restored.plays.allSatisfy { $0.preSnapSeconds == 0 },
+                   "a decoded legacy play retained a non-zero pre-snap charge")
+        }
+
+        test("a schema-1 save rejects a null pre-snap charge") {
+            let game = GameEngine.play(tier: .college, home: home, away: away, seed: 99)
+            let currentEnvelope = try SaveEnvelope.encode(game)
+            let header = Data(currentEnvelope.prefix(SaveEnvelope.headerLength))
+            let body = try JSONSerialization.jsonObject(
+                with: currentEnvelope.dropFirst(SaveEnvelope.headerLength)
+            )
+
+            func nullingPreSnapSeconds(in value: Any) -> Any {
+                if var object = value as? [String: Any] {
+                    if object["preSnapSeconds"] != nil {
+                        object["preSnapSeconds"] = NSNull()
+                    }
+                    return object.mapValues(nullingPreSnapSeconds)
+                }
+                if let array = value as? [Any] {
+                    return array.map(nullingPreSnapSeconds)
+                }
+                return value
+            }
+
+            var malformedEnvelope = header
+            malformedEnvelope.append(try JSONSerialization.data(
+                withJSONObject: nullingPreSnapSeconds(in: body), options: [.sortedKeys]
+            ))
+            do {
+                _ = try SaveEnvelope.decode(GameRecord.self, from: malformedEnvelope)
+                expect(false, "an explicit null pre-snap charge decoded as a legacy missing key")
+            } catch DecodingError.valueNotFound {
+                // Expected: only an absent schema-1 key receives the legacy zero default.
+            }
         }
     }
 }

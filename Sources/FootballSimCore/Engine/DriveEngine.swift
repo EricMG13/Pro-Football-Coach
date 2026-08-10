@@ -27,6 +27,24 @@ public struct PlayRecord: Codable, Sendable, Equatable {
         self.outcome = outcome
         self.callInTriggers = callInTriggers
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case situation, offensiveCall, defensiveCall, preSnapSeconds, outcome, callInTriggers
+    }
+
+    /// Schema 1 predates the pre-snap charge field. Its envelope version cannot distinguish those
+    /// bodies, so a missing key is the legacy representation rather than malformed game data.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        situation = try container.decode(Situation.self, forKey: .situation)
+        offensiveCall = try container.decode(OffensiveCall.self, forKey: .offensiveCall)
+        defensiveCall = try container.decode(DefensiveCall.self, forKey: .defensiveCall)
+        preSnapSeconds = try container.contains(.preSnapSeconds)
+            ? container.decode(Int.self, forKey: .preSnapSeconds)
+            : 0
+        outcome = try container.decode(SnapOutcome.self, forKey: .outcome)
+        callInTriggers = try container.decode([CallInTrigger].self, forKey: .callInTriggers)
+    }
 }
 
 /// How a drive ended.
