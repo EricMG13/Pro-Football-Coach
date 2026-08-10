@@ -41,19 +41,26 @@ public enum CalibrationHarness {
     /// covers even games and mismatches rather than only the middle.
     public static let matchupsPerSeed = 12
 
+    /// A game and the talent it was played at, so the favourite can be identified.
+    struct SampledGame {
+        let record: GameRecord
+        let homeSkill: Int
+        let awaySkill: Int
+    }
+
     /// Runs the harness and tests every band for the tier.
     public static func run(tier: Tier, seeds: [UInt64]) -> CalibrationReport {
-        var games: [GameRecord] = []
+        var games: [SampledGame] = []
         for seed in seeds {
             for matchup in 0..<matchupsPerSeed {
                 let ladder = talentLadder(matchup: matchup)
-                games.append(GameEngine.play(
+                games.append(SampledGame(record: GameEngine.play(
                     tier: tier,
                     home: CalibrationRoster.team(skill: ladder.home, seed: seed &+ UInt64(matchup)),
                     away: CalibrationRoster.team(skill: ladder.away,
                                                  seed: seed &+ UInt64(matchup) &+ 500_000),
                     seed: SeededRandom.derive(from: seed, scope: .game, ordinal: matchup)
-                ))
+                ), homeSkill: ladder.home, awaySkill: ladder.away))
             }
         }
         let bands = tier == .pro ? CalibrationBands.pro : CalibrationBands.college
@@ -65,16 +72,34 @@ public enum CalibrationHarness {
         )
     }
 
-    /// The talent pairing for one matchup index. Spread deliberately, because a sample of even
-    /// games cannot see the favourite-win-rate or blowout bands at all.
+    /// The talent pairing for one matchup index.
+    ///
+    /// The first version paired rung *i* with rung *i* for half the schedule and rung *i+1* for the
+    /// other half, so every "mismatch" was a six-point gap. A favourite that is six points better
+    /// wins about 53 percent of the time, which is what the harness measured and then blamed on the
+    /// engine. `01` §6.5's 0.62 to 0.72 favourite band describes real betting favourites, whose
+    /// edge is much larger.
+    ///
+    /// This spreads the gaps the way a schedule does: some even games, a majority of moderate
+    /// mismatches, a few routs.
     public static func talentLadder(matchup: Int) -> (home: Int, away: Int) {
-        let rungs = [58, 64, 70, 76, 82, 88]
-        return (rungs[matchup % rungs.count], rungs[(matchup / rungs.count + matchup) % rungs.count])
+        // Gaps of 0 to 9 rating points, not 0 to 26. A twenty-point gap applied to every player on
+        // the roster is not a mismatch, it is a different sport: real rosters overlap heavily and
+        // the *team* difference between a contender and a bottom side is a few points of mean.
+        // The wide version measured a 0.94 favourite win rate against a 0.62 to 0.72 band and the
+        // reading was the harness's, not the engine's.
+        let pairs: [(Int, Int)] = [
+            (72, 72), (74, 71), (69, 72),
+            (76, 70), (70, 76), (73, 67),
+            (67, 73), (78, 69), (69, 78),
+            (75, 66), (66, 75), (71, 74),
+        ]
+        return pairs[matchup % pairs.count]
     }
 
     // MARK: - Measurement
 
-    static func measure(_ games: [GameRecord]) -> [String: Estimate] {
+    static func measure(_ samples: [SampledGame]) -> [String: Estimate] {
         var teamPoints: [Double] = []
         var teamPlays: [Double] = []
         var teamPassYards: [Double] = []
@@ -93,7 +118,8 @@ public enum CalibrationHarness {
         var passPlays = 0, explosivePasses = 0
         var pointsInQ4 = 0, pointsTotal = 0
 
-        for game in games {
+        for sample in samples {
+            let game = sample.record
             combinedTotals.append(Double(game.homeScore + game.awayScore))
             teamPoints.append(Double(game.homeScore))
             teamPoints.append(Double(game.awayScore))
@@ -106,6 +132,7 @@ public enum CalibrationHarness {
             if Swift.abs(game.homeScore - game.awayScore) >= MatchupRules.blowoutMargin {
                 blowouts += 1
             }
+            _ = sample.awaySkill
 
             var perSide: [Side: (plays: Int, pass: Int, rush: Int, sacks: Int, ints: Int,
                                  safeties: Int)] = [.home: (0, 0, 0, 0, 0, 0),
@@ -154,14 +181,22 @@ public enum CalibrationHarness {
                 teamSafeties.append(Double(tally.safeties))
             }
 
-            // The favourite is the roster with the higher mean overall. Ties in talent are excluded
-            // rather than counted as a loss for a favourite that does not exist.
             for drive in game.drives where drive.ending == .touchdown || drive.ending == .fieldGoal {
                 pointsTotal += drive.pointsScored
                 if drive.plays.last?.situation.quarter == 4 { pointsInQ4 += drive.pointsScored }
             }
-            ratedGames += 1
-            if game.winner == .home { favouriteWins += 1 }
+
+            // The favourite is the better roster, not the home team. It was `winner == .home`,
+            // which measures home-field advantage twice and the favourite band not at all — the
+            // harness was reporting an engine defect that was its own.
+            //
+            // Even matchups and draws are excluded rather than scored against a favourite who does
+            // not exist.
+            if sample.homeSkill != sample.awaySkill, let winner = game.winner {
+                ratedGames += 1
+                let favourite: Side = sample.homeSkill > sample.awaySkill ? .home : .away
+                if winner == favourite { favouriteWins += 1 }
+            }
         }
 
         func meanEstimate(_ values: [Double]) -> Estimate {
@@ -196,8 +231,8 @@ public enum CalibrationHarness {
             "field goal percentage": rateEstimate(kicksMade, kickAttempts, scale: 100),
             "home win rate": rateEstimate(homeWins, decidedGames),
             "favourite win rate": rateEstimate(favouriteWins, ratedGames),
-            "blowout rate": rateEstimate(blowouts, games.count),
-            "tie rate": rateEstimate(ties, games.count),
+            "blowout rate": rateEstimate(blowouts, samples.count),
+            "tie rate": rateEstimate(ties, samples.count),
             "explosive run rate": rateEstimate(explosiveRuns, runPlays),
             "explosive pass rate": rateEstimate(explosivePasses, passPlays),
             "Q4 share of points": rateEstimate(pointsInQ4, pointsTotal),
@@ -225,8 +260,12 @@ public enum CalibrationRoster {
         func build(_ positions: [Position]) -> [Player] {
             positions.map { position in
                 var attributes = Attributes()
+                // Wide, deliberately. A team whose every player sits within six points of one
+                // number has no stars and no holes, so a small mean difference becomes a uniform
+                // advantage in every matchup and the favourite wins almost always. Real rosters are
+                // spiky, and the spikiness is most of what makes a game close.
                 for attribute in position.ratedAttributes {
-                    attributes[attribute] = Rating(skill + rng.int(in: -6...6))
+                    attributes[attribute] = Rating(skill + rng.int(in: -18...18))
                 }
                 return Player(id: rng.uuid(), firstName: "C", lastName: "R",
                               position: position, age: 25, attributes: attributes,

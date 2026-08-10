@@ -109,7 +109,13 @@ public struct BaselinePlayCaller: PlayCaller, Sendable {
         // Mixing is driven by the situation rather than by a coin, so the caller stays a pure
         // function of state and consumes no draws — the drive loop's snap seed is the only
         // randomness, which is what keeps a replay exact.
-        if !hurrying, situation.down <= 2, situation.distance <= MatchupRules.runningDownDistance {
+        // Mixed, not "always run on an early down". Running every first-and-ten put the harness at
+        // 231 rush yards and 50 pass yards per team-game — a caller with one play again, just a
+        // different one. The mix is a function of the situation so it stays pure and consumes no
+        // draws; the drive loop's snap seed is the only randomness.
+        let runsThisDown = (situation.yardLine + situation.down) % 2 == 0
+        if !hurrying, runsThisDown, situation.down <= 2,
+           situation.distance <= MatchupRules.runningDownDistance {
             return OffensiveCall(playType: .run,
                                  runGap: RunGap.allCases[situation.yardLine % RunGap.allCases.count],
                                  tempo: .normal)
