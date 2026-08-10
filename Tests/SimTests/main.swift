@@ -3,5 +3,6 @@ runSeededRandomTests()
 runSeedDerivationTests()
 runContractTests()
 runSaveEnvelopeTests()
+runRulesTests()
 
 TestKit.finish()

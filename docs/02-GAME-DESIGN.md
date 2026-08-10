@@ -226,7 +226,66 @@ stakeholder, set a plan, made ~25 calls, seen a consequence, and been given a re
 
 ---
 
-## 11. What v1 does not include
+## 11. League structure and rules constants
+
+`CLAUDE.md` puts league structure here rather than in itself, and the doc-first amendment rule says a
+number gets written down before it is coded. **Added 2026-08-10 by P1**, which needed them and found
+them unspecified. Everything below is a design constant and lives in a rules module.
+
+These are rules *of the sport* and structural choices about this game's fictional leagues. No
+conference, division, programme or team name appears here — those are generated (§8) and guarded by
+the legal tests.
+
+### 11.1 The college tier
+
+| Constant | Value | Why |
+|---|---|---|
+| Programmes | 134 | D14, with the D3/D4 fallback to 64 if P5's ceiling cannot be met |
+| Conferences | 10, of 12 to 16 programmes, summing to 134 | Enough for realignment (§8) to change the map without churning it |
+| Regular season | 13 weeks: 12 games and 1 bye | §2.3 |
+| Conference championships | week 14 | §2.3 |
+| Bracket | 8 teams, 3 rounds, weeks 15 to 17 | §2.3's ~17 weeks, exactly |
+| Season length | 17 weeks | The sum of the four rows above |
+| Scholarships | 85 | The sport's limit. Soak-asserted per programme (`03` §6) |
+| Initial signings per class | 25 | §4.3's "~25 signings" made exact |
+| Roster limit | 105 | Scholarship players plus walk-ons |
+| Eligibility | 4 seasons of competition within a 5-year clock | The redshirt year is the difference, and §4.1's redshirt decision is what spends it |
+| Portal windows | two: after the bracket, and in spring | §4.1 |
+
+### 11.2 The pro tier
+
+| Constant | Value | Why |
+|---|---|---|
+| Teams | 32 | 2 conferences of 16, each 4 divisions of 4 |
+| Regular season | 18 weeks: 17 games and 1 bye | §2.3 |
+| Bracket | 8 teams, 4 per conference, 3 rounds, weeks 19 to 21 | §2.3's ~21 weeks, exactly. No first-round bye, so the bracket is a clean three rounds |
+| Season length | 21 weeks | The sum of the two rows above |
+| Active roster | 53 | Gameday active 48 |
+| Practice squad | 16 | P8's cap-laundering defences apply here specifically |
+| Salary cap | 255,000,000 integer dollars, growing 7 percent a year | Integer dollars, never floating point |
+| Signing-bonus proration | over the contract's length, capped at 5 years | The mechanism dead money comes from |
+| Draft | 7 rounds of 32 picks, 224 total | |
+
+### 11.3 Shared
+
+| Constant | Value | Why |
+|---|---|---|
+| Rating range | 40 to 99, `Int` | §5 |
+| Potential range | 40 to 99, `Int`, hidden | §5 |
+| Call-ins per game | 25 default, 12 to 40 tunable | §3.1 |
+| Coordinators | 4 | §6 |
+| Stakeholder groups | 4 | §7 |
+| Programme archetypes | 14 | §8 |
+
+### 11.4 What is deliberately not fixed here
+
+Conference *composition* is generated per league, not listed — a fixed table would make every save's
+map identical and defeat §8. The same goes for divisions inside the pro conferences. The rules module
+carries the *shape* (10 conferences, sizes 12 to 16, summing to 134) and generation fills it.
+
+---
+
+## 12. What v1 does not include
 
 Stated so scope creep has something to bounce off: no multiplayer, no online anything, no custom
 roster import/export (escalated to counsel in `01-RESEARCH.md` §6.2B §3.2 and not planned), no
