@@ -145,11 +145,66 @@ fourth elevation is not a value someone can add later; it needs a fourth surface
 
 ---
 
+### 2.4 Broadcast packages
+
+Added 2026-08-10 by owner direction: pro, college, playoff and championship games should look
+different from one another, the way two networks covering the same sport look different. This also
+answers a review finding — that after promotion the app looked identical, so the tier change was a
+label rather than an event.
+
+`02` §11 gives **seven** broadcast occasions across the two tiers. Seven bespoke packages is seven
+things to maintain, so the system is two axes instead:
+
+**House — who is playing.** The primary channel is **geometry, not colour**. College furniture is cut
+at **9°**; pro furniture is **orthogonal**. Accents are bronze `#D9A441` and steel `#7FB2E5`.
+
+> **The two accents measure 1.01:1 against each other.** Near-identical luminance — in greyscale, or
+> to a monochromat, they are the same colour. That is survivable *only* because geometry carries the
+> distinction and colour is secondary. A house system separated by hue alone would fail §2.1's
+> never-only-colour rule outright, and this one was measured rather than assumed.
+
+**Escalation — what is at stake.** Additive and monotonic: each step adds furniture and never
+rearranges it, so the championship bug is read with the regular-season bug's learned layout.
+
+| Escalation | Bug height | Frame | Occasion tag |
+|---|---|---|---|
+| Regular | 44 pt | none | none |
+| Elimination | 48 pt | 2 pt top rule | round name |
+| Final | 52 pt | full accent frame + corner marks | title lockup |
+
+**Modifier — rivalry**, regular season only: a paired seam in both programmes' secondaries plus the
+generated rivalry name and meeting count. P2 already seeds eight rivalries per programme and nothing
+has ever displayed one.
+
+**The occasion-to-package mapping is a rules constant**, in the per-tier rules module with every
+other constant, never a branch in a view. Seven occasions, six combinations, about ten values.
+
+**No in-fiction broadcaster is named.** A network name is a fresh trade-mark collision surface for no
+mechanical gain, so the houses are named for the tier. Branded networks go to counsel first.
+
+---
+
 ## 3. Components
 
 `Card`, `Row`, `StatCell`, `Chip`, `Meter`, `Badge`, `SegmentedControl`, `PrimaryButton`,
 `DestructiveButton`, `InboxItem`, `CallInCard`, `FieldCanvas`, `EmptyState`, `ErrorBanner`,
-`OpposedBar`, `Sparkline`, `LowerThird`.
+`OpposedBar`, `Sparkline`, `LowerThird`, **`ScoreBug`**, **`StakeholderCard`**.
+
+**Nineteen as of 2026-08-10.** The last two were added by the design pass:
+
+- **`ScoreBug`** — three variants: full (match view), compact (league readouts, aftermath, career
+  line) and live (elsewhere while a match runs). Team-coloured segments either side of a black score
+  block, so it is legible against any generated pair. It takes a §2.4 package. v1 assembled this
+  ad hoc from `StatCell`s on each surface, which is how it ended up grey and how it would drift.
+- **`StakeholderCard`** — `02` §7's four groups, in voice. Initials disc, name, role, group index,
+  and quoted speech against a rule in the speaker's colour, so the speaker is identifiable before
+  the name is read. §7 required the voices to be *"distinct enough to be recognised without a name
+  attached"* and the registry had nothing to say them with.
+
+**Every component declares a register**: BROADCAST (radius 0, team-filled, tabular numerals, lives
+over the field) or DESK (radius `m`, neutral surfaces, team colour as a single stroke). §2.3's
+per-component radius assignment is subordinate to this — a rounded score bug is as wrong as a square
+inbox row.
 
 Each is registered in a **component registry** that the contract tests enumerate. A component not in
 the registry cannot ship, which is what makes "by construction" true rather than aspirational.
@@ -200,6 +255,23 @@ the design system. Raised against P2's `ColourGenerator`.
 
 Grouped by tab. Each declares DESTINATION or READOUT.
 
+**The entry sequence.** Added 2026-08-10. The review found that **the app had no specified entry
+point** — every row below assumed a coach already in post, mid-season, with a team, while `02` §10
+requires the first fifteen minutes to end with the player having *chosen a job with visible stakes,
+met a stakeholder, set a plan, made ~25 calls and seen a consequence.* Choosing a job is a screen.
+None of these existed, and `02` §9 says plainly that *"what sells the game is the first hour"*.
+
+| Screen | Class | Notes |
+|---|---|---|
+| Title | DESTINATION | One save, so a **Continue** card carrying the career's real state, not a slot picker. "Start a new career" is the most dangerous control in the product — it destroys a career that may be twenty seasons old, and §3's destructive rule applies in full: confirmed, and labelled with what is lost |
+| The board | DESTINATION | Three open programmes, each with roster, resources, expectation and patience stated **before** the choice. Passes §2.2: two defensible answers, a visible consequence, a cost — the other two jobs are gone |
+| The offer | DESTINATION | Terms restated, accept or go back |
+| The appointment | READOUT + handoff | First `StakeholderCard`, in voice. Full-bleed `team.primary` — the moment the player becomes this programme's coach, and the only full-bleed team surface outside the match |
+| Settings | DESTINATION | Reachable from Title and from Career. Owns the D1 tunables (`02` §11.3, call-ins 12–40), appearance, and the save. **Canon contained zero mentions of a settings screen before this row** |
+
+Then the tabbed set below, entered at week one. Onboarding does not add screens beyond these — D9
+teaches through the first real week, so first-run state rides on the ordinary week surfaces.
+
 | Tab | Screen | Class |
 |---|---|---|
 | **Week** | Inbox | DESTINATION — the week's inbound events |
@@ -241,18 +313,42 @@ written, and the design pass found both:
 
 1. **A management screen keeps its status bar, so the budget is 347 pt, not 369.** That is 22 pt off
    every two-pane screen, and it is not slack: the Inbox rail is full at **four** items in 347 pt,
-   and Roster shows **six** rows at 812, not seven. §5.2's field arithmetic is unaffected only
+   and Roster shows **seven** rows at the 844 floor (the six-row case was the mini, now dropped —
+   §4.1). §5.2's field arithmetic is unaffected only
    because the match view hides the status bar — see there.
 2. **The two-pane chassis does not hold at AX5.** It holds at 844 at default type. At AX5 two option
    cards cannot sit side by side, and the correct behaviour is that **the pane falls to a single
    scrolling column** — a stated reduction, not a squeeze. This is the chassis rule, not a per-screen
    workaround.
 
-**Design at 812 first and let 844 have the surplus.** At the mini class the detail pane drops to
-216 pt, and what it loses is not a row — it is the explanatory clause. "Suspension pending" survives;
-"the AD is waiting on you" does not, and the glyph legend that fits at 844 does not fit at all. A row
-is the cheap loss. The expensive one is the detail pane ceasing to be able to explain itself, which
-is the entire reason the second pane exists.
+### 4.1 The supported device set
+
+**Owner decision, 2026-08-10: the SE and mini classes are out of the design budget.** The floor is the
+standard iPhone at 844 × 390 landscape; the ceiling is Plus / Pro Max at 932 × 430. Design at the
+floor and let the ceiling have the surplus.
+
+This is a good trade and it buys three specific things. The management budget rises from 332 pt to
+**347 pt**; the detail pane stops dropping to 216 pt, where it lost its explanatory clauses and its
+glyph legend and therefore stopped being able to explain itself; and the field scale range collapses
+to 6.54–7.28 pt/yd, an 11 % spread, instead of 5.56–6.54.
+
+**Three things it does not buy, stated because two of them read as if it should.**
+
+1. **It does not remove the size-class split.** The standard and Pro classes are **compact** width in
+   landscape; Plus and Pro Max are **regular**. That boundary runs through the middle of the
+   *supported* set, not between supported and dropped, so §4's two-pane chassis still must not be a
+   `NavigationSplitView` on defaults and both classes are still rendered in test.
+2. **It does not remove the AX5 constraint.** 369 pt of height at the largest accessibility size is
+   the binding case and always was; the dropped devices were 15 pt worse, not categorically worse.
+3. **It does not remove SE and mini from the install base, and it cannot.** There is no App Store
+   mechanism to exclude a device by screen size — `UIRequiredDeviceCapabilities` has no such key —
+   and every dropped device runs the deployment target. So an SE owner can still install this app.
+   **The obligation therefore changes rather than disappearing:** those devices get no bespoke design
+   work, no layout tuned for them, and no gate, but they must still *run* — no clipped controls, no
+   unreachable primary action. `SmallestDeviceLayoutTest` is re-pointed at 844 × 390 as the design
+   floor and keeps a separate, weaker assertion at 667 × 375: **controls reachable, nothing
+   off-screen, appearance not guaranteed.** A phase that deletes the weaker assertion rather than
+   demoting it has turned a design decision into a crash report.
 
 **Landscape's three costs, named so they are designed for rather than discovered.**
 
@@ -272,11 +368,33 @@ cannot be a `NavigationSplitView` left to its own defaults: that control collaps
 at compact width, which is most of the range, and the layout would then be correct only on the
 largest phones. The two panes are laid out explicitly and both size classes are rendered in test.
 
-**Navigation has a ceiling, and the ceiling is the point.** Five tabs; every destination reachable
-in at most two taps from its tab root. If this game ever needs a search field over its own screens,
+**Navigation has a ceiling, and the ceiling is the point.** Five destinations; every screen reachable
+in at most two taps from its root. If this game ever needs a search field over its own screens,
 or a user-configurable shortcut manager, the architecture has failed rather than matured — both
 appear in the reference set and both are symptoms (`01-RESEARCH.md` §6.6 §4.3). The screen list
 above is a budget, not a starting point.
+
+### 4.2 The destination bar
+
+Owner decision, 2026-08-10: **bottom**. Specified here because "five tabs" was the entire previous
+spec, which left the most expensive layout decision in the product to a SwiftUI default.
+
+- **Bottom, 44 pt, icon beside label rather than under it.** The stock arrangement stacks label under
+  icon and needs ~49 pt. Landscape has width to spare and height to save, so the pair goes
+  horizontal and the bar lands on 44 — the touch floor exactly, not a point more.
+- **The active destination is marked on the bar's top edge**, a 2 pt `live` rule. A bottom marker
+  would collide with the home indicator.
+- **Hidden in the broadcast register.** The match view is full-bleed and §5.2's arithmetic already
+  assumes all 369 pt; leaving the bar up would clip the field by 44 and break the whole-field claim.
+
+**The cost, stated because every screen in §4 inherits it.** 390 − 22 status − 44 bar − 21 home
+indicator = **303 pt of content, 78 % of the screen.** At 44 pt rows that is **6, down from 7**; at
+AX5, where a row runs ~65 pt, it is **4, down from 5**. Losing a fifth of the scarce axis to
+navigation is the real price of a bottom bar in landscape and it should be paid knowingly.
+
+**They are destinations, not tabs, and the distinction earns its word.** One position mutates:
+**Recruit becomes Front office on promotion**, changing label, icon and contents mid-career. "Tab
+bar" implies fixed furniture and invites a builder to hard-code five cases.
 
 ---
 
@@ -302,15 +420,19 @@ pan during a play and no recentring between snaps, because there is nothing to r
 **2.250 : 1**. A landscape iPhone is **2.164 : 1**. The field is *slightly* more elongated than the
 screen, so fitting its length to the long axis leaves room to spare on the short one:
 
-| Device | Usable canvas after safe areas | Scale at full 120 yd | Field width | Spare height |
-|---|---|---|---|---|
-| Base iPhone (844 × 390) | 785 × 369 | **6.54 pt/yd** | 349 pt | 20 pt |
-| Mini class (812 × 375) | 753 × 354 | **6.28 pt/yd** | 335 pt | **19 pt** |
-| SE floor (667 × 375) | 667 × 375 | **5.56 pt/yd** | 296 pt | 79 pt |
+**The supported set, narrowed by the owner on 2026-08-10: no SE, no mini.** The design floor is the
+standard iPhone at 844 × 390. See §4.1 for what that does and does not buy.
 
-DERIVED. **The two floors are different devices**, which is worth knowing before a layout is drawn:
-the mini is the binding case for **spare height** at 19 pt, and the SE — no sensor housing, no home
-indicator, so no insets to subtract — is the binding case for **scale** at 5.56 pt/yd. Both fit.
+| Device | Usable canvas after safe areas | Scale at full 120 yd | Field height | Spare |
+|---|---|---|---|---|
+| **Floor** — standard (844 × 390) | 785 × 369 | **6.54 pt/yd** | 349 pt | 20 pt |
+| Pro (852 × 393) | 793 × 372 | 6.61 pt/yd | 352 pt | 20 pt |
+| **Ceiling** — Plus / Pro Max (932 × 430) | 873 × 409 | 7.28 pt/yd | 388 pt | 21 pt |
+
+DERIVED. The range is now narrow and well behaved: **6.54 to 7.28 pt/yd, an 11 % spread**, with the
+spare height essentially constant at 20 pt because every supported device carries the same sensor
+housing and home-indicator insets. The two awkward cases are gone — the mini's 19 pt clearance and
+the SE's 5.56 pt/yd both left the set with the devices that produced them.
 
 **And the match view therefore hides the status bar.** Established 2026-08-10 when the design pass
 found that management screens keep theirs (§4). Recomputed with a 22 pt status bar visible, the
@@ -343,6 +465,12 @@ against portrait's ~8.4 pt. Same order of magnitude, so `01-RESEARCH.md` §6.3's
 unaltered: **individually numbered marks on the two lines remain geometrically impossible**, the
 seven-man line is drawn as one shape rather than seven marks, and nothing inside the match `Canvas`
 is individually tappable. Orientation bought field coverage. It bought nothing on local clustering.
+
+**The §2.4 package is a parameter, not a variant.** The match view is drawn once and takes a house
+and an escalation. Because the bug overlays rather than stacks, the field arithmetic above is
+unchanged at every escalation — the Final package's 52 pt bug plus its 18 pt title bar sits over the
+field's dead margin, not above it. A package that pushed the field down would eat the 20 pt clearance
+and clip it; that is the constraint the overlay rule exists to protect.
 
 **Chrome overlays the field; it does not take a slice of it.** The numbers above assume the canvas
 gets the whole usable rectangle. A side rail that reserved 120 pt would drop the SE to 4.56 pt/yd,
@@ -425,7 +553,7 @@ Binding, tested, and enumerated by construction.
 | Reduce Motion | Every animation has a defined reduced form | `ReduceMotionContractTest` |
 | VoiceOver | Every data row is one sentence; every control has a label and a hint where non-obvious | `VoiceOverLabelTest` |
 | Touch targets | 44 × 44 pt minimum | `TouchTargetTest` |
-| Smallest device | Every screen usable at the smallest supported size, no off-screen controls | `SmallestDeviceLayoutTest` |
+| Smallest device | Every screen fully designed at the **844 × 390 design floor** (§4.1); at 667 × 375, unsupported but installable, the weaker assertion holds — controls reachable, nothing off-screen, appearance not guaranteed | `SmallestDeviceLayoutTest`, two tiers |
 | Errors | Every error path terminates in a presented surface | `ErrorSurfaceTest` |
 | Reachability | Every view is reachable from the app entry point | `ReachabilityTest` |
 

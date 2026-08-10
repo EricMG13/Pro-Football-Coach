@@ -48,14 +48,14 @@ No emoji anywhere — code, copy, cards or commits.
 ## 4. The frame
 
 - **iPhone only, landscape only.** Owner decision 2026-08-10 — `04` §5.2. Cards render at
-  **844 × 390**, and every screen card is rendered again at **both** floors, because they are
-  different devices and they bind on different things (`04` §5.2): the **mini class, 812 × 375**, is
-  tightest on height at 19 pt spare, and the **SE, 667 × 375**, is tightest on scale. Safe areas are
-  not decorative here — ≈59 pt on the sensor-housing short edge, ≈21 pt on the home-indicator edge,
-  and the device rotates both ways so either short edge can be the housing one. `04` §6's
-  `SmallestDeviceLayoutTest` is a gate.
+  **844 × 390** — the design floor since the owner dropped the SE and mini classes on 2026-08-10
+  (`04` §4.1) — and again at the **932 × 430** ceiling. The supported range is now 6.54–7.28 pt/yd,
+  an 11 % spread, with spare height flat at ~20 pt. Safe areas are not decorative: ≈59 pt on the
+  sensor-housing short edge, ≈21 pt on the home-indicator edge, and the device rotates both ways so
+  either short edge can be the housing one. Do **not** design for 667 × 375; it is unsupported but
+  still installable, so it needs only the weaker assertion — reachable, not beautiful.
 - **Two size classes, not one.** This is the trap. Portrait made every iPhone compact-width;
-  landscape splits the range — Plus/Max report **regular** width, standard/SE report **compact**. A
+  landscape splits the range — Plus/Max report **regular** width, the standard and Pro classes report **compact**. The split runs through the middle of the *supported* set, so narrowing the device range did not remove it. A
   layout that only holds together on a Max is a P1. Render both.
 - **The chassis is two-pane** (`04` §4): list rail leading, detail trailing, both visible at once.
   Height is the scarce axis now — ~369 pt usable — so a single scrolling column shows five to seven

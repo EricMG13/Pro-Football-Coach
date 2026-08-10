@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><style>body{margin:0;background:#05070C;-webkit-font-smoothing:antialiased}
+.mono{font:500 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace}
+.lbl{font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:#78839A}
+.num{font-family:'SF Compact Display','SF Pro Display',-apple-system,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.card{background:#121724;border:1px solid rgba(255,255,255,.09);border-radius:12px}
+.note{font:400 11.5px/1.55 -apple-system,sans-serif;color:#A7B0C0}
+.turf{background:#22482C;position:relative;overflow:hidden}
+</style></helmet>
+
+<div style="font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;color:#F5F7FA;padding:40px 44px 72px;max-width:1740px;margin:0 auto">
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:32px;padding-bottom:22px;border-bottom:1px solid rgba(255,255,255,.12)">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="lbl">PRO FOOTBALL COACH &middot; DESIGN REFERENCE v2 &middot; GROUP: BROADCAST PACKAGES</div>
+<div style="font:700 32px/1.1 -apple-system,'SF Pro Display',sans-serif;letter-spacing:-.02em">The occasion has a look</div>
+<div style="font:400 14px/1.55 inherit;color:#A7B0C0;max-width:78ch">Owner direction: pro, college, playoffs and championships should look different from one another, the way two networks covering the same sport look different. That is right, and it solves a problem the review raised separately &mdash; that after promotion <strong style="color:#F5F7FA;font-weight:650">the app looked identical</strong>, so the tier change was a label rather than an event.</div>
+</div>
+<div style="flex:none;width:270px;display:flex;flex-direction:column;gap:9px">
+<div style="padding:11px 13px;background:rgba(255,176,38,.1);border:1px solid rgba(255,176,38,.35);border-radius:8px;font:500 11.5px/1.5 inherit;color:#FFB026">No in-fiction network is named. A broadcaster name is a fresh trade-mark collision surface for no mechanical gain, so the houses are named for the tier they cover. If branded networks are ever wanted they go to counsel first.</div>
+</div>
+</div>
+
+<!-- THE SYSTEM -->
+<div style="display:flex;align-items:baseline;gap:12px;margin:38px 0 6px"><div style="font:700 20px/1.2 inherit;letter-spacing:-.015em">1 &nbsp;Two axes, not seven packages</div><div style="font:400 13px/1.4 inherit;color:#78839A">the lazy version that covers every case in the calendar</div></div>
+<div style="font:400 13.5px/1.6 inherit;color:#A7B0C0;max-width:90ch;margin:10px 0 18px"><code class="mono">02</code> §11 gives seven distinct broadcast occasions across the two tiers. Seven bespoke packages is seven things to maintain and seven ways to drift. Instead: a <strong style="color:#F5F7FA">house</strong> (which tier is playing) crossed with an <strong style="color:#F5F7FA">escalation</strong> (what is at stake), plus one modifier. Two houses &times; three escalations covers all seven occasions from about ten token values, and a new occasion is a mapping rather than a design.</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+<div class="card" style="padding:18px 20px">
+<div class="lbl" style="margin-bottom:12px">AXIS 1 &mdash; HOUSE &middot; WHO IS PLAYING</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="border-left:3px solid #D9A441;padding-left:13px">
+<div style="font:650 14px/1.2 inherit;color:#D9A441">COLLEGE HOUSE</div>
+<div class="note" style="margin-top:5px">Warm. Furniture ends are <strong style="color:#F5F7FA">cut at 9&deg;</strong>, carrying the pennant geometry the <code class="mono">LowerThird</code> already uses. Frame accent bronze <code class="mono">#D9A441</code>. Numerals track slightly open. Occasion tags are set in small caps with wide letterspacing &mdash; the register of a programme that has done this since 1898.</div>
+</div>
+<div style="border-left:3px solid #7FB2E5;padding-left:13px">
+<div style="font:650 14px/1.2 inherit;color:#7FB2E5">PRO HOUSE</div>
+<div class="note" style="margin-top:5px">Cool. Furniture is <strong style="color:#F5F7FA">orthogonal</strong> &mdash; every edge square, no skew anywhere. Frame accent steel <code class="mono">#7FB2E5</code>. Numerals track tight. Occasion tags are set as solid blocks. The register of a television product, not an institution.</div>
+</div>
+</div>
+<div class="note" style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)"><strong style="color:#F5F7FA">Measured, and it confirms the design.</strong> Bronze <code class="mono">#D9A441</code> and steel <code class="mono">#7FB2E5</code> sit at <strong style="color:#C6F24E">1.01:1</strong> against each other — near-identical luminance. In greyscale, or to a monochromat, <em>the two house accents are the same colour.</em> That is survivable only because colour is the secondary channel here and <strong style="color:#F5F7FA">geometry is the primary one</strong>. Had the houses been distinguished by hue alone this system would fail the never-only-colour rule outright.</div><div class="note" style="margin-top:10px"><strong style="color:#F5F7FA">The skew is the tell.</strong> One geometric rule &mdash; 9&deg; or 0&deg; &mdash; separates the two houses at a glance, survives at any size, costs nothing to implement, and is legible in a screenshot without a single word. It is doing the work a logo would do, without inventing a logo.</div>
+</div>
+
+<div class="card" style="padding:18px 20px">
+<div class="lbl" style="margin-bottom:12px">AXIS 2 &mdash; ESCALATION &middot; WHAT IS AT STAKE</div>
+<table style="width:100%;border-collapse:collapse;font:400 11.5px/1.5 -apple-system,sans-serif">
+<tr style="color:#78839A"><td class="mono" style="padding:5px 0;font-size:10px">TIER</td><td class="mono" style="font-size:10px">BUG</td><td class="mono" style="font-size:10px">FRAME</td><td class="mono" style="font-size:10px">OCCASION TAG</td></tr>
+<tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:8px 0;color:#F5F7FA;font-weight:600">Regular</td><td class="num">44 pt</td><td style="color:#78839A">none</td><td style="color:#78839A">none</td></tr>
+<tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:8px 0;color:#F5F7FA;font-weight:600">Elimination</td><td class="num">48 pt</td><td style="color:#A7B0C0">2 pt top rule</td><td style="color:#A7B0C0">round name</td></tr>
+<tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:8px 0;color:#F5F7FA;font-weight:600">Final</td><td class="num">52 pt</td><td style="color:#A7B0C0">full accent frame + corner marks</td><td style="color:#A7B0C0">title lockup</td></tr>
+</table>
+<div class="note" style="margin-top:14px"><strong style="color:#F5F7FA">Escalation is additive and monotonic.</strong> Each tier adds furniture and never rearranges it, so a player who has learned the regular-season bug can read the championship bug instantly &mdash; the score, clock and situation are in the same places, with more around them. A package that moved things at the biggest moment would be at its least legible when it mattered most.</div>
+<div class="note" style="margin-top:9px"><strong style="color:#F5F7FA">Modifier &mdash; rivalry.</strong> Applies to regular-season games only, where it has something to say. Adds a tag and a paired seam in the two programmes' colours. <code class="mono">02</code> §11.3 carries 8 rivalries per programme and P2 already seeds them; this is the first surface that spends one.</div>
+</div>
+</div>
+
+<!-- THE MAPPING -->
+<div style="display:flex;align-items:baseline;gap:12px;margin:40px 0 14px"><div style="font:700 20px/1.2 inherit;letter-spacing:-.015em">2 &nbsp;Every occasion in the calendar, mapped</div><div style="font:400 13px/1.4 inherit;color:#78839A">02 §11.1 and §11.2, exhaustively &mdash; no occasion without a package</div></div>
+<div class="card" style="padding:4px 20px">
+<table style="width:100%;border-collapse:collapse;font:400 12.5px/1.5 -apple-system,sans-serif">
+<tr class="lbl"><td style="padding:11px 0">OCCASION</td><td>WEEKS</td><td>HOUSE</td><td>ESCALATION</td><td>OCCASION TAG</td></tr>
+<tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:9px 0">College regular season</td><td class="num" style="color:#A7B0C0">1&ndash;13</td><td style="color:#D9A441">College</td><td>Regular</td><td style="color:#78839A">&mdash; (or RIVALRY)</td></tr>
+<tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:9px 0">Conference championship</td><td class="num" style="color:#A7B0C0">14</td><td style="color:#D9A441">College</td><td>Elimination</td><td class="num" style="color:#D9A441">CONFERENCE FINAL</td></tr>
+<tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:9px 0">Bracket, rounds 1&ndash;2</td><td class="num" style="color:#A7B0C0">15&ndash;16</td><td style="color:#D9A441">College</td><td>Elimination</td><td class="num" style="color:#D9A441">QUARTER-FINAL / SEMI-FINAL</td></tr>
+<tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:9px 0"><strong style="color:#F5F7FA">National championship</strong></td><td class="num" style="color:#A7B0C0">17</td><td style="color:#D9A441">College</td><td><strong style="color:#F5F7FA">Final</strong></td><td class="num" style="color:#D9A441">NATIONAL CHAMPIONSHIP</td></tr>
+<tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:9px 0">Pro regular season</td><td class="num" style="color:#A7B0C0">1&ndash;18</td><td style="color:#7FB2E5">Pro</td><td>Regular</td><td style="color:#78839A">&mdash; (or RIVALRY)</td></tr>
+<tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:9px 0">Bracket, rounds 1&ndash;2</td><td class="num" style="color:#A7B0C0">19&ndash;20</td><td style="color:#7FB2E5">Pro</td><td>Elimination</td><td class="num" style="color:#7FB2E5">DIVISIONAL / CONFERENCE</td></tr>
+<tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:9px 0"><strong style="color:#F5F7FA">Pro championship</strong></td><td class="num" style="color:#A7B0C0">21</td><td style="color:#7FB2E5">Pro</td><td><strong style="color:#F5F7FA">Final</strong></td><td class="num" style="color:#7FB2E5">THE CHAMPIONSHIP</td></tr>
+</table>
+</div>
+<div class="note" style="margin-top:11px;max-width:92ch">Seven occasions, six combinations, ten values. The mapping is a table in the rules module &mdash; not a branch in a view &mdash; so an occasion that gains a package later is a row, and a view that hard-codes a package is a defect the token scan can catch.</div>
+
+<!-- RENDERS -->
+<div style="display:flex;align-items:baseline;gap:12px;margin:42px 0 14px"><div style="font:700 20px/1.2 inherit;letter-spacing:-.015em">3 &nbsp;Drawn</div><div style="font:400 13px/1.4 inherit;color:#78839A">same matchup, same score, six packages</div></div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:22px">
+
+<!-- COLLEGE REGULAR -->
+<div>
+<div class="lbl" style="margin-bottom:8px;color:#D9A441">COLLEGE &middot; REGULAR &middot; 44 PT</div>
+<div style="width:100%;height:96px;background:#22482C;position:relative;overflow:hidden;border-radius:8px">
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 47px,rgba(255,255,255,.13) 47px 48px)"></div>
+  <div style="position:absolute;left:0;top:0;right:0;height:44px;display:flex;font-family:'SF Compact Display',-apple-system,sans-serif">
+    <div style="background:#14294B;display:flex;align-items:center;gap:6px;padding:0 15px 0 11px;transform:skewX(-9deg);margin-left:-6px"><span class="num" style="font-size:15px;font-weight:700;color:#fff;letter-spacing:.06em;transform:skewX(9deg)">ASH</span></div>
+    <div style="background:#000;display:flex;align-items:center;padding:0 12px;transform:skewX(-9deg);margin-left:-7px"><span class="num" style="font-size:22px;font-weight:700;color:#fff;transform:skewX(9deg)">17</span></div>
+    <div style="background:#000;display:flex;align-items:center;padding:0 12px;transform:skewX(-9deg);margin-left:-7px;border-left:1px solid rgba(255,255,255,.2)"><span class="num" style="font-size:22px;font-weight:700;color:#fff;transform:skewX(9deg)">20</span></div>
+    <div style="background:#7A1F2B;display:flex;align-items:center;padding:0 15px;transform:skewX(-9deg);margin-left:-7px"><span class="num" style="font-size:15px;font-weight:700;color:#fff;letter-spacing:.06em;transform:skewX(9deg)">WEX</span></div>
+    <div style="background:#0C0F16;display:flex;align-items:center;gap:9px;padding:0 13px 0 18px;transform:skewX(-9deg);margin-left:-7px;flex:1"><span class="num" style="font-size:17px;font-weight:700;color:#fff;transform:skewX(9deg)">3:12</span><span class="num" style="font-size:13px;font-weight:700;color:#C6F24E;transform:skewX(9deg)">3rd &amp; 7</span></div>
+  </div>
+</div>
+<div class="note" style="margin-top:8px">The workhorse, and 13 of 17 college weeks. Skewed ends, no frame, no tag. Everything above this adds to it.</div>
+</div>
+
+<!-- PRO REGULAR -->
+<div>
+<div class="lbl" style="margin-bottom:8px;color:#7FB2E5">PRO &middot; REGULAR &middot; 44 PT</div>
+<div style="width:100%;height:96px;background:#22482C;position:relative;overflow:hidden;border-radius:8px">
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 47px,rgba(255,255,255,.13) 47px 48px)"></div>
+  <div style="position:absolute;left:0;top:0;right:0;height:44px;display:flex;font-family:'SF Compact Display',-apple-system,sans-serif">
+    <div style="background:#2E4A5C;display:flex;align-items:center;padding:0 13px"><span class="num" style="font-size:15px;font-weight:700;color:#fff;letter-spacing:.02em">DET</span></div>
+    <div style="background:#000;display:flex;align-items:center;padding:0 13px"><span class="num" style="font-size:22px;font-weight:700;color:#fff">17</span></div>
+    <div style="background:#000;display:flex;align-items:center;padding:0 13px;border-left:1px solid rgba(255,255,255,.2)"><span class="num" style="font-size:22px;font-weight:700;color:#fff">20</span></div>
+    <div style="background:#14294B;display:flex;align-items:center;padding:0 13px"><span class="num" style="font-size:15px;font-weight:700;color:#fff;letter-spacing:.02em">NYE</span></div>
+    <div style="background:#0C0F16;display:flex;align-items:center;gap:9px;padding:0 13px;flex:1"><span class="num" style="font-size:17px;font-weight:700;color:#fff">3:12</span><span class="num" style="font-size:13px;font-weight:700;color:#C6F24E">3rd &amp; 7</span></div>
+  </div>
+</div>
+<div class="note" style="margin-top:8px">Same information, square everywhere, tighter tracking. Side by side with the college bug the tier is unmistakable and no word says which.</div>
+</div>
+
+<!-- COLLEGE ELIMINATION -->
+<div>
+<div class="lbl" style="margin-bottom:8px;color:#D9A441">COLLEGE &middot; ELIMINATION &middot; 48 PT</div>
+<div style="width:100%;height:96px;background:#22482C;position:relative;overflow:hidden;border-radius:8px">
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 47px,rgba(255,255,255,.13) 47px 48px)"></div>
+  <div style="position:absolute;left:0;top:0;right:0;height:2px;background:#D9A441"></div>
+  <div style="position:absolute;left:0;top:2px;right:0;height:48px;display:flex;font-family:'SF Compact Display',-apple-system,sans-serif">
+    <div style="background:#14294B;display:flex;align-items:center;gap:6px;padding:0 15px 0 11px;transform:skewX(-9deg);margin-left:-6px"><span class="num" style="font-size:15px;font-weight:700;color:#fff;letter-spacing:.06em;transform:skewX(9deg)">ASH</span></div>
+    <div style="background:#000;display:flex;align-items:center;padding:0 12px;transform:skewX(-9deg);margin-left:-7px"><span class="num" style="font-size:23px;font-weight:700;color:#fff;transform:skewX(9deg)">17</span></div>
+    <div style="background:#000;display:flex;align-items:center;padding:0 12px;transform:skewX(-9deg);margin-left:-7px;border-left:1px solid rgba(255,255,255,.2)"><span class="num" style="font-size:23px;font-weight:700;color:#fff;transform:skewX(9deg)">20</span></div>
+    <div style="background:#7A1F2B;display:flex;align-items:center;padding:0 15px;transform:skewX(-9deg);margin-left:-7px"><span class="num" style="font-size:15px;font-weight:700;color:#fff;letter-spacing:.06em;transform:skewX(9deg)">WEX</span></div>
+    <div style="background:#0C0F16;display:flex;align-items:center;gap:9px;padding:0 13px 0 18px;transform:skewX(-9deg);margin-left:-7px;flex:1">
+      <span class="num" style="font-size:17px;font-weight:700;color:#fff;transform:skewX(9deg)">3:12</span>
+      <span class="num" style="font-size:13px;font-weight:700;color:#C6F24E;transform:skewX(9deg)">3rd &amp; 7</span>
+      <span class="num" style="margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.2em;color:#D9A441;transform:skewX(9deg)">SEMI-FINAL</span>
+    </div>
+  </div>
+</div>
+<div class="note" style="margin-top:8px">Four pixels taller, a bronze rule above, and the round named in the situation strip. The score has not moved.</div>
+</div>
+
+<!-- PRO ELIMINATION -->
+<div>
+<div class="lbl" style="margin-bottom:8px;color:#7FB2E5">PRO &middot; ELIMINATION &middot; 48 PT</div>
+<div style="width:100%;height:96px;background:#22482C;position:relative;overflow:hidden;border-radius:8px">
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 47px,rgba(255,255,255,.13) 47px 48px)"></div>
+  <div style="position:absolute;left:0;top:0;right:0;height:2px;background:#7FB2E5"></div>
+  <div style="position:absolute;left:0;top:2px;right:0;height:48px;display:flex;font-family:'SF Compact Display',-apple-system,sans-serif">
+    <div style="background:#2E4A5C;display:flex;align-items:center;padding:0 13px"><span class="num" style="font-size:15px;font-weight:700;color:#fff">DET</span></div>
+    <div style="background:#000;display:flex;align-items:center;padding:0 13px"><span class="num" style="font-size:23px;font-weight:700;color:#fff">17</span></div>
+    <div style="background:#000;display:flex;align-items:center;padding:0 13px;border-left:1px solid rgba(255,255,255,.2)"><span class="num" style="font-size:23px;font-weight:700;color:#fff">20</span></div>
+    <div style="background:#14294B;display:flex;align-items:center;padding:0 13px"><span class="num" style="font-size:15px;font-weight:700;color:#fff">NYE</span></div>
+    <div style="background:#0C0F16;display:flex;align-items:center;gap:9px;padding:0 13px;flex:1">
+      <span class="num" style="font-size:17px;font-weight:700;color:#fff">3:12</span>
+      <span class="num" style="font-size:13px;font-weight:700;color:#C6F24E">3rd &amp; 7</span>
+      <span class="num" style="margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.14em;color:#04070E;background:#7FB2E5;padding:4px 7px">CONFERENCE</span>
+    </div>
+  </div>
+</div>
+<div class="note" style="margin-top:8px">The pro house tags with a solid block rather than letterspaced caps &mdash; same information, opposite register.</div>
+</div>
+
+<!-- COLLEGE FINAL -->
+<div>
+<div class="lbl" style="margin-bottom:8px;color:#D9A441">COLLEGE &middot; FINAL &middot; 52 PT &middot; ONE GAME A SEASON</div>
+<div style="width:100%;height:120px;background:#22482C;position:relative;overflow:hidden;border-radius:8px;box-shadow:inset 0 0 0 2px #D9A441">
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 47px,rgba(255,255,255,.13) 47px 48px)"></div>
+  <div style="position:absolute;left:0;top:0;width:16px;height:16px;border-top:3px solid #D9A441;border-left:3px solid #D9A441"></div>
+  <div style="position:absolute;right:0;top:0;width:16px;height:16px;border-top:3px solid #D9A441;border-right:3px solid #D9A441"></div>
+  <div style="position:absolute;left:0;bottom:0;width:16px;height:16px;border-bottom:3px solid #D9A441;border-left:3px solid #D9A441"></div>
+  <div style="position:absolute;right:0;bottom:0;width:16px;height:16px;border-bottom:3px solid #D9A441;border-right:3px solid #D9A441"></div>
+  <div style="position:absolute;left:0;top:0;right:0;background:#D9A441;height:18px;display:flex;align-items:center;justify-content:center"><span class="num" style="font-size:10px;font-weight:700;letter-spacing:.34em;color:#22160A">NATIONAL CHAMPIONSHIP</span></div>
+  <div style="position:absolute;left:0;top:18px;right:0;height:52px;display:flex;font-family:'SF Compact Display',-apple-system,sans-serif">
+    <div style="background:#14294B;display:flex;align-items:center;gap:6px;padding:0 16px 0 11px;transform:skewX(-9deg);margin-left:-6px"><span class="num" style="font-size:16px;font-weight:700;color:#fff;letter-spacing:.06em;transform:skewX(9deg)">ASH</span></div>
+    <div style="background:#000;display:flex;align-items:center;padding:0 14px;transform:skewX(-9deg);margin-left:-7px"><span class="num" style="font-size:26px;font-weight:700;color:#fff;transform:skewX(9deg)">17</span></div>
+    <div style="background:#000;display:flex;align-items:center;padding:0 14px;transform:skewX(-9deg);margin-left:-7px;border-left:1px solid rgba(255,255,255,.2)"><span class="num" style="font-size:26px;font-weight:700;color:#fff;transform:skewX(9deg)">20</span></div>
+    <div style="background:#7A1F2B;display:flex;align-items:center;padding:0 16px;transform:skewX(-9deg);margin-left:-7px"><span class="num" style="font-size:16px;font-weight:700;color:#fff;letter-spacing:.06em;transform:skewX(9deg)">WEX</span></div>
+    <div style="background:#0C0F16;display:flex;align-items:center;gap:10px;padding:0 13px 0 19px;transform:skewX(-9deg);margin-left:-7px;flex:1"><span class="num" style="font-size:18px;font-weight:700;color:#fff;transform:skewX(9deg)">3:12</span><span class="num" style="font-size:14px;font-weight:700;color:#C6F24E;transform:skewX(9deg)">3rd &amp; 7</span></div>
+  </div>
+</div>
+<div class="note" style="margin-top:8px">A full bronze frame, corner marks, and a title bar across the top. Once a season, at most once a career for most players &mdash; and the player should be able to tell from a screenshot years later which game it was.</div>
+</div>
+
+<!-- PRO FINAL -->
+<div>
+<div class="lbl" style="margin-bottom:8px;color:#7FB2E5">PRO &middot; FINAL &middot; 52 PT &middot; THE END OF THE ARC</div>
+<div style="width:100%;height:120px;background:#22482C;position:relative;overflow:hidden;border-radius:8px;box-shadow:inset 0 0 0 2px #7FB2E5">
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 47px,rgba(255,255,255,.13) 47px 48px)"></div>
+  <div style="position:absolute;left:0;top:0;width:16px;height:16px;border-top:3px solid #7FB2E5;border-left:3px solid #7FB2E5"></div>
+  <div style="position:absolute;right:0;top:0;width:16px;height:16px;border-top:3px solid #7FB2E5;border-right:3px solid #7FB2E5"></div>
+  <div style="position:absolute;left:0;bottom:0;width:16px;height:16px;border-bottom:3px solid #7FB2E5;border-left:3px solid #7FB2E5"></div>
+  <div style="position:absolute;right:0;bottom:0;width:16px;height:16px;border-bottom:3px solid #7FB2E5;border-right:3px solid #7FB2E5"></div>
+  <div style="position:absolute;left:0;top:0;right:0;background:#7FB2E5;height:18px;display:flex;align-items:center;justify-content:center"><span class="num" style="font-size:10px;font-weight:700;letter-spacing:.34em;color:#04141F">THE CHAMPIONSHIP</span></div>
+  <div style="position:absolute;left:0;top:18px;right:0;height:52px;display:flex;font-family:'SF Compact Display',-apple-system,sans-serif">
+    <div style="background:#2E4A5C;display:flex;align-items:center;padding:0 14px"><span class="num" style="font-size:16px;font-weight:700;color:#fff">DET</span></div>
+    <div style="background:#000;display:flex;align-items:center;padding:0 15px"><span class="num" style="font-size:26px;font-weight:700;color:#fff">17</span></div>
+    <div style="background:#000;display:flex;align-items:center;padding:0 15px;border-left:1px solid rgba(255,255,255,.2)"><span class="num" style="font-size:26px;font-weight:700;color:#fff">20</span></div>
+    <div style="background:#14294B;display:flex;align-items:center;padding:0 14px"><span class="num" style="font-size:16px;font-weight:700;color:#fff">NYE</span></div>
+    <div style="background:#0C0F16;display:flex;align-items:center;gap:10px;padding:0 13px;flex:1"><span class="num" style="font-size:18px;font-weight:700;color:#fff">3:12</span><span class="num" style="font-size:14px;font-weight:700;color:#C6F24E">3rd &amp; 7</span></div>
+  </div>
+</div>
+<div class="note" style="margin-top:8px">The same escalation in the pro house. If the promotion arc lands, this is the frame the career was for.</div>
+</div>
+
+</div>
+
+<!-- RIVALRY -->
+<div style="display:flex;align-items:baseline;gap:12px;margin:40px 0 14px"><div style="font:700 20px/1.2 inherit;letter-spacing:-.015em">4 &nbsp;The modifier</div><div style="font:400 13px/1.4 inherit;color:#78839A">a rivalry is a regular-season game that is not a regular-season game</div></div>
+<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px">
+<div>
+<div style="width:100%;height:96px;background:#22482C;position:relative;overflow:hidden;border-radius:8px">
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 47px,rgba(255,255,255,.13) 47px 48px)"></div>
+  <div style="position:absolute;left:0;top:0;right:0;height:3px;background:linear-gradient(90deg,#C8A24A 0 50%,#E4D5A8 50% 100%)"></div>
+  <div style="position:absolute;left:0;top:3px;right:0;height:44px;display:flex;font-family:'SF Compact Display',-apple-system,sans-serif">
+    <div style="background:#14294B;display:flex;align-items:center;gap:6px;padding:0 15px 0 11px;transform:skewX(-9deg);margin-left:-6px"><span class="num" style="font-size:15px;font-weight:700;color:#fff;letter-spacing:.06em;transform:skewX(9deg)">ASH</span></div>
+    <div style="background:#000;display:flex;align-items:center;padding:0 12px;transform:skewX(-9deg);margin-left:-7px"><span class="num" style="font-size:22px;font-weight:700;color:#fff;transform:skewX(9deg)">17</span></div>
+    <div style="background:#000;display:flex;align-items:center;padding:0 12px;transform:skewX(-9deg);margin-left:-7px;border-left:1px solid rgba(255,255,255,.2)"><span class="num" style="font-size:22px;font-weight:700;color:#fff;transform:skewX(9deg)">20</span></div>
+    <div style="background:#7A1F2B;display:flex;align-items:center;padding:0 15px;transform:skewX(-9deg);margin-left:-7px"><span class="num" style="font-size:15px;font-weight:700;color:#fff;letter-spacing:.06em;transform:skewX(9deg)">WEX</span></div>
+    <div style="background:#0C0F16;display:flex;align-items:center;gap:9px;padding:0 13px 0 18px;transform:skewX(-9deg);margin-left:-7px;flex:1">
+      <span class="num" style="font-size:17px;font-weight:700;color:#fff;transform:skewX(9deg)">3:12</span>
+      <span class="num" style="font-size:13px;font-weight:700;color:#C6F24E;transform:skewX(9deg)">3rd &amp; 7</span>
+      <span class="num" style="margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.2em;color:#F5F7FA;transform:skewX(9deg)">THE IRON BELL &middot; 94TH</span>
+    </div>
+  </div>
+</div>
+</div>
+<div class="card" style="padding:14px 16px">
+<div style="font:650 13px/1.3 inherit;margin-bottom:7px">Two colours, one seam, one name, one number</div>
+<div class="note">The top rule splits into both programmes' secondaries. The tag carries the rivalry's generated name and its meeting count &mdash; P2 already generates both and nothing has ever displayed them. <strong style="color:#F5F7FA">This is the cheapest possible payoff for a whole generation subsystem</strong>: one rule, one string, and a regular-season week suddenly has a week that matters in it.</div>
+</div>
+</div>
+
+<div style="margin-top:44px;padding-top:22px;border-top:1px solid rgba(255,255,255,.12)">
+<div class="lbl" style="margin-bottom:10px">WHAT THIS GROUP SENDS BACK TO 04</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">§2 gains <code class="mono">broadcast.*</code></div><div class="note">A fourth token group beside colour, type and spacing: house geometry, house accent, three escalation heights, frame treatment. Ten values, and the contrast suite enumerates the two accents like any other colour.</div></div>
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">The mapping is a rules constant</div><div class="note">Occasion to package belongs in the per-tier rules module with every other constant, never inlined in a view. <code class="mono">CLAUDE.md</code>'s no-magic-number rule already covers it.</div></div>
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">§5 gains a package parameter</div><div class="note">The match view is drawn once and takes a package. §5.2's arithmetic is unaffected at Regular and loses 4 and 8 pt of field height at Elimination and Final &mdash; within the 20 pt clearance, but it must be stated, not discovered.</div></div>
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#FFB026;margin-bottom:5px">The promotion arc now has a payoff</div><div class="note">Crossing to the pro tier changes the house: skew to square, bronze to steel. <code class="mono">02</code> §9 called the arc a retention device; a visible change of register is what makes it feel like one.</div></div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1800,&quot;height&quot;:2400}}"></script>
+</body>
+</html>

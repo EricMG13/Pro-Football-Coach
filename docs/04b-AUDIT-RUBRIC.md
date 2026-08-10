@@ -383,7 +383,7 @@ not scored per phase; they are not ignored per phase.
 
 **Adaptivity — LOCAL checks (per phase, pass/fail):**
 
-- Every touched screen survives 375×667 at XXXL without truncation or overlap (`AUDIT.md:282`, `291`)
+- Every touched screen survives the **844 × 390 landscape design floor** at AX5 without truncation or overlap (`AUDIT.md:282`, `291`; floor narrowed by the owner 2026-08-10, `04` §4.1). At 667 × 375 — unsupported but installable — the weaker assertion applies: reachable, not beautiful
 - No literal `.frame(width:)` or `.frame(height:)` around scaling text (`AUDIT.md:93`, `599`)
 - Non-scrolling columns are wrapped or made proportional (`AUDIT.md:273`, `282`)
 - Text fields declare `textContentType`, capitalisation and autocorrect (`AUDIT.md:608`)

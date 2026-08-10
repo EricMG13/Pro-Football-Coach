@@ -156,13 +156,37 @@ Coordinator AI, roster AI, opponent game-plan AI — each against its stated bar
 it here is the only defence P5 allows.
 
 ### P11 — Design system and the accessibility contract (D12)
-Tokens, component registry, and **all nine contract tests before any feature view exists.** The
+Tokens, component registry, and **all ten contract tests before any feature view exists.** The
 contract is built first so that every subsequent phase inherits a passing baseline rather than
 retrofitting one.
 **Gates:** G1, G2, G3, G4.
 
-### P12 — The week loop
-Inbox, opponent report, game plan, practice allocation, aftermath. The core management week.
+**Ten, not nine — `04` §6 gained an orientation clause on 2026-08-10.** `OrientationPolicyTest` reads
+`App/project.yml`. Any phase citing "nine" is reading a stale copy.
+
+**Scope grew with the design pass, and the additions are cheap here and expensive later:** the
+`broadcast.*` token group (`04` §2.4, two house accents the contrast suite enumerates like any other
+colour), the `numeral` type role, `live`, and the registry at **nineteen** entries — `ScoreBug` and
+`StakeholderCard` were added because both are used on four or more surfaces and both were being
+assembled ad hoc. `SmallestDeviceLayoutTest` is now two-tier per `04` §4.1: full gate at the
+844 × 390 design floor, weaker assertion at 667 × 375 (reachable, nothing off-screen, appearance not
+guaranteed — those devices are unsupported but remain installable, and no App Store mechanism
+excludes them).
+
+### P12 — The entry sequence and the week loop
+**The entry sequence first** — title, the board, the offer, the appointment, settings (`04` §4).
+Added 2026-08-10: the design review found the app had **no specified entry point at all**, and no
+phase owned one. Nothing in P12–P14 can be reached without it, and P17 would have been where that
+was discovered. The board is a DESTINATION and must pass `02` §2.2 on its own terms — it is the first
+real decision the player ever makes, and a first decision that fails the test teaches them that
+decisions here do not matter.
+
+Then the week: inbox, opponent report, game plan, practice allocation, aftermath. The core
+management week.
+
+**P12 carries first-run state from the start.** D9 teaches through the first real week rather than
+through cards, so onboarding is not a separate set of screens — it is a state these screens are in.
+Building them without it and retrofitting in P15 means rewriting P12. See the P15 note.
 The week opens on **commitments with a cost** — what each item will take, not only what happened
 (`04` §4, `01` §6.6 §3.9). The opponent report is the first surface to carry a generated **verdict**,
 and it is the one that proves the mechanism before P14 depends on it.
@@ -197,6 +221,16 @@ that ships without one is a P1, not a polish item.
 ### P15 — Onboarding (D9)
 The first fifteen minutes, taught through the first real week.
 **Gates:** G1, G2, G3, G4, plus the D9 owner protocol.
+
+**P15 no longer builds onboarding from nothing, and the correction matters.** D9's onboarding is
+diegetic — it rides the week surfaces P12 builds and the entry sequence P12 now owns. A P15 that
+arrives after P14 and starts building would be retrofitting first-run state into fourteen phases of
+screens designed without it. P15's real scope is **tuning and the D9 protocol**: the beat sheet's
+pacing, what is said when, and the owner run-through. The build happens in P12.
+
+**And the owner walkthrough owes a first-hour read, not only a field read.** P13's script asks
+whether the field reads as football. Nothing asked about the first hour — which `02` §9 names as the
+thing that sells the game. That question belongs here.
 **→ Milestone M2: G8.**
 
 ### P16 — Durability

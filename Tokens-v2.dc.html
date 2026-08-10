@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><style>body{margin:0;background:#05070C;-webkit-font-smoothing:antialiased}
+.mono{font:500 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace}
+.lbl{font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:#78839A}
+.num{font-family:'SF Compact Display','SF Pro Display',-apple-system,sans-serif;font-variant-numeric:tabular-nums;font-stretch:condensed;letter-spacing:-.02em}
+.card{background:#121724;border:1px solid rgba(255,255,255,.09);border-radius:12px}
+</style></helmet>
+
+<div style="font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;color:#F5F7FA;padding:40px 44px 72px;max-width:1560px;margin:0 auto">
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:32px;padding-bottom:22px;border-bottom:1px solid rgba(255,255,255,.12)">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="lbl">PRO FOOTBALL COACH &middot; DESIGN REFERENCE v2 &middot; GROUP: TOKENS</div>
+<div style="font:700 32px/1.1 -apple-system,'SF Pro Display',sans-serif;letter-spacing:-.02em">Broadcast — the token sheet</div>
+<div style="font:400 14px/1.55 inherit;color:#A7B0C0;max-width:70ch">v1 was a productivity app wearing football's copy: eight of its ten most-used colours were neutral greys and its accent ranked eleventh by usage. This version commits to one world — <strong style="font-weight:650;color:#F5F7FA">the television broadcast of a football game</strong> — and makes the generated team identity the chrome rather than a token nobody spends. Every ratio is computed against the surface it composites on and was re-derived independently before publication.</div>
+</div>
+<div style="flex:none;width:270px;display:flex;flex-direction:column;gap:9px">
+<div style="padding:11px 13px;background:rgba(198,242,78,.09);border:1px solid rgba(198,242,78,.35);border-radius:8px;font:500 11.5px/1.5 inherit;color:#C6F24E">Reference read: 19 owner-supplied Football Manager captures. What transferred is the <em>grammar</em> — team-coloured hard-edged furniture, banded numerals, verdict pills, numbered discs. No FM asset, layout, colour or text is reproduced.</div>
+<div style="padding:11px 13px;background:rgba(255,255,255,.05);border-radius:8px;font:400 11px/1.5 inherit;color:#A7B0C0">All identities synthetic. No real school, franchise, player or colour pair appears.</div>
+</div>
+</div>
+
+<!-- 1. THE IDIOM -->
+<div style="display:flex;align-items:baseline;gap:12px;margin:40px 0 6px"><div style="font:700 20px/1.2 inherit;letter-spacing:-.015em">1 &nbsp;The idiom this world is built on</div><div style="font:400 13px/1.4 inherit;color:#78839A">why a score bug and not a StatCell</div></div>
+<div style="font:400 13.5px/1.6 inherit;color:#A7B0C0;max-width:88ch;margin:10px 0 20px">Football has exactly one piece of visual furniture that every viewer on earth reads without instruction: the score bug. It is hard-edged, it is segmented, each team's segment carries <em>that team's colour</em>, and the numerals are condensed and tabular so they never reflow. It is the only football-native layout primitive that survives at 390 pt of height — and v1 rendered it as a grey card with 17 pt body text.</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div class="card" style="padding:18px 20px 20px;border-color:rgba(255,107,90,.4)">
+<div style="display:flex;gap:9px;align-items:baseline;margin-bottom:14px"><span class="lbl" style="color:#FF6B5A">v1 &mdash; REJECTED</span><span style="font:400 12px/1 inherit;color:#78839A">grey StatCell, no sport in it</span></div>
+<div style="background:#FFFFFF;border:1px solid rgba(0,0,0,.1);border-radius:12px;padding:14px 16px;display:flex;gap:22px;color:#14161C">
+<div><div style="font:400 12px/1.4 inherit;color:#767C8B">Score</div><div style="font:600 22px/1.2 inherit">17 &ndash; 20</div></div>
+<div><div style="font:400 12px/1.4 inherit;color:#767C8B">Quarter</div><div style="font:600 22px/1.2 inherit">Q4</div></div>
+<div><div style="font:400 12px/1.4 inherit;color:#767C8B">Clock</div><div style="font:600 22px/1.2 inherit">3:12</div></div>
+</div>
+<div style="font:400 11.5px/1.5 inherit;color:#A7B0C0;margin-top:12px">Remove the three labels and this is a billing summary. Nothing here is football; the words are doing all the work, which is the definition of a generic layout.</div>
+</div>
+
+<div class="card" style="padding:18px 20px 20px;border-color:rgba(198,242,78,.4)">
+<div style="display:flex;gap:9px;align-items:baseline;margin-bottom:14px"><span class="lbl" style="color:#C6F24E">v2 &mdash; ADOPTED</span><span style="font:400 12px/1 inherit;color:#78839A">team-coloured, hard-edged, tabular</span></div>
+<div style="display:flex;height:46px;overflow:hidden;font-family:'SF Compact Display','SF Pro Display',-apple-system,sans-serif">
+  <div style="background:#14294B;display:flex;align-items:center;gap:8px;padding:0 14px 0 12px"><div style="width:20px;height:20px;border-radius:3px;background:#C8A24A"></div><span class="num" style="font:700 17px/1;color:#FFFFFF;letter-spacing:.04em">ASH</span></div>
+  <div style="background:#000;display:flex;align-items:center;padding:0 15px"><span class="num" style="font:700 25px/1;color:#fff;font-variant-numeric:tabular-nums">17</span></div>
+  <div style="background:#000;display:flex;align-items:center;padding:0 15px;border-left:1px solid rgba(255,255,255,.22)"><span class="num" style="font:700 25px/1;color:#fff;font-variant-numeric:tabular-nums">20</span></div>
+  <div style="background:#7A1F2B;display:flex;align-items:center;gap:8px;padding:0 12px 0 14px"><span class="num" style="font:700 17px/1;color:#FFFFFF;letter-spacing:.04em">WEX</span><div style="width:20px;height:20px;border-radius:3px;background:#E4D5A8"></div></div>
+  <div style="background:#12151C;display:flex;align-items:center;gap:10px;padding:0 14px;flex:1">
+    <span class="num" style="font:700 19px/1;color:#fff;font-variant-numeric:tabular-nums">3:12</span>
+    <span class="num" style="font:600 12px/1;color:#78839A">Q4</span>
+    <div style="margin-left:auto;display:flex;gap:3px;align-items:center">
+      <div style="width:9px;height:9px;background:#C6F24E"></div><div style="width:9px;height:9px;background:#C6F24E"></div><div style="width:9px;height:9px;background:#C6F24E"></div>
+      <div style="width:9px;height:9px;background:rgba(255,255,255,.22)"></div><div style="width:9px;height:9px;background:rgba(255,255,255,.22)"></div>
+    </div>
+  </div>
+</div>
+<div style="font:400 11.5px/1.5 inherit;color:#A7B0C0;margin-top:12px">Remove every word and it is still a football game in the fourth quarter with two key moments left. Five rules do that work, and they are the whole visual world.</div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px">
+<div class="card" style="padding:12px 14px"><div class="lbl" style="margin-bottom:6px">01 &nbsp;ZERO RADIUS</div><div style="font:400 11.5px/1.5 inherit;color:#A7B0C0">Broadcast furniture is cut, not rounded. The score bug, the <code class="mono">LowerThird</code> and the live badge take <code class="mono">radius 0</code>. Management cards keep <code class="mono">m 12</code>. Radius now separates <em>the game</em> from <em>the desk</em>.</div></div>
+<div class="card" style="padding:12px 14px"><div class="lbl" style="margin-bottom:6px">02 &nbsp;TEAM OWNS CHROME</div><div style="font:400 11.5px/1.5 inherit;color:#A7B0C0">Each side's segment is filled with its own generated primary, at full bleed. This is the only place in the product where the per-save identity becomes visible rather than notional.</div></div>
+<div class="card" style="padding:12px 14px"><div class="lbl" style="margin-bottom:6px">03 &nbsp;TABULAR CONDENSED</div><div style="font:400 11.5px/1.5 inherit;color:#A7B0C0">Score and clock are <code class="mono">numeral</code>, a new role: SF Compact, condensed, <code class="mono">tabular-nums</code>. A clock that reflows as it counts is the tell of a spreadsheet.</div></div>
+<div class="card" style="padding:12px 14px"><div class="lbl" style="margin-bottom:6px">04 &nbsp;BLACK CENTRE</div><div style="font:400 11.5px/1.5 inherit;color:#A7B0C0">The score itself sits on pure black between the two team fields. It is neutral ground, it guarantees contrast against any generated pair, and it is what makes the bug legible over a bright field.</div></div>
+<div class="card" style="padding:12px 14px"><div class="lbl" style="margin-bottom:6px">05 &nbsp;PIPS, NOT A BAR</div><div style="font:400 11.5px/1.5 inherit;color:#A7B0C0">Remaining key moments are discrete squares, filling in <code class="mono">live</code>. <code class="mono">04</code> §5 requires the player to feel a known-length sequence; a percentage bar cannot say "two moments left".</div></div>
+</div>
+
+<!-- 2. COLOUR -->
+<div style="display:flex;align-items:baseline;gap:12px;margin:44px 0 6px"><div style="font:700 20px/1.2 inherit;letter-spacing:-.015em">2 &nbsp;Colour</div><div style="font:400 13px/1.4 inherit;color:#78839A">04 §2.1 roles, revalued &mdash; dark is the native appearance, light is the obligation</div></div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:18px">
+<div class="card" style="padding:20px">
+<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:15px"><div style="font:650 13px/1 inherit;letter-spacing:.02em">DARK &mdash; NATIVE</div><div class="mono" style="color:#78839A">vs page / card / raised</div></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px">
+<div style="background:#0A0D14;border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:11px 10px"><div style="font:500 11.5px/1.3 inherit">surface.page</div><div class="mono" style="color:#A7B0C0;margin-top:3px">#0A0D14</div></div>
+<div style="background:#121724;border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:11px 10px"><div style="font:500 11.5px/1.3 inherit">surface.card</div><div class="mono" style="color:#A7B0C0;margin-top:3px">#121724</div></div>
+<div style="background:#1B2130;border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:11px 10px"><div style="font:500 11.5px/1.3 inherit">surface.raised</div><div class="mono" style="color:#A7B0C0;margin-top:3px">#1B2130</div></div>
+</div>
+<div style="background:#0A0D14;border:1px solid rgba(255,255,255,.08);border-radius:8px;overflow:hidden">
+<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font:400 15px/1.3 inherit;color:#F5F7FA">content.primary</span><span class="mono" style="color:#78839A">#F5F7FA &nbsp;<span style="color:#C6F24E;font-weight:600">18.11 / 16.67 / 14.97</span></span></div>
+<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font:400 15px/1.3 inherit;color:#A7B0C0">content.secondary</span><span class="mono" style="color:#78839A">#A7B0C0 &nbsp;<span style="color:#C6F24E;font-weight:600">8.90 / 8.19 / 7.36</span></span></div>
+<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.07)"><span style="font:400 15px/1.3 inherit;color:#78839A">content.tertiary</span><span class="mono" style="color:#78839A">#78839A &nbsp;<span style="color:#FFB026;font-weight:600">5.10 / 4.70 / 4.22</span></span></div>
+<div style="display:flex;justify-content:space-between;padding:9px 12px"><span style="font:500 15px/1.3 inherit;color:#5B9DFF">accent</span><span class="mono" style="color:#78839A">#5B9DFF &nbsp;<span style="color:#C6F24E;font-weight:600">7.14 / 6.57 / 5.90</span></span></div>
+</div>
+<div style="font:400 11px/1.5 inherit;color:#FFB026;background:rgba(255,176,38,.1);border-radius:6px;padding:8px 10px;margin-top:10px">Carried unchanged from v1's finding: dark <code class="mono">content.tertiary</code> drops to <strong style="font-weight:650">4.22</strong> on raised. Large text and non-text indicators only there. The value moved; the rule did not.</div>
+
+<div class="lbl" style="margin:16px 0 9px">STATE &mdash; each ships with its glyph, never colour alone</div>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:9px">
+<div style="background:#121724;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 11px"><div style="font:600 12.5px/1.3 inherit;color:#57D98A">&#9650;&nbsp; state.positive</div><div class="mono" style="color:#78839A;margin-top:3px">#57D98A &middot; 9.97 on card</div></div>
+<div style="background:#121724;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 11px"><div style="font:600 12.5px/1.3 inherit;color:#FF6B5A">&#9660;&nbsp; state.negative</div><div class="mono" style="color:#78839A;margin-top:3px">#FF6B5A &middot; 6.39 on card</div></div>
+<div style="background:#121724;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 11px"><div style="font:600 12.5px/1.3 inherit;color:#FFB026">&#9632;&nbsp; state.warning</div><div class="mono" style="color:#78839A;margin-top:3px">#FFB026 &middot; 9.79 on card</div></div>
+<div style="background:#121724;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 11px"><div style="font:600 12.5px/1.3 inherit;color:#6DB3F2">&#9679;&nbsp; state.info</div><div class="mono" style="color:#78839A;margin-top:3px">#6DB3F2 &middot; 7.99 on card</div></div>
+</div>
+<div style="background:rgba(198,242,78,.08);border:1px solid rgba(198,242,78,.3);border-radius:8px;padding:11px 12px;margin-top:10px">
+<div style="font:650 12.5px/1.3 inherit;color:#C6F24E">live &nbsp;<span class="mono" style="font-weight:500">#C6F24E &middot; 13.81 on card</span></div>
+<div style="font:400 11px/1.5 inherit;color:#A7B0C0;margin-top:5px"><strong style="color:#F5F7FA;font-weight:650">A new role, and the one that makes the product feel switched on.</strong> Reserved for what is happening <em>now</em>: the live badge, remaining-moment pips, the clock running, a call-in awaiting an answer. Nothing static may use it, which is what keeps it meaningful.</div>
+</div>
+</div>
+
+<div style="background:#FFFFFF;border:1px solid rgba(0,0,0,.12);border-radius:12px;padding:20px;color:#0E1218">
+<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:15px"><div style="font:650 13px/1 inherit;letter-spacing:.02em">LIGHT &mdash; OBLIGATION</div><div class="mono" style="color:#6B7484">vs page / card / raised</div></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px">
+<div style="background:#EEF0F4;border:1px solid rgba(0,0,0,.16);border-radius:8px;padding:11px 10px"><div style="font:500 11.5px/1.3 inherit">surface.page</div><div class="mono" style="color:#48505F;margin-top:3px">#EEF0F4</div></div>
+<div style="background:#FFFFFF;border:1px solid rgba(0,0,0,.16);border-radius:8px;padding:11px 10px"><div style="font:500 11.5px/1.3 inherit">surface.card</div><div class="mono" style="color:#48505F;margin-top:3px">#FFFFFF</div></div>
+<div style="background:#F7F9FC;border:1px solid rgba(0,0,0,.16);border-radius:8px;padding:11px 10px"><div style="font:500 11.5px/1.3 inherit">surface.raised</div><div class="mono" style="color:#48505F;margin-top:3px">#F7F9FC</div></div>
+</div>
+<div style="background:#FFFFFF;border:1px solid rgba(0,0,0,.1);border-radius:8px;overflow:hidden">
+<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid rgba(0,0,0,.07)"><span style="font:400 15px/1.3 inherit;color:#0E1218">content.primary</span><span class="mono" style="color:#6B7484">#0E1218 &nbsp;<span style="color:#0B6B3F;font-weight:600">16.46 / 18.78 / 17.80</span></span></div>
+<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid rgba(0,0,0,.07)"><span style="font:400 15px/1.3 inherit;color:#48505F">content.secondary</span><span class="mono" style="color:#6B7484">#48505F &nbsp;<span style="color:#0B6B3F;font-weight:600">7.11 / 8.11 / 7.69</span></span></div>
+<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid rgba(0,0,0,.07)"><span style="font:400 15px/1.3 inherit;color:#6B7484">content.tertiary</span><span class="mono" style="color:#6B7484">#6B7484 &nbsp;<span style="color:#8A5A00;font-weight:600">4.13 / 4.71 / 4.47</span></span></div>
+<div style="display:flex;justify-content:space-between;padding:9px 12px"><span style="font:500 15px/1.3 inherit;color:#1257C7">accent</span><span class="mono" style="color:#6B7484">#1257C7 &nbsp;<span style="color:#0B6B3F;font-weight:600">5.73 / 6.53 / 6.20</span></span></div>
+</div>
+<div style="font:400 11px/1.5 inherit;color:#8A5A00;background:rgba(138,90,0,.08);border-radius:6px;padding:8px 10px;margin-top:10px">Light <code class="mono">content.tertiary</code> clears 3:1 everywhere and 4.5:1 only on card and raised &mdash; <strong style="font-weight:650">4.13 on page</strong>. Large and non-text only, as in v1.</div>
+<div class="lbl" style="margin:16px 0 9px;color:#6B7484">STATE</div>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:9px">
+<div style="border:1px solid rgba(0,0,0,.1);border-radius:8px;padding:10px 11px"><div style="font:600 12.5px/1.3 inherit;color:#0B6B3F">&#9650;&nbsp; state.positive</div><div class="mono" style="color:#6B7484;margin-top:3px">#0B6B3F &middot; 6.58</div></div>
+<div style="border:1px solid rgba(0,0,0,.1);border-radius:8px;padding:10px 11px"><div style="font:600 12.5px/1.3 inherit;color:#C0261B">&#9660;&nbsp; state.negative</div><div class="mono" style="color:#6B7484;margin-top:3px">#C0261B &middot; 5.94</div></div>
+<div style="border:1px solid rgba(0,0,0,.1);border-radius:8px;padding:10px 11px"><div style="font:600 12.5px/1.3 inherit;color:#8A5A00">&#9632;&nbsp; state.warning</div><div class="mono" style="color:#6B7484;margin-top:3px">#8A5A00 &middot; 5.93</div></div>
+<div style="border:1px solid rgba(0,0,0,.1);border-radius:8px;padding:10px 11px"><div style="font:600 12.5px/1.3 inherit;color:#0B5FA8">&#9679;&nbsp; state.info</div><div class="mono" style="color:#6B7484;margin-top:3px">#0B5FA8 &middot; 6.53</div></div>
+</div>
+<div style="font:400 11px/1.5 inherit;color:#48505F;background:rgba(0,0,0,.04);border-radius:6px;padding:8px 10px;margin-top:10px"><strong style="font-weight:650">There is no light <code class="mono">live</code> text colour, and that is deliberate.</strong> Chartreuse cannot clear 4.5:1 on white at any usable saturation. In light, <code class="mono">live</code> is a <em>fill</em> carrying <code class="mono">#0E1218</code> &mdash; #C6F24E under near-black measures 14.50:1. One role, two mechanisms, same as elevation.</div>
+</div>
+</div>
+
+<!-- 3. TEAM COLOUR AS CHROME -->
+<div style="display:flex;align-items:baseline;gap:12px;margin:44px 0 6px"><div style="font:700 20px/1.2 inherit;letter-spacing:-.015em">3 &nbsp;Team colour as chrome</div><div style="font:400 13px/1.4 inherit;color:#78839A">the differentiator v1 generated and then hid</div></div>
+<div style="font:400 13.5px/1.6 inherit;color:#A7B0C0;max-width:88ch;margin:10px 0 18px">P2 generates a colour pair per programme and gates it on ΔE and contrast. v1 spent that nowhere: its ten most-used colours were eight greys and two states, and the shell was identical for every save. Here the pair fills the score bug, the header rule and the roster's depth spine. The same four synthetic pairs are drawn below; the sheet stays legible in all four because <code class="mono">04</code> §2.1's floors already guarantee it.</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+<div class="card" style="overflow:hidden">
+<div style="height:38px;background:#14294B;display:flex;align-items:center;gap:8px;padding:0 12px"><div style="width:18px;height:18px;border-radius:3px;background:#C8A24A"></div><span class="num" style="font:700 15px/1;color:#FFFFFF;letter-spacing:.04em">ASHGROVE</span></div>
+<div style="padding:11px 13px"><div class="mono" style="color:#78839A">primary #14294B</div><div class="mono" style="color:#78839A">secondary #C8A24A</div><div class="mono" style="color:#C6F24E;margin-top:5px">onTeam 14.50:1 &nbsp;&#10003;</div></div>
+</div>
+<div class="card" style="overflow:hidden">
+<div style="height:38px;background:#7A1F2B;display:flex;align-items:center;gap:8px;padding:0 12px"><div style="width:18px;height:18px;border-radius:3px;background:#E4D5A8"></div><span class="num" style="font:700 15px/1;color:#FFFFFF;letter-spacing:.04em">WEXMOOR</span></div>
+<div style="padding:11px 13px"><div class="mono" style="color:#78839A">primary #7A1F2B</div><div class="mono" style="color:#78839A">secondary #E4D5A8</div><div class="mono" style="color:#C6F24E;margin-top:5px">onTeam 10.20:1 &nbsp;&#10003;</div></div>
+</div>
+<div class="card" style="overflow:hidden">
+<div style="height:38px;background:#2E4A5C;display:flex;align-items:center;gap:8px;padding:0 12px"><div style="width:18px;height:18px;border-radius:3px;background:#C0C6CC"></div><span class="num" style="font:700 15px/1;color:#FFFFFF;letter-spacing:.04em">MOTORS</span></div>
+<div style="padding:11px 13px"><div class="mono" style="color:#78839A">primary #2E4A5C</div><div class="mono" style="color:#78839A">secondary #C0C6CC</div><div class="mono" style="color:#C6F24E;margin-top:5px">onTeam 9.33:1 &nbsp;&#10003;</div></div>
+</div>
+<div class="card" style="overflow:hidden;border-color:rgba(255,176,38,.5)">
+<div style="height:38px;background:#C8A24A;display:flex;align-items:center;gap:8px;padding:0 12px"><div style="width:18px;height:18px;border-radius:3px;background:#14294B"></div><span class="num" style="font:700 15px/1;color:#14161C;letter-spacing:.04em">KESTRELS</span></div>
+<div style="padding:11px 13px"><div class="mono" style="color:#78839A">primary #C8A24A</div><div class="mono" style="color:#78839A">secondary #14294B</div><div class="mono" style="color:#FFB026;margin-top:5px">onTeam 7.51:1 &nbsp;&#10003; light-primary</div></div>
+</div>
+</div>
+<div style="background:rgba(255,176,38,.08);border:1px solid rgba(255,176,38,.32);border-radius:10px;padding:13px 15px;margin-top:14px;font:400 12.5px/1.6 inherit;color:#A7B0C0"><strong style="color:#FFB026;font-weight:650">The fourth card is the open finding, restated because v2 depends on it more than v1 did.</strong> All 32 pro <code class="mono">TeamTable</code> pairs are dark-primary-with-light-secondary, so the light-primary case is <em>synthetic</em> &mdash; it does not occur in the generated data. v1 could shrug at that because team colour touched almost nothing. In v2 team colour fills the score bug on every screen, so a generator that cannot produce a light primary means a product where every programme's chrome is dark and the identity system is narrower than it looks. <strong style="color:#F5F7FA;font-weight:650">This is now a generation question with a visible consequence, not a theoretical gap.</strong></div>
+
+<!-- 4. TYPE -->
+<div style="display:flex;align-items:baseline;gap:12px;margin:44px 0 6px"><div style="font:700 20px/1.2 inherit;letter-spacing:-.015em">4 &nbsp;Type</div><div style="font:400 13px/1.4 inherit;color:#78839A">04 §2.2 &mdash; six roles kept, one added</div></div>
+<div class="card" style="padding:6px 20px;margin-top:18px">
+<div style="display:grid;grid-template-columns:104px 140px 1fr 1fr;gap:16px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.1)" class="lbl"><div>ROLE</div><div>TEXT STYLE</div><div>DEFAULT</div><div>AX5</div></div>
+<div style="display:grid;grid-template-columns:104px 140px 1fr 1fr;gap:16px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.07);align-items:baseline"><div class="mono" style="font-size:12.5px">display</div><div class="mono" style="color:#A7B0C0">.largeTitle<br><span style="color:#78839A">34 &rarr; 60 pt</span></div><div style="font:700 34px/1.1 -apple-system,'SF Pro Display',sans-serif;letter-spacing:-.02em">Fourth quarter</div><div style="font:700 56px/1.05 -apple-system,'SF Pro Display',sans-serif;letter-spacing:-.022em">Fourth</div></div>
+<div style="display:grid;grid-template-columns:104px 140px 1fr 1fr;gap:16px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.07);align-items:baseline"><div class="mono" style="font-size:12.5px;color:#C6F24E">numeral &nbsp;NEW</div><div class="mono" style="color:#A7B0C0">.title1 compact<br><span style="color:#78839A">28 &rarr; 58 pt, tabular</span></div><div class="num" style="font:700 28px/1;font-variant-numeric:tabular-nums">17&ndash;20 &nbsp; 3:12 &nbsp; 3rd &amp; 7</div><div class="num" style="font:700 58px/1;font-variant-numeric:tabular-nums">17&ndash;20</div></div>
+<div style="display:grid;grid-template-columns:104px 140px 1fr 1fr;gap:16px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.07);align-items:baseline"><div class="mono" style="font-size:12.5px">title</div><div class="mono" style="color:#A7B0C0">.title2<br><span style="color:#78839A">22 &rarr; 56 pt</span></div><div style="font:600 22px/1.2 inherit;letter-spacing:-.01em">Week 9 &middot; Opponent</div><div style="font:600 56px/1.12 inherit;letter-spacing:-.015em">Week 9</div></div>
+<div style="display:grid;grid-template-columns:104px 140px 1fr 1fr;gap:16px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.07);align-items:baseline"><div class="mono" style="font-size:12.5px">headline</div><div class="mono" style="color:#A7B0C0">.headline<br><span style="color:#78839A">17 &rarr; 53 pt</span></div><div style="font:600 17px/1.3 inherit">Your run defence is the problem</div><div style="font:600 53px/1.18 inherit;letter-spacing:-.012em">Run defence</div></div>
+<div style="display:grid;grid-template-columns:104px 140px 1fr 1fr;gap:16px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.07);align-items:baseline"><div class="mono" style="font-size:12.5px">body</div><div class="mono" style="color:#A7B0C0">.body<br><span style="color:#78839A">17 &rarr; 53 pt</span></div><div style="font:400 17px/1.4 inherit;color:#A7B0C0">5.1 a carry against a league 3.8.</div><div style="font:400 53px/1.22 inherit;color:#A7B0C0">5.1 a carry</div></div>
+<div style="display:grid;grid-template-columns:104px 140px 1fr 1fr;gap:16px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.07);align-items:baseline"><div class="mono" style="font-size:12.5px">callout</div><div class="mono" style="color:#A7B0C0">.callout<br><span style="color:#78839A">16 &rarr; 51 pt</span></div><div style="font:400 16px/1.35 inherit;color:#A7B0C0">Costs 4 of 12 install hours.</div><div style="font:400 51px/1.2 inherit;color:#A7B0C0">Costs 4</div></div>
+<div style="display:grid;grid-template-columns:104px 140px 1fr 1fr;gap:16px;padding:13px 0;align-items:baseline"><div class="mono" style="font-size:12.5px">caption</div><div class="mono" style="color:#A7B0C0">.caption1<br><span style="color:#78839A">12 &rarr; 43 pt</span></div><div style="font:400 12px/1.35 inherit;color:#A7B0C0">Reported by the position coach</div><div style="font:400 43px/1.2 inherit;color:#A7B0C0">Reported</div></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+<div class="card" style="padding:11px 13px;border-color:rgba(198,242,78,.3)"><div style="font:400 11.5px/1.55 inherit;color:#A7B0C0"><strong style="color:#C6F24E;font-weight:650">Why <code class="mono">numeral</code> earns a seventh role.</strong> A football product shows a running clock, a score, a down-and-distance and a rating on nearly every surface. In a proportional face those reflow every tick and every roster row sits on a ragged right edge. Tabular condensed fixes both, and it is the single change that most makes the product read as a sport rather than a table. It maps to a real text style so Dynamic Type still governs it.</div></div>
+<div class="card" style="padding:11px 13px;border-color:rgba(255,176,38,.3)"><div style="font:400 11.5px/1.55 inherit;color:#A7B0C0"><strong style="color:#FFB026;font-weight:650">UNVERIFIED, unchanged from v1.</strong> Every AX5 point size here is cited from memory, as is the 44 pt touch floor. Confirm against the HIG type table before <code class="mono">04</code> §2.2 records them. <code class="mono">SF Compact</code>'s availability as a Dynamic Type face is a further assumption &mdash; if it is not, <code class="mono">numeral</code> falls back to <code class="mono">.title1</code> with <code class="mono">monospacedDigit()</code>, which keeps the tabular property and loses the condensing.</div></div>
+</div>
+
+<!-- 5. RATING LADDER -->
+<div style="display:flex;align-items:baseline;gap:12px;margin:44px 0 6px"><div style="font:700 20px/1.2 inherit;letter-spacing:-.015em">5 &nbsp;The rating ladder, in two appearances</div><div style="font:400 13px/1.4 inherit;color:#78839A">v1's CVD study survives; it needed a dark twin</div></div>
+<div style="font:400 13.5px/1.6 inherit;color:#A7B0C0;max-width:88ch;margin:10px 0 18px">v1 tested three ladders under deuteranopia, protanopia and tritanopia and found only a single-hue lightness ramp keeps five ordered steps. That finding stands and is not re-litigated. What v1 did not supply is a dark-appearance ladder &mdash; its light ramp bottoms out at <code class="mono">#C2D4E8</code>, which on a near-black page is a glare. Both are below, both monotonic in L*.</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div class="card" style="padding:18px 20px">
+<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><div style="font:650 13px/1 inherit">LIGHT &mdash; v1, unchanged</div><span class="mono" style="color:#C6F24E">L* 19 / 35 / 50 / 68 / 84</span></div>
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
+<div style="background:#0B2E5C;border-radius:6px;padding:9px 10px"><div style="font:600 11.5px/1.3 inherit;color:#fff">elite</div><div class="mono" style="color:rgba(255,255,255,.75);font-size:10px">90&ndash;99</div></div>
+<div style="background:#14538F;border-radius:6px;padding:9px 10px"><div style="font:600 11.5px/1.3 inherit;color:#fff">good</div><div class="mono" style="color:rgba(255,255,255,.8);font-size:10px">75&ndash;89</div></div>
+<div style="background:#2E7BC4;border-radius:6px;padding:9px 10px"><div style="font:600 11.5px/1.3 inherit;color:#fff">average</div><div class="mono" style="color:rgba(255,255,255,.82);font-size:10px">60&ndash;74</div></div>
+<div style="background:#7FA9D9;border-radius:6px;padding:9px 10px"><div style="font:600 11.5px/1.3 inherit;color:#14161C">poor</div><div class="mono" style="color:rgba(0,0,0,.6);font-size:10px">50&ndash;59</div></div>
+<div style="background:#C2D4E8;border-radius:6px;padding:9px 10px"><div style="font:600 11.5px/1.3 inherit;color:#14161C">bad</div><div class="mono" style="color:rgba(0,0,0,.62);font-size:10px">40&ndash;49</div></div>
+</div>
+</div>
+<div class="card" style="padding:18px 20px;border-color:rgba(198,242,78,.4)">
+<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><div style="font:650 13px/1 inherit;color:#C6F24E">DARK &mdash; NEW</div><span class="mono" style="color:#C6F24E">L* 19 / 30 / 42 / 59 / 77, monotonic</span></div>
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
+<div style="background:#0E2E52;border-radius:6px;padding:9px 10px"><div style="font:600 11.5px/1.3 inherit;color:#fff">elite</div><div class="mono" style="color:rgba(255,255,255,.75);font-size:10px">90&ndash;99</div></div>
+<div style="background:#164878;border-radius:6px;padding:9px 10px"><div style="font:600 11.5px/1.3 inherit;color:#fff">good</div><div class="mono" style="color:rgba(255,255,255,.8);font-size:10px">75&ndash;89</div></div>
+<div style="background:#2166A8;border-radius:6px;padding:9px 10px"><div style="font:600 11.5px/1.3 inherit;color:#fff">average</div><div class="mono" style="color:rgba(255,255,255,.82);font-size:10px">60&ndash;74</div></div>
+<div style="background:#4E93D6;border-radius:6px;padding:9px 10px"><div style="font:600 11.5px/1.3 inherit;color:#0E1218">poor</div><div class="mono" style="color:rgba(0,0,0,.6);font-size:10px">50&ndash;59</div></div>
+<div style="background:#9CC3EC;border-radius:6px;padding:9px 10px"><div style="font:600 11.5px/1.3 inherit;color:#0E1218">bad</div><div class="mono" style="color:rgba(0,0,0,.62);font-size:10px">40&ndash;49</div></div>
+</div>
+</div>
+</div>
+<div style="background:rgba(255,107,90,.08);border:1px solid rgba(255,107,90,.32);border-radius:10px;padding:13px 15px;margin-top:14px;font:400 12.5px/1.6 inherit;color:#A7B0C0"><strong style="color:#FF6B5A;font-weight:650">The mid-step defect generalises, and that is the finding.</strong> In the dark ladder <code class="mono">average #2166A8</code> measures <strong style="color:#F5F7FA">5.95:1</strong> against white and <strong style="color:#F5F7FA">3.16:1</strong> against near-black &mdash; white works. But the light ladder's <code class="mono">average #2E7BC4</code> clears 4.5:1 against <em>neither</em> white (4.42) nor near-black (4.24). A five-step lightness ramp always has a middle step near L* 50, and L* 50 is exactly where neither polarity of text is safe. So the rule is not "patch the light ladder": <strong style="color:#F5F7FA;font-weight:650">a numeral-bearing chip may not use the ladder's mid step at all</strong> &mdash; it uses the darkened <code class="mono">#1F6099</code> (6.58:1 on white), and the pure ladder stays fill-only as measured. Two variants, one rule, and it is a rule about lightness ramps in general rather than about these ten hexes.</div>
+
+<!-- 6. SENDS BACK -->
+<div style="margin-top:46px;padding-top:22px;border-top:1px solid rgba(255,255,255,.12)">
+<div class="lbl" style="margin-bottom:10px">WHAT v2 SENDS BACK TO 04</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">Two new roles</div><div style="font:400 11.5px/1.55 inherit;color:#A7B0C0"><code class="mono">live</code> in §2.1 and <code class="mono">numeral</code> in §2.2. Both are additions to the role list, so §3's registry and the contrast suite's enumeration both grow. <code class="mono">live</code> has no light text form and is a fill there &mdash; the same two-mechanism shape elevation already has.</div></div>
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">Radius carries meaning</div><div style="font:400 11.5px/1.55 inherit;color:#A7B0C0">§2.3 assigns radius by component. v2 assigns it by <em>register</em>: <code class="mono">0</code> for broadcast furniture, <code class="mono">m</code> for the desk. A rounded score bug is as wrong as a square inbox row, and neither is currently expressible.</div></div>
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">A ladder per appearance</div><div style="font:400 11.5px/1.55 inherit;color:#A7B0C0">§2.1 records one <code class="mono">rating.*</code> ladder. It needs two, like every other colour role, and the mid-step rule stated as a property of lightness ramps rather than as a patch to one hex.</div></div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1640,&quot;height&quot;:2600}}"></script>
+</body>
+</html>

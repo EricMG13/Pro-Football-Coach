@@ -443,6 +443,46 @@ walkthrough asks about direction specifically.
 
 ---
 
+### 2026-08-10 — four owner decisions, and the gaps they exposed
+
+Taken in one session after an adversarial review of the v2 design reference against `04` and `05`.
+
+1. **The SE and mini classes leave the design budget.** Floor 844 × 390, ceiling 932 × 430; the field
+   scale range narrows to 6.54–7.28 pt/yd and the management budget rises to 347 pt. **It does not
+   remove the size-class split** (standard/Pro are compact width, Plus/Max regular — the boundary is
+   inside the supported set), **it does not remove AX5** as the binding constraint, and **it cannot
+   remove those devices from the install base** — no App Store mechanism excludes by screen size, so
+   `SmallestDeviceLayoutTest` becomes two-tier rather than losing a tier. `04` §4.1.
+2. **The destination bar is at the bottom**, 44 pt, icon beside label, active marked on the top edge,
+   hidden in the broadcast register. Costs **one row** at default type and one at AX5 — 303 pt of
+   content, 78 % of the screen. They are called destinations, not tabs, because one position mutates
+   from Recruit to Front office on promotion. `04` §4.2.
+3. **Broadcast packages by occasion** — the strongest idea in the sequence. Two houses (college cut
+   at 9°, pro orthogonal) crossed with three escalations covers all seven occasions in `02` §11 from
+   about ten values. The two house accents measure **1.01:1** against each other, so geometry is
+   necessarily the primary channel and colour the secondary one; a hue-only house system would fail
+   the never-only-colour rule. `04` §2.4.
+4. **The first-run sequence was designed**, because the review found the app **had no entry point at
+   all** — every screen in `04` §4 assumed a coach already in post, while `02` §10 requires the first
+   fifteen minutes to end with a job chosen and a stakeholder met. Title, board, offer, appointment
+   and settings are now in `04` §4, and **canon had contained zero mentions of a settings screen.**
+
+**Three plan defects the review found, all corrected in `05`.** P11 cited nine contract tests when
+`04` §6 has ten. **No phase owned the entry point** — P17 is where that would have surfaced. And P15
+was scheduled to build onboarding after P14, when D9's onboarding is diegetic and rides P12's
+screens; P12 now carries first-run state and P15 owns tuning and the protocol.
+
+**Registry is nineteen.** `ScoreBug` and `StakeholderCard` were added — both used on four or more
+surfaces, both previously assembled ad hoc, which is how the score bug ended up as a grey `StatCell`.
+
+**Still open, and none of it is design's to close:** the failure set (`ErrorBanner`, `EmptyState`)
+remains undrawn in every pass; the map, draft and signing-day surfaces have no reference; all 32 pro
+`TeamTable` pairs are dark-primary so the light-primary contrast floors have never met the case that
+would break them; and nothing gates two *opponents* against mutual illegibility — a fixture-time ΔE
+floor that `02` §11.3.5's machinery could already serve.
+
+---
+
 ## Decisions made without owner input
 
 The owner was asked and did not answer, so these were decided during execution and are marked

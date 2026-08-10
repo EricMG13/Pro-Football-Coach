@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><style>body{margin:0;background:#05070C;-webkit-font-smoothing:antialiased}
+.mono{font:500 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace}
+.lbl{font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:#78839A}
+.num{font-family:'SF Compact Display','SF Pro Display',-apple-system,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.card{background:#121724;border:1px solid rgba(255,255,255,.09);border-radius:12px}
+.phone{width:844px;height:390px;position:relative;overflow:hidden;background:#0A0D14;flex:none}
+.bezel{padding:8px;background:#000;border-radius:44px;box-shadow:0 14px 34px rgba(0,0,0,.5);width:860px;flex:none}
+.note{font:400 11.5px/1.55 -apple-system,sans-serif;color:#A7B0C0}
+.sb{position:absolute;left:0;top:0;right:0;height:22px;display:flex;align-items:center;justify-content:space-between;padding:0 70px;font-family:'SF Compact Display',-apple-system,sans-serif;font-size:11px;font-weight:600;color:#F5F7FA}
+.hi{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:130px;height:4px;border-radius:2px;background:rgba(255,255,255,.4)}
+</style></helmet>
+
+<div style="font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;color:#F5F7FA;padding:40px 44px 72px;max-width:1900px;margin:0 auto">
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:32px;padding-bottom:22px;border-bottom:1px solid rgba(255,255,255,.12)">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="lbl">PRO FOOTBALL COACH &middot; DESIGN REFERENCE v2 &middot; GROUP: FIRST RUN</div>
+<div style="font:700 32px/1.1 -apple-system,'SF Pro Display',sans-serif;letter-spacing:-.02em">The first run &mdash; the hour that sells the game</div>
+<div style="font:400 14px/1.55 inherit;color:#A7B0C0;max-width:76ch">The v2 review found that <strong style="color:#F5F7FA;font-weight:650">the app had no specified entry point.</strong> Every screen in <code class="mono">04</code> §4 assumed a coach already in post, mid-season, with a team &mdash; while <code class="mono">02</code> §10 requires the first fifteen minutes to end with the player having chosen a job with visible stakes, met a stakeholder, set a plan and seen a consequence. Choosing a job is a screen. None of them existed. And <code class="mono">02</code> §9 is explicit that <em>"what sells the game is the first hour, which is a college hour"</em> &mdash; so this was the least-specified part of the most important surface.</div>
+</div>
+<div style="flex:none;width:250px;padding:11px 13px;background:rgba(255,255,255,.05);border-radius:8px;font:400 11px/1.5 inherit;color:#A7B0C0">All identities synthetic. Programme names, coach names and stakeholder voices are generator-shaped placeholders; no real institution, person or colour pair appears.</div>
+</div>
+
+<!-- SEQUENCE MAP -->
+<div style="display:flex;align-items:baseline;gap:12px;margin:38px 0 14px"><div style="font:700 20px/1.2 inherit;letter-spacing:-.015em">The sequence</div><div style="font:400 13px/1.4 inherit;color:#78839A">five screens before week one, four of which did not exist in canon</div></div>
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
+<div class="card" style="padding:12px 14px;border-color:rgba(198,242,78,.35)"><div class="lbl" style="color:#C6F24E;margin-bottom:5px">1 &nbsp;TITLE</div><div class="note">Continue, or start. Carries the save. The only screen that exists before a career does.</div></div>
+<div class="card" style="padding:12px 14px;border-color:rgba(198,242,78,.35)"><div class="lbl" style="color:#C6F24E;margin-bottom:5px">2 &nbsp;THE BOARD</div><div class="note">Three open jobs, each with its stakes visible. <strong style="color:#F5F7FA">The first real decision.</strong></div></div>
+<div class="card" style="padding:12px 14px;border-color:rgba(198,242,78,.35)"><div class="lbl" style="color:#C6F24E;margin-bottom:5px">3 &nbsp;THE OFFER</div><div class="note">What they expect, what you get, what happens if you miss. Accept or go back.</div></div>
+<div class="card" style="padding:12px 14px;border-color:rgba(198,242,78,.35)"><div class="lbl" style="color:#C6F24E;margin-bottom:5px">4 &nbsp;THE AD</div><div class="note">First stakeholder, in voice. States the bar in one sentence.</div></div>
+<div class="card" style="padding:12px 14px"><div class="lbl" style="margin-bottom:5px">5 &nbsp;WEEK ONE</div><div class="note">Hands off into the ordinary inbox. Onboarding ends by becoming the game.</div></div>
+</div>
+
+<!-- SCREEN 1 + 2 -->
+<div style="display:flex;gap:16px;align-items:flex-start;margin-top:26px;flex-wrap:wrap">
+<div style="display:flex;flex-direction:column;gap:9px">
+<div class="lbl">1 &middot; TITLE &mdash; 844 &times; 390</div>
+<div class="bezel"><div class="phone">
+  <div style="position:absolute;inset:0;background:linear-gradient(160deg,#0E1626 0%,#0A0D14 55%,#0A0D14 100%)"></div>
+  <!-- faint field ruling as texture -->
+  <div style="position:absolute;left:0;right:0;bottom:0;height:170px;opacity:.16;background:repeating-linear-gradient(90deg,transparent 0 63px,rgba(255,255,255,.5) 63px 64px)"></div>
+  <div class="sb"><span>9:41</span><span>86%</span></div>
+  <div style="position:absolute;left:70px;top:74px">
+    <div class="num" style="font-size:11px;font-weight:700;letter-spacing:.26em;color:#C6F24E">SEASON 2026 &middot; WEEK ZERO</div>
+    <div style="font:700 44px/1.02 -apple-system,'SF Pro Display',sans-serif;letter-spacing:-.03em;margin-top:11px">Pro Football<br>Coach</div>
+  </div>
+  <div style="position:absolute;right:70px;top:70px;width:330px;display:flex;flex-direction:column;gap:9px">
+    <div style="background:#121724;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:12px">
+      <div style="width:38px;height:38px;border-radius:6px;background:#14294B;border:1px solid #C8A24A;display:flex;align-items:center;justify-content:center"><span class="num" style="font-size:13px;font-weight:700;color:#C8A24A">AG</span></div>
+      <div style="flex:1"><div style="font:600 14px/1.25 inherit">Continue</div><div class="mono" style="color:#78839A;margin-top:3px">Ashgrove &middot; year 3 &middot; week 9 &middot; 6&ndash;2</div></div>
+      <span style="color:#5B9DFF;font-size:15px">&#9656;</span>
+    </div>
+    <button style="height:44px;background:#C6F24E;color:#0A0D14;border:0;border-radius:10px;font:650 14px/1 -apple-system,sans-serif;cursor:pointer;width:100%">Start a new career</button>
+    <div style="display:flex;gap:9px">
+      <button style="flex:1;height:44px;background:transparent;color:#A7B0C0;border:1px solid rgba(255,255,255,.2);border-radius:10px;font:500 13.5px/1 -apple-system,sans-serif;cursor:pointer">Settings</button>
+      <button style="flex:1;height:44px;background:transparent;color:#A7B0C0;border:1px solid rgba(255,255,255,.2);border-radius:10px;font:500 13.5px/1 -apple-system,sans-serif;cursor:pointer">Record book</button>
+    </div>
+  </div>
+  <div class="hi"></div>
+</div></div>
+</div>
+
+<div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:11px">
+<div class="card" style="padding:14px 16px;border-color:rgba(198,242,78,.4)">
+<div style="font:650 13px/1.3 inherit;color:#C6F24E;margin-bottom:7px">One save, and the title screen says so</div>
+<div class="note"><code class="mono">CLAUDE.md</code> and <code class="mono">PRODUCT.md</code> both promise <em>one save, one coach, one continuous career</em>. So there is no slot picker &mdash; there is a <strong style="color:#F5F7FA">Continue</strong> card carrying the career's actual state, and starting a new one is the destructive act. That framing is the product's positioning rendered as a screen, and it costs one card.</div>
+</div>
+<div class="card" style="padding:14px 16px;border-color:rgba(255,107,90,.4)">
+<div style="font:650 13px/1.3 inherit;color:#FF6B5A;margin-bottom:7px">Start a new career is destructive and must behave like it</div>
+<div class="note">With one save, "new career" overwrites a career the player may have run for twenty seasons. <code class="mono">04</code> §3's destructive rule applies in full: confirmed, labelled with what will happen &mdash; <em>"This ends the Ashgrove career, year 3, 6&ndash;2. It cannot be undone."</em> This is the single most dangerous control in the product and it sits on the first screen.</div>
+</div>
+<div class="card" style="padding:14px 16px">
+<div style="font:650 13px/1.3 inherit;margin-bottom:7px">Settings finally has a home</div>
+<div class="note">The review found <strong style="color:#F5F7FA">zero mentions of a settings screen anywhere in canon</strong> &mdash; not in <code class="mono">02</code>, <code class="mono">04</code>, <code class="mono">05</code> or the checklist. It owns the D1 tunables (<code class="mono">02</code> §11.3: call-ins 12&ndash;40), appearance, Reduce Motion acknowledgement, and the save. Reachable from the title and from the last tab; nowhere else.</div>
+</div>
+</div>
+</div>
+
+<!-- SCREEN 2 -->
+<div style="display:flex;gap:16px;align-items:flex-start;margin-top:24px;flex-wrap:wrap">
+<div style="display:flex;flex-direction:column;gap:9px">
+<div class="lbl">2 &middot; THE BOARD &mdash; DESTINATION &middot; THE FIRST REAL DECISION</div>
+<div class="bezel"><div class="phone">
+  <div class="sb"><span>9:41</span><span>86%</span></div>
+  <div style="position:absolute;left:59px;top:28px;right:16px;display:flex;align-items:baseline;gap:10px">
+    <span style="font:700 19px/1.1 -apple-system,'SF Pro Display',sans-serif;letter-spacing:-.015em">Three programmes want you</span>
+    <span class="note" style="font-size:11.5px">Pick one. You cannot come back to this.</span>
+  </div>
+  <div style="position:absolute;left:59px;top:64px;right:16px;bottom:30px;display:flex;gap:11px">
+
+    <div style="flex:1;background:#121724;border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="height:34px;background:#14294B;display:flex;align-items:center;gap:8px;padding:0 12px"><div style="width:15px;height:15px;border-radius:3px;background:#C8A24A"></div><span class="num" style="font-size:13px;font-weight:700;letter-spacing:.05em;color:#fff">ASHGROVE</span></div>
+      <div style="padding:11px 13px;flex:1;display:flex;flex-direction:column;gap:8px">
+        <div class="mono" style="color:#78839A;font-size:10px">SLEEPING GIANT &middot; TIER 1 CONFERENCE</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">Roster</span><span class="num" style="font-size:12px;font-weight:700;color:#4E93D6">68</span></div>
+          <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">Resources</span><span class="num" style="font-size:12px;font-weight:700;color:#57D98A">Strong</span></div>
+          <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">They expect</span><span class="num" style="font-size:12px;font-weight:700;color:#FF6B5A">9 wins, year 1</span></div>
+          <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">Patience</span><span class="num" style="font-size:12px;font-weight:700;color:#FF6B5A">2 seasons</span></div>
+        </div>
+        <div style="margin-top:auto;font:400 11px/1.45 inherit;color:#A7B0C0;border-top:1px solid rgba(255,255,255,.08);padding-top:8px">Money and a fanbase. They have not won since before you were born and they blame the last four coaches.</div>
+      </div>
+      <button style="height:44px;background:#5B9DFF;color:#04070E;border:0;font:650 13.5px/1 -apple-system,sans-serif;cursor:pointer">Take Ashgrove</button>
+    </div>
+
+    <div style="flex:1;background:#121724;border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="height:34px;background:#1F4A38;display:flex;align-items:center;gap:8px;padding:0 12px"><div style="width:15px;height:15px;border-radius:3px;background:#D8CDB0"></div><span class="num" style="font-size:13px;font-weight:700;letter-spacing:.05em;color:#fff">MARLOWE STATE</span></div>
+      <div style="padding:11px 13px;flex:1;display:flex;flex-direction:column;gap:8px">
+        <div class="mono" style="color:#78839A;font-size:10px">STEADY HAND &middot; TIER 2 CONFERENCE</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">Roster</span><span class="num" style="font-size:12px;font-weight:700;color:#2166A8">74</span></div>
+          <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">Resources</span><span class="num" style="font-size:12px;font-weight:700;color:#FFB026">Modest</span></div>
+          <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">They expect</span><span class="num" style="font-size:12px;font-weight:700;color:#57D98A">7 wins, year 2</span></div>
+          <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">Patience</span><span class="num" style="font-size:12px;font-weight:700;color:#57D98A">4 seasons</span></div>
+        </div>
+        <div style="margin-top:auto;font:400 11px/1.45 inherit;color:#A7B0C0;border-top:1px solid rgba(255,255,255,.08);padding-top:8px">A better roster than the job deserves and an athletic director who has seen coaches come and go. Time, but no money.</div>
+      </div>
+      <button style="height:44px;background:#5B9DFF;color:#04070E;border:0;font:650 13.5px/1 -apple-system,sans-serif;cursor:pointer">Take Marlowe State</button>
+    </div>
+
+    <div style="flex:1;background:#121724;border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="height:34px;background:#5A1E2E;display:flex;align-items:center;gap:8px;padding:0 12px"><div style="width:15px;height:15px;border-radius:3px;background:#C0C6CC"></div><span class="num" style="font-size:13px;font-weight:700;letter-spacing:.05em;color:#fff">PELLWORTH</span></div>
+      <div style="padding:11px 13px;flex:1;display:flex;flex-direction:column;gap:8px">
+        <div class="mono" style="color:#78839A;font-size:10px">RECLAMATION &middot; TIER 3 CONFERENCE</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">Roster</span><span class="num" style="font-size:12px;font-weight:700;color:#9CC3EC">51</span></div>
+          <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">Resources</span><span class="num" style="font-size:12px;font-weight:700;color:#FF6B5A">Thin</span></div>
+          <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">They expect</span><span class="num" style="font-size:12px;font-weight:700;color:#57D98A">Be competitive</span></div>
+          <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">Patience</span><span class="num" style="font-size:12px;font-weight:700;color:#57D98A">6 seasons</span></div>
+        </div>
+        <div style="margin-top:auto;font:400 11px/1.45 inherit;color:#A7B0C0;border-top:1px solid rgba(255,255,255,.08);padding-top:8px">Nobody is watching and nobody will fire you. Whatever this becomes, you built it.</div>
+      </div>
+      <button style="height:44px;background:#5B9DFF;color:#04070E;border:0;font:650 13.5px/1 -apple-system,sans-serif;cursor:pointer">Take Pellworth</button>
+    </div>
+  </div>
+  <div class="hi"></div>
+</div></div>
+</div>
+
+<div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:11px">
+<div class="card" style="padding:14px 16px;border-color:rgba(198,242,78,.4)">
+<div style="font:650 13px/1.3 inherit;color:#C6F24E;margin-bottom:7px">It passes 02 §2.2, which is the whole point</div>
+<div class="note"><strong style="color:#F5F7FA">Two defensible answers:</strong> resources with a two-season clock, or time with a thin roster &mdash; and a middle option that is genuinely neither. <strong style="color:#F5F7FA">A visible consequence:</strong> the expectation and the patience are stated as numbers before you choose, not discovered in year two. <strong style="color:#F5F7FA">A cost:</strong> the other two jobs are gone. A first decision that fails this test teaches the player that decisions here do not matter, on the screen where they are deciding whether to keep playing.</div>
+</div>
+<div class="card" style="padding:14px 16px">
+<div style="font:650 13px/1.3 inherit;margin-bottom:7px">Three, and three is the argument</div>
+<div class="note">The working-memory rule caps a decision at four visible options; three cards at 246 pt each is what 785 pt of width holds without a scroll. It also happens to be the number that makes the trade legible &mdash; one of each pole and one in between. A job board that scrolled would be a list, and a list is a filter problem, not a decision.</div>
+</div>
+<div class="card" style="padding:14px 16px">
+<div style="font:650 13px/1.3 inherit;margin-bottom:7px">Archetype is the load-bearing word</div>
+<div class="note"><code class="mono">SLEEPING GIANT</code>, <code class="mono">STEADY HAND</code>, <code class="mono">RECLAMATION</code> come from P2's 14 generated archetypes, which <code class="mono">IdentityDistributionTests</code> already proves are mechanically real rather than cosmetic. This screen is the first place a player meets one, and it is the payoff for a whole phase of generation work that has so far been invisible.</div>
+</div>
+<div class="card" style="padding:14px 16px;border-color:rgba(255,176,38,.4)">
+<div style="font:650 13px/1.3 inherit;color:#FFB026;margin-bottom:7px">Open: does the board pick three, or does the player search?</div>
+<div class="note">Drawn as three offered jobs. The alternative &mdash; browse all 134 programmes and apply &mdash; is a different game and a much worse first five minutes, but it is a real design question and <code class="mono">02</code> §10 does not settle it. Flagged for the owner rather than decided here.</div>
+</div>
+</div>
+</div>
+
+<!-- SCREEN 4: THE AD -->
+<div style="display:flex;gap:16px;align-items:flex-start;margin-top:24px;flex-wrap:wrap">
+<div style="display:flex;flex-direction:column;gap:9px">
+<div class="lbl">4 &middot; THE ATHLETIC DIRECTOR &mdash; FIRST STAKEHOLDER, IN VOICE</div>
+<div class="bezel"><div class="phone">
+  <div style="position:absolute;inset:0;background:#0A0D14"></div>
+  <div style="position:absolute;left:0;top:0;bottom:0;width:300px;background:#14294B"></div>
+  <div style="position:absolute;left:0;bottom:0;width:300px;height:120px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.45))"></div>
+  <div class="sb"><span>9:41</span><span>86%</span></div>
+  <div style="position:absolute;left:70px;top:64px;width:210px">
+    <div style="width:56px;height:56px;border-radius:8px;background:#C8A24A;display:flex;align-items:center;justify-content:center"><span class="num" style="font-size:21px;font-weight:700;color:#14294B">AG</span></div>
+    <div style="font:700 25px/1.08 -apple-system,'SF Pro Display',sans-serif;letter-spacing:-.02em;color:#fff;margin-top:13px">Ashgrove<br>Ironsides</div>
+    <div class="num" style="font-size:11px;font-weight:700;letter-spacing:.16em;color:#C8A24A;margin-top:9px">HEAD COACH &middot; YEAR ONE</div>
+  </div>
+  <div style="position:absolute;left:336px;top:56px;right:16px;bottom:30px;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px">
+      <div style="width:30px;height:30px;border-radius:50%;background:#1B2130;border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center"><span class="num" style="font-size:11px;font-weight:700;color:#A7B0C0">EV</span></div>
+      <div><div style="font:600 13px/1.2 inherit">Eleanor Vance-Rutherford</div><div class="mono" style="color:#78839A;font-size:10px;margin-top:2px">ATHLETIC DIRECTOR &middot; STAKEHOLDER 1 OF 4</div></div>
+    </div>
+    <div style="background:#121724;border:1px solid rgba(255,255,255,.09);border-left:3px solid #C8A24A;border-radius:0 10px 10px 0;padding:14px 16px">
+      <div style="font:400 15px/1.5 inherit;color:#F5F7FA">"I hired you because the last four wanted five years. You do not have five. Nine wins keeps the boosters quiet and keeps me employed, and I would rather we were both here in 2028."</div>
+      <div style="font:400 12.5px/1.5 inherit;color:#A7B0C0;margin-top:10px">"Your first one is at home. Try not to lose it."</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <div style="flex:1;background:#121724;border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:10px 12px"><div class="mono" style="color:#78839A;font-size:9.5px;margin-bottom:4px">THE BAR</div><div class="num" style="font-size:17px;font-weight:700;color:#FF6B5A">9 wins</div></div>
+      <div style="flex:1;background:#121724;border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:10px 12px"><div class="mono" style="color:#78839A;font-size:9.5px;margin-bottom:4px">PATIENCE</div><div class="num" style="font-size:17px;font-weight:700;color:#FF6B5A">2 seasons</div></div>
+      <div style="flex:1;background:#121724;border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:10px 12px"><div class="mono" style="color:#78839A;font-size:9.5px;margin-bottom:4px">WEEK ONE</div><div class="num" style="font-size:17px;font-weight:700;color:#F5F7FA">vs WEX</div></div>
+    </div>
+    <button style="margin-top:auto;height:44px;background:#C6F24E;color:#0A0D14;border:0;border-radius:10px;font:650 14px/1 -apple-system,sans-serif;cursor:pointer;width:100%">Get to work</button>
+  </div>
+  <div class="hi"></div>
+</div></div>
+</div>
+
+<div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:11px">
+<div class="card" style="padding:14px 16px;border-color:rgba(198,242,78,.4)">
+<div style="font:650 13px/1.3 inherit;color:#C6F24E;margin-bottom:7px">This is where team colour earns its keep</div>
+<div class="note">The left third is the programme's generated primary at full bleed with its secondary as the crest and rule. It is the only full-bleed team surface outside the match, and it exists because <strong style="color:#F5F7FA">this is the moment the player becomes this programme's coach.</strong> Every save's version of this screen is a different colour, which is exactly the differentiator P2 built and v1 never spent.</div>
+</div>
+<div class="card" style="padding:14px 16px">
+<div style="font:650 13px/1.3 inherit;margin-bottom:7px">A stakeholder needs a component, and did not have one</div>
+<div class="note"><code class="mono">04</code> §7 requires stakeholder voices <em>"distinct enough to be recognised without a name attached"</em>, and §3's registry had nothing to say them with. <code class="mono">StakeholderCard</code>: initials disc, name, role, group index, and quoted speech against a rule in the speaker's colour. Four groups, four rule colours, so the speaker is identifiable before the name is read.</div>
+</div>
+<div class="card" style="padding:14px 16px">
+<div style="font:650 13px/1.3 inherit;margin-bottom:7px">The bar is stated as numbers, once, here</div>
+<div class="note">Nine wins and two seasons appear on the board, again in the offer, and a third time from the AD's mouth. That is deliberate repetition: <code class="mono">02</code> §7's jeopardy only works if the player knew the bar before they missed it, and <code class="mono">01-RESEARCH.md</code> §6.0 found the prior build's jeopardy frozen for a whole season without the player ever being told what it measured.</div>
+</div>
+</div>
+</div>
+
+<!-- NAV CHROME -->
+<div style="display:flex;align-items:baseline;gap:12px;margin:46px 0 14px"><div style="font:700 20px/1.2 inherit;letter-spacing:-.015em">The bar</div><div style="font:600 10px/1 ui-monospace,Menlo,monospace;background:#5B9DFF;color:#04070E;padding:5px 8px;letter-spacing:.06em">OWNER: BOTTOM</div><div style="font:400 13px/1.4 inherit;color:#78839A">five destinations, and what they cost in a 390 pt window</div></div>
+
+<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+<div style="flex:1;min-width:420px">
+<div class="card" style="padding:16px 18px">
+<div class="lbl" style="margin-bottom:11px">BOTTOM BAR &middot; 44 PT &middot; ICON BESIDE LABEL, NOT UNDER IT</div>
+<div style="background:#0C0F16;border-top:1px solid rgba(255,255,255,.1);height:44px;display:flex;align-items:stretch;max-width:785px">
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border-top:2px solid #C6F24E;margin-top:-1px"><span style="color:#C6F24E;font-size:13px">&#9632;</span><span class="num" style="font-size:12.5px;font-weight:700;color:#C6F24E">Week</span></div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px"><span style="color:#78839A;font-size:13px">&#9679;</span><span class="num" style="font-size:12.5px;font-weight:600;color:#A7B0C0">Team</span></div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px"><span style="color:#78839A;font-size:13px">&#9650;</span><span class="num" style="font-size:12.5px;font-weight:600;color:#A7B0C0">Recruit</span><span class="num" style="font-size:9.5px;font-weight:700;color:#0A0D14;background:#C6F24E;padding:2px 4px;border-radius:3px">3</span></div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px"><span style="color:#78839A;font-size:13px">&#9670;</span><span class="num" style="font-size:12.5px;font-weight:600;color:#A7B0C0">League</span></div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px"><span style="color:#78839A;font-size:13px">&#9724;</span><span class="num" style="font-size:12.5px;font-weight:600;color:#A7B0C0">Career</span></div>
+</div>
+<div class="note" style="margin-top:12px"><strong style="color:#F5F7FA">Icon beside label, not stacked.</strong> The stock iOS arrangement puts a label under an icon and needs ~49 pt; landscape has width to spare and height to save, so the pair goes horizontal and the bar comes down to 44 &mdash; exactly the touch floor, not a pixel more. The active tab is marked by a 2 pt <code class="mono">live</code> rule on its <em>top</em> edge, because in landscape the bar's bottom edge is against the home indicator and a bottom marker would collide with it.</div>
+</div>
+</div>
+
+<div style="flex:1;min-width:340px;display:flex;flex-direction:column;gap:11px">
+<div class="card" style="padding:14px 16px;border-color:rgba(255,176,38,.4)">
+<div style="font:650 13px/1.3 inherit;color:#FFB026;margin-bottom:7px">The bar costs exactly one row, and here is the arithmetic</div>
+<div class="note">390 &minus; 22 status &minus; 44 bar &minus; 21 home indicator = <strong style="color:#F5F7FA">303 pt of content</strong>, 78% of the screen. At 44 pt rows that is <strong style="color:#F5F7FA">6 rows, down from 7</strong>. At AX5, where a row is ~65 pt, it is <strong style="color:#F5F7FA">4 rows, down from 5</strong>. Losing a fifth of the scarce axis to navigation is the real price of a bottom bar in landscape and it should be paid knowingly. Stock iOS at 49 pt would cost the same row and 5 pt more.</div>
+</div>
+<div class="card" style="padding:14px 16px">
+<div style="font:650 13px/1.3 inherit;margin-bottom:7px">The match view has no bar</div>
+<div class="note">The broadcast register is full-bleed, so the bar is hidden there and the field gets all 369 pt &mdash; which is also what <code class="mono">04</code> §5.2's arithmetic already assumed. Leaving the bar visible during a match would clip the field by 44 pt and break the whole-field claim.</div>
+</div>
+<div class="card" style="padding:14px 16px">
+<div style="font:650 13px/1.3 inherit;margin-bottom:7px">"Tabs" is the wrong word and the docs should stop using it</div>
+<div class="note">You said you were not sure it is tabs, and you are right to doubt it. These are five <em>destinations</em> in a persistent switcher, and <code class="mono">04</code> §4 calls them tabs only because iOS does. The distinction matters once: <strong style="color:#F5F7FA">Recruit becomes Front office after promotion</strong>, so one position in the bar changes its label, icon and contents mid-career. A tab bar implies fixed furniture; this one has a slot that mutates when the tier does. Naming it a <em>destination bar</em> in <code class="mono">04</code> is a one-word change that stops a builder assuming the five are static.</div>
+</div>
+</div>
+</div>
+
+<div style="margin-top:44px;padding-top:22px;border-top:1px solid rgba(255,255,255,.12)">
+<div class="lbl" style="margin-bottom:10px">WHAT THIS GROUP SENDS BACK TO 04</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">§4 gains an entry sequence</div><div class="note">Title, Board, Offer, Appointment, Settings. Five screens that did not exist in the table, four of which precede everything that did. The Board is a DESTINATION and passes §2.2.</div></div>
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">§3 gains <code class="mono">StakeholderCard</code></div><div class="note">Four groups, four rule colours, quoted speech, speaker identifiable before the name is read. §7 required the voices to be distinct and gave nothing to say them with.</div></div>
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">§4 gains the destination bar</div><div class="note">Bottom, 44 pt, icon beside label, active marked on the top edge, hidden in the broadcast register. And a stated content budget of 303 pt, because every screen in §4 now inherits it.</div></div>
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#FF6B5A;margin-bottom:5px">Destructive, on screen one</div><div class="note">One save means "new career" destroys a twenty-season career. It is the most dangerous control in the product and §3's confirmation rule has to name what is lost, not just ask.</div></div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1960,&quot;height&quot;:2400}}"></script>
+</body>
+</html>
