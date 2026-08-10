@@ -8,9 +8,55 @@ The honest picture: what exists, what is verified, what is not.
 
 ## Where the project actually is
 
-**P0 and P1 are complete. There is a foundation, a model and two rules modules.**
+**P0, P1 and P2 are complete. There is a foundation, a model, two rules modules and a generator.**
 
-### P1 — model and rules
+### P2 — generation and identity
+
+One seed builds a whole two-tier world: map, 10 conferences, 134 programmes, 32 pro teams,
+colours, venues, traditions and rivalries. Canon gained `02` §11.3.5 (the ΔE colour space and
+threshold, the contrast floors, the retry budget, the sweep size, and what the blocklist does and
+does not cover — none of which existed) and a rewritten `04` §2.1 contrast contract.
+
+| Gate | Result |
+|---|---|
+| G1 build | green |
+| G2 tests | 194 tests, 40,025 checks, all passed |
+| G4 scope | generation only; no engine, no season, no view |
+| Name-collision test | green, exhaustively over the reachable word space **and** across 200 leagues |
+| Trade-dress test | green across 200 leagues, plus every fallback pair |
+| `IdentityDistributionTests` | both limbs of D6's falsifier |
+| Cross-process | suite output byte-identical across five invocations; the encoded world pinned by size and an order-sensitive digest |
+
+**D6's falsifier did its job and failed the first implementation.** Four of the five archetype
+priors were never written onto a programme, so a programme carried an `archetypeID` and nothing the
+id explained — the falsifier's own definition of cosmetic. `Programme` now carries resources,
+fanbase volatility, academic constraint and recruiting reach, and a nearest-centroid classifier
+recovers archetype at **100%** over 5,360 programmes against a 7% chance baseline and 13% from
+prestige alone.
+
+**The phase-end review raised 13 findings across four lenses; 12 survived independent refutation,
+two of them legal.** The full detail is in the fix commit. Four lessons outlive P2:
+
+1. **A denylist only protects the slice it covers.** The blocklist was FBS institutions plus FBS and
+   NFL nicknames, and the generator emitted `Southern Conference` and `Frontier Conference` — both
+   real bodies — 63 and 58 times across a sweep, seen by nothing.
+2. **A whole-string comparison is not a name check.** `blocks("Old Dominion")` was true and
+   `blocks("Old Dominion Tech")` false, and `Old Dominion Tech` is the exact string `PORT-LOG.md`
+   records the prior build shipping.
+3. **A sample is not "at any seed".** The morpheme check read one file and missed 505 of 638
+   reachable words. The reachable space enumerates in a fraction of a second, so it is now checked
+   exhaustively; `GenerationVocabulary` collects it from the types that draw it.
+4. **Test seeds can be correlated without anyone noticing.** `sweepSeed` multiplied by SplitMix64's
+   own gamma, so 200 "independent" leagues were one stream at 200 offsets and the trade-dress sweep
+   was worth about five leagues.
+
+**What P2 does NOT do.** Conference realignment (`02` §8) is a simulated system that needs seasons
+to drive it; P2 generates the starting map only and P6 or later owns the rest. No players are
+generated — rosters are empty id lists until P7 and P8 fill them. No staff are generated.
+
+### P0 and P1 — foundation, model and rules
+
+#### P1 — model and rules
 
 `02` §11 did not exist; P1 needed league structure, scholarship limits, eligibility clocks, roster
 sizes, the cap and the draft shape, and canon named none of them. Per the doc-first amendment rule
@@ -39,7 +85,7 @@ across eight separate process invocations. Two lessons carried forward:
 **What is NOT true yet:** nothing generates a league, nothing resolves a snap, and no rule is
 *enforced* — `RosterLegality` is a predicate and P7 and P8 own enforcement. P2 starts generation.
 
-### P0 — foundation
+#### P0 — foundation
 
 The spec package is complete and P0 has run: the repository is stripped to the four things
 `docs/PORT-LOG.md` justifies keeping, the `03b` §1 module skeleton exists, the `03` §3 hierarchical
