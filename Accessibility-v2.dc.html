@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><style>body{margin:0;background:#05070C;-webkit-font-smoothing:antialiased}
+.mono{font:500 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace}
+.lbl{font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:#78839A}
+.num{font-family:'SF Compact Display','SF Pro Display',-apple-system,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.card{background:#121724;border:1px solid rgba(255,255,255,.09);border-radius:12px}
+.note{font:400 11.5px/1.55 -apple-system,sans-serif;color:#A7B0C0}
+.phone{width:844px;height:390px;position:relative;overflow:hidden;background:#0A0D14;flex:none}
+.bezel{padding:8px;background:#000;border-radius:44px;box-shadow:0 14px 34px rgba(0,0,0,.5);width:860px;flex:none}
+.sb{position:absolute;left:0;top:0;right:0;height:22px;display:flex;align-items:center;justify-content:space-between;padding:0 70px;font-family:'SF Compact Display',-apple-system,sans-serif;font-size:11px;font-weight:600;color:#F5F7FA}
+.hi{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:130px;height:4px;border-radius:2px;background:rgba(255,255,255,.4)}
+.bar{position:absolute;left:0;right:0;bottom:21px;height:44px;background:#0C0F16;border-top:1px solid rgba(255,255,255,.1);display:flex;font-family:'SF Compact Display',-apple-system,sans-serif;font-size:12.5px;font-weight:600;color:#A7B0C0}
+.bi{flex:1;display:flex;align-items:center;justify-content:center;gap:6px}
+.tt{outline:1px dashed rgba(198,242,78,.75);outline-offset:0}
+</style></helmet>
+
+<div style="font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;color:#F5F7FA;padding:40px 44px 72px;max-width:1980px;margin:0 auto">
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:32px;padding-bottom:22px;border-bottom:1px solid rgba(255,255,255,.12)">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="lbl">PRO FOOTBALL COACH &middot; DESIGN REFERENCE v2 &middot; GROUP: ACCESSIBILITY</div>
+<div style="font:700 32px/1.1 -apple-system,'SF Pro Display',sans-serif;letter-spacing:-.02em">AX5, VoiceOver, targets, motion</div>
+<div style="font:400 14px/1.55 inherit;color:#A7B0C0;max-width:78ch">The v2 critique's second P0, and the worst finding in it: <strong style="color:#F5F7FA;font-weight:650">v1 drew four AX5 renders and v2 drew none.</strong> Every AX5 mention in the v2 set was prose sitting beside a default-size screen. Canon names AX5 in 369 pt as <em>the</em> binding constraint and the library that replaced v1 stopped testing it. This group closes that and the three §6 clauses that had no reference at all &mdash; VoiceOver, touch targets and Reduce Motion.</div>
+</div>
+<div style="flex:none;width:280px;padding:11px 13px;background:rgba(255,176,38,.1);border:1px solid rgba(255,176,38,.35);border-radius:8px;font:400 11px/1.5 inherit;color:#A7B0C0">AX5 point sizes remain <strong style="color:#FFB026">UNVERIFIED</strong> — cited from memory, as is the 44 pt floor. Confirm both against the HIG before P11. What is drawn here is the <em>shape</em> of the failure, which does not change if 53 turns out to be 51.</div>
+</div>
+
+<!-- AX5 -->
+<div style="display:flex;align-items:baseline;gap:12px;margin:38px 0 14px"><div style="font:700 20px/1.2 inherit;letter-spacing:-.015em">1 &nbsp;AX5, drawn</div><div style="font:400 13px/1.4 inherit;color:#78839A">body and headline both 53 pt &middot; 303 pt of content under the bar &middot; four rows, not seven</div></div>
+
+<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+<div style="display:flex;flex-direction:column;gap:9px">
+<div class="lbl">INBOX AT AX5 &middot; THE RAIL COLLAPSES TO A QUEUE OF ONE</div>
+<div class="bezel"><div class="phone">
+  <div class="sb"><span>9:41</span><span>86%</span></div>
+  <div style="position:absolute;left:59px;top:26px;right:16px;height:30px;display:flex;align-items:center;gap:10px;border-bottom:2px solid #14294B">
+    <span style="font:650 22px/1 inherit">Inbox</span>
+    <span class="num" style="font-size:15px;font-weight:700;color:#C6F24E">4 open</span>
+  </div>
+  <div style="position:absolute;left:59px;top:64px;right:16px;bottom:76px;overflow:hidden">
+    <div style="background:#1B2130;border-radius:10px;padding:12px 14px;display:flex;gap:11px;align-items:flex-start">
+      <div style="width:5px;align-self:stretch;background:#C6F24E;border-radius:3px"></div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><span class="num" style="font-size:14px;font-weight:700;letter-spacing:.08em;color:#78839A">ATHLETIC DIRECTOR</span><span class="num" style="font-size:12px;font-weight:700;color:#0A0D14;background:#C6F24E;padding:3px 6px">ANSWER</span></div>
+        <div style="font:600 53px/1.12 inherit;letter-spacing:-.014em">A decision on the suspension</div>
+        <div style="font:400 43px/1.16 inherit;color:#FF6B5A;margin-top:8px">Costs 1 starter, 2 games</div>
+      </div>
+    </div>
+    <div style="margin-top:9px;display:flex;align-items:center;justify-content:space-between;padding:0 4px">
+      <span class="num" style="font-size:15px;font-weight:600;color:#78839A">3 more &middot; scrolls</span>
+      <span style="color:#78839A;font-size:15px">&#9662;</span>
+    </div>
+  </div>
+  <div class="bar">
+    <div class="bi" style="color:#C6F24E;border-top:2px solid #C6F24E;margin-top:-1px"><span style="font-size:13px">&#9632;</span>Week</div>
+    <div class="bi"><span style="font-size:13px">&#9679;</span>Team</div>
+    <div class="bi"><span style="font-size:13px">&#9650;</span>Recruit</div>
+    <div class="bi"><span style="font-size:13px">&#9670;</span>League</div>
+    <div class="bi"><span style="font-size:13px">&#9724;</span>Career</div>
+  </div>
+  <div class="hi"></div>
+</div></div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px">
+<div class="lbl">GAME PLAN AT AX5 &middot; TWO PANES BECOME ONE COLUMN, COMMIT PINNED</div>
+<div class="bezel"><div class="phone">
+  <div class="sb"><span>9:41</span><span>86%</span></div>
+  <div style="position:absolute;left:59px;top:26px;right:16px;height:30px;display:flex;align-items:center;gap:10px;border-bottom:2px solid #14294B">
+    <span style="font:650 22px/1 inherit">Game plan</span>
+    <span class="num" style="font-size:15px;font-weight:700;color:#FFB026">8 / 12</span>
+  </div>
+  <div style="position:absolute;left:59px;top:64px;right:16px;bottom:126px;overflow:hidden">
+    <div style="font:600 43px/1.14 inherit;letter-spacing:-.012em">Inside right is their weakness.</div>
+    <div style="margin-top:14px">
+      <div class="num" style="font-size:15px;font-weight:700;letter-spacing:.08em;color:#78839A;margin-bottom:8px">TEMPO</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="height:52px;background:#5B9DFF;color:#04070E;border-radius:8px;display:flex;align-items:center;padding:0 16px;font:650 34px/1 -apple-system,sans-serif">normal</div>
+        <div style="height:52px;background:#1B2130;color:#A7B0C0;border-radius:8px;display:flex;align-items:center;padding:0 16px;font:500 34px/1 -apple-system,sans-serif">hurry</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:59px;right:16px;bottom:76px;height:44px"><button style="width:100%;height:44px;background:#5B9DFF;color:#04070E;border:0;border-radius:9px;font:650 20px/1 -apple-system,sans-serif;cursor:pointer">Commit the plan</button></div>
+  <div class="bar">
+    <div class="bi" style="color:#C6F24E;border-top:2px solid #C6F24E;margin-top:-1px"><span style="font-size:13px">&#9632;</span>Week</div>
+    <div class="bi"><span style="font-size:13px">&#9679;</span>Team</div>
+    <div class="bi"><span style="font-size:13px">&#9650;</span>Recruit</div>
+    <div class="bi"><span style="font-size:13px">&#9670;</span>League</div>
+    <div class="bi"><span style="font-size:13px">&#9724;</span>Career</div>
+  </div>
+  <div class="hi"></div>
+</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px">
+<div class="card" style="padding:14px 16px;border-color:rgba(198,242,78,.4)">
+<div style="font:650 13px/1.3 inherit;color:#C6F24E;margin-bottom:7px">The Inbox holds one item, and that is the honest form</div>
+<div class="note">One card fills 303 pt at AX5. The rail-plus-detail split has nowhere to go, so it collapses into <strong style="color:#F5F7FA">a queue of one</strong> — which is the honest shape of a screen whose job is "answer the next thing". The cost line survives because it is the shortest string on the card and was written to be. <strong style="color:#F5F7FA">Copy length is a Dynamic Type constraint, not a style preference.</strong></div>
+</div>
+<div class="card" style="padding:14px 16px;border-color:rgba(198,242,78,.4)">
+<div style="font:650 13px/1.3 inherit;color:#C6F24E;margin-bottom:7px">The commit pins, and this render is why the rule exists</div>
+<div class="note">Two option cards cannot sit side by side at 34 pt, so the pane is one column and <code class="mono">SegmentedControl</code> is a list per §3's above-AX3 rule. If the commit scrolled with the content it would sit below the fold and <code class="mono">SmallestDeviceLayoutTest</code> would fail on <strong style="color:#F5F7FA">the most important control on the screen</strong>. It is pinned at 44 pt above the bar.</div>
+</div>
+<div class="card" style="padding:14px 16px;border-color:rgba(255,107,90,.4)">
+<div style="font:650 13px/1.3 inherit;color:#FF6B5A;margin-bottom:7px">The bar does not scale, and that is deliberate</div>
+<div class="note">The destination bar stays 44 pt with 12.5 pt labels at every type size. It is the one place the system refuses Dynamic Type, because a bar that grew to 53 pt would take <strong style="color:#F5F7FA">140 pt of a 303 pt budget</strong> and leave less than two rows. <strong style="color:#F5F7FA">This is a real accessibility trade and it must be a stated exemption in §6, not a silent one</strong> — the labels are redundant with icons and the destinations are reachable by VoiceOver regardless.</div>
+</div>
+</div>
+
+<!-- VOICEOVER -->
+<div style="display:flex;align-items:baseline;gap:12px;margin:44px 0 14px"><div style="font:700 20px/1.2 inherit;letter-spacing:-.015em">2 &nbsp;VoiceOver &mdash; one sentence per row, everywhere</div><div style="font:400 13px/1.4 inherit;color:#78839A">§6 requires it; nothing had collected them</div></div>
+
+<div class="card" style="padding:6px 20px">
+<div style="display:grid;grid-template-columns:150px 1fr;gap:16px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.1)" class="lbl"><div>SURFACE</div><div>UTTERANCE</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr;gap:16px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.07)"><div class="mono" style="color:#C6F24E">Roster row</div><div class="note">"Depth one, Marlin Reyland-Voss, linebacker, 27, rated 91, elite. Availability at risk: suspension pending. Injury: knock, questionable."</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr;gap:16px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.07)"><div class="mono" style="color:#C6F24E">Snap</div><div class="note">"Third and seven, own 34. Ashfield-Pell beat the corner inside on the seam, complete for 24, first down at the Wexmoor 42."</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr;gap:16px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.07)"><div class="mono" style="color:#C6F24E">ScoreBug</div><div class="note">"Ashgrove 17, Wexmoor 20. Fourth quarter, 3 minutes 12. Third and seven on your own 34. Two key moments left."</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr;gap:16px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.07)"><div class="mono" style="color:#C6F24E">OpposedBar</div><div class="note">"Yards per carry allowed: 5.1, against a league median of 3.8. Worse than average."</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr;gap:16px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.07)"><div class="mono" style="color:#C6F24E">Meter, breached</div><div class="note">"Salary cap: 1.2 million dollars over the limit. Over capacity."</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr;gap:16px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.07)"><div class="mono" style="color:#C6F24E">Job security</div><div class="note">"Seven wins from nine, against an expectation of nine. Ahead of the bar. Boosters unhappy, three other groups steady."</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr;gap:16px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.07)"><div class="mono" style="color:#FFB026">MapCanvas</div><div class="note"><strong style="color:#FFB026">Hidden from VoiceOver.</strong> 134 positions with no natural reading order is not narratable. The verdict panel beside it carries the whole meaning and is the accessible surface: "Your reach is regional. You sign well inside Iron Basin and almost nowhere else."</div></div>
+<div style="display:grid;grid-template-columns:150px 1fr;gap:16px;padding:11px 0"><div class="mono" style="color:#FFB026">FieldCanvas</div><div class="note"><strong style="color:#FFB026">Hidden; the snap sentence above is the accessible form.</strong> 22 marks with no order are no more narratable than the map. The difference is that the field <em>has</em> a natural per-snap sentence and the map does not, which is why one is solved and the other is a decision.</div></div>
+</div>
+<div class="note" style="margin-top:12px;max-width:94ch"><strong style="color:#F5F7FA">The rule this sheet establishes:</strong> a canvas is never narrated mark-by-mark. It is hidden, and a text surface beside it carries the meaning. That is one rule covering both canvases, and it converts §6's hardest clause from "make the canvas accessible" — which is not achievable — into "every canvas has a named text twin", which is testable.</div>
+
+<!-- TARGETS + MOTION -->
+<div style="display:flex;gap:16px;align-items:flex-start;margin-top:44px;flex-wrap:wrap">
+<div style="flex:1;min-width:430px">
+<div class="lbl" style="margin-bottom:10px">3 &nbsp;TOUCH TARGETS &middot; 44 PT, OVERLAID</div>
+<div class="card" style="padding:15px 17px">
+<div style="background:#0A0D14;border-radius:9px;padding:12px;display:flex;flex-direction:column;gap:8px">
+  <div style="display:flex;gap:8px;align-items:center">
+    <div class="tt" style="height:44px;flex:1;background:#5B9DFF;color:#04070E;border-radius:8px;display:flex;align-items:center;justify-content:center;font:650 13.5px/1 -apple-system,sans-serif">Commit the plan</div>
+    <div class="tt" style="height:44px;width:44px;background:#1B2130;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#A7B0C0">&#9662;</div>
+  </div>
+  <div class="tt" style="height:44px;background:#1B2130;border-radius:8px;display:flex;align-items:center;padding:0 12px;gap:10px"><span class="num" style="font-size:12px;font-weight:700;color:#78839A">1</span><span style="font:500 13px/1 inherit;flex:1">M. Reyland-Voss</span><span class="num" style="font-size:12px;font-weight:700;color:#fff;background:#0E2E52;padding:4px 8px;border-radius:5px">91</span></div>
+  <div style="display:flex;gap:6px">
+    <div class="tt" style="height:44px;padding:0 14px;background:#1B2130;border-radius:6px;display:flex;align-items:center;font:650 11.5px/1 'SF Compact Display',sans-serif;color:#A7B0C0">hurry</div>
+    <div class="tt" style="height:44px;padding:0 14px;background:#5B9DFF;border-radius:6px;display:flex;align-items:center;font:650 11.5px/1 'SF Compact Display',sans-serif;color:#04070E">normal</div>
+    <div class="tt" style="height:44px;padding:0 14px;background:#1B2130;border-radius:6px;display:flex;align-items:center;font:650 11.5px/1 'SF Compact Display',sans-serif;color:#A7B0C0">bleed</div>
+  </div>
+</div>
+<div class="note" style="margin-top:12px"><strong style="color:#F5F7FA">The dashed outline is the 44 pt hit region, not the ink.</strong> A <code class="mono">Chip</code> renders at 24 pt of visible height and carries a 44 pt target — the prior build shipped 21 pt chips <em>as</em> the whole target at four sites (<code class="mono">AUDIT.md:138</code>), which is the exact defect this overlay exists to make visible. Rows are 44 pt by construction. <code class="mono">TouchTargetTest</code> asserts the region, never the ink.</div>
+</div>
+</div>
+
+<div style="flex:1;min-width:420px">
+<div class="lbl" style="margin-bottom:10px">4 &nbsp;MOTION &middot; EVERY ANIMATION NAMES ITS REDUCED FORM</div>
+<div class="card" style="padding:6px 18px">
+<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.1)" class="lbl"><div>MOTION</div><div>FULL</div><div style="color:#C6F24E">REDUCE MOTION</div></div>
+<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)"><div style="font:600 12px/1.3 inherit">Snap resolution</div><div class="note">Marks interpolate over 1.2&ndash;2.5 s</div><div class="note" style="color:#C6F24E">Three discrete states, no tween</div></div>
+<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)"><div style="font:600 12px/1.3 inherit">LowerThird entry</div><div class="note">Slides in along the 9&deg; skew, 240 ms</div><div class="note" style="color:#C6F24E">Appears in place, no fade</div></div>
+<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)"><div style="font:600 12px/1.3 inherit">Call-in countdown</div><div class="note">Rule drains continuously</div><div class="note" style="color:#C6F24E">Steps once per second</div></div>
+<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)"><div style="font:600 12px/1.3 inherit">Pane selection</div><div class="note">Crossfade at rest, 160 ms</div><div class="note" style="color:#C6F24E">Instant swap</div></div>
+<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)"><div style="font:600 12px/1.3 inherit">Score change</div><div class="note">Numeral rolls, 180 ms</div><div class="note" style="color:#C6F24E">Sets directly</div></div>
+<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:12px;padding:10px 0"><div style="font:600 12px/1.3 inherit">Realignment</div><div class="note">Map dots travel to new conferences</div><div class="note" style="color:#C6F24E">Before / after, two states</div></div>
+</div>
+<div class="note" style="margin-top:12px"><strong style="color:#F5F7FA">Reduce Motion is a discrete-state contract, not a duration of zero.</strong> The prior build scored 1/4 on accessibility with Reduce Motion at <em>literally zero occurrences</em>. Every row's reduced form is a different <em>form</em>, not a faster version of the same one — which is also why the match view's three-state sequence is drawn as the reduced form first and animated second. <strong style="color:#F5F7FA">Nothing in the reduced column can change an outcome</strong> (<code class="mono">03</code> §1.3).</div>
+</div>
+</div>
+
+<div style="margin-top:44px;padding-top:22px;border-top:1px solid rgba(255,255,255,.12)">
+<div class="lbl" style="margin-bottom:10px">WHAT THIS GROUP SENDS BACK TO 04</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">A canvas is never narrated</div><div class="note">One rule for both canvases: hidden from VoiceOver, with a named text twin carrying the meaning. Converts §6's hardest clause into something testable.</div></div>
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#FF6B5A;margin-bottom:5px">The bar is a stated Dynamic Type exemption</div><div class="note">It stays 44 pt at AX5. A scaling bar would eat 140 pt of 303. This is a real trade and §6 must name it as an exemption rather than let it look like an oversight.</div></div>
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">Copy length is a Dynamic Type constraint</div><div class="note">The cost line survives AX5 because it was written short. §7 should say so — a copy rule with a layout consequence, not a style preference.</div></div>
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">Targets are regions, not ink</div><div class="note">A 24 pt chip carries a 44 pt region. <code class="mono">TouchTargetTest</code> asserts the region; the prior build's four 21 pt chip failures were ink measured as target.</div></div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2040,&quot;height&quot;:2000}}"></script>
+</body>
+</html>
