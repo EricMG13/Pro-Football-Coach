@@ -41,7 +41,7 @@ public enum MatchupRules {
     ///
     /// The single most important number in the engine: it is what makes a worse team able to win.
     /// `03` §5.1's talent-dispersion band is what will pin it in P4.
-    public static let leverageNoise = 0.33
+    public static let leverageNoise = 0.38
 
     /// How much scheme fit can move a matchup, in leverage units at full fit.
     ///
@@ -107,7 +107,7 @@ public enum MatchupRules {
     public static let aggressionThrowBonus = 0.06
     /// Below this the throw is intercepted; below `completionThreshold` it falls incomplete.
     public static let interceptionThreshold = -0.94
-    public static let completionThreshold = -0.16
+    public static let completionThreshold = -0.02
     /// How much a low-decision passer is pulled toward progression order rather than the open man.
     public static let progressionPenalty = 0.25
 
@@ -120,7 +120,7 @@ public enum MatchupRules {
     public static let crashRunBonus = 0.10
     public static let aggressionRunBonus = 0.05
     /// Leverage above which the carrier breaks a tackle.
-    public static let breakTackleThreshold = 0.50
+    public static let breakTackleThreshold = 0.40
     public static let brokenTackleYards = 4
     /// Each successive break is harder. Bounded, because an unbounded chain is a hang with a small
     /// probability and `03` §7's frame budget has no room for one.
