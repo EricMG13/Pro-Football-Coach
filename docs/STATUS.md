@@ -26,23 +26,28 @@ variation distance, and a headless seeded harness with an A/B seed ladder.
 **G5 does not hold, and this is the measured gap, not an estimate.** Over 240 games per tier on the
 tuning ladder:
 
-| Tier | Bands tested | Failing |
-|---|---|---|
-| Pro | 16 | 14 |
-| College | 8 | 8 |
+| Tier | Bands tested | Failing | After the first tuning pass |
+|---|---|---|---|
+| Pro | 16 | 14 | **13** |
+| College | 8 | 8 | 8 |
 
-Passing today: pro completion percentage (61.1%, band 61–67) and pro Q4 share of points (0.240, band
-0.22–0.32). Everything else is out, several by a wide margin — college points per team-game measures
-66.1 against a band of 26–31, and both explosive-play rates measure essentially zero.
+Passing today: pro field goal percentage (82.3%, band 81–88), pro offensive plays per team-game
+(64.7, band 60–68), pro Q4 share of points (0.281, band 0.22–0.32).
 
-**Several of those failures are structural rather than mistuning, and naming them is P4's next
-task.** The baseline play-caller never calls a deep pass and almost never runs, because its
-threshold is `distance <= 7` and first-and-ten is ten; so nearly every completion is exactly the
-mid-pass air yardage, which is why the explosive rates are zero and the pass yardage is doubled.
-College measures 142 offensive plays per team-game against a band of 67–75, which says the
-first-down clock stop is skipping far too much of the pre-snap clock. **Tuning constants will not
-fix any of those** — they are the model being wrong in shape, which is exactly what `03` §5.2 says
-to fix rather than widen a band around.
+**The first pass fixed shape, not constants, which is the order `03` §5.2 requires.** Three
+structural defects the harness exposed on its first run: the baseline caller ran only when distance
+was 7 or less and first-and-ten is ten, so it threw on almost every snap and never deep — hence six
+run plays per team-game and an explosive-pass rate of zero; the college first-down clock stop
+skipped the entire pre-snap charge, putting college at 142 plays per team-game against a band of
+67–75; and field goal difficulty was `40 + distance`, making a routine 25-yarder a 65-rated
+opponent. None of those was a constant to nudge.
+
+**The remaining gap is real and quantified.** Pro pass yards, completion percentage, interceptions,
+sacks, safeties, both explosive rates, home and favourite win rate and blowout rate are all still
+out, and college is out on all eight. D2's own falsifier is the thing to watch here: it is falsified
+if the matchup model "cannot be tuned to hold every band in `03` simultaneously — that is, if fixing
+completion rate breaks sack rate and no parameter set holds both — across 5 consecutive tuning
+attempts." **One attempt has been made.**
 
 **Sixteen of §6.5's rows are not measured at all**, listed in `CalibrationBands.unimplementedMetrics`
 with what each waits on: per-drive accounting, target shares (which need per-player stat lines the
