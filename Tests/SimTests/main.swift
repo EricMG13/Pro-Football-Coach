@@ -9,5 +9,6 @@ runLegalTests()
 runGenerationTests()
 runIdentityDistributionTests()
 runEngineTests()
+runSnapResolverTests()
 
 TestKit.finish()

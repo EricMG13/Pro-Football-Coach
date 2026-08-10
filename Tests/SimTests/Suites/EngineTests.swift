@@ -230,3 +230,262 @@ func runEngineTests() {
         }
     }
 }
+
+// MARK: - Snap resolution
+
+/// A deterministic test roster. Ratings are passed in so a test can make one side better.
+func testPersonnel(offenseSkill: Int, defenseSkill: Int) -> SnapPersonnel {
+    func player(_ position: Position, _ index: Int, _ skill: Int) -> Player {
+        var attributes = Attributes()
+        for attribute in position.ratedAttributes { attributes[attribute] = Rating(skill) }
+        return Player(
+            id: UUID(uuidString: String(format: "00000000-0000-4000-8000-%012X",
+                                        index + skill * 1_000))!,
+            firstName: "T", lastName: "P\(index)", position: position, age: 24,
+            attributes: attributes, potential: Rating(80)
+        )
+    }
+    var offense: [Player] = []
+    var index = 0
+    for position in [Position.quarterback, .runningBack, .wideReceiver, .wideReceiver,
+                     .wideReceiver, .tightEnd, .leftTackle, .guardPosition, .center,
+                     .rightTackle, .kicker, .punter] {
+        offense.append(player(position, index, offenseSkill)); index += 1
+    }
+    var defense: [Player] = []
+    for position in [Position.edgeRusher, .edgeRusher, .defensiveTackle, .defensiveTackle,
+                     .linebacker, .linebacker, .linebacker, .cornerback, .cornerback,
+                     .safety, .safety] {
+        defense.append(player(position, index, defenseSkill)); index += 1
+    }
+    return SnapPersonnel(offense: offense, defense: defense)
+}
+
+func runSnapResolverTests() {
+    let rules = Tier.pro.clockRules
+    let even = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+
+    suite("Snap resolution") {
+        test("the same seed and state resolve to the same snap") {
+            func once() -> SnapOutcome {
+                var rng = SeededRandom(seed: 555)
+                return SnapResolver.resolve(
+                    offensiveCall: OffensiveCall(playType: .pass),
+                    defensiveCall: DefensiveCall(coverage: .man),
+                    personnel: even, situation: Situation(), rules: rules, rng: &rng
+                )
+            }
+            expectEqual(once(), once(), "a snap is not reproducible from its seed and state")
+        }
+
+        test("a snap consumes the same number of draws whatever it produced") {
+            // The determinism property that matters most, and the one that is easy to lose: a
+            // resolver whose draw count depends on the outcome makes every later snap in the drive
+            // diverge as soon as one play differs. Every branch — sack, incompletion, catch,
+            // touchdown, fumble — must leave the stream in the same place.
+            func stateAfter(_ call: OffensiveCall, _ defence: DefensiveCall,
+                            _ situation: Situation, _ personnel: SnapPersonnel) -> UInt64 {
+                var rng = SeededRandom(seed: 909)
+                _ = SnapResolver.resolve(offensiveCall: call, defensiveCall: defence,
+                                         personnel: personnel, situation: situation,
+                                         rules: rules, rng: &rng)
+                return rng.next()
+            }
+            let base = stateAfter(OffensiveCall(playType: .pass), DefensiveCall(coverage: .man),
+                                  Situation(), even)
+            // Same call and personnel, different field position: the goal-line branch must not
+            // change how much of the stream the snap consumed.
+            expectEqual(base,
+                        stateAfter(OffensiveCall(playType: .pass), DefensiveCall(coverage: .man),
+                                   Situation(yardLine: 98), even),
+                        "the goal-line branch changed the draw count")
+        }
+
+        test("every pass snap records the matchups that produced it") {
+            // D2 rejected the distribution model because it cannot say why. A resolver that
+            // returned yardage without the duels would be that model.
+            var rng = SeededRandom(seed: 4)
+            var sawProtection = false, sawRoute = false, sawThrow = false
+            for _ in 0..<200 {
+                let outcome = SnapResolver.resolve(
+                    offensiveCall: OffensiveCall(playType: .pass),
+                    defensiveCall: DefensiveCall(coverage: .zoneUnder),
+                    personnel: even, situation: Situation(), rules: rules, rng: &rng
+                )
+                expect(!outcome.matchups.isEmpty, "a pass produced no matchups")
+                for matchup in outcome.matchups {
+                    if matchup.kind == .passProtection { sawProtection = true }
+                    if matchup.kind == .routeVersusCoverage { sawRoute = true }
+                    if matchup.kind == .throwing { sawThrow = true }
+                }
+            }
+            expect(sawProtection, "no protection duel was ever recorded")
+            expect(sawRoute, "no route matchup was ever recorded")
+            expect(sawThrow, "no throw was ever recorded")
+        }
+
+        test("a sack names the protection duel that lost") {
+            // 04 section 5.3 draws a sack as the protection duel that lost, and can only do that
+            // if the engine said which one.
+            var rng = SeededRandom(seed: 31)
+            var found = false
+            for _ in 0..<400 {
+                let outcome = SnapResolver.resolve(
+                    offensiveCall: OffensiveCall(playType: .pass),
+                    defensiveCall: DefensiveCall(coverage: .man, rushers: 7, aggression: 1),
+                    personnel: testPersonnel(offenseSkill: 45, defenseSkill: 95),
+                    situation: Situation(), rules: rules, rng: &rng
+                )
+                guard outcome.result == .sack else { continue }
+                found = true
+                guard let deciding = outcome.decidingMatchup else {
+                    expect(false, "a sack named no deciding matchup"); continue
+                }
+                expectEqual(deciding.kind, .passProtection,
+                            "a sack was decided by something other than a protection duel")
+                expect(!deciding.attackerWon, "the blocker won the duel that produced a sack")
+            }
+            expect(found, "a heavy blitz against a weak line never produced a sack in 400 snaps")
+        }
+
+        test("every snap result is reachable") {
+            // Dead capability is this project's first named failure mode. A result the engine
+            // declares and never produces is exactly that.
+            var rng = SeededRandom(seed: 17)
+            var seen: Set<SnapResult> = []
+            let weak = testPersonnel(offenseSkill: 45, defenseSkill: 95)
+            let strong = testPersonnel(offenseSkill: 95, defenseSkill: 45)
+            for index in 0..<3_000 {
+                let personnel = index % 2 == 0 ? weak : strong
+                let call: OffensiveCall
+                switch index % 5 {
+                case 0: call = OffensiveCall(playType: .pass, passDepth: .deep, aggression: 1)
+                case 1: call = OffensiveCall(playType: .run, runGap: .outsideLeft)
+                case 2: call = OffensiveCall(playType: .fieldGoal)
+                case 3: call = OffensiveCall(playType: .punt)
+                default: call = OffensiveCall(playType: .pass, passDepth: .short)
+                }
+                let situation = Situation(yardLine: index % 3 == 0 ? 92 : 30)
+                seen.insert(SnapResolver.resolve(
+                    offensiveCall: call,
+                    defensiveCall: DefensiveCall(coverage: CoverageShell.allCases[index % 4],
+                                                 rushers: 3 + index % 5),
+                    personnel: personnel, situation: situation, rules: rules, rng: &rng
+                ).result)
+            }
+            seen.insert(SnapResolver.resolve(
+                offensiveCall: OffensiveCall(playType: .kneel),
+                defensiveCall: DefensiveCall(coverage: .prevent), personnel: even,
+                situation: Situation(), rules: rules, rng: &rng
+            ).result)
+            let unreachable = SnapResult.allCases.filter { !seen.contains($0) && $0 != .safety }
+            expect(unreachable.isEmpty,
+                   "these results are declared and never produced: "
+                       + unreachable.map(\.rawValue).joined(separator: ", "))
+        }
+
+        test("a better offence gains more than a worse one") {
+            func meanYards(offense: Int, defense: Int) -> Double {
+                var rng = SeededRandom(seed: 8_080)
+                var total = 0
+                for _ in 0..<1_500 {
+                    total += SnapResolver.resolve(
+                        offensiveCall: OffensiveCall(playType: .pass),
+                        defensiveCall: DefensiveCall(coverage: .zoneUnder),
+                        personnel: testPersonnel(offenseSkill: offense, defenseSkill: defense),
+                        situation: Situation(), rules: rules, rng: &rng
+                    ).yards
+                }
+                return Double(total) / 1_500
+            }
+            let good = meanYards(offense: 90, defense: 50)
+            let bad = meanYards(offense: 50, defense: 90)
+            expect(good > bad,
+                   "a 90-rated offence gained \(good) a snap against a 50-rated one's \(bad)")
+        }
+
+        test("prevent concedes the short throw and takes away the deep one") {
+            // Every shell must give something up, or one is always right and 02 section 2.2's
+            // first test for a real decision fails.
+            expect(CoverageShell.prevent.help(against: .deep) > 0, "prevent does not help deep")
+            expect(CoverageShell.prevent.help(against: .short) < 0, "prevent does not concede short")
+            expect(CoverageShell.zoneUnder.help(against: .deep) < 0,
+                   "an underneath zone does not concede the deep ball")
+            for shell in CoverageShell.allCases {
+                expect(shell.runCost > 0, "\(shell.rawValue) costs nothing against the run")
+            }
+        }
+
+        test("blitzing trades coverage for pressure") {
+            expect(DefensiveCall(coverage: .man, rushers: 6).coverageDrain > 0,
+                   "an extra rusher costs the coverage nothing")
+            expect(DefensiveCall(coverage: .man, rushers: 3).coverageDrain < 0,
+                   "dropping a rusher does not help the coverage")
+            expectEqual(DefensiveCall(coverage: .man, rushers: 99).rushers,
+                        MatchupRules.maximumRushers, "the rusher count is unbounded")
+        }
+
+        test("a poor decider is pulled toward progression order") {
+            // The second receiver is more open, but a low-decision passer should still favour the
+            // first read.
+            let openSecond = SnapResolver.weightedTarget(0.9, order: 1, decision: 0.05)
+            let coveredFirst = SnapResolver.weightedTarget(0.2, order: 0, decision: 0.05)
+            expect(coveredFirst > openSecond, "a poor decider found the open man anyway")
+            let sharpSecond = SnapResolver.weightedTarget(0.9, order: 1, decision: 0.95)
+            let sharpFirst = SnapResolver.weightedTarget(0.2, order: 0, decision: 0.95)
+            expect(sharpSecond > sharpFirst, "a sharp decider missed the open man")
+        }
+
+        test("a long field goal is harder than a short one") {
+            func madeRate(from yardLine: Int) -> Double {
+                var rng = SeededRandom(seed: 606)
+                var made = 0
+                for _ in 0..<800 {
+                    if SnapResolver.resolve(
+                        offensiveCall: OffensiveCall(playType: .fieldGoal),
+                        defensiveCall: DefensiveCall(coverage: .man), personnel: even,
+                        situation: Situation(yardLine: yardLine), rules: rules, rng: &rng
+                    ).result == .fieldGoalGood { made += 1 }
+                }
+                return Double(made) / 800
+            }
+            let short = madeRate(from: 90)
+            let long = madeRate(from: 55)
+            expect(short > long,
+                   "a 27-yard kick went in \(short) of the time against a 62-yarder's \(long)")
+        }
+
+        test("a kneel loses a yard and stops nothing") {
+            var rng = SeededRandom(seed: 1)
+            let outcome = SnapResolver.resolve(
+                offensiveCall: OffensiveCall(playType: .kneel),
+                defensiveCall: DefensiveCall(coverage: .prevent), personnel: even,
+                situation: Situation(), rules: rules, rng: &rng
+            )
+            expectEqual(outcome.result, .kneel)
+            expectEqual(outcome.yards, -1)
+            expect(!outcome.result.stopsClock, "a kneel stopped the clock")
+        }
+
+        test("tempo changes how much clock a snap costs") {
+            func seconds(_ tempo: Tempo) -> Int {
+                var rng = SeededRandom(seed: 2)
+                return SnapResolver.resolve(
+                    offensiveCall: OffensiveCall(playType: .run, tempo: tempo),
+                    defensiveCall: DefensiveCall(coverage: .man), personnel: even,
+                    situation: Situation(), rules: rules, rng: &rng
+                ).secondsElapsed
+            }
+            expect(seconds(.hurry) < seconds(.normal), "hurrying up saved no clock")
+            expect(seconds(.bleed) > seconds(.normal), "bleeding the clock cost none")
+        }
+
+        test("a turnover and a clock stop are properties of the result, not of a call site") {
+            expect(SnapResult.interception.isTurnover, "an interception is not a turnover")
+            expect(SnapResult.fumbleLost.isTurnover, "a lost fumble is not a turnover")
+            expect(!SnapResult.punt.isTurnover, "a punt is a turnover")
+            expect(SnapResult.incompletion.stopsClock, "an incompletion does not stop the clock")
+            expect(!SnapResult.gain.stopsClock, "a gain in bounds stops the clock")
+        }
+    }
+}

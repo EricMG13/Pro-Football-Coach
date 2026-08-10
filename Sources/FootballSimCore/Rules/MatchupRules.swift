@@ -45,4 +45,91 @@ public enum MatchupRules {
 
     /// Home advantage, in leverage units applied to every home matchup before traditions.
     public static let homeAdvantage = 0.08
+
+    // MARK: - Assignment
+
+    public static let baseRushers = 4
+    public static let minimumRushers = 3
+    public static let maximumRushers = 7
+    /// What each extra rusher costs the coverage, in leverage units. The cost that makes a blitz a
+    /// decision rather than a free choice (`02` §2.2's third test).
+    public static let rusherCoverageDrain = 0.09
+    public static let receiversInRoute = 4
+    public static let runLaneMatchups = 3
+
+    // MARK: - Coverage shells
+
+    // Every shell helps against something and concedes something else. A shell with no cost would
+    // always be right, and `02` §2.2's first test for a real decision is that two answers are
+    // defensible.
+    public static let manCoveragePassHelp = 0.10
+    public static let manCoverageRunCost = 0.06
+    public static let zoneUnderPassHelp = 0.08
+    public static let zoneUnderRunCost = 0.02
+    public static let zoneDeepPassHelp = 0.12
+    public static let zoneDeepRunCost = 0.10
+    public static let preventPassHelp = 0.20
+    public static let preventRunCost = 0.24
+
+    // MARK: - Pass
+
+    public static let shortPassAirYards = 5
+    public static let midPassAirYards = 12
+    public static let deepPassAirYards = 24
+    /// Average pressure above which the pocket collapses into a sack.
+    public static let sackPressureThreshold = 0.42
+    /// How much a maximally poised passer raises that threshold.
+    public static let poiseSackRelief = 0.22
+    public static let sackYards = -7
+    public static let blitzPressureBonus = 0.14
+    public static let pressureThrowPenalty = 0.30
+    /// How much being open helps the throw, in leverage units at full openness.
+    public static let opennessThrowHelp = 0.30
+
+    /// The rating a throw is resolved against, by depth. A deep ball is hard to complete even to an
+    /// open receiver, and making depth the difficulty is what keeps incompletions reachable at all.
+    public static func throwDifficulty(_ depth: PassDepth) -> Int {
+        switch depth {
+        case .short: return 58
+        case .mid: return 70
+        case .deep: return 84
+        }
+    }
+    public static let aggressionThrowBonus = 0.06
+    /// Below this the throw is intercepted; below `completionThreshold` it falls incomplete.
+    public static let interceptionThreshold = -0.72
+    public static let completionThreshold = -0.06
+    /// How much a low-decision passer is pulled toward progression order rather than the open man.
+    public static let progressionPenalty = 0.25
+
+    // MARK: - Run
+
+    /// Yards per unit of lane leverage.
+    public static let laneYardScale = 7.0
+    /// Outside runs multiply the lane result, trading certainty for the edge.
+    public static let outsideRunVariance = 1.35
+    public static let crashRunBonus = 0.10
+    public static let aggressionRunBonus = 0.05
+    /// Leverage above which the carrier breaks a tackle.
+    public static let breakTackleThreshold = 0.55
+    public static let brokenTackleYards = 4
+    /// Each successive break is harder. Bounded, because an unbounded chain is a hang with a small
+    /// probability and `03` §7's frame budget has no room for one.
+    public static let brokenTackleDecay = 0.18
+    public static let maximumBrokenTackles = 4
+
+    // MARK: - Kicks
+
+    /// Yards behind the line of scrimmage the ball is spotted, plus the end zone.
+    public static let fieldGoalSnapDistance = 17
+    /// Rating points of difficulty per yard of kick distance.
+    public static let fieldGoalDifficultyPerYard = 1
+    public static let legStrengthHelp = 0.25
+    public static let basePuntYards = 34
+    public static let puntLegYards = 18
+    public static let puntVariance = 6
+
+    // MARK: - Consequence
+
+    public static let fumbleChance = 0.012
 }
