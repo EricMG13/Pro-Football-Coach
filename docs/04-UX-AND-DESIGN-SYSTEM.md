@@ -117,6 +117,14 @@ three roles carry two different obligations:
 | `team.onTeam` against `team.primary` | **4.5:1** | Text sits on the primary. WCAG AA for body text |
 | `team.secondary` against `team.primary` | **3:1** | The secondary is a stroke, a chip, a chart series — a non-text element that must be distinguishable on the primary. WCAG AA for non-text contrast |
 
+**A kit-clash floor, added 2026-08-10.** The contract above gates each programme's pair
+*internally*. Nothing gates two programmes that **meet** from being mutually illegible, and
+drawing both teams' marks on one field made that load-bearing. The fixture sets a minimum **ΔE
+between the two sides' on-field marks**, with the away side falling back to its secondary.
+ΔE is the right tool and WCAG contrast is not: contrast asks whether text is readable on a
+background, ΔE asks whether two marks are different colours. `02` §11.3.5 already uses ΔE for
+trade dress, so the machinery exists.
+
 `team.secondary` is not a text background. A surface that needs text on the secondary uses
 `content.primary` on a neutral surface instead; nothing in §4 or §5 asks for the other thing.
 
@@ -135,6 +143,14 @@ anywhere — the prior build had ten, four below the 11 pt floor.
 | `body` | `.body` | 17 → 53 pt |
 | `callout` | `.callout` | 16 → 51 pt |
 | `caption` | `.caption1` | 12 → 43 pt |
+| **`numeral`** | `.title1`, SF Compact, tabular | 28 → 58 pt |
+
+**`numeral` is a seventh role, added 2026-08-10.** A football product shows a running clock, a
+score, a down-and-distance and a rating on nearly every surface. In a proportional face those
+reflow every tick and every roster column sits on a ragged right edge; condensed tabular fixes
+both, and it is the single change that most makes the product read as a sport rather than a table.
+**UNVERIFIED:** whether `SF Compact` is available as a Dynamic Type face. If not, `numeral` falls
+back to `.title1` with `monospacedDigit()`, keeping tabular and losing the condensing.
 
 `.caption2`, `.footnote` and `.subheadline` are **deliberately unmapped**. The smallest role is
 therefore 12 pt, clear of the 11 pt floor, and nothing in the system can land on the floor by
@@ -258,7 +274,10 @@ The last three, and two clarifications, come from the reference read in `01-RESE
 
 - **`OpposedBar`** — two values on one shared track, label at each end. The shape for
   us-versus-them numbers; a two-column table is not legible at this width.
-- **`Sparkline`** — a small fixed-count bar or line run for recent form and short trends.
+- **`Sparkline`** — a small fixed-count **bar** run. **Bars, not a line** (2026-08-10): five
+  discrete games are five discrete facts and a line implies interpolation between them that does
+  not exist. Two domains, same component: recent form (five games) and a career arc (one bar per
+  season), differing only in domain and axis labels.
 - **`LowerThird`** — the match view's event card: who, what, and one line of context, over the
   field. It is how a moment gets *named*; the field stays ambient (§5).
 - **`Meter` has a defined over-capacity state.** A budget that is exceeded draws past its track in
@@ -266,6 +285,23 @@ The last three, and two clarifications, come from the reference read in `01-RESE
   cap, scholarship and contact-budget surface.
 - **Role and status tokens are `Chip` variants, not new components.** A short assignment code beside
   a mark on a field, and a status glyph in a roster row, are the same primitive.
+
+**Three more components, added 2026-08-10.**
+
+- **`ProgressState`** — the one moment the player waits on the simulation. `03` §7 budgets 2.0 s
+  for a week advance at 134 programmes. **Determinate**, because 134 and 32 are constants and a
+  spinner would be a lie about knowable work; results land *during* the wait, because two seconds
+  of watching the league play is content and two seconds of a bar is a loading screen. **Show
+  after 400 ms, hold 600 ms minimum** — otherwise the fastest device gets the ugliest transition.
+- **`ConfirmSheet`** — names what is destroyed with real numbers, not "your progress". The safe
+  action is **first and visually heavier**, reversing the usual dialog order because the default
+  here is retreat; the destructive action is outlined, never filled, because a filled red button
+  reads as primary and it is not.
+- **`CallInCard` has two more states** — **deferred** (the clock expired, so it resolved to the
+  coordinator's recommendation and says so afterwards: a call-in cannot resolve to nothing) and
+  **paused** (the clock stops on background and resumes on foreground). At ~25 a match these are
+  the most-hit states in the product, and a timer that runs while the phone is in a pocket
+  punishes the commute the product is designed for.
 
 **Four rules the 2026-08-10 design pass found missing.** Each is a *stated reduction* rather than a
 fixed-height container, which is what §6's no-clipping clause actually requires — a component that
@@ -338,7 +374,7 @@ teaches through the first real week, so first-run state rides on the ordinary we
 | **League** | Map | READOUT — a second canvas, `MapCanvas` |
 | | Standings | READOUT |
 | | Schedule and rankings | READOUT |
-| | News | READOUT |
+| | News | READOUT — **bounded at 40 items**, newest first (`CLAUDE.md`'s growth rule; the prior build's unbounded feed helped take saves to 8.3 MB) |
 | | Realignment | READOUT — an **event**, once a season, on the map |
 | **Career** | Job security | READOUT — the jeopardy surface |
 | | Stakeholders | READOUT — four groups, four permanent rule colours |
@@ -573,6 +609,15 @@ skill positions and the three foregrounded marks. That is more than "one shape" 
 **individually numbered marks on the two lines remain geometrically impossible**, the
 seven-man line is drawn as one shape rather than seven marks, and nothing inside the match `Canvas`
 is individually tappable. Orientation bought field coverage. It bought nothing on local clustering.
+
+**A match can always be left, and it is never destructive.** Added 2026-08-10. The outcome is
+already determined by the seed (`03` §1.3), so leaving forfeits nothing except *watching* — and
+the sentence **"the result is already decided"** is required on the exit, not optional: without
+it every player assumes leaving forfeits something and force-quits instead. Three exits, because
+they are three different intentions: **keep watching** (default, heaviest), **leave and resume
+here later** (the commute answer), and **simulate the rest**. Simulate is the only one that
+changes what the player *gets* — remaining call-ins resolve to the coordinator — so it names that
+cost beneath itself.
 
 **The §2.4 package is a parameter, not a variant.** The match view is drawn once and takes a house
 and an escalation. Because the bug overlays rather than stacks, the field arithmetic above is
