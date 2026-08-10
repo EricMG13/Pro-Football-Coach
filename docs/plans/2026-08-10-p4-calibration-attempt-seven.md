@@ -77,4 +77,3 @@
 2. Run `confidence-review`, investigate every low-confidence point to root cause, and patch confirmed defects.
 3. Run `./scripts/verify.sh` and report the exact test/check counts.
 4. Update status and handoff documents with commands, scores, remaining failed bands, and the next justified action.
-
