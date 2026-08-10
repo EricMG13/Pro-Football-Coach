@@ -94,9 +94,10 @@ search, `swift run -c release CalibrationScore holdout > /tmp/p4-attempt7-after-
 (**5/24**). The retained constants are `leverageNoise = 0.46`, `homeAdvantage = 0.02`, and
 `breakTackleThreshold = 0.45`; each is part of the strict 4-to-7 tuning-score improvement.
 
-The deliberate P4 re-pin is complete. The final `./scripts/verify.sh` run reports **265 tests /
-77,745 checks, all passed**, after a green build and the green 23-contract calibration-tool gate.
-The pinned pro and college fingerprints are visibly updated to the independently reproduced values.
+The deliberate P4 re-pin is complete. The final attempt-seven `./scripts/verify.sh` run reports
+**265 tests / 77,745 checks, all passed**, after a green build and the green 23-contract
+calibration-tool gate. The pinned pro and college fingerprints are visibly updated to the
+independently reproduced values.
 
 The calibration-tool gate is `scripts/test-calibration-tools.sh`. It fails closed on scorer/tuner
 arguments and malformed, impossible, or non-24 score totals; proves a failed first candidate rolls
