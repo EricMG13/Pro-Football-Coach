@@ -13,7 +13,7 @@ calibrated, and the harness says by how much.** There is a foundation, a model, 
 generator, and a match engine that plays a whole game from a seed and records why every play
 happened.
 
-Suite: **243 tests, 74,796 checks, all passed**, byte-identical across separate process invocations.
+Suite: **264 tests, 77,741 checks, all passed**, byte-identical across separate process invocations.
 
 **P5 through P17 have not started.** The off-screen model, seasons, both tiers' systems, the career
 arc, the AI, the design system and every view are ahead.
@@ -30,12 +30,9 @@ search, `swift run -c release CalibrationScore holdout > /tmp/p4-attempt7-after-
 (**5/24**). The retained constants are `leverageNoise = 0.46`, `homeAdvantage = 0.02`, and
 `breakTackleThreshold = 0.45`; each is part of the strict 4-to-7 tuning-score improvement.
 
-`./scripts/verify.sh` built successfully, but `SimTests` reported **264 tests / 77,741 checks, one
-failing test / two failed checks**. Both failures are the pinned pro and college play-by-play
-fingerprints, which are expected to move for a deliberate P4 calibration change; two separate
-processes produced the same new fingerprints. The required re-pin is in
-`Tests/SimTests/Suites/EngineTests.swift`, outside this task's allowed paths, so the verification
-gate is honestly unresolved rather than treated as green.
+The deliberate P4 re-pin is complete: two fresh `swift run -c release SimTests` processes and
+`./scripts/verify.sh` now report **264 tests / 77,741 checks, all passed**. The pinned pro and
+college fingerprints are visibly updated to the independently reproduced values.
 
 The tuning failures are: college FG% upper; college home-win lower; college favourite-win upper;
 college explosive-run lower; college explosive-pass lower; college plays upper; pro pass yards
@@ -56,6 +53,21 @@ explosive rushing through its current leverage/lane/rare-tail formulation. Do no
 extend this grid; change the outcome model first. This attempt is repeated adverse D2 evidence, but
 does not honestly prove D2's five-consecutive-*model-tuning*-attempt falsifier because three prior
 attempts were instrument repairs.
+
+**Attempt ledger (auditable D2 count).** Attempts 1–3 were instrument repairs (favourite counting,
+talent ladder, and roster construction) and do not count as model-tuning attempts. Attempts 4–6
+were genuine model-tuning attempts; attempt 7 is the completed bounded model-tuning attempt above.
+The D2 sequence is therefore **4 of 5** consecutive model-tuning failures, not 7 of 7 and not yet
+formally falsified.
+
+**Search-trace caveat.** During authoritative pass-one `leverageNoise` testing, an accidental
+duplicate xtrace wrote only `0.22` then `0.30`. The authoritative pass restored `0.38`; neither
+contaminated value was retained, and the duplicate ended before every later coordinate. The entire
+second pass re-evaluated all eight coordinates cleanly and retained `0.46` / `0.02` / `0.45`; a
+standalone final-source scorer returned 7/24. The early per-candidate leverage trace is
+procedurally tainted, but the final retained state and score are independently valid.
+
+#### Historical pre-attempt-seven P4 evidence — not current state
 
 Built and green: `01` §6.5's band tables with their confidence grades, §6.2's TOST, §6.3's total
 variation distance, and a headless seeded harness with an A/B seed ladder.
@@ -82,8 +94,8 @@ opponent. None of those was a constant to nudge.
 **Seven of 24 tuning bands hold (five on the deterministic post-search evaluation set).** Six held before commit `a629e86`, which gave the run game a right tail
 and made it read `vision` — both required by `03` §1.1 and §1.2. The constants were tuned around the
 old run model, so the tuned point moved when the model did, and a worse-scoring correct model beats
-a better-scoring wrong one. **Attempt seven is a re-run of `scripts/tune-calibration.sh`**, whose
-search space now includes the two tail constants.
+a better-scoring wrong one. This was the pre-attempt-seven rationale for the now-completed bounded
+search, whose space included the two tail constants.
 
 The previous configuration's numbers, kept because the comparison is the useful part: **six on the
 tuning ladder and five on the holdout.** That is the honest number
