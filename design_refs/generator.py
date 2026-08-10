@@ -106,6 +106,8 @@ STYLES = r"""
   --broadcast-bug-regular: 44px;
   --broadcast-bug-elimination: 48px;
   --broadcast-bug-final: 52px;
+  --broadcast-title-height: 18px;
+  --college-house-angle: 9deg;
   --a11y-unit: 1px;
   --selection-rule: 3px;
   --opposed-track-height: 11px;
@@ -343,7 +345,7 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .player-mark.home { background: var(--team-primary); border: 2px solid var(--team-on); color: var(--team-on); }
 .player-mark.opponent { background: var(--opponent-primary); border: 2px solid var(--opponent-on); color: var(--opponent-on); }
 .score-bug { position: absolute; left: 0; right: 0; top: 0; height: var(--destination-height); display: flex; align-items: center; background: var(--broadcast-black); color: var(--content-primary); border-bottom: 1px solid var(--hairline); z-index: 4; font-variant-numeric: tabular-nums; }
-.score-bug > span, .score-bug > strong { min-width: var(--score-segment-width); height: var(--destination-height); display: grid; place-items: center; padding: 0 var(--optical-6); } /* named optical broadcast lockup */
+.score-bug > span, .score-bug > strong { min-width: var(--score-segment-width); height: var(--destination-height); display: grid; place-items: center; padding: 0 var(--space-s); }
 .score-bug > span:first-child { margin-left: var(--safe-leading); background: var(--team-primary); color: var(--team-on); }
 .score-bug > span:nth-of-type(2) { background: var(--opponent-primary); color: var(--opponent-on); }
 .score-bug > strong { min-width: var(--score-numeral-width); font-size: var(--numeral-size); background: var(--doc-page); color: var(--content-primary); }
@@ -452,18 +454,23 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .mini-map { position: relative; height: var(--map-visual-height); overflow: hidden; background: #152234; border: 1px solid var(--hairline); }
 .mini-map i { position: absolute; left: var(--x); top: var(--y); width: var(--map-dot-m); height: var(--map-dot-m); border-radius: 50%; background: var(--frame-accent); border: 1px solid var(--content-primary); }
 .mini-map span { position: absolute; left: var(--space-xs); bottom: var(--space-xs); color: var(--content-primary); font-size: var(--caption-size); }
-.mini-map-list { display: grid; gap: var(--space-xs); margin: 0; padding: 0; list-style: none; }
+.mini-map-list { display: grid; max-height: var(--map-visual-height); overflow: auto; gap: var(--space-xs); margin: 0; padding: 0; }
+.mini-map-list h3 { position: sticky; top: 0; margin: 0; padding: var(--space-xs); background: var(--frame-raised); font-size: var(--caption-size); }
+.mini-map-list ol { margin: 0; padding: 0; list-style: none; }
 .mini-map-list li { display: flex; justify-content: space-between; gap: var(--space-s); padding: var(--space-xs); border-bottom: 1px solid var(--hairline); font-size: var(--caption-size); }
 .mini-map-list strong { text-align: right; }
 .mini-controls button { flex: 1; }
 .visual-attributerow.attribute-row { grid-template-columns: var(--map-visual-height) 1fr var(--component-value-width); min-height: var(--destination-height); }
 .broadcast-screen { background: var(--field-dark); }
-.broadcast-frame { height: var(--broadcast-bug-regular); display: flex; align-items: center; gap: var(--space-m); padding: 0 var(--space-ml) 0 var(--safe-leading); background: var(--team-primary); color: var(--team-on); border-bottom: 4px solid var(--team-secondary); }
-.broadcast-screen.college .broadcast-frame { clip-path: polygon(0 0, 100% 0, 98.5% 100%, 0 100%); }
+.broadcast-screen { --broadcast-bug-height: var(--broadcast-bug-regular); }
+.broadcast-frame { height: var(--broadcast-bug-height); display: flex; align-items: center; gap: var(--space-m); padding: 0 var(--space-ml) 0 var(--safe-leading); background: var(--team-primary); color: var(--team-on); border-bottom: 4px solid var(--team-secondary); }
+.broadcast-screen.college .broadcast-frame { clip-path: polygon(0 0, 100% 0, calc(100% - var(--broadcast-bug-height) * tan(var(--college-house-angle))) 100%, 0 100%); }
 .broadcast-screen.pro .broadcast-frame { border-radius: 0; }
-.broadcast-screen.elimination .broadcast-frame { height: var(--broadcast-bug-elimination); border-top: 2px solid var(--team-secondary); }
+.broadcast-screen.elimination { --broadcast-bug-height: var(--broadcast-bug-elimination); }
+.broadcast-screen.elimination .broadcast-frame { border-top: 2px solid var(--team-secondary); }
 .broadcast-screen.final { border: 2px solid var(--team-secondary); }
-.broadcast-screen.final .broadcast-frame { height: var(--broadcast-bug-final); }
+.broadcast-screen.final { --broadcast-bug-height: var(--broadcast-bug-final); }
+.broadcast-title-bar { position: absolute; top: var(--broadcast-bug-final); left: 0; height: var(--broadcast-title-height); display: flex; align-items: center; padding: 0 var(--space-ml) 0 var(--safe-leading); background: var(--team-secondary); color: var(--broadcast-black); }
 .broadcast-frame .state-tag { margin-left: auto; }
 .broadcast-clock { font-size: var(--numeral-size); font-weight: 800; font-variant-numeric: tabular-nums; }
 .broadcast-field { position: absolute; inset: var(--broadcast-field-top) var(--broadcast-field-edge) var(--broadcast-field-edge) var(--safe-leading); background: repeating-linear-gradient(90deg,var(--field-dark) 0,var(--field-dark) var(--field-stripe),var(--field-light) calc(var(--field-stripe) + 1px),var(--field-light) calc(var(--field-stripe) + 2px)); border: 2px solid var(--team-on); color: var(--team-on); }

@@ -619,9 +619,19 @@ class GeneratorTests(unittest.TestCase):
             node for node in tree.descendants()
             if node.attrs.get("data-specimen") == "MapCanvas" and node.attrs.get("data-specimen-state") == "list-twin"
         )
-        semantic_lists = elements(list_twin, tag="ul")
+        semantic_lists = elements(list_twin, class_name="mini-map-list")
         self.assertEqual(len(semantic_lists), 1)
-        self.assertEqual(len(elements(semantic_lists[0], tag="li")), 3)
+        semantic_list = semantic_lists[0]
+        self.assertEqual(semantic_list.attrs.get("data-lens"), "reach")
+        self.assertEqual(semantic_list.attrs.get("data-total-programmes"), "134")
+        self.assertEqual(len(elements(semantic_list, class_name="mini-region-group")), 8)
+        programmes = elements(semantic_list, tag="li")
+        self.assertEqual(len(programmes), 134)
+        for programme in programmes:
+            fixture_programme = FIXTURES["college-week"].programmes[int(programme.attrs["data-program-index"])]
+            self.assertEqual(elements(programme, tag="span")[0].text(), fixture_programme.name)
+            self.assertEqual(elements(programme, tag="strong")[0].text(), fixture_programme.reach)
+        self.assertIn("max-height: var(--map-visual-height); overflow: auto", STYLES)
 
         pressed = next(
             node for node in tree.descendants()
@@ -655,11 +665,11 @@ class GeneratorTests(unittest.TestCase):
 
     def test_broadcast_mapping_and_football_composition_are_complete(self) -> None:
         expected = {
-            "college-regular": ("college", "regular", "SATURDAY"),
+            "college-regular": ("college", "regular", ""),
             "college-conference-championship": ("college", "elimination", "CONFERENCE CHAMPIONSHIP"),
             "college-playoff": ("college", "elimination", "PLAYOFF"),
             "college-final": ("college", "final", "NATIONAL CHAMPIONSHIP"),
-            "pro-regular": ("pro", "regular", "SUNDAY"),
+            "pro-regular": ("pro", "regular", ""),
             "pro-elimination": ("pro", "elimination", "PLAYOFF"),
             "pro-final": ("pro", "final", "LEAGUE CHAMPIONSHIP"),
         }
@@ -692,10 +702,24 @@ class GeneratorTests(unittest.TestCase):
         self.assertTrue(screen.has_class("elimination"))
         rivalry = next(frame for frame in frames if frame.attrs["data-state"] == "college-rivalry")
         self.assertEqual(len(elements(rivalry, class_name="rivalry-seam")), 1)
+        regulars = [frame for frame in frames if elements(frame, class_name="broadcast-screen")[0].has_class("regular")]
+        self.assertEqual(len(regulars), 3)
+        for frame in regulars:
+            self.assertEqual(len(elements(frame, class_name="occasion")), 0)
+            self.assertEqual(len(elements(frame, class_name="broadcast-title-bar")), 0)
+        eliminations = [frame for frame in frames if elements(frame, class_name="broadcast-screen")[0].has_class("elimination")]
+        self.assertEqual(len(eliminations), 3)
+        for frame in eliminations:
+            self.assertEqual(len(elements(frame, class_name="occasion")), 1)
+            self.assertEqual(len(elements(frame, class_name="broadcast-title-bar")), 0)
         finals = [frame for frame in frames if elements(frame, class_name="broadcast-screen")[0].has_class("final")]
         self.assertEqual(len(finals), 2)
         for frame in finals:
             self.assertEqual(len(elements(frame, class_name="broadcast-corner")), 4)
+            title_bars = elements(frame, class_name="broadcast-title-bar")
+            self.assertEqual(len(title_bars), 1)
+            self.assertEqual(len(elements(frame, class_name="occasion")), 0)
+            self.assertTrue(title_bars[0].text())
         for frame in frames:
             if not elements(frame, class_name="broadcast-screen")[0].has_class("final"):
                 self.assertEqual(len(elements(frame, class_name="broadcast-corner")), 0)
@@ -703,6 +727,9 @@ class GeneratorTests(unittest.TestCase):
             "--broadcast-bug-regular: 44px",
             "--broadcast-bug-elimination: 48px",
             "--broadcast-bug-final: 52px",
+            "--broadcast-title-height: 18px",
+            "--college-house-angle: 9deg",
+            "tan(var(--college-house-angle))",
             "border-top: 2px solid var(--team-secondary)",
             "border: 2px solid var(--team-secondary)",
             "linear-gradient(90deg,var(--team-secondary) 0 50%,var(--opponent-secondary) 50%)",
@@ -795,9 +822,17 @@ class GeneratorTests(unittest.TestCase):
             for property_name, value in re.findall(r"([a-z-]+)\s*:\s*([^;]+)", body):
                 if "var(--optical-" in value:
                     optical_uses.append((selector.strip(), property_name, value.strip()))
-        self.assertEqual(len(optical_uses), 2)
-        self.assertTrue(any("score-bug" in selector and property_name == "padding" and "--optical-6" in value for selector, property_name, value in optical_uses))
-        self.assertTrue(any("lower-third" in selector and property_name == "border-left" and "--optical-10" in value for selector, property_name, value in optical_uses))
+        forbidden_optical_properties = {
+            "gap", "row-gap", "column-gap", "padding", "padding-top", "padding-right", "padding-bottom",
+            "padding-left", "margin", "margin-top", "margin-right", "margin-bottom", "margin-left", "top",
+            "right", "bottom", "left", "inset", "width", "height", "min-width", "min-height", "max-width",
+            "max-height", "grid-template-columns",
+        }
+        self.assertFalse(
+            [use for use in optical_uses if use[1] in forbidden_optical_properties],
+            "optical tokens cannot define ordinary spacing or frame dimensions",
+        )
+        self.assertEqual(optical_uses, [(".lower-third", "border-left", "var(--optical-10) solid var(--team-secondary)")])
 
     def test_live_css_and_rating_tokens_cannot_leak_to_static_roles(self) -> None:
         live_uses = [line for line in STYLES.splitlines() if "var(--live)" in line]

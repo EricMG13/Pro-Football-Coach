@@ -609,11 +609,11 @@ DRAFT_LIFECYCLE: dict[str, LifecycleBadge] = {
 
 
 BROADCAST_OCCASIONS: dict[str, BroadcastOccasion] = {
-    "college-regular": BroadcastOccasion("college", "regular", "SATURDAY"),
+    "college-regular": BroadcastOccasion("college", "regular", ""),
     "college-conference-championship": BroadcastOccasion("college", "elimination", "CONFERENCE CHAMPIONSHIP"),
     "college-playoff": BroadcastOccasion("college", "elimination", "PLAYOFF"),
     "college-final": BroadcastOccasion("college", "final", "NATIONAL CHAMPIONSHIP"),
-    "pro-regular": BroadcastOccasion("pro", "regular", "SUNDAY"),
+    "pro-regular": BroadcastOccasion("pro", "regular", ""),
     "pro-elimination": BroadcastOccasion("pro", "elimination", "PLAYOFF"),
     "pro-final": BroadcastOccasion("pro", "final", "LEAGUE CHAMPIONSHIP"),
 }

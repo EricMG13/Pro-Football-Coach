@@ -243,7 +243,7 @@ function auditExpression(frameId) {
       ".ax5-inbox-reduction", ".ax5-roster-reduction", ".ax5-attribute", ".ax5-type-ramp",
       ".job-board", ".job-dimensions", ".arrival-summary", ".arrival-next-decision",
       ".destination-bar", ".map-layout", ".score-bug", ".exit-sheet", ".warning-banner",
-      ".component-grid", ".broadcast-frame", ".broadcast-field", ".broadcast-overlay",
+      ".component-grid", ".broadcast-frame", ".broadcast-title-bar", ".broadcast-field", ".broadcast-overlay",
       ".rivalry-seam", ".visual-fieldcanvas", ".visual-attributerow.state-poor",
       ".visual-attributerow.state-bad"
     ];
@@ -266,6 +266,14 @@ function auditExpression(frameId) {
       for (const child of specimen.children) {
         if (visible(child) && !horizontallyInside(child.getBoundingClientRect(), specimen.getBoundingClientRect())) errors.push("component content clips outside specimen");
       }
+    }
+    const componentListTwin = frame.querySelector('[data-specimen="MapCanvas"][data-specimen-state="list-twin"] .mini-map-list');
+    if (componentListTwin) {
+      if (componentListTwin.dataset.lens !== "reach") errors.push("component list twin has no active reach lens");
+      if (componentListTwin.querySelectorAll(".mini-region-group").length !== 8) errors.push("component list twin is not region-grouped");
+      if (componentListTwin.querySelectorAll("li[data-program-index]").length !== 134) errors.push("component list twin does not contain all 134 programmes");
+      if (componentListTwin.scrollHeight <= componentListTwin.clientHeight + tolerance) errors.push("component list twin is not contained in a scrollable specimen");
+      if (!inside(componentListTwin.getBoundingClientRect())) errors.push("component list twin leaves frame");
     }
 
     const destination = frame.querySelector(".destination-bar");
@@ -337,7 +345,18 @@ function auditExpression(frameId) {
       const bug = broadcast.querySelector(".broadcast-frame");
       const expectedHeight = broadcast.classList.contains("final") ? 52 : broadcast.classList.contains("elimination") ? 48 : 44;
       if (Math.round(bug.getBoundingClientRect().height) !== expectedHeight) errors.push("broadcast bug height differs from escalation canon");
+      const occasionTags = [...broadcast.querySelectorAll(".occasion")];
+      const titleBars = [...broadcast.querySelectorAll(".broadcast-title-bar")];
+      if (broadcast.classList.contains("regular") && (occasionTags.length || titleBars.length)) errors.push("regular package has an occasion tag");
       if (broadcast.classList.contains("elimination") && Math.round(parseFloat(getComputedStyle(bug).borderTopWidth)) !== 2) errors.push("elimination rule is not 2pt");
+      if (broadcast.classList.contains("elimination") && (occasionTags.length !== 1 || titleBars.length)) errors.push("elimination round tag is incomplete");
+      if (broadcast.classList.contains("college")) {
+        const angle = getComputedStyle(broadcast).getPropertyValue("--college-house-angle").trim();
+        const clipPath = getComputedStyle(bug).clipPath;
+        const expectedCut = expectedHeight * Math.tan(9 * Math.PI / 180);
+        const pixelValues = [...clipPath.matchAll(/([\\d.]+)px/g)].map((match) => Number(match[1]));
+        if (angle !== "9deg" || clipPath === "none" || !pixelValues.some((value) => Math.abs(value - expectedCut) < .15)) errors.push("college house geometry is not a fixed 9 degrees: angle=" + angle + ", clip=" + clipPath);
+      }
       const corners = [...broadcast.querySelectorAll(".broadcast-corner")];
       if (broadcast.classList.contains("final")) {
         const style = getComputedStyle(broadcast);
@@ -345,13 +364,24 @@ function auditExpression(frameId) {
           if (Math.round(parseFloat(style["border" + side + "Width"])) !== 2) errors.push("final frame is incomplete");
         }
         if (corners.length !== 4 || corners.some((corner) => !visible(corner))) errors.push("final corner marks are incomplete");
+        if (occasionTags.length || titleBars.length !== 1 || Math.round(titleBars[0].getBoundingClientRect().height) !== 18) errors.push("final title bar is not the distinct 18pt lockup");
       } else if (corners.length) errors.push("corner marks leaked below final escalation");
       const marks = [...broadcast.querySelectorAll(".player-mark")];
       for (const side of ["home", "opponent"]) {
         if (marks.filter((mark) => mark.dataset.side === side).length !== 11) errors.push(side + " formation does not have 11 marks");
       }
       const rivalry = broadcast.querySelector(".rivalry-seam");
-      if (rivalry && (getComputedStyle(rivalry).backgroundImage.match(/rgb/g) || []).length < 2) errors.push("rivalry seam does not use both secondary colours");
+      if (rivalry) {
+        const style = getComputedStyle(broadcast);
+        const gradient = getComputedStyle(rivalry).backgroundImage.replace(/\\s/g, "");
+        const rgbTriplet = (value) => {
+          const hex = value.trim().match(/^#([0-9a-f]{6})$/i)?.[1];
+          return hex ? [0, 2, 4].map((offset) => parseInt(hex.slice(offset, offset + 2), 16)).join(",") : "";
+        };
+        const teamSecondary = rgbTriplet(style.getPropertyValue("--team-secondary"));
+        const opponentSecondary = rgbTriplet(style.getPropertyValue("--opponent-secondary"));
+        if (!teamSecondary || !opponentSecondary || !gradient.includes("rgb(" + teamSecondary + ")") || !gradient.includes("rgb(" + opponentSecondary + ")")) errors.push("rivalry seam does not use both teams' secondary colours: gradient=" + gradient);
+      }
     }
 
     const elevation = frame.querySelector(".elevation-grid");

@@ -681,11 +681,20 @@ def _component_sample(component: str, state: str, fixture: str) -> str:
         visual = f'<blockquote class="mini-stakeholder"><strong>Boosters</strong><span>{"Patience falling" if state == "dissatisfied" else "Expect a bowl"}</span></blockquote>'
     elif component == "MapCanvas":
         if state == "list-twin":
+            entries_by_region: dict[str, list[str]] = {}
+            for index, programme in enumerate(FIXTURES[fixture].programmes):
+                entries_by_region.setdefault(programme.region, []).append(
+                    f'<li data-program-index="{index}"><span>{escape(programme.name)}</span>'
+                    f'<strong>{escape(programme.reach)}</strong></li>'
+                )
+            groups = "".join(
+                f'<section class="mini-region-group" data-region="{escape(region)}">'
+                f'<h3>{escape(region)}</h3><ol>{"".join(entries)}</ol></section>'
+                for region, entries in entries_by_region.items()
+            )
             visual = (
-                '<ul class="mini-map-list" aria-label="Programmes grouped by region">'
-                f'<li><span>Aven Reach</span><strong>{_fact(fixture, "college_programme")} Wardens · National</strong></li>'
-                '<li><span>Briar March</span><strong>Bellweather Wardens · Regional</strong></li>'
-                '<li><span>Cinder Vale</span><strong>Cinderhall Wardens · Local</strong></li></ul>'
+                '<div class="mini-map-list" data-lens="reach" data-total-programmes="134" '
+                f'aria-label="Reach lens, all programmes grouped by region">{groups}</div>'
             )
         else:
             visual = '<div class="mini-map" aria-hidden="true">' + "".join(f'<i style="--x:{8 + index * 17}%;--y:{18 + (index * 31) % 65}%"></i>' for index in range(6)) + f'<span>{state.title()} · 134 programmes</span></div>'
@@ -840,7 +849,12 @@ def _broadcast_body(occasion_key: str) -> str:
             f'<strong>{_fact(fixture, "rivalry_name")}</strong><span>{_fact(fixture, "rivalry_meeting")}</span></div>'
         )
     corners = ""
+    occasion_tag = ""
+    title_bar = ""
+    if occasion.escalation == "elimination":
+        occasion_tag = f'<span class="occasion">{escape(occasion.label)}</span>'
     if occasion.escalation == "final":
+        title_bar = f'<div class="broadcast-title-bar"><strong>{escape(occasion.label)}</strong></div>'
         corners = "".join(
             f'<i class="broadcast-corner corner-{corner}" data-corner="{corner}" aria-hidden="true"></i>'
             for corner in ("top-left", "top-right", "bottom-left", "bottom-right")
@@ -848,8 +862,9 @@ def _broadcast_body(occasion_key: str) -> str:
     return (
         f'<div class="broadcast-screen {occasion.house} {occasion.escalation}{" rivalry" if rivalry else ""}" '
         f'data-broadcast-occasion="{escape(occasion_key)}"><div class="broadcast-frame">'
-        f'<span class="occasion">{escape(occasion.label)}</span><strong>{_fact(fixture, name_key)}</strong>'
+        f'{occasion_tag}<strong>{_fact(fixture, name_key)}</strong>'
         f'{_state_tag("LIVE", live=True)}<span class="broadcast-clock">{_fact(fixture, clock_key)}</span></div>'
+        f'{title_bar}'
         f'<div class="broadcast-field" aria-hidden="true"><div class="line-of-scrimmage"></div>{_field_marks()}'
         f'<div class="broadcast-down">{_fact(fixture, "situation")} · {_fact(fixture, "direction")} <span aria-hidden="true">→</span></div></div>'
         f'{rivalry_seam}<section class="broadcast-overlay"><strong>{_fact(fixture, "snap_matchup")}</strong>'
