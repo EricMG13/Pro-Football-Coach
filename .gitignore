@@ -6,6 +6,7 @@ DerivedData/
 xcuserdata/
 *.xcuserstate
 .swiftpm/
+.worktrees/
 
 # Xcode build products. These were committed once (70 MB) and went stale:
 # the last compiled module predates Sources/FootballSimCore/Arcade/ entirely.
