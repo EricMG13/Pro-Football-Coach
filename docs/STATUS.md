@@ -8,10 +8,14 @@ The honest picture: what exists, what is verified, what is not.
 
 ## Where the project actually is
 
-**P0, P1 and P2 are complete. P3 is part-built and NOT done.** There is a foundation, a model, two
-rules modules, a generator, and the first three layers of the match engine.
+**P0, P1 and P2 are complete. P3's engine is built and its phase-end review is outstanding.** There
+is a foundation, a model, two rules modules, a world generator, and a match engine that plays a
+whole game from a seed.
 
-Suite: **213 tests, 60,341 checks, all passed**, byte-identical across separate process invocations.
+Suite: **237 tests, 68,989 checks, all passed**, byte-identical across separate process invocations.
+
+**P4 through P17 have not started.** Calibration under TOST, the off-screen model, seasons, both
+tiers' systems, the career arc, the AI, the design system and every view are ahead.
 
 ### P3 — match engine core — **built, review outstanding**
 
@@ -68,8 +72,6 @@ something it could not produce — `08`'s first named failure mode:
 **Not built by P3, by design:** overtime (P6 owns it, when standings care about a tie), real
 coordinator AI (P10 — `BaselinePlayCaller` is a named placeholder), penalties, injuries and fatigue
 accumulation, and per-player stat lines.
-
-### P2 — generation and identity
 
 ### P2 — generation and identity
 
