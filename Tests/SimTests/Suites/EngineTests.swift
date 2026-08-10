@@ -117,6 +117,86 @@ func runEngineTests() {
         }
     }
 
+    suite("Outcome sampling") {
+        test("weighted sampling selects the first and last buckets at their boundaries") {
+            let distribution = WeightedOutcome([("first", 1.0), ("last", 3.0)])
+            expectEqual(distribution.sample(roll: 0), "first")
+            expectEqual(distribution.sample(roll: 0.249_999_999), "first")
+            expectEqual(distribution.sample(roll: 0.25), "last")
+            expectEqual(distribution.sample(roll: Double(1).nextDown), "last")
+            expectEqual(distribution.sample(roll: 1), "last",
+                        "a terminal roll did not clamp into the final bucket")
+        }
+
+        test("weighted sampling rejects empty and invalid distributions") {
+            expectEqual(WeightedOutcome<Int>([]).sample(roll: 0), nil,
+                        "an empty distribution produced a value")
+            expectEqual(WeightedOutcome([(1, 0.0)]).sample(roll: 0.5), nil,
+                        "a zero-total distribution produced a value")
+            expectEqual(WeightedOutcome([(1, -1.0)]).sample(roll: 0.5), nil,
+                        "a negative weight produced a value")
+            expectEqual(WeightedOutcome([(1, Double.nan)]).sample(roll: 0.5), nil,
+                        "a NaN weight produced a value")
+            expectEqual(WeightedOutcome([(1, Double.infinity)]).sample(roll: 0.5), nil,
+                        "an infinite weight produced a value")
+            expectEqual(WeightedOutcome([(1, 1.0)]).sample(roll: Double.nan), nil,
+                        "a NaN roll produced a value")
+        }
+
+        test("zero-weight entries do not claim a bucket") {
+            let distribution = WeightedOutcome([("zero", 0.0), ("positive", 1.0)])
+            expectEqual(distribution.sample(roll: 0), "positive")
+        }
+
+        test("integer sampling includes both range endpoints") {
+            expectEqual(OutcomeSampling.integer(in: -3...4, roll: 0), -3)
+            expectEqual(OutcomeSampling.integer(in: -3...4, roll: Double(1).nextDown), 4)
+            expectEqual(OutcomeSampling.integer(in: -3...4, roll: 1), 4,
+                        "a terminal roll did not clamp to the upper endpoint")
+            expectEqual(OutcomeSampling.integer(in: -3...4, roll: Double.infinity), nil,
+                        "an infinite roll produced an integer")
+            expectEqual(OutcomeSampling.integer(in: Int.min...Int.max, roll: 0.5), nil,
+                        "an overflowing range produced an integer")
+        }
+
+        test("integer sampling preserves the terminal endpoint in a wide valid range") {
+            let range = 0...(Int.max - 1)
+            expectEqual(OutcomeSampling.integer(in: range, roll: Double(1).nextDown), range.upperBound,
+                        "a representable terminal roll lost the upper endpoint to Double precision")
+            expectEqual(OutcomeSampling.integer(in: range, roll: 1), range.upperBound,
+                        "a clamped terminal roll lost the upper endpoint to Double precision")
+        }
+
+        test("snap draws consume a fixed budget and sampling leaves the same RNG state") {
+            var actual = SeededRandom(seed: 83)
+            let draws = SnapDraws(rng: &actual)
+            var expected = SeededRandom(seed: 83)
+            for _ in 0..<8 { _ = expected.double01() }
+            expect(draws.outcome >= 0 && draws.spareB < 1,
+                   "the captured snap draws were outside the unit interval")
+            expectEqual(actual.next(), expected.next(), "a snap did not consume exactly eight draws")
+
+            var left = SeededRandom(seed: 17)
+            var right = SeededRandom(seed: 17)
+            let leftDraws = SnapDraws(rng: &left)
+            let rightDraws = SnapDraws(rng: &right)
+            let outcomes = WeightedOutcome([("loss", 1.0), ("gain", 1.0)])
+            expectEqual(outcomes.sample(roll: leftDraws.outcome), outcomes.sample(roll: rightDraws.outcome))
+            let lowOutcome = outcomes.sample(roll: 0)
+            let highOutcome = outcomes.sample(roll: 0.99)
+            expect(lowOutcome != highOutcome, "the fixture did not sample different outcomes")
+            expectEqual(left.next(), right.next(),
+                        "different sampled outcomes left the RNG in different states")
+        }
+
+        test("snap draw values can be injected without an RNG") {
+            let draws = SnapDraws(outcome: 0, yardage: 0.1, target: 0.2, attribution: 0.3,
+                                  secondary: 0.4, turnover: 0.5, spareA: 0.6, spareB: 0.7)
+            expectEqual(draws, SnapDraws(outcome: 0, yardage: 0.1, target: 0.2, attribution: 0.3,
+                                         secondary: 0.4, turnover: 0.5, spareA: 0.6, spareB: 0.7))
+        }
+    }
+
     suite("Situation") {
         test("field position and score read from the right side") {
             var situation = Situation(yardLine: 75, possession: .home, homeScore: 21, awayScore: 14)
