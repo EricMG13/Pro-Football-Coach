@@ -13,29 +13,61 @@ rules modules, a generator, and the first three layers of the match engine.
 
 Suite: **213 tests, 60,341 checks, all passed**, byte-identical across separate process invocations.
 
-### P3 — match engine core — **IN PROGRESS, three of nine tasks**
+### P3 — match engine core — **built, review outstanding**
 
-Built and green: `Engine/Situation.swift` (including five of `02` §3.1's seven call-in triggers),
-`Rules/ClockRules.swift` (both tiers), `Rules/MatchupRules.swift`, `Engine/Leverage.swift`
-(`03` §1.1 stage 2).
+D2's hybrid assignment/leverage resolution, per tier, with the clock, the drive loop and the game
+loop. `GameEngine.play(tier:home:away:seed:)` plays a whole game from a seed.
 
-**Not built.** Assignment (stage 1), snap resolution (stage 3), consequence (stage 4), the drive
-loop, the game loop, the cross-process play-by-play determinism assertion, and the
-render-cannot-change-outcome invariant. `docs/plans/2026-08-10-p3-match-engine-core.md` has the task
-list; tasks 4 through 9 are outstanding.
+| Gate | Result |
+|---|---|
+| G1 build | green |
+| G2 tests | 237 tests, 68,989 checks, all passed |
+| G4 scope | engine only; no calibration, no off-screen model, no schedule, no view |
+| G6 determinism | `playByPlayFingerprint` pinned per tier as a source literal; suite byte-identical across three process invocations |
+
+`03` §3's determinism test is now the real one it asks for — "same seed across two separate process
+invocations, compared by hash of the full play-by-play". P0's golden vectors deferred it to the
+phase that had a play-by-play to hash.
+
+`SnapOutcome` carries the matchups that produced it, which is the whole reason D2 rejected the
+distribution model: `04` §5.3 draws a sack as *the protection duel that lost*, and it can only do
+that if the engine recorded which one. A test asserts a sack is always decided by a protection duel
+the blocker lost.
+
+**Four defects the reachability tests found in P3's own work**, each a case of the engine declaring
+something it could not produce — `08`'s first named failure mode:
+
+1. The throw resolved against a difficulty derived by inverting the chosen receiver's openness, and
+   since the target is the most open of four, `incompletion` and `interception` were unreachable.
+   Fixed structurally (depth is the difficulty) rather than by moving a threshold, which would have
+   been P4's calibration done early and by eye.
+2. `DriveEnding` was initialised to `.endOfHalf` while the loop's continue-guard tested for that
+   value, so the sentinel and a real terminal state were the same thing: every drive ended after one
+   play and four of the eight endings were unreachable.
+3. The baseline caller punted on every fourth down it could not kick, making turnover-on-downs
+   unreachable — and punting while trailing inside two minutes is also just bad coaching.
+4. The call-in test conflated the *qualifying* set with the *selected* set. `02` §3.1's 12-to-40 is
+   a budget applied to the qualifying snaps; the phase that builds the call-in queue owns selection.
+
+**Outstanding for P3:** the phase-end adversarial review. Everything else in
+`docs/plans/2026-08-10-p3-match-engine-core.md` is done.
 
 **Two things P3 must not be read as claiming.**
 
-1. **The college clock constants are UNCONFIRMED.** `03` §8 clause 3 requires them to be checked
-   against the current rule book before the tier constants are fixed. No rule book is reachable from
-   the build environment and routing around the egress policy to fetch one is forbidden. The values
-   in `Rules/ClockRules.swift` are the engine's working set and are marked as such in the file.
-   **Owner action:** confirm the college play clock, the first-down clock stop and its two-minute
-   exception, and the overtime format, against the current book. P4's calibration will show whether
-   they produce the right plays-per-game, which is evidence but not confirmation.
-2. **Nothing in `MatchupRules` is calibrated.** P3 builds the mechanism and P4 owns the bands. The
-   engine is numerically wrong at this point and is expected to be — a P3 that tuned by eye would
-   make P4's TOST a formality over numbers already fitted to it.
+1. **The college clock constants are UNCONFIRMED.** `03` §8 clause 3 requires them checked against
+   the current rule book before the tier constants are fixed. No rule book is reachable from the
+   build environment and routing around the egress policy is forbidden. **Owner action:** confirm
+   the college play clock, the first-down clock stop and its two-minute exception, and the overtime
+   format. P4's calibration will show whether they produce the right plays-per-game, which is
+   evidence and not confirmation.
+2. **Nothing in `MatchupRules` is calibrated.** The engine is numerically wrong and is expected to
+   be. P4 owns the bands under TOST; a P3 that tuned by eye would make that TOST a formality over
+   numbers already fitted to it. What P3 asserts is *direction*, not magnitude: a better roster wins
+   more, a longer kick is harder, college fits more plays into the same four quarters.
+
+**Not built by P3, by design:** overtime (P6 owns it, when standings care about a tie), real
+coordinator AI (P10 — `BaselinePlayCaller` is a named placeholder), penalties, injuries and fatigue
+accumulation, and per-player stat lines.
 
 ### P2 — generation and identity
 
