@@ -41,13 +41,16 @@ public struct Estimate: Sendable, Equatable {
     /// Sample standard deviation. Zero for a rate, where the SE comes from the proportion itself.
     public let standardDeviation: Double
     public let estimator: EstimatorKind
+    /// Displayed units per whole probability for a rate. Fractional rates and means use one.
+    public let scale: Double
 
     public init(value: Double, sampleSize: Int, standardDeviation: Double,
-                estimator: EstimatorKind) {
+                estimator: EstimatorKind, scale: Double = 1) {
         self.value = value
         self.sampleSize = sampleSize
         self.standardDeviation = standardDeviation
         self.estimator = estimator
+        self.scale = scale
     }
 
     /// `01` §6.2's standard error.
@@ -55,8 +58,8 @@ public struct Estimate: Sendable, Equatable {
         guard sampleSize > 0 else { return .infinity }
         switch estimator {
         case .rate:
-            let p = Swift.min(Swift.max(value, 0), 1)
-            return (p * (1 - p) / Double(sampleSize)).squareRoot()
+            let p = Swift.min(Swift.max(value / scale, 0), 1)
+            return (p * (1 - p) / Double(sampleSize)).squareRoot() * scale
         case .mean:
             return standardDeviation / Double(sampleSize).squareRoot()
         }

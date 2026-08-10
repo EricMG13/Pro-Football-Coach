@@ -19,6 +19,13 @@ func runCalibrationTests() {
             expect(band.test(estimate).passed, "a precise 0.55 inside 0.50 to 0.60 failed")
         }
 
+        test("a percentage-valued rate has standard error in percentage points") {
+            let estimate = Estimate(value: 65, sampleSize: 100, standardDeviation: 0,
+                                    estimator: .rate, scale: 100)
+            expectClose(estimate.standardError, 4.7697, 0.0001,
+                        "a 65% rate has no percentage-point standard error")
+        }
+
         test("an estimate inside the band but imprecise FAILS") {
             // The whole difference between TOST and a range check. A point estimate of 0.55 from 40
             // trials is consistent with a true value well outside the band, and the burden is on the
