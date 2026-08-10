@@ -8,7 +8,38 @@ The honest picture: what exists, what is verified, what is not.
 
 ## Where the project actually is
 
-**P0 is complete. The tree is a foundation and nothing more.**
+**P0 and P1 are complete. There is a foundation, a model and two rules modules.**
+
+### P1 — model and rules
+
+`02` §11 did not exist; P1 needed league structure, scholarship limits, eligibility clocks, roster
+sizes, the cap and the draft shape, and canon named none of them. Per the doc-first amendment rule
+they went into `docs/02-GAME-DESIGN.md` §11 first. `02` also gained §11.3.1 (both tiers share one
+21-week counter, because one save runs both leagues), §11.3.2 (decline ages), §11.3.3 (the trait
+roster) and §11.3.4 (the scheme roster).
+
+| Gate | Result |
+|---|---|
+| G1 build | green |
+| G2 tests | 137 tests, 690 checks, all passed |
+| G4 scope | model and rules only; no engine, no generation, no view |
+
+**The phase-end review found a cross-process determinism bug this phase's own commit message claimed
+to have closed.** `Player.traits` was a `Set<Trait>`, and `Set` encodes to an unkeyed container in
+per-launch hash order — so the most-instantiated type in the save produced different bytes every
+launch, with two traits enough to trigger it. It is fixed, and the suite is now byte-identical
+across eight separate process invocations. Two lessons carried forward:
+
+1. **A round-trip test cannot see an ordering bug**, because `Set` equality is order-independent and
+   the hash seed is constant within a process. Only asserting the *encoded shape or bytes* can.
+2. **The scan meant to prevent it looked at one spelling.** It now covers `Dictionary<K, V>` as well
+   as `[K: V]`, bans a stored `Set` in `Model/`, and requires stored properties there to carry a
+   type annotation — the inferred-literal case no annotation scan can otherwise see.
+
+**What is NOT true yet:** nothing generates a league, nothing resolves a snap, and no rule is
+*enforced* — `RosterLegality` is a predicate and P7 and P8 own enforcement. P2 starts generation.
+
+### P0 — foundation
 
 The spec package is complete and P0 has run: the repository is stripped to the four things
 `docs/PORT-LOG.md` justifies keeping, the `03b` §1 module skeleton exists, the `03` §3 hierarchical
