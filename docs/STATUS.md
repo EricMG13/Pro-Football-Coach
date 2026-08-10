@@ -9,18 +9,80 @@ The honest picture: what exists, what is verified, what is not.
 ## Where the project actually is
 
 **P0 through P3 are complete. P4's instrument is built; the engine it measures is not yet
-calibrated, and the harness says by how much.** There is a foundation, a model, two rules modules, a world
-generator, and a match engine that plays a whole game from a seed and records why every play
-happened.
+calibrated, and attempt eight has falsified D2's hybrid architecture.** There is a foundation, a
+model, two rules modules, a world generator, and a match engine that plays a whole game from a seed
+and records why every play happened.
 
-Suite: **265 tests, 77,745 checks, all passed**. The final `./scripts/verify.sh` run passed build,
-the checked-in **23/23 calibration-tool contracts** stage, and SimTests (three stages passed, zero
-failed).
+The final `./scripts/verify.sh` is green: build passed, calibration-tool contracts passed **23/23**,
+and SimTests passed **266 tests / 75,433 checks** (**3 passed, 0 failed** overall). An earlier full
+run caught the tuner's stale `brokenTackleYards` search after the accepted engine change split that
+constant; commit `4205260` updated it to `runBrokenTackleYards` before the final green run.
 
 **P5 through P17 have not started.** The off-screen model, seasons, both tiers' systems, the career
 arc, the AI, the design system and every view are ahead.
 
 ### P4 — calibration harness and bands — **instrument done, engine not calibrated**
+
+#### Attempt eight (2026-08-10): D2 falsified; G5 remains red
+
+The accepted outcome-model change entered the attempt with a before diagnostic of **1.33 pro
+yards/carry and 3.27% explosive pro runs**. No coordinate search ran and no constant changed after
+measurement. `swift run -c release CalibrationScore tuning` ran once and returned **SCORE 5/24**;
+`swift run -c release CalibrationScore holdout` then ran once and returned **SCORE 7/24**. The
+exposed second seed set is deterministic evaluation evidence, not blinded holdout evidence.
+
+The targeted pro run measures improved but did not clear every band. Tuning pro rush
+yards/team-game was CI90 **118.5767–134.4692** versus **100–130** (upper), and explosive run rate
+was **0.0996–0.1078** versus **0.105–0.130** (lower). Evaluation pro rush yards/team-game was
+**114.1082–128.3127** versus **100–130** (pass), and explosive run rate was **0.0921–0.1001**
+versus **0.105–0.130** (lower).
+
+Complete attempt-eight failures (CI90 versus fixed band, followed by violated edge):
+
+| Seed set | Failed metric | CI90 / band | Edge |
+|---|---|---|---|
+| tuning | college points/team-game | 25.3970–29.2696 / 26–31 | lower |
+| tuning | college field goal percentage | 82.2617–85.6036 / 72–79 | upper |
+| tuning | college home win rate | 0.4656–0.5724 / 0.60–0.68 | lower |
+| tuning | college favourite win rate | 0.8087–0.8886 / 0.70–0.78 | upper |
+| tuning | college explosive run rate | 0.0973–0.1047 / 0.135–0.165 | lower |
+| tuning | college explosive pass rate | 0.0909–0.0973 / 0.128–0.158 | lower |
+| tuning | college offensive plays/team-game | 94.0876–96.6374 / 67–75 | upper |
+| tuning | pro rush yards/team-game | 118.5767–134.4692 / 100–130 | upper |
+| tuning | pro completion percentage | 41.6652–42.8574 / 61–67 | lower |
+| tuning | pro interceptions/team-game | 3.2445–3.6930 / 0.6–1.1 | upper |
+| tuning | pro sacks/team-game | 0.9983–1.4100 / 2–3.1 | lower |
+| tuning | pro home win rate | 0.4699–0.5762 / 0.50–0.58 | lower |
+| tuning | pro favourite win rate | 0.7944–0.8768 / 0.62–0.72 | upper |
+| tuning | pro blowout rate | 0.6908–0.7842 / 0.17–0.26 | upper |
+| tuning | pro offensive plays/team-game | 78.5786–80.9381 / 60–68 | upper |
+| tuning | pro explosive run rate | 0.0996–0.1078 / 0.105–0.130 | lower |
+| tuning | pro explosive pass rate | 0.0906–0.0976 / 0.125–0.150 | lower |
+| tuning | pro safeties/game | 0.0329–0.0671 / 0.005–0.050 | upper |
+| tuning | pro tie rate | -0.0027–0.0110 / 0–0.020 | lower |
+| evaluation | college points/team-game | 25.6474–29.3067 / 26–31 | lower |
+| evaluation | college field goal percentage | 80.4387–83.8735 / 72–79 | upper |
+| evaluation | college home win rate | 0.5248–0.6300 / 0.60–0.68 | lower |
+| evaluation | college favourite win rate | 0.7496–0.8394 / 0.70–0.78 | upper |
+| evaluation | college explosive run rate | 0.0934–0.1007 / 0.135–0.165 | lower |
+| evaluation | college explosive pass rate | 0.0904–0.0968 / 0.128–0.158 | lower |
+| evaluation | college offensive plays/team-game | 94.4374–96.9584 / 67–75 | upper |
+| evaluation | pro completion percentage | 42.1793–43.3628 / 61–67 | lower |
+| evaluation | pro interceptions/team-game | 3.2278–3.6639 / 0.6–1.1 | upper |
+| evaluation | pro sacks/team-game | 0.9309–1.3232 / 2–3.1 | lower |
+| evaluation | pro field goal percentage | 80.1948–84.0061 / 81–88 | lower |
+| evaluation | pro home win rate | 0.5056–0.6111 / 0.50–0.58 | upper |
+| evaluation | pro favourite win rate | 0.7704–0.8568 / 0.62–0.72 | upper |
+| evaluation | pro blowout rate | 0.6426–0.7407 / 0.17–0.26 | upper |
+| evaluation | pro offensive plays/team-game | 78.8063–81.0937 / 60–68 | upper |
+| evaluation | pro explosive run rate | 0.0921–0.1001 / 0.105–0.130 | lower |
+| evaluation | pro explosive pass rate | 0.0896–0.0965 / 0.125–0.150 | lower |
+
+**D2 ledger and gate:** attempts 1–3 were instrument repairs; attempts 4–8 are **5 of 5
+consecutive genuine model-tuning failures**. D2's pre-declared falsifier has fired. P4 G5 remains
+red, P4 cannot close, and hybrid-model tuning stops here. The next action is a written successor
+architecture plan for D2 option (b), a play-outcome distribution model that emits a causal record
+for the visualisation layer. Do not begin P5 or a sixth hybrid tuning attempt.
 
 #### Attempt seven (2026-08-10): bounded search completed; G5 remains red
 
@@ -65,11 +127,11 @@ extend this grid; change the outcome model first. This attempt is repeated adver
 does not honestly prove D2's five-consecutive-*model-tuning*-attempt falsifier because three prior
 attempts were instrument repairs.
 
-**Attempt ledger (auditable D2 count).** Attempts 1–3 were instrument repairs (favourite counting,
-talent ladder, and roster construction) and do not count as model-tuning attempts. Attempts 4–6
-were genuine model-tuning attempts; attempt 7 is the completed bounded model-tuning attempt above.
-The D2 sequence is therefore **4 of 5** consecutive model-tuning failures, not 7 of 7 and not yet
-formally falsified.
+**Attempt-seven ledger (historical D2 count).** Attempts 1–3 were instrument repairs (favourite
+counting, talent ladder, and roster construction) and did not count as model-tuning attempts.
+Attempts 4–6 were genuine model-tuning attempts; attempt 7 was the completed bounded model-tuning
+attempt above. The D2 sequence was therefore **4 of 5** consecutive model-tuning failures at that
+point. Attempt eight has since supplied the fifth failure; the current ledger is above.
 
 **Search-trace caveat.** During authoritative pass-one `leverageNoise` testing, an accidental
 duplicate xtrace wrote only `0.22` then `0.30`. The authoritative pass restored `0.38`; neither
@@ -147,10 +209,10 @@ because a run is lane leverage times a scale with a rare break-tackle bonus and 
 the play-caller is P10's, not P4's. More search over these six constants will not fix those; the
 next attempt should widen the *model*, not the grid.
 
-**D2's falsifier has NOT been met, and reporting otherwise would be wrong.** It fires if the model
-"cannot be tuned to hold every band simultaneously… across 5 consecutive tuning attempts". Six
-attempts have happened; three were instrument repair and one was a search rather than a hand pass.
-An instrument repair is not a failed tuning attempt.
+**At this historical point D2's falsifier had not been met.** It fires if the model "cannot be
+tuned to hold every band simultaneously… across 5 consecutive tuning attempts". Three of the first
+six attempts were instrument repairs and did not count. Attempt eight has since completed the fifth
+genuine model-tuning failure; the current attempt-eight section is authoritative.
 
 **Sixteen of §6.5's rows are not measured at all**, listed in `CalibrationBands.unimplementedMetrics`
 with what each waits on: per-drive accounting, target shares (which need per-player stat lines the

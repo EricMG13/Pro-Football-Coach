@@ -10,12 +10,13 @@ would actually run: a test, a band, a harness, or an owner protocol with a metri
 fixed in advance.
 
 **Status key.** `DECIDED` — settled, build against it. `DECIDED (REVERSIBLE)` — settled on stated
-assumptions, cheap to change. `ESCALATED` — blocking owner question, do not build past it.
+assumptions, cheap to change. `FALSIFIED` — its pre-declared instrument rejected the selected
+choice; do not continue building on it. `ESCALATED` — blocking owner question, do not build past it.
 
 | ID | Decision | Status |
 |----|----------|--------|
 | D1 | In-match agency model | DECIDED |
-| D2 | Match engine architecture | DECIDED |
+| D2 | Match engine architecture | **FALSIFIED 2026-08-10** — successor plan required |
 | D3 | Two-tier simulation | DECIDED |
 | D4 | Performance budgets | DECIDED (REVERSIBLE) |
 | D5 | College/pro system design | DECIDED |
@@ -122,7 +123,7 @@ would strand the game-plan design in `02`.
 distribution model with a visualisation layer; (c) hybrid assignment/leverage resolution without
 continuous physics.
 
-**Choice: (c) hybrid assignment/leverage resolution.**
+**Falsified choice: (c) hybrid assignment/leverage resolution.**
 
 The engine resolves a snap as a set of *matchups* — each blocker against each rusher, each receiver
 against each defender, the run lane against the front — scored from ratings, scheme fit, fatigue and
@@ -138,6 +139,18 @@ the UI can narrate, while keeping the probability mass in one place where it can
 The prior build reached the same conclusion the expensive way and the lesson transfers: its
 `SnapKernel` measured matchups while **the engine still owned every probability**. That separation
 is the reusable part.
+
+**Recorded falsification (attempt eight, 2026-08-10).** Attempts 1–3 were instrument repairs and
+did not count. Attempts 4–8 were five consecutive genuine model-tuning failures. Attempt eight
+returned **SCORE 5/24** on tuning and **SCORE 7/24** on the exposed deterministic evaluation set,
+so the five-attempt threshold below is met. P4 G5 remains red. Do not start a sixth hybrid-model
+tuning attempt.
+
+The required successor is option **(b), a play-outcome distribution model with a causal
+visualisation record**. Its architecture plan must make the sampled outcome and its causal
+attribution one deterministic record, so the match view can still explain which protection,
+coverage, run-lane, or player factor produced the result. This preserves the coaching-information
+requirement without retaining the falsified hybrid probability model.
 
 **Falsifier — instrument: the calibration harness in `03` plus `DeterminismTests`.**
 Falsified if the matchup model cannot be tuned to hold every band in `03` simultaneously — that is,
