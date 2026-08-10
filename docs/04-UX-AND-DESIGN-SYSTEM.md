@@ -65,6 +65,7 @@ Semantic roles only. No view names a hue.
 | Role | Use |
 |---|---|
 | `surface.page` / `surface.card` / `surface.raised` | Backgrounds by elevation |
+| `surface.selected` | Selected rows and quiet emphasis; never the only selection cue |
 | `content.primary` / `.secondary` / `.tertiary` | Text by weight |
 | `accent` | The single interactive accent |
 | `rating.{elite,good,average,poor,bad}` | The rating ladder |
@@ -82,6 +83,7 @@ computed and independently re-derived.
 | `surface.page` | `#0A0D14` | — | `#EEF0F4` | — |
 | `surface.card` | `#121724` | — | `#FFFFFF` | — |
 | `surface.raised` | `#1B2130` | — | `#F7F9FC` | — |
+| `surface.selected` | `#14294B` | 1.34 / 1.23 / 1.11 | `#DCE6F5` | 1.10 / 1.26 / 1.19 |
 | `content.primary` | `#F5F7FA` | 18.11 / 16.67 / 14.97 | `#0E1218` | 16.46 / 18.78 / 17.80 |
 | `content.secondary` | `#A7B0C0` | 8.90 / 8.19 / 7.36 | `#48505F` | 7.11 / 8.11 / 7.69 |
 | `content.tertiary` | `#78839A` | 5.10 / 4.70 / **4.22** | `#6B7484` | **4.13** / 4.71 / 4.47 |
@@ -97,6 +99,14 @@ happening *now* — the live badge, remaining-moment pips, a running clock, a ca
 answer. Nothing static may use it. **It has no light text form**: chartreuse cannot clear 4.5:1 on
 white at any usable saturation, so in light it is a *fill* carrying `content.primary`. One role, two
 mechanisms — the same shape elevation already has.
+
+**`surface.selected` is the semantic surface for selection and quiet emphasis.** It is deliberately
+close to the neutral surfaces and therefore is not a bare meaning-bearing fill: selection also has
+an `accent` stroke or checkmark, stronger type, and the selected accessibility trait. Only
+`content.primary` and `content.secondary` may carry body text on it. Those pairs measure 13.51:1
+and 6.64:1 in dark, and 14.91:1 and 6.44:1 in light. `content.tertiary` is forbidden on the selected
+surface even where it clears the 3:1 large-text floor; selection is not the place to lower emphasis
+again.
 
 `rating.*` is a **single-hue lightness ladder, one per appearance**:
 
@@ -115,7 +125,7 @@ failing both. Numeral chips use the darkened substitute **`#1F6099`** (6.58 on w
 polarity flips at the ladder's midpoint**: `elite`/`good`/`average` carry white, `poor`/`bad` carry
 `content.primary`. This is a rule about lightness ramps, not about these ten hexes.
 
-**Four rules the values forced, each of which changes a test rather than a value.**
+**Five rules the values forced, each of which changes a test rather than a value.**
 
 1. **`rating.*` is a fill role and is not legal as a text colour.** The ladder was chosen against a
    hue ramp and a hue-plus-glyph ramp by rendering all three under deuteranopia, protanopia and
@@ -133,6 +143,13 @@ polarity flips at the ladder's midpoint**: `elite`/`good`/`average` carry white,
    light, 1.108 and 1.120 dark). A card edge cannot be carried by the fill step, so the hairline is
    load-bearing and must be enumerated like any other colour.
 4. **Elevation has two definitions, so it cannot be one shadow value.** See §2.3.
+5. **A bare fill that carries meaning must clear 3:1 against the surface where it actually lands.**
+   This applies to bars, discs, swatches and filled state marks with no text, outline, pattern or
+   redundant glyph carrying the same meaning. A fill below 3:1 is legal only after it stops being
+   bare: give it a boundary that clears 3:1 and a redundant label, glyph or pattern. The contrast
+   suite enumerates each fill against its real landing surface in both appearances; measuring it
+   against an assumed white or black canvas is a defect. `surface.selected` is intentionally in
+   this second category, and `rating.*` bars that miss the floor require the same treatment.
 
 **Team colours are generated per save** and must pass the trade-dress ΔE test and the contrast
 contract *at generation time* — a generated pair that cannot carry legible text is rejected and
@@ -163,7 +180,9 @@ trade dress, so the machinery exists.
 ### 2.2 Type
 
 Dynamic Type throughout, `@ScaledMetric` for any dimension that gutters text. No `.system(size:)`
-anywhere — the prior build had ten, four below the 11 pt floor.
+anywhere — the prior build had ten, four below the 11 pt floor. The destination bar's fixed-height
+exception and its compensations are defined narrowly in §4.3; it is not permission for another
+component to opt out.
 
 **Six roles onto six iOS text styles.** Added 2026-08-10 from the design pass.
 
@@ -195,8 +214,11 @@ the 44 pt touch-target floor. Confirm against the HIG type table before P11 depe
 
 ### 2.3 Spacing, radius, elevation
 
-An 8-point scale (`xs 4, s 8, m 16, l 24, xl 32, xxl 48`), three radii (`s 8, m 12, l 20`), three
-elevations. Anything off-scale is a defect.
+The spacing scale is **`4, 8, 12, 16, 20, 24, 32, 48` pt** (`xs`, `s`, `sm`, `m`, `ml`, `l`, `xl`,
+`xxl`). Two named optical half-steps also exist: **`optical.6 = 6 pt`** and **`optical.10 = 10 pt`**.
+They are only for optical alignment inside an icon, numeral or broadcast lockup; they are not legal
+for layout gaps, padding, frame dimensions or touch targets. There are three radii (`s 8, m 12,
+l 20`) and three elevations. Any other value is a defect.
 
 **Radius carries depth, not decoration** (2026-08-10): `s` for `Chip` and `Badge`, `m` for `Card` and
 `Row`, `l` for the sheet and `CallInCard` only.
@@ -227,12 +249,18 @@ label rather than an event.
 things to maintain, so the system is two axes instead:
 
 **House — who is playing.** The primary channel is **geometry, not colour**. College furniture is cut
-at **9°**; pro furniture is **orthogonal**. Accents are bronze `#D9A441` and steel `#7FB2E5`.
+at **9°**; pro furniture is **orthogonal**. Accents are college bronze `#C8A24A` and pro steel
+`#7FB2E5`.
 
-> **The two accents measure 1.01:1 against each other.** Near-identical luminance — in greyscale, or
+> **The two accents measure 1.08:1 against each other.** Near-identical luminance — in greyscale, or
 > to a monochromat, they are the same colour. That is survivable *only* because geometry carries the
 > distinction and colour is secondary. A house system separated by hue alone would fail §2.1's
 > never-only-colour rule outright, and this one was measured rather than assumed.
+
+College bronze measures **8.07 / 7.43 / 6.67:1** against dark page / card / raised, but only
+**2.11 / 2.41 / 2.28:1** against their light counterparts. It may therefore be text on dark only.
+In light it is furniture, a fill with a ≥3:1 boundary or a rule with a redundant geometric cue, and
+any text on the bronze uses `content.primary` (`#0E1218`, 7.80:1), never white (2.24:1).
 
 **Escalation — what is at stake.** Additive and monotonic: each step adds furniture and never
 rearranges it, so the championship bug is read with the regular-season bug's learned layout.
@@ -262,9 +290,9 @@ mechanical gain, so the houses are named for the tier. Branded networks go to co
 `OpposedBar`, `Sparkline`, `LowerThird`, **`ScoreBug`**, **`StakeholderCard`**, **`MapCanvas`**,
 **`ListControls`**, **`AttributeRow`**.
 
-**Twenty-two as of 2026-08-10.** The last two close the review's largest finding — across the whole
-library there was not one filter, sort, search or multi-select, and the player card showed no
-attributes at all:
+**Twenty-two components, exactly, as of 2026-08-10.** The last two close the review's largest
+finding — across the whole library there was not one filter, sort, search or multi-select, and the
+player card showed no attributes at all:
 
 - **`ListControls`** — position filter, sort, search and multi-select, as one primitive serving the
   roster, the recruiting board, free agency and the draft board. Four screens or four different
@@ -275,15 +303,16 @@ attributes at all:
   text polarity flipping at the ladder midpoint per §2.1. Ten per card, not forty: the pattern is
   borrowed from the reference set's grammar, the density is not.
 
-**Twenty as of earlier the same day.** The last three were added by the design pass:
+The registry reached twenty earlier the same day when these three were added by the design pass:
 
 - **`MapCanvas`** — the league map. A *second* canvas with its own clustering problem: `GameMap` is
   1000 × 700 world units with 8 regions and 134 programmes, which projects to ~0.5 pt per unit, so no
   city is labelled at full zoom and dots are sized by `marketSize`. Three lenses over one canvas
   (reach, talent, rivalries) rather than three screens. **It is not a `FieldCanvas` variant** —
-  inheriting the field's rules would be wrong — and **its accessible form is unresolved**: a spatial
-  readout with 134 positions and no natural order is harder for VoiceOver than the field, and the
-  likely answer is that the canvas is decorative and the verdict panel beside it carries the meaning.
+  inheriting the field's rules would be wrong. Its semantic twin is a complete list of all 134
+  programmes, filtered by the same active lens and grouped by region. The map may be decorative to
+  VoiceOver, but the list may not be partial, sampled or differently filtered; map and list expose
+  the same facts and verdict in spatial and ordered forms.
 
 - **`ScoreBug`** — three variants: full (match view), compact (league readouts, aftermath, career
   line) and live (elsewhere while a match runs). Team-coloured segments either side of a black score
@@ -318,7 +347,9 @@ The last three, and two clarifications, come from the reference read in `01-RESE
 - **Role and status tokens are `Chip` variants, not new components.** A short assignment code beside
   a mark on a field, and a status glyph in a roster row, are the same primitive.
 
-**Three more components, added 2026-08-10.**
+**Two system patterns and two `CallInCard` states, added 2026-08-10.** `ProgressState` and
+`ConfirmSheet` are named compositions of registry components, not registry entries; promoting them
+to components would make the count twenty-four and contradict the authoritative list above.
 
 - **`ProgressState`** — the one moment the player waits on the simulation. `03` §7 budgets 2.0 s
   for a week advance at 134 programmes. **Determinate**, because 134 and 32 are constants and a
@@ -330,7 +361,8 @@ The last three, and two clarifications, come from the reference read in `01-RESE
   here is retreat; the destructive action is outlined, never filled, because a filled red button
   reads as primary and it is not.
 - **`CallInCard` has two more states** — **deferred** (the clock expired, so it resolved to the
-  coordinator's recommendation and says so afterwards: a call-in cannot resolve to nothing) and
+  coordinator's highest-ranked legal recommendation and says so afterwards: a call-in cannot
+  resolve to nothing) and
   **paused** (the clock stops on background and resumes on foreground). At ~25 a match these are
   the most-hit states in the product, and a timer that runs while the phone is in a pocket
   punishes the commute the product is designed for.
@@ -422,11 +454,27 @@ fell out of drawing them:
   the player acts or not, a decision with a deadline, and a named coordinator proposal — that is the
   call-in loop with different content. They take the **broadcast register** and reuse `ScoreBug`'s
   live variant and `CallInCard`. Building a second timed interaction would get it worse the second
-  time. **An expired draft clock must auto-pick**, stated: this is a commute game and a clock that
-  expires into nothing is a soft-locked draft.
+  time. **The draft clock pauses when the app backgrounds and resumes with the same remaining time
+  when it foregrounds.** If its foreground time then expires, it auto-picks the coordinator's
+  highest-ranked legal option and displays the selected player and the reason. Expiry cannot resolve
+  to nothing, choose an illegal player, or make a silent pick.
 - **The promotion needs its own row and its own §2.2 test.** It was the word "carousel" inside a
   comma list, and it is the product's headline. Declining must be genuinely available or the arc is
-  a cutscene.
+  a cutscene. Acceptance does not drop the player at an ordinary pro tab root: it enters a pro
+  **arrival state** that names the new organisation, role, inherited constraints, first stakeholder
+  and next decision before handing control to the ordinary week.
+
+**The current state coverage is part of the screen contract, not reference-sheet decoration.** Tests
+and rendered references enumerate these states from the same inventory:
+
+| Surface | Required states |
+|---|---|
+| Entry | no career; board; offer; accepted appointment; Continue with the exact saved surface |
+| Match | live; call-in awaiting input; background-paused; foreground-resumed; resolved/deferred; exit; resumable return; aftermath |
+| Draft | live pick; background-paused; foreground-resumed; user selection; foreground-expiry auto-pick result |
+| Map | reach, talent and rivalry lenses; each with its complete, region-grouped list twin |
+| Persistence | saving; saved; failed; continuing-without-saving warning; recovered |
+| Promotion | offered; declined; accepted; pro arrival |
 
 Every DESTINATION must pass `02` §2.2's three tests — two defensible answers, a visible consequence,
 a cost — or it is demoted to a READOUT and its decision automated.
@@ -527,17 +575,32 @@ nowhere, and nothing covered cold launch.
   player's place and makes them re-read a screen they had finished. The Title screen's Continue
   card names where they were, when it saved, and what triggered the save — the third of those
   teaches the cadence rule without stating it.
+- **Save failure is a decision surface, not a dismissible error banner.** It exposes exactly three
+  actions: **Try again**, **Manage storage**, and **Continue without saving**. Continuing is allowed
+  because blocking play cannot create storage, but it installs a persistent `state.warning` banner
+  on every destination until a save succeeds. The warning states the last successful save and keeps
+  Try again and Manage storage reachable; navigating away never implies that persistence recovered.
 
 ### 4.3 The destination bar
 
 Owner decision, 2026-08-10: **bottom**. Specified here because "five tabs" was the entire previous
 spec, which left the most expensive layout decision in the product to a SwiftUI default.
 
-- **Bottom, 44 pt, icon beside label rather than under it.** The stock arrangement stacks label under
-  icon and needs ~49 pt. Landscape has width to spare and height to save, so the pair goes
-  horizontal and the bar lands on 44 — the touch floor exactly, not a point more.
-- **The active destination is marked on the bar's top edge**, a 2 pt `live` rule. A bottom marker
-  would collide with the home indicator.
+- **Bottom, 44 pt, `surface.page` plus the hairline token.** There is no separate destination-chrome
+  colour. Icon sits beside label rather than under it: the stock arrangement stacks them and needs
+  ~49 pt, while landscape has width to spare and height to save, so the pair goes horizontal and
+  the bar lands on 44 — the touch floor exactly, not a point more.
+- **The active destination is marked on the bar's top edge**, a 2 pt `accent` rule, stronger label
+  weight and the selected accessibility trait. A bottom marker would collide with the home
+  indicator. `live` is forbidden here because a selected destination is static state, not something
+  happening now.
+- **This bar is the sole Dynamic Type exception.** Its 44 pt height and 12 pt labels do not scale,
+  because scaling five persistent labels to AX5 would either consume the scarce axis or make the
+  destinations unreachable. The compensation is cumulative: every item remains a 44 × 44 pt target;
+  icon and written label both remain; VoiceOver announces the full destination and selected state;
+  the five labels are short and never truncated; and all destination content beyond the bar still
+  renders at AX5. The exception belongs to this five-item navigation landmark only, not to buttons,
+  rows or any content inside a destination.
 - **Hidden in the broadcast register.** The match view is full-bleed and §5.2's arithmetic already
   assumes all 369 pt; leaving the bar up would clip the field by 44 and break the whole-field claim.
 
@@ -635,12 +698,12 @@ the arithmetic is decisive and it is not a floor problem: a legible numeral need
 which at 7.5 pt centres is **62 % occluded**, and at the 932 ceiling's 8.4 pt centres still 58 %.
 
 **So the conclusion is amended in one direction only.** All 22 marks *are* drawn, at true positions
-— the nine interior linemen as 11 pt ringed discs the eye can **count**, and 13 numerals on the
-skill positions and the three foregrounded marks. That is more than "one shape" and less than
-"22 numbered". The original clause stands where it matters:
-**individually numbered marks on the two lines remain geometrically impossible**, the
-seven-man line is drawn as one shape rather than seven marks, and nothing inside the match `Canvas`
-is individually tappable. Orientation bought field coverage. It bought nothing on local clustering.
+— **13 numbered field marks plus nine blank 11 pt ringed discs for the clustered interior
+linemen**. The discs remain separate and countable; the stale claim that the seven-man line becomes
+one shape is withdrawn. That is more than "one shape" and less than "22 numbered". Individually
+numbering the two clustered lines remains geometrically impossible, and nothing inside the match
+`Canvas` is individually tappable. Orientation bought field coverage. It bought nothing on local
+clustering.
 
 **A match can always be left, and it is never destructive.** Added 2026-08-10. The outcome is
 already determined by the seed (`03` §1.3), so leaving forfeits nothing except *watching* — and
@@ -727,14 +790,16 @@ A sack is drawn as the protection duel that lost, not as a generic collapse.
 
 ## 6. The accessibility contract (D12)
 
-Binding, tested, and enumerated by construction.
+Binding, tested, and enumerated by construction. There are **exactly ten accessibility tests** in
+this contract; adding a clause means adding an enumerated test rather than hiding another assertion
+inside a hand-written specimen.
 
 | Clause | Requirement | Test |
 |---|---|---|
-| Contrast | ≥4.5:1 body, ≥3:1 large text and non-text indicators, measured on the composited surface, both appearances. **Fill roles are enumerated against the surface they fill, not as a foreground pair** — `rating.*` is a fill role (§2.1) and scoring it as text would fail it wrongly; the hairline is a colour token and is enumerated | `ContrastByConstructionTest` |
-| Coverage | The contrast suite's surface count equals the count of surfaces consuming a colour token | meta-assertion inside the same test |
+| Contrast | ≥4.5:1 body and ≥3:1 large text and non-text indicators, measured on the composited surface in both appearances. **Every bare meaning-bearing fill clears 3:1 against its actual landing surface. Fill roles are enumerated against the surface they fill, not scored as text** — `rating.*` is a fill role (§2.1); the hairline is a colour token and is enumerated | `ContrastByConstructionTest` |
+| Coverage | The contrast suite's surface count equals the count of surfaces consuming a colour token | `ContrastCoverageTest` |
 | Orientation | The app declares landscape and only landscape, in `App/project.yml`; no view opts out | `OrientationPolicyTest` reads the project manifest |
-| Dynamic Type | Every screen legible at AX5 **in 369 pt of height**, no clipping, no fixed-size text container | `DynamicTypeContractTest` |
+| Dynamic Type | Every screen legible at AX5 **in 369 pt of height**, no clipping, no fixed-size text container; the destination bar's sole fixed-label exception must retain every compensation in §4.3 | `DynamicTypeContractTest` |
 | Reduce Motion | Every animation has a defined reduced form | `ReduceMotionContractTest` |
 | VoiceOver | Every data row is one sentence; every control has a label and a hint where non-obvious | `VoiceOverLabelTest` |
 | Touch targets | 44 × 44 pt minimum | `TouchTargetTest` |
