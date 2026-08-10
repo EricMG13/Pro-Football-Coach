@@ -133,6 +133,14 @@ public enum MatchupRules {
 
     public static let fumbleChance = 0.012
 
+    // MARK: - Calibration thresholds
+
+    /// 01 section 6.5 defines a blowout as a margin of 17 or more.
+    public static let blowoutMargin = 17
+    /// 01 section 6.5 re-bases the explosive bands on these lengths.
+    public static let explosiveRunYards = 10
+    public static let explosivePassYards = 15
+
     // MARK: - Scoring
 
     public static let touchdownPoints = 6

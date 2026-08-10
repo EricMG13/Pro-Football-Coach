@@ -11,5 +11,6 @@ runIdentityDistributionTests()
 runEngineTests()
 runSnapResolverTests()
 runGameLoopTests()
+runCalibrationTests()
 
 TestKit.finish()
