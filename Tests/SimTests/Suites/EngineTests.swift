@@ -2,8 +2,8 @@ import Foundation
 import FootballSimCore
 
 /// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 9_878_132_314_835_229_116
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 5_319_401_859_029_702_986
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 12_373_771_103_372_689_254
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 13_850_891_251_756_572_042
 
 func runEngineTests() {
     suite("Leverage") {
@@ -471,7 +471,11 @@ func runSnapResolverTests() {
             expect(!outcome.result.stopsClock, "a kneel stopped the clock")
         }
 
-        test("tempo changes how much clock a snap costs") {
+        test("a snap reports its play's own duration, not the pre-snap clock") {
+            // The pre-snap clock moved to the drive loop, because whether it runs at all depends on
+            // what the PREVIOUS snap did and on the tier's first-down rule — neither of which a
+            // single snap can see. Tempo's effect is asserted at the game level instead, where it
+            // now lives.
             func seconds(_ tempo: Tempo) -> Int {
                 var rng = SeededRandom(seed: 2)
                 return SnapResolver.resolve(
@@ -480,8 +484,9 @@ func runSnapResolverTests() {
                     situation: Situation(), rules: rules, rng: &rng
                 ).secondsElapsed
             }
-            expect(seconds(.hurry) < seconds(.normal), "hurrying up saved no clock")
-            expect(seconds(.bleed) > seconds(.normal), "bleeding the clock cost none")
+            expectEqual(seconds(.hurry), seconds(.bleed),
+                        "a snap's own duration should not depend on the tempo it was called at")
+            expect(seconds(.normal) > 0, "a snap took no time at all")
         }
 
         test("a turnover and a clock stop are properties of the result, not of a call site") {
@@ -611,7 +616,10 @@ func runGameLoopTests() {
                     seen.insert(drive.ending)
                 }
             }
-            let unreachable = DriveEnding.allCases.filter { !seen.contains($0) && $0 != .endOfGame }
+            // No exemptions. `endOfGame` used to be here and was exempted; it covered the same
+            // event as `endOfHalf`, nothing produced it, and an exemption is how a declared-but-
+            // unreachable case survives its own reachability test. It was deleted instead.
+            let unreachable = DriveEnding.allCases.filter { !seen.contains($0) }
             expect(unreachable.isEmpty,
                    "these drive endings never happen: "
                        + unreachable.map(\.rawValue).joined(separator: ", "))
@@ -659,6 +667,143 @@ func runGameLoopTests() {
             expectEqual(GameEngine.play(tier: .pro, home: home, away: away, seed: 777)
                             .playByPlayFingerprint, before,
                         "replaying after reading produced a different game")
+        }
+
+        test("tempo changes how much of the game clock a drive burns") {
+            // Where tempo actually bites now: the drive loop charges the pre-snap clock, and only
+            // when the clock was running.
+            func secondsUsed(_ tempo: Tempo) -> Int {
+                struct FixedTempoCaller: PlayCaller, Sendable {
+                    let tempo: Tempo
+                    func offensiveCall(for situation: Situation,
+                                       rules: any ClockRules.Type) -> OffensiveCall {
+                        OffensiveCall(playType: .run, tempo: tempo)
+                    }
+                    func defensiveCall(for situation: Situation,
+                                       rules: any ClockRules.Type) -> DefensiveCall {
+                        DefensiveCall(coverage: .man)
+                    }
+                }
+                let game = GameEngine.play(tier: .pro, home: home, away: away,
+                                           caller: FixedTempoCaller(tempo: tempo), seed: 4_040)
+                return game.plays.count
+            }
+            expect(secondsUsed(.hurry) > secondsUsed(.bleed),
+                   "hurrying up did not fit more plays into the game than bleeding the clock")
+        }
+
+        test("the clock only runs when it should") {
+            // stopsClock and clockStopsOnFirstDown were both declared and read by nobody. The
+            // second is the ONE tier difference 03 section 2 names, so an engine that ignored it
+            // had no tier difference at all — the college clock stopping on a first down is the
+            // largest reason college games run more plays.
+            //
+            // Asserted through the consequence: with the same rosters and seeds, the tier whose
+            // clock stops more often fits more plays into the same four quarters.
+            var collegeFirstDowns = 0, proFirstDowns = 0
+            var collegePlays = 0, proPlays = 0
+            for seed in UInt64(1)...12 {
+                let college = GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                let pro = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                collegePlays += college.plays.count
+                proPlays += pro.plays.count
+                collegeFirstDowns += college.plays.filter {
+                    $0.outcome.yards >= $0.situation.distance
+                }.count
+                proFirstDowns += pro.plays.filter { $0.outcome.yards >= $0.situation.distance }.count
+            }
+            expect(collegeFirstDowns > 0 && proFirstDowns > 0, "no first downs were made at all")
+            expect(collegePlays > proPlays,
+                   "college fitted \(collegePlays) plays against pro's \(proPlays), so the "
+                       + "first-down clock stop is not reaching the play count")
+        }
+
+        test("possession does not change at the end of the first or third quarter") {
+            // It did, in every game: the drive loop treated every quarter boundary as the end of a
+            // half and the epilogue handed the ball over unconditionally.
+            for seed in UInt64(1)...25 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                for (index, drive) in game.drives.enumerated() where drive.ending == .endOfQuarter {
+                    guard index + 1 < game.drives.count else { continue }
+                    expectEqual(game.drives[index + 1].offense, drive.offense,
+                                "seed \(seed): possession changed at a quarter boundary")
+                }
+            }
+        }
+
+        test("the after-turnover call-in trigger actually fires") {
+            // 02 section 3.1 lists it. It was a local of DriveEngine.run that nothing ever set to
+            // true, so it was a declared trigger the game could not produce — dead capability in
+            // the one system the previous build failed hardest at.
+            var fired = 0
+            for seed in UInt64(1)...40 {
+                for play in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).plays
+                where play.callInTriggers.contains(.afterTurnover) {
+                    fired += 1
+                }
+            }
+            expect(fired > 0, "the after-turnover trigger never fired across 40 games")
+        }
+
+        test("the fingerprint sees possession, the calls and the players") {
+            // Seven mutations of a real game used to produce a byte-identical fingerprint,
+            // including flipping possession on every drive. A determinism gate that cannot see who
+            // had the ball is not one.
+            let game = GameEngine.play(tier: .pro, home: home, away: away, seed: 12_345)
+            let base = game.playByPlayFingerprint
+
+            func rebuilt(_ transform: (PlayRecord) -> PlayRecord) -> UInt64 {
+                GameRecord(
+                    homeScore: game.homeScore, awayScore: game.awayScore,
+                    drives: game.drives.map {
+                        DriveRecord(offense: $0.offense, plays: $0.plays.map(transform),
+                                    ending: $0.ending, pointsScored: $0.pointsScored,
+                                    startYardLine: $0.startYardLine)
+                    },
+                    tier: game.tier
+                ).playByPlayFingerprint
+            }
+            expect(rebuilt { play in
+                var situation = play.situation
+                situation.possession = situation.possession.opponent
+                return PlayRecord(situation: situation, offensiveCall: play.offensiveCall,
+                                  defensiveCall: play.defensiveCall, outcome: play.outcome,
+                                  callInTriggers: play.callInTriggers)
+            } != base, "the fingerprint ignores possession")
+            expect(rebuilt { play in
+                PlayRecord(situation: play.situation,
+                           offensiveCall: OffensiveCall(playType: .kneel),
+                           defensiveCall: play.defensiveCall, outcome: play.outcome,
+                           callInTriggers: play.callInTriggers)
+            } != base, "the fingerprint ignores the offensive call")
+            expect(rebuilt { play in
+                PlayRecord(situation: play.situation, offensiveCall: play.offensiveCall,
+                           defensiveCall: play.defensiveCall, outcome: play.outcome,
+                           callInTriggers: [])
+            } != base, "the fingerprint ignores the call-in triggers")
+            expect(GameRecord(homeScore: game.homeScore, awayScore: game.awayScore,
+                              drives: game.drives, tier: .college).playByPlayFingerprint != base,
+                   "the fingerprint ignores the tier")
+        }
+
+        test("every throwing matchup names the defender covering the target") {
+            // It named routes[0]'s defender, which was wrong on 42 percent of throws — so the
+            // causal record 04 section 5.3 reads was a lie on nearly half the passes in the game.
+            var checked = 0
+            for seed in UInt64(1)...25 {
+                for play in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).plays {
+                    guard let target = play.outcome.targetID else { continue }
+                    guard let throwing = play.outcome.matchups.first(where: { $0.kind == .throwing }),
+                          let route = play.outcome.matchups.first(where: {
+                              $0.kind == .routeVersusCoverage && $0.attackerID == target
+                          })
+                    else { continue }
+                    checked += 1
+                    expectEqual(throwing.defenderID, route.defenderID,
+                                "the throw credited a defender who was covering somebody else")
+                }
+            }
+            expect(checked > 200, "only \(checked) throws were checkable")
         }
 
         test("a game survives the save envelope unchanged") {

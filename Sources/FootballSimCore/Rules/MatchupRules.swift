@@ -144,6 +144,9 @@ public enum MatchupRules {
 
     public static let yardsForFirstDown = 10
     public static let kickoffTouchbackYardLine = 25
+    /// Where a punt that reaches the goal line spots the receiving team. Without it a deep punt
+    /// clamped the receiver to its own 1, which happened on 2 percent of measured punts.
+    public static let puntTouchbackYardLine = 20
     /// Inside this many yards from the goal line, a kick is worth attempting.
     public static let fieldGoalRangeYards = 38
     public static let fourthDownGoForItDistance = 2

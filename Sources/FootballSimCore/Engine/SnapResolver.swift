@@ -26,24 +26,26 @@ public enum SnapResolver {
         let assignment = Assignment.assign(offensiveCall: offensiveCall,
                                            defensiveCall: defensiveCall,
                                            personnel: personnel)
-        let preSnap = offensiveCall.tempo.snapSeconds(rules: rules)
+        // The pre-snap clock is the drive loop's, not the snap's: whether it runs at all depends on
+        // what the *previous* snap did and on the tier's first-down rule, neither of which a single
+        // snap can see. `secondsElapsed` here is the play's own duration.
 
         switch offensiveCall.playType {
         case .kneel:
             return SnapOutcome(result: .kneel, yards: -1,
-                               secondsElapsed: preSnap + rules.inBoundsPlaySeconds,
+                               secondsElapsed: rules.inBoundsPlaySeconds,
                                matchups: [])
         case .run:
             return resolveRun(offensiveCall, defensiveCall, assignment, situation, rules,
-                              homeFieldAdvantage, preSnap, &rng)
+                              homeFieldAdvantage, &rng)
         case .pass:
             return resolvePass(offensiveCall, defensiveCall, assignment, situation, rules,
-                               homeFieldAdvantage, preSnap, &rng)
+                               homeFieldAdvantage, &rng)
         case .fieldGoal:
             return resolveFieldGoal(personnel, assignment, situation, rules, homeFieldAdvantage,
-                                    preSnap, &rng)
+                                    &rng)
         case .punt:
-            return resolvePunt(personnel, situation, rules, preSnap, &rng)
+            return resolvePunt(personnel, situation, rules, &rng)
         }
     }
 
@@ -60,7 +62,6 @@ public enum SnapResolver {
         _ situation: Situation,
         _ rules: any ClockRules.Type,
         _ homeFieldAdvantage: Double,
-        _ preSnap: Int,
         _ rng: inout SeededRandom
     ) -> SnapOutcome {
         var matchups: [MatchupRecord] = []
@@ -86,9 +87,9 @@ public enum SnapResolver {
         let pressure = Swift.max(0, -averageProtection)
 
         guard let passer = assignment.passer else {
-            return SnapOutcome(result: .sack, yards: MatchupRules.sackYards,
-                               secondsElapsed: preSnap + rules.inBoundsPlaySeconds,
-                               matchups: matchups)
+            return sackOrSafety(yards: MatchupRules.sackYards, situation: situation,
+                                elapsed: rules.inBoundsPlaySeconds, matchups: matchups,
+                                passer: nil)
         }
 
         // 2. Routes, into an openness score each.
@@ -113,9 +114,13 @@ public enum SnapResolver {
             - Double(passer.attributes[.poise].value - SharedRules.ratingRange.lowerBound)
             / Double(SharedRules.ratingRange.count) * MatchupRules.poiseSackRelief
         if pressure > sackThreshold || openness.isEmpty {
-            return SnapOutcome(result: .sack, yards: MatchupRules.sackYards,
-                               secondsElapsed: preSnap + rules.inBoundsPlaySeconds,
-                               matchups: matchups, ballCarrierID: passer.id, passerID: passer.id)
+            // Through the safety check, not around it. The three sack returns used to bypass
+            // `finish` entirely, so the single most common real safety — a sack in your own end
+            // zone — could not happen: 5,000 of 5,000 sacks from the offence's own 2 came back as
+            // an ordinary loss.
+            return sackOrSafety(yards: MatchupRules.sackYards, situation: situation,
+                                elapsed: rules.inBoundsPlaySeconds, matchups: matchups,
+                                passer: passer)
         }
 
         // 4. Target selection: openness, weighted by the passer's decision rating. A poor decider
@@ -149,20 +154,26 @@ public enum SnapResolver {
                 + offensiveCall.aggression * MatchupRules.aggressionThrowBonus,
             rng: &rng
         )
-        matchups.append(MatchupRecord(kind: .throwing, attackerID: passer.id,
-                                      defenderID: assignment.routes.first?.defender.id ?? passer.id,
-                                      leverage: throwLeverage))
+        // The defender covering the TARGET, not routes[0]. The target is the argmax over
+        // weightedTarget and is frequently not the first read: 1,606 of 3,867 measured throws — 42
+        // percent — recorded a defender who was covering somebody else, which makes the causal
+        // record 04 section 5.3 reads a lie on nearly half the passes in the game.
+        matchups.append(MatchupRecord(
+            kind: .throwing, attackerID: passer.id,
+            defenderID: assignment.routes[target.offset].defender.id,
+            leverage: throwLeverage
+        ))
 
-        let elapsed = preSnap + rules.inBoundsPlaySeconds
+        let elapsed = rules.inBoundsPlaySeconds
         if throwLeverage < MatchupRules.interceptionThreshold {
             return SnapOutcome(result: .interception, yards: 0,
-                               secondsElapsed: preSnap + rules.stoppedPlaySeconds,
+                               secondsElapsed: rules.stoppedPlaySeconds,
                                matchups: matchups, passerID: passer.id,
                                targetID: target.element.receiver.id)
         }
         if throwLeverage < MatchupRules.completionThreshold {
             return SnapOutcome(result: .incompletion, yards: 0,
-                               secondsElapsed: preSnap + rules.stoppedPlaySeconds,
+                               secondsElapsed: rules.stoppedPlaySeconds,
                                matchups: matchups, passerID: passer.id,
                                targetID: target.element.receiver.id)
         }
@@ -197,7 +208,6 @@ public enum SnapResolver {
         _ situation: Situation,
         _ rules: any ClockRules.Type,
         _ homeFieldAdvantage: Double,
-        _ preSnap: Int,
         _ rng: inout SeededRandom
     ) -> SnapOutcome {
         var matchups: [MatchupRecord] = []
@@ -218,7 +228,7 @@ public enum SnapResolver {
 
         guard let carrier = assignment.carrier else {
             return SnapOutcome(result: .gain, yards: 0,
-                               secondsElapsed: preSnap + rules.inBoundsPlaySeconds,
+                               secondsElapsed: rules.inBoundsPlaySeconds,
                                matchups: matchups)
         }
 
@@ -231,7 +241,7 @@ public enum SnapResolver {
         let outside = offensiveCall.runGap.isOutside ? MatchupRules.outsideRunVariance : 1.0
         let gained = Int((lane * MatchupRules.laneYardScale * outside).rounded()) + broken
         return finish(gained: gained, situation: situation,
-                      elapsed: preSnap + rules.inBoundsPlaySeconds, matchups: matchups,
+                      elapsed: rules.inBoundsPlaySeconds, matchups: matchups,
                       carrier: carrier, passer: nil, target: nil, rng: &rng)
     }
 
@@ -276,14 +286,13 @@ public enum SnapResolver {
         _ situation: Situation,
         _ rules: any ClockRules.Type,
         _ homeFieldAdvantage: Double,
-        _ preSnap: Int,
         _ rng: inout SeededRandom
     ) -> SnapOutcome {
         let distance = situation.yardsToGoal + MatchupRules.fieldGoalSnapDistance
         guard let kicker = personnel.offensive(group: .specialists).first,
               let blocker = assignment.pursuit.first else {
             return SnapOutcome(result: .fieldGoalMissed, yards: 0,
-                               secondsElapsed: preSnap + rules.stoppedPlaySeconds, matchups: [])
+                               secondsElapsed: rules.stoppedPlaySeconds, matchups: [])
         }
         // Distance is the defender: a long kick is a harder matchup, which keeps the whole engine
         // on one scale rather than bolting a distance curve onto the side of it.
@@ -300,7 +309,7 @@ public enum SnapResolver {
         let record = MatchupRecord(kind: .kick, attackerID: kicker.id, defenderID: blocker.id,
                                    leverage: leverage)
         return SnapOutcome(result: leverage > 0 ? .fieldGoalGood : .fieldGoalMissed, yards: 0,
-                           secondsElapsed: preSnap + rules.stoppedPlaySeconds, matchups: [record],
+                           secondsElapsed: rules.stoppedPlaySeconds, matchups: [record],
                            ballCarrierID: kicker.id)
     }
 
@@ -308,7 +317,6 @@ public enum SnapResolver {
         _ personnel: SnapPersonnel,
         _ situation: Situation,
         _ rules: any ClockRules.Type,
-        _ preSnap: Int,
         _ rng: inout SeededRandom
     ) -> SnapOutcome {
         let punter = personnel.offensive(.punter).first ?? personnel.offensive(group: .specialists).first
@@ -318,7 +326,7 @@ public enum SnapResolver {
             + rng.int(in: -MatchupRules.puntVariance...MatchupRules.puntVariance)
         return SnapOutcome(result: .punt,
                            yards: Swift.min(distance, situation.yardsToGoal),
-                           secondsElapsed: preSnap + rules.stoppedPlaySeconds, matchups: [],
+                           secondsElapsed: rules.stoppedPlaySeconds, matchups: [],
                            ballCarrierID: punter?.id)
     }
 
@@ -357,6 +365,18 @@ public enum SnapResolver {
         return SnapOutcome(result: .gain, yards: gained, secondsElapsed: elapsed,
                            matchups: matchups, ballCarrierID: carrier.id, passerID: passer?.id,
                            targetID: target?.id)
+    }
+
+    /// A sack, unless the tackle happened behind the offence's own goal line.
+    private static func sackOrSafety(
+        yards: Int, situation: Situation, elapsed: Int, matchups: [MatchupRecord], passer: Player?
+    ) -> SnapOutcome {
+        if situation.yardLine + yards <= 0 {
+            return SnapOutcome(result: .safety, yards: -situation.yardLine, secondsElapsed: elapsed,
+                               matchups: matchups, ballCarrierID: passer?.id, passerID: passer?.id)
+        }
+        return SnapOutcome(result: .sack, yards: yards, secondsElapsed: elapsed,
+                           matchups: matchups, ballCarrierID: passer?.id, passerID: passer?.id)
     }
 
     /// A rating on 0...1, for use as a weight.

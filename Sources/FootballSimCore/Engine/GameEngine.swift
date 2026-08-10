@@ -36,20 +36,57 @@ public struct GameRecord: Codable, Sendable, Equatable {
                 for byte in bytes { value = (value ^ UInt64(byte)) &* 0x0000_0100_0000_01B3 }
             }
         }
-        mix(homeScore); mix(awayScore); mix(drives.count)
+        func mixBytes<T>(_ value_: T) {
+            withUnsafeBytes(of: value_) { bytes in
+                for byte in bytes { value = (value ^ UInt64(byte)) &* 0x0000_0100_0000_01B3 }
+            }
+        }
+        func index<T: CaseIterable & Equatable>(_ item: T) -> Int {
+            (T.allCases as? [T])?.firstIndex(of: item) ?? -1
+        }
+
+        mix(homeScore); mix(awayScore); mix(drives.count); mix(index(tier))
         for drive in drives {
             mix(drive.pointsScored)
             mix(drive.startYardLine)
-            mix(DriveEnding.allCases.firstIndex(of: drive.ending) ?? -1)
+            mix(index(drive.ending))
+            mix(index(drive.offense))
             for play in drive.plays {
-                mix(SnapResult.allCases.firstIndex(of: play.outcome.result) ?? -1)
+                // Every field, not a chosen few. The first version mixed the result, the yardage,
+                // the clock and three situation numbers — and was blind to possession, the quarter,
+                // the score, both play calls, the call-in triggers, the matchup kinds and every
+                // player identity. Seven separate mutations of a real game produced a byte-identical
+                // fingerprint, including flipping possession on every drive. A determinism gate
+                // that cannot see who had the ball is not a determinism gate.
+                mix(index(play.outcome.result))
                 mix(play.outcome.yards)
                 mix(play.outcome.secondsElapsed)
                 mix(play.situation.down)
                 mix(play.situation.distance)
                 mix(play.situation.yardLine)
+                mix(index(play.situation.possession))
+                mix(play.situation.quarter)
+                mix(play.situation.secondsRemainingInQuarter)
+                mix(play.situation.homeScore)
+                mix(play.situation.awayScore)
+                for side in Side.allCases { mix(play.situation.timeoutsRemaining[side] ?? -1) }
+                mix(index(play.offensiveCall.playType))
+                mix(index(play.offensiveCall.passDepth))
+                mix(index(play.offensiveCall.runGap))
+                mix(index(play.offensiveCall.tempo))
+                mix(Int((play.offensiveCall.aggression * 1_000_000).rounded()))
+                mix(index(play.defensiveCall.coverage))
+                mix(play.defensiveCall.rushers)
+                mix(Int((play.defensiveCall.aggression * 1_000_000).rounded()))
+                mix(play.callInTriggers.count)
+                for trigger in play.callInTriggers { mix(index(trigger)) }
+                mixBytes(play.outcome.ballCarrierID?.uuid ?? UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0,
+                                                                        0, 0, 0, 0, 0, 0, 0, 0)).uuid)
                 mix(play.outcome.matchups.count)
                 for matchup in play.outcome.matchups {
+                    mix(index(matchup.kind))
+                    mixBytes(matchup.attackerID.uuid)
+                    mixBytes(matchup.defenderID.uuid)
                     mix(Int((matchup.leverage * 1_000_000).rounded()))
                 }
             }
@@ -72,7 +109,6 @@ public enum GameEngine {
         homeFieldAdvantage: Double = MatchupRules.homeAdvantage,
         seed: UInt64
     ) -> GameRecord {
-        var rng = SeededRandom(seed: seed)
         let rules = tier.clockRules
         var situation = Situation(
             yardLine: MatchupRules.kickoffTouchbackYardLine,
@@ -82,16 +118,29 @@ public enum GameEngine {
             timeoutsRemaining: [.home: rules.timeoutsPerHalf, .away: rules.timeoutsPerHalf]
         )
         var drives: [DriveRecord] = []
+        var afterTurnover = false
+        var clockRunning = false
 
-        for _ in 0..<MatchupRules.maximumDrivesPerGame {
+        for driveIndex in 0..<MatchupRules.maximumDrivesPerGame {
             let offense = situation.possession == .home ? home : away
             let defense = situation.possession == .home ? away : home
+            // 03 section 3 clause 6's drive node. Deriving it per drive rather than threading one
+            // generator through the whole game means a drive that ran long cannot shift the stream
+            // the next drive reads.
+            let driveSeed = SeededRandom.derive(from: seed, scope: .drive, ordinal: driveIndex)
             let (drive, next) = DriveEngine.run(
                 from: situation, offense: offense, defense: defense, caller: caller, rules: rules,
-                homeFieldAdvantage: homeFieldAdvantage, rng: &rng
+                homeFieldAdvantage: homeFieldAdvantage, driveSeed: driveSeed,
+                isAfterTurnover: afterTurnover, clockRunning: clockRunning
             )
             drives.append(drive)
             situation = next
+            // 02 section 3.1's trigger, threaded across the drive boundary. It was a local of
+            // DriveEngine.run that nothing ever set to true, so the trigger was declared and could
+            // not fire — dead capability in the call-in system, which is the one system the
+            // previous build failed hardest at.
+            afterTurnover = drive.ending == .turnover || drive.ending == .downs
+            clockRunning = drive.ending == .endOfQuarter
 
             // Roll the clock into the next quarter when this one runs out, and stop at the end of
             // regulation. Overtime is a tier rule and belongs to the phase that has standings to
@@ -100,9 +149,17 @@ public enum GameEngine {
                   situation.quarter < rules.quarters {
                 situation.quarter += 1
                 situation.secondsRemainingInQuarter += rules.quarterSeconds
-                if situation.quarter == 3 {
+                // Halftime: the ball changes hands and both sides get their timeouts back. The
+                // quarter break between 1 and 2, or 3 and 4, changes neither.
+                if situation.quarter == rules.quarters / 2 + 1 {
                     situation.timeoutsRemaining = [.home: rules.timeoutsPerHalf,
                                                    .away: rules.timeoutsPerHalf]
+                    situation.possession = situation.possession.opponent
+                    situation.yardLine = MatchupRules.kickoffTouchbackYardLine
+                    situation.down = 1
+                    situation.distance = MatchupRules.yardsForFirstDown
+                    clockRunning = false
+                    afterTurnover = false
                 }
             }
             if situation.quarter >= rules.quarters, situation.secondsRemainingInQuarter <= 0 {
