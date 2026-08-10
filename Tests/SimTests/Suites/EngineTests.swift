@@ -690,60 +690,137 @@ func runSnapResolverTests() {
                    "fixed draws could not reach: \(missing.map(\.rawValue).joined(separator: ", "))")
         }
 
-        test("every populated distribution outcome carries honest deciding attribution") {
-            let run = OffensiveCall(playType: .run)
-            let pass = OffensiveCall(playType: .pass)
-            let kick = OffensiveCall(playType: .fieldGoal)
-            var checked: Set<SnapResult> = []
+        test("every fixed run band names its prescribed causal pair") {
+            let call = OffensiveCall(playType: .run)
+            let defence = DefensiveCall(coverage: .man)
+            let assignment = Assignment.assign(offensiveCall: call, defensiveCall: defence,
+                                               personnel: even)
+            let attribution = 0.75
+            let lane = assignment.runLane[Int(attribution * Double(assignment.runLane.count))]
+            let pursuer = assignment.pursuit[Int(attribution * Double(assignment.pursuit.count))]
+            let carrier = assignment.carrier!
+            let situation = Situation(distance: 5)
+            let cases: [(name: String, roll: Double, result: SnapResult, yards: Int,
+                         kind: MatchupRecord.Kind, attacker: UUID, defender: UUID,
+                         attackerWon: Bool)] = [
+                ("loss", 0.05, .gain, -1, .runLane, lane.blocker.id, lane.defender.id, false),
+                ("short", 0.20, .gain, 2, .runLane, lane.blocker.id, lane.defender.id, true),
+                ("medium", 0.70, .gain, 7, .runLane, lane.blocker.id, lane.defender.id, true),
+                ("explosive", 0.90, .gain, 14, .carrierVersusPursuit,
+                 carrier.id, pursuer.id, true),
+                ("breakaway", 0.983, .gain, 40, .carrierVersusPursuit,
+                 carrier.id, pursuer.id, true),
+                ("fumble", 0.995, .fumbleLost, 2, .ballSecurity,
+                 carrier.id, pursuer.id, false),
+            ]
 
-            for rollIndex in 0...1_000 {
-                let roll = Double(rollIndex) / 1_000
-                for call in [run, pass, kick] {
-                    let outcome = resolve(call, draws: draws(outcome: roll))
-                    guard checked.insert(outcome.result).inserted else { continue }
-                    guard let deciding = outcome.decidingMatchup else {
-                        expect(false, "\(outcome.result) had no deciding attribution")
-                        continue
-                    }
-                    switch outcome.result {
-                    case .sack:
-                        expectEqual(deciding.kind, .passProtection)
-                        expect(!deciding.attackerWon, "a sack credited a winning blocker")
-                    case .interception:
-                        let target = outcome.targetID
-                        let route = outcome.matchups.first { $0.kind == .routeVersusCoverage }
-                        let throwing = outcome.matchups.first { $0.kind == .throwing }
-                        expectEqual(route?.attackerID, target)
-                        expectEqual(route?.defenderID, throwing?.defenderID)
-                        expect(route?.attackerWon == false && throwing?.attackerWon == false,
-                               "an interception recorded a winning route or throw")
-                    case .fumbleLost:
-                        expectEqual(deciding.kind, .ballSecurity)
-                        expect(!deciding.attackerWon, "a lost fumble credited winning security")
-                    case .gain:
-                        expectEqual(deciding.attackerWon, outcome.yards > 0,
-                                    "a run's attribution sign disagreed with its yards")
-                    case .touchdown:
-                        expect(deciding.attackerWon, "a touchdown credited a losing pair")
-                    case .incompletion:
-                        expect(!deciding.attackerWon, "an incompletion credited a winning throw")
-                    case .fieldGoalGood:
-                        expectEqual(deciding.kind, .kick)
-                        expect(deciding.attackerWon, "a made kick credited the defender")
-                    case .fieldGoalMissed:
-                        expectEqual(deciding.kind, .kick)
-                        expect(!deciding.attackerWon, "a miss credited the kicker")
-                    case .safety:
-                        expect(!deciding.attackerWon, "a safety credited the offence")
-                    case .punt, .kneel:
-                        break
-                    }
+            for item in cases {
+                let outcome = resolve(call, situation: situation,
+                                      draws: draws(outcome: item.roll,
+                                                   attribution: attribution), defence: defence)
+                expectEqual(outcome.result, item.result, "run \(item.name) sampled wrong result")
+                expectEqual(outcome.yards, item.yards, "run \(item.name) sampled wrong yards")
+                expectEqual(outcome.ballCarrierID, carrier.id)
+                expect(outcome.passerID == nil && outcome.targetID == nil,
+                       "run \(item.name) invented pass identities")
+                expectEqual(outcome.matchups.count, 1)
+                let record = outcome.matchups.first
+                expectEqual(record?.kind, item.kind)
+                expectEqual(record?.attackerID, item.attacker)
+                expectEqual(record?.defenderID, item.defender)
+                expectEqual(record?.attackerWon, item.attackerWon,
+                            "run \(item.name) recorded the wrong leverage sign")
+            }
+        }
+
+        test("every fixed pass band names its prescribed target or protection pair") {
+            let call = OffensiveCall(playType: .pass, passDepth: .mid)
+            let defence = DefensiveCall(coverage: .man)
+            let assignment = Assignment.assign(offensiveCall: call, defensiveCall: defence,
+                                               personnel: even)
+            let target = assignment.routes[1]
+            let protection = assignment.protection[1]
+            let passer = assignment.passer!
+            let situation = Situation(distance: 5)
+            let cases: [(name: String, roll: Double, result: SnapResult, yards: Int,
+                         sign: Bool, carrier: UUID?)] = [
+                ("sack", 0.03, .sack, -6, false, nil),
+                ("interception", 0.07, .interception, 0, false, nil),
+                ("incompletion", 0.20, .incompletion, 0, false, nil),
+                ("completion", 0.50, .gain, 8, true, target.receiver.id),
+                ("explosive", 0.90, .gain, 25, true, target.receiver.id),
+                ("fumble", 0.995, .fumbleLost, 8, false, target.receiver.id),
+            ]
+
+            for item in cases {
+                let outcome = resolve(call, situation: situation,
+                                      draws: draws(outcome: item.roll, target: 0.3,
+                                                   attribution: 0.3), defence: defence)
+                expectEqual(outcome.result, item.result, "pass \(item.name) sampled wrong result")
+                expectEqual(outcome.yards, item.yards, "pass \(item.name) sampled wrong yards")
+                expectEqual(outcome.ballCarrierID, item.carrier)
+                expectEqual(outcome.passerID, passer.id)
+                if item.name == "sack" {
+                    expect(outcome.targetID == nil, "a sack invented a target")
+                    expectEqual(outcome.matchups.count, 1)
+                    let record = outcome.matchups.first
+                    expectEqual(record?.kind, .passProtection)
+                    expectEqual(record?.attackerID, protection.blocker.id)
+                    expectEqual(record?.defenderID, protection.rusher.id)
+                    expectEqual(record?.attackerWon, false)
+                    continue
+                }
+
+                expectEqual(outcome.targetID, target.receiver.id)
+                for kind in [MatchupRecord.Kind.routeVersusCoverage, .throwing] {
+                    let record = outcome.matchups.first { $0.kind == kind }
+                    expectEqual(record?.attackerID, target.receiver.id,
+                                "pass \(item.name) used the wrong target for \(kind)")
+                    expectEqual(record?.defenderID, target.defender.id,
+                                "pass \(item.name) used the wrong defender for \(kind)")
+                    expectEqual(record?.attackerWon, item.name == "fumble" ? true : item.sign,
+                                "pass \(item.name) recorded the wrong \(kind) sign")
+                }
+                if item.name == "fumble" {
+                    let security = outcome.matchups.first { $0.kind == .ballSecurity }
+                    expectEqual(security?.attackerID, target.receiver.id)
+                    expectEqual(security?.defenderID, target.defender.id)
+                    expectEqual(security?.attackerWon, false)
                 }
             }
-            for expected in [SnapResult.gain, .incompletion, .sack, .interception, .fumbleLost,
-                             .fieldGoalGood, .fieldGoalMissed] {
-                expect(checked.contains(expected), "did not inspect \(expected)")
+        }
+
+        test("fixed field-goal bands name the specialist and ranked defender") {
+            let call = OffensiveCall(playType: .fieldGoal)
+            let defence = DefensiveCall(coverage: .man)
+            let assignment = Assignment.assign(offensiveCall: call, defensiveCall: defence,
+                                               personnel: even)
+            let specialist = even.offensive(group: .specialists).first!
+            let defender = assignment.pursuit.first!
+            for (name, roll, result, won) in [
+                ("good", 0.1, SnapResult.fieldGoalGood, true),
+                ("missed", 0.9, SnapResult.fieldGoalMissed, false),
+            ] {
+                let outcome = resolve(call, situation: Situation(yardLine: 75),
+                                      draws: draws(outcome: roll), defence: defence)
+                expectEqual(outcome.result, result, "field goal \(name) sampled wrong result")
+                expectEqual(outcome.yards, 0)
+                expectEqual(outcome.ballCarrierID, specialist.id)
+                expect(outcome.passerID == nil && outcome.targetID == nil,
+                       "field goal \(name) invented pass identities")
+                let record = outcome.matchups.first
+                expectEqual(record?.kind, .kick)
+                expectEqual(record?.attackerID, specialist.id)
+                expectEqual(record?.defenderID, defender.id)
+                expectEqual(record?.attackerWon, won)
             }
+        }
+
+        test("distribution validation requires independent unit mass") {
+            expect(DistributionSnapResolver.validDistribution([0.1, 0.2, 0.7]),
+                   "a finite non-negative unit distribution was rejected")
+            expect(!DistributionSnapResolver.validDistribution([0.1, 0.2, 0.6]),
+                   "a finite non-negative distribution with non-unit mass was accepted")
         }
 
         test("target weighting selects the second route and keeps its defender causal") {
@@ -829,6 +906,81 @@ func runSnapResolverTests() {
                 expectEqual(outcome, SnapOutcome(result: .fieldGoalMissed, yards: 0,
                                                  secondsElapsed: rules.stoppedPlaySeconds,
                                                  matchups: []))
+            }
+        }
+
+        test("every missing-person fallback still consumes all eight public RNG draws") {
+            let empty = SnapPersonnel(offense: [], defense: [])
+            let noCarrier = SnapPersonnel(
+                offense: even.offense.filter { $0.position != .runningBack }, defense: even.defense
+            )
+            let noLanePair = SnapPersonnel(
+                offense: even.offense.filter { $0.position.group != .offensiveLine },
+                defense: even.defense
+            )
+            let noPursuer = SnapPersonnel(offense: even.offense, defense: [])
+            let noPasser = SnapPersonnel(
+                offense: even.offense.filter { $0.position != .quarterback }, defense: even.defense
+            )
+            let noRoutePair = SnapPersonnel(
+                offense: even.offense.filter { $0.position.group != .receivers },
+                defense: even.defense
+            )
+            let noProtectionPair = noLanePair
+            let noSpecialist = SnapPersonnel(
+                offense: even.offense.filter { $0.position.group != .specialists },
+                defense: even.defense
+            )
+            let cases: [(name: String, playType: OffensivePlayType,
+                         personnel: SnapPersonnel, expected: SnapOutcome)] = [
+                ("empty run", .run, empty,
+                 SnapOutcome(result: .gain, yards: 0,
+                             secondsElapsed: rules.inBoundsPlaySeconds, matchups: [])),
+                ("empty pass", .pass, empty,
+                 SnapOutcome(result: .gain, yards: 0,
+                             secondsElapsed: rules.inBoundsPlaySeconds, matchups: [])),
+                ("empty field goal", .fieldGoal, empty,
+                 SnapOutcome(result: .fieldGoalMissed, yards: 0,
+                             secondsElapsed: rules.stoppedPlaySeconds, matchups: [])),
+                ("run missing carrier", .run, noCarrier,
+                 SnapOutcome(result: .gain, yards: 0,
+                             secondsElapsed: rules.inBoundsPlaySeconds, matchups: [])),
+                ("run missing lane pair", .run, noLanePair,
+                 SnapOutcome(result: .gain, yards: 0,
+                             secondsElapsed: rules.inBoundsPlaySeconds, matchups: [])),
+                ("run missing pursuer", .run, noPursuer,
+                 SnapOutcome(result: .gain, yards: 0,
+                             secondsElapsed: rules.inBoundsPlaySeconds, matchups: [])),
+                ("pass missing passer", .pass, noPasser,
+                 SnapOutcome(result: .gain, yards: 0,
+                             secondsElapsed: rules.inBoundsPlaySeconds, matchups: [])),
+                ("pass missing route pair", .pass, noRoutePair,
+                 SnapOutcome(result: .gain, yards: 0,
+                             secondsElapsed: rules.inBoundsPlaySeconds, matchups: [])),
+                ("pass missing protection pair", .pass, noProtectionPair,
+                 SnapOutcome(result: .gain, yards: 0,
+                             secondsElapsed: rules.inBoundsPlaySeconds, matchups: [])),
+                ("field goal missing specialist", .fieldGoal, noSpecialist,
+                 SnapOutcome(result: .fieldGoalMissed, yards: 0,
+                             secondsElapsed: rules.stoppedPlaySeconds, matchups: [])),
+                ("field goal missing ranked defender", .fieldGoal, noPursuer,
+                 SnapOutcome(result: .fieldGoalMissed, yards: 0,
+                             secondsElapsed: rules.stoppedPlaySeconds, matchups: [])),
+            ]
+
+            for (index, item) in cases.enumerated() {
+                let seed = UInt64(50_000 + index)
+                var actual = SeededRandom(seed: seed)
+                let outcome = DistributionSnapResolver.resolve(
+                    tier: .pro, offensiveCall: OffensiveCall(playType: item.playType),
+                    defensiveCall: DefensiveCall(coverage: .man), personnel: item.personnel,
+                    situation: Situation(), isHomeOffense: false, rng: &actual
+                )
+                expectEqual(outcome, item.expected, "\(item.name) changed the exact fallback")
+                var expected = SeededRandom(seed: seed)
+                for _ in 0..<8 { _ = expected.double01() }
+                expectEqual(actual.next(), expected.next(),
+                            "\(item.name) did not consume exactly eight draws")
             }
         }
 

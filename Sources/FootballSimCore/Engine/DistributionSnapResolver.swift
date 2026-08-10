@@ -78,15 +78,18 @@ public enum DistributionSnapResolver {
         weights[receiver, default: .zero] += moved
     }
 
+    /// Test seam for the distribution invariant shared by every conditioned outcome table.
+    public static func validDistribution(_ weights: [Double]) -> Bool {
+        weights.allSatisfy { $0.isFinite && $0 >= .zero }
+            && Swift.abs(weights.reduce(.zero, +) - 1.0)
+                <= OutcomeDistributionRules.probabilityTolerance
+    }
+
     private static func assertDistribution<Band>(_ weights: [Band
         : Double]) {
-        let expectedMass = OutcomeDistributionRules.runWeights(tier: .pro)
-            .reduce(Double.zero) { $0 + $1.1 }
-        let validWeights = weights.values.allSatisfy { $0.isFinite && $0 >= .zero }
-        let conserved = Swift.abs(weights.values.reduce(.zero, +) - expectedMass)
-            <= OutcomeDistributionRules.probabilityTolerance
-        assert(validWeights && conserved)
-        precondition(validWeights && conserved)
+        let valid = validDistribution(Array(weights.values))
+        assert(valid)
+        precondition(valid)
     }
 
     private static func homeShift(tier: Tier, isHomeOffense: Bool) -> Double {

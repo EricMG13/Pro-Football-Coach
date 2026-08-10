@@ -28,8 +28,10 @@ Stages, in fixed order (the order is part of the determinism contract):
    run-lane pairs, a carrier and pursuit. Assignment consumes no randomness.
 2. **Causal selection.** A run preselects one assigned lane and one pursuer. A pass selects one
    protection pair and samples one target from rating-weighted assigned routes. A kick selects the
-   specialist and first ranked defender. These exact people condition the table and are the people
-   named in the resulting `MatchupRecord`.
+   specialist and first ranked defender. These exact people condition the table; the result records
+   its prescribed deciding selected pair. For example, a medium run records the lane pair even
+   though the selected pursuer also conditions mass, while a non-sack pass records the target pair
+   even though the selected protection pair also conditions mass.
 3. **Probability conditioning.** Means of the named ratings below produce bounded signed shifts.
    Each shift transfers mass between one adverse and one favourable bucket; it never creates or
    destroys mass. Call, situation, depth, shell and tier home effects are transfers in a fixed order.
