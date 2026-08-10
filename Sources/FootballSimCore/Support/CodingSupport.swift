@@ -26,12 +26,21 @@ public struct StringCodingKey: CodingKey {
     public init?(intValue: Int) { nil }
 }
 
+// Dates encode as seconds since 1970, not ISO 8601.
+//
+// `.iso8601` renders whole seconds only, so `decode(encode(x)) != x` for any Date carrying a
+// fraction — a silent precision loss on the way *out*, which a byte-stability test cannot see
+// because encoding stays perfectly idempotent. Found by an adversarial review of P0.
+//
+// The engine has no ambient `Date()` at all (03 section 3 clause 5) and time comes from the
+// simulated calendar, so a save should rarely carry one. That is a reason to make the strategy
+// lossless and stop thinking about it, not a reason to leave a lossy one in place.
 public extension JSONEncoder {
-    /// The encoder every save and every determinism check uses: stable key order, ISO dates.
+    /// The encoder every save and every determinism check uses: stable key order, lossless dates.
     static func stable() -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
+        encoder.dateEncodingStrategy = .secondsSince1970
         return encoder
     }
 }
@@ -39,7 +48,7 @@ public extension JSONEncoder {
 public extension JSONDecoder {
     static func stable() -> JSONDecoder {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = .secondsSince1970
         return decoder
     }
 }

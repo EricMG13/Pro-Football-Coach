@@ -39,7 +39,7 @@ enum TestKit {
         currentTest = name
         testsRun += 1
         if ProcessInfo.processInfo.environment["TRACE_TESTS"] != nil {
-            FileHandle.standardError.write(Data("→ \(suiteName) › \(name)\n".utf8))
+            FileHandle.standardError.write(Data("> \(suiteName) / \(name)\n".utf8))
         }
         let done = DispatchSemaphore(value: 0)
         Task {
@@ -116,7 +116,7 @@ enum TestKit {
     }
 
     private static func record(_ detail: String) {
-        let label = "\(suiteName) › \(currentTest)"
+        let label = "\(suiteName) / \(currentTest)"
         failedTests.insert(label)
         failures.append("  FAIL \(label): \(detail)")
     }

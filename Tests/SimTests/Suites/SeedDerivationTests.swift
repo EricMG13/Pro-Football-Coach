@@ -8,6 +8,15 @@ private let GOLDEN_LEAGUE_0: UInt64 = 3_662_598_640_555_723_460
 private let GOLDEN_SEASON_1: UInt64 = 1_738_821_789_517_853_511
 private let GOLDEN_SNAP_42_17: UInt64 = 2_749_126_016_540_132_632
 
+// The root of the hierarchy needs pinning too. `derive` is only ever as reproducible as the seed it
+// starts from, and an unpinned `seed(from:)` can be replaced with system randomness without a single
+// test noticing — which was true of this suite until it was tried.
+private let GOLDEN_SEED_ONE: UInt64 = 3_372_039_570_709_087_602
+private let GOLDEN_SEED_TWO: UInt64 = 6_619_274_789_208_811_879
+
+private let ROOT_A = UUID(uuidString: "00000000-0000-4000-8000-000000000001")!
+private let ROOT_B = UUID(uuidString: "6BA7B810-9DAD-11D1-80B4-00C04FD430C8")!
+
 func runSeedDerivationTests() {
     suite("Seed derivation") {
         test("the same inputs always derive the same seed") {
@@ -69,9 +78,11 @@ func runSeedDerivationTests() {
         }
 
         test("a full six-level path is stable end to end") {
-            let league = SeededRandom.seed(from: UUID(uuidString: "00000000-0000-4000-8000-000000000001")!)
+            // seed(from:) is called inside the closure, not hoisted out of it. Hoisted, both calls
+            // close over one constant and the assertion holds for any implementation of the root
+            // at all — a tautology wearing an end-to-end test's clothes.
             func path() -> UInt64 {
-                var seed = league
+                var seed = SeededRandom.seed(from: ROOT_A)
                 seed = SeededRandom.derive(from: seed, scope: .season, ordinal: 2)
                 seed = SeededRandom.derive(from: seed, scope: .week, ordinal: 9)
                 seed = SeededRandom.derive(from: seed, scope: .game, ordinal: 4)
@@ -101,6 +112,22 @@ func runSeedDerivationTests() {
             expectEqual(SeededRandom.derive(from: 0, scope: .league, ordinal: 0), GOLDEN_LEAGUE_0)
             expectEqual(SeededRandom.derive(from: 1, scope: .season, ordinal: 1), GOLDEN_SEASON_1)
             expectEqual(SeededRandom.derive(from: 42, scope: .snap, ordinal: 17), GOLDEN_SNAP_42_17)
+        }
+
+        test("golden vectors pin the root of the hierarchy too") {
+            // Without these, seed(from:) can be swapped for UInt64.random and the whole suite stays
+            // green: every other assertion here compares derive against derive, and derive is a
+            // pure function of whatever root it is handed.
+            expectEqual(SeededRandom.seed(from: ROOT_A), GOLDEN_SEED_ONE)
+            expectEqual(SeededRandom.seed(from: ROOT_A, ROOT_B), GOLDEN_SEED_TWO)
+        }
+
+        test("the variadic root seed depends on identifier order") {
+            expect(
+                SeededRandom.seed(from: ROOT_A, ROOT_B) != SeededRandom.seed(from: ROOT_B, ROOT_A),
+                "the multi-identifier root seed is order-insensitive, so two different leagues can "
+                    + "share a root"
+            )
         }
 
         test("every scope has a distinct raw value") {

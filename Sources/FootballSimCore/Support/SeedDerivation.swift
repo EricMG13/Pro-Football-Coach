@@ -17,20 +17,15 @@ public enum SeedScope: UInt64, Sendable, CaseIterable {
 public extension SeededRandom {
     /// Derives a child seed from a parent seed, a scope tag and a sibling ordinal.
     ///
-    /// FNV-1a over the little-endian bytes of parent, scope and ordinal, in that order — the same
-    /// mixing function and the same constants as `seed(from:)`, so the whole project has one
-    /// documented way of turning bytes into a seed. FNV-1a is not a cryptographic hash and does not
-    /// need to be: the requirement is reproducibility across processes and good separation between
-    /// siblings, and salting is exactly what must not happen here.
+    /// FNV-1a over the little-endian bytes of parent, scope and ordinal, in that order, through the
+    /// single `SeededRandom.fnv1a` the whole project shares with `seed(from:)`.
     ///
     /// The ordinal is reinterpreted bit-for-bit rather than converted, so a negative ordinal is a
     /// distinct input rather than an aliased or trapping one.
     static func derive(from parent: UInt64, scope: SeedScope, ordinal: Int) -> UInt64 {
-        var value = fnvOffsetBasis
-        value = mix(value, bytesOf: parent)
-        value = mix(value, bytesOf: scope.rawValue)
-        value = mix(value, bytesOf: UInt64(bitPattern: Int64(ordinal)))
-        return value
+        var value = fnv1a(word: parent, continuing: fnvOffsetBasis)
+        value = fnv1a(word: scope.rawValue, continuing: value)
+        return fnv1a(word: UInt64(bitPattern: Int64(ordinal)), continuing: value)
     }
 
     /// Derives a child seed from an identifier rather than an ordinal.
@@ -42,23 +37,8 @@ public extension SeededRandom {
     /// so the two cannot alias except by an outright FNV collision. That is not defended against
     /// and does not need to be: no caller chooses between the overloads for the same entity.
     static func derive(from parent: UInt64, scope: SeedScope, identifier: UUID) -> UInt64 {
-        var value = fnvOffsetBasis
-        value = mix(value, bytesOf: parent)
-        value = mix(value, bytesOf: scope.rawValue)
-        withUnsafeBytes(of: identifier.uuid) { raw in
-            for byte in raw { value = (value ^ UInt64(byte)) &* fnvPrime }
-        }
-        return value
-    }
-
-    private static var fnvOffsetBasis: UInt64 { 0xCBF2_9CE4_8422_2325 }
-    private static var fnvPrime: UInt64 { 0x0000_0100_0000_01B3 }
-
-    private static func mix(_ accumulator: UInt64, bytesOf word: UInt64) -> UInt64 {
-        var value = accumulator
-        withUnsafeBytes(of: word.littleEndian) { raw in
-            for byte in raw { value = (value ^ UInt64(byte)) &* fnvPrime }
-        }
-        return value
+        var value = fnv1a(word: parent, continuing: fnvOffsetBasis)
+        value = fnv1a(word: scope.rawValue, continuing: value)
+        return withUnsafeBytes(of: identifier.uuid) { fnv1a($0, continuing: value) }
     }
 }

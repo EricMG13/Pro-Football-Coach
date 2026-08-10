@@ -4,6 +4,15 @@ public enum SaveEnvelopeError: Error, Equatable {
     case notASaveFile
     case truncatedHeader
     case futureVersion(found: UInt32, supported: UInt32)
+    /// An older version with no migration registered. 03b section 4 requires forward-only,
+    /// one-step migrations; until that table exists, an older save is refused rather than fed to
+    /// the current decoder, which would succeed with wrong data rather than throw.
+    case unmigratableVersion(found: UInt32, supported: UInt32)
+    /// A header flag this build does not implement — today, the reserved "body is compressed" bit.
+    case unsupportedHeaderFlags(found: UInt8)
+    /// A reserved header byte carries data, so the file was written by something this build does
+    /// not understand.
+    case reservedHeaderBytesSet
 }
 
 /// The on-disk wrapper around a save payload.
@@ -54,6 +63,25 @@ public struct SaveEnvelope: Sendable {
         // half-migrated league is worse than a refused one.
         guard version <= currentSchemaVersion else {
             throw SaveEnvelopeError.futureVersion(found: version, supported: currentSchemaVersion)
+        }
+        // And an *older* version is refused too, rather than handed to the current decoder. There is
+        // no migration table yet; 03b section 4 says migrations are forward-only and one step each,
+        // and its own "unknown-field defaults" policy means a stale body can decode *successfully*
+        // with wrong data instead of throwing. The phase that adds persistence proper adds the
+        // table and routes through it here.
+        guard version == currentSchemaVersion else {
+            throw SaveEnvelopeError.unmigratableVersion(found: version,
+                                                        supported: currentSchemaVersion)
+        }
+        // The writer zeroes the flags and reserved bytes; a reader that never checks them turns
+        // "headroom for gzip" into a promise nothing keeps. A compressed body handed to JSONDecoder
+        // fails as dataCorrupted, which tells the player nothing.
+        let header = Array(data.prefix(headerLength))
+        guard header[8] == 0 else {
+            throw SaveEnvelopeError.unsupportedHeaderFlags(found: header[8])
+        }
+        guard header[9..<16].allSatisfy({ $0 == 0 }) else {
+            throw SaveEnvelopeError.reservedHeaderBytesSet
         }
         return try JSONDecoder.stable().decode(type, from: data.dropFirst(headerLength))
     }

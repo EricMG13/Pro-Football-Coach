@@ -8,19 +8,40 @@ import Foundation
 public struct SeededRandom: Codable, Sendable, Equatable {
     private var state: UInt64
 
+    // The project's one documented way of turning bytes into a seed. `seed(from:)` below and
+    // `SeedDerivation`'s two `derive` overloads all route through `fnv1a`, so the mixing function
+    // and its constants exist once rather than in three hand-copied loops that nothing asserts
+    // agree — which is what CLAUDE.md means by never inlining a magic number.
+    static let fnvOffsetBasis: UInt64 = 0xCBF2_9CE4_8422_2325
+    static let fnvPrime: UInt64 = 0x0000_0100_0000_01B3
+
+    /// FNV-1a over `bytes`, optionally continuing an accumulator from an earlier call.
+    ///
+    /// Not a cryptographic hash and does not need to be: the requirement is reproducibility across
+    /// processes and good separation between siblings. Salting is exactly what must not happen.
+    static func fnv1a<Bytes: Sequence>(
+        _ bytes: Bytes,
+        continuing accumulator: UInt64 = fnvOffsetBasis
+    ) -> UInt64 where Bytes.Element == UInt8 {
+        var value = accumulator
+        for byte in bytes { value = (value ^ UInt64(byte)) &* fnvPrime }
+        return value
+    }
+
+    /// FNV-1a over a word's little-endian bytes, continuing an accumulator.
+    static func fnv1a(word: UInt64, continuing accumulator: UInt64) -> UInt64 {
+        withUnsafeBytes(of: word.littleEndian) { fnv1a($0, continuing: accumulator) }
+    }
+
     /// A seed derived from identifiers rather than from `hashValue`.
     ///
     /// `UUID.hashValue` is salted with a per-process random seed, so anything derived from it
     /// changes between launches. Using it to seed a generator makes the league unreproducible
     /// from its own seed, which is the one guarantee this type exists to provide.
     public static func seed(from identifiers: UUID...) -> UInt64 {
-        var value: UInt64 = 0xCBF2_9CE4_8422_2325
+        var value = fnvOffsetBasis
         for identifier in identifiers {
-            withUnsafeBytes(of: identifier.uuid) { bytes in
-                for byte in bytes {
-                    value = (value ^ UInt64(byte)) &* 0x0000_0100_0000_01B3
-                }
-            }
+            value = withUnsafeBytes(of: identifier.uuid) { fnv1a($0, continuing: value) }
         }
         return value
     }

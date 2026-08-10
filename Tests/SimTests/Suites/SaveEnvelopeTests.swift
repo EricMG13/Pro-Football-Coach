@@ -130,5 +130,56 @@ func runSaveEnvelopeTests() {
             let reserved = Array(data[9..<16])
             expectEqual(reserved, Array(repeating: UInt8(0), count: 7))
         }
+
+        test("an older-version save is refused rather than fed to the current decoder") {
+            // The version guard was one-sided: it caught the future and waved the past through.
+            // With unknown-field defaults on, a stale body can decode SUCCESSFULLY with wrong data
+            // instead of throwing, which is the worst of the three outcomes.
+            var data = try SaveEnvelope.encode(payload)
+            for offset in 4..<8 { data[offset] = 0 }
+            do {
+                _ = try SaveEnvelope.decode(Payload.self, from: data)
+                expect(false, "a version-0 save was opened by the current decoder")
+            } catch let error as SaveEnvelopeError {
+                expectEqual(error, .unmigratableVersion(found: 0,
+                                                        supported: SaveEnvelope.currentSchemaVersion))
+            }
+        }
+
+        test("a set flags bit is refused, so the reserved gzip bit means something") {
+            // The header comment promises the flags byte is headroom for compressing the body
+            // later. A reader that never looks at offset 8 makes that promise fictional: it would
+            // hand gzip bytes to JSONDecoder and report dataCorrupted.
+            var data = try SaveEnvelope.encode(payload)
+            data[8] = 0x01
+            do {
+                _ = try SaveEnvelope.decode(Payload.self, from: data)
+                expect(false, "a save claiming a compressed body was opened")
+            } catch let error as SaveEnvelopeError {
+                expectEqual(error, .unsupportedHeaderFlags(found: 0x01))
+            }
+        }
+
+        test("a non-zero reserved byte is refused") {
+            var data = try SaveEnvelope.encode(payload)
+            data[12] = 0x7F
+            do {
+                _ = try SaveEnvelope.decode(Payload.self, from: data)
+                expect(false, "a save with a reserved byte set was opened")
+            } catch let error as SaveEnvelopeError {
+                expectEqual(error, .reservedHeaderBytesSet)
+            }
+        }
+
+        test("a Date round-trips without losing its fraction") {
+            // .iso8601 renders whole seconds, so this failed by 0.512345 s before the strategy
+            // changed. Encoding stayed byte-stable throughout, which is why no existing assertion
+            // could see it: the loss is on the way out, not the way in.
+            struct Stamped: Codable, Equatable { let at: Date }
+            let stamped = Stamped(at: Date(timeIntervalSince1970: 1_700_000_000.512345))
+            let restored = try SaveEnvelope.decode(Stamped.self,
+                                                   from: try SaveEnvelope.encode(stamped))
+            expectEqual(restored, stamped, "a Date lost precision through the envelope")
+        }
     }
 }
