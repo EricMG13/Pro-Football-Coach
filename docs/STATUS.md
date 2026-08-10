@@ -14,7 +14,7 @@ model, two rules modules, a world generator, and a match engine that plays a who
 and records why every play happened.
 
 The final `./scripts/verify.sh` is green: build passed, calibration-tool contracts passed **23/23**,
-and SimTests passed **266 tests / 75,433 checks** (**3 passed, 0 failed** overall). An earlier full
+and SimTests passed **266 tests / 75,434 checks** (**3 passed, 0 failed** overall). An earlier full
 run caught the tuner's stale `brokenTackleYards` search after the accepted engine change split that
 constant; commit `4205260` updated it to `runBrokenTackleYards` before the final green run.
 
