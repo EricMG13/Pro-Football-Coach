@@ -15,6 +15,7 @@ expected_rules_dir=$(cd -P -- "$repo_root/Sources/FootballSimCore/Rules" && pwd)
 matchup_rules="$expected_rules_dir/MatchupRules.swift"
 lock_parent="$repo_root/.build"
 lock_file="$lock_parent/tune-calibration.lock"
+advisory_lock_fd=""
 
 validate_matchup_rules() {
   [[ "$matchup_rules" == "$expected_rules_dir/MatchupRules.swift" ]] \
@@ -113,6 +114,13 @@ except (OSError, ValueError) as error:
 PY
 }
 
+close_advisory_lock_for_child() {
+  [[ "$advisory_lock_fd" =~ ^[0-9]+$ ]] \
+    || die "invalid advisory-lock descriptor for child"
+  # The descriptor is numeric and verified above, so this evaluates exactly `exec N>&-`.
+  eval "exec ${advisory_lock_fd}>&-"
+}
+
 # Validate the exact mutation target before parsing modes or starting the search.
 validate_matchup_rules
 
@@ -128,18 +136,60 @@ if [[ ${TUNE_CALIBRATION_INHERITED_LOCK:-} != 1 ]]; then
 fi
 validate_lock_parent
 verify_inherited_advisory_lock
+advisory_lock_fd=$TUNE_CALIBRATION_LOCK_FD
+unset TUNE_CALIBRATION_INHERITED_LOCK TUNE_CALIBRATION_LOCK_FD
 
 # Test-only modes are inert normally and run after descriptor verification, before score/mutation.
 if [[ ${TUNE_CALIBRATION_TEST_HOLD_LOCK:-} == 1 ]]; then
-  sleep 10
+  (
+    close_advisory_lock_for_child
+    sleep 10
+  ) &
+  helper_pid=$!
+  printf 'tune-calibration: test lockless helper pid=%s\n' "$helper_pid"
+  wait "$helper_pid"
   exit 0
 fi
 if [[ ${TUNE_CALIBRATION_TEST_LOCK_ONLY:-} == 1 ]]; then
   exit 0
 fi
+if [[ ${TUNE_CALIBRATION_TEST_CHILD_FD:-} == 1 ]]; then
+  (
+    close_advisory_lock_for_child
+    python3 - "$advisory_lock_fd" <<'PY'
+import errno
+import os
+import sys
+
+try:
+    os.fstat(int(sys.argv[1]))
+except OSError as error:
+    if error.errno == errno.EBADF:
+        print("advisory lock descriptor closed for child")
+        raise SystemExit(0)
+    raise
+raise SystemExit("advisory lock descriptor leaked to child")
+PY
+  )
+  exit 0
+fi
+if [[ ${TUNE_CALIBRATION_TEST_RECURSIVE_CHILD:-} == 1 ]]; then
+  recursive_status=0
+  (
+    close_advisory_lock_for_child
+    TUNE_CALIBRATION_TEST_RECURSIVE_CHILD= TUNE_CALIBRATION_TEST_LOCK_ONLY=1 \
+      "$script_dir/tune-calibration.sh"
+  ) || recursive_status=$?
+  if (( recursive_status == 0 )); then
+    die "recursive child unexpectedly acquired advisory lock"
+  fi
+  exit 0
+fi
 
 setval() {
-  python3 - "$matchup_rules" "$1" "$2" <<'PY'
+  (
+    close_advisory_lock_for_child
+    python3 - "$matchup_rules" "$1" "$2" <<'PY'
 import os
 import pathlib
 import re
@@ -185,9 +235,12 @@ except BaseException:
         pass
     raise
 PY
+  )
 }
 
 score() {
+  # score is always called through command substitution; close this subshell's inherited FD first.
+  close_advisory_lock_for_child
   local output line
   local -a score_lines=()
   if ! output=$(cd "$repo_root" && swift run -c release CalibrationScore tuning); then
@@ -214,9 +267,15 @@ printf 'start SCORE=%s\n' "$best"
 for pass_n in 1 2; do
   for i in "${!names[@]}"; do
     name=${names[$i]}
-    original=$(sed -nE "s/^[[:space:]]*public static let ${name}[[:space:]]*=[[:space:]]*([-0-9._]+).*/\1/p" "$matchup_rules")
-    [[ $(printf '%s\n' "$original" | sed '/^$/d' | wc -l | tr -d ' ') -eq 1 ]] \
-      || die "expected exactly one readable ${name} constant"
+    original=""
+    original_count=0
+    while IFS= read -r rules_line || [[ -n "$rules_line" ]]; do
+      if [[ $rules_line =~ ^[[:space:]]*public[[:space:]]static[[:space:]]let[[:space:]]${name}[[:space:]]*=[[:space:]]*([-0-9._]+) ]]; then
+        original=${BASH_REMATCH[1]}
+        ((original_count += 1))
+      fi
+    done < "$matchup_rules"
+    [[ $original_count -eq 1 ]] || die "expected exactly one readable ${name} constant"
     best_value=$original
     for value in ${grids[$i]}; do
       setval "$name" "$value"
