@@ -8,14 +8,46 @@ The honest picture: what exists, what is verified, what is not.
 
 ## Where the project actually is
 
-**P0 through P3 are complete.** There is a foundation, a model, two rules modules, a world
+**P0 through P3 are complete. P4's instrument is built; the engine it measures is not yet
+calibrated, and the harness says by how much.** There is a foundation, a model, two rules modules, a world
 generator, and a match engine that plays a whole game from a seed and records why every play
 happened.
 
 Suite: **243 tests, 74,796 checks, all passed**, byte-identical across separate process invocations.
 
-**P4 through P17 have not started.** Calibration under TOST, the off-screen model, seasons, both
-tiers' systems, the career arc, the AI, the design system and every view are ahead.
+**P5 through P17 have not started.** The off-screen model, seasons, both tiers' systems, the career
+arc, the AI, the design system and every view are ahead.
+
+### P4 — calibration harness and bands — **instrument done, engine not calibrated**
+
+Built and green: `01` §6.5's band tables with their confidence grades, §6.2's TOST, §6.3's total
+variation distance, and a headless seeded harness with an A/B seed ladder.
+
+**G5 does not hold, and this is the measured gap, not an estimate.** Over 240 games per tier on the
+tuning ladder:
+
+| Tier | Bands tested | Failing |
+|---|---|---|
+| Pro | 16 | 14 |
+| College | 8 | 8 |
+
+Passing today: pro completion percentage (61.1%, band 61–67) and pro Q4 share of points (0.240, band
+0.22–0.32). Everything else is out, several by a wide margin — college points per team-game measures
+66.1 against a band of 26–31, and both explosive-play rates measure essentially zero.
+
+**Several of those failures are structural rather than mistuning, and naming them is P4's next
+task.** The baseline play-caller never calls a deep pass and almost never runs, because its
+threshold is `distance <= 7` and first-and-ten is ten; so nearly every completion is exactly the
+mid-pass air yardage, which is why the explosive rates are zero and the pass yardage is doubled.
+College measures 142 offensive plays per team-game against a band of 67–75, which says the
+first-down clock stop is skipping far too much of the pre-snap clock. **Tuning constants will not
+fix any of those** — they are the model being wrong in shape, which is exactly what `03` §5.2 says
+to fix rather than widen a band around.
+
+**Sixteen of §6.5's rows are not measured at all**, listed in `CalibrationBands.unimplementedMetrics`
+with what each waits on: per-drive accounting, target shares (which need per-player stat lines the
+engine does not produce), overtime and schedule context (P6). §6.6 clause 3 wants every scalar band
+gated by TOST; until that is true the honest statement is the list.
 
 ### P3 — match engine core
 
