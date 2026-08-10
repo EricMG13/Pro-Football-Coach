@@ -60,6 +60,7 @@ public struct GameRecord: Codable, Sendable, Equatable {
                 // that cannot see who had the ball is not a determinism gate.
                 mix(index(play.outcome.result))
                 mix(play.outcome.yards)
+                mix(play.preSnapSeconds)
                 mix(play.outcome.secondsElapsed)
                 mix(play.situation.down)
                 mix(play.situation.distance)

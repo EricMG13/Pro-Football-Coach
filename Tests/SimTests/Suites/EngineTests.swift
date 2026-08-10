@@ -2,8 +2,8 @@ import Foundation
 import FootballSimCore
 
 /// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 17_748_293_380_667_316_148
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 8_397_056_543_477_569_840
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 8_846_929_954_692_613_626
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 13_319_869_856_741_633_015
 
 func runEngineTests() {
     suite("Leverage") {
@@ -192,10 +192,16 @@ func runEngineTests() {
 
     suite("Clock rules") {
         test("the tiers differ where 03 section 2 says they differ") {
-            expect(CollegeClockRules.clockStopsOnFirstDown,
-                   "the college clock does not stop on a first down")
-            expect(!ProClockRules.clockStopsOnFirstDown,
-                   "the pro clock stops on a first down")
+            expect(DriveEngine.firstDownStopsClock(
+                madeFirstDown: true,
+                situation: Situation(quarter: 2, secondsRemainingInQuarter: 120),
+                rules: CollegeClockRules.self
+            ), "the college clock does not stop on a first down inside two minutes")
+            expect(!DriveEngine.firstDownStopsClock(
+                madeFirstDown: true,
+                situation: Situation(quarter: 2, secondsRemainingInQuarter: 120),
+                rules: ProClockRules.self
+            ), "the pro clock stops on a first down")
             expect(CollegeClockRules.overtime != ProClockRules.overtime,
                    "both tiers resolve a tie the same way")
         }
@@ -203,11 +209,19 @@ func runEngineTests() {
         test("college tempo falls out of the clock model rather than a fudge factor") {
             // 03 section 2: "Higher college tempo is a consequence of the clock model, not a fudge
             // factor applied afterwards." The consequence has to be visible in the constants: the
-            // college offence takes less time between snaps and its clock stops more often.
+            // college offence takes less time between snaps and stops after first downs only
+            // after the two-minute timeout.
             expect(CollegeClockRules.normalTempoSnapSeconds < ProClockRules.normalTempoSnapSeconds,
                    "the college offence does not snap faster")
-            expect(CollegeClockRules.clockStopsOnFirstDown && !ProClockRules.clockStopsOnFirstDown,
-                   "the first-down stop is not the tier difference it is documented as")
+            expect(DriveEngine.firstDownStopsClock(
+                madeFirstDown: true,
+                situation: Situation(quarter: 4, secondsRemainingInQuarter: 120),
+                rules: CollegeClockRules.self
+            ) && !DriveEngine.firstDownStopsClock(
+                madeFirstDown: true,
+                situation: Situation(quarter: 4, secondsRemainingInQuarter: 120),
+                rules: ProClockRules.self
+            ), "the first-down stop is not the tier difference it is documented as")
         }
 
         test("both tiers' clock constants are internally coherent") {
@@ -227,10 +241,16 @@ func runEngineTests() {
         }
 
         test("a tier reports the clock rules that belong to it") {
-            expect(Tier.college.clockRules.clockStopsOnFirstDown,
-                   "the college tier is wired to the pro clock")
-            expect(!Tier.pro.clockRules.clockStopsOnFirstDown,
-                   "the pro tier is wired to the college clock")
+            expect(DriveEngine.firstDownStopsClock(
+                madeFirstDown: true,
+                situation: Situation(quarter: 2, secondsRemainingInQuarter: 120),
+                rules: Tier.college.clockRules
+            ), "the college tier is wired to the pro clock")
+            expect(!DriveEngine.firstDownStopsClock(
+                madeFirstDown: true,
+                situation: Situation(quarter: 2, secondsRemainingInQuarter: 120),
+                rules: Tier.pro.clockRules
+            ), "the pro tier is wired to the college clock")
         }
     }
 }
@@ -549,6 +569,99 @@ func runGameLoopTests() {
     let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
 
     suite("Game loop") {
+        test("college first downs stop only inside two minutes") {
+            func stops(_ tier: Tier, _ seconds: Int) -> Bool {
+                DriveEngine.firstDownStopsClock(
+                    madeFirstDown: true,
+                    situation: Situation(quarter: 2, secondsRemainingInQuarter: seconds),
+                    rules: tier.clockRules
+                )
+            }
+            expect(!stops(.college, 300), "college stopped after a first down with five minutes left")
+            expect(stops(.college, 90), "college did not stop after a first down inside two minutes")
+            expect(stops(.college, 120), "college did not stop at the exact two-minute boundary")
+            expect(!stops(.college, 121), "college stopped one second before the two-minute boundary")
+            expect(!DriveEngine.firstDownStopsClock(
+                madeFirstDown: true,
+                situation: Situation(quarter: 1, secondsRemainingInQuarter: 90),
+                rules: CollegeClockRules.self
+            ), "first-quarter 1:30 was mistaken for the end of the half")
+            expect(!DriveEngine.firstDownStopsClock(
+                madeFirstDown: true,
+                situation: Situation(quarter: 3, secondsRemainingInQuarter: 90),
+                rules: CollegeClockRules.self
+            ), "third-quarter 1:30 was mistaken for the end of the half")
+            expect(DriveEngine.firstDownStopsClock(
+                madeFirstDown: true,
+                situation: Situation(quarter: 4, secondsRemainingInQuarter: 90),
+                rules: CollegeClockRules.self
+            ), "fourth-quarter 1:30 did not use end-of-half timing")
+            expect(!stops(.pro, 300), "pro stopped after a first down with five minutes left")
+            expect(!stops(.pro, 90), "pro stopped after a first down inside two minutes")
+
+            expectEqual(DriveEngine.preSnapSeconds(
+                clockRunning: false, clockStoppedByFirstDown: true, tempo: .normal,
+                rules: CollegeClockRules.self
+            ), CollegeClockRules.readyForPlaySeconds,
+            "college first-down restart did not charge the 18-second ready-for-play interval")
+        }
+
+        test("a college first-down restart records and charges ready-for-play time") {
+            struct FixedRunCaller: PlayCaller, Sendable {
+                func offensiveCall(for situation: Situation,
+                                   rules: any ClockRules.Type) -> OffensiveCall {
+                    OffensiveCall(playType: .run, tempo: .normal)
+                }
+
+                func defensiveCall(for situation: Situation,
+                                   rules: any ClockRules.Type) -> DefensiveCall {
+                    DefensiveCall(coverage: .man)
+                }
+            }
+
+            let start = Situation(down: 1, distance: 1, yardLine: 25, possession: .home,
+                                  quarter: 2, secondsRemainingInQuarter: 125)
+            let offense = testPersonnel(offenseSkill: 99, defenseSkill: 40)
+            let defense = testPersonnel(offenseSkill: 40, defenseSkill: 99)
+
+            func drive(_ rules: any ClockRules.Type, seed: UInt64) -> DriveRecord {
+                DriveEngine.run(from: start, offense: offense, defense: defense,
+                                caller: FixedRunCaller(), rules: rules, homeFieldAdvantage: 0,
+                                driveSeed: seed, isAfterTurnover: false, clockRunning: true).drive
+            }
+
+            var selectedSeed: UInt64?
+            var collegeDrive: DriveRecord?
+            for seed in UInt64(1)...200 {
+                let candidate = drive(CollegeClockRules.self, seed: seed)
+                guard candidate.plays.count >= 3,
+                      candidate.plays[0].outcome.yards >= candidate.plays[0].situation.distance,
+                      !candidate.plays[0].outcome.result.isTurnover
+                else { continue }
+                selectedSeed = seed
+                collegeDrive = candidate
+                break
+            }
+
+            guard let seed = selectedSeed, let college = collegeDrive else {
+                expect(false, "no qualifying college first-down drive found in seeds 1...200")
+                return
+            }
+            let second = college.plays[1]
+            let third = college.plays[2]
+            expectEqual(second.preSnapSeconds, CollegeClockRules.readyForPlaySeconds,
+                        "seed \(seed): college restart did not record ready-for-play time")
+            expectEqual(third.situation.secondsRemainingInQuarter,
+                        second.situation.secondsRemainingInQuarter
+                            - second.preSnapSeconds - second.outcome.secondsElapsed,
+                        "seed \(seed): recorded college restart time was not charged to the clock")
+
+            let pro = drive(ProClockRules.self, seed: seed)
+            expect(pro.plays.count >= 2, "seed \(seed): pro fixture ended before the restart snap")
+            expectEqual(pro.plays[1].preSnapSeconds, ProClockRules.normalTempoSnapSeconds,
+                        "seed \(seed): pro first down used the college ready-for-play interval")
+        }
+
         test("the same seed replays a game exactly, by hash of the full play-by-play") {
             // 03 section 3's test, verbatim: "same seed across two separate process invocations,
             // compared by hash of the full play-by-play". The in-process half is here; the
@@ -620,8 +733,9 @@ func runGameLoopTests() {
 
         test("college games run more plays than pro games") {
             // 03 section 2: higher college tempo must be a CONSEQUENCE of the clock model. The
-            // college clock stops on a first down and its offence snaps faster, so with the same
-            // rosters and the same seed it must fit more plays into the same four quarters. This is
+            // college clock stops after first downs inside two minutes and its offence snaps
+            // faster, so with the same rosters and the same seed it must fit more plays into the
+            // same four quarters. This is
             // not a calibration band — P4 owns those — it is the direction the model must point.
             var collegePlays = 0, proPlays = 0
             for seed in UInt64(1)...20 {
@@ -736,13 +850,11 @@ func runGameLoopTests() {
         }
 
         test("the clock only runs when it should") {
-            // stopsClock and clockStopsOnFirstDown were both declared and read by nobody. The
-            // second is the ONE tier difference 03 section 2 names, so an engine that ignored it
-            // had no tier difference at all — the college clock stopping on a first down is the
-            // largest reason college games run more plays.
+            // `stopsClock` and the inside-two-minute first-down stop are clock decisions the
+            // drive loop must apply. Ignoring the latter would erase a real tier difference.
             //
             // Asserted through the consequence: with the same rosters and seeds, the tier whose
-            // clock stops more often fits more plays into the same four quarters.
+            // clock stops after late first downs fits more plays into the same four quarters.
             var collegeFirstDowns = 0, proFirstDowns = 0
             var collegePlays = 0, proPlays = 0
             for seed in UInt64(1)...12 {
@@ -810,18 +922,21 @@ func runGameLoopTests() {
                 var situation = play.situation
                 situation.possession = situation.possession.opponent
                 return PlayRecord(situation: situation, offensiveCall: play.offensiveCall,
-                                  defensiveCall: play.defensiveCall, outcome: play.outcome,
+                                  defensiveCall: play.defensiveCall,
+                                  preSnapSeconds: play.preSnapSeconds, outcome: play.outcome,
                                   callInTriggers: play.callInTriggers)
             } != base, "the fingerprint ignores possession")
             expect(rebuilt { play in
                 PlayRecord(situation: play.situation,
                            offensiveCall: OffensiveCall(playType: .kneel),
-                           defensiveCall: play.defensiveCall, outcome: play.outcome,
+                           defensiveCall: play.defensiveCall,
+                           preSnapSeconds: play.preSnapSeconds, outcome: play.outcome,
                            callInTriggers: play.callInTriggers)
             } != base, "the fingerprint ignores the offensive call")
             expect(rebuilt { play in
                 PlayRecord(situation: play.situation, offensiveCall: play.offensiveCall,
-                           defensiveCall: play.defensiveCall, outcome: play.outcome,
+                           defensiveCall: play.defensiveCall,
+                           preSnapSeconds: play.preSnapSeconds, outcome: play.outcome,
                            callInTriggers: [])
             } != base, "the fingerprint ignores the call-in triggers")
             expect(GameRecord(homeScore: game.homeScore, awayScore: game.awayScore,

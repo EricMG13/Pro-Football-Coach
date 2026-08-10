@@ -63,9 +63,10 @@ outcome. A test asserts that rendering a play cannot alter its recorded result �
 ## 2. Clock and situation
 
 - Quarters, play clock, game clock, timeouts, two-minute handling, overtime per tier rules.
-- **College clock rules differ from pro and must be modelled per tier** — the current rule on the
-  clock stopping for first downs is a tier constant, not a shared one. Higher college tempo is a
-  consequence of the clock model, not a fudge factor applied afterwards.
+- **College clock rules differ from pro and must be modelled per tier** — under NCAA Football Rule
+  3-3-2-e-1, after the two-minute timeout a Team A first down stops the clock until the referee's
+  ready-for-play signal; pro does not use that rule. Higher college tempo is a consequence of the
+  clock model, not a fudge factor applied afterwards.
 - Situation is a value type carried into resolution: down, distance, field position, score
   differential, time remaining, timeouts. Every call-in trigger in `02` reads it.
 
@@ -227,8 +228,9 @@ Stated plainly rather than papered over:
    seconds per call-in) are proposals, not measurements. They need the owner protocol in
    `01-RESEARCH.md` §6.0 §8 and one layout measurement in Xcode.
 2. **Recruiting-AI cost** is unmeasured, as above.
-3. **College clock rules** must be confirmed against the current rule book before the tier constants
-   are fixed.
+3. **College first-down timing is confirmed:** NCAA Football Rule 3-3-2-e-1 stops the clock after
+   the two-minute timeout on a Team A first down and restarts it on the referee's ready-for-play
+   signal. Other college clock constants still need their own source confirmation.
 4. **Model-vs-model agreement for the recruiting/portal AI** is not covered by §4.1's bands, which
    cover game outcomes only. If the abstracted recruiting AI produces different class quality than a
    detailed one would, the league drifts over 20 seasons. The soak's churn assertion is a partial

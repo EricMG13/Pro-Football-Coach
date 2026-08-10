@@ -267,9 +267,9 @@ hash.
 Two more worth carrying forward. `03` §3 clause 6's seed hierarchy stopped at week — `.game`,
 `.drive` and `.snap` were declared scopes that only the seed-derivation tests passed — and each
 drive and snap now derives its own node, which also makes the variable draw count inside a snap
-harmless. And `stopsClock` and `clockStopsOnFirstDown` were both declared and read by nobody; the
-second is the *one* tier difference `03` §2 names, so ignoring it meant there was no real tier
-difference at all.
+harmless. And `stopsClock` and the inside-two-minute first-down decision were both declared and
+read by nobody; the second is the tier difference `03` §2 names, so ignoring it meant there was no
+real tier difference at all.
 
 **The recurring lesson across all fifteen P3 defects: the engine kept declaring things it could not
 produce, and only a reachability test over the declared set found them.** An enum case, a trigger, a
@@ -280,12 +280,10 @@ an exemption; it was deleted instead.
 
 **Two things P3 must not be read as claiming.**
 
-1. **The college clock constants are UNCONFIRMED.** `03` §8 clause 3 requires them checked against
-   the current rule book before the tier constants are fixed. No rule book is reachable from the
-   build environment and routing around the egress policy is forbidden. **Owner action:** confirm
-   the college play clock, the first-down clock stop and its two-minute exception, and the overtime
-   format. P4's calibration will show whether they produce the right plays-per-game, which is
-   evidence and not confirmation.
+1. **College first-down timing is confirmed.** NCAA Football Rule 3-3-2-e-1 stops the clock after
+   the two-minute timeout on a Team A first down, then restarts it on the referee's ready-for-play
+   signal; the NCAA's 2026 published changes do not replace this timing rule. Other college clock
+   constants, including play clock and overtime format, still need their own source confirmation.
 2. **Nothing in `MatchupRules` is calibrated.** The engine is numerically wrong and is expected to
    be. P4 owns the bands under TOST; a P3 that tuned by eye would make that TOST a formality over
    numbers already fitted to it. What P3 asserts is *direction*, not magnitude: a better roster wins

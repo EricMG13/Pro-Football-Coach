@@ -10,12 +10,9 @@ import Foundation
 /// engine reads a `ClockRules` and never asks which tier it is in. A tempo constant applied on top
 /// of a shared clock would be exactly the fudge `03` forbids.
 ///
-/// **UNCONFIRMED — owner action outstanding.** `03` §8 clause 3: "College clock rules must be
-/// confirmed against the current rule book before the tier constants are fixed." No rule book is
-/// reachable from the build environment, and routing around the egress policy to fetch one is
-/// forbidden. The values below are the engine's working set and are recorded as unconfirmed in
-/// `docs/STATUS.md`. They are not presented as verified, and P4's calibration is what will show
-/// whether they produce the right plays-per-game before anyone checks the book.
+/// NCAA Football Rule 3-3-2-e-1 (2025) confirms the college first-down difference: after the
+/// two-minute timeout, a Team A first down stops the game clock until the referee's ready-for-play
+/// signal. The 2026 published changes do not replace that timing rule.
 public protocol ClockRules: Sendable {
     /// Quarters in a regulation game.
     static var quarters: Int { get }
@@ -36,11 +33,9 @@ public protocol ClockRules: Sendable {
     /// Seconds burned getting to the line when the clock was stopped but restarts on the
     /// ready-for-play rather than the snap — the college first-down rule.
     static var readyForPlaySeconds: Int { get }
-    /// **The tier difference `03` §2 names.** Does the game clock stop on a first down?
-    static var clockStopsOnFirstDown: Bool { get }
-    /// If it stops, does it restart on the ready-for-play rather than the snap, and inside what
-    /// part of the game does that stop apply at all?
-    static var firstDownStopEndsAtSecondsRemaining: Int { get }
+    /// **The tier difference `03` §2 names.** Does a first down stop the game clock after the
+    /// two-minute timeout, until ready for play?
+    static var clockStopsOnFirstDownInsideTwoMinutes: Bool { get }
     /// Timeouts per team per half.
     static var timeoutsPerHalf: Int { get }
     /// The two-minute threshold, in seconds remaining in a half.
@@ -59,7 +54,7 @@ public enum OvertimeFormat: String, Codable, Sendable {
     case timedPeriod
 }
 
-/// College clock constants. **Unconfirmed against the rule book — see `ClockRules`.**
+/// College clock constants.
 public enum CollegeClockRules: ClockRules {
     public static let quarters = 4
     public static let quarterSeconds = 900
@@ -71,20 +66,16 @@ public enum CollegeClockRules: ClockRules {
     public static let stoppedPlaySeconds = 5
     public static let readyForPlaySeconds = 18
 
-    /// The tier difference. The college clock stops on a first down to reset the chains, which is
-    /// the single largest reason college games run more plays than pro ones — and modelling it here
-    /// is what makes the higher plays-per-game band in `03` §5.1 a consequence rather than a fudge.
-    public static let clockStopsOnFirstDown = true
-
-    /// The first-down stop does not apply inside the last two minutes of either half.
-    public static let firstDownStopEndsAtSecondsRemaining = 120
+    /// NCAA Football Rule 3-3-2-e-1: after the two-minute timeout, a Team A first down stops the
+    /// clock until the referee's ready-for-play signal.
+    public static let clockStopsOnFirstDownInsideTwoMinutes = true
 
     public static let timeoutsPerHalf = 3
     public static let twoMinuteSeconds = 120
     public static let overtime = OvertimeFormat.alternatingPossessions
 }
 
-/// Pro clock constants. **Unconfirmed against the rule book — see `ClockRules`.**
+/// Pro clock constants.
 public enum ProClockRules: ClockRules {
     public static let quarters = 4
     public static let quarterSeconds = 900
@@ -99,8 +90,7 @@ public enum ProClockRules: ClockRules {
     public static let readyForPlaySeconds = 18
 
     /// The pro clock keeps running on a first down.
-    public static let clockStopsOnFirstDown = false
-    public static let firstDownStopEndsAtSecondsRemaining = 0
+    public static let clockStopsOnFirstDownInsideTwoMinutes = false
 
     public static let timeoutsPerHalf = 3
     public static let twoMinuteSeconds = 120

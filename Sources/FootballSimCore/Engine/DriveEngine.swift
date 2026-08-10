@@ -6,6 +6,8 @@ public struct PlayRecord: Codable, Sendable, Equatable {
     public let situation: Situation
     public let offensiveCall: OffensiveCall
     public let defensiveCall: DefensiveCall
+    /// Seconds charged before this snap for the previous clock state.
+    public let preSnapSeconds: Int
     public let outcome: SnapOutcome
     /// Why the coach was pulled in on this snap, if they were. `02` §3.1.
     public let callInTriggers: [CallInTrigger]
@@ -14,12 +16,14 @@ public struct PlayRecord: Codable, Sendable, Equatable {
         situation: Situation,
         offensiveCall: OffensiveCall,
         defensiveCall: DefensiveCall,
+        preSnapSeconds: Int,
         outcome: SnapOutcome,
         callInTriggers: [CallInTrigger]
     ) {
         self.situation = situation
         self.offensiveCall = offensiveCall
         self.defensiveCall = defensiveCall
+        self.preSnapSeconds = preSnapSeconds
         self.outcome = outcome
         self.callInTriggers = callInTriggers
     }
@@ -150,6 +154,30 @@ public struct BaselinePlayCaller: PlayCaller, Sendable {
 
 /// The drive loop.
 public enum DriveEngine {
+    /// NCAA Football Rule 3-3-2-e-1: after the two-minute timeout, a college Team A first down
+    /// stops the clock until the referee declares the ball ready for play.
+    public static func firstDownStopsClock(
+        madeFirstDown: Bool,
+        situation: Situation,
+        rules: any ClockRules.Type
+    ) -> Bool {
+        rules.clockStopsOnFirstDownInsideTwoMinutes
+            && madeFirstDown
+            && situation.secondsRemainingInHalf(rules: rules) <= rules.twoMinuteSeconds
+    }
+
+    /// The pre-snap charge for the clock state inherited from the previous play.
+    public static func preSnapSeconds(
+        clockRunning: Bool,
+        clockStoppedByFirstDown: Bool,
+        tempo: Tempo,
+        rules: any ClockRules.Type
+    ) -> Int {
+        if clockRunning { return tempo.snapSeconds(rules: rules) }
+        if clockStoppedByFirstDown { return rules.readyForPlaySeconds }
+        return 0
+    }
+
     /// Runs one drive to its end.
     ///
     /// Bounded by `MatchupRules.maximumPlaysPerDrive`. An unbounded loop here is a hang rather than
@@ -194,6 +222,9 @@ public enum DriveEngine {
             let triggers = situation.situationalCallInTriggers(rules: rules,
                                                                isSnapAfterTurnover: afterTurnover)
             afterTurnover = false
+            let preSnap = preSnapSeconds(clockRunning: clockRunning,
+                                         clockStoppedByFirstDown: clockStoppedByFirstDown,
+                                         tempo: offensiveCall.tempo, rules: rules)
 
             let outcome = SnapResolver.resolve(
                 offensiveCall: offensiveCall, defensiveCall: defensiveCall,
@@ -204,31 +235,14 @@ public enum DriveEngine {
                 rng: &rng
             )
             plays.append(PlayRecord(situation: situation, offensiveCall: offensiveCall,
-                                    defensiveCall: defensiveCall, outcome: outcome,
+                                    defensiveCall: defensiveCall, preSnapSeconds: preSnap,
+                                    outcome: outcome,
                                     callInTriggers: triggers))
 
-            // The drive loop is the clock authority. The pre-snap clock only runs if it was
-            // running: after an incompletion, a score, or a first down under the college rule, the
-            // offence gets to the line for free. `stopsClock` and `clockStopsOnFirstDown` were both
-            // declared and read by nobody — the second is the one tier difference 03 section 2
-            // names, and it was inert.
-            // A stopped clock does not mean a free snap. The college first-down stop restarts on
-            // the ready-for-play, so it costs a reduced charge rather than nothing — skipping the
-            // whole pre-snap put college at 142 offensive plays per team-game against a band of 67
-            // to 75, which is the clock model wrong in shape rather than a constant mistuned.
-            let preSnap: Int
-            if clockRunning {
-                preSnap = offensiveCall.tempo.snapSeconds(rules: rules)
-            } else if clockStoppedByFirstDown {
-                preSnap = rules.readyForPlaySeconds
-            } else {
-                preSnap = 0
-            }
             situation.secondsRemainingInQuarter -= preSnap + outcome.secondsElapsed
             let madeFirstDown = outcome.yards >= situation.distance && !outcome.result.isTurnover
-            let firstDownStop = rules.clockStopsOnFirstDown && madeFirstDown
-                && situation.secondsRemainingInHalf(rules: rules)
-                    > rules.firstDownStopEndsAtSecondsRemaining
+            let firstDownStop = firstDownStopsClock(madeFirstDown: madeFirstDown,
+                                                     situation: situation, rules: rules)
             clockRunning = !outcome.result.stopsClock && !firstDownStop
             clockStoppedByFirstDown = firstDownStop
 
