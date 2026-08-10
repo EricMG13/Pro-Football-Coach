@@ -188,9 +188,17 @@ mechanical gain, so the houses are named for the tier. Branded networks go to co
 
 `Card`, `Row`, `StatCell`, `Chip`, `Meter`, `Badge`, `SegmentedControl`, `PrimaryButton`,
 `DestructiveButton`, `InboxItem`, `CallInCard`, `FieldCanvas`, `EmptyState`, `ErrorBanner`,
-`OpposedBar`, `Sparkline`, `LowerThird`, **`ScoreBug`**, **`StakeholderCard`**.
+`OpposedBar`, `Sparkline`, `LowerThird`, **`ScoreBug`**, **`StakeholderCard`**, **`MapCanvas`**.
 
-**Nineteen as of 2026-08-10.** The last two were added by the design pass:
+**Twenty as of 2026-08-10.** The last three were added by the design pass:
+
+- **`MapCanvas`** — the league map. A *second* canvas with its own clustering problem: `GameMap` is
+  1000 × 700 world units with 8 regions and 134 programmes, which projects to ~0.5 pt per unit, so no
+  city is labelled at full zoom and dots are sized by `marketSize`. Three lenses over one canvas
+  (reach, talent, rivalries) rather than three screens. **It is not a `FieldCanvas` variant** —
+  inheriting the field's rules would be wrong — and **its accessible form is unresolved**: a spatial
+  readout with 134 positions and no natural order is harder for VoiceOver than the field, and the
+  likely answer is that the canvas is decorative and the verdict panel beside it carries the meaning.
 
 - **`ScoreBug`** — three variants: full (match view), compact (league readouts, aftermath, career
   line) and live (elsewhere while a match runs). Team-coloured segments either side of a black score
@@ -284,9 +292,36 @@ teaches through the first real week, so first-run state rides on the ordinary we
 | | Player card | DESTINATION (development, discipline, redshirt) |
 | | Staff | DESTINATION (hire, fire, assign) |
 | | Scheme | DESTINATION |
-| **Recruit** (college) / **Front office** (pro) | Board, shortlist, contact budget / cap, contracts, draft | DESTINATION |
-| **League** | Standings, schedule, rankings, news, realignment | READOUT |
-| **Career** | Job security, stakeholders, record book, rivalries, career line | READOUT + the carousel is a DESTINATION |
+| **Recruit** (college) | Board | DESTINATION — the contact budget is the game |
+| | Shortlist | DESTINATION |
+| | Signing day | DESTINATION — **broadcast register**, see below |
+| **Front office** (pro) | Cap and contracts | DESTINATION |
+| | Draft | DESTINATION — **broadcast register**, see below |
+| | Free agency | DESTINATION |
+| **League** | Map | READOUT — a second canvas, `MapCanvas` |
+| | Standings | READOUT |
+| | Schedule and rankings | READOUT |
+| | News | READOUT |
+| | Realignment | READOUT — an **event**, once a season, on the map |
+| **Career** | Job security | READOUT — the jeopardy surface |
+| | Stakeholders | READOUT — four groups, four permanent rule colours |
+| | **The promotion** | **DESTINATION** — `02` §9, and it must pass §2.2 with a real decline |
+| | Carousel | DESTINATION — cannot dead-end |
+| | Record book, rivalries, career line | READOUT |
+
+**The three rows above replaced three comma-lists holding fourteen screens.** §4 calls itself a
+budget, and a budget that hides fourteen screens in three cells is not counting. Two consequences
+fell out of drawing them:
+
+- **The draft and signing day are not list screens.** A clock counting down, events arriving whether
+  the player acts or not, a decision with a deadline, and a named coordinator proposal — that is the
+  call-in loop with different content. They take the **broadcast register** and reuse `ScoreBug`'s
+  live variant and `CallInCard`. Building a second timed interaction would get it worse the second
+  time. **An expired draft clock must auto-pick**, stated: this is a commute game and a clock that
+  expires into nothing is a soft-locked draft.
+- **The promotion needs its own row and its own §2.2 test.** It was the word "carousel" inside a
+  comma list, and it is the product's headline. Declining must be genuinely available or the arc is
+  a cutscene.
 
 Every DESTINATION must pass `02` §2.2's three tests — two defensible answers, a visible consequence,
 a cost — or it is demoted to a READOUT and its decision automated.

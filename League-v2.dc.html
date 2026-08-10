@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><style>body{margin:0;background:#05070C;-webkit-font-smoothing:antialiased}
+.mono{font:500 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace}
+.lbl{font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:#78839A}
+.num{font-family:'SF Compact Display','SF Pro Display',-apple-system,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.card{background:#121724;border:1px solid rgba(255,255,255,.09);border-radius:12px}
+.note{font:400 11.5px/1.55 -apple-system,sans-serif;color:#A7B0C0}
+.phone{width:844px;height:390px;position:relative;overflow:hidden;background:#0A0D14;flex:none}
+.bezel{padding:8px;background:#000;border-radius:44px;box-shadow:0 14px 34px rgba(0,0,0,.5);width:860px;flex:none}
+.sb{position:absolute;left:0;top:0;right:0;height:22px;display:flex;align-items:center;justify-content:space-between;padding:0 70px;font-family:'SF Compact Display',-apple-system,sans-serif;font-size:11px;font-weight:600;color:#F5F7FA}
+.hi{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:130px;height:4px;border-radius:2px;background:rgba(255,255,255,.4)}
+.real{font:600 9.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#0A0D14;background:#C6F24E;padding:3px 6px;border-radius:3px}
+.guide{font:600 9.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#0A0D14;background:#FFB026;padding:3px 6px;border-radius:3px}
+.bar{position:absolute;left:0;right:0;bottom:21px;height:44px;background:#0C0F16;border-top:1px solid rgba(255,255,255,.1);display:flex}
+.bi{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'SF Compact Display',-apple-system,sans-serif;font-size:12.5px;font-weight:600;color:#A7B0C0}
+</style></helmet>
+
+<div style="font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;color:#F5F7FA;padding:40px 44px 72px;max-width:1900px;margin:0 auto">
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:32px;padding-bottom:22px;border-bottom:1px solid rgba(255,255,255,.12)">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="lbl">PRO FOOTBALL COACH &middot; DESIGN REFERENCE v2 &middot; GROUP: LEAGUE</div>
+<div style="font:700 32px/1.1 -apple-system,'SF Pro Display',sans-serif;letter-spacing:-.02em">League &mdash; the map, the table, the rivalry</div>
+<div style="font:400 14px/1.55 inherit;color:#A7B0C0;max-width:78ch"><code class="mono">04</code> §4 gave this whole tab one row: <em>"Standings, schedule, rankings, news, realignment &mdash; READOUT."</em> Five screens in a comma list, one of which is a <strong style="color:#F5F7FA;font-weight:650">second canvas surface</strong> with the same legibility problems as the field and no <code class="mono">FieldCanvas</code> equivalent in the registry. The map is drawn against the shipped <code class="mono">GameMap</code> type, not invented.</div>
+</div>
+<div style="flex:none;width:250px;padding:11px 13px;background:rgba(198,242,78,.09);border:1px solid rgba(198,242,78,.3);border-radius:8px;font:400 11px/1.5 inherit;color:#A7B0C0"><span class="real">REAL</span> the map and rivalries exist in shipped P2 code and this reference matches their fields. <span class="guide">GUIDE</span> standings, schedule and rankings need P6.</div>
+</div>
+
+<!-- MAP -->
+<div style="display:flex;align-items:baseline;gap:12px;margin:38px 0 14px"><div style="font:700 21px/1.2 inherit;letter-spacing:-.015em">The map</div><span class="real">REAL &middot; GameMap</span><div style="font:400 13px/1.4 inherit;color:#78839A">1000 &times; 700 world units, 8 regions, cities carrying marketSize</div></div>
+
+<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+<div style="display:flex;flex-direction:column;gap:9px">
+<div class="lbl">LEAGUE &middot; MAP &middot; READOUT WITH A VERDICT</div>
+<div class="bezel"><div class="phone">
+  <div class="sb"><span>9:41</span><span>86%</span></div>
+  <div style="position:absolute;left:59px;top:26px;right:16px;height:30px;display:flex;align-items:center;gap:10px;border-bottom:2px solid #14294B">
+    <span style="font:650 15px/1 inherit">The map</span>
+    <span class="num" style="font-size:12px;font-weight:700;color:#78839A">134 programmes &middot; 10 conferences &middot; 8 regions</span>
+    <span style="margin-left:auto;display:flex;gap:5px">
+      <span class="num" style="font-size:10px;font-weight:700;color:#0A0D14;background:#C6F24E;padding:4px 7px">REACH</span>
+      <span class="num" style="font-size:10px;font-weight:600;color:#A7B0C0;border:1px solid rgba(255,255,255,.2);padding:4px 7px">TALENT</span>
+      <span class="num" style="font-size:10px;font-weight:600;color:#A7B0C0;border:1px solid rgba(255,255,255,.2);padding:4px 7px">RIVALS</span>
+    </span>
+  </div>
+
+  <!-- map canvas: 1000x700 world -> 500x230 -->
+  <div style="position:absolute;left:59px;top:62px;width:508px;height:234px;background:#0E131E;border:1px solid rgba(255,255,255,.08);overflow:hidden">
+    <!-- region fills, talentDensity as value -->
+    <div style="position:absolute;left:0;top:0;width:172px;height:118px;background:rgba(91,157,255,.10);border-right:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)"></div>
+    <div style="position:absolute;left:172px;top:0;width:180px;height:118px;background:rgba(91,157,255,.20);border-right:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)"></div>
+    <div style="position:absolute;left:352px;top:0;width:156px;height:118px;background:rgba(91,157,255,.07);border-bottom:1px solid rgba(255,255,255,.06)"></div>
+    <div style="position:absolute;left:0;top:118px;width:130px;height:116px;background:rgba(91,157,255,.14);border-right:1px solid rgba(255,255,255,.06)"></div>
+    <div style="position:absolute;left:130px;top:118px;width:126px;height:116px;background:rgba(91,157,255,.30);border-right:1px solid rgba(255,255,255,.06)"></div>
+    <div style="position:absolute;left:256px;top:118px;width:128px;height:116px;background:rgba(91,157,255,.24);border-right:1px solid rgba(255,255,255,.06)"></div>
+    <div style="position:absolute;left:384px;top:118px;width:124px;height:116px;background:rgba(91,157,255,.11)"></div>
+    <div class="num" style="position:absolute;left:8px;top:6px;font-size:9px;font-weight:700;letter-spacing:.14em;color:rgba(255,255,255,.35)">NORTH REACH</div>
+    <div class="num" style="position:absolute;left:180px;top:6px;font-size:9px;font-weight:700;letter-spacing:.14em;color:rgba(255,255,255,.42)">IRON BASIN</div>
+    <div class="num" style="position:absolute;left:360px;top:6px;font-size:9px;font-weight:700;letter-spacing:.14em;color:rgba(255,255,255,.3)">EAST STRAND</div>
+    <div class="num" style="position:absolute;left:138px;top:124px;font-size:9px;font-weight:700;letter-spacing:.14em;color:rgba(255,255,255,.5)">GOLD PLAINS</div>
+
+    <!-- cities: radius by marketSize, your programme highlighted -->
+    <div style="position:absolute;left:82px;top:44px;width:7px;height:7px;border-radius:50%;background:#78839A"></div>
+    <div style="position:absolute;left:212px;top:34px;width:10px;height:10px;border-radius:50%;background:#A7B0C0"></div>
+    <div style="position:absolute;left:266px;top:70px;width:8px;height:8px;border-radius:50%;background:#78839A"></div>
+    <div style="position:absolute;left:412px;top:52px;width:6px;height:6px;border-radius:50%;background:#78839A"></div>
+    <div style="position:absolute;left:56px;top:158px;width:9px;height:9px;border-radius:50%;background:#A7B0C0"></div>
+    <div style="position:absolute;left:300px;top:186px;width:7px;height:7px;border-radius:50%;background:#78839A"></div>
+    <div style="position:absolute;left:436px;top:150px;width:11px;height:11px;border-radius:50%;background:#A7B0C0"></div>
+    <!-- rivalry arc, drawn because it is the thing worth seeing -->
+    <div style="position:absolute;left:176px;top:132px;width:112px;height:2px;background:linear-gradient(90deg,#C8A24A,#E4D5A8);transform:rotate(9deg);transform-origin:left center"></div>
+    <!-- your programme -->
+    <div style="position:absolute;left:168px;top:126px;width:16px;height:16px;border-radius:50%;background:#C8A24A;border:2px solid #0A0D14;box-shadow:0 0 0 2px #C8A24A"></div>
+    <div class="num" style="position:absolute;left:190px;top:127px;font-size:10px;font-weight:700;color:#C8A24A">ASHGROVE</div>
+    <div style="position:absolute;left:282px;top:138px;width:13px;height:13px;border-radius:50%;background:#E4D5A8;border:2px solid #0A0D14"></div>
+    <div class="num" style="position:absolute;left:300px;top:139px;font-size:10px;font-weight:700;color:#E4D5A8">WEXMOOR</div>
+  </div>
+
+  <div style="position:absolute;left:583px;top:62px;right:16px;bottom:76px;background:#121724;border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:13px 15px">
+    <div style="font:650 14px/1.25 inherit">Your reach is regional, not national.</div>
+    <div class="note" style="margin-top:6px">You sign well inside <strong style="color:#F5F7FA">Iron Basin</strong> and almost nowhere else. Gold Plains has the most talent in the league and you have never signed a player from it.</div>
+    <div style="height:1px;background:rgba(255,255,255,.09);margin:11px 0"></div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">Recruiting reach</span><span class="num" style="font-size:12px;font-weight:700;color:#4E93D6">61</span></div>
+      <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">Home region talent</span><span class="num" style="font-size:12px;font-weight:700;color:#2166A8">72</span></div>
+      <div style="display:flex;justify-content:space-between"><span class="note" style="font-size:11px">Market size</span><span class="num" style="font-size:12px;font-weight:700;color:#4E93D6">64</span></div>
+    </div>
+  </div>
+
+  <div class="bar">
+    <div class="bi"><span style="font-size:13px">&#9632;</span>Week</div>
+    <div class="bi"><span style="font-size:13px">&#9679;</span>Team</div>
+    <div class="bi"><span style="font-size:13px">&#9650;</span>Recruit</div>
+    <div class="bi" style="color:#C6F24E;border-top:2px solid #C6F24E;margin-top:-1px"><span style="font-size:13px">&#9670;</span>League</div>
+    <div class="bi"><span style="font-size:13px">&#9724;</span>Career</div>
+  </div>
+  <div class="hi"></div>
+</div></div>
+</div>
+
+<div style="flex:1;min-width:320px;display:flex;flex-direction:column;gap:11px">
+<div class="card" style="padding:14px 16px;border-color:rgba(198,242,78,.4)">
+<div style="font:650 13px/1.3 inherit;color:#C6F24E;margin-bottom:7px">The map is a second canvas, and it needed saying</div>
+<div class="note"><code class="mono">GameMap</code> is <code class="mono">1000 &times; 700</code> world units with <code class="mono">regionCount = 8</code>; <code class="mono">MapCity</code> carries <code class="mono">x</code>, <code class="mono">y</code> and <code class="mono">marketSize</code>; <code class="mono">MapRegion</code> carries <code class="mono">talentDensity</code>. Projected into 508 &times; 234 pt that is <strong style="color:#F5F7FA">0.5 pt per world unit</strong> and 134 programmes in the space. The same clustering arithmetic that governs the field governs here: <strong style="color:#F5F7FA">no city label at full zoom</strong>, dots sized by <code class="mono">marketSize</code>, and only your programme, your opponent and your rivals named.</div>
+</div>
+<div class="card" style="padding:14px 16px">
+<div style="font:650 13px/1.3 inherit;margin-bottom:7px">Three lenses, one map</div>
+<div class="note">REACH shades regions by how well you recruit there. TALENT shades by <code class="mono">talentDensity</code>. RIVALS drops the shading and draws the arcs. One canvas, three data joins &mdash; which is what stops the League tab needing three map screens and keeps the two-tap ceiling.</div>
+</div>
+<div class="card" style="padding:14px 16px">
+<div style="font:650 13px/1.3 inherit;margin-bottom:7px">Realignment is this screen, animated once a year</div>
+<div class="note"><code class="mono">02</code> §8's realignment changes conference membership. It does not need a screen &mdash; it needs <em>this</em> screen with a before and after, and a `LowerThird`-register card naming what moved. <strong style="color:#F5F7FA">A readout that changes once a season is an event, and events get named.</strong></div>
+</div>
+<div class="card" style="padding:14px 16px;border-color:rgba(255,176,38,.4)">
+<div style="font:650 13px/1.3 inherit;color:#FFB026;margin-bottom:7px">Open: the map has no accessible form yet</div>
+<div class="note">A spatial readout is the hardest thing in the product for VoiceOver, harder than the field &mdash; the field has 22 named marks and a sentence per snap, this has 134 positions and no natural order. The likely answer is that the map is <em>decorative</em> and the verdict panel beside it carries the whole meaning, in which case the canvas is marked accessibility-hidden and the panel is the screen. Stated, not resolved.</div>
+</div>
+</div>
+</div>
+
+<!-- STANDINGS + RIVALRY -->
+<div style="display:flex;gap:16px;align-items:flex-start;margin-top:26px;flex-wrap:wrap">
+<div style="flex:1;min-width:420px">
+<div class="lbl" style="margin-bottom:9px">STANDINGS <span class="guide" style="margin-left:5px">GUIDE &middot; NEEDS P6</span></div>
+<div class="card" style="padding:14px 16px">
+<div style="font:650 13.5px/1.2 inherit;margin-bottom:3px">You are second, and the tiebreak is not with you.</div>
+<div class="note" style="margin-bottom:11px">Wexmoor holds the head-to-head. You need them to lose once, or to win out.</div>
+<table style="width:100%;border-collapse:collapse;font:400 12.5px/1 -apple-system,sans-serif">
+<tr class="lbl"><td style="padding:6px 0">#</td><td>PROGRAMME</td><td style="text-align:right">CONF</td><td style="text-align:right">ALL</td><td style="text-align:right">PF</td><td style="text-align:right">PA</td><td style="text-align:right">STREAK</td></tr>
+<tr style="border-top:1px solid rgba(255,255,255,.08)"><td class="num" style="padding:8px 0;color:#78839A">1</td><td style="display:flex;align-items:center;gap:7px"><span style="width:3px;height:15px;background:#7A1F2B;display:inline-block"></span>Wexmoor</td><td class="num" style="text-align:right">6&ndash;1</td><td class="num" style="text-align:right">8&ndash;1</td><td class="num" style="text-align:right;color:#78839A">294</td><td class="num" style="text-align:right;color:#78839A">171</td><td class="num" style="text-align:right;color:#57D98A">W4</td></tr>
+<tr style="border-top:1px solid rgba(255,255,255,.08);background:rgba(200,162,74,.07)"><td class="num" style="padding:8px 0;color:#C8A24A">2</td><td style="display:flex;align-items:center;gap:7px;font-weight:650"><span style="width:3px;height:15px;background:#C8A24A;display:inline-block"></span>Ashgrove</td><td class="num" style="text-align:right;font-weight:700">6&ndash;1</td><td class="num" style="text-align:right;font-weight:700">7&ndash;2</td><td class="num" style="text-align:right;color:#78839A">271</td><td class="num" style="text-align:right;color:#78839A">188</td><td class="num" style="text-align:right;color:#57D98A">W2</td></tr>
+<tr style="border-top:1px solid rgba(255,255,255,.08)"><td class="num" style="padding:8px 0;color:#78839A">3</td><td style="display:flex;align-items:center;gap:7px"><span style="width:3px;height:15px;background:#2E4A5C;display:inline-block"></span>Marlowe State</td><td class="num" style="text-align:right">4&ndash;3</td><td class="num" style="text-align:right">6&ndash;3</td><td class="num" style="text-align:right;color:#78839A">233</td><td class="num" style="text-align:right;color:#78839A">210</td><td class="num" style="text-align:right;color:#FF6B5A">L1</td></tr>
+<tr style="border-top:1px solid rgba(255,255,255,.08)"><td class="num" style="padding:8px 0;color:#78839A">4</td><td style="display:flex;align-items:center;gap:7px"><span style="width:3px;height:15px;background:#5A1E2E;display:inline-block"></span>Pellworth</td><td class="num" style="text-align:right">3&ndash;4</td><td class="num" style="text-align:right">4&ndash;5</td><td class="num" style="text-align:right;color:#78839A">198</td><td class="num" style="text-align:right;color:#78839A">241</td><td class="num" style="text-align:right;color:#FF6B5A">L2</td></tr>
+</table>
+<div class="note" style="margin-top:12px"><strong style="color:#F5F7FA">A table is a readout and gets a verdict too.</strong> A standings screen that shows six columns and leaves the player to work out the tiebreak is the wallpaper §6.0 found. The verdict states the position, the mechanism, and the one thing that changes it &mdash; and it is engine-generated, so it cannot go stale. Your row carries the team spine and a tinted background; every other row is neutral.</div>
+</div>
+</div>
+
+<div style="flex:1;min-width:380px">
+<div class="lbl" style="margin-bottom:9px">RIVALRY <span class="real" style="margin-left:5px">REAL &middot; Rivalry</span></div>
+<div class="card" style="padding:14px 16px">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:11px">
+  <div style="flex:1;height:4px;background:linear-gradient(90deg,#C8A24A 0 50%,#E4D5A8 50%)"></div>
+  <span class="num" style="font-size:11px;font-weight:700;letter-spacing:.16em;color:#F5F7FA">THE IRON BELL</span>
+  <div style="flex:1;height:4px;background:linear-gradient(90deg,#C8A24A 0 50%,#E4D5A8 50%)"></div>
+</div>
+<div style="display:flex;gap:12px;margin-bottom:12px">
+  <div style="flex:1;background:#1B2130;border-radius:9px;padding:10px 12px"><div class="lbl" style="font-size:9px;margin-bottom:4px">INTENSITY</div><div class="num" style="font-size:19px;font-weight:700;color:#FF6B5A">81</div></div>
+  <div style="flex:1;background:#1B2130;border-radius:9px;padding:10px 12px"><div class="lbl" style="font-size:9px;margin-bottom:4px">ORIGIN</div><div class="num" style="font-size:14px;font-weight:700;color:#F5F7FA">BOTH</div></div>
+  <div style="flex:1;background:#1B2130;border-radius:9px;padding:10px 12px"><div class="lbl" style="font-size:9px;margin-bottom:4px">MEETINGS</div><div class="num" style="font-size:19px;font-weight:700;color:#F5F7FA">94</div></div>
+</div>
+<div class="lbl" style="margin-bottom:7px">NOTABLE MEETINGS &middot; 12 KEPT, NEWEST FIRST</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+  <div style="display:flex;gap:9px;align-items:baseline"><span class="num" style="font-size:11px;font-weight:700;color:#78839A;width:34px">2025</span><span class="note" style="flex:1">Lost 20&ndash;17 after leading by ten with three minutes left.</span></div>
+  <div style="display:flex;gap:9px;align-items:baseline"><span class="num" style="font-size:11px;font-weight:700;color:#78839A;width:34px">2024</span><span class="note" style="flex:1">Won 31&ndash;28 in the snow; the bell stayed home.</span></div>
+  <div style="display:flex;gap:9px;align-items:baseline"><span class="num" style="font-size:11px;font-weight:700;color:#78839A;width:34px">2022</span><span class="note" style="flex:1">Their perfect season ended here, 14&ndash;13.</span></div>
+</div>
+<div class="note" style="margin-top:12px"><code class="mono">Rivalry</code> ships today with <code class="mono">origin</code> (geography 62, conference 54, both 74 as base intensity), a mutable <code class="mono">intensity</code>, and <code class="mono">notableMeetings</code> bounded at <strong style="color:#F5F7FA">12</strong> per <code class="mono">CLAUDE.md</code>'s growth rule. <strong style="color:#F5F7FA">Every field on this card is a real property of a shipped type</strong> — the subsystem has existed since P2 and no surface has ever displayed it.</div>
+</div>
+</div>
+</div>
+
+<div style="margin-top:44px;padding-top:22px;border-top:1px solid rgba(255,255,255,.12)">
+<div class="lbl" style="margin-bottom:10px">WHAT THIS GROUP SENDS BACK TO 04</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">§3 gains <code class="mono">MapCanvas</code></div><div class="note">A second canvas with its own clustering problem, its own lens model and an unresolved accessible form. It is not a <code class="mono">FieldCanvas</code> variant and pretending it is would inherit the wrong rules.</div></div>
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">§4 splits the League row</div><div class="note">Map, standings, schedule, rankings and news are five screens, not a comma list. §4 calls itself a budget and a budget that hides four screens in one cell is not counting.</div></div>
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#C6F24E;margin-bottom:5px">A table is a readout</div><div class="note">§4's verdict rule already says so, but standings is the surface most likely to be built as a bare grid. Name it explicitly or it ships as wallpaper.</div></div>
+<div class="card" style="padding:13px 15px"><div style="font:650 12.5px/1.3 inherit;color:#FFB026;margin-bottom:5px">Realignment is an event, not a state</div><div class="note">It happens once a season and changes the map. It wants the before/after and a named card, which means the League tab has a moment in it — and §1.5's "the game initiates" applies here too.</div></div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1960,&quot;height&quot;:1800}}"></script>
+</body>
+</html>

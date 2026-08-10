@@ -508,6 +508,46 @@ floor that `02` §11.3.5's machinery could already serve.
 
 ---
 
+### 2026-08-10 — the design reference library is complete
+
+Eight `*-v2.dc.html` groups at the repository root: Tokens, Components, Screens, FirstRun, Broadcast,
+Failure, League, Career, Squad, Offseason. **Untracked as canon — `04` is still the only home for the
+design system**, and every finding below was written into it.
+
+**Grounded where the code is real, marked GUIDE where it is not.** The references now match shipped
+types rather than inventing parallel ones: the game plan's four axes are `PlayCall`'s real
+`Tempo` / `Depth` / `Gap` enums; the aftermath enumerates `DriveEnding`'s nine cases including the
+zeroes; the refusal set is `RosterLegality.Violation`'s four cases; the map uses `GameMap`'s real
+1000 × 700 / 8-region geometry; the rivalry card uses `Rivalry`'s real `origin`, `intensity` and
+12-bounded `notableMeetings`. Surfaces needing P6–P9 are marked GUIDE and will be altered by the code
+that implements them. **This caught an error in my own first-run pass** — it invented three programme
+archetypes when `Archetype.all` has fourteen real ones; corrected to `Fallen blueblood`,
+`Rural stalwart` and `Mining-town grinder`.
+
+**`04` §4 grew from 13 rows to 30.** Three comma-list cells were hiding fourteen screens, in a table
+that calls itself a budget. Registry is **twenty** — `MapCanvas` joins `ScoreBug` and
+`StakeholderCard`.
+
+**The two findings worth carrying into the phases that build them:**
+
+1. **The draft and signing day are not list screens.** A countdown, events arriving whether the
+   player acts or not, a deadline, and a named coordinator proposal — that is the call-in loop with
+   different content. They take the broadcast register and reuse `ScoreBug` live and `CallInCard`.
+   P8 building a second timed interaction would get it worse the second time. **An expired draft
+   clock must auto-pick**; this is a commute game and a clock expiring into nothing soft-locks it.
+2. **`MapCanvas` has no accessible form.** 134 positions with no natural order is harder for
+   VoiceOver than the field's 22 named marks. Likely answer: the canvas is decorative and the verdict
+   panel carries the meaning. Unresolved, and P14 owns it.
+
+**Detector across all eight: 28 findings**, against 17 for v1's three files — but the composition
+changed. Nineteen are `side-tab`, and on inspection **all nineteen are load-bearing or false
+positives**: stakeholder rule colours identifying the speaker per §7, the roster depth spine encoding
+order, refusal severity, and four that are the championship frame's corner marks being read as side
+tabs. Two genuinely decorative stripes were found and removed. That distinction is stated rather than
+hidden, because v1 was criticised for the same rule.
+
+---
+
 ## Decisions made without owner input
 
 The owner was asked and did not answer, so these were decided during execution and are marked
