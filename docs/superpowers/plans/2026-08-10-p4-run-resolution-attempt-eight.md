@@ -44,6 +44,7 @@ Add this test inside `suite("Snap resolution")` in `Tests/SimTests/Suites/Engine
             var rng = SeededRandom(seed: 8_008)
             var yards = 0
             var explosive = 0
+            var ordinaryGains = 0
             let attempts = 12_000
             for attempt in 0..<attempts {
                 let outcome = SnapResolver.resolve(
@@ -59,13 +60,19 @@ Add this test inside `suite("Snap resolution")` in `Tests/SimTests/Suites/Engine
                 )
                 yards += outcome.yards
                 if outcome.yards >= MatchupRules.explosiveRunYards { explosive += 1 }
+                if (1..<MatchupRules.explosiveRunYards).contains(outcome.yards) {
+                    ordinaryGains += 1
+                }
             }
             let yardsPerCarry = Double(yards) / Double(attempts)
             let explosiveRate = Double(explosive) / Double(attempts)
+            let ordinaryGainRate = Double(ordinaryGains) / Double(attempts)
             expect((3.4...4.8).contains(yardsPerCarry),
                    "even rushing averaged \(yardsPerCarry) yards per carry")
             expect((0.05...0.09).contains(explosiveRate),
                    "even rushing produced an explosive rate of \(explosiveRate)")
+            expect(Double(ordinaryGains) / Double(attempts) >= 0.70,
+                   "even rushing produced an ordinary-gain rate of \(ordinaryGainRate)")
         }
 ```
 
@@ -144,7 +151,7 @@ Run:
 swift run -c release SimTests
 ```
 
-Expected: zero exit; the new run-shape test passes, all existing tests pass, and only the two pinned cross-process fingerprints fail if they have not yet been updated.
+Expected: non-zero exit; the new run-shape test passes and the only failures are the two pinned cross-process fingerprint assertions, which have not yet been updated.
 
 - [ ] **Step 6: Re-pin deterministic fingerprints as an explicit consequence of the accepted engine change**
 
