@@ -42,7 +42,14 @@ skipped the entire pre-snap charge, putting college at 142 plays per team-game a
 67–75; and field goal difficulty was `40 + distance`, making a routine 25-yarder a 65-rated
 opponent. None of those was a constant to nudge.
 
-**Six of 24 bands hold on the tuning ladder and five on the holdout.** That is the honest number
+**Five of 24 bands hold.** Six held before commit `a629e86`, which gave the run game a right tail
+and made it read `vision` — both required by `03` §1.1 and §1.2. The constants were tuned around the
+old run model, so the tuned point moved when the model did, and a worse-scoring correct model beats
+a better-scoring wrong one. **Attempt seven is a re-run of `scripts/tune-calibration.sh`**, whose
+search space now includes the two tail constants.
+
+The previous configuration's numbers, kept because the comparison is the useful part: **six on the
+tuning ladder and five on the holdout.** That is the honest number
 and it is not close to G5, which needs all of them.
 
 **Hand-tuning was replaced by a bounded coordinate search**, committed as
