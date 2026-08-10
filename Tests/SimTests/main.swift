@@ -8,5 +8,6 @@ runModelTests()
 runLegalTests()
 runGenerationTests()
 runIdentityDistributionTests()
+runEngineTests()
 
 TestKit.finish()
