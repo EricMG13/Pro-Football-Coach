@@ -264,6 +264,7 @@ the legal tests.
 | Practice squad | 16 | P8's cap-laundering defences apply here specifically |
 | Salary cap | 255,000,000 integer dollars, growing 7 percent a year | Integer dollars, never floating point |
 | Signing-bonus proration | over the contract's length, capped at 5 years | The mechanism dead money comes from |
+| Contract length | 1 to 7 years | An upper bound so a corrupt save cannot ask for an unbounded allocation. A contract of zero years carries no signing bonus |
 | Draft | 7 rounds of 32 picks, 224 total | |
 
 ### 11.3 Shared
@@ -276,6 +277,63 @@ the legal tests.
 | Coordinators | 4 | §6 |
 | Stakeholder groups | 4 | §7 |
 | Programme archetypes | 14 | §8 |
+| Rivalries carried per programme | 8, strongest first | §8's rivalry strength accumulates for a whole career, and `CLAUDE.md` requires every collection that grows across seasons to state a bound |
+
+### 11.3.1 The calendar both tiers share
+
+One save runs both leagues at once — the pro league exists and plays while the coach is still in
+college, because §9's promotion needs somewhere to be promoted *to*. They therefore share one week
+counter rather than each keeping their own.
+
+| Constant | Value |
+|---|---|
+| In-season weeks | 21, the longer of the two tiers |
+| College active | weeks 1 to 17 |
+| Pro active | weeks 1 to 21 |
+
+A deliberate simplification: real college and pro calendars overlap with an offset, and this one has
+them start together. Nothing in §2 or §3 reads the offset, and one counter is what keeps a save's
+calendar unambiguous.
+
+### 11.3.2 Decline ages
+
+`§5` says decline begins at position-specific ages and is visible before it is punishing. The ages:
+
+| Age | Positions | Why |
+|---|---|---|
+| 27 | Running back | Carries the most contact per snap of any skill position |
+| 29 | Cornerback, wide receiver, edge rusher | Live on top-end speed, which goes first |
+| 30 | Safety, linebacker, defensive tackle, tight end | Speed matters but leverage and recognition carry more of the job |
+| 31 | Every offensive line position | Technique and strength decline slowest of the contact positions |
+| 34 | Quarterback | The job is decision and accuracy, and neither is a young attribute |
+| 36 | Kicker, punter | Barely a contact position |
+
+### 11.3.3 Traits
+
+`§5` requires every trait to have mechanical bite in a specific system. Eight, each naming its
+system, and a trait may not be added without one:
+
+| Trait | System | Effect |
+|---|---|---|
+| Ironman | Injury | Recovers faster, misses fewer weeks |
+| Workhorse | Development | Develops faster from practice allocation |
+| Ice in veins | Match resolution | Performs above rating in the fourth quarter and the bracket |
+| Front runner | Match resolution | Performs below rating on the road and in hostile venues |
+| Mentor | Development | Raises development of younger players at the same position |
+| Restless | Retention | Interest decays faster on a loss; enters the portal more readily |
+| Adaptable | Scheme fit | Fits a new scheme faster after a change |
+| Volatile | Discipline | Draws more penalties and more discipline events |
+
+### 11.3.4 Schemes
+
+`§6` makes scheme identity the spine, so the roster's fit to it modifies every matchup. Six each
+side, and every one names the attributes a fit score reads — a scheme that emphasised nothing would
+be a label, which §6 explicitly is not.
+
+**Offensive:** pro style, air raid, spread option, west coast, power run, run and shoot.
+**Defensive:** four-three, three-four, nickel base, bear front, two deep, press man.
+
+The attribute sets each emphasises live in the rules module with the schemes.
 
 ### 11.4 What is deliberately not fixed here
 

@@ -43,20 +43,14 @@ public enum Position: String, Codable, Sendable, CaseIterable, Hashable {
         }
     }
 
-    /// The age at which decline begins for this position.
+    /// The age at which decline begins for this position, from `02` section 11.3.2.
     ///
-    /// `02` section 5: decline begins at position-specific ages and is visible before it is
-    /// punishing. Positions that live on speed decline earliest; those that live on technique and
-    /// awareness decline latest.
+    /// The numbers live in `SharedRules.declineAgeByPosition`, not here. They are design constants
+    /// and `03b` section 6 says design constants live in a rules module; a `switch` in the model
+    /// was fifteen magic numbers wearing a computed property's clothes. `RulesTests` asserts the
+    /// table is total, so the fallback below is unreachable rather than a silent default.
     public var declineAge: Int {
-        switch self {
-        case .runningBack: return 27
-        case .cornerback, .wideReceiver, .edgeRusher: return 29
-        case .safety, .linebacker, .defensiveTackle, .tightEnd: return 30
-        case .leftTackle, .guardPosition, .center, .rightTackle: return 31
-        case .quarterback: return 34
-        case .kicker, .punter: return 36
-        }
+        SharedRules.declineAgeByPosition[self] ?? SharedRules.declineAgeFallback
     }
 
     /// The attributes this position's matchups read, from `03-MATCH-ENGINE.md` section 1.2 plus the
@@ -82,12 +76,19 @@ public enum Position: String, Codable, Sendable, CaseIterable, Hashable {
             return [.routeRunning, .release, .hands, .runBlock, .passBlock]
         case .leftTackle, .guardPosition, .center, .rightTackle:
             return [.passBlock, .runBlock]
+        // The defensive front rates blockLeverage because 03 section 1.2's Kick row names it as the
+        // *defender's* attribute in a kick-block matchup, and these are the players who rush one.
+        // It was declared and rated by nobody, so it read the floor for every player alive and P3's
+        // kick-block matchup would have been a constant.
         case .edgeRusher:
-            return [.passRush, .finesse, .power, .motor, .runDefence, .shed, .tackling, .pursuit]
+            return [.passRush, .finesse, .power, .motor, .runDefence, .shed, .gapDiscipline,
+                    .tackling, .pursuit, .blockLeverage]
         case .defensiveTackle:
-            return [.passRush, .power, .motor, .runDefence, .shed, .gapDiscipline, .tackling]
+            return [.passRush, .finesse, .power, .motor, .runDefence, .shed, .gapDiscipline,
+                    .tackling, .pursuit, .blockLeverage]
         case .linebacker:
-            return [.coverage, .runDefence, .shed, .gapDiscipline, .tackling, .pursuit, .passRush]
+            return [.coverage, .runDefence, .shed, .gapDiscipline, .tackling, .pursuit,
+                    .passRush, .finesse, .power, .motor]
         case .cornerback:
             return [.coverage, .release, .tackling, .pursuit, .hands]
         case .safety:

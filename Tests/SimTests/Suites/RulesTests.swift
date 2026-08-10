@@ -24,6 +24,45 @@ func runRulesTests() {
             expectEqual(SharedRules.stakeholderGroupCount, 4)
             expectEqual(SharedRules.programmeArchetypeCount, 14)
         }
+
+        test("the rivalry bound is 8") {
+            expectEqual(SharedRules.rivalriesPerProgramme, 8)
+        }
+
+        test("the shared calendar is 21 weeks and holds the longer tier exactly") {
+            // 02 section 11.3.1. Both leagues run in one save on one week counter, so the shared
+            // calendar has to be the longer of the two — not more, or there are dead weeks; not
+            // less, or the pro bracket has nowhere to happen.
+            expectEqual(SharedRules.inSeasonWeeks, 21)
+            expectEqual(SharedRules.inSeasonWeeks,
+                        Swift.max(CollegeRules.seasonWeeks, ProRules.seasonWeeks))
+        }
+
+        test("the decline-age table covers every position exactly once") {
+            // Total by construction. A position added without a decline age fails here rather than
+            // silently taking the fallback, which is the difference between a table and a default.
+            expectEqual(SharedRules.declineAgeByPosition.count, Position.allCases.count)
+            for position in Position.allCases {
+                expect(SharedRules.declineAgeByPosition[position] != nil,
+                       "\(position) has no decline age")
+            }
+        }
+
+        test("decline ages are ordered the way 02 section 11.3.2 argues") {
+            // Not just present, but in the relationship the canon table's reasoning claims: the
+            // positions that live on top-end speed decline before the ones that live on technique,
+            // and both before the ones that barely take contact.
+            let age = { (position: Position) in SharedRules.declineAgeByPosition[position]! }
+            expect(age(.runningBack) < age(.cornerback), "a back should decline before a corner")
+            expect(age(.cornerback) < age(.leftTackle), "a corner should decline before a tackle")
+            expect(age(.leftTackle) < age(.quarterback),
+                   "a tackle should decline before a quarterback")
+            expect(age(.quarterback) < age(.kicker), "a quarterback should decline before a kicker")
+            for position in Position.allCases {
+                expect(age(position) >= SharedRules.declineAgeFallback,
+                       "\(position) declines before the fallback, so the fallback is not the floor")
+            }
+        }
     }
 
     suite("College rules") {
@@ -167,6 +206,20 @@ func runRulesTests() {
 
         test("signing-bonus proration is capped at five years") {
             expectEqual(ProRules.maximumProrationYears, 5)
+        }
+
+        test("contract length is bounded at both ends") {
+            expectEqual(ProRules.contractYearsRange, 1...7)
+            expect(ProRules.contractYearsRange.upperBound >= ProRules.maximumProrationYears,
+                   "a contract cannot be shorter than the proration window it is capped at")
+        }
+
+        test("the cap does not trap on a season before the base") {
+            // Rating sets the project's policy for a value that can arrive from a corrupt save:
+            // clamp, never trap. season arrives from disk, so a precondition here turns a bad save
+            // into a crash on the cap screen.
+            expectEqual(ProRules.salaryCap(seasonsAfterBase: -1), ProRules.baseSalaryCap)
+            expectEqual(ProRules.salaryCap(seasonsAfterBase: Int.min), ProRules.baseSalaryCap)
         }
 
         test("the draft is 7 rounds of 32") {

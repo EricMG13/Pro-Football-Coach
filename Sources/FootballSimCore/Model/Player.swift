@@ -23,7 +23,17 @@ public struct Player: Codable, Sendable, Equatable, Identifiable {
     /// (`02` section 5). The model stores the truth; the fog is the reader's business.
     public var potential: Rating
 
-    public var traits: Set<Trait>
+    /// An array, deliberately, and kept in `Trait.allCases` order.
+    ///
+    /// This was a `Set<Trait>` and that was a cross-process determinism bug. `Set` encodes to an
+    /// *unkeyed* container in iteration order; `JSONEncoder.stable()`'s `.sortedKeys` orders object
+    /// keys and does nothing to array elements; and Swift's hash seed is per-launch. So one player
+    /// with two traits produced different save bytes every launch, on the most-instantiated type in
+    /// the save. Nothing could see it: `Set` equality is order-independent, so a round-trip test
+    /// passes, and within one process the order is constant, so a repeat-encode test passes too.
+    ///
+    /// `ContractTests` now bans `Set<` as a stored property in `Model/` so this cannot come back.
+    public private(set) var traits: [Trait]
 
     /// College only.
     public var eligibility: Eligibility?
@@ -39,7 +49,7 @@ public struct Player: Codable, Sendable, Equatable, Identifiable {
         age: Int,
         attributes: Attributes,
         potential: Rating,
-        traits: Set<Trait> = [],
+        traits: [Trait] = [],
         eligibility: Eligibility? = nil,
         contract: Contract? = nil
     ) {
@@ -50,14 +60,47 @@ public struct Player: Codable, Sendable, Equatable, Identifiable {
         self.age = age
         self.attributes = attributes
         self.potential = potential
-        self.traits = traits
+        self.traits = Player.canonicalised(traits)
         self.eligibility = eligibility
         self.contract = contract
     }
 
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            id: try container.decode(UUID.self, forKey: .id),
+            firstName: try container.decode(String.self, forKey: .firstName),
+            lastName: try container.decode(String.self, forKey: .lastName),
+            position: try container.decode(Position.self, forKey: .position),
+            age: try container.decode(Int.self, forKey: .age),
+            attributes: try container.decode(Attributes.self, forKey: .attributes),
+            potential: try container.decode(Rating.self, forKey: .potential),
+            traits: try container.decode([Trait].self, forKey: .traits),
+            eligibility: try container.decodeIfPresent(Eligibility.self, forKey: .eligibility),
+            contract: try container.decodeIfPresent(Contract.self, forKey: .contract)
+        )
+    }
+
+    /// Deduplicated and put in a fixed order, so the encoded bytes are the same whatever order the
+    /// caller supplied. Routing the decoder through the same initialiser means a save written
+    /// before this rule existed is canonicalised on load rather than carried forward.
+    private static func canonicalised(_ traits: [Trait]) -> [Trait] {
+        Trait.allCases.filter(traits.contains)
+    }
+
+    public func has(_ trait: Trait) -> Bool { traits.contains(trait) }
+
+    public mutating func add(_ trait: Trait) {
+        traits = Player.canonicalised(traits + [trait])
+    }
+
+    public mutating func remove(_ trait: Trait) {
+        traits.removeAll { $0 == trait }
+    }
+
     public var fullName: String { "\(firstName) \(lastName)" }
 
-    /// Whether age has passed this position's decline threshold (`02` section 5).
+    /// Whether age has passed this position's decline threshold (`02` section 11.3.2).
     public var isDeclining: Bool { age >= position.declineAge }
 
     /// The mean of the attributes this position's matchups actually read.

@@ -87,27 +87,261 @@ func runModelTests() {
                    "coach ratings are not keyed by name: \(json)")
         }
 
-        test("every attribute the 03 matchup table names exists") {
-            // 03 section 1.2 is the contract between 02's ratings model and the engine. Enumerated
-            // by construction: this fails the day the engine reads an attribute the model lacks,
-            // rather than the day someone remembers to check.
+        test("every attribute is rated by at least one position") {
+            // The previous version of this test iterated a hand-written list and asserted
+            // Attribute.allCases.contains(each) — which cannot be false, because every value of the
+            // type is in allCases. It was a tautology over a list someone remembered, and it is why
+            // blockLeverage shipped declared, never rated, reading the floor for every player alive
+            // and turning P3's kick-block matchup into a constant.
+            //
+            // This version enumerates by construction. An attribute no position rates is dead
+            // capability, which 08-OPUS5-BUILD-PROMPT.md names as this project's first failure mode.
+            var rated: Set<Attribute> = []
+            for position in Position.allCases { rated.formUnion(position.ratedAttributes) }
+            let orphaned = Attribute.allCases.filter { !rated.contains($0) }
+            expect(orphaned.isEmpty,
+                   "these attributes are declared and rated by no position, so they read the floor "
+                       + "forever: " + orphaned.map(\.rawValue).sorted().joined(separator: ", "))
+        }
+
+        test("every attribute has a label") {
             for attribute in Attribute.allCases {
                 expect(!attribute.label.isEmpty, "\(attribute) has no label")
             }
-            let required: [Attribute] = [
-                .passBlock, .runBlock, .strength, .awareness,
-                .passRush, .finesse, .power, .motor,
-                .routeRunning, .speed, .release, .hands,
-                .coverage, .agility,
-                .accuracyShort, .accuracyMid, .accuracyDeep, .armStrength, .decision, .poise,
-                .schemeFit, .runDefence, .shed, .gapDiscipline,
-                .vision, .elusiveness, .tackling, .pursuit,
-                .legStrength, .kickAccuracy, .blockLeverage,
-                .durability, .temperament, .workEthic, .clutch,
-            ]
-            for attribute in required {
-                expect(Attribute.allCases.contains(attribute), "\(attribute) is missing")
+        }
+
+        test("writing the floor does not turn an unset attribute into a stored one") {
+            // What a development tick that produced no change looks like. Storing it would make two
+            // players that read identically compare unequal and encode differently, failing a
+            // state-equality check and growing the save for nothing.
+            var attributes = Attributes()
+            attributes[.speed] = attributes[.speed]
+            expectEqual(attributes, Attributes())
+            expectEqual(String(decoding: try JSONEncoder.stable().encode(attributes), as: UTF8.self),
+                        "{\"values\":{}}")
+        }
+    }
+
+    suite("Position") {
+        test("every position has a unit, a group and a decline age") {
+            for position in Position.allCases {
+                expect(SharedRules.declineAgeByPosition[position] != nil,
+                       "\(position) has no decline age in the rules table")
+                expectEqual(position.declineAge, SharedRules.declineAgeByPosition[position]!)
+                expect(!position.ratedAttributes.isEmpty, "\(position) rates no attributes")
             }
+        }
+
+        test("every position rates the attributes shared across all of them") {
+            for position in Position.allCases {
+                for shared in [Attribute.speed, .strength, .agility, .durability, .awareness,
+                               .schemeFit, .temperament, .workEthic, .clutch] {
+                    expect(position.ratedAttributes.contains(shared),
+                           "\(position) does not rate \(shared.rawValue)")
+                }
+            }
+        }
+
+        test("units partition the positions") {
+            let byUnit = Dictionary(grouping: Position.allCases, by: \.unit)
+            expectEqual(byUnit.values.reduce(0) { $0 + $1.count }, Position.allCases.count)
+            for unit in Unit.allCases {
+                expect(!(byUnit[unit] ?? []).isEmpty, "\(unit) has no positions")
+            }
+        }
+
+        test("a player past the decline age is declining, and one before it is not") {
+            func player(age: Int, at position: Position) -> Player {
+                Player(firstName: "A", lastName: "B", position: position, age: age,
+                       attributes: Attributes(), potential: Rating(70))
+            }
+            expect(player(age: 27, at: .runningBack).isDeclining, "a 27-year-old back is declining")
+            expect(!player(age: 26, at: .runningBack).isDeclining, "a 26-year-old back is not")
+            expect(!player(age: 33, at: .quarterback).isDeclining,
+                   "a 33-year-old quarterback is not declining")
+        }
+    }
+
+    suite("Player") {
+        test("overall averages only the attributes the position reads, and stays in range") {
+            // A quarterback rated on their coverage would be a nonsense number on every readout.
+            // Swept across every position at both extremes: the result must never leave 40 to 99
+            // and must never divide by zero.
+            for position in Position.allCases {
+                let floor = Player(firstName: "A", lastName: "B", position: position, age: 24,
+                                   attributes: Attributes(), potential: Rating(70))
+                expectEqual(floor.overall.value, SharedRules.ratingRange.lowerBound)
+
+                var maxed = Attributes()
+                for attribute in Attribute.allCases { maxed[attribute] = Rating(99) }
+                let ceiling = Player(firstName: "A", lastName: "B", position: position, age: 24,
+                                     attributes: maxed, potential: Rating(70))
+                expectEqual(ceiling.overall.value, SharedRules.ratingRange.upperBound)
+            }
+        }
+
+        test("traits are stored in a fixed order whatever order they arrive in") {
+            // The determinism fix. Set<Trait> encoded in per-launch order; an array in allCases
+            // order encodes the same bytes every time.
+            let one = Player(firstName: "A", lastName: "B", position: .safety, age: 24,
+                             attributes: Attributes(), potential: Rating(70),
+                             traits: [.volatile, .ironman, .mentor])
+            let other = Player(id: one.id, firstName: "A", lastName: "B", position: .safety, age: 24,
+                               attributes: Attributes(), potential: Rating(70),
+                               traits: [.mentor, .volatile, .ironman])
+            expectEqual(one.traits, other.traits)
+            expectEqual(try SaveEnvelope.encode(one), try SaveEnvelope.encode(other),
+                        "trait order changed the save bytes")
+            expectEqual(one.traits, Trait.allCases.filter(one.traits.contains),
+                        "traits are not in allCases order")
+        }
+
+        test("a duplicate trait is not stored twice") {
+            let player = Player(firstName: "A", lastName: "B", position: .safety, age: 24,
+                                attributes: Attributes(), potential: Rating(70),
+                                traits: [.ironman, .ironman])
+            expectEqual(player.traits.count, 1)
+        }
+
+        test("adding and removing a trait keeps the order and the uniqueness") {
+            var player = Player(firstName: "A", lastName: "B", position: .safety, age: 24,
+                                attributes: Attributes(), potential: Rating(70), traits: [.volatile])
+            player.add(.ironman)
+            expectEqual(player.traits, [.ironman, .volatile], "add did not canonicalise the order")
+            player.add(.ironman)
+            expectEqual(player.traits.count, 2, "add stored a duplicate")
+            expect(player.has(.ironman), "has() does not see an added trait")
+            player.remove(.ironman)
+            expectEqual(player.traits, [.volatile])
+        }
+
+        test("a save written with traits in another order is canonicalised on load") {
+            // The decoder routes through the initialiser, so a save from before the rule existed
+            // comes back in order rather than carrying the old order forward.
+            let player = Player(firstName: "A", lastName: "B", position: .safety, age: 24,
+                                attributes: Attributes(), potential: Rating(70),
+                                traits: [.volatile, .ironman])
+            let restored = try SaveEnvelope.decode(Player.self,
+                                                   from: try SaveEnvelope.encode(player))
+            expectEqual(restored.traits, [.ironman, .volatile])
+        }
+    }
+
+    suite("Traits and schemes") {
+        test("every trait names a system it bites in") {
+            // 02 section 5: traits have mechanical bite "never as flavour". A trait whose system is
+            // not in TraitSystem does not compile, and this asserts the mapping is total.
+            for trait in Trait.allCases {
+                expect(TraitSystem.allCases.contains(trait.bitesIn),
+                       "\(trait) bites in a system that does not exist")
+                expect(!trait.label.isEmpty, "\(trait) has no label")
+            }
+        }
+
+        test("every scheme emphasises something") {
+            // 02 section 6: a scheme that emphasised nothing would be a label, which section 6
+            // explicitly says scheme identity is not.
+            for scheme in OffensiveScheme.allCases {
+                expect(!scheme.emphasises.isEmpty, "\(scheme) emphasises nothing")
+                expect(!scheme.label.isEmpty, "\(scheme) has no label")
+            }
+            for scheme in DefensiveScheme.allCases {
+                expect(!scheme.emphasises.isEmpty, "\(scheme) emphasises nothing")
+                expect(!scheme.label.isEmpty, "\(scheme) has no label")
+            }
+        }
+
+        test("no two schemes on a side emphasise the same set") {
+            // Two identical schemes are one scheme with two names, and 02 section 6 makes changing
+            // scheme expensive on the premise that it means something.
+            expectEqual(Set(OffensiveScheme.allCases.map(\.emphasises)).count,
+                        OffensiveScheme.allCases.count, "two offensive schemes are identical")
+            expectEqual(Set(DefensiveScheme.allCases.map(\.emphasises)).count,
+                        DefensiveScheme.allCases.count, "two defensive schemes are identical")
+        }
+
+        test("scheme identity reads the right side of the ball for a position") {
+            let identity = SchemeIdentity(offense: .airRaid, defense: .pressMan)
+            expectEqual(identity.emphasised(for: .quarterback), OffensiveScheme.airRaid.emphasises)
+            expectEqual(identity.emphasised(for: .cornerback), DefensiveScheme.pressMan.emphasises)
+            expect(identity.emphasised(for: .kicker).isEmpty,
+                   "a specialist inherited a scheme emphasis")
+        }
+    }
+
+    suite("Staff and league") {
+        test("the coordinator roles match the count shared rules states") {
+            expectEqual(StaffRole.coordinators.count, SharedRules.coordinatorCount)
+            for role in StaffRole.coordinators {
+                expect(StaffRole.allCases.contains(role), "\(role) is not a staff role")
+            }
+        }
+
+        test("an unrated coach attribute reads at the floor, not zero") {
+            let coach = Staff(firstName: "R", lastName: "O", role: .headCoach,
+                              ratings: [.development: Rating(80)])
+            expectEqual(coach.rating(.development).value, 80)
+            expectEqual(coach.rating(.recruiting).value, SharedRules.ratingRange.lowerBound)
+        }
+
+        test("a tier knows its own season length and size") {
+            expectEqual(Tier.college.seasonWeeks, CollegeRules.seasonWeeks)
+            expectEqual(Tier.pro.seasonWeeks, ProRules.seasonWeeks)
+            expectEqual(Tier.college.memberCount, CollegeRules.programmeCount)
+            expectEqual(Tier.pro.memberCount, ProRules.teamCount)
+        }
+
+        test("both tiers fit inside the shared in-season calendar") {
+            // 02 section 11.3.1: one save runs both leagues on one week counter, so neither tier
+            // may run past it.
+            for tier in Tier.allCases {
+                expect(tier.seasonWeeks <= SharedRules.inSeasonWeeks,
+                       "\(tier) runs \(tier.seasonWeeks) weeks, past the shared calendar's "
+                           + "\(SharedRules.inSeasonWeeks)")
+            }
+        }
+
+        test("league seeds derive from the root rather than being stored") {
+            let league = League(seed: 1234, season: 2)
+            expectEqual(league.seasonSeed,
+                        SeededRandom.derive(from: 1234, scope: .season, ordinal: 2))
+            expectEqual(league.weekSeed(5),
+                        SeededRandom.derive(from: league.seasonSeed, scope: .week, ordinal: 5))
+            expect(league.weekSeed(5) != league.weekSeed(6), "two weeks share a seed")
+        }
+    }
+
+    suite("Rivalry bound") {
+        test("a programme truncates rivalries on construction, on append and on load") {
+            // A bound applied only in the memberwise initialiser is not a bound: appending and
+            // decoding are the two paths that actually accumulate rivalries across a career, and
+            // both bypassed it. Fifty-eight rivals round-tripped through the envelope before this.
+            let many = (0..<50).map { index in
+                UUID(uuidString: String(format: "00000000-0000-4000-8000-%012X", index))!
+            }
+            var programme = Programme(name: "N", nickname: "K", cityName: "C", archetypeID: 1,
+                                      scheme: SchemeIdentity(offense: .proStyle, defense: .fourThree),
+                                      prestige: Rating(70), rivalIDs: many)
+            expectEqual(programme.rivalIDs.count, SharedRules.rivalriesPerProgramme)
+
+            for id in many { programme.addRival(id) }
+            expectEqual(programme.rivalIDs.count, SharedRules.rivalriesPerProgramme,
+                        "addRival grew the list past its bound")
+
+            let restored = try SaveEnvelope.decode(Programme.self,
+                                                   from: try SaveEnvelope.encode(programme))
+            expectEqual(restored.rivalIDs.count, SharedRules.rivalriesPerProgramme)
+            expectEqual(restored, programme)
+        }
+
+        test("adding the same rival twice does not consume two slots") {
+            var programme = Programme(name: "N", nickname: "K", cityName: "C", archetypeID: 1,
+                                      scheme: SchemeIdentity(offense: .proStyle, defense: .fourThree),
+                                      prestige: Rating(70))
+            let rival = UUID(uuidString: "00000000-0000-4000-8000-0000000000AB")!
+            programme.addRival(rival)
+            programme.addRival(rival)
+            expectEqual(programme.rivalIDs.count, 1)
         }
     }
 
@@ -231,6 +465,42 @@ func runModelTests() {
             let deal = Contract(years: 2, baseSalaryByYear: [1_000_000, 1_000_000], signingBonus: 0)
             expectEqual(deal.deadMoney(ifReleasedBeforeYear: 0), 0)
             expectEqual(deal.capHit(inYear: 0), 1_000_000)
+        }
+
+        test("an absurd year count from a save clamps rather than crashing the process") {
+            // years is unbounded above until it is bounded: Int.max asked for an unbounded array
+            // allocation and took the process down with SIGTRAP on load.
+            let huge = Contract(years: Int.max, baseSalaryByYear: [], signingBonus: 0)
+            expectEqual(huge.years, ProRules.contractYearsRange.upperBound)
+            expectEqual(huge.baseSalaryByYear.count, ProRules.contractYearsRange.upperBound)
+
+            let decoded = try SaveEnvelope.decode(
+                Contract.self,
+                from: try SaveEnvelope.encode(Contract(years: 3,
+                                                       baseSalaryByYear: [1, 2, 3],
+                                                       signingBonus: 9))
+            )
+            expectEqual(decoded.years, 3)
+        }
+
+        test("a negative base salary cannot invent cap space") {
+            // signingBonus was clamped and baseSalaryByYear was not, two lines apart. A negative
+            // base gives a negative cap hit, which is 100 million dollars of cap room conjured out
+            // of a hand-edited save.
+            let deal = Contract(years: 2, baseSalaryByYear: [-100_000_000, 1_000_000],
+                                signingBonus: 0)
+            expectEqual(deal.capHit(inYear: 0), 0)
+            expect(deal.totalValue >= 0, "a contract is worth a negative number of dollars")
+        }
+
+        test("a contract of no years carries no bonus") {
+            // Otherwise the bonus is paid, charged against no year at all, and reported as dead
+            // money at every release point forever — the same shape as a bonus that never
+            // amortises, which is the laundering this file exists to prevent.
+            let deal = Contract(years: 0, baseSalaryByYear: [], signingBonus: 30_000_000)
+            expectEqual(deal.signingBonus, 0)
+            expectEqual(deal.deadMoney(ifReleasedBeforeYear: 0), 0)
+            expectEqual(deal.totalValue, 0)
         }
     }
 

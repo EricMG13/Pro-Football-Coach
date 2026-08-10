@@ -257,39 +257,121 @@ private func caught(_ source: String, by predicate: (String) -> Bool) -> Bool {
 /// Key types Swift already encodes as a JSON object without help.
 private let inherentlyKeyableTypes: Set<String> = ["String", "Int", "UUID"]
 
-/// Every dictionary key type named in a `[Key: Value]` annotation in `text`.
+/// Every dictionary key type named in `text`, in either spelling Swift accepts.
 ///
-/// ponytail: matches the annotation syntax the model actually uses — `[Key: Value]` with a single
-/// capitalised identifier before the colon. A key that is itself generic or nested arrives as its
-/// outer name, which is the conservative direction: it gets checked rather than skipped.
+/// Both forms, because the sugar-only version shipped and a planted `Dictionary<ProbeKey, Int>`
+/// walked straight past it:
+///
+///     [Key: Value]            the sugar
+///     Dictionary<Key, Value>  the generic spelling
+///
+/// ponytail: a key that is itself generic or nested arrives as its outer name, which is the
+/// conservative direction — it gets checked rather than skipped. The one spelling neither form
+/// catches is a dictionary declared with no type annotation at all; `stored properties carry a
+/// type annotation` below is the rule that closes it.
 func dictionaryKeyTypes(in text: String) -> Set<String> {
     var found: Set<String> = []
     for line in codeLines(of: text) {
-        var characters = Array(line)
+        let characters = Array(line)
         var index = 0
         while index < characters.count {
-            guard characters[index] == "[" else { index += 1; continue }
-            var cursor = index + 1
-            while cursor < characters.count, characters[cursor] == " " { cursor += 1 }
-            var name = ""
-            while cursor < characters.count,
-                  characters[cursor].isLetter || characters[cursor].isNumber
-                    || characters[cursor] == "_" {
-                name.append(characters[cursor])
-                cursor += 1
-            }
-            // A dictionary annotation is "[Name:", with nothing between the name and the colon but
-            // spaces. "[Name]" is an array and "[a: b]" is a literal with a lowercase key.
-            while cursor < characters.count, characters[cursor] == " " { cursor += 1 }
-            if cursor < characters.count, characters[cursor] == ":",
-               let initial = name.first, initial.isUppercase {
-                found.insert(name)
+            if characters[index] == "[" {
+                var cursor = index + 1
+                while cursor < characters.count, characters[cursor] == " " { cursor += 1 }
+                var name = ""
+                while cursor < characters.count, isIdentifierCharacter(characters[cursor]) {
+                    name.append(characters[cursor])
+                    cursor += 1
+                }
+                // A dictionary annotation is "[Name:", with nothing between the name and the colon
+                // but spaces. "[Name]" is an array and "[a: b]" is a literal with a lowercase key.
+                while cursor < characters.count, characters[cursor] == " " { cursor += 1 }
+                if cursor < characters.count, characters[cursor] == ":",
+                   name.first?.isUppercase == true {
+                    found.insert(name)
+                }
             }
             index += 1
         }
-        _ = characters
+        if let key = genericKeyType(in: line, after: "Dictionary<") { found.insert(key) }
     }
     return found
+}
+
+/// Every `Set<Element>` element type named in `text`.
+///
+/// `Set` encodes to an *unkeyed* container in iteration order, and `.sortedKeys` orders object keys
+/// rather than array elements — so a `Set` in a `Codable` model is the same per-launch churn a
+/// hash-ordered dictionary is, on a shape the dictionary scan cannot see. P1 shipped exactly that
+/// on `Player.traits`.
+/// Only *stored* properties. A computed property that returns a `Set` is never encoded — the first
+/// version of this scan flagged `OffensiveScheme.emphasises`, which is a lookup table, not a save
+/// field. A gate that fails on correct code gets weakened rather than obeyed.
+func setElementTypes(in text: String) -> Set<String> {
+    var found: Set<String> = []
+    for line in codeLines(of: text) where storedPropertyDeclaration(in: line) != nil {
+        if let element = genericKeyType(in: line, after: "Set<") { found.insert(element) }
+    }
+    return found
+}
+
+/// The part of `line` after `var`/`let` and its name, if `line` declares a **stored property of a
+/// type** — not a local binding, and not a computed property.
+///
+/// Two discriminators, both textual, because the alternative is parsing Swift:
+///
+/// - **Indentation of four spaces or less.** A type's own members sit one level in; a binding
+///   inside a function body sits at eight or more. The first version of this scan had no such
+///   check and reported eleven `let container = try decoder...` locals as offenders.
+/// - **No `{` after the declaration.** That is a computed property or an observer.
+///
+/// ponytail: a stored property of a *nested* type sits at eight spaces and is therefore skipped.
+/// The model has no nested stored properties today. If one appears, this misses it — a false
+/// negative, which is the direction that does not break a correct build.
+private func storedPropertyDeclaration(in line: String) -> Substring? {
+    let indent = line.prefix(while: { $0 == " " }).count
+    guard indent <= 4 else { return nil }
+    var rest = Substring(line.trimmingCharacters(in: .whitespaces))
+    for modifier in ["public ", "internal ", "private ", "fileprivate ", "private(set) ",
+                     "public private(set) ", "static ", "public static ", "lazy "]
+    where rest.hasPrefix(modifier) {
+        rest = rest.dropFirst(modifier.count)
+    }
+    guard rest.hasPrefix("var ") || rest.hasPrefix("let ") else { return nil }
+    guard !rest.contains("{") else { return nil }
+    let declaration = rest.dropFirst(4)
+    let name = declaration.prefix(while: isIdentifierCharacter)
+    guard !name.isEmpty else { return nil }
+    return declaration[name.endIndex...].drop(while: { $0 == " " })
+}
+
+private func isIdentifierCharacter(_ character: Character) -> Bool {
+    character.isLetter || character.isNumber || character == "_"
+}
+
+/// The first type argument following `marker`, if the line contains it.
+private func genericKeyType(in line: String, after marker: String) -> String? {
+    guard let range = line.range(of: marker) else { return nil }
+    let rest = line[range.upperBound...].drop(while: { $0 == " " })
+    let name = String(rest.prefix(while: isIdentifierCharacter))
+    return name.first?.isUppercase == true ? name : nil
+}
+
+/// Stored-property declarations in `text` that carry no explicit type annotation.
+///
+/// The inferred-literal case the two scans above cannot see: `var m = [SomeKey.a: 1]` declares a
+/// dictionary with no annotation anywhere for a scan to read. Rather than parse Swift, `Model/`
+/// carries the rule that a stored property is annotated — which is good practice for a type that
+/// defines a save format anyway, and makes the other two scans total over that directory.
+func unannotatedStoredProperties(in text: String) -> [Int] {
+    var offenders: [Int] = []
+    for (index, line) in codeLines(of: text).enumerated() {
+        guard let afterName = storedPropertyDeclaration(in: line) else { continue }
+        // An annotated declaration reads "name: Type". Anything else that assigns is inferred.
+        if afterName.hasPrefix(":") { continue }
+        if afterName.hasPrefix("=") { offenders.append(index + 1) }
+    }
+    return offenders
 }
 
 /// Every type given a `CodingKeyRepresentable` conformance anywhere in the engine.
@@ -513,9 +595,13 @@ func runContractTests() {
             )
         }
 
-        test("the dictionary-key scan catches an unconformed key and spares a conformed one") {
+        test("the dictionary-key scan sees both spellings Swift accepts") {
             expect(dictionaryKeyTypes(in: "var m: [Attribute: Rating] = [:]\n").contains("Attribute"),
                    "a planted dictionary annotation was not seen")
+            expect(dictionaryKeyTypes(in: "var m: Dictionary<ProbeKey, Int> = [:]\n")
+                       .contains("ProbeKey"),
+                   "the generic Dictionary<> spelling was not seen — this exact plant walked past "
+                       + "the first version of this scan")
             expect(dictionaryKeyTypes(in: "var m: [String: Int]\n").contains("String"),
                    "a String-keyed annotation was not seen")
             expect(!dictionaryKeyTypes(in: "var ids: [UUID]\n").contains("UUID"),
@@ -524,6 +610,77 @@ func runContractTests() {
                    "a lowercase literal key was mistaken for a type")
             expect(!dictionaryKeyTypes(in: "// [Attribute: Rating] in prose\n").contains("Attribute"),
                    "a dictionary mentioned only in a comment was reported")
+        }
+
+        test("no model type stores a Set, whose encoded order is salted per launch") {
+            // Set encodes to an UNKEYED container in iteration order. .sortedKeys orders object
+            // keys and does nothing to array elements, and Swift's hash seed is per-launch, so a
+            // Set in a saved type produces different bytes every launch. P1 shipped this on
+            // Player.traits — two traits was enough — and nothing could see it: Set equality is
+            // order-independent so a round-trip test passes, and within one process the order is
+            // constant so a repeat-encode test passes too.
+            //
+            // The fix is an array in a fixed order. The ban is on Model/ only: Engine/ may use Set
+            // freely for scratch, because nothing there is encoded.
+            let model = swiftFiles(under: "Sources/FootballSimCore/Model")
+            expect(!model.isEmpty, "found no model sources to scan — the scan would pass vacuously")
+            var offenders: [String] = []
+            for file in model where !setElementTypes(in: file.text).isEmpty {
+                offenders.append("\(file.path): Set<\(setElementTypes(in: file.text).sorted().joined(separator: ", "))>")
+            }
+            expect(
+                offenders.isEmpty,
+                "a Set in a saved type encodes in per-launch order; use an array in a fixed order: "
+                    + offenders.joined(separator: ", ")
+            )
+        }
+
+        test("every stored property in a model type carries a type annotation") {
+            // The spelling neither map scan can see: `var m = [SomeKey.a: 1]` declares a dictionary
+            // with no annotation anywhere to read. Rather than parse Swift, Model/ carries the rule
+            // that a stored property is annotated — good practice for types that define a save
+            // format, and what makes the two scans above total over this directory.
+            let model = swiftFiles(under: "Sources/FootballSimCore/Model")
+            expect(!model.isEmpty, "found no model sources to scan — the scan would pass vacuously")
+            var offenders: [String] = []
+            for file in model {
+                for line in unannotatedStoredProperties(in: file.text) {
+                    offenders.append("\(file.path):\(line)")
+                }
+            }
+            expect(
+                offenders.isEmpty,
+                "an inferred stored-property type hides its shape from the map scans: "
+                    + offenders.joined(separator: ", ")
+            )
+        }
+
+        test("the Set and annotation scans catch their planted offenders") {
+            expect(setElementTypes(in: "    public var traits: Set<Trait>\n").contains("Trait"),
+                   "a planted stored Set was not seen")
+            expect(setElementTypes(in: "    var members: Set<ProbeSetKey> = []\n")
+                       .contains("ProbeSetKey"),
+                   "a planted initialised Set was not seen")
+            expect(setElementTypes(in: "    public var emphasises: Set<Attribute> { [.speed] }\n")
+                       .isEmpty,
+                   "a computed property returning a Set was reported — it is a lookup table, not a "
+                       + "save field, and this false positive was in the first version")
+            expect(setElementTypes(in: "        let scratch: Set<Int> = []\n").isEmpty,
+                   "a local Set inside a function body was reported")
+            expect(setElementTypes(in: "    let x: Int = 1\n").isEmpty,
+                   "a plain declaration was reported as a Set")
+
+            expectEqual(unannotatedStoredProperties(in: "    var inferred = [ProbeKey.alpha: 1]\n"),
+                        [1], "a planted inferred dictionary literal was not caught")
+            expectEqual(unannotatedStoredProperties(in: "    public static let limit = 8\n"), [1],
+                        "an inferred static constant was not caught")
+            expectEqual(unannotatedStoredProperties(in: "    public var name: String\n"), [],
+                        "an annotated property was reported")
+            expectEqual(unannotatedStoredProperties(in: "    public var overall: Rating { rating }\n"),
+                        [], "a computed property was reported")
+            expectEqual(unannotatedStoredProperties(in: "        let container = try d.container()\n"),
+                        [], "a local binding inside a function body was reported — eleven of these "
+                            + "were false failures in the first version")
         }
 
         test("no symlink hides source from the scans") {

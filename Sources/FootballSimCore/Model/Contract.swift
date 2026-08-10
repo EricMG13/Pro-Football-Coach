@@ -20,13 +20,26 @@ public struct Contract: Codable, Sendable, Equatable {
     /// `years` and the salary array are reconciled rather than trusted to agree — a save that
     /// disagreed with itself would otherwise trap on load. A short array is padded with zero, a
     /// long one is truncated.
+    ///
+    /// Everything here clamps rather than traps, because every field arrives from disk. Three
+    /// specific hostile inputs, each of which reached a real defect before this was written:
+    ///
+    /// - `years: 9223372036854775807` asked for an unbounded allocation and crashed the process.
+    ///   Clamped to `ProRules.contractYearsRange`.
+    /// - A negative base salary produced a negative cap hit, which invents cap space out of
+    ///   nothing — the same laundering shape as a bonus that never charges. Clamped to zero.
+    /// - `years: 0` with a bonus produced a bonus no year ever charges, so `capHit` was zero
+    ///   forever while `deadMoney` reported the full amount at every release point. A contract of
+    ///   no years carries no bonus (`02` section 11.2).
     public init(years: Int, baseSalaryByYear: [Int], signingBonus: Int) {
-        let length = Swift.max(0, years)
-        var salaries = Array(baseSalaryByYear.prefix(length))
+        let length = years <= 0
+            ? 0
+            : Swift.min(years, ProRules.contractYearsRange.upperBound)
+        var salaries = Array(baseSalaryByYear.prefix(length)).map { Swift.max(0, $0) }
         salaries.append(contentsOf: Array(repeating: 0, count: length - salaries.count))
         self.years = length
         self.baseSalaryByYear = salaries
-        self.signingBonus = Swift.max(0, signingBonus)
+        self.signingBonus = length == 0 ? 0 : Swift.max(0, signingBonus)
     }
 
     public init(from decoder: any Decoder) throws {

@@ -52,10 +52,13 @@ public enum ProRules {
     /// Compounds in integers: each season's growth is computed from that season's cap and truncated,
     /// so the sequence is exactly reproducible and never accumulates a fractional cent. Truncation
     /// is deliberate and downward — a cap that rounds up is a cap teams can exceed.
+    /// A season before the base returns the base cap rather than trapping. `Rating` sets the
+    /// project's policy for a value that can arrive from a corrupt save — clamp, never trap — and
+    /// `season` arrives from disk. A `precondition` here turns a bad save into a crash on the cap
+    /// screen.
     public static func salaryCap(seasonsAfterBase seasons: Int) -> Int {
-        precondition(seasons >= 0, "the cap is not defined before the base season")
         var cap = baseSalaryCap
-        for _ in 0..<seasons {
+        for _ in 0..<Swift.max(0, seasons) {
             cap += cap * capGrowthPercentPerYear / 100
         }
         return cap
@@ -65,6 +68,10 @@ public enum ProRules {
     /// remainder of an unamortised bonus is what becomes dead money when a player is released,
     /// which is P8's business.
     public static let maximumProrationYears = 5
+
+    /// `02` section 11.2. An upper bound so a save claiming `years: 9223372036854775807` clamps
+    /// instead of asking for an unbounded allocation and trapping.
+    public static let contractYearsRange: ClosedRange<Int> = 1...7
 
     // MARK: - The draft
 

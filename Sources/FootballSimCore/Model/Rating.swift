@@ -38,9 +38,11 @@ public struct Rating: Codable, Sendable, Equatable, Hashable, Comparable {
 /// Every attribute the engine reads.
 ///
 /// `03-MATCH-ENGINE.md` section 1.2 is the contract between `02`'s ratings model and the engine's
-/// matchup table; this enum is that contract in code. The behavioural four at the end are `02`
-/// section 5's traits expressed as ratings, because temperament and work ethic feed development
-/// arithmetic rather than a yes-or-no.
+/// matchup table; this enum is that contract in code. `temperament`, `workEthic` and `clutch` are
+/// `02` section 5's behavioural qualities expressed as ratings rather than as `Trait`s, because
+/// they feed development and resolution arithmetic rather than a yes-or-no. `durability` is the
+/// fourth of that group and sits under Physical because that is what it is; `awareness` and
+/// `schemeFit` come from the matchup table, not from section 5.
 public enum Attribute: String, Codable, Sendable, CaseIterable, Hashable {
     // Physical
     case speed, strength, agility, durability
@@ -124,9 +126,21 @@ public struct Attributes: Codable, Sendable, Equatable {
         self.values = values
     }
 
+    /// Writing the floor removes the entry rather than storing it.
+    ///
+    /// Otherwise `a[.speed] = a[.speed]` — which is what a development tick that produced no change
+    /// looks like — turns an unset attribute into a stored one. The two read identically through
+    /// every accessor and yet compare unequal and encode differently, so a state-equality check
+    /// fails and the save grows for no reason.
     public subscript(attribute: Attribute) -> Rating {
         get { values[attribute] ?? Rating(SharedRules.ratingRange.lowerBound) }
-        set { values[attribute] = newValue }
+        set {
+            if newValue.value == SharedRules.ratingRange.lowerBound {
+                values.removeValue(forKey: attribute)
+            } else {
+                values[attribute] = newValue
+            }
+        }
     }
 
     /// The attributes actually set, for a surface that should show only what a position uses.
