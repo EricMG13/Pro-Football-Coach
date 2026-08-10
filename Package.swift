@@ -16,6 +16,7 @@ let package = Package(
     products: [
         .library(name: "FootballSimCore", targets: ["FootballSimCore"]),
         .library(name: "ProFootballCoachUI", targets: ["ProFootballCoachUI"]),
+        .executable(name: "CalibrationScore", targets: ["CalibrationScore"]),
     ],
     targets: [
         .target(name: "FootballSimCore", path: "Sources/FootballSimCore"),
@@ -23,6 +24,11 @@ let package = Package(
             name: "ProFootballCoachUI",
             dependencies: ["FootballSimCore"],
             path: "Sources/ProFootballCoachUI"
+        ),
+        .executableTarget(
+            name: "CalibrationScore",
+            dependencies: ["FootballSimCore"],
+            path: "Tools/CalibrationScore"
         ),
         // Hand-rolled harness (see Tests/SimTests/TestKit.swift): XCTest and
         // swift-testing both require full Xcode, so the suite runs as an executable.
