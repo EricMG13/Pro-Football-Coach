@@ -43,7 +43,7 @@
 
 <div class="card" style="padding:15px 17px;margin-top:14px;border-color:rgba(255,176,38,.4)">
 <div style="font:650 13.5px/1.3 inherit;color:#FFB026;margin-bottom:7px">And measuring it found a real defect nobody had looked for</div>
-<div class="note">The bug's black block against the turf is <strong style="color:#F5F7FA">2.03:1</strong> &mdash; under the 3:1 non-text floor. The numerals on it are 21:1, so the <em>content</em> was never at risk; what is at risk is the <strong style="color:#F5F7FA">edge of the furniture</strong>, which is the thing that tells the eye the bug is an overlay and not part of the field. Fix is one line: a <code class="mono">rgba(255,255,255,.22)</code> hairline on the bug's lower edge, which reads as 3.4:1 against both the block and the turf. Broadcast bugs on television have this hairline for exactly this reason and it looked like styling until it was measured.</div>
+<div class="note">The bug's black block against the turf is <strong style="color:#F5F7FA">2.03:1</strong> &mdash; under the 3:1 non-text floor. The numerals on it are 21:1, so the <em>content</em> was never at risk; what is at risk is the <strong style="color:#F5F7FA">edge of the furniture</strong>, which is the thing that tells the eye the bug is an overlay and not part of the field. Fix is one line, and my first attempt at it was wrong by roughly a factor of two &mdash; <code class="mono">rgba(255,255,255,.22)</code> composites to <code class="mono">#383838</code>, which is <strong style="color:#FF6B5A">1.79:1</strong> against the block and worse against the turf. Solved rather than guessed: the first alpha clearing 3:1 on <em>both</em> edges is <strong style="color:#F5F7FA">0.56</strong>; the token is set at <code class="mono">#9E9E9E</code> (alpha 0.62) for margin &mdash; <strong style="color:#C6F24E">7.84:1</strong> against the block and <strong style="color:#C6F24E">3.86:1</strong> against the turf. Broadcast bugs on television have this hairline for exactly this reason and it looked like styling until it was measured.</div>
 </div>
 
 <!-- 2. LIGHT DESK -->
@@ -166,7 +166,7 @@
     <div style="position:absolute;left:444px;top:188px;width:20px;height:20px;border-radius:50%;background:#F5F7FA;color:#7A1F2B;display:flex;align-items:center;justify-content:center;font:700 10px/1 'SF Compact Display',sans-serif;opacity:.56">31</div>
     <div style="position:absolute;left:316px;top:194px;width:12px;height:8px;border-radius:50%;background:#6B4423;border:1px solid rgba(255,255,255,.75)"></div>
   </div>
-  <div style="position:absolute;left:0;top:0;right:0;height:46px;display:flex;font-family:'SF Compact Display',-apple-system,sans-serif;border-bottom:1px solid rgba(255,255,255,.22)">
+  <div style="position:absolute;left:0;top:0;right:0;height:46px;display:flex;font-family:'SF Compact Display',-apple-system,sans-serif;border-bottom:1px solid #9E9E9E">
     <div style="width:59px;background:#04060A"></div>
     <div style="background:#14294B;display:flex;align-items:center;gap:7px;padding:0 13px"><div style="width:18px;height:18px;border-radius:3px;background:#C8A24A"></div><span class="num" style="font-size:17px;font-weight:700;color:#fff;letter-spacing:.05em">ASH</span></div>
     <div style="background:#000;display:flex;align-items:center;padding:0 14px"><span class="num" style="font-size:26px;font-weight:700;color:#fff">17</span></div>
@@ -185,7 +185,7 @@
 </div>
 <div class="card" style="padding:14px 16px;border-color:rgba(255,176,38,.4)">
 <div style="font:650 13px/1.3 inherit;color:#FFB026;margin-bottom:7px">The bug's hairline, applied</div>
-<div class="note">This render carries the <code class="mono">rgba(255,255,255,.22)</code> lower edge from §1. Compare it to the floor renders in <code class="mono">Screens-v2</code>, which do not have it &mdash; the bug there floats without an edge, and once seen it cannot be unseen. <strong style="color:#F5F7FA">Retrofit into every existing bug render.</strong></div>
+<div class="note">This render carries the <code class="mono">#9E9E9E</code> lower edge from §1. Compare it to the floor renders in <code class="mono">Screens-v2</code>, which do not have it &mdash; the bug there floats without an edge, and once seen it cannot be unseen. <strong style="color:#F5F7FA">Retrofit into every existing bug render.</strong></div>
 </div>
 <div class="card" style="padding:14px 16px">
 <div style="font:650 13px/1.3 inherit;margin-bottom:7px">This is the regular-width case</div>
