@@ -19,6 +19,9 @@ lock_parent_identity=""
 lock_identity=""
 search_lock_held=0
 pending_acquisition_signal=0
+identity_channel=""
+identity_channel_identity=""
+identity_channel_held=0
 
 validate_matchup_rules() {
   [[ "$matchup_rules" == "$expected_rules_dir/MatchupRules.swift" ]] \
@@ -55,6 +58,52 @@ prepare_lock_parent() {
     mkdir "$lock_parent" || die "cannot create calibration lock parent"
   fi
   validate_lock_parent
+}
+
+create_identity_channel() {
+  identity_channel="$lock_parent/.tune-calibration.identity.$$.${RANDOM}"
+  [[ "$identity_channel" == "$lock_parent/.tune-calibration.identity."[0-9]*.[0-9]* ]] \
+    || die "unexpected calibration identity channel path"
+  if ! (set -C; : > "$identity_channel") 2>/dev/null; then
+    die "cannot exclusively create calibration identity channel"
+  fi
+  [[ -f "$identity_channel" && ! -L "$identity_channel" ]] \
+    || die "calibration identity channel must be a regular non-symlink file"
+  identity_channel_identity=$(stat -f '%d:%i' "$identity_channel") \
+    || die "cannot inspect calibration identity channel"
+  [[ "$identity_channel_identity" =~ ^[0-9]+:[0-9]+$ ]] \
+    || die "invalid calibration identity channel identity"
+  identity_channel_held=1
+}
+
+release_identity_channel() {
+  (( identity_channel_held )) || return 0
+  [[ "$identity_channel" == "$lock_parent/.tune-calibration.identity."[0-9]*.[0-9]* \
+      && -f "$identity_channel" && ! -L "$identity_channel" ]] \
+    || {
+      printf 'tune-calibration: refusing to release a changed identity channel; inspect %s manually\n' \
+        "$identity_channel" >&2
+      return 1
+    }
+  local current_identity
+  current_identity=$(stat -f '%d:%i' "$identity_channel") \
+    || {
+      printf 'tune-calibration: cannot inspect identity channel; inspect %s manually\n' \
+        "$identity_channel" >&2
+      return 1
+    }
+  [[ "$current_identity" == "$identity_channel_identity" ]] \
+    || {
+      printf 'tune-calibration: refusing to release a replaced identity channel; inspect %s manually\n' \
+        "$identity_channel" >&2
+      return 1
+    }
+  if ! rm "$identity_channel"; then
+    printf 'tune-calibration: could not safely release identity channel %s; inspect it manually\n' \
+      "$identity_channel" >&2
+    return 1
+  fi
+  identity_channel_held=0
 }
 
 revalidate_lock_parent_after_acquisition() {
@@ -106,7 +155,10 @@ release_search_lock() {
 release_search_lock_on_exit() {
   local status=$?
   trap - EXIT HUP INT TERM
-  release_search_lock || exit 1
+  local cleanup_failed=0
+  release_search_lock || cleanup_failed=1
+  release_identity_channel || cleanup_failed=1
+  (( cleanup_failed )) && exit 1
   exit "$status"
 }
 
@@ -122,10 +174,23 @@ record_acquisition_signal() {
   return 0
 }
 
-run_acquisition_child() {
-  # Bash resets trapped handlers in children, so the actual mkdir/stat child must explicitly
-  # inherit ignored handled signals. The parent records them and remains alive to own cleanup.
-  /bin/sh -c 'trap "" HUP INT TERM; exec "$@"' tune-calibration-acquisition "$@"
+run_lock_creation_transaction() {
+  # Bash resets caught handlers in external children. This one protected child explicitly ignores
+  # handled signals while it creates the lock and writes its identity, leaving no parent shell gap.
+  /bin/sh -c '
+    trap "" HUP INT TERM
+    lock=$1
+    channel=$2
+    parent_pid=$3
+    [ -f "$channel" ] && [ ! -L "$channel" ] || exit 1
+    mkdir "$lock" || exit 1
+    [ "${TUNE_CALIBRATION_TEST_SELF_INT_AFTER_LOCK:-}" != 1 ] || kill -INT "$parent_pid"
+    if /usr/bin/stat -f "%d:%i" "$lock" > "$channel"; then
+      exit 0
+    fi
+    rmdir "$lock" || exit 1
+    exit 1
+  ' tune-calibration-transaction "$lock_dir" "$identity_channel" "$$"
 }
 
 restore_search_signal_exit_traps() {
@@ -143,19 +208,30 @@ exit_for_pending_acquisition_signal() {
 
 acquire_search_lock() {
   prepare_lock_parent
+  arm_lock_acquisition_traps
+  create_identity_channel
   lock_parent_identity=$(stat -f '%d:%i' "$lock_parent") \
     || die "cannot inspect calibration lock parent"
-  arm_lock_acquisition_traps
-  if ! run_acquisition_child mkdir "$lock_dir"; then
+  if ! run_lock_creation_transaction; then
     exit_for_pending_acquisition_signal
     die "cannot acquire calibration lock at $lock_dir; another tuner may be running or the lock may be stale/tampered. Confirm no tuner is running, inspect the lock, then remove only that empty directory."
   fi
-  # Ownership is marked before any post-mkdir command can fail. Parent traps record the first
-  # handled signal while the mkdir/stat children explicitly ignore it.
+  # The transaction returned only after it wrote the lock identity to our owned channel.
   search_lock_held=1
-  [[ ${TUNE_CALIBRATION_TEST_SELF_INT_AFTER_LOCK:-} != 1 ]] || kill -INT "$$"
-  lock_identity=$(run_acquisition_child stat -f '%d:%i' "$lock_dir") \
-    || die "cannot inspect newly acquired calibration lock"
+  exec 9< "$identity_channel" || die "cannot open calibration identity channel"
+  IFS= read -r lock_identity <&9 || {
+    exec 9<&-
+    die "cannot read calibration lock identity"
+  }
+  local extra_identity_line=""
+  if IFS= read -r extra_identity_line <&9; then
+    exec 9<&-
+    die "calibration identity channel has unexpected extra data"
+  fi
+  exec 9<&-
+  [[ "$lock_identity" =~ ^[0-9]+:[0-9]+$ ]] \
+    || die "invalid calibration lock identity"
+  release_identity_channel || die "cannot safely release calibration identity channel"
   revalidate_lock_parent_after_acquisition
   restore_search_signal_exit_traps
   exit_for_pending_acquisition_signal
