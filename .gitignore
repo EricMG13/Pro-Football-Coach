@@ -14,3 +14,7 @@ build/
 # An accidental gitlink pointed here: a nested clone of this same repo was staged as a
 # submodule (mode 160000) with no .gitmodules, so clones got an uninitialisable empty directory.
 Pro-Football-Coach/
+
+# Owner-supplied competitor reference screenshots. Third-party copyright:
+# research material only, never redistributed. See CLAUDE.md legal guardrail.
+FM Screenshots/

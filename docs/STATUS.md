@@ -571,6 +571,55 @@ hidden, because v1 was criticised for the same rule.
 
 ---
 
+### 2026-08-10 — the design reference library is at 37/40, and canon points at it
+
+**Sixteen `*-v2.dc.html` sheets at the repository root**, indexed in `docs/04-UX-AND-DESIGN-SYSTEM.md`
+and named per-phase in `docs/05-IMPLEMENTATION-PLAN.md` for P11 through P15. `04` remains the only
+canonical home: where a sheet and `04` disagree, `04` wins and the sheet is the defect.
+
+**Two owner decisions closed the last open questions.** Light ships as an equal appearance. The
+all-22 field is kept, with the frame redrawn at true 1.15 yd spacing — and the redraw settled the
+question rather than confirming the assumption: at 7.52 pt centres a legible numeral needs a ~20 pt
+disc, which is **62 % occluded**, and 58 % at the ceiling. So all 22 marks are drawn at true
+positions, the nine interior linemen as ringed discs the eye can **count**, and 13 numerals sit on
+the skill positions and the three foregrounded marks. `04` §5.2 is amended in that one direction, on
+a redrawn frame rather than on an assertion.
+
+**A six-lens adversarial review drove the uplift** — 37 agents, 46 raw findings, 31 rated P0/P1,
+**10 confirmed after independent refutation.** The 21 that were refuted matter as much as the 10 that
+held: several were confident, well-argued and wrong. Three findings were fixed before any plan was
+written, and all three were the library lying about itself:
+
+1. **A legal breach.** The pro tier shipped as *Detroit Motors* across four files. `Detroit` is in
+   the project's own `Blocklist.swift:149`, so `blocks("Detroit Motors")` returns `true` — a name our
+   own name-collision gate rejects, under a disclaimer saying no real franchise appears. The trade
+   dress was clean (ΔE 32.6); the name alone was the defect.
+2. **A false remedy.** The `ScoreBug` hairline was published at 3.4:1 and computes to 1.79:1. Solved
+   rather than guessed: `#9E9E9E`, 7.84 on the block and 3.86 on turf.
+3. **A cheating demonstration.** The all-22 frame drew linemen at 2.17× true spacing while claiming
+   `04` §5.2 "already required" it — §5.2 says the opposite.
+
+**Scores, honestly.** 31/40 before the uplift, **37/40** after. The three that moved were User
+Control (match exit, call-in expiry and pause, save cadence, cold-launch resume), Consistency (one
+palette, one budget table, one `ScoreBug` spec, the ceiling made isotropic) and Flexibility
+(`ListControls` and `AttributeRow` — the library had **no filter, sort, search or multi-select
+anywhere**, which was the largest single finding). The three still at 3 — Error Prevention,
+Recognition, Help — are held down by P7–P10 mechanisms that do not exist yet.
+
+Coverage: **27 device frames, 8 at AX5, 3 in light.** Legal sweep of the corpus against every
+`Blocklist` entry: clean.
+
+**Two housekeeping decisions taken this session, both legal.** The three v1 sheets were **deleted** —
+superseded in full, and one carried the same real-identity breach. Reachable through `git show`, the
+same disposition `docs/PORT-LOG.md` records for `NameBank.swift`. And the owner's Football Manager
+reference screenshots are **gitignored, never committed**: they are third-party copyright and
+`CLAUDE.md` permits reference titles as mechanics research only.
+
+**Still unverified and needing a machine with the HIG in front of it:** the twelve SF Symbol names in
+`System-v2`, and every AX5 point size. Neither is design work.
+
+---
+
 ## Decisions made without owner input
 
 The owner was asked and did not answer, so these were decided during execution and are marked

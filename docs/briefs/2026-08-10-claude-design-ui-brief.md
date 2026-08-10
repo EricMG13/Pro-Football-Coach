@@ -1,5 +1,11 @@
 # Brief — Claude Design for the UI
 
+> **SUPERSEDED 2026-08-10 by the work it commissioned.** This brief asked for three card groups
+> and got them; adversarial review then took the library to **sixteen** `*-v2.dc.html` sheets,
+> indexed in `docs/04-UX-AND-DESIGN-SYSTEM.md`. Retained as the record of what was asked for and
+> why — its §6 acceptance checks and §3 legal guardrail still describe the standard the library
+> is held to. Its device figures and screen counts are stale; `04` carries the current ones.
+
 Written 2026-08-10. **Not canon.** `docs/DOC-MANIFEST.md` §4 lists the paths that carry authority and
 this is not one of them. It is a working input handed to a tool. Where it disagrees with
 `docs/04-UX-AND-DESIGN-SYSTEM.md`, `04` wins and this file is the defect.

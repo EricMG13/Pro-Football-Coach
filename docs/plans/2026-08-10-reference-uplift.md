@@ -1,5 +1,12 @@
 # Reference uplift plan — target 37/40
 
+> **EXECUTED 2026-08-10.** All four phases done. Phase A closed the palette, budget, ceiling,
+> ScoreBug and send-back divergences; B added `ListControls` and `AttributeRow`; C added the
+> persistence, match-exit and call-in rules; D took AX5 from 2 renders to 8 and light from 1 to 3.
+> **Reached 37/40.** Owner decisions taken during execution: light ships as an equal appearance,
+> and the all-22 field is kept with the frame redrawn at true 1.15 yd spacing — which showed the
+> nine interior linemen can be counted but not numbered, at any supported device.
+
 Written 2026-08-10 after a six-lens adversarial review of the v2 design reference library
 (37 agents; 46 raw findings, 31 rated P0/P1, **10 confirmed** after independent refutation).
 **Not canon.** `docs/04-UX-AND-DESIGN-SYSTEM.md` remains the only home for the design system.
