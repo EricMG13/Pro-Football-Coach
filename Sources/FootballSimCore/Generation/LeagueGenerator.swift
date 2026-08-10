@@ -104,6 +104,9 @@ public enum LeagueGenerator {
         var identities: [UUID: TeamIdentity] = [:]
         var cityCursor = 0
         var fallbackCursor = 0
+        // Donor-named venues are drawn without replacement, like place names, so no two stadiums in
+        // a league share a name.
+        var donorVenues = NameGrammar.distinctDonorVenueNames(using: &rng)
 
         // MARK: College
 
@@ -134,7 +137,7 @@ public enum LeagueGenerator {
                 ))
                 identities[programmeID] = identity(
                     city: city, seasonWeeks: CollegeRules.seasonWeeks,
-                    fallbackIndex: fallbackCursor, using: &rng
+                    fallbackIndex: fallbackCursor, donorVenues: &donorVenues, using: &rng
                 )
                 fallbackCursor += 1
                 memberIDs.append(programmeID)
@@ -176,14 +179,14 @@ public enum LeagueGenerator {
                     ))
                     identities[teamID] = identity(
                         city: city, seasonWeeks: ProRules.seasonWeeks,
-                        fallbackIndex: fallbackCursor, using: &rng
+                        fallbackIndex: fallbackCursor, donorVenues: &donorVenues, using: &rng
                     )
                     fallbackCursor += 1
                     divisionMembers.append(teamID)
                 }
                 divisions.append(Division(
                     id: divisionID,
-                    name: NameGrammar.conferenceName(using: &rng),
+                    name: NameGrammar.divisionName(using: &rng),
                     conferenceID: conferenceID,
                     memberIDs: divisionMembers
                 ))
@@ -302,11 +305,19 @@ public enum LeagueGenerator {
         city: MapCity,
         seasonWeeks: Int,
         fallbackIndex: Int,
+        donorVenues: inout [String],
         using rng: inout SeededRandom
     ) -> TeamIdentity {
-        TeamIdentity(
+        // Half the venues are named for the place and half for a donor. The place form is unique
+        // because the city is; the donor form comes off a pool drawn without replacement. Both
+        // draws happen unconditionally so the coin flip does not change how much of the stream the
+        // identity consumes — the coupling that made archetype sampling non-uniform earlier.
+        let placeVenue = NameGrammar.venueName(place: city.name, using: &rng)
+        let donorVenue = donorVenues.popLast()
+        let useDonor = rng.chance(0.5)
+        return TeamIdentity(
             colours: ColourGenerator.pair(using: &rng, fallbackIndex: fallbackIndex),
-            venueName: NameGrammar.venueName(place: city.name, using: &rng),
+            venueName: (useDonor ? donorVenue : nil) ?? placeVenue,
             traditions: TraditionGrammar.traditions(regionID: city.regionID,
                                                     seasonWeeks: seasonWeeks,
                                                     using: &rng),

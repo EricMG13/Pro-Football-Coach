@@ -54,9 +54,16 @@ public enum TraditionGrammar {
         using rng: inout SeededRandom
     ) -> [Tradition] {
         let count = rng.int(in: perProgrammeRange)
+        // The kind is chosen by position so a programme never gets the same kind twice — but with a
+        // per-programme rotation, or position alone fully determines it. It did: every programme's
+        // first tradition was a home-field one and every second was a recruiting one, 100 percent
+        // of the time, and the two rivalry and morale kinds only ever appeared on programmes that
+        // happened to draw three or four. Four distinct effects existed and two of them were rare
+        // for a reason nothing had chosen.
+        let rotation = rng.int(in: 0...3)
         var traditions: [Tradition] = []
         for index in 0..<count {
-            traditions.append(tradition(index: index, regionID: regionID,
+            traditions.append(tradition(index: index + rotation, regionID: regionID,
                                         seasonWeeks: seasonWeeks, using: &rng))
         }
         return traditions
@@ -95,6 +102,12 @@ public enum TraditionGrammar {
             blurb = "This one is circled a year in advance."
         }
         return Tradition(id: rng.uuid(), name: name, blurb: blurb, effect: effect)
+    }
+
+    /// Contributed to `GenerationVocabulary`, because tradition names reach a surface and the
+    /// name grammar does not know these pools exist.
+    static var emittableWords: [String] {
+        ritualAdjectives + ritualNouns + pipelineNouns + rivalryAdjectives + rivalryNouns + ["The"]
     }
 
     private static let ritualAdjectives = [

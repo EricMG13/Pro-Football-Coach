@@ -246,6 +246,13 @@ private func containsDesignTokenLiteral(_ line: String) -> Bool {
     return false
 }
 
+/// The files the save-shape scans walk: the whole engine, minus anything explicitly exempted.
+private func savedShapeFiles() -> [(path: String, text: String)] {
+    swiftFiles(under: "Sources/FootballSimCore").filter { file in
+        !saveShapeExemptDirectories.contains { file.path.contains("/\($0)/") }
+    }
+}
+
 /// Runs a predicate against a synthetic in-memory file, so a self-test never has to write to the
 /// tree it is scanning.
 private func caught(_ source: String, by predicate: (String) -> Bool) -> Bool {
@@ -254,8 +261,24 @@ private func caught(_ source: String, by predicate: (String) -> Bool) -> Bool {
 
 // MARK: - The dictionary-key scan
 
-/// Key types Swift already encodes as a JSON object without help.
-private let inherentlyKeyableTypes: Set<String> = ["String", "Int", "UUID"]
+/// Key types Swift already encodes as a JSON object with no help from us.
+///
+/// `UUID` is **not** on this list, deliberately, even though every `[UUID: ...]` map in the save
+/// encodes correctly today. It does so only because of the retroactive `CodingKeyRepresentable`
+/// conformance in `Support/CodingSupport.swift`. Allowlisting `UUID` here meant deleting that
+/// conformance left this scan green while every UUID-keyed map in an 800 KB save reverted to
+/// hash-ordered flat arrays — the scan would have been allowlisting the fix rather than checking
+/// for it.
+private let inherentlyKeyableTypes: Set<String> = ["String", "Int"]
+
+/// Directories whose types are never encoded, and are therefore outside the save-shape scans.
+///
+/// Exempt-by-name, cover-everything-else — the inversion the ambient-identity scan already uses,
+/// carried across after P2 put ten `Codable` save types in `Generation/` while both of these scans
+/// still walked `Model/` alone. Nothing is exempt today; the list exists so that a future
+/// scratch-only directory is an explicit, visible decision rather than a scope that quietly
+/// stopped covering the tree.
+private let saveShapeExemptDirectories: [String] = []
 
 /// Every dictionary key type named in `text`, in either spelling Swift accepts.
 ///
@@ -332,11 +355,18 @@ private func storedPropertyDeclaration(in line: String) -> Substring? {
     let indent = line.prefix(while: { $0 == " " }).count
     guard indent <= 4 else { return nil }
     var rest = Substring(line.trimmingCharacters(in: .whitespaces))
+    // `static` declarations are skipped rather than stripped. A static is a lookup table, not a
+    // field of an encoded value, so neither save-shape rule applies to it: `Blocklist.names` is a
+    // legitimate `static let Set<String>`, and the rules modules are full of legitimate inferred
+    // static constants. Including them turned one scan into 70 false failures and the other into
+    // one, which is how a gate gets weakened instead of obeyed.
+    if rest.hasPrefix("static ") || rest.hasPrefix("class ") { return nil }
     for modifier in ["public ", "internal ", "private ", "fileprivate ", "private(set) ",
-                     "public private(set) ", "static ", "public static ", "lazy "]
+                     "public private(set) ", "lazy "]
     where rest.hasPrefix(modifier) {
         rest = rest.dropFirst(modifier.count)
     }
+    if rest.hasPrefix("static ") || rest.hasPrefix("class ") { return nil }
     guard rest.hasPrefix("var ") || rest.hasPrefix("let ") else { return nil }
     guard !rest.contains("{") else { return nil }
     let declaration = rest.dropFirst(4)
@@ -620,10 +650,15 @@ func runContractTests() {
             // order-independent so a round-trip test passes, and within one process the order is
             // constant so a repeat-encode test passes too.
             //
-            // The fix is an array in a fixed order. The ban is on Model/ only: Engine/ may use Set
-            // freely for scratch, because nothing there is encoded.
-            let model = swiftFiles(under: "Sources/FootballSimCore/Model")
-            expect(!model.isEmpty, "found no model sources to scan — the scan would pass vacuously")
+            // The fix is an array in a fixed order.
+            //
+            // Scoped to Model/ when it was written, on the premise that nothing outside Model/ is
+            // encoded. P2 falsified that the same day by putting GeneratedWorld, TeamIdentity,
+            // Rivalry, Tradition, GameMap, MapCity, Colour and three more Codable save types in
+            // Generation/, all unscanned. It now walks the whole engine and exempts by name, which
+            // is the inversion the ambient-identity scan above already uses.
+            let model = savedShapeFiles()
+            expect(!model.isEmpty, "found no engine sources to scan — the scan would pass vacuously")
             var offenders: [String] = []
             for file in model where !setElementTypes(in: file.text).isEmpty {
                 offenders.append("\(file.path): Set<\(setElementTypes(in: file.text).sorted().joined(separator: ", "))>")
@@ -637,11 +672,11 @@ func runContractTests() {
 
         test("every stored property in a model type carries a type annotation") {
             // The spelling neither map scan can see: `var m = [SomeKey.a: 1]` declares a dictionary
-            // with no annotation anywhere to read. Rather than parse Swift, Model/ carries the rule
-            // that a stored property is annotated — good practice for types that define a save
-            // format, and what makes the two scans above total over this directory.
-            let model = swiftFiles(under: "Sources/FootballSimCore/Model")
-            expect(!model.isEmpty, "found no model sources to scan — the scan would pass vacuously")
+            // with no annotation anywhere to read. Rather than parse Swift, the engine carries the
+            // rule that an instance stored property is annotated — good practice for types that
+            // define a save format, and what makes the two scans above total over the tree.
+            let model = savedShapeFiles()
+            expect(!model.isEmpty, "found no engine sources to scan — the scan would pass vacuously")
             var offenders: [String] = []
             for file in model {
                 for line in unannotatedStoredProperties(in: file.text) {
@@ -672,8 +707,13 @@ func runContractTests() {
 
             expectEqual(unannotatedStoredProperties(in: "    var inferred = [ProbeKey.alpha: 1]\n"),
                         [1], "a planted inferred dictionary literal was not caught")
-            expectEqual(unannotatedStoredProperties(in: "    public static let limit = 8\n"), [1],
-                        "an inferred static constant was not caught")
+            expectEqual(unannotatedStoredProperties(in: "    public static let limit = 8\n"), [],
+                        "a static constant was reported — a static is a lookup table, not a field "
+                            + "of an encoded value, and the rules modules are full of legitimate "
+                            + "inferred ones")
+            expect(setElementTypes(in: "    public static let names: Set<String> = []\n").isEmpty,
+                   "a static Set lookup table was reported — Blocklist.names is one and is never "
+                       + "encoded")
             expectEqual(unannotatedStoredProperties(in: "    public var name: String\n"), [],
                         "an annotated property was reported")
             expectEqual(unannotatedStoredProperties(in: "    public var overall: Rating { rating }\n"),

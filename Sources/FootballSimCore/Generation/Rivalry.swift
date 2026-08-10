@@ -114,16 +114,17 @@ public enum RivalrySeeder {
     /// Every seeded rivalry across `members`, deduplicated by canonical pair ordering.
     public static func seed(members: [Member], using rng: inout SeededRandom) -> [Rivalry] {
         var rivalries: [Rivalry] = []
-        var seen: Set<String> = []
         // Ordered iteration over an array, never over a Set or a Dictionary, so the output order is
         // a function of the input rather than of this launch's hash seed.
+        //
+        // There was a `seen` set here that could never reject anything: the nested loop already
+        // visits each unordered pair exactly once, so every key was new by construction. It read
+        // like a guard against duplicate pairs while guarding nothing, and it hid the invariant
+        // that actually holds — uniqueness comes from the loop shape, and the test below asserts
+        // it against the output rather than trusting a set that cannot fire.
         for (indexA, memberA) in members.enumerated() {
             for memberB in members[(indexA + 1)...] {
                 guard let origin = origin(memberA, memberB) else { continue }
-                let key = [memberA.id, memberB.id]
-                    .sorted { $0.uuidString < $1.uuidString }
-                    .map(\.uuidString).joined()
-                guard seen.insert(key).inserted else { continue }
                 let jitter = rng.int(in: -6...6)
                 rivalries.append(Rivalry(
                     id: rng.uuid(),

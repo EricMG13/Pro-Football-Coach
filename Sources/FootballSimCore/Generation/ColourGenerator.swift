@@ -11,6 +11,17 @@ public enum ColourGenerator {
     /// `02` §11.3.5 and `04` §2.1.
     public static let tradeDressThreshold = 25.0
     /// `team.onTeam` on `team.primary`. WCAG AA for body text.
+    ///
+    /// **This floor cannot currently reject anything, and that is a fact worth stating rather than
+    /// hiding.** `legibleForeground` picks the better of white and black, which gives
+    /// `max(1.05 / (L + 0.05), (L + 0.05) / 0.05)`; the two branches cross at L = 0.1791 where both
+    /// equal the square root of 21, about 4.583. So the worst case over the entire sRGB gamut is
+    /// already above 4.5 and the guard is satisfied by construction.
+    ///
+    /// It stays because it is the *contract* `04` §2.1 states, and the moment `onTeam` becomes
+    /// anything other than a white-or-black choice — a tinted foreground, a third generated colour —
+    /// the guard starts binding. The floor that actually filters pairs today is
+    /// `secondaryContrastFloor`.
     public static let textContrastFloor = 4.5
     /// `team.secondary` on `team.primary`. WCAG AA for non-text elements.
     public static let secondaryContrastFloor = 3.0
@@ -106,7 +117,14 @@ public extension Colour {
     /// From HSL, which is the space a generator wants: hue picks an identity, saturation keeps it
     /// from being grey, and lightness is the dial that decides whether text can sit on it.
     init(hue: Double, saturation: Double, lightness: Double) {
-        let h = hue.truncatingRemainder(dividingBy: 360) / 60
+        // Normalised into [0, 360) before the sector maths, not merely wrapped. `truncatingRemainder`
+        // keeps the sign, so a negative hue landed in a negative sector and `Int(h)` truncated
+        // toward zero: 359 of 360 negative hues returned a different colour from their positive
+        // equivalent. Nothing in the generator passes a negative hue today, which is why no test
+        // saw it, and a public initialiser that is wrong for half its domain is a trap for whoever
+        // does.
+        let wrapped = hue.truncatingRemainder(dividingBy: 360)
+        let h = (wrapped < 0 ? wrapped + 360 : wrapped) / 60
         let c = (1 - Swift.abs(2 * lightness - 1)) * saturation
         let x = c * (1 - Swift.abs(h.truncatingRemainder(dividingBy: 2) - 1))
         let m = lightness - c / 2

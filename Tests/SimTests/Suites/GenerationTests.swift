@@ -1,6 +1,25 @@
 import Foundation
 import FootballSimCore
 
+/// Pinned bytes of `SaveEnvelope.encode(LeagueGenerator.generate(seed: 20260810))`.
+///
+/// See "the encoded world matches a pinned digest" below for why these exist and when to change
+/// them.
+private let PINNED_WORLD_BYTES = 824_938
+private let PINNED_WORLD_DIGEST: UInt64 = 11_940_504_972_335_370_785
+
+/// FNV-1a over the bytes, order-sensitive.
+///
+/// Written here rather than reached for from the engine because `SeededRandom.fnv1a` is internal
+/// and `SimTests` imports `FootballSimCore` without `@testable`. Order sensitivity is the whole
+/// requirement — a sum or an XOR would be blind to exactly the reordering this pin exists to catch,
+/// and the self-test below swaps two bytes to prove it is not.
+private func checksum(_ data: Data) -> UInt64 {
+    var value: UInt64 = 0xCBF2_9CE4_8422_2325
+    for byte in data { value = (value ^ UInt64(byte)) &* 0x0000_0100_0000_01B3 }
+    return value
+}
+
 func runGenerationTests() {
     suite("Colour maths") {
         test("Lab conversion matches known reference values") {
@@ -130,6 +149,45 @@ func runGenerationTests() {
             expectEqual(try SaveEnvelope.decode(GeneratedWorld.self, from: encoded), world)
         }
 
+        test("the encoded world matches a pinned digest, which is the cross-process assertion") {
+            // Repeat-encoding and round-tripping are both blind to this class, and ModelTests
+            // documents why: Set and Dictionary iteration order is constant within one process, so
+            // an ordering bug reproduces perfectly until the next launch. The suite had no coverage
+            // of the process boundary at all, and the commit that claimed it cited stdout being
+            // identical across three runs — which TestKit prints as a count and "all passed"
+            // whether or not a single save byte moved.
+            //
+            // A literal in a source file cannot be salted per launch, so pinning the digest is the
+            // cross-process assertion, exactly as P0's golden vectors are for seeding. It was
+            // watched failing: planting a Set<UUID> of nine ids on TeamIdentity gave three
+            // different digests on three consecutive runs of the same binary, while the whole suite
+            // still printed "all passed".
+            //
+            // This digest changes whenever generation changes, and that is the point — a generation
+            // change must be a deliberate edit here rather than a silent one. Regenerate only when
+            // the change is intended.
+            let encoded = try SaveEnvelope.encode(world)
+            expectEqual(encoded.count, PINNED_WORLD_BYTES,
+                        "the encoded world changed size, so generation changed")
+            expectEqual(checksum(encoded), PINNED_WORLD_DIGEST,
+                        "the encoded world's bytes changed. If generation was changed deliberately, "
+                            + "re-pin. If not, something in the save is ordering by a per-launch "
+                            + "hash and one seed now produces a different league every launch")
+        }
+
+        test("the digest would notice a single byte moving") {
+            // The self-test. A checksum that returned a constant would make the pin above green
+            // forever, which is the shape of a gate that has never failed.
+            let encoded = try SaveEnvelope.encode(world)
+            var mutated = encoded
+            mutated[mutated.count / 2] = mutated[mutated.count / 2] &+ 1
+            expect(checksum(mutated) != checksum(encoded), "the checksum ignores a changed byte")
+            var swapped = encoded
+            swapped.swapAt(SaveEnvelope.headerLength, encoded.count - 1)
+            expect(checksum(swapped) != checksum(encoded),
+                   "the checksum ignores byte ORDER, which is the only thing this pin is for")
+        }
+
         test("the league holds exactly the members the rules require") {
             expectEqual(world.programmes.count, CollegeRules.programmeCount)
             expectEqual(world.proTeams.count, ProRules.teamCount)
@@ -171,6 +229,55 @@ func runGenerationTests() {
             for conference in world.league.conferences(in: .pro) {
                 expectEqual(conference.memberIDs.count,
                             ProRules.divisionsPerConference * ProRules.teamsPerDivision)
+            }
+        }
+
+        test("no two members, cities or venues in a league share a name") {
+            // Ids were asserted distinct and names never were — the coverage-boundary pattern.
+            // 166 members were drawn from a 570-name space with replacement, and the birthday
+            // paradox did the rest: all 200 swept leagues carried duplicate city names, 145 had two
+            // programmes with the identical full name, and 23 put two identically named programmes
+            // in the same conference, which is two identical rows on a standings table.
+            //
+            // The sharpest form is D6's: 145 leagues contained a rivalry pointing at a name two
+            // programmes shared. Rivalry is the emotional payload the whole endogenous-identity
+            // design rests on, and "our rival is Blackmere Hollow Inland" means nothing when two
+            // of them exist.
+            func duplicates(_ names: [String]) -> [String] {
+                var counts: [String: Int] = [:]
+                for name in names { counts[name, default: 0] += 1 }
+                return counts.filter { $0.value > 1 }.keys.sorted()
+            }
+            for (index, world) in sweptWorlds.prefix(40).enumerated() {
+                expect(duplicates(world.map.cities.map(\.name)).isEmpty,
+                       "seed \(index) has duplicate city names: "
+                           + duplicates(world.map.cities.map(\.name)).prefix(3).joined(separator: ", "))
+                let memberNames = world.programmes.map(\.name) + world.proTeams.map(\.name)
+                expect(duplicates(memberNames).isEmpty,
+                       "seed \(index) has two members with the same name: "
+                           + duplicates(memberNames).prefix(3).joined(separator: ", "))
+                let venues = world.identities.values.map(\.venueName)
+                expect(duplicates(venues).isEmpty,
+                       "seed \(index) has duplicate venue names: "
+                           + duplicates(venues).prefix(3).joined(separator: ", "))
+            }
+        }
+
+        test("no rivalry points at an ambiguous name") {
+            // The consequence that matters, asserted directly rather than inferred from the
+            // uniqueness of the pool.
+            for (index, world) in sweptWorlds.prefix(20).enumerated() {
+                let nameByID = Dictionary(uniqueKeysWithValues: world.programmes.map { ($0.id, $0.name) })
+                var counts: [String: Int] = [:]
+                for name in nameByID.values { counts[name, default: 0] += 1 }
+                for programme in world.programmes {
+                    for rivalID in programme.rivalIDs {
+                        guard let rivalName = nameByID[rivalID] else { continue }
+                        expectEqual(counts[rivalName] ?? 0, 1,
+                                    "seed \(index): \(programme.name)'s rival is named "
+                                        + "\(rivalName), which \(counts[rivalName] ?? 0) programmes share")
+                    }
+                }
             }
         }
 

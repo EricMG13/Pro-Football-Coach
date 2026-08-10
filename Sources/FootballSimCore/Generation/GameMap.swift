@@ -83,13 +83,26 @@ public struct GameMap: Codable, Sendable, Equatable {
             ))
         }
 
+        // Drawn without replacement. See `NameGrammar.distinctPlaceNames`: with replacement, every
+        // league carried duplicate city names and two-thirds carried two programmes with the
+        // identical full name.
+        var placeNames = NameGrammar.distinctPlaceNames(using: &rng)
+        // Guard rather than trap, because D14's fallback can change the league size and a larger
+        // map is a foreseeable change. Falling back to drawing with replacement keeps generation
+        // working and is caught by the uniqueness test rather than by a crash.
+        if placeNames.count < cityCount {
+            while placeNames.count < cityCount {
+                placeNames.append(NameGrammar.placeName(using: &rng))
+            }
+        }
+
         var cities: [MapCity] = []
         for index in 0..<cityCount {
             let region = index % regionCount
             let centre = regionCentres[region]
             cities.append(MapCity(
                 id: rng.uuid(),
-                name: NameGrammar.placeName(using: &rng),
+                name: placeNames[index],
                 regionID: regions[region].id,
                 x: clamp(centre.x + rng.int(in: -(width / 8)...(width / 8)), 0, width),
                 y: clamp(centre.y + rng.int(in: -(height / 8)...(height / 8)), 0, height),
@@ -99,8 +112,20 @@ public struct GameMap: Codable, Sendable, Equatable {
         return GameMap(regions: regions, cities: cities)
     }
 
+    /// The map's own noun pool, which lands in every region name and which
+    /// `NameGrammar.emittableWords` does not know about — hence `GenerationVocabulary`.
+    ///
+    /// "Delta" was here and is gone: crossed with an institution word it spells Delta State, one of
+    /// the six real institutions `docs/PORT-LOG.md` records the prior build shipping under a
+    /// comment reading "Fictional alma maters".
+    static let regionWords = [
+        "Reach", "Basin", "Coast", "Uplands", "Flats", "Divide", "Marches", "Tidelands",
+    ]
+
+    static var emittableWords: [String] { regionWords }
+
     private static func regionWord(_ index: Int) -> String {
-        ["Reach", "Basin", "Coast", "Uplands", "Flats", "Divide", "Marches", "Delta"][index % 8]
+        regionWords[index % regionWords.count]
     }
 
     private static func clamp(_ value: Int, _ low: Int, _ high: Int) -> Int {

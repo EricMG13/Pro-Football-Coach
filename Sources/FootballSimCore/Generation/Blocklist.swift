@@ -26,22 +26,51 @@ public enum Blocklist {
         name.lowercased().filter { $0.isLetter || $0.isNumber }
     }
 
-    /// Every blocked *name*, normalised. Institutions, nicknames, conferences, stadiums, cities and
-    /// identifiable people, in one set because the test asks one question of every generated
-    /// string: is this a real thing's name?
-    public static let names: Set<String> = Set(
-        (institutions + nicknames + conferences + venues + cities + people).map(normalised)
-    )
-
-    /// True if `name`, or any word in it, is a blocked name.
+    /// Every blocked entry, as its sequence of normalised words.
     ///
-    /// Whole-string *and* per-word, because "Clemson Valley" is not saved by the extra word. A
-    /// generated multi-word name is checked as a whole and then component by component.
+    /// Word *sequences*, not whole strings. The first version normalised each entry to one token,
+    /// so "Ohio State" became `ohiostate` and no single word of a longer candidate could ever equal
+    /// it — which made every one of the 114 multi-word entries invisible the moment another word
+    /// was attached. `blocks("Ohio State")` was true and `blocks("Ohio State Technical")` false.
+    ///
+    /// The case that settles it: `docs/PORT-LOG.md` names **`Old Dominion Tech`** as one of the six
+    /// real institutions the prior build shipped under a comment reading "Fictional alma maters".
+    /// The gate written to catch that failure did not catch the string it names.
+    public static let entries: [[String]] = (institutions + nicknames + conferences + venues + cities
+        + people).map(words)
+
+    /// The same entries as single normalised tokens, for the whole-string check.
+    public static let names: Set<String> = Set(entries.map { $0.joined() })
+
+    /// The longest entry, in words. Bounds the sliding window; derived rather than inlined, because
+    /// `CLAUDE.md` forbids the magic number and because an entry longer than the window would be
+    /// silently uncheckable.
+    static let longestEntryWords: Int = entries.map(\.count).max() ?? 1
+
+    private static func words(_ name: String) -> [String] {
+        name.split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .map { normalised(String($0)) }
+            .filter { !$0.isEmpty }
+    }
+
+    /// True if any contiguous run of `name`'s words is a blocked entry.
+    ///
+    /// Word sequences rather than raw substring containment. Substring containment is safe against
+    /// today's generator and blocks invented names on sight — "Thibo Jacksonville" contains
+    /// `bojackson`, "Newyorkshire" contains `newyork` — and a legal gate that fails on original
+    /// names is a gate that gets weakened rather than obeyed.
     public static func blocks(_ name: String) -> Bool {
-        if names.contains(normalised(name)) { return true }
-        return name
-            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
-            .contains { names.contains(normalised(String($0))) }
+        let candidate = words(name)
+        guard !candidate.isEmpty else { return false }
+        for start in candidate.indices {
+            let longest = Swift.min(longestEntryWords, candidate.count - start)
+            guard longest > 0 else { continue }
+            for length in 1...longest
+            where names.contains(candidate[start..<(start + length)].joined()) {
+                return true
+            }
+        }
+        return false
     }
 
     // MARK: - Real trade dress

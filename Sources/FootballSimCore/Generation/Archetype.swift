@@ -38,11 +38,17 @@ public struct Archetype: Sendable, Equatable {
     /// keeps the character its name describes. `separationFloor` records the requirement the search
     /// was run against.
     ///
-    /// The floor is *derived*: jitter is plus or minus `LeagueGenerator.priorJitter` on each of four
-    /// dimensions, so a programme sits a mean L1 of about 16 from its own archetype's centroid.
-    /// Anything under about 1.5 times that would put a programme closer to a neighbour than to its
-    /// own centroid often enough to matter.
-    public static let separationFloor = 24
+    /// **Two numbers, and they are not the same number.** The *derived requirement* is 24: jitter is
+    /// plus or minus `LeagueGenerator.priorJitter` on each of four dimensions, so a programme sits a
+    /// mean L1 of about 16 from its own centroid, and anything under about 1.5 times that puts a
+    /// programme nearer a neighbour than its own archetype often enough to matter. The *achieved*
+    /// minimum after the search is 62.
+    ///
+    /// The bar is set at 48, not 24. A bar at less than half the measured value is not a gate — the
+    /// spacing could regress by a factor of two and stay green, which is exactly the regression that
+    /// would make the archetypes cosmetic again. 48 leaves room to re-tune an archetype's character
+    /// while failing loudly on a collapse.
+    public static let separationFloor = 48
     public static let all: [Archetype] = [
         Archetype(id: 0, name: "Land-grant power",
                   resources: 99, fanbaseVolatility: 79, academicConstraint: 44,

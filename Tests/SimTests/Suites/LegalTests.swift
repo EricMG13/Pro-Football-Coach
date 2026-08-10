@@ -16,10 +16,23 @@ import FootballSimCore
 /// `02` §11.3.5. One sweep serves both these tests and D6's falsifier.
 let LEGAL_SWEEP_LEAGUES = 200
 
-/// The seed for sweep league `index`. Multiplied by an odd constant so consecutive indices are not
-/// consecutive seeds — a sweep over 0, 1, 2 exercises neighbouring RNG streams rather than
-/// independent ones, which is a weaker test than it looks.
-func sweepSeed(_ index: Int) -> UInt64 { UInt64(index) &* 0x9E37_79B9_7F4A_7C15 }
+/// The seed for sweep league `index`.
+///
+/// This was `UInt64(index) &* 0x9E37_79B9_7F4A_7C15` — SplitMix64's own gamma, the exact constant
+/// `SeededRandom.next()` adds to its state. So league *i*'s stream was league 0's stream shifted
+/// forward by *i* draws, and the sweep was one stream read at 200 offsets. Measured: 795 distinct
+/// colour pairs across 33,200 identities instead of 33,200, with leagues 6 through 200 contributing
+/// 408 new pairs between them. **The trade-dress sweep was worth about five independent leagues**,
+/// and unlike the collision test it has no by-construction limb behind it — the sweep *is* the
+/// trade-dress test.
+///
+/// Running the index through one round of SplitMix64 decorrelates it: verified at 33,200 distinct
+/// pairs, matching an independent-FNV baseline. The docstring that used to sit here claimed exactly
+/// the property the constant destroyed.
+func sweepSeed(_ index: Int) -> UInt64 {
+    var generator = SeededRandom(seed: UInt64(index))
+    return generator.next()
+}
 
 /// The swept worlds, generated once.
 ///
@@ -80,24 +93,79 @@ func runLegalTests() {
             }
         }
 
-        test("a real name hidden inside a longer one is still blocked") {
-            // "Clemson Valley" is not saved by the extra word, and a generator that concatenates is
-            // exactly how one would appear.
-            expect(Blocklist.blocks("Clemson Valley"), "an embedded real name was not blocked")
-            expect(Blocklist.blocks("North Alabama Technical"), "an embedded institution was missed")
+        test("a real name hidden inside a longer one is still blocked, including multi-word ones") {
+            // The previous version of this test was titled for this case and could not see it. Both
+            // its examples — "Clemson Valley", "North Alabama Technical" — hit on a single word, so
+            // deleting the multi-word capability entirely left it green.
+            //
+            // The decisive case is the one PORT-LOG.md names: "Old Dominion Tech" is one of the six
+            // real institutions the prior build shipped under a comment reading "Fictional alma
+            // maters", and blocks() returned false for it while returning true for the bare
+            // "Old Dominion" this test used to plant.
+            for planted in ["Clemson Valley", "North Alabama Technical",
+                            "Old Dominion Tech", "Delta State Tech",
+                            "Ohio State Technical", "North Notre Dame", "Upper Boise State",
+                            "The Ohio State University", "Nick Saban Field",
+                            "Coastal Green Bay", "Kyle Field Stadium"] {
+                expect(Blocklist.blocks(planted), "\(planted) contains a real name and was not blocked")
+            }
         }
 
-        test("no morpheme the grammar can emit is itself a blocked name") {
-            // By construction, and stronger than the sweep above. A generated name is a
-            // concatenation of these, so a blocked word anywhere in a pool is a collision waiting
-            // for the right seed — and 200 leagues is a sample, not a proof. "Crimson" sat in the
-            // nickname adjectives until the sweep happened to surface it; a rarer word might not
-            // have appeared at all.
-            let offenders = NameGrammar.allMorphemes
+        test("every blocklist entry is still blocked with a word attached at either end") {
+            // By construction over the whole list rather than over remembered examples. 114 of the
+            // entries are multi-word, and every one of them was invisible the moment a word was
+            // attached.
+            var offenders: [String] = []
+            for entry in Blocklist.entries.map({ $0.joined(separator: " ") }) {
+                if !Blocklist.blocks(entry + " Technical") { offenders.append("\(entry) + suffix") }
+                if !Blocklist.blocks("North " + entry) { offenders.append("prefix + \(entry)") }
+            }
+            expect(offenders.isEmpty,
+                   "these entries stop being blocked once a word is attached: "
+                       + offenders.prefix(8).joined(separator: ", "))
+        }
+
+        test("no word any generator can emit is itself a blocked name") {
+            // By construction, and stronger than the sweep above, which is a sample. CLAUDE.md's
+            // guardrail says no generated name matches a real one "at any seed" — that is a claim
+            // about the reachable set, and only exhaustion proves it.
+            //
+            // The first version of this test read one file's pools and missed 505 of the 638
+            // reachable words, including all 464 surnames, which reach a stadium name. It also
+            // listed surname stems and endings separately while the generator concatenates them
+            // into one word, and the concatenation is the unit Blocklist splits on.
+            let words = GenerationVocabulary.everyEmittableWord
+            expect(words.count > 600,
+                   "only \(words.count) emittable words — a pool is not contributing")
+            let offenders = words
                 .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
                 .filter { Blocklist.blocks($0) }
             expect(offenders.isEmpty,
-                   "these grammar morphemes are real names: " + offenders.joined(separator: ", "))
+                   "these generator words are real names: "
+                       + Array(Set(offenders)).sorted().joined(separator: ", "))
+        }
+
+        test("the vocabulary covers the words the sweep actually produced") {
+            // The guard on the guard. GenerationVocabulary is contributed to by hand, one pool per
+            // type, so a phase that adds a pool and forgets is the remaining hole. This closes it
+            // from the other side: every word the generator was observed emitting must be in the
+            // declared vocabulary, or the vocabulary is out of date.
+            let declared = Set(GenerationVocabulary.everyEmittableWord.map(Blocklist.normalised))
+            var missing: Set<String> = []
+            for world in sweptWorlds.prefix(25) {
+                for name in world.everyGeneratedName {
+                    for word in name.split(whereSeparator: { !$0.isLetter && !$0.isNumber }) {
+                        let normalised = Blocklist.normalised(String(word))
+                        if !normalised.isEmpty, !declared.contains(normalised) {
+                            missing.insert(String(word))
+                        }
+                    }
+                }
+            }
+            expect(missing.isEmpty,
+                   "the generator emitted words the vocabulary does not declare, so the "
+                       + "by-construction legal check does not cover them: "
+                       + missing.sorted().prefix(12).joined(separator: ", "))
         }
 
         test("the morpheme check would catch a planted real word") {
