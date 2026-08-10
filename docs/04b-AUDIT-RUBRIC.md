@@ -543,9 +543,9 @@ All citations are to `docs/AUDIT.md` at the state audited: generated 2026-08-09 
 | Recommended Actions | 884–898 |
 | Appendix — Refuted Findings (6) | 900–927 |
 
-Referenced elsewhere: `docs/archive/PRODUCT.md` (accessibility commitments: XXXL survival, 4.5:1
+Referenced elsewhere: the deleted `PRODUCT.md` (pre-rebuild) (accessibility commitments: XXXL survival, 4.5:1
 verified against actual surfaces, 44pt targets, VoiceOver sentences, Reduce Motion, never-colour-alone;
-performance targets: week advance under 150 ms, saves under 5 MB) and `docs/archive/DESIGN.md` (the
+performance targets: week advance under 150 ms, saves under 5 MB) and the deleted `DESIGN.md` (the
 Measured-Surface Rule, the Never-Colour-Alone Rule, the Dynamic Type Rule, the Tabular Figures Rule).
 Both are archived per `docs/DOC-MANIFEST.md`; their commitments are superseded by
 `docs/04-UX-AND-DESIGN-SYSTEM.md` and `PRODUCT.md`, and this rubric grades against **those**, not

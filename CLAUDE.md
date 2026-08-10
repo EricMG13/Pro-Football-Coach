@@ -53,7 +53,7 @@ prose as if it were a test.
 `docs/DOC-MANIFEST.md` is the authority on what is canon. Its rule has **two limbs, and quoting only
 the first inverts it**: a document carries authority if it is listed there as `RETAINED` **or** is
 one of the canon documents listed in its §4. **Anything else carries none**, whatever path it sits
-at. Files under `docs/archive/` are history.
+at. **There is no archive as of 2026-08-10** — the superseded documents were deleted rather than kept, because a cold builder who opens one is the failure the manifest exists to prevent. `docs/DOC-MANIFEST.md` records what each was and why; `git show` recovers any of them.
 
 | Doc | Purpose |
 |---|---|

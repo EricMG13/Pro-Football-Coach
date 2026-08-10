@@ -305,7 +305,7 @@ watching the suite turn red; the detail is in the fix commit. Three consequences
 | Artefact | State | Verified by |
 |---|---|---|
 | `CLAUDE.md` | Rewritten as Deliverable 0 | Read by hand; consistent with `08` |
-| `docs/DOC-MANIFEST.md` + archival | Done; anti-canon moved to `docs/archive/` | `git status` shows the moves; `README.md` repointed |
+| `docs/DOC-MANIFEST.md` + archival | Done; anti-canon deleted 2026-08-10 | `git status` shows the moves; `README.md` repointed |
 | `docs/01-RESEARCH.md` | 7,300 lines, §6.0–§6.5 plus carried-forward §A–§H | Adversarial completeness critic; two defects found and fixed |
 | `docs/04b-AUDIT-RUBRIC.md` | Reconstructed from `AUDIT.md` evidence | **Not** extracted from the tool — see caveat below |
 | `docs/02-GAME-DESIGN.md` | Written | Not independently reviewed |

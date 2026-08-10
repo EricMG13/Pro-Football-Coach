@@ -9,21 +9,25 @@ mode, no throwing passes. Matches are watched in a 2D view and shaped by roster 
 identity, opponent preparation, staff and in-game decisions. Every school, team, conference, city,
 stadium, player and coach is fictional and original.
 
-> **Status: the spec package is complete. No line of the rebuild has been written.**
+> **Status: P0 through P3 are complete. P4's instrument is built and the engine it measures is
+> not yet calibrated.** There is a foundation, a model, two rules modules, a world generator, and
+> a match engine that plays a whole game from a seed and records why every play happened.
+> Suite: **243 tests, 74,796 checks**, byte-identical across separate process invocations.
 >
-> Every canon document listed below exists. Phase **P0** is planned
-> ([`docs/plans/2026-08-09-p0-foundation.md`](docs/plans/2026-08-09-p0-foundation.md)) and has not
-> been executed.
+> **P5 through P17 have not started** — the off-screen model, seasons, both tiers' systems, the
+> career arc, the AI, the design system and every view are ahead.
 >
-> The code under `Sources/`, `Tests/` and `App/` is the *previous* build — a pro-only franchise sim
-> with an arcade mode — and carries **no authority** over the rebuild. P0's first task deletes most
-> of it. Do not treat it as a specification.
+> The UI has a **rendered reference library**: sixteen `*-v2.dc.html` sheets at the repository
+> root, indexed in [`docs/04-UX-AND-DESIGN-SYSTEM.md`](docs/04-UX-AND-DESIGN-SYSTEM.md). The rules
+> live in `04`; the sheets are a rendering of them. A value that appears only in a sheet has not
+> shipped.
 >
-> [`docs/STATUS.md`](docs/STATUS.md) is the honest picture and takes precedence over this paragraph.
+> [`docs/STATUS.md`](docs/STATUS.md) is the honest picture and takes precedence over this
+> paragraph. [`docs/HANDOFF-2026-08-10.md`](docs/HANDOFF-2026-08-10.md) is the cold-start pointer.
 
 ## Start here
 
-1. **[`docs/DOC-MANIFEST.md`](docs/DOC-MANIFEST.md)** — what is canon, what was archived and why.
+1. **[`docs/DOC-MANIFEST.md`](docs/DOC-MANIFEST.md)** — what is canon, and what was deleted and why.
    Read this before opening anything else in `docs/`. Its rule has two limbs, and quoting only the
    first inverts it: a document carries authority if it is marked `RETAINED` **or** is one of the
    canon documents listed in its §4. Anything else carries none, whatever path it sits at.
@@ -42,7 +46,7 @@ entry point: it owns the mission and the definition of done, and it runs one pha
 
 | Doc | Purpose |
 |---|---|
-| [`docs/DOC-MANIFEST.md`](docs/DOC-MANIFEST.md) | Canon, superseded, archived |
+| [`docs/DOC-MANIFEST.md`](docs/DOC-MANIFEST.md) | Canon, and what was deleted, with reasons |
 | [`CLAUDE.md`](CLAUDE.md) | Standing rules for every session |
 | [`docs/01-RESEARCH.md`](docs/01-RESEARCH.md) | Reference research, competitive set, community signal, calibration sources |
 | [`docs/02-GAME-DESIGN.md`](docs/02-GAME-DESIGN.md) | The game: core loop, agency model, both tiers, promotion arc, systems, stakes |
@@ -59,7 +63,7 @@ entry point: it owns the mission and the definition of done, and it runs one pha
 | [`docs/STATUS.md`](docs/STATUS.md) | Honest state of the build: what exists, what is verified, what is not |
 | [`docs/AUDIT.md`](docs/AUDIT.md) | Prior UI audit — evidence about craft, retained read-only |
 | [`PRODUCT.md`](PRODUCT.md) | Positioning, audience, market gap, v1 scope |
-| [`docs/archive/`](docs/archive/) | History. No authority, nothing here is a specification |
+| *(no archive)* | The superseded documents were deleted on 2026-08-10. `docs/DOC-MANIFEST.md` records what each was and why it went; `git show` recovers any of them |
 
 ## Non-negotiables
 
@@ -80,17 +84,18 @@ entry point: it owns the mission and the definition of done, and it runs one pha
 | Path | What |
 |---|---|
 | `docs/` | Design and planning documents. Start at `docs/DOC-MANIFEST.md` |
-| `docs/archive/` | Superseded documents, kept as history. No authority |
+| *(no archive)* | Deleted 2026-08-10. See `docs/DOC-MANIFEST.md` |
 | `docs/plans/` | Per-phase task plans, one per phase, written before that phase is built |
+| `*-v2.dc.html` | The rendered UI reference library. Indexed in `docs/04-UX-AND-DESIGN-SYSTEM.md` |
 | `docs/reviews/` | The governing brief and the review that produced it |
-| `Sources/FootballSimCore/` | Prior simulation engine — pure Swift, no UI imports, seeded RNG |
-| `Sources/ProFootballCoachUI/` | Prior SwiftUI feature layer (views + view models) |
-| `Tests/SimTests/` | Prior test suite and its hand-rolled harness |
+| `Sources/FootballSimCore/` | The engine — pure Swift, no UI imports, seeded RNG. P0–P4 |
+| `Sources/ProFootballCoachUI/` | The SwiftUI layer. Empty until P11 |
+| `Tests/SimTests/` | The suite and its hand-rolled harness |
 | `App/` | Thin `@main` iOS shell + `project.yml` for Xcode project generation |
 | `scripts/verify.sh` | Runs both machine gates and prints a pasteable result |
 
-Everything under `Sources/`, `Tests/` and `App/` is the previous implementation, retained as readable
-prior art only until P0 removes it.
+The previous build was removed by P0; what is under `Sources/`, `Tests/` and `App/` now is the
+rebuild. `docs/PORT-LOG.md` records what survived and why, both ways.
 
 ## Building
 

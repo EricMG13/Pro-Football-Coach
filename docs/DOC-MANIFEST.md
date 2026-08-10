@@ -7,7 +7,7 @@ rebuild appears in the table below exactly once, classified and given a reason.
 
 **The rule: a document not listed here as `RETAINED`, or written as one of the new canon documents
 listed in [§4](#4-canon-paths), carries no authority — whatever path it sits at.**
-Files under `docs/archive/` are history, not specification.
+**As of 2026-08-10 there is no archive.** Everything previously held there was deleted; see §1.
 
 This exists because a cold builder used to open `README.md`, read "Start here:
 `docs/00-EXECUTIVE-PLAN.md`", and land in a plan for a different product — and could then find
@@ -31,7 +31,7 @@ brief: `docs/reviews/2026-08-09-spec-prompt-v4.md`. Standing rules: `CLAUDE.md`.
 | Mark | Meaning | Where the old text lives |
 |---|---|---|
 | `SUPERSEDED-BY <path>` | A new document has **already been written at that same path**, replacing the old one in place. | Git history only. |
-| `ARCHIVED-TO docs/archive/<path>` | The file has been moved out of the canon tree. Its old path is now empty (or will be re-occupied by a new document, named in the row). | `docs/archive/`. |
+| **DELETED** | Gone from the tree. Its old path is empty, or re-occupied by a new document named in the row. | Git history. |
 | `RETAINED` | Still at its path, still authoritative. | Unchanged. |
 
 `SUPERSEDED-BY` is used **only** where the replacement exists now. Where a replacement is still to be
@@ -47,20 +47,20 @@ builder build the wrong game.
 |---|---|---|---|
 | `CLAUDE.md` | `SUPERSEDED-BY CLAUDE.md` | Rewritten in place as Deliverable 0. The old text asserted a pro-only scope, "College mechanics are replaced by pro mechanics", a 32-team league shape, and a doc map pointing at the arcade mode — all now false. Not archived: every session loads this file, so it must never be absent. | `CLAUDE.md` (current) |
 | `README.md` | `SUPERSEDED-BY README.md` | Rewritten in place by this deliverable. Its "Start here" pointed at `docs/00-EXECUTIVE-PLAN.md`, and its one-line description sold a pro-only franchise sim. | `README.md` (current) |
-| `PRODUCT.md` | `ARCHIVED-TO docs/archive/PRODUCT.md`, and the later gate-2 rewrite to `docs/archive/PRODUCT-primetime.md` | Positioning is built on a pro-only product and explicitly sells the "On the Field" arcade mode the mission forbids; its market-gap claim predates the research that must now produce it (§6.3 of the brief). | New `PRODUCT.md` — Deliverable 7 |
-| `DESIGN.md` | `ARCHIVED-TO docs/archive/DESIGN.md` | The design system gets exactly one home, and it is not this file. Its tokens describe the "Coordinator's Clipboard" visual world, which the archived Almanac plan had already superseded, on a screen inventory that no longer applies. Explicitly **not** maintained in parallel. | `docs/04-UX-AND-DESIGN-SYSTEM.md` — Deliverable 5 |
+| `PRODUCT.md` | **DELETED**, as was the later gate-2 rewrite `PRODUCT-primetime.md` | Positioning is built on a pro-only product and explicitly sells the "On the Field" arcade mode the mission forbids; its market-gap claim predates the research that must now produce it (§6.3 of the brief). | New `PRODUCT.md` — Deliverable 7 |
+| `DESIGN.md` | **DELETED** | The design system gets exactly one home, and it is not this file. Its tokens describe the "Coordinator's Clipboard" visual world, which the archived Almanac plan had already superseded, on a screen inventory that no longer applies. Explicitly **not** maintained in parallel. | `docs/04-UX-AND-DESIGN-SYSTEM.md` — Deliverable 5 |
 
 ### `docs/`
 
 | Path | Classification | Reason | Where its role lives now |
 |---|---|---|---|
-| `docs/00-EXECUTIVE-PLAN.md` | `ARCHIVED-TO docs/archive/00-EXECUTIVE-PLAN.md` | The master plan for the discarded pro-only scope — 32 teams, live two-way play-calling, Phase 4B "On the Field". It was the repo's advertised entry point, which made it the most misleading file a cold builder could open. No new document takes the `00-` number. | Split: scope and positioning → `PRODUCT.md`; phases, gates and process → `docs/05-IMPLEMENTATION-PLAN.md`; definition of done → `docs/08-OPUS5-BUILD-PROMPT.md` |
+| `docs/00-EXECUTIVE-PLAN.md` | **DELETED** | The master plan for the discarded pro-only scope — 32 teams, live two-way play-calling, Phase 4B "On the Field". It was the repo's advertised entry point, which made it the most misleading file a cold builder could open. No new document takes the `00-` number. | Split: scope and positioning → `PRODUCT.md`; phases, gates and process → `docs/05-IMPLEMENTATION-PLAN.md`; definition of done → `docs/08-OPUS5-BUILD-PROMPT.md` |
 | `docs/01-RESEARCH.md` | `RETAINED` | Tier B evidence. Sections A (reference-app screen inventory), B (the lineage), C and H (community signal), D (owner working patterns) and F (legal guardrails) carry forward. Extended, never replaced — see [§5](#5-required-edits-inside-retained-documents). | `docs/01-RESEARCH.md`, extended by Deliverable 1 |
-| `docs/02-GAME-DESIGN.md` | `ARCHIVED-TO docs/archive/02-GAME-DESIGN.md` | Designs a different game: 32 fictional pro teams in 2 conferences × 4 divisions, no college tier, and "Every down is a decision" as the core loop — i.e. it silently resolves gate zero (agency density) in favour of every-snap play-calling, the exact question the rebuild must decide with arithmetic. | New `docs/02-GAME-DESIGN.md` — Deliverable 2 |
-| `docs/03-ARCHITECTURE.md` | `ARCHIVED-TO docs/archive/03-ARCHITECTURE.md` | Number collision: `03` is now the match engine. Its content is also stale — module layout, save format and test mechanism are re-decided in D7 and D11, and it assumes a single pro league. | `docs/03b-ARCHITECTURE.md` — Deliverable 4 |
-| `docs/04-SCREENS-UI.md` | `ARCHIVED-TO docs/archive/04-SCREENS-UI.md` | Number collision: `04` is now UX and the design system. Its screens are converted one-for-one from the pro-only scope and include play-calling and arcade surfaces that no longer exist. | `docs/04-UX-AND-DESIGN-SYSTEM.md` — Deliverable 5 |
-| `docs/05-IMPLEMENTATION-PLAN.md` | `ARCHIVED-TO docs/archive/05-IMPLEMENTATION-PLAN.md` | Phases P0–P8 build the implementation Tier C discards, including P4B/4C arcade mode, and its gates cite bands and budgets that D3/D4 must re-derive from the college case. | New `docs/05-IMPLEMENTATION-PLAN.md` — Deliverable 8 |
-| `docs/06-PLAYED-GAME-MODE.md` | `ARCHIVED-TO docs/archive/06-PLAYED-GAME-MODE.md` | **The most dangerous file in the repo for a cold builder.** It specifies direct player control — drag-aim passing, ball-carrier control, kick meter, all-22 arcade field — in enough detail to be built from. The mission forbids all of it. The `06-` number is now the audit disposition. | Nothing. The feature is out of scope. `docs/06-AUDIT-DISPOSITION.md` (Deliverable 9) takes the number |
+| `docs/02-GAME-DESIGN.md` | **DELETED** | Designs a different game: 32 fictional pro teams in 2 conferences × 4 divisions, no college tier, and "Every down is a decision" as the core loop — i.e. it silently resolves gate zero (agency density) in favour of every-snap play-calling, the exact question the rebuild must decide with arithmetic. | New `docs/02-GAME-DESIGN.md` — Deliverable 2 |
+| `docs/03-ARCHITECTURE.md` | **DELETED** | Number collision: `03` is now the match engine. Its content is also stale — module layout, save format and test mechanism are re-decided in D7 and D11, and it assumes a single pro league. | `docs/03b-ARCHITECTURE.md` — Deliverable 4 |
+| `docs/04-SCREENS-UI.md` | **DELETED** | Number collision: `04` is now UX and the design system. Its screens are converted one-for-one from the pro-only scope and include play-calling and arcade surfaces that no longer exist. | `docs/04-UX-AND-DESIGN-SYSTEM.md` — Deliverable 5 |
+| `docs/05-IMPLEMENTATION-PLAN.md` | **DELETED** | Phases P0–P8 build the implementation Tier C discards, including P4B/4C arcade mode, and its gates cite bands and budgets that D3/D4 must re-derive from the college case. | New `docs/05-IMPLEMENTATION-PLAN.md` — Deliverable 8 |
+| `docs/06-PLAYED-GAME-MODE.md` | **DELETED** | **The most dangerous file in the repo for a cold builder.** It specifies direct player control — drag-aim passing, ball-carrier control, kick meter, all-22 arcade field — in enough detail to be built from. The mission forbids all of it. The `06-` number is now the audit disposition. | Nothing. The feature is out of scope. `docs/06-AUDIT-DISPOSITION.md` (Deliverable 9) takes the number |
 | `docs/AUDIT.md` | `RETAINED` | Tier B evidence. A UI-layer audit of the discarded view code, so it is evidence about *craft*, not about why the game was boring. Its `Patterns & Systemic Issues` section, and the line *"the test's coverage boundary became the quality boundary"*, are design inputs for the rebuild. Read-only; dispositioned, not edited. | `docs/AUDIT.md`; disposition in `docs/06-AUDIT-DISPOSITION.md` |
 | `docs/STATUS.md` | `RETAINED` | Tier B evidence and the live status document. Holds the calibration bands, the soak invariants, the bounded-save-growth lesson, the toolchain reality that D11 must answer to, and the record of Phase 4C shipping uncompiled. The builder keeps writing to it. | `docs/STATUS.md` |
 
@@ -79,16 +79,16 @@ Owner decision, 2026-08-09: **superseded — archive it.** Nothing is deleted.
 
 | Path | Classification | Reason | Where its role lives now |
 |---|---|---|---|
-| `docs/07-SALVAGE.md` | `ARCHIVED-TO docs/archive/07-SALVAGE.md` | The earlier program's salvage ledger, written against the pro-only v1. v4 re-does the same job in both directions — a logged reason to port *and* a logged reason to discard — from the current mission. | `docs/PORT-LOG.md` |
-| `docs/research/R1a-madden-franchise.md` | `ARCHIVED-TO docs/archive/research/` | Reference dossier for the earlier program. Its ground is re-covered from the current scope, with per-claim sourcing and a standing-caveat register the dossiers do not carry. | `docs/01-RESEARCH.md` §6.2A |
-| `docs/research/R1b-retro-bowl.md` | `ARCHIVED-TO docs/archive/research/` | Same. | `docs/01-RESEARCH.md` §6.2B |
-| `docs/research/R1c-football-manager.md` | `ARCHIVED-TO docs/archive/research/` | Same, and narrower than what replaced it: §6.1 separates FM Mobile from desktop FM, which conflating is the main error in this area. | `docs/01-RESEARCH.md` §6.1, §6.6 |
-| `docs/research/R1d-adjacent-and-feel.md` | `ARCHIVED-TO docs/archive/research/` | Same. | `docs/01-RESEARCH.md` §6.2A, §6.2B |
-| `docs/research/R2-synthesis.md` | `ARCHIVED-TO docs/archive/research/` | Produced the six Experience Pillars and the parity rule, both written for the pro-only scope. The market argument it asserts is re-derived as an *output* in §6.3 rather than assumed. | `docs/01-RESEARCH.md` §6.3; `PRODUCT.md` |
-| `docs/design/briefs/00-system.md` … `07-coach.md` (8 files) | `ARCHIVED-TO docs/archive/design/briefs/` | Per-screen briefs for the pro-only screen set, including front office and draft surfaces shaped by a 32-team league with no college tier. The design system they build on is the Primetime/Broadcast skin, which `04` replaces from zero. | `docs/04-UX-AND-DESIGN-SYSTEM.md` §4 |
-| `docs/design/mockups/*.dc.html`, `02-hub-storyboard-selection.png` (12 files) | `ARCHIVED-TO docs/archive/design/mockups/` | Twelve owner-approved frames — real signed-off evidence, and the reason this row says archived rather than deleted. They are approvals of a **different product's** screens under a design system `04` does not inherit, so they cannot be canon; they remain readable as evidence of what the owner liked. | `docs/04-UX-AND-DESIGN-SYSTEM.md`; the approvals themselves carry no authority over the new screen set |
-| `docs/OPEN-DECISIONS.md` (main's) | `ARCHIVED-TO docs/archive/OPEN-DECISIONS-rebuild-gates.md` | **Not an older version of the file at that path — a different document that shares it.** Main's is the **OD-1…OD-5** owner-decision log from the three signed-off rebuild gates, two of its entries still open; v4's is the D1–D14 register. The OD rulings are real owner decisions and are preserved under their own name rather than lost to a conflict resolution. | `docs/OPEN-DECISIONS.md` (D1–D14) is canon; the OD log is history |
-| `docs/PRE-DEPLOYMENT-CHECKLIST.md` (main's) | `ARCHIVED-TO docs/archive/PRE-DEPLOYMENT-CHECKLIST-broadcast.md` | Same situation. Main's is the outstanding-work list from the Broadcast skin critique (8 assessors, 87 issues) against a tree that P0 deletes. Retained as evidence about craft, like `AUDIT.md`. | `docs/PRE-DEPLOYMENT-CHECKLIST.md` (v4's) |
+| `docs/07-SALVAGE.md` | **DELETED** | The earlier program's salvage ledger, written against the pro-only v1. v4 re-does the same job in both directions — a logged reason to port *and* a logged reason to discard — from the current mission. | `docs/PORT-LOG.md` |
+| `docs/research/R1a-madden-franchise.md` | **DELETED** | Reference dossier for the earlier program. Its ground is re-covered from the current scope, with per-claim sourcing and a standing-caveat register the dossiers do not carry. | `docs/01-RESEARCH.md` §6.2A |
+| `docs/research/R1b-retro-bowl.md` | **DELETED** | Same. | `docs/01-RESEARCH.md` §6.2B |
+| `docs/research/R1c-football-manager.md` | **DELETED** | Same, and narrower than what replaced it: §6.1 separates FM Mobile from desktop FM, which conflating is the main error in this area. | `docs/01-RESEARCH.md` §6.1, §6.6 |
+| `docs/research/R1d-adjacent-and-feel.md` | **DELETED** | Same. | `docs/01-RESEARCH.md` §6.2A, §6.2B |
+| `docs/research/R2-synthesis.md` | **DELETED** | Produced the six Experience Pillars and the parity rule, both written for the pro-only scope. The market argument it asserts is re-derived as an *output* in §6.3 rather than assumed. | `docs/01-RESEARCH.md` §6.3; `PRODUCT.md` |
+| `docs/design/briefs/00-system.md` … `07-coach.md` (8 files) | **DELETED** | Per-screen briefs for the pro-only screen set, including front office and draft surfaces shaped by a 32-team league with no college tier. The design system they build on is the Primetime/Broadcast skin, which `04` replaces from zero. | `docs/04-UX-AND-DESIGN-SYSTEM.md` §4 |
+| `docs/design/mockups/*.dc.html`, `02-hub-storyboard-selection.png` (12 files) | **DELETED** | Twelve owner-approved frames — real signed-off evidence, and the reason this row says archived rather than deleted. They are approvals of a **different product's** screens under a design system `04` does not inherit, so they cannot be canon; they remain readable as evidence of what the owner liked. | `docs/04-UX-AND-DESIGN-SYSTEM.md`; the approvals themselves carry no authority over the new screen set |
+| `docs/OPEN-DECISIONS.md` (main's) | **DELETED** | **Not an older version of the file at that path — a different document that shares it.** Main's is the **OD-1…OD-5** owner-decision log from the three signed-off rebuild gates, two of its entries still open; v4's is the D1–D14 register. The OD rulings are real owner decisions and are preserved under their own name rather than lost to a conflict resolution. | `docs/OPEN-DECISIONS.md` (D1–D14) is canon; the OD log is history |
+| `docs/PRE-DEPLOYMENT-CHECKLIST.md` (main's) | **DELETED** | Same situation. Main's is the outstanding-work list from the Broadcast skin critique (8 assessors, 87 issues) against a tree that P0 deletes. Retained as evidence about craft, like `AUDIT.md`. | `docs/PRE-DEPLOYMENT-CHECKLIST.md` (v4's) |
 
 **Three of main's canonical files were already classified above and needed no new row** —
 `DESIGN.md`, `docs/03-ARCHITECTURE.md` and `docs/04-SCREENS-UI.md` were archived on this branch
@@ -104,9 +104,9 @@ plan — the first plan in this directory that belongs to the rebuild rather tha
 
 | Path | Classification | Reason | Where its role lives now |
 |---|---|---|---|
-| `docs/plans/2026-08-09-phase-a-foundation.md` | `ARCHIVED-TO docs/archive/plans/2026-08-09-phase-a-foundation.md` | Phase plan for audit fixes and Almanac tokens inside the discarded UI layer. Its accessibility and save-queue thinking is reusable knowledge; the tasks are not. | New phase plans under `docs/plans/`, from Deliverable 8 |
-| `docs/plans/2026-08-09-almanac-redesign.md` | `ARCHIVED-TO docs/archive/plans/2026-08-09-almanac-redesign.md` | UI redesign of the pro-only build, whose own status line reads "awaiting owner approval. No build until the signal." That signal was never given, and the product it redesigns no longer exists. | `docs/04-UX-AND-DESIGN-SYSTEM.md` — Deliverable 5 |
-| `docs/plans/2026-08-09-arcade-all22.md` | `ARCHIVED-TO docs/archive/plans/2026-08-09-arcade-all22.md` | The build plan for direct player control (Phase 4C): input traces, thumb grading, a controlled ball carrier. Forbidden by the mission. Its `SnapKernel`/`Canvas` rendering notes may inform D2 as prior art, but the control layer must not be revived. | Nothing. Rendering prior art only, with no authority |
+| `docs/plans/2026-08-09-phase-a-foundation.md` | **DELETED** | Phase plan for audit fixes and Almanac tokens inside the discarded UI layer. Its accessibility and save-queue thinking is reusable knowledge; the tasks are not. | New phase plans under `docs/plans/`, from Deliverable 8 |
+| `docs/plans/2026-08-09-almanac-redesign.md` | **DELETED** | UI redesign of the pro-only build, whose own status line reads "awaiting owner approval. No build until the signal." That signal was never given, and the product it redesigns no longer exists. | `docs/04-UX-AND-DESIGN-SYSTEM.md` — Deliverable 5 |
+| `docs/plans/2026-08-09-arcade-all22.md` | **DELETED** | The build plan for direct player control (Phase 4C): input traces, thumb grading, a controlled ball carrier. Forbidden by the mission. Its `SnapKernel`/`Canvas` rendering notes may inform D2 as prior art, but the control layer must not be revived. | Nothing. Rendering prior art only, with no authority |
 
 ### `docs/reviews/`
 
@@ -120,24 +120,19 @@ plan — the first plan in this directory that belongs to the rebuild rather tha
 | Classification | Count |
 |---|---|
 | `SUPERSEDED-BY` (rewritten in place) | 2 |
-| `ARCHIVED-TO docs/archive/` — original pass | 11 |
-| `ARCHIVED-TO docs/archive/` — branch reconciliation, 2026-08-09 | 28 |
+| **DELETED** — original pass | 11 |
+| **DELETED** — branch reconciliation, 2026-08-09 | 28 |
 | `RETAINED` | 5 |
 | **Total documents classified** | **46** |
 
-Measured after the reconciliation, not asserted: `docs/archive/` holds **41 tracked files**
-(13 markdown at its root, 20 under `design/`, 5 under `research/`, 3 under `plans/`), and canonical
-`docs/` holds **15 markdown files** plus `plans/`, `reviews/` and `archive/`. **Fourteen of those 15
-appear in a table in §2 or §4.** The fifteenth is this file, which classifies the others and is named
-in §3's closing line rather than classifying itself.
+**Superseded 2026-08-10.** The counts and the `git ls-files docs/archive` check below were
+written when the anti-canon was archived rather than deleted. There is no archive now, so
+the check is `git ls-files docs/archive | wc -l` returning **0**. What each deleted file was,
+and why it went, is the table above — that is the part worth keeping.
 
-```bash
-git ls-files docs | grep -c '^docs/[^/]*\.md$'   # expect 15
-git ls-files docs/archive | wc -l                # expect 41
-```
 
 Files created by this deliverable, which have no pre-rebuild predecessor: `docs/DOC-MANIFEST.md`
-(this file) and `docs/archive/README.md` (a no-authority banner over the archive folder).
+(this file).
 
 ## 4. Canon paths
 
@@ -169,7 +164,7 @@ every document below, which is the opposite of what this manifest is for.
 
 There is deliberately no `docs/00-*` and no `docs/07-*`. `00` was the old executive plan and is not
 replaced. `07` **did** exist — the earlier program's salvage ledger — and is archived to
-`docs/archive/07-SALVAGE.md`; `docs/PORT-LOG.md` does that job now. Neither number is reused.
+the deleted `07-SALVAGE.md`; `docs/PORT-LOG.md` does that job now. Neither number is reused.
 
 ## 5. Required edits inside retained documents
 
@@ -193,8 +188,8 @@ dropped silently.
   `05-IMPLEMENTATION-PLAN.md` references now resolve to the **current** canon file rather than the
   archived one — so that pair is listed here for history, not as a live dangling reference.
   `docs/01-RESEARCH.md` §G cites doc 06. All of those targets now live
-  under `docs/archive/`. The links are **not** repaired: a historical record that has been quietly
-  edited stops being a record. Resolve them by prefixing `docs/archive/`.
+  to files since deleted. The links are **not** repaired: a historical record that has been quietly
+  edited stops being a record. Resolve them with `git show`.
 - `docs/01-RESEARCH.md` §A says the screen inventory was compiled from "all 68 screenshots in this
   folder". **No image files have ever been committed to this repository.** The tables in §A are the
   only surviving record of those screenshots; treat them as the primary artefact, and do not go

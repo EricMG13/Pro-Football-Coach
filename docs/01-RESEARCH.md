@@ -1452,7 +1452,7 @@ App = "CFB Simulator" (id 6752640167), 4.78★/625 US ratings; 86 reviews + full
 
 > **The "Our answer" column is HISTORICAL and carries no authority** — same banner as §C above. The
 > mined complaint data is evidence; the response column was written against the superseded pro-only
-> scope, cites documents now under `docs/archive/`, and commits to features that either contradict
+> scope, cites documents since deleted, and commits to features that either contradict
 > **P3** or are pending counsel review. Read it as a record of intent, never as a specification.
 
 **Complaint/request league table (→ what our design does):**

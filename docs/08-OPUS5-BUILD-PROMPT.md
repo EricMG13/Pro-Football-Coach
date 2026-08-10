@@ -24,7 +24,7 @@ setting, and `CLAUDE.md` requires one phase at a time with adversarial review at
 **Resumption contract — do this every time you start:**
 
 1. Read `docs/DOC-MANIFEST.md`. It is the authority on what is canon. **A document not listed there
-   as `RETAINED` carries no authority**, whatever path it sits at. `docs/archive/` is history.
+   as `RETAINED` carries no authority**, whatever path it sits at. There is no archive; superseded documents were deleted (see `docs/DOC-MANIFEST.md`).
 2. Read `CLAUDE.md`, then `docs/OPEN-DECISIONS.md`, then `docs/05-IMPLEMENTATION-PLAN.md`.
 3. Read `docs/STATUS.md` for the honest state of the build.
 4. Find the **first phase whose gates are not green**. That is your phase.
