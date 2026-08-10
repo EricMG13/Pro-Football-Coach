@@ -5,5 +5,8 @@ runContractTests()
 runSaveEnvelopeTests()
 runRulesTests()
 runModelTests()
+runLegalTests()
+runGenerationTests()
+runIdentityDistributionTests()
 
 TestKit.finish()

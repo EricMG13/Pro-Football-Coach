@@ -335,6 +335,31 @@ be a label, which §6 explicitly is not.
 
 The attribute sets each emphasises live in the rules module with the schemes.
 
+### 11.3.5 The two legal tests, as numbers
+
+`CLAUDE.md` states the guardrail and says both limbs are tests. Neither had a threshold anywhere.
+**Added 2026-08-10 by P2**, which needed them.
+
+| Constant | Value | Why |
+|---|---|---|
+| Colour space for the trade-dress test | CIE L\*a\*b\*, CIE76 ΔE | The cheapest perceptual distance that is not RGB. No dependency, and the choice is stated so it can be argued with |
+| Trade-dress collision threshold | ΔE **25**, on *both* members of the pair | A pair collides only when primary *and* secondary are both close. One shared colour is not trade dress — half the sport wears navy |
+| Orientation | Checked both ways round | Swapping primary and secondary does not make a pair original |
+| Contrast floors for team colours | 4.5:1 for `team.onTeam` on `team.primary`; 3:1 for `team.secondary` on `team.primary` | `04` §2.1's table. Both checked *at generation time*, so a pair that cannot carry legible text is regenerated rather than shipped. Requiring one foreground to work on *both* members was tried first and is unsatisfiable — it rules out every dark-plus-light identity |
+| Generation retry budget | 64 attempts per programme, then a deterministic fallback pair | A generator that can loop forever is a hang. The fallback is drawn from a pre-verified set and is itself covered by both tests |
+| Leagues the legal tests sweep | 200 | Matches D6's falsifier sample, so one generation run serves both |
+
+**What the blocklist covers, and what it cannot.** Institution names, nicknames and mascots,
+conference names, stadium names, city names, and a maintained list of identifiable people. It is
+refreshed per release (`docs/PRE-DEPLOYMENT-CHECKLIST.md`).
+
+It is a *denylist*, not a definition of compliance. `01` §7 already records the gap and it is
+restated here because P2 is where someone would otherwise assume the tests are the whole guardrail:
+**a generated programme whose ratings, conference, geography and history are individually fictional
+but jointly identify a real one is trade-dress adjacent, and no test in this package covers
+statistical or biographical resemblance.** That is a review obligation on generation content, and an
+owner-and-counsel question, not something a threshold settles.
+
 ### 11.4 What is deliberately not fixed here
 
 Conference *composition* is generated per league, not listed — a fixed table would make every save's

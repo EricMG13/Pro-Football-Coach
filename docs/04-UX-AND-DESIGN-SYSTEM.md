@@ -44,6 +44,19 @@ contract *at generation time* — a generated pair that cannot carry legible tex
 regenerated. This closes the prior build's whole class of "white on the team gradient" failures at
 the source rather than at the call site.
 
+**The contrast contract, stated precisely.** Amended 2026-08-10 by P2, which found the loose version
+unsatisfiable. Requiring one `team.onTeam` to be legible against *both* members rules out every
+dark-plus-light pair — which is most of the sport's real identities, navy and white among them. The
+three roles carry two different obligations:
+
+| Pair | Floor | Why |
+|---|---|---|
+| `team.onTeam` against `team.primary` | **4.5:1** | Text sits on the primary. WCAG AA for body text |
+| `team.secondary` against `team.primary` | **3:1** | The secondary is a stroke, a chip, a chart series — a non-text element that must be distinguishable on the primary. WCAG AA for non-text contrast |
+
+`team.secondary` is not a text background. A surface that needs text on the secondary uses
+`content.primary` on a neutral surface instead; nothing in §4 or §5 asks for the other thing.
+
 ### 2.2 Type
 
 Dynamic Type throughout, `@ScaledMetric` for any dimension that gutters text. Roles: `display`,

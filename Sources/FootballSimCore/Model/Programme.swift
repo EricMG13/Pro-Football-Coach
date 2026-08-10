@@ -18,6 +18,30 @@ public struct Programme: Codable, Sendable, Equatable, Identifiable {
     /// Prestige on the rating scale, so it is comparable with everything else.
     public var prestige: Rating
 
+    // The archetype's priors, realised onto this programme with jitter.
+    //
+    // D6's falsifier is that "programme archetype cannot be inferred from a programme's generated
+    // properties by a simple classifier — meaning the archetypes are cosmetic." Until these
+    // existed, four of the five priors lived only on the `Archetype` and were never written
+    // anywhere, so a programme carried an `archetypeID` and nothing that the id explained. That is
+    // the falsifier's own definition of cosmetic, and `IdentityDistributionTests` found it.
+    //
+    // Each is read by a later phase: resources by NIL and facilities, fanbase volatility by D8's
+    // stakeholder pressure, academic constraint by recruiting eligibility filtering, recruiting
+    // reach by the distance falloff in P7's interest model.
+
+    /// Money and facilities available to the programme.
+    public var resources: Rating
+
+    /// How fast the fanbase's disposition moves on a result. `02` §7.
+    public var fanbaseVolatility: Rating
+
+    /// How much the admissions office narrows the recruiting pool.
+    public var academicConstraint: Rating
+
+    /// How far from home the programme can recruit before distance bites. `02` §4.3.
+    public var recruitingReach: Rating
+
     public var rosterIDs: [UUID]
     public var scholarshipCount: Int
     public var staffIDs: [UUID]
@@ -40,6 +64,10 @@ public struct Programme: Codable, Sendable, Equatable, Identifiable {
         archetypeID: Int,
         scheme: SchemeIdentity,
         prestige: Rating,
+        resources: Rating,
+        fanbaseVolatility: Rating,
+        academicConstraint: Rating,
+        recruitingReach: Rating,
         rosterIDs: [UUID] = [],
         scholarshipCount: Int = 0,
         staffIDs: [UUID] = [],
@@ -53,6 +81,10 @@ public struct Programme: Codable, Sendable, Equatable, Identifiable {
         self.archetypeID = archetypeID
         self.scheme = scheme
         self.prestige = prestige
+        self.resources = resources
+        self.fanbaseVolatility = fanbaseVolatility
+        self.academicConstraint = academicConstraint
+        self.recruitingReach = recruitingReach
         self.rosterIDs = rosterIDs
         self.scholarshipCount = scholarshipCount
         self.staffIDs = staffIDs
@@ -72,6 +104,10 @@ public struct Programme: Codable, Sendable, Equatable, Identifiable {
             archetypeID: try container.decode(Int.self, forKey: .archetypeID),
             scheme: try container.decode(SchemeIdentity.self, forKey: .scheme),
             prestige: try container.decode(Rating.self, forKey: .prestige),
+            resources: try container.decode(Rating.self, forKey: .resources),
+            fanbaseVolatility: try container.decode(Rating.self, forKey: .fanbaseVolatility),
+            academicConstraint: try container.decode(Rating.self, forKey: .academicConstraint),
+            recruitingReach: try container.decode(Rating.self, forKey: .recruitingReach),
             rosterIDs: try container.decode([UUID].self, forKey: .rosterIDs),
             scholarshipCount: try container.decode(Int.self, forKey: .scholarshipCount),
             staffIDs: try container.decode([UUID].self, forKey: .staffIDs),
@@ -88,6 +124,12 @@ public struct Programme: Codable, Sendable, Equatable, Identifiable {
 
     public var rosterLegality: RosterLegality {
         RosterLegality.college(players: rosterIDs.count, scholarships: scholarshipCount)
+    }
+
+    /// The realised priors, in the same order as `Archetype.priorVector`, so a classifier can
+    /// compare a programme against an archetype without either side restating the order.
+    public var priorVector: [Int] {
+        [resources.value, fanbaseVolatility.value, academicConstraint.value, recruitingReach.value]
     }
 }
 

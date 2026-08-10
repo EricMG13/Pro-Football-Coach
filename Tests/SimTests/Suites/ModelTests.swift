@@ -321,7 +321,9 @@ func runModelTests() {
             }
             var programme = Programme(name: "N", nickname: "K", cityName: "C", archetypeID: 1,
                                       scheme: SchemeIdentity(offense: .proStyle, defense: .fourThree),
-                                      prestige: Rating(70), rivalIDs: many)
+                                      prestige: Rating(70), resources: Rating(70),
+                                      fanbaseVolatility: Rating(50), academicConstraint: Rating(60),
+                                      recruitingReach: Rating(65), rivalIDs: many)
             expectEqual(programme.rivalIDs.count, SharedRules.rivalriesPerProgramme)
 
             for id in many { programme.addRival(id) }
@@ -337,7 +339,9 @@ func runModelTests() {
         test("adding the same rival twice does not consume two slots") {
             var programme = Programme(name: "N", nickname: "K", cityName: "C", archetypeID: 1,
                                       scheme: SchemeIdentity(offense: .proStyle, defense: .fourThree),
-                                      prestige: Rating(70))
+                                      prestige: Rating(70), resources: Rating(70),
+                                      fanbaseVolatility: Rating(50), academicConstraint: Rating(60),
+                                      recruitingReach: Rating(65))
             let rival = UUID(uuidString: "00000000-0000-4000-8000-0000000000AB")!
             programme.addRival(rival)
             programme.addRival(rival)
