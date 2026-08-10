@@ -42,32 +42,48 @@ skipped the entire pre-snap charge, putting college at 142 plays per team-game a
 67–75; and field goal difficulty was `40 + distance`, making a routine 25-yarder a 65-rated
 opponent. None of those was a constant to nudge.
 
-**The remaining gap is real, quantified, and NOT converging.** Five tuning attempts have happened.
-One band of 24 passes at the committed configuration; the best configuration reached during the
-session held three. Do not read the current numbers as progress toward green — read them as the
-state of an uncalibrated engine.
+**Six of 24 bands hold on the tuning ladder and five on the holdout.** That is the honest number
+and it is not close to G5, which needs all of them.
 
-**Three of the five attempts fixed the harness, not the model, and each time the harness was making
-the engine look wrong.** This is the single most useful thing to carry into the next attempt:
+**Hand-tuning was replaced by a bounded coordinate search**, committed as
+`scripts/tune-calibration.sh`. Five hand attempts moved between one and three bands with no
+direction — what guessing at six coupled parameters looks like. Two passes of coordinate descent
+over four candidate values each, rebuilding and re-measuring all 48 candidates, reached six. **The
+holdout ladder reports five**, so roughly one band's worth of overfit across 48 evaluations: the
+search found structure rather than seed-specific noise. That check is the entire reason `01` §6.6
+clause 2 demands an A/B split, and it is the first time in this phase it has had anything to say.
 
-1. The favourite's win was counted as `winner == .home`, which measures home advantage twice and the
+Holding now: pro points per team-game, pro pass yards per team-game, pro field goal percentage, pro
+Q4 share of points, college points per team-game, college combined game total. Both tiers hold
+points per team-game, which no hand-tuned configuration managed.
+
+**Three of the earlier five attempts were fixing the harness, not the model, and each time the
+harness was making the engine look wrong.** Carry this into the next attempt:
+
+1. A favourite's win was counted as `winner == .home`, which measures home advantage twice and the
    favourite band not at all.
-2. The talent ladder's "mismatches" were all six points apart. A six-point favourite winning 53
+2. Every "mismatch" in the talent ladder was six points apart. A six-point favourite winning 53
    percent is correct; §6.5's 0.62–0.72 describes real betting favourites.
-3. `CalibrationRoster` gave every player on a team one skill ±6, so a twenty-point team gap meant
-   every matchup favoured the same side and the favourite won 94 percent. Real rosters are spiky and
-   the spikiness is most of what makes a game close.
+3. `CalibrationRoster` gave every player on a team one skill ±6, so a twenty-point team gap made all
+   twenty-three matchups favour the same side and the favourite won 94 percent. Real rosters are
+   spiky and the spikiness is most of what makes a game close.
 
-**Two couplings observed, both worth knowing before attempt six.** Cutting home advantage brought the
-pro home-win rate into band and pushed favourite-win *out*, because a per-matchup home bonus dilutes
-the talent signal. And flattening the talent curve to fix favourite-win broke `03` §1.1's stated
-requirement that a ten-point gap matter more mid-scale than at the ends — the `Leverage` tests caught
-it, which is the spec defending itself against a calibration change.
+**Two couplings, both worth knowing before attempt seven.** Cutting home advantage brings the pro
+home-win rate into band and pushes favourite-win *out*, because a per-matchup home bonus dilutes the
+talent signal. And flattening the talent curve to fix favourite-win broke `03` §1.1's requirement
+that a ten-point gap matter more mid-scale than at the ends — the `Leverage` tests caught it, which
+is the spec defending itself against a calibration change.
+
+**The remaining 18 failures are concentrated where the model is thin rather than mistuned.** There
+is no per-drive accounting, the run game barely exists (explosive run rate measures near zero
+because a run is lane leverage times a scale with a rare break-tackle bonus and nothing else), and
+the play-caller is P10's, not P4's. More search over these six constants will not fix those; the
+next attempt should widen the *model*, not the grid.
 
 **D2's falsifier has NOT been met, and reporting otherwise would be wrong.** It fires if the model
-"cannot be tuned to hold every band simultaneously… across 5 consecutive tuning attempts". Five
-attempts happened; only attempts two and four were model tuning. Three were instrument repair, and
-an instrument repair is not a failed tuning attempt.
+"cannot be tuned to hold every band simultaneously… across 5 consecutive tuning attempts". Six
+attempts have happened; three were instrument repair and one was a search rather than a hand pass.
+An instrument repair is not a failed tuning attempt.
 
 **Sixteen of §6.5's rows are not measured at all**, listed in `CalibrationBands.unimplementedMetrics`
 with what each waits on: per-drive accounting, target shares (which need per-player stat lines the
