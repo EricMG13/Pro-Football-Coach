@@ -14,14 +14,7 @@ expected_rules_dir=$(cd -P -- "$repo_root/Sources/FootballSimCore/Rules" && pwd)
   || die "cannot resolve Rules directory under script-derived repository"
 matchup_rules="$expected_rules_dir/MatchupRules.swift"
 lock_parent="$repo_root/.build"
-lock_dir="$lock_parent/tune-calibration.lock"
-lock_parent_identity=""
-lock_identity=""
-search_lock_held=0
-pending_acquisition_signal=0
-identity_channel=""
-identity_channel_identity=""
-identity_channel_held=0
+lock_file="$lock_parent/tune-calibration.lock"
 
 validate_matchup_rules() {
   [[ "$matchup_rules" == "$expected_rules_dir/MatchupRules.swift" ]] \
@@ -38,7 +31,7 @@ validate_matchup_rules() {
 }
 
 validate_lock_parent() {
-  [[ "$lock_parent" == "$repo_root/.build" && "$lock_dir" == "$lock_parent/tune-calibration.lock" ]] \
+  [[ "$lock_parent" == "$repo_root/.build" && "$lock_file" == "$lock_parent/tune-calibration.lock" ]] \
     || die "unexpected calibration lock path"
   [[ "$lock_parent" == "$repo_root/"* && "$lock_parent" != "$repo_root" ]] \
     || die "calibration lock parent escapes script-derived repository"
@@ -60,181 +53,64 @@ prepare_lock_parent() {
   validate_lock_parent
 }
 
-create_identity_channel() {
-  identity_channel="$lock_parent/.tune-calibration.identity.$$.${RANDOM}"
-  [[ "$identity_channel" == "$lock_parent/.tune-calibration.identity."[0-9]*.[0-9]* ]] \
-    || die "unexpected calibration identity channel path"
-  if ! (set -C; : > "$identity_channel") 2>/dev/null; then
-    die "cannot exclusively create calibration identity channel"
-  fi
-  [[ -f "$identity_channel" && ! -L "$identity_channel" ]] \
-    || die "calibration identity channel must be a regular non-symlink file"
-  identity_channel_identity=$(stat -f '%d:%i' "$identity_channel") \
-    || die "cannot inspect calibration identity channel"
-  [[ "$identity_channel_identity" =~ ^[0-9]+:[0-9]+$ ]] \
-    || die "invalid calibration identity channel identity"
-  identity_channel_held=1
+launch_with_advisory_lock() {
+  exec python3 - "$script_dir/tune-calibration.sh" "$lock_file" <<'PY'
+import errno
+import fcntl
+import os
+import stat
+import sys
+
+script, lock_path = sys.argv[1:]
+flags = os.O_RDWR | os.O_CREAT
+if hasattr(os, "O_NOFOLLOW"):
+    flags |= os.O_NOFOLLOW
+try:
+    lock_fd = os.open(lock_path, flags, 0o600)
+    fd_stat = os.fstat(lock_fd)
+    path_stat = os.lstat(lock_path)
+    if (not stat.S_ISREG(fd_stat.st_mode) or stat.S_ISLNK(path_stat.st_mode)
+            or (fd_stat.st_dev, fd_stat.st_ino) != (path_stat.st_dev, path_stat.st_ino)):
+        raise OSError(errno.EPERM, "lock path is not the opened regular file")
+    fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+except BlockingIOError:
+    print("tune-calibration: another tuner holds the advisory lock; wait for it to exit", file=sys.stderr)
+    raise SystemExit(1)
+except OSError as error:
+    print(f"tune-calibration: cannot safely acquire advisory lock: {error}", file=sys.stderr)
+    raise SystemExit(1)
+
+os.set_inheritable(lock_fd, True)
+environment = os.environ.copy()
+environment["TUNE_CALIBRATION_INHERITED_LOCK"] = "1"
+environment["TUNE_CALIBRATION_LOCK_FD"] = str(lock_fd)
+os.execve("/bin/bash", ["/bin/bash", script], environment)
+PY
 }
 
-release_identity_channel() {
-  (( identity_channel_held )) || return 0
-  [[ "$identity_channel" == "$lock_parent/.tune-calibration.identity."[0-9]*.[0-9]* \
-      && -f "$identity_channel" && ! -L "$identity_channel" ]] \
-    || {
-      printf 'tune-calibration: refusing to release a changed identity channel; inspect %s manually\n' \
-        "$identity_channel" >&2
-      return 1
-    }
-  local current_identity
-  current_identity=$(stat -f '%d:%i' "$identity_channel") \
-    || {
-      printf 'tune-calibration: cannot inspect identity channel; inspect %s manually\n' \
-        "$identity_channel" >&2
-      return 1
-    }
-  [[ "$current_identity" == "$identity_channel_identity" ]] \
-    || {
-      printf 'tune-calibration: refusing to release a replaced identity channel; inspect %s manually\n' \
-        "$identity_channel" >&2
-      return 1
-    }
-  if ! rm "$identity_channel"; then
-    printf 'tune-calibration: could not safely release identity channel %s; inspect it manually\n' \
-      "$identity_channel" >&2
-    return 1
-  fi
-  identity_channel_held=0
-}
+verify_inherited_advisory_lock() {
+  [[ ${TUNE_CALIBRATION_INHERITED_LOCK:-} == 1 ]] \
+    || die "missing inherited advisory-lock marker"
+  [[ ${TUNE_CALIBRATION_LOCK_FD:-} =~ ^[0-9]+$ ]] \
+    || die "invalid inherited advisory-lock descriptor"
+  python3 - "$TUNE_CALIBRATION_LOCK_FD" "$lock_file" <<'PY'
+import fcntl
+import os
+import stat
+import sys
 
-revalidate_lock_parent_after_acquisition() {
-  validate_lock_parent
-  # This narrow failure hook exercises cleanup after ownership is established without scoring.
-  [[ ${TUNE_CALIBRATION_TEST_FORCE_PARENT_STAT_FAILURE:-} != 1 ]] \
-    || die "test-only forced calibration lock parent identity failure"
-  local current_parent_identity
-  current_parent_identity=$(stat -f '%d:%i' "$lock_parent") \
-    || die "cannot inspect calibration lock parent after acquisition"
-  [[ "$current_parent_identity" == "$lock_parent_identity" ]] \
-    || die "calibration lock parent changed during acquisition"
-}
-
-release_search_lock() {
-  (( search_lock_held )) || return 0
-  [[ "$lock_dir" == "$lock_parent/tune-calibration.lock" && -d "$lock_dir" && ! -L "$lock_dir" ]] \
-    || {
-      printf 'tune-calibration: refusing to release a changed calibration lock; inspect %s manually\n' \
-        "$lock_dir" >&2
-      return 1
-    }
-  local current_parent_identity current_lock_identity
-  current_parent_identity=$(stat -f '%d:%i' "$lock_parent") \
-    || {
-      printf 'tune-calibration: cannot inspect calibration lock parent; inspect %s manually\n' \
-        "$lock_dir" >&2
-      return 1
-    }
-  current_lock_identity=$(stat -f '%d:%i' "$lock_dir") \
-    || {
-      printf 'tune-calibration: cannot inspect calibration lock; inspect %s manually\n' "$lock_dir" >&2
-      return 1
-    }
-  [[ "$current_parent_identity" == "$lock_parent_identity" && "$current_lock_identity" == "$lock_identity" ]] \
-    || {
-      printf 'tune-calibration: refusing to release a replaced calibration lock; inspect %s manually\n' \
-        "$lock_dir" >&2
-      return 1
-    }
-  if ! rmdir "$lock_dir"; then
-    printf 'tune-calibration: could not safely release calibration lock %s; inspect it manually\n' \
-      "$lock_dir" >&2
-    return 1
-  fi
-  search_lock_held=0
-}
-
-release_search_lock_on_exit() {
-  local status=$?
-  trap - EXIT HUP INT TERM
-  local cleanup_failed=0
-  release_search_lock || cleanup_failed=1
-  release_identity_channel || cleanup_failed=1
-  (( cleanup_failed )) && exit 1
-  exit "$status"
-}
-
-arm_lock_acquisition_traps() {
-  trap release_search_lock_on_exit EXIT
-  trap 'record_acquisition_signal 129' HUP
-  trap 'record_acquisition_signal 130' INT
-  trap 'record_acquisition_signal 143' TERM
-}
-
-record_acquisition_signal() {
-  (( pending_acquisition_signal )) || pending_acquisition_signal=$1
-  return 0
-}
-
-run_lock_creation_transaction() {
-  # Bash resets caught handlers in external children. This one protected child explicitly ignores
-  # handled signals while it creates the lock and writes its identity, leaving no parent shell gap.
-  /bin/sh -c '
-    trap "" HUP INT TERM
-    lock=$1
-    channel=$2
-    parent_pid=$3
-    [ -f "$channel" ] && [ ! -L "$channel" ] || exit 1
-    mkdir "$lock" || exit 1
-    [ "${TUNE_CALIBRATION_TEST_SELF_INT_AFTER_LOCK:-}" != 1 ] || kill -INT "$parent_pid"
-    if /usr/bin/stat -f "%d:%i" "$lock" > "$channel"; then
-      exit 0
-    fi
-    rmdir "$lock" || exit 1
-    exit 1
-  ' tune-calibration-transaction "$lock_dir" "$identity_channel" "$$"
-}
-
-restore_search_signal_exit_traps() {
-  trap 'exit 129' HUP
-  trap 'exit 130' INT
-  trap 'exit 143' TERM
-}
-
-exit_for_pending_acquisition_signal() {
-  if (( pending_acquisition_signal )); then
-    exit "$pending_acquisition_signal"
-  fi
-  return 0
-}
-
-acquire_search_lock() {
-  prepare_lock_parent
-  arm_lock_acquisition_traps
-  create_identity_channel
-  lock_parent_identity=$(stat -f '%d:%i' "$lock_parent") \
-    || die "cannot inspect calibration lock parent"
-  if ! run_lock_creation_transaction; then
-    exit_for_pending_acquisition_signal
-    die "cannot acquire calibration lock at $lock_dir; another tuner may be running or the lock may be stale/tampered. Confirm no tuner is running, inspect the lock, then remove only that empty directory."
-  fi
-  # The transaction returned only after it wrote the lock identity to our owned channel.
-  search_lock_held=1
-  exec 9< "$identity_channel" || die "cannot open calibration identity channel"
-  IFS= read -r lock_identity <&9 || {
-    exec 9<&-
-    die "cannot read calibration lock identity"
-  }
-  local extra_identity_line=""
-  if IFS= read -r extra_identity_line <&9; then
-    exec 9<&-
-    die "calibration identity channel has unexpected extra data"
-  fi
-  exec 9<&-
-  [[ "$lock_identity" =~ ^[0-9]+:[0-9]+$ ]] \
-    || die "invalid calibration lock identity"
-  release_identity_channel || die "cannot safely release calibration identity channel"
-  revalidate_lock_parent_after_acquisition
-  restore_search_signal_exit_traps
-  exit_for_pending_acquisition_signal
+try:
+    lock_fd = int(sys.argv[1])
+    fd_stat = os.fstat(lock_fd)
+    path_stat = os.lstat(sys.argv[2])
+    if (not stat.S_ISREG(fd_stat.st_mode) or stat.S_ISLNK(path_stat.st_mode)
+            or (fd_stat.st_dev, fd_stat.st_ino) != (path_stat.st_dev, path_stat.st_ino)):
+        raise OSError("inherited descriptor does not match the regular lock file")
+    fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+except (OSError, ValueError) as error:
+    print(f"tune-calibration: inherited advisory lock is invalid: {error}", file=sys.stderr)
+    raise SystemExit(1)
+PY
 }
 
 # Validate the exact mutation target before parsing modes or starting the search.
@@ -246,8 +122,21 @@ if [[ ${1:-} == "--validate" && $# -eq 1 ]]; then
 fi
 [[ $# -eq 0 ]] || die "usage: tune-calibration.sh [--validate]"
 
-# Search must own this lock before its first score or source mutation.
-acquire_search_lock
+if [[ ${TUNE_CALIBRATION_INHERITED_LOCK:-} != 1 ]]; then
+  prepare_lock_parent
+  launch_with_advisory_lock
+fi
+validate_lock_parent
+verify_inherited_advisory_lock
+
+# Test-only modes are inert normally and run after descriptor verification, before score/mutation.
+if [[ ${TUNE_CALIBRATION_TEST_HOLD_LOCK:-} == 1 ]]; then
+  sleep 10
+  exit 0
+fi
+if [[ ${TUNE_CALIBRATION_TEST_LOCK_ONLY:-} == 1 ]]; then
+  exit 0
+fi
 
 setval() {
   python3 - "$matchup_rules" "$1" "$2" <<'PY'
