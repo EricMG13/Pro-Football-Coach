@@ -696,9 +696,21 @@ func runSnapResolverTests() {
             let assignment = Assignment.assign(offensiveCall: call, defensiveCall: defence,
                                                personnel: even)
             let attribution = 0.75
-            let lane = assignment.runLane[Int(attribution * Double(assignment.runLane.count))]
-            let pursuer = assignment.pursuit[Int(attribution * Double(assignment.pursuit.count))]
-            let carrier = assignment.carrier!
+            guard !assignment.runLane.isEmpty,
+                  !assignment.pursuit.isEmpty,
+                  let laneIndex = OutcomeSampling.integer(
+                    in: 0...(assignment.runLane.count - 1), roll: attribution
+                  ),
+                  let pursuerIndex = OutcomeSampling.integer(
+                    in: 0...(assignment.pursuit.count - 1), roll: attribution
+                  ),
+                  let carrier = assignment.carrier
+            else {
+                expect(false, "run-band fixture is missing its carrier, lane, or pursuer")
+                return
+            }
+            let lane = assignment.runLane[laneIndex]
+            let pursuer = assignment.pursuit[pursuerIndex]
             let situation = Situation(distance: 5)
             let cases: [(name: String, roll: Double, result: SnapResult, yards: Int,
                          kind: MatchupRecord.Kind, attacker: UUID, defender: UUID,
@@ -738,9 +750,15 @@ func runSnapResolverTests() {
             let defence = DefensiveCall(coverage: .man)
             let assignment = Assignment.assign(offensiveCall: call, defensiveCall: defence,
                                                personnel: even)
+            guard assignment.routes.count >= 2,
+                  assignment.protection.count >= 2,
+                  let passer = assignment.passer
+            else {
+                expect(false, "pass-band fixture is missing its second route, protection pair, or passer")
+                return
+            }
             let target = assignment.routes[1]
             let protection = assignment.protection[1]
-            let passer = assignment.passer!
             let situation = Situation(distance: 5)
             let cases: [(name: String, roll: Double, result: SnapResult, yards: Int,
                          sign: Bool, carrier: UUID?)] = [
@@ -795,8 +813,12 @@ func runSnapResolverTests() {
             let defence = DefensiveCall(coverage: .man)
             let assignment = Assignment.assign(offensiveCall: call, defensiveCall: defence,
                                                personnel: even)
-            let specialist = even.offensive(group: .specialists).first!
-            let defender = assignment.pursuit.first!
+            guard let specialist = even.offensive(group: .specialists).first,
+                  let defender = assignment.pursuit.first
+            else {
+                expect(false, "field-goal fixture is missing its specialist or ranked defender")
+                return
+            }
             for (name, roll, result, won) in [
                 ("good", 0.1, SnapResult.fieldGoalGood, true),
                 ("missed", 0.9, SnapResult.fieldGoalMissed, false),
@@ -828,7 +850,10 @@ func runSnapResolverTests() {
                 offensiveCall: OffensiveCall(playType: .pass),
                 defensiveCall: DefensiveCall(coverage: .man), personnel: even
             )
-            expect(assignment.routes.count >= 2, "fixture has fewer than two routes")
+            guard assignment.routes.count >= 2 else {
+                expect(false, "target-weight fixture has fewer than two routes")
+                return
+            }
             let selected = assignment.routes[1]
             let first = assignment.routes[0]
             // Equal route weights divide the unit interval evenly; this lies in route two.
@@ -987,11 +1012,16 @@ func runSnapResolverTests() {
         test("only the preselected run lane can move its sampled boundary") {
             let attribution = Double.zero
             var boostedOffense = even.offense
-            let initiallyFirst = Assignment.assign(
+            let initialAssignment = Assignment.assign(
                 offensiveCall: OffensiveCall(playType: .run),
                 defensiveCall: DefensiveCall(coverage: .man), personnel: even
-            ).runLane.first!.blocker.id
-            let boostedIndex = boostedOffense.firstIndex { $0.id == initiallyFirst }!
+            )
+            guard let initiallyFirst = initialAssignment.runLane.first?.blocker.id,
+                  let boostedIndex = boostedOffense.firstIndex(where: { $0.id == initiallyFirst })
+            else {
+                expect(false, "run-lane fixture is missing its initially selected blocker")
+                return
+            }
             for attribute in boostedOffense[boostedIndex].position.ratedAttributes {
                 boostedOffense[boostedIndex].attributes[attribute] = Rating(99)
             }
@@ -1000,18 +1030,27 @@ func runSnapResolverTests() {
                 offensiveCall: OffensiveCall(playType: .run),
                 defensiveCall: DefensiveCall(coverage: .man), personnel: basePersonnel
             )
-            let selectedID = baseAssignment.runLane.first!.blocker.id
-            let unselectedID = baseAssignment.runLane.last!.blocker.id
+            guard baseAssignment.runLane.count >= 2,
+                  let selectedID = baseAssignment.runLane.first?.blocker.id,
+                  let unselectedID = baseAssignment.runLane.last?.blocker.id
+            else {
+                expect(false, "run-lane fixture needs distinct selected and unselected blockers")
+                return
+            }
 
-            func changing(_ id: UUID, runBlock: Int) -> SnapPersonnel {
+            func changing(_ id: UUID, runBlock: Int) -> SnapPersonnel? {
                 var offense = basePersonnel.offense
-                let index = offense.firstIndex { $0.id == id }!
+                guard let index = offense.firstIndex(where: { $0.id == id }) else { return nil }
                 offense[index].attributes[.runBlock] = Rating(runBlock)
                 return SnapPersonnel(offense: offense, defense: basePersonnel.defense)
             }
 
-            let selectedWeak = changing(selectedID, runBlock: 40)
-            let unselectedWeak = changing(unselectedID, runBlock: 65)
+            guard let selectedWeak = changing(selectedID, runBlock: 40),
+                  let unselectedWeak = changing(unselectedID, runBlock: 65)
+            else {
+                expect(false, "run-lane fixture could not locate the selected blocker")
+                return
+            }
             var moved = false
             for index in 0...10_000 {
                 let roll = Double(index) / 10_000
@@ -1037,27 +1076,41 @@ func runSnapResolverTests() {
             let call = OffensiveCall(playType: .pass)
             let defence = DefensiveCall(coverage: .man)
             var boostedOffense = even.offense
-            let initiallyFirst = Assignment.assign(offensiveCall: call, defensiveCall: defence,
-                                                   personnel: even).protection.first!.blocker.id
-            let boostedIndex = boostedOffense.firstIndex { $0.id == initiallyFirst }!
+            let initialAssignment = Assignment.assign(offensiveCall: call, defensiveCall: defence,
+                                                      personnel: even)
+            guard let initiallyFirst = initialAssignment.protection.first?.blocker.id,
+                  let boostedIndex = boostedOffense.firstIndex(where: { $0.id == initiallyFirst })
+            else {
+                expect(false, "protection fixture is missing its initially selected blocker")
+                return
+            }
             for attribute in boostedOffense[boostedIndex].position.ratedAttributes {
                 boostedOffense[boostedIndex].attributes[attribute] = Rating(99)
             }
             let basePersonnel = SnapPersonnel(offense: boostedOffense, defense: even.defense)
             let baseAssignment = Assignment.assign(offensiveCall: call, defensiveCall: defence,
                                                    personnel: basePersonnel)
-            let selected = baseAssignment.protection.first!
-            let unselectedID = baseAssignment.protection.last!.blocker.id
+            guard baseAssignment.protection.count >= 2,
+                  let selected = baseAssignment.protection.first,
+                  let unselectedID = baseAssignment.protection.last?.blocker.id
+            else {
+                expect(false, "protection fixture needs distinct selected and unselected blockers")
+                return
+            }
 
-            func changing(_ id: UUID, passBlock: Int) -> SnapPersonnel {
+            func changing(_ id: UUID, passBlock: Int) -> SnapPersonnel? {
                 var offense = basePersonnel.offense
-                let index = offense.firstIndex { $0.id == id }!
+                guard let index = offense.firstIndex(where: { $0.id == id }) else { return nil }
                 offense[index].attributes[.passBlock] = Rating(passBlock)
                 return SnapPersonnel(offense: offense, defense: basePersonnel.defense)
             }
 
-            let selectedWeak = changing(selected.blocker.id, passBlock: 40)
-            let unselectedWeak = changing(unselectedID, passBlock: 40)
+            guard let selectedWeak = changing(selected.blocker.id, passBlock: 40),
+                  let unselectedWeak = changing(unselectedID, passBlock: 40)
+            else {
+                expect(false, "protection fixture could not locate the selected blocker")
+                return
+            }
             var movedToSack = false
             for index in 0...10_000 {
                 let injected = draws(outcome: Double(index) / 10_000,

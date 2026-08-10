@@ -79,7 +79,7 @@ public enum DistributionSnapResolver {
     }
 
     /// Test seam for the distribution invariant shared by every conditioned outcome table.
-    public static func validDistribution(_ weights: [Double]) -> Bool {
+    package static func validDistribution(_ weights: [Double]) -> Bool {
         weights.allSatisfy { $0.isFinite && $0 >= .zero }
             && Swift.abs(weights.reduce(.zero, +) - 1.0)
                 <= OutcomeDistributionRules.probabilityTolerance
