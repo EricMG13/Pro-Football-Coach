@@ -13,7 +13,7 @@
 # XCTest nor swift-testing ships outside Xcode.
 
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 pass=0
 fail=0
@@ -63,6 +63,13 @@ if [ "${1:-}" = "--build" ]; then
     exit $((fail > 0))
 fi
 
+note "calibration tool contracts"
+if ./scripts/test-calibration-tools.sh 2>&1 | tee /tmp/pfc-calibration-tools.log; then
+    ok "calibration tool contracts"
+else
+    bad "calibration tool contracts — see /tmp/pfc-calibration-tools.log"
+fi
+
 note "tests"
 # The harness exits non-zero on failure and prints its own counts.
 if swift run -c release SimTests 2>&1 | tee /tmp/pfc-tests.log; then
@@ -74,5 +81,6 @@ fi
 note "result"
 printf '%s passed, %s failed\n' "$pass" "$fail"
 echo
-echo "Paste the tail of /tmp/pfc-build.log and /tmp/pfc-tests.log back into the session."
+echo "Paste the tails of /tmp/pfc-build.log, /tmp/pfc-calibration-tools.log, and"
+echo "/tmp/pfc-tests.log back into the session."
 exit $((fail > 0))

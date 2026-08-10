@@ -13,7 +13,9 @@ calibrated, and the harness says by how much.** There is a foundation, a model, 
 generator, and a match engine that plays a whole game from a seed and records why every play
 happened.
 
-Suite: **264 tests, 77,741 checks, all passed**, byte-identical across separate process invocations.
+Suite: **265 tests, 77,745 checks, all passed**. The final `./scripts/verify.sh` run passed build,
+the checked-in **23/23 calibration-tool contracts** stage, and SimTests (three stages passed, zero
+failed).
 
 **P5 through P17 have not started.** The off-screen model, seasons, both tiers' systems, the career
 arc, the AI, the design system and every view are ahead.
@@ -30,9 +32,18 @@ search, `swift run -c release CalibrationScore holdout > /tmp/p4-attempt7-after-
 (**5/24**). The retained constants are `leverageNoise = 0.46`, `homeAdvantage = 0.02`, and
 `breakTackleThreshold = 0.45`; each is part of the strict 4-to-7 tuning-score improvement.
 
-The deliberate P4 re-pin is complete: two fresh `swift run -c release SimTests` processes and
-`./scripts/verify.sh` now report **264 tests / 77,741 checks, all passed**. The pinned pro and
-college fingerprints are visibly updated to the independently reproduced values.
+The deliberate P4 re-pin is complete. The final `./scripts/verify.sh` run reports **265 tests /
+77,745 checks, all passed**, after a green build and the green 23-contract calibration-tool gate.
+The pinned pro and college fingerprints are visibly updated to the independently reproduced values.
+
+The calibration-tool gate is `scripts/test-calibration-tools.sh`. It fails closed on scorer/tuner
+arguments and malformed, impossible, or non-24 score totals; proves a failed first candidate rolls
+all searched constants back byte-identically while the owner advisory lock excludes contenders;
+checks ordinary and early re-entry descendants see `EBADF`; and exercises descriptor-anchored
+parent/target symlink and replaced-target refusal in isolated temporary directories. The tuner
+restores the last accepted coordinate state for `EXIT`, `HUP`, `INT`, and `TERM`. `SIGKILL` cannot
+run rollback, so a killed search requires an explicit `MatchupRules.swift` inspection before a
+retry. The ignored persistent lock file is not truncated or deleted.
 
 The tuning failures are: college FG% upper; college home-win lower; college favourite-win upper;
 college explosive-run lower; college explosive-pass lower; college plays upper; pro pass yards

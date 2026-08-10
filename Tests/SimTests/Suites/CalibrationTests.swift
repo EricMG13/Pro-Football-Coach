@@ -26,19 +26,39 @@ func runCalibrationTests() {
                         "a 65% rate has no percentage-point standard error")
         }
 
-        test("a rate with an invalid scale cannot pass") {
-            let invalidScales: [(scale: Double, label: String)] = [
-                (0, "zero"),
-                (-1, "negative"),
-                (.nan, "NaN"),
-                (.infinity, "infinite")
+        test("non-finite estimates and intervals fail explicitly") {
+            let cases: [(estimate: Estimate, label: String)] = [
+                (Estimate(value: 0.55, sampleSize: 100_000, standardDeviation: 0,
+                          estimator: .rate, scale: 0), "rate with zero scale"),
+                (Estimate(value: 0.55, sampleSize: 100_000, standardDeviation: 0,
+                          estimator: .rate, scale: -1), "rate with negative scale"),
+                (Estimate(value: 0.55, sampleSize: 100_000, standardDeviation: 0,
+                          estimator: .rate, scale: .nan), "rate with NaN scale"),
+                (Estimate(value: 0.55, sampleSize: 100_000, standardDeviation: 0,
+                          estimator: .rate, scale: .infinity), "rate with infinite scale"),
+                (Estimate(value: .nan, sampleSize: 100_000, standardDeviation: 0,
+                          estimator: .rate), "NaN rate with valid scale"),
+                (Estimate(value: .nan, sampleSize: 100_000, standardDeviation: 0,
+                          estimator: .rate, scale: .nan), "NaN rate with invalid scale"),
+                (Estimate(value: .infinity, sampleSize: 100_000, standardDeviation: 0,
+                          estimator: .rate), "positive-infinite rate"),
+                (Estimate(value: -.infinity, sampleSize: 100_000, standardDeviation: 0,
+                          estimator: .rate), "negative-infinite rate"),
+                (Estimate(value: 23, sampleSize: 100, standardDeviation: .infinity,
+                          estimator: .mean), "infinite mean standard deviation"),
+                (Estimate(value: .greatestFiniteMagnitude, sampleSize: 1,
+                          standardDeviation: .greatestFiniteMagnitude, estimator: .mean),
+                 "overflowed mean interval")
             ]
-            for invalid in invalidScales {
-                let estimate = Estimate(value: 0.55, sampleSize: 100_000, standardDeviation: 0,
-                                        estimator: .rate, scale: invalid.scale)
-                expect(!band.test(estimate).passed,
-                       "a rate with a \(invalid.label) scale passed its band")
-            }
+            let results = cases.map { (label: $0.label, result: band.test($0.estimate)) }
+            let invalidReason = "invalid non-finite estimate"
+            expectEqual(results.count, cases.count, "not every invalid estimate was tested")
+            expect(results.allSatisfy { !$0.result.passed },
+                   "invalid estimate passed: \(results.filter(\.result.passed).map(\.label))")
+            expect(results.allSatisfy { $0.result.violatedEdge == invalidReason },
+                   "an invalid estimate did not identify its non-finite input or interval")
+            expect(results.allSatisfy { $0.result.report.contains(invalidReason) },
+                   "an invalid estimate report did not explain the non-finite input or interval")
         }
 
         test("an estimate inside the band but imprecise FAILS") {

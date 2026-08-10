@@ -109,9 +109,18 @@ public extension Band {
     /// TOST at alpha = 0.05: pass if and only if the 90 percent confidence interval lies entirely
     /// inside the band.
     func test(_ estimate: Estimate) -> BandResult {
-        let half = Band.zNinety * estimate.standardError
+        let standardError = estimate.standardError
+        guard estimate.value.isFinite, standardError.isFinite else {
+            return BandResult(band: self, estimate: estimate, passed: false,
+                              violatedEdge: "invalid non-finite estimate")
+        }
+        let half = Band.zNinety * standardError
         let low = estimate.value - half
         let high = estimate.value + half
+        guard low.isFinite, high.isFinite else {
+            return BandResult(band: self, estimate: estimate, passed: false,
+                              violatedEdge: "invalid non-finite estimate")
+        }
         let belowFloor = low < lower
         let aboveCeiling = high > upper
         let edge: String?
