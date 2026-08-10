@@ -99,13 +99,33 @@ public struct BaselinePlayCaller: PlayCaller, Sendable {
             return OffensiveCall(playType: .punt)
         }
         let hurrying = situation.isTwoMinute(rules: rules) && situation.scoreDifferential <= 0
-        let depth: PassDepth = situation.distance >= MatchupRules.longYardage ? .mid : .short
-        // Run on early downs and short yardage, throw otherwise.
-        if !hurrying, situation.down <= 2, situation.distance <= MatchupRules.longYardage {
-            return OffensiveCall(playType: .run, tempo: hurrying ? .hurry : .normal)
+
+        // The first version threw on almost every snap and never threw deep: it ran only when
+        // `distance <= 7`, and first-and-ten is ten. The calibration harness saw the consequence
+        // immediately — six run plays per team-game against a band of 100 to 130 rush yards, and an
+        // explosive-pass rate of zero, because every completion was exactly the mid-pass air
+        // yardage. A caller with one play is not a baseline, it is a bug.
+        //
+        // Mixing is driven by the situation rather than by a coin, so the caller stays a pure
+        // function of state and consumes no draws — the drive loop's snap seed is the only
+        // randomness, which is what keeps a replay exact.
+        if !hurrying, situation.down <= 2, situation.distance <= MatchupRules.runningDownDistance {
+            return OffensiveCall(playType: .run,
+                                 runGap: RunGap.allCases[situation.yardLine % RunGap.allCases.count],
+                                 tempo: .normal)
         }
-        return OffensiveCall(playType: .pass, passDepth: hurrying ? .mid : depth,
-                             tempo: hurrying ? .hurry : .normal)
+        let depth: PassDepth
+        if hurrying, situation.distance >= MatchupRules.deepShotDistance {
+            depth = .deep
+        } else if situation.distance >= MatchupRules.deepShotDistance,
+                  situation.down >= 3 || situation.yardLine % 4 == 0 {
+            depth = .deep
+        } else if situation.distance >= MatchupRules.longYardage {
+            depth = .mid
+        } else {
+            depth = .short
+        }
+        return OffensiveCall(playType: .pass, passDepth: depth, tempo: hurrying ? .hurry : .normal)
     }
 
     public func defensiveCall(for situation: Situation, rules: any ClockRules.Type) -> DefensiveCall {
@@ -148,6 +168,7 @@ public enum DriveEngine {
         var situation = start
         var plays: [PlayRecord] = []
         var clockRunning = clockRunning
+        var clockStoppedByFirstDown = false
         // Optional, not defaulted to `.endOfHalf`. It was, and since the loop's continue-guard
         // tested `ending == .endOfHalf`, the sentinel and a real terminal state were the same
         // value: every drive ended after exactly one play, and fieldGoal, punt, missedFieldGoal
@@ -185,13 +206,25 @@ public enum DriveEngine {
             // offence gets to the line for free. `stopsClock` and `clockStopsOnFirstDown` were both
             // declared and read by nobody — the second is the one tier difference 03 section 2
             // names, and it was inert.
-            let preSnap = clockRunning ? offensiveCall.tempo.snapSeconds(rules: rules) : 0
+            // A stopped clock does not mean a free snap. The college first-down stop restarts on
+            // the ready-for-play, so it costs a reduced charge rather than nothing — skipping the
+            // whole pre-snap put college at 142 offensive plays per team-game against a band of 67
+            // to 75, which is the clock model wrong in shape rather than a constant mistuned.
+            let preSnap: Int
+            if clockRunning {
+                preSnap = offensiveCall.tempo.snapSeconds(rules: rules)
+            } else if clockStoppedByFirstDown {
+                preSnap = rules.readyForPlaySeconds
+            } else {
+                preSnap = 0
+            }
             situation.secondsRemainingInQuarter -= preSnap + outcome.secondsElapsed
             let madeFirstDown = outcome.yards >= situation.distance && !outcome.result.isTurnover
             let firstDownStop = rules.clockStopsOnFirstDown && madeFirstDown
                 && situation.secondsRemainingInHalf(rules: rules)
                     > rules.firstDownStopEndsAtSecondsRemaining
             clockRunning = !outcome.result.stopsClock && !firstDownStop
+            clockStoppedByFirstDown = firstDownStop
 
             switch outcome.result {
             case .touchdown:

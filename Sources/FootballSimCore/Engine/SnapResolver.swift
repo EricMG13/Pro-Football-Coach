@@ -296,9 +296,7 @@ public enum SnapResolver {
         }
         // Distance is the defender: a long kick is a harder matchup, which keeps the whole engine
         // on one scale rather than bolting a distance curve onto the side of it.
-        let difficulty = Rating(SharedRules.ratingRange.lowerBound
-            + Swift.min(distance * MatchupRules.fieldGoalDifficultyPerYard,
-                        SharedRules.ratingRange.count))
+        let difficulty = Rating(MatchupRules.fieldGoalDifficulty(distanceYards: distance))
         let leverage = Leverage.score(
             attacker: kicker.attributes[.kickAccuracy],
             defender: difficulty,

@@ -33,6 +33,9 @@ public protocol ClockRules: Sendable {
     static var inBoundsPlaySeconds: Int { get }
     /// Seconds a play consumes when it ends out of bounds or incomplete.
     static var stoppedPlaySeconds: Int { get }
+    /// Seconds burned getting to the line when the clock was stopped but restarts on the
+    /// ready-for-play rather than the snap — the college first-down rule.
+    static var readyForPlaySeconds: Int { get }
     /// **The tier difference `03` §2 names.** Does the game clock stop on a first down?
     static var clockStopsOnFirstDown: Bool { get }
     /// If it stops, does it restart on the ready-for-play rather than the snap, and inside what
@@ -66,6 +69,7 @@ public enum CollegeClockRules: ClockRules {
     public static let bleedTempoSnapSeconds = 36
     public static let inBoundsPlaySeconds = 6
     public static let stoppedPlaySeconds = 5
+    public static let readyForPlaySeconds = 18
 
     /// The tier difference. The college clock stops on a first down to reset the chains, which is
     /// the single largest reason college games run more plays than pro ones — and modelling it here
@@ -90,6 +94,9 @@ public enum ProClockRules: ClockRules {
     public static let bleedTempoSnapSeconds = 38
     public static let inBoundsPlaySeconds = 6
     public static let stoppedPlaySeconds = 5
+    /// Unused in this tier — the pro clock does not stop on a first down — but the protocol needs
+    /// a value and a tier-specific one is more honest than a shared default.
+    public static let readyForPlaySeconds = 18
 
     /// The pro clock keeps running on a first down.
     public static let clockStopsOnFirstDown = false

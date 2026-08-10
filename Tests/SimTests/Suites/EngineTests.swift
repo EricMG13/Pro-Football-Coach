@@ -2,8 +2,8 @@ import Foundation
 import FootballSimCore
 
 /// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 12_373_771_103_372_689_254
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 13_850_891_251_756_572_042
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 10_032_172_296_174_846_032
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 14_573_601_324_112_555_796
 
 func runEngineTests() {
     suite("Leverage") {
@@ -359,8 +359,14 @@ func runSnapResolverTests() {
             var seen: Set<SnapResult> = []
             let weak = testPersonnel(offenseSkill: 45, defenseSkill: 95)
             let strong = testPersonnel(offenseSkill: 95, defenseSkill: 45)
+            // Three rungs, not two. The first version alternated a 45-rated offence against a
+            // 95-rated defence and the reverse — all mismatches, so it exercised only the tails.
+            // A tuning pass that changed the completion threshold made `incompletion` unreachable
+            // in the fixture while ordinary games were still full of them, which is the fixture
+            // being wrong rather than the engine.
+            let level = [weak, even, strong]
             for index in 0..<3_000 {
-                let personnel = index % 2 == 0 ? weak : strong
+                let personnel = level[index % level.count]
                 let call: OffensiveCall
                 switch index % 5 {
                 case 0: call = OffensiveCall(playType: .pass, passDepth: .deep, aggression: 1)
@@ -369,7 +375,9 @@ func runSnapResolverTests() {
                 case 3: call = OffensiveCall(playType: .punt)
                 default: call = OffensiveCall(playType: .pass, passDepth: .short)
                 }
-                let situation = Situation(yardLine: index % 3 == 0 ? 92 : 30)
+                // Goal-line snaps have to be in the mix or `touchdown` is unreachable from a
+                // single-snap fixture: from the 30, no one play covers 70 yards.
+                let situation = Situation(yardLine: [96, 92, 30, 55][index % 4])
                 seen.insert(SnapResolver.resolve(
                     offensiveCall: call,
                     defensiveCall: DefensiveCall(coverage: CoverageShell.allCases[index % 4],

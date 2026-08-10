@@ -18,6 +18,15 @@ public enum MatchupRules {
     /// Distance at or beyond which third down counts as "and long". A `02` §3.1 call-in trigger.
     public static let longYardage = 7
 
+    /// Distance at or under which an early down is a running down.
+    ///
+    /// Ten, not seven: first-and-ten is the most common snap in football and a caller that treated
+    /// it as a passing down threw on almost every play.
+    public static let runningDownDistance = 10
+
+    /// Distance at or beyond which a deep shot is on the table.
+    public static let deepShotDistance = 8
+
     // MARK: - Leverage
 
     /// The logistic's steepness, in rating points.
@@ -32,7 +41,7 @@ public enum MatchupRules {
     ///
     /// The single most important number in the engine: it is what makes a worse team able to win.
     /// `03` §5.1's talent-dispersion band is what will pin it in P4.
-    public static let leverageNoise = 0.34
+    public static let leverageNoise = 0.24
 
     /// How much scheme fit can move a matchup, in leverage units at full fit.
     ///
@@ -97,21 +106,21 @@ public enum MatchupRules {
     }
     public static let aggressionThrowBonus = 0.06
     /// Below this the throw is intercepted; below `completionThreshold` it falls incomplete.
-    public static let interceptionThreshold = -0.72
-    public static let completionThreshold = -0.06
+    public static let interceptionThreshold = -0.90
+    public static let completionThreshold = -0.30
     /// How much a low-decision passer is pulled toward progression order rather than the open man.
     public static let progressionPenalty = 0.25
 
     // MARK: - Run
 
     /// Yards per unit of lane leverage.
-    public static let laneYardScale = 7.0
+    public static let laneYardScale = 9.5
     /// Outside runs multiply the lane result, trading certainty for the edge.
     public static let outsideRunVariance = 1.35
     public static let crashRunBonus = 0.10
     public static let aggressionRunBonus = 0.05
     /// Leverage above which the carrier breaks a tackle.
-    public static let breakTackleThreshold = 0.55
+    public static let breakTackleThreshold = 0.42
     public static let brokenTackleYards = 4
     /// Each successive break is harder. Bounded, because an unbounded chain is a hang with a small
     /// probability and `03` §7's frame budget has no room for one.
@@ -122,8 +131,18 @@ public enum MatchupRules {
 
     /// Yards behind the line of scrimmage the ball is spotted, plus the end zone.
     public static let fieldGoalSnapDistance = 17
-    /// Rating points of difficulty per yard of kick distance.
-    public static let fieldGoalDifficultyPerYard = 1
+    /// A kick's difficulty as a rating: `base + distance`, clamped to the scale.
+    ///
+    /// The first version was `40 + distance`, which made a routine 25-yard attempt a 65-rated
+    /// defender and a 55-yarder a 95 — so the harness measured 42 percent against a band of 81 to
+    /// 88. Distance still drives it; the base is where a chip shot sits.
+    public static let fieldGoalBaseDifficulty = 18
+
+    public static func fieldGoalDifficulty(distanceYards: Int) -> Int {
+        Swift.min(Swift.max(fieldGoalBaseDifficulty + distanceYards,
+                            SharedRules.ratingRange.lowerBound),
+                  SharedRules.ratingRange.upperBound)
+    }
     public static let legStrengthHelp = 0.25
     public static let basePuntYards = 34
     public static let puntLegYards = 18
