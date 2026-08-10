@@ -53,7 +53,14 @@ class ScenarioFixture:
             raise ValueError(f"fixture {self.name!r} contains duplicate fact keys")
         if set(direct_keys) & set(derived_keys):
             raise ValueError(f"fixture {self.name!r} defines a fact both directly and derivationally")
-        required_tokens = {"team.primary", "team.secondary", "team.onTeam", "opponent.primary", "opponent.onTeam"}
+        required_tokens = {
+            "team.primary",
+            "team.secondary",
+            "team.onTeam",
+            "opponent.primary",
+            "opponent.secondary",
+            "opponent.onTeam",
+        }
         if set(token_keys) != required_tokens or len(token_keys) != len(set(token_keys)):
             raise ValueError(f"fixture {self.name!r} must define the exact semantic team token set")
         for key, value in self.tokens:
@@ -207,6 +214,7 @@ COLLEGE_TOKENS = {
     "team.secondary": "#C8A24A",
     "team.onTeam": "#FFFFFF",
     "opponent.primary": "#7A1F2B",
+    "opponent.secondary": "#E1B8BE",
     "opponent.onTeam": "#FFFFFF",
 }
 
@@ -223,6 +231,7 @@ PRO_TOKENS = {
     "team.secondary": "#7FB2E5",
     "team.onTeam": "#FFFFFF",
     "opponent.primary": "#5A2433",
+    "opponent.secondary": "#CFA8B4",
     "opponent.onTeam": "#FFFFFF",
 }
 
@@ -356,6 +365,9 @@ FIXTURES: dict[str, ScenarioFixture] = {
             call="Inside zone",
             call_duration="18 seconds",
             call_cost="Passing tendency rises next drive",
+            snap_matchup="Inside zone beat the interior front",
+            snap_gain="+23 yards",
+            snap_outcome="First down",
             rivalry_name="The Iron Lantern",
             rivalry_meeting="67th meeting",
             last_save_time="14:32",
@@ -365,6 +377,7 @@ FIXTURES: dict[str, ScenarioFixture] = {
             ("last_save", "{week}, {last_save_time}"),
             ("match_result", "{college_programme} {final_home_score}, {college_opponent} {away_score}"),
             ("field_position", "{college_opponent} {field_position_yard}"),
+            ("snap_sentence", "At {clock}, {situation} at {field_position}. {snap_matchup}; {snap_gain}, {snap_outcome}."),
         ),
         tokens=_tokens(COLLEGE_TOKENS),
     ),
@@ -387,6 +400,11 @@ FIXTURES: dict[str, ScenarioFixture] = {
             cap_space="$11.6M available",
             contract_guarantee="$5.4M guaranteed",
             contract_cost="A signing leaves $3.4M for injury cover",
+            situation="3rd and 7",
+            direction="Attacking right",
+            snap_matchup="Power run beat the edge",
+            snap_gain="+17 yards",
+            snap_outcome="First down",
         ),
         tokens=_tokens(PRO_TOKENS),
     ),

@@ -169,12 +169,17 @@ def _lifecycle_tag(state: str, presentation: LifecycleBadge) -> str:
 @_records_facts
 def _inbox_body(*, ax5: bool = False) -> str:
     fixture = "college-week"
+    if ax5:
+        compact = (
+            '<article class="inbox-item ax5-inbox-reduction" data-authored-reduction="single-decision">'
+            '<strong>Set plan</strong><span class="cost">ANSWER</span>'
+            f'<p>{_fact(fixture, "plan_cost_short")}</p></article>'
+        )
+        return _screen("Week", compact, nav="Week", class_name="ax5-layout")
     first = (
         '<article class="inbox-item selected"><div><strong>Set Saturday plan</strong>'
         f'<p>{_fact(fixture, "plan_cost")}</p></div><span class="cost">ANSWER</span></article>'
     )
-    if ax5:
-        return _screen("Week", first + '<p class="ax5-note">One decision at a time. The cost remains visible.</p>', nav="Week", class_name="ax5-layout")
     second = (
         '<article class="inbox-item"><div><strong>Recruiting visit</strong>'
         f'<p>{_fact(fixture, "recruit_cost")}</p></div><span class="cost">DECIDE</span></article>'
@@ -357,12 +362,12 @@ def _roster_body(*, batch: bool = False, ax5: bool = False, evidence: str = "ros
         '<label>Search <input value=""></label><button>Columns: coaching</button></div>'
     )
     if ax5:
-        controls = '<button class="button secondary">Filter and sort</button><p>11 of 105 · LB · by rating</p>'
+        controls = '<div class="ax5-roster-controls"><button class="button secondary">Filter</button><p>11 of 105</p></div>'
     rows = []
     names: tuple[str | None, ...] = (None, "Dara Okoro-Vance", "Cai Vanders", "Milo Kest", "Ari Tolland", "Noa Serrin")
-    for index, name in enumerate(names[:3] if ax5 else names):
+    for index, name in enumerate(names[:1] if ax5 else names):
         checked = " checked" if batch and index < 2 else ""
-        rendered_name = _fact(fixture, "player") if name is None else escape(name)
+        rendered_name = _fact(fixture, "player_short" if ax5 else "player") if name is None else escape(name)
         rows.append(
             f'<article class="roster-row"><input type="checkbox" aria-label="Select roster player"{checked}>'
             f'<strong>{rendered_name}</strong><span>{91 - index * 4}</span></article>'
@@ -373,13 +378,17 @@ def _roster_body(*, batch: bool = False, ax5: bool = False, evidence: str = "ros
         "throughput": "One filter grammar supports selection and batch consequence.",
         "appearance": "Regular width keeps the dense roster and controls together in light appearance.",
     }[evidence]
-    return _screen("Roster", f'<p class="domain-evidence">{evidence_copy}</p>' + controls + "".join(rows) + action, nav="Team", class_name="ax5-layout" if ax5 else "")
+    if ax5:
+        content = f'<div class="ax5-roster-reduction" data-authored-reduction="controls-and-one-row">{controls}{"".join(rows)}</div>'
+    else:
+        content = f'<p class="domain-evidence">{evidence_copy}</p>' + controls + "".join(rows) + action
+    return _screen("Roster", content, nav="Team", class_name="ax5-layout" if ax5 else "")
 
 
 def _field_marks() -> str:
     numbered = (
         ("12", 38, 50, "home"), ("22", 44, 24, "home"), ("83", 47, 67, "home"),
-        ("18", 53, 18, "home"), ("33", 56, 78, "home"), ("1", 64, 40, "opponent"),
+        ("18", 53, 18, "home"), ("33", 56, 78, "home"), ("1", 57, 40, "home"),
         ("7", 66, 58, "opponent"), ("4", 71, 14, "opponent"), ("9", 73, 86, "opponent"),
         ("21", 78, 31, "opponent"), ("28", 81, 69, "opponent"), ("41", 86, 45, "opponent"),
         ("55", 89, 56, "opponent"),
@@ -436,9 +445,9 @@ def _match_body(state: str, *, ax5: bool = False, evidence: str = "match") -> st
         overlay = f'<section class="lower-third"><strong>{_fact(fixture, "call")} selected</strong><p>The clock expired; your coordinator’s highest-ranked legal call was used.</p></section>'
     elif state == "exit":
         overlay = (
-            '<section class="exit-sheet"><h2>Leave the match?</h2><p>The result is already decided.</p>'
-            f'{_actions(_button("Keep watching"), _button("Leave and resume here later", kind="secondary"), _button("Simulate the rest", kind="quiet"), class_name="broadcast-actions")}'
-            '<small>Remaining calls resolve to your coordinator.</small></section>'
+            '<section class="exit-sheet" data-action-container="modal"><h2>Leave the match?</h2><p>The result is already decided.</p>'
+            '<small>Simulating gives remaining calls to your coordinator.</small>'
+            f'{_actions(_button("Keep watching"), _button("Leave and resume here later", kind="secondary"), _button("Simulate the rest", kind="quiet"), class_name="broadcast-actions")}</section>'
         )
     elif state == "resumable-return":
         overlay = (
@@ -452,12 +461,13 @@ def _match_body(state: str, *, ax5: bool = False, evidence: str = "match") -> st
         )
     lower = ""
     if state == "live":
-        lower = f'<section class="lower-third"><strong>{_fact(fixture, "player_short")} · +23</strong>'
+        lower = f'<section class="lower-third"><strong>{_fact(fixture, "player_short")} · {_fact(fixture, "snap_gain")}</strong>'
         lower += '' if ax5 else '<p>Won the leverage matchup and crossed midfield.</p>'
         lower += '</section>'
     live_pip_attribute = ' data-role="live"' if is_live else ""
     return (
         f'<div class="match-screen" data-evidence="{escape(evidence)}">'
+        f'{_fact(fixture, "snap_sentence", class_name="snap-voiceover")}'
         f'<div class="field" aria-hidden="true"><div class="line-of-scrimmage"></div>{_field_marks()}</div>'
         f'{_score_bug(state)}'
         f'<div class="direction"><span aria-hidden="true">→</span> {_fact(fixture, "direction")}</div>'
@@ -555,7 +565,7 @@ def _draft_body(state: str) -> str:
     return (
         '<div class="draft-screen"><header class="draft-bug">'
         f'<span>{_fact(fixture, "pro_organisation")}</span><strong>{_fact(fixture, "draft_round")}</strong>'
-        f'<span>{_fact(fixture, "draft_pick")}</span>{clock}</header><main>{decision}</main><div class="home-indicator"></div></div>'
+        f'<span>{_fact(fixture, "draft_pick")}</span>{clock}</header><main data-action-container="pane">{decision}</main><div class="home-indicator"></div></div>'
     )
 
 
@@ -576,10 +586,10 @@ def _promotion_body(state: str) -> str:
         content = f'<h1>Promotion accepted</h1><p>You join {_fact(fixture, "pro_organisation")} after the bowl.</p>{_actions(_button("Review arrival brief"))}'
     else:
         content = (
-            '<div class="arrival-summary"><p class="eyebrow">YOUR PRO ARRIVAL</p>'
-            f'<h1>{_fact(fixture, "pro_organisation")}</h1><dl class="terms">'
+            '<div class="arrival-summary"><div class="arrival-identity"><p class="eyebrow">YOUR PRO ARRIVAL</p>'
+            f'<h1>{_fact(fixture, "pro_organisation")}</h1></div><dl class="terms arrival-terms">'
             f'<div><dt>Role</dt><dd>{_fact(fixture, "pro_role")}</dd></div><div><dt>Inherited constraint</dt><dd>{_fact(fixture, "inherited_cap")}</dd></div>'
-            f'<div><dt>First stakeholder</dt><dd>{_fact(fixture, "pro_stakeholder")}</dd></div><div><dt>Next decision</dt><dd>{_fact(fixture, "first_decision")}</dd></div></dl></div>'
+            f'<div><dt>First stakeholder</dt><dd>{_fact(fixture, "pro_stakeholder")}</dd></div><div class="arrival-next-decision"><dt>Next decision</dt><dd>{_fact(fixture, "first_decision")}</dd></div></dl></div>'
             f'<blockquote>“{_fact(fixture, "owner_voice")}.”</blockquote>{_actions(_button("Enter preseason"))}'
         )
     tier = "pro" if state in {"accepted", "pro-arrival"} else "college"
@@ -604,7 +614,7 @@ def _component_sample(component: str, state: str, fixture: str) -> str:
     if component == "Card":
         visual = f'<article class="mini-card"><strong>{_fact(fixture, "week")}</strong><small>Saturday · {_fact(fixture, "college_opponent")}</small></article>'
     elif component == "Row":
-        visual = f'<div class="mini-row"><span>WR</span><strong>{_fact(fixture, "player")}</strong><span>{_fact(fixture, "player_rating")}</span></div>'
+        visual = f'<div class="mini-row"><span>WR</span><strong>{_fact(fixture, "player_short")}</strong><span>{_fact(fixture, "player_rating")}</span></div>'
     elif component == "StatCell":
         visual = f'<div class="mini-stat"><strong>{_fact(fixture, "player_rating")}</strong><small>Overall</small></div>'
     elif component == "Chip":
@@ -636,7 +646,7 @@ def _component_sample(component: str, state: str, fixture: str) -> str:
         visual = f'<button class="mini-destructive"{disabled}>{"Release both · confirm" if state == "confirmation" else "Release player"}</button>'
     elif component == "InboxItem":
         status = "ANSWER" if state == "unread" else "DONE"
-        visual = f'<article class="mini-inbox"><i></i><div><strong>Set Saturday plan</strong><small>{_fact(fixture, "plan_cost")}</small></div><span>{status}</span></article>'
+        visual = f'<article class="mini-inbox"><i></i><div><strong>Set Saturday plan</strong><small>{_fact(fixture, "plan_cost_short")}</small></div><span>{status}</span></article>'
     elif component == "CallInCard":
         live = state == "awaiting"
         call_text = f'{_fact(fixture, "call")} · {_fact(fixture, "call_duration")}' if live else state.title()
@@ -644,7 +654,8 @@ def _component_sample(component: str, state: str, fixture: str) -> str:
         live_attribute = ' data-role="live"' if live else ""
         visual = f'<article class="mini-call{paused_class}"{live_attribute}><small>COORDINATOR</small><strong>{call_text}</strong></article>'
     elif component == "FieldCanvas":
-        visual = f'<div class="mini-field"><i></i><i></i><i></i><span>{dict(formation="Set", **{"key-moment": "Matchup", "outcome": "First down"})[state]}</span></div>'
+        label = _fact(fixture, "snap_outcome") if state == "outcome" else {"formation": "Set", "key-moment": "Matchup"}[state]
+        visual = f'<div class="mini-field"><i></i><i></i><i></i><span>{label}</span></div>'
     elif component == "EmptyState":
         action = '<button>Advance to Monday</button>' if state == "action" else ""
         visual = f'<div class="mini-empty"><strong>No offers yet</strong>{action}</div>'
@@ -660,7 +671,7 @@ def _component_sample(component: str, state: str, fixture: str) -> str:
         visual = '<div class="mini-spark" aria-label="Five game form">' + "".join(f'<i style="--value:{height}%"></i>' for height in heights) + '</div>'
     elif component == "LowerThird":
         context = "" if state == "ax5-reduced" else '<small>Won the leverage matchup</small>'
-        visual = f'<div class="mini-lower"><strong>{_fact(fixture, "player_short")} · +23</strong>{context}</div>'
+        visual = f'<div class="mini-lower"><strong>{_fact(fixture, "player_short")} · {_fact(fixture, "snap_gain")}</strong>{context}</div>'
     elif component == "ScoreBug":
         live = state == "live"
         live_badge = '<i data-role="live">LIVE</i>' if live else ""
@@ -773,12 +784,19 @@ def _tokens_body(kind: str, *, appearance: str = "dark", ax5: bool = False) -> s
         return f'{filters}<div class="cvd-grid">{lanes}</div>'
     if kind == "elevation":
         mechanism = "shadow" if appearance == "light" else "surface-hairline-scrim"
-        scrim = '<span class="elevation-scrim" aria-hidden="true"></span>' if appearance == "dark" else ""
+        if appearance == "dark":
+            third = (
+                '<section class="elevation-stage-three"><div class="elevation-covered" aria-hidden="true">'
+                '<span>Covered career surface</span></div><span class="elevation-scrim" aria-hidden="true"></span>'
+                '<article class="elevation-three"><strong>Elevation 3</strong><span>Confirmation over scrim</span></article></section>'
+            )
+        else:
+            third = '<article class="elevation-three"><strong>Elevation 3</strong><span>Confirmation over scrim</span></article>'
         return (
             f'<div class="elevation-grid" data-elevation-mechanism="{mechanism}">'
             '<article class="elevation-one"><strong>Elevation 1</strong><span>Resting surface</span></article>'
             '<article class="elevation-two"><strong>Elevation 2</strong><span>Decision over content</span></article>'
-            f'<article class="elevation-three">{scrim}<strong>Elevation 3</strong><span>Confirmation over scrim</span></article></div>'
+            f'{third}</div>'
         )
     return '<div class="spacing-ramp"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="radius-ramp"><i></i><i></i><i></i></div>'
 
@@ -821,14 +839,21 @@ def _broadcast_body(occasion_key: str) -> str:
             '<div class="rivalry-seam" aria-label="Rivalry occasion">'
             f'<strong>{_fact(fixture, "rivalry_name")}</strong><span>{_fact(fixture, "rivalry_meeting")}</span></div>'
         )
+    corners = ""
+    if occasion.escalation == "final":
+        corners = "".join(
+            f'<i class="broadcast-corner corner-{corner}" data-corner="{corner}" aria-hidden="true"></i>'
+            for corner in ("top-left", "top-right", "bottom-left", "bottom-right")
+        )
     return (
         f'<div class="broadcast-screen {occasion.house} {occasion.escalation}{" rivalry" if rivalry else ""}" '
         f'data-broadcast-occasion="{escape(occasion_key)}"><div class="broadcast-frame">'
         f'<span class="occasion">{escape(occasion.label)}</span><strong>{_fact(fixture, name_key)}</strong>'
         f'{_state_tag("LIVE", live=True)}<span class="broadcast-clock">{_fact(fixture, clock_key)}</span></div>'
         f'<div class="broadcast-field" aria-hidden="true"><div class="line-of-scrimmage"></div>{_field_marks()}'
-        '<div class="broadcast-down">3RD &amp; 7 · ATTACKING RIGHT →</div></div>'
-        f'{rivalry_seam}<section class="broadcast-overlay"><strong>Inside run wins leverage</strong><span>+23 · first down</span></section></div>'
+        f'<div class="broadcast-down">{_fact(fixture, "situation")} · {_fact(fixture, "direction")} <span aria-hidden="true">→</span></div></div>'
+        f'{rivalry_seam}<section class="broadcast-overlay"><strong>{_fact(fixture, "snap_matchup")}</strong>'
+        f'<span>{_fact(fixture, "snap_gain")} · {_fact(fixture, "snap_outcome")}</span></section>{corners}</div>'
     )
 
 

@@ -8,6 +8,7 @@ import unittest
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
+from string import Formatter
 from unittest.mock import patch
 
 import design_refs.generator as generator_module
@@ -73,6 +74,21 @@ def _lab(hex_value: str) -> tuple[float, float, float]:
 
 def _delta_e(first: str, second: str) -> float:
     return math.sqrt(sum((left - right) ** 2 for left, right in zip(_lab(first), _lab(second), strict=True)))
+
+
+def _normalise_fact(value: str) -> str:
+    return " ".join(value.casefold().split())
+
+
+def _fact_dependency_closure(fixture, key: str) -> set[str]:
+    templates = dict(fixture.derived_facts)
+    result = {key}
+    if key not in templates:
+        return result
+    for _, field_name, _, _ in Formatter().parse(templates[key]):
+        if field_name is not None:
+            result.update(_fact_dependency_closure(fixture, field_name))
+    return result
 
 
 @dataclass
@@ -299,6 +315,8 @@ class GeneratorTests(unittest.TestCase):
                 frame.attrs["data-frame"],
             )
         accessibility = self.trees["Accessibility-v3.dc.html"]
+        ax5_inbox = next(frame for frame in elements(accessibility, class_name="product-frame") if frame.attrs["data-frame"] == "ax5-inbox")
+        self.assertEqual(len(elements(ax5_inbox, class_name="ax5-inbox-reduction")), 1)
         ax5_save = next(frame for frame in elements(accessibility, class_name="product-frame") if frame.attrs["data-frame"] == "ax5-save")
         self.assertEqual(len(elements(ax5_save, class_name="ax5-save-summary")), 1)
         self.assertEqual(len(elements(ax5_save, class_name="ax5-save-actions")), 1)
@@ -311,6 +329,12 @@ class GeneratorTests(unittest.TestCase):
             {node.attrs["data-type-role"] for node in type_frame.descendants() if "data-type-role" in node.attrs},
             {"display", "title", "headline", "body", "callout", "caption", "numeral"},
         )
+        throughput = self.trees["Throughput-v3.dc.html"]
+        ax5_roster = next(frame for frame in elements(throughput, class_name="product-frame") if frame.attrs["data-frame"] == "throughput-ax5")
+        self.assertEqual(len(elements(ax5_roster, class_name="ax5-roster-reduction")), 1)
+        self.assertEqual(len(elements(ax5_roster, class_name="roster-row")), 1)
+        self.assertIn(FIXTURES["college-week"].fact("player_short"), ax5_roster.text())
+        self.assertNotIn(FIXTURES["college-week"].fact("player"), ax5_roster.text())
 
     def test_attribute_rows_bind_label_track_fill_and_accessible_numeral(self) -> None:
         tiers = set()
@@ -399,6 +423,8 @@ class GeneratorTests(unittest.TestCase):
                 self.assertEqual(sum(mark.attrs.get("data-numbered") == "false" for mark in marks), 9)
                 self.assertEqual({mark.attrs.get("data-side") for mark in marks}, {"home", "opponent"})
                 self.assertTrue(all(mark.has_class(mark.attrs["data-side"]) for mark in marks))
+                self.assertEqual(sum(mark.attrs.get("data-side") == "home" for mark in marks), 11)
+                self.assertEqual(sum(mark.attrs.get("data-side") == "opponent" for mark in marks), 11)
         self.assertIn(".player-mark.home { background: var(--team-primary);", STYLES)
         self.assertIn(".player-mark.opponent { background: var(--opponent-primary);", STYLES)
         screens = self.trees["Screens-v3.dc.html"]
@@ -489,6 +515,17 @@ class GeneratorTests(unittest.TestCase):
         self.assertNotIn("action-row", " ".join(self.outputs.values()))
         self.assertIn(".pane-actions { position: sticky; bottom: 0;", STYLES)
         self.assertIn('data-type-scale="ax5"] .pane-actions { flex-wrap: nowrap;', STYLES)
+        continuity = self.trees["Continuity-v3.dc.html"]
+        exit_frame = next(frame for frame in elements(continuity, class_name="product-frame") if frame.attrs["data-frame"] == "match-exit")
+        exit_container = next(node for node in exit_frame.descendants() if node.attrs.get("data-action-container") == "modal")
+        self.assertTrue(exit_container.children[-1].has_class("pane-actions"))
+        offseason = self.trees["Offseason-v3.dc.html"]
+        draft = next(frame for frame in elements(offseason, class_name="product-frame") if frame.attrs["data-frame"] == "draft-live-pick")
+        draft_container = next(node for node in draft.descendants() if node.attrs.get("data-action-container") == "pane")
+        self.assertEqual(len(elements(draft_container, class_name="pane-actions")), 1)
+        audit_source = (REPOSITORY_ROOT / "scripts/check-design-reference-layout.mjs").read_text(encoding="utf-8")
+        self.assertIn("pane actions are not pinned to container bottom", audit_source)
+        self.assertIn("getBoundingClientRect().bottom - expectedBottom", audit_source)
 
     def test_pro_destination_mutates_and_front_office_is_selected(self) -> None:
         career = self.trees["Career-v3.dc.html"]
@@ -497,6 +534,10 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual([destination.text() for destination in arrival_destinations], ["Week", "Team", "Front office", "League", "Career"])
         self.assertNotIn("Recruit", [destination.text() for destination in arrival_destinations])
         self.assertEqual(len([node for node in arrival.descendants() if node.attrs.get("data-action-role") == "primary" and node.text() == "Enter preseason"]), 1)
+        next_decision = elements(arrival, class_name="arrival-next-decision")
+        self.assertEqual(len(next_decision), 1)
+        self.assertEqual(elements(next_decision[0], tag="dt")[0].text(), "Next decision")
+        self.assertEqual(elements(next_decision[0], tag="dd")[0].text(), FIXTURES["pro-arrival"].fact("first_decision"))
         offseason = self.trees["Offseason-v3.dc.html"]
         for state in {"free-agency", "cap-plan", "contract-offer"}:
             frame = next(frame for frame in elements(offseason, class_name="product-frame") if frame.attrs["data-state"] == state)
@@ -518,6 +559,26 @@ class GeneratorTests(unittest.TestCase):
             )
         self.assertGreaterEqual(len(occurrences), 2)
         self.assertEqual({node.text() for node in occurrences}, {duration})
+
+    def test_match_has_one_composed_voiceover_snap_sentence_at_every_scale(self) -> None:
+        expected_parts = tuple(
+            FIXTURES["match-resume"].fact(key)
+            for key in ("clock", "situation", "field_position", "snap_matchup", "snap_gain", "snap_outcome")
+        )
+        match_frames = []
+        for tree in self.trees.values():
+            match_frames.extend(frame for frame in elements(tree, class_name="product-frame") if elements(frame, class_name="match-screen"))
+        self.assertTrue(match_frames)
+        for frame in match_frames:
+            sentences = elements(frame, class_name="snap-voiceover")
+            self.assertEqual(len(sentences), 1, frame.attrs["data-frame"])
+            self.assertEqual(sentences[0].attrs.get("data-fact-key"), "snap_sentence")
+            self.assertEqual(sentences[0].text(), FIXTURES["match-resume"].fact("snap_sentence"))
+            for value in expected_parts:
+                self.assertIn(value, sentences[0].text())
+            self.assertTrue(all(field.attrs.get("aria-hidden") == "true" for field in elements(frame, class_name="field")))
+        ax5 = next(frame for frame in match_frames if frame.attrs["data-frame"] == "ax5-match")
+        self.assertEqual(len(elements(ax5, class_name="snap-voiceover")), 1)
 
     def test_invalid_authoring_states_fail_closed(self) -> None:
         renderers = (_match_body, _save_body, _draft_body, _promotion_body, _game_plan_body)
@@ -587,6 +648,10 @@ class GeneratorTests(unittest.TestCase):
         self.assertTrue({"poor", "bad"}.issubset(attribute_states))
         self.assertIn(".component-grid", STYLES)
         self.assertIn("overflow: auto", STYLES)
+        self.assertIn("repeat(auto-fit, minmax(var(--component-column-min), 1fr))", STYLES)
+        self.assertIn("grid-auto-rows: max-content", STYLES)
+        self.assertIn('.specimen[data-specimen="InboxItem"] { grid-column: span 2; }', STYLES)
+        self.assertNotIn("--specimen-height", STYLES)
 
     def test_broadcast_mapping_and_football_composition_are_complete(self) -> None:
         expected = {
@@ -615,12 +680,34 @@ class GeneratorTests(unittest.TestCase):
             self.assertEqual(len(elements(fields[0], class_name="line-of-scrimmage")), 1)
             self.assertEqual(len(elements(fields[0], class_name="broadcast-down")), 1)
             self.assertEqual(len(elements(frame, class_name="broadcast-overlay")), 1)
+            self.assertEqual(sum(mark.attrs.get("data-side") == "home" for mark in elements(fields[0], class_name="player-mark")), 11)
+            self.assertEqual(sum(mark.attrs.get("data-side") == "opponent" for mark in elements(fields[0], class_name="player-mark")), 11)
+            down_keys = {node.attrs["data-fact-key"] for node in elements(fields[0], class_name="broadcast-down")[0].descendants() if "data-fact-key" in node.attrs}
+            overlay_keys = {node.attrs["data-fact-key"] for node in elements(frame, class_name="broadcast-overlay")[0].descendants() if "data-fact-key" in node.attrs}
+            self.assertEqual(down_keys, {"situation", "direction"})
+            self.assertEqual(overlay_keys, {"snap_matchup", "snap_gain", "snap_outcome"})
         pro_elimination = next(frame for frame in frames if frame.attrs["data-state"] == "pro-elimination")
         screen = elements(pro_elimination, class_name="broadcast-screen")[0]
         self.assertTrue(screen.has_class("pro"))
         self.assertTrue(screen.has_class("elimination"))
         rivalry = next(frame for frame in frames if frame.attrs["data-state"] == "college-rivalry")
         self.assertEqual(len(elements(rivalry, class_name="rivalry-seam")), 1)
+        finals = [frame for frame in frames if elements(frame, class_name="broadcast-screen")[0].has_class("final")]
+        self.assertEqual(len(finals), 2)
+        for frame in finals:
+            self.assertEqual(len(elements(frame, class_name="broadcast-corner")), 4)
+        for frame in frames:
+            if not elements(frame, class_name="broadcast-screen")[0].has_class("final"):
+                self.assertEqual(len(elements(frame, class_name="broadcast-corner")), 0)
+        for declaration in (
+            "--broadcast-bug-regular: 44px",
+            "--broadcast-bug-elimination: 48px",
+            "--broadcast-bug-final: 52px",
+            "border-top: 2px solid var(--team-secondary)",
+            "border: 2px solid var(--team-secondary)",
+            "linear-gradient(90deg,var(--team-secondary) 0 50%,var(--opponent-secondary) 50%)",
+        ):
+            self.assertIn(declaration, STYLES)
 
     def test_elevation_uses_appearance_specific_mechanisms(self) -> None:
         tree = self.trees["Tokens-v3.dc.html"]
@@ -632,7 +719,12 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(light_grid.attrs["data-elevation-mechanism"], "shadow")
         self.assertEqual(len(elements(dark_grid, class_name="elevation-scrim")), 1)
         self.assertEqual(len(elements(light_grid, class_name="elevation-scrim")), 0)
-        self.assertIn('[data-elevation-mechanism="surface-hairline-scrim"] article { border: 1px solid var(--hairline); box-shadow: none;', STYLES)
+        self.assertEqual(len(elements(dark_grid, class_name="elevation-covered")), 1)
+        self.assertEqual(len(elements(dark_grid, class_name="elevation-stage-three")), 1)
+        self.assertIn("border: 1px solid rgba(158,158,158,.09)", STYLES)
+        self.assertIn("border: 1px solid rgba(158,158,158,.14)", STYLES)
+        self.assertIn("border: 1px solid rgba(158,158,158,.22)", STYLES)
+        self.assertIn("background: rgba(0,0,0,.22)", STYLES)
         self.assertIn('[data-elevation-mechanism="shadow"] .elevation-three { box-shadow:', STYLES)
 
     def test_fixture_manifest_is_a_sheet_projection(self) -> None:
@@ -665,11 +757,15 @@ class GeneratorTests(unittest.TestCase):
                     programme_node = node
                     while programme_node is not None and "data-program-index" not in programme_node.attrs:
                         programme_node = programme_node.parent
-                    allowed = fixture.fact_keys() if fact_key or programme_node is not None else frozenset()
+                    allowed = _fact_dependency_closure(fixture, fact_key) if fact_key else fixture.fact_keys() if programme_node is not None else frozenset()
                     for text in node.data:
                         for key in observable_keys.get(fixture.name, set()):
                             value = fixture.fact(key)
-                            if value in text and key not in allowed:
+                            covered_by_allowed_fact = any(
+                                _normalise_fact(value) in _normalise_fact(fixture.fact(allowed_key))
+                                for allowed_key in allowed
+                            )
+                            if _normalise_fact(value) in _normalise_fact(text) and key not in allowed and not covered_by_allowed_fact:
                                 self.fail(
                                     f"{name}:{frame.attrs['data-frame']} renders {key}={value!r} "
                                     "outside its explicit fact record"
@@ -748,14 +844,16 @@ class GeneratorTests(unittest.TestCase):
             tokens = dict(fixture.tokens)
             self.assertEqual(
                 set(tokens),
-                {"team.primary", "team.secondary", "team.onTeam", "opponent.primary", "opponent.onTeam"},
+                {"team.primary", "team.secondary", "team.onTeam", "opponent.primary", "opponent.secondary", "opponent.onTeam"},
             )
             self.assertGreaterEqual(_contrast(tokens["team.primary"], tokens["team.onTeam"]), 4.5)
             self.assertGreaterEqual(_contrast(tokens["team.primary"], tokens["team.secondary"]), 3.0)
+            self.assertGreaterEqual(_contrast(tokens["team.secondary"], "#0E1218"), 4.5)
+            self.assertGreaterEqual(_contrast(tokens["opponent.secondary"], "#0E1218"), 4.5)
             self.assertGreaterEqual(_delta_e(tokens["team.primary"], tokens["opponent.primary"]), 25)
-            for key in ("team.primary", "team.secondary", "opponent.primary"):
+            for key in ("team.primary", "team.secondary", "opponent.primary", "opponent.secondary"):
                 self.assertNotIn(tokens[key], product_css)
-        for variable in ("--team-primary", "--team-secondary", "--team-on", "--opponent-primary", "--opponent-on"):
+        for variable in ("--team-primary", "--team-secondary", "--team-on", "--opponent-primary", "--opponent-secondary", "--opponent-on"):
             self.assertIn(variable, self.outputs["Broadcast-v3.dc.html"])
         self.assertIn("font: 800 var(--field-notation-size)/1", STYLES)
         self.assertIn("Device-validated notation", STYLES)
@@ -875,6 +973,8 @@ class GeneratorTests(unittest.TestCase):
         projected = league_manifest["fixtures"]["college-week"]["programmes"]
         self.assertEqual(len(projected), 134)
         self.assertTrue(all({"x", "y", "marketSize"}.issubset(item) for item in projected))
+        self.assertIn('.product-frame[data-width-class="compact"] .map-layout', STYLES)
+        self.assertIn("flex-basis: calc(var(--space-xxl) * 4)", STYLES)
 
     def test_high_risk_light_regular_evidence_and_local_layout_audit_are_present(self) -> None:
         appearance = self.trees["Appearance-v3.dc.html"]
@@ -897,10 +997,28 @@ class GeneratorTests(unittest.TestCase):
             *expected,
             "ax5-inbox", "ax5-plan", "ax5-save", "ax5-match", "career-security-ax5",
             "throughput-ax5", "throughput-attributes-ax5", "tokens-type-ax5",
-            "entry-board", "entry-offer", "pro-arrival", "components-2", "components-4",
-            "broadcast-college-rivalry", "broadcast-pro-elimination",
+            "entry-board", "entry-offer", "pro-arrival", "match-exit", "draft-live-pick", "map-reach",
+            "components-1", "components-2", "components-3", "components-4", "components-5",
+            "broadcast-college-regular", "broadcast-college-rivalry",
+            "broadcast-college-conference-championship", "broadcast-college-playoff", "broadcast-college-final",
+            "broadcast-pro-regular", "broadcast-pro-elimination", "broadcast-pro-final",
+            "tokens-elevation-dark", "tokens-elevation-light",
         }:
             self.assertIn(frame_id, audit_source)
+        for regression_guard in (
+            "commandTimeoutMilliseconds",
+            'addEventListener("close"',
+            "DevTools socket error",
+            "overlapChecks",
+            "contrastChecks",
+            "is occluded by destination bar",
+            "pane actions are not pinned to container bottom",
+            "broadcast bug height differs from escalation canon",
+            "dark elevation hairline strengths differ",
+            "stopChrome",
+            'chrome.kill("SIGKILL")',
+        ):
+            self.assertIn(regression_guard, audit_source)
         self.assertNotRegex(audit_source.lower(), r"playwright|npm")
 
     def test_tokens_and_offseason_cover_the_full_requested_domains(self) -> None:

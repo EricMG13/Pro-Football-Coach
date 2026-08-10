@@ -68,10 +68,15 @@
   --match-lower-trailing: 110px;
   --call-in-width: 380px;
   --map-height: 220px;
+  --component-column-min: 180px;
   --draft-header-height: 56px;
   --draft-content-top: 70px;
   --broadcast-field-top: 72px;
   --broadcast-field-edge: 30px;
+  --broadcast-bug-regular: 44px;
+  --broadcast-bug-elimination: 48px;
+  --broadcast-bug-final: 52px;
+  --a11y-unit: 1px;
   --selection-rule: 3px;
   --opposed-track-height: 11px;
   --list-field-width: 110px;
@@ -80,7 +85,6 @@
   --rating-value-width: 42px;
   --rating-value-height: 30px;
   --progress-height: 18px;
-  --specimen-height: 76px;
   --compact-visual-height: 52px;
   --map-visual-height: 56px;
   --map-dot-xs: 5px;
@@ -231,6 +235,7 @@ button, input, select { font: inherit; }
 .inbox-item.selected, .choice.selected, .job.selected, .roster-row.selected { background: var(--frame-selected); border-color: var(--frame-accent); }
 .inbox-item p { margin: var(--space-xs) 0 0; font-size: var(--caption-size); }
 .inbox-item .cost { margin-left: auto; color: var(--frame-accent); font-weight: 800; font-size: var(--caption-size); }
+.snap-voiceover { position: absolute; width: var(--a11y-unit); height: var(--a11y-unit); padding: 0; margin: calc(-1 * var(--a11y-unit)); overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 .button, .list-controls button, .list-controls input, .lens-row button, .warning-banner button, .match-exit {
   min-width: var(--destination-height);
   min-height: var(--destination-height);
@@ -307,11 +312,12 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .player-mark.interior { width: var(--field-interior-size); height: var(--field-interior-size); }
 .player-mark.home { background: var(--team-primary); border: 2px solid var(--team-on); color: var(--team-on); }
 .player-mark.opponent { background: var(--opponent-primary); border: 2px solid var(--opponent-on); color: var(--opponent-on); }
-.score-bug { position: absolute; left: 0; right: 0; top: 0; height: var(--destination-height); display: flex; align-items: center; background: var(--broadcast-black); border-bottom: 1px solid var(--hairline); z-index: 4; font-variant-numeric: tabular-nums; }
+.score-bug { position: absolute; left: 0; right: 0; top: 0; height: var(--destination-height); display: flex; align-items: center; background: var(--broadcast-black); color: var(--content-primary); border-bottom: 1px solid var(--hairline); z-index: 4; font-variant-numeric: tabular-nums; }
 .score-bug > span, .score-bug > strong { min-width: var(--score-segment-width); height: var(--destination-height); display: grid; place-items: center; padding: 0 var(--optical-6); } /* named optical broadcast lockup */
 .score-bug > span:first-child { margin-left: var(--safe-leading); background: var(--team-primary); color: var(--team-on); }
 .score-bug > span:nth-of-type(2) { background: var(--opponent-primary); color: var(--opponent-on); }
-.score-bug > strong { min-width: var(--score-numeral-width); font-size: var(--numeral-size); background: var(--doc-page); }
+.score-bug > strong { min-width: var(--score-numeral-width); font-size: var(--numeral-size); background: var(--doc-page); color: var(--content-primary); }
+.score-bug > span:nth-of-type(3), .score-bug > .state-tag:not(.is-live) { color: var(--content-primary); }
 .state-tag { display: inline-grid; place-items: center; min-height: var(--destination-height); padding: var(--space-xs) var(--space-s); border: 1px solid var(--frame-accent); color: var(--frame-primary); font-family: ui-monospace, Menlo, monospace; font-size: var(--caption-size); font-weight: 800; line-height: 1; letter-spacing: .05em; }
 .state-tag.is-live, [data-role="live"] { background: var(--live); color: #0E1218; border-color: #0E1218; }
 .direction { position: absolute; top: var(--match-overlay-top); right: var(--space-m); z-index: 4; padding: var(--space-s) var(--space-sm); background: rgba(4,6,10,.86); color: var(--content-primary); font-weight: 750; }
@@ -326,10 +332,12 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .call-in { right: var(--space-ml); bottom: var(--space-xl); width: var(--call-in-width); border-top: 4px solid var(--frame-accent); border-radius: var(--radius-l); padding: var(--space-m); }
 .call-in[data-role="live"] { border-top-color: var(--live); }
 .call-in h2, .exit-sheet h2 { margin: var(--space-xs) 0; font-size: var(--headline-size); }
-.call-in p, .exit-sheet p { margin: var(--space-xs) 0 var(--space-s); color: var(--team-on); }
+.call-in p { margin: var(--space-xs) 0 var(--space-s); color: var(--team-on); }
 .call-in.paused { border-top-color: var(--warning); }
-.exit-sheet { inset: var(--space-xl) var(--app-content-top) var(--space-xl); border-radius: var(--radius-l); padding: var(--space-m) var(--space-ml); background: var(--frame-card); }
-.exit-sheet small { display: block; color: #A7B0C0; }
+.exit-sheet { inset: var(--space-xl) var(--app-content-top) var(--space-xl); display: flex; flex-direction: column; border-radius: var(--radius-l); padding: var(--space-m) var(--space-ml); background: var(--frame-card); color: var(--frame-primary); }
+.exit-sheet p { margin: var(--space-xs) 0 var(--space-s); color: var(--frame-secondary); }
+.exit-sheet small { display: block; color: var(--frame-secondary); }
+.exit-sheet .pane-actions { margin-top: auto; }
 .aftermath { background: #121724; }
 .progress { height: var(--progress-height); background: var(--frame-raised); border: 1px solid var(--hairline); margin: var(--space-sm) 0; }
 .progress i { display: block; width: var(--value); height: 100%; background: var(--frame-accent); }
@@ -339,6 +347,7 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .lens-row button { background: var(--frame-raised); color: var(--frame-primary); border-color: var(--hairline); }
 .lens-row button.selected { background: var(--frame-selected); border-color: var(--frame-accent); }
 .map-layout { display: grid; flex: 0 0 var(--map-height); grid-template-columns: 58% 42%; height: var(--map-height); gap: var(--space-sm); }
+.product-frame[data-width-class="compact"] .map-layout { flex-basis: calc(var(--space-xxl) * 4); height: calc(var(--space-xxl) * 4); }
 .league-map { position: relative; overflow: hidden; background: #152234; border: 1px solid var(--hairline); border-radius: var(--radius-m); }
 .league-map .map-dot { position: absolute; left: var(--x); top: var(--y); width: var(--map-dot-s); height: var(--map-dot-s); border-radius: 50%; background: var(--frame-accent); border: 1px solid var(--team-on); transform: translate(-50%,-50%); }
 .league-map .market-1 { width: var(--map-dot-xs); height: var(--map-dot-xs); }
@@ -364,12 +373,13 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .draft-bug { height: var(--draft-header-height); display: flex; align-items: center; gap: var(--space-sm); padding: 0 var(--space-ml) 0 var(--safe-leading); background: var(--team-primary); color: var(--team-on); border-bottom: 4px solid var(--team-secondary); }
 .draft-bug strong { font-size: var(--headline-size); }
 .draft-bug .state-tag { margin-left: auto; }
-.draft-screen main { position: absolute; left: var(--safe-leading); right: var(--space-ml); top: var(--draft-content-top); bottom: var(--space-xl); padding: var(--space-ml); background: var(--frame-card); border: 1px solid var(--team-secondary); }
+.draft-screen main { position: absolute; left: var(--safe-leading); right: var(--space-ml); top: var(--draft-content-top); bottom: var(--space-xl); display: flex; flex-direction: column; padding: var(--space-ml); background: var(--frame-card); border: 1px solid var(--team-secondary); }
 .draft-screen main h1 { margin: var(--space-xs) 0; font-size: var(--display-size); }
-.component-grid { position: absolute; inset: var(--space-m); display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-s); align-content: start; overflow: auto; }
-.specimen { min-height: var(--specimen-height); padding: var(--space-s); display: flex; flex-direction: column; justify-content: center; gap: var(--space-xs); }
+.component-grid { position: absolute; inset: var(--space-m); display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--component-column-min), 1fr)); grid-auto-rows: max-content; gap: var(--space-s); align-content: start; align-items: start; overflow: auto; }
+.specimen { min-width: 0; padding: var(--space-s); display: flex; flex-direction: column; justify-content: flex-start; gap: var(--space-xs); overflow: visible; }
+.specimen[data-specimen="InboxItem"] { grid-column: span 2; }
 .specimen > .specimen-state { color: var(--frame-secondary); font: 750 var(--caption-size)/1 ui-monospace, Menlo, monospace; letter-spacing: .06em; }
-.component-visual { min-width: 0; border: 1px solid transparent; border-radius: var(--radius-s); }
+.component-visual { min-width: 0; max-width: 100%; border: 1px solid transparent; border-radius: var(--radius-s); }
 .component-visual.state-selected, .component-visual.state-pressed, .component-visual.state-active { background: var(--frame-selected); border-color: var(--frame-accent); }
 .component-visual.state-disabled { opacity: .42; }
 .component-visual.state-error, .component-visual.state-over-capacity { border-color: var(--frame-negative); }
@@ -393,7 +403,7 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .mini-inbox > i { width: var(--space-xs); align-self: stretch; background: var(--frame-accent); }
 .mini-inbox > span { font-size: var(--caption-size); font-weight: 800; }
 .mini-call { border-top: 4px solid var(--frame-accent); }
-.mini-call[data-role="live"] { border-top-color: var(--live); }
+.mini-call[data-role="live"] { border-top-color: var(--live); color: var(--frame-primary); }
 .mini-field { position: relative; min-height: calc(var(--space-xxl) + var(--space-xs)); overflow: hidden; background: var(--field-dark); border: 1px solid var(--team-on); }
 .mini-field i { position: relative; display: inline-block; width: var(--space-sm); height: var(--space-sm); margin: var(--space-m) var(--space-s); border-radius: 50%; background: var(--team-primary); border: 1px solid var(--team-on); }
 .mini-field span { position: absolute; right: var(--space-s); bottom: var(--space-xs); color: var(--team-on); }
@@ -414,20 +424,25 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .mini-map span { position: absolute; left: var(--space-xs); bottom: var(--space-xs); color: var(--content-primary); font-size: var(--caption-size); }
 .mini-map-list { display: grid; gap: var(--space-xs); margin: 0; padding: 0; list-style: none; }
 .mini-map-list li { display: flex; justify-content: space-between; gap: var(--space-s); padding: var(--space-xs); border-bottom: 1px solid var(--hairline); font-size: var(--caption-size); }
+.mini-map-list strong { text-align: right; }
 .mini-controls button { flex: 1; }
 .visual-attributerow.attribute-row { grid-template-columns: var(--map-visual-height) 1fr var(--component-value-width); min-height: var(--destination-height); }
 .broadcast-screen { background: var(--field-dark); }
-.broadcast-frame { height: calc(var(--space-xxl) + var(--space-sm)); display: flex; align-items: center; gap: var(--space-m); padding: 0 var(--space-ml) 0 var(--safe-leading); background: var(--team-primary); color: var(--team-on); border-bottom: 4px solid var(--team-secondary); }
+.broadcast-frame { height: var(--broadcast-bug-regular); display: flex; align-items: center; gap: var(--space-m); padding: 0 var(--space-ml) 0 var(--safe-leading); background: var(--team-primary); color: var(--team-on); border-bottom: 4px solid var(--team-secondary); }
 .broadcast-screen.college .broadcast-frame { clip-path: polygon(0 0, 100% 0, 98.5% 100%, 0 100%); }
 .broadcast-screen.pro .broadcast-frame { border-radius: 0; }
-.broadcast-screen.elimination .broadcast-frame { border-top: 3px solid var(--team-secondary); }
-.broadcast-screen.final { border: var(--space-s) solid var(--team-secondary); }
+.broadcast-screen.elimination .broadcast-frame { height: var(--broadcast-bug-elimination); border-top: 2px solid var(--team-secondary); }
+.broadcast-screen.final { border: 2px solid var(--team-secondary); }
+.broadcast-screen.final .broadcast-frame { height: var(--broadcast-bug-final); }
 .broadcast-frame .state-tag { margin-left: auto; }
 .broadcast-clock { font-size: var(--numeral-size); font-weight: 800; font-variant-numeric: tabular-nums; }
 .broadcast-field { position: absolute; inset: var(--broadcast-field-top) var(--broadcast-field-edge) var(--broadcast-field-edge) var(--safe-leading); background: repeating-linear-gradient(90deg,var(--field-dark) 0,var(--field-dark) var(--field-stripe),var(--field-light) calc(var(--field-stripe) + 1px),var(--field-light) calc(var(--field-stripe) + 2px)); border: 2px solid var(--team-on); color: var(--team-on); }
 .broadcast-down { position: absolute; right: var(--space-sm); top: var(--space-sm); padding: var(--space-s) var(--space-sm); background: var(--broadcast-black); color: var(--content-primary); font-weight: 800; }
 .broadcast-overlay { position: absolute; left: var(--safe-leading); bottom: var(--space-xl); z-index: 5; display: grid; gap: var(--space-xs); padding: var(--space-sm) var(--space-m); background: var(--team-primary); color: var(--team-on); border-left: var(--space-s) solid var(--team-secondary); }
-.rivalry-seam { position: absolute; left: var(--safe-leading); right: var(--broadcast-field-edge); top: var(--broadcast-field-top); z-index: 4; display: flex; justify-content: space-between; padding: var(--space-s) var(--space-sm); background: linear-gradient(90deg,var(--team-secondary) 0 48%,var(--opponent-on) 48% 52%,var(--opponent-primary) 52%); color: var(--content-primary); border: 2px solid var(--broadcast-black); }
+.rivalry-seam { position: absolute; left: var(--safe-leading); right: var(--broadcast-field-edge); top: var(--broadcast-field-top); z-index: 4; display: flex; justify-content: space-between; padding: var(--space-s) var(--space-sm); background: linear-gradient(90deg,var(--team-secondary) 0 50%,var(--opponent-secondary) 50%); color: #0E1218; border: 2px solid var(--broadcast-black); }
+.broadcast-corner { position: absolute; z-index: 8; width: var(--space-sm); height: var(--space-sm); border-color: var(--team-secondary); border-style: solid; }
+.corner-top-left { left: var(--space-s); top: var(--space-s); border-width: 4px 0 0 4px; }.corner-top-right { right: var(--space-s); top: var(--space-s); border-width: 4px 4px 0 0; }
+.corner-bottom-left { left: var(--space-s); bottom: var(--space-s); border-width: 0 0 4px 4px; }.corner-bottom-right { right: var(--space-s); bottom: var(--space-s); border-width: 0 4px 4px 0; }
 .token-grid { position: absolute; inset: var(--space-ml); display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-sm); }
 .swatch { min-height: var(--token-swatch-height); display: flex; align-items: end; padding: var(--space-sm); border: 2px solid var(--hairline); font-weight: 800; }
 .swatch-page { background: var(--frame-page); }.swatch-card { background: var(--frame-card); }.swatch-raised { background: var(--frame-raised); }
@@ -440,7 +455,7 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .rating-token-list { position: absolute; inset: var(--space-xl) var(--space-xxl); display: grid; gap: var(--space-sm); }
 .rating-token-list .attribute-row { grid-template-columns: var(--token-label-width) 1fr var(--map-visual-height); min-height: var(--space-xxl); }
 .cvd-definitions { position: absolute; width: 0; height: 0; }.cvd-grid { position: absolute; inset: var(--space-l) var(--space-xxl); display: grid; gap: var(--space-m); }.cvd-lane { display: grid; grid-template-columns: var(--cvd-label-width) 1fr; align-items: center; gap: var(--space-m); }.cvd-lane > div { display: grid; grid-template-columns: repeat(5, 1fr); }.cvd-lane i { min-height: var(--destination-height); display: grid; place-items: center; color: #FFFFFF; font-style: normal; }.cvd-lane .elite { background: var(--rating-elite); }.cvd-lane .good { background: var(--rating-good); }.cvd-lane .average { background: var(--rating-numeral-average); }.cvd-lane .poor { background: var(--rating-poor); color: #0E1218; }.cvd-lane .bad { background: var(--rating-bad); color: #0E1218; }.cvd-deuteranopia > div { filter: url(#cvd-deuteranopia); }.cvd-protanopia > div { filter: url(#cvd-protanopia); }.cvd-tritanopia > div { filter: url(#cvd-tritanopia); }
-.elevation-grid { position: absolute; inset: var(--space-xxl); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-l); align-items: center; }.elevation-grid article { position: relative; min-height: var(--elevation-sample-height); display: grid; place-content: center; gap: var(--space-s); padding: var(--space-m); background: var(--frame-card); }.elevation-grid[data-elevation-mechanism="surface-hairline-scrim"] article { border: 1px solid var(--hairline); box-shadow: none; }.elevation-grid[data-elevation-mechanism="surface-hairline-scrim"] .elevation-two, .elevation-grid[data-elevation-mechanism="surface-hairline-scrim"] .elevation-three { background: var(--frame-raised); }.elevation-scrim { position: absolute; inset: calc(-1 * var(--space-s)); z-index: -1; background: rgba(0,0,0,.22); }.elevation-grid[data-elevation-mechanism="shadow"] article { border: 0; }.elevation-grid[data-elevation-mechanism="shadow"] .elevation-one { box-shadow: 0 1px 2px rgba(0,0,0,.06); }.elevation-grid[data-elevation-mechanism="shadow"] .elevation-two { box-shadow: 0 4px 12px rgba(0,0,0,.10); }.elevation-grid[data-elevation-mechanism="shadow"] .elevation-three { box-shadow: 0 12px 28px rgba(0,0,0,.16); }
+.elevation-grid { position: absolute; inset: var(--space-xxl); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-l); align-items: center; }.elevation-grid article { position: relative; min-height: var(--elevation-sample-height); display: grid; place-content: center; gap: var(--space-s); padding: var(--space-m); background: var(--frame-card); }.elevation-grid[data-elevation-mechanism="surface-hairline-scrim"] article { box-shadow: none; }.elevation-grid[data-elevation-mechanism="surface-hairline-scrim"] .elevation-one { background: var(--frame-card); border: 1px solid rgba(158,158,158,.09); }.elevation-grid[data-elevation-mechanism="surface-hairline-scrim"] .elevation-two { background: var(--frame-raised); border: 1px solid rgba(158,158,158,.14); }.elevation-stage-three { position: relative; min-height: var(--elevation-sample-height); overflow: hidden; background: var(--frame-card); }.elevation-covered { position: absolute; inset: 0; display: grid; align-content: start; padding: var(--space-s); color: var(--frame-secondary); font-size: var(--caption-size); }.elevation-stage-three .elevation-scrim { position: absolute; inset: 0; z-index: 1; background: rgba(0,0,0,.22); }.elevation-stage-three .elevation-three { position: absolute; inset: var(--space-xl) var(--space-m) var(--space-m) var(--space-xl); z-index: 2; min-height: 0; background: var(--frame-raised); border: 1px solid rgba(158,158,158,.22); }.elevation-grid[data-elevation-mechanism="shadow"] article { border: 0; }.elevation-grid[data-elevation-mechanism="shadow"] .elevation-one { box-shadow: 0 1px 2px rgba(0,0,0,.06); }.elevation-grid[data-elevation-mechanism="shadow"] .elevation-two { box-shadow: 0 4px 12px rgba(0,0,0,.10); }.elevation-grid[data-elevation-mechanism="shadow"] .elevation-three { box-shadow: 0 12px 28px rgba(0,0,0,.16); }
 .type-ramp { padding: var(--space-l) var(--space-xxl); }
 .type-ramp p { margin: var(--space-xs) 0; }.display-type { font-size: var(--display-size); font-weight: 800; }.title-type { font-size: var(--title-size); font-weight: 700; }.headline-type { font-size: var(--headline-size); font-weight: 700; }
 .body-type { font-size: var(--body-size); }.callout-type { font-size: var(--callout-size); }.caption-type { font-size: var(--caption-size); }.numeral-type { font-size: var(--numeral-size); font-weight: 800; font-variant-numeric: tabular-nums; }
@@ -457,7 +472,7 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .allocation { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-m); }.allocation label { background: var(--frame-card); padding: var(--space-sm); }
 .standings { list-style-position: inside; margin: var(--space-s) 0; padding: 0; }.standings li { display: flex; justify-content: space-between; min-height: var(--destination-height); align-items: center; padding: 0 var(--space-sm); border-bottom: 1px solid rgba(158,158,158,.3); }.standings li.selected { background: var(--frame-selected); border-left: var(--selection-rule) solid var(--frame-accent); }
 .result-list { margin: var(--space-s) 0; padding-left: var(--space-l); }.result-list li { margin: var(--space-xs) 0; }
-.arrival-layout .app-content { display: grid; grid-template-columns: 3fr 2fr; grid-template-rows: 1fr auto; gap: var(--space-sm); }.arrival-layout .arrival-summary { min-width: 0; }.arrival-layout blockquote { margin: 0; }.arrival-layout .pane-actions { grid-column: 1 / -1; }
+.arrival-layout .app-content { display: grid; grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; gap: var(--space-s); }.arrival-layout .arrival-summary { min-width: 0; display: grid; grid-template-columns: var(--component-column-min) 1fr; gap: var(--space-sm); }.arrival-layout .arrival-identity { min-width: 0; }.arrival-layout .arrival-terms { grid-template-columns: repeat(4, 1fr); gap: var(--space-s); margin: 0; }.arrival-layout .arrival-terms div { padding: var(--space-s); }.arrival-layout .arrival-terms dd { font-size: var(--callout-size); }.arrival-layout blockquote { margin: 0; padding: var(--space-s) var(--space-m); }.arrival-layout .pane-actions { grid-column: 1 / -1; }
 .ax5-layout .app-content { padding-top: var(--space-xs); }.ax5-layout .app-content p { line-height: 1; }
 .product-frame[data-type-scale="ax5"] .choice-grid, .product-frame[data-type-scale="ax5"] .two-pane { display: block; }
 .product-frame[data-type-scale="ax5"] .status-bar { height: var(--space-xxl); }
@@ -466,6 +481,9 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .product-frame[data-type-scale="ax5"] .button { min-height: calc(var(--space-xxl) + var(--space-m)); padding: 0 var(--space-sm); font-size: var(--callout-size); line-height: 1; white-space: nowrap; }
 .product-frame[data-type-scale="ax5"] .pane-actions { flex-wrap: nowrap; overflow-x: auto; }
 .product-frame[data-type-scale="ax5"] .eyebrow, .product-frame[data-type-scale="ax5"] .inbox-item .cost { font-size: var(--caption-size); }
+.product-frame[data-type-scale="ax5"] .ax5-inbox-reduction { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; align-content: center; align-items: center; gap: var(--space-xs) var(--space-sm); min-height: calc(var(--space-xxl) * 3); }
+.product-frame[data-type-scale="ax5"] .ax5-inbox-reduction strong { line-height: 1; }.product-frame[data-type-scale="ax5"] .ax5-inbox-reduction .cost { margin: 0; }.product-frame[data-type-scale="ax5"] .ax5-inbox-reduction p { grid-column: 1 / -1; margin: 0; line-height: 1; }
+.product-frame[data-type-scale="ax5"] .ax5-roster-reduction { display: grid; gap: var(--space-sm); }.product-frame[data-type-scale="ax5"] .ax5-roster-controls { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: var(--space-sm); }.product-frame[data-type-scale="ax5"] .ax5-roster-controls p { margin: 0; line-height: 1; }.product-frame[data-type-scale="ax5"] .ax5-roster-reduction .roster-row { margin: 0; }.product-frame[data-type-scale="ax5"] .ax5-roster-reduction .roster-row strong { white-space: nowrap; }
 .product-frame[data-type-scale="ax5"] .score-bug, .product-frame[data-type-scale="ax5"] .score-bug > span, .product-frame[data-type-scale="ax5"] .score-bug > strong { height: calc(var(--space-xxl) + var(--space-xl)); }
 .product-frame[data-type-scale="ax5"] .score-bug > span, .product-frame[data-type-scale="ax5"] .score-bug > strong { min-width: calc(var(--space-xxl) + var(--space-xl)); }
 .product-frame[data-type-scale="ax5"] .score-bug .state-tag { min-width: calc(var(--space-xxl) + var(--space-xxl) + var(--space-xxl)); }
@@ -473,7 +491,7 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .product-frame[data-type-scale="ax5"] .match-exit { font-size: var(--callout-size); }
 .product-frame[data-type-scale="ax5"] .direction { max-width: calc(var(--space-xxl) * 7); font-size: var(--body-size); }
 .product-frame[data-type-scale="ax5"] .lower-third { min-height: calc(var(--space-xxl) + var(--space-l)); }
-.product-frame[data-type-scale="ax5"] .attribute-row { grid-template-columns: var(--ax5-label-width) 1fr var(--specimen-height); min-height: var(--app-content-top); }
+.product-frame[data-type-scale="ax5"] .attribute-row { grid-template-columns: var(--ax5-label-width) 1fr calc(var(--space-xxl) + var(--space-l) + var(--space-xs)); min-height: var(--app-content-top); }
 .product-frame[data-type-scale="ax5"] .ax5-plan-reduction { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: var(--space-sm); }
 .product-frame[data-type-scale="ax5"] .ax5-plan-reduction strong { font-size: var(--headline-size); line-height: 1; }
 .product-frame[data-type-scale="ax5"] .ax5-plan-reduction p { margin: 0; }
@@ -495,49 +513,49 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
   <main class="sheet">
 <article class="reference-frame" id="reference-draft-live-pick">
   <header class="frame-chrome"><strong>Live Pick</strong><span class="provenance">GUIDE · 844x390 · dark · default</span></header>
-  <section data-frame="draft-live-pick" data-canon="04 §4 Draft" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="draft" data-state="live-pick" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-on:#FFFFFF">
-<div class="draft-screen"><header class="draft-bug"><span><span data-fact-key="pro_organisation">Verrick Foundry</span></span><strong><span data-fact-key="draft_round">Round 2</span></strong><span><span data-fact-key="draft_pick">Pick 41</span></span><span class="draft-clock"><span data-fact-key="draft_clock">1:18</span></span><span data-lifecycle-state="live-pick" data-role="live" class="state-tag is-live">ON CLOCK</span></header><main><p class="eyebrow"><span data-fact-key="draft_coordinator">Lena Varro</span> RECOMMENDS</p><h1><span data-fact-key="draft_prospect">Tavian Quell</span></h1><p><span data-fact-key="draft_position">Edge</span> · floor <span data-fact-key="draft_floor">74</span> · projection <span data-fact-key="draft_projection">82</span></p><div class="pane-actions broadcast-actions"><button class="button primary" data-action-role="primary">Make the pick</button><button class="button secondary">Open board</button></div></main><div class="home-indicator"></div></div>
+  <section data-frame="draft-live-pick" data-canon="04 §4 Draft" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="draft" data-state="live-pick" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-secondary:#CFA8B4;--opponent-on:#FFFFFF">
+<div class="draft-screen"><header class="draft-bug"><span><span data-fact-key="pro_organisation">Verrick Foundry</span></span><strong><span data-fact-key="draft_round">Round 2</span></strong><span><span data-fact-key="draft_pick">Pick 41</span></span><span class="draft-clock"><span data-fact-key="draft_clock">1:18</span></span><span data-lifecycle-state="live-pick" data-role="live" class="state-tag is-live">ON CLOCK</span></header><main data-action-container="pane"><p class="eyebrow"><span data-fact-key="draft_coordinator">Lena Varro</span> RECOMMENDS</p><h1><span data-fact-key="draft_prospect">Tavian Quell</span></h1><p><span data-fact-key="draft_position">Edge</span> · floor <span data-fact-key="draft_floor">74</span> · projection <span data-fact-key="draft_projection">82</span></p><div class="pane-actions broadcast-actions"><button class="button primary" data-action-role="primary">Make the pick</button><button class="button secondary">Open board</button></div></main><div class="home-indicator"></div></div>
   </section>
 </article>
 <article class="reference-frame" id="reference-draft-background-paused">
   <header class="frame-chrome"><strong>Background Paused</strong><span class="provenance">GUIDE · 844x390 · dark · default</span></header>
-  <section data-frame="draft-background-paused" data-canon="04 §4 Draft" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="draft" data-state="background-paused" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-on:#FFFFFF">
-<div class="draft-screen"><header class="draft-bug"><span><span data-fact-key="pro_organisation">Verrick Foundry</span></span><strong><span data-fact-key="draft_round">Round 2</span></strong><span><span data-fact-key="draft_pick">Pick 41</span></span><span class="draft-clock"><span data-fact-key="draft_clock">1:18</span></span><span data-lifecycle-state="background-paused" class="state-tag">PAUSED</span></header><main><h1>Clock paused</h1><p>Your remaining time is preserved while the app is away.</p></main><div class="home-indicator"></div></div>
+  <section data-frame="draft-background-paused" data-canon="04 §4 Draft" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="draft" data-state="background-paused" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-secondary:#CFA8B4;--opponent-on:#FFFFFF">
+<div class="draft-screen"><header class="draft-bug"><span><span data-fact-key="pro_organisation">Verrick Foundry</span></span><strong><span data-fact-key="draft_round">Round 2</span></strong><span><span data-fact-key="draft_pick">Pick 41</span></span><span class="draft-clock"><span data-fact-key="draft_clock">1:18</span></span><span data-lifecycle-state="background-paused" class="state-tag">PAUSED</span></header><main data-action-container="pane"><h1>Clock paused</h1><p>Your remaining time is preserved while the app is away.</p></main><div class="home-indicator"></div></div>
   </section>
 </article>
 <article class="reference-frame" id="reference-draft-foreground-resumed">
   <header class="frame-chrome"><strong>Foreground Resumed</strong><span class="provenance">GUIDE · 844x390 · dark · default</span></header>
-  <section data-frame="draft-foreground-resumed" data-canon="04 §4 Draft" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="draft" data-state="foreground-resumed" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-on:#FFFFFF">
-<div class="draft-screen"><header class="draft-bug"><span><span data-fact-key="pro_organisation">Verrick Foundry</span></span><strong><span data-fact-key="draft_round">Round 2</span></strong><span><span data-fact-key="draft_pick">Pick 41</span></span><span class="draft-clock"><span data-fact-key="draft_clock">1:18</span></span><span data-lifecycle-state="foreground-resumed" data-role="live" class="state-tag is-live">RESUMED</span></header><main><h1>Clock resumed</h1><p>The same <span data-fact-key="draft_clock">1:18</span> remains. No board position changed while paused.</p></main><div class="home-indicator"></div></div>
+  <section data-frame="draft-foreground-resumed" data-canon="04 §4 Draft" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="draft" data-state="foreground-resumed" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-secondary:#CFA8B4;--opponent-on:#FFFFFF">
+<div class="draft-screen"><header class="draft-bug"><span><span data-fact-key="pro_organisation">Verrick Foundry</span></span><strong><span data-fact-key="draft_round">Round 2</span></strong><span><span data-fact-key="draft_pick">Pick 41</span></span><span class="draft-clock"><span data-fact-key="draft_clock">1:18</span></span><span data-lifecycle-state="foreground-resumed" data-role="live" class="state-tag is-live">RESUMED</span></header><main data-action-container="pane"><h1>Clock resumed</h1><p>The same <span data-fact-key="draft_clock">1:18</span> remains. No board position changed while paused.</p></main><div class="home-indicator"></div></div>
   </section>
 </article>
 <article class="reference-frame" id="reference-draft-user-selection">
   <header class="frame-chrome"><strong>User Selection</strong><span class="provenance">GUIDE · 844x390 · dark · default</span></header>
-  <section data-frame="draft-user-selection" data-canon="04 §4 Draft" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="draft" data-state="user-selection" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-on:#FFFFFF">
-<div class="draft-screen"><header class="draft-bug"><span><span data-fact-key="pro_organisation">Verrick Foundry</span></span><strong><span data-fact-key="draft_round">Round 2</span></strong><span><span data-fact-key="draft_pick">Pick 41</span></span><span class="draft-clock"><span data-fact-key="draft_clock">1:18</span></span><span data-lifecycle-state="user-selection" class="state-tag">SELECTED</span></header><main><h1><span data-fact-key="draft_prospect">Tavian Quell</span> selected</h1><p><span data-fact-key="draft_position">Edge</span> · projection <span data-fact-key="draft_projection">82</span></p><div class="pane-actions broadcast-actions"><button class="button primary" data-action-role="primary">Confirm selection</button></div></main><div class="home-indicator"></div></div>
+  <section data-frame="draft-user-selection" data-canon="04 §4 Draft" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="draft" data-state="user-selection" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-secondary:#CFA8B4;--opponent-on:#FFFFFF">
+<div class="draft-screen"><header class="draft-bug"><span><span data-fact-key="pro_organisation">Verrick Foundry</span></span><strong><span data-fact-key="draft_round">Round 2</span></strong><span><span data-fact-key="draft_pick">Pick 41</span></span><span class="draft-clock"><span data-fact-key="draft_clock">1:18</span></span><span data-lifecycle-state="user-selection" class="state-tag">SELECTED</span></header><main data-action-container="pane"><h1><span data-fact-key="draft_prospect">Tavian Quell</span> selected</h1><p><span data-fact-key="draft_position">Edge</span> · projection <span data-fact-key="draft_projection">82</span></p><div class="pane-actions broadcast-actions"><button class="button primary" data-action-role="primary">Confirm selection</button></div></main><div class="home-indicator"></div></div>
   </section>
 </article>
 <article class="reference-frame" id="reference-draft-expiry-auto-pick">
   <header class="frame-chrome"><strong>Expiry Auto Pick</strong><span class="provenance">GUIDE · 844x390 · dark · default</span></header>
-  <section data-frame="draft-expiry-auto-pick" data-canon="04 §4 Draft" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="draft" data-state="expiry-auto-pick" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-on:#FFFFFF">
-<div class="draft-screen"><header class="draft-bug"><span><span data-fact-key="pro_organisation">Verrick Foundry</span></span><strong><span data-fact-key="draft_round">Round 2</span></strong><span><span data-fact-key="draft_pick">Pick 41</span></span><span class="draft-clock"><span data-fact-key="draft_clock">1:18</span></span><span data-lifecycle-state="expiry-auto-pick" class="state-tag">AUTO-PICK</span></header><main><h1><span data-fact-key="draft_prospect">Tavian Quell</span> is the pick</h1><p><span data-fact-key="draft_reason">Highest-ranked legal option at the biggest need</span>.</p><span class="state-tag">AUTO-PICK SHOWN</span></main><div class="home-indicator"></div></div>
+  <section data-frame="draft-expiry-auto-pick" data-canon="04 §4 Draft" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="draft" data-state="expiry-auto-pick" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-secondary:#CFA8B4;--opponent-on:#FFFFFF">
+<div class="draft-screen"><header class="draft-bug"><span><span data-fact-key="pro_organisation">Verrick Foundry</span></span><strong><span data-fact-key="draft_round">Round 2</span></strong><span><span data-fact-key="draft_pick">Pick 41</span></span><span class="draft-clock"><span data-fact-key="draft_clock">1:18</span></span><span data-lifecycle-state="expiry-auto-pick" class="state-tag">AUTO-PICK</span></header><main data-action-container="pane"><h1><span data-fact-key="draft_prospect">Tavian Quell</span> is the pick</h1><p><span data-fact-key="draft_reason">Highest-ranked legal option at the biggest need</span>.</p><span class="state-tag">AUTO-PICK SHOWN</span></main><div class="home-indicator"></div></div>
   </section>
 </article>
 <article class="reference-frame" id="reference-free-agency-board">
   <header class="frame-chrome"><strong>Free-agency board</strong><span class="provenance">GUIDE · 844x390 · dark · default</span></header>
-  <section data-frame="free-agency-board" data-canon="04 §4 Front office" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="front-office" data-state="free-agency" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-on:#FFFFFF">
+  <section data-frame="free-agency-board" data-canon="04 §4 Front office" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="front-office" data-state="free-agency" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-secondary:#CFA8B4;--opponent-on:#FFFFFF">
 <div class="app-screen with-destination"><div class="status-bar"><span>9:41</span><span>86%</span></div><header class="app-header"><h2>Front office</h2></header><div class="app-content"><p class="verdict">Coverage is the only starting-grade need in range.</p><h1><span data-fact-key="free_agent">Oren Vale</span></h1><p><span data-fact-key="free_agent_position">Cornerback</span> · asks <span data-fact-key="free_agent_ask">$8.2M for two years</span></p><div class="pane-actions"><button class="button primary" data-action-role="primary">Open negotiation</button><button class="button secondary">Keep searching</button></div></div><nav class="destination-bar" aria-label="Destinations"><button class="destination"><span class="destination-mark" aria-hidden="true"></span>Week</button><button class="destination"><span class="destination-mark" aria-hidden="true"></span>Team</button><button class="destination selected" aria-current="page"><span class="destination-mark" aria-hidden="true"></span>Front office</button><button class="destination"><span class="destination-mark" aria-hidden="true"></span>League</button><button class="destination"><span class="destination-mark" aria-hidden="true"></span>Career</button></nav><div class="home-indicator" aria-hidden="true"></div></div>
   </section>
 </article>
 <article class="reference-frame" id="reference-cap-plan">
   <header class="frame-chrome"><strong>Cap plan</strong><span class="provenance">GUIDE · 844x390 · dark · default</span></header>
-  <section data-frame="cap-plan" data-canon="04 §4 Front office" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="front-office" data-state="cap-plan" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-on:#FFFFFF">
+  <section data-frame="cap-plan" data-canon="04 §4 Front office" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="front-office" data-state="cap-plan" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-secondary:#CFA8B4;--opponent-on:#FFFFFF">
 <div class="app-screen with-destination"><div class="status-bar"><span>9:41</span><span>86%</span></div><header class="app-header"><h2>Front office</h2></header><div class="app-content"><p class="verdict">One starter fits; two remove the injury reserve.</p><h1><span data-fact-key="cap_space">$11.6M available</span></h1><div class="security-meter"><i style="--value:72%"></i></div><p><span data-fact-key="contract_cost">A signing leaves $3.4M for injury cover</span>.</p><div class="pane-actions"><button class="button primary" data-action-role="primary">Review roster moves</button></div></div><nav class="destination-bar" aria-label="Destinations"><button class="destination"><span class="destination-mark" aria-hidden="true"></span>Week</button><button class="destination"><span class="destination-mark" aria-hidden="true"></span>Team</button><button class="destination selected" aria-current="page"><span class="destination-mark" aria-hidden="true"></span>Front office</button><button class="destination"><span class="destination-mark" aria-hidden="true"></span>League</button><button class="destination"><span class="destination-mark" aria-hidden="true"></span>Career</button></nav><div class="home-indicator" aria-hidden="true"></div></div>
   </section>
 </article>
 <article class="reference-frame" id="reference-contract-offer">
   <header class="frame-chrome"><strong>Contract offer</strong><span class="provenance">GUIDE · 844x390 · dark · default</span></header>
-  <section data-frame="contract-offer" data-canon="04 §4 Front office" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="front-office" data-state="contract-offer" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-on:#FFFFFF">
+  <section data-frame="contract-offer" data-canon="04 §4 Front office" data-fixture="draft" data-status="guide" data-device="844x390" data-width-class="compact" data-appearance="dark" data-type-scale="default" data-flow="front-office" data-state="contract-offer" class="product-frame" style="--frame-width:844px;--frame-height:390px;--team-primary:#102A3F;--team-secondary:#7FB2E5;--team-on:#FFFFFF;--opponent-primary:#5A2433;--opponent-secondary:#CFA8B4;--opponent-on:#FFFFFF">
 <div class="app-screen with-destination"><div class="status-bar"><span>9:41</span><span>86%</span></div><header class="app-header"><h2>Front office</h2></header><div class="app-content"><p class="eyebrow">CONTRACT DECISION</p><h1><span data-fact-key="free_agent">Oren Vale</span></h1><p><span data-fact-key="free_agent_ask">$8.2M for two years</span> · <span data-fact-key="contract_guarantee">$5.4M guaranteed</span></p><p class="cost-line"><span data-fact-key="contract_cost">A signing leaves $3.4M for injury cover</span>.</p><div class="pane-actions"><button class="button primary" data-action-role="primary">Submit offer</button><button class="button secondary">Walk away</button></div></div><nav class="destination-bar" aria-label="Destinations"><button class="destination"><span class="destination-mark" aria-hidden="true"></span>Week</button><button class="destination"><span class="destination-mark" aria-hidden="true"></span>Team</button><button class="destination selected" aria-current="page"><span class="destination-mark" aria-hidden="true"></span>Front office</button><button class="destination"><span class="destination-mark" aria-hidden="true"></span>League</button><button class="destination"><span class="destination-mark" aria-hidden="true"></span>Career</button></nav><div class="home-indicator" aria-hidden="true"></div></div>
   </section>
 </article>
@@ -568,6 +586,7 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
       "tokens": {
         "opponent.onTeam": "#FFFFFF",
         "opponent.primary": "#5A2433",
+        "opponent.secondary": "#CFA8B4",
         "team.onTeam": "#FFFFFF",
         "team.primary": "#102A3F",
         "team.secondary": "#7FB2E5"
