@@ -64,7 +64,7 @@ Add this test inside `suite("Snap resolution")` in `Tests/SimTests/Suites/Engine
             let explosiveRate = Double(explosive) / Double(attempts)
             expect((3.4...4.8).contains(yardsPerCarry),
                    "even rushing averaged \(yardsPerCarry) yards per carry")
-            expect((0.09...0.15).contains(explosiveRate),
+            expect((0.05...0.09).contains(explosiveRate),
                    "even rushing produced an explosive rate of \(explosiveRate)")
         }
 ```
@@ -77,7 +77,7 @@ Run:
 swift run -c release SimTests
 ```
 
-Expected: non-zero exit; the new test reports roughly 1.3 yards per carry and roughly 0.03 explosive rate, outside both asserted ranges. No pre-existing test may fail.
+Expected: non-zero exit; the new isolated even-roster test reports roughly 0.84 yards per carry and 0.013 explosive rate, outside both asserted ranges. No pre-existing test may fail. This micro-population is a structural regression fixture; the calibration harness remains the authority for the evidence bands.
 
 - [ ] **Step 3: Add the run-specific rules**
 
