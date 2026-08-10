@@ -18,6 +18,7 @@ lock_dir="$lock_parent/tune-calibration.lock"
 lock_parent_identity=""
 lock_identity=""
 search_lock_held=0
+pending_acquisition_signal=0
 
 validate_matchup_rules() {
   [[ "$matchup_rules" == "$expected_rules_dir/MatchupRules.swift" ]] \
@@ -111,9 +112,20 @@ release_search_lock_on_exit() {
 
 arm_lock_acquisition_traps() {
   trap release_search_lock_on_exit EXIT
-  # HUP/INT/TERM are deliberately ignored only until the new lock has an identity. This closes
-  # mkdir-to-ownership without scoring or mutating source; normal signal exits are restored below.
-  trap '' HUP INT TERM
+  trap 'record_acquisition_signal 129' HUP
+  trap 'record_acquisition_signal 130' INT
+  trap 'record_acquisition_signal 143' TERM
+}
+
+record_acquisition_signal() {
+  (( pending_acquisition_signal )) || pending_acquisition_signal=$1
+  return 0
+}
+
+run_acquisition_child() {
+  # Bash resets trapped handlers in children, so the actual mkdir/stat child must explicitly
+  # inherit ignored handled signals. The parent records them and remains alive to own cleanup.
+  /bin/sh -c 'trap "" HUP INT TERM; exec "$@"' tune-calibration-acquisition "$@"
 }
 
 restore_search_signal_exit_traps() {
@@ -122,21 +134,31 @@ restore_search_signal_exit_traps() {
   trap 'exit 143' TERM
 }
 
+exit_for_pending_acquisition_signal() {
+  if (( pending_acquisition_signal )); then
+    exit "$pending_acquisition_signal"
+  fi
+  return 0
+}
+
 acquire_search_lock() {
   prepare_lock_parent
   lock_parent_identity=$(stat -f '%d:%i' "$lock_parent") \
     || die "cannot inspect calibration lock parent"
   arm_lock_acquisition_traps
-  if ! mkdir "$lock_dir"; then
+  if ! run_acquisition_child mkdir "$lock_dir"; then
+    exit_for_pending_acquisition_signal
     die "cannot acquire calibration lock at $lock_dir; another tuner may be running or the lock may be stale/tampered. Confirm no tuner is running, inspect the lock, then remove only that empty directory."
   fi
-  # Signals remain ignored for this minimal critical section, so a successful mkdir is owned
-  # before validation can fail and invoke the already-armed EXIT cleanup.
+  # Ownership is marked before any post-mkdir command can fail. Parent traps record the first
+  # handled signal while the mkdir/stat children explicitly ignore it.
   search_lock_held=1
-  lock_identity=$(stat -f '%d:%i' "$lock_dir") \
+  [[ ${TUNE_CALIBRATION_TEST_SELF_INT_AFTER_LOCK:-} != 1 ]] || kill -INT "$$"
+  lock_identity=$(run_acquisition_child stat -f '%d:%i' "$lock_dir") \
     || die "cannot inspect newly acquired calibration lock"
   revalidate_lock_parent_after_acquisition
   restore_search_signal_exit_traps
+  exit_for_pending_acquisition_signal
 }
 
 # Validate the exact mutation target before parsing modes or starting the search.
