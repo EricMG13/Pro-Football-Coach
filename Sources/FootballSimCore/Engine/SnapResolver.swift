@@ -182,7 +182,8 @@ public enum SnapResolver {
         let air = offensiveCall.passDepth.airYards
         let (afterCatch, pursuitRecord) = yardsAfterContact(
             carrier: target.element.receiver, pursuit: assignment.pursuit,
-            aggression: offensiveCall.aggression, homeFieldAdvantage: homeFieldAdvantage, rng: &rng
+            aggression: offensiveCall.aggression, homeFieldAdvantage: homeFieldAdvantage,
+            yardsPerBreak: MatchupRules.yardsAfterCatchPerBreak, rng: &rng
         )
         if let pursuitRecord { matchups.append(pursuitRecord) }
         let gained = air + afterCatch
@@ -234,12 +235,14 @@ public enum SnapResolver {
 
         let (broken, pursuitRecord) = yardsAfterContact(
             carrier: carrier, pursuit: assignment.pursuit, aggression: offensiveCall.aggression,
-            homeFieldAdvantage: homeFieldAdvantage, rng: &rng
+            homeFieldAdvantage: homeFieldAdvantage,
+            yardsPerBreak: MatchupRules.runBrokenTackleYards, rng: &rng
         )
         if let pursuitRecord { matchups.append(pursuitRecord) }
 
         let outside = offensiveCall.runGap.isOutside ? MatchupRules.outsideRunVariance : 1.0
-        let gained = Int((lane * MatchupRules.laneYardScale * outside).rounded()) + broken
+        let gained = Int((MatchupRules.baseRunYards
+            + lane * MatchupRules.laneYardScale * outside).rounded()) + broken
         return finish(gained: gained, situation: situation,
                       elapsed: rules.inBoundsPlaySeconds, matchups: matchups,
                       carrier: carrier, passer: nil, target: nil, rng: &rng)
@@ -263,6 +266,7 @@ public enum SnapResolver {
         pursuit: [Player],
         aggression: Double,
         homeFieldAdvantage: Double,
+        yardsPerBreak: Int,
         rng: inout SeededRandom
     ) -> (yards: Int, record: MatchupRecord?) {
         guard let tackler = pursuit.first else { return (0, nil) }
@@ -287,7 +291,7 @@ public enum SnapResolver {
                                        defenderID: tackler.id, leverage: leverage)
             }
             guard leverage > MatchupRules.breakTackleThreshold else { break }
-            yards += MatchupRules.brokenTackleYards * (attempt + 1)
+            yards += yardsPerBreak * (attempt + 1)
         }
         return (yards, record)
     }

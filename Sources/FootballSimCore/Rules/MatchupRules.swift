@@ -113,6 +113,12 @@ public enum MatchupRules {
 
     // MARK: - Run
 
+    /// Ordinary forward progress before lane leverage and contact are applied.
+    ///
+    /// A zero-centred lane cannot represent a real carry: an even line produced a zero-yard mode
+    /// and only 1.33 yards per pro carry. The positive baseline carries the ordinary mass while
+    /// lane leverage still moves each play above or below it.
+    public static let baseRunYards = 2.0
     /// Yards per unit of lane leverage.
     public static let laneYardScale = 3.0
     /// Outside runs multiply the lane result, trading certainty for the edge.
@@ -121,9 +127,10 @@ public enum MatchupRules {
     public static let aggressionRunBonus = 0.05
     /// Leverage above which the carrier breaks a tackle.
     public static let breakTackleThreshold = 0.45
-    /// Yards for the first break. Each successive one is worth a multiple of this, which is what
-    /// gives a run distribution its right tail.
-    public static let brokenTackleYards = 4
+    /// A rushing tackle break gets the carrier through a level of the defence.
+    public static let runBrokenTackleYards = 7
+    /// A catch starts downfield, so its smaller YAC increment remains independent of rushing.
+    public static let yardsAfterCatchPerBreak = 4
     /// Each successive break is harder. Bounded, because an unbounded chain is a hang with a small
     /// probability and `03` §7's frame budget has no room for one.
     public static let brokenTackleDecay = 0.18

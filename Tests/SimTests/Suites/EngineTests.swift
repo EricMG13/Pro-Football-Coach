@@ -2,8 +2,8 @@ import Foundation
 import FootballSimCore
 
 /// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 4_949_979_951_440_603_373
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 4_197_251_262_058_138_606
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 17_748_293_380_667_316_148
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 8_397_056_543_477_569_840
 
 func runEngineTests() {
     suite("Leverage") {
@@ -280,6 +280,34 @@ func runSnapResolverTests() {
                 )
             }
             expectEqual(once(), once(), "a snap is not reproducible from its seed and state")
+        }
+
+        test("an even run game has ordinary gains and a reachable explosive tail") {
+            var rng = SeededRandom(seed: 8_008)
+            var yards = 0
+            var explosive = 0
+            let attempts = 12_000
+            for attempt in 0..<attempts {
+                let outcome = SnapResolver.resolve(
+                    offensiveCall: OffensiveCall(
+                        playType: .run,
+                        runGap: RunGap.allCases[attempt % RunGap.allCases.count]
+                    ),
+                    defensiveCall: DefensiveCall(coverage: .zoneUnder),
+                    personnel: even,
+                    situation: Situation(),
+                    rules: rules,
+                    rng: &rng
+                )
+                yards += outcome.yards
+                if outcome.yards >= MatchupRules.explosiveRunYards { explosive += 1 }
+            }
+            let yardsPerCarry = Double(yards) / Double(attempts)
+            let explosiveRate = Double(explosive) / Double(attempts)
+            expect((3.4...4.8).contains(yardsPerCarry),
+                   "even rushing averaged \(yardsPerCarry) yards per carry")
+            expect((0.05...0.09).contains(explosiveRate),
+                   "even rushing produced an explosive rate of \(explosiveRate)")
         }
 
         test("a snap consumes the same number of draws whatever it produced") {
