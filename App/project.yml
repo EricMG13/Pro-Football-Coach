@@ -19,11 +19,13 @@ targets:
     settings:
       base:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        # Portrait only. The audit's landscape findings all traced back to this one line: every
-        # screen was rotatable and two of them lost their controls off the bottom edge when they
-        # were. The match view is a vertical, one-thumb surface by design (04 section 5.2), so
-        # nothing in the app wants the other orientation.
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
+        # Landscape only, both ways up. Owner decision 2026-08-10 (04 section 5.2): landscape is
+        # what fits the whole 120-yard field in frame at once with no camera pan. The audit's
+        # orientation findings all traced back to this one line being absent, not to which
+        # orientation it named - every screen was rotatable and two of them lost their controls
+        # off the bottom edge when they were. One declared orientation is the property that
+        # matters. OrientationPolicyTest reads this file, so it cannot drift from 04.
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_CFBundleDisplayName: "Pro Football Coach"
         SWIFT_VERSION: "5.10"
         TARGETED_DEVICE_FAMILY: "1"

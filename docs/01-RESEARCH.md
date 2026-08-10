@@ -85,8 +85,9 @@ community it serves**, and the conflict is named at the point of use.
   the inherited bands verbatim from the test source, names four structural defects in that harness,
   refines the pro tier, and builds the college tier from scratch.
 - **§6.5** is the rendering specification input: what a dot-based view can honestly draw, how many
-  moving marks a viewer can follow, the portrait geometry arithmetic, and what the `Canvas` becomes
-  under Reduce Motion and VoiceOver.
+  moving marks a viewer can follow, the field geometry arithmetic, and what the `Canvas` becomes
+  under Reduce Motion and VoiceOver. **Its §6 was written against a portrait constraint the owner
+  lifted on 2026-08-10; §6.5 carries the correction and `04` §5.2 carries the current numbers.**
 
 ### Standing caveats that apply to the whole of Part Two
 
@@ -240,11 +241,11 @@ work that was not done, not claims that were made.
 | AS-6.5-04 | ASSUMPTION | A legible two-digit numbered circle needs ~20–22 pt diameter at 11 pt font. Typographic rule of thumb, not tested. | The Class-1 mark budget. | Test on device at the smallest Dynamic Type size. |
 | AS-6.5-05 | ASSUMPTION | The dwell defaults in §6.5 §9 (1.2–2.5 s resolution, 0.8 s post-play, 0.6 s flashed). **Proposals to be tuned against an owner timing protocol, not findings.** | The presentation-time term in the §4 arithmetic — the single term most likely to blow P4. | Owner timing protocol with a stated threshold. |
 | AS-6.5-06 | ASSUMPTION | The 25/105 high-leverage split in §6.5 §9's second budget. Illustrative arithmetic; the real number is an output of D1's leverage filter. | The season-time budget. | Falls out of D1 once the leverage filter is specified. |
-| AS-6.5-07 | **SETTLED — against the assumption** (§6.6 §2) | FM Mobile draws its pitch **landscape**, full-bleed, goals at the screen edges; the device is rotated for the match. There is no portrait precedent in FM. | The claimed precedent is withdrawn. `04` §5.2's vertical field survives on field-ratio geometry alone (1 : 2.25 gridiron versus 1 : 1.55 pitch) — corrected in place there. | Settled by direct observation of two owner-supplied FM Mobile captures. Residual: both read `FM23 MOBILE`, so this is FMM23, not the current SKU — see §6.6 §2. |
+| AS-6.5-07 | **SETTLED — against the assumption** (§6.6 §2) | FM Mobile draws its pitch **landscape**, full-bleed, goals at the screen edges; the device is rotated for the match. There is no portrait precedent in FM. | **Reversed again 2026-08-10, and now it points at the app as a whole.** The owner set the app landscape and reports FMM is landscape *throughout*, menus included — testimony, not capture. FM is therefore a live precedent again, though a soccer one for a sport with the opposite field ratio; `04` §5.2 leans on its own arithmetic instead. | Settled by direct observation of two owner-supplied FM Mobile captures. Two residuals: both read `FM23 MOBILE`, so this is FMM23, not the current SKU (see §6.6 §2); and the management-screen claim is owner testimony with no capture behind it. |
 | AS-6.5-08 | UNVERIFIED | Apple's 44 × 44 pt minimum touch target. Long-standing HIG guidance; `developer.apple.com` returns no readable body through the proxy. | D12's touch-target floor. | Read the HIG on an unrestricted machine. |
 | AS-6.5-09 | UNVERIFIED | Apple's exact HIG wording on Reduce Motion, including whether cross-fade is recommended in those words. Same cause. | D12's Reduce Motion contract. | Same. |
 | AS-6.5-10 | UNVERIFIED | The precise SwiftUI API surface for suppressing `TimelineView` scheduling under Reduce Motion. The environment key is documented; the "assert on a seam" test in §6.5 §7.1 is written that way *because* SwiftUI internals could not be verified as observable. | How the Reduce Motion test is written — the mechanism, not the requirement. | Write the test against a real toolchain. |
-| AS-6.5-11 | UNRUN | How other mobile sports titles handle field orientation in portrait. **Retro Bowl's orientation specifically could not be sourced, and it is the highest-value missing data point in the document** — it is the most-played football game on the platform. | §6.5 §6.5's orientation recommendation. | Open Retro Bowl. |
+| AS-6.5-11 | UNRUN — **and worth more since 2026-08-10, not less** | How other mobile sports titles orient the field. **Retro Bowl's orientation specifically could not be sourced, and it is the highest-value missing data point in the document** — it is the most-played football game on the platform. Originally scoped to portrait; the app is now landscape and the question is the same one, asked without a preferred answer. | `04` §5.2's landscape decision, which rests on arithmetic plus a soccer precedent and runs against FM's vertical-legibility finding. | Open Retro Bowl. |
 | AS-6.5-12 | UNRUN | Whether any shipping title animates all 22 players in a 2D top-down football view. None found in the competitive set, but "found none" under an exhausted search budget is weaker than "there is none." | §6.5 §3.1's claim, and the novelty argument for the match view. | Broader search. |
 | AS-6.5-13 | UNRUN | Direct evidence on legible mark sizes at phone scale. There is a data-visualisation literature on minimum discriminable mark size and small-multiple density that was not reached; §6.5 §6.3 rests on arithmetic and a typographic rule of thumb instead. | The ≤4-individuated-marks rule's numeric basis. | Literature search. |
 | AS-6.5-14 | UNRUN | Blood Bowl and OOTP community complaints about presentation legibility specifically. Both are represented by review and manual text, not player voice. | The breadth of the presentation-legibility evidence. | Forum search. |
@@ -6346,7 +6347,8 @@ Every URL below was surfaced by WebSearch. **None could be fetched directly from
 
 Research part for `docs/reviews/2026-08-09-spec-prompt-v4.md` §6.5. Scope: **how comparable titles
 convey what happened on a snap, and what makes a dot-based view legible rather than noise**, under
-P1's fixed renderer (SwiftUI `Canvas` + `TimelineView`, iPhone, portrait).
+P1's fixed renderer (SwiftUI `Canvas` + `TimelineView`, iPhone, portrait — **the orientation half of
+that constraint was lifted by the owner on 2026-08-10; see §6.5's correction**).
 
 This file **extends** `§6.1 §3` (the FMM match view and its two speed sliders),
 `§6.2A §3.3` (the "presentation must be diagnostic" lesson) and `§6.2B`
@@ -6403,7 +6405,7 @@ the whole design problem:
 | Constraint | Number | Where it comes from |
 |---|---|---|
 | **Perceptual** | A viewer can attentively track ~**4** independently moving objects, and as few as **1** when they move fast or **2–3** when they are tightly spaced | §5, MOT literature |
-| **Geometric** | The field is **120 × 53.33 yd** = **2.25 : 1 landscape**; the screen is ~**390 × 844 pt** = **2.17 : 1 portrait** | §6 |
+| **Geometric** | The field is **120 × 53.33 yd** = **2.25 : 1 landscape**; the screen is ~**390 × 844 pt** = **2.17 : 1**. Written when the screen was portrait; since 2026-08-10 it is landscape, and the two ratios being this close is what lets the whole field fit | §6, and §6.5's correction |
 | **Budgetary** | Presentation time is the dominant term in the §4 season budget: 6 s/snap × 130 snaps = **13 min of watching per game** before a single decision is priced | → `§6.2B §4.2` |
 
 Twenty-two marks is **5.5× perceptual capacity at the most generous reading and 22× at the least**.
@@ -6456,6 +6458,13 @@ has been iterated for two decades.
   orientation that reads *better* than the horizontal one for the thing a manager is looking at
   (shape, lines, gaps). See §6.5 — this inverts the framing of P1's portrait constraint from a cost
   into an asset.
+
+  **2026-08-10: this is now evidence *against* the shipping decision, and it is kept for that
+  reason.** The app is landscape and the field runs along the long axis, so our line of scrimmage is
+  vertical but the direction of attack is not. Whether "easier to spot lines and gaps" transfers from
+  a defensive block in soccer to a line of scrimmage in gridiron is unresolved, and `05` P13's owner
+  walkthrough is where it gets asked. A finding does not stop being a finding because a decision
+  went the other way.
 - **On mobile it is the only view.** FMM matches are 2D top-down only; the 3D engine is a
   Touch/PC/console feature. → `§6.1 §3.1`
 - **On desktop, "2D Classic" is one of a named camera list** that in FM26 includes *2D Classic,
@@ -6808,6 +6817,11 @@ function of `(playOutcome, t)` with no view-side state, which is what §8's dete
 
 ### 6. Portrait geometry: the arithmetic
 
+> **Superseded in its conclusion, retained in its method — 2026-08-10.** Everything below computes
+> the portrait case correctly and never computes the landscape one; §6.5 carries the correction and
+> the scored option E. The current numbers live in `04` §5.2. §6.3 (clustering), §6.4 (no tappable
+> marks) and the pt/yd legibility floor are orientation-independent and still govern.
+
 #### 6.1 The two rectangles
 
 | | Long axis | Short axis | Ratio |
@@ -6893,11 +6907,32 @@ non-overlapping tap targets**, and they would not line up with where players act
 | Option | What it is | Verdict |
 |---|---|---|
 | **A. Full field, rotated vertical, always visible** | Attack up-screen, 120 yd fitted to height | **Rejected on arithmetic.** Needs 877 pt of height on an 844 pt screen; with chrome you land at ~4.2 pt/yd, below any legible mark size. |
-| **B. Vertical field, zoomed to the line of scrimmage** | Fixed 7.3 pt/yd, ~68 yd window centred on the LOS, recentred *between* snaps | **Recommended.** Full width always in frame; no panning during a play (§5.4); covers ±34 yd; degrades gracefully on SE. |
+| **B. Vertical field, zoomed to the line of scrimmage** | Fixed 7.3 pt/yd, ~68 yd window centred on the LOS, recentred *between* snaps | ~~**Recommended.**~~ **Superseded 2026-08-10 by option E.** Full width always in frame; no panning during a play (§5.4); covers ±34 yd; degrades gracefully on SE. |
 | **C. Pan/zoom following the ball** | DDS's approach | **Rejected for in-play use**, per §5.4. Retained as a *between-snaps* recentring transition only. |
 | **D. Abstract away from geometry** | ZenGM drive chart; field as an outcome axis, plays as bars | **Adopted as the ambient mode** (§3.2), and as the honest fallback if D2 picks a non-positional engine (§8). |
+| **E. Rotate the device: full field, landscape, always visible** | 120 yd fitted to the screen's long axis, LOS vertical, offence attacking rightward | **Adopted 2026-08-10 (owner).** 6.54 pt/yd on the base device and 5.56 pt/yd on the SE, whole field in frame, no pan, no recentring. Was never scored in the original table — see the correction below. |
 
-**And the framing inversion, which is the point of this section:**
+**Correction, 2026-08-10 — the framing inversion below is falsified, and this section is why it took
+so long to notice.** The owner set the app to landscape; `04` §5.2 now carries the arithmetic. The
+paragraph is retained unedited because it is what the decision was made against, but two of its
+claims do not survive contact with the numbers this very section establishes:
+
+1. **"A landscape phone would force either a 2.25:1 letterbox with the width crushed, or horizontal
+   panning."** Neither. This was asserted and never computed. The field is 2.250 : 1 and a landscape
+   iPhone is 2.164 : 1, so fitting the field's *length* to the long axis leaves its width at 349 pt
+   inside 369 pt of usable height. The letterbox is ~20 pt and the width is not crushed at all.
+2. **"Portrait … keeps the entire 53.3-yard width in frame at 7.3 pt/yd with no panning."** True, and
+   incomplete in the way that matters: it keeps the entire *width* and only **68 of 120 yards** of
+   *length*, requiring a recentre between snaps. Landscape keeps both axes whole for an 11 % cut in
+   mark size. §6.2 does the portrait arithmetic to four significant figures and never once ran the
+   same three lines for the other orientation — an options table that scores four variants of one
+   orientation and zero of the other was answering a narrower question than its heading claims.
+
+What survives untouched: §6.3's clustering result (landscape gives ~7.5 pt between adjacent linemen
+against portrait's ~8.4 pt — same order, same conclusion), §6.4's no-tappable-marks rule, and the
+Class 1 / Class 2 split. The orientation changed; the legibility argument did not.
+
+**The original framing inversion, retained as written:**
 
 > **Portrait is an advantage for American football, not a constraint.** The sport's meaningful axis
 > is the long one — down, distance, progress toward a goal line. Portrait gives you that axis
@@ -6906,6 +6941,10 @@ non-overlapping tap targets**, and they would not line up with where players act
 > horizontal panning. FM's own community independently reports that the **vertical** pitch is the
 > more legible orientation for reading structure (§2.1), and FM26 ships a camera literally called
 > *Vertical Scrolling*.
+
+Its last sentence is the one live residual: the FM community finding on vertical legibility is
+evidence, it points the other way, and no test in the plan can settle whether it transfers to a
+sport whose structure is a line of scrimmage. `05` P13's owner walkthrough carries the question.
 
 ---
 
@@ -7190,8 +7229,9 @@ Each rule cites the finding it comes from. These are the concrete output of this
 
 **UNRUN** — research the exhausted WebSearch budget cut off:
 
-11. **How other mobile sports titles handle field/pitch orientation in portrait.** Only FM (§2.1) and
-    the field arithmetic (§6) inform §6.5's recommendation. Retro Bowl's orientation specifically
+11. **How other mobile sports titles orient the field.** Only FM (§2.1) and the field arithmetic
+    (§6) inform §6.5's recommendation — and as of 2026-08-10 they point in opposite directions, which
+    makes this gap load-bearing rather than merely open. Retro Bowl's orientation specifically
     could not be sourced, and it is the highest-value missing data point in this document — it is
     the most-played football game on the platform.
 12. **Whether any shipping title animates all 22 players in a 2D top-down football view.** I found
@@ -7369,11 +7409,18 @@ three years unlikely — but unlikely is not observed. The residual only matters
 to reinstate a portrait precedent; it cannot resurrect one, because a precedent this document has not
 seen is not a precedent it may cite.
 
-This does **not** overturn `04` §5.2's vertical field, for a reason worth stating: the two sports have
-opposite field ratios. A soccer pitch is roughly 1 : 1.55 (68 × 105 m) and an American football field
-is roughly 1 : 2.25 (53.3 × 120 yd). Landscape is the natural fit for the first and the wrong fit for
-the second. The decision survives — but it now rests on **geometry alone**, with no shipping
-precedent behind it, and `04` §5.2 has been corrected to say so.
+This did **not**, at the time, overturn `04` §5.2's vertical field, for a reason worth stating: the
+two sports have opposite field ratios. A soccer pitch is roughly 1 : 1.55 (68 × 105 m) and an
+American football field is roughly 1 : 2.25 (53.3 × 120 yd). Landscape is the natural fit for the
+first and the wrong fit for the second. The decision survived — but on **geometry alone**, with no
+shipping precedent behind it.
+
+**2026-08-10 — overturned, by the owner and on the geometry, not by this observation.** The app is
+landscape (`04` §5.2). The ratio argument above is the part that did not hold up: 2.25 : 1 against a
+2.164 : 1 screen is a *near fit*, not a wrong fit, and §6.5's correction shows the whole field lands
+inside the frame with ~20 pt to spare. The owner additionally reports FMM is landscape throughout,
+menus included — testimony, not capture, and recorded that way in AS-6.5-07. What this section
+observed remains exactly true: two captures, landscape pitch, FMM23.
 
 ### 3. Patterns that transfer
 
@@ -7451,9 +7498,15 @@ this section exists inside it.
 #### 4.2 Density
 
 These are 16:9 desktop screens running three and four columns, eight-column attribute blocks and
-fifteen-column tables. A straight port to a 390 pt portrait screen is the failure mode, and it is a
-failure this project has already made once — `docs/AUDIT.md` is the record. Every pattern in §3 is
-adopted as a *relationship between pieces of information*, never as a layout.
+fifteen-column tables. A straight port to a phone screen is the failure mode, and it is a failure
+this project has already made once — `docs/AUDIT.md` is the record. Every pattern in §3 is adopted as
+a *relationship between pieces of information*, never as a layout.
+
+**And the 2026-08-10 orientation change makes this trap easier to fall into, not harder.** A
+landscape phone is 844 × 390 pt — the same *aspect* as those desktop screens and about a tenth of the
+*area*. The temptation is to read "we are landscape now" as "the desktop column layouts port". They
+do not: `04` §4 allows **two** panes, not four columns, and a fifteen-column table has no landscape
+answer either.
 
 #### 4.3 Navigation scale — the anti-lesson
 

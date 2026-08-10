@@ -71,7 +71,7 @@ entry point: it owns the mission and the definition of done, and it runs one pha
 - **Determinism.** A given seed plus a given input state reproduces a match exactly, across processes
   and app launches. Seeds derive from identifier bytes, never from `hashValue`.
 - **Offline, single-player.** No network, no accounts, no analytics, no ads, no IAP, no subscriptions.
-- **iPhone-only, portrait-only, iOS 17+, zero third-party dependencies.** The 2D match view renders
+- **iPhone-only, landscape-only, iOS 17+, zero third-party dependencies.** The 2D match view renders
   in SwiftUI `Canvas` + `TimelineView` — no SpriteKit, no Metal.
 - **A full season is completable in 6–8 hours of play.**
 

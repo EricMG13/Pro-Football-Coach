@@ -61,8 +61,13 @@ Severity spread (`AUDIT.md:22`): **1 P0 · 24 P1 · 36 P2 · 17 P3**, implicatin
 Raise/refute counts (`AUDIT.md:8`): **84 raised, 6 refuted, 78 confirmed.**
 
 Excluded from that run (`AUDIT.md:4–5`): the engine (`FootballSimCore`), iPad, size classes, and App
-Store review. Under P1 (iPhone-only, portrait-only) the iPad and size-class exclusions remain correct
-for the rebuild. See §10 for what the rebuild adds that this baseline never covered.
+Store review. Under iPhone-only the iPad exclusion remains correct for the rebuild. **The size-class
+exclusion does not, and the 2026-08-10 orientation change is why.** In portrait every supported
+iPhone is compact-width / regular-height — one size class, which is what made the exclusion safe. In
+landscape the range splits: Plus- and Max-class devices report **regular** width while the standard
+and SE classes report **compact**. Size classes are therefore now a real axis of variation across the
+supported device range, they belong inside the Adaptivity dimension, and `04` §4's two-pane chassis
+must not be built on a control that silently collapses in one of them. See §10.
 
 ---
 
@@ -363,10 +368,14 @@ not scored per phase; they are not ignored per phase.
 
 **Adaptivity — GLOBAL checks (milestone):**
 
-- An orientation policy is declared **and enforced in code** (`AUDIT.md:264`). Under P1 the app is
-  portrait-only, so the policy is trivially stateable — and per `AUDIT.md:270`, declaring it "removes
-  the landscape failure modes from the other 20 screens in one change rather than making each of them
-  landscape-safe".
+- An orientation policy is declared **and enforced in code** (`AUDIT.md:264`). The app is
+  **landscape-only** (owner, 2026-08-10), so the policy is still trivially stateable, and
+  `AUDIT.md:270`'s argument carries over unchanged with the orientations swapped: declaring one
+  orientation "removes the [other-orientation] failure modes from the other 20 screens in one change
+  rather than making each of them [other-orientation]-safe". What the baseline punished was the
+  *absence* of a policy, not the choice of value.
+- **Both landscape size classes render.** Compact-width (standard, SE) and regular-width (Plus, Max)
+  are now distinct cases, per §2's note. A two-pane layout that only survives on a Max is a P1.
 - The safe-area ownership convention for bottom chrome — `safeAreaInset(edge:)`, not a stacked child
   (`AUDIT.md:590`, 11 sites). The *convention* is set once at milestone level; its *application* is a
   local check thereafter.

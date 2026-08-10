@@ -47,15 +47,24 @@ No emoji anywhere — code, copy, cards or commits.
 
 ## 4. The frame
 
-- **iPhone only, portrait only.** Cards render at **390 × 844** unless the component is a full
-  screen, in which case still 390 wide. Also render every screen card at the **smallest supported
-  size** — `04` §6's `SmallestDeviceLayoutTest` is a gate, so a layout that only works at 390 is
-  already failing.
+- **iPhone only, landscape only.** Owner decision 2026-08-10 — `04` §5.2. Cards render at
+  **844 × 390**, and every screen card is rendered again at **both** floors, because they are
+  different devices and they bind on different things (`04` §5.2): the **mini class, 812 × 375**, is
+  tightest on height at 19 pt spare, and the **SE, 667 × 375**, is tightest on scale. Safe areas are
+  not decorative here — ≈59 pt on the sensor-housing short edge, ≈21 pt on the home-indicator edge,
+  and the device rotates both ways so either short edge can be the housing one. `04` §6's
+  `SmallestDeviceLayoutTest` is a gate.
+- **Two size classes, not one.** This is the trap. Portrait made every iPhone compact-width;
+  landscape splits the range — Plus/Max report **regular** width, standard/SE report **compact**. A
+  layout that only holds together on a Max is a P1. Render both.
+- **The chassis is two-pane** (`04` §4): list rail leading, detail trailing, both visible at once.
+  Height is the scarce axis now — ~369 pt usable — so a single scrolling column shows five to seven
+  rows and is the wrong default.
 - **Both appearances.** Light and dark are not a variant, they are two required renders. Contrast is
   measured against the surface a thing is *actually composited on*, in both.
 - **Dynamic Type.** Every screen card also renders at **AX5**. No clipping, no fixed-height text
-  container. This is the single check most likely to invalidate an otherwise good layout, so do it
-  early rather than at the end.
+  container. In 369 pt of height this is now the check most likely to invalidate an otherwise good
+  layout — do it first, not last.
 - **Touch targets ≥ 44 × 44 pt.** Cited from memory and marked UNVERIFIED in `01-RESEARCH.md` —
   confirm against the HIG before treating the number as settled.
 - **Zero third-party anything.** The previews are self-contained HTML/CSS. No CDN, no icon font, no
@@ -128,21 +137,30 @@ Five, in this order. Each declares DESTINATION or READOUT at the top of the card
 
 ### 5.4 The match view — the hardest surface, and the one to be honest about
 
-`04` §5 resolves it: **vertical field**, line of scrimmage across the screen, offence attacking
-upward, camera holding the LOS plus ~25 yards; **at most three foregrounded marks** with everything
-else at reduced contrast and size; the field stays ambient and the moment is named by a
-`LowerThird`; a header carrying one mark per remaining key moment.
+`04` §5.2 resolves it: **landscape field with all 120 yards in frame**, line of scrimmage running
+vertically, offence attacking rightward, **no camera pan and no recentring**; **at most three
+foregrounded marks** with everything else at reduced contrast and size; the field stays ambient and
+the moment is named by a `LowerThird`; one mark per remaining key moment.
+
+**Chrome overlays the field — it does not take a slice of it.** The field gets the whole usable
+rectangle (6.54 pt/yd base, 5.56 pt/yd SE). A 120 pt side rail would drop the SE to 4.56 pt/yd, below
+the legibility floor, so the scoreboard, the remaining-moments indicator and the call-in are drawn
+over the field's dead margins.
+
+Note what landscape did **not** fix: adjacent linemen are ~7.5 pt apart (~6.4 pt on SE), so
+individually numbered marks on the two lines remain impossible and the seven-man line is one shape,
+not seven marks.
 
 Previews are static, which suits this: render the match view as the **three-state discrete sequence**
 — formation, key moment, outcome. That is also exactly the Reduce Motion form the contract requires,
 so drawing it satisfies two obligations at once. Add one card for the **call-in**: a named proposal
 with one-tap accept and an explicit dismiss.
 
-**Flag it, do not settle it.** The vertical field rests on field geometry alone with **no shipping
-precedent** — the FM Mobile assumption that once supported it was checked and is false
-(`01-RESEARCH.md` §6.6 §2). Whether it reads as a football field on a phone is the one presentation
-question no test can answer; it belongs in the P13 owner walkthrough. The brief's job is to make the
-question askable by rendering it, not to declare it answered.
+**Flag it, do not settle it.** FM's community reports the *vertical* pitch reads better for shape,
+lines and gaps, and our field now runs the other way (`01-RESEARCH.md` §2.1 and §6.5's correction).
+Whether the field reads as a football field, and the line of scrimmage as a line, is the one
+presentation question no test can answer; it belongs in the P13 owner walkthrough. The brief's job is
+to make the question askable by rendering it, not to declare it answered.
 
 ## 6. Acceptance
 
@@ -180,10 +198,14 @@ than working around it.
 
 ## 8. Open questions this work should return, not resolve
 
-1. Does the vertical field read as a football field at 390 pt wide? → P13 owner walkthrough.
-2. Do the 44 pt floor and the Reduce Motion semantics survive a check against the current HIG? Three
-   accessibility premises in `04` §6 are UNVERIFIED.
-3. Does the `rating.*` ladder hold five distinguishable steps under CVD simulation, or does it need
+1. Does the landscape field read as a football field, and the line of scrimmage as a line, at
+   6.54 pt/yd? → P13 owner walkthrough.
+2. Does the two-pane chassis hold at compact width (standard iPhone, SE), or only at regular width
+   (Plus, Max)? If only the latter, `04` §4 needs a second answer for the compact case.
+3. Do the 44 pt floor and the Reduce Motion semantics survive a check against the current HIG? Three
+   accessibility premises in `04` §6 are UNVERIFIED, as are every device point size and safe-area
+   inset in `04` §5.2.
+4. Does the `rating.*` ladder hold five distinguishable steps under CVD simulation, or does it need
    to be four?
-4. Does any screen in the `04` §4 budget fail its DESTINATION test once drawn, and therefore get
+5. Does any screen in the `04` §4 budget fail its DESTINATION test once drawn, and therefore get
    demoted to a READOUT with its decision automated?

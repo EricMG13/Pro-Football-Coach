@@ -134,6 +134,8 @@ is, not duplicated.
 
 ## 7. Project structure
 
-`App/project.yml` generates the Xcode project via XcodeGen. Portrait-only and iPhone-only are
-declared there — the prior build's landscape audit findings were rooted in that declaration being
-absent.
+`App/project.yml` generates the Xcode project via XcodeGen. **Landscape-only** and iPhone-only are
+declared there — the prior build's orientation audit findings were rooted in that declaration being
+absent, not in which orientation it named. One orientation, declared and asserted, is the property
+that matters; the owner changed which one on 2026-08-10 (`04` §5.2). `OrientationPolicyTest` reads
+this manifest, so the declaration cannot drift from the design.

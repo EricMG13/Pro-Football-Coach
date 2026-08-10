@@ -194,6 +194,50 @@ no longer on the critical path.
 
 ---
 
+## Owner decisions taken during the build
+
+### 2026-08-10 — the app is landscape, not portrait
+
+The owner reversed the orientation half of `CLAUDE.md`'s owner-fixed tech stack, citing FM as the
+reference and reporting that FM Mobile is landscape throughout, menus included. That report is
+**owner testimony, not capture** — the two FM Mobile screenshots in `01-RESEARCH.md` §6.6 are both
+in-match — and it is recorded as testimony in AS-6.5-07.
+
+**The geometry supports it, and the research had not checked.** `01-RESEARCH.md` §6.5 dismissed
+landscape in a single uncomputed sentence ("would force either a 2.25:1 letterbox with the width
+crushed, or horizontal panning"). Computed: the whole 120-yard field fits at **6.54 pt/yd** on the
+base device, **6.28** on the mini class and **5.56** on the SE, with no pan and no between-snaps
+recentring, against portrait's 7.31 pt/yd over 68 of 120 yards. About 11 % smaller marks for the
+entire field, permanently. §6.5 now carries the correction and a scored option E.
+
+**Changed:** `CLAUDE.md` tech stack, `README.md`, `PRODUCT.md` and `02` §12 non-goals,
+`03b` §7, `04` §4 (new two-pane chassis and its three costs) and §5.1–§5.2 (rewritten) and §6 (new
+`OrientationPolicyTest` row), `04b` §2 and its Adaptivity global checks, `05` P13,
+`06-AUDIT-DISPOSITION.md` row 17, `01-RESEARCH.md` (six dated corrections, none rewriting what it
+observed), and `App/project.yml`.
+
+**Two consequences worth reading before P11.**
+
+1. **Size classes are back.** Portrait made every supported iPhone compact-width — one case, which
+   is why `04b` could exclude size classes. In landscape, Plus/Max report **regular** width and
+   standard/SE report **compact**. A `NavigationSplitView` left to its defaults collapses at compact
+   width, so the two-pane chassis is laid out explicitly and both classes are rendered in test.
+2. **AX5 is now the binding accessibility constraint.** 369 pt of usable height, not 844.
+   `DynamicTypeContractTest` is the contract test most likely to fail first.
+
+**Verification.** `xcodegen generate` accepted the new `App/project.yml` and emits
+`INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft
+UIInterfaceOrientationLandscapeRight"`. That is the whole of what was verified — no app target has
+been built, because there are no views to build. Every device point size and safe-area inset in
+`04` §5.2 remains **ASSUMPTION**; P13 measures them.
+
+**Unresolved, and pointing the other way.** FM's own community reports the *vertical* pitch reads
+better for team shape, lines and gaps (`01-RESEARCH.md` §2.1), and FM26 ships a *Vertical Scrolling*
+camera. Whether that transfers to a sport whose structure is a line of scrimmage is settled by
+nothing in the package. `05` P13's owner walkthrough asks it.
+
+---
+
 ## Decisions made without owner input
 
 The owner was asked and did not answer, so these were decided during execution and are marked

@@ -372,4 +372,5 @@ carries the *shape* (10 conferences, sizes 12 to 16, summing to 134) and generat
 
 Stated so scope creep has something to bounce off: no multiplayer, no online anything, no custom
 roster import/export (escalated to counsel in `01-RESEARCH.md` §6.2B §3.2 and not planned), no
-create-a-school editor, no historical seasons, no iPad layout, no landscape.
+create-a-school editor, no historical seasons, no iPad layout, no portrait. (Orientation flipped by
+the owner on 2026-08-10 — `04` §5.2.)

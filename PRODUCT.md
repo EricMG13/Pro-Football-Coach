@@ -106,7 +106,7 @@ draft/cap/free agency, staff and scheme, generated identity with rivalries and t
 conference realignment, the carousel, the record book, 20-season durability.
 
 **Out:** multiplayer, anything online, custom roster import/export (escalated to counsel and not
-planned), a school editor, historical seasons, iPad, landscape.
+planned), a school editor, historical seasons, iPad, portrait.
 
 **Later, if it earns it:** more tiers below the top college division, a deeper staff market,
 scenario starts.

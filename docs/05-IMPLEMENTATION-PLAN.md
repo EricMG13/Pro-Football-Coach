@@ -169,16 +169,20 @@ and it is the one that proves the mechanism before P14 depends on it.
 **Gates:** G1, G2, G3, G4.
 
 ### P13 — The match view
-Vertical field, directed attention (at most three foregrounded marks), drive-level default with snap
+Landscape field with the whole 120 yards in frame and no camera pan (`04` §5.2, owner decision
+2026-08-10 — the phase also **measures** the device point sizes and landscape safe-area insets that
+§5.2's table currently marks ASSUMPTION), directed attention (at most three foregrounded marks), drive-level default with snap
 animation on call-ins, the choreographer pinned to recorded outcomes, Reduce Motion as a discrete
 state sequence, per-snap VoiceOver sentences. Plus `LowerThird` for the named moment, the
 remaining-key-moments indicator in the header, and the call-in as a **named proposal with one-tap
 accept and explicit dismiss** (`04` §5, `01` §6.6 §3.2–3.4).
 **Gates:** G1, G2, G3, G4, plus the render-cannot-change-outcome assertion and the 16.7 ms frame
 ceiling.
-**Owner walkthrough owes an orientation read.** The vertical field now rests on geometry with no
-shipping precedent (`04` §5.2). The script must ask the owner, explicitly, whether the field reads
-as a football field on a phone — it is the one presentation question no test in this plan can answer.
+**Owner walkthrough owes an orientation read.** The landscape field rests on the `04` §5.2 arithmetic
+plus a soccer precedent for a sport with the opposite field ratio, and it runs against FM's community
+finding that the *vertical* pitch reads better for structure. The script must ask the owner,
+explicitly, whether the field reads as a football field on a phone and whether the line of scrimmage
+is legible as a line — the one presentation question no test in this plan can answer.
 **→ Milestone M1: G8.**
 
 ### P14 — Remaining feature surfaces

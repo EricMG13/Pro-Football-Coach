@@ -114,8 +114,12 @@ Agent environments frequently have **no `swift` and no `xcodebuild`**, and the e
 
 ## Tech stack (owner-fixed — do not relitigate)
 
-- iOS 17+, Swift 5.10+, SwiftUI. **iPhone-only, portrait-only.** Offline. **Zero third-party
+- iOS 17+, Swift 5.10+, SwiftUI. **iPhone-only, landscape-only.** Offline. **Zero third-party
   dependencies.**
+  - **Changed from portrait-only by the owner on 2026-08-10.** Landscape is what lets the whole
+    120-yard field sit in frame at once with no camera pan — the arithmetic is in `04` §5.2 and the
+    consequences for every other screen are in `04` §4. It is declared in `App/project.yml` and
+    asserted by `OrientationPolicyTest`. Portrait is not a supported orientation.
 - The 2D match view renders in **SwiftUI `Canvas` + `TimelineView`**. No SpriteKit, no Metal.
 - **Strict engine/UI separation.** The simulation runs headless and contains zero `import SwiftUI`.
 - **Determinism.** A given seed plus a given input state reproduces a match exactly, **across
