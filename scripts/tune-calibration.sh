@@ -436,7 +436,7 @@ if [[ -z "$advisory_lock_fd" ]]; then
 fi
 validate_lock_parent
 
-names=(leverageNoise laneYardScale breakTackleThreshold sackPressureThreshold completionThreshold homeAdvantage brokenTackleYards maximumBrokenTackles)
+names=(leverageNoise laneYardScale breakTackleThreshold sackPressureThreshold completionThreshold homeAdvantage runBrokenTackleYards maximumBrokenTackles)
 grids=("0.22 0.30 0.38 0.46" "3.0 5.0 7.0 9.0" "0.35 0.45 0.55 0.65" "0.45 0.60 0.75 0.90" "-0.30 -0.16 -0.02 0.10" "0.02 0.04 0.07 0.10" "2 3 4 5" "2 3 4 5")
 accepted_values=()
 rollback_armed=0
