@@ -8,16 +8,16 @@ The honest picture: what exists, what is verified, what is not.
 
 ## Where the project actually is
 
-**P0, P1 and P2 are complete. P3's engine is built and its phase-end review is outstanding.** There
-is a foundation, a model, two rules modules, a world generator, and a match engine that plays a
-whole game from a seed.
+**P0 through P3 are complete.** There is a foundation, a model, two rules modules, a world
+generator, and a match engine that plays a whole game from a seed and records why every play
+happened.
 
-Suite: **237 tests, 68,989 checks, all passed**, byte-identical across separate process invocations.
+Suite: **243 tests, 74,796 checks, all passed**, byte-identical across separate process invocations.
 
 **P4 through P17 have not started.** Calibration under TOST, the off-screen model, seasons, both
 tiers' systems, the career arc, the AI, the design system and every view are ahead.
 
-### P3 — match engine core — **built, review outstanding**
+### P3 — match engine core
 
 D2's hybrid assignment/leverage resolution, per tier, with the clock, the drive loop and the game
 loop. `GameEngine.play(tier:home:away:seed:)` plays a whole game from a seed.
@@ -25,7 +25,7 @@ loop. `GameEngine.play(tier:home:away:seed:)` plays a whole game from a seed.
 | Gate | Result |
 |---|---|
 | G1 build | green |
-| G2 tests | 237 tests, 68,989 checks, all passed |
+| G2 tests | 243 tests, 74,796 checks, all passed |
 | G4 scope | engine only; no calibration, no off-screen model, no schedule, no view |
 | G6 determinism | `playByPlayFingerprint` pinned per tier as a source literal; suite byte-identical across three process invocations |
 
@@ -53,8 +53,27 @@ something it could not produce — `08`'s first named failure mode:
 4. The call-in test conflated the *qualifying* set with the *selected* set. `02` §3.1's 12-to-40 is
    a budget applied to the qualifying snaps; the phase that builds the call-in queue owns selection.
 
-**Outstanding for P3:** the phase-end adversarial review. Everything else in
-`docs/plans/2026-08-10-p3-match-engine-core.md` is done.
+**The phase-end review found eleven more, every one measured against the running engine.** Three
+were critical and all three were the same shape as the four above — a capability the engine declared
+and could not produce. The after-turnover call-in trigger could never fire. Possession changed at
+the end of the first and third quarters in every game. And the play-by-play fingerprint, the sole
+cross-process determinism gate, was blind to possession, both play calls, the triggers, the matchup
+kinds, the tier and every player identity: seven mutations of a real game produced a byte-identical
+hash.
+
+Two more worth carrying forward. `03` §3 clause 6's seed hierarchy stopped at week — `.game`,
+`.drive` and `.snap` were declared scopes that only the seed-derivation tests passed — and each
+drive and snap now derives its own node, which also makes the variable draw count inside a snap
+harmless. And `stopsClock` and `clockStopsOnFirstDown` were both declared and read by nobody; the
+second is the *one* tier difference `03` §2 names, so ignoring it meant there was no real tier
+difference at all.
+
+**The recurring lesson across all fifteen P3 defects: the engine kept declaring things it could not
+produce, and only a reachability test over the declared set found them.** An enum case, a trigger, a
+constant, a result — each looked implemented and was not. That is
+`08-OPUS5-BUILD-PROMPT.md`'s first named failure mode, and the defence is a test that enumerates the
+declared set and asserts every member is reachable, with no exemptions. `endOfGame` was surviving on
+an exemption; it was deleted instead.
 
 **Two things P3 must not be read as claiming.**
 
