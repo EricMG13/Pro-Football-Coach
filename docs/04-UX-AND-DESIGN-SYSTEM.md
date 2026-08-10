@@ -39,26 +39,49 @@ Semantic roles only. No view names a hue.
 | `state.{positive,negative,warning,info}` | Status, never raw `.green`/`.red` |
 | `team.primary` / `.secondary` / `.onTeam` | Programme identity, generated per save |
 
-**The values.** Added 2026-08-10 from the design pass (`docs/briefs/2026-08-10-claude-design-ui-brief.md`).
-Every ratio below was computed from WCAG relative luminance and independently re-computed before
-being written here — 24 ratios and three seams, all exact. They are not estimates.
+**Revalued 2026-08-10 for the broadcast world** (§2.4). The first values were a neutral grey set;
+the review found eight of the ten most-used colours were greys and the accent ranked eleventh by
+usage, which is the signature of a productivity app rather than a football product. **Dark is the
+native appearance and light ships as an equal one** (owner, 2026-08-10). Every figure below was
+computed and independently re-derived.
 
-| Role | Light | vs page / card / raised | Dark | vs page / card / raised |
+| Role | Dark (native) | vs page / card / raised | Light | vs page / card / raised |
 |---|---|---|---|---|
-| `surface.page` | `#F2F3F6` | — | `#0C0E13` | — |
-| `surface.card` | `#FFFFFF` | — | `#161A22` | — |
-| `surface.raised` | `#FAFBFD` | — | `#1F242E` | — |
-| `content.primary` | `#14161C` | 16.30 / 18.08 / 17.47 | `#F4F6FA` | 17.84 / 16.11 / 14.38 |
-| `content.secondary` | `#4A4F5C` | 7.38 / 8.19 / 7.91 | `#A8AFBE` | 8.77 / 7.92 / 7.07 |
-| `content.tertiary` | `#767C8B` | 3.77 / 4.18 / 4.04 | `#7C8494` | 5.13 / 4.64 / **4.14** |
-| `accent` | `#0B63C5` | 5.25 / 5.82 / 5.63 | `#63A8F5` | 7.77 / 7.01 / 6.26 |
-| `state.positive` | `#0A6B3D` | 6.60 on card | `#4ED08A` | 8.89 on card |
-| `state.negative` | `#B3261E` | 6.54 on card | `#FF8A80` | 7.63 on card |
-| `state.warning` | `#8A5A00` | 5.93 on card | `#E0A93B` | 8.22 on card |
-| `state.info` | `#0B5FA8` | 6.53 on card | `#6DB3F2` | 7.78 on card |
+| `surface.page` | `#0A0D14` | — | `#EEF0F4` | — |
+| `surface.card` | `#121724` | — | `#FFFFFF` | — |
+| `surface.raised` | `#1B2130` | — | `#F7F9FC` | — |
+| `content.primary` | `#F5F7FA` | 18.11 / 16.67 / 14.97 | `#0E1218` | 16.46 / 18.78 / 17.80 |
+| `content.secondary` | `#A7B0C0` | 8.90 / 8.19 / 7.36 | `#48505F` | 7.11 / 8.11 / 7.69 |
+| `content.tertiary` | `#78839A` | 5.10 / 4.70 / **4.22** | `#6B7484` | **4.13** / 4.71 / 4.47 |
+| `accent` | `#5B9DFF` | 7.14 / 6.57 / 5.90 | `#1257C7` | 5.73 / 6.53 / 6.20 |
+| `live` | `#C6F24E` | 15.00 / 13.81 / 12.41 | *fill only* | `#0E1218` on it = 14.50 |
+| `state.positive` | `#57D98A` | 9.97 on card | `#0B6B3F` | 6.58 on card |
+| `state.negative` | `#FF6B5A` | 6.39 on card | `#C0261B` | 5.94 on card |
+| `state.warning` | `#FFB026` | 9.79 on card | `#8A5A00` | 5.93 on card |
+| `state.info` | `#6DB3F2` | 7.99 on card | `#0B5FA8` | 6.53 on card |
 
-`rating.*` is a **single-hue lightness ladder**: `elite #0B2E5C`, `good #14538F`, `average #2E7BC4`,
-`poor #7FA9D9`, `bad #C2D4E8`. L\* runs 19 / 35 / 50 / 68 / 84.
+**`live` is a new role and the one that makes the product feel switched on.** Reserved for what is
+happening *now* — the live badge, remaining-moment pips, a running clock, a call-in awaiting an
+answer. Nothing static may use it. **It has no light text form**: chartreuse cannot clear 4.5:1 on
+white at any usable saturation, so in light it is a *fill* carrying `content.primary`. One role, two
+mechanisms — the same shape elevation already has.
+
+`rating.*` is a **single-hue lightness ladder, one per appearance**:
+
+| | elite | good | average | poor | bad |
+|---|---|---|---|---|---|
+| **Light** | `#0B2E5C` | `#14538F` | `#2E7BC4` | `#7FA9D9` | `#C2D4E8` |
+| **Dark** | `#0E2E52` | `#164878` | `#2166A8` | `#4E93D6` | `#9CC3EC` |
+
+L\* runs 19 / 35 / 50 / 68 / 84 light and 19 / 30 / 42 / 59 / 77 dark — monotonic in both, which is
+what survives all three colour-vision deficiencies.
+
+**A numeral-bearing chip may not use the ladder's mid step, in either appearance.** A five-step
+lightness ramp always has a step near L\* 50, and L\* 50 is exactly where neither white nor
+near-black clears 4.5:1 — light `average #2E7BC4` measures 4.42 on white and 4.24 on near-black,
+failing both. Numeral chips use the darkened substitute **`#1F6099`** (6.58 on white). **Text
+polarity flips at the ladder's midpoint**: `elite`/`good`/`average` carry white, `poor`/`bad` carry
+`content.primary`. This is a rule about lightness ramps, not about these ten hexes.
 
 **Four rules the values forced, each of which changes a test rather than a value.**
 
@@ -188,9 +211,23 @@ mechanical gain, so the houses are named for the tier. Branded networks go to co
 
 `Card`, `Row`, `StatCell`, `Chip`, `Meter`, `Badge`, `SegmentedControl`, `PrimaryButton`,
 `DestructiveButton`, `InboxItem`, `CallInCard`, `FieldCanvas`, `EmptyState`, `ErrorBanner`,
-`OpposedBar`, `Sparkline`, `LowerThird`, **`ScoreBug`**, **`StakeholderCard`**, **`MapCanvas`**.
+`OpposedBar`, `Sparkline`, `LowerThird`, **`ScoreBug`**, **`StakeholderCard`**, **`MapCanvas`**,
+**`ListControls`**, **`AttributeRow`**.
 
-**Twenty as of 2026-08-10.** The last three were added by the design pass:
+**Twenty-two as of 2026-08-10.** The last two close the review's largest finding — across the whole
+library there was not one filter, sort, search or multi-select, and the player card showed no
+attributes at all:
+
+- **`ListControls`** — position filter, sort, search and multi-select, as one primitive serving the
+  roster, the recruiting board, free agency and the draft board. Four screens or four different
+  answers. Batch actions state their **plural** consequence ("Release both, 2 scholarships back").
+  Above AX3 the control row collapses to a single "Filter and sort" button opening a sheet — the
+  same stated reduction `SegmentedControl` already declares, not a second pattern.
+- **`AttributeRow`** — the bar and the numeral as one object, fill taken from the `rating.*` ladder,
+  text polarity flipping at the ladder midpoint per §2.1. Ten per card, not forty: the pattern is
+  borrowed from the reference set's grammar, the density is not.
+
+**Twenty as of earlier the same day.** The last three were added by the design pass:
 
 - **`MapCanvas`** — the league map. A *second* canvas with its own clustering problem: `GameMap` is
   1000 × 700 world units with 8 regions and 134 programmes, which projects to ~0.5 pt per unit, so no
@@ -409,7 +446,21 @@ or a user-configurable shortcut manager, the architecture has failed rather than
 appear in the reference set and both are symptoms (`01-RESEARCH.md` §6.6 §4.3). The screen list
 above is a budget, not a starting point.
 
-### 4.2 The destination bar
+### 4.2 Persistence and return
+
+Added 2026-08-10. The review found the product described as "a commute game" twice in its own
+design references and designed for it nowhere: save cadence was implied at two values and ruled
+nowhere, and nothing covered cold launch.
+
+- **Save on every completed decision and every week boundary. Never on a timer.** A timer means a
+  player can lose a decision they remember making. The save is ~2.1 MB, so per-decision is
+  affordable; P16 owns proving it stays affordable across twenty seasons.
+- **Cold launch restores the surface, not the tab root.** Returning to Week root loses the
+  player's place and makes them re-read a screen they had finished. The Title screen's Continue
+  card names where they were, when it saved, and what triggered the save — the third of those
+  teaches the cadence rule without stating it.
+
+### 4.3 The destination bar
 
 Owner decision, 2026-08-10: **bottom**. Specified here because "five tabs" was the entire previous
 spec, which left the most expensive layout decision in the product to a SwiftUI default.
@@ -426,6 +477,18 @@ spec, which left the most expensive layout decision in the product to a SwiftUI 
 indicator = **303 pt of content, 78 % of the screen.** At 44 pt rows that is **6, down from 7**; at
 AX5, where a row runs ~65 pt, it is **4, down from 5**. Losing a fifth of the scarce axis to
 navigation is the real price of a bottom bar in landscape and it should be paid knowingly.
+
+**The three content budgets, in one place.** A review found this figure quoted as 303, 347 and 369
+in different documents. All three are right *for different chrome*, and none of them said which —
+so the table is the fix:
+
+| Surface | Chrome subtracted | Content height | Rows at 44 pt | Rows at AX5 |
+|---|---|---|---|---|
+| **Match view** | home indicator only (status bar and bar both hidden) | **369 pt** | — | — |
+| **Management, no bar** (modal, sheet, first-run) | status 22 + indicator 21 | **347 pt** | 7 | 5 |
+| **Management, with the bar** (every §4 destination) | status 22 + bar 44 + indicator 21 | **303 pt** | 6 | 4 |
+
+Quote the row, never the bare number.
 
 **They are destinations, not tabs, and the distinction earns its word.** One position mutates:
 **Recruit becomes Front office on promotion**, changing label, icon and contents mid-career. "Tab
@@ -497,7 +560,17 @@ fit, and `01-RESEARCH.md` §6.5 dismissed landscape in one line without ever com
 
 **What this does not buy.** At 6.54 pt/yd adjacent linemen sit ~7.5 pt apart, ~6.4 pt on the SE,
 against portrait's ~8.4 pt. Same order of magnitude, so `01-RESEARCH.md` §6.3's conclusion stands
-unaltered: **individually numbered marks on the two lines remain geometrically impossible**, the
+unaltered — **and it was tested on a redrawn frame on 2026-08-10 rather than left as an assertion.**
+An earlier design pass claimed all 22 could be drawn *and numbered*, and demonstrated it on a frame
+whose linemen sat on 16 pt centres — **2.17× the true 1.15 yd split of 7.5 pt.** Redrawn honestly,
+the arithmetic is decisive and it is not a floor problem: a legible numeral needs a ~20 pt disc,
+which at 7.5 pt centres is **62 % occluded**, and at the 932 ceiling's 8.4 pt centres still 58 %.
+
+**So the conclusion is amended in one direction only.** All 22 marks *are* drawn, at true positions
+— the nine interior linemen as 11 pt ringed discs the eye can **count**, and 13 numerals on the
+skill positions and the three foregrounded marks. That is more than "one shape" and less than
+"22 numbered". The original clause stands where it matters:
+**individually numbered marks on the two lines remain geometrically impossible**, the
 seven-man line is drawn as one shape rather than seven marks, and nothing inside the match `Canvas`
 is individually tappable. Orientation bought field coverage. It bought nothing on local clustering.
 

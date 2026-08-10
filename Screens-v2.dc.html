@@ -23,7 +23,7 @@
 <div style="display:flex;flex-direction:column;gap:8px">
 <div class="lbl">PRO FOOTBALL COACH &middot; DESIGN REFERENCE v2 &middot; GROUP: SCREENS</div>
 <div style="font:700 32px/1.1 -apple-system,'SF Pro Display',sans-serif;letter-spacing:-.02em">Screens &mdash; broadcast world, 844 &times; 390 landscape</div>
-<div style="font:400 14px/1.55 inherit;color:#A7B0C0;max-width:74ch">Two owner findings drive this revision. <strong style="color:#F5F7FA;font-weight:650">The match view now draws all 22 players</strong>, numbered. <strong style="color:#FFB026">Corrected after adversarial review:</strong> an earlier version of this sentence claimed <code class="mono">04</code> §5.2 "already required" it. It does not &mdash; §5.2 says <em>"individually numbered marks on the two lines remain geometrically impossible"</em>, which is the opposite. And the frames below draw the five linemen on <strong style="color:#FF6B5A">16 pt centres, 2.17&times; the true 1.15 yd split of 7.4 pt</strong>, so they do not demonstrate what they claim. What is honestly shown: 22 discs are drawable and <em>eleven</em> of them carry legible numerals; the interior line does not, at true spacing, at the floor. Amending §5.2 therefore requires redrawing this frame at 7.4 pt centres first &mdash; the request is withdrawn until it is. And <strong style="color:#F5F7FA;font-weight:650">the score bug replaces the grey StatCell</strong> as the product's anchor idiom.</div>
+<div style="font:400 14px/1.55 inherit;color:#A7B0C0;max-width:74ch">Two owner findings drive this revision. <strong style="color:#F5F7FA;font-weight:650">The match view draws all 22 players at true 1.15 yd spacing</strong>, redrawn 2026-08-10 after an adversarial review found the previous frame used 16 pt centres &mdash; <strong style="color:#FF6B5A">2.17&times; overstated</strong>. At the honest 7.52 pt the five linemen span 30 pt, and the arithmetic is decisive: <strong style="color:#F5F7FA">a numeral needs a ~20 pt disc, which at 7.52 pt centres is 62 % occluded</strong>. That holds at the ceiling too (8.4 pt centres, 58 % occluded), so it is not a floor problem &mdash; it is the geometry of the sport. <strong style="color:#C6F24E">What survives, and it is more than v1 had:</strong> 22 marks at true positions; the nine interior linemen as 11 pt ringed discs you can <em>count</em> but not read; 13 numerals legible on the skill positions and the three foregrounded marks. <code class="mono">04</code> §5.2 said the line is "one shape rather than seven marks" &mdash; the redraw shows it is five countable marks without numerals, which is the amendment now being requested, on evidence rather than on assertion.</div>
 </div>
 <div style="flex:none;width:250px;padding:11px 13px;background:rgba(255,255,255,.05);border-radius:8px;font:400 11px/1.5 inherit;color:#A7B0C0">All identities synthetic. Ashgrove and Wexmoor are generator-shaped placeholders; no real programme, franchise, player or colour pair appears.</div>
 </div>
@@ -33,85 +33,61 @@
 
 <div style="display:flex;gap:16px;align-items:flex-start;margin-top:16px;flex-wrap:wrap">
 <div style="display:flex;flex-direction:column;gap:9px">
-<div class="lbl">FORMATION &middot; 844 &times; 390 &middot; 6.41 pt/yd &middot; ALL 22 DRAWN</div>
+<div class="lbl">FORMATION &middot; 844 &times; 390 &middot; 6.54 pt/yd &middot; ALL 22 AT TRUE 1.15 yd SPACING</div>
 <div class="bezel"><div class="phone">
 
-  <!-- turf -->
   <div style="position:absolute;inset:0;background:#1B3A24"></div>
-  <!-- field of play -->
-  <div style="position:absolute;left:59px;top:14px;width:769px;height:342px;background:#22482C;overflow:hidden">
-    <!-- end zones -->
-    <div style="position:absolute;left:0;top:0;bottom:0;width:64px;background:#14294B;display:flex;align-items:center;justify-content:center"><div class="num" style="font-size:13px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.24em;transform:rotate(-90deg);white-space:nowrap">ASHGROVE</div></div>
-    <div style="position:absolute;right:0;top:0;bottom:0;width:64px;background:#7A1F2B;display:flex;align-items:center;justify-content:center"><div class="num" style="font-size:13px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.24em;transform:rotate(90deg);white-space:nowrap">WEXMOOR</div></div>
-    <!-- 5-yard lines -->
-    <div style="position:absolute;left:96px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
-    <div style="position:absolute;left:128px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
-    <div style="position:absolute;left:160px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
-    <div style="position:absolute;left:192px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
-    <div style="position:absolute;left:224px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
-    <div style="position:absolute;left:256px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
-    <div style="position:absolute;left:288px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
-    <div style="position:absolute;left:320px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
-    <div style="position:absolute;left:352px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
-    <div style="position:absolute;left:384px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.48)"></div>
-    <div style="position:absolute;left:416px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
-    <div style="position:absolute;left:448px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
-    <div style="position:absolute;left:480px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
-    <div style="position:absolute;left:512px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
-    <div style="position:absolute;left:544px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
-    <div style="position:absolute;left:576px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
-    <div style="position:absolute;left:608px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
-    <div style="position:absolute;left:640px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
-    <div style="position:absolute;left:672px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
-    <!-- hash marks, both rows -->
-    <div style="position:absolute;left:70px;right:70px;top:151px;height:1px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.34) 0 6px,transparent 6px 32px)"></div>
-    <div style="position:absolute;left:70px;right:70px;top:191px;height:1px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.34) 0 6px,transparent 6px 32px)"></div>
-    <!-- yard numerals -->
-    <div class="num" style="position:absolute;left:243px;top:24px;font-size:15px;font-weight:700;color:rgba(255,255,255,.48)">30</div>
-    <div class="num" style="position:absolute;left:371px;top:24px;font-size:15px;font-weight:700;color:rgba(255,255,255,.34)">50</div>
-    <div class="num" style="position:absolute;left:499px;top:24px;font-size:15px;font-weight:700;color:rgba(255,255,255,.48)">30</div>
-    <!-- first down marker -->
-    <div style="position:absolute;left:327px;top:0;bottom:0;width:2px;background:#C6F24E"></div>
-    <!-- line of scrimmage -->
-    <div style="position:absolute;left:282px;top:0;bottom:0;width:3px;background:#F5F7FA"></div>
-
-    <!-- ===== OFFENCE (11) - Ashgrove, drawn in secondary gold, attacking right ===== -->
-    <!-- OL x5. NOTE: 16pt centres = 2.50yd, NOT the true 1.15yd (7.4pt). Overstated 2.17x - see the corrected header note. -->
-    <div class="disc" style="left:264px;top:132px;width:18px;height:18px;background:#C8A24A;color:#14161C;font-size:9px;opacity:.55">76</div>
-    <div class="disc" style="left:264px;top:148px;width:18px;height:18px;background:#C8A24A;color:#14161C;font-size:9px;opacity:.55">64</div>
-    <div class="disc" style="left:264px;top:164px;width:18px;height:18px;background:#C8A24A;color:#14161C;font-size:9px;opacity:.55">55</div>
-    <div class="disc" style="left:264px;top:180px;width:18px;height:18px;background:#C8A24A;color:#14161C;font-size:9px;opacity:.55">67</div>
-    <div class="disc" style="left:264px;top:196px;width:18px;height:18px;background:#C8A24A;color:#14161C;font-size:9px;opacity:.55">71</div>
-    <!-- TE -->
-    <div class="disc" style="left:268px;top:218px;width:18px;height:18px;background:#C8A24A;color:#14161C;font-size:9px;opacity:.62">88</div>
-    <!-- trips left -->
-    <div class="disc" style="left:270px;top:36px;width:18px;height:18px;background:#C8A24A;color:#14161C;font-size:9px;opacity:.62">11</div>
-    <div class="disc" style="left:262px;top:60px;width:18px;height:18px;background:#C8A24A;color:#14161C;font-size:9px;opacity:.62">17</div>
-    <!-- FOREGROUND 1: the receiver the play turns on -->
-    <div class="disc" style="left:266px;top:84px;width:26px;height:26px;background:#C8A24A;color:#14161C;font-size:12px;box-shadow:0 0 0 2px #0A0D14">84</div>
-    <!-- split right -->
-    <div class="disc" style="left:270px;top:296px;width:18px;height:18px;background:#C8A24A;color:#14161C;font-size:9px;opacity:.62">19</div>
-    <!-- FOREGROUND 2: the passer -->
-    <div class="disc" style="left:234px;top:158px;width:26px;height:26px;background:#C8A24A;color:#14161C;font-size:12px;box-shadow:0 0 0 2px #0A0D14">09</div>
-
-    <!-- ===== DEFENCE (11) - Wexmoor, nickel ===== -->
-    <div class="disc" style="left:290px;top:138px;width:18px;height:18px;background:#F5F7FA;color:#7A1F2B;font-size:9px;opacity:.5">93</div>
-    <div class="disc" style="left:290px;top:156px;width:18px;height:18px;background:#F5F7FA;color:#7A1F2B;font-size:9px;opacity:.5">99</div>
-    <div class="disc" style="left:290px;top:174px;width:18px;height:18px;background:#F5F7FA;color:#7A1F2B;font-size:9px;opacity:.5">78</div>
-    <div class="disc" style="left:290px;top:192px;width:18px;height:18px;background:#F5F7FA;color:#7A1F2B;font-size:9px;opacity:.5">52</div>
-    <div class="disc" style="left:322px;top:146px;width:18px;height:18px;background:#F5F7FA;color:#7A1F2B;font-size:9px;opacity:.55">44</div>
-    <div class="disc" style="left:322px;top:186px;width:18px;height:18px;background:#F5F7FA;color:#7A1F2B;font-size:9px;opacity:.55">58</div>
-    <div class="disc" style="left:296px;top:36px;width:18px;height:18px;background:#F5F7FA;color:#7A1F2B;font-size:9px;opacity:.55">21</div>
-    <div class="disc" style="left:298px;top:60px;width:18px;height:18px;background:#F5F7FA;color:#7A1F2B;font-size:9px;opacity:.55">28</div>
-    <!-- FOREGROUND 3: the defender who decides it -->
-    <div class="disc" style="left:302px;top:84px;width:26px;height:26px;background:#F5F7FA;color:#7A1F2B;font-size:12px;box-shadow:0 0 0 2px #0A0D14">24</div>
-    <div class="disc" style="left:298px;top:294px;width:18px;height:18px;background:#F5F7FA;color:#7A1F2B;font-size:9px;opacity:.55">33</div>
-    <div class="disc" style="left:392px;top:162px;width:18px;height:18px;background:#F5F7FA;color:#7A1F2B;font-size:9px;opacity:.55">31</div>
-
-    <!-- ball -->
-    <div style="position:absolute;left:278px;top:167px;width:11px;height:7px;border-radius:50%;background:#6B4423;border:1px solid rgba(255,255,255,.75)"></div>
-    <!-- the matchup line: what the play turns on -->
-    <div style="position:absolute;left:292px;top:97px;width:10px;height:2px;background:rgba(198,242,78,.8)"></div>
+  <div style="position:absolute;left:59px;top:10px;width:785px;height:349px;background:#22482C;overflow:hidden">
+  <div style="position:absolute;left:0;top:0;bottom:0;width:65px;background:#14294B;display:flex;align-items:center;justify-content:center"><div style="font:700 13px/1 'SF Compact Display',sans-serif;color:rgba(255,255,255,.5);letter-spacing:.24em;transform:rotate(-90deg);white-space:nowrap">ASHGROVE</div></div>
+  <div style="position:absolute;right:0;top:0;bottom:0;width:65px;background:#7A1F2B;display:flex;align-items:center;justify-content:center"><div style="font:700 13px/1 'SF Compact Display',sans-serif;color:rgba(255,255,255,.55);letter-spacing:.24em;transform:rotate(90deg);white-space:nowrap">WEXMOOR</div></div>
+  <div style="position:absolute;left:98px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
+  <div style="position:absolute;left:131px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
+  <div style="position:absolute;left:164px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
+  <div style="position:absolute;left:196px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
+  <div style="position:absolute;left:229px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
+  <div style="position:absolute;left:262px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
+  <div style="position:absolute;left:294px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
+  <div style="position:absolute;left:327px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
+  <div style="position:absolute;left:360px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
+  <div style="position:absolute;left:392px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.48)"></div>
+  <div style="position:absolute;left:425px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
+  <div style="position:absolute;left:458px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
+  <div style="position:absolute;left:491px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
+  <div style="position:absolute;left:523px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
+  <div style="position:absolute;left:556px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
+  <div style="position:absolute;left:589px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
+  <div style="position:absolute;left:621px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
+  <div style="position:absolute;left:654px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
+  <div style="position:absolute;left:687px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.26)"></div>
+  <div style="position:absolute;left:720px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.44)"></div>
+  <div style="position:absolute;left:70px;right:70px;top:154px;height:1px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.34) 0 6px,transparent 6px 32px)"></div>
+  <div style="position:absolute;left:70px;right:70px;top:195px;height:1px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.34) 0 6px,transparent 6px 32px)"></div>
+  <div style="position:absolute;left:334px;top:0;bottom:0;width:2px;background:#C6F24E"></div>
+  <div style="position:absolute;left:288px;top:0;bottom:0;width:3px;background:#F5F7FA"></div>
+  <div style="position:absolute;left:268px;top:154px;width:11px;height:11px;border-radius:50%;background:#C8A24A;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#14161C;opacity:0.72;box-shadow:0 0 0 1px #14251A"></div>
+  <div style="position:absolute;left:268px;top:160px;width:11px;height:11px;border-radius:50%;background:#C8A24A;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#14161C;opacity:0.72;box-shadow:0 0 0 1px #14251A"></div>
+  <div style="position:absolute;left:268px;top:168px;width:11px;height:11px;border-radius:50%;background:#C8A24A;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#14161C;opacity:0.72;box-shadow:0 0 0 1px #14251A"></div>
+  <div style="position:absolute;left:268px;top:176px;width:11px;height:11px;border-radius:50%;background:#C8A24A;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#14161C;opacity:0.72;box-shadow:0 0 0 1px #14251A"></div>
+  <div style="position:absolute;left:268px;top:184px;width:11px;height:11px;border-radius:50%;background:#C8A24A;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#14161C;opacity:0.72;box-shadow:0 0 0 1px #14251A"></div>
+  <div style="position:absolute;left:263px;top:196px;width:18px;height:18px;border-radius:50%;background:#C8A24A;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#14161C;opacity:0.62;font-size:9px">88</div>
+  <div style="position:absolute;left:267px;top:26px;width:18px;height:18px;border-radius:50%;background:#C8A24A;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#14161C;opacity:0.62;font-size:9px">11</div>
+  <div style="position:absolute;left:259px;top:57px;width:18px;height:18px;border-radius:50%;background:#C8A24A;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#14161C;opacity:0.62;font-size:9px">17</div>
+  <div style="position:absolute;left:259px;top:85px;width:26px;height:26px;border-radius:50%;background:#C8A24A;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#14161C;opacity:1;font-size:12px">84</div>
+  <div style="position:absolute;left:267px;top:288px;width:18px;height:18px;border-radius:50%;background:#C8A24A;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#14161C;opacity:0.62;font-size:9px">19</div>
+  <div style="position:absolute;left:223px;top:161px;width:26px;height:26px;border-radius:50%;background:#C8A24A;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#14161C;opacity:1;font-size:12px">09</div>
+  <div style="position:absolute;left:298px;top:158px;width:11px;height:11px;border-radius:50%;background:#F5F7FA;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#7A1F2B;opacity:0.62;box-shadow:0 0 0 1px #14251A"></div>
+  <div style="position:absolute;left:298px;top:164px;width:11px;height:11px;border-radius:50%;background:#F5F7FA;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#7A1F2B;opacity:0.62;box-shadow:0 0 0 1px #14251A"></div>
+  <div style="position:absolute;left:298px;top:172px;width:11px;height:11px;border-radius:50%;background:#F5F7FA;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#7A1F2B;opacity:0.62;box-shadow:0 0 0 1px #14251A"></div>
+  <div style="position:absolute;left:298px;top:180px;width:11px;height:11px;border-radius:50%;background:#F5F7FA;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#7A1F2B;opacity:0.62;box-shadow:0 0 0 1px #14251A"></div>
+  <div style="position:absolute;left:327px;top:139px;width:18px;height:18px;border-radius:50%;background:#F5F7FA;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#7A1F2B;opacity:0.58;font-size:9px">44</div>
+  <div style="position:absolute;left:327px;top:191px;width:18px;height:18px;border-radius:50%;background:#F5F7FA;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#7A1F2B;opacity:0.58;font-size:9px">58</div>
+  <div style="position:absolute;left:293px;top:26px;width:18px;height:18px;border-radius:50%;background:#F5F7FA;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#7A1F2B;opacity:0.58;font-size:9px">21</div>
+  <div style="position:absolute;left:297px;top:57px;width:18px;height:18px;border-radius:50%;background:#F5F7FA;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#7A1F2B;opacity:0.58;font-size:9px">28</div>
+  <div style="position:absolute;left:297px;top:85px;width:26px;height:26px;border-radius:50%;background:#F5F7FA;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#7A1F2B;opacity:1;font-size:12px">24</div>
+  <div style="position:absolute;left:293px;top:288px;width:18px;height:18px;border-radius:50%;background:#F5F7FA;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#7A1F2B;opacity:0.58;font-size:9px">33</div>
+  <div style="position:absolute;left:391px;top:165px;width:18px;height:18px;border-radius:50%;background:#F5F7FA;display:flex;align-items:center;justify-content:center;font-family:'SF Compact Display',sans-serif;font-weight:700;color:#7A1F2B;opacity:0.58;font-size:9px">31</div>
+  <div style="position:absolute;left:280px;top:170px;width:11px;height:7px;border-radius:50%;background:#6B4423;border:1px solid rgba(255,255,255,.75)"></div>
+  <div style="position:absolute;left:296px;top:98px;width:12px;height:2px;background:rgba(198,242,78,.85)"></div>
   </div>
 
   <!-- ===== SCORE BUG, overlaying the field, hard edges, zero radius ===== -->
