@@ -284,6 +284,51 @@ nothing in the package. `05` P13's owner walkthrough asks it.
 
 ---
 
+### 2026-08-10 — the design pass, and the four things it falsified
+
+`docs/briefs/2026-08-10-claude-design-ui-brief.md` was run. Output is `Tokens.dc.html`,
+`Components.dc.html` and `Screens.dc.html` at the repository root — **untracked, and not canon.**
+Per the brief, the artefact the build consumes is the write-back into `04`, which is done: §2.1 now
+carries every colour value with its measured ratio, §2.2 the six type roles, §2.3 the radius
+assignment and both elevation definitions, §3 four new component rules, §4 the corrected chassis, and
+§6 the changed contrast enumeration.
+
+**The numbers were re-computed here before being written into canon** — 24 WCAG ratios, three surface
+seams and both candidate rating ladders' L\* values, all reproduced exactly. That is the only claim of
+verification this entry makes. Nothing was built; there is still nothing to build.
+
+**Four things the pass falsified, three of them mine from earlier the same day:**
+
+1. **The two-pane chassis does not hold at AX5.** It holds at 844 at default type and falls to a
+   single scrolling column at AX5. `04` §4 said it held; it now states the reduction.
+2. **A management screen keeps its status bar** — 22 pt off every two-pane budget, so 347 pt, not
+   369. The Inbox rail is full at four items and Roster shows six rows at 812, not seven.
+3. **The match view must therefore hide the status bar**, or the field misses by 2 pt on the base
+   device and 3 pt on the mini. The §5.2 clearances were 20 pt and 19 pt, so the bar is the entire
+   margin. This is arithmetic, not styling.
+4. **The `rating.*` ladder can only be carried by lightness.** Hue ramps collapse two of five steps
+   to ΔE 2 under deuteranopia. The surviving ladder is fill-only — `poor` is 2.45:1 and `bad` 1.51:1
+   as text — which changes what `ContrastByConstructionTest` enumerates. Open question 4 is closed:
+   five steps hold, it does not drop to four.
+
+**Two findings that are not the design system's to fix.**
+
+- **All 32 pro `TeamTable` pairs are dark-primary-with-light-secondary.** The light-primary case
+  `04` §2.1's contrast floors exist to catch does not occur in the data, so those floors have never
+  met the case that would break them. Either `ColourGenerator`'s reachable space is narrower than
+  §2.1 assumes or the requirement is theoretical. **Raised against P2, unresolved.**
+- **The pass's own geometry table does not reconcile.** It states a 59 pt sensor-housing inset and
+  subtracts 75, reaching 6.41 pt/yd where `04` §5.2 has 6.54. Unresolved, and one more reason P13
+  measures rather than derives. The conclusion survives the whole range — the field fits at 6.54,
+  6.41 and 6.05 alike, with the status bar hidden.
+
+**Still open:** the field reads at 6.41 pt/yd and the line of scrimmage reads as a line, but
+**direction does not** — nothing in a still frame says the offence attacks rightward except the ball
+spot. The header indicator is carrying drive direction as well as remaining moments. P13's
+walkthrough asks about direction specifically.
+
+---
+
 ## Decisions made without owner input
 
 The owner was asked and did not answer, so these were decided during execution and are marked
