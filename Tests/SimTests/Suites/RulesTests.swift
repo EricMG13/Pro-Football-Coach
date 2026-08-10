@@ -238,4 +238,200 @@ func runRulesTests() {
             expectEqual(ProRules.draftPickCount, ProRules.draftRounds * ProRules.draftPicksPerRound)
         }
     }
+
+    suite("Outcome distribution rules") {
+        test("run outcome bands are ordered, finite distributions for both tiers") {
+            for tier in Tier.allCases {
+                let weights = OutcomeDistributionRules.runWeights(tier: tier)
+                expectEqual(weights.map(\.0), RunOutcomeBand.allCases)
+                expect(weights.allSatisfy { $0.1.isFinite && $0.1 >= 0 },
+                       "\(tier) run table contains a non-finite or negative weight")
+                expectClose(weights.reduce(0) { $0 + $1.1 }, 1,
+                            OutcomeDistributionRules.probabilityTolerance,
+                            "\(tier) run table does not sum to one")
+            }
+        }
+
+        test("pass outcome bands are ordered, finite distributions for both tiers") {
+            for tier in Tier.allCases {
+                let weights = OutcomeDistributionRules.passWeights(tier: tier)
+                expectEqual(weights.map(\.0), PassOutcomeBand.allCases)
+                expect(weights.allSatisfy { $0.1.isFinite && $0.1 >= 0 },
+                       "\(tier) pass table contains a non-finite or negative weight")
+                expectClose(weights.reduce(0) { $0 + $1.1 }, 1,
+                            OutcomeDistributionRules.probabilityTolerance,
+                            "\(tier) pass table does not sum to one")
+            }
+        }
+
+        test("run tables retain every calibrated base weight") {
+            let expected: [Tier: [(RunOutcomeBand, Double)]] = [
+                .pro: [(.loss, 0.100), (.short, 0.538), (.medium, 0.232),
+                       (.explosive, 0.108), (.breakaway, 0.010), (.fumbleLost, 0.012)],
+                .college: [(.loss, 0.100), (.short, 0.508), (.medium, 0.229),
+                           (.explosive, 0.136), (.breakaway, 0.015), (.fumbleLost, 0.012)],
+            ]
+            for tier in Tier.allCases {
+                for (actual, expectedWeight) in zip(OutcomeDistributionRules.runWeights(tier: tier),
+                                                     expected[tier]!) {
+                    expectEqual(actual.0, expectedWeight.0, "\(tier) run band")
+                    expectClose(actual.1, expectedWeight.1,
+                                OutcomeDistributionRules.probabilityTolerance,
+                                "\(tier) \(actual.0) run weight")
+                }
+            }
+        }
+
+        test("pass tables retain every calibrated base weight") {
+            let expected: [Tier: [(PassOutcomeBand, Double)]] = [
+                .pro: [(.sack, 0.060), (.interception, 0.022), (.incompletion, 0.278),
+                       (.completion, 0.491), (.explosiveCompletion, 0.137), (.fumbleLost, 0.012)],
+                .college: [(.sack, 0.060), (.interception, 0.022), (.incompletion, 0.278),
+                           (.completion, 0.485), (.explosiveCompletion, 0.143), (.fumbleLost, 0.012)],
+            ]
+            for tier in Tier.allCases {
+                for (actual, expectedWeight) in zip(OutcomeDistributionRules.passWeights(tier: tier),
+                                                     expected[tier]!) {
+                    expectEqual(actual.0, expectedWeight.0, "\(tier) pass band")
+                    expectClose(actual.1, expectedWeight.1,
+                                OutcomeDistributionRules.probabilityTolerance,
+                                "\(tier) \(actual.0) pass weight")
+                }
+            }
+        }
+
+        test("run tables use the calibrated explosive mass for each tier") {
+            let proExplosive = OutcomeDistributionRules.runWeights(tier: .pro)
+                .filter { $0.0 == .explosive || $0.0 == .breakaway }
+                .reduce(0) { $0 + $1.1 }
+            let collegeExplosive = OutcomeDistributionRules.runWeights(tier: .college)
+                .filter { $0.0 == .explosive || $0.0 == .breakaway }
+                .reduce(0) { $0 + $1.1 }
+
+            expectClose(proExplosive, 0.118, OutcomeDistributionRules.probabilityTolerance)
+            expectClose(collegeExplosive, 0.151, OutcomeDistributionRules.probabilityTolerance)
+        }
+
+        test("pass tables use the calibrated explosive mass for each tier") {
+            let proExplosive = OutcomeDistributionRules.passWeights(tier: .pro)
+                .first { $0.0 == .explosiveCompletion }!.1
+            let collegeExplosive = OutcomeDistributionRules.passWeights(tier: .college)
+                .first { $0.0 == .explosiveCompletion }!.1
+
+            expectClose(proExplosive, 0.137, OutcomeDistributionRules.probabilityTolerance)
+            expectClose(collegeExplosive, 0.143, OutcomeDistributionRules.probabilityTolerance)
+        }
+
+        test("yard ranges are ordered") {
+            let ranges: [ClosedRange<Int>] = [
+                OutcomeDistributionRules.lossYards,
+                OutcomeDistributionRules.shortRunYards,
+                OutcomeDistributionRules.mediumRunYards,
+                OutcomeDistributionRules.explosiveRunYards,
+                OutcomeDistributionRules.breakawayRunYards,
+                OutcomeDistributionRules.ordinaryPassYards,
+                OutcomeDistributionRules.explosivePassYards,
+                OutcomeDistributionRules.runFumbleYards,
+                OutcomeDistributionRules.passFumbleYards,
+                OutcomeDistributionRules.sackYards,
+                OutcomeDistributionRules.puntYards,
+            ]
+            for range in ranges {
+                expect(range.lowerBound <= range.upperBound, "unordered range \(range)")
+            }
+            expectEqual(OutcomeDistributionRules.lossYards, -3...0)
+            expectEqual(OutcomeDistributionRules.shortRunYards, 1...3)
+            expectEqual(OutcomeDistributionRules.mediumRunYards, 4...9)
+            expectEqual(OutcomeDistributionRules.explosiveRunYards, 10...18)
+            expectEqual(OutcomeDistributionRules.breakawayRunYards, 19...60)
+            expectEqual(OutcomeDistributionRules.ordinaryPassYards, 1...14)
+            expectEqual(OutcomeDistributionRules.explosivePassYards, 15...35)
+            expectEqual(OutcomeDistributionRules.runFumbleYards, 1...3)
+            expectEqual(OutcomeDistributionRules.passFumbleYards, 1...14)
+            expectEqual(OutcomeDistributionRules.sackYards, -9 ... -4)
+            expectEqual(OutcomeDistributionRules.puntYards, 35...55)
+        }
+
+        test("a ten-point rating edge consumes half the maximum probability shift") {
+            let shift = 10.0 / OutcomeDistributionRules.ratingPointsForMaximumShift
+                * OutcomeDistributionRules.maximumProbabilityShift
+            expectClose(shift, OutcomeDistributionRules.maximumProbabilityShift / 2,
+                        OutcomeDistributionRules.probabilityTolerance)
+        }
+
+        test("outcome constants match the starting calibration") {
+            expectClose(OutcomeDistributionRules.proRunExplosiveMass, 0.118,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.collegeRunExplosiveMass, 0.151,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.passCompletionMass, 0.640,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.passSackMass, 0.060,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.passInterceptionMass, 0.022,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.proPassExplosiveMass, 0.137,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.collegePassExplosiveMass, 0.143,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.fumbleLostMass, 0.012,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectEqual(OutcomeDistributionRules.kneelYards, -1)
+            expectClose(OutcomeDistributionRules.maximumProbabilityShift, 0.04,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.maximumBallSecurityProbabilityShift, 0.006,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.ratingPointsForMaximumShift, 20.0,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.maximumDepthProbabilityShift, 0.010,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.outsideRunProbabilityShift, 0.010,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.runAggressionProbabilityShift, 0.006,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.passAggressionProbabilityShift, 0.008,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.defensiveAggressionProbabilityShift, 0.006,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.rusherSackShiftPerPlayer, 0.006,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.coverageShellProbabilityShift, 0.008,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.longYardageProbabilityShift, 0.008,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.shortYardageProbabilityShift, 0.006,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectEqual(OutcomeDistributionRules.shortYardageDistance, 2)
+            expectEqual(OutcomeDistributionRules.longYardageDistance, 7)
+            expectClose(OutcomeDistributionRules.targetRatingFloor, 1.0,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.riskRewardSplit, 0.5,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.passProtectionThrowWeight, 0.5,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.minimumAttributionMagnitude, 0.5,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.attributionMagnitudeRange, 0.5,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.proHomeProbabilityShift, 0.010,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.collegeHomeProbabilityShift, 0.045,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.proFieldGoalBase, 0.84,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.collegeFieldGoalBase, 0.76,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.maximumFieldGoalMatchupProbabilityShift, 0.10,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.fieldGoalDistancePenaltyPerYard, 0.006,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectEqual(OutcomeDistributionRules.fieldGoalReferenceDistance, 35)
+            expectClose(OutcomeDistributionRules.minimumFieldGoalProbability, 0.02,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectClose(OutcomeDistributionRules.maximumFieldGoalProbability, 0.98,
+                        OutcomeDistributionRules.probabilityTolerance)
+            expectEqual(OutcomeDistributionRules.lastFieldYardOffset, 1)
+            expectClose(OutcomeDistributionRules.probabilityTolerance, 1e-12, 0)
+        }
+    }
 }
