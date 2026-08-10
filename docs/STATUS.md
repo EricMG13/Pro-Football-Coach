@@ -8,15 +8,56 @@ The honest picture: what exists, what is verified, what is not.
 
 ## Where the project actually is
 
-**The spec package is complete. No line of the rebuild has been written.**
+**P0 is complete. The tree is a foundation and nothing more.**
 
-The v4 brief (`docs/reviews/2026-08-09-spec-prompt-v4.md`) has been executed: research, design,
-architecture, plan, decisions and the build prompt all exist and are internally consistent. Phase P0
-of `docs/05-IMPLEMENTATION-PLAN.md` has not started. **It is no longer blocked** — see D11 below.
+The spec package is complete and P0 has run: the repository is stripped to the four things
+`docs/PORT-LOG.md` justifies keeping, the `03b` §1 module skeleton exists, the `03` §3 hierarchical
+seeding contract is implemented and pinned by golden vectors at both the root and every derived
+level, the four build-wide source scans live in `Tests/SimTests/Suites/ContractTests.swift`, and the
+save envelope carries a version readable from a 16-byte header.
 
-The previous build's source is still in the tree (`Sources/`, `Tests/`, `App/`). Under Tier C it has
-**no authority**. It has not been deleted, because deleting it is P0's business and P0 has not run.
-Do not treat anything in `Sources/` as canon; `docs/DOC-MANIFEST.md` is the authority on what is.
+**Gates, run on this machine in the session that claims them, not cited from elsewhere:**
+
+| Gate | Result |
+|---|---|
+| G1 build | green, `swift build` clean |
+| G2 tests | 50 tests, 134 checks, all passed |
+| G4 scope | diff matches `docs/plans/2026-08-09-p0-foundation.md`'s File Structure table |
+| G6 determinism | golden vectors pin `seed(from:)` and `derive`; three separate process invocations byte-identical; both determinism source scans green |
+
+**The suite shrank from 324 tests / 18,631 checks to 50 / 134.** That is the phase working — 88 of
+93 tracked source and test files were deleted, including 90 arcade tests. The full accounting, with
+the retrieval SHA, is in `docs/PORT-LOG.md`.
+
+**What is NOT true yet:** there is no model, no rules module, no engine, no generation, no AI, no
+design system and no view beyond a placeholder. P1 starts the model.
+
+### What P0's adversarial review found, and what it means for later phases
+
+The phase-end review planted six real violations in the tree and the suite reported all passed. Both
+gates P0 exists to install had been shipped without being watched failing against the spellings a
+real offender uses. All findings are fixed and each fix was verified by re-planting the violation and
+watching the suite turn red; the detail is in the fix commit. Three consequences outlive P0:
+
+1. **A self-test that only tries the idealised spelling is not evidence.** The first version of
+   `ContractTests` caught `import SwiftUI` and missed `import struct SwiftUI.Color`; caught
+   `.hashValue` and missed `Hasher()`; caught `Date()` and missed `Date.now`. Every scan a later
+   phase adds owes a self-test over the *evasions*, not the textbook case.
+2. **A scan over a hand-written list of directories is the coverage-boundary failure wearing a
+   gate's clothes.** The ambient-identity scan named four directories, all empty, and covered
+   nothing. It now walks the whole engine and exempts `Model/` by name.
+3. **A gate that fails on compliant code will be weakened, not obeyed.** The design-token scan
+   rejected `.padding(.horizontal, Token.gutter)`. P11 would have hit that on its first view.
+
+### Known gaps in P0's scans, stated rather than left implicit
+
+- **Literal colours are not covered.** `03b` §1's fourth token class is colour; the scan checks
+  spacing, radius and font size only. This is the pattern set the plan deliberately scoped small.
+  **P11 owns extending it**, and `04` §3's component registry is what makes that enumeration by
+  construction rather than by memory.
+- **The comment scanner does not understand raw strings or multiline literals.** A `#"…"#`
+  containing a backslash could mis-track its closing quote. The failure direction is a false
+  negative on a line no current pattern occupies. Revisit if the tree gains raw strings.
 
 ---
 
@@ -159,13 +200,12 @@ Stated plainly so nothing here is mistaken for more than it is.
    independently refuted before being accepted) confirmed 23 defects across the package, of which
    three were blockers. All 23 are fixed; the lesson is that the package had not been re-read against
    the tree after it was written.
-7. **The legal guardrail is currently violated in shipped code, and P0 removes the violation.**
-   `Sources/FootballSimCore/Generation/NameBank.swift` declares its college list "Fictional alma
-   maters" while containing real NCAA institutions, and asserts "no real player is referenced" for a
-   name cross product that cannot guarantee it. This is on the public repository now. It is not
-   patched, because P0 deletes `Generation/` entirely; it is recorded in `docs/PORT-LOG.md` as the
-   worked example P2's collision test exists to catch. **If P0 slips, this becomes a patch, not a
-   note.**
+7. **The legal guardrail violation is gone from the working tree, and remains in history.**
+   `Sources/FootballSimCore/Generation/NameBank.swift` declared its college list "Fictional alma
+   maters" while containing real NCAA institutions, and asserted "no real player is referenced" for
+   a name cross product that cannot guarantee it. **P0 deleted it** along with the rest of
+   `Generation/` (commit `37b10c3`). It is still reachable through `git show`, as every deleted file
+   is, and `docs/PORT-LOG.md` keeps it as the worked example P2's collision test exists to catch.
 
 ---
 
