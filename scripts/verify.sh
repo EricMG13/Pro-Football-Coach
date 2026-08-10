@@ -5,7 +5,7 @@
 # (download.swift.org is refused by egress policy, 403 on CONNECT), so the owner's
 # machine runs the gates. This script makes that one command instead of a ritual.
 #
-#   ./scripts/verify.sh          build + tests
+#   ./scripts/verify.sh          build + tests + V3 rendered references
 #   ./scripts/verify.sh --build  build only
 #
 # Needs only the Swift Command Line Tools, not full Xcode: the suite is an executable
@@ -71,8 +71,21 @@ else
     bad "SimTests — see /tmp/pfc-tests.log"
 fi
 
+note "V3 design references"
+shopt -s nullglob
+legacy_references=(*-v2.dc.html)
+if (( ${#legacy_references[@]} != 0 )); then
+    bad "legacy V2 references remain at the repository root: ${legacy_references[*]}"
+elif ! command -v npm >/dev/null 2>&1; then
+    bad "npm not found on PATH; V3 reference checks did not run"
+elif npm run refs:check 2>&1 | tee /tmp/pfc-refs.log; then
+    ok "V3 generated and rendered references"
+else
+    bad "V3 reference checks — see /tmp/pfc-refs.log"
+fi
+
 note "result"
 printf '%s passed, %s failed\n' "$pass" "$fail"
 echo
-echo "Paste the tail of /tmp/pfc-build.log and /tmp/pfc-tests.log back into the session."
+echo "Paste the tail of /tmp/pfc-build.log, /tmp/pfc-tests.log and /tmp/pfc-refs.log back into the session."
 exit $((fail > 0))

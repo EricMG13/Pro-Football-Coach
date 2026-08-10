@@ -318,6 +318,7 @@ watching the suite turn red; the detail is in the fix commit. Three consequences
 | `docs/PRE-DEPLOYMENT-CHECKLIST.md` | Authored | — |
 | `docs/08-OPUS5-BUILD-PROMPT.md` | Written as a phase-entry prompt | — |
 | `PRODUCT.md` | Rewritten from the §6.3 gap argument | — |
+| Sixteen root `*-v3.dc.html` references | Active generated reference library | 40 generator checks, 33-frame Chrome probe, 92-frame Playwright audit, and 20 approved visual snapshots |
 
 **Nothing in this table has been compiled, because there is nothing to compile yet.**
 
@@ -617,6 +618,24 @@ reference screenshots are **gitignored, never committed**: they are third-party 
 
 **Still unverified and needing a machine with the HIG in front of it:** the twelve SF Symbol names in
 `System-v2`, and every AX5 point size. Neither is design work.
+
+---
+
+### 2026-08-10 — V3 atomically replaces V2 as the active rendered library
+
+**Sixteen generated `*-v3.dc.html` sheets are now the only root rendered references.** V2 was
+deleted in the same cutover that repointed `04`, `05`, the README and the handoff. Historical status
+and review entries elsewhere retain their V2 wording because they describe the evidence available
+when they were written; they do not name the active library.
+
+V3 is generated from shared fixtures and tokens and checked at two browser layers: the existing
+dependency-free 33-frame Chrome geometry probe plus a pinned Playwright audit of all 92 product
+frames. The rendered gate covers exact inventory and metadata, external/runtime dependencies,
+blocklisted identities, fixture and commitment consistency, token discipline, composited contrast,
+meaning-bearing fills, minimum text and target sizes, focus and disabled semantics, field/map text
+twins, required states, the 844 × 390 floor, 932 × 430 ceiling, light and dark, both landscape
+rotations, true AX5, the 667 × 375 reachability fallback, and the full first-fifteen-minute flow.
+Approved visual baselines are owner-only and cannot be rewritten in CI.
 
 ---
 

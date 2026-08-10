@@ -17,10 +17,10 @@ stadium, player and coach is fictional and original.
 > **P5 through P17 have not started** — the off-screen model, seasons, both tiers' systems, the
 > career arc, the AI, the design system and every view are ahead.
 >
-> The UI has a **rendered reference library**: sixteen `*-v2.dc.html` sheets at the repository
+> The UI has a **rendered reference library**: sixteen generated `*-v3.dc.html` sheets at the repository
 > root, indexed in [`docs/04-UX-AND-DESIGN-SYSTEM.md`](docs/04-UX-AND-DESIGN-SYSTEM.md). The rules
-> live in `04`; the sheets are a rendering of them. A value that appears only in a sheet has not
-> shipped.
+> live in `04`; the sheets are a rendering of them. `npm run refs:check` validates the generated
+> inventory and rendered browser contract. A value that appears only in a sheet has not shipped.
 >
 > [`docs/STATUS.md`](docs/STATUS.md) is the honest picture and takes precedence over this
 > paragraph. [`docs/HANDOFF-2026-08-10.md`](docs/HANDOFF-2026-08-10.md) is the cold-start pointer.
@@ -86,7 +86,7 @@ entry point: it owns the mission and the definition of done, and it runs one pha
 | `docs/` | Design and planning documents. Start at `docs/DOC-MANIFEST.md` |
 | *(no archive)* | Deleted 2026-08-10. See `docs/DOC-MANIFEST.md` |
 | `docs/plans/` | Per-phase task plans, one per phase, written before that phase is built |
-| `*-v2.dc.html` | The rendered UI reference library. Indexed in `docs/04-UX-AND-DESIGN-SYSTEM.md` |
+| `*-v3.dc.html` | The generated, rendered UI reference library. Indexed in `docs/04-UX-AND-DESIGN-SYSTEM.md` |
 | `docs/reviews/` | The governing brief and the review that produced it |
 | `Sources/FootballSimCore/` | The engine — pure Swift, no UI imports, seeded RNG. P0–P4 |
 | `Sources/ProFootballCoachUI/` | The SwiftUI layer. Empty until P11 |
@@ -103,7 +103,13 @@ rebuild. `docs/PORT-LOG.md` records what survived and why, both ways.
 ./scripts/verify.sh
 ```
 
-That is the gate: `swift build`, then the suite. Pass `--build` for the build alone.
+That is the gate: `swift build`, the suite, then the generated and browser-rendered V3 reference
+checks. Pass `--build` for the Swift build alone.
+
+The reference toolchain is pinned in `.node-version` and `package-lock.json`. On a new checkout, run
+`npm install` and `npx playwright install chromium` once before the gate. A missing managed browser
+is a hard failure. Snapshot rewrites are owner-reviewed local work: they are refused in CI and
+require the explicit `PFC_OWNER_SNAPSHOT_UPDATE=1 npm run refs:update-snapshots` command.
 
 Both library targets — engine *and* SwiftUI — build for macOS as well as iOS, so the codebase is
 compile-verified from the command line without full Xcode. Neither XCTest nor swift-testing ships

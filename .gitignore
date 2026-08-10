@@ -19,3 +19,8 @@ Pro-Football-Coach/
 # Owner-supplied competitor reference screenshots. Third-party copyright:
 # research material only, never redistributed. See CLAUDE.md legal guardrail.
 FM Screenshots/
+
+# Local Playwright diagnostics. Approved reference baselines live beside the tests.
+playwright-report/
+test-results/
+node_modules/

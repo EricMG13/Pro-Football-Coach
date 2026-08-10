@@ -294,7 +294,7 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .attribute-row { display: grid; grid-template-columns: var(--list-field-width) 1fr var(--spacing-sample-width); align-items: center; gap: var(--space-s); min-height: var(--attribute-row-height); }
 .attribute-label { font-weight: 650; }
 .attribute-track { height: var(--attribute-track-height); background: var(--frame-raised); border: 1px solid var(--hairline); overflow: hidden; border-radius: var(--radius-s); }
-.rating-fill { display: block; height: 100%; width: var(--value); border-right: 2px solid var(--frame-primary); }
+.rating-fill { display: block; height: 100%; width: var(--value); border: 1px solid var(--frame-primary); }
 .rating-value { display: grid; place-items: center; min-width: var(--rating-value-width); min-height: var(--rating-value-height); border-radius: var(--radius-s); font-weight: 800; font-variant-numeric: tabular-nums; }
 .rating-fill.elite, .rating-value.elite { background-color: var(--rating-elite); }
 .rating-fill.good, .rating-value.good { background-color: var(--rating-good); }
@@ -399,7 +399,7 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .product-frame[data-appearance="light"] .mini-segments button.selected, .product-frame[data-appearance="light"] .mini-primary { color: #FFFFFF; }
 .mini-destructive, .mini-error button { color: var(--frame-negative); border-color: var(--frame-negative); background: transparent; }
 .mini-meter { height: var(--space-sm); background: var(--frame-raised); border: 1px solid var(--hairline); margin-bottom: var(--space-xs); }
-.mini-meter i { display: block; width: var(--value); height: 100%; background: var(--rating-good); border-right: 2px solid var(--frame-primary); }
+.mini-meter i { display: block; width: var(--value); height: 100%; background: var(--rating-good); border: 1px solid var(--frame-primary); }
 .mini-meter.over { overflow: visible; margin-right: var(--space-sm); }
 .mini-meter.over i { background: var(--frame-negative); }
 .mini-inbox > i { width: var(--space-xs); align-self: stretch; background: var(--frame-accent); }
@@ -456,6 +456,7 @@ blockquote cite { display: block; margin-top: var(--space-s); font-size: var(--c
 .swatch-selected { background: var(--frame-selected); border-color: var(--frame-accent); }.swatch-accent { background: var(--frame-accent); color: #0E1218; }
 .product-frame[data-appearance="light"] .swatch-accent { color: #FFFFFF; }
 .swatch-primary { background: var(--frame-primary); color: var(--frame-page); }.swatch-secondary { background: var(--frame-secondary); color: var(--frame-page); }.swatch-tertiary { background: var(--frame-tertiary); color: var(--frame-page); }
+.product-frame[data-appearance="light"] .swatch-tertiary { color: #FFFFFF; }
 .swatch-live[data-role="live"] { background: var(--live); color: #0E1218; }.swatch-positive { background: var(--frame-positive); color: #0E1218; }.swatch-warning { background: var(--frame-warning); color: #0E1218; }.swatch-negative { background: var(--frame-negative); color: #0E1218; }.swatch-info { background: var(--frame-info); color: var(--frame-page); }
 .product-frame[data-appearance="light"] .swatch-positive, .product-frame[data-appearance="light"] .swatch-warning, .product-frame[data-appearance="light"] .swatch-negative { color: #FFFFFF; }
 .swatch-team-primary, .swatch-team-on { background: var(--team-primary); color: var(--team-on); }.swatch-team-secondary { background: var(--team-primary); color: var(--team-on); border-color: var(--team-secondary); border-width: var(--space-xs); }

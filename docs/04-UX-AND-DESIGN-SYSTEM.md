@@ -9,31 +9,32 @@ choice here is aimed at making that class of failure impossible rather than mere
 ## The visual reference library
 
 **This document is the only canonical home for the design system.** Beside it, at the repository
-root, sits a **rendered reference library of sixteen `*-v2.dc.html` sheets** — the same rules drawn,
+root, sits a **generated, rendered reference library of sixteen `*-v3.dc.html` sheets** — the same rules drawn,
 so P11–P15 build against something that has been seen and judged rather than against prose alone.
 
 | Group | What it shows |
 |---|---|
-| `Tokens-v2` | Colour, type, spacing, radius, elevation, the rating ladders under CVD simulation |
-| `Components-v2` | The registry, drawn, in both registers |
-| `Screens-v2` | Match view (all 22 at true spacing), opponent report |
-| `Broadcast-v2` | §2.4's two houses × three escalations, and the rivalry modifier |
-| `FirstRun-v2` | Title, the board, the offer, the appointment, the destination bar |
-| `Teaching-v2` | D9's taught week as a *state*, plus the long-tail screens |
-| `Failure-v2` | Refusals, save errors, empty states |
-| `League-v2` · `Career-v2` · `Squad-v2` · `Offseason-v2` | The four tabs |
-| `Appearance-v2` | Light, and the 932 × 430 ceiling |
-| `Accessibility-v2` | AX5, VoiceOver utterances, touch targets, motion and its reduced forms |
-| `System-v2` | Progress, confirmation, settings, the symbol set |
-| `Throughput-v2` | `ListControls` and `AttributeRow` — filter, sort, batch, attributes |
-| `Continuity-v2` | Save cadence, cold-launch resume, the match exit, call-in expiry |
+| `Tokens-v3` | Colour, type, spacing, radius, elevation, the rating ladders under CVD simulation |
+| `Components-v3` | The registry, drawn, in both registers |
+| `Screens-v3` | Match view (all 22 at true spacing), opponent report |
+| `Broadcast-v3` | §2.4's two houses × three escalations, and the rivalry modifier |
+| `FirstRun-v3` | Title, the board, the offer, the appointment, the destination bar |
+| `Teaching-v3` | D9's taught week as a *state*, plus the long-tail screens |
+| `Failure-v3` | Refusals, save errors, empty states |
+| `League-v3` · `Career-v3` · `Squad-v3` · `Offseason-v3` | The four tabs |
+| `Appearance-v3` | Light, and the 932 × 430 ceiling |
+| `Accessibility-v3` | AX5, VoiceOver utterances, touch targets, motion and its reduced forms |
+| `System-v3` | Progress, confirmation, settings, the symbol set |
+| `Throughput-v3` | `ListControls` and `AttributeRow` — filter, sort, batch, attributes |
+| `Continuity-v3` | Save cadence, cold-launch resume, the match exit, call-in expiry |
 
 **The rules are here; the sheets are a rendering.** Where a sheet and this document disagree, this
 document wins and the sheet is the defect. A value that appears only in a sheet has not shipped.
 
-**The v1 sheets were deleted on 2026-08-10.** They are superseded in full, and one of them carried a
-real-identity breach the blocklist rejects. Reachable through `git show`, as every deleted file is —
-the same disposition `docs/PORT-LOG.md` records for `NameBank.swift`.
+**The v1 and V2 sheets were deleted on 2026-08-10.** Both sets are superseded in full; V3 is the
+active generated library. One earlier sheet carried a real-identity breach the blocklist rejects.
+All deleted sheets remain reachable through `git show`, as every deleted file is — the same
+disposition `docs/PORT-LOG.md` records for `NameBank.swift`.
 
 **Owner-supplied competitor screenshots are never committed.** They are third-party copyright and
 mechanics research only (`CLAUDE.md`); `.gitignore` excludes them.

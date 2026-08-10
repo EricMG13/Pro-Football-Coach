@@ -1,0 +1,19 @@
+{
+  "name": "pro-football-coach-design-references",
+  "private": true,
+  "version": "3.0.0",
+  "description": "Pinned rendered-validation tooling for the generated V3 design references.",
+  "engines": {
+    "node": "24.16.0",
+    "npm": "11.13.0"
+  },
+  "packageManager": "npm@11.13.0",
+  "scripts": {
+    "refs:build": "node scripts/check-node-version.mjs && python3 -B scripts/build-design-references.py",
+    "refs:check": "node scripts/check-node-version.mjs && python3 -B scripts/build-design-references.py --check && python3 -B -m unittest discover -s Tests/DesignReferences -v && node scripts/check-design-reference-layout.mjs && playwright test",
+    "refs:update-snapshots": "node scripts/check-node-version.mjs && node scripts/update-design-reference-snapshots.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1"
+  }
+}

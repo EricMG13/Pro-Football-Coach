@@ -156,7 +156,7 @@ Coordinator AI, roster AI, opponent game-plan AI — each against its stated bar
 it here is the only defence P5 allows.
 
 **The UI phases build against the rendered reference library** at the repository root, sixteen
-`*-v2.dc.html` sheets indexed in `docs/04-UX-AND-DESIGN-SYSTEM.md`. `04` remains the only
+`*-v3.dc.html` sheets indexed in `docs/04-UX-AND-DESIGN-SYSTEM.md`. `04` remains the only
 canonical home: where a sheet and `04` disagree, `04` wins and the sheet is the defect. Each
 phase below names the groups that serve it.
 
@@ -164,7 +164,7 @@ phase below names the groups that serve it.
 Tokens, component registry, and **all ten contract tests before any feature view exists.** The
 contract is built first so that every subsequent phase inherits a passing baseline rather than
 retrofitting one.
-**References:** `Tokens-v2`, `Components-v2`, `Accessibility-v2`, `System-v2`, `Throughput-v2`.
+**References:** `Tokens-v3`, `Components-v3`, `Accessibility-v3`, `System-v3`, `Throughput-v3`.
 
 **Ten, not nine — `04` §6 gained an orientation clause on 2026-08-10.** `OrientationPolicyTest` reads
 `App/project.yml`. Any phase citing "nine" is reading a stale copy.
@@ -189,9 +189,9 @@ decisions here do not matter.
 Then the week: inbox, opponent report, game plan, practice allocation, aftermath. The core
 management week.
 
-**References:** `FirstRun-v2` (the entry sequence), `Teaching-v2` (first-run
-state), `Squad-v2` (game plan, practice, aftermath), `Screens-v2` (opponent report),
-`Continuity-v2` (save cadence, cold-launch resume), `Failure-v2`.
+**References:** `FirstRun-v3` (the entry sequence), `Teaching-v3` (first-run
+state), `Squad-v3` (game plan, practice, aftermath), `Screens-v3` (opponent report),
+`Continuity-v3` (save cadence, cold-launch resume), `Failure-v3`.
 
 **P12 carries first-run state from the start.** D9 teaches through the first real week rather than
 through cards, so onboarding is not a separate set of screens — it is a state these screens are in.
@@ -209,9 +209,9 @@ animation on call-ins, the choreographer pinned to recorded outcomes, Reduce Mot
 state sequence, per-snap VoiceOver sentences. Plus `LowerThird` for the named moment, the
 remaining-key-moments indicator in the header, and the call-in as a **named proposal with one-tap
 accept and explicit dismiss** (`04` §5, `01` §6.6 §3.2–3.4).
-**References:** `Screens-v2` (the all-22 frame at true spacing), `Broadcast-v2` (packages),
-`Appearance-v2` (the ceiling), `Accessibility-v2` (motion and its reduced forms),
-`Continuity-v2` (the match exit).
+**References:** `Screens-v3` (the all-22 frame at true spacing), `Broadcast-v3` (packages),
+`Appearance-v3` (the ceiling), `Accessibility-v3` (motion and its reduced forms),
+`Continuity-v3` (the match exit).
 
 **Gates:** G1, G2, G3, G4, plus the render-cannot-change-outcome assertion and the 16.7 ms frame
 ceiling.
@@ -223,8 +223,8 @@ is legible as a line — the one presentation question no test in this plan can 
 **→ Milestone M1: G8.**
 
 ### P14 — Remaining feature surfaces
-**References:** `League-v2`, `Career-v2`, `Squad-v2`,
-`Offseason-v2`, `Throughput-v2`, `Teaching-v2` §2.
+**References:** `League-v3`, `Career-v3`, `Squad-v3`,
+`Offseason-v3`, `Throughput-v3`, `Teaching-v3` §2.
 Team, roster, player card, staff, scheme; recruiting board / front office; league readouts; career
 and record book. Roster rows carry **at most three status glyphs**, each one that changes a decision
 (`01` §6.6 §3.10). Player card uses `Sparkline` for form; team comparisons use `OpposedBar`; cap,
@@ -234,7 +234,7 @@ assignment codes on the field as `Chip`s rather than labels.
 that ships without one is a P1, not a polish item.
 
 ### P15 — Onboarding (D9)
-**References:** `Teaching-v2`, `FirstRun-v2`.
+**References:** `Teaching-v3`, `FirstRun-v3`.
 The first fifteen minutes, taught through the first real week.
 **Gates:** G1, G2, G3, G4, plus the D9 owner protocol.
 
