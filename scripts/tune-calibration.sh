@@ -56,6 +56,18 @@ prepare_lock_parent() {
   validate_lock_parent
 }
 
+revalidate_lock_parent_after_acquisition() {
+  validate_lock_parent
+  # This narrow failure hook exercises cleanup after ownership is established without scoring.
+  [[ ${TUNE_CALIBRATION_TEST_FORCE_PARENT_STAT_FAILURE:-} != 1 ]] \
+    || die "test-only forced calibration lock parent identity failure"
+  local current_parent_identity
+  current_parent_identity=$(stat -f '%d:%i' "$lock_parent") \
+    || die "cannot inspect calibration lock parent after acquisition"
+  [[ "$current_parent_identity" == "$lock_parent_identity" ]] \
+    || die "calibration lock parent changed during acquisition"
+}
+
 release_search_lock() {
   (( search_lock_held )) || return 0
   [[ "$lock_dir" == "$lock_parent/tune-calibration.lock" && -d "$lock_dir" && ! -L "$lock_dir" ]] \
@@ -97,20 +109,34 @@ release_search_lock_on_exit() {
   exit "$status"
 }
 
+arm_lock_acquisition_traps() {
+  trap release_search_lock_on_exit EXIT
+  # HUP/INT/TERM are deliberately ignored only until the new lock has an identity. This closes
+  # mkdir-to-ownership without scoring or mutating source; normal signal exits are restored below.
+  trap '' HUP INT TERM
+}
+
+restore_search_signal_exit_traps() {
+  trap 'exit 129' HUP
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+}
+
 acquire_search_lock() {
   prepare_lock_parent
   lock_parent_identity=$(stat -f '%d:%i' "$lock_parent") \
     || die "cannot inspect calibration lock parent"
+  arm_lock_acquisition_traps
   if ! mkdir "$lock_dir"; then
     die "cannot acquire calibration lock at $lock_dir; another tuner may be running or the lock may be stale/tampered. Confirm no tuner is running, inspect the lock, then remove only that empty directory."
   fi
+  # Signals remain ignored for this minimal critical section, so a successful mkdir is owned
+  # before validation can fail and invoke the already-armed EXIT cleanup.
+  search_lock_held=1
   lock_identity=$(stat -f '%d:%i' "$lock_dir") \
     || die "cannot inspect newly acquired calibration lock"
-  search_lock_held=1
-  trap release_search_lock_on_exit EXIT
-  trap 'exit 129' HUP
-  trap 'exit 130' INT
-  trap 'exit 143' TERM
+  revalidate_lock_parent_after_acquisition
+  restore_search_signal_exit_traps
 }
 
 # Validate the exact mutation target before parsing modes or starting the search.
