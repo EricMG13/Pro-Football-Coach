@@ -13,6 +13,11 @@ repo_root=$(cd -P -- "$script_dir/.." && pwd)
 expected_rules_dir=$(cd -P -- "$repo_root/Sources/FootballSimCore/Rules" && pwd) \
   || die "cannot resolve Rules directory under script-derived repository"
 matchup_rules="$expected_rules_dir/MatchupRules.swift"
+lock_parent="$repo_root/.build"
+lock_dir="$lock_parent/tune-calibration.lock"
+lock_parent_identity=""
+lock_identity=""
+search_lock_held=0
 
 validate_matchup_rules() {
   [[ "$matchup_rules" == "$expected_rules_dir/MatchupRules.swift" ]] \
@@ -28,6 +33,86 @@ validate_matchup_rules() {
     || die "MatchupRules.swift is outside its expected repository path"
 }
 
+validate_lock_parent() {
+  [[ "$lock_parent" == "$repo_root/.build" && "$lock_dir" == "$lock_parent/tune-calibration.lock" ]] \
+    || die "unexpected calibration lock path"
+  [[ "$lock_parent" == "$repo_root/"* && "$lock_parent" != "$repo_root" ]] \
+    || die "calibration lock parent escapes script-derived repository"
+  [[ -d "$lock_parent" && ! -L "$lock_parent" ]] \
+    || die "calibration lock parent must be a real directory, not a symlink"
+  local resolved_lock_parent
+  resolved_lock_parent=$(cd -P -- "$lock_parent" && pwd) \
+    || die "cannot resolve calibration lock parent"
+  [[ "$resolved_lock_parent" == "$repo_root/.build" ]] \
+    || die "calibration lock parent escapes script-derived repository"
+  git -C "$repo_root" check-ignore -q -- .build/tune-calibration.lock \
+    || die "calibration lock location must be an ignored build or scratch path"
+}
+
+prepare_lock_parent() {
+  if [[ ! -e "$lock_parent" ]]; then
+    mkdir "$lock_parent" || die "cannot create calibration lock parent"
+  fi
+  validate_lock_parent
+}
+
+release_search_lock() {
+  (( search_lock_held )) || return 0
+  [[ "$lock_dir" == "$lock_parent/tune-calibration.lock" && -d "$lock_dir" && ! -L "$lock_dir" ]] \
+    || {
+      printf 'tune-calibration: refusing to release a changed calibration lock; inspect %s manually\n' \
+        "$lock_dir" >&2
+      return 1
+    }
+  local current_parent_identity current_lock_identity
+  current_parent_identity=$(stat -f '%d:%i' "$lock_parent") \
+    || {
+      printf 'tune-calibration: cannot inspect calibration lock parent; inspect %s manually\n' \
+        "$lock_dir" >&2
+      return 1
+    }
+  current_lock_identity=$(stat -f '%d:%i' "$lock_dir") \
+    || {
+      printf 'tune-calibration: cannot inspect calibration lock; inspect %s manually\n' "$lock_dir" >&2
+      return 1
+    }
+  [[ "$current_parent_identity" == "$lock_parent_identity" && "$current_lock_identity" == "$lock_identity" ]] \
+    || {
+      printf 'tune-calibration: refusing to release a replaced calibration lock; inspect %s manually\n' \
+        "$lock_dir" >&2
+      return 1
+    }
+  if ! rmdir "$lock_dir"; then
+    printf 'tune-calibration: could not safely release calibration lock %s; inspect it manually\n' \
+      "$lock_dir" >&2
+    return 1
+  fi
+  search_lock_held=0
+}
+
+release_search_lock_on_exit() {
+  local status=$?
+  trap - EXIT HUP INT TERM
+  release_search_lock || exit 1
+  exit "$status"
+}
+
+acquire_search_lock() {
+  prepare_lock_parent
+  lock_parent_identity=$(stat -f '%d:%i' "$lock_parent") \
+    || die "cannot inspect calibration lock parent"
+  if ! mkdir "$lock_dir"; then
+    die "cannot acquire calibration lock at $lock_dir; another tuner may be running or the lock may be stale/tampered. Confirm no tuner is running, inspect the lock, then remove only that empty directory."
+  fi
+  lock_identity=$(stat -f '%d:%i' "$lock_dir") \
+    || die "cannot inspect newly acquired calibration lock"
+  search_lock_held=1
+  trap release_search_lock_on_exit EXIT
+  trap 'exit 129' HUP
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+}
+
 # Validate the exact mutation target before parsing modes or starting the search.
 validate_matchup_rules
 
@@ -36,6 +121,9 @@ if [[ ${1:-} == "--validate" && $# -eq 1 ]]; then
   exit 0
 fi
 [[ $# -eq 0 ]] || die "usage: tune-calibration.sh [--validate]"
+
+# Search must own this lock before its first score or source mutation.
+acquire_search_lock
 
 setval() {
   python3 - "$matchup_rules" "$1" "$2" <<'PY'

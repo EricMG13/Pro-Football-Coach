@@ -26,6 +26,21 @@ func runCalibrationTests() {
                         "a 65% rate has no percentage-point standard error")
         }
 
+        test("a rate with an invalid scale cannot pass") {
+            let invalidScales: [(scale: Double, label: String)] = [
+                (0, "zero"),
+                (-1, "negative"),
+                (.nan, "NaN"),
+                (.infinity, "infinite")
+            ]
+            for invalid in invalidScales {
+                let estimate = Estimate(value: 0.55, sampleSize: 100_000, standardDeviation: 0,
+                                        estimator: .rate, scale: invalid.scale)
+                expect(!band.test(estimate).passed,
+                       "a rate with a \(invalid.label) scale passed its band")
+            }
+        }
+
         test("an estimate inside the band but imprecise FAILS") {
             // The whole difference between TOST and a range check. A point estimate of 0.55 from 40
             // trials is consistent with a true value well outside the band, and the burden is on the

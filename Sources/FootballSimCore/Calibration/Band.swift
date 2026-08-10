@@ -58,6 +58,7 @@ public struct Estimate: Sendable, Equatable {
         guard sampleSize > 0 else { return .infinity }
         switch estimator {
         case .rate:
+            guard scale.isFinite, scale > 0 else { return .infinity }
             let p = Swift.min(Swift.max(value / scale, 0), 1)
             return (p * (1 - p) / Double(sampleSize)).squareRoot() * scale
         case .mean:
