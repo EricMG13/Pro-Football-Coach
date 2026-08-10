@@ -1,6 +1,6 @@
 import Foundation
 
-/// One matchup, and how it went.
+/// One causal matchup, sampled jointly with the outcome it explains.
 ///
 /// **This type is the point of D2.** `docs/OPEN-DECISIONS.md` rejects the play-outcome distribution
 /// model because it "cannot answer why did that happen, which is the entire information payload of
@@ -8,17 +8,19 @@ import Foundation
 /// sack occurred." `04` §5.3 draws a sack as *the protection duel that lost*, and it can only do
 /// that if the engine recorded which duel that was.
 ///
-/// So every snap carries its matchups out with it, and the view reads them. A resolver that
-/// returned only yardage would be the model D2 turned down.
+/// So every snap carries its matchups out with it, and the view reads them. In the distribution
+/// resolver this is causal attribution, not a separately simulated stochastic duel: the selected
+/// pair conditions the outcome table and the sampled outcome fixes the record's sign.
 public struct MatchupRecord: Codable, Sendable, Equatable {
     public enum Kind: String, Codable, Sendable, CaseIterable {
-        case passProtection, routeVersusCoverage, throwing, runLane, carrierVersusPursuit, kick
+        case passProtection, routeVersusCoverage, throwing, runLane, carrierVersusPursuit
+        case ballSecurity, kick
     }
 
     public let kind: Kind
     public let attackerID: UUID
     public let defenderID: UUID
-    /// The stage-2 scalar. Positive means the attacker won.
+    /// Signed causal magnitude. Positive means the attacker-favourable result was sampled.
     public let leverage: Double
 
     public init(kind: Kind, attackerID: UUID, defenderID: UUID, leverage: Double) {
@@ -75,7 +77,7 @@ public struct SnapOutcome: Codable, Sendable, Equatable {
     public let result: SnapResult
     /// Net yards from the previous line of scrimmage. Negative on a sack or a loss.
     public let yards: Int
-    /// Seconds the snap consumed, including the pre-snap clock at the chosen tempo.
+    /// Play-action time only. `PlayRecord.preSnapSeconds` records the separate pre-snap charge.
     public let secondsElapsed: Int
     /// The matchups that produced it, in resolution order.
     public let matchups: [MatchupRecord]
@@ -104,15 +106,17 @@ public struct SnapOutcome: Codable, Sendable, Equatable {
 
     /// The matchup that decided the snap: the largest-magnitude one of the deciding kind.
     ///
-    /// What `04` §5.3's "draw the sack as the protection duel that lost" reads. Returns nil only for
-    /// a snap with no matchups, which is a kneel.
+    /// What `04` §5.3's "draw the sack as the protection duel that lost" reads. Returns nil for
+    /// kneels, punts, and explicit missing-personnel fallbacks. Populated run, pass, and kick
+    /// outcomes always name a deciding causal pair.
     public var decidingMatchup: MatchupRecord? {
         let relevant: [MatchupRecord.Kind]
         switch result {
         case .sack: relevant = [.passProtection]
         case .incompletion, .interception: relevant = [.throwing, .routeVersusCoverage]
         case .fieldGoalGood, .fieldGoalMissed: relevant = [.kick]
-        case .gain, .touchdown, .fumbleLost: relevant = [.carrierVersusPursuit, .throwing, .runLane]
+        case .fumbleLost: relevant = [.ballSecurity]
+        case .gain, .touchdown: relevant = [.carrierVersusPursuit, .throwing, .runLane]
         case .punt, .safety, .kneel: relevant = MatchupRecord.Kind.allCases
         }
         return matchups

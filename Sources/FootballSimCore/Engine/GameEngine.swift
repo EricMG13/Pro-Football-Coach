@@ -83,6 +83,10 @@ public struct GameRecord: Codable, Sendable, Equatable {
                 for trigger in play.callInTriggers { mix(index(trigger)) }
                 mixBytes(play.outcome.ballCarrierID?.uuid ?? UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0,
                                                                         0, 0, 0, 0, 0, 0, 0, 0)).uuid)
+                mixBytes(play.outcome.passerID?.uuid ?? UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0,
+                                                                   0, 0, 0, 0, 0, 0, 0, 0)).uuid)
+                mixBytes(play.outcome.targetID?.uuid ?? UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0,
+                                                                   0, 0, 0, 0, 0, 0, 0, 0)).uuid)
                 mix(play.outcome.matchups.count)
                 for matchup in play.outcome.matchups {
                     mix(index(matchup.kind))

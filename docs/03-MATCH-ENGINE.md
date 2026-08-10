@@ -12,10 +12,11 @@ lives in a rules module rather than inline.
 
 ### 1.1 The model
 
-A snap resolves as a set of **matchups**, scored from ratings, and combined into an outcome. No
-continuous physics, no tick integration. This is the hybrid assignment/leverage model D2 chose:
-per-matchup causality the UI can narrate, with the probability mass in one place where it can be
-calibrated.
+A snap resolves from one calibrated outcome distribution, conditioned by a **selected causal
+matchup**. No continuous physics, no tick integration, and no separately resolved duel whose result
+is later translated into yardage. The selected pair both moves probability mass and supplies the
+attribution the UI can narrate, so causality remains honest while the full result distribution stays
+in one place where it can be calibrated.
 
 ```
 resolveSnap(offense, defense, call, situation, rng) -> SnapOutcome
@@ -23,34 +24,33 @@ resolveSnap(offense, defense, call, situation, rng) -> SnapOutcome
 
 Stages, in fixed order (the order is part of the determinism contract):
 
-1. **Assignment.** The offensive call assigns every offensive player a role (blocker, route runner,
-   carrier, decoy). The defensive call assigns coverage responsibility, rush lanes and run fits.
-2. **Leverage.** Each matchup produces a scalar in [-1, 1]:
-   `leverage = f(attackerRating, defenderRating, schemeFit, fatigue, situationModifier) + noise(rng)`
-   The rating term uses a logistic on the difference, not a linear one, so a 10-point gap matters
-   more in the middle of the scale than at the ends.
-3. **Resolution.** Leverages combine per play type into an outcome:
-   - **Pass:** protection duels resolve first, producing time-to-pressure. Route matchups resolve
-     into an openness score per receiver. The passer selects a target from openness, progression
-     order and decision rating, then the throw resolves against openness, accuracy and pressure.
-   - **Run:** front matchups resolve into lane quality; the carrier's vision and elusiveness resolve
-     against pursuit leverage into yards, with a break-tackle chain that can extend the play.
-   - **Kick:** distance, angle, leg strength, snap and hold quality, weather.
-4. **Consequence.** Yards, clock, turnover, penalty, injury, fatigue accumulation.
+1. **Assignment.** The calls deterministically assign protection pairs, routes and coverage,
+   run-lane pairs, a carrier and pursuit. Assignment consumes no randomness.
+2. **Causal selection.** A run preselects one assigned lane and one pursuer. A pass selects one
+   protection pair and samples one target from rating-weighted assigned routes. A kick selects the
+   specialist and first ranked defender. These exact people condition the table and are the people
+   named in the resulting `MatchupRecord`.
+3. **Probability conditioning.** Means of the named ratings below produce bounded signed shifts.
+   Each shift transfers mass between one adverse and one favourable bucket; it never creates or
+   destroys mass. Call, situation, depth, shell and tier home effects are transfers in a fixed order.
+4. **One immutable outcome.** One draw samples the conditioned table, one draw samples the named
+   yard range, and the already selected causal pair receives a sign consistent with that result.
+   A snap captures eight draws before branching, including fallbacks, so result choice cannot move
+   the random stream. Rendering receives the completed `SnapOutcome`; it cannot draw or resolve.
 
 ### 1.2 Attribute → outcome mapping
 
-Each matchup names the attributes it reads. This table is the contract between the ratings model in
-`02` and the engine:
+Each conditioning aggregate names every attribute it reads. This table is the contract between the
+ratings model in `02` and the engine:
 
 | Matchup | Attacker attributes | Defender attributes |
 |---|---|---|
-| Pass protection | run/pass block, strength, awareness | pass rush, finesse, power, motor |
-| Route vs coverage | route running, speed, release, hands | coverage, speed, agility, awareness |
-| Throw | accuracy (short/mid/deep), arm strength, decision, poise | (openness, pressure state) |
-| Run lane | run block, strength, scheme fit | run defence, shed, gap discipline |
-| Carrier vs pursuit | vision, elusiveness, power, speed | tackling, pursuit angle, speed |
-| Kick | leg strength, accuracy | block leverage |
+| Run lane | selected blocker's run block, strength, awareness, scheme fit | selected lane defender's run defence, shed, gap discipline, strength |
+| Run carrier | carrier's vision, elusiveness, power, speed | selected pursuer's tackling, pursuit, speed |
+| Pass protection | selected blocker's pass block, strength, awareness | paired rusher's pass rush, finesse, power, motor |
+| Target / throw | passer's depth accuracy, arm strength, decision, poise; selected receiver's route running, release, hands, speed | paired defender's coverage, awareness, hands, speed, agility; selected protection edge also feeds the throw |
+| Ball security | carrier or selected receiver's power, awareness, durability | selected pursuer or paired defender's tackling, pursuit, power |
+| Kick | kicker's kick accuracy, leg strength, poise | selected defender's block leverage, awareness; distance is applied separately |
 
 ### 1.3 Ceilings
 

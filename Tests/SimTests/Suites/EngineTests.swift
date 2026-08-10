@@ -2,8 +2,8 @@ import Foundation
 import FootballSimCore
 
 /// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 8_846_929_954_692_613_626
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 13_319_869_856_741_633_015
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 12_812_997_658_043_978_554
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 17_380_292_129_192_486_949
 
 func runEngineTests() {
     suite("Leverage") {
@@ -640,6 +640,387 @@ func runSnapResolverTests() {
             expect(!SnapResult.gain.stopsClock, "a gain in bounds stops the clock")
         }
     }
+
+    suite("Distribution snap resolution") {
+        let neutralDraws = SnapDraws(outcome: 0.5, yardage: 0.5, target: 0.5,
+                                     attribution: 0.5, secondary: 0.5, turnover: 0.5,
+                                     spareA: 0.5, spareB: 0.5)
+
+        func resolve(
+            _ call: OffensiveCall,
+            situation: Situation = Situation(),
+            personnel: SnapPersonnel = even,
+            draws: SnapDraws = neutralDraws,
+            tier: Tier = .pro,
+            defence: DefensiveCall = DefensiveCall(coverage: .man)
+        ) -> SnapOutcome {
+            DistributionSnapResolver.resolve(
+                tier: tier, offensiveCall: call, defensiveCall: defence,
+                personnel: personnel, situation: situation, isHomeOffense: false, draws: draws
+            )
+        }
+
+        func draws(outcome: Double, yardage: Double = 0.5, target: Double = 0.5,
+                   attribution: Double = 0.5, secondary: Double = 0.5) -> SnapDraws {
+            SnapDraws(outcome: outcome, yardage: yardage, target: target,
+                      attribution: attribution, secondary: secondary, turnover: 0.5,
+                      spareA: 0.5, spareB: 0.5)
+        }
+
+        test("fixed draws reach every declared snap result") {
+            var seen: Set<SnapResult> = []
+            let calls = [
+                OffensiveCall(playType: .run, runGap: .insideLeft),
+                OffensiveCall(playType: .pass, passDepth: .mid),
+                OffensiveCall(playType: .fieldGoal),
+                OffensiveCall(playType: .punt),
+                OffensiveCall(playType: .kneel),
+            ]
+            for call in calls {
+                for yardLine in [1, 30, 99] {
+                    for rollIndex in 0...1_000 {
+                        let roll = Double(rollIndex) / 1_000
+                        seen.insert(resolve(call, situation: Situation(yardLine: yardLine),
+                                            draws: draws(outcome: roll, yardage: roll)).result)
+                    }
+                }
+            }
+            let missing = SnapResult.allCases.filter { !seen.contains($0) }
+            expect(missing.isEmpty,
+                   "fixed draws could not reach: \(missing.map(\.rawValue).joined(separator: ", "))")
+        }
+
+        test("every populated distribution outcome carries honest deciding attribution") {
+            let run = OffensiveCall(playType: .run)
+            let pass = OffensiveCall(playType: .pass)
+            let kick = OffensiveCall(playType: .fieldGoal)
+            var checked: Set<SnapResult> = []
+
+            for rollIndex in 0...1_000 {
+                let roll = Double(rollIndex) / 1_000
+                for call in [run, pass, kick] {
+                    let outcome = resolve(call, draws: draws(outcome: roll))
+                    guard checked.insert(outcome.result).inserted else { continue }
+                    guard let deciding = outcome.decidingMatchup else {
+                        expect(false, "\(outcome.result) had no deciding attribution")
+                        continue
+                    }
+                    switch outcome.result {
+                    case .sack:
+                        expectEqual(deciding.kind, .passProtection)
+                        expect(!deciding.attackerWon, "a sack credited a winning blocker")
+                    case .interception:
+                        let target = outcome.targetID
+                        let route = outcome.matchups.first { $0.kind == .routeVersusCoverage }
+                        let throwing = outcome.matchups.first { $0.kind == .throwing }
+                        expectEqual(route?.attackerID, target)
+                        expectEqual(route?.defenderID, throwing?.defenderID)
+                        expect(route?.attackerWon == false && throwing?.attackerWon == false,
+                               "an interception recorded a winning route or throw")
+                    case .fumbleLost:
+                        expectEqual(deciding.kind, .ballSecurity)
+                        expect(!deciding.attackerWon, "a lost fumble credited winning security")
+                    case .gain:
+                        expectEqual(deciding.attackerWon, outcome.yards > 0,
+                                    "a run's attribution sign disagreed with its yards")
+                    case .touchdown:
+                        expect(deciding.attackerWon, "a touchdown credited a losing pair")
+                    case .incompletion:
+                        expect(!deciding.attackerWon, "an incompletion credited a winning throw")
+                    case .fieldGoalGood:
+                        expectEqual(deciding.kind, .kick)
+                        expect(deciding.attackerWon, "a made kick credited the defender")
+                    case .fieldGoalMissed:
+                        expectEqual(deciding.kind, .kick)
+                        expect(!deciding.attackerWon, "a miss credited the kicker")
+                    case .safety:
+                        expect(!deciding.attackerWon, "a safety credited the offence")
+                    case .punt, .kneel:
+                        break
+                    }
+                }
+            }
+            for expected in [SnapResult.gain, .incompletion, .sack, .interception, .fumbleLost,
+                             .fieldGoalGood, .fieldGoalMissed] {
+                expect(checked.contains(expected), "did not inspect \(expected)")
+            }
+        }
+
+        test("target weighting selects the second route and keeps its defender causal") {
+            let assignment = Assignment.assign(
+                offensiveCall: OffensiveCall(playType: .pass),
+                defensiveCall: DefensiveCall(coverage: .man), personnel: even
+            )
+            expect(assignment.routes.count >= 2, "fixture has fewer than two routes")
+            let selected = assignment.routes[1]
+            let first = assignment.routes[0]
+            // Equal route weights divide the unit interval evenly; this lies in route two.
+            let outcome = resolve(OffensiveCall(playType: .pass),
+                                  draws: draws(outcome: 0.5, target: 0.3))
+            expectEqual(outcome.targetID, selected.receiver.id)
+            expect(outcome.targetID != first.receiver.id, "the first route was silently selected")
+            let route = outcome.matchups.first { $0.kind == .routeVersusCoverage }
+            let throwing = outcome.matchups.first { $0.kind == .throwing }
+            expectEqual(route?.attackerID, selected.receiver.id)
+            expectEqual(route?.defenderID, selected.defender.id)
+            expectEqual(throwing?.attackerID, selected.receiver.id)
+            expectEqual(throwing?.defenderID, selected.defender.id)
+        }
+
+        test("empty and partial personnel use the exact non-inventing fallback") {
+            let empty = SnapPersonnel(offense: [], defense: [])
+            for tier in Tier.allCases {
+                let rules = tier.clockRules
+                for playType in [OffensivePlayType.run, .pass] {
+                    let outcome = resolve(OffensiveCall(playType: playType), personnel: empty,
+                                          tier: tier)
+                    expectEqual(outcome.result, .gain)
+                    expectEqual(outcome.yards, 0)
+                    expectEqual(outcome.secondsElapsed, rules.inBoundsPlaySeconds)
+                    expect(outcome.matchups.isEmpty, "fallback invented a matchup")
+                    expect(outcome.ballCarrierID == nil && outcome.passerID == nil
+                               && outcome.targetID == nil, "fallback invented a player ID")
+                }
+                let kick = resolve(OffensiveCall(playType: .fieldGoal), personnel: empty, tier: tier)
+                expectEqual(kick.result, .fieldGoalMissed)
+                expectEqual(kick.yards, 0)
+                expectEqual(kick.secondsElapsed, rules.stoppedPlaySeconds)
+                expect(kick.matchups.isEmpty && kick.ballCarrierID == nil,
+                       "empty kick invented attribution")
+                expectEqual(resolve(OffensiveCall(playType: .punt), personnel: empty,
+                                    tier: tier).result, .punt)
+                expectEqual(resolve(OffensiveCall(playType: .kneel), personnel: empty,
+                                    tier: tier).result, .kneel)
+            }
+
+            let noCarrier = SnapPersonnel(
+                offense: even.offense.filter { $0.position != .runningBack }, defense: even.defense
+            )
+            let noLine = SnapPersonnel(
+                offense: even.offense.filter { $0.position.group != .offensiveLine },
+                defense: even.defense
+            )
+            let noPursuit = SnapPersonnel(offense: even.offense, defense: [])
+            for personnel in [noCarrier, noLine, noPursuit] {
+                let outcome = resolve(OffensiveCall(playType: .run), personnel: personnel)
+                expectEqual(outcome, SnapOutcome(result: .gain, yards: 0,
+                                                 secondsElapsed: rules.inBoundsPlaySeconds,
+                                                 matchups: []))
+            }
+            let noPasser = SnapPersonnel(
+                offense: even.offense.filter { $0.position != .quarterback }, defense: even.defense
+            )
+            let noRoutes = SnapPersonnel(
+                offense: even.offense.filter { $0.position.group != .receivers },
+                defense: even.defense
+            )
+            for personnel in [noPasser, noRoutes, noLine, noPursuit] {
+                let outcome = resolve(OffensiveCall(playType: .pass), personnel: personnel)
+                expectEqual(outcome, SnapOutcome(result: .gain, yards: 0,
+                                                 secondsElapsed: rules.inBoundsPlaySeconds,
+                                                 matchups: []))
+            }
+            let noSpecialist = SnapPersonnel(
+                offense: even.offense.filter { $0.position.group != .specialists },
+                defense: even.defense
+            )
+            for personnel in [noSpecialist, noPursuit] {
+                let outcome = resolve(OffensiveCall(playType: .fieldGoal), personnel: personnel)
+                expectEqual(outcome, SnapOutcome(result: .fieldGoalMissed, yards: 0,
+                                                 secondsElapsed: rules.stoppedPlaySeconds,
+                                                 matchups: []))
+            }
+        }
+
+        test("only the preselected run lane can move its sampled boundary") {
+            let attribution = Double.zero
+            var boostedOffense = even.offense
+            let initiallyFirst = Assignment.assign(
+                offensiveCall: OffensiveCall(playType: .run),
+                defensiveCall: DefensiveCall(coverage: .man), personnel: even
+            ).runLane.first!.blocker.id
+            let boostedIndex = boostedOffense.firstIndex { $0.id == initiallyFirst }!
+            for attribute in boostedOffense[boostedIndex].position.ratedAttributes {
+                boostedOffense[boostedIndex].attributes[attribute] = Rating(99)
+            }
+            let basePersonnel = SnapPersonnel(offense: boostedOffense, defense: even.defense)
+            let baseAssignment = Assignment.assign(
+                offensiveCall: OffensiveCall(playType: .run),
+                defensiveCall: DefensiveCall(coverage: .man), personnel: basePersonnel
+            )
+            let selectedID = baseAssignment.runLane.first!.blocker.id
+            let unselectedID = baseAssignment.runLane.last!.blocker.id
+
+            func changing(_ id: UUID, runBlock: Int) -> SnapPersonnel {
+                var offense = basePersonnel.offense
+                let index = offense.firstIndex { $0.id == id }!
+                offense[index].attributes[.runBlock] = Rating(runBlock)
+                return SnapPersonnel(offense: offense, defense: basePersonnel.defense)
+            }
+
+            let selectedWeak = changing(selectedID, runBlock: 40)
+            let unselectedWeak = changing(unselectedID, runBlock: 65)
+            var moved = false
+            for index in 0...10_000 {
+                let roll = Double(index) / 10_000
+                let injected = draws(outcome: roll, attribution: attribution)
+                let goalLine = Situation(yardLine: 99)
+                let baseline = resolve(OffensiveCall(playType: .run), situation: goalLine,
+                                       personnel: basePersonnel, draws: injected)
+                let selected = resolve(OffensiveCall(playType: .run), situation: goalLine,
+                                       personnel: selectedWeak, draws: injected)
+                let unselected = resolve(OffensiveCall(playType: .run), situation: goalLine,
+                                         personnel: unselectedWeak, draws: injected)
+                expectEqual(unselected.result, baseline.result,
+                            "an unselected lane participant moved the table")
+                if selected.result != baseline.result {
+                    moved = true
+                    expectEqual(selected.matchups.first?.attackerID, selectedID)
+                }
+            }
+            expect(moved, "weakening the selected lane never moved a bucket boundary")
+        }
+
+        test("only the preselected protection pair can move the sack boundary") {
+            let call = OffensiveCall(playType: .pass)
+            let defence = DefensiveCall(coverage: .man)
+            var boostedOffense = even.offense
+            let initiallyFirst = Assignment.assign(offensiveCall: call, defensiveCall: defence,
+                                                   personnel: even).protection.first!.blocker.id
+            let boostedIndex = boostedOffense.firstIndex { $0.id == initiallyFirst }!
+            for attribute in boostedOffense[boostedIndex].position.ratedAttributes {
+                boostedOffense[boostedIndex].attributes[attribute] = Rating(99)
+            }
+            let basePersonnel = SnapPersonnel(offense: boostedOffense, defense: even.defense)
+            let baseAssignment = Assignment.assign(offensiveCall: call, defensiveCall: defence,
+                                                   personnel: basePersonnel)
+            let selected = baseAssignment.protection.first!
+            let unselectedID = baseAssignment.protection.last!.blocker.id
+
+            func changing(_ id: UUID, passBlock: Int) -> SnapPersonnel {
+                var offense = basePersonnel.offense
+                let index = offense.firstIndex { $0.id == id }!
+                offense[index].attributes[.passBlock] = Rating(passBlock)
+                return SnapPersonnel(offense: offense, defense: basePersonnel.defense)
+            }
+
+            let selectedWeak = changing(selected.blocker.id, passBlock: 40)
+            let unselectedWeak = changing(unselectedID, passBlock: 40)
+            var movedToSack = false
+            for index in 0...10_000 {
+                let injected = draws(outcome: Double(index) / 10_000,
+                                     attribution: Double.zero)
+                let baseline = resolve(call, personnel: basePersonnel, draws: injected,
+                                       defence: defence)
+                let weakened = resolve(call, personnel: selectedWeak, draws: injected,
+                                       defence: defence)
+                let control = resolve(call, personnel: unselectedWeak, draws: injected,
+                                      defence: defence)
+                expectEqual(control.result, baseline.result,
+                            "an unselected protection blocker moved the table")
+                if weakened.result == .sack, baseline.result != .sack {
+                    movedToSack = true
+                    let record = weakened.decidingMatchup
+                    expectEqual(record?.attackerID, selected.blocker.id)
+                    expectEqual(record?.defenderID, selected.rusher.id)
+                }
+            }
+            expect(movedToSack, "weakening selected protection never expanded the sack bucket")
+        }
+
+        test("fumbles stop short of the goal line and losses become safeties") {
+            func firstFumble(_ call: OffensiveCall) -> SnapOutcome? {
+                for index in 0...1_000 {
+                    let outcome = resolve(call, situation: Situation(yardLine: 99),
+                                          draws: draws(outcome: Double(index) / 1_000,
+                                                       yardage: Double(1).nextDown))
+                    if outcome.result == .fumbleLost { return outcome }
+                }
+                return nil
+            }
+            for call in [OffensiveCall(playType: .run), OffensiveCall(playType: .pass)] {
+                let fumble = firstFumble(call)
+                expectEqual(fumble?.yards, 0, "a fumble crossed the goal line")
+                expectEqual(fumble?.decidingMatchup?.kind, .ballSecurity)
+            }
+            let runSafety = resolve(OffensiveCall(playType: .run),
+                                    situation: Situation(yardLine: 1),
+                                    draws: draws(outcome: 0, yardage: 0))
+            expectEqual(runSafety.result, .safety)
+            expectEqual(runSafety.yards, -1)
+            let passSafety = resolve(OffensiveCall(playType: .pass),
+                                     situation: Situation(yardLine: 1),
+                                     draws: draws(outcome: 0, yardage: 0))
+            expectEqual(passSafety.result, .safety)
+            expectEqual(passSafety.yards, -1)
+        }
+
+        test("all resolver branches consume exactly the fixed eight-draw budget") {
+            let wanted: Set<String> = ["run loss", "run gain", "run fumble",
+                                       "pass sack", "pass incompletion", "pass completion",
+                                       "field goal good", "field goal missed", "punt", "kneel"]
+            var seen: Set<String> = []
+            for seed in UInt64(1)...20_000 where seen != wanted {
+                for playType in OffensivePlayType.allCases {
+                    var actual = SeededRandom(seed: seed)
+                    let outcome = DistributionSnapResolver.resolve(
+                        tier: .pro, offensiveCall: OffensiveCall(playType: playType),
+                        defensiveCall: DefensiveCall(coverage: .man), personnel: even,
+                        situation: Situation(), isHomeOffense: false, rng: &actual
+                    )
+                    let branch: String?
+                    switch (playType, outcome.result) {
+                    case (.run, .gain) where outcome.yards <= 0: branch = "run loss"
+                    case (.run, .gain), (.run, .touchdown): branch = "run gain"
+                    case (.run, .fumbleLost): branch = "run fumble"
+                    case (.pass, .sack): branch = "pass sack"
+                    case (.pass, .incompletion): branch = "pass incompletion"
+                    case (.pass, .gain), (.pass, .touchdown): branch = "pass completion"
+                    case (.fieldGoal, .fieldGoalGood): branch = "field goal good"
+                    case (.fieldGoal, .fieldGoalMissed): branch = "field goal missed"
+                    case (.punt, .punt): branch = "punt"
+                    case (.kneel, .kneel): branch = "kneel"
+                    default: branch = nil
+                    }
+                    guard let branch, wanted.contains(branch) else { continue }
+                    var expected = SeededRandom(seed: seed)
+                    for _ in 0..<8 { _ = expected.double01() }
+                    expectEqual(actual.next(), expected.next(),
+                                "\(playType)/\(outcome.result) did not consume eight draws")
+                    seen.insert(branch)
+                }
+            }
+            expectEqual(seen, wanted, "not every fixed-budget branch was sampled")
+        }
+
+        test("reading an already-resolved distribution game cannot change it") {
+            var rng = SeededRandom(seed: 7_007)
+            let calls = [OffensivePlayType.run, .pass, .fieldGoal, .punt, .kneel]
+            let plays = calls.enumerated().map { index, playType in
+                let situation = Situation(down: 1, distance: 10, yardLine: 25 + index)
+                let call = OffensiveCall(playType: playType)
+                let outcome = DistributionSnapResolver.resolve(
+                    tier: .pro, offensiveCall: call,
+                    defensiveCall: DefensiveCall(coverage: .zoneUnder), personnel: even,
+                    situation: situation, isHomeOffense: true, rng: &rng
+                )
+                return PlayRecord(situation: situation, offensiveCall: call,
+                                  defensiveCall: DefensiveCall(coverage: .zoneUnder),
+                                  preSnapSeconds: 0, outcome: outcome, callInTriggers: [])
+            }
+            let game = GameRecord(homeScore: 0, awayScore: 0,
+                                  drives: [DriveRecord(offense: .home, plays: plays,
+                                                       ending: .punt, pointsScored: 0,
+                                                       startYardLine: 25)], tier: .pro)
+            let before = game.playByPlayFingerprint
+            for play in game.plays {
+                _ = play.outcome.decidingMatchup
+                _ = play.outcome.matchups.map(\.leverage)
+                _ = play.outcome.result.stopsClock
+            }
+            expectEqual(game.playByPlayFingerprint, before)
+        }
+    }
 }
 
 // MARK: - Drive and game loops
@@ -647,6 +1028,26 @@ func runSnapResolverTests() {
 func runGameLoopTests() {
     let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
     let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
+
+    func identityGame(carrier: UUID, passer: UUID, target: UUID) -> GameRecord {
+        let situation = Situation()
+        let call = OffensiveCall(playType: .pass)
+        let outcome = SnapOutcome(result: .gain, yards: 7,
+                                  secondsElapsed: Tier.pro.clockRules.inBoundsPlaySeconds,
+                                  matchups: [], ballCarrierID: carrier,
+                                  passerID: passer, targetID: target)
+        let play = PlayRecord(situation: situation, offensiveCall: call,
+                              defensiveCall: DefensiveCall(coverage: .man),
+                              preSnapSeconds: 0, outcome: outcome, callInTriggers: [])
+        return GameRecord(homeScore: 0, awayScore: 0,
+                          drives: [DriveRecord(offense: .home, plays: [play], ending: .punt,
+                                               pointsScored: 0, startYardLine: 25)], tier: .pro)
+    }
+
+    let identityA = UUID(uuidString: "00000000-0000-4000-8000-000000000001")!
+    let identityB = UUID(uuidString: "00000000-0000-4000-8000-000000000002")!
+    let identityC = UUID(uuidString: "00000000-0000-4000-8000-000000000003")!
+    let identityD = UUID(uuidString: "00000000-0000-4000-8000-000000000004")!
 
     suite("Game loop") {
         test("college first downs stop only inside two minutes") {
@@ -1028,6 +1429,36 @@ func runGameLoopTests() {
             expect(GameRecord(homeScore: game.homeScore, awayScore: game.awayScore,
                               drives: game.drives, tier: .college).playByPlayFingerprint != base,
                    "the fingerprint ignores the tier")
+        }
+
+        test("replacing only the carrier changes the fingerprint") {
+            let original = identityGame(carrier: identityA, passer: identityB, target: identityC)
+            let changed = identityGame(carrier: identityD, passer: identityB, target: identityC)
+            expect(original.playByPlayFingerprint != changed.playByPlayFingerprint,
+                   "the fingerprint ignores the carrier")
+            let restored = try SaveEnvelope.decode(GameRecord.self,
+                                                   from: try SaveEnvelope.encode(original))
+            expectEqual(restored.playByPlayFingerprint, original.playByPlayFingerprint)
+        }
+
+        test("replacing only the passer changes the fingerprint") {
+            let original = identityGame(carrier: identityA, passer: identityB, target: identityC)
+            let changed = identityGame(carrier: identityA, passer: identityD, target: identityC)
+            expect(original.playByPlayFingerprint != changed.playByPlayFingerprint,
+                   "the fingerprint ignores the passer")
+            let restored = try SaveEnvelope.decode(GameRecord.self,
+                                                   from: try SaveEnvelope.encode(original))
+            expectEqual(restored.playByPlayFingerprint, original.playByPlayFingerprint)
+        }
+
+        test("replacing only the target changes the fingerprint") {
+            let original = identityGame(carrier: identityA, passer: identityB, target: identityC)
+            let changed = identityGame(carrier: identityA, passer: identityB, target: identityD)
+            expect(original.playByPlayFingerprint != changed.playByPlayFingerprint,
+                   "the fingerprint ignores the target")
+            let restored = try SaveEnvelope.decode(GameRecord.self,
+                                                   from: try SaveEnvelope.encode(original))
+            expectEqual(restored.playByPlayFingerprint, original.playByPlayFingerprint)
         }
 
         test("every throwing matchup names the defender covering the target") {
