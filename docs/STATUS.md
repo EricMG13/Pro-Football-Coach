@@ -8,7 +8,36 @@ The honest picture: what exists, what is verified, what is not.
 
 ## Where the project actually is
 
-**P0, P1 and P2 are complete. There is a foundation, a model, two rules modules and a generator.**
+**P0, P1 and P2 are complete. P3 is part-built and NOT done.** There is a foundation, a model, two
+rules modules, a generator, and the first three layers of the match engine.
+
+Suite: **213 tests, 60,341 checks, all passed**, byte-identical across separate process invocations.
+
+### P3 — match engine core — **IN PROGRESS, three of nine tasks**
+
+Built and green: `Engine/Situation.swift` (including five of `02` §3.1's seven call-in triggers),
+`Rules/ClockRules.swift` (both tiers), `Rules/MatchupRules.swift`, `Engine/Leverage.swift`
+(`03` §1.1 stage 2).
+
+**Not built.** Assignment (stage 1), snap resolution (stage 3), consequence (stage 4), the drive
+loop, the game loop, the cross-process play-by-play determinism assertion, and the
+render-cannot-change-outcome invariant. `docs/plans/2026-08-10-p3-match-engine-core.md` has the task
+list; tasks 4 through 9 are outstanding.
+
+**Two things P3 must not be read as claiming.**
+
+1. **The college clock constants are UNCONFIRMED.** `03` §8 clause 3 requires them to be checked
+   against the current rule book before the tier constants are fixed. No rule book is reachable from
+   the build environment and routing around the egress policy to fetch one is forbidden. The values
+   in `Rules/ClockRules.swift` are the engine's working set and are marked as such in the file.
+   **Owner action:** confirm the college play clock, the first-down clock stop and its two-minute
+   exception, and the overtime format, against the current book. P4's calibration will show whether
+   they produce the right plays-per-game, which is evidence but not confirmation.
+2. **Nothing in `MatchupRules` is calibrated.** P3 builds the mechanism and P4 owns the bands. The
+   engine is numerically wrong at this point and is expected to be — a P3 that tuned by eye would
+   make P4's TOST a formality over numbers already fitted to it.
+
+### P2 — generation and identity
 
 ### P2 — generation and identity
 
