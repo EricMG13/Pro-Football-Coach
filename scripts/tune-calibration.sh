@@ -119,6 +119,8 @@ repo_root=$(resolve_physical_directory "$script_dir/..") \
 expected_rules_dir=$(resolve_physical_directory "$repo_root/Sources/FootballSimCore/Rules") \
   || die "cannot resolve Rules directory under script-derived repository"
 matchup_rules="$expected_rules_dir/MatchupRules.swift"
+worktree_rules_dir=$expected_rules_dir
+worktree_matchup_rules=$matchup_rules
 lock_parent="$repo_root/.build"
 lock_file="$lock_parent/tune-calibration.lock"
 
@@ -138,6 +140,46 @@ validate_matchup_rules() {
     || die "cannot resolve MatchupRules.swift parent"
   [[ "$resolved_rules_dir" == "$expected_rules_dir" ]] \
     || die "MatchupRules.swift is outside its expected repository path"
+}
+
+activate_contract_rules_override() {
+  [[ ${TUNE_CALIBRATION_TEST_CONTRACT_MODE:-} == 1 ]] \
+    || die "rules override requires explicit calibration contract mode"
+  [[ ${TUNE_CALIBRATION_TEST_FAIL_FIRST_CANDIDATE:-} == 1 \
+      && ${TUNE_CALIBRATION_TEST_ROLLBACK_HOLD:-} == 1 ]] \
+    || die "contract rules override is limited to the held failing-candidate rollback fixture"
+  [[ ${TUNE_CALIBRATION_TEST_SCORE_OUTPUT+x} != x ]] \
+    || die "contract rules override cannot be combined with a score-output hook"
+  [[ -n ${TUNE_CALIBRATION_TEST_CONTRACT_RULES_DIR:-} ]] \
+    || die "contract rules override requires an isolated Rules directory"
+
+  local temporary_base=${TMPDIR:-/tmp}
+  temporary_base=${temporary_base%/}
+  local resolved_temporary_base resolved_override_dir fixture_root fixture_name
+  resolved_temporary_base=$(resolve_physical_directory "$temporary_base") \
+    || die "cannot resolve temporary base for contract rules override"
+  resolved_override_dir=$(resolve_physical_directory \
+    "$TUNE_CALIBRATION_TEST_CONTRACT_RULES_DIR") \
+    || die "cannot resolve contract rules override directory"
+  fixture_root=${resolved_override_dir%/*}
+  fixture_name=${fixture_root##*/}
+  [[ "${resolved_override_dir##*/}" == rollback-rules \
+      && "$fixture_name" == pfc-calibration-tools.* \
+      && "${fixture_root%/*}" == "$resolved_temporary_base" \
+      && "$resolved_override_dir" != "$worktree_rules_dir" ]] \
+    || die "contract rules override must be the gate's isolated rollback-rules directory"
+
+  local override_target="$resolved_override_dir/MatchupRules.swift"
+  [[ -f "$override_target" && ! -L "$override_target" ]] \
+    || die "contract rules override target must be a copied regular non-symlink MatchupRules.swift"
+  (
+    close_advisory_lock_for_child
+    cmp -s "$worktree_matchup_rules" "$override_target"
+  ) || die "contract rules override must begin byte-identical to tracked MatchupRules.swift"
+
+  expected_rules_dir=$resolved_override_dir
+  matchup_rules=$override_target
+  printf 'tune-calibration: contract rules target %s\n' "$matchup_rules" >&2
 }
 
 validate_lock_parent() {
@@ -383,6 +425,11 @@ if [[ ${1:-} == "--validate" && $# -eq 1 ]]; then
 fi
 [[ $# -eq 0 ]] || die "usage: tune-calibration.sh [--validate]"
 
+if [[ ${TUNE_CALIBRATION_TEST_CONTRACT_MODE:-} == 1 \
+    || ${TUNE_CALIBRATION_TEST_CONTRACT_RULES_DIR+x} == x ]]; then
+  activate_contract_rules_override
+fi
+
 if [[ -z "$advisory_lock_fd" ]]; then
   prepare_lock_parent
   launch_with_advisory_lock
@@ -521,6 +568,7 @@ score() {
   [[ $passed =~ ^[0-9]+$ && $total =~ ^[0-9]+$ ]] \
     || die "SCORE counts are not numeric"
   (( 10#$passed <= 10#$total )) || die "SCORE passed count exceeds total"
+  (( 10#$total > 0 )) || die "SCORE total must be greater than zero"
   (( 10#$total == 24 )) || die "SCORE total must equal the 24 implemented bands"
   printf '%s\n' "$passed"
 }

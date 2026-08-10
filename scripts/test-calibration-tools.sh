@@ -12,32 +12,84 @@ rules="$repo_root/Sources/FootballSimCore/Rules/MatchupRules.swift"
 
 fixture_root=$(mktemp -d "${TMPDIR:-/tmp}/pfc-calibration-tools.XXXXXX")
 fixture_rules="$fixture_root/rules"
+rollback_rules="$fixture_root/rollback-rules"
 case_log="$fixture_root/case.log"
 holder_log="$fixture_root/holder.log"
 contender_log="$fixture_root/contender.log"
+timeout_ready="$fixture_root/timeout-ready"
 holder_pid=""
-mkdir "$fixture_rules"
+mkdir "$fixture_rules" "$rollback_rules"
+resolved_rollback_rules=$(cd -P -- "$rollback_rules" && pwd)
+
+supervised_wait_status=0
+
+reap_exact_child() {
+  local child_pid=$1
+  if wait "$child_pid" 2>/dev/null; then
+    supervised_wait_status=0
+  else
+    supervised_wait_status=$?
+  fi
+}
+
+bounded_reap_pid() {
+  local child_pid=$1
+  local maximum_polls=$2
+  local poll=0 state
+  [[ "$child_pid" =~ ^[1-9][0-9]*$ && "$maximum_polls" =~ ^[0-9]+$ ]] || return 2
+  while :; do
+    if ! state=$(ps -o stat= -p "$child_pid" 2>/dev/null); then
+      reap_exact_child "$child_pid"
+      return 0
+    fi
+    state=${state//[[:space:]]/}
+    if [[ $state == Z* ]]; then
+      reap_exact_child "$child_pid"
+      return 0
+    fi
+    (( poll < maximum_polls )) || return 1
+    sleep 0.05
+    ((poll += 1))
+  done
+}
+
+terminate_and_reap_pid() {
+  local child_pid=$1
+  [[ "$child_pid" =~ ^[1-9][0-9]*$ ]] || return 2
+  kill -TERM "$child_pid" 2>/dev/null || true
+  if bounded_reap_pid "$child_pid" 10; then
+    return 0
+  fi
+  kill -KILL "$child_pid" 2>/dev/null || true
+  bounded_reap_pid "$child_pid" 10
+}
 
 cleanup() {
   local original_status=$?
   local cleanup_status=0
-  local leftover
+  local cleanup_directory leftover
   trap - EXIT HUP INT TERM
   set +e
-  if [[ "$holder_pid" =~ ^[0-9]+$ ]]; then
-    wait "$holder_pid" >/dev/null 2>&1
+  if [[ "$holder_pid" =~ ^[1-9][0-9]*$ ]]; then
+    if ! bounded_reap_pid "$holder_pid" 10; then
+      terminate_and_reap_pid "$holder_pid" || cleanup_status=1
+    fi
+    holder_pid=""
   fi
   rm -f -- "$fixture_root/rules-link" "$fixture_rules/MatchupRules.swift" \
-    "$fixture_rules/referent.swift" \
-    "$case_log" "$holder_log" "$contender_log" || cleanup_status=1
-  for leftover in "$fixture_rules"/.[!.]* "$fixture_rules"/..?*; do
-    [[ -e "$leftover" || -L "$leftover" ]] || continue
-    case "$leftover" in
-      "$fixture_rules"/*) rm -f -- "$leftover" || cleanup_status=1 ;;
-      *) cleanup_status=1 ;;
-    esac
+    "$fixture_rules/referent.swift" "$rollback_rules/MatchupRules.swift" \
+    "$case_log" "$holder_log" "$contender_log" "$timeout_ready" || cleanup_status=1
+  for cleanup_directory in "$fixture_rules" "$rollback_rules"; do
+    for leftover in "$cleanup_directory"/.[!.]* "$cleanup_directory"/..?*; do
+      [[ -e "$leftover" || -L "$leftover" ]] || continue
+      case "$leftover" in
+        "$cleanup_directory"/*) rm -f -- "$leftover" || cleanup_status=1 ;;
+        *) cleanup_status=1 ;;
+      esac
+    done
   done
-  rmdir "$fixture_rules" "$fixture_root" >/dev/null 2>&1 || cleanup_status=1
+  rmdir "$fixture_rules" "$rollback_rules" "$fixture_root" >/dev/null 2>&1 \
+    || cleanup_status=1
   if (( original_status == 0 && cleanup_status != 0 )); then
     printf 'FAIL  fixture cleanup left unexpected paths under %s\n' "$fixture_root" >&2
     original_status=1
@@ -86,6 +138,37 @@ rules_checksum() {
 }
 
 cd "$repo_root"
+cp "$rules" "$rollback_rules/MatchupRules.swift"
+
+# Exercise the deadline path without adding an advertised contract: the child ignores TERM after
+# signalling readiness, so supervision must escalate to KILL for exactly this recorded `$!` PID.
+/bin/bash -c 'trap "" TERM; : > "$1"; while :; do :; done' _ "$timeout_ready" &
+holder_pid=$!
+timeout_ready_seen=0
+attempt=0
+while (( attempt < 100 )); do
+  if [[ -f "$timeout_ready" ]]; then
+    timeout_ready_seen=1
+    break
+  fi
+  sleep 0.01
+  ((attempt += 1))
+done
+if (( timeout_ready_seen != 1 )); then
+  terminate_and_reap_pid "$holder_pid" || true
+  holder_pid=""
+  fail_case "bounded-supervision timeout fixture did not become ready"
+fi
+if bounded_reap_pid "$holder_pid" 2; then
+  holder_pid=""
+  fail_case "bounded-supervision timeout fixture exited before its deadline"
+fi
+terminate_and_reap_pid "$holder_pid" \
+  || fail_case "bounded supervision could not terminate and reap its exact child PID"
+holder_pid=""
+[[ $supervised_wait_status -eq 137 ]] \
+  || fail_case "bounded supervision did not reach the exact-PID KILL fallback"
+printf '      bounded supervision TERM/KILL/reap self-test passed\n'
 
 expect_failure "scorer rejects a missing mode" swift run -c release CalibrationScore
 grep -q 'usage: CalibrationScore <tuning|holdout>' "$case_log" \
@@ -103,6 +186,19 @@ grep -q 'usage: tune-calibration.sh \[--validate\]' "$case_log" \
   || fail_case "unknown tuner argument omitted usage"
 
 initial_rules_checksum=$(rules_checksum)
+if env TUNE_CALIBRATION_TEST_CONTRACT_MODE=1 \
+    TUNE_CALIBRATION_TEST_CONTRACT_RULES_DIR="${rules%/*}" \
+    TUNE_CALIBRATION_TEST_FAIL_FIRST_CANDIDATE=1 \
+    TUNE_CALIBRATION_TEST_ROLLBACK_HOLD=1 \
+    /bin/bash "$tuner" >"$case_log" 2>&1; then
+  fail_case "contract rules override accepted the tracked Rules directory"
+fi
+grep -Fq "contract rules override must be the gate's isolated rollback-rules directory" \
+  "$case_log" || fail_case "tracked rules override refusal omitted its safety diagnostic"
+[[ $(rules_checksum) == "$initial_rules_checksum" ]] \
+  || fail_case "rejected contract rules override changed tracked MatchupRules.swift"
+printf '      tracked Rules override refusal self-test passed\n'
+
 score_labels=(
   "malformed score"
   "missing score"
@@ -121,9 +217,23 @@ score_outputs=(
   "SCORE 0/23"
   "SCORE 0/25"
 )
+score_diagnostics=(
+  "tune-calibration: expected exactly one well-formed SCORE passed/total line"
+  "tune-calibration: expected exactly one well-formed SCORE passed/total line"
+  "tune-calibration: expected exactly one well-formed SCORE passed/total line"
+  "tune-calibration: SCORE passed count exceeds total"
+  "tune-calibration: SCORE total must be greater than zero"
+  "tune-calibration: SCORE total must equal the 24 implemented bands"
+  "tune-calibration: SCORE total must equal the 24 implemented bands"
+)
 for index in "${!score_outputs[@]}"; do
-  expect_failure "tuner rejects ${score_labels[$index]}" env \
-    TUNE_CALIBRATION_TEST_SCORE_OUTPUT="${score_outputs[$index]}" /bin/bash "$tuner"
+  if env TUNE_CALIBRATION_TEST_SCORE_OUTPUT="${score_outputs[$index]}" \
+      /bin/bash "$tuner" >"$case_log" 2>&1; then
+    fail_case "tuner rejects ${score_labels[$index]} unexpectedly succeeded"
+  fi
+  grep -Fq "${score_diagnostics[$index]}" "$case_log" \
+    || fail_case "${score_labels[$index]} omitted its expected parser diagnostic"
+  pass_case "tuner rejects ${score_labels[$index]}"
   [[ $(rules_checksum) == "$initial_rules_checksum" ]] \
     || fail_case "${score_labels[$index]} mutated MatchupRules.swift"
 done
@@ -134,8 +244,13 @@ grep -q 'test score-output contract accepted without search' "$case_log" \
 [[ $(rules_checksum) == "$initial_rules_checksum" ]] \
   || fail_case "valid score hook changed retained MatchupRules.swift constants"
 
-rollback_before=$(rules_checksum)
-env TUNE_CALIBRATION_TEST_FAIL_FIRST_CANDIDATE=1 \
+real_rollback_before=$(rules_checksum)
+fixture_rollback_before=$(shasum -a 256 "$rollback_rules/MatchupRules.swift" | awk '{print $1}')
+grep -q 'TUNE_CALIBRATION_TEST_CONTRACT_RULES_DIR' "$tuner" \
+  || fail_case "fixture-only rollback target override is unavailable"
+env TUNE_CALIBRATION_TEST_CONTRACT_MODE=1 \
+  TUNE_CALIBRATION_TEST_CONTRACT_RULES_DIR="$rollback_rules" \
+  TUNE_CALIBRATION_TEST_FAIL_FIRST_CANDIDATE=1 \
   TUNE_CALIBRATION_TEST_ROLLBACK_HOLD=1 \
   /bin/bash "$tuner" >"$holder_log" 2>&1 &
 holder_pid=$!
@@ -149,23 +264,45 @@ while (( attempt < 100 )); do
   sleep 0.05
   ((attempt += 1))
 done
-(( rollback_ready == 1 )) || fail_case "candidate failure did not enter rollback"
+if (( rollback_ready != 1 )); then
+  terminate_and_reap_pid "$holder_pid" || true
+  holder_pid=""
+  fail_case "candidate failure did not enter rollback before its readiness deadline"
+fi
+grep -Fq "contract rules target $resolved_rollback_rules/MatchupRules.swift" "$holder_log" \
+  || fail_case "candidate rollback did not activate its isolated rules target"
+real_rollback_during=$(rules_checksum)
+fixture_rollback_during=$(shasum -a 256 "$rollback_rules/MatchupRules.swift" | awk '{print $1}')
+[[ "$real_rollback_during" == "$real_rollback_before" ]] \
+  || fail_case "candidate fixture changed tracked MatchupRules.swift during rollback"
+[[ "$fixture_rollback_during" != "$fixture_rollback_before" ]] \
+  || fail_case "candidate fixture never held a trial constant before rollback"
 if env TUNE_CALIBRATION_TEST_LOCK_ONLY=1 /bin/bash "$tuner" >"$contender_log" 2>&1; then
   fail_case "contender acquired the owner lock during rollback"
 fi
 grep -q 'another tuner holds the advisory lock' "$contender_log" \
   || fail_case "rollback contender failure did not identify lock ownership"
-if wait "$holder_pid"; then
-  fail_case "first-candidate score failure unexpectedly succeeded"
+if ! bounded_reap_pid "$holder_pid" 100; then
+  terminate_and_reap_pid "$holder_pid" || true
+  holder_pid=""
+  fail_case "first-candidate rollback exceeded its completion deadline"
 fi
+rollback_status=$supervised_wait_status
 holder_pid=""
+(( rollback_status != 0 )) || fail_case "first-candidate score failure unexpectedly succeeded"
 grep -q 'restoring last accepted calibration constants' "$holder_log" \
   || fail_case "candidate failure did not report rollback"
-rollback_after=$(rules_checksum)
-[[ "$rollback_after" == "$rollback_before" ]] \
-  || fail_case "candidate rollback left a trial constant in MatchupRules.swift"
+real_rollback_after=$(rules_checksum)
+fixture_rollback_after=$(shasum -a 256 "$rollback_rules/MatchupRules.swift" | awk '{print $1}')
+[[ "$real_rollback_after" == "$real_rollback_before" ]] \
+  || fail_case "candidate rollback changed tracked MatchupRules.swift"
+[[ "$fixture_rollback_after" == "$fixture_rollback_before" ]] \
+  || fail_case "candidate rollback left a trial constant in its isolated fixture"
 pass_case "first-candidate failure rolls back while owner lock excludes contenders"
-printf '      rollback checksum %s -> %s\n' "$rollback_before" "$rollback_after"
+printf '      tracked checksum %s -> %s -> %s\n' \
+  "$real_rollback_before" "$real_rollback_during" "$real_rollback_after"
+printf '      fixture checksum %s -> %s -> %s\n' \
+  "$fixture_rollback_before" "$fixture_rollback_during" "$fixture_rollback_after"
 
 expect_success "ordinary search child sees a closed lock descriptor" env \
   TUNE_CALIBRATION_TEST_CHILD_FD=1 /bin/bash "$tuner"
@@ -193,15 +330,25 @@ while (( attempt < 100 )); do
   sleep 0.05
   ((attempt += 1))
 done
-(( holder_ready == 1 )) || fail_case "lock holder did not become ready"
+if (( holder_ready != 1 )); then
+  terminate_and_reap_pid "$holder_pid" || true
+  holder_pid=""
+  fail_case "lock holder did not become ready before its deadline"
+fi
 if env TUNE_CALIBRATION_TEST_LOCK_ONLY=1 /bin/bash "$tuner" >"$contender_log" 2>&1; then
   fail_case "contender acquired the held advisory lock"
 fi
 grep -q 'another tuner holds the advisory lock' "$contender_log" \
   || fail_case "contender failure did not identify lock ownership"
 pass_case "holder excludes a contender while its lockless helper runs"
-wait "$holder_pid" || fail_case "lock holder failed"
+if ! bounded_reap_pid "$holder_pid" 100; then
+  terminate_and_reap_pid "$holder_pid" || true
+  holder_pid=""
+  fail_case "lock holder exceeded its completion deadline"
+fi
+holder_status=$supervised_wait_status
 holder_pid=""
+(( holder_status == 0 )) || fail_case "lock holder failed"
 expect_success "advisory lock is reacquirable after owner exit" env \
   TUNE_CALIBRATION_TEST_LOCK_ONLY=1 /bin/bash "$tuner"
 
@@ -263,4 +410,5 @@ grep -q '^public static let probe = 2$' "$fixture_rules/MatchupRules.swift" \
 final_rules_checksum=$(rules_checksum)
 [[ "$final_rules_checksum" == "$initial_rules_checksum" ]] \
   || fail_case "calibration-tool gate changed retained MatchupRules.swift constants"
+(( passes == 23 )) || fail_case "calibration-tool contract count drifted from 23 to ${passes}"
 printf '\ncalibration tool contracts: %s passed, 0 failed\n' "$passes"
