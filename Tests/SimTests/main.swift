@@ -10,5 +10,6 @@ runGenerationTests()
 runIdentityDistributionTests()
 runEngineTests()
 runSnapResolverTests()
+runGameLoopTests()
 
 TestKit.finish()

@@ -132,4 +132,26 @@ public enum MatchupRules {
     // MARK: - Consequence
 
     public static let fumbleChance = 0.012
+
+    // MARK: - Scoring
+
+    public static let touchdownPoints = 6
+    public static let extraPointPoints = 1
+    public static let fieldGoalPoints = 3
+    public static let safetyPoints = 2
+
+    // MARK: - Drive and game
+
+    public static let yardsForFirstDown = 10
+    public static let kickoffTouchbackYardLine = 25
+    /// Inside this many yards from the goal line, a kick is worth attempting.
+    public static let fieldGoalRangeYards = 38
+    public static let fourthDownGoForItDistance = 2
+    public static let fourthDownGoForItTerritory = 50
+
+    /// Bounds. An unbounded loop here is a hang rather than a bug — a resolver that returned zero
+    /// yards forever would never reach a fourth down that ended anything — and `03` §7's budgets
+    /// have no room for one. Both are far above any real drive or game.
+    public static let maximumPlaysPerDrive = 40
+    public static let maximumDrivesPerGame = 60
 }

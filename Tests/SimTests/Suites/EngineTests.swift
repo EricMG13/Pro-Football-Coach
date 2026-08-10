@@ -1,6 +1,10 @@
 import Foundation
 import FootballSimCore
 
+/// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 9_878_132_314_835_229_116
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 5_319_401_859_029_702_986
+
 func runEngineTests() {
     suite("Leverage") {
         test("an even matchup is even, and the extremes saturate the right way") {
@@ -486,6 +490,183 @@ func runSnapResolverTests() {
             expect(!SnapResult.punt.isTurnover, "a punt is a turnover")
             expect(SnapResult.incompletion.stopsClock, "an incompletion does not stop the clock")
             expect(!SnapResult.gain.stopsClock, "a gain in bounds stops the clock")
+        }
+    }
+}
+
+// MARK: - Drive and game loops
+
+func runGameLoopTests() {
+    let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
+    let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
+
+    suite("Game loop") {
+        test("the same seed replays a game exactly, by hash of the full play-by-play") {
+            // 03 section 3's test, verbatim: "same seed across two separate process invocations,
+            // compared by hash of the full play-by-play". The in-process half is here; the
+            // cross-process half is the pinned fingerprint below, which is a literal in a source
+            // file and therefore cannot be salted per launch.
+            let first = GameEngine.play(tier: .pro, home: home, away: away, seed: 12_345)
+            let second = GameEngine.play(tier: .pro, home: home, away: away, seed: 12_345)
+            expectEqual(first.playByPlayFingerprint, second.playByPlayFingerprint,
+                        "the same seed produced a different game")
+            expectEqual(first, second, "the same seed produced a different record")
+        }
+
+        test("the play-by-play fingerprint is pinned across processes") {
+            // Regenerate only when the engine is changed deliberately. P4's calibration will move
+            // it, and that is the point: a tuning change must be a visible edit here.
+            expectEqual(GameEngine.play(tier: .pro, home: home, away: away, seed: 12_345)
+                            .playByPlayFingerprint,
+                        PINNED_PRO_GAME_FINGERPRINT,
+                        "the engine's output changed. If that was deliberate, re-pin")
+            expectEqual(GameEngine.play(tier: .college, home: home, away: away, seed: 12_345)
+                            .playByPlayFingerprint,
+                        PINNED_COLLEGE_GAME_FINGERPRINT,
+                        "the engine's output changed. If that was deliberate, re-pin")
+        }
+
+        test("the fingerprint notices a single play moving") {
+            // The self-test. A fingerprint that ignored order or magnitude would make the pin above
+            // green forever.
+            let game = GameEngine.play(tier: .pro, home: home, away: away, seed: 12_345)
+            let reversed = GameRecord(homeScore: game.homeScore, awayScore: game.awayScore,
+                                      drives: game.drives.reversed(), tier: game.tier)
+            expect(reversed.playByPlayFingerprint != game.playByPlayFingerprint,
+                   "the fingerprint ignores drive order")
+            let nudged = GameRecord(homeScore: game.homeScore + 1, awayScore: game.awayScore,
+                                    drives: game.drives, tier: game.tier)
+            expect(nudged.playByPlayFingerprint != game.playByPlayFingerprint,
+                   "the fingerprint ignores the score")
+        }
+
+        test("a different seed produces a different game") {
+            let a = GameEngine.play(tier: .pro, home: home, away: away, seed: 1)
+            let b = GameEngine.play(tier: .pro, home: home, away: away, seed: 2)
+            expect(a.playByPlayFingerprint != b.playByPlayFingerprint,
+                   "two seeds produced the same game, so the seed is not being read")
+        }
+
+        test("a game finishes, scores, and stays inside its bounds") {
+            for seed in UInt64(1)...30 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                expect(!game.drives.isEmpty, "seed \(seed) produced no drives")
+                expect(game.drives.count <= MatchupRules.maximumDrivesPerGame,
+                       "seed \(seed) ran past the drive bound")
+                expect(game.homeScore >= 0 && game.awayScore >= 0,
+                       "seed \(seed) produced a negative score")
+                for drive in game.drives {
+                    expect(drive.plays.count <= MatchupRules.maximumPlaysPerDrive,
+                           "a drive ran past the play bound")
+                    expect((1...99).contains(drive.startYardLine),
+                           "a drive started off the field at \(drive.startYardLine)")
+                }
+                for play in game.plays {
+                    expect((1...99).contains(play.situation.yardLine),
+                           "a snap happened off the field")
+                    expect((1...4).contains(play.situation.down),
+                           "a snap happened on down \(play.situation.down)")
+                }
+            }
+        }
+
+        test("college games run more plays than pro games") {
+            // 03 section 2: higher college tempo must be a CONSEQUENCE of the clock model. The
+            // college clock stops on a first down and its offence snaps faster, so with the same
+            // rosters and the same seed it must fit more plays into the same four quarters. This is
+            // not a calibration band — P4 owns those — it is the direction the model must point.
+            var collegePlays = 0, proPlays = 0
+            for seed in UInt64(1)...20 {
+                collegePlays += GameEngine.play(tier: .college, home: home, away: away,
+                                                seed: seed).plays.count
+                proPlays += GameEngine.play(tier: .pro, home: home, away: away, seed: seed).plays.count
+            }
+            expect(collegePlays > proPlays,
+                   "college fitted \(collegePlays) plays into 20 games against pro's \(proPlays), "
+                       + "so the tier clock difference is not reaching the play count")
+        }
+
+        test("the better team wins more often than not") {
+            // Not a calibration band. Just the sign: if the stronger roster did not win more, the
+            // engine would be noise with a scoreboard.
+            var homeWins = 0, decided = 0
+            for seed in UInt64(1)...120 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                guard let winner = game.winner else { continue }
+                decided += 1
+                if winner == .home { homeWins += 1 }
+            }
+            expect(decided > 100, "only \(decided) of 120 games were decided")
+            expect(homeWins * 2 > decided,
+                   "the better team won \(homeWins) of \(decided), which is not more than half")
+        }
+
+        test("every drive ending is reachable") {
+            // Dead capability again. A drive ending the loop declares and never produces is a
+            // branch nothing exercises.
+            var seen: Set<DriveEnding> = []
+            for seed in UInt64(1)...200 {
+                for drive in GameEngine.play(tier: .college, home: home, away: away,
+                                             seed: seed).drives {
+                    seen.insert(drive.ending)
+                }
+            }
+            let unreachable = DriveEnding.allCases.filter { !seen.contains($0) && $0 != .endOfGame }
+            expect(unreachable.isEmpty,
+                   "these drive endings never happen: "
+                       + unreachable.map(\.rawValue).joined(separator: ", "))
+        }
+
+        test("call-ins fire at a rate 02 section 3.1 would recognise") {
+            // What this measures is the number of snaps that QUALIFY, which is not the same as the
+            // number of call-ins the player sees. 02 section 3.1 sets the rate at ~25 a game,
+            // tunable 12 to 40, and that is a budget applied to the qualifying set — the phase that
+            // builds the call-in queue owns the selection. Asserting the raw qualifying count
+            // against the tunable ceiling conflated the two, and the first version of this test did
+            // exactly that.
+            //
+            // What P3 can assert is that the qualifying set is neither empty nor everything. Empty
+            // is the previous build's failure verbatim: one mandatory decision a week. Everything
+            // would mean the triggers are not selecting.
+            var qualifying = 0, snaps = 0
+            for seed in UInt64(1)...20 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                qualifying += game.plays.filter { !$0.callInTriggers.isEmpty }.count
+                snaps += game.plays.count
+            }
+            let perGame = Double(qualifying) / 20
+            expect(perGame >= Double(SharedRules.callInsPerGameRange.lowerBound),
+                   "only \(perGame) snaps a game qualify for a call-in, which is under the 12 the "
+                       + "tunable range's floor would need to select from")
+            expect(Double(qualifying) < Double(snaps) * 0.8,
+                   "\(qualifying) of \(snaps) snaps qualify, so the triggers are not selecting")
+        }
+
+        test("rendering cannot change an outcome") {
+            // 03 section 1.3's honesty invariant, engine half. A GameRecord is a value type with no
+            // reference to the engine, so a consumer holding one cannot reach back into the
+            // simulation; and re-reading it any number of times cannot alter it. This asserts the
+            // property a match view would rely on before there is a match view to rely on it.
+            let game = GameEngine.play(tier: .pro, home: home, away: away, seed: 777)
+            let before = game.playByPlayFingerprint
+            for play in game.plays {
+                _ = play.outcome.decidingMatchup
+                _ = play.outcome.matchups.map(\.leverage)
+                _ = play.outcome.result.stopsClock
+            }
+            expectEqual(game.playByPlayFingerprint, before,
+                        "reading a game changed it")
+            expectEqual(GameEngine.play(tier: .pro, home: home, away: away, seed: 777)
+                            .playByPlayFingerprint, before,
+                        "replaying after reading produced a different game")
+        }
+
+        test("a game survives the save envelope unchanged") {
+            let game = GameEngine.play(tier: .college, home: home, away: away, seed: 99)
+            let restored = try SaveEnvelope.decode(GameRecord.self,
+                                                   from: try SaveEnvelope.encode(game))
+            expectEqual(restored, game)
+            expectEqual(restored.playByPlayFingerprint, game.playByPlayFingerprint)
         }
     }
 }
