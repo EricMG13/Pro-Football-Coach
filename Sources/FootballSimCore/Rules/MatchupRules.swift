@@ -114,13 +114,15 @@ public enum MatchupRules {
     // MARK: - Run
 
     /// Yards per unit of lane leverage.
-    public static let laneYardScale = 7.0
+    public static let laneYardScale = 3.0
     /// Outside runs multiply the lane result, trading certainty for the edge.
     public static let outsideRunVariance = 1.35
     public static let crashRunBonus = 0.10
     public static let aggressionRunBonus = 0.05
     /// Leverage above which the carrier breaks a tackle.
     public static let breakTackleThreshold = 0.40
+    /// Yards for the first break. Each successive one is worth a multiple of this, which is what
+    /// gives a run distribution its right tail.
     public static let brokenTackleYards = 4
     /// Each successive break is harder. Bounded, because an unbounded chain is a hang with a small
     /// probability and `03` §7's frame budget has no room for one.

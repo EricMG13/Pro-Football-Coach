@@ -247,6 +247,15 @@ public enum SnapResolver {
 
     /// The carrier against pursuit, with a bounded break-tackle chain.
     ///
+    /// `03` §1.1: "the carrier's vision and elusiveness resolve against pursuit leverage into yards,
+    /// **with a break-tackle chain that can extend the play**."
+    ///
+    /// Each break is worth more than the last, because that is the shape a run distribution has:
+    /// most carries gain a few yards into a crowd, and the ones that get past the second level go a
+    /// long way. A flat bonus per break gave a near-symmetric distribution and an explosive-run rate
+    /// of essentially zero against a band of 0.105 to 0.130 — the model missing a tail, not a
+    /// constant mistuned.
+    ///
     /// Bounded because an unbounded chain is a hang with a small probability, and `03` §7's frame
     /// budget has no room for one.
     private static func yardsAfterContact(
@@ -261,8 +270,13 @@ public enum SnapResolver {
         var record: MatchupRecord?
         for attempt in 0..<MatchupRules.maximumBrokenTackles {
             let defender = pursuit[Swift.min(attempt, pursuit.count - 1)]
+            // Vision gets the carrier to the second level; elusiveness is what beats the man
+            // there. 03 section 1.2's Carrier row names both and only one was being read.
+            let carrying = attempt == 0
+                ? carrier.attributes[.vision]
+                : carrier.attributes[.elusiveness]
             let leverage = Leverage.score(
-                attacker: carrier.attributes[.elusiveness],
+                attacker: carrying,
                 defender: defender.attributes[.tackling],
                 situationModifier: homeFieldAdvantage + aggression * MatchupRules.aggressionRunBonus
                     - Double(attempt) * MatchupRules.brokenTackleDecay,
@@ -273,7 +287,7 @@ public enum SnapResolver {
                                        defenderID: tackler.id, leverage: leverage)
             }
             guard leverage > MatchupRules.breakTackleThreshold else { break }
-            yards += MatchupRules.brokenTackleYards
+            yards += MatchupRules.brokenTackleYards * (attempt + 1)
         }
         return (yards, record)
     }

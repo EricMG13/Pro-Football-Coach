@@ -2,8 +2,8 @@ import Foundation
 import FootballSimCore
 
 /// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 16_041_092_025_493_042_683
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 13_537_363_483_789_520_418
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 151_802_325_001_383_283
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 17_135_830_121_998_607_854
 
 func runEngineTests() {
     suite("Leverage") {

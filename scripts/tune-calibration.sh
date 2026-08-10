@@ -20,10 +20,9 @@ score() {
   ( cd "$PROBE" && swift run -c release Search 2>/dev/null | grep -oE 'SCORE [0-9]+' | awk '{print $2}' )
 }
 
-declare -A BEST
-names=(leverageNoise laneYardScale breakTackleThreshold sackPressureThreshold completionThreshold homeAdvantage)
-files=("$M" "$M" "$M" "$M" "$M" "$M")
-grids=("0.22 0.30 0.38 0.46" "5.0 7.0 9.0 11.0" "0.40 0.50 0.60 0.70" "0.45 0.60 0.75 0.90" "-0.30 -0.16 -0.02 0.10" "0.02 0.04 0.07 0.10")
+names=(leverageNoise laneYardScale breakTackleThreshold sackPressureThreshold completionThreshold homeAdvantage brokenTackleYards maximumBrokenTackles)
+files=("$M" "$M" "$M" "$M" "$M" "$M" "$M" "$M")
+grids=("0.22 0.30 0.38 0.46" "3.0 5.0 7.0 9.0" "0.35 0.45 0.55 0.65" "0.45 0.60 0.75 0.90" "-0.30 -0.16 -0.02 0.10" "0.02 0.04 0.07 0.10" "2 3 4 5" "2 3 4 5")
 
 best=$(score); echo "start SCORE=$best"
 for pass_n in 1 2; do
