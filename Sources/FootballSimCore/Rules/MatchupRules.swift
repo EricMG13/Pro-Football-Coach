@@ -41,7 +41,7 @@ public enum MatchupRules {
     ///
     /// The single most important number in the engine: it is what makes a worse team able to win.
     /// `03` §5.1's talent-dispersion band is what will pin it in P4.
-    public static let leverageNoise = 0.38
+    public static let leverageNoise = 0.46
 
     /// How much scheme fit can move a matchup, in leverage units at full fit.
     ///
@@ -53,7 +53,7 @@ public enum MatchupRules {
     public static let fatigueWeight = 0.22
 
     /// Home advantage, in leverage units applied to every home matchup before traditions.
-    public static let homeAdvantage = 0.035
+    public static let homeAdvantage = 0.02
 
     // MARK: - Assignment
 
@@ -120,7 +120,7 @@ public enum MatchupRules {
     public static let crashRunBonus = 0.10
     public static let aggressionRunBonus = 0.05
     /// Leverage above which the carrier breaks a tackle.
-    public static let breakTackleThreshold = 0.40
+    public static let breakTackleThreshold = 0.45
     /// Yards for the first break. Each successive one is worth a multiple of this, which is what
     /// gives a run distribution its right tail.
     public static let brokenTackleYards = 4

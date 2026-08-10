@@ -20,6 +20,43 @@ arc, the AI, the design system and every view are ahead.
 
 ### P4 — calibration harness and bands — **instrument done, engine not calibrated**
 
+#### Attempt seven (2026-08-10): bounded search completed; G5 remains red
+
+Exact execution order: `swift run -c release CalibrationScore tuning >
+/tmp/p4-attempt7-before-tuning.txt 2>&1` (**4/24**); `./scripts/tune-calibration.sh >
+/tmp/p4-attempt7-search.log 2>&1` (exit 0, **1,554 s**, tuning only); `swift run -c release
+CalibrationScore tuning > /tmp/p4-attempt7-after-tuning.txt 2>&1` (**7/24**); and, only after
+search, `swift run -c release CalibrationScore holdout > /tmp/p4-attempt7-after-holdout.txt 2>&1`
+(**5/24**). The retained constants are `leverageNoise = 0.46`, `homeAdvantage = 0.02`, and
+`breakTackleThreshold = 0.45`; each is part of the strict 4-to-7 tuning-score improvement.
+
+`./scripts/verify.sh` built successfully, but `SimTests` reported **264 tests / 77,741 checks, one
+failing test / two failed checks**. Both failures are the pinned pro and college play-by-play
+fingerprints, which are expected to move for a deliberate P4 calibration change; two separate
+processes produced the same new fingerprints. The required re-pin is in
+`Tests/SimTests/Suites/EngineTests.swift`, outside this task's allowed paths, so the verification
+gate is honestly unresolved rather than treated as green.
+
+The tuning failures are: college FG% upper; college home-win lower; college favourite-win upper;
+college explosive-run lower; college explosive-pass lower; college plays upper; pro pass yards
+upper; rush yards lower; completion% lower; interceptions upper; sacks lower; home-win lower;
+favourite-win upper; blowout upper; plays upper; explosive-run lower; and safeties upper. The
+holdout failures are: college total upper, FG% upper, home-win lower, favourite-win upper,
+explosive-run lower, and plays upper; pro pass yards upper, rush yards lower, completion% lower,
+interceptions upper, sacks lower, FG% lower, home-win **both** (CI wider than band), favourite-win
+upper, blowout upper, plays upper, explosive-run lower, safeties upper, and tie rate lower. Exact
+CIs, bands, sample sizes, and all violated edges are recorded in `HANDOFF-2026-08-10.md`'s attempt
+seven table and the `/tmp/p4-attempt7-after-*.txt` reports.
+
+The holdout set was previously used for Task 2's CLI smoke check. Its post-search result is
+deterministic evaluation evidence, but no longer blinded holdout evidence; it was not used during
+candidate selection. G5 consequently remains red and **P4 cannot close**. The smallest model
+deficiency shown by both reports is the run-resolution path: it cannot produce enough baseline or
+explosive rushing through its current leverage/lane/rare-tail formulation. Do not widen bands or
+extend this grid; change the outcome model first. This attempt is repeated adverse D2 evidence, but
+does not honestly prove D2's five-consecutive-*model-tuning*-attempt falsifier because three prior
+attempts were instrument repairs.
+
 Built and green: `01` §6.5's band tables with their confidence grades, §6.2's TOST, §6.3's total
 variation distance, and a headless seeded harness with an A/B seed ladder.
 
@@ -42,7 +79,7 @@ skipped the entire pre-snap charge, putting college at 142 plays per team-game a
 67–75; and field goal difficulty was `40 + distance`, making a routine 25-yarder a 65-rated
 opponent. None of those was a constant to nudge.
 
-**Five of 24 bands hold.** Six held before commit `a629e86`, which gave the run game a right tail
+**Seven of 24 tuning bands hold (five on the deterministic post-search evaluation set).** Six held before commit `a629e86`, which gave the run game a right tail
 and made it read `vision` — both required by `03` §1.1 and §1.2. The constants were tuned around the
 old run model, so the tuned point moved when the model did, and a worse-scoring correct model beats
 a better-scoring wrong one. **Attempt seven is a re-run of `scripts/tune-calibration.sh`**, whose
