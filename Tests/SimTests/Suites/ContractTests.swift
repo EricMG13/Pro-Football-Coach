@@ -252,6 +252,60 @@ private func caught(_ source: String, by predicate: (String) -> Bool) -> Bool {
     !offendingLines(in: [(path: "planted.swift", text: source)], where: predicate).isEmpty
 }
 
+// MARK: - The dictionary-key scan
+
+/// Key types Swift already encodes as a JSON object without help.
+private let inherentlyKeyableTypes: Set<String> = ["String", "Int", "UUID"]
+
+/// Every dictionary key type named in a `[Key: Value]` annotation in `text`.
+///
+/// ponytail: matches the annotation syntax the model actually uses — `[Key: Value]` with a single
+/// capitalised identifier before the colon. A key that is itself generic or nested arrives as its
+/// outer name, which is the conservative direction: it gets checked rather than skipped.
+func dictionaryKeyTypes(in text: String) -> Set<String> {
+    var found: Set<String> = []
+    for line in codeLines(of: text) {
+        var characters = Array(line)
+        var index = 0
+        while index < characters.count {
+            guard characters[index] == "[" else { index += 1; continue }
+            var cursor = index + 1
+            while cursor < characters.count, characters[cursor] == " " { cursor += 1 }
+            var name = ""
+            while cursor < characters.count,
+                  characters[cursor].isLetter || characters[cursor].isNumber
+                    || characters[cursor] == "_" {
+                name.append(characters[cursor])
+                cursor += 1
+            }
+            // A dictionary annotation is "[Name:", with nothing between the name and the colon but
+            // spaces. "[Name]" is an array and "[a: b]" is a literal with a lowercase key.
+            while cursor < characters.count, characters[cursor] == " " { cursor += 1 }
+            if cursor < characters.count, characters[cursor] == ":",
+               let initial = name.first, initial.isUppercase {
+                found.insert(name)
+            }
+            index += 1
+        }
+        _ = characters
+    }
+    return found
+}
+
+/// Every type given a `CodingKeyRepresentable` conformance anywhere in the engine.
+private func codingKeyRepresentableTypes(in files: [(path: String, text: String)]) -> Set<String> {
+    var conformed: Set<String> = []
+    for file in files {
+        for line in codeLines(of: file.text) where line.contains("CodingKeyRepresentable") {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard trimmed.hasPrefix("extension ") else { continue }
+            let rest = trimmed.dropFirst("extension ".count).drop(while: { $0 == " " })
+            conformed.insert(String(rest.prefix { $0.isLetter || $0.isNumber || $0 == "_" }))
+        }
+    }
+    return conformed
+}
+
 // MARK: - The directories each scan walks
 
 // 03 section 3.5: `id: UUID = UUID()` as a default parameter is legitimate in Model/, and a scan
@@ -430,6 +484,46 @@ func runContractTests() {
                        "Sources/FootballSimCore/\(name) is missing, so the ambient-identity "
                            + "exemption names a directory that is not there")
             }
+        }
+
+        test("every dictionary key type in the engine encodes as a JSON object") {
+            // Swift keys a JSON object only when the key is String, Int or CodingKeyRepresentable.
+            // Anything else encodes as a flat [key, value, key, value] array in DICTIONARY ORDER,
+            // which is salted per process — so the save bytes churn between launches and no
+            // byte-level determinism test downstream can hold.
+            //
+            // CodingSupport was ported to fix this for UUID. P1 reintroduced it for Attribute and
+            // CoachAttribute, because the port log recorded the fix and not the rule. This scan is
+            // the rule: a phase that adds an enum-keyed map without a conformance fails here rather
+            // than shipping a save that differs from itself.
+            let engine = swiftFiles(under: "Sources/FootballSimCore")
+            expect(!engine.isEmpty, "found no engine sources to scan — the scan would pass vacuously")
+            let conformed = codingKeyRepresentableTypes(in: engine)
+            var unsafe: [String] = []
+            for file in engine {
+                for key in dictionaryKeyTypes(in: file.text)
+                where !inherentlyKeyableTypes.contains(key) && !conformed.contains(key) {
+                    unsafe.append("\(file.path): [\(key): ...]")
+                }
+            }
+            expect(
+                unsafe.isEmpty,
+                "these dictionary keys are not CodingKeyRepresentable, so their maps encode in "
+                    + "hash order: " + unsafe.sorted().joined(separator: ", ")
+            )
+        }
+
+        test("the dictionary-key scan catches an unconformed key and spares a conformed one") {
+            expect(dictionaryKeyTypes(in: "var m: [Attribute: Rating] = [:]\n").contains("Attribute"),
+                   "a planted dictionary annotation was not seen")
+            expect(dictionaryKeyTypes(in: "var m: [String: Int]\n").contains("String"),
+                   "a String-keyed annotation was not seen")
+            expect(!dictionaryKeyTypes(in: "var ids: [UUID]\n").contains("UUID"),
+                   "an array was mistaken for a dictionary")
+            expect(!dictionaryKeyTypes(in: "let m = [key: value]\n").contains("key"),
+                   "a lowercase literal key was mistaken for a type")
+            expect(!dictionaryKeyTypes(in: "// [Attribute: Rating] in prose\n").contains("Attribute"),
+                   "a dictionary mentioned only in a comment was reported")
         }
 
         test("no symlink hides source from the scans") {

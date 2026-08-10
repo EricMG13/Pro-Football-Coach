@@ -4,5 +4,6 @@ runSeedDerivationTests()
 runContractTests()
 runSaveEnvelopeTests()
 runRulesTests()
+runModelTests()
 
 TestKit.finish()

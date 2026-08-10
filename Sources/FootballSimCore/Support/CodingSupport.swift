@@ -16,6 +16,25 @@ extension UUID: @retroactive CodingKeyRepresentable {
     }
 }
 
+// The same rule, for every other key type the model uses.
+//
+// This is not a UUID problem, it is a *dictionary key* problem: Swift keys a JSON object only when
+// the key is String, Int, or CodingKeyRepresentable. A String-raw-value enum is none of those by
+// default, so `[Attribute: Rating]` encoded as ["hands",70,"speed",88,...] in hash order until
+// these conformances existed. Found in P1 by asserting the encoded *shape*, which is what makes it
+// visible: within one process the hash seed is constant, so a round-trip test and a repeat-encode
+// test both pass while the bytes churn between launches.
+//
+// SE-0320 gives every `RawRepresentable where RawValue == String` the implementation for free, so
+// each of these is a one-line declaration of intent. `ContractTests` scans `Model/` for a
+// dictionary key type that has no conformance, so a later phase cannot add one and forget.
+extension Attribute: CodingKeyRepresentable {}
+extension CoachAttribute: CodingKeyRepresentable {}
+extension Position: CodingKeyRepresentable {}
+extension PositionGroup: CodingKeyRepresentable {}
+extension Trait: CodingKeyRepresentable {}
+extension Tier: CodingKeyRepresentable {}
+
 /// Minimal string-backed coding key, needed only by the conformance above.
 public struct StringCodingKey: CodingKey {
     public let stringValue: String
