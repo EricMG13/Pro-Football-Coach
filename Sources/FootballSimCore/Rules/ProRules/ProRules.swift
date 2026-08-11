@@ -31,10 +31,35 @@ public enum ProRules {
 
     public static var seasonWeeks: Int { regularSeasonWeeks + bracketRounds }
 
+    /// A player cannot play in the bye week, so the possible game total is smaller than the shared
+    /// calendar even for a team that reaches the championship.
+    public static var maximumGamesPerSeason: Int {
+        gamesPerRegularSeason + bracketRounds
+    }
+
     // MARK: - The roster
 
     public static let activeRosterLimit = 53
     public static let gamedayActiveLimit = 48
+
+    /// Target-scale initial population from `02-GAME-DESIGN.md` section 11.2.1.
+    public static let initialRosterByPosition: [Position: Int] = [
+        .quarterback: 3,
+        .runningBack: 4,
+        .wideReceiver: 6,
+        .tightEnd: 3,
+        .leftTackle: 2,
+        .guardPosition: 5,
+        .center: 2,
+        .rightTackle: 2,
+        .edgeRusher: 4,
+        .defensiveTackle: 4,
+        .linebacker: 5,
+        .cornerback: 6,
+        .safety: 5,
+        .kicker: 1,
+        .punter: 1,
+    ]
 
     /// P8's cap-laundering defences apply here specifically: the practice squad is where the prior
     /// build's attack hid a contract.

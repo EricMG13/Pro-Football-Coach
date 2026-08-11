@@ -105,8 +105,10 @@ grows a row that no test backs.
 draft/cap/free agency, staff and scheme, generated identity with rivalries and traditions,
 conference realignment, the carousel, the record book, 20-season durability.
 
-**Out:** multiplayer, anything online, custom roster import/export (escalated to counsel and not
-planned), a school editor, historical seasons, iPad, portrait.
+**Out of v1:** multiplayer, anything online, custom-universe import/export, a school editor,
+historical seasons, iPad and portrait. The UI reserves optional player-photo, team-identity and
+venue-name/media slots so a future user-supplied universe is not blocked, but that feature requires
+a separate legal, privacy, security and content-handling gate.
 
 **Later, if it earns it:** more tiers below the top college division, a deeper staff market,
-scenario starts.
+scenario starts and a legally reviewed custom-universe workflow.

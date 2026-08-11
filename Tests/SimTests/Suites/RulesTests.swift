@@ -66,6 +66,13 @@ func runRulesTests() {
     }
 
     suite("College rules") {
+        test("prospect tombstone capacity covers every legal hot event") {
+            expectEqual(
+                CollegeRules.maximumArchivedProspectIdentities,
+                DomainEventLedger.maximumRetentionLimit
+            )
+        }
+
         test("the league is 134 programmes in 10 conferences") {
             expectEqual(CollegeRules.programmeCount, 134)
             expectEqual(CollegeRules.conferenceCount, 10)
@@ -97,6 +104,13 @@ func runRulesTests() {
             expectEqual(
                 CollegeRules.seasonWeeks,
                 CollegeRules.regularSeasonWeeks + CollegeRules.conferenceChampionshipWeeks
+                    + CollegeRules.bracketRounds
+            )
+            expectEqual(CollegeRules.maximumGamesPerSeason, 16)
+            expectEqual(
+                CollegeRules.maximumGamesPerSeason,
+                CollegeRules.gamesPerRegularSeason
+                    + CollegeRules.conferenceChampionshipWeeks
                     + CollegeRules.bracketRounds
             )
         }
@@ -160,6 +174,11 @@ func runRulesTests() {
             expectEqual(ProRules.bracketRounds, 3)
             expectEqual(ProRules.seasonWeeks, 21)
             expectEqual(ProRules.seasonWeeks, ProRules.regularSeasonWeeks + ProRules.bracketRounds)
+            expectEqual(ProRules.maximumGamesPerSeason, 20)
+            expectEqual(
+                ProRules.maximumGamesPerSeason,
+                ProRules.gamesPerRegularSeason + ProRules.bracketRounds
+            )
         }
 
         test("games plus byes fill the regular season exactly") {

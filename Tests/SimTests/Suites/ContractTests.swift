@@ -1,4 +1,5 @@
 import Foundation
+import ProFootballCoachUI
 
 // The four build-wide invariants from 03b section 1, in one place because that is what they are:
 // properties of the whole tree, not of any suite's subject.
@@ -140,6 +141,12 @@ private func importsUIFramework(_ line: String) -> Bool {
         break
     }
     return uiModules.contains(String(rest.prefix { $0.isLetter || $0.isNumber || $0 == "_" }))
+}
+
+private func referencesAuthoritativeRoot(_ line: String) -> Bool {
+    line.split { character in
+        !(character.isLetter || character.isNumber || character == "_")
+    }.contains("GameState")
 }
 
 /// True for any per-launch-salted hash, not only the literal spelling `hashValue`.
@@ -428,6 +435,25 @@ private func codingKeyRepresentableTypes(in files: [(path: String, text: String)
 // this file committing it.
 private let ambientIdentityExemptDirectories = ["Model"]
 
+private func contrastRatio(
+    _ foreground: CoachWorldTokens.ColorValue,
+    _ background: CoachWorldTokens.ColorValue
+) -> Double {
+    func linearized(_ channel: Double) -> Double {
+        channel <= 0.04045
+            ? channel / 12.92
+            : pow((channel + 0.055) / 1.055, 2.4)
+    }
+    func relativeLuminance(_ color: CoachWorldTokens.ColorValue) -> Double {
+        0.2126 * linearized(color.red) + 0.7152 * linearized(color.green)
+            + 0.0722 * linearized(color.blue)
+    }
+    let foregroundLuminance = relativeLuminance(foreground)
+    let backgroundLuminance = relativeLuminance(background)
+    return (max(foregroundLuminance, backgroundLuminance) + 0.05)
+        / (min(foregroundLuminance, backgroundLuminance) + 0.05)
+}
+
 func runContractTests() {
     suite("Contracts") {
         test("the engine imports no UI framework") {
@@ -462,6 +488,25 @@ func runContractTests() {
                    "a legitimate import was reported as an offender")
             expect(!caught("import SwiftUIX\n", by: importsUIFramework),
                    "the scan matched a module whose name merely starts with SwiftUI")
+        }
+
+        test("the UI target never owns or reads the authoritative root") {
+            let views = swiftFiles(under: "Sources/ProFootballCoachUI")
+            expect(!views.isEmpty, "found no UI sources to scan — the scan would pass vacuously")
+            let offenders = offendingLines(in: views, where: referencesAuthoritativeRoot)
+            expect(
+                offenders.isEmpty,
+                "UI code consumes immutable read models and intents, never GameState: "
+                    + offenders.joined(separator: ", ")
+            )
+        }
+
+        test("the authoritative-root UI scan catches code but ignores prose") {
+            expect(caught("let state: GameState\n", by: referencesAuthoritativeRoot),
+                   "a planted GameState property was not caught")
+            expect(!caught("// GameState stays in the application service\n",
+                           by: referencesAuthoritativeRoot),
+                   "a comment about GameState was reported")
         }
 
         test("no engine code seeds anything from a salted hash") {
@@ -584,6 +629,409 @@ func runContractTests() {
                    "a token-valued spacing was reported as an offender")
             expect(!caught("Text(\"hi\").padding(Token.gutter2)\n", by: containsDesignTokenLiteral),
                    "a digit inside a token's name was mistaken for a literal")
+        }
+
+        test("the production UI tokens preserve the canonical scales") {
+            expectEqual(
+                [CoachWorldTokens.Space.xxs, CoachWorldTokens.Space.xs,
+                 CoachWorldTokens.Space.sm, CoachWorldTokens.Space.md,
+                 CoachWorldTokens.Space.lg, CoachWorldTokens.Space.xl],
+                [4, 6, 8, 12, 16, 20],
+                "spacing must remain the six-step canonical scale"
+            )
+            expect(CoachWorldTokens.Shape.minimumTarget >= 44,
+                   "interactive targets must remain at least 44 points")
+            expect(CoachWorldTokens.TypeRole.authoredFloor >= 12,
+                   "authored text must remain at least 12 points")
+            expect(CoachWorldTokens.TypeRole.workingProse >= 17,
+                   "working prose must remain at least 17 points")
+        }
+
+        test("the production screen registry is complete and stably numbered") {
+            let screens = CoachWorldScreenID.allCases
+            expectEqual(screens.map(\.number), Array(1...62),
+                        "production screens must remain numbered exactly 1...62")
+            expectEqual(Set(screens.map(\.canonicalName)).count, 62,
+                        "production screen names must remain unique")
+        }
+
+        test("Coaching HQ exposes an injected read-model surface and a truthful app root") {
+            let uiFiles = swiftFiles(under: "Sources/ProFootballCoachUI")
+            let hq = uiFiles.first { $0.path.hasSuffix("/CoachingHQView.swift") }?.text ?? ""
+            let recruiting = uiFiles.first {
+                $0.path.hasSuffix("/RecruitingBoardView.swift")
+            }?.text ?? ""
+            let deskComponents = uiFiles.first {
+                $0.path.hasSuffix("/CoachWorldDeskComponents.swift")
+            }?.text ?? ""
+            let root = uiFiles.first { $0.path.hasSuffix("/RootView.swift") }?.text ?? ""
+
+            expect(hq.contains("public struct CoachingHQView"),
+                   "CoachingHQView.swift must expose the production HQ screen")
+            expect(hq.contains("let model: CoachingHQReadModel"),
+                   "Coaching HQ must consume an immutable read model")
+            expect(hq.contains("Button("), "Coaching HQ must use native buttons")
+            expect(!hq.contains("onTapGesture"),
+                   "Coaching HQ must not replace semantic controls with tap gestures")
+            expect(hq.contains("@State private"),
+                   "screen-owned draft state must remain private")
+            expect(hq.contains("accessibilitySortPriority"),
+                   "Coaching HQ must declare deterministic VoiceOver order")
+
+            expect(recruiting.contains("public struct RecruitingBoardView"),
+                   "RecruitingBoardView.swift must expose the production board")
+            expect(recruiting.contains("let model: RecruitingBoardReadModel"),
+                   "Recruiting Board must consume an immutable read model")
+            expect(recruiting.contains("Button("),
+                   "Recruiting Board must use native buttons")
+            expect(!recruiting.contains("onTapGesture"),
+                   "Recruiting Board must not replace semantic controls with tap gestures")
+            expect(recruiting.contains("accessibilitySortPriority"),
+                   "Recruiting Board must declare deterministic VoiceOver order")
+            expect(recruiting.contains("choice.cost") && recruiting.contains("choice.consequence"),
+                   "recruiting actions must expose both cost and consequence")
+
+            expect(deskComponents.contains("struct CoachWorldActionButtonStyle")
+                       && deskComponents.contains("struct CoachWorldRouteButton")
+                       && deskComponents.contains("coachWorldDeskSurface"),
+                   "management screens must share the proven action, route and desk-surface elements")
+            expect(hq.contains("CoachWorldActionButtonStyle")
+                       && hq.contains("CoachWorldRouteButton")
+                       && recruiting.contains("CoachWorldActionButtonStyle")
+                       && recruiting.contains("CoachWorldRouteButton"),
+                   "HQ and Recruiting must consume the same management-screen controls")
+            expect(!hq.contains("HQActionButtonStyle")
+                       && !recruiting.contains("RecruitingActionButtonStyle"),
+                   "screen-local copies of shared controls must not return")
+
+            expect(root.contains("public struct RootView"),
+                   "the application shell imports a public RootView")
+            expect(root.contains("#if DEBUG")
+                       && root.contains("CoachWorldSampleData.coachingHQ")
+                       && root.contains("CoachWorldSampleData.recruitingBoard"),
+                   "sample career values must be debug-only")
+            expect(root.contains("No career loaded"),
+                   "release builds need a truthful no-career state")
+        }
+
+#if DEBUG
+        test("sample read models stay labelled and enforce the recorded-match shape") {
+            let headquarters = CoachWorldSampleData.coachingHQ
+            expectEqual(headquarters.weekPlan.count, 7,
+                        "the Coaching HQ week plan must come from seven read-model days")
+            expectEqual(headquarters.weekPlan.filter(\.isCurrent).count, 1,
+                        "the Coaching HQ week plan must own one current day")
+            expect(headquarters.unallocatedPracticeMinutes >= 0,
+                   "the Coaching HQ time bank must be owned by a nonnegative read-model value")
+            expect(headquarters.coach.photo == nil,
+                   "the base career uses the canonical blank coach photo state")
+
+            let recruiting = CoachWorldSampleData.recruitingBoard
+            expectEqual(recruiting.provenance, .sample,
+                        "preview recruiting data must identify itself as sample data")
+            expectEqual(recruiting.prospects.count, 5,
+                        "the proof board needs enough rows to test comparison hierarchy")
+            expectEqual(Set(recruiting.prospects.map(\.stableID)).count,
+                        recruiting.prospects.count,
+                        "recruiting prospect identifiers must be unique")
+            expectEqual(Set(recruiting.prospects.map(\.boardRank)).count,
+                        recruiting.prospects.count,
+                        "recruiting board ranks must be unique")
+            expect(recruiting.prospects.allSatisfy { $0.person.photo == nil },
+                        "personnel samples use the canonical blank photo state")
+            expect(recruiting.prospects.allSatisfy { prospect in
+                prospect.choices.allSatisfy { choice in
+                    !choice.cost.isEmpty && !choice.consequence.isEmpty
+                }
+            }, "every recruiting choice must name its cost and consequence")
+            expect(CoachWorldSampleData.homeTeam.secondaryMarkAsset == nil
+                       && CoachWorldSampleData.homeTeam.uniformAsset == nil
+                       && CoachWorldSampleData.homeTeam.primaryColorHex == nil
+                       && CoachWorldSampleData.homeTeam.secondaryColorHex == nil,
+                   "future custom-universe team assets must remain optional")
+
+            let sample = CoachWorldSampleData.matchDay
+            expectEqual(sample.provenance, .sample,
+                        "preview match data must identify itself as sample data")
+            expectEqual(sample.actors.count, 22, "a Match Day frame must contain all 22 actors")
+            expect(sample.foregroundActorIDs.count <= 3,
+                   "a Match Day frame may foreground at most three actors")
+            expectEqual(Set(sample.controls.map(\.id)), Set(MatchDayControlID.allCases),
+                        "Match Day exposes exactly the five canonical controls")
+            if let interruption = sample.staffInterruption {
+                expect(!interruption.evidence.isEmpty,
+                       "a staff interruption must cite inspectable evidence")
+                expectEqual(
+                    Set(interruption.actions.map(\.path)),
+                    Set(MatchDayReadModel.StaffInterruption.Path.allCases),
+                    "a staff interruption must expose accept, dismiss and inspect-evidence paths"
+                )
+                expect(interruption.actions.allSatisfy { action in
+                    !action.cost.isEmpty && !action.consequence.isEmpty
+                }, "every staff interruption path must expose cost and consequence")
+                do {
+                    _ = try MatchDayReadModel.StaffInterruption(
+                        stableID: interruption.stableID,
+                        staff: interruption.staff,
+                        message: interruption.message,
+                        evidence: interruption.evidence,
+                        actions: Array(interruption.actions.dropLast())
+                    )
+                    expect(false, "an interruption without inspect-evidence was accepted")
+                } catch let error as MatchDayReadModel.StaffInterruption.ValidationError {
+                    expectEqual(error, .missingPath(.inspectEvidence),
+                                "the wrong missing-path error was returned")
+                } catch {
+                    expect(false, "an unexpected interruption error was returned: \(error)")
+                }
+                do {
+                    _ = try MatchDayReadModel.StaffInterruption(
+                        stableID: interruption.stableID,
+                        staff: interruption.staff,
+                        message: interruption.message,
+                        evidence: ["   "],
+                        actions: interruption.actions
+                    )
+                    expect(false, "an interruption with blank evidence was accepted")
+                } catch let error as MatchDayReadModel.StaffInterruption.ValidationError {
+                    expectEqual(error, .evidenceRequired,
+                                "the wrong blank-evidence error was returned")
+                } catch {
+                    expect(false, "an unexpected blank-evidence error was returned: \(error)")
+                }
+                do {
+                    let actions = interruption.actions.map { action in
+                        action.path == .accept
+                            ? .init(
+                                path: action.path,
+                                intentID: action.intentID,
+                                title: action.title,
+                                cost: " ",
+                                consequence: action.consequence,
+                                isEnabled: action.isEnabled
+                            )
+                            : action
+                    }
+                    _ = try MatchDayReadModel.StaffInterruption(
+                        stableID: interruption.stableID,
+                        staff: interruption.staff,
+                        message: interruption.message,
+                        evidence: interruption.evidence,
+                        actions: actions
+                    )
+                    expect(false, "an interruption with a blank accept cost was accepted")
+                } catch let error as MatchDayReadModel.StaffInterruption.ValidationError {
+                    expectEqual(error, .costRequired(.accept),
+                                "the wrong blank-cost error was returned")
+                } catch {
+                    expect(false, "an unexpected blank-cost error was returned: \(error)")
+                }
+                do {
+                    let repeatedIntent = interruption.actions[0].intentID
+                    let actions = interruption.actions.map { action in
+                        MatchDayReadModel.StaffInterruption.Action(
+                            path: action.path,
+                            intentID: repeatedIntent,
+                            title: action.title,
+                            cost: action.cost,
+                            consequence: action.consequence,
+                            isEnabled: action.isEnabled
+                        )
+                    }
+                    _ = try MatchDayReadModel.StaffInterruption(
+                        stableID: interruption.stableID,
+                        staff: interruption.staff,
+                        message: interruption.message,
+                        evidence: interruption.evidence,
+                        actions: actions
+                    )
+                    expect(false, "an interruption with duplicate intent IDs was accepted")
+                } catch let error as MatchDayReadModel.StaffInterruption.ValidationError {
+                    expectEqual(error, .duplicateIntentID,
+                                "the wrong duplicate-intent error was returned")
+                } catch {
+                    expect(false, "an unexpected duplicate-intent error was returned: \(error)")
+                }
+            } else {
+                expect(false, "the sample Match Day frame must contain a staff interruption")
+            }
+
+            func rebuilding(
+                actors: [MatchDayReadModel.Actor],
+                foregroundActorIDs: [String],
+                situation: MatchDayReadModel.Situation? = nil,
+                offenseDirection: MatchFieldDirection? = nil,
+                causalCommentary: String? = nil,
+                controls: [MatchDayReadModel.ControlState]? = nil
+            ) throws -> MatchDayReadModel {
+                try MatchDayReadModel(
+                    recordedOutcomeID: sample.recordedOutcomeID,
+                    provenance: sample.provenance,
+                    world: sample.world,
+                    venue: sample.venue,
+                    home: sample.home,
+                    away: sample.away,
+                    situation: situation ?? sample.situation,
+                    offenseDirection: offenseDirection ?? sample.offenseDirection,
+                    actors: actors,
+                    lineOfScrimmage: sample.lineOfScrimmage,
+                    firstDownLine: sample.firstDownLine,
+                    foregroundActorIDs: foregroundActorIDs,
+                    causalCommentary: causalCommentary ?? sample.causalCommentary,
+                    staffInterruption: sample.staffInterruption,
+                    controls: controls ?? sample.controls
+                )
+            }
+
+            do {
+                _ = try rebuilding(
+                    actors: Array(sample.actors.dropLast()),
+                    foregroundActorIDs: sample.foregroundActorIDs
+                )
+                expect(false, "a 21-actor recorded frame was accepted")
+            } catch let error as MatchDayReadModel.ValidationError {
+                expectEqual(error, .actorCount(21), "the wrong 21-actor error was returned")
+            } catch {
+                expect(false, "an unexpected 21-actor error was returned: \(error)")
+            }
+
+            do {
+                var actors = sample.actors
+                let actor = actors[0]
+                actors[0] = MatchDayReadModel.Actor(
+                    stableID: actor.stableID,
+                    side: actor.side,
+                    uniformNumber: actor.uniformNumber,
+                    position: actor.position,
+                    xYardsFromLeftGoalLine: actor.xYardsFromLeftGoalLine,
+                    yFraction: .nan
+                )
+                _ = try rebuilding(
+                    actors: actors,
+                    foregroundActorIDs: sample.foregroundActorIDs
+                )
+                expect(false, "a non-finite actor position was accepted")
+            } catch let error as MatchDayReadModel.ValidationError {
+                expectEqual(error, .invalidFieldPosition(sample.actors[0].stableID),
+                            "the wrong non-finite-position error was returned")
+            } catch {
+                expect(false, "an unexpected non-finite-position error was returned: \(error)")
+            }
+
+            do {
+                _ = try rebuilding(
+                    actors: sample.actors,
+                    foregroundActorIDs: sample.actors.prefix(4).map(\.stableID)
+                )
+                expect(false, "a four-actor foreground was accepted")
+            } catch let error as MatchDayReadModel.ValidationError {
+                expectEqual(error, .foregroundCount(4),
+                            "the wrong four-actor foreground error was returned")
+            } catch {
+                expect(false, "an unexpected foreground error was returned: \(error)")
+            }
+
+            do {
+                _ = try rebuilding(
+                    actors: sample.actors,
+                    foregroundActorIDs: sample.foregroundActorIDs,
+                    situation: .init(
+                        quarter: sample.situation.quarter,
+                        clockSecondsRemaining: sample.situation.clockSecondsRemaining,
+                        down: 5,
+                        yardsToGo: sample.situation.yardsToGo,
+                        possession: sample.situation.possession
+                    )
+                )
+                expect(false, "a fifth down was accepted")
+            } catch let error as MatchDayReadModel.ValidationError {
+                expectEqual(error, .invalidSituation("down"),
+                            "the wrong invalid-down error was returned")
+            } catch {
+                expect(false, "an unexpected invalid-down error was returned: \(error)")
+            }
+
+            do {
+                _ = try rebuilding(
+                    actors: sample.actors,
+                    foregroundActorIDs: sample.foregroundActorIDs,
+                    offenseDirection: .rightToLeft
+                )
+                expect(false, "a first-down line behind the declared direction was accepted")
+            } catch let error as MatchDayReadModel.ValidationError {
+                expectEqual(error, .invalidLine("firstDownDirection"),
+                            "the wrong first-down-direction error was returned")
+            } catch {
+                expect(false, "an unexpected first-down-direction error was returned: \(error)")
+            }
+
+            do {
+                _ = try rebuilding(
+                    actors: sample.actors,
+                    foregroundActorIDs: sample.foregroundActorIDs,
+                    causalCommentary: "   "
+                )
+                expect(false, "blank causal commentary was accepted")
+            } catch let error as MatchDayReadModel.ValidationError {
+                expectEqual(error, .commentaryRequired,
+                            "the wrong blank-commentary error was returned")
+            } catch {
+                expect(false, "an unexpected commentary error was returned: \(error)")
+            }
+
+            do {
+                let repeatedIntent = sample.controls[0].intentID
+                let controls = sample.controls.map { control in
+                    MatchDayReadModel.ControlState(
+                        id: control.id,
+                        value: control.value,
+                        isEnabled: control.isEnabled,
+                        isSelected: control.isSelected,
+                        intentID: repeatedIntent
+                    )
+                }
+                _ = try rebuilding(
+                    actors: sample.actors,
+                    foregroundActorIDs: sample.foregroundActorIDs,
+                    controls: controls
+                )
+                expect(false, "Match Day controls with duplicate intent IDs were accepted")
+            } catch let error as MatchDayReadModel.ValidationError {
+                expectEqual(error, .invalidControls,
+                            "the wrong duplicate-control-intent error was returned")
+            } catch {
+                expect(false, "an unexpected duplicate-control-intent error was returned: \(error)")
+            }
+        }
+#endif
+
+        test("the production palettes preserve readable role contrast") {
+            for (name, palette) in [
+                ("dark", CoachWorldTokens.dark), ("light", CoachWorldTokens.light),
+            ] {
+                for surface in [palette.page, palette.work, palette.raised] {
+                    expect(contrastRatio(palette.contentPrimary, surface) >= 4.5,
+                           "\(name) primary content must meet 4.5:1")
+                    expect(contrastRatio(palette.contentSecondary, surface) >= 4.5,
+                           "\(name) secondary content must meet 4.5:1")
+                    expect(contrastRatio(palette.contentQuiet, surface) >= 4.5,
+                           "\(name) quiet content must meet 4.5:1")
+                }
+                for indicator in [
+                    palette.actionPrimary, palette.actionSecondary,
+                    palette.actionDestructive, palette.stateLive, palette.statePositive,
+                    palette.stateWarning, palette.stateNegative, palette.stateInfo,
+                ] {
+                    expect(contrastRatio(indicator, palette.work) >= 3,
+                           "\(name) action and state indicators must meet 3:1")
+                }
+                expect(contrastRatio(palette.fieldLine, palette.fieldTurf) >= 3,
+                       "\(name) field lines must meet 3:1")
+                expect(contrastRatio(palette.fieldAnnotation, palette.fieldTurf) >= 3,
+                       "\(name) field annotations must meet 3:1")
+                expect(contrastRatio(palette.fieldLive, palette.fieldTurf) >= 3,
+                       "\(name) live field marks must meet 3:1")
+            }
         }
 
         test("every directory the ambient-identity scan exempts exists") {

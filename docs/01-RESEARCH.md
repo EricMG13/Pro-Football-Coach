@@ -2215,7 +2215,7 @@ dated note, so any post-hoc rationalisation is visible.**
 
 #### 8.0 Preconditions
 
-1. Machine with Xcode 16+ and an iOS 17 simulator or device.
+1. Machine with Xcode 26.6+ and an iOS 26 simulator or iPhone 15-generation-or-newer device.
 2. `brew install xcodegen && xcodegen generate --spec App/project.yml`, then
    `swift build && swift run -c release SimTests` (per `STATUS.md:23-32`).
 3. **Record which build you are running.** Note the commit SHA. If it is `HEAD` (post-`47ac105`),

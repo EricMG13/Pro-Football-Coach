@@ -267,6 +267,30 @@ the legal tests.
 | Contract length | 1 to 7 years | An upper bound so a corrupt save cannot ask for an unbounded allocation. A contract of zero years carries no signing bonus |
 | Draft | 7 rounds of 32 picks, 224 total | |
 
+### 11.2.1 Initial roster position templates
+
+M1 populates the target world before lifecycle systems exist. These are initialization constants,
+not permanent depth-chart rules; M2 movement may change the shape while positional-coverage
+integrity keeps every roster playable.
+
+| Position | College (105) | Pro active (53) |
+|---|---:|---:|
+| Quarterback | 4 | 3 |
+| Running back | 7 | 4 |
+| Wide receiver | 14 | 6 |
+| Tight end | 6 | 3 |
+| Left tackle | 6 | 2 |
+| Guard | 12 | 5 |
+| Center | 5 | 2 |
+| Right tackle | 6 | 2 |
+| Edge rusher | 9 | 4 |
+| Defensive tackle | 9 | 4 |
+| Linebacker | 11 | 5 |
+| Cornerback | 9 | 6 |
+| Safety | 5 | 5 |
+| Kicker | 1 | 1 |
+| Punter | 1 | 1 |
+
 ### 11.3 Shared
 
 | Constant | Value | Why |
@@ -371,6 +395,7 @@ carries the *shape* (10 conferences, sizes 12 to 16, summing to 134) and generat
 ## 12. What v1 does not include
 
 Stated so scope creep has something to bounce off: no multiplayer, no online anything, no custom
-roster import/export (escalated to counsel in `01-RESEARCH.md` §6.2B §3.2 and not planned), no
-create-a-school editor, no historical seasons, no iPad layout, no portrait. (Orientation flipped by
-the owner on 2026-08-10 — `04` §5.2.)
+universe import/export in v1 (escalated to counsel in `01-RESEARCH.md` §6.2B §3.2; optional person,
+team and venue asset fields remain reserved for a future approved feature), no create-a-school
+editor, no historical seasons, no iPad layout, no portrait. (Orientation flipped by the owner on
+2026-08-10 — `04` §7.)

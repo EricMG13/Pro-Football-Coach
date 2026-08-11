@@ -1,0 +1,477 @@
+import Foundation
+
+public enum CoachIntent: Codable, Sendable, Equatable {
+    case advanceWeek
+    case recruiting(RecruitingActionRequest)
+    case tacticalPlan(TacticalPlanRequest)
+    case practicePlan(TacticalPracticePlanRequest)
+    case career(CareerArcRequest)
+    case proManagement(ProManagementRequest)
+    case proMarket(ProMarketRequest)
+}
+
+public enum IntentResolutionError: Error, Equatable {
+    case unresolvedMandatoryDecisions(count: Int)
+    case recruitingUnavailableDuringPortal
+    case tacticalPlanUnavailable
+    case tacticalCalendarMismatch
+    case careerArcUnavailable
+    case careerCalendarMismatch
+    case professionalManagementUnavailable
+    case professionalCalendarMismatch
+    case professionalTransactionFailed(ProManagementError)
+    case professionalMarketUnavailable
+    case professionalMarketCalendarMismatch
+    case professionalMarketActionFailed(ProMarketError)
+    case eventAppendFailed
+    case integrityFailed(issueCount: Int)
+}
+
+public struct TacticalPlanRequest: Codable, Sendable, Equatable {
+    public let organisationID: UUID
+    public let calendar: CalendarState
+    public let plan: TacticalPlan
+
+    public init(organisationID: UUID, calendar: CalendarState, plan: TacticalPlan) {
+        self.organisationID = organisationID
+        self.calendar = calendar
+        self.plan = plan
+    }
+}
+
+public struct TacticalPracticePlanRequest: Codable, Sendable, Equatable {
+    public let organisationID: UUID
+    public let calendar: CalendarState
+    public let plan: TacticalPracticePlan
+
+    public init(organisationID: UUID, calendar: CalendarState, plan: TacticalPracticePlan) {
+        self.organisationID = organisationID
+        self.calendar = calendar
+        self.plan = plan
+    }
+}
+
+public struct CareerArcRequest: Codable, Sendable, Equatable {
+    public let calendar: CalendarState
+    public let action: CareerArcAction
+
+    public init(calendar: CalendarState, action: CareerArcAction) {
+        self.calendar = calendar
+        self.action = action
+    }
+}
+
+public enum TacticalUpdateKind: String, Codable, Sendable, Equatable {
+    case gamePlan
+    case practicePlan
+}
+
+public struct TacticalIntentResult: Codable, Sendable, Equatable {
+    public let organisationID: UUID
+    public let calendar: CalendarState
+    public let kind: TacticalUpdateKind
+
+    public init(organisationID: UUID, calendar: CalendarState, kind: TacticalUpdateKind) {
+        self.organisationID = organisationID
+        self.calendar = calendar
+        self.kind = kind
+    }
+}
+
+public struct CareerIntentResult: Codable, Sendable, Equatable {
+    public let calendar: CalendarState
+    public let action: CareerArcAction
+
+    public init(calendar: CalendarState, action: CareerArcAction) {
+        self.calendar = calendar
+        self.action = action
+    }
+}
+
+public struct ProManagementIntentResult: Codable, Sendable, Equatable {
+    public let calendar: CalendarState
+    public let action: ProManagementAction
+    public let cap: ProCapSnapshot
+
+    public init(
+        calendar: CalendarState,
+        action: ProManagementAction,
+        cap: ProCapSnapshot
+    ) {
+        self.calendar = calendar
+        self.action = action
+        self.cap = cap
+    }
+}
+
+public struct ProMarketIntentResult: Codable, Sendable, Equatable {
+    public let calendar: CalendarState
+    public let action: ProMarketAction
+    public let emittedEvents: [DomainEvent]
+
+    public init(
+        calendar: CalendarState,
+        action: ProMarketAction,
+        emittedEvents: [DomainEvent] = []
+    ) {
+        self.calendar = calendar
+        self.action = action
+        self.emittedEvents = emittedEvents
+    }
+}
+
+public struct RecruitingIntentResult: Codable, Sendable, Equatable {
+    public let request: RecruitingActionRequest
+    public let explanation: RecruitingDecisionExplanation
+    public let emittedEvents: [DomainEvent]
+
+    public init(
+        request: RecruitingActionRequest,
+        explanation: RecruitingDecisionExplanation,
+        emittedEvents: [DomainEvent]
+    ) {
+        self.request = request
+        self.explanation = explanation
+        self.emittedEvents = emittedEvents
+    }
+}
+
+public enum IntentResult: Codable, Sendable, Equatable {
+    case weekAdvanced(snapshot: WeekSnapshot, emittedEvents: [DomainEvent])
+    case recruitingUpdated(RecruitingIntentResult)
+    case tacticalUpdated(TacticalIntentResult)
+    case careerUpdated(CareerIntentResult)
+    case proManagementUpdated(ProManagementIntentResult)
+    case proMarketUpdated(ProMarketIntentResult)
+}
+
+public struct ResolvedIntent: Codable, Sendable, Equatable {
+    public let state: GameState
+    public let result: IntentResult
+
+    public init(state: GameState, result: IntentResult) {
+        self.state = state
+        self.result = result
+    }
+}
+
+/// The sole mutation boundary exposed to presentation code.
+public enum IntentResolver {
+    public static func resolve(_ intent: CoachIntent, in state: GameState) throws -> ResolvedIntent {
+        switch intent {
+        case .advanceWeek:
+            guard state.pending.mandatoryDecisions.isEmpty else {
+                throw IntentResolutionError.unresolvedMandatoryDecisions(
+                    count: state.pending.mandatoryDecisions.count
+                )
+            }
+            let transition = try WorldScheduler.advanceWeek(state)
+            return ResolvedIntent(
+                state: transition.state,
+                result: .weekAdvanced(
+                    snapshot: transition.snapshot,
+                    emittedEvents: transition.emittedEvents
+                )
+            )
+
+        case let .recruiting(request):
+            guard state.college.portal.phase != .awaitingSpring else {
+                throw IntentResolutionError.recruitingUnavailableDuringPortal
+            }
+            let transition = try CollegeRecruitingSystem.apply(request, in: state)
+            var nextState = state
+            nextState.prospects = transition.prospects
+            nextState.college = transition.college
+            nextState.scouting = transition.scouting
+            var emittedEvents: [DomainEvent] = []
+            for payload in transition.eventPayloads {
+                let event = DomainEvent(
+                    id: DomainEvent.deterministicID(
+                        rootSeed: nextState.league.seed,
+                        sequence: nextState.history.nextSequence
+                    ),
+                    sequence: nextState.history.nextSequence,
+                    occurredAt: nextState.calendar,
+                    payload: payload
+                )
+                guard nextState.history.append(event) else {
+                    throw IntentResolutionError.eventAppendFailed
+                }
+                emittedEvents.append(event)
+            }
+            nextState.college = CollegeCycleSystem.pruningArchivedProspects(in: nextState)
+            let integrity = WorldIntegrity.check(nextState)
+            guard integrity.isValid else {
+                throw IntentResolutionError.integrityFailed(issueCount: integrity.issues.count)
+            }
+            return ResolvedIntent(
+                state: nextState,
+                result: .recruitingUpdated(RecruitingIntentResult(
+                    request: request,
+                    explanation: transition.explanation,
+                    emittedEvents: emittedEvents
+                ))
+            )
+
+        case let .tacticalPlan(request):
+            guard request.calendar == state.calendar else {
+                throw IntentResolutionError.tacticalCalendarMismatch
+            }
+            guard state.programmes[request.organisationID] != nil
+                    || state.proTeams[request.organisationID] != nil else {
+                throw IntentResolutionError.tacticalPlanUnavailable
+            }
+            var nextState = state
+            guard nextState.tactical.setPlan(
+                request.plan,
+                for: request.organisationID,
+                at: request.calendar
+            ) else {
+                throw IntentResolutionError.tacticalPlanUnavailable
+            }
+            let integrity = WorldIntegrity.check(nextState)
+            guard integrity.isValid else {
+                throw IntentResolutionError.integrityFailed(issueCount: integrity.issues.count)
+            }
+            return ResolvedIntent(
+                state: nextState,
+                result: .tacticalUpdated(TacticalIntentResult(
+                    organisationID: request.organisationID,
+                    calendar: request.calendar,
+                    kind: .gamePlan
+                ))
+            )
+
+        case let .practicePlan(request):
+            guard request.calendar == state.calendar else {
+                throw IntentResolutionError.tacticalCalendarMismatch
+            }
+            guard state.programmes[request.organisationID] != nil
+                    || state.proTeams[request.organisationID] != nil else {
+                throw IntentResolutionError.tacticalPlanUnavailable
+            }
+            var nextState = state
+            guard nextState.tactical.setPracticePlan(
+                request.plan,
+                for: request.organisationID,
+                at: request.calendar
+            ) else {
+                throw IntentResolutionError.tacticalPlanUnavailable
+            }
+            let integrity = WorldIntegrity.check(nextState)
+            guard integrity.isValid else {
+                throw IntentResolutionError.integrityFailed(issueCount: integrity.issues.count)
+            }
+            return ResolvedIntent(
+                state: nextState,
+                result: .tacticalUpdated(TacticalIntentResult(
+                    organisationID: request.organisationID,
+                    calendar: request.calendar,
+                    kind: .practicePlan
+                ))
+            )
+
+        case let .career(request):
+            guard request.calendar == state.calendar else {
+                throw IntentResolutionError.careerCalendarMismatch
+            }
+            guard state.career.college != nil else {
+                throw IntentResolutionError.careerArcUnavailable
+            }
+            var nextState = state
+            let applied: Bool
+            switch request.action {
+            case let .acceptOpportunity(opportunityID):
+                applied = nextState.careerArc.acceptOpportunity(
+                    id: opportunityID,
+                    at: request.calendar
+                )
+                if applied {
+                    nextState.career.clearCollege()
+                }
+            case .resign:
+                applied = nextState.careerArc.resign(at: request.calendar)
+            }
+            guard applied else { throw IntentResolutionError.careerArcUnavailable }
+            let integrity = WorldIntegrity.check(nextState)
+            guard integrity.isValid else {
+                throw IntentResolutionError.integrityFailed(issueCount: integrity.issues.count)
+            }
+            return ResolvedIntent(
+                state: nextState,
+                result: .careerUpdated(CareerIntentResult(
+                    calendar: request.calendar,
+                    action: request.action
+                ))
+            )
+
+        case let .proManagement(request):
+            guard request.calendar == state.calendar else {
+                throw IntentResolutionError.professionalCalendarMismatch
+            }
+            guard state.career.college == nil,
+                  let job = state.careerArc.currentJob,
+                  job.tier == .professional else {
+                throw IntentResolutionError.professionalManagementUnavailable
+            }
+            let nextState: GameState
+            let cap: ProCapSnapshot
+            do {
+                switch request.action {
+                case let .acquire(playerID, teamID, kind, contract):
+                    guard teamID == job.organisationID else {
+                        throw ProManagementError.missingTeam
+                    }
+                    let receipt = try ProManagementSystem.acquire(
+                        playerID: playerID,
+                        for: teamID,
+                        kind: kind,
+                        contract: contract,
+                        in: state
+                    )
+                    nextState = receipt.state
+                    cap = receipt.capAfter
+                case let .release(playerID, teamID):
+                    guard teamID == job.organisationID else {
+                        throw ProManagementError.missingTeam
+                    }
+                    let receipt = try ProManagementSystem.release(
+                        playerID: playerID,
+                        from: teamID,
+                        in: state
+                    )
+                    nextState = receipt.state
+                    cap = receipt.capAfter
+                }
+            } catch let error as ProManagementError {
+                throw IntentResolutionError.professionalTransactionFailed(error)
+            }
+            return ResolvedIntent(
+                state: nextState,
+                result: .proManagementUpdated(ProManagementIntentResult(
+                    calendar: request.calendar,
+                    action: request.action,
+                    cap: cap
+                ))
+            )
+
+        case let .proMarket(request):
+            guard request.calendar == state.calendar else {
+                throw IntentResolutionError.professionalMarketCalendarMismatch
+            }
+            guard state.career.college == nil,
+                  let job = state.careerArc.currentJob,
+                  job.tier == .professional else {
+                throw IntentResolutionError.professionalMarketUnavailable
+            }
+            var nextState: GameState
+            do {
+                switch request.action {
+                case .openOffseason:
+                    nextState = try ProMarketSystem.openOffseason(in: state)
+                case let .scout(teamID, prospectID):
+                    guard teamID == job.organisationID else {
+                        throw ProMarketError.missingTeam
+                    }
+                    nextState = try ProMarketSystem.recordScouting(
+                        teamID: teamID,
+                        prospectID: prospectID,
+                        in: state
+                    )
+                case .beginDraft:
+                    nextState = try ProMarketSystem.beginDraft(in: state)
+                case let .signFreeAgent(playerID, teamID, contract):
+                    guard teamID == job.organisationID else {
+                        throw ProMarketError.missingTeam
+                    }
+                    nextState = try ProMarketSystem.signFreeAgent(
+                        playerID: playerID,
+                        teamID: teamID,
+                        contract: contract,
+                        in: state
+                    )
+                case let .draft(prospectID, teamID, contract):
+                    guard teamID == job.organisationID else {
+                        throw ProMarketError.missingTeam
+                    }
+                    nextState = try ProMarketSystem.draft(
+                        prospectID: prospectID,
+                        for: teamID,
+                        contract: contract,
+                        in: state
+                    )
+                case .close:
+                    nextState = try ProMarketSystem.close(in: state)
+                }
+            } catch let error as ProMarketError {
+                throw IntentResolutionError.professionalMarketActionFailed(error)
+            }
+            let payload: DomainEventPayload
+            switch request.action {
+            case .openOffseason:
+                payload = .proMarketOpened(
+                    season: nextState.proMarket.season,
+                    draftClassCount: nextState.proMarket.draftClass.count,
+                    freeAgentCount: nextState.proMarket.freeAgentIDs.count
+                )
+            case let .scout(teamID, prospectID):
+                let confidence = nextState.proMarket.observations.first {
+                    $0.teamID == teamID && $0.prospectID == prospectID
+                }?.confidence ?? 0
+                payload = .proDraftScouted(
+                    teamID: teamID,
+                    prospectID: prospectID,
+                    confidence: confidence
+                )
+            case let .signFreeAgent(playerID, teamID, contract):
+                payload = .proPlayerSigned(
+                    playerID: playerID,
+                    teamID: teamID,
+                    kind: .freeAgency,
+                    contract: contract
+                )
+            case let .draft(prospectID, teamID, contract):
+                let resolvedContract = contract
+                    ?? nextState.players[prospectID]?.contract
+                    ?? ProMarketSystem.rookieContract(
+                        for: nextState.proMarket.draftClass.first { $0.id == prospectID }!.player
+                    )
+                payload = .proDraftPick(
+                    prospectID: prospectID,
+                    teamID: teamID,
+                    pick: state.proMarket.nextPick,
+                    contract: resolvedContract
+                )
+            case .beginDraft:
+                payload = .proDraftStarted(season: nextState.proMarket.season)
+            case .close:
+                payload = .proMarketClosed(season: state.proMarket.season)
+            }
+            let event = DomainEvent(
+                id: DomainEvent.deterministicID(
+                    rootSeed: nextState.league.seed,
+                    sequence: nextState.history.nextSequence
+                ),
+                sequence: nextState.history.nextSequence,
+                occurredAt: request.calendar,
+                payload: payload
+            )
+            guard nextState.history.append(event) else {
+                throw IntentResolutionError.eventAppendFailed
+            }
+            let integrity = WorldIntegrity.check(nextState)
+            guard integrity.isValid else {
+                throw IntentResolutionError.integrityFailed(issueCount: integrity.issues.count)
+            }
+            return ResolvedIntent(
+                state: nextState,
+                result: .proMarketUpdated(ProMarketIntentResult(
+                    calendar: request.calendar,
+                    action: request.action,
+                    emittedEvents: [event]
+                ))
+            )
+        }
+    }
+
+}

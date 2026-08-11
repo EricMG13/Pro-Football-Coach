@@ -201,7 +201,8 @@ Twenty seasons, seeded, run headless, asserting:
 
 ## 7. Performance budgets (D4)
 
-Restated here as the engine's contract; derived from the college case on an iPhone 12-class device.
+Restated here as the engine's contract; derived from the college case and now measured against an
+iPhone 15-class device per the 2026-08-11 platform baseline.
 
 | Budget | Target | Hard ceiling |
 |---|---|---|

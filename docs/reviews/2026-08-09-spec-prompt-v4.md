@@ -21,7 +21,7 @@ Fixed inputs, not open questions. Do not re-litigate them; design within them.
 
 | ID | Parameter | Value |
 |----|-----------|-------|
-| P1 | Platform & stack | iOS 17+, Swift 5.10+, SwiftUI, **iPhone-only**, portrait-only, offline, **zero third-party dependencies**. The 2D match view is rendered in **SwiftUI `Canvas` + `TimelineView`** — no SpriteKit, no Metal. |
+| P1 | Platform & stack | **Superseded by owner 2026-08-11:** iOS 26+, Swift 5.10+, SwiftUI, **iPhone-only, landscape-only, supported and release-tested on iPhone 15-generation hardware and newer**, offline, **zero third-party app dependencies**. Agent skills are development tooling only. The 2D match view is rendered in **SwiftUI `Canvas` + `TimelineView`** — no SpriteKit, no Metal. |
 | P2 | Scope shape | **Unified college→pro career.** One save, one coach: start in the college game, get promoted to the pro league. The promotion arc is a v1 feature, not a v2 addition. |
 | P3 | Distribution & monetisation | TestFlight → paid premium on the App Store. **No IAP, no ads, no subscriptions, no analytics, no accounts.** |
 | P4 | Season time budget | **A full season is completable in 6–8 hours of play.** |

@@ -1,7 +1,20 @@
 # 05 — Implementation Plan
 
+> **Superseded build ordering (2026-08-10):** the Master Build Documentation folder supplied with
+> the end-to-end goal is the primary authority. Follow milestones M0–M9 in its
+> `06-BUILD-ROADMAP-AND-GATES.md`. This file remains historical detail for the preserved P0–P4
+> foundation and its existing gates. M0 architecture hardening, M1 playable world, and M2 people
+> lifecycle have exited; the active dependency milestone is M3 college management. Do not resume isolated P4 tuning ahead
+> of the roadmap's interconnected tactical and product-completion work.
+
 Phased build with per-phase gates. One phase at a time; a phase is not done until its gates are
 green.
+
+The platform baseline changed by owner decision on 2026-08-11: iOS 26+, with release support and
+performance measured on iPhone 15-generation hardware and newer. The 844 × 390 layout floor remains
+because later compact `e` models are smaller than the base iPhone 15. See
+`docs/plans/2026-08-11-skill-integration.md` for the development-skill activation gates and the
+scheduled creation of project-local skills.
 
 **Ordering follows D14: college first, at ~134 programmes.** The player starts in college, and both
 unsolved risks — D3/D4's scale problem and D6's identity problem — live there. Building pro first
@@ -125,8 +138,8 @@ prior build learned this concretely: its week-advance test asserted 150 ms and m
 debug, with no build-configuration guard. Measure both configurations, print both, assert on release.
 *(Lesson taken from `adf5af1` on the unmerged `rebuild/spec-package` branch.)*
 
-**And the budgets are Mac numbers until a device says otherwise.** `03` §7 derives them for an
-iPhone 12-class device; nothing has measured them on one. A green `PerformanceBudgetTests` on an
+**And the budgets are Mac numbers until a device says otherwise.** `03` §7 now requires an
+iPhone 15-class device; nothing has measured them on one. A green `PerformanceBudgetTests` on an
 Apple-silicon Mac is necessary and not sufficient, and `docs/STATUS.md` says so.
 
 ### P6 — Season structure
@@ -155,63 +168,47 @@ Coordinator AI, roster AI, opponent game-plan AI — each against its stated bar
 **These bars are gates, not polish.** AI quality is what gets cut when a schedule slips, and naming
 it here is the only defence P5 allows.
 
-**The UI phases build against the rendered reference library** at the repository root, sixteen
-`*-v2.dc.html` sheets indexed in `docs/04-UX-AND-DESIGN-SYSTEM.md`. `04` remains the only
-canonical home: where a sheet and `04` disagree, `04` wins and the sheet is the defect. Each
-phase below names the groups that serve it.
+**The UI phases do not build against the deleted v2 sheets, Stitch output or the rejected 34-screen
+Film Room gallery.** Those artefacts repeated one application chassis across the game and were
+removed on 2026-08-11. `04` remains the only canonical design and screen-inventory authority.
 
-### P11 — Design system and the accessibility contract (D12)
-Tokens, component registry, and **all ten contract tests before any feature view exists.** The
-contract is built first so that every subsequent phase inherits a passing baseline rather than
-retrofitting one.
-**References:** `Tokens-v2`, `Components-v2`, `Accessibility-v2`, `System-v2`, `Throughput-v2`.
+Before feature SwiftUI begins, three interactive HTML proofs establish the corrected direction:
+Coaching HQ, Recruiting Board and Match Day. They share one continuous save but use three visibly
+different registers. Passing the proof gate demonstrates direction; it does not make reference code
+production code or authorise invented read-model values.
 
-**Ten, not nine — `04` §6 gained an orientation clause on 2026-08-10.** `OrientationPolicyTest` reads
-`App/project.yml`. Any phase citing "nine" is reading a stale copy.
+### P11 — Proof gate, design system and accessibility contract (D12)
 
-**Scope grew with the design pass, and the additions are cheap here and expensive later:** the
-`broadcast.*` token group (`04` §2.4, two house accents the contrast suite enumerates like any other
-colour), the `numeral` type role, `live`, and the registry at **nineteen** entries — `ScoreBug` and
-`StakeholderCard` were added because both are used on four or more surfaces and both were being
-assembled ad hoc. `SmallestDeviceLayoutTest` is now two-tier per `04` §4.1: full gate at the
-844 × 390 design floor, weaker assertion at 667 × 375 (reachable, nothing off-screen, appearance not
-guaranteed — those devices are unsupported but remain installable, and no App Store mechanism
-excludes them).
+1. Render the three owner-approved proof screens at both native sizes, both appearances, default and
+   AX5, and both sensor orientations.
+2. Score each at least 31/40 under `04b`, with no P0/P1 and no automatic design-specificity rejection.
+3. Obtain owner approval of the set together. A mechanically passing proof that still looks like an
+   application does not pass.
+4. Build production tokens, shared interaction primitives and contract tests. Do not create a
+   universal screen chassis or port reference HTML/CSS into SwiftUI.
 
-### P12 — The entry sequence and the week loop
-**The entry sequence first** — title, the board, the offer, the appointment, settings (`04` §4).
-Added 2026-08-10: the design review found the app had **no specified entry point at all**, and no
-phase owned one. Nothing in P12–P14 can be reached without it, and P17 would have been where that
-was discovered. The board is a DESTINATION and must pass `02` §2.2 on its own terms — it is the first
-real decision the player ever makes, and a first decision that fails the test teaches them that
-decisions here do not matter.
+The contract is built before feature views so subsequent phases inherit safe-area, type, theme,
+truth, focus, motion and target guarantees. Components are promoted only after at least three real
+production uses. Screen-specific football objects remain screen-specific.
 
-Then the week: inbox, opponent report, game plan, practice allocation, aftermath. The core
-management week.
+### P12 — Entry, office and the playable week
 
-**References:** `FirstRun-v2` (the entry sequence), `Teaching-v2` (first-run
-state), `Squad-v2` (game plan, practice, aftermath), `Screens-v2` (opponent report),
-`Continuity-v2` (save cadence, cold-launch resume), `Failure-v2`.
+Build the entry sequence, Coaching HQ, Inbox, Opponent Report / Film Room, Game Plan, Practice Plan,
+Team Health and Aftermath from the named read models in `04` §8. Onboarding is state on these real
+surfaces, not a separate tour.
 
-**P12 carries first-run state from the start.** D9 teaches through the first real week rather than
-through cards, so onboarding is not a separate set of screens — it is a state these screens are in.
-Building them without it and retrofitting in P15 means rewriting P12. See the P15 note.
-The week opens on **commitments with a cost** — what each item will take, not only what happened
-(`04` §4, `01` §6.6 §3.9). The opponent report is the first surface to carry a generated **verdict**,
-and it is the one that proves the mechanism before P14 depends on it.
+Coaching HQ must prove the Coach's Office register rather than a dashboard: current world strip,
+dominant week plan, next obligation and causal staff voice. Opponent Report is the only weekly screen
+that inherits the Film Room register. A first decision that fails `02` §2.2 teaches the wrong game.
 **Gates:** G1, G2, G3, G4.
 
-### P13 — The match view
-Landscape field with the whole 120 yards in frame and no camera pan (`04` §5.2, owner decision
-2026-08-10 — the phase also **measures** the device point sizes and landscape safe-area insets that
-§5.2's table currently marks ASSUMPTION), directed attention (at most three foregrounded marks), drive-level default with snap
-animation on call-ins, the choreographer pinned to recorded outcomes, Reduce Motion as a discrete
-state sequence, per-snap VoiceOver sentences. Plus `LowerThird` for the named moment, the
-remaining-key-moments indicator in the header, and the call-in as a **named proposal with one-tap
-accept and explicit dismiss** (`04` §5, `01` §6.6 §3.2–3.4).
-**References:** `Screens-v2` (the all-22 frame at true spacing), `Broadcast-v2` (packages),
-`Appearance-v2` (the ceiling), `Accessibility-v2` (motion and its reduced forms),
-`Continuity-v2` (the match exit).
+### P13 — Match Day
+
+Build the Broadcast register directly from `04` §9: complete landscape field, all 22 actors, at
+most three foregrounded, scorebug, causal lower third, five primary controls and contextual staff
+call-ins. Management navigation and application chrome are absent. The choreographer remains pinned
+to recorded outcomes; Reduce Motion is a discrete state sequence; every snap has an equivalent
+VoiceOver sentence.
 
 **Gates:** G1, G2, G3, G4, plus the render-cannot-change-outcome assertion and the 16.7 ms frame
 ceiling.
@@ -222,19 +219,20 @@ explicitly, whether the field reads as a football field on a phone and whether t
 is legible as a line — the one presentation question no test in this plan can answer.
 **→ Milestone M1: G8.**
 
-### P14 — Remaining feature surfaces
-**References:** `League-v2`, `Career-v2`, `Squad-v2`,
-`Offseason-v2`, `Throughput-v2`, `Teaching-v2` §2.
-Team, roster, player card, staff, scheme; recruiting board / front office; league readouts; career
-and record book. Roster rows carry **at most three status glyphs**, each one that changes a decision
-(`01` §6.6 §3.10). Player card uses `Sparkline` for form; team comparisons use `OpposedBar`; cap,
-scholarship and contact budgets use `Meter`'s over-capacity state. Scheme and depth chart put
-assignment codes on the field as `Chip`s rather than labels.
-**Gates:** G1, G2, G3, G4, plus **every READOUT states a generated verdict** — `04` §4. A readout
-that ships without one is a P1, not a polish item.
+### P14 — Remaining screen inventory
+
+Build every remaining family in the explicit 62-screen inventory in `04` §8. Nothing may hide inside
+a comma-list. Each family requires a named read model, world location, dominant football object,
+state matrix and owner-visible completion gate.
+
+Comparison tasks may be dense. They may not become generic tables: people, relationships, needs,
+uncertainty and consequence remain visible. Analytical readouts state staff interpretation before
+evidence and identify the sample and confidence. Career surfaces use chronology rather than summary
+dashboards. Offseason command surfaces are dated sequences that open the real task screens.
+
+**Gates:** G1, G2, G3, G4, every touched screen ≥31/40 under `04b`, and no inventory gap.
 
 ### P15 — Onboarding (D9)
-**References:** `Teaching-v2`, `FirstRun-v2`.
 The first fifteen minutes, taught through the first real week.
 **Gates:** G1, G2, G3, G4, plus the D9 owner protocol.
 

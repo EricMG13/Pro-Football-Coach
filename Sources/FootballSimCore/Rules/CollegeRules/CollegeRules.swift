@@ -43,6 +43,12 @@ public enum CollegeRules {
         regularSeasonWeeks + conferenceChampionshipWeeks + bracketRounds
     }
 
+    /// A player cannot play in the bye week. The largest possible total is every regular-season
+    /// game, the conference championship, and every national-bracket round.
+    public static var maximumGamesPerSeason: Int {
+        gamesPerRegularSeason + conferenceChampionshipWeeks + bracketRounds
+    }
+
     // MARK: - The roster
 
     public static let rosterLimit = 105
@@ -50,12 +56,101 @@ public enum CollegeRules {
     /// The sport's limit. Asserted per programme by the soak (`03` section 6).
     public static let scholarshipLimit = 85
 
+    /// Target-scale initial population from `02-GAME-DESIGN.md` section 11.2.1.
+    public static let initialRosterByPosition: [Position: Int] = [
+        .quarterback: 4,
+        .runningBack: 7,
+        .wideReceiver: 14,
+        .tightEnd: 6,
+        .leftTackle: 6,
+        .guardPosition: 12,
+        .center: 5,
+        .rightTackle: 6,
+        .edgeRusher: 9,
+        .defensiveTackle: 9,
+        .linebacker: 11,
+        .cornerback: 9,
+        .safety: 5,
+        .kicker: 1,
+        .punter: 1,
+    ]
+
     // MARK: - Recruiting and eligibility
 
     /// `02` section 4.3's "~25 signings", made exact.
     public static let initialSigningsPerClass = 25
 
+    /// The user-facing shortlist ceiling from `02-GAME-DESIGN.md` section 4.3.
+    public static let recruitingBoardLimit = 40
+
+    /// A 20% choice margin over 134 classes of 25 without making the pool a database-sized burden.
+    public static var annualProspectCount: Int {
+        programmeCount * initialSigningsPerClass * 6 / 5
+    }
+
+    /// Integer weekly currency shared by user and AI recruiting actions.
+    public static let weeklyRecruitingContactPoints = 100
+    public static let aiWeeklyBoardGrowth = 5
+    public static let aiBoardDepthBeyondClassTarget = 15
+    public static let aiWeeklyInvestmentActionLimit = 15
+    public static let aiEvaluationContactPoints = 20
+    public static let aiInitialNILAllocation = 500
+    public static let minimumCommitmentWeek = 4
+    public static let minimumCommitmentScore = 60
+    public static let minimumCommitmentFlipScoreImprovement = 10
+    public static let commitmentHistoryLimit = 4
+    public static let visitContactCost = 30
+    public static let visitInterestBonus = 8
+    public static let scholarshipOfferInterestBonus = 6
+    public static let nilInterestPointsPerUnit = 100
+    public static var maximumSeasonRecruitingContactPoints: Int {
+        weeklyRecruitingContactPoints * SharedRules.inSeasonWeeks
+    }
+
+    /// NIL remains an abstract integer resource rather than salary or currency in M3.
+    public static let nilBudgetPerResourcePoint = 100
+    public static var maximumNILBudget: Int {
+        SharedRules.ratingRange.upperBound * nilBudgetPerResourcePoint
+    }
+
+    /// Task 5's bounded national transfer candidate pool.
+    public static let portalPoolLimit = 300
+    public static let maximumPortalNILReservations = portalPoolLimit
+    public static let maximumPortalOffersPerEntrant = 5
+    public static var maximumPortalOffersPerWindow: Int {
+        portalPoolLimit * maximumPortalOffersPerEntrant
+    }
+    public static let portalPolicyVersion = 1
+    public static let maximumPortalNILBand = 20
+    public static let portalIntentReasonCount = 6
+    public static let maximumPortalIntentComponentMagnitude = 20
+    public static var portalIntentTotalRange: ClosedRange<Int> {
+        let magnitude = portalIntentReasonCount * maximumPortalIntentComponentMagnitude
+        return -magnitude...magnitude
+    }
+    public static let portalIntentSelectionThreshold = 25
+    public static let portalAdmissionReasonCount = 6
+    public static let maximumPortalAdmissionComponentMagnitude = 20
+    public static var portalAdmissionTotalRange: ClosedRange<Int> {
+        let magnitude = portalAdmissionReasonCount * maximumPortalAdmissionComponentMagnitude
+        return -magnitude...magnitude
+    }
+
+    public static let prospectAgeRange: ClosedRange<Int> = 17...21
+    public static let knowledgeConfidenceRange: ClosedRange<Int> = 0...100
+    public static let maximumScoutingEvidence = 10_000
+    public static let maximumProspectKnowledgeConfidence = 95
+    public static let maximumObservationsPerProgramme = 5_000
+    public static var maximumPendingEvaluations: Int {
+        programmeCount * recruitingBoardLimit
+    }
+    public static let maximumArchivedProspectIdentities = 100_000
+    public static let walkOnRatingPenalty = 12
+
     public static let seasonsOfCompetition = 4
+
+    public static let maximumRedshirtAppearances = 4
+    public static let redshirtAppearanceLimitRange = 0...maximumRedshirtAppearances
 
     /// The clock is a year longer than the seasons it holds. That year is the redshirt, and
     /// spending it is `02` section 4.1's redshirt decision.

@@ -1,758 +1,380 @@
 # 04 — UX and Design System
 
-A design system built from zero, then the screens, then the match view — the hardest surface.
-Includes the D12 accessibility contract in full.
+Owner-approved correction, 2026-08-11. This document is the only canonical home for product UX,
+visual language, screen inventory and UI acceptance rules. The previous universal **Film Room**
+system and its 34-screen rendered library were rejected because they made unrelated football tasks
+look like variants of the same management application.
 
-The previous build scored **9/20** on `04b`'s rubric with accessibility at **1/4**. Every structural
-choice here is aimed at making that class of failure impossible rather than merely discouraged.
+## 1. Product fantasy
 
-## The visual reference library
+The player is not operating software. The player is living a coaching career.
 
-**This document is the only canonical home for the design system.** Beside it, at the repository
-root, sits a **rendered reference library of sixteen `*-v2.dc.html` sheets** — the same rules drawn,
-so P11–P15 build against something that has been seen and judged rather than against prose alone.
+The global design premise is **The Coach's World**. Every surface must answer three questions within
+the first glance:
 
-| Group | What it shows |
-|---|---|
-| `Tokens-v2` | Colour, type, spacing, radius, elevation, the rating ladders under CVD simulation |
-| `Components-v2` | The registry, drawn, in both registers |
-| `Screens-v2` | Match view (all 22 at true spacing), opponent report |
-| `Broadcast-v2` | §2.4's two houses × three escalations, and the rivalry modifier |
-| `FirstRun-v2` | Title, the board, the offer, the appointment, the destination bar |
-| `Teaching-v2` | D9's taught week as a *state*, plus the long-tail screens |
-| `Failure-v2` | Refusals, save errors, empty states |
-| `League-v2` · `Career-v2` · `Squad-v2` · `Offseason-v2` | The four tabs |
-| `Appearance-v2` | Light, and the 932 × 430 ceiling |
-| `Accessibility-v2` | AX5, VoiceOver utterances, touch targets, motion and its reduced forms |
-| `System-v2` | Progress, confirmation, settings, the symbol set |
-| `Throughput-v2` | `ListControls` and `AttributeRow` — filter, sort, batch, attributes |
-| `Continuity-v2` | Save cadence, cold-launch resume, the match exit, call-in expiry |
+1. Where am I in the football world?
+2. What changed because time, people or competition moved?
+3. What does the head coach need to understand or decide now?
 
-**The rules are here; the sheets are a rendering.** Where a sheet and this document disagree, this
-document wins and the sheet is the defect. A value that appears only in a sheet has not shipped.
+**The Film Room is one location, not the whole game.** It is used for opponent analysis, tactics and
+replay. Recruiting, contracts, career history and live football must not inherit its furniture.
 
-**The v1 sheets were deleted on 2026-08-10.** They are superseded in full, and one of them carried a
-real-identity breach the blocklist rejects. Reachable through `git show`, as every deleted file is —
-the same disposition `docs/PORT-LOG.md` records for `NameBank.swift`.
+### 1.1 What the owner-supplied Football Manager references establish
 
-**Owner-supplied competitor screenshots are never committed.** They are third-party copyright and
-mechanics research only (`CLAUDE.md`); `.gitignore` excludes them.
+The eighteen saved references are evidence about information behaviour, not a visual template:
 
----
+- a player report is organised around a person, club identity and role;
+- a calendar becomes the screen when time is the task;
+- a squad comparison becomes a dense, sortable team sheet when comparison is the task;
+- tactics and set pieces become spatial field diagrams;
+- training becomes a week plan with load and consequences;
+- finances become a ledger with warnings and trajectories;
+- analytics lead with a judgement, then show the evidence;
+- mobile recent-form becomes one chronological story rather than a desktop dashboard;
+- live football gives the field the frame, with the score and current cause attached to it.
 
-## 1. Principles
+The references also show what **not** to inherit: generic portal tiles, equal-weight card grids,
+bookmark managers, menu depth, tiny desktop type, unexplained data density, soccer-specific
+terminology, colours, navigation, assets and trade dress.
 
-1. **A literal in a view is a defect.** Spacing, radius, colour and font size come from tokens. The
-   build fails on a literal (`03b` §1). The prior build wrote this rule down and accumulated 43
-   literal spacings against it.
-2. **Measured surfaces, not idealised ones.** A colour is verified against the surface it is
-   actually composited on, in both appearances.
-3. **Enumerate by construction.** Any test over a class of surfaces derives its list from the token
-   set and component registry, never from a hand-written list.
-4. **Every screen is a place to decide or a place to look**, and it declares which. Readouts do not
-   pretend to be destinations.
-5. **The game initiates.** Something arrives every week. §6.0 found zero inbound events in the
-   previous build.
+FM feels alive partly because its data already carries real-world emotional meaning. This fictional
+game must manufacture that meaning through continuity, people, place, rivalry, history and visible
+consequence. Copying FM density without those stakes produces number juggling.
 
----
+## 2. Registers: one career, several football places
 
-## 2. Tokens
+Consistency comes from shared truth, typography, interaction and identity rules. It does **not**
+come from forcing every screen into one chassis.
 
-### 2.1 Colour
-
-Semantic roles only. No view names a hue.
-
-| Role | Use |
-|---|---|
-| `surface.page` / `surface.card` / `surface.raised` | Backgrounds by elevation |
-| `content.primary` / `.secondary` / `.tertiary` | Text by weight |
-| `accent` | The single interactive accent |
-| `rating.{elite,good,average,poor,bad}` | The rating ladder |
-| `state.{positive,negative,warning,info}` | Status, never raw `.green`/`.red` |
-| `team.primary` / `.secondary` / `.onTeam` | Programme identity, generated per save |
-
-**Revalued 2026-08-10 for the broadcast world** (§2.4). The first values were a neutral grey set;
-the review found eight of the ten most-used colours were greys and the accent ranked eleventh by
-usage, which is the signature of a productivity app rather than a football product. **Dark is the
-native appearance and light ships as an equal one** (owner, 2026-08-10). Every figure below was
-computed and independently re-derived.
-
-| Role | Dark (native) | vs page / card / raised | Light | vs page / card / raised |
-|---|---|---|---|---|
-| `surface.page` | `#0A0D14` | — | `#EEF0F4` | — |
-| `surface.card` | `#121724` | — | `#FFFFFF` | — |
-| `surface.raised` | `#1B2130` | — | `#F7F9FC` | — |
-| `content.primary` | `#F5F7FA` | 18.11 / 16.67 / 14.97 | `#0E1218` | 16.46 / 18.78 / 17.80 |
-| `content.secondary` | `#A7B0C0` | 8.90 / 8.19 / 7.36 | `#48505F` | 7.11 / 8.11 / 7.69 |
-| `content.tertiary` | `#78839A` | 5.10 / 4.70 / **4.22** | `#6B7484` | **4.13** / 4.71 / 4.47 |
-| `accent` | `#5B9DFF` | 7.14 / 6.57 / 5.90 | `#1257C7` | 5.73 / 6.53 / 6.20 |
-| `live` | `#C6F24E` | 15.00 / 13.81 / 12.41 | *fill only* | `#0E1218` on it = 14.50 |
-| `state.positive` | `#57D98A` | 9.97 on card | `#0B6B3F` | 6.58 on card |
-| `state.negative` | `#FF6B5A` | 6.39 on card | `#C0261B` | 5.94 on card |
-| `state.warning` | `#FFB026` | 9.79 on card | `#8A5A00` | 5.93 on card |
-| `state.info` | `#6DB3F2` | 7.99 on card | `#0B5FA8` | 6.53 on card |
-
-**`live` is a new role and the one that makes the product feel switched on.** Reserved for what is
-happening *now* — the live badge, remaining-moment pips, a running clock, a call-in awaiting an
-answer. Nothing static may use it. **It has no light text form**: chartreuse cannot clear 4.5:1 on
-white at any usable saturation, so in light it is a *fill* carrying `content.primary`. One role, two
-mechanisms — the same shape elevation already has.
-
-`rating.*` is a **single-hue lightness ladder, one per appearance**:
-
-| | elite | good | average | poor | bad |
-|---|---|---|---|---|---|
-| **Light** | `#0B2E5C` | `#14538F` | `#2E7BC4` | `#7FA9D9` | `#C2D4E8` |
-| **Dark** | `#0E2E52` | `#164878` | `#2166A8` | `#4E93D6` | `#9CC3EC` |
-
-L\* runs 19 / 35 / 50 / 68 / 84 light and 19 / 30 / 42 / 59 / 77 dark — monotonic in both, which is
-what survives all three colour-vision deficiencies.
-
-**A numeral-bearing chip may not use the ladder's mid step, in either appearance.** A five-step
-lightness ramp always has a step near L\* 50, and L\* 50 is exactly where neither white nor
-near-black clears 4.5:1 — light `average #2E7BC4` measures 4.42 on white and 4.24 on near-black,
-failing both. Numeral chips use the darkened substitute **`#1F6099`** (6.58 on white). **Text
-polarity flips at the ladder's midpoint**: `elite`/`good`/`average` carry white, `poor`/`bad` carry
-`content.primary`. This is a rule about lightness ramps, not about these ten hexes.
-
-**Four rules the values forced, each of which changes a test rather than a value.**
-
-1. **`rating.*` is a fill role and is not legal as a text colour.** The ladder was chosen against a
-   hue ramp and a hue-plus-glyph ramp by rendering all three under deuteranopia, protanopia and
-   tritanopia. Only lightness survives all three — the hue ramp collapses `average` and `poor` to
-   ΔE 2 under deuteranopia, two of five steps becoming one. The cost is that `poor` measures 2.45:1
-   and `bad` 1.51:1 as a foreground on card. So the ladder is legal as a `Meter` track, a `Chip`
-   background or a `Sparkline` bar, and never as a tinted numeral. **`ContrastByConstructionTest`
-   must enumerate `rating.*` against the surface it fills, not as a foreground pair.** This closes
-   the brief's open question 4: five steps hold, and it does not drop to four.
-2. **`content.tertiary` is not a body-text role.** In light it clears 3:1 but not 4.5:1 on any
-   surface — large text and non-text indicators only. In dark it clears 4.5:1 on page and card and
-   drops to 4.14 on `surface.raised`, so tertiary body text is **banned on raised in dark**. Exactly
-   the composited-surface case §1.2 exists for.
-3. **The hairline is a token, not a style.** Every surface seam measures ~1.11:1 (card/page 1.110
-   light, 1.108 and 1.120 dark). A card edge cannot be carried by the fill step, so the hairline is
-   load-bearing and must be enumerated like any other colour.
-4. **Elevation has two definitions, so it cannot be one shadow value.** See §2.3.
-
-**Team colours are generated per save** and must pass the trade-dress ΔE test and the contrast
-contract *at generation time* — a generated pair that cannot carry legible text is rejected and
-regenerated. This closes the prior build's whole class of "white on the team gradient" failures at
-the source rather than at the call site.
-
-**The contrast contract, stated precisely.** Amended 2026-08-10 by P2, which found the loose version
-unsatisfiable. Requiring one `team.onTeam` to be legible against *both* members rules out every
-dark-plus-light pair — which is most of the sport's real identities, navy and white among them. The
-three roles carry two different obligations:
-
-| Pair | Floor | Why |
-|---|---|---|
-| `team.onTeam` against `team.primary` | **4.5:1** | Text sits on the primary. WCAG AA for body text |
-| `team.secondary` against `team.primary` | **3:1** | The secondary is a stroke, a chip, a chart series — a non-text element that must be distinguishable on the primary. WCAG AA for non-text contrast |
-
-**A kit-clash floor, added 2026-08-10.** The contract above gates each programme's pair
-*internally*. Nothing gates two programmes that **meet** from being mutually illegible, and
-drawing both teams' marks on one field made that load-bearing. The fixture sets a minimum **ΔE
-between the two sides' on-field marks**, with the away side falling back to its secondary.
-ΔE is the right tool and WCAG contrast is not: contrast asks whether text is readable on a
-background, ΔE asks whether two marks are different colours. `02` §11.3.5 already uses ΔE for
-trade dress, so the machinery exists.
-
-`team.secondary` is not a text background. A surface that needs text on the secondary uses
-`content.primary` on a neutral surface instead; nothing in §4 or §5 asks for the other thing.
-
-### 2.2 Type
-
-Dynamic Type throughout, `@ScaledMetric` for any dimension that gutters text. No `.system(size:)`
-anywhere — the prior build had ten, four below the 11 pt floor.
-
-**Six roles onto six iOS text styles.** Added 2026-08-10 from the design pass.
-
-| Role | Text style | Default → AX5 |
-|---|---|---|
-| `display` | `.largeTitle` | 34 → 60 pt |
-| `title` | `.title2` | 22 → 56 pt |
-| `headline` | `.headline` (semibold) | 17 → 53 pt |
-| `body` | `.body` | 17 → 53 pt |
-| `callout` | `.callout` | 16 → 51 pt |
-| `caption` | `.caption1` | 12 → 43 pt |
-| **`numeral`** | `.title1`, SF Compact, tabular | 28 → 58 pt |
-
-**`numeral` is a seventh role, added 2026-08-10.** A football product shows a running clock, a
-score, a down-and-distance and a rating on nearly every surface. In a proportional face those
-reflow every tick and every roster column sits on a ragged right edge; condensed tabular fixes
-both, and it is the single change that most makes the product read as a sport rather than a table.
-**UNVERIFIED:** whether `SF Compact` is available as a Dynamic Type face. If not, `numeral` falls
-back to `.title1` with `monospacedDigit()`, keeping tabular and losing the condensing.
-
-`.caption2`, `.footnote` and `.subheadline` are **deliberately unmapped**. The smallest role is
-therefore 12 pt, clear of the 11 pt floor, and nothing in the system can land on the floor by
-accident — the prior build's four sub-floor sizes are unreachable by construction rather than by
-review. At AX5 `body` and `headline` converge on 53 pt: weight separates them at the top of the
-scale, not size, so a layout that relies on size alone to distinguish them breaks at AX5.
-
-**The AX5 point sizes are UNVERIFIED** — cited from memory, the same status `01-RESEARCH.md` gives
-the 44 pt touch-target floor. Confirm against the HIG type table before P11 depends on them.
-
-### 2.3 Spacing, radius, elevation
-
-An 8-point scale (`xs 4, s 8, m 16, l 24, xl 32, xxl 48`), three radii (`s 8, m 12, l 20`), three
-elevations. Anything off-scale is a defect.
-
-**Radius carries depth, not decoration** (2026-08-10): `s` for `Chip` and `Badge`, `m` for `Card` and
-`Row`, `l` for the sheet and `CallInCard` only.
-
-**Elevation is two different mechanisms, and the token cannot be a single shadow value.** In light it
-is shadow-borne; in dark a shadow is invisible on a near-black page, so it is surface-borne.
-
-| Step | Light | Dark | Used for |
+| Register | Player fantasy | Dominant objects | Shape and motion |
 |---|---|---|---|
-| `elev.1` | y1 b2 / 6 % | `surface.card` + 9 % hairline | Card at rest on page |
-| `elev.2` | y4 b12 / 10 % | `surface.raised` + 14 % | `CallInCard` over the field |
-| `elev.3` | y12 b28 / 16 % | `raised` + 22 % + scrim | Confirmation sheet |
-
-Three surfaces carry three elevations, so **dark has no fourth step available**. `elev.3` reuses
-`raised` and separates itself with a dimming scrim over what it covers, not with a lighter fill. A
-fourth elevation is not a value someone can add later; it needs a fourth surface first.
-
----
-
-### 2.4 Broadcast packages
-
-Added 2026-08-10 by owner direction: pro, college, playoff and championship games should look
-different from one another, the way two networks covering the same sport look different. This also
-answers a review finding — that after promotion the app looked identical, so the tier change was a
-label rather than an event.
-
-`02` §11 gives **seven** broadcast occasions across the two tiers. Seven bespoke packages is seven
-things to maintain, so the system is two axes instead:
-
-**House — who is playing.** The primary channel is **geometry, not colour**. College furniture is cut
-at **9°**; pro furniture is **orthogonal**. Accents are bronze `#D9A441` and steel `#7FB2E5`.
-
-> **The two accents measure 1.01:1 against each other.** Near-identical luminance — in greyscale, or
-> to a monochromat, they are the same colour. That is survivable *only* because geometry carries the
-> distinction and colour is secondary. A house system separated by hue alone would fail §2.1's
-> never-only-colour rule outright, and this one was measured rather than assumed.
-
-**Escalation — what is at stake.** Additive and monotonic: each step adds furniture and never
-rearranges it, so the championship bug is read with the regular-season bug's learned layout.
-
-| Escalation | Bug height | Frame | Occasion tag |
-|---|---|---|---|
-| Regular | 44 pt | none | none |
-| Elimination | 48 pt | 2 pt top rule | round name |
-| Final | 52 pt | full accent frame + corner marks | title lockup |
-
-**Modifier — rivalry**, regular season only: a paired seam in both programmes' secondaries plus the
-generated rivalry name and meeting count. P2 already seeds eight rivalries per programme and nothing
-has ever displayed one.
-
-**The occasion-to-package mapping is a rules constant**, in the per-tier rules module with every
-other constant, never a branch in a view. Seven occasions, six combinations, about ten values.
-
-**No in-fiction broadcaster is named.** A network name is a fresh trade-mark collision surface for no
-mechanical gain, so the houses are named for the tier. Branded networks go to counsel first.
-
----
-
-## 3. Components
-
-`Card`, `Row`, `StatCell`, `Chip`, `Meter`, `Badge`, `SegmentedControl`, `PrimaryButton`,
-`DestructiveButton`, `InboxItem`, `CallInCard`, `FieldCanvas`, `EmptyState`, `ErrorBanner`,
-`OpposedBar`, `Sparkline`, `LowerThird`, **`ScoreBug`**, **`StakeholderCard`**, **`MapCanvas`**,
-**`ListControls`**, **`AttributeRow`**.
-
-**Twenty-two as of 2026-08-10.** The last two close the review's largest finding — across the whole
-library there was not one filter, sort, search or multi-select, and the player card showed no
-attributes at all:
-
-- **`ListControls`** — position filter, sort, search and multi-select, as one primitive serving the
-  roster, the recruiting board, free agency and the draft board. Four screens or four different
-  answers. Batch actions state their **plural** consequence ("Release both, 2 scholarships back").
-  Above AX3 the control row collapses to a single "Filter and sort" button opening a sheet — the
-  same stated reduction `SegmentedControl` already declares, not a second pattern.
-- **`AttributeRow`** — the bar and the numeral as one object, fill taken from the `rating.*` ladder,
-  text polarity flipping at the ladder midpoint per §2.1. Ten per card, not forty: the pattern is
-  borrowed from the reference set's grammar, the density is not.
-
-**Twenty as of earlier the same day.** The last three were added by the design pass:
-
-- **`MapCanvas`** — the league map. A *second* canvas with its own clustering problem: `GameMap` is
-  1000 × 700 world units with 8 regions and 134 programmes, which projects to ~0.5 pt per unit, so no
-  city is labelled at full zoom and dots are sized by `marketSize`. Three lenses over one canvas
-  (reach, talent, rivalries) rather than three screens. **It is not a `FieldCanvas` variant** —
-  inheriting the field's rules would be wrong — and **its accessible form is unresolved**: a spatial
-  readout with 134 positions and no natural order is harder for VoiceOver than the field, and the
-  likely answer is that the canvas is decorative and the verdict panel beside it carries the meaning.
-
-- **`ScoreBug`** — three variants: full (match view), compact (league readouts, aftermath, career
-  line) and live (elsewhere while a match runs). Team-coloured segments either side of a black score
-  block, so it is legible against any generated pair. It takes a §2.4 package. v1 assembled this
-  ad hoc from `StatCell`s on each surface, which is how it ended up grey and how it would drift.
-- **`StakeholderCard`** — `02` §7's four groups, in voice. Initials disc, name, role, group index,
-  and quoted speech against a rule in the speaker's colour, so the speaker is identifiable before
-  the name is read. §7 required the voices to be *"distinct enough to be recognised without a name
-  attached"* and the registry had nothing to say them with.
-
-**Every component declares a register**: BROADCAST (radius 0, team-filled, tabular numerals, lives
-over the field) or DESK (radius `m`, neutral surfaces, team colour as a single stroke). §2.3's
-per-component radius assignment is subordinate to this — a rounded score bug is as wrong as a square
-inbox row.
-
-Each is registered in a **component registry** that the contract tests enumerate. A component not in
-the registry cannot ship, which is what makes "by construction" true rather than aspirational.
-
-The last three, and two clarifications, come from the reference read in `01-RESEARCH.md` §6.6 §3:
-
-- **`OpposedBar`** — two values on one shared track, label at each end. The shape for
-  us-versus-them numbers; a two-column table is not legible at this width.
-- **`Sparkline`** — a small fixed-count **bar** run. **Bars, not a line** (2026-08-10): five
-  discrete games are five discrete facts and a line implies interpolation between them that does
-  not exist. Two domains, same component: recent form (five games) and a career arc (one bar per
-  season), differing only in domain and axis labels.
-- **`LowerThird`** — the match view's event card: who, what, and one line of context, over the
-  field. It is how a moment gets *named*; the field stays ambient (§5).
-- **`Meter` has a defined over-capacity state.** A budget that is exceeded draws past its track in
-  `state.negative` with the figure stated. A breach must be visible before it is read — this is the
-  cap, scholarship and contact-budget surface.
-- **Role and status tokens are `Chip` variants, not new components.** A short assignment code beside
-  a mark on a field, and a status glyph in a roster row, are the same primitive.
-
-**Three more components, added 2026-08-10.**
-
-- **`ProgressState`** — the one moment the player waits on the simulation. `03` §7 budgets 2.0 s
-  for a week advance at 134 programmes. **Determinate**, because 134 and 32 are constants and a
-  spinner would be a lie about knowable work; results land *during* the wait, because two seconds
-  of watching the league play is content and two seconds of a bar is a loading screen. **Show
-  after 400 ms, hold 600 ms minimum** — otherwise the fastest device gets the ugliest transition.
-- **`ConfirmSheet`** — names what is destroyed with real numbers, not "your progress". The safe
-  action is **first and visually heavier**, reversing the usual dialog order because the default
-  here is retreat; the destructive action is outlined, never filled, because a filled red button
-  reads as primary and it is not.
-- **`CallInCard` has two more states** — **deferred** (the clock expired, so it resolved to the
-  coordinator's recommendation and says so afterwards: a call-in cannot resolve to nothing) and
-  **paused** (the clock stops on background and resumes on foreground). At ~25 a match these are
-  the most-hit states in the product, and a timer that runs while the phone is in a pocket
-  punishes the commute the product is designed for.
-
-**Four rules the 2026-08-10 design pass found missing.** Each is a *stated reduction* rather than a
-fixed-height container, which is what §6's no-clipping clause actually requires — a component that
-must shrink at AX5 instead declares what it drops.
-
-- **`PrimaryButton` pins to the bottom of its pane; it does not scroll with content.** At AX5 the
-  Game plan's commit action otherwise falls below the fold, and `SmallestDeviceLayoutTest`'s
-  no-off-screen-controls clause fails on the most important control on the screen. This is a
-  component rule, not a per-screen fix, because every DESTINATION has one.
-- **`SegmentedControl` becomes a list above AX3.** Three labels at 53 pt do not fit the usable width.
-  Growing two segments is legal; shrinking three is not.
-- **`LowerThird` drops its context line at AX5** rather than shrinking. A three-line card at 53 pt
-  would cover the marks it exists to describe.
-- **`OpposedBar` colours the outlier, not the home side.** When neither value is an outlier both
-  fills go neutral. Otherwise the component reads as a loyalty badge rather than a comparison.
-
-**Destructive and irreversible actions** have a defined placement: never in the navigation bar's
-leading slot, always confirmed, always labelled with what will happen. The prior build put "sim the
-rest of the game and commit it" in the cancellation slot.
-
-**One thing the component pass could not test, stated rather than left implicit.** All 32 pro
-`TeamTable` pairs are dark-primary-with-light-secondary, so the light-primary case these components
-are required to survive **does not occur in the data**. Both real pairs clear their floors
-comfortably; that is not reassurance, it is the observation that the floors have never met the case
-that would break them. Either the generator's reachable colour space is narrower than §2.1 assumes,
-or the light-primary requirement is theoretical — and which one it is belongs to generation, not to
-the design system. Raised against P2's `ColourGenerator`.
-
----
-
-## 4. Screens
-
-Grouped by tab. Each declares DESTINATION or READOUT.
-
-**The entry sequence.** Added 2026-08-10. The review found that **the app had no specified entry
-point** — every row below assumed a coach already in post, mid-season, with a team, while `02` §10
-requires the first fifteen minutes to end with the player having *chosen a job with visible stakes,
-met a stakeholder, set a plan, made ~25 calls and seen a consequence.* Choosing a job is a screen.
-None of these existed, and `02` §9 says plainly that *"what sells the game is the first hour"*.
-
-| Screen | Class | Notes |
-|---|---|---|
-| Title | DESTINATION | One save, so a **Continue** card carrying the career's real state, not a slot picker. "Start a new career" is the most dangerous control in the product — it destroys a career that may be twenty seasons old, and §3's destructive rule applies in full: confirmed, and labelled with what is lost |
-| The board | DESTINATION | Three open programmes, each with roster, resources, expectation and patience stated **before** the choice. Passes §2.2: two defensible answers, a visible consequence, a cost — the other two jobs are gone |
-| The offer | DESTINATION | Terms restated, accept or go back |
-| The appointment | READOUT + handoff | First `StakeholderCard`, in voice. Full-bleed `team.primary` — the moment the player becomes this programme's coach, and the only full-bleed team surface outside the match |
-| Settings | DESTINATION | Reachable from Title and from Career. Owns the D1 tunables (`02` §11.3, call-ins 12–40), appearance, and the save. **Canon contained zero mentions of a settings screen before this row** |
-
-Then the tabbed set below, entered at week one. Onboarding does not add screens beyond these — D9
-teaches through the first real week, so first-run state rides on the ordinary week surfaces.
-
-| Tab | Screen | Class |
-|---|---|---|
-| **Week** | Inbox | DESTINATION — the week's inbound events |
-| | Opponent report | READOUT |
-| | Game plan | DESTINATION — the week's biggest decision |
-| | Practice allocation | DESTINATION |
-| | Match | DESTINATION during call-ins |
-| | Aftermath | READOUT + occasional decision |
-| **Team** | Roster / depth chart | DESTINATION |
-| | Player card | DESTINATION (development, discipline, redshirt) |
-| | Staff | DESTINATION (hire, fire, assign) |
-| | Scheme | DESTINATION |
-| **Recruit** (college) | Board | DESTINATION — the contact budget is the game |
-| | Shortlist | DESTINATION |
-| | Signing day | DESTINATION — **broadcast register**, see below |
-| **Front office** (pro) | Cap and contracts | DESTINATION |
-| | Draft | DESTINATION — **broadcast register**, see below |
-| | Free agency | DESTINATION |
-| **League** | Map | READOUT — a second canvas, `MapCanvas` |
-| | Standings | READOUT |
-| | Schedule and rankings | READOUT |
-| | News | READOUT — **bounded at 40 items**, newest first (`CLAUDE.md`'s growth rule; the prior build's unbounded feed helped take saves to 8.3 MB) |
-| | Realignment | READOUT — an **event**, once a season, on the map |
-| **Career** | Job security | READOUT — the jeopardy surface |
-| | Stakeholders | READOUT — four groups, four permanent rule colours |
-| | **The promotion** | **DESTINATION** — `02` §9, and it must pass §2.2 with a real decline |
-| | Carousel | DESTINATION — cannot dead-end |
-| | Record book, rivalries, career line | READOUT |
-
-**The three rows above replaced three comma-lists holding fourteen screens.** §4 calls itself a
-budget, and a budget that hides fourteen screens in three cells is not counting. Two consequences
-fell out of drawing them:
-
-- **The draft and signing day are not list screens.** A clock counting down, events arriving whether
-  the player acts or not, a decision with a deadline, and a named coordinator proposal — that is the
-  call-in loop with different content. They take the **broadcast register** and reuse `ScoreBug`'s
-  live variant and `CallInCard`. Building a second timed interaction would get it worse the second
-  time. **An expired draft clock must auto-pick**, stated: this is a commute game and a clock that
-  expires into nothing is a soft-locked draft.
-- **The promotion needs its own row and its own §2.2 test.** It was the word "carousel" inside a
-  comma list, and it is the product's headline. Declining must be genuinely available or the arc is
-  a cutscene.
-
-Every DESTINATION must pass `02` §2.2's three tests — two defensible answers, a visible consequence,
-a cost — or it is demoted to a READOUT and its decision automated.
-
-**Every READOUT states its own verdict.** A readout that shows numbers and leaves the reader to form
-the judgement is wallpaper, and wallpaper is what §6.0 found. Each one carries, above its data, a
-one-line judgement and at most three sentences naming which figures are outliers and in which
-direction — *the run defence is the weakness; you are giving up 5.1 a carry against a league 4.2*.
-This is the strongest single pattern in the reference read (`01-RESEARCH.md` §6.6 §3.1): wherever a
-mature competitor expects the player to form a judgement, it states the judgement first and lets the
-chart be the evidence — eight times on its analytics page alone. The verdict is generated by the
-engine, not authored per screen, so it cannot go stale.
-
-**The chassis is two-pane, because landscape gives width and takes height.** Added 2026-08-10 with
-the orientation decision. A single scrolling column shows roughly five to seven rows at default type
-and fewer at AX5 — a roster of 85 or a recruiting board becomes a scroll marathon. The width is the
-compensation: **a list rail on the leading side, detail on the trailing side**, both visible at once.
-This is not decoration. It removes a navigation level — roster row to player card stops being a push
-and becomes a selection — which is how the two-tap ceiling below survives. READOUTs that are
-genuinely one object (career line, record book) may still be full-width.
-
-**Corrected the same day, by drawing it.** Two claims in the paragraph above were wrong as first
-written, and the design pass found both:
-
-1. **A management screen keeps its status bar, so the budget is 347 pt, not 369.** That is 22 pt off
-   every two-pane screen, and it is not slack: the Inbox rail is full at **four** items in 347 pt,
-   and Roster shows **seven** rows at the 844 floor (the six-row case was the mini, now dropped —
-   §4.1). §5.2's field arithmetic is unaffected only
-   because the match view hides the status bar — see there.
-2. **The two-pane chassis does not hold at AX5.** It holds at 844 at default type. At AX5 two option
-   cards cannot sit side by side, and the correct behaviour is that **the pane falls to a single
-   scrolling column** — a stated reduction, not a squeeze. This is the chassis rule, not a per-screen
-   workaround.
-
-### 4.1 The supported device set
-
-**Owner decision, 2026-08-10: the SE and mini classes are out of the design budget.** The floor is the
-standard iPhone at 844 × 390 landscape; the ceiling is Plus / Pro Max at 932 × 430. Design at the
-floor and let the ceiling have the surplus.
-
-This is a good trade and it buys three specific things. The management budget rises from 332 pt to
-**347 pt**; the detail pane stops dropping to 216 pt, where it lost its explanatory clauses and its
-glyph legend and therefore stopped being able to explain itself; and the field scale range collapses
-to 6.54–7.28 pt/yd, an 11 % spread, instead of 5.56–6.54.
-
-**Three things it does not buy, stated because two of them read as if it should.**
-
-1. **It does not remove the size-class split.** The standard and Pro classes are **compact** width in
-   landscape; Plus and Pro Max are **regular**. That boundary runs through the middle of the
-   *supported* set, not between supported and dropped, so §4's two-pane chassis still must not be a
-   `NavigationSplitView` on defaults and both classes are still rendered in test.
-2. **It does not remove the AX5 constraint.** 369 pt of height at the largest accessibility size is
-   the binding case and always was; the dropped devices were 15 pt worse, not categorically worse.
-3. **It does not remove SE and mini from the install base, and it cannot.** There is no App Store
-   mechanism to exclude a device by screen size — `UIRequiredDeviceCapabilities` has no such key —
-   and every dropped device runs the deployment target. So an SE owner can still install this app.
-   **The obligation therefore changes rather than disappearing:** those devices get no bespoke design
-   work, no layout tuned for them, and no gate, but they must still *run* — no clipped controls, no
-   unreachable primary action. `SmallestDeviceLayoutTest` is re-pointed at 844 × 390 as the design
-   floor and keeps a separate, weaker assertion at 667 × 375: **controls reachable, nothing
-   off-screen, appearance not guaranteed.** A phase that deletes the weaker assertion rather than
-   demoting it has turned a design decision into a crash report.
-
-**Landscape's three costs, named so they are designed for rather than discovered.**
-
-1. **AX5 is the binding constraint, not the smallest device.** 369 pt of height at the largest
-   accessibility type is where layouts break. `DynamicTypeContractTest` is now the test most likely
-   to fail first, and every screen is drawn at AX5 before it is drawn at default.
-2. **This is a two-handed app.** 844 pt of width puts both thumbs at the extremes and nothing at the
-   centre. Primary and destructive actions live in the **bottom corners** of the trailing pane; the
-   centre of the screen is for reading, not for reaching.
-3. **The sensor housing eats one short edge.** Chrome respects `safeAreaInsets` on both leading and
-   trailing edges, because the device can be rotated either way and the inset follows the housing.
-
-**And landscape reintroduces size classes, which portrait had made a non-issue.** Every supported
-iPhone is compact-width in portrait — one case. In landscape, Plus- and Max-class devices report
-**regular** width while the standard and SE classes report **compact**. So the two-pane chassis
-cannot be a `NavigationSplitView` left to its own defaults: that control collapses to a single stack
-at compact width, which is most of the range, and the layout would then be correct only on the
-largest phones. The two panes are laid out explicitly and both size classes are rendered in test.
-
-**Navigation has a ceiling, and the ceiling is the point.** Five destinations; every screen reachable
-in at most two taps from its root. If this game ever needs a search field over its own screens,
-or a user-configurable shortcut manager, the architecture has failed rather than matured — both
-appear in the reference set and both are symptoms (`01-RESEARCH.md` §6.6 §4.3). The screen list
-above is a budget, not a starting point.
-
-### 4.2 Persistence and return
-
-Added 2026-08-10. The review found the product described as "a commute game" twice in its own
-design references and designed for it nowhere: save cadence was implied at two values and ruled
-nowhere, and nothing covered cold launch.
-
-- **Save on every completed decision and every week boundary. Never on a timer.** A timer means a
-  player can lose a decision they remember making. The save is ~2.1 MB, so per-decision is
-  affordable; P16 owns proving it stays affordable across twenty seasons.
-- **Cold launch restores the surface, not the tab root.** Returning to Week root loses the
-  player's place and makes them re-read a screen they had finished. The Title screen's Continue
-  card names where they were, when it saved, and what triggered the save — the third of those
-  teaches the cadence rule without stating it.
-
-### 4.3 The destination bar
-
-Owner decision, 2026-08-10: **bottom**. Specified here because "five tabs" was the entire previous
-spec, which left the most expensive layout decision in the product to a SwiftUI default.
-
-- **Bottom, 44 pt, icon beside label rather than under it.** The stock arrangement stacks label under
-  icon and needs ~49 pt. Landscape has width to spare and height to save, so the pair goes
-  horizontal and the bar lands on 44 — the touch floor exactly, not a point more.
-- **The active destination is marked on the bar's top edge**, a 2 pt `live` rule. A bottom marker
-  would collide with the home indicator.
-- **Hidden in the broadcast register.** The match view is full-bleed and §5.2's arithmetic already
-  assumes all 369 pt; leaving the bar up would clip the field by 44 and break the whole-field claim.
-
-**The cost, stated because every screen in §4 inherits it.** 390 − 22 status − 44 bar − 21 home
-indicator = **303 pt of content, 78 % of the screen.** At 44 pt rows that is **6, down from 7**; at
-AX5, where a row runs ~65 pt, it is **4, down from 5**. Losing a fifth of the scarce axis to
-navigation is the real price of a bottom bar in landscape and it should be paid knowingly.
-
-**The three content budgets, in one place.** A review found this figure quoted as 303, 347 and 369
-in different documents. All three are right *for different chrome*, and none of them said which —
-so the table is the fix:
-
-| Surface | Chrome subtracted | Content height | Rows at 44 pt | Rows at AX5 |
-|---|---|---|---|---|
-| **Match view** | home indicator only (status bar and bar both hidden) | **369 pt** | — | — |
-| **Management, no bar** (modal, sheet, first-run) | status 22 + indicator 21 | **347 pt** | 7 | 5 |
-| **Management, with the bar** (every §4 destination) | status 22 + bar 44 + indicator 21 | **303 pt** | 6 | 4 |
-
-Quote the row, never the bare number.
-
-**They are destinations, not tabs, and the distinction earns its word.** One position mutates:
-**Recruit becomes Front office on promotion**, changing label, icon and contents mid-career. "Tab
-bar" implies fixed furniture and invites a builder to hard-code five cases.
-
----
-
-## 5. The match view — the hardest surface
-
-### 5.1 The problem
-
-22 marks on one phone screen. Human multiple-object tracking capacity is far below 22, so a literal
-all-22 render is noise by construction, not by execution. That half of the problem is
-orientation-independent, and the directed-attention rule below is what answers it.
-
-Orientation decides only the other half: how much field is in frame, at what scale, and whether the
-camera has to move during a play.
-
-### 5.2 The resolution
-
-**The app is landscape** — owner decision, 2026-08-10, recorded in `CLAUDE.md` and `docs/STATUS.md`.
-The field is drawn along the screen's long axis: the line of scrimmage runs **vertically**, the
-offence attacks **rightward**, and the **whole 120-yard field is in frame at all times**. There is no
-pan during a play and no recentring between snaps, because there is nothing to recentre to.
-
-**The arithmetic, which portrait could not satisfy.** A football field is 120 × 53.333 yd —
-**2.250 : 1**. A landscape iPhone is **2.164 : 1**. The field is *slightly* more elongated than the
-screen, so fitting its length to the long axis leaves room to spare on the short one:
-
-**The supported set, narrowed by the owner on 2026-08-10: no SE, no mini.** The design floor is the
-standard iPhone at 844 × 390. See §4.1 for what that does and does not buy.
-
-| Device | Usable canvas after safe areas | Scale at full 120 yd | Field height | Spare |
-|---|---|---|---|---|
-| **Floor** — standard (844 × 390) | 785 × 369 | **6.54 pt/yd** | 349 pt | 20 pt |
-| Pro (852 × 393) | 793 × 372 | 6.61 pt/yd | 352 pt | 20 pt |
-| **Ceiling** — Plus / Pro Max (932 × 430) | 873 × 409 | 7.28 pt/yd | 388 pt | 21 pt |
-
-DERIVED. The range is now narrow and well behaved: **6.54 to 7.28 pt/yd, an 11 % spread**, with the
-spare height essentially constant at 20 pt because every supported device carries the same sensor
-housing and home-indicator insets. The two awkward cases are gone — the mini's 19 pt clearance and
-the SE's 5.56 pt/yd both left the set with the devices that produced them.
-
-**And the match view therefore hides the status bar.** Established 2026-08-10 when the design pass
-found that management screens keep theirs (§4). Recomputed with a 22 pt status bar visible, the
-usable height falls to 347 pt and the field wants 349 — **it does not fit, by 2 pt, on the base
-device, and by 3 pt on the mini**. The margins above are 20 pt and 19 pt, so the status bar is not a
-rounding error, it is the whole clearance. The field is a full-bleed immersive surface and hiding the
-bar is the ordinary treatment for one; the scoreboard already carries the game state the status bar
-would compete with. Stated here because it is a *requirement of the arithmetic*, not a style choice,
-and a P13 that leaves the bar visible will find the field clipped rather than merely tight.
-
-The design pass reached the same conclusion by a different route — it subtracted 75 pt of width
-rather than 59, which its own inset table does not account for, and arrived at 6.41 pt/yd. The
-discrepancy is unresolved and is one more reason P13 measures rather than derives. **The conclusion
-is robust across the whole candidate range**: at 59 pt of inset on one edge (6.54 pt/yd), at the
-design pass's 75 (6.41), and at 59 on both edges (6.05), the whole field fits with the status bar
-hidden. What changes is mark size, not whether the approach works.
-
-Device point sizes are ASSUMPTION, carried from `01-RESEARCH.md` §6.1 and still unmeasured; the
-landscape safe-area figures (≈59 pt on the sensor-housing edge, ≈21 pt on the home-indicator edge)
-are ASSUMPTION on the same footing. P13 replaces both with a measurement.
-
-Against portrait's 7.31 pt/yd over **68 of 120 yards** with recentring between snaps, the trade is
-explicit: **about 11 % smaller marks in exchange for the entire field, permanently, with no camera
-motion.** Whole-field-always-visible was rejected in portrait on arithmetic — it wanted 877 pt of
-height on an 844 pt screen (`01-RESEARCH.md` §6.5, option A). Rotating the device is what makes it
-fit, and `01-RESEARCH.md` §6.5 dismissed landscape in one line without ever computing it.
-
-**What this does not buy.** At 6.54 pt/yd adjacent linemen sit ~7.5 pt apart, ~6.4 pt on the SE,
-against portrait's ~8.4 pt. Same order of magnitude, so `01-RESEARCH.md` §6.3's conclusion stands
-unaltered — **and it was tested on a redrawn frame on 2026-08-10 rather than left as an assertion.**
-An earlier design pass claimed all 22 could be drawn *and numbered*, and demonstrated it on a frame
-whose linemen sat on 16 pt centres — **2.17× the true 1.15 yd split of 7.5 pt.** Redrawn honestly,
-the arithmetic is decisive and it is not a floor problem: a legible numeral needs a ~20 pt disc,
-which at 7.5 pt centres is **62 % occluded**, and at the 932 ceiling's 8.4 pt centres still 58 %.
-
-**So the conclusion is amended in one direction only.** All 22 marks *are* drawn, at true positions
-— the nine interior linemen as 11 pt ringed discs the eye can **count**, and 13 numerals on the
-skill positions and the three foregrounded marks. That is more than "one shape" and less than
-"22 numbered". The original clause stands where it matters:
-**individually numbered marks on the two lines remain geometrically impossible**, the
-seven-man line is drawn as one shape rather than seven marks, and nothing inside the match `Canvas`
-is individually tappable. Orientation bought field coverage. It bought nothing on local clustering.
-
-**A match can always be left, and it is never destructive.** Added 2026-08-10. The outcome is
-already determined by the seed (`03` §1.3), so leaving forfeits nothing except *watching* — and
-the sentence **"the result is already decided"** is required on the exit, not optional: without
-it every player assumes leaving forfeits something and force-quits instead. Three exits, because
-they are three different intentions: **keep watching** (default, heaviest), **leave and resume
-here later** (the commute answer), and **simulate the rest**. Simulate is the only one that
-changes what the player *gets* — remaining call-ins resolve to the coordinator — so it names that
-cost beneath itself.
-
-**The §2.4 package is a parameter, not a variant.** The match view is drawn once and takes a house
-and an escalation. Because the bug overlays rather than stacks, the field arithmetic above is
-unchanged at every escalation — the Final package's 52 pt bug plus its 18 pt title bar sits over the
-field's dead margin, not above it. A package that pushed the field down would eat the 20 pt clearance
-and clip it; that is the constraint the overlay rule exists to protect.
-
-**Chrome overlays the field; it does not take a slice of it.** The numbers above assume the canvas
-gets the whole usable rectangle. A side rail that reserved 120 pt would drop the SE to 4.56 pt/yd,
-below the legibility floor §6.5 uses to reject option A — so the scoreboard, the remaining-key-moments
-indicator and the call-in are drawn **over** the field, in its dead margins, not beside it.
-
-**Precedent, at its true strength.** FM Mobile is landscape throughout: the match pitch by direct
-observation of two owner-supplied captures (`01-RESEARCH.md` §6.6 §2, AS-6.5-07), the management
-screens by owner report — testimony, not capture, and marked as such. Real, but a *soccer* precedent
-for a sport with the opposite field ratio. The load-bearing argument is the table, not the reference.
-
-**The residual, not glossed.** FM's own community reports that the **vertical** pitch — attacking
-up-screen — is the more legible orientation for reading team shape, lines and gaps
-(`01-RESEARCH.md` §2.1), and FM26 ships a camera called *Vertical Scrolling*. Our field now runs the
-other way. Whether "better for structure" survives transfer to a sport whose structure is a line of
-scrimmage rather than a defensive block is settled by nothing in this document. It is the question
-P13's owner walkthrough exists to ask.
-
-**Half of that question came back answered on 2026-08-10, and the other half got sharper.** Drawn at
-6.41 pt/yd, the hash marks and yard lines read, and the line of scrimmage reads as a line — because
-it is the only unbroken vertical rule on the surface, which is a property worth protecting rather
-than a coincidence. **What does not read is direction.** Nothing in a still frame says the offence
-attacks rightward except the ball spot. So the remaining-key-moments indicator in the header is
-carrying drive direction as well, which makes it load-bearing rather than ambient, and P13's
-walkthrough should ask about direction specifically rather than about the field in general.
-
-**Attention is directed, not divided.** At any moment the view foregrounds at most **three** marks:
-the ball carrier or passer, the primary matchup the play turns on, and the defender who will decide
-it. Everything else is drawn at reduced contrast and reduced size. This is the difference between an
-all-22 diagram and a legible one.
-
-**The field stays ambient; the moment is named.** The field is not asked to carry the story on its
-own. A snap that matters resolves into a `LowerThird` — who, what happened, one line of context —
-and that card, not the marks, is what the player reads. The reference read found the same division
-of labour in a shipping mobile match view (`01-RESEARCH.md` §6.6 §3.3), arrived at from the opposite
-direction: it leaves all 22 undifferentiated and lets the card do everything. Ours narrows the field
-*and* names the moment.
-
-**The player can see how much is left.** The match header carries one mark per remaining key moment,
-filling as the game runs. Without it, drive-granularity default reads as an indefinite wait rather
-than a known-length sequence — and D1's 10.5-minute budget is only reassuring if the player can feel
-it (`01-RESEARCH.md` §6.6 §3.4).
-
-**The play resolves before it animates.** The engine produces the outcome; the choreographer builds
-motion whose last frame is pinned to the recorded result (`03` §1.3). The view cannot change what
-happened, and a test asserts it.
-
-**Drive granularity by default.** Between call-ins the view summarises at drive level. Full snap
-animation is reserved for call-in snaps, scoring plays, turnovers and explosives — which is what
-makes D1's 10.5-minute match budget hold.
-
-### 5.3 What the player reads
-
-A snap must be legible as *what it was*: a completion, a sack, a run stuffed at the line. The minimum
-vocabulary is the matchup that decided it — which is available because D2 chose a model that knows.
-A sack is drawn as the protection duel that lost, not as a generic collapse.
-
-### 5.4 Accessibility of the match view
-
-- **Reduce Motion:** the view becomes a discrete state sequence — formation, key moment, outcome —
-  with no interpolated motion. It is not disabled; a player who needs Reduce Motion still gets the
-  match.
-- **VoiceOver:** each snap emits one composed sentence built from the same matchup resolution the
-  animation draws from, so audio and picture cannot diverge.
-- **Contrast:** every mark, trail and annotation is measured against the field surface in both
-  appearances.
-
----
-
-## 6. The accessibility contract (D12)
-
-Binding, tested, and enumerated by construction.
-
-| Clause | Requirement | Test |
-|---|---|---|
-| Contrast | ≥4.5:1 body, ≥3:1 large text and non-text indicators, measured on the composited surface, both appearances. **Fill roles are enumerated against the surface they fill, not as a foreground pair** — `rating.*` is a fill role (§2.1) and scoring it as text would fail it wrongly; the hairline is a colour token and is enumerated | `ContrastByConstructionTest` |
-| Coverage | The contrast suite's surface count equals the count of surfaces consuming a colour token | meta-assertion inside the same test |
-| Orientation | The app declares landscape and only landscape, in `App/project.yml`; no view opts out | `OrientationPolicyTest` reads the project manifest |
-| Dynamic Type | Every screen legible at AX5 **in 369 pt of height**, no clipping, no fixed-size text container | `DynamicTypeContractTest` |
-| Reduce Motion | Every animation has a defined reduced form | `ReduceMotionContractTest` |
-| VoiceOver | Every data row is one sentence; every control has a label and a hint where non-obvious | `VoiceOverLabelTest` |
-| Touch targets | 44 × 44 pt minimum | `TouchTargetTest` |
-| Smallest device | Every screen fully designed at the **844 × 390 design floor** (§4.1); at 667 × 375, unsupported but installable, the weaker assertion holds — controls reachable, nothing off-screen, appearance not guaranteed | `SmallestDeviceLayoutTest`, two tiers |
-| Errors | Every error path terminates in a presented surface | `ErrorSurfaceTest` |
-| Reachability | Every view is reachable from the app entry point | `ReachabilityTest` |
-
-**Unverified premises, flagged rather than buried.** Three inputs to this contract could not be
-checked — `developer.apple.com` returned no readable body through the proxy: the 44 pt touch-target
-floor, Apple's exact Reduce Motion semantics, and the SwiftUI API surface for suppressing
-`TimelineView` updates. All three are cited from memory and marked UNVERIFIED in `01-RESEARCH.md`.
-**Confirm against the HIG before implementing.** Building an accessibility contract on unverified
-guidance would reproduce precisely the failure pattern 1 names.
-
----
-
-## 7. Copy
-
-Short, plain, specific. No lorem ipsum, no emoji. A refusal names the door that shut ("roster full",
-"$1.2M over the cap"), never just "cannot do that". Stakeholder voices are distinct enough to be
-recognised without a name attached.
+| **Coach's Office** | Run the week | week plan, correspondence, pressure, staff notes | disciplined seams, writable schedules, restrained motion |
+| **Personnel Room** | Build and develop the team | team sheet, depth chart, player dossier, medical and staff files | dense comparison where earned; identity-led detail |
+| **Acquisition Room** | Compete for future talent | recruiting board, territory, relationship history, offer ledger | live market movement, physical ranking/territory cues |
+| **Front Office** | Keep the pro roster legal and competitive | cap ledger, contracts, draft board, market | harder steel geometry, transaction receipts, clocks only when real |
+| **League & Media** | Understand the living world | map, standings, schedule, stories, records | editorial hierarchy; data tied to teams, games and history |
+| **Career & Legacy** | Read the coach's story | timeline, stakeholders, jobs, rivals, record book | chronological composition; earned ceremony |
+| **Film Room** | Study evidence | field film, tendencies, matchup evidence, staff interpretation | dark analytical environment; annotation belongs to evidence |
+| **Broadcast** | Experience live or timed football | full field, score, clock, causal commentary, call-in | square geometry, team identity, no management chrome |
+| **Ceremony** | Mark an irreversible career moment | appointment, signing, promotion, trophy | rare, focused, minimal controls |
+
+No screen may describe itself as “Film Room” unless it belongs to that row.
+
+## 3. World navigation
+
+The former universal five-tab bottom bar is removed.
+
+Management surfaces use a **world strip** that carries the current programme or club, coach, date or
+phase, record and the next legal advance in time. It is world state, not an app toolbar. A task then
+provides only the local routes it needs: Office, Personnel, Acquisition/Front Office, League and
+Career. Labels may move or collapse, but the information architecture remains stable.
+
+- `Continue` advances only to the next unresolved obligation or scheduled event.
+- Mandatory work cannot be skipped. It may be explicitly delegated when the system supports it.
+- Match, draft-room clocks, signing-day clocks and ceremonies suppress global navigation.
+- Back/close returns to the football object that opened the surface, not an arbitrary tab root.
+- Cold resume restores the exact surface and draft selection at the last durable boundary.
+- No screen needs a bookmark manager or user-configurable shortcut system.
+
+## 4. Composition rules
+
+### 4.1 One dominant football object
+
+Every screen has one dominant representation. Examples: week plan, player dossier, recruiting
+board, salary ledger, field, map, chronological story. Supporting evidence may surround it, but no
+more than two secondary regions compete at the initial viewport.
+
+There is no universal 38/62 split, task header, verdict card, choice-card row or fixed action rail.
+Those patterns may appear where the task earns them; they may not become global templates.
+
+### 4.2 Density is task-relative
+
+- Use full tables for roster, recruiting, contracts, standings and statistical comparison.
+- Use spatial diagrams for tactics, depth, packages, territory and live play.
+- Use chronology for weeks, recent form, career, recruiting relationships and offseason.
+- Use editorial story hierarchy for news, appointment, promotion and aftermath.
+- Lead analytical readouts with staff interpretation, then sample, confidence and evidence.
+- Show exact numbers only where the simulation owns exact numbers. Use bands for estimates.
+- Advanced density belongs behind an intentional local route, never in tiny default text.
+
+### 4.3 Decisions live beside their cause
+
+A meaningful decision exposes deadline, cost, uncertainty, staff voice, consequence and two or
+three defensible actions. The control is attached to the object being changed. A generic footer
+button labelled `Commit` is prohibited unless the transaction itself is the dominant object.
+
+`Decide`, `Inspect` and `Delegate` remain distinct. Success shows an exact receipt. Failure preserves
+the authoritative draft and offers recovery. An interrupted decision must disclose what changed
+before the player can resolve it.
+
+### 4.4 Application-slop rejection
+
+A screen fails before scoring if any of these is true:
+
+- it could describe a CRM, analytics SaaS product or project-management tool after nouns are changed;
+- unrelated tasks reuse the same visible chassis;
+- five or more equal-weight rounded cards form the primary composition;
+- pills, badges or coloured side rails substitute for hierarchy;
+- generic blue is the only expression of action or selection;
+- internal fixture, prototype or `REFERENCE DATA` copy appears inside the game frame;
+- there is no visible team, opponent, season, person, place, football object or consequence;
+- an AI-style verdict invents authority without sample, staff ownership or uncertainty;
+- the first viewport is a contents page for the real task rather than the task itself.
+
+Prototype truth disclosure belongs in gallery chrome outside the native device frame.
+
+## 5. Identity system
+
+Identity is structural, not a two-point decorative accent.
+
+- Programme or club colour may own a world-strip field, scoreboard, selection state, uniform mark,
+  recruiting territory or ceremony surface when it remains legible.
+- Opponents use their own identity only where comparison or conflict requires it.
+- College may use one restrained 9-degree cut in identity furniture. Pro remains orthogonal.
+- Broadcast furniture uses both teams. Management never receives a decorative team-colour wash.
+- Team marks, uniforms, stadium names, player names and staff names come from the generated universe.
+
+### 5.1 People and future custom universes
+
+The base product uses a deliberate neutral photo plate for players and personnel. It contains no
+generated face and no initials pretending to be a photograph. Recognition comes from name, role,
+uniform, team, relationships and history.
+
+The base UI never fetches procedural portraits or other identity assets from a network service.
+Future user-supplied universe media is resolved from a validated local import, with the neutral
+photo plate remaining the offline, missing-file and opt-out state.
+
+The view model reserves optional asset references for future user-supplied universes:
+
+- `person.photoAsset`
+- `team.primaryMarkAsset`, `team.secondaryMarkAsset`, `team.uniformAsset`
+- `team.displayName`, `team.shortName`, `team.colours`
+- `venue.displayName`, `venue.imageAsset`
+
+The base game remains fictional and original. Importing custom names or media is a future product
+and legal decision, not a v1 feature; UI code must neither require it nor block it.
+
+## 6. Foundations
+
+### 6.1 Colour roles
+
+Tokens name purpose, never hue. Exact production values are validated in both appearances before
+SwiftUI implementation.
+
+| Role | Purpose |
+|---|---|
+| `world.page`, `world.work`, `world.raised` | three maximum neutral elevations |
+| `content.primary`, `content.secondary`, `content.quiet` | text hierarchy; quiet never carries working prose |
+| `action.primary`, `action.secondary`, `action.destructive` | controls; team colour is not a generic action token |
+| `state.live`, `state.positive`, `state.warning`, `state.negative`, `state.info` | semantic state; never colour alone |
+| `college.identity`, `pro.identity` | tier furniture only |
+| `field.turf`, `field.line`, `field.annotation`, `field.live` | field grammar |
+| `broadcast.home`, `broadcast.away`, `broadcast.ink` | per-match derived roles |
+
+The owner-supplied Football Manager captures are the temporary production proxy for density,
+navigation proportions, panel rhythm and typographic hierarchy. DESK therefore defaults to a
+near-navy workspace with restrained violet navigation/action furniture and compact opaque panels.
+The game does not copy FM marks, icons, photographs, club identities or branded artwork.
+
+No gradients, glow, glass, fake paper, leather, cork or decorative shadow. Surfaces are matte and
+opaque. Hairlines separate continuous regions; containers exist only for interaction, grouping or
+clipping.
+
+### 6.2 Typography
+
+Use the system family in production and a system stack in references. The hierarchy relies on scale,
+weight and width, not a dozen tiny roles.
+
+Do not substitute a generic “sports” display font for hierarchy. A bundled face may be evaluated
+later only if its licence, full Dynamic Type range, numerals, localisation and VoiceOver behaviour
+are verified without shrinking working text.
+
+| Role | Default floor | Use |
+|---|---:|---|
+| Display | 22 pt | score, career moment, singular identity |
+| Title | 20 pt | screen or dominant object |
+| Headline | 17 pt semibold | local decision or story |
+| Body | 17 pt | working prose |
+| Callout | 15 pt | evidence and supporting facts |
+| Caption | 12 pt | metadata only |
+| Numeral | 20–32 pt tabular | score, clock, money, rank, rating |
+
+Authored text never falls below 12 pt. AX5 reflows to a single readable path; it does not scale a
+desktop composition. Diagram marks may remain fixed only when an equivalent accessible sentence is
+present.
+
+### 6.3 Shape, spacing and touch
+
+- Base spacing steps: 4, 6, 8, 12, 16, 20.
+- DESK control radius: 8 pt; row radius: 8 pt; surface radius: 10 pt.
+- Broadcast radius: 0.
+- Minimum interactive target: 44 × 44 pt.
+- Selected items receive boundary, value and spoken state; never a coloured fill alone.
+- Icons use SF Symbols as one coherent line family. Emoji are prohibited.
+- Repeated utilities may become icon-first: inspect film, delegate, pause, speed and tactical view.
+  Their accessible names remain explicit. Destinations and irreversible decisions retain visible text;
+  a familiar icon may support that label but never replace its meaning.
+
+## 7. Device and accessibility contract
+
+Production supports landscape iPhone at 844 × 390 through 932 × 430. Both sensor orientations,
+light/dark appearances, compact/regular landscape width classes and AX5 are binding.
+
+- Safe areas are owned at physical edges, not guessed from a preferred orientation.
+- The initial viewport contains the dominant object and any decision due now.
+- AX5 may scroll vertically. The focused action remains reachable without crossing a hidden shelf.
+- VoiceOver order follows world context → dominant object → evidence → actions → local navigation.
+- Reduce Motion replaces travel, reveal and field animation with discrete state changes.
+- Sound and haptics have visual and spoken equivalents.
+- Loading never displays invented percentage progress.
+- Empty, error, interrupted and resume states remain inside the composition they belong to.
+
+## 8. Canonical v1 screen inventory — 62 families
+
+Counting rule: a screen is a distinct player-facing destination or task surface. Loading, empty,
+error, success, disabled, delegated, interrupted, confirmation, first-week teaching, AX5 and resume
+are states beneath their owning screen. Tabs that preserve the same object and task are modes, not
+new screens.
+
+### Entry and system — 7
+
+| # | Screen | Dominant object |
+|---:|---|---|
+| 1 | Title / Continue | current career and durable boundary |
+| 2 | New Career & Coach Identity | coach premise and generated universe |
+| 3 | Job Board | three defensible starting jobs |
+| 4 | Offer | terms and accept/decline consequence |
+| 5 | Appointment | stakeholder handoff and programme identity |
+| 6 | Settings & Accessibility | device, match and accessibility choices |
+| 7 | World Search | bounded index across people, teams, games and history |
+
+### Week and match — 8
+
+| # | Screen | Dominant object |
+|---:|---|---|
+| 8 | Coaching HQ | current week plan and next obligation |
+| 9 | Inbox | conversations and commitments with cost |
+| 10 | Opponent Report / Film Room | observed film, staff interpretation and confidence |
+| 11 | Game Plan | weekly tactical keys and trade-offs |
+| 12 | Practice Plan | scarce practice minutes across units |
+| 13 | Team Health | availability, fatigue, injury and return decisions |
+| 14 | Match Day | full field, score, current cause and call-ins |
+| 15 | Aftermath | result, causal review and recovery consequence |
+
+### Team and staff — 8
+
+| # | Screen | Dominant object |
+|---:|---|---|
+| 16 | Roster | sortable legal team sheet |
+| 17 | Depth Chart | spatial roles, packages and succession |
+| 18 | Player Profile | role, story, form, confidence and history |
+| 19 | Development Plan | current focus, staff ownership and opportunity cost |
+| 20 | Staff Room | assignments, continuity and unit performance |
+| 21 | Staff Market & Profile | candidate comparison, contract and scheme relationship |
+| 22 | Scheme Book | offensive/defensive identity and adoption cost |
+| 23 | Personnel Packages | situation-specific on-field assignments |
+
+### College acquisition and offseason — 10
+
+| # | Screen | Dominant object |
+|---:|---|---|
+| 24 | Recruiting Board | ranked live target board |
+| 25 | Prospect Profile | evaluation, relationship, fit and uncertainty |
+| 26 | Shortlist | monitored prospects and next contact |
+| 27 | Contact & Visit Planner | weekly contact budget and scheduled visits |
+| 28 | Class Overview | needs, commitments, capacity and class history |
+| 29 | Signing Day | timed commitment feed and unresolved choices |
+| 30 | Portal Hub | window, roster exposure and movement summary |
+| 31 | Retention Decisions | departure risk, promise and NIL trade-offs |
+| 32 | Portal Market | available players, fit, competition and capacity |
+| 33 | NIL Allocation | finite programme pool distributed across the roster |
+
+### Professional front office — 7
+
+| # | Screen | Dominant object |
+|---:|---|---|
+| 34 | Cap & Contracts | legal ledger, commitments and future years |
+| 35 | Contract Negotiation | term, guarantee, role and cap consequence |
+| 36 | Roster Cuts & Transactions | legality deadline and loss of depth |
+| 37 | Pro Scouting Board | uncertain draft and market evaluations |
+| 38 | Draft Board | ranked prospects, needs and scouting investment |
+| 39 | Draft Room | timed pick sequence and trade-off at the clock |
+| 40 | Free Agency | live market waves, competing bidders and offers |
+
+### League and competition — 11
+
+| # | Screen | Dominant object |
+|---:|---|---|
+| 41 | League Map | place, distance, regions and rivalry context |
+| 42 | Team / Programme Profile | identity, trajectory, venue and history |
+| 43 | Standings | current competitive order and tiebreak meaning |
+| 44 | Schedule | season chronology and preparation rhythm |
+| 45 | Rankings & Playoff Picture | selection position, neighbours and path |
+| 46 | Bracket / Postseason | live elimination path |
+| 47 | Game Detail / Box Score | result, drives, turning points and participation |
+| 48 | Statistics & Leaders | bounded comparison with context and sample |
+| 49 | Awards & Honours | season and career recognition |
+| 50 | News | editorial world events, bounded newest-first |
+| 51 | Realignment Event | map change, cause and consequence |
+
+### Career and legacy — 9
+
+| # | Screen | Dominant object |
+|---:|---|---|
+| 52 | Career Hub | chronological story of the coach |
+| 53 | Job Security | expectation, movement, cause and jeopardy |
+| 54 | Stakeholders | relationships, voices and recent triggers |
+| 55 | Promotion Decision | college-to-pro offer with a real decline path |
+| 56 | Coaching Carousel | open jobs, interest and non-dead-end outcomes |
+| 57 | Record Book | bounded records across the save |
+| 58 | Rivalries | history, current stakes and accumulated strength |
+| 59 | Career Line | roles, seasons, records and defining moments |
+| 60 | Coaching Tree | staff relationships and career descendants |
+
+### Offseason command — 2
+
+| # | Screen | Dominant object |
+|---:|---|---|
+| 61 | College Offseason | dated sequence linking signing, portal, NIL, staff and carousel |
+| 62 | Pro Offseason | dated sequence linking cuts, contracts, market, draft, staff and carousel |
+
+Any new surface requires an amendment here, a read-model owner, a navigation location and a reason it
+cannot be a mode of an existing family.
+
+## 9. Match Day
+
+Match is the strongest game-authenticity gate.
+
+- The complete 120-yard field remains in frame, with both end zones, line of scrimmage and first-down
+  line.
+- Native drawing may add restrained turf bands, yard lines, hash marks and field numbers. Route
+  vectors appear only when the recorded read model supplies that route; decorative or invented
+  movement is prohibited.
+- Offense direction is recorded data. It owns defended end-zone labels and whether the first-down
+  line lies left or right of the line of scrimmage; the view never guesses from home/away colour.
+- All 22 actors are represented; no more than three are visually foregrounded at once.
+- The field owns the usable frame. No management header, card grid or destination bar appears.
+- The scorebug names teams, score, quarter, clock, down, distance and possession.
+- A causal lower third answers what just happened and why it matters.
+- The five primary controls are Speed, Pause, Key Moments, Take Over and Tactics.
+- A call-in is a named staff proposal with accept, dismiss and inspect-evidence paths.
+- Animation visualises an already-recorded outcome and cannot change simulation truth.
+
+## 10. Proof and production gates
+
+Before production SwiftUI begins, three interactive proof screens must be owner-approved together:
+
+1. **Coaching HQ** — proves week rhythm, world context and local decision anatomy.
+2. **Recruiting Board** — proves dense comparison, people, relationships and uncertainty.
+3. **Match Day** — proves broadcast immersion, spatial football and live intervention.
+
+They depict one continuous fictional save: Carson Tech, head coach Eric Mercer, Week 9, Southern
+State as the current opponent, and consistent staff/recruit consequences. Personnel photographs are
+neutral blank plates.
+
+Each proof renders at 844 × 390 and 932 × 430, light and dark, default and AX5. It must score at
+least 31/40 under `04b`, with no P0/P1 and none of the §4.4 automatic rejection conditions.
+
+Proof code is reference-only. It does not define SwiftUI architecture, simulation truth or persisted
+data. Production implementation begins only when its read model exists and the owner approves the
+proof direction.

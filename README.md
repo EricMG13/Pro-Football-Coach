@@ -9,18 +9,24 @@ mode, no throwing passes. Matches are watched in a 2D view and shaped by roster 
 identity, opponent preparation, staff and in-game decisions. Every school, team, conference, city,
 stadium, player and coach is fictional and original.
 
-> **Status: P0 through P3 are complete. P4's instrument is built and the engine it measures is
-> not yet calibrated.** There is a foundation, a model, two rules modules, a world generator, and
-> a match engine that plays a whole game from a seed and records why every play happened.
-> Suite: **243 tests, 74,796 checks**, byte-identical across separate process invocations.
+> **Status: the Master Build Documentation rebaseline is active; M0 architecture hardening, M1
+> playable world, and M2 people lifecycle are implemented.** The normalized deterministic root runs exact
+> college and professional schedules, target-scale rosters, abstract results, regular-season
+> standings, postseason brackets, awards/records, causal development, health and fatigue,
+> eligibility/retirement, staff continuity, season rollover, and bounded history. M2 completed a
+> verified 20-season college/pro lifecycle soak. P4's detailed-engine calibration instrument remains
+> built but not calibrated. M3 college management is the active backend milestone. Exact gates and
+> exclusions are in `docs/STATUS.md`.
 >
-> **P5 through P17 have not started** — the off-screen model, seasons, both tiers' systems, the
-> career arc, the AI, the design system and every view are ahead.
+> **The complete management game is not yet built** — college recruiting/portal/NIL, professional
+> roster markets, tactics, the full career/stakes layer, AI/delegation, persistence productionization,
+> the design system, and feature views remain ahead.
 >
-> The UI has a **rendered reference library**: sixteen `*-v2.dc.html` sheets at the repository
-> root, indexed in [`docs/04-UX-AND-DESIGN-SYSTEM.md`](docs/04-UX-AND-DESIGN-SYSTEM.md). The rules
-> live in `04`; the sheets are a rendering of them. A value that appears only in a sheet has not
-> shipped.
+> The rejected v2, Stitch and 34-screen Film Room references were removed on 2026-08-11. The
+> corrected canonical language is **The Coach's World**, with Film Room reserved for scouting,
+> tactics and replay. [`docs/04-UX-AND-DESIGN-SYSTEM.md`](docs/04-UX-AND-DESIGN-SYSTEM.md) owns the
+> complete 62-family screen inventory and the three-proof gate. Reference HTML never becomes
+> production SwiftUI.
 >
 > [`docs/STATUS.md`](docs/STATUS.md) is the honest picture and takes precedence over this
 > paragraph. [`docs/HANDOFF-2026-08-10.md`](docs/HANDOFF-2026-08-10.md) is the cold-start pointer.
@@ -53,8 +59,9 @@ entry point: it owns the mission and the definition of done, and it runs one pha
 | [`docs/03-MATCH-ENGINE.md`](docs/03-MATCH-ENGINE.md) | Play resolution, seeding contract, off-screen model, calibration harness, soak |
 | [`docs/03b-ARCHITECTURE.md`](docs/03b-ARCHITECTURE.md) | Module layout, engine/UI boundary, save architecture, test architecture |
 | [`docs/04-UX-AND-DESIGN-SYSTEM.md`](docs/04-UX-AND-DESIGN-SYSTEM.md) | Design system, screens, match view, accessibility contract |
-| [`docs/04b-AUDIT-RUBRIC.md`](docs/04b-AUDIT-RUBRIC.md) | Audit rubric: five dimensions, 0–4 anchors, P0–P3 severities |
+| [`docs/04b-AUDIT-RUBRIC.md`](docs/04b-AUDIT-RUBRIC.md) | 40-point product UI audit: football fantasy, specificity, hierarchy, continuity, control, accessibility, truth and craft |
 | [`docs/05-IMPLEMENTATION-PLAN.md`](docs/05-IMPLEMENTATION-PLAN.md) | Phased build with per-phase gates |
+| [`docs/plans/2026-08-11-skill-integration.md`](docs/plans/2026-08-11-skill-integration.md) | Skill activation, duplication boundaries, and project-local skill creation gates |
 | [`docs/06-AUDIT-DISPOSITION.md`](docs/06-AUDIT-DISPOSITION.md) | Prior audit's P0/P1s and systemic patterns, converted into tests |
 | [`docs/08-OPUS5-BUILD-PROMPT.md`](docs/08-OPUS5-BUILD-PROMPT.md) | Phase-entry prompt. Owns mission and definition of done |
 | [`docs/OPEN-DECISIONS.md`](docs/OPEN-DECISIONS.md) | Decision register D1–D14, each with an instrumented falsifier |
@@ -67,15 +74,17 @@ entry point: it owns the mission and the definition of done, and it runs one pha
 
 ## Non-negotiables
 
-- **Fictional and original IP only.** No real school, team, conference, player or coach names, no
-  real logos, colours, fight songs or broadcast identities. No importer, no "community" real-name
-  files, no wink in the store listing. Two of these become shipping tests — a name-collision test
-  against a blocklist, and a trade-dress test on generated colour pairs. Neither exists yet; both are
-  gates on the generation phase (P2).
+- **The shipped universe is fictional and original.** No bundled real school, team, conference,
+  player or coach names; no real logos, colours, fight songs or broadcast identities. The UI
+  reserves optional person/team/venue asset slots so a future, separately approved custom-universe
+  feature is not architecturally blocked. Import is not a v1 feature and requires its own legal,
+  privacy, security and content-handling decision. Name-collision and trade-dress tests remain gates
+  on the bundled generator.
 - **Determinism.** A given seed plus a given input state reproduces a match exactly, across processes
   and app launches. Seeds derive from identifier bytes, never from `hashValue`.
 - **Offline, single-player.** No network, no accounts, no analytics, no ads, no IAP, no subscriptions.
-- **iPhone-only, landscape-only, iOS 17+, zero third-party dependencies.** The 2D match view renders
+- **iPhone-only, landscape-only, iOS 26+, tested on iPhone 15-generation hardware and newer, zero
+  third-party app dependencies.** The 2D match view renders
   in SwiftUI `Canvas` + `TimelineView` — no SpriteKit, no Metal.
 - **A full season is completable in 6–8 hours of play.**
 
@@ -86,7 +95,7 @@ entry point: it owns the mission and the definition of done, and it runs one pha
 | `docs/` | Design and planning documents. Start at `docs/DOC-MANIFEST.md` |
 | *(no archive)* | Deleted 2026-08-10. See `docs/DOC-MANIFEST.md` |
 | `docs/plans/` | Per-phase task plans, one per phase, written before that phase is built |
-| `*-v2.dc.html` | The rendered UI reference library. Indexed in `docs/04-UX-AND-DESIGN-SYSTEM.md` |
+| `docs/04-UX-AND-DESIGN-SYSTEM.md` | The Coach's World language, canonical 62-family screen inventory and proof gate |
 | `docs/reviews/` | The governing brief and the review that produced it |
 | `Sources/FootballSimCore/` | The engine — pure Swift, no UI imports, seeded RNG. P0–P4 |
 | `Sources/ProFootballCoachUI/` | The SwiftUI layer. Empty until P11 |

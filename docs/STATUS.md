@@ -4,19 +4,308 @@ The honest picture: what exists, what is verified, what is not.
 
 **Read this first, before believing any other document about the state of the build.**
 
+> **UI direction correction — owner decision 2026-08-11:** the v2 sheets, Stitch output and
+> 34-screen Film Room gallery described in older dated entries below are rejected and removed.
+> They are historical build notes, not references. The only current UI authority is
+> `docs/04-UX-AND-DESIGN-SYSTEM.md`: **The Coach's World**, 62 screen families, no universal
+> application chassis, and Film Room limited to scouting, tactics and replay.
+
+**Platform baseline — owner decision 2026-08-11:** iOS 26+, iPhone-only and landscape-only, with
+release support and performance evidence on iPhone 15-generation hardware and newer. The supported
+layout floor remains 844 × 390 because later compact `e` models are smaller than the base iPhone 15.
+Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 allows installation.
+
 ---
 
 ## Where the project actually is
 
-**P0 through P3 are complete. P4's instrument is built; the engine it measures is not yet
-calibrated, and the harness says by how much.** There is a foundation, a model, two rules modules, a world
-generator, and a match engine that plays a whole game from a seed and records why every play
-happened.
+> **2026-08-10 master-plan rebaseline:** the attached Master Build Documentation is now the primary
+> product and technical authority. Its Milestone 0 architecture hardening is implemented. The
+> previous P0–P4 work below remains an accurate account of the preserved deterministic foundation,
+> but the old instruction to tune P4 next is superseded until `GameState`, `WorldScheduler`, the
+> domain-event ledger, read-model/intent contracts, and whole-root integrity are established. The
+> completed implementation record is `docs/plans/2026-08-10-m0-architecture-hardening.md`.
+>
+> Measured baseline for this rebaseline: `swift build` passed and `SimTests` passed with **263 tests,
+> 78,296 checks**. No M0 production code existed at that measurement.
+
+### M0 — architecture hardening — **implemented and green**
+
+Built backend-first from the master plan:
+
+- one normalized, versioned `GameState` root with deterministic entity stores;
+- the exact 15-step `WorldScheduler`, with unavailable systems visibly marked inactive;
+- typed domain events, bounded hot history, stable scheduler identities, and archive accounting;
+- explicit `CoachIntent` resolution and immutable `WeekSnapshot`/`IntentResult` projections;
+- whole-root integrity for topology, ownership, staff employment, roster limits, calendar, and
+  history, enforced again when a save root decodes;
+- hostile-save guards for entity-key mismatches, invalid calendar/version data, and malformed
+  history ledgers;
+- a source gate preventing the SwiftUI target from owning or reading `GameState`.
+
+Verified on 2026-08-10 with `./scripts/verify.sh`: **289 tests, 78,530 checks, all passed**. Root and
+one-week transition fingerprints are pinned as source literals, so cross-process changes are
+visible. Existing generation and match-engine pins remain green.
+
+The adversarial M0 review found four confirmed corruption/truthfulness issues; all were fixed and
+regression-tested. At the owner's direction, the repository-wide rewrite tournament and confidence
+review are deferred until the complete product's final verification rather than repeated at each
+milestone.
+
+At the M0 close, event references, schedule/standings, and positional coverage were truthfully
+inactive. M1 has now activated those checks. Eligibility transitions, contracts, observer
+knowledge, tactical-role eligibility, and salary-cap checks remain inactive until their named
+systems exist; the live boundary is tracked in `docs/FUTURE-SIMULATION-CONTRACT.md`.
+
+### M1 — playable world — **implemented and green**
+
+The base competition world now runs at target scale:
+
+- deterministic 134-programme college and 32-team professional schedules, with exact game/bye
+  counts and bounded bye distribution;
+- 15,766 deterministically generated players, legal roster ownership, tier-specific ages and
+  eligibility, sparse position ratings, and minimum playable position coverage;
+- rules-owned abstract outcomes, player/team statistics, regular-season standings with two-team
+  head-to-head and conference-record tiebreaks, rankings, awards, and contextual record primitives;
+- ten college conference championships, eight-team college and professional brackets, earned
+  round advancement, champions, compact archives, and deterministic rollover schedules;
+- typed game/postseason/season events and active integrity for results, event references,
+  projections, brackets, archives, record context, ownership, and positional coverage.
+
+Verified on 2026-08-10 with `./scripts/verify.sh`: **312 tests, 225,499 checks, all passed**. The
+post-review release soak completed **20 seasons / 420 weeks / 22,000 games** in **266.816595875
+seconds** (about 0.64 seconds/week) with no integrity drift. Save/load checkpoints were **9,615,246
+bytes** at season 1, **10,591,838 bytes** at season 5, and **10,710,674 bytes** at season 20.
+
+The detailed user match remains the preserved P3 engine rather than being integrated into the
+career loop, and its P4 numerical calibration gate remains open. M1 does not claim people aging,
+development, injuries, recruiting, contracts/cap, staff/career movement, AI/delegation, cold event
+storage, or production UI; those begin with M2 and later milestones. Full implementation and review
+details are in `docs/plans/2026-08-10-m1-playable-world.md`.
+
+### M2 — people lifecycle — **implemented and green**
+
+The authoritative world now carries people credibly across seasons:
+
+- normalized active health/development state, compact departed-player identities, and bounded
+  player/staff career records;
+- deterministic recovery, fatigue from recorded workload, injury probability driven by fatigue and
+  durability, real availability/fatigue effects on abstract results, and structured events;
+- twice-seasonal causal development from age/decline, practice, playing time, position coaching,
+  scheme fit, and work ethic, with one-point changes and a potential ceiling;
+- college eligibility advancement and graduation, professional age/position retirement, compact
+  career lines, and deterministic same-position replacement intake;
+- 2,158 employed staff with complete role coverage, ratings/preferences, aging, continuity,
+  careers, and deterministic vacancy resolution;
+- active whole-root checks for people state, eligibility transitions, staff coverage, historical
+  references, roster legality, and hostile persisted subrecord bounds.
+
+Verified on 2026-08-11 with `./scripts/verify.sh`: debug and release builds passed, followed by
+**330 tests / 710,609 checks, all passed**. The final target-scale soak completed **20 seasons / 420
+weeks** in **677.408770083 seconds** with **326 checks, all passed**. It retained stable roster and
+staff counts, legal ages/eligibility, bounded injury incidence, development explanations, plausible
+broad rating bands, whole-root integrity, and save/load equality.
+
+Measured uncompressed save checkpoints were **22,119,600 bytes** after season 1, **35,262,057
+bytes** after season 5, and **84,659,139 bytes** after season 20. That does not meet the old 8 MB
+production ceiling. The snapshot remains honest and deterministic, but compression, a cold event
+archive, and chunked/streaming persistence remain required work under FSC-002/FSC-003 and M9.
+
+The milestone adversarial review found that synthesized decoding bypassed bounds on nested career,
+development, assignment, and departed-identity records; those corruption paths and impossible
+active ages were fixed and regression-tested. It also confirmed two deliberate dependency bridges:
+M2 replacement intake is not recruiting or the pro draft, and full historical archive storage is
+not implemented. Both are registered below rather than represented as finished systems.
+
+M3 college management is now active. Its current implementation record is
+`docs/plans/2026-08-11-m3-college-management.md`; the completed M2 record remains
+`docs/plans/2026-08-10-m2-people-lifecycle.md`.
+
+### M3 — college management — **complete**
+
+The authoritative world now has deterministic annual prospect pools, observer-specific scouting,
+shared user/AI recruiting actions, visits, offers, NIL promises, competing commitments, signing,
+exact scholarship ownership, explicit walk-on intake, and annual recruiting-cycle renewal.
+
+Commitments are now projected capacity reservations rather than promises the roster may silently
+discard. Deterministic global races preserve winner, runner-up, fallback, flip, NIL, visit, and
+score context; signing resolves every commitment exactly once as signed or explicitly released,
+and durable recruiting origins survive event eviction and player departure. AI boards ramp to a
+class-sized 40-player ceiling, losing pursuits refund NIL exactly, full classes stop spending, and
+each programme can stage five evaluation/offer/NIL pipelines per week under the shared action rules.
+
+The annual transition preserves signed-player UUIDs and career recruiting origin while compact
+former-prospect identities exist only as long as retained recent events need them. Recorded game
+results now also carry canonical home/away participant manifests, so appearances are authoritative
+for statless linemen, defenders, specialists, and reserves rather than inferred from production.
+
+Save schema 5 now combines one authoritative seasonal NIL ledger per programme with persisted,
+usage-aware redshirt plans and strict eligibility clocks. Roster allocations,
+recruiting reservations, and future portal reservations share one conserved budget; remaining money
+is derived rather than stored twice. Signing reclassifies an existing promise, withdrawals refund
+it, departures remove it, and rollover carries only allocations for retained roster identities.
+Strict decoding and whole-root integrity reject category overlap, orphan reservations, incorrect
+programme/season/budget ownership, and overcommitment. A redshirt designation now controls actual
+game participation, records a typed resolution before lifecycle departure, and preserves a season
+only at four or fewer appearances. Hostile saves cannot erase live plans or persist impossible
+eligibility/career chronology. Focused gates passed for college state (**39 tests / 4,102 checks**),
+commitments (**25 / 124**), and redshirts (**33 / 104**), and the release core build succeeded.
+
+On 2026-08-11 the settled schema-5 release suite passed with **454 tests / 715,092 checks** and zero
+failures in **498.33 seconds**. Focused gates also passed for commitments (**25 / 124**), college
+state (**39 / 4,102**), redshirts (**33 / 104**), event-ledger batching (**12 / 56**), and
+architecture/determinism (**25 / 222**). Both root fingerprints were identical across two rebuilt
+runs before their pins were updated. Runtime remains an explicit production target rather than an
+unverified claim.
+
+The first target-world recruiting calibration exposed a real Task 4 failure rather than
+blessing legal rosters as plausible classes: median scholarship class was **2** against a median
+projected target of **21**, with **902** signed recruits and **2,576** walk-ons. Two identical
+one-season runs took **102.109 s / 105.813 s**, produced byte-identical roots, passed save/load and
+integrity, and left all 134 rosters legal. That result is retained as the pre-correction baseline,
+not the behavior of the current capacity-aware/NIL-causal policy. The replacement gate now passes
+without relaxed bounds: **2,177** scholarship signings versus **1,301** walk-ons, **78%** aggregate
+fill, **94%** median fill, and nonempty classes at all 134 programmes. Two identical runs took
+**76.213 s / 81.268 s**, round-tripped exactly, passed integrity/history/save limits, and left every
+roster position-covered and legal. An immutable shared fit snapshot removed the diagnostic's
+whole-world rebuild per board entry; a final-week terminal market now converts legal last-week AI
+work before signing; and AI deepens its strongest renewable relationship work instead of visiting
+an entire board before following up. The current calibration save is **28,420,806 bytes** with
+**73,865** total events, **4,096** retained hot and **69,769** archived.
+
+Schema 6 now has the persistence foundation for two atomic portal windows. `CollegeState` requires
+a season-bound stable portal state; transient open transactions cannot be encoded as valid saves.
+Versioned records retain intent, permitted knowledge, separate player-preference and destination-
+admission explanations, fixed capacity, offers, retention, outcomes, and summaries. Programme NIL
+supports atomic roster updates and exact expected-amount portal-to-roster reclassification, while
+player careers retain at most two windows across a five-season eligibility span with exact usage,
+source, scholarship, NIL, tenure, transfer, and career-end continuity. Focused schema-6 gates pass
+for portal contracts (**27 tests / 134 checks**), college state (**39 / 4,102**), people lifecycle
+(**18 / 485,115**), commitments (**25 / 124**), and release core contracts (**140 / 777**).
+
+The first schema-6 policy boundary is also active. A sealed, non-persisted window snapshot derives
+authoritative intents, private-truth-limited observations, and retention decisions from one exact
+season/window root; callers cannot substitute free-form explanations or mix windows. Portal-player
+knowledge is deterministic, observer-scoped, immutable once recorded, canonically batch-written,
+and bounded to the 134-programme world. Retention spends the smallest exact NIL amount in usage
+priority order or releases the player without mutating the source ledger. The mechanically active
+`restless` trait is populated deterministically at eight percent across every player-generation
+route and changes portal intent by exactly ten points; signing preserves it. The seven trait names
+without authoritative consumers remain deliberately unpopulated under FSC-014. Focused gates pass
+for portal policy (**12 tests / 715 checks**) and trait population (**7 / 570**), with the existing
+portal-contract, college-state, commitment, and release-core compatibility gates still green.
+
+Portal destination matching is now a sealed pure transaction over that authority snapshot. It
+captures post-retention roster, scholarship, and NIL capacity before any departure; schools form
+bounded admission-ranked willingness sets, players form five-destination preference shortlists,
+and equal per-school terms are derived from one fixed ledger snapshot. Entrant-proposing deferred
+acceptance uses separate school-admission and player-preference orderings. Outbound players do not
+create same-window capacity, losing NIL reservations refund exactly, accepted reservations alone
+survive in the transient result, and a player cannot transfer twice in one target season. Saved V1
+offer evidence now locally rederives all eight preference components, admission components, exact
+equal NIL terms, and frozen calendar/collection bounds without consulting later balance rules.
+Focused matching passed **15 tests / 108 checks**; portal contracts passed **27 / 137**, portal
+policy **12 / 715**, college state **39 / 4,102**, and release core contracts **140 / 783**.
+
+Portal matching results now commit as one sealed, all-or-nothing transaction. The commit preserves
+player identity and career evidence while moving roster and scholarship ownership, reclassifying
+the exact accepted NIL promise (including a truthful zero-dollar absence), refunding every losing
+promise, appending durable career windows, and publishing one deterministic typed-event batch.
+Whole-root integrity rederives current and rotated window summaries, ownership, scholarship, NIL,
+career, capacity, knowledge, and retained event facts from durable records; its indexed hot-history
+checks avoid per-observation career rescans. Portal admission also persists the programme's exact
+minimum-position deficits and reserves enough remaining openings to repair them; an off-position
+transfer can no longer consume the last coverage slot or create a 106-player roster.
+
+The two-window cycle is now in the fixed scheduler. Final-week rollover resolves the terminal
+recruiting market, career usage/redshirts/departures, season archive and next schedule, signing and
+NIL renewal, the postseason portal, then minimum-only coverage walk-ons before persisting week 1 as
+`awaitingSpring`. Week 1 resolves spring before scouting, recruiting, AI, or games, fills the final
+roster with a distinct collision-free walk-on namespace, and closes the portal. The shared
+recruiting action authority itself rejects work during the spring pause. A two-copy second-season
+replay produced byte-identical roots and events with valid integrity: **363** portal-window records,
+**62 retained**, **210 transferred**, and **91 returned**. Focused gates pass for scheduler
+**9 tests / 27,813 checks**, transaction **16 / 118**, matching **16 / 116**, contracts **28 / 138**,
+policy **12 / 715**, college state **39 / 4,102**, and release core contracts **140 / 786**.
+
+The M3 management boundary is now active under schema 7. A persisted controlled college job owns
+explicit user/delegated responsibilities; scheduled AI cannot also act for it, and delegation uses
+the same recruiting policy and legality as every other programme. Typed mandatory decisions retain
+subjects, deadlines, stable option IDs, recommendations, causal reasons, owners, and durable
+resolutions. The actor-owned `CareerSession` derives programme authority internally, commits without
+a reentrant suspension, checks cancellation before mutation, and returns immutable fog-of-war
+projections rather than `GameState`. The app-target source gate continues to reject direct
+`GameState` or `IntentResolver` access. Complete strict-concurrency diagnostics emitted no warnings,
+actor-race instrumentation passed, the focused career gate is **11 tests / 77 checks**, and two
+rebuilt architecture runs are **25 / 222** with identical schema-7 fingerprints.
+
+Task 7 is now closed. The target-scale soak completed **20 seasons / 421 weeks** with **1 test /
+8,307 checks**, all passing, including deterministic save checkpoints through season 20, bounded
+portal/redshirt history, legal ages and ratings, class sizes **3–25** (median **14**), and valid
+integrity after every checkpoint. Final release compatibility is **558 tests / 746,742 checks**,
+all passing; the schema-7 architecture fingerprints match across two rebuilt runs. College
+provisional replacement intake has been removed; the professional bridge remains intentionally
+active until M6.
+
+### M4 — tactical management — **active**
+
+Schema 8 tactical state (carried by the current schema-9 root) carries calendar-bound tactical state
+in the authoritative root. Immutable plans,
+practice allocations, opponent snapshots, and bounded game-plan reviews survive save/load; the
+fixed scheduler consumes explicit plans before games and records reviews after results. Practice
+spends exactly 60 minutes across install, conditioning, recovery, and a position focus, and the
+existing development path consumes that allocation. `CoachIntent` owns game-plan and practice-plan
+writes, while `TacticalCallInSystem` produces deterministic, inspectable proposals with at most
+three options and a named risk.
+
+Focused tactical coverage is **6 tests / 67 checks**, tactical-state/intent coverage is **5 / 16**,
+competition compatibility is **32 / 6,315**, and core contracts are **144 / 875**; all passed.
+Strict Swift-5 concurrency diagnostics are clean. Architecture fingerprints are **25 /
+222** in two rebuilt runs (the current schema-9 root includes the M5 field). Detailed-game call-in choices still need to be threaded through the live
+match session and controlled career actor; no production UI or simulator evidence is claimed yet.
+
+### M5 — career stakes — **active**
+
+Schema 9 adds a persistent `CareerArcState` beside controlled-college authority. It records the
+current job, bounded job history, four stakeholder support levels, deterministic professional
+opportunities, and fired/seeking/employed status. Weekly completed results move stakeholder support
+against a prestige-based expectation; support can end the job in-season, while the season-end
+evaluation can create a professional opportunity after sustained success. Root integrity binds every
+job, history entry, and opportunity to real organisations and calendar chronology, and the custom
+encoding keeps save bytes deterministic across processes.
+
+The scheduler now evaluates weekly stakes after statistics and evaluates the season-end arc before
+the schedule is replaced. Focused career-arc coverage is **8 tests / 35 checks**, controlled-career
+coverage remains **11 / 77**, strict-concurrency FootballSimCore is clean, core contracts are
+**144 / 875**, and two rebuilt architecture runs are **25 / 222**. Professional offer acceptance
+and resignation are available through the engine intent boundary; coaching-carousel transitions
+and inbox events remain open.
+
+### M6 — professional management — **active**
+
+The first professional-management boundary now uses the existing `Player.contract` and `ProTeam`
+ownership model rather than introducing a second market ledger. `ProManagementSystem` computes an
+integer cap snapshot, rejects invalid or over-cap acquisitions atomically, supports draft/free-agent
+acquisition receipts, carries signing-bonus dead money on release, and exposes a deterministic draft
+order fallback. Promoted professional careers can submit the same transactions through the guarded
+intent boundary; college-controlled roots cannot.
+
+Focused M6 coverage is **6 tests / 17 checks**, core contracts are **144 / 875**, strict Swift-5
+concurrency diagnostics are clean, and architecture fingerprints remain **25 / 222** in two rebuilt
+runs. Full dated free-agency waves, draft-class scouting, trades, practice-squad rules, and the
+professional actor/UI remain deliberately open for the next M6 slice.
+
+### Preserved pre-rebaseline P0–P4 record
+
+The remainder of this document records the older P-phase foundation and its measurements. It is
+historical evidence, not the active build order; M0/M1 above supersede its statements about P5/P6
+having no schedule or off-screen model. P0 through P3 remain complete. P4's instrument is built;
+the detailed engine it measures is not yet calibrated.
 
 Suite: **243 tests, 74,796 checks, all passed**, byte-identical across separate process invocations.
 
-**P5 through P17 have not started.** The off-screen model, seasons, both tiers' systems, the career
-arc, the AI, the design system and every view are ahead.
+Under that superseded numbering, P5/P6 capabilities have now been implemented through master-plan
+M1. P7–P17 remain future work, reorganized under master milestones M2–M9.
 
 ### P4 — calibration harness and bands — **instrument done, engine not calibrated**
 
@@ -494,6 +783,9 @@ walkthrough asks about direction specifically.
 ### 2026-08-10 — four owner decisions, and the gaps they exposed
 
 Taken in one session after an adversarial review of the v2 design reference against `04` and `05`.
+
+> Historical record. The 2026-08-11 iOS 26 / iPhone 15-generation support decision at the top of
+> this file supersedes item 1's pre-iPhone-15 fallback obligation.
 
 1. **The SE and mini classes leave the design budget.** Floor 844 × 390, ceiling 932 × 430; the field
    scale range narrows to 6.54–7.28 pt/yd and the management budget rises to 347 pt. **It does not

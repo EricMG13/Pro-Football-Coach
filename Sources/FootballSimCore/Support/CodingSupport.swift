@@ -35,6 +35,8 @@ extension PositionGroup: CodingKeyRepresentable {}
 extension Trait: CodingKeyRepresentable {}
 extension Tier: CodingKeyRepresentable {}
 extension Side: CodingKeyRepresentable {}
+extension RecruitingPitch: CodingKeyRepresentable {}
+extension CollegeCareerResponsibility: CodingKeyRepresentable {}
 
 /// Minimal string-backed coding key, needed only by the conformance above.
 public struct StringCodingKey: CodingKey {

@@ -12,6 +12,12 @@ public enum SeedScope: UInt64, Sendable, CaseIterable {
     case game = 4
     case drive = 5
     case snap = 6
+    /// Save-level orchestration and history identities, separate from football outcome streams.
+    case scheduler = 7
+    /// Player/staff population streams, isolated from league and football-outcome draws.
+    case personnel = 8
+    /// Observer-specific knowledge draws, isolated from hidden prospect truth generation.
+    case scouting = 9
 }
 
 public extension SeededRandom {

@@ -34,6 +34,14 @@ public enum SharedRules {
     /// college, or section 9 has nowhere to promote them to.
     public static let inSeasonWeeks = 21
 
+    /// Minimum playable coverage checked after every AI roster pass.
+    public static let minimumPlayableRosterByPosition: [Position: Int] = [
+        .quarterback: 1, .runningBack: 1, .wideReceiver: 3, .tightEnd: 1,
+        .leftTackle: 1, .guardPosition: 2, .center: 1, .rightTackle: 1,
+        .edgeRusher: 2, .defensiveTackle: 2, .linebacker: 2,
+        .cornerback: 3, .safety: 2, .kicker: 1, .punter: 1,
+    ]
+
     /// `02` section 11.3.2. Decline begins here, per position.
     ///
     /// A table rather than a `switch` in `Position`, because these are design constants and

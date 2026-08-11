@@ -189,7 +189,8 @@ alternative and it is priced out by D4.
 ## D4 — Performance budgets
 
 Derived from the **college** case, which is the worse one, on the oldest supported device
-(iPhone 12-class, A14).
+(iPhone 15-class, A16), superseding the earlier iPhone 12/A14 performance baseline by owner decision
+on 2026-08-11.
 
 | Budget | Target | Hard ceiling | Notes |
 |---|---|---|---|

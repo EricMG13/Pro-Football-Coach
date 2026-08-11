@@ -29,13 +29,14 @@ owner-checked ones are owner-checked because no agent in this project's environm
 - [ ] Save size after 20 seasons is under the 8 MB ceiling; every bounded collection verified bounded
       by growth check.
 - [ ] Migration fixtures pass at every schema version boundary.
-- [ ] All nine accessibility contract tests green, including the coverage meta-assertion.
+- [ ] All ten accessibility contract tests green, including orientation and the coverage
+      meta-assertion.
 - [ ] `CommitmentCoverageTest` green — every row in `PRODUCT.md`'s commitment table names a test that
       exists.
 - [ ] `ReachabilityTest` green — no unreachable screen ships.
 - [ ] `ErrorSurfaceTest` green — no error is captured without being presented.
-- [ ] Performance budgets met on the **oldest supported device**, not the newest: week advance, full
-      season sim, frame budget, cold launch, save write.
+- [ ] Performance budgets met on a physical **iPhone 15/A16 baseline**: week advance, full season
+      sim, frame budget, cold launch, save write.
 
 ## 2. Legal gates — non-negotiable
 
@@ -64,7 +65,11 @@ owner-checked ones are owner-checked because no agent in this project's environm
 - [ ] The simulator walkthrough script has been run end to end on a real device or simulator, by the
       owner, and every step behaved as the script says.
 - [ ] A fresh install, a new career, a full season, a quit, a relaunch, and a resumed save.
-- [ ] Both appearances, smallest and largest supported screens.
+- [ ] Both appearances on the 844 × 390 supported-generation floor and the largest current
+      Plus/Pro Max class, using iOS 26.
+- [ ] A physical iPhone 15 run plus simulator coverage for any later supported `e`-class floor.
+- [ ] The `ios-simulator-skill` evidence bundle retains semantic accessibility trees, AX5
+      screenshots, visual diffs, and hang/trace summaries for the release commit.
 - [ ] VoiceOver walkthrough of the week loop and the match view.
 - [ ] Dynamic Type at AX5 across every screen.
 - [ ] Reduce Motion on, through a full match.

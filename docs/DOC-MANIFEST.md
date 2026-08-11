@@ -115,6 +115,30 @@ plan — the first plan in this directory that belongs to the rebuild rather tha
 | `docs/reviews/2026-08-09-spec-prompt-v4.md` | `RETAINED` | **The governing brief.** Owner parameters P1–P5, authority tiers, gate zero, the decision register and the deliverable list all live here. Where any other document disagrees with it, the other document is wrong. | `docs/reviews/2026-08-09-spec-prompt-v4.md` |
 | `docs/reviews/2026-08-09-spec-prompt-v3-adversarial-review.md` | `RETAINED` | The review that produced v4. Retained so the reasoning behind v4's constraints is recoverable instead of looking arbitrary. Historical: it critiques v3, not the current brief. | `docs/reviews/2026-08-09-spec-prompt-v3-adversarial-review.md` |
 
+### UI-reference correction, 2026-08-11
+
+Owner decision: **The Film Room is a location, not the product's global design language.** The
+rendered libraries passed mechanical and accessibility checks while repeating one management-app
+chassis across unrelated football tasks. Keeping the inputs beside canon would make that rejected
+answer easier to rebuild than the approved one, so they are deleted rather than archived.
+
+| Path | Classification | Reason | Where its role lives now |
+|---|---|---|---|
+| `*-v2.dc.html` (16 root sheets) | **DELETED** | Historical rendered reference library; generic two-pane/card composition, stale screen count and parallel design authority. | `docs/04-UX-AND-DESIGN-SYSTEM.md` |
+| `design.md` | **DELETED** | Parallel token/design-system restatement derived from the rejected sheets. | `docs/04-UX-AND-DESIGN-SYSTEM.md` |
+| `docs/briefs/2026-08-10-claude-design-ui-brief.md` | **DELETED** | Commissioned the two-pane rendered library and treated repeatable component cards as the visual-design goal. | Git history only |
+| `docs/briefs/2026-08-10-google-stitch-prompt-pack.md` | **DELETED** | Prompted the same 38/62 chassis, DESK register and 2 pt identity treatment at scale. | Git history only |
+| `docs/stitch_screens/` | **DELETED** | Generated implementation of the rejected prompt pack. | Git history only |
+| `docs/plans/2026-08-10-reference-uplift.md` | **DELETED** | Plan for refining rather than replacing the rejected reference language. | `docs/05-IMPLEMENTATION-PLAN.md` |
+| `docs/reviews/2026-08-10-v2-reference-library-critique.md` | **DELETED** | Useful mechanical findings but a misleading positive product judgement against the wrong direction. | `docs/04b-AUDIT-RUBRIC.md` |
+| `docs/HANDOFF-2026-08-10.md` | **DELETED** | Stale handoff that told a cold builder to restart an obsolete phase sequence and pointed at the rejected rendered library. | `docs/STATUS.md` and the master roadmap |
+| `DESIGN-IS-2026-08-10/` and `impeccable report.md` | **DELETED** | Parallel scorecards that could certify the rejected library without testing game fantasy. | `docs/04b-AUDIT-RUBRIC.md` |
+| `scripts/export_existing_screens.py`, `scripts/export_stitch_html.py` | **DELETED** | Generators whose only output is the rejected reference material. | Nothing |
+
+The separate unversioned 34-screen Film Room gallery was also removed from the active visualisation
+workspace. Its replacement is a deliberately narrow three-screen **Coach's World** proof package;
+proof code carries no canonical or production authority.
+
 ## 3. Counts
 
 | Classification | Count |
@@ -152,8 +176,8 @@ every document below, which is the opposite of what this manifest is for.
 | `docs/02-GAME-DESIGN.md` | 2 | The game: core loop, the agency-model resolution, both tiers, the promotion arc, systems, stakes, onboarding, content volume |
 | `docs/03-MATCH-ENGINE.md` | 3 | Play resolution, seeding and determinism contract, the abstracted off-screen model, the calibration harness, the soak |
 | `docs/03b-ARCHITECTURE.md` | 4 | Module layout, engine/UI boundary and its enforcement, save architecture, test architecture |
-| `docs/04-UX-AND-DESIGN-SYSTEM.md` | 5 | Design system from zero, screens, the match view, the accessibility contract |
-| `docs/04b-AUDIT-RUBRIC.md` | 6 | Five dimensions, 0–4 anchors, P0–P3 severities, which dimensions are global |
+| `docs/04-UX-AND-DESIGN-SYSTEM.md` | 5 | The Coach's World design system, complete 62-family screen inventory, match view, accessibility and proof contract |
+| `docs/04b-AUDIT-RUBRIC.md` | 6 | Eight-dimension 40-point product UI gate, automatic specificity rejection and P0–P3 severities |
 | `PRODUCT.md` | 7 | Positioning, audience, the market-gap argument, v1 scope |
 | `docs/05-IMPLEMENTATION-PLAN.md` | 8 | Phased build with per-phase gates |
 | `docs/PRE-DEPLOYMENT-CHECKLIST.md` | 8 | What must be true before a build goes out. Authored fresh against the v4 scope. A **different** checklist existed on the pre-merge `main` — the Broadcast-critique outstanding-work list — now at `docs/archive/PRE-DEPLOYMENT-CHECKLIST-broadcast.md` |
@@ -161,6 +185,7 @@ every document below, which is the opposite of what this manifest is for.
 | `docs/OPEN-DECISIONS.md` | 10 | The D1–D14 register, each with an instrumented falsifier. D14 (build order and league size) was added during execution because P2 fixes *that* both tiers ship, not which is built first. **D11 closed 2026-08-09 — the gates were run** |
 | `docs/08-OPUS5-BUILD-PROMPT.md` | 11 | The phase-entry prompt. **Owns mission and definition of done** |
 | `docs/PORT-LOG.md` | — | Tier C's symmetric justification: what is ported from the prior build and why, what is discarded and why. Added during execution |
+| `docs/plans/2026-08-11-skill-integration.md` | — | Supporting execution authority for development-skill activation, duplication boundaries, the iOS 26/iPhone 15-generation verification matrix, and the phase gates that create project-local skills |
 
 There is deliberately no `docs/00-*` and no `docs/07-*`. `00` was the old executive plan and is not
 replaced. `07` **did** exist — the earlier program's salvage ledger — and is archived to

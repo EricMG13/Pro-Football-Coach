@@ -14,19 +14,63 @@ public struct Eligibility: Codable, Sendable, Equatable {
         seasonsRemaining: Int = CollegeRules.seasonsOfCompetition,
         yearsRemaining: Int = CollegeRules.eligibilityClockYears
     ) {
-        self.seasonsRemaining = Swift.max(0, seasonsRemaining)
-        self.yearsRemaining = Swift.max(0, yearsRemaining)
+        precondition(
+            Self.hasSupportedCounters(
+                seasonsRemaining: seasonsRemaining,
+                yearsRemaining: yearsRemaining
+            ),
+            "Eligibility counters must remain inside the four-season, five-year clock."
+        )
+        self.seasonsRemaining = seasonsRemaining
+        self.yearsRemaining = yearsRemaining
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let decodedSeasons = try container.decode(Int.self, forKey: .seasonsRemaining)
+        let decodedYears = try container.decode(Int.self, forKey: .yearsRemaining)
+        guard Self.hasSupportedCounters(
+            seasonsRemaining: decodedSeasons,
+            yearsRemaining: decodedYears
+        ) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .yearsRemaining,
+                in: container,
+                debugDescription: "Eligibility counters exceed the supported competition clock."
+            )
+        }
+        seasonsRemaining = decodedSeasons
+        yearsRemaining = decodedYears
     }
 
     /// Exhausted when *either* counter runs out. Checking only the seasons is how a twice-redshirted
     /// player keeps playing past the window that was supposed to close on them.
     public var isExhausted: Bool { seasonsRemaining <= 0 || yearsRemaining <= 0 }
 
+    /// Stable active college state can contain either the original spare clock year or a clock
+    /// whose one redshirt has already been spent. A larger or inverted gap can only come from an
+    /// unsupported transition or hostile persistence.
+    var isValidForActiveCollegeRoot: Bool {
+        yearsRemaining >= seasonsRemaining
+            && yearsRemaining - seasonsRemaining
+                <= CollegeRules.eligibilityClockYears - CollegeRules.seasonsOfCompetition
+    }
+
     /// One year passes. A redshirt year spends the clock without spending a season.
     public func advanced(redshirting: Bool) -> Eligibility {
         Eligibility(
-            seasonsRemaining: redshirting ? seasonsRemaining : seasonsRemaining - 1,
-            yearsRemaining: yearsRemaining - 1
+            seasonsRemaining: redshirting
+                ? seasonsRemaining
+                : Swift.max(0, seasonsRemaining - 1),
+            yearsRemaining: Swift.max(0, yearsRemaining - 1)
         )
+    }
+
+    private static func hasSupportedCounters(
+        seasonsRemaining: Int,
+        yearsRemaining: Int
+    ) -> Bool {
+        (0...CollegeRules.seasonsOfCompetition).contains(seasonsRemaining)
+            && (0...CollegeRules.eligibilityClockYears).contains(yearsRemaining)
     }
 }

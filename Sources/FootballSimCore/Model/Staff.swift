@@ -29,6 +29,8 @@ public struct Staff: Codable, Sendable, Equatable, Identifiable {
     public var firstName: String
     public var lastName: String
     public var role: StaffRole
+    public var age: Int
+    public var reputation: Rating
 
     /// Set only for a position coach, and the group they coach.
     public var positionGroup: PositionGroup?
@@ -47,6 +49,8 @@ public struct Staff: Codable, Sendable, Equatable, Identifiable {
         firstName: String,
         lastName: String,
         role: StaffRole,
+        age: Int = 35,
+        reputation: Rating = Rating(SharedRules.ratingRange.lowerBound),
         positionGroup: PositionGroup? = nil,
         ratings: [CoachAttribute: Rating] = [:],
         preferredOffense: OffensiveScheme? = nil,
@@ -57,6 +61,9 @@ public struct Staff: Codable, Sendable, Equatable, Identifiable {
         self.firstName = firstName
         self.lastName = lastName
         self.role = role
+        self.age = min(max(age, PeopleRules.staffAgeRange.lowerBound),
+                       PeopleRules.staffAgeRange.upperBound)
+        self.reputation = reputation
         self.positionGroup = positionGroup
         self.ratings = ratings
         self.preferredOffense = preferredOffense
