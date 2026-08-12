@@ -256,7 +256,8 @@ All ten questions above were put to the owner and disposed the same day:
    downgrade deferred to "when next touched" — they are live-session working files).
 7. **Master Build Documentation located**: `~/Documents/Pro-Football-Coach-Master-Build-Documentation/`,
    eleven documents (00 through 09 plus README). Canonical placement remains an open owner action;
-   the manifest seam stands until they are placed.
+   the manifest seam stands until they are placed. **Resolved 2026-08-12: owner approved import** —
+   the pack now lives at `docs/roadmap/` with manifest rows; the `05` header pointer resolves.
 8. **Light-primary team colours: labelled synthetic pair** for the card contract until the
    generator's reachable space changes; the generator gap is raised against P2.
 9. **Verdict voice: named staff.** G-02's staff-voice attribution is a requirement, not an option;

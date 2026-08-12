@@ -191,6 +191,29 @@ There is deliberately no `docs/00-*` and no `docs/07-*`. `00` was the old execut
 replaced. `07` **did** exist — the earlier program's salvage ledger — and is archived to
 the deleted `07-SALVAGE.md`; `docs/PORT-LOG.md` does that job now. Neither number is reused.
 
+### `docs/roadmap/` — Master Build Documentation, imported 2026-08-12
+
+The Codex-authored Master Build Documentation pack, previously outside the repository (which left
+`docs/05-IMPLEMENTATION-PLAN.md`'s deferral pointing at a path that did not exist — the seam
+recorded in `docs/briefs/2026-08-12-gap-register.md` §4 Q6). Imported verbatim on owner instruction;
+**these paths carry authority**, and `docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md` is the build
+ordering `05` defers to. The pack's internal `00`–`09` numbering is its own and does not reuse the
+`docs/` deliverable numbering above.
+
+| Path | Owns |
+|---|---|
+| `docs/roadmap/README.md` | Reading order and the four-piece structural core recommendation |
+| `docs/roadmap/00-MASTER-BUILD-BLUEPRINT.md` | The end-to-end build blueprint |
+| `docs/roadmap/01-SYSTEM-DEPENDENCY-MAP.md` | System dependency ordering |
+| `docs/roadmap/02-DOMAIN-MODEL-AND-DATA-CONTRACTS.md` | Domain model and data contracts |
+| `docs/roadmap/03-SIMULATION-BACKEND-PLAN.md` | Simulation backend plan |
+| `docs/roadmap/04-AI-AND-DELEGATION-ARCHITECTURE.md` | AI and delegation architecture |
+| `docs/roadmap/05-PERSISTENCE-PERFORMANCE-TESTING.md` | Persistence, performance and testing plan |
+| `docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md` | **M0–M9 milestones and gates — the build ordering authority** |
+| `docs/roadmap/07-FUTURE-SIMULATION-CONTRACT.md` | Future simulation contract (pack edition; the live tracked edition is `docs/FUTURE-SIMULATION-CONTRACT.md`) |
+| `docs/roadmap/08-UI-ADVERSARIAL-AUDIT.md` | UI adversarial audit (pack edition) |
+| `docs/roadmap/09-UI-BACKEND-SURFACE-CONTRACT.md` | UI/backend surface contract |
+
 ## 5. Required edits inside retained documents
 
 `docs/01-RESEARCH.md` is retained, but two of its sections are not covered by the carry-forward list

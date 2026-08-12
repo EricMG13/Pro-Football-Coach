@@ -2,7 +2,8 @@
 
 > **Superseded build ordering (2026-08-10):** the Master Build Documentation folder supplied with
 > the end-to-end goal is the primary authority. Follow milestones M0–M9 in its
-> `06-BUILD-ROADMAP-AND-GATES.md`. This file remains historical detail for the preserved P0–P4
+> `06-BUILD-ROADMAP-AND-GATES.md` — since 2026-08-12 imported at
+> `docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md` with manifest rows. This file remains historical detail for the preserved P0–P4
 > foundation and its existing gates. M0 architecture hardening, M1 playable world, and M2 people
 > lifecycle have exited; the active dependency milestone is M3 college management. Do not resume isolated P4 tuning ahead
 > of the roadmap's interconnected tactical and product-completion work.
@@ -341,10 +342,11 @@ now says it).
 
 P14's gate includes the per-family density-budget statement check from G-08.
 
-### Recorded seam (escalated, not repaired)
+### Recorded seam (escalated 2026-08-12, resolved same day)
 
-This file's header defers to a Master Build Documentation (`06-BUILD-ROADMAP-AND-GATES.md`) that is
-not a path in this repository; under `docs/DOC-MANIFEST.md`'s rule a document outside the canon
-paths carries no authority. The seam is owner question Q6 in
-`docs/briefs/2026-08-12-gap-register.md` §4. These amendments are phrased in both vocabularies and
-do not resolve it.
+This file's header deferred to a Master Build Documentation (`06-BUILD-ROADMAP-AND-GATES.md`) that
+was not a path in this repository; under `docs/DOC-MANIFEST.md`'s rule a document outside the canon
+paths carries no authority. Escalated as owner question Q6 in
+`docs/briefs/2026-08-12-gap-register.md` §4; **resolved by owner-approved import** — the pack lives
+at `docs/roadmap/` with manifest rows, and the header pointer above now resolves. These amendments
+remain phrased in both vocabularies.
