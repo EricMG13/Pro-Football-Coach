@@ -601,6 +601,9 @@ remains binding at every floor; the deployment target stays iOS 26.
 **Gate before canon rewrite:** every point size and inset in the evaluation is UNVERIFIED
 (AS-6.5-01). The `04` §7 window is not rewritten until sourcing rows Q4–Q5
 (`docs/briefs/2026-08-12-sourcing-log.md`) land and their retrieved values pass gate two.
+**Gate passed 2026-08-12:** rows approved by the owner; `04` §7 rewritten from the verified size
+table. Point sizes are Apple-verified; insets are secondary-sourced per model; the 16e insets and
+the 17e remain unsourced and are recorded as gaps, not guessed.
 
 **Falsifier — instruments, fixed in advance.**
 - `SmallestDeviceLayoutTest`, two-tier: every registry surface renders at the install floor

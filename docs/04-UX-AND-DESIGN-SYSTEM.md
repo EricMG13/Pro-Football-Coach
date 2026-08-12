@@ -355,8 +355,22 @@ existing `ContractTests.swift` source-contract pattern.
 
 ## 7. Device and accessibility contract
 
-Production supports landscape iPhone at 844 × 390 through 932 × 430. Both sensor orientations,
-light/dark appearances, compact/regular landscape width classes and AX5 are binding.
+*Window rewritten 2026-08-12 under D15 (option b) from verified sizes — Apple HIG Layout via
+sourcing rows Q4–Q5, gate two passed (`docs/briefs/2026-08-12-sourcing-log.md`).*
+
+Production promises landscape iPhone at **852 × 393 through 956 × 440** (iPhone 15 Pro class and
+newer; all five window sizes Apple-verified: 852 × 393, 874 × 402, 932 × 430, 956 × 440, and the
+844 × 390 `e`/base class below the promise). The **install floor stays 844 × 390**: below-promise
+devices can always install, so every surface renders un-clipped and reachable there forever; the
+promise floor is where the full budget must hold (two-tier `SmallestDeviceLayoutTest`, D15). Both
+sensor orientations, light/dark appearances, compact/regular landscape width classes and AX5 are
+binding.
+
+Landscape safe-area insets are per-model and secondary-sourced (sensor edge / home edge): 59/21 for
+the 15 generation and base 16; 62/21 for the 16 Pro class; 62 sides with 20 top and bottom for the
+17 generation. Recorded gaps, not guessed: 16e landscape insets and the 17e are unsourced — measure
+before relying on either. The 44 × 44 pt touch floor is HIG-verified (Apple's stated minimum is
+28 × 28 pt; this contract keeps the stricter 44 pt).
 
 - Safe areas are owned at physical edges, not guessed from a preferred orientation.
 - The initial viewport contains the dominant object and any decision due now.
