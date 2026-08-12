@@ -260,10 +260,13 @@ Measured constraints, binding on every consumer:
 | light-primary | `#E9E0C9` | `#6E3038` | `#18202B` | 12.47 | 7.45 |
 | low-chroma | `#555B66` | `#D9DDE4` | `#FFFFFF` | 6.83 | 5.01 |
 
-- **Low-chroma `team.primary` on dark `world.work` measures 2.67** — below the 3:1 non-text floor.
-  A team chip in that combination carries a hairline boundary; this is §6.3's
-  boundary-value-spoken rule made mandatory rather than stylistic for team colour, because
-  generated colour cannot be assumed to clear the floor against every surface.
+- **Team fills against the work surfaces (measured 2026-08-12):** dark-primary on dark `work` 1.41,
+  on light `work` 12.47; light-primary on dark `work` 13.86, on light `work` 1.27; low-chroma on
+  dark `work` 2.67, on light `work` 6.61. Every trio primary falls below the 3:1 non-text floor
+  against its tonally-similar surface, so the rule is general, not a low-chroma special case:
+  **a team-colour fill always carries the hairline boundary**, because generated colour cannot be
+  assumed to clear the floor against any given surface. This is §6.3's boundary-value-spoken rule
+  made mandatory for team colour.
 
 No gradients, glow, glass, fake paper, leather, cork or decorative shadow. Surfaces are matte and
 opaque. Hairlines separate continuous regions; containers exist only for interaction, grouping or
