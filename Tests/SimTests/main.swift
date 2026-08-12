@@ -54,6 +54,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runModelTests()
 } else if CommandLine.arguments.contains("--rivalry-order") {
     runRivalryOrderTests()
+} else if CommandLine.arguments.contains("--coaching-tree") {
+    runCoachingTreeTests()
 } else if CommandLine.arguments.contains("--legal-only") {
     runLegalTests()
 } else if CommandLine.arguments.contains("--competition-only") {
@@ -96,6 +98,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runProMarketTests()
     runHistoryReadModelTests()
     runRivalryOrderTests()
+    runCoachingTreeTests()
     runCareerPortalDecisionTests()
     runTacticalManagementTests()
     runTacticalStateTests()
