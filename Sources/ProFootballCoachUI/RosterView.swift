@@ -171,7 +171,7 @@ public struct RosterView: View {
                     summaryValue("ROSTER", "\(model.players.count)/\(model.rosterLimit)")
                     summaryValue("INJURIES", "\(model.injuryCount)")
                     summaryValue("OPEN NEEDS", "\(model.openNeedCount)")
-                    summaryValue("CLASS BALANCE", classBalance)
+                    summaryValue("CLASS BALANCE", classBalance, fitsContent: true)
                 }
             }
         }
@@ -180,18 +180,34 @@ public struct RosterView: View {
         .accessibilitySortPriority(100)
     }
 
-    private func summaryValue(_ label: String, _ value: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Space.xxs) {
+    private func summaryValue(
+        _ label: String,
+        _ value: String,
+        fitsContent: Bool = false
+    ) -> some View {
+        // The class-balance value is four terms long, so a label-beside-value cell
+        // hyphenates the label and wraps the value at this width. Stacking keeps both
+        // on one line each without shrinking type below the dense-screen floor, and
+        // the long cell takes its natural width so the short counts absorb the rest.
+        VStack(alignment: .leading, spacing: .zero) {
             Text(label)
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                 .foregroundStyle(palette.contentSecondary.color)
-            Spacer(minLength: CoachWorldTokens.Space.xxs)
             Text(value)
                 .font(CoachWorldTokens.TypeRole.headline.weight(.black))
                 .monospacedDigit()
         }
+        // One line keeps the dense ribbon on its 44-point band. At accessibility sizes
+        // the ribbon is already a scrolling column, so wrapping beats truncating a
+        // class balance that carries four counts.
+        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+        .fixedSize(horizontal: fitsContent, vertical: false)
         .padding(.horizontal, CoachWorldTokens.Space.xs)
-        .frame(maxWidth: .infinity, minHeight: RosterMetric.summaryHeight)
+        .frame(
+            maxWidth: fitsContent ? nil : .infinity,
+            minHeight: RosterMetric.summaryHeight,
+            alignment: .leading
+        )
         .overlay(alignment: .trailing) { verticalSeam }
         .accessibilityElement(children: .combine)
     }
@@ -280,6 +296,7 @@ public struct RosterView: View {
         Button(action: { toggleSort(field) }) {
             HStack(spacing: CoachWorldTokens.Space.xxs) {
                 Text(title)
+                    .lineLimit(1)
                 if sort.field == field {
                     Image(systemName: sort.isAscending ? "chevron.up" : "chevron.down")
                         .accessibilityHidden(true)
@@ -607,14 +624,14 @@ public struct RosterView: View {
 
 private enum RosterMetric {
     static let worldStripHeight: CGFloat = 48
-    static let summaryHeight: CGFloat = 36
+    static let summaryHeight: CGFloat = 44
     static let headerHeight: CGFloat = 44
     static let rowContentHeight: CGFloat = 28
     static let selectedRuleWidth: CGFloat = 3
     static let tableFraction: CGFloat = 0.64
     static let numberWidth: CGFloat = 28
     static let positionWidth: CGFloat = 34
-    static let ratingWidth: CGFloat = 42
+    static let ratingWidth: CGFloat = 48
     static let fitWidth: CGFloat = 52
     static let statusWidth: CGFloat = 66
     static let photoWidth: CGFloat = 52

@@ -17,7 +17,7 @@ import ProFootballCoachUI
 // a `.hashValue` sitting behind a URL string literal. An adversarial review of P0 planted each of
 // those in the tree and watched an earlier version of this file stay green.
 
-private func packageRoot() -> URL {
+func packageRoot() -> URL {
     URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()   // Suites
         .deletingLastPathComponent()   // SimTests
@@ -25,7 +25,7 @@ private func packageRoot() -> URL {
         .deletingLastPathComponent()   // package root
 }
 
-private func swiftFiles(under relativePath: String) -> [(path: String, text: String)] {
+func swiftFiles(under relativePath: String) -> [(path: String, text: String)] {
     let root = packageRoot().appendingPathComponent(relativePath)
     let names = FileManager.default.enumerator(atPath: root.path)?
         .compactMap { $0 as? String }
@@ -714,6 +714,8 @@ func runContractTests() {
                    "accessibility rows must preserve a distinct condition rating")
             expect(roster.contains(".sheet(item: $presentedProfile)"),
                    "the dossier must preserve roster selection and sort state")
+            expect(roster.contains("lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)"),
+                   "the summary ribbon must wrap rather than truncate at accessibility sizes")
 
             expect(profile.contains("public struct PlayerProfileView"))
             expect(profile.contains("let model: PlayerProfileReadModel"))
@@ -746,6 +748,15 @@ func runContractTests() {
                    "sample career values must be debug-only")
             expect(root.contains("No career loaded"),
                    "release builds need a truthful no-career state")
+            expect(root.contains("CoachWorldSampleData.roster"),
+                   "the personnel proof entry must use the fixed sample roster")
+            expect(root.contains("--roster") && root.contains("PROOF_SCREEN")
+                       && root.contains("\"roster\""),
+                   "Roster needs both a launch argument and a proof-screen name")
+            expect(root.contains("--player-profile") && root.contains("\"player\""),
+                   "Player Profile needs both a launch argument and a proof-screen name")
+            expect(root.contains("RosterView(") && root.contains("PlayerProfileView("),
+                   "the debug root must reach both personnel screens")
         }
 
 #if DEBUG
@@ -753,6 +764,8 @@ func runContractTests() {
             let roster = CoachWorldSampleData.roster
             expectEqual(roster.provenance, .sample)
             expectEqual(Set(roster.players.map(\.stableID)).count, roster.players.count)
+            expectEqual(Set(roster.players.map(\.profile.stableID)).count, roster.players.count,
+                        "callbacks carry the profile identity, so it must resolve one player")
             expect(roster.players.allSatisfy { $0.person.photo == nil })
             expect(roster.players.allSatisfy { player in
                 player.overall >= 0 && player.overall <= 99

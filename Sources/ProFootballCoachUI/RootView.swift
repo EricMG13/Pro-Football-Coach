@@ -22,16 +22,21 @@ private struct DebugCoachingHQRoot: View {
     @State private var coachingHQ = CoachWorldSampleData.coachingHQ
     @State private var recruitingBoard = CoachWorldSampleData.recruitingBoard
     private let matchDay = CoachWorldSampleData.matchDay
+    private let roster = CoachWorldSampleData.roster
     @State private var statusMessage: String?
 
     init() {
-        let opensMatch = CommandLine.arguments.contains("--match-day")
-            || ProcessInfo.processInfo.environment["PROOF_SCREEN"] == "match"
-        let opensRecruiting = CommandLine.arguments.contains("--recruiting-board")
-            || ProcessInfo.processInfo.environment["PROOF_SCREEN"] == "recruiting"
-        _currentScreen = State(
-            initialValue: opensMatch ? .matchDay : (opensRecruiting ? .recruitingBoard : .coachingHQ)
-        )
+        let proofScreen = ProcessInfo.processInfo.environment["PROOF_SCREEN"]
+        let entries: [(argument: String, proofName: String, screen: CoachWorldScreenID)] = [
+            ("--player-profile", "player", .playerProfile),
+            ("--roster", "roster", .roster),
+            ("--match-day", "match", .matchDay),
+            ("--recruiting-board", "recruiting", .recruitingBoard),
+        ]
+        let requested = entries.first {
+            CommandLine.arguments.contains($0.argument) || proofScreen == $0.proofName
+        }
+        _currentScreen = State(initialValue: requested?.screen ?? .coachingHQ)
     }
 
     var body: some View {
@@ -42,6 +47,20 @@ private struct DebugCoachingHQRoot: View {
                     statusMessage: statusMessage,
                     onControl: useMatchControl,
                     onInterruption: answerMatchInterruption
+                )
+            } else if currentScreen == .playerProfile, let profile = roster.players.first?.profile {
+                PlayerProfileView(
+                    model: profile,
+                    onClose: { currentScreen = .roster },
+                    onInspectDevelopment: inspectDevelopment
+                )
+            } else if currentScreen == .roster {
+                RosterView(
+                    model: roster,
+                    statusMessage: statusMessage,
+                    onContinue: { statusMessage = "No later personnel event is available yet" },
+                    onNavigate: navigate,
+                    onInspectDevelopment: inspectDevelopment
                 )
             } else if currentScreen == .recruitingBoard {
                 RecruitingBoardView(
@@ -129,8 +148,16 @@ private struct DebugCoachingHQRoot: View {
         statusMessage = "\(action.title) · \(action.consequence)"
     }
 
+    private func inspectDevelopment(_ profileID: String) {
+        guard let player = roster.players.first(where: { $0.profile.stableID == profileID }) else {
+            statusMessage = "That player profile is no longer available"
+            return
+        }
+        statusMessage = "Development evidence opened for \(player.person.name) · no changes made"
+    }
+
     private func navigate(_ screen: CoachWorldScreenID) {
-        guard screen == .coachingHQ || screen == .recruitingBoard else {
+        guard screen == .coachingHQ || screen == .recruitingBoard || screen == .roster else {
             statusMessage = "\(screen.canonicalName) is not available yet"
             return
         }

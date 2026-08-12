@@ -28,11 +28,18 @@ public struct PlayerProfileView: View {
                     identityBand
                     routeBar
                     GeometryReader { proxy in
-                        HStack(spacing: ProfileMetric.workspaceGap) {
-                            attributeBody.frame(
-                                width: proxy.size.width * ProfileMetric.attributeFraction
-                            )
-                            evidenceRail.frame(maxWidth: .infinity)
+                        // Landscape leaves this band about 200 points tall, which is less
+                        // than three attribute rows plus the evidence rail need. Each
+                        // column scrolls so nothing is silently clipped off the bottom.
+                        HStack(alignment: .top, spacing: ProfileMetric.workspaceGap) {
+                            ScrollView {
+                                attributeBody
+                            }
+                            .frame(width: proxy.size.width * ProfileMetric.attributeFraction)
+                            ScrollView {
+                                evidenceRail
+                            }
+                            .frame(maxWidth: .infinity)
                         }
                         .padding(.horizontal, CoachWorldTokens.Space.xs)
                     }
