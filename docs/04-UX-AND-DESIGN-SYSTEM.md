@@ -244,6 +244,11 @@ Measured constraints, binding on every consumer:
   3.61 (large text only); dark `world.page` ink on the same fill measures 5.02 and is the body-text
   pairing. Light-appearance fills are unconstrained (`world.work` on `action.primary` = 6.89).
 - Every other role/surface pairing above meets 4.5:1 in both appearances.
+- **Filled-control ink pairings (measured 2026-08-12, same method):** dark `world.page` ink on a
+  dark `state.live` fill measures 11.23; light `world.page` ink on the light `action.primary` fill
+  measures 6.37 (so the shipped light filled-violet ink passes alongside the 6.89 `world.work`
+  pairing); light `world.work` ink on the light `state.live` fill measures 5.70. All meet the
+  4.5:1 body floor.
 
 **Team colour reference trio (labelled synthetic — pending generator output, owner disposition
 2026-08-12; the P2 generator's sampled space is uniformly dark-primary).** Floors:
