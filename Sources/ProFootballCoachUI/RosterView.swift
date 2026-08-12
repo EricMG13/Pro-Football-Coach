@@ -5,26 +5,27 @@ public struct RosterView: View {
     public let statusMessage: String?
     public let onContinue: () -> Void
     public let onNavigate: (CoachWorldScreenID) -> Void
-    public let onOpenProfile: (PlayerProfileReadModel) -> Void
+    public let onInspectDevelopment: (String) -> Void
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var workspaceGap = CoachWorldTokens.Space.xs
     @State private var selectedPlayerID: String
     @State private var sort = RosterSortDescriptor(field: .overall, isAscending: false)
+    @State private var presentedProfile: PlayerProfileReadModel?
 
     public init(
         model: RosterReadModel,
         statusMessage: String? = nil,
         onContinue: @escaping () -> Void,
         onNavigate: @escaping (CoachWorldScreenID) -> Void,
-        onOpenProfile: @escaping (PlayerProfileReadModel) -> Void
+        onInspectDevelopment: @escaping (String) -> Void
     ) {
         self.model = model
         self.statusMessage = statusMessage
         self.onContinue = onContinue
         self.onNavigate = onNavigate
-        self.onOpenProfile = onOpenProfile
+        self.onInspectDevelopment = onInspectDevelopment
         _selectedPlayerID = State(initialValue: model.players.first?.stableID ?? "")
     }
 
@@ -59,6 +60,13 @@ public struct RosterView: View {
             if !stableIDs.contains(selectedPlayerID) {
                 selectedPlayerID = stableIDs.first ?? ""
             }
+        }
+        .sheet(item: $presentedProfile) { profile in
+            PlayerProfileView(
+                model: profile,
+                onClose: { presentedProfile = nil },
+                onInspectDevelopment: onInspectDevelopment
+            )
         }
     }
 
@@ -415,7 +423,7 @@ public struct RosterView: View {
             )
 
             Button("Open dossier") {
-                onOpenProfile(selected.profile)
+                presentedProfile = selected.profile
             }
             .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
             .padding(CoachWorldTokens.Space.sm)

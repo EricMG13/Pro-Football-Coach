@@ -663,6 +663,9 @@ func runContractTests() {
                 $0.path.hasSuffix("/RecruitingBoardView.swift")
             }?.text ?? ""
             let roster = uiFiles.first { $0.path.hasSuffix("/RosterView.swift") }?.text ?? ""
+            let profile = uiFiles.first {
+                $0.path.hasSuffix("/PlayerProfileView.swift")
+            }?.text ?? ""
             let deskComponents = uiFiles.first {
                 $0.path.hasSuffix("/CoachWorldDeskComponents.swift")
             }?.text ?? ""
@@ -709,6 +712,18 @@ func runContractTests() {
                    "accessibility rows must preserve a distinct development rating")
             expect(roster.contains("accessibleRating(\"COND\", player.condition)"),
                    "accessibility rows must preserve a distinct condition rating")
+            expect(roster.contains(".sheet(item: $presentedProfile)"),
+                   "the dossier must preserve roster selection and sort state")
+
+            expect(profile.contains("public struct PlayerProfileView"))
+            expect(profile.contains("let model: PlayerProfileReadModel"))
+            expect(profile.contains("Button("))
+            expect(!profile.contains("onTapGesture"))
+            expect(profile.contains("monospacedDigit"))
+            expect(profile.contains("accessibilitySortPriority"))
+            expect(profile.contains("dynamicTypeSize.isAccessibilitySize"))
+            expect(profile.contains("CoachWorldBlankPhotoPlate"))
+            expect(profile.contains("model.attributeGroups"))
 
             expect(deskComponents.contains("struct CoachWorldActionButtonStyle")
                        && deskComponents.contains("struct CoachWorldRouteButton")
