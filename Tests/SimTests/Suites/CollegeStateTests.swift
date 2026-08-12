@@ -434,7 +434,7 @@ func runCollegeStateTests() {
         test("bootstrap creates legal programme resources and a normalized annual prospect pool") {
             let state = GameState.bootstrap(seed: 92_001)
 
-            expectEqual(GameState.schemaVersion, 10)
+            expectEqual(GameState.schemaVersion, 11)
             expectEqual(state.prospects.count, CollegeRules.annualProspectCount)
             expectEqual(state.college.programmes.count, state.programmes.count)
             expectEqual(state.college.prospectRecruitment.count, state.prospects.count)
