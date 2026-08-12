@@ -90,7 +90,7 @@ public enum ProManagementSystem {
             }
             if let contract = player.contract {
                 guard Self.isValid(contract) else { throw ProManagementError.invalidContract }
-                let capHit = contract.capHit(inYear: 0)
+                let capHit = contract.capHit(atSeason: state.calendar.season)
                 guard committedCap <= Int.max - capHit else {
                     throw ProManagementError.invalidContract
                 }
@@ -160,7 +160,7 @@ public enum ProManagementSystem {
         let isActive = team.rosterIDs.contains(playerID)
         let isPractice = team.practiceSquadIDs.contains(playerID)
         guard isActive || isPractice else { throw ProManagementError.playerNotOnRoster }
-        let addedDeadMoney = contract.deadMoney(ifReleasedBeforeYear: 0)
+        let addedDeadMoney = contract.deadMoney(ifReleasedAtSeason: state.calendar.season)
         guard team.deadMoney <= Int.max - addedDeadMoney else {
             throw ProManagementError.invalidTeamRoster
         }

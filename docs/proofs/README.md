@@ -1,8 +1,14 @@
 # FM-proxy proof screens
 
 These screenshots are DEBUG reference fixtures, not simulation outcomes or final art.
-They demonstrate the current Football Manager-derived information rhythm at landscape iPhone
-size, using original fictional identities and native controls rather than copied assets.
+They demonstrate the current Football Manager Touch target: desktop-style information density
+adapted to landscape iPhone, using original fictional identities and native controls rather than
+copied assets. The standard-size reference target uses 10–12 pt dense type; AX5 proofs reflow and scale.
+Both current proof variants use the canonical 844×390 landscape viewport: light/default at 2× and
+dark/AX5 at 3×. AX5 is an accessibility reflow proof, not a density reference.
+The canonical component rules are `04-UX-AND-DESIGN-SYSTEM.md` §6.4: 10–12 pt micro-type, tabular
+numbers, zero-inset 24–28 pt rows, adaptive data tiles, heatmap badges and context-preserving
+popovers or detented sheets.
 
 | Proof | Light / standard | Dark / AX5 |
 |---|---|---|

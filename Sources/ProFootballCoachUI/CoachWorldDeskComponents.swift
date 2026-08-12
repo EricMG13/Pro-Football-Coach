@@ -63,25 +63,22 @@ struct CoachWorldActionButtonStyle: ButtonStyle {
 
 struct CoachWorldRouteButton: View {
     let title: String
-    let screen: CoachWorldScreenID
     let isCurrent: Bool
     let palette: CoachWorldTokens.Palette
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: CoachWorldTokens.Space.xxs) {
-                Image(systemName: symbol)
-                    .accessibilityHidden(true)
-                Text(title)
-            }
+            Text(title)
+                .lineLimit(1)
+                .minimumScaleFactor(0.9)
         }
         .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
         .frame(
-            minWidth: CoachWorldTokens.Shape.minimumTarget,
+            maxWidth: .infinity,
             minHeight: CoachWorldTokens.Shape.minimumTarget
         )
-        .padding(.horizontal, CoachWorldTokens.Space.xs)
+        .padding(.horizontal, CoachWorldTokens.Space.xxs)
         .background(isCurrent ? palette.collegeIdentity.color.opacity(0.16) : Color.clear)
         .overlay(alignment: .bottom) {
             if isCurrent {
@@ -93,17 +90,6 @@ struct CoachWorldRouteButton: View {
         }
         .accessibilityLabel(title)
         .accessibilityAddTraits(isCurrent ? .isSelected : [])
-    }
-
-    private var symbol: String {
-        switch screen {
-        case .coachingHQ: "house"
-        case .roster: "person.3"
-        case .recruitingBoard: "scope"
-        case .leagueMap: "globe.americas"
-        case .careerHub: "briefcase"
-        default: "square.grid.2x2"
-        }
     }
 }
 

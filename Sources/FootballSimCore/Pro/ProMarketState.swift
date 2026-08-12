@@ -114,10 +114,34 @@ public struct ProDraftObservation: Codable, Sendable, Equatable, Identifiable {
     }
 }
 
+public struct ProWaiverEntry: Codable, Sendable, Equatable, Identifiable {
+    public let id: UUID
+    public let playerID: UUID
+    public let sourceTeamID: UUID
+    public let openedAt: CalendarState
+    public let claimDeadline: CalendarState
+
+    public init(
+        id: UUID,
+        playerID: UUID,
+        sourceTeamID: UUID,
+        openedAt: CalendarState,
+        claimDeadline: CalendarState
+    ) {
+        self.id = id
+        self.playerID = playerID
+        self.sourceTeamID = sourceTeamID
+        self.openedAt = openedAt
+        self.claimDeadline = claimDeadline
+    }
+}
+
 public struct ProMarketState: Codable, Sendable, Equatable {
     public static let maximumDraftClassSize = ProRules.draftPickCount
     public static let maximumFreeAgentIDs = 512
     public static let maximumObservations = 8_192
+    public static let maximumArchivedProspectIDs = 4_096
+    public static let maximumWaivers = 512
 
     public private(set) var season: Int
     public private(set) var phase: ProMarketPhase
@@ -127,6 +151,8 @@ public struct ProMarketState: Codable, Sendable, Equatable {
     public private(set) var draftedProspectIDs: [UUID]
     public private(set) var freeAgentIDs: [UUID]
     public private(set) var observations: [ProDraftObservation]
+    public private(set) var archivedDraftProspectIDs: [UUID]
+    public private(set) var waivers: [ProWaiverEntry]
 
     public init(
         season: Int = 0,
@@ -136,7 +162,9 @@ public struct ProMarketState: Codable, Sendable, Equatable {
         nextPick: Int = 0,
         draftedProspectIDs: [UUID] = [],
         freeAgentIDs: [UUID] = [],
-        observations: [ProDraftObservation] = []
+        observations: [ProDraftObservation] = [],
+        archivedDraftProspectIDs: [UUID] = [],
+        waivers: [ProWaiverEntry] = []
     ) {
         self.season = max(0, season)
         self.phase = phase
@@ -146,6 +174,8 @@ public struct ProMarketState: Codable, Sendable, Equatable {
         self.draftedProspectIDs = Self.canonicalIDs(draftedProspectIDs)
         self.freeAgentIDs = Self.canonicalIDs(freeAgentIDs)
         self.observations = Self.canonicalObservations(observations)
+        self.archivedDraftProspectIDs = Self.canonicalIDs(archivedDraftProspectIDs)
+        self.waivers = Self.canonicalWaivers(waivers)
         precondition(isValidShape(proTeamIDs: nil), "Professional market state is invalid.")
     }
 
@@ -159,6 +189,11 @@ public struct ProMarketState: Codable, Sendable, Equatable {
         let draftedProspectIDs = try container.decode([UUID].self, forKey: .draftedProspectIDs)
         let freeAgentIDs = try container.decode([UUID].self, forKey: .freeAgentIDs)
         let observations = try container.decode([ProDraftObservation].self, forKey: .observations)
+        let archivedDraftProspectIDs = try container.decode(
+            [UUID].self,
+            forKey: .archivedDraftProspectIDs
+        )
+        let waivers = try container.decode([ProWaiverEntry].self, forKey: .waivers)
         guard season >= 0,
               draftClass.count <= Self.maximumDraftClassSize,
               Set(draftClass.map(\.id)).count == draftClass.count,
@@ -171,7 +206,13 @@ public struct ProMarketState: Codable, Sendable, Equatable {
               freeAgentIDs.count <= Self.maximumFreeAgentIDs,
               Set(freeAgentIDs).count == freeAgentIDs.count,
               observations.count <= Self.maximumObservations,
-              Self.observationsAreUnique(observations) else {
+              Self.observationsAreUnique(observations),
+              archivedDraftProspectIDs.count <= Self.maximumArchivedProspectIDs,
+              Set(archivedDraftProspectIDs).count == archivedDraftProspectIDs.count,
+              waivers.count <= Self.maximumWaivers,
+              Set(waivers.map(\.id)).count == waivers.count,
+              Set(waivers.map(\.playerID)).count == waivers.count,
+              waivers.allSatisfy({ !$0.claimDeadlineIsBeforeOpened }) else {
             throw DecodingError.dataCorruptedError(
                 forKey: .draftClass,
                 in: container,
@@ -186,7 +227,9 @@ public struct ProMarketState: Codable, Sendable, Equatable {
             nextPick: nextPick,
             draftedProspectIDs: draftedProspectIDs,
             freeAgentIDs: freeAgentIDs,
-            observations: observations
+            observations: observations,
+            archivedDraftProspectIDs: archivedDraftProspectIDs,
+            waivers: waivers
         )
     }
 
@@ -262,8 +305,35 @@ public struct ProMarketState: Codable, Sendable, Equatable {
     }
 
     @discardableResult
+    public mutating func addFreeAgent(_ playerID: UUID) -> Bool {
+        guard freeAgentIDs.count < Self.maximumFreeAgentIDs,
+              !freeAgentIDs.contains(playerID) else { return false }
+        freeAgentIDs.append(playerID)
+        freeAgentIDs.sort { $0.uuidString < $1.uuidString }
+        return true
+    }
+
+    @discardableResult
+    public mutating func addWaiver(_ entry: ProWaiverEntry) -> Bool {
+        guard waivers.count < Self.maximumWaivers,
+              !waivers.contains(where: { $0.id == entry.id || $0.playerID == entry.playerID }) else {
+            return false
+        }
+        waivers.append(entry)
+        waivers.sort { $0.id.uuidString < $1.id.uuidString }
+        return true
+    }
+
+    @discardableResult
+    public mutating func removeWaiver(_ waiverID: UUID) -> ProWaiverEntry? {
+        guard let index = waivers.firstIndex(where: { $0.id == waiverID }) else { return nil }
+        return waivers.remove(at: index)
+    }
+
+    @discardableResult
     public mutating func close() -> Bool {
         guard phase == .rosterBuild || phase == .freeAgency || phase == .draft else { return false }
+        let closedDraftIDs = draftClass.map(\.id)
         phase = .closed
         draftClass = []
         draftOrder = []
@@ -271,6 +341,10 @@ public struct ProMarketState: Codable, Sendable, Equatable {
         draftedProspectIDs = []
         freeAgentIDs = []
         observations = []
+        archivedDraftProspectIDs = Array(
+            Self.canonicalIDs(Array(Set(archivedDraftProspectIDs).union(closedDraftIDs)))
+                .suffix(Self.maximumArchivedProspectIDs)
+        )
         return true
     }
 
@@ -287,6 +361,12 @@ public struct ProMarketState: Codable, Sendable, Equatable {
             && Set(freeAgentIDs).count == freeAgentIDs.count
             && observations.count <= Self.maximumObservations
             && Self.observationsAreUnique(observations)
+            && archivedDraftProspectIDs.count <= Self.maximumArchivedProspectIDs
+            && Set(archivedDraftProspectIDs).count == archivedDraftProspectIDs.count
+            && waivers.count <= Self.maximumWaivers
+            && Set(waivers.map(\.id)).count == waivers.count
+            && Set(waivers.map(\.playerID)).count == waivers.count
+            && waivers.allSatisfy { !$0.claimDeadlineIsBeforeOpened }
             && (proTeamIDs.map { Set(draftOrder).isSubset(of: $0) } ?? true)
     }
 
@@ -302,7 +382,19 @@ public struct ProMarketState: Codable, Sendable, Equatable {
         values.sorted { $0.id < $1.id }
     }
 
+    private static func canonicalWaivers(_ values: [ProWaiverEntry]) -> [ProWaiverEntry] {
+        values.sorted { $0.id.uuidString < $1.id.uuidString }
+    }
+
     private static func observationsAreUnique(_ values: [ProDraftObservation]) -> Bool {
         Set(values.map(\.id)).count == values.count
+    }
+}
+
+private extension ProWaiverEntry {
+    var claimDeadlineIsBeforeOpened: Bool {
+        claimDeadline.season < openedAt.season
+            || (claimDeadline.season == openedAt.season
+                && claimDeadline.week < openedAt.week)
     }
 }

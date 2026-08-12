@@ -6,6 +6,17 @@ public enum ProMarketAction: Codable, Sendable, Equatable {
     case beginDraft
     case signFreeAgent(playerID: UUID, teamID: UUID, contract: Contract)
     case draft(prospectID: UUID, teamID: UUID, contract: Contract?)
+    case moveToPracticeSquad(playerID: UUID, teamID: UUID)
+    case promoteFromPracticeSquad(playerID: UUID, teamID: UUID)
+    case trade(
+        sourcePlayerID: UUID,
+        sourceTeamID: UUID,
+        destinationPlayerID: UUID,
+        destinationTeamID: UUID
+    )
+    case placeOnWaivers(playerID: UUID, teamID: UUID)
+    case claimWaiver(playerID: UUID, teamID: UUID)
+    case resolveExpiredWaivers
     case close
 }
 
@@ -29,7 +40,26 @@ public enum ProMarketError: Error, Sendable, Equatable {
     case wrongDraftTeam
     case duplicateDraftPick
     case invalidObservation
+    case practiceSquadFull
+    case activeRosterFull
+    case playerNotOnRoster
+    case teamsMustDiffer
+    case tradePlayerUnavailable
+    case waiverAlreadyOpen
+    case waiverNotFound
+    case waiverClaimExpired
+    case waiverClaimInvalid
     case invalidRoot
+}
+
+public struct ProContractExpiryReceipt: Sendable, Equatable {
+    public let state: GameState
+    public let expiredPlayerIDs: [UUID]
+
+    public init(state: GameState, expiredPlayerIDs: [UUID]) {
+        self.state = state
+        self.expiredPlayerIDs = expiredPlayerIDs
+    }
 }
 
 /// Deterministic professional-market mutations. Each operation works on a value copy and only
@@ -124,6 +154,9 @@ public enum ProMarketSystem {
         guard state.proMarket.freeAgentIDs.contains(playerID) else {
             throw ProMarketError.unavailableFreeAgent
         }
+        guard contract.signedSeason == nil || contract.signedSeason == state.proMarket.season else {
+            throw ProMarketError.invalidRoot
+        }
         var next = state
         guard next.proMarket.removeFreeAgent(playerID) else {
             throw ProMarketError.unavailableFreeAgent
@@ -132,7 +165,9 @@ public enum ProMarketSystem {
             playerID: playerID,
             for: teamID,
             kind: .freeAgency,
-            contract: contract,
+            contract: contract.signedSeason == nil
+                ? contract.withSignedSeason(state.proMarket.season)
+                : contract,
             in: next
         )
         next = receipt.state
@@ -156,6 +191,13 @@ public enum ProMarketSystem {
         guard !state.proMarket.draftedProspectIDs.contains(prospectID) else {
             throw ProMarketError.duplicateDraftPick
         }
+        if let contract, contract.signedSeason != nil, contract.signedSeason != state.proMarket.season {
+            throw ProMarketError.invalidRoot
+        }
+        let requestedContract = contract ?? rookieContract(for: prospect.player)
+        let resolvedContract = requestedContract.signedSeason == nil
+            ? requestedContract.withSignedSeason(state.proMarket.season)
+            : requestedContract
         var next = state
         next.players.insert(prospect.player)
         next.people.insert(player: prospect.player)
@@ -166,7 +208,7 @@ public enum ProMarketSystem {
             playerID: prospectID,
             for: teamID,
             kind: .draft,
-            contract: contract ?? rookieContract(for: prospect.player),
+            contract: resolvedContract,
             in: next
         )
         next = receipt.state
@@ -174,10 +216,252 @@ public enum ProMarketSystem {
         return next
     }
 
+    public static func moveToPracticeSquad(
+        playerID: UUID,
+        teamID: UUID,
+        in state: GameState
+    ) throws -> GameState {
+        guard let team = state.proTeams[teamID],
+              team.rosterIDs.contains(playerID) else {
+            throw ProMarketError.playerNotOnRoster
+        }
+        guard team.practiceSquadIDs.count < ProRules.practiceSquadLimit else {
+            throw ProMarketError.practiceSquadFull
+        }
+        var next = state
+        _ = next.proTeams.update(teamID) {
+            $0.rosterIDs.removeAll { $0 == playerID }
+            $0.practiceSquadIDs.append(playerID)
+        }
+        guard WorldIntegrity.check(next).isValid else { throw ProMarketError.invalidRoot }
+        return next
+    }
+
+    public static func promoteFromPracticeSquad(
+        playerID: UUID,
+        teamID: UUID,
+        in state: GameState
+    ) throws -> GameState {
+        guard let team = state.proTeams[teamID],
+              team.practiceSquadIDs.contains(playerID) else {
+            throw ProMarketError.playerNotOnRoster
+        }
+        guard team.rosterIDs.count < ProRules.activeRosterLimit else {
+            throw ProMarketError.activeRosterFull
+        }
+        var next = state
+        _ = next.proTeams.update(teamID) {
+            $0.practiceSquadIDs.removeAll { $0 == playerID }
+            $0.rosterIDs.append(playerID)
+        }
+        guard WorldIntegrity.check(next).isValid else { throw ProMarketError.invalidRoot }
+        return next
+    }
+
+    public static func trade(
+        sourcePlayerID: UUID,
+        sourceTeamID: UUID,
+        destinationPlayerID: UUID,
+        destinationTeamID: UUID,
+        in state: GameState
+    ) throws -> GameState {
+        guard sourceTeamID != destinationTeamID else {
+            throw ProMarketError.teamsMustDiffer
+        }
+        guard let source = state.proTeams[sourceTeamID],
+              let destination = state.proTeams[destinationTeamID] else {
+            throw ProMarketError.missingTeam
+        }
+        guard source.rosterIDs.contains(sourcePlayerID),
+              destination.rosterIDs.contains(destinationPlayerID) else {
+            throw ProMarketError.tradePlayerUnavailable
+        }
+        guard let sourcePlayer = state.players[sourcePlayerID],
+              let destinationPlayer = state.players[destinationPlayerID],
+              sourcePlayer.eligibility == nil,
+              destinationPlayer.eligibility == nil else {
+            throw ProMarketError.tradePlayerUnavailable
+        }
+        var next = state
+        _ = next.proTeams.update(sourceTeamID) {
+            $0.rosterIDs.removeAll { $0 == sourcePlayerID }
+            $0.rosterIDs.append(destinationPlayerID)
+        }
+        _ = next.proTeams.update(destinationTeamID) {
+            $0.rosterIDs.removeAll { $0 == destinationPlayerID }
+            $0.rosterIDs.append(sourcePlayerID)
+        }
+        do {
+            guard try ProManagementSystem.capSnapshot(teamID: sourceTeamID, in: next).isWithinCap,
+                  try ProManagementSystem.capSnapshot(teamID: destinationTeamID, in: next).isWithinCap
+            else { throw ProMarketError.invalidRoot }
+        } catch is ProManagementError {
+            throw ProMarketError.invalidRoot
+        }
+        guard WorldIntegrity.check(next).isValid else { throw ProMarketError.invalidRoot }
+        return next
+    }
+
+    public static func placeOnWaivers(
+        playerID: UUID,
+        teamID: UUID,
+        at calendar: CalendarState,
+        in state: GameState
+    ) throws -> GameState {
+        guard calendar == state.calendar else { throw ProMarketError.invalidSeason }
+        guard let team = state.proTeams[teamID],
+              team.rosterIDs.contains(playerID) || team.practiceSquadIDs.contains(playerID) else {
+            throw ProMarketError.playerNotOnRoster
+        }
+        guard state.players[playerID]?.eligibility == nil,
+              state.players[playerID]?.contract != nil else {
+            throw ProMarketError.waiverClaimInvalid
+        }
+        guard !state.proMarket.waivers.contains(where: { $0.playerID == playerID }) else {
+            throw ProMarketError.waiverAlreadyOpen
+        }
+        var waiverRNG = SeededRandom(seed: SeededRandom.derive(
+            from: SeededRandom.seed(from: playerID, teamID),
+            scope: .week,
+            ordinal: calendar.week
+        ))
+        let entry = ProWaiverEntry(
+            id: waiverRNG.uuid(),
+            playerID: playerID,
+            sourceTeamID: teamID,
+            openedAt: calendar,
+            claimDeadline: calendar.advancedWeek()
+        )
+        var next = state
+        guard next.proMarket.addWaiver(entry) else {
+            throw ProMarketError.waiverAlreadyOpen
+        }
+        guard WorldIntegrity.check(next).isValid else { throw ProMarketError.invalidRoot }
+        return next
+    }
+
+    public static func claimWaiver(
+        playerID: UUID,
+        teamID: UUID,
+        at calendar: CalendarState,
+        in state: GameState
+    ) throws -> GameState {
+        guard calendar == state.calendar else { throw ProMarketError.invalidSeason }
+        guard let entry = state.proMarket.waivers.first(where: { $0.playerID == playerID }) else {
+            throw ProMarketError.waiverNotFound
+        }
+        guard entry.sourceTeamID != teamID,
+              !isBefore(entry.claimDeadline, calendar),
+              let source = state.proTeams[entry.sourceTeamID],
+              let destination = state.proTeams[teamID],
+              destination.rosterIDs.count < ProRules.activeRosterLimit,
+              let player = state.players[playerID],
+              player.contract != nil else {
+            throw ProMarketError.waiverClaimInvalid
+        }
+        guard source.rosterIDs.contains(playerID) || source.practiceSquadIDs.contains(playerID) else {
+            throw ProMarketError.waiverClaimInvalid
+        }
+        var next = state
+        _ = next.proMarket.removeWaiver(entry.id)
+        _ = next.proTeams.update(entry.sourceTeamID) {
+            $0.rosterIDs.removeAll { $0 == playerID }
+            $0.practiceSquadIDs.removeAll { $0 == playerID }
+        }
+        _ = next.proTeams.update(teamID) { $0.rosterIDs.append(playerID) }
+        do {
+            guard try ProManagementSystem.capSnapshot(teamID: teamID, in: next).isWithinCap else {
+                throw ProMarketError.invalidRoot
+            }
+        } catch is ProManagementError {
+            throw ProMarketError.invalidRoot
+        }
+        guard WorldIntegrity.check(next).isValid else { throw ProMarketError.invalidRoot }
+        return next
+    }
+
+    public static func resolveExpiredWaivers(
+        at calendar: CalendarState,
+        in state: GameState
+    ) throws -> GameState {
+        var next = state
+        for entry in state.proMarket.waivers where isBefore(entry.claimDeadline, calendar) {
+            guard next.proMarket.removeWaiver(entry.id) != nil else {
+                throw ProMarketError.waiverNotFound
+            }
+            let receipt = try ProManagementSystem.release(
+                playerID: entry.playerID,
+                from: entry.sourceTeamID,
+                in: next
+            )
+            next = receipt.state
+            if !next.proMarket.freeAgentIDs.contains(entry.playerID) {
+                guard next.proMarket.addFreeAgent(entry.playerID) else {
+                    throw ProMarketError.invalidRoot
+                }
+            }
+        }
+        guard WorldIntegrity.check(next).isValid else { throw ProMarketError.invalidRoot }
+        return next
+    }
+
+    /// Ends only contracts with authoritative start seasons. Legacy contracts are deliberately
+    /// left untouched because their start date is unknowable. Expiry is processed at the final
+    /// week, before the next market opens, and returns released players to the same free-agent
+    /// identity ledger without creating dead money.
+    public static func expireContracts(
+        at calendar: CalendarState,
+        in state: GameState
+    ) throws -> ProContractExpiryReceipt {
+        guard calendar == state.calendar,
+              calendar.week == SharedRules.inSeasonWeeks else {
+            throw ProMarketError.invalidSeason
+        }
+        let nextSeason = calendar.season + 1
+        let candidates = state.proTeams.values
+            .sorted { $0.id.uuidString < $1.id.uuidString }
+            .flatMap { team in
+                (team.rosterIDs + team.practiceSquadIDs).compactMap { playerID -> (UUID, UUID)? in
+                    guard let contract = state.players[playerID]?.contract,
+                          let signedSeason = contract.signedSeason,
+                          nextSeason >= signedSeason + contract.years else { return nil }
+                    return (team.id, playerID)
+                }
+            }
+        guard candidates.count <= ProMarketState.maximumFreeAgentIDs else {
+            throw ProMarketError.invalidRoot
+        }
+        var next = state
+        var expired: [UUID] = []
+        expired.reserveCapacity(candidates.count)
+        for (teamID, playerID) in candidates {
+            next.proTeams.update(teamID) {
+                $0.rosterIDs.removeAll { $0 == playerID }
+                $0.practiceSquadIDs.removeAll { $0 == playerID }
+            }
+            next.players.update(playerID) { $0.contract = nil }
+            if !next.proMarket.freeAgentIDs.contains(playerID) {
+                guard next.proMarket.addFreeAgent(playerID) else {
+                    throw ProMarketError.invalidRoot
+                }
+            }
+            expired.append(playerID)
+        }
+        guard WorldIntegrity.check(next).isValid else { throw ProMarketError.invalidRoot }
+        return ProContractExpiryReceipt(
+            state: next,
+            expiredPlayerIDs: expired.sorted { $0.uuidString < $1.uuidString }
+        )
+    }
+
     public static func close(in state: GameState) throws -> GameState {
         var next = state
         guard next.proMarket.close() else { throw ProMarketError.invalidPhase }
         return next
+    }
+
+    private static func isBefore(_ lhs: CalendarState, _ rhs: CalendarState) -> Bool {
+        lhs.season < rhs.season || (lhs.season == rhs.season && lhs.week < rhs.week)
     }
 
     public static func rookieContract(for player: Player) -> Contract {
@@ -203,7 +487,7 @@ public enum ProMarketSystem {
     ) -> [ProDraftProspect] {
         let positions = Position.allCases
         let existingIDs = Set(state.players.ids)
-        var usedIDs = existingIDs
+        var usedIDs = existingIDs.union(state.proMarket.archivedDraftProspectIDs)
         var prospects: [ProDraftProspect] = []
         prospects.reserveCapacity(ProRules.draftPickCount)
         for pick in 0..<ProRules.draftPickCount {

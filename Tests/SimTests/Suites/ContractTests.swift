@@ -643,8 +643,9 @@ func runContractTests() {
                    "interactive targets must remain at least 44 points")
             expect(CoachWorldTokens.TypeRole.authoredFloor >= 12,
                    "authored text must remain at least 12 points")
-            expect(CoachWorldTokens.TypeRole.workingProse >= 17,
-                   "working prose must remain at least 17 points")
+            expect(CoachWorldTokens.TypeRole.workingProse >= 12
+                       && CoachWorldTokens.TypeRole.workingProse <= 13,
+                   "standard management prose must remain in the compact 12–13 point band")
         }
 
         test("the production screen registry is complete and stably numbered") {
@@ -715,6 +716,32 @@ func runContractTests() {
         }
 
 #if DEBUG
+        test("personnel projections keep stable identities and deterministic sorting") {
+            let roster = CoachWorldSampleData.roster
+            expectEqual(roster.provenance, .sample)
+            expectEqual(Set(roster.players.map(\.stableID)).count, roster.players.count)
+            expect(roster.players.allSatisfy { $0.person.photo == nil })
+            expect(roster.players.allSatisfy { player in
+                player.overall >= 0 && player.overall <= 99
+                    && player.development >= 0 && player.development <= 99
+                    && player.condition >= 0 && player.condition <= 100
+            })
+            expect(roster.players.allSatisfy { player in
+                player.profile.attributeGroups.count == 3
+                    && player.profile.attributeGroups.flatMap(\.attributes).allSatisfy {
+                        $0.value >= 0 && $0.value <= 99
+                    }
+            })
+
+            let descending = RosterSortDescriptor(field: .overall, isAscending: false)
+                .sorted(roster.players)
+            expectEqual(descending.map(\.overall), descending.map(\.overall).sorted(by: >))
+
+            let ascending = RosterSortDescriptor(field: .name, isAscending: true)
+                .sorted(roster.players)
+            expectEqual(ascending.map { $0.person.name }, ascending.map { $0.person.name }.sorted())
+        }
+
         test("sample read models stay labelled and enforce the recorded-match shape") {
             let headquarters = CoachWorldSampleData.coachingHQ
             expectEqual(headquarters.weekPlan.count, 7,

@@ -249,7 +249,7 @@ active until M6.
 
 ### M4 — tactical management — **active**
 
-Schema 8 tactical state (carried by the current schema-9 root) carries calendar-bound tactical state
+Schema 8 tactical state (carried by the current schema-10 root) carries calendar-bound tactical state
 in the authoritative root. Immutable plans,
 practice allocations, opponent snapshots, and bounded game-plan reviews survive save/load; the
 fixed scheduler consumes explicit plans before games and records reviews after results. Practice
@@ -261,7 +261,7 @@ three options and a named risk.
 Focused tactical coverage is **6 tests / 67 checks**, tactical-state/intent coverage is **5 / 16**,
 competition compatibility is **32 / 6,315**, and core contracts are **144 / 875**; all passed.
 Strict Swift-5 concurrency diagnostics are clean. Architecture fingerprints are **25 /
-222** in two rebuilt runs (the current schema-9 root includes the M5 field). Detailed-game call-in choices still need to be threaded through the live
+222** in two rebuilt runs (the current schema-10 root includes the M5 field). Detailed-game call-in choices still need to be threaded through the live
 match session and controlled career actor; no production UI or simulator evidence is claimed yet.
 
 ### M5 — career stakes — **active**
@@ -283,17 +283,32 @@ and inbox events remain open.
 
 ### M6 — professional management — **active**
 
-The first professional-management boundary now uses the existing `Player.contract` and `ProTeam`
-ownership model rather than introducing a second market ledger. `ProManagementSystem` computes an
-integer cap snapshot, rejects invalid or over-cap acquisitions atomically, supports draft/free-agent
-acquisition receipts, carries signing-bonus dead money on release, and exposes a deterministic draft
-order fallback. Promoted professional careers can submit the same transactions through the guarded
-intent boundary; college-controlled roots cannot.
+The cap-safe `ProManagementSystem` remains the ownership and money boundary. Schema 10 now adds a
+bounded `ProMarketState` for deterministic offseason opening, free agency, draft class/scouting
+fog, pick consumption, rookie contracts, and roster-build closure. `CoachIntent.proMarket` is
+guarded by the promoted professional job and emits typed market events; college-controlled roots
+cannot submit it. Final-week rollover closes the prior market before postseason projection and opens
+the next market after college portal/cycle work.
 
-Focused M6 coverage is **6 tests / 17 checks**, core contracts are **144 / 875**, strict Swift-5
-concurrency diagnostics are clean, and architecture fingerprints remain **25 / 222** in two rebuilt
-runs. Full dated free-agency waves, draft-class scouting, trades, practice-squad rules, and the
-professional actor/UI remain deliberately open for the next M6 slice.
+Focused market coverage is **12 tests / 58 checks**. Portal scheduler compatibility is **9 / 27,823**
+with two-season byte-identical replay and valid integrity; portal contracts are **28 / 138**.
+Core contracts are **144 / 880**, and strict Swift-5 concurrency diagnostics remain clean. Practice-
+squad movement, trades, waiver claims, expired-waiver release, sourced contract expiry, and
+deterministic professional roster AI now use copied-root validation and typed events; the full
+both-tier soak and professional actor/UI remain open. Architecture is **25 / 222** in two identical
+rebuilt runs after the waiver schema update.
+
+### M7 — living world/history — **active**
+
+The first M7 slice adds `WorldHistoryReadModel`, a disposable deterministic projection that indexes
+current programmes, pro teams, players, staff, departed identities, rivalries, season archives,
+awards, record-book entries, and retained typed events. Search is tokenized, case/diacritic-insensitive,
+bounded, and never exposes `GameState`; the index is rebuilt after load rather than persisted as a
+second authority. Rivalry meetings now strengthen the stored intensity once, in the existing
+relationships step, with bounded notable-meeting history. Focused coverage is **4 tests / 24 checks**,
+portal-scheduler compatibility is **9 / 27,823**, and core contracts are **144 / 883**. Cold event
+bodies, generated news, semantic rivalry narratives, coaching-tree projections, and the 30-season
+history/performance gate remain open.
 
 ### Preserved pre-rebaseline P0–P4 record
 

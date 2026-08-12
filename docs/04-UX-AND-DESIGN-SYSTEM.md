@@ -21,7 +21,10 @@ replay. Recruiting, contracts, career history and live football must not inherit
 
 ### 1.1 What the owner-supplied Football Manager references establish
 
-The eighteen saved references are evidence about information behaviour, not a visual template:
+The eighteen saved references are the visual-density and information-behaviour proxy for the
+management game. They represent desktop-style Football Manager composition adapted for landscape
+iPhone, closest in intent to **Football Manager Touch**, not the simplified Football Manager Mobile
+product. Copy proportions, rhythm and hierarchy; do not copy protected assets or identities.
 
 - a player report is organised around a person, club identity and role;
 - a calendar becomes the screen when time is the task;
@@ -33,9 +36,10 @@ The eighteen saved references are evidence about information behaviour, not a vi
 - mobile recent-form becomes one chronological story rather than a desktop dashboard;
 - live football gives the field the frame, with the score and current cause attached to it.
 
-The references also show what **not** to inherit: generic portal tiles, equal-weight card grids,
-bookmark managers, menu depth, tiny desktop type, unexplained data density, soccer-specific
-terminology, colours, navigation, assets and trade dress.
+The references also show what **not** to inherit: generic portal tiles, unstructured equal-weight card grids,
+bookmark managers, unexplained data density, soccer-specific terminology, colours, assets and
+trade dress. Their compact type, continuous panes, table rhythm and shallow navigation are positive
+references and should be retained at the 844 × 390 pt floor.
 
 FM feels alive partly because its data already carries real-world emotional meaning. This fictional
 game must manufacture that meaning through continuity, people, place, rivalry, history and visible
@@ -95,7 +99,9 @@ Those patterns may appear where the task earns them; they may not become global 
 - Use editorial story hierarchy for news, appointment, promotion and aftermath.
 - Lead analytical readouts with staff interpretation, then sample, confidence and evidence.
 - Show exact numbers only where the simulation owns exact numbers. Use bands for estimates.
-- Advanced density belongs behind an intentional local route, never in tiny default text.
+- Compact comparison density is the default for management work. Advanced columns and long-form
+  evidence may move behind a local route, but the initial frame must still feel like a complete
+  football workspace rather than a mobile card feed.
 
 ### 4.3 Decisions live beside their cause
 
@@ -113,8 +119,8 @@ A screen fails before scoring if any of these is true:
 
 - it could describe a CRM, analytics SaaS product or project-management tool after nouns are changed;
 - unrelated tasks reuse the same visible chassis;
-- five or more equal-weight rounded cards form the primary composition;
-- pills, badges or coloured side rails substitute for hierarchy;
+- an unstructured grid of equal-weight cards replaces the football task hierarchy;
+- decorative pills, badges or coloured side rails substitute for meaning rather than compress it;
 - generic blue is the only expression of action or selection;
 - internal fixture, prototype or `REFERENCE DATA` copy appears inside the game frame;
 - there is no visible team, opponent, season, person, place, football object or consequence;
@@ -191,29 +197,96 @@ are verified without shrinking working text.
 
 | Role | Default floor | Use |
 |---|---:|---|
-| Display | 22 pt | score, career moment, singular identity |
-| Title | 20 pt | screen or dominant object |
-| Headline | 17 pt semibold | local decision or story |
-| Body | 17 pt | working prose |
-| Callout | 15 pt | evidence and supporting facts |
-| Caption | 12 pt | metadata only |
-| Numeral | 20–32 pt tabular | score, clock, money, rank, rating |
+| Display | 20 pt | score, career moment, singular identity |
+| Title | 17 pt | screen or dominant object |
+| Headline | 15 pt semibold | local decision or story |
+| Body | 12 pt | working prose and comparison rows |
+| Callout | 11–12 pt | evidence and supporting facts |
+| Caption | 10–11 pt | metadata, column labels and dense table cells |
+| Numeral | 10–28 pt tabular | table ratings through score, clock, money and rank |
 
-Authored text never falls below 12 pt. AX5 reflows to a single readable path; it does not scale a
-desktop composition. Diagram marks may remain fixed only when an equivalent accessible sentence is
-present.
+Standard management screens may use 10–12 pt micro-type to reproduce Football Manager Touch
+density. Working prose stays at 12 pt; 10–11 pt is reserved for short labels, ratings, metadata and
+tabular cells. AX5 scales these semantic roles and reflows to one readable path; it does not preserve
+the dense multi-pane composition. Diagram marks may remain fixed only when an equivalent accessible
+sentence is present.
+
+- Numeric columns use tabular figures (`monospacedDigit()` in SwiftUI); prose does not become
+  monospaced merely to look technical.
+- Micro-type uses tight tracking around −0.2 pt where it prevents wrapping without harming
+  recognition.
+- Custom sizes are wrapped in `@ScaledMetric` so the default composition remains dense while
+  accessibility categories can expand and reflow it.
 
 ### 6.3 Shape, spacing and touch
 
 - Base spacing steps: 4, 6, 8, 12, 16, 20.
-- DESK control radius: 8 pt; row radius: 8 pt; surface radius: 10 pt.
+- DESK control radius: 8 pt; free-standing row radius: 8 pt; continuous table row radius: 0;
+  surface radius: 10 pt.
 - Broadcast radius: 0.
-- Minimum interactive target: 44 × 44 pt.
+- Primary actions and irreversible controls remain at least 44 × 44 pt.
+- Dense table rows use explicit 24–28 pt tracks in the default composition. AX5 expands and reflows
+  them rather than forcing micro-type into an accessibility layout.
 - Selected items receive boundary, value and spoken state; never a coloured fill alone.
 - Icons use SF Symbols as one coherent line family. Emoji are prohibited.
 - Repeated utilities may become icon-first: inspect film, delegate, pause, speed and tactical view.
   Their accessible names remain explicit. Destinations and irreversible decisions retain visible text;
   a familiar icon may support that label but never replace its meaning.
+
+### 6.4 High-density SwiftUI component pipeline
+
+The management register deliberately departs from default iOS `List` and `Form` spacing to reach
+Football Manager Touch density.
+
+1. **Micro-typography and tabular numbers**
+   - Ratings and short statistics use 10–12 pt custom system fonts, tight tracking and one-line
+     truncation.
+   - Numeric columns apply `.monospacedDigit()` so values align and do not jitter.
+   - `@ScaledMetric` owns custom sizes; AX5 receives a larger reflow rather than clipped micro-type.
+
+   ```swift
+   Text("\(rating)")
+       .font(.system(size: 11, weight: .bold))
+       .monospacedDigit()
+       .tracking(-0.2)
+       .lineLimit(1)
+   ```
+
+2. **Zero-inset dense containers**
+   - Prefer `ScrollView` with `LazyVStack(spacing: 2)` or `LazyVGrid` over a default padded list.
+   - Dense rows use explicit 24–28 pt heights and minimal 2–4 pt internal padding.
+   - When `List` is required, remove automatic row insets with
+     `.listRowInsets(EdgeInsets())`.
+
+3. **Modular data tiles**
+   - Scouting summaries, roster depth, cap space, coach chemistry and similar bounded readouts may
+     use `LazyVGrid` with `GridItem(.adaptive(minimum: 160))`.
+   - Tiles share a compact header/value/evidence grammar rather than default iOS card spacing.
+   - `ViewThatFits` switches a multi-column landscape composition to stacked tiles on narrower
+     devices or larger accessibility categories.
+
+4. **Heatmaps, rating badges and micro gauges**
+   - Replace repeated prose bands such as Elite/Average/Poor with fixed-size numeric badges when the
+     rating is simulation-owned.
+   - Use red below 70, amber from 70–84 and green from 85 upward as the default visual heat scale;
+     retain the printed number and a spoken band so colour is not the sole meaning.
+   - Thin progress bars or compact gauges may represent stamina, roster fit, development progress,
+     portal interest or scouting confidence.
+
+   ```swift
+   Text("\(value)")
+       .font(.system(size: 10, weight: .bold, design: .monospaced))
+       .frame(width: 20, height: 16)
+       .background(ratingColour.opacity(0.85))
+       .clipShape(RoundedRectangle(cornerRadius: 3))
+   ```
+
+5. **Context-preserving inspection**
+   - Player, prospect, contract and play-call previews open in a `Popover` or detented sheet rather
+     than replacing the management screen.
+   - Use `.presentationDetents([.fraction(0.35), .medium])` for short inspection flows.
+   - Selection, drafts, clocks and save boundaries remain in the game model so dismissing an
+     overlay restores the exact prior context.
 
 ## 7. Device and accessibility contract
 

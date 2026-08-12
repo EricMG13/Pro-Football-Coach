@@ -400,64 +400,167 @@ public enum IntentResolver {
                         contract: contract,
                         in: state
                     )
+                case let .moveToPracticeSquad(playerID, teamID):
+                    guard teamID == job.organisationID else {
+                        throw ProMarketError.missingTeam
+                    }
+                    nextState = try ProMarketSystem.moveToPracticeSquad(
+                        playerID: playerID,
+                        teamID: teamID,
+                        in: state
+                    )
+                case let .promoteFromPracticeSquad(playerID, teamID):
+                    guard teamID == job.organisationID else {
+                        throw ProMarketError.missingTeam
+                    }
+                    nextState = try ProMarketSystem.promoteFromPracticeSquad(
+                        playerID: playerID,
+                        teamID: teamID,
+                        in: state
+                    )
+                case let .trade(sourcePlayerID, sourceTeamID, destinationPlayerID, destinationTeamID):
+                    guard sourceTeamID == job.organisationID || destinationTeamID == job.organisationID else {
+                        throw ProMarketError.missingTeam
+                    }
+                    nextState = try ProMarketSystem.trade(
+                        sourcePlayerID: sourcePlayerID,
+                        sourceTeamID: sourceTeamID,
+                        destinationPlayerID: destinationPlayerID,
+                        destinationTeamID: destinationTeamID,
+                        in: state
+                    )
+                case let .placeOnWaivers(playerID, teamID):
+                    guard teamID == job.organisationID else {
+                        throw ProMarketError.missingTeam
+                    }
+                    nextState = try ProMarketSystem.placeOnWaivers(
+                        playerID: playerID,
+                        teamID: teamID,
+                        at: request.calendar,
+                        in: state
+                    )
+                case let .claimWaiver(playerID, teamID):
+                    guard teamID == job.organisationID else {
+                        throw ProMarketError.missingTeam
+                    }
+                    nextState = try ProMarketSystem.claimWaiver(
+                        playerID: playerID,
+                        teamID: teamID,
+                        at: request.calendar,
+                        in: state
+                    )
+                case .resolveExpiredWaivers:
+                    nextState = try ProMarketSystem.resolveExpiredWaivers(
+                        at: request.calendar,
+                        in: state
+                    )
                 case .close:
                     nextState = try ProMarketSystem.close(in: state)
                 }
             } catch let error as ProMarketError {
                 throw IntentResolutionError.professionalMarketActionFailed(error)
             }
-            let payload: DomainEventPayload
+            let payloads: [DomainEventPayload]
             switch request.action {
             case .openOffseason:
-                payload = .proMarketOpened(
+                payloads = [.proMarketOpened(
                     season: nextState.proMarket.season,
                     draftClassCount: nextState.proMarket.draftClass.count,
                     freeAgentCount: nextState.proMarket.freeAgentIDs.count
-                )
+                )]
             case let .scout(teamID, prospectID):
                 let confidence = nextState.proMarket.observations.first {
                     $0.teamID == teamID && $0.prospectID == prospectID
                 }?.confidence ?? 0
-                payload = .proDraftScouted(
+                payloads = [.proDraftScouted(
                     teamID: teamID,
                     prospectID: prospectID,
                     confidence: confidence
-                )
-            case let .signFreeAgent(playerID, teamID, contract):
-                payload = .proPlayerSigned(
+                )]
+            case let .signFreeAgent(playerID, teamID, _):
+                guard let committedContract = nextState.players[playerID]?.contract else {
+                    throw IntentResolutionError.eventAppendFailed
+                }
+                payloads = [.proPlayerSigned(
                     playerID: playerID,
                     teamID: teamID,
                     kind: .freeAgency,
-                    contract: contract
-                )
+                    contract: committedContract
+                )]
             case let .draft(prospectID, teamID, contract):
-                let resolvedContract = contract
-                    ?? nextState.players[prospectID]?.contract
-                    ?? ProMarketSystem.rookieContract(
-                        for: nextState.proMarket.draftClass.first { $0.id == prospectID }!.player
-                    )
-                payload = .proDraftPick(
+                let draftContract = nextState.proMarket.draftClass
+                    .first(where: { $0.id == prospectID })
+                    .map { ProMarketSystem.rookieContract(for: $0.player) }
+                guard (contract
+                        ?? nextState.players[prospectID]?.contract
+                        ?? draftContract) != nil else {
+                    throw IntentResolutionError.eventAppendFailed
+                }
+                guard let committedContract = nextState.players[prospectID]?.contract else {
+                    throw IntentResolutionError.eventAppendFailed
+                }
+                payloads = [.proDraftPick(
                     prospectID: prospectID,
                     teamID: teamID,
                     pick: state.proMarket.nextPick,
-                    contract: resolvedContract
-                )
+                    contract: committedContract
+                )]
             case .beginDraft:
-                payload = .proDraftStarted(season: nextState.proMarket.season)
+                payloads = [.proDraftStarted(season: nextState.proMarket.season)]
+            case let .moveToPracticeSquad(playerID, teamID):
+                payloads = [.proPracticeSquadMoved(playerID: playerID, teamID: teamID, promoted: false)]
+            case let .promoteFromPracticeSquad(playerID, teamID):
+                payloads = [.proPracticeSquadMoved(playerID: playerID, teamID: teamID, promoted: true)]
+            case let .trade(sourcePlayerID, sourceTeamID, destinationPlayerID, destinationTeamID):
+                payloads = [.proTradeCompleted(
+                    sourcePlayerID: sourcePlayerID,
+                    sourceTeamID: sourceTeamID,
+                    destinationPlayerID: destinationPlayerID,
+                    destinationTeamID: destinationTeamID
+                )]
+            case let .placeOnWaivers(playerID, teamID):
+                guard let entry = nextState.proMarket.waivers.first(where: { $0.playerID == playerID }) else {
+                    throw IntentResolutionError.eventAppendFailed
+                }
+                payloads = [.proWaiverPlaced(
+                    playerID: playerID,
+                    teamID: teamID,
+                    claimDeadline: entry.claimDeadline
+                )]
+            case let .claimWaiver(playerID, teamID):
+                guard let sourceTeamID = state.proMarket.waivers.first(where: { $0.playerID == playerID })?.sourceTeamID else {
+                    throw IntentResolutionError.eventAppendFailed
+                }
+                payloads = [.proWaiverClaimed(
+                    playerID: playerID,
+                    sourceTeamID: sourceTeamID,
+                    destinationTeamID: teamID
+                )]
+            case .resolveExpiredWaivers:
+                let count = state.proMarket.waivers.filter {
+                    $0.claimDeadline.season < request.calendar.season
+                        || ($0.claimDeadline.season == request.calendar.season
+                            && $0.claimDeadline.week < request.calendar.week)
+                }.count
+                payloads = [.proWaiversResolved(count: count)]
             case .close:
-                payload = .proMarketClosed(season: state.proMarket.season)
+                payloads = [.proMarketClosed(season: state.proMarket.season)]
             }
-            let event = DomainEvent(
-                id: DomainEvent.deterministicID(
-                    rootSeed: nextState.league.seed,
-                    sequence: nextState.history.nextSequence
-                ),
-                sequence: nextState.history.nextSequence,
-                occurredAt: request.calendar,
-                payload: payload
-            )
-            guard nextState.history.append(event) else {
-                throw IntentResolutionError.eventAppendFailed
+            var emittedEvents: [DomainEvent] = []
+            for payload in payloads {
+                let event = DomainEvent(
+                    id: DomainEvent.deterministicID(
+                        rootSeed: nextState.league.seed,
+                        sequence: nextState.history.nextSequence
+                    ),
+                    sequence: nextState.history.nextSequence,
+                    occurredAt: request.calendar,
+                    payload: payload
+                )
+                guard nextState.history.append(event) else {
+                    throw IntentResolutionError.eventAppendFailed
+                }
+                emittedEvents.append(event)
             }
             let integrity = WorldIntegrity.check(nextState)
             guard integrity.isValid else {
@@ -468,7 +571,7 @@ public enum IntentResolver {
                 result: .proMarketUpdated(ProMarketIntentResult(
                     calendar: request.calendar,
                     action: request.action,
-                    emittedEvents: [event]
+                    emittedEvents: emittedEvents
                 ))
             )
         }

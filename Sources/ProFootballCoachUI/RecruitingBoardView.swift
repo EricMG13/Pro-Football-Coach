@@ -52,7 +52,7 @@ public struct RecruitingBoardView: View {
     }
 
     private var worldStrip: some View {
-        HStack(spacing: CoachWorldTokens.Space.sm) {
+        HStack(spacing: CoachWorldTokens.Space.xs) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                 Text(model.team.name.uppercased())
                     .font(CoachWorldTokens.TypeRole.headline.weight(.black))
@@ -85,7 +85,7 @@ public struct RecruitingBoardView: View {
             }
                 .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
         }
-        .padding(.horizontal, CoachWorldTokens.Space.md)
+        .padding(.horizontal, CoachWorldTokens.Space.sm)
         .frame(height: RecruitingMetric.worldStripHeight)
         .background(palette.raised.color)
         .overlay(alignment: .bottom) { seam }
@@ -99,7 +99,6 @@ public struct RecruitingBoardView: View {
     ) -> some View {
         CoachWorldRouteButton(
             title: title,
-            screen: screen,
             isCurrent: current,
             palette: palette,
             action: { onNavigate(screen) }
@@ -174,7 +173,7 @@ public struct RecruitingBoardView: View {
     }
 
     private var boardSurface: some View {
-        VStack(spacing: CoachWorldTokens.Space.xxs) {
+        VStack(spacing: .zero) {
             boardHeader
             capacityStrip
             if model.prospects.isEmpty {
@@ -214,7 +213,7 @@ public struct RecruitingBoardView: View {
                 }
             }
         }
-        .padding(.horizontal, CoachWorldTokens.Space.md)
+        .padding(.horizontal, CoachWorldTokens.Space.sm)
         .frame(minHeight: RecruitingMetric.boardHeaderHeight)
         .overlay(alignment: .bottom) { seam }
         .accessibilityElement(children: .combine)
@@ -222,15 +221,17 @@ public struct RecruitingBoardView: View {
 
     private var boardTitle: some View {
         Text("RECRUITING BOARD")
-            .font(CoachWorldTokens.TypeRole.title.weight(.black))
+            .font(CoachWorldTokens.TypeRole.headline.weight(.black))
+            .lineLimit(1)
+            .minimumScaleFactor(0.9)
     }
 
     private var sampleCareerFlag: some View {
         Text("SAMPLE CAREER")
             .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
             .foregroundStyle(palette.page.color)
-            .padding(.horizontal, CoachWorldTokens.Space.sm)
-            .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+            .padding(.horizontal, CoachWorldTokens.Space.xs)
+            .frame(minHeight: RecruitingMetric.fixtureFlagHeight)
             .background(
                 RecruitingCollegeCutShape(cut: RecruitingMetric.collegeCut)
                     .fill(palette.collegeIdentity.color)
@@ -290,8 +291,8 @@ public struct RecruitingBoardView: View {
                 .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
                 .foregroundStyle(palette.contentSecondary.color)
         }
-        .padding(.horizontal, CoachWorldTokens.Space.sm)
-        .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
+        .padding(.horizontal, CoachWorldTokens.Space.xs)
+        .frame(maxWidth: .infinity, minHeight: RecruitingMetric.capacityHeight)
         .overlay(alignment: .trailing) { verticalSeam }
         .accessibilityElement(children: .combine)
     }
@@ -310,8 +311,8 @@ public struct RecruitingBoardView: View {
                 .font(CoachWorldTokens.TypeRole.caption)
                 .foregroundStyle(palette.contentSecondary.color)
         }
-        .padding(.horizontal, CoachWorldTokens.Space.sm)
-        .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
+        .padding(.horizontal, CoachWorldTokens.Space.xs)
+        .frame(maxWidth: .infinity, minHeight: RecruitingMetric.capacityHeight)
         .overlay(alignment: .trailing) { verticalSeam }
         .accessibilityElement(children: .combine)
     }
@@ -326,7 +327,7 @@ public struct RecruitingBoardView: View {
                 tableHeader("STATUS", width: RecruitingMetric.statusWidth)
                 tableHeader("FIT", width: RecruitingMetric.fitWidth)
             }
-            .padding(.horizontal, CoachWorldTokens.Space.sm)
+            .padding(.horizontal, CoachWorldTokens.Space.xs)
             .frame(minHeight: RecruitingMetric.tableHeaderHeight)
             .background(palette.page.color)
             .overlay(alignment: .bottom) { seam }
@@ -376,7 +377,7 @@ public struct RecruitingBoardView: View {
                 rowValue(prospect.status, width: RecruitingMetric.statusWidth)
                 rowValue(prospect.evaluation.schemeFit, width: RecruitingMetric.fitWidth)
             }
-            .padding(.horizontal, CoachWorldTokens.Space.sm)
+            .padding(.horizontal, CoachWorldTokens.Space.xs)
             .frame(minHeight: RecruitingMetric.rowHeight)
             .contentShape(Rectangle())
             .background(
@@ -390,19 +391,9 @@ public struct RecruitingBoardView: View {
                         .frame(width: RecruitingMetric.selectedRuleWidth)
                 }
             }
-            .overlay {
-                RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.rowRadius)
-                    .stroke(
-                        prospect.stableID == selectedProspect?.stableID
-                            ? palette.collegeIdentity.color
-                            : palette.contentQuiet.color.opacity(0.38),
-                        lineWidth: CoachWorldTokens.Shape.hairline
-                    )
-            }
-            .clipShape(RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.rowRadius))
+            .overlay(alignment: .bottom) { seam }
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, CoachWorldTokens.Space.xxs)
         .accessibilityLabel(prospectAccessibilityLabel(prospect))
         .accessibilityAddTraits(
             prospect.stableID == selectedProspect?.stableID ? .isSelected : []
@@ -645,10 +636,9 @@ public struct RecruitingBoardView: View {
     }
 
     private var worldContextLine: String {
-        let sample = model.provenance == .sample ? "Sample career · " : ""
-        return sample
-            + "\(model.capacity.scholarshipSlotsRemaining) scholarships · "
-            + "\(model.capacity.weeklyHoursRemaining) recruiting hours"
+        "\(model.capacity.scholarshipSlotsRemaining) scholarships · "
+            + "\(model.capacity.weeklyHoursRemaining)h · "
+            + "\(model.capacity.officialVisitsRemaining) visits"
     }
 
     private var positionPlanLine: String {
@@ -695,19 +685,20 @@ private struct RecruitingCollegeCutShape: Shape {
 }
 
 private enum RecruitingMetric {
-    static let worldStripHeight: CGFloat = 56
-    static let dossierWidth: CGFloat = 318
-    static let boardHeaderHeight: CGFloat = 44
-    static let capacityHeight: CGFloat = 44
-    static let tableHeaderHeight: CGFloat = 24
+    static let worldStripHeight: CGFloat = 48
+    static let dossierWidth: CGFloat = 326
+    static let boardHeaderHeight: CGFloat = 36
+    static let capacityHeight: CGFloat = 36
+    static let tableHeaderHeight: CGFloat = 22
     static let rowHeight: CGFloat = 44
     static let rankWidth: CGFloat = 24
     static let positionWidth: CGFloat = 34
     static let interestWidth: CGFloat = 54
     static let statusWidth: CGFloat = 84
     static let fitWidth: CGFloat = 56
-    static let photoWidth: CGFloat = 52
-    static let photoHeight: CGFloat = 64
+    static let photoWidth: CGFloat = 44
+    static let photoHeight: CGFloat = 52
+    static let fixtureFlagHeight: CGFloat = 28
     static let collegeCut: CGFloat = 8
     static let selectedRuleWidth: CGFloat = 3
 }

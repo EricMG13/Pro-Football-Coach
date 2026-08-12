@@ -1,5 +1,10 @@
 # 01 — Research: the evidence base
 
+> **Visual-reference boundary (owner correction, 2026-08-12):** §6.1 studies Football Manager
+> Mobile as market evidence; it is not the UI target. Management UI follows the owner-supplied
+> desktop Football Manager captures and the Football Manager Touch interpretation locked in
+> `docs/04-UX-AND-DESIGN-SYSTEM.md`.
+
 **What this document is.** The single evidence base for the ground-up rebuild specified in
 `docs/reviews/2026-08-09-spec-prompt-v4.md`. It is Deliverable 1 of that brief. `02-GAME-DESIGN.md`,
 `03-MATCH-ENGINE.md`, `03b-ARCHITECTURE.md`, `04-UX-AND-DESIGN-SYSTEM.md`, `PRODUCT.md` and

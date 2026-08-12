@@ -429,6 +429,7 @@ public enum WorldIntegrity {
             .union(state.rivalries.ids)
             .union(state.competition.currentSchedule.games.map(\.id))
             .union(state.proMarket.draftClass.map(\.id))
+            .union(state.proMarket.archivedDraftProspectIDs)
         var redshirtResolutionSeasonsByPlayer: [UUID: Set<Int>] = [:]
         for event in state.history.recent {
             for entityID in event.payload.referencedEntityIDs where !allEntityIDs.contains(entityID) {
@@ -1791,6 +1792,17 @@ public enum WorldIntegrity {
                     state.players[$0]?.contract != nil
                 }
             guard hasCapData else { continue }
+            let contractsHavePlausibleTerms = (team.rosterIDs + team.practiceSquadIDs).allSatisfy { playerID in
+                guard let contract = state.players[playerID]?.contract,
+                      let signedSeason = contract.signedSeason else { return true }
+                return signedSeason >= 0
+                    && signedSeason <= state.calendar.season + 1
+                    && state.calendar.season < signedSeason + contract.years
+            }
+            guard contractsHavePlausibleTerms else {
+                issues.append(.invalidProfessionalCap(teamID: team.id))
+                continue
+            }
             do {
                 let cap = try ProManagementSystem.capSnapshot(teamID: team.id, in: state)
                 if !cap.isWithinCap {
@@ -1818,6 +1830,7 @@ public enum WorldIntegrity {
         let proTeamIDs = Set(state.proTeams.ids)
         let draftIDs = market.draftClass.map(\.id)
         let draftIDSet = Set(draftIDs)
+        let archivedDraftIDSet = Set(market.archivedDraftProspectIDs)
         let ownedIDs = Set(state.programmes.values.flatMap(\.rosterIDs))
             .union(state.proTeams.values.flatMap { $0.rosterIDs + $0.practiceSquadIDs })
         let draftOrderIsValid = market.phase == .closed
@@ -1828,6 +1841,7 @@ public enum WorldIntegrity {
             ? market.draftClass.isEmpty
             : market.draftClass.count == ProRules.draftPickCount
                 && draftIDSet.count == draftIDs.count
+                && draftIDSet.isDisjoint(with: archivedDraftIDSet)
                 && market.draftClass.allSatisfy {
                     let prospectID = $0.id
                     let drafted = market.draftedProspectIDs.contains(prospectID)
@@ -1858,12 +1872,29 @@ public enum WorldIntegrity {
                     && proTeamIDs.contains(observation.teamID)
                     && draftIDSet.contains(observation.prospectID)
             }
+        let waiversAreValid = market.waivers.count <= ProMarketState.maximumWaivers
+            && Set(market.waivers.map(\.id)).count == market.waivers.count
+            && Set(market.waivers.map(\.playerID)).count == market.waivers.count
+            && market.waivers.allSatisfy { waiver in
+                guard let source = state.proTeams[waiver.sourceTeamID],
+                      let player = state.players[waiver.playerID] else { return false }
+                let sourceOwnsPlayer = source.rosterIDs.contains(waiver.playerID)
+                    || source.practiceSquadIDs.contains(waiver.playerID)
+                let openedSeasonIsPlausible = waiver.openedAt.season >= max(0, state.calendar.season - 1)
+                    && waiver.openedAt.season <= state.calendar.season + 1
+                return sourceOwnsPlayer
+                    && player.eligibility == nil
+                    && player.contract != nil
+                    && !market.freeAgentIDs.contains(waiver.playerID)
+                    && !draftIDSet.contains(waiver.playerID)
+                    && waiver.claimDeadline == waiver.openedAt.advancedWeek()
+                    && openedSeasonIsPlausible
+            }
         let phaseShapeIsValid: Bool
         switch market.phase {
         case .closed:
             phaseShapeIsValid = market.nextPick == 0
                 && market.draftedProspectIDs.isEmpty
-                && market.freeAgentIDs.isEmpty
                 && market.observations.isEmpty
         case .freeAgency:
             phaseShapeIsValid = market.nextPick == 0
@@ -1882,6 +1913,7 @@ public enum WorldIntegrity {
               draftClassIsValid,
               freeAgentsAreValid,
               observationsAreValid,
+              waiversAreValid,
               phaseShapeIsValid else {
             issues.append(.invalidProfessionalMarket)
             return

@@ -20,15 +20,21 @@ public enum CoachWorldTokens {
     }
 
     public enum TypeRole {
-        public static let display = Font.title2.weight(.heavy).width(.condensed)
-        public static let title = Font.title3.weight(.heavy).width(.condensed)
-        public static let headline = Font.headline.weight(.semibold).width(.condensed)
-        public static let body = Font.body
-        public static let callout = Font.callout
-        public static let caption = Font.caption
+        public static let display = Font.system(
+            .title3, design: .default, weight: .heavy
+        ).width(.condensed)
+        public static let title = Font.system(
+            .headline, design: .default, weight: .heavy
+        ).width(.condensed)
+        public static let headline = Font.system(
+            .subheadline, design: .default, weight: .semibold
+        ).width(.condensed)
+        public static let body = Font.system(.footnote, design: .default)
+        public static let callout = Font.system(.footnote, design: .default)
+        public static let caption = Font.system(.caption, design: .default)
 
         public static let authoredFloor: CGFloat = 12
-        public static let workingProse: CGFloat = 17
+        public static let workingProse: CGFloat = 13
     }
 
     public struct ColorValue: Sendable, Equatable {

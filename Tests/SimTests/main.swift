@@ -17,6 +17,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runProManagementTests()
 } else if CommandLine.arguments.contains("--pro-market") {
     runProMarketTests()
+} else if CommandLine.arguments.contains("--history-read-model") {
+    runHistoryReadModelTests()
 } else if CommandLine.arguments.contains("--career-portal-decisions") {
     runCareerPortalDecisionTests()
 } else if CommandLine.arguments.contains("--tactical-management") {
@@ -88,6 +90,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runCareerArcTests()
     runProManagementTests()
     runProMarketTests()
+    runHistoryReadModelTests()
     runCareerPortalDecisionTests()
     runTacticalManagementTests()
     runTacticalStateTests()

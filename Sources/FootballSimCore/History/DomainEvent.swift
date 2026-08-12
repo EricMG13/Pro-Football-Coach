@@ -142,12 +142,24 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
         kind: ProAcquisitionKind,
         contract: Contract
     )
+    case proContractExpired(playerID: UUID)
     case proDraftPick(
         prospectID: UUID,
         teamID: UUID,
         pick: Int,
         contract: Contract
     )
+    case proPracticeSquadMoved(playerID: UUID, teamID: UUID, promoted: Bool)
+    case proTradeCompleted(
+        sourcePlayerID: UUID,
+        sourceTeamID: UUID,
+        destinationPlayerID: UUID,
+        destinationTeamID: UUID
+    )
+    case proWaiverPlaced(playerID: UUID, teamID: UUID, claimDeadline: CalendarState)
+    case proWaiverClaimed(playerID: UUID, sourceTeamID: UUID, destinationTeamID: UUID)
+    case proWaiverExpired(playerID: UUID, teamID: UUID)
+    case proWaiversResolved(count: Int)
     case proMarketClosed(season: Int)
 
     public var referencedEntityIDs: [UUID] {
@@ -204,8 +216,20 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
             return [teamID, prospectID]
         case let .proPlayerSigned(playerID, teamID, _, _):
             return [playerID, teamID]
+        case let .proContractExpired(playerID):
+            return [playerID]
         case let .proDraftPick(prospectID, teamID, _, _):
             return [prospectID, teamID]
+        case let .proPracticeSquadMoved(playerID, teamID, _):
+            return [playerID, teamID]
+        case let .proTradeCompleted(sourcePlayerID, sourceTeamID, destinationPlayerID, destinationTeamID):
+            return [sourcePlayerID, sourceTeamID, destinationPlayerID, destinationTeamID]
+        case let .proWaiverPlaced(playerID, teamID, _):
+            return [playerID, teamID]
+        case let .proWaiverClaimed(playerID, sourceTeamID, destinationTeamID):
+            return [playerID, sourceTeamID, destinationTeamID]
+        case let .proWaiverExpired(playerID, teamID):
+            return [playerID, teamID]
         default:
             return []
         }

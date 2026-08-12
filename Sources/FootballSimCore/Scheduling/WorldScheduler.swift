@@ -93,6 +93,27 @@ public enum WorldScheduler {
         for step in steps {
             switch step {
             case .marketInteractions:
+                let expiredWaivers = nextState.proMarket.waivers.filter {
+                    $0.claimDeadline.season < completed.season
+                        || ($0.claimDeadline.season == completed.season
+                            && $0.claimDeadline.week < completed.week)
+                }
+                if !expiredWaivers.isEmpty {
+                    do {
+                        nextState = try ProMarketSystem.resolveExpiredWaivers(
+                            at: completed,
+                            in: nextState
+                        )
+                    } catch let error as ProMarketError {
+                        throw WorldSchedulerError.professionalMarketFailed(error)
+                    }
+                    try appendEvents(
+                        payloads: [.proWaiversResolved(count: expiredWaivers.count)],
+                        occurredAt: completed,
+                        to: &nextState,
+                        emittedEvents: &events
+                    )
+                }
                 if nextState.college.portal.phase == .awaitingSpring {
                     try resolveAndCommitPortal(
                         window: .spring,
@@ -162,6 +183,21 @@ public enum WorldScheduler {
                     to: &nextState,
                     emittedEvents: &events
                 )
+                do {
+                    let professional = try ProRosterAISystem.process(
+                        at: completed,
+                        in: nextState
+                    )
+                    nextState = professional.state
+                    try appendEvents(
+                        payloads: professional.eventPayloads,
+                        occurredAt: completed,
+                        to: &nextState,
+                        emittedEvents: &events
+                    )
+                } catch let error as ProMarketError {
+                    throw WorldSchedulerError.professionalMarketFailed(error)
+                }
                 records.append(WorldStepRecord(step: step, status: .executed))
 
             case .injuriesAndRecovery:
@@ -302,8 +338,67 @@ public enum WorldScheduler {
                 )
                 records.append(WorldStepRecord(step: step, status: .executed))
 
+            case .relationshipsAndStakeholders:
+                let rivalries = RivalrySystem.process(after: completed, in: nextState)
+                nextState.rivalries = rivalries.rivalries
+                records.append(WorldStepRecord(step: step, status: .executed))
+
             case .jobAndStaffMarkets:
                 if completed.week == SharedRules.inSeasonWeeks {
+                    let expiredWaivers = nextState.proMarket.waivers.filter {
+                        $0.claimDeadline.season < completed.season
+                            || ($0.claimDeadline.season == completed.season
+                                && $0.claimDeadline.week < completed.week)
+                    }
+                    if !expiredWaivers.isEmpty {
+                        do {
+                            nextState = try ProMarketSystem.resolveExpiredWaivers(
+                                at: completed,
+                                in: nextState
+                            )
+                        } catch let error as ProMarketError {
+                            throw WorldSchedulerError.professionalMarketFailed(error)
+                        }
+                        try appendEvents(
+                            payloads: [.proWaiversResolved(count: expiredWaivers.count)],
+                            occurredAt: completed,
+                            to: &nextState,
+                            emittedEvents: &events
+                        )
+                    }
+                    do {
+                        let expiry = try ProMarketSystem.expireContracts(
+                            at: completed,
+                            in: nextState
+                        )
+                        nextState = expiry.state
+                        try appendEvents(
+                            payloads: expiry.expiredPlayerIDs.map {
+                                .proContractExpired(playerID: $0)
+                            },
+                            occurredAt: completed,
+                            to: &nextState,
+                            emittedEvents: &events
+                        )
+                    } catch let error as ProMarketError {
+                        throw WorldSchedulerError.professionalMarketFailed(error)
+                    }
+                    if nextState.proMarket.phase != .closed {
+                        let closedSeason = nextState.proMarket.season
+                        do {
+                            nextState = try ProMarketSystem.close(in: nextState)
+                        } catch let error as ProMarketError {
+                            throw WorldSchedulerError.professionalMarketFailed(error)
+                        } catch {
+                            throw WorldSchedulerError.professionalMarketFailed(.invalidRoot)
+                        }
+                        try appendEvents(
+                            payloads: [.proMarketClosed(season: closedSeason)],
+                            occurredAt: completed,
+                            to: &nextState,
+                            emittedEvents: &events
+                        )
+                    }
                     // Resolve work performed after the ordinary pre-AI market before signing.
                     // Appending immediately keeps commitment history causally ahead of the
                     // resolution and join events emitted by the college cycle below.
@@ -391,22 +486,6 @@ public enum WorldScheduler {
                         to: &nextState,
                         emittedEvents: &events
                     )
-                    if nextState.proMarket.phase != .closed {
-                        let closedSeason = nextState.proMarket.season
-                        do {
-                            nextState = try ProMarketSystem.close(in: nextState)
-                        } catch let error as ProMarketError {
-                            throw WorldSchedulerError.professionalMarketFailed(error)
-                        } catch {
-                            throw WorldSchedulerError.professionalMarketFailed(.invalidRoot)
-                        }
-                        try appendEvents(
-                            payloads: [.proMarketClosed(season: closedSeason)],
-                            occurredAt: completed,
-                            to: &nextState,
-                            emittedEvents: &events
-                        )
-                    }
                     do {
                         nextState = try ProMarketSystem.openOffseason(in: nextState)
                     } catch let error as ProMarketError {

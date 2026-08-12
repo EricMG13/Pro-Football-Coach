@@ -17,6 +17,10 @@ public struct Contract: Codable, Sendable, Equatable {
     /// Paid up front, charged against the cap over `prorationYears`.
     public let signingBonus: Int
 
+    /// The football season in which this deal begins. Legacy contracts may omit it; those deals
+    /// keep the historical year-zero cap behavior and are not auto-expired from guessed dates.
+    public let signedSeason: Int?
+
     /// `years` and the salary array are reconciled rather than trusted to agree — a save that
     /// disagreed with itself would otherwise trap on load. A short array is padded with zero, a
     /// long one is truncated.
@@ -31,7 +35,12 @@ public struct Contract: Codable, Sendable, Equatable {
     /// - `years: 0` with a bonus produced a bonus no year ever charges, so `capHit` was zero
     ///   forever while `deadMoney` reported the full amount at every release point. A contract of
     ///   no years carries no bonus (`02` section 11.2).
-    public init(years: Int, baseSalaryByYear: [Int], signingBonus: Int) {
+    public init(
+        years: Int,
+        baseSalaryByYear: [Int],
+        signingBonus: Int,
+        signedSeason: Int? = nil
+    ) {
         let length = years <= 0
             ? 0
             : Swift.min(years, ProRules.contractYearsRange.upperBound)
@@ -40,14 +49,24 @@ public struct Contract: Codable, Sendable, Equatable {
         self.years = length
         self.baseSalaryByYear = salaries
         self.signingBonus = length == 0 ? 0 : Swift.max(0, signingBonus)
+        self.signedSeason = signedSeason.flatMap { $0 >= 0 ? $0 : nil }
     }
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let signedSeason = try container.decodeIfPresent(Int.self, forKey: .signedSeason)
+        guard signedSeason.map({ $0 >= 0 }) ?? true else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .signedSeason,
+                in: container,
+                debugDescription: "A contract start season cannot be negative."
+            )
+        }
         self.init(
             years: try container.decode(Int.self, forKey: .years),
             baseSalaryByYear: try container.decode([Int].self, forKey: .baseSalaryByYear),
-            signingBonus: try container.decode(Int.self, forKey: .signingBonus)
+            signingBonus: try container.decode(Int.self, forKey: .signingBonus),
+            signedSeason: signedSeason
         )
     }
 
@@ -78,6 +97,17 @@ public struct Contract: Codable, Sendable, Equatable {
         return baseSalaryByYear[year] + bonusProration(inYear: year)
     }
 
+    /// The contract year charged during a calendar season. Unsourced legacy contracts retain
+    /// year zero; a future start is also charged at year zero until it begins.
+    public func year(atSeason season: Int) -> Int {
+        guard let signedSeason else { return 0 }
+        return Swift.max(0, season - signedSeason)
+    }
+
+    public func capHit(atSeason season: Int) -> Int {
+        capHit(inYear: year(atSeason: season))
+    }
+
     /// Every bonus dollar not yet charged, accelerated into the year of release.
     ///
     /// `charged(before: n) + deadMoney(ifReleasedBeforeYear: n) == signingBonus`, for every `n`. The
@@ -86,6 +116,19 @@ public struct Contract: Codable, Sendable, Equatable {
     public func deadMoney(ifReleasedBeforeYear year: Int) -> Int {
         let alreadyCharged = (0..<Swift.max(0, year)).reduce(0) { $0 + bonusProration(inYear: $1) }
         return signingBonus - alreadyCharged
+    }
+
+    public func deadMoney(ifReleasedAtSeason season: Int) -> Int {
+        deadMoney(ifReleasedBeforeYear: year(atSeason: season))
+    }
+
+    public func withSignedSeason(_ season: Int) -> Contract {
+        Contract(
+            years: years,
+            baseSalaryByYear: baseSalaryByYear,
+            signingBonus: signingBonus,
+            signedSeason: season
+        )
     }
 
     /// Every base dollar plus the bonus. What the deal is worth to the player.

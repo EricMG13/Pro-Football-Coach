@@ -6,8 +6,8 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
     var value: Int
 }
 
-private let pinnedRootFingerprint: UInt64 = 10_300_092_988_346_632_263
-private let pinnedAdvancedRootFingerprint: UInt64 = 582_169_093_708_097_543
+private let pinnedRootFingerprint: UInt64 = 11_551_884_399_080_000_570
+private let pinnedAdvancedRootFingerprint: UInt64 = 6_207_118_505_168_178_532
 
 private func architectureFingerprint<T: Encodable>(_ value: T) throws -> UInt64 {
     let bytes = try SaveEnvelope.encode(value)
@@ -251,6 +251,7 @@ func runArchitectureTests() {
                     .nonUserGames,
                     .standingsAndRankings,
                     .statisticsAndRecords,
+                    .relationshipsAndStakeholders,
                     .jobAndStaffMarkets,
                     .saveGrowthAndIntegrity,
                     .weekSnapshot,
@@ -258,7 +259,7 @@ func runArchitectureTests() {
             )
             expectEqual(
                 transition.stepRecords.filter { $0.status == .inactive }.count,
-                WorldScheduler.steps.count - 11
+                WorldScheduler.steps.count - 12
             )
         }
 

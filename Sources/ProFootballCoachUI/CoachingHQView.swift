@@ -134,7 +134,6 @@ public struct CoachingHQView: View {
     private func route(_ title: String, screen: CoachWorldScreenID, current: Bool = false) -> some View {
         CoachWorldRouteButton(
             title: title,
-            screen: screen,
             isCurrent: current,
             palette: palette,
             action: { onNavigate(screen) }
