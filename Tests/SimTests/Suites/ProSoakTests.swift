@@ -166,3 +166,43 @@ private func proEventName(_ payload: DomainEventPayload) -> String? {
     default: return nil
     }
 }
+
+/// A fast probe for why the draft makes no picks, without advancing seasons.
+///
+/// The soak takes twelve minutes to say "no picks were made". This reaches the same state directly
+/// and reports the thrown reason, which the AI driver deliberately swallows so one refused pick
+/// cannot spin the loop forever.
+func runProDraftProbeTests() {
+    suite("Professional draft probe") {
+        test("the first draft pick of a bootstrapped world reports why it fails") {
+            var state = GameState.bootstrap(seed: 96_003)
+            state = try ProMarketSystem.openOffseason(in: state)
+            state = try ProMarketSystem.beginDraft(in: state)
+
+            expectEqual(state.proMarket.phase, .draft)
+            expect(!state.proMarket.draftClass.isEmpty, "the draft class is empty")
+
+            guard let teamID = state.proMarket.currentPickTeamID else {
+                expect(false, "no team is on the clock immediately after the draft begins")
+                return
+            }
+            guard let prospect = state.proMarket.draftClass.first else { return }
+            let team = state.proTeams[teamID]
+            let cap = try ProManagementSystem.capSnapshot(teamID: teamID, in: state)
+
+            do {
+                _ = try ProMarketSystem.draft(prospectID: prospect.id, for: teamID, in: state)
+                print("Pro draft probe: first pick succeeded")
+            } catch {
+                print("""
+                Pro draft probe: first pick threw \(error) \
+                roster=\(team?.rosterIDs.count ?? -1)/\(ProRules.activeRosterLimit) \
+                practiceSquad=\(team?.practiceSquadIDs.count ?? -1)/\(ProRules.practiceSquadLimit) \
+                committedCap=\(cap.committedCap)/\(cap.capLimit) \
+                draftClass=\(state.proMarket.draftClass.count)
+                """)
+                expect(false, "the first draft pick of a fresh world cannot be made: \(error)")
+            }
+        }
+    }
+}

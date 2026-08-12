@@ -62,6 +62,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runHistoryGateTests()
 } else if CommandLine.arguments.contains("--pro-soak") {
     runProSoakTests()
+} else if CommandLine.arguments.contains("--pro-draft-probe") {
+    runProDraftProbeTests()
 } else if CommandLine.arguments.contains("--legal-only") {
     runLegalTests()
 } else if CommandLine.arguments.contains("--competition-only") {

@@ -462,7 +462,22 @@ draftedFinal=0  freeAgents=0  waivers=0
 The market opens and closes. **Nothing else ever happens** — no draft pick, no signing, no waiver,
 no trade, across 32 teams and two full seasons.
 
-Two causes, both verified by reading the call graph rather than inferred:
+**Diagnosed to root cause, and it is deeper than a missing driver.** `--pro-draft-probe` reaches the
+draft directly in seconds instead of twelve minutes and reports the thrown reason:
+
+```text
+first pick threw activeRosterFull  roster=53/53  practiceSquad=0/16
+committedCap=0/255000000  draftClass=224
+```
+
+**The professional roster never turns over at all.** Bootstrap fills every team to exactly the
+53-man active limit, and nothing ever cuts anyone, so there is no room for a single draft pick — the
+class of 224 is generated every season and none of it can ever be taken. The same bootstrap gives
+professionals **no contracts** (`committedCap=0`), so nothing expires, so nobody is ever released
+into the free-agent pool either. The two halves of professional intake are each blocked by the same
+missing thing: roster turnover.
+
+The original two causes, both verified by reading the call graph rather than inferred:
 
 1. **The professional draft has no autonomous driver.** `ProMarketSystem.beginDraft` and
    `ProMarketSystem.draft` are reachable only from `IntentResolver`, i.e. only when a *promoted*
@@ -480,13 +495,23 @@ the entire pre-promotion career. The promotion arc's premise is that you are pro
 that has been living without you; today you would be promoted into one that has aged N seasons with
 zero intake.
 
-**Not fixed here, deliberately.** The transaction layer is complete and correct — `beginDraft`,
-`draft` and `rookieContract` all exist and are tested in isolation. What is missing is a driver, and
-writing one requires an offseason-calendar rule that canon does not state: *when does free agency
-yield to the draft, and what happens when the controlled team is on the clock?* Under the doc-first
-amendment rule that belongs in canon before it is built. `--pro-soak` stays red until it is, in the
-same way P4's calibration gate stays red, and it is **not** in the default run, so `verify.sh` is
-unaffected.
+**The driver half is now built.** `02` §4.2 already fixed the offseason *order* — free agency, then
+the draft pick by pick — but said nothing about what drives it when nobody is watching, which is why
+the market sat inert. That rule is now in canon with its own falsifier, and `ProRosterAISystem`
+implements it: free agency signs while signings remain legal, a pass that signs nobody begins the
+draft, and the draft is then made pick by pick in draft order by every AI team, pausing only when the
+controlled professional team is on the clock. Before promotion no professional team is controlled, so
+it runs to completion unattended. Focused gates are unmoved by it — core contracts **147 / 969**,
+architecture **25 / 222**, pro market **12 / 58**, pro management **6 / 17**.
+
+**It is necessary and not sufficient, and both gates stay red to say so.** The driver cannot fire
+while every roster sits at 53/53. The remaining work is roster turnover, and it is a design question
+canon only half answers: §4.2 lists "retirements and expiring contracts" and "cap compliance — a hard
+date the player must be legal by" as the first two offseason beats, but bootstrap issues no contracts
+for anyone to expire and nothing implements the compliance date that would force cuts. Deciding who
+gets cut, and when, is an owner-level design call rather than an implementation detail, so it is not
+invented here. `--pro-soak` and `--pro-draft-probe` stay red until it is answered, in the same way
+P4's calibration gate stays red; **neither is in the default run**, so `verify.sh` is unaffected.
 
 ### Preserved pre-rebaseline P0–P4 record
 

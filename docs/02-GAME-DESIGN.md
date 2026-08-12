@@ -120,6 +120,29 @@ The offseason carries ~90 minutes of the season budget and is where the two tier
 4. **The draft**, played pick by pick, with the board reflecting the scouting the player paid for.
 5. **Staff and carousel**, as above.
 
+**How this runs when nobody is watching — added 2026-08-12.** The order above is what the *player*
+experiences; it says nothing about the thirty-one teams they do not control, or about the seasons
+before promotion when no professional team is controlled at all. Without a rule the market simply
+never advances: a soak measured two full seasons in which it opened, closed, and produced no draft
+pick, signing, waiver or trade, because `beginDraft` and `draft` were reachable only through a
+promoted coach's intent.
+
+The rule is the one the college tier already uses — the headless policy drives every seat the player
+does not hold, and stops at the one they do:
+
+- The professional offseason advances **one phase per scheduled week**, driven by the roster policy
+  that already runs weekly.
+- **Free agency** signs while signings remain legal. When a pass makes no signing — the pool is dry
+  or every roster is full — the draft begins.
+- **The draft** is then made pick by pick in draft order by every AI team, deterministically: the
+  best available prospect by rating, ties broken by prospect identity.
+- It **pauses when the controlled professional team is on the clock**, because that pick is the
+  player's decision and §4.2 sells it as one. Before promotion no professional team is controlled,
+  so the draft runs to completion unattended, which is what makes the league the player is promoted
+  into a league that has been living without them.
+
+Falsifier: `--pro-soak` fails if a season passes with no `proDraftPick` event.
+
 ### 4.3 Recruiting, in detail (college)
 
 Recruiting is the college tier's signature system and its throughput problem (D3/D4).
