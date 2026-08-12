@@ -162,6 +162,63 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
     case proWaiversResolved(count: Int)
     case proMarketClosed(season: Int)
 
+    /// Whether this event's body is worth keeping once it leaves the bounded hot journal.
+    ///
+    /// The archive keeps a bounded sample of bodies per season, and this decides what competes for
+    /// that sample. The rule is whether a coach five seasons later would want the event named:
+    /// titles, awards, people arriving and leaving, money and rights changing hands. Not the weekly
+    /// bookkeeping that only matters while it is current.
+    ///
+    /// **Exhaustive, with no `default`, deliberately.** A new payload then cannot be added without
+    /// someone deciding whether it belongs in history — the compiler asks. A `default` here would
+    /// silently classify every future event as forgettable, which is exactly the coverage boundary
+    /// `CLAUDE.md` calls a defect.
+    public var isNotable: Bool {
+        switch self {
+        case .worldCreated,
+             .seasonCompleted,
+             .postseasonScheduled,
+             .redshirtResolved,
+             .playerDeparted,
+             .playerJoined,
+             .staffHired,
+             .prospectCommitted,
+             .commitmentResolved,
+             .portalEntered,
+             .playerTransferred,
+             .portalWindowCompleted,
+             .proMarketOpened,
+             .proDraftStarted,
+             .proPlayerSigned,
+             .proDraftPick,
+             .proTradeCompleted,
+             .proWaiverClaimed,
+             .proMarketClosed:
+            return true
+
+        // Weekly bookkeeping. Every one of these is either derivable from authoritative state, or
+        // only interesting while it is current: a recovered player is simply available again, and a
+        // completed game is already in the competition archive with its result.
+        case .integrityChecked,
+             .weekAdvanced,
+             .gameCompleted,
+             .playerInjured,
+             .playerRecovered,
+             .playerDeveloped,
+             .prospectEvaluated,
+             .recruitingInteraction,
+             .portalRetentionResolved,
+             .portalOfferMade,
+             .proDraftScouted,
+             .proContractExpired,
+             .proPracticeSquadMoved,
+             .proWaiverPlaced,
+             .proWaiverExpired,
+             .proWaiversResolved:
+            return false
+        }
+    }
+
     public var referencedEntityIDs: [UUID] {
         switch self {
         case let .gameCompleted(_, homeID, awayID, _, _, _):
@@ -294,10 +351,18 @@ public struct DomainEventLedger: Codable, Sendable, Equatable {
     public static let defaultRetentionLimit = 4_096
     public static let maximumRetentionLimit = 100_000
 
+    /// Seasons of digest retained. A career is twenty and the M7 exit gate asks for thirty-plus, so
+    /// this is the gate's number with headroom rather than a guess.
+    public static let maximumArchivedSeasons = 40
+
     public let retentionLimit: Int
     public private(set) var recent: [DomainEvent]
     public private(set) var archivedCount: Int
     public private(set) var lastSequence: Int?
+
+    /// One digest per season, ascending, bounded. What an event leaves behind after it falls out of
+    /// `recent` — the layer `docs/roadmap/05` §2 calls the historical aggregate archive.
+    public private(set) var archive: [SeasonHistoryDigest]
 
     public init(retentionLimit: Int = DomainEventLedger.defaultRetentionLimit) {
         self.retentionLimit = min(
@@ -307,6 +372,15 @@ public struct DomainEventLedger: Codable, Sendable, Equatable {
         recent = []
         archivedCount = 0
         lastSequence = nil
+        archive = []
+    }
+
+    /// One season's digest, without touching `recent`.
+    ///
+    /// The M7 exit gate's second clause in one call: surfacing a past season reads that season's
+    /// aggregate, not the journal and not the save.
+    public func digest(forSeason season: Int) -> SeasonHistoryDigest? {
+        archive.first { $0.season == season }
     }
 
     public init(from decoder: any Decoder) throws {
@@ -352,10 +426,30 @@ public struct DomainEventLedger: Codable, Sendable, Equatable {
             )
         }
 
+        let decodedArchive = try container.decode([SeasonHistoryDigest].self, forKey: .archive)
+        var previousSeason: Int?
+        let archiveIsOrderedAndBounded = decodedArchive.count <= Self.maximumArchivedSeasons
+            && decodedArchive.allSatisfy { digest in
+                defer { previousSeason = digest.season }
+                return previousSeason.map { digest.season > $0 } ?? true
+            }
+        // The two accountings cannot disagree: every retained digest's count is part of the total,
+        // so the sum can never exceed it. It can be less, because the oldest seasons drop out.
+        let archivedSum = decodedArchive.reduce(0) { $0 + $1.archivedCount }
+        guard archiveIsOrderedAndBounded, archivedSum <= decodedArchivedCount else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .archive,
+                in: container,
+                debugDescription: "The history archive is unordered, over its bound, or disagrees "
+                    + "with the archived-event count."
+            )
+        }
+
         retentionLimit = decodedRetentionLimit
         recent = decodedRecent
         archivedCount = decodedArchivedCount
         lastSequence = decodedLastSequence
+        archive = decodedArchive
     }
 
     @discardableResult
@@ -402,10 +496,41 @@ public struct DomainEventLedger: Codable, Sendable, Equatable {
         nextRecent.append(contentsOf: recent.suffix(existingToKeep))
         nextRecent.append(contentsOf: events.suffix(incomingToKeep))
 
+        // What falls out of the window, oldest first and in the order it happened: the existing
+        // events this append displaces, then any incoming events too old to fit. Folded into the
+        // archive before they are dropped, which is the whole difference between this and a counter.
+        let displacedExisting = recent.prefix(recent.count - existingToKeep)
+        let displacedIncoming = events.prefix(events.count - incomingToKeep)
+        for event in displacedExisting { archiving(event) }
+        for event in displacedIncoming { archiving(event) }
+
         recent = nextRecent
         archivedCount = nextArchivedCount
         lastSequence = events.last?.sequence
         return true
+    }
+
+    /// Folds one displaced event into its own season's digest.
+    ///
+    /// Its *own* season, not the current one: a late append that overflows the window must not
+    /// credit an old event to the season that pushed it out.
+    private mutating func archiving(_ event: DomainEvent) {
+        let season = event.occurredAt.season
+        if let index = archive.firstIndex(where: { $0.season == season }) {
+            archive[index].record(event, isNotable: event.payload.isNotable)
+            return
+        }
+        var digest = SeasonHistoryDigest(season: season)
+        digest.record(event, isNotable: event.payload.isNotable)
+        // Kept ascending by insertion rather than by sorting the whole archive on every overflow,
+        // which happens thousands of times a season.
+        let insertion = archive.firstIndex { $0.season > season } ?? archive.count
+        archive.insert(digest, at: insertion)
+        // The oldest season is the one that goes. `archivedCount` is deliberately not reduced: the
+        // events still happened, and the count is the honest total rather than the retained one.
+        if archive.count > Self.maximumArchivedSeasons {
+            archive.removeFirst(archive.count - Self.maximumArchivedSeasons)
+        }
     }
 
     public var totalCount: Int { archivedCount + recent.count }

@@ -6,13 +6,14 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
     var value: Int
 }
 
-private let pinnedRootFingerprint: UInt64 = 11_551_884_399_080_000_570
+/// Both pins moved on 2026-08-12 for the same deliberate reason: schema 10 became schema 11 when
+/// `DomainEventLedger` gained its bounded season archive. The version and the ledger's shape are
+/// both inside the encoded root, so *every* root fingerprint moves — including a freshly
+/// bootstrapped one that has archived nothing yet. That is why the root pin moves here and did not
+/// move for the rivalry-ordering change, which touched a step rather than a persisted type.
+private let pinnedRootFingerprint: UInt64 = 1_530_522_178_018_711_063
 
-/// Changed on 2026-08-12, deliberately: the relationships step now reorders `Programme.rivalIDs`
-/// from the intensity the week's meetings earned, so a one-week transition writes programme records
-/// it did not write before. The root pin above is unchanged, which is the evidence that generation
-/// did not move — only the step did.
-private let pinnedAdvancedRootFingerprint: UInt64 = 1_806_996_032_597_519_722
+private let pinnedAdvancedRootFingerprint: UInt64 = 6_295_828_161_462_602_203
 
 private func architectureFingerprint<T: Encodable>(_ value: T) throws -> UInt64 {
     let bytes = try SaveEnvelope.encode(value)

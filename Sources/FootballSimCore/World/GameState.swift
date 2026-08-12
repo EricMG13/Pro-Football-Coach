@@ -50,7 +50,7 @@ public struct PendingQueues: Codable, Sendable, Equatable {
 
 /// The single authoritative root for a career save.
 public struct GameState: Codable, Sendable, Equatable {
-    public static let schemaVersion = 10
+    public static let schemaVersion = 11
 
     public let version: Int
     public var league: League
