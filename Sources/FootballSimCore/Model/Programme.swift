@@ -122,6 +122,19 @@ public struct Programme: Codable, Sendable, Equatable, Identifiable {
         rivalIDs = Array((rivalIDs + [rivalID]).prefix(SharedRules.rivalriesPerProgramme))
     }
 
+    /// Replaces the whole list, strongest first, at the same bound `addRival` respects.
+    ///
+    /// Separate from `addRival` because the two callers want different things. Seeding adds one
+    /// rival it does not yet hold; the weekly relationships step already knows the complete order
+    /// and needs to install it. Rebuilding through repeated `addRival` calls would keep whichever
+    /// eight arrived first rather than the eight that are now strongest, which is the whole point.
+    public mutating func reorderRivals(to ordered: [UUID]) {
+        var seen: Set<UUID> = []
+        rivalIDs = Array(
+            ordered.filter { seen.insert($0).inserted }.prefix(SharedRules.rivalriesPerProgramme)
+        )
+    }
+
     public var rosterLegality: RosterLegality {
         RosterLegality.college(players: rosterIDs.count, scholarships: scholarshipCount)
     }

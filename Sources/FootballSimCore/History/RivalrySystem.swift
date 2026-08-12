@@ -8,9 +8,21 @@ public struct RivalryTransition: Sendable, Equatable {
     public let rivalries: EntityStore<Rivalry>
     public let recordedRivalryIDs: [UUID]
 
-    public init(rivalries: EntityStore<Rivalry>, recordedRivalryIDs: [UUID]) {
+    /// The programmes whose rival order the recorded meetings can have changed, in UUID order.
+    ///
+    /// Only the sides of a rivalry that actually moved. Reordering all 134 programmes every week
+    /// would make the weekly step cost proportional to the world rather than to the week, and the
+    /// soak measures that cost.
+    public let reorderedProgrammeIDs: [UUID]
+
+    public init(
+        rivalries: EntityStore<Rivalry>,
+        recordedRivalryIDs: [UUID],
+        reorderedProgrammeIDs: [UUID]
+    ) {
         self.rivalries = rivalries
         self.recordedRivalryIDs = recordedRivalryIDs
+        self.reorderedProgrammeIDs = reorderedProgrammeIDs
     }
 }
 
@@ -67,9 +79,19 @@ public enum RivalrySystem {
             recorded.append(rivalryID)
         }
 
+        // The sides of every rivalry that moved, sorted before it leaves the function so no output
+        // order depends on this launch's hash seed.
+        var affected: Set<UUID> = []
+        for rivalryID in recorded {
+            guard let rivalry = rivalries[rivalryID] else { continue }
+            if state.programmes[rivalry.sideA] != nil { affected.insert(rivalry.sideA) }
+            if state.programmes[rivalry.sideB] != nil { affected.insert(rivalry.sideB) }
+        }
+
         return RivalryTransition(
             rivalries: rivalries,
-            recordedRivalryIDs: recorded.sorted { $0.uuidString < $1.uuidString }
+            recordedRivalryIDs: recorded.sorted { $0.uuidString < $1.uuidString },
+            reorderedProgrammeIDs: affected.sorted { $0.uuidString < $1.uuidString }
         )
     }
 

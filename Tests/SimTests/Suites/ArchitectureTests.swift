@@ -7,7 +7,12 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
 }
 
 private let pinnedRootFingerprint: UInt64 = 11_551_884_399_080_000_570
-private let pinnedAdvancedRootFingerprint: UInt64 = 6_207_118_505_168_178_532
+
+/// Changed on 2026-08-12, deliberately: the relationships step now reorders `Programme.rivalIDs`
+/// from the intensity the week's meetings earned, so a one-week transition writes programme records
+/// it did not write before. The root pin above is unchanged, which is the evidence that generation
+/// did not move — only the step did.
+private let pinnedAdvancedRootFingerprint: UInt64 = 1_806_996_032_597_519_722
 
 private func architectureFingerprint<T: Encodable>(_ value: T) throws -> UInt64 {
     let bytes = try SaveEnvelope.encode(value)

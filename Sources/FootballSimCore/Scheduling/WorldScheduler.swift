@@ -341,6 +341,19 @@ public enum WorldScheduler {
             case .relationshipsAndStakeholders:
                 let rivalries = RivalrySystem.process(after: completed, in: nextState)
                 nextState.rivalries = rivalries.rivalries
+                if !rivalries.reorderedProgrammeIDs.isEmpty {
+                    // Sorted once, outside the loop: `strongest` breaks intensity ties on the
+                    // rivalry's own id, and it can only do that from a stable input. Hoisted
+                    // because the ordering does not vary per programme.
+                    let ranked = rivalries.rivalries.values
+                        .sorted { $0.id.uuidString < $1.id.uuidString }
+                    for programmeID in rivalries.reorderedProgrammeIDs {
+                        let ordered = RivalrySeeder.strongest(for: programmeID, among: ranked)
+                        _ = nextState.programmes.update(programmeID) {
+                            $0.reorderRivals(to: ordered)
+                        }
+                    }
+                }
                 records.append(WorldStepRecord(step: step, status: .executed))
 
             case .jobAndStaffMarkets:
