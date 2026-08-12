@@ -177,10 +177,13 @@ removed on 2026-08-11. `04` remains the only canonical design and screen-invento
 `04` §6.5, indexed with renders in `docs/proofs/design-references/`. Those are the definitive
 design references for composition and states; `04` still owns every value.
 
-Before feature SwiftUI begins, three interactive HTML proofs establish the corrected direction:
-Coaching HQ, Recruiting Board and Match Day. They share one continuous save but use three visibly
-different registers. Passing the proof gate demonstrates direction; it does not make reference code
-production code or authorise invented read-model values.
+Before feature SwiftUI begins, three interactive proof screens establish the corrected direction:
+Coaching HQ, Recruiting Board and Match Day. **Proof medium amended 2026-08-12:** the proofs are
+the native SwiftUI screens behind the DEBUG `PROOF_SCREEN` routing — the earlier "HTML proofs"
+wording predates those views existing; `04` §10 owns the proof-medium rule. They share one
+continuous save but use three visibly different registers. Passing the proof gate demonstrates
+direction; it does not authorise invented read-model values — the proof screens are production
+code paths whose read models stay fixture-provenance until G-01.
 
 ### P11 — Proof gate, design system and accessibility contract (D12)
 

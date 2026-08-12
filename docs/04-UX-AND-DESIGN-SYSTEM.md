@@ -166,6 +166,27 @@ Identity is structural, not a two-point decorative accent.
 - Broadcast furniture uses both teams. Management never receives a decorative team-colour wash.
 - Team marks, uniforms, stadium names, player names and staff names come from the generated universe.
 
+**Restraint rules (added 2026-08-12; owner instruction — team colour must never become distracting
+or intense).** The six slots above are the only surfaces team colour may own; anything else is the
+wash §4.4 rejects. Within the slots:
+
+- **One full-bleed team field per management screen: the world strip's.** Every other management
+  use is mark-scale — chip, crest, boundary — none taller than its own row.
+- **Selection takes a boundary, never a fill.** Boundary plus value plus spoken state per §6.3; the
+  boundary rule may take the team accent only when it measures at least 3:1 against its surface at
+  runtime, otherwise it falls back to `action.primary`. A team-coloured selection fill is a defect.
+- **Recruiting territory is a bounded tint, adopted with the identity sheet.** The tint alpha and
+  its measured ink pairings land with the P4 identity samples under the G-07 write-back discipline;
+  until then a territory surface uses the neutral map grammar. Labels stay in content roles.
+- **Scoreboard and ceremony surfaces may carry full identity.** They are BROADCAST-register places:
+  a scoreboard carries both teams per the bullet above; a ceremony carries its subject.
+- **Team colour never inks meaning.** Status glyphs stay in `state.*` roles, text in `content.*`,
+  and no numeral that carries a value takes team ink.
+- **`CoachWorldTeamIdentity` is the sole resolution point for generated colour.** A view that reads
+  `primaryColorHex` directly is a defect (source-scannable). When the legibility gates fail, the
+  surface refuses team paint and renders neutral; §6.1's mandatory hairline boundary applies to
+  every team fill in every slot.
+
 ### 5.1 People and future custom universes
 
 The base product uses a deliberate neutral photo plate for players and personnel. It contains no
@@ -185,6 +206,36 @@ The view model reserves optional asset references for future user-supplied unive
 
 The base game remains fictional and original. Importing custom names or media is a future product
 and legal decision, not a v1 feature; UI code must neither require it nor block it.
+
+### 5.2 Generated crests and uniform marks
+
+*Added 2026-08-12, owner-approved plan. The recognition device §5.1 promises — "uniform, team" —
+made concrete without a single authored image.*
+
+Each programme receives a **crest**: an abstract geometric mark composed from a closed heraldic
+vocabulary, drawn only in the team's own colour pair.
+
+- **Vocabulary, closed by construction.** Field divisions: pale, fess, bend, saltire, chevron,
+  quartered. Charges: roundel, arch, bordure, canton, bar. The spec type can express nothing else —
+  no letterforms, no figurative shapes, no mascots, no pictorial art. That impossibility is a
+  type-level property with an exhaustive-case test, not a review item.
+- **Grammar.** One field division plus at most two charges. Colours are `team.primary`,
+  `team.secondary` and `team.onTeam` only — a crest never mints a colour.
+- **Determinism.** The crest is a pure function of the team's stable identifier and colour pair,
+  derived at read time. It is never persisted; there is no save-schema change (the
+  rebuilt-not-persisted pattern).
+- **Where it appears.** The §5 slots: world strip, scoreboard, uniform mark, ceremony surface. At
+  chip scale it may replace the abbreviation text plate; the accessible name remains the programme
+  name.
+- **Read model.** A structured `team.crest` spec field. The §5.1 asset slots stay reserved for
+  future user-supplied media and are never used for generated crests; when a validated import
+  supplies a mark it replaces the generated crest, and the generated crest remains the offline,
+  missing-file and opt-out state — the plate pattern applied to marks.
+- **Legal posture.** The machine guarantees closure, determinism and colour provenance (colour
+  pairs already pass the trade-dress ΔE sweep). Geometric resemblance to a real mark is **not**
+  machine-testable: a deterministic crest census — a specimen grid across the legal-sweep leagues —
+  is emitted for owner review and flagged for counsel per the `CLAUDE.md` guardrail. No test claims
+  to cover crest resemblance, and no document may describe one as doing so.
 
 ## 6. Foundations
 
@@ -315,6 +366,16 @@ are verified without shrinking working text.
 | Callout | 11–12 pt | evidence and supporting facts |
 | Caption | 10–11 pt | metadata, column labels and dense table cells |
 | Numeral | 10–28 pt tabular | table ratings through score, clock, money and rank |
+| Broadcast numeral | 20–34 pt tabular, compressed heavy | score, clock, down and distance in BROADCAST furniture only |
+
+**Width axis (codified 2026-08-12).** The system family's width variants are part of the voice, not
+a decoration: Display, Title and Headline ship condensed (`.width(.condensed)` in
+`DesignTokens.swift` — the shipped choice, now stated in canon); Body, Callout and Caption stay
+standard width, because condensing working prose buys density at the cost of reading comfort.
+`Broadcast numeral` is the one compressed role: the BROADCAST register's square geometry earns the
+densest width for score, clock and distance, and nowhere else. Compressed never sets prose;
+Expanded is unused in v1. Reference sheets approximate width with `font-stretch`, which desktop
+Chrome renders only approximately — the native render is authoritative.
 
 Standard management screens may use 10–12 pt micro-type to reach desktop-class management density
 on landscape iPhone. Working prose stays at 12 pt; 10–11 pt is reserved for short labels, ratings, metadata and
@@ -472,7 +533,7 @@ grid in three different contexts. What is never permitted is an unbounded class.
 
 **Total learned symbols: 23** (12 status + 2 change + 2 obligation + 5 session + 2 broadcast). Control furniture
 is excluded by the rule above — a marked control is read from its label, not recalled from a
-vocabulary. **The 21 is stated so it can be argued with; it is the number the owner is agreeing to
+vocabulary. **The 23 is stated so it can be argued with; it is the number the owner is agreeing to
 when a class grows.** Filled and unfilled variants of one symbol are one member: `hand.raised.fill`
 is `hand.raised`, and `circle` is the unchecked state of `checkmark.circle.fill` rather than a
 thirteenth status symbol or a new class. Where two components want the same meaning they take the same member — a
@@ -480,7 +541,10 @@ delegated receipt is `person.badge.clock` on every surface, not `person.fill.che
 
 Growth rule: a new symbol displaces an existing member of its class or the class cap moves, and a
 class cap moves only by owner decision recorded here. §4.5 names vocabulary growth as the leak
-detector; this table is the detector.
+detector; this table is the detector. Custom symbols drawn on Apple's variable template (three
+weights, exported per symbolset) are eligible members under the same displacement rule and join
+§6.3's one-coherent-line-family requirement — a custom glyph that reads as a different family is a
+defect, not a style.
 
 **The definitive design references (owner-approved 2026-08-12).** Eight sheets at the repository
 root render this registry: `tokens-v3.dc.html`, `chrome-v3.dc.html`, `table-v3.dc.html`,
@@ -652,6 +716,13 @@ Match is the strongest game-authenticity gate.
 - Native drawing may add restrained turf bands, yard lines, hash marks and field numbers. Route
   vectors appear only when the recorded read model supplies that route; decorative or invented
   movement is prohibited.
+- **The play-art vocabulary is fixed (added 2026-08-12):** route vectors as recorded polylines,
+  formation dots per §6.5 #18's role tokens, the line-of-scrimmage and first-down rules, and the
+  §6.6 broadcast marks. Route-tree and formation notation are drawn conventions of the sport, not
+  protected expression; a specific playbook's diagrams are someone's expression and are never
+  reproduced. Every fixed diagram mark carries §6.2's accessible-sentence equivalent. Until G-06
+  supplies recorded routes, sheets and views draw play art in target form only, labelled "once
+  G-06 lands".
 - Offense direction is recorded data. It owns defended end-zone labels and whether the first-down
   line lies left or right of the line of scrimmage; the view never guesses from home/away colour.
 - All 22 actors are represented; no more than three are visually foregrounded at once.
@@ -672,12 +743,19 @@ Before production SwiftUI begins, three interactive proof screens must be owner-
 
 They depict one continuous fictional save: Carson Tech, head coach Eric Mercer, Week 9, Southern
 State as the current opponent, and consistent staff/recruit consequences. Personnel photographs are
-neutral blank plates.
+neutral blank plates. The reference sheets hold themselves to the same one-save rule with their own
+fixed cast, moment and figure table — `docs/briefs/2026-08-12-reference-shared-world.md`; a sheet
+identity or figure outside that file is a defect.
 
 Each proof renders at 844 × 390 (install floor), 852 × 393 (promise floor) and 956 × 440 (ceiling)
 per §7 and D15, light and dark, default and AX5. It must score at least 31/40 under `04b`, with no
 P0/P1 and none of the §4.4 automatic rejection conditions.
 
-Proof code is reference-only. It does not define SwiftUI architecture, simulation truth or persisted
-data. Production implementation begins only when its read model exists and the owner approves the
-proof direction.
+**Proof medium (amended 2026-08-12, owner-approved plan).** The proofs are the native SwiftUI
+screens — Coaching HQ, Recruiting Board and Match Day — reached through the DEBUG `PROOF_SCREEN`
+routing in `RootView.swift` and rendered at native size on simulator. They are production code
+paths, not reference HTML; earlier language calling proof code reference-only described the HTML
+era and is superseded. What does not change: a proof's read model stays fixture-fed and declares
+`provenance: .sample` until G-01 lands, an approved proof never authorises invented read-model
+values, and feature families beyond the three proofs begin only after the owner approves the set
+together.
