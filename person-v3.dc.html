@@ -4,920 +4,1103 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>person-v3 — person components reference sheet</title>
+<title>Person sheet v3 - Pro Football Coach design reference</title>
 <style>
-/* ============================================================
-   SHEET CHROME — gallery furniture OUTSIDE the device frame.
-   Chrome styling carries no canon claim (04 §4.4: prototype truth
-   disclosure belongs in gallery chrome outside the native frame).
-   Every value INSIDE a render panel is quoted from 04 §6.1/§6.2/§6.3.
-   CSS px are treated as pt throughout this sheet.
-   ============================================================ */
-* { box-sizing: border-box; }
-body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-       background: #FFFFFF; color: #15171C; line-height: 1.45; }
-.chrome { max-width: 1240px; margin: 0 auto; padding: 20px; }
-.chrome h1 { font-size: 22px; margin: 8px 0 4px; }
-.chrome h2 { font-size: 17px; margin: 32px 0 6px; border-top: 2px solid #15171C; padding-top: 12px; }
-.chrome h3 { font-size: 13px; margin: 16px 0 6px; text-transform: uppercase; letter-spacing: .04em; }
-.chrome p, .chrome li, .chrome td, .chrome th { font-size: 12px; color: #3A3E48; }
-.meta { font-size: 11px; color: #5A5F6B; }
-.notice { border: 1px solid #C9CCD4; border-left: 4px solid #15171C; padding: 8px 12px; margin: 12px 0;
-          font-size: 12px; background: #F7F7F9; }
-table.ratios { border-collapse: collapse; margin: 8px 0 16px; }
-table.ratios th, table.ratios td { border: 1px solid #D6D9DF; padding: 3px 8px; text-align: left;
-                                   font-variant-numeric: tabular-nums; }
-table.ratios th { background: #F0F1F4; font-size: 11px; }
-ol.contract { padding-left: 20px; }
-ol.contract li { margin: 6px 0; }
-.contract-block { border: 1px solid #C9CCD4; background: #FAFAFB; padding: 12px 16px; margin: 16px 0; }
-.contract-block h3 { margin-top: 0; }
-.scrollx { overflow-x: auto; padding-bottom: 8px; }
-code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; background: #F0F1F4;
-       padding: 0 3px; }
+/* Sheet gallery chrome uses the light-appearance 6.1 values. CSS px are read as pt. */
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#F1F2F7;color:#111426;font:12px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif}
+.sheet{max-width:1280px;margin:0 auto;padding:20px}
+h1{font-size:20px;font-weight:800;letter-spacing:-.2px}
+h2{font-size:17px;font-weight:700;margin:0 0 4px}
+h3{font-size:15px;font-weight:600;margin:16px 0 6px}
+p{margin:6px 0;max-width:76em}
+.meta{color:#4D5366;font-size:11px;letter-spacing:-.2px}
+.rulebox{background:#FBFBFD;border:1px solid #E6E8F0;border-radius:10px;padding:12px 16px;margin:12px 0}
+.card{background:#FBFBFD;border:1px solid #E6E8F0;border-radius:10px;padding:16px;margin:20px 0}
+.card>header{border-bottom:1px solid #E6E8F0;padding-bottom:8px;margin-bottom:12px}
+.status{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#6840B0;border:1px solid #6840B0;border-radius:8px;padding:2px 8px;margin-left:8px;vertical-align:middle}
+.mono{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace}
+.note{font-size:11px;color:#4D5366;letter-spacing:-.2px;margin:6px 0;max-width:76em}
+.gap{font-size:11px;color:#A42D32;letter-spacing:-.2px;margin:6px 0}
+.caption{font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:#4D5366;margin:8px 0 4px}
+/* Side-by-side appearance panes: explicit sections, not media queries. */
+.modes{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.pane{flex:1 1 480px;min-width:360px;border-radius:10px;padding:12px}
+.pane .pane-h{font-size:10px;letter-spacing:.4px;text-transform:uppercase;margin-bottom:8px}
+.dk{background:#080A14;color:#F4F5FA;
+  --page:#080A14;--work:#111426;--raised:#191D32;--tp:#F4F5FA;--ts:#B8BDCC;--tq:#858CA2;
+  --ap:#9964E8;--inkOnAp:#080A14;--pos:#6FD39A;--warn:#F0C56C;--neg:#F07886;
+  --hair:#191D32;--bnd:#B8BDCC}
+.dk .pane-h{color:#B8BDCC}
+.lt{background:#F1F2F7;color:#111426;border:1px solid #E6E8F0;
+  --page:#F1F2F7;--work:#FBFBFD;--raised:#E6E8F0;--tp:#111426;--ts:#4D5366;--tq:#596074;
+  --ap:#6840B0;--inkOnAp:#FBFBFD;--pos:#1F7048;--warn:#765300;--neg:#A42D32;
+  --hair:#E6E8F0;--bnd:#4D5366}
+.lt .pane-h{color:#4D5366}
+.ratios{font-size:10px;letter-spacing:-.2px;color:var(--tq,#596074);margin-top:8px;line-height:1.6}
+table.ratiotable{border-collapse:collapse;margin:10px 0 4px}
+table.ratiotable th,table.ratiotable td{border:1px solid #E6E8F0;padding:3px 8px;text-align:left;
+  font-size:11px;color:#4D5366;font-variant-numeric:tabular-nums}
+table.ratiotable th{background:#F1F2F7;font-size:10px;letter-spacing:.4px;text-transform:uppercase}
+/* Width stages: geometry study containers. */
+.stage{overflow-x:auto;border:1px dashed #4D5366;border-radius:10px;padding:8px;margin:12px 0;background:#F1F2F7}
+.stage .win{flex:none}
+.w844 .win{width:844px}.w852 .win{width:852px}.w956 .win{width:956px}
+/* Contract block. */
+.contract{border-top:1px solid #E6E8F0;margin-top:16px;padding-top:12px}
+.contract h4{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:#6840B0;margin-bottom:6px}
+.contract ol{margin:0 0 0 18px}
+.contract li{margin:5px 0;font-size:12px;max-width:76em}
+.contract .vo{font-style:italic}
 
-/* ============================================================
-   RENDER PANELS — inside the frame. Appearance scopes carry the
-   04 §6.1 production values (G-07 write-back, 2026-08-12) exactly.
-   ============================================================ */
-.d { /* dark appearance */
-  --page:#080A14; --work:#111426; --raised:#191D32;
-  --tp:#F4F5FA; --ts:#B8BDCC; --tq:#858CA2;
-  --act:#9964E8; --neg:#F07886; --pos:#6FD39A; --warn:#F0C56C; --info:#72ADEC;
-  --ink-on-act:#080A14; /* dark world.page ink on violet fill = 5.02, the body pairing (04 §6.1) */
-  --hair:#191D32;       /* world.raised as hairline between continuous regions on work */
-  --hairq:#858CA2;      /* content.quiet as the meaning-bearing boundary stroke */
-}
-.l { /* light appearance */
-  --page:#F1F2F7; --work:#FBFBFD; --raised:#E6E8F0;
-  --tp:#111426; --ts:#4D5366; --tq:#596074;
-  --act:#6840B0; --neg:#A42D32; --pos:#1F7048; --warn:#765300; --info:#205F96;
-  --ink-on-act:#FBFBFD; /* light world.work on violet fill = 6.89 (04 §6.1) */
-  --hair:#E6E8F0;
-  --hairq:#596074;
-}
-/* Team colour reference trio — synthetic, pending generator output (04 §6.1) */
-:root {
-  --t1p:#14382A; --t1s:#D9B23C; --t1o:#F2F5F3; /* dark-primary  */
-  --t2p:#E9E0C9; --t2s:#6E3038; --t2o:#18202B; /* light-primary */
-  --t3p:#555B66; --t3s:#D9DDE4; --t3o:#FFFFFF; /* low-chroma    */
-}
-.pair { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; margin: 12px 0; }
-.pair > .rp { flex: 1 1 420px; }
-.rp { background: var(--page); padding: 16px; border-radius: 10px; }
-.rp .apx { font-size: 10px; letter-spacing: -.2px; color: var(--tq); margin: 0 0 8px;
-           text-transform: uppercase; }
-.srf { background: var(--work); border-radius: 10px; overflow: hidden; }
-/* DESK register: matte, opaque, hairline seams, radii 8/8/10, spacing 4/6/8/12/16/20 */
-
-/* type roles (04 §6.2): Display 20 / Title 17 / Headline 15sb / Body 12 / Callout 11-12 /
-   Caption 10-11 / tabular numerals. Micro type 10-12 with -0.2 tracking. */
-.t20 { font-size: 20px; font-weight: 800; }
-.t17 { font-size: 17px; font-weight: 700; }
-.t15 { font-size: 15px; font-weight: 600; }
-.t12 { font-size: 12px; }
-.t11 { font-size: 11px; }
-.t10 { font-size: 10px; letter-spacing: -.2px; }
-.num { font-variant-numeric: tabular-nums; }
-.cp { color: var(--tp); } .cs { color: var(--ts); } .cq { color: var(--tq); }
-.pos { color: var(--pos); } .neg { color: var(--neg); } .warn { color: var(--warn); }
-.b { font-weight: 700; } .sb { font-weight: 600; }
-
-/* glyph = SF Symbol name written as text in a small monospace chip (no icon font) */
-.g { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 10px; letter-spacing: -.2px;
-     padding: 1px 5px; border: 1px solid var(--hairq); border-radius: 8px; white-space: nowrap; }
-
-/* identity band (registry 6) */
-.band { display: flex; gap: 12px; align-items: center; height: 64px; padding: 4px 12px;
-        background: var(--work); }
-.plate { width: 44px; height: 56px; border-radius: 8px; background: var(--raised);
-         border: 1px solid var(--hair); flex: none; }
-.band .id { min-width: 0; }
-.band .id > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bandright { margin-left: auto; text-align: right; }
-.chip { height: 20px; padding: 0 8px; border-radius: 8px; font-size: 10px; letter-spacing: -.2px;
-        font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
-.chip .sec { width: 8px; height: 8px; border-radius: 0; display: inline-block; }
-.tabs { display: flex; height: 44px; border-top: 1px solid var(--hair);
-        border-bottom: 1px solid var(--hair); background: var(--work); }
-.tab { min-width: 64px; padding: 0 12px; display: flex; align-items: center; justify-content: center;
-       font-size: 11px; color: var(--ts); position: relative; }
-.tab.sel { color: var(--tp); font-weight: 700; }
-.tab.sel::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px;
-                  background: var(--act); }
-.verdict-slot { margin: 8px 12px; padding: 6px 8px; border: 1px dashed var(--tq); border-radius: 8px;
-                font-size: 10px; letter-spacing: -.2px; color: var(--tq); }
-
-/* dense rows: continuous table rows, radius 0, 24-28 pt tracks (26 here), 2-4 pt padding (04 §6.4.2) */
-.rows { padding: 0; }
-.row { display: flex; align-items: center; height: 26px; padding: 0 12px; gap: 8px;
-       border-bottom: 1px solid var(--hair); border-radius: 0; }
-.row:last-child { border-bottom: 0; }
-.row .lbl { font-size: 11px; color: var(--ts); flex: 1 1 auto; min-width: 0; }
-.row .val { font-size: 12px; font-weight: 700; color: var(--tp); font-variant-numeric: tabular-nums; }
-.row.ctl { height: 44px; } /* rows carrying a primary control expand to a 44 pt track */
-.delta { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; letter-spacing: -.2px;
-         font-variant-numeric: tabular-nums; font-weight: 700; }
-.sentence { padding: 6px 12px; font-size: 12px; color: var(--ts); border-bottom: 1px solid var(--hair); }
-
-/* Scout action (primary action: 44 pt floor, 04 §6.3) */
-.btn { height: 44px; min-width: 84px; padding: 0 16px; border-radius: 8px; border: 0;
-       background: var(--act); color: var(--ink-on-act); font-size: 12px; font-weight: 700;
-       display: inline-flex; align-items: center; justify-content: center; }
-.btn.dis { background: var(--raised); color: var(--tq); border: 1px solid var(--hair); }
-.stance { height: 22px; padding: 0 8px; border-radius: 8px; background: var(--raised);
-          color: var(--tp); font-size: 10px; letter-spacing: -.2px; font-weight: 700;
-          display: inline-flex; align-items: center; }
-
-/* form line (registry 16) */
-.form { display: flex; gap: 8px; padding: 8px 12px; align-items: stretch; }
-.fcell { width: 84px; min-height: 64px; padding: 4px 6px; border: 1px solid var(--hair);
-         border-radius: 8px; display: flex; flex-direction: column; gap: 2px; }
-.fbarwrap { height: 28px; display: flex; align-items: flex-end; }
-.fbar { width: 6px; background: var(--info); border-radius: 0; }
-.expchip { height: 22px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--hair);
-           display: inline-flex; align-items: center; gap: 6px; font-size: 10px; letter-spacing: -.2px;
-           font-weight: 700; }
-
-/* width proofs */
-.wbox { margin: 12px 0; }
-.wframe { border-radius: 0; } /* fixed-width device excerpts, page gutter owns the rounding */
-
-/* AX5 rendition — sizes per sourcing row Q5 (Apple Dynamic Type tables, gate two approved):
-   title3 20 -> 55, headline 17 -> 53, subheadline 15 -> 49, footnote 13 -> 44,
-   caption1 12 -> 43, caption2 11 -> 40. Custom 10 pt micro rides @ScaledMetric and maps
-   here to the nearest verified row (caption2 -> 40). */
-.ax .axt { font-size: 53px; font-weight: 700; line-height: 1.1; }
-.ax .axh { font-size: 49px; font-weight: 600; line-height: 1.1; }
-.ax .axb { font-size: 44px; line-height: 1.15; }
-.ax .axc { font-size: 43px; line-height: 1.15; }
-.ax .axc2 { font-size: 40px; line-height: 1.15; letter-spacing: 0; }
-.ax .row, .ax .band { height: auto; min-height: 44px; flex-wrap: wrap; padding: 12px; }
-.ax .fcell { width: auto; }
+/* ---- DESK person grammar (inside the device frame). Matte opaque work surface radius 10,
+   continuous rows radius 0, hairline seams, 26 pt tracks, 10-12 pt micro type. ---- */
+.srf{background:var(--work);border-radius:10px;overflow:hidden;border:1px solid var(--hair)}
+.band{display:flex;gap:12px;align-items:center;height:64px;padding:4px 12px;background:var(--work)}
+.plate{width:44px;height:56px;border-radius:8px;background:var(--raised);border:1px solid var(--hair);flex:none}
+.band .id{min-width:0}
+.band .id>div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bandright{margin-left:auto;text-align:right}
+/* 44 pt of tab between two 1 pt hairline seams: the tab itself owns the touch floor, not the seam. */
+.tabs{display:flex;height:46px;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);background:var(--work)}
+.tab{min-width:64px;padding:0 12px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ts);position:relative}
+.tab.sel{color:var(--tp);font-weight:700}
+.tab.sel::after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:2px;background:var(--ap)}
+/* VerdictLine slot: shipping form (empty, gap ID) and target form (populated), 04 6.5. */
+.vslot{margin:8px 12px;padding:6px 8px;border:1px dashed var(--tq);border-radius:8px;font-size:10px;letter-spacing:-.2px;color:var(--tq)}
+.vline{margin:8px 12px;padding:6px 8px;border-radius:8px;background:var(--raised);font-size:11px;letter-spacing:-.2px;color:var(--ts)}
+.vline b{display:block;color:var(--tp);font-weight:700;font-size:12px;letter-spacing:0;margin-bottom:2px}
+.rows{padding:0}
+.row{display:flex;align-items:center;height:26px;padding:0 12px;gap:8px;border-bottom:1px solid var(--hair);border-radius:0}
+.row:last-child{border-bottom:0}
+.row .lbl{font-size:11px;color:var(--ts);flex:1 1 auto;min-width:0}
+.row .val{font-size:12px;font-weight:700;color:var(--tp);font-variant-numeric:tabular-nums}
+.row.ctl{height:44px}
+.delta{display:inline-flex;align-items:center;gap:4px;font-size:10px;letter-spacing:-.2px;font-variant-numeric:tabular-nums;font-weight:700}
+.delta.up{color:var(--pos)}
+.delta.dn{color:var(--neg)}
+.sentence{padding:6px 12px;font-size:12px;color:var(--ts);border-bottom:1px solid var(--hair)}
+/* A glyph is an SF Symbol name written as text in a small monospace chip on world.raised. */
+.gl{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;background:var(--raised);
+  border-radius:8px;height:18px;padding:0 5px;font-size:10px;display:inline-flex;align-items:center;white-space:nowrap}
+.gl.pos{color:var(--pos)}.gl.neg{color:var(--neg)}.gl.warn{color:var(--warn)}
+/* Controls: 44 pt touch floor (6.3). */
+.btn{height:44px;min-width:84px;padding:0 16px;border-radius:8px;border:1px solid transparent;background:var(--ap);
+  color:var(--inkOnAp);font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
+.btn.dis{background:var(--raised);color:var(--tq);border-color:var(--hair)}
+.stance{height:22px;padding:0 8px;border-radius:8px;background:var(--raised);color:var(--tp);font-size:10px;
+  letter-spacing:-.2px;font-weight:700;display:inline-flex;align-items:center}
+/* FormLine: bounded last-N strip. Bar height = (rating - 40) / 59 of a 26 pt track. */
+.form{display:flex;flex-wrap:wrap;gap:8px;padding:8px 12px;align-items:stretch}
+/* Cells never shrink: at a narrow gallery width they wrap at their true size rather than squashing. */
+.fcell{width:84px;flex:none;min-height:64px;padding:4px 6px;border:1px solid var(--hair);border-radius:8px;display:flex;flex-direction:column;gap:2px}
+.fbarwrap{height:26px;display:flex;align-items:flex-end}
+.fbar{width:6px;background:var(--tq);border-radius:0}
+.expchip{height:22px;padding:0 8px;border-radius:8px;border:1px solid var(--hair);color:var(--ts);
+  display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:-.2px;font-weight:700}
+.expchip.urgent{color:var(--warn);border-color:var(--warn)}
+/* Team chips: synthetic trio, exact 6.1 values. Every team fill carries the hairline boundary. */
+.tc{display:inline-flex;align-items:center;gap:6px;height:20px;padding:0 8px;border-radius:8px;
+  font:700 10px ui-monospace,"SF Mono",Menlo,monospace}
+.tc .sb{width:4px;height:12px;border-radius:2px;display:inline-block}
+.tc.t1{background:#14382A;color:#F2F5F3}.tc.t1 .sb{background:#D9B23C}
+.tc.t2{background:#E9E0C9;color:#18202B}.tc.t2 .sb{background:#6E3038}
+.tc.t3{background:#555B66;color:#FFFFFF}.tc.t3 .sb{background:#D9DDE4}
+.tc.hairline{box-shadow:0 0 0 1px var(--bnd)}
+/* Type roles (6.2): Title 17 / Body 12 / Callout 11-12 / Caption 10-11, tabular numerals.
+   Tight line boxes so the 64 pt band and the dense tracks hold their stated heights. */
+.t17{font-size:17px;font-weight:700;line-height:1.25}
+.t12{font-size:12px;line-height:1.3}
+.t11{font-size:11px;line-height:1.3}
+.t10{font-size:10px;letter-spacing:-.2px;line-height:1.3}
+.num{font-variant-numeric:tabular-nums}
+.cp{color:var(--tp)}.cs{color:var(--ts)}.cq{color:var(--tq)}
+.b{font-weight:700}
+/* AX5 rendition: sizes from the five verified Q5 rows only (55/53/49/44/43). */
+.ax .axt{font-size:53px;font-weight:700;line-height:1.1}
+.ax .axb{font-size:44px;line-height:1.15;letter-spacing:0}
+.ax .axc{font-size:43px;line-height:1.15;letter-spacing:0}
+.ax .band,.ax .row{height:auto;min-height:44px;flex-wrap:wrap;padding:12px}
+.ax .band .id>div{white-space:normal}
+.ax .tabs{height:auto;flex-wrap:wrap}
+.ax .tab{min-height:44px}
 </style>
 </head>
 <body>
-<div class="chrome">
+<div class="sheet">
 
-<h1>person-v3 — person components reference sheet</h1>
-<p class="meta">Group: person. Registry entries 6 (<code>IdentityBand</code>), 11 (<code>DeltaMark</code>),
-12 (<code>ConfidenceTag</code>), 16 (<code>FormLine</code>) per <code>docs/04-UX-AND-DESIGN-SYSTEM.md</code> §6.5.
-Register: DESK — near-navy workspace, restrained violet furniture, matte opaque panels, hairline seams,
-radii 8/8/10 (continuous table rows 0), spacing steps 4/6/8/12/16/20, dense 24–28 pt row tracks,
-10–12 pt micro type with −0.2 tracking, tabular numerals — the desktop-reference density direction of 04 §6.4.
-CSS px are treated as pt.</p>
+<h1>Person sheet — v3 <span class="status">group: person</span></h1>
+<p class="meta">Pro Football Coach — DESK register reference sheet. Registry entries 6 (<span class="mono">IdentityBand</span>),
+11 (<span class="mono">DeltaMark</span>), 12 (<span class="mono">ConfidenceTag</span>) and 16 (<span class="mono">FormLine</span>)
+of <span class="mono">docs/04-UX-AND-DESIGN-SYSTEM.md</span> §6.5, drawn as approval cards. 2026-08-12; revised the same
+day against <span class="mono">docs/reviews/2026-08-12-personnel-proof-review.md</span> (F-01, F-03, F-04, F-05, F-06, F-09, F-13).</p>
 
-<div class="notice">
-<strong>This sheet is a rendering, not canon.</strong> <code>docs/04-UX-AND-DESIGN-SYSTEM.md</code> is the only
-canonical home; a value appearing only in a sheet has not shipped (reference-library plan §5). Every colour,
-ratio, radius, spacing step and type size below is quoted from 04 §6.1/§6.2/§6.3 (G-07 write-back, 2026-08-12)
-or sourcing row Q5. Ratios are <em>quoted from canon, never recomputed or invented here</em>; canon states each
-ratio as measured WCAG 2.2 relative-luminance contrast against the surface the role is actually composited on
-(floors 4.5:1 body text, 3:1 large text and non-text).
+<div class="rulebox">
+<p><strong>This sheet is a rendering, not canon.</strong> <span class="mono">docs/04-UX-AND-DESIGN-SYSTEM.md</span> is the
+only canonical home; a value appearing only in a sheet has not shipped. Every hex value and every contrast ratio below is
+quoted from 04 §6.1 as written (G-07 write-back, 2026-08-12); no ratio was recomputed here, and no pair canon has not
+measured is given an invented number.</p>
+
+<p><strong>Colour disclosure (review F-03).</strong> 04 §4.4 permits prototype truth in gallery chrome outside the native
+device frame, and <span class="mono">tokens-v3</span> discloses the one place it spends that licence. <strong>This sheet
+spends none of it.</strong> The chrome around the cards draws in the light-appearance §6.1 production values and nothing
+else: ground <span class="mono">world.page #F1F2F7</span>, ink <span class="mono">content.primary #111426</span>, cards
+<span class="mono">world.work #FBFBFD</span>, hairlines and card borders <span class="mono">world.raised #E6E8F0</span>,
+secondary chrome text <span class="mono">content.secondary #4D5366</span>, kickers <span class="mono">action.primary
+#6840B0</span>, gap notes <span class="mono">action.destructive #A42D32</span>. The previous revision of this sheet carried
+eight values outside §6.1 in its chrome — one ink, four greys and three panel tints — over a
+<span class="mono">#FFFFFF</span> ground that §6.1 holds only as the low-chroma trio's
+<span class="mono">team.onTeam</span>. None of them was disclosed; they are gone rather than disclosed. No value inside a device frame was ever off-canon and none is now. Hairlines follow §6.1's
+named rule — a hairline rule draws in <span class="mono">world.raised</span> over <span class="mono">work</span> surfaces,
+the mandatory team-fill boundary in <span class="mono">content.secondary</span>.</p>
+
+<p><strong>Shared world (review F-06).</strong> Identities and figures come from
+<span class="mono">docs/briefs/2026-08-12-reference-shared-world.md</span>, so the library depicts one save rather than
+five. The moment: <strong>Week 9, preparation day, Example State, record 6-2, next opponent Example Coastal (away)</strong>
+— eight games played. The cast drawn here: <strong>Player Fourteen</strong> (QB, No. 14, senior, age 22, OVR 84, fit 82,
+last five ratings 78 / 81 / 74 / 86 / 83, contract expires after next season) on Cards 1 and 4 and in every width proof;
+<strong>Player Seventy-Two</strong> (LT, No. 72, junior, age 20, OVR 88, fit 85, awareness 74 up 2 since Week 6, cause
+development focus, no status chips) on Card 2; <strong>Player Seven</strong> (WR, No. 7, sophomore, age 19, OVR 79,
+fit 75, unscouted at the market level) on Card 3; <strong>Analyst Sample</strong> voicing the verdict target form. Those
+facts are used verbatim. <em>Every other figure on this sheet — attribute values below overall, money, past scores, past
+opponent codes — is sheet-local detail that the shared world does not fix and no other sheet holds.</em> Past opponents
+render as codes (OPP-A through OPP-E) because the shared world fixes three programmes and this sheet will not invent five
+more.</p>
+
+<p><strong>Identity and legal.</strong> All identities are mechanical placeholders labelled <em>pending generator
+output</em>. No real school, team, player, coach, city or mark appears; the name-collision and trade-dress tests stay green
+over anything rendered here. The photo area is the blank plate of 04 §5.1 — no generated face, no initials pretending to be
+a photograph. Team colours are the synthetic reference trio of 04 §6.1, labelled <em>synthetic — pending generator
+output</em>.</p>
+
+<p><strong>Symbols (04 §6.6, the register that holds the totals).</strong> This sheet draws three symbols, all existing
+register members, and grows no class: <span class="mono">arrow.up.right</span> and
+<span class="mono">arrow.down.right</span> — the whole of the <strong>Change</strong> class (cap 2, registry 11) — and
+<span class="mono">clock.badge.exclamationmark</span>, one of the twelve <strong>Status</strong> members. The register's
+total of 21 learned symbols is unchanged by this sheet. Two symbols the previous revision drew,
+<span class="mono">tag</span> (banded estimate) and <span class="mono">clock</span> (non-urgent expiry), are <em>not</em>
+in §6.6; both are removed and their meaning is carried in words, because the cheaper fix is never to grow a class.</p>
+
+<p><strong>Data sources, none live.</strong> Verdicts: gap <strong>G-02</strong> (engine-owned verdicts) — both the
+shipping form and the target form are drawn and labelled on Card 1, per §6.5's verdict-state rule. DeltaMark: gap
+<strong>G-03</strong> (per-attribute recent-change record). FormLine: gap <strong>G-04</strong> (per-game rating definition
+and last-5 projection). Opponent-preparation confidence: gap <strong>G-05</strong>. Drawing a verdict without a baseline, a
+change mark without a retained delta, or a band without a recorded observation is fabrication under 04 §4.4/§4.5 — these
+cards name their gaps instead.</p>
+
+<p class="meta">Self-contained HTML and CSS. No JavaScript, no CDN, no web font, no icon font, no images, no emoji. System
+type stack; a glyph is an SF Symbol name written as text in a small monospace chip standing in for the 16 pt symbol. CSS px
+are read as pt. Light and dark are rendered side by side as explicit sections. Registry entries are <strong>provisional</strong>
+under the P11 three-production-uses rule; these cards are for owner approval.</p>
 </div>
 
-<div class="notice">
-<strong>Identity and legal.</strong> All identities are mechanical placeholders — Player Fourteen, Player Forty,
-Example State Institute, Example Coastal Institute, Opponent One through Opponent Five — labelled
-<em>pending generator output</em>. No real school, team, player, coach, city or mark appears; the name-collision
-and trade-dress tests stay green over anything rendered here. The photo area is the blank plate of 04 §5.1:
-no generated face, no initials pretending to be a photograph. Team colours are the synthetic reference trio of
-04 §6.1, labelled <em>synthetic — pending generator output</em>. No emoji. No JavaScript, no CDN, no web font,
-no icon font, no images: a glyph is an SF Symbol name written as text in a small monospace chip.
-</div>
+<!-- ================================================================ CARD 1 -->
+<section class="card" id="identity-band">
+<header>
+<h2>IdentityBand <span class="status">Registry 6 — provisional</span></h2>
+<p class="note">Person-led stable header for sequenced disclosure. Grounding: finding F1 (the identity band is the stable
+anchor of sequenced disclosure) and density-model technique T9 (the band is what makes sequenced disclosure feel like one
+place; it traded roughly 15% of the reference frame). The band carries the stable person anchor — name, number, class year,
+age, position, programme, overall, fit, terms, worth band, team chip — and stays fixed while detail levels swap beneath it.
+Screen-local precursor: <span class="mono">Sources/ProFootballCoachUI/PlayerProfileView.swift</span>. Data source: person
+identity from the career read model (exists, fixture-fed); the worth band derives from recorded observations (ConfidenceTag
+rules apply). No live data is claimed.</p>
+</header>
 
-<div class="notice">
-<strong>Data sources are stated per card and none claims live data.</strong> Person surfaces carry verdict lines
-only where the engine will own the computation; no engine verdict machinery exists yet, so every verdict slot on
-this sheet is drawn empty with its gap ID, G-02 (engine-owned verdicts), in place — contract point 8. DeltaMark
-draws against gap G-03 (per-attribute recent-change record); FormLine draws against gap G-04 (per-player form
-series). Drawing a change mark without a retained delta, or a band without a recorded observation, is
-fabrication under 04 §4.4/§4.5 — these cards therefore name their gaps instead.
-</div>
+<h3>Two lower-region states — the anchor holds while detail swaps</h3>
+<p class="note">Each appearance renders the band twice, with Attributes selected and then Form selected. The band markup is
+identical in both; only the region beneath the tab row swaps. Subject: <strong>Player Fourteen</strong>, the quarterback the
+shared world fixes. Attribute values below overall are sheet-local detail, pending generator output.</p>
 
-<!-- ================================================================
-     CARD 1 — Registry 6: IdentityBand
-     ================================================================ -->
-<h2>Card 1 — Registry 6: <code>IdentityBand</code></h2>
-<p>Purpose (04 §6.5): person-led stable header for sequenced disclosure. Grounding: finding F1 (the identity
-band is the stable anchor of sequenced disclosure) and density-model technique T9 (the band is what makes
-sequenced disclosure feel like one place; it traded roughly 15% of the reference frame). The band carries the
-stable person anchor — name, age, position, programme, terms, current worth band — and stays fixed while
-detail levels swap beneath it. Below, each appearance renders the band twice with <em>two different
-lower-region states</em> (Attributes selected, then Form selected): the band is markup-identical in both;
-only the region beneath the tab row swaps. Screen-local precursor: <code>Sources/ProFootballCoachUI/PlayerProfileView.swift</code>.
-Data source: person identity from the career read model (exists, fixture-fed); the worth band shown derives
-from recorded observations (ConfidenceTag rules apply); no live data is claimed.</p>
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark — world.page #080A14 gutter, world.work #111426 surface</div>
 
-<div class="pair">
-  <!-- DARK -->
-  <div class="rp d">
-    <p class="apx">Dark — page #080A14 gutter, work #111426 surface</p>
-
-    <!-- State A: Attributes tab selected -->
-    <div class="srf">
-      <div class="band">
-        <div class="plate" role="img" aria-label="Photo plate, blank"></div>
-        <div class="id">
-          <div class="t17 cp">Player Fourteen</div>
-          <div class="t11 cs">Age 20 &#183; LB &#183; Example State Institute</div>
-          <div class="t10 cq num">Terms $1,850,000 through 2029 &#183; Worth $2,400,000&#8211;$3,100,000 (band)</div>
-        </div>
-        <div class="bandright">
-          <span class="chip" style="background:var(--t1p);color:var(--t1o)"><span class="sec" style="background:var(--t1s)"></span>ESI</span>
-        </div>
-      </div>
-      <div class="verdict-slot">VerdictLine slot &#8212; drawn empty. Gap G-02, engine-owned verdicts: no
-        baseline/sample/confidence computation exists, so no verdict is fabricated here (04 §4.5).</div>
-      <div class="tabs">
-        <div class="tab">Overview</div>
-        <div class="tab sel">Attributes</div>
-        <div class="tab">Form</div>
-        <div class="tab">History</div>
-      </div>
-      <div class="rows">
-        <div class="row"><span class="lbl">Awareness</span><span class="delta pos"><span class="g">arrow.up.right</span>+2</span><span class="val">74</span></div>
-        <div class="row"><span class="lbl">Tackling</span><span class="val">81</span></div>
-        <div class="row"><span class="lbl">Speed</span><span class="delta neg"><span class="g">arrow.down.right</span>&#8722;1</span><span class="val">68</span></div>
-      </div>
+<div class="srf">
+  <div class="band">
+    <div class="plate" role="img" aria-label="Photo plate, blank"></div>
+    <div class="id">
+      <div class="t17 cp">Player Fourteen <span class="t12 cs num">No. 14</span></div>
+      <div class="t11 cs">Senior &#183; Age 22 &#183; QB &#183; Example State</div>
+      <div class="t10 cq num">OVR 84 &#183; Fit 82 &#183; Terms expire after next season &#183; Worth $2,400,000&#8211;$3,100,000 (band)</div>
     </div>
-
-    <p class="apx" style="margin-top:12px">Same band, second lower-region state &#8212; Form tab selected. The band is unchanged.</p>
-
-    <!-- State B: Form tab selected -->
-    <div class="srf">
-      <div class="band">
-        <div class="plate" role="img" aria-label="Photo plate, blank"></div>
-        <div class="id">
-          <div class="t17 cp">Player Fourteen</div>
-          <div class="t11 cs">Age 20 &#183; LB &#183; Example State Institute</div>
-          <div class="t10 cq num">Terms $1,850,000 through 2029 &#183; Worth $2,400,000&#8211;$3,100,000 (band)</div>
-        </div>
-        <div class="bandright">
-          <span class="chip" style="background:var(--t1p);color:var(--t1o)"><span class="sec" style="background:var(--t1s)"></span>ESI</span>
-        </div>
-      </div>
-      <div class="verdict-slot">VerdictLine slot &#8212; drawn empty. Gap G-02 in place (as above).</div>
-      <div class="tabs">
-        <div class="tab">Overview</div>
-        <div class="tab">Attributes</div>
-        <div class="tab sel">Form</div>
-        <div class="tab">History</div>
-      </div>
-      <div class="form">
-        <div class="fcell"><span class="t10 cs">Wk 5 &#183; OP1</span><span class="t12 cp b num">W 31&#8211;17</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="t10 cs num">78</span></div>
-        <div class="fcell"><span class="t10 cs">Wk 6 &#183; OP2</span><span class="t12 cp b num">L 13&#8211;20</span><div class="fbarwrap"><div class="fbar" style="height:13px"></div></div><span class="t10 cs num">66</span></div>
-        <div class="fcell"><span class="t10 cs">Wk 7 &#183; OP3</span><span class="t12 cp b num">W 24&#8211;21</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="t10 cs num">71</span></div>
-      </div>
-    </div>
-
-    <!-- Team chip against all three synthetic trio pairs -->
-    <p class="apx" style="margin-top:12px">Team chip against the three synthetic trio pairs (04 §6.1) &#8212; synthetic &#8212; pending generator output</p>
-    <div class="srf" style="padding:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
-      <span class="chip" style="background:var(--t1p);color:var(--t1o)"><span class="sec" style="background:var(--t1s)"></span>ESI</span>
-      <span class="chip" style="background:var(--t2p);color:var(--t2o)"><span class="sec" style="background:var(--t2s)"></span>ESI</span>
-      <span class="chip" style="background:var(--t3p);color:var(--t3o);border:1px solid var(--hairq)"><span class="sec" style="background:var(--t3s)"></span>ESI</span>
-      <span class="t10 cq">left to right: dark-primary, light-primary, low-chroma (hairline boundary mandatory on dark work: 2.67 vs the 3:1 non-text floor)</span>
-    </div>
+    <div class="bandright"><span class="tc t1 hairline"><span class="sb"></span>EXS</span></div>
   </div>
-
-  <!-- LIGHT -->
-  <div class="rp l">
-    <p class="apx">Light — page #F1F2F7 gutter, work #FBFBFD surface</p>
-
-    <div class="srf">
-      <div class="band">
-        <div class="plate" role="img" aria-label="Photo plate, blank"></div>
-        <div class="id">
-          <div class="t17 cp">Player Fourteen</div>
-          <div class="t11 cs">Age 20 &#183; LB &#183; Example State Institute</div>
-          <div class="t10 cq num">Terms $1,850,000 through 2029 &#183; Worth $2,400,000&#8211;$3,100,000 (band)</div>
-        </div>
-        <div class="bandright">
-          <span class="chip" style="background:var(--t1p);color:var(--t1o)"><span class="sec" style="background:var(--t1s)"></span>ESI</span>
-        </div>
-      </div>
-      <div class="verdict-slot">VerdictLine slot &#8212; drawn empty. Gap G-02, engine-owned verdicts: no
-        baseline/sample/confidence computation exists, so no verdict is fabricated here (04 §4.5).</div>
-      <div class="tabs">
-        <div class="tab">Overview</div>
-        <div class="tab sel">Attributes</div>
-        <div class="tab">Form</div>
-        <div class="tab">History</div>
-      </div>
-      <div class="rows">
-        <div class="row"><span class="lbl">Awareness</span><span class="delta pos"><span class="g">arrow.up.right</span>+2</span><span class="val">74</span></div>
-        <div class="row"><span class="lbl">Tackling</span><span class="val">81</span></div>
-        <div class="row"><span class="lbl">Speed</span><span class="delta neg"><span class="g">arrow.down.right</span>&#8722;1</span><span class="val">68</span></div>
-      </div>
-    </div>
-
-    <p class="apx" style="margin-top:12px">Same band, second lower-region state &#8212; Form tab selected. The band is unchanged.</p>
-
-    <div class="srf">
-      <div class="band">
-        <div class="plate" role="img" aria-label="Photo plate, blank"></div>
-        <div class="id">
-          <div class="t17 cp">Player Fourteen</div>
-          <div class="t11 cs">Age 20 &#183; LB &#183; Example State Institute</div>
-          <div class="t10 cq num">Terms $1,850,000 through 2029 &#183; Worth $2,400,000&#8211;$3,100,000 (band)</div>
-        </div>
-        <div class="bandright">
-          <span class="chip" style="background:var(--t1p);color:var(--t1o)"><span class="sec" style="background:var(--t1s)"></span>ESI</span>
-        </div>
-      </div>
-      <div class="verdict-slot">VerdictLine slot &#8212; drawn empty. Gap G-02 in place (as above).</div>
-      <div class="tabs">
-        <div class="tab">Overview</div>
-        <div class="tab">Attributes</div>
-        <div class="tab sel">Form</div>
-        <div class="tab">History</div>
-      </div>
-      <div class="form">
-        <div class="fcell"><span class="t10 cs">Wk 5 &#183; OP1</span><span class="t12 cp b num">W 31&#8211;17</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="t10 cs num">78</span></div>
-        <div class="fcell"><span class="t10 cs">Wk 6 &#183; OP2</span><span class="t12 cp b num">L 13&#8211;20</span><div class="fbarwrap"><div class="fbar" style="height:13px"></div></div><span class="t10 cs num">66</span></div>
-        <div class="fcell"><span class="t10 cs">Wk 7 &#183; OP3</span><span class="t12 cp b num">W 24&#8211;21</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="t10 cs num">71</span></div>
-      </div>
-    </div>
-
-    <p class="apx" style="margin-top:12px">Team chip against the three synthetic trio pairs &#8212; synthetic &#8212; pending generator output</p>
-    <div class="srf" style="padding:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap">
-      <span class="chip" style="background:var(--t1p);color:var(--t1o)"><span class="sec" style="background:var(--t1s)"></span>ESI</span>
-      <span class="chip" style="background:var(--t2p);color:var(--t2o)"><span class="sec" style="background:var(--t2s)"></span>ESI</span>
-      <span class="chip" style="background:var(--t3p);color:var(--t3o);border:1px solid var(--hairq)"><span class="sec" style="background:var(--t3s)"></span>ESI</span>
-      <span class="t10 cq">canon states the low-chroma floor breach against dark work only; the hairline is carried here too as the safe default, because generated colour cannot be assumed to clear the floor against every surface (04 §6.1)</span>
-    </div>
+  <div class="vslot">VerdictLine slot &#8212; drawn empty. Gap G-02, engine-owned verdicts: no baseline, sample or
+    confidence computation exists, so no verdict is fabricated here (04 §4.5). This is the shipping form.</div>
+  <div class="tabs">
+    <div class="tab">Overview</div><div class="tab sel">Attributes</div><div class="tab">Form</div><div class="tab">History</div>
+  </div>
+  <div class="rows">
+    <div class="row"><span class="lbl">Decision-making</span><span class="delta up"><span class="gl pos">arrow.up.right</span>+2</span><span class="t10 cq">film study, Wk 7</span><span class="val">83</span></div>
+    <div class="row"><span class="lbl">Short accuracy</span><span class="delta up"><span class="gl pos">arrow.up.right</span>+1</span><span class="t10 cq">practice emphasis, Wk 8</span><span class="val">86</span></div>
+    <div class="row"><span class="lbl">Play-action timing</span><span class="delta dn"><span class="gl neg">arrow.down.right</span>&#8722;1</span><span class="t10 cq">reduced reps, Wk 5</span><span class="val">77</span></div>
+    <div class="row"><span class="lbl">Deep accuracy</span><span class="t10 cq">no recent change</span><span class="val">79</span></div>
   </div>
 </div>
 
-<h3>Measured pairs used above — quoted from 04 §6.1 (G-07 write-back)</h3>
-<table class="ratios">
-<tr><th>Element</th><th>Pair</th><th>Dark ratio</th><th>Light ratio</th><th>Floor</th></tr>
-<tr><td>Name (17 pt), terms value, attribute values</td><td>content.primary on world.work</td><td>16.74</td><td>17.64</td><td>4.5 met</td></tr>
-<tr><td>Meta line, worth band, tab labels (unselected)</td><td>content.secondary on world.work</td><td>9.71</td><td>7.40</td><td>4.5 met</td></tr>
-<tr><td>Micro metadata, verdict-slot label</td><td>content.quiet on world.work</td><td>5.44</td><td>6.07</td><td>4.5 met (metadata only; quiet never carries working prose)</td></tr>
-<tr><td>Selected-tab underline (non-text)</td><td>action.primary on world.work</td><td>4.64</td><td>6.89</td><td>3 met</td></tr>
-<tr><td>Delta up mark</td><td>state.positive on world.work</td><td>9.95</td><td>5.86</td><td>4.5 met</td></tr>
-<tr><td>Delta down mark</td><td>state.negative on world.work</td><td>6.72</td><td>6.77</td><td>4.5 met</td></tr>
-<tr><td>Form thread bars (non-text)</td><td>state.info on world.work</td><td>7.73</td><td>6.47</td><td>3 met</td></tr>
-<tr><td>Team chip text, dark-primary pair</td><td>team.onTeam on team.primary</td><td colspan="2">11.74 (surface-independent pair)</td><td>4.5 met</td></tr>
-<tr><td>Team chip text, light-primary pair</td><td>team.onTeam on team.primary</td><td colspan="2">12.47</td><td>4.5 met</td></tr>
-<tr><td>Team chip text, low-chroma pair</td><td>team.onTeam on team.primary</td><td colspan="2">6.83</td><td>4.5 met</td></tr>
-<tr><td>Chip secondary square, per pair</td><td>team.secondary on team.primary</td><td colspan="2">6.37 / 7.45 / 5.01</td><td>3 met</td></tr>
-<tr><td>Low-chroma chip against dark work</td><td>team.primary on world.work (dark)</td><td>2.67</td><td>6.61 (canon 6.1, 2026-08-12)</td><td>boundary mandatory on every team fill per canon's generalised rule (boundary ink content.secondary)</td></tr>
+<p class="caption">Same band, second lower-region state — Form selected. The band is unchanged.</p>
+<div class="srf">
+  <div class="band">
+    <div class="plate" role="img" aria-label="Photo plate, blank"></div>
+    <div class="id">
+      <div class="t17 cp">Player Fourteen <span class="t12 cs num">No. 14</span></div>
+      <div class="t11 cs">Senior &#183; Age 22 &#183; QB &#183; Example State</div>
+      <div class="t10 cq num">OVR 84 &#183; Fit 82 &#183; Terms expire after next season &#183; Worth $2,400,000&#8211;$3,100,000 (band)</div>
+    </div>
+    <div class="bandright"><span class="tc t1 hairline"><span class="sb"></span>EXS</span></div>
+  </div>
+  <div class="vslot">VerdictLine slot &#8212; drawn empty; gap G-02 in place (shipping form, as above).</div>
+  <div class="tabs">
+    <div class="tab">Overview</div><div class="tab">Attributes</div><div class="tab sel">Form</div><div class="tab">History</div>
+  </div>
+  <div class="form">
+    <div class="fcell"><span class="t10 cs">Wk 4 &#183; OPP-A</span><span class="t12 cp b num">W 27&#8211;14</span><div class="fbarwrap"><div class="fbar" style="height:17px"></div></div><span class="t10 cs num">78</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 5 &#183; OPP-B</span><span class="t12 cp b num">W 24&#8211;7</span><div class="fbarwrap"><div class="fbar" style="height:18px"></div></div><span class="t10 cs num">81</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 6 &#183; OPP-C</span><span class="t12 cp b num">L 17&#8211;24</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="t10 cs num">74</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 7 &#183; OPP-D</span><span class="t12 cp b num">W 31&#8211;12</span><div class="fbarwrap"><div class="fbar" style="height:20px"></div></div><span class="t10 cs num">86</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 8 &#183; OPP-E</span><span class="t12 cp b num">W 20&#8211;16</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="t10 cs num">83</span></div>
+  </div>
+</div>
+<p class="ratios">Quoted ratios (04 §6.1, dark): content.primary on work 16.74 · content.secondary on work 9.71 ·
+content.quiet on work 5.44 (metadata licence; quiet never carries working prose) · action.primary on work 4.64 (the 2 pt
+selected-tab underline is non-text, floor 3) · state.positive on work 9.95 and on raised 9.07 · state.negative on work 6.72
+and on raised 6.12 · content.quiet on work 5.44 for the thread bars (non-text, floor 3).</p>
+</div>
+
+<div class="pane lt"><div class="pane-h">Light — world.page #F1F2F7 gutter, world.work #FBFBFD surface</div>
+
+<div class="srf">
+  <div class="band">
+    <div class="plate" role="img" aria-label="Photo plate, blank"></div>
+    <div class="id">
+      <div class="t17 cp">Player Fourteen <span class="t12 cs num">No. 14</span></div>
+      <div class="t11 cs">Senior &#183; Age 22 &#183; QB &#183; Example State</div>
+      <div class="t10 cq num">OVR 84 &#183; Fit 82 &#183; Terms expire after next season &#183; Worth $2,400,000&#8211;$3,100,000 (band)</div>
+    </div>
+    <div class="bandright"><span class="tc t1 hairline"><span class="sb"></span>EXS</span></div>
+  </div>
+  <div class="vslot">VerdictLine slot &#8212; drawn empty. Gap G-02, engine-owned verdicts: no baseline, sample or
+    confidence computation exists, so no verdict is fabricated here (04 §4.5). This is the shipping form.</div>
+  <div class="tabs">
+    <div class="tab">Overview</div><div class="tab sel">Attributes</div><div class="tab">Form</div><div class="tab">History</div>
+  </div>
+  <div class="rows">
+    <div class="row"><span class="lbl">Decision-making</span><span class="delta up"><span class="gl pos">arrow.up.right</span>+2</span><span class="t10 cq">film study, Wk 7</span><span class="val">83</span></div>
+    <div class="row"><span class="lbl">Short accuracy</span><span class="delta up"><span class="gl pos">arrow.up.right</span>+1</span><span class="t10 cq">practice emphasis, Wk 8</span><span class="val">86</span></div>
+    <div class="row"><span class="lbl">Play-action timing</span><span class="delta dn"><span class="gl neg">arrow.down.right</span>&#8722;1</span><span class="t10 cq">reduced reps, Wk 5</span><span class="val">77</span></div>
+    <div class="row"><span class="lbl">Deep accuracy</span><span class="t10 cq">no recent change</span><span class="val">79</span></div>
+  </div>
+</div>
+
+<p class="caption">Same band, second lower-region state — Form selected. The band is unchanged.</p>
+<div class="srf">
+  <div class="band">
+    <div class="plate" role="img" aria-label="Photo plate, blank"></div>
+    <div class="id">
+      <div class="t17 cp">Player Fourteen <span class="t12 cs num">No. 14</span></div>
+      <div class="t11 cs">Senior &#183; Age 22 &#183; QB &#183; Example State</div>
+      <div class="t10 cq num">OVR 84 &#183; Fit 82 &#183; Terms expire after next season &#183; Worth $2,400,000&#8211;$3,100,000 (band)</div>
+    </div>
+    <div class="bandright"><span class="tc t1 hairline"><span class="sb"></span>EXS</span></div>
+  </div>
+  <div class="vslot">VerdictLine slot &#8212; drawn empty; gap G-02 in place (shipping form, as above).</div>
+  <div class="tabs">
+    <div class="tab">Overview</div><div class="tab">Attributes</div><div class="tab sel">Form</div><div class="tab">History</div>
+  </div>
+  <div class="form">
+    <div class="fcell"><span class="t10 cs">Wk 4 &#183; OPP-A</span><span class="t12 cp b num">W 27&#8211;14</span><div class="fbarwrap"><div class="fbar" style="height:17px"></div></div><span class="t10 cs num">78</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 5 &#183; OPP-B</span><span class="t12 cp b num">W 24&#8211;7</span><div class="fbarwrap"><div class="fbar" style="height:18px"></div></div><span class="t10 cs num">81</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 6 &#183; OPP-C</span><span class="t12 cp b num">L 17&#8211;24</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="t10 cs num">74</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 7 &#183; OPP-D</span><span class="t12 cp b num">W 31&#8211;12</span><div class="fbarwrap"><div class="fbar" style="height:20px"></div></div><span class="t10 cs num">86</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 8 &#183; OPP-E</span><span class="t12 cp b num">W 20&#8211;16</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="t10 cs num">83</span></div>
+  </div>
+</div>
+<p class="ratios">Quoted ratios (04 §6.1, light): content.primary on work 17.64 · content.secondary on work 7.40 ·
+content.quiet on work 6.07 · action.primary on work 6.89 · state.positive on work 5.86 and on raised 4.95 ·
+state.negative on work 6.77 and on raised 5.72 · content.quiet on work 6.07 for the thread bars (non-text, floor 3).</p>
+</div>
+</div>
+
+<h3>The verdict slot — both states, labelled (04 §6.5's verdict-state rule)</h3>
+<p class="note">Registry 13 has exactly one drawing convention across the library, because three sheets shipped three.
+Every surface that will carry a verdict draws <strong>both</strong>: the <strong>shipping form</strong> is the slot empty
+with its gap ID in place, because G-02 does not exist and §4.4 rejects invented authority; the <strong>target form</strong>
+is the populated verdict — staff name, sample size, confidence and the computation class that backs it — marked
+<em>once G-02 lands</em>. The populated form is never the unlabelled default, and it does not appear in this sheet's width
+or AX5 renditions, which draw the shipping form only. The three blocks below are alternative states of <em>one</em> slot,
+not three lines on one surface: §4.5's ceiling of one verdict line per readout holds.</p>
+<p class="note">The third block answers review F-13: every populated verdict in the library reads "confidence high", and
+the thin-sample case is the one that makes a simulation honest under uncertainty. At low confidence the judgement states a
+<strong>band</strong> rather than a point (§4.2: bands for estimates), keeps the sample size in the sentence, and names what
+would raise it. It is drawn on the two-game case — the mid-season arrival the FormLine partial state also uses — because
+Player Fourteen's eight games could not produce it. Confidence is carried in words, never in a state colour: a low
+confidence is not a warning.</p>
+
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark</div>
+<p class="caption">1 — Shipping form, today</p>
+<div class="srf"><div class="vslot">VerdictLine slot &#8212; drawn empty. Gap G-02, engine-owned verdicts: no
+  distributional baseline, expectation delta, sample or confidence computation exists.</div></div>
+<p class="caption">2 — Target form, once G-02 lands (full sample, high confidence)</p>
+<div class="srf"><div class="vline"><b>Pass efficiency sits in the 68th percentile of the conference this season.</b>
+  Analyst Sample, analytics &#183; sample 8 games &#183; confidence high &#183; season percentile against the conference
+  baseline.</div></div>
+<p class="caption">3 — Target form, once G-02 lands (thin sample, low confidence — a two-game case, not Player Fourteen)</p>
+<div class="srf"><div class="vline"><b>Pass efficiency sits somewhere between the 45th and 70th percentile.</b>
+  Analyst Sample, analytics &#183; sample 2 games &#183; confidence low &#183; season percentile against the conference
+  baseline &#183; the band narrows to a point estimate at 5 games.</div></div>
+<p class="ratios">Quoted ratios (04 §6.1, dark): empty-slot label and its dashed boundary, content.quiet on work 5.44
+(text floor 4.5 met as metadata; boundary is non-text, floor 3) · verdict judgement, content.primary on raised 15.27 ·
+verdict evidence chain, content.secondary on raised 8.86.</p>
+</div>
+<div class="pane lt"><div class="pane-h">Light</div>
+<p class="caption">1 — Shipping form, today</p>
+<div class="srf"><div class="vslot">VerdictLine slot &#8212; drawn empty. Gap G-02, engine-owned verdicts: no
+  distributional baseline, expectation delta, sample or confidence computation exists.</div></div>
+<p class="caption">2 — Target form, once G-02 lands (full sample, high confidence)</p>
+<div class="srf"><div class="vline"><b>Pass efficiency sits in the 68th percentile of the conference this season.</b>
+  Analyst Sample, analytics &#183; sample 8 games &#183; confidence high &#183; season percentile against the conference
+  baseline.</div></div>
+<p class="caption">3 — Target form, once G-02 lands (thin sample, low confidence — a two-game case, not Player Fourteen)</p>
+<div class="srf"><div class="vline"><b>Pass efficiency sits somewhere between the 45th and 70th percentile.</b>
+  Analyst Sample, analytics &#183; sample 2 games &#183; confidence low &#183; season percentile against the conference
+  baseline &#183; the band narrows to a point estimate at 5 games.</div></div>
+<p class="ratios">Quoted ratios (04 §6.1, light): empty-slot label and its dashed boundary, content.quiet on work 6.07 ·
+verdict judgement, content.primary on raised 14.90 · verdict evidence chain, content.secondary on raised 6.25.</p>
+</div>
+</div>
+
+<h3>Team chip — the three synthetic trio pairs, both appearances</h3>
+<p class="note">Labelled <strong>synthetic — pending generator output</strong> (owner disposition 2026-08-12; the P2
+generator's sampled space is uniformly dark-primary). Canon's rule is general, not a low-chroma special case: every trio
+primary falls below the 3:1 non-text floor against its tonally-similar surface, so <strong>a team-colour fill always
+carries the hairline boundary</strong>, drawn in content.secondary. All three chips carry it here.</p>
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark — on world.work</div>
+<div style="background:var(--work);border-radius:10px;border:1px solid var(--hair);padding:12px;display:flex;gap:12px;flex-wrap:wrap">
+<span class="tc t1 hairline"><span class="sb"></span>EXS Example State</span>
+<span class="tc t2 hairline"><span class="sb"></span>ECL Example Coastal</span>
+<span class="tc t3 hairline"><span class="sb"></span>EUN Example Union</span>
+</div>
+<p class="ratios">Quoted from 04 §6.1: team fills against dark work measure 1.41 (dark-primary), 13.86 (light-primary) and
+2.67 (low-chroma) — two of the three sit below the 3:1 non-text floor, which is why the boundary is mandatory rather than
+conditional.</p>
+</div>
+<div class="pane lt"><div class="pane-h">Light — on world.work</div>
+<div style="background:var(--work);border-radius:10px;border:1px solid var(--hair);padding:12px;display:flex;gap:12px;flex-wrap:wrap">
+<span class="tc t1 hairline"><span class="sb"></span>EXS Example State</span>
+<span class="tc t2 hairline"><span class="sb"></span>ECL Example Coastal</span>
+<span class="tc t3 hairline"><span class="sb"></span>EUN Example Union</span>
+</div>
+<p class="ratios">Quoted from 04 §6.1: team fills against light work measure 12.47 (dark-primary), 1.27 (light-primary)
+and 6.61 (low-chroma).</p>
+</div>
+</div>
+
+<h3>Measured pairs used on this card — quoted from 04 §6.1 (G-07 write-back)</h3>
+<table class="ratiotable">
+<tr><th>Element</th><th>Pair</th><th>Dark</th><th>Light</th><th>Floor</th></tr>
+<tr><td>Name (17 pt), attribute values, verdict judgement (on work)</td><td>content.primary on world.work</td><td>16.74</td><td>17.64</td><td>4.5 met</td></tr>
+<tr><td>Number, meta line, tab labels, verdict evidence (on work)</td><td>content.secondary on world.work</td><td>9.71</td><td>7.40</td><td>4.5 met</td></tr>
+<tr><td>Micro metadata, empty-slot label, thread bars</td><td>content.quiet on world.work</td><td>5.44</td><td>6.07</td><td>4.5 met as metadata; 3 met for the non-text bars and dashed boundary</td></tr>
+<tr><td>Selected-tab underline (non-text, 2 pt)</td><td>action.primary on world.work</td><td>4.64</td><td>6.89</td><td>3 met</td></tr>
+<tr><td>Delta up: signed number</td><td>state.positive on world.work</td><td>9.95</td><td>5.86</td><td>4.5 met</td></tr>
+<tr><td>Delta up: glyph chip ink (chip sits on raised)</td><td>state.positive on world.raised</td><td>9.07</td><td>4.95</td><td>4.5 met</td></tr>
+<tr><td>Delta down: signed number</td><td>state.negative on world.work</td><td>6.72</td><td>6.77</td><td>4.5 met</td></tr>
+<tr><td>Delta down: glyph chip ink</td><td>state.negative on world.raised</td><td>6.12</td><td>5.72</td><td>4.5 met</td></tr>
+<tr><td>Verdict judgement, target form (strip sits on raised)</td><td>content.primary on world.raised</td><td>15.27</td><td>14.90</td><td>4.5 met</td></tr>
+<tr><td>Verdict evidence chain, target form</td><td>content.secondary on world.raised</td><td>8.86</td><td>6.25</td><td>4.5 met</td></tr>
+<tr><td>Team chip text, per pair</td><td>team.onTeam on team.primary</td><td colspan="2">11.74 / 12.47 / 6.83 (surface-independent)</td><td>4.5 met</td></tr>
+<tr><td>Chip secondary bar, per pair</td><td>team.secondary on team.primary</td><td colspan="2">6.37 / 7.45 / 5.01</td><td>3 met</td></tr>
+<tr><td>Team fills against work (why the boundary is mandatory)</td><td>team.primary on world.work</td><td>1.41 / 13.86 / 2.67</td><td>12.47 / 1.27 / 6.61</td><td>boundary carried on every fill, drawn in content.secondary</td></tr>
 </table>
 
-<div class="contract-block">
-<h3>CONTRACT — IdentityBand, ten points</h3>
-<ol class="contract">
-<li><strong>Appearances and ratios.</strong> Light and dark both rendered above; every foreground/background
-pair used is listed in the table with its ratio against the surface it is actually composited on. Ratios are
-quoted from 04 §6.1's measured tables (canon holds the measurements; this sheet recomputes nothing). Floors:
-4.5:1 body text, 3:1 large text and non-text — every body pair meets 4.5, every non-text pair meets 3.</li>
+<div class="contract">
+<h4>Contract — IdentityBand</h4>
+<ol>
+<li><strong>Appearances and ratios.</strong> Light and dark rendered side by side for all three sections of this card
+(two lower-region states, three verdict-slot states, three team chips); every foreground/background pair used is in the
+table above with the ratio 04 §6.1 states for it, against the surface the role is actually composited on. Canon holds the
+measurements; this sheet recomputes nothing. Floors: 4.5:1 body text, 3:1 large text and non-text — every body pair meets
+4.5, every non-text pair meets 3.</li>
 <li><strong>Widths.</strong> D15 is settled in 04 §7: promise window 852&#215;393 through 956&#215;440, install floor
-844&#215;390. The identity-band-plus-attributes composition is rendered at 844, 852 and 956 pt in the Width
-proofs section at the end of this sheet, plus one AX5 rendition — no clipping at any width; this card's band
-is that composition's anchor.</li>
-<li><strong>Touch.</strong> Interactive elements: the four tabs, each 44 pt tall and &#8805;64 pt wide
-(measured: minimum tab 64&#215;44 pt &#8805; 44&#215;44 pt floor; the floor is HIG-verified per 04 §7, which keeps 44 pt
-against Apple's stated 28 pt minimum). The band itself, the plate and the team chip are identity, not
-controls, and carry no floor claim.</li>
-<li><strong>States.</strong> Two lower-region states rendered (Attributes selected, Form selected) proving the
-anchor holds while detail swaps (F1/T9); selected tab state shown with boundary (2 pt underline) plus value
-(weight and colour step) plus spoken state ("selected") — never a coloured fill alone (04 §6.3). Loading,
-empty, error and interrupted are owned by the surrounding composition (registry 23) — a band renders only
-when its person exists; disabled and delegated do not apply to an anchor.</li>
-<li><strong>Team colour.</strong> The chip renders against all three synthetic trio pairs, labelled
-"synthetic — pending generator output". Floors quoted: onTeam-on-primary 11.74 / 12.47 / 6.83 (&#8805;4.5);
-secondary-on-primary 6.37 / 7.45 / 5.01 (&#8805;3). Low-chroma on dark work measures 2.67, below the 3:1
-non-text floor, so that chip carries the mandatory hairline boundary (04 §6.1).</li>
-<li><strong>VoiceOver.</strong> Band, one sentence: "Player Fourteen, age 20, linebacker, Example State
-Institute, terms one million eight hundred fifty thousand dollars through 2029, worth band two million four
-hundred thousand to three million one hundred thousand dollars." Tab row: "Attributes, tab, selected, two of
-four." Verdict slot: "Verdict pending: the engine does not yet own this judgement." Attribute and form rows
-read per the DeltaMark and FormLine contracts below. Order follows 04 §7: world context, dominant object
-(band first), evidence, actions.</li>
-<li><strong>Motion.</strong> One animation: the lower-region tab swap, a 160 ms crossfade beneath the fixed
-band. Reduced form, named: under Reduce Motion the crossfade is replaced by a discrete swap — the outgoing
-region is removed and the incoming region appears complete, no fade, no travel (04 §7).</li>
-<li><strong>Verdict.</strong> Person surfaces carry a verdict only where the engine owns the computation.
-No engine baseline exists, so the verdict slot is drawn empty with its gap ID in place: G-02, engine-owned
-verdicts (distributional baselines, expectation deltas, sample, confidence, staff voice). Nothing in this
-card fabricates a judgement.</li>
-<li><strong>Density budget (04 §4.5 currencies).</strong> Points: band 64 pt tall at default type — 16.3% of
-the 393 pt promise-floor height (within T9's observed ~15% trade); band plus 44 pt tab row totals 108 pt,
-leaving the swap region as the working area of the dominant object (the dossier composition itself). Taps: 0
-— the band is context, not a route; tabs swap detail at cost 1 tap with context preserved. Working memory: 0
-— holding context is the band's entire job. Learned symbols: 0 new (delta glyphs are priced by the DeltaMark
-card). Verdict lines: 0 drawn (slot reserved, G-02).</li>
-<li><strong>Values and identities.</strong> Every colour is a 04 §6.1 hex exactly; type sizes 10/11/12/17 pt
-and weights per 04 §6.2; radii 8 (chip, plate, slot) / 10 (surface) / 0 (continuous rows) and spacing steps
-4/6/8/12 per 04 §6.3. Identities are mechanical placeholders labelled pending generator output; the plate is
-the blank photo plate of 04 §5.1 (no generated face, no initials); attribute values are 40–99 integers;
-money is integer dollars.</li>
+844&#215;390. The band-plus-attributes composition renders at 844, 852 and 956 pt in the width study below, plus one AX5
+rendition, all with the verdict slot in its shipping form. No clipping at any width; this card's band is that
+composition's anchor.</li>
+<li><strong>Touch.</strong> Interactive elements: the four tabs, each 44 pt tall and at least 64 pt wide (minimum tab
+64&#215;44 pt, against the 44&#215;44 pt floor — HIG-verified per 04 §7, which keeps 44 pt against Apple's stated 28 pt
+minimum). The band, the plate, the team chip and both verdict renditions are identity or statement, not controls, and
+carry no floor claim.</li>
+<li><strong>States.</strong> Two lower-region states rendered (Attributes selected, Form selected) proving the anchor
+holds while detail swaps (F1/T9). Selected tab: boundary (2 pt underline) plus value (weight and colour step) plus spoken
+state — never a coloured fill alone (04 §6.3). Verdict slot: three states rendered and labelled — shipping (empty, G-02),
+target at high confidence, target at low confidence on a thin sample. Loading, empty, error and interrupted are owned by
+the surrounding composition (registry 23); a band renders only when its person exists, and disabled and delegated do not
+apply to an anchor.</li>
+<li><strong>Team colour.</strong> The chip renders against all three synthetic trio pairs in both appearances, labelled
+pending generator output. Floors quoted: onTeam-on-primary 11.74 / 12.47 / 6.83 (at least 4.5); secondary-on-primary
+6.37 / 7.45 / 5.01 (at least 3). Every chip carries the mandatory content.secondary boundary, because canon's rule is
+general: fills measure 1.41 / 13.86 / 2.67 on dark work and 12.47 / 1.27 / 6.61 on light work, so no generated colour can
+be assumed to clear the floor.</li>
+<li><strong>VoiceOver.</strong> Band, one sentence: <span class="vo">"Player Fourteen, number fourteen, senior, age
+twenty-two, quarterback, Example State. Overall eighty-four, role fit eighty-two. Terms expire after next season. Worth
+band, two million four hundred thousand to three million one hundred thousand dollars."</span> Tab row:
+<span class="vo">"Attributes, tab, selected, two of four."</span> Verdict slot, shipping form:
+<span class="vo">"Verdict pending: the engine does not yet own this judgement."</span> Verdict, target form:
+<span class="vo">"Pass efficiency sits in the sixty-eighth percentile of the conference this season. Analyst Sample,
+analytics, sample eight games, confidence high."</span> Target form, thin sample: <span class="vo">"Pass efficiency sits
+somewhere between the forty-fifth and seventieth percentile. Analyst Sample, analytics, sample two games, confidence low.
+The band narrows to a point estimate at five games."</span> Attribute and form rows read per the DeltaMark and FormLine
+contracts. Order follows 04 §7: world context, dominant object (band first), evidence, actions.</li>
+<li><strong>Motion.</strong> One animation: the lower-region tab swap, a 160 ms crossfade beneath the fixed band. Reduced
+form, named: under Reduce Motion the crossfade becomes a discrete swap — the outgoing region is removed and the incoming
+region appears complete, no fade, no travel (04 §7).</li>
+<li><strong>Verdict.</strong> Shipping behaviour is the empty slot with gap ID G-02 in place (engine-owned verdicts:
+distributional baselines, expectation deltas, sample, confidence, staff voice). The target form is drawn twice and
+labelled "once G-02 lands", never as the default, and never in the width or AX5 renditions. Nothing in this card
+fabricates a judgement the engine could not later produce, and the low-confidence rendition states a band rather than a
+point because §4.2 gives bands to estimates.</li>
+<li><strong>Density budget (04 §4.5 currencies).</strong> Points: band 64 pt tall at default type — 16.3% of the 393 pt
+promise-floor height, inside T9's observed ~15% trade; band plus the tab row (44 pt of tab between two 1 pt hairline
+seams, 46 pt in all) totals 110 pt, leaving the swap region as the working area of the dominant object. Taps: 0 — the band is context, not a route; tabs swap detail at 1 tap with
+context preserved. Working memory: 0 — holding context is the band's entire job. Learned symbols: 0 spent by the band
+itself; the two Change-class arrows in the Attributes region are priced on Card 2, and no Status member appears on this
+card. Verdict lines: 0 in the shipping form; the target renditions draw 1, which is §4.5's per-readout ceiling.</li>
+<li><strong>Values and identities.</strong> Every colour is a 04 §6.1 hex exactly; type sizes 10/11/12/17 pt and weights
+per §6.2; radii 8 (chip, plate, slot, verdict strip) / 10 (surface) / 0 (continuous rows) and spacing steps 4/6/8/12 per
+§6.3. Identities are the shared-world cast, labelled pending generator output; the plate is the blank photo plate of §5.1
+(no generated face, no initials); ratings are 40&#8211;99 integers; money is integer dollars.</li>
 </ol>
 </div>
+</section>
 
-<!-- ================================================================
-     CARD 2 — Registry 11: DeltaMark
-     ================================================================ -->
-<h2>Card 2 — Registry 11: <code>DeltaMark</code></h2>
-<p>Purpose (04 §6.5): per-value recent-change mark with sentence equivalent. Grounding: finding F2 (change
-marks ride the attributes themselves — "what changed" is answered in place, not on a separate development
-screen) and density-model technique T3 (delta channels; portable at glyph scale, AX5 requires the sentence
-equivalent). The mark carries direction and cause, and every marked row has a one-sentence equivalent.
-What decides the reduction (density model §3): a retained change record with a design-time threshold for
-"worth marking" — the threshold is a rules constant owned by 02 §5, never a per-screen judgement.
-<strong>Data source: G-03 attribute-change record</strong> — the engine change record is a gap (bounded
-per-player ring, last 6 changes, written at development time; <code>DevelopmentSystem.swift</code> produces the
-causal events today but no queryable projection exists). This card claims no live data.</p>
+<!-- ================================================================ CARD 2 -->
+<section class="card" id="delta-mark">
+<header>
+<h2>DeltaMark <span class="status">Registry 11 — provisional</span></h2>
+<p class="note">Per-value recent-change mark with sentence equivalent. Grounding: finding F2 (change marks ride the
+attributes themselves — "what changed" is answered in place, not on a separate development screen) and density-model
+technique T3 (delta channels; portable at glyph scale, AX5 requires the sentence equivalent). The mark carries direction
+and cause, and every marked row has a one-sentence equivalent. What decides the reduction (density model §3): a retained
+change record with a design-time threshold for "worth marking" — a rules constant owned by 02 §5, never a per-screen
+judgement.</p>
+<p class="gap">Data source: gap <strong>G-03</strong>, the attribute-change record — a bounded per-player ring, last 6
+changes, written at development time. <span class="mono">DevelopmentSystem.swift</span> produces the causal events today
+but no queryable projection exists. This card claims no live data.</p>
+</header>
 
-<div class="pair">
-  <!-- DARK -->
-  <div class="rp d">
-    <p class="apx">Dark — marks in place on 26 pt attribute rows (values 40&#8211;99 integers)</p>
-    <div class="srf">
-      <div class="rows">
-        <div class="row"><span class="lbl">Awareness</span><span class="delta pos"><span class="g">arrow.up.right</span>+2</span><span class="t10 cq">development focus, Wk 6</span><span class="val">74</span></div>
-        <div class="row"><span class="lbl">Tackling</span><span class="delta pos"><span class="g">arrow.up.right</span>+1</span><span class="t10 cq">practice emphasis, Wk 7</span><span class="val">81</span></div>
-        <div class="row"><span class="lbl">Speed</span><span class="delta neg"><span class="g">arrow.down.right</span>&#8722;1</span><span class="t10 cq">ankle injury, Wk 4</span><span class="val">68</span></div>
-        <div class="row"><span class="lbl">Discipline</span><span class="t10 cq">no recent change</span><span class="val">77</span></div>
-      </div>
-    </div>
-    <p class="apx" style="margin-top:12px">Sentence equivalent — the AX5 and VoiceOver form of the marked row (T3)</p>
-    <div class="srf">
-      <div class="sentence">Awareness 74, up 2 since Week 6 &#8212; development focus.</div>
-      <div class="sentence" style="border-bottom:0">Speed 68, down 1 since Week 4 &#8212; ankle injury.</div>
-    </div>
-  </div>
-  <!-- LIGHT -->
-  <div class="rp l">
-    <p class="apx">Light — same rows, same marks</p>
-    <div class="srf">
-      <div class="rows">
-        <div class="row"><span class="lbl">Awareness</span><span class="delta pos"><span class="g">arrow.up.right</span>+2</span><span class="t10 cq">development focus, Wk 6</span><span class="val">74</span></div>
-        <div class="row"><span class="lbl">Tackling</span><span class="delta pos"><span class="g">arrow.up.right</span>+1</span><span class="t10 cq">practice emphasis, Wk 7</span><span class="val">81</span></div>
-        <div class="row"><span class="lbl">Speed</span><span class="delta neg"><span class="g">arrow.down.right</span>&#8722;1</span><span class="t10 cq">ankle injury, Wk 4</span><span class="val">68</span></div>
-        <div class="row"><span class="lbl">Discipline</span><span class="t10 cq">no recent change</span><span class="val">77</span></div>
-      </div>
-    </div>
-    <p class="apx" style="margin-top:12px">Sentence equivalent</p>
-    <div class="srf">
-      <div class="sentence">Awareness 74, up 2 since Week 6 &#8212; development focus.</div>
-      <div class="sentence" style="border-bottom:0">Speed 68, down 1 since Week 4 &#8212; ankle injury.</div>
-    </div>
+<h3>Marks in place on 26 pt attribute rows</h3>
+<p class="note">Subject: <strong>Player Seventy-Two</strong> — left tackle, No. 72, junior, age 20, overall 88, role fit
+85, Example State, no status chips. His awareness change is the one the shared world fixes: <em>74, up 2 since Week 6,
+cause development focus</em>. The remaining three rows are sheet-local detail, pending generator output. Causes are typed
+development events (G-03's shape), worded mechanically; none of them is an injury, because the shared world gives this
+player no status chip and a state must never be smuggled in through a cause line.</p>
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark</div>
+<div class="srf">
+  <div class="rows">
+    <div class="row"><span class="lbl">Awareness</span><span class="delta up"><span class="gl pos">arrow.up.right</span>+2</span><span class="t10 cq">development focus, Wk 6</span><span class="val">74</span></div>
+    <div class="row"><span class="lbl">Run block</span><span class="delta up"><span class="gl pos">arrow.up.right</span>+1</span><span class="t10 cq">practice emphasis, Wk 7</span><span class="val">89</span></div>
+    <div class="row"><span class="lbl">Lateral speed</span><span class="delta dn"><span class="gl neg">arrow.down.right</span>&#8722;1</span><span class="t10 cq">added mass, Wk 4</span><span class="val">71</span></div>
+    <div class="row"><span class="lbl">Strength</span><span class="t10 cq">no recent change</span><span class="val">90</span></div>
   </div>
 </div>
+<p class="caption">Sentence equivalent — the AX5 and VoiceOver form of a marked row (T3)</p>
+<div class="srf">
+  <div class="sentence">Awareness 74, up 2 since Week 6 &#8212; development focus.</div>
+  <div class="sentence" style="border-bottom:0">Lateral speed 71, down 1 since Week 4 &#8212; added mass.</div>
+</div>
+<p class="ratios">Quoted ratios (04 §6.1, dark): value content.primary on work 16.74 · label content.secondary on work
+9.71 · cause content.quiet on work 5.44 · signed number state.positive 9.95 / state.negative 6.72 on work · glyph chip ink
+state.positive 9.07 / state.negative 6.12 on raised.</p>
+</div>
+<div class="pane lt"><div class="pane-h">Light</div>
+<div class="srf">
+  <div class="rows">
+    <div class="row"><span class="lbl">Awareness</span><span class="delta up"><span class="gl pos">arrow.up.right</span>+2</span><span class="t10 cq">development focus, Wk 6</span><span class="val">74</span></div>
+    <div class="row"><span class="lbl">Run block</span><span class="delta up"><span class="gl pos">arrow.up.right</span>+1</span><span class="t10 cq">practice emphasis, Wk 7</span><span class="val">89</span></div>
+    <div class="row"><span class="lbl">Lateral speed</span><span class="delta dn"><span class="gl neg">arrow.down.right</span>&#8722;1</span><span class="t10 cq">added mass, Wk 4</span><span class="val">71</span></div>
+    <div class="row"><span class="lbl">Strength</span><span class="t10 cq">no recent change</span><span class="val">90</span></div>
+  </div>
+</div>
+<p class="caption">Sentence equivalent</p>
+<div class="srf">
+  <div class="sentence">Awareness 74, up 2 since Week 6 &#8212; development focus.</div>
+  <div class="sentence" style="border-bottom:0">Lateral speed 71, down 1 since Week 4 &#8212; added mass.</div>
+</div>
+<p class="ratios">Quoted ratios (04 §6.1, light): value content.primary on work 17.64 · label content.secondary on work
+7.40 · cause content.quiet on work 6.07 · signed number state.positive 5.86 / state.negative 6.77 on work · glyph chip ink
+state.positive 4.95 / state.negative 5.72 on raised.</p>
+</div>
+</div>
 
-<h3>Measured pairs used above — quoted from 04 §6.1</h3>
-<table class="ratios">
-<tr><th>Element</th><th>Pair</th><th>Dark ratio</th><th>Light ratio</th><th>Floor</th></tr>
+<h3>Measured pairs used on this card — quoted from 04 §6.1</h3>
+<table class="ratiotable">
+<tr><th>Element</th><th>Pair</th><th>Dark</th><th>Light</th><th>Floor</th></tr>
 <tr><td>Attribute value (12 pt bold tabular)</td><td>content.primary on world.work</td><td>16.74</td><td>17.64</td><td>4.5 met</td></tr>
-<tr><td>Attribute label (11 pt)</td><td>content.secondary on world.work</td><td>9.71</td><td>7.40</td><td>4.5 met</td></tr>
+<tr><td>Attribute label (11 pt), sentence equivalent (12 pt)</td><td>content.secondary on world.work</td><td>9.71</td><td>7.40</td><td>4.5 met</td></tr>
 <tr><td>Cause metadata (10 pt)</td><td>content.quiet on world.work</td><td>5.44</td><td>6.07</td><td>4.5 met (metadata, not working prose)</td></tr>
-<tr><td>Up mark: glyph chip, signed number</td><td>state.positive on world.work</td><td>9.95</td><td>5.86</td><td>4.5 met</td></tr>
-<tr><td>Down mark: glyph chip, signed number</td><td>state.negative on world.work</td><td>6.72</td><td>6.77</td><td>4.5 met</td></tr>
+<tr><td>Up mark: signed number</td><td>state.positive on world.work</td><td>9.95</td><td>5.86</td><td>4.5 met</td></tr>
+<tr><td>Up mark: glyph chip ink</td><td>state.positive on world.raised</td><td>9.07</td><td>4.95</td><td>4.5 met</td></tr>
+<tr><td>Down mark: signed number</td><td>state.negative on world.work</td><td>6.72</td><td>6.77</td><td>4.5 met</td></tr>
+<tr><td>Down mark: glyph chip ink</td><td>state.negative on world.raised</td><td>6.12</td><td>5.72</td><td>4.5 met</td></tr>
 </table>
 
-<div class="contract-block">
-<h3>CONTRACT — DeltaMark, ten points</h3>
-<ol class="contract">
-<li><strong>Appearances and ratios.</strong> Light and dark rendered side by side; every pair used is in the
-table above, quoted from 04 §6.1 against the composited surface (world.work). All body pairs &#8805;4.5; the
-mark is never colour alone — direction is carried three ways (glyph name, signed number, sentence), so no
-3:1-only element exists in this card.</li>
-<li><strong>Widths.</strong> The marks render inside the identity-band-plus-attributes composition at 844,
-852 and 956 pt and in the AX5 rendition (Width proofs section); the mark's fixed cost is width-independent
-(it sits in the row's fact column). No clipping at any width.</li>
-<li><strong>Touch.</strong> No interactive element in this card: the mark is an indicator, not a control
-(measured: mark chip ~46&#215;14 pt, not tappable, no floor claim; the 44&#215;44 pt floor — HIG-verified per 04 §7 —
-binds the controls in Cards 3 and 4). Change history arrives via the owning row's inspection popover
-(depth 1), which the DenseTable sheet prices.</li>
-<li><strong>States.</strong> Up (+n), down (&#8722;n), and quiet (change below the marking threshold renders no
-mark — the threshold is a rules constant, 02 §5), plus the sentence-equivalent state rendered explicitly.
-Selected/disabled/loading/empty/error/interrupted/delegated do not apply to a non-interactive mark; absence
-of the record (gap G-03 unbuilt) means the mark is not drawn at all — never a placeholder arrow.</li>
-<li><strong>Team colour.</strong> Not touched: DeltaMark uses state roles only, so the trio floors do not
-apply (trio coverage is carried by Card 1's chip).</li>
-<li><strong>VoiceOver — one sentence per data row, change and cause included.</strong>
-"Awareness, 74, up 2 since Week 6, cause development focus."
-"Tackling, 81, up 1 since Week 7, cause practice emphasis."
-"Speed, 68, down 1 since Week 4, cause ankle injury."
-"Discipline, 77, no recent change."</li>
-<li><strong>Motion.</strong> None by default — the mark is static. If a first-appearance fade is ever added,
-its reduced form is named now: under Reduce Motion the mark appears complete as a discrete state change, no
-fade, no travel (04 §7).</li>
-<li><strong>Verdict.</strong> A DeltaMark is a change record, not a judgement; it carries no verdict line.
-The dossier's verdict slot above it is drawn empty with gap ID G-02 in place (Card 1). A change mark without
-a retained delta is fabrication under 04 §4.5 — hence the G-03 data-source line, not a live-data claim.</li>
-<li><strong>Density budget (04 §4.5 currencies).</strong> Points: 0 additional — the mark occupies ~46&#215;14 pt
-inside the existing 26 pt row track; the sentence row costs one 26 pt-class line only at AX5/spoken contexts.
-Taps: 0 for the mark itself; full change history is 1 tap (row popover, depth 1). Working memory: 0 — the
-change is answered in place (F2). Learned symbols: 2 of the global &#8804;12 (arrow.up.right,
-arrow.down.right), each changing a decision (develop vs rest vs replace); &#8804;1 glyph per row, within the
-&#8804;3 cap. Verdict lines: 0.</li>
-<li><strong>Values and identities.</strong> Colours, sizes (10/11/12 pt, &#8722;0.2 tracking), 26 pt tracks,
-radius 0 rows and 8 pt glyph chips all per 04 §6.1/§6.2/§6.3/§6.4. Attribute values 40&#8211;99 integers.
-Causes are typed development events (G-03's shape), worded mechanically; identities inherited from Card 1's
-placeholders, pending generator output.</li>
+<div class="contract">
+<h4>Contract — DeltaMark</h4>
+<ol>
+<li><strong>Appearances and ratios.</strong> Light and dark rendered side by side; every pair used is in the table above,
+quoted from 04 §6.1 against the composited surface — work for the row text and the signed number, raised for the glyph
+chip. All body pairs meet 4.5. The mark is never colour alone: direction is carried four ways (glyph name, arrow
+direction, signed number, sentence), so no element on this card depends on hue.</li>
+<li><strong>Widths.</strong> The marks render inside the band-plus-attributes composition at 844, 852 and 956 pt and in
+the AX5 rendition (width study below); the mark's cost is width-independent because it sits in the row's fact column. No
+clipping at any width.</li>
+<li><strong>Touch.</strong> No interactive element on this card: the mark is an indicator, not a control (drawn as an
+18 pt-tall glyph chip plus a signed number inside the 26 pt row track, not tappable, no floor claim; the 44&#215;44 pt
+floor — HIG-verified per 04 §7 — binds the controls on Cards 1 and 3). Change history arrives through the owning row's
+inspection popover at depth 1, which the DenseTable sheet prices.</li>
+<li><strong>States.</strong> Up (+n), down (&#8722;n) and quiet (a change below the marking threshold renders no mark —
+the threshold is a rules constant, 02 §5), plus the sentence-equivalent state rendered explicitly. Selected, disabled,
+loading, empty, error, interrupted and delegated do not apply to a non-interactive mark; absence of the record (G-03
+unbuilt) means the mark is not drawn at all — never a placeholder arrow.</li>
+<li><strong>Team colour.</strong> Not touched: DeltaMark uses state roles only, so the trio floors do not apply. Trio
+coverage is carried by Card 1's chips.</li>
+<li><strong>VoiceOver — one sentence per data row, change and cause included.</strong> <span class="vo">"Awareness,
+seventy-four, up two since Week 6, cause development focus."</span> <span class="vo">"Run block, eighty-nine, up one
+since Week 7, cause practice emphasis."</span> <span class="vo">"Lateral speed, seventy-one, down one since Week 4, cause
+added mass."</span> <span class="vo">"Strength, ninety, no recent change."</span></li>
+<li><strong>Motion.</strong> None by default — the mark is static. If a first-appearance fade is ever added, its reduced
+form is named now: under Reduce Motion the mark appears complete as a discrete state change, no fade, no travel
+(04 §7).</li>
+<li><strong>Verdict.</strong> A DeltaMark is a change record, not a judgement; it carries no verdict line. The dossier's
+verdict slot above it is the empty shipping form with gap ID G-02 (Card 1). A change mark without a retained delta is
+fabrication under 04 §4.5 — hence the G-03 data-source line rather than a live-data claim.</li>
+<li><strong>Density budget (04 §4.5 currencies).</strong> Points: 0 additional — the mark occupies an 18 pt chip and a
+signed number inside the existing 26 pt row track; the sentence row costs one line only in AX5 and spoken contexts. Taps:
+0 for the mark; full change history is 1 tap (row popover, depth 1). Working memory: 0 — the change is answered in place
+(F2). Learned symbols: <strong>2 of the Change class's cap of 2</strong> (04 §6.6: <span class="mono">arrow.up.right</span>,
+<span class="mono">arrow.down.right</span>) — the whole class, and no growth; at most 1 per row. The Change class is
+separate from the Status class, so these rows spend 0 of §4.5's three-status-glyphs-per-row allowance and 0 of the
+twelve-member Status vocabulary. Verdict lines: 0.</li>
+<li><strong>Values and identities.</strong> Colours, sizes (10/11/12 pt at &#8722;0.2 tracking), 26 pt tracks, radius 0
+rows and 8 pt glyph chips all per 04 §6.1/§6.2/§6.3/§6.4. Attribute values are 40&#8211;99 integers. The subject and his
+awareness change are shared-world facts; the other three rows are sheet-local, pending generator output.</li>
 </ol>
 </div>
+</section>
 
-<!-- ================================================================
-     CARD 3 — Registry 12: ConfidenceTag
-     ================================================================ -->
-<h2>Card 3 — Registry 12: <code>ConfidenceTag</code></h2>
-<p>Purpose (04 §6.5): banded value / unknown / observation-count state. Grounding: finding F3 (uncertainty is
-a display state, not a footnote — the required action sits in the same cell where the answer would be),
-finding F20 (the market cell can answer with a stance: band, unknown, or the owner's refusal "Not for sale"),
-finding F21 (fog is per-fact, not per-player — one row mixes exact public record, banded estimates and fogged
-judgements), and density-model technique T2 (a band is shorter than a number and truthful). What decides the
-reduction (density model §3): the knowledge model — observer-scoped scouting state, which exists in the tree
-(<code>Sources/FootballSimCore/College/ScoutingState.swift</code>, <code>Pro/ProMarketState.swift</code>;
-<code>PersonnelReadModels.swift</code> carries the attribute-confidence shape). Band width derives from recorded
-observations, never from a display-side blur. Opponent-preparation confidence awaits gap G-05. This card
-claims no live data. The fact list below is <strong>one attribute list mixing exact, banded and unknown
-cells</strong> per F21.</p>
+<!-- ================================================================ CARD 3 -->
+<section class="card" id="confidence-tag">
+<header>
+<h2>ConfidenceTag <span class="status">Registry 12 — provisional</span></h2>
+<p class="note">Banded value / unknown / observation-count state. Grounding: finding F3 (uncertainty is a display state,
+not a footnote — the required action sits in the same cell where the answer would be), F20 (the market cell can answer
+with a stance: band, unknown, or a refusal), F21 (fog is per-fact, not per-player — one list mixes exact public record,
+exact staff observation, banded estimates and unknowns) and density-model technique T2 (a band is shorter than a number
+and truthful). What decides the reduction (density model §3): the knowledge model — observer-scoped scouting state, which
+exists in the tree (<span class="mono">Sources/FootballSimCore/College/ScoutingState.swift</span>,
+<span class="mono">Pro/ProMarketState.swift</span>; <span class="mono">PersonnelReadModels.swift</span> carries the
+attribute-confidence shape). Band width derives from recorded observations, never from a display-side blur.</p>
+<p class="gap">Opponent-preparation confidence awaits gap <strong>G-05</strong>. This card claims no live data.</p>
+</header>
 
-<div class="pair">
-  <!-- DARK -->
-  <div class="rp d">
-    <p class="apx">Dark — one unscouted person, per-fact fog. Player Forty, Example Coastal Institute (pending generator output)</p>
-    <div class="srf">
-      <div class="rows">
-        <div class="row"><span class="lbl">Age</span><span class="t10 cq">public record</span><span class="val">21</span></div>
-        <div class="row"><span class="lbl">Position</span><span class="t10 cq">public record</span><span class="val">CB</span></div>
-        <div class="row"><span class="lbl">Worth</span><span class="g cs">tag</span><span class="t10 cq">band, 3 observations</span><span class="val">$1,400,000&#8211;$2,200,000</span></div>
-        <div class="row"><span class="lbl">Asking salary</span><span class="g cs">tag</span><span class="t10 cq">band, per year</span><span class="val">$900,000&#8211;$1,300,000</span></div>
-        <div class="row ctl"><span class="lbl">Ability</span><span class="t11 cs">Unknown</span><button class="btn" type="button">Scout</button></div>
-        <div class="row ctl"><span class="lbl">Potential</span><span class="t11 cs">Unknown</span><button class="btn dis" type="button">Scout &#8212; contact budget spent</button></div>
-        <div class="row"><span class="lbl">Availability</span><span class="stance">Not for sale</span></div>
-        <div class="row"><span class="lbl">Observations</span><span class="t10 cq">last: Wk 8</span><span class="val">3</span></div>
-      </div>
-    </div>
-  </div>
-  <!-- LIGHT -->
-  <div class="rp l">
-    <p class="apx">Light — same list, same knowledge states</p>
-    <div class="srf">
-      <div class="rows">
-        <div class="row"><span class="lbl">Age</span><span class="t10 cq">public record</span><span class="val">21</span></div>
-        <div class="row"><span class="lbl">Position</span><span class="t10 cq">public record</span><span class="val">CB</span></div>
-        <div class="row"><span class="lbl">Worth</span><span class="g cs">tag</span><span class="t10 cq">band, 3 observations</span><span class="val">$1,400,000&#8211;$2,200,000</span></div>
-        <div class="row"><span class="lbl">Asking salary</span><span class="g cs">tag</span><span class="t10 cq">band, per year</span><span class="val">$900,000&#8211;$1,300,000</span></div>
-        <div class="row ctl"><span class="lbl">Ability</span><span class="t11 cs">Unknown</span><button class="btn" type="button">Scout</button></div>
-        <div class="row ctl"><span class="lbl">Potential</span><span class="t11 cs">Unknown</span><button class="btn dis" type="button">Scout &#8212; contact budget spent</button></div>
-        <div class="row"><span class="lbl">Availability</span><span class="stance">Not for sale</span></div>
-        <div class="row"><span class="lbl">Observations</span><span class="t10 cq">last: Wk 8</span><span class="val">3</span></div>
-      </div>
-    </div>
+<h3>One fact list, four knowledge states — fog is per-fact (F21)</h3>
+<p class="note">Subject: <strong>Player Seven</strong> — wide receiver, No. 7, sophomore, age 19, overall 79, role fit 75,
+Example State, <em>unscouted at the market level</em>, which is the shared world's fixed fact about him. His ratings are
+exact because the staff observes them daily; his market facts are fogged because nobody has done that work. That is the
+point of F21 and the counter-example to a per-player fog switch: a state never erases a fact the simulation owns. Money
+figures and the observation count are sheet-local detail, pending generator output.</p>
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark</div>
+<div class="srf">
+  <div class="rows">
+    <div class="row"><span class="lbl">Age</span><span class="t10 cq">public record</span><span class="val">19</span></div>
+    <div class="row"><span class="lbl">Position</span><span class="t10 cq">public record</span><span class="val">WR</span></div>
+    <div class="row"><span class="lbl">Overall</span><span class="t10 cq">staff observation, exact</span><span class="val">79</span></div>
+    <div class="row"><span class="lbl">Role fit</span><span class="t10 cq">staff observation, exact</span><span class="val">75</span></div>
+    <div class="row"><span class="lbl">Worth</span><span class="t10 cq">band, 3 observations</span><span class="val">$1,400,000&#8211;$2,200,000</span></div>
+    <div class="row ctl"><span class="lbl">Portal interest</span><span class="t11 cs">Unknown</span><button class="btn" type="button">Scout</button></div>
+    <div class="row ctl"><span class="lbl">Rival offer level</span><span class="t11 cs">Unknown</span><button class="btn dis" type="button">Scout &#8212; contact budget spent</button></div>
+    <div class="row"><span class="lbl">Availability</span><span class="stance">Not for sale</span></div>
+    <div class="row"><span class="lbl">Observations</span><span class="t10 cq">last: Wk 8</span><span class="val">3</span></div>
   </div>
 </div>
+<p class="ratios">Quoted ratios (04 §6.1, dark): exact values and band endpoints content.primary on work 16.74 · labels
+and "Unknown" content.secondary on work 9.71 · knowledge metadata content.quiet on work 5.44 · Scout fill action.primary
+on work 4.64 (non-text) with world.page ink on the fill 5.02 · disabled label content.quiet on raised 4.96 · stance chip
+content.primary on raised 15.27.</p>
+</div>
+<div class="pane lt"><div class="pane-h">Light</div>
+<div class="srf">
+  <div class="rows">
+    <div class="row"><span class="lbl">Age</span><span class="t10 cq">public record</span><span class="val">19</span></div>
+    <div class="row"><span class="lbl">Position</span><span class="t10 cq">public record</span><span class="val">WR</span></div>
+    <div class="row"><span class="lbl">Overall</span><span class="t10 cq">staff observation, exact</span><span class="val">79</span></div>
+    <div class="row"><span class="lbl">Role fit</span><span class="t10 cq">staff observation, exact</span><span class="val">75</span></div>
+    <div class="row"><span class="lbl">Worth</span><span class="t10 cq">band, 3 observations</span><span class="val">$1,400,000&#8211;$2,200,000</span></div>
+    <div class="row ctl"><span class="lbl">Portal interest</span><span class="t11 cs">Unknown</span><button class="btn" type="button">Scout</button></div>
+    <div class="row ctl"><span class="lbl">Rival offer level</span><span class="t11 cs">Unknown</span><button class="btn dis" type="button">Scout &#8212; contact budget spent</button></div>
+    <div class="row"><span class="lbl">Availability</span><span class="stance">Not for sale</span></div>
+    <div class="row"><span class="lbl">Observations</span><span class="t10 cq">last: Wk 8</span><span class="val">3</span></div>
+  </div>
+</div>
+<p class="ratios">Quoted ratios (04 §6.1, light): exact values and band endpoints content.primary on work 17.64 · labels
+and "Unknown" content.secondary on work 7.40 · knowledge metadata content.quiet on work 6.07 · Scout fill action.primary
+on work 6.89 with world.work ink on the fill 6.89 · disabled label content.quiet on raised 5.12 · stance chip
+content.primary on raised 14.90.</p>
+</div>
+</div>
 
-<p class="meta">The four knowledge states in one list: <strong>exact</strong> (age, position — public record
-stays exact under fog, F21), <strong>banded</strong> (worth, asking salary — with observation count and unit
-stated), <strong>unknown with action</strong> ("Scout" sits in the cell where the answer would be, F3), and
-<strong>stance</strong> ("Not for sale" — the owner's refusal is a first-class answer alongside price, F20).
-The disabled Scout states its reason in words. Rows carrying a primary control expand from the 26 pt dense
-track to a 44 pt track; all other rows stay dense.</p>
+<p class="note">The four knowledge states in one list: <strong>exact</strong> (age and position as public record; overall
+and role fit as staff observation — both stay exact under market fog, F21), <strong>banded</strong> (worth, with its
+observation count stated), <strong>unknown with action</strong> (Scout sits in the cell where the answer would be, F3),
+and <strong>stance</strong> ("Not for sale" — a refusal is a first-class answer alongside a price, F20). The disabled
+Scout states its reason in words. Rows carrying a primary control expand from the 26 pt dense track to a 44 pt track; all
+other rows stay dense. <strong>No symbol is drawn:</strong> 04 §6.6 holds no member for a banded estimate, and this sheet
+does not grow a class to get one — "band, 3 observations" is words, and words cost no learned symbol.</p>
 
-<h3>Measured pairs used above — quoted from 04 §6.1</h3>
-<table class="ratios">
-<tr><th>Element</th><th>Pair</th><th>Dark ratio</th><th>Light ratio</th><th>Floor</th></tr>
+<h3>Measured pairs used on this card — quoted from 04 §6.1</h3>
+<table class="ratiotable">
+<tr><th>Element</th><th>Pair</th><th>Dark</th><th>Light</th><th>Floor</th></tr>
 <tr><td>Exact values, band endpoints (tabular)</td><td>content.primary on world.work</td><td>16.74</td><td>17.64</td><td>4.5 met</td></tr>
-<tr><td>Labels, "Unknown", tag glyph chip</td><td>content.secondary on world.work</td><td>9.71</td><td>7.40</td><td>4.5 met</td></tr>
+<tr><td>Labels, "Unknown"</td><td>content.secondary on world.work</td><td>9.71</td><td>7.40</td><td>4.5 met</td></tr>
 <tr><td>Knowledge metadata (10 pt)</td><td>content.quiet on world.work</td><td>5.44</td><td>6.07</td><td>4.5 met (metadata only)</td></tr>
 <tr><td>Scout fill (non-text control surface)</td><td>action.primary on world.work</td><td>4.64</td><td>6.89</td><td>3 met</td></tr>
-<tr><td>Scout label ink on violet fill (dark)</td><td>world.page ink on action.primary</td><td>5.02</td><td>&#8212;</td><td>4.5 met — canon's stated body pairing; content.primary on the fill measures 3.61 and is large-text-only, so it is not used here</td></tr>
-<tr><td>Scout label ink on violet fill (light)</td><td>world.work on action.primary</td><td>&#8212;</td><td>6.89</td><td>4.5 met</td></tr>
+<tr><td>Scout label ink on the violet fill (dark)</td><td>world.page ink on action.primary</td><td>5.02</td><td>&#8212;</td><td>4.5 met — canon's stated body pairing; content.primary on the fill measures 3.61 and is large-text-only, so it is not used</td></tr>
+<tr><td>Scout label ink on the violet fill (light)</td><td>world.work ink on action.primary</td><td>&#8212;</td><td>6.89</td><td>4.5 met</td></tr>
 <tr><td>Disabled Scout label</td><td>content.quiet on world.raised</td><td>4.96</td><td>5.12</td><td>4.5 met</td></tr>
 <tr><td>Stance chip text</td><td>content.primary on world.raised</td><td>15.27</td><td>14.90</td><td>4.5 met</td></tr>
 </table>
 
-<div class="contract-block">
-<h3>CONTRACT — ConfidenceTag, ten points</h3>
-<ol class="contract">
-<li><strong>Appearances and ratios.</strong> Light and dark rendered; every pair quoted from 04 §6.1 against
-its actual surface, including both filled-control ink pairings canon states (dark: world.page ink at 5.02;
-light: world.work ink at 6.89) and the raised-surface pairs for the disabled control and stance chip. All
-floors met.</li>
-<li><strong>Widths.</strong> Confidence cells render inside the width-proof composition at 844, 852 and
-956 pt and at AX5 (band first, one fact stack per row, nothing dropped). Band endpoints are the widest cells;
-at 844 pt the flexible label column absorbs the loss — no clipping.</li>
-<li><strong>Touch.</strong> Interactive elements: the Scout action, measured 84&#215;44 pt minimum (this render:
-wider), &#8805; the 44&#215;44 pt floor (HIG-verified per 04 §7); its row expands to a 44 pt track so the target
-never overlaps adjacent dense rows. The disabled Scout keeps the same geometry. Tag chips and the stance chip
-are indicators, not controls.</li>
-<li><strong>States.</strong> Exact, banded (with observation count), unknown-with-action, and the third-state
-stance "Not for sale" (F20) — all four rendered in one list (per-fact fog, F21); plus the disabled action
-with its worded reason (contact budget spent — Contact &amp; Visit Planner's budget, screen 27). Loading,
-empty, error, interrupted belong to the owning composition (registry 23); a queued-scout state is deliberately
-not drawn — no capture or engine shape backs it yet.</li>
-<li><strong>Team colour.</strong> Not touched — knowledge states use neutral and action roles only; trio
-coverage is carried by Card 1's chip renders.</li>
-<li><strong>VoiceOver — one sentence per data row.</strong>
-"Age, 21, public record."
-"Position, cornerback, public record."
-"Worth, band, one million four hundred thousand to two million two hundred thousand dollars, from 3 observations."
-"Asking salary, band, nine hundred thousand to one million three hundred thousand dollars per year."
-"Ability, unknown. Scout, button."
-"Potential, unknown. Scout, button, dimmed, contact budget spent."
-"Availability, not for sale, owner stance."
-"Observations, 3, most recent Week 8."</li>
-<li><strong>Motion.</strong> One animation: a band may narrow when a new observation lands (width change on
-the value cell). Reduced form, named: under Reduce Motion the narrowing is a discrete swap — old band out,
-new band in, no interpolation (04 §7).</li>
-<li><strong>Verdict.</strong> No verdict line: a confidence state is knowledge, not judgement. The person
-surface's verdict slot stays empty with gap ID G-02 in place (Card 1). A band without a recorded observation
-is fabrication (04 §4.5) — the observation-count row is therefore part of the component, not decoration.</li>
-<li><strong>Density budget (04 §4.5 currencies).</strong> Points: dense rows 26 pt; the two action rows 44 pt
-each (the only rows allowed to exceed the dense track). Taps: Scout = 1 tap, answered with an exact receipt
-(04 §4.3); evidence (observation count, last week) is in-place, 0 taps. Working memory: 0 — every knowledge
-state is stated in its own cell. Learned symbols: 1 of the global &#8804;12 (tag, marking a banded estimate);
-&#8804;1 glyph per row, within the &#8804;3 cap; "Unknown", "Scout" and "Not for sale" are words, not
-symbols, by design. Verdict lines: 0.</li>
-<li><strong>Values and identities.</strong> All colours 04 §6.1 hexes; money integer dollars with band
-endpoints as integers; units stated ("per year"); type 10/11/12 pt per §6.2; radii 8/10/0 and spacing steps
-per §6.3. Identities mechanical placeholders (Player Forty, Example Coastal Institute), labelled pending
-generator output.</li>
+<div class="contract">
+<h4>Contract — ConfidenceTag</h4>
+<ol>
+<li><strong>Appearances and ratios.</strong> Light and dark rendered; every pair quoted from 04 §6.1 against its actual
+surface, including both filled-control ink pairings canon states (dark: world.page ink at 5.02; light: world.work ink at
+6.89) and the raised-surface pairs for the disabled control and the stance chip. All floors met.</li>
+<li><strong>Widths.</strong> A confidence cell renders inside the width study below at 844, 852 and 956 pt (the unknown
+Ceiling row with its Scout action, and the banded Worth row) and at AX5, where the fact stack keeps its order and drops
+nothing. Band endpoints are the widest cells; at 844 pt the flexible label column absorbs the difference — no
+clipping.</li>
+<li><strong>Touch.</strong> Interactive elements: the Scout action at 84&#215;44 pt minimum (this render is wider), at or
+above the 44&#215;44 pt floor (HIG-verified per 04 §7); its row expands to a 44 pt track so the target never overlaps the
+adjacent dense rows. The disabled Scout keeps the same geometry. The stance chip is an indicator, not a control.</li>
+<li><strong>States.</strong> Exact (public record and staff observation), banded with observation count, unknown with
+action, and the stance "Not for sale" (F20) — all four rendered in one list (per-fact fog, F21) — plus the disabled action
+with its worded reason (contact budget spent; the Contact and Visit Planner's budget, screen 27). Loading, empty, error
+and interrupted belong to the owning composition (registry 23); a queued-scout state is deliberately not drawn, since no
+capture or engine shape backs it yet.</li>
+<li><strong>Team colour.</strong> Not touched — knowledge states use neutral and action roles only. Trio coverage is
+carried by Card 1's chips.</li>
+<li><strong>VoiceOver — one sentence per data row.</strong> <span class="vo">"Age, nineteen, public record."</span>
+<span class="vo">"Position, wide receiver, public record."</span> <span class="vo">"Overall, seventy-nine, staff
+observation."</span> <span class="vo">"Role fit, seventy-five, staff observation."</span> <span class="vo">"Worth, band,
+one million four hundred thousand to two million two hundred thousand dollars, from three observations."</span>
+<span class="vo">"Portal interest, unknown. Scout, button."</span> <span class="vo">"Rival offer level, unknown. Scout,
+button, dimmed, contact budget spent."</span> <span class="vo">"Availability, not for sale."</span>
+<span class="vo">"Observations, three, most recent Week 8."</span></li>
+<li><strong>Motion.</strong> One animation: a band may narrow when a new observation lands (a width change on the value
+cell). Reduced form, named: under Reduce Motion the narrowing is a discrete swap — old band out, new band in, no
+interpolation (04 §7).</li>
+<li><strong>Verdict.</strong> No verdict line: a confidence state is knowledge, not judgement. The person surface's
+verdict slot stays in its empty shipping form with gap ID G-02 (Card 1). A band without a recorded observation is
+fabrication (04 §4.5), so the observation-count row is part of the component, not decoration.</li>
+<li><strong>Density budget (04 §4.5 currencies).</strong> Points: seven dense rows at 26 pt and two control rows at 44 pt
+— the only rows allowed to exceed the dense track. Taps: Scout = 1 tap, answered with an exact receipt (04 §4.3);
+evidence (observation count, most recent week) is in place at 0 taps. Working memory: 0 — every knowledge state is stated
+in its own cell. Learned symbols: <strong>0</strong> — §6.6 holds no member for a banded estimate and this card grows no
+class; "Unknown", "Scout", "band" and "Not for sale" are words. Verdict lines: 0.</li>
+<li><strong>Values and identities.</strong> All colours are 04 §6.1 hexes; money is integer dollars with integer band
+endpoints; type 10/11/12 pt per §6.2; radii 8/10/0 and spacing steps per §6.3. The subject and his unscouted market state
+are shared-world facts; money figures and the observation count are sheet-local, pending generator output.</li>
 </ol>
 </div>
+</section>
 
-<!-- ================================================================
-     CARD 4 — Registry 16: FormLine
-     ================================================================ -->
-<h2>Card 4 — Registry 16: <code>FormLine</code></h2>
-<p>Purpose (04 §6.5): bounded last-N results with rating thread. Grounding: density-model technique T3 (the
-form line threads across five result columns) and T6 (chronology as the natural compression); the reference's
-threaded five-result line is mock-grade evidence and is treated as intent, not shipping behaviour. The series
-is bounded at the last five results; each cell carries result, score, opponent code and the per-game rating
-(40&#8211;99 integer) whose printed number carries the value — the thread bars are non-text indicators.
-<strong>Data source: G-04 form series</strong> — a gap: no engine definition of a per-game player rating
-exists yet (the rating definition is simulation truth owned by 03, then a last-5 projection derived from
-retained results); <code>PersonnelReadModels.swift</code>'s <code>FormEntry</code> is fixture-fed today. This card
-claims no live data. Per finding F22 the card also carries the <strong>contract-expiry urgency state</strong>:
-the expiry chip renders urgent only for dates inside the nearest horizon — the poaching scan is pre-computed
-into the mark, and the horizon is a rules constant.</p>
+<!-- ================================================================ CARD 4 -->
+<section class="card" id="form-line">
+<header>
+<h2>FormLine <span class="status">Registry 16 — provisional</span></h2>
+<p class="note">Bounded last-N results with rating thread. Grounding: density-model techniques T3 (the form line threads
+across five result columns) and T6 (chronology as the natural compression); the reference's threaded five-result line is
+mock-grade evidence and is treated as intent, not shipping behaviour. The series is bounded at the last five results; each
+cell carries week, opponent code, result, score and the per-game rating (40&#8211;99 integer). Per finding F22 the card
+also carries the <strong>contract-expiry urgency state</strong>: the chip renders urgent only for terms ending inside the
+nearest horizon, the scan is pre-computed into the mark, and the horizon is a rules constant.</p>
+<p class="gap">Data source: gap <strong>G-04</strong>, the form series — no engine definition of a per-game player rating
+exists yet (the rating definition is simulation truth owned by 03, then a last-5 projection derived from retained
+results); <span class="mono">PersonnelReadModels.swift</span>'s <span class="mono">FormEntry</span> is fixture-fed today.
+This card claims no live data.</p>
+</header>
 
-<div class="pair">
-  <!-- DARK -->
-  <div class="rp d">
-    <p class="apx">Dark — last 5 of 9 recorded games, rating thread 40&#8211;99</p>
-    <div class="srf">
-      <div class="form">
-        <div class="fcell"><span class="t10 cs">Wk 5 &#183; OP1</span><span class="t12 cp b num">W 31&#8211;17</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="t10 cs num">78</span></div>
-        <div class="fcell"><span class="t10 cs">Wk 6 &#183; OP2</span><span class="t12 cp b num">L 13&#8211;20</span><div class="fbarwrap"><div class="fbar" style="height:13px"></div></div><span class="t10 cs num">66</span></div>
-        <div class="fcell"><span class="t10 cs">Wk 7 &#183; OP3</span><span class="t12 cp b num">W 24&#8211;21</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="t10 cs num">71</span></div>
-        <div class="fcell"><span class="t10 cs">Wk 8 &#183; OP4</span><span class="t12 cp b num">W 27&#8211;10</span><div class="fbarwrap"><div class="fbar" style="height:22px"></div></div><span class="t10 cs num">84</span></div>
-        <div class="fcell"><span class="t10 cs">Wk 9 &#183; OP5</span><span class="t12 cp b num">L 14&#8211;28</span><div class="fbarwrap"><div class="fbar" style="height:11px"></div></div><span class="t10 cs num">62</span></div>
-      </div>
-      <div class="sentence" style="border-top:1px solid var(--hair); border-bottom:0">Bounded series: last 5 of 9 recorded games. Older games live in Game Detail, one tap away.</div>
-    </div>
-    <p class="apx" style="margin-top:12px">Partial and empty series &#8212; the bound stated, never padded</p>
-    <div class="srf">
-      <div class="form">
-        <div class="fcell"><span class="t10 cs">Wk 1 &#183; OP2</span><span class="t12 cp b num">W 20&#8211;14</span><div class="fbarwrap"><div class="fbar" style="height:16px"></div></div><span class="t10 cs num">73</span></div>
-        <div class="fcell"><span class="t10 cs">Wk 2 &#183; OP4</span><span class="t12 cp b num">L 10&#8211;17</span><div class="fbarwrap"><div class="fbar" style="height:12px"></div></div><span class="t10 cs num">64</span></div>
-      </div>
-      <div class="sentence" style="border-top:1px solid var(--hair)">2 games recorded &#8212; the series shows only what the simulation retains.</div>
-      <div class="sentence" style="border-bottom:0">No games recorded yet.</div>
-    </div>
-    <p class="apx" style="margin-top:12px">Contract-expiry chip (F22) &#8212; urgent only inside the nearest horizon</p>
-    <div class="srf" style="padding:12px; display:flex; gap:12px; flex-wrap:wrap; align-items:center">
-      <span class="expchip cs"><span class="g">clock</span>Contract ends Wk 1, 2028</span>
-      <span class="expchip warn" style="border-color:var(--warn)"><span class="g" style="border-color:var(--warn)">clock.badge.exclamationmark</span>Expiring &#183; Wk 15, 2026</span>
-    </div>
+<h3>Default series — last 5 of 8 recorded games</h3>
+<p class="note">Subject: <strong>Player Fourteen</strong>. The five ratings are the shared world's fixed series —
+78, 81, 74, 86, 83 across Weeks 4 to 8, the last five before the Week 9 preparation day this library depicts. Results
+across those five are 4-1, which with Weeks 1 to 3 gives the programme's 6-2 record. Scores and opponent codes are
+sheet-local, pending generator output.</p>
+<p class="note"><strong>The thread is content, not state (review F-09).</strong> The bars were previously inked in
+<span class="mono">state.info</span>, which made a status token carry a magnitude; 04 §6.1 defines the
+<span class="mono">state.*</span> family as semantic state, and a 40&#8211;99 rating is not a state. The thread now draws
+in <span class="mono">content.quiet</span>, a content-hierarchy role — quieter than the printed rating in
+<span class="mono">content.secondary</span> that carries the value, because the bar is the redundant shape and the number
+is the datum. Bar height is <strong>(rating &#8722; 40) &#247; 59 of a 26 pt track, rounded to whole points</strong>, so
+the shape agrees with the number rather than being drawn by eye: 78&#8594;17, 81&#8594;18, 74&#8594;15, 86&#8594;20,
+83&#8594;19. State colour on this card is reserved for the one genuine state, the urgent expiry.</p>
+
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark</div>
+<div class="srf">
+  <div class="form">
+    <div class="fcell"><span class="t10 cs">Wk 4 &#183; OPP-A</span><span class="t12 cp b num">W 27&#8211;14</span><div class="fbarwrap"><div class="fbar" style="height:17px"></div></div><span class="t10 cs num">78</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 5 &#183; OPP-B</span><span class="t12 cp b num">W 24&#8211;7</span><div class="fbarwrap"><div class="fbar" style="height:18px"></div></div><span class="t10 cs num">81</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 6 &#183; OPP-C</span><span class="t12 cp b num">L 17&#8211;24</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="t10 cs num">74</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 7 &#183; OPP-D</span><span class="t12 cp b num">W 31&#8211;12</span><div class="fbarwrap"><div class="fbar" style="height:20px"></div></div><span class="t10 cs num">86</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 8 &#183; OPP-E</span><span class="t12 cp b num">W 20&#8211;16</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="t10 cs num">83</span></div>
   </div>
-  <!-- LIGHT -->
-  <div class="rp l">
-    <p class="apx">Light — same series, same bound</p>
-    <div class="srf">
-      <div class="form">
-        <div class="fcell"><span class="t10 cs">Wk 5 &#183; OP1</span><span class="t12 cp b num">W 31&#8211;17</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="t10 cs num">78</span></div>
-        <div class="fcell"><span class="t10 cs">Wk 6 &#183; OP2</span><span class="t12 cp b num">L 13&#8211;20</span><div class="fbarwrap"><div class="fbar" style="height:13px"></div></div><span class="t10 cs num">66</span></div>
-        <div class="fcell"><span class="t10 cs">Wk 7 &#183; OP3</span><span class="t12 cp b num">W 24&#8211;21</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="t10 cs num">71</span></div>
-        <div class="fcell"><span class="t10 cs">Wk 8 &#183; OP4</span><span class="t12 cp b num">W 27&#8211;10</span><div class="fbarwrap"><div class="fbar" style="height:22px"></div></div><span class="t10 cs num">84</span></div>
-        <div class="fcell"><span class="t10 cs">Wk 9 &#183; OP5</span><span class="t12 cp b num">L 14&#8211;28</span><div class="fbarwrap"><div class="fbar" style="height:11px"></div></div><span class="t10 cs num">62</span></div>
-      </div>
-      <div class="sentence" style="border-top:1px solid var(--hair); border-bottom:0">Bounded series: last 5 of 9 recorded games. Older games live in Game Detail, one tap away.</div>
-    </div>
-    <p class="apx" style="margin-top:12px">Contract-expiry chip (F22)</p>
-    <div class="srf" style="padding:12px; display:flex; gap:12px; flex-wrap:wrap; align-items:center">
-      <span class="expchip cs"><span class="g">clock</span>Contract ends Wk 1, 2028</span>
-      <span class="expchip warn" style="border-color:var(--warn)"><span class="g" style="border-color:var(--warn)">clock.badge.exclamationmark</span>Expiring &#183; Wk 15, 2026</span>
-    </div>
+  <div class="sentence" style="border-top:1px solid var(--hair);border-bottom:0">Bounded series: last 5 of 8 recorded
+    games. Older games live in Game Detail, one tap away.</div>
+</div>
+<p class="caption">Partial and empty series — the bound stated, never padded</p>
+<div class="srf">
+  <div class="form">
+    <div class="fcell"><span class="t10 cs">Wk 7 &#183; OPP-D</span><span class="t12 cp b num">W 31&#8211;12</span><div class="fbarwrap"><div class="fbar" style="height:14px"></div></div><span class="t10 cs num">72</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 8 &#183; OPP-E</span><span class="t12 cp b num">W 20&#8211;16</span><div class="fbarwrap"><div class="fbar" style="height:11px"></div></div><span class="t10 cs num">64</span></div>
   </div>
+  <div class="sentence" style="border-top:1px solid var(--hair)">2 games recorded &#8212; the series shows only what the
+    simulation retains.</div>
+  <div class="sentence" style="border-bottom:0">No games recorded yet.</div>
+</div>
+<p class="caption">Contract-expiry chip (F22) — the two states side by side</p>
+<div class="srf" style="padding:12px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+  <span class="expchip">Contract ends after next season</span>
+  <span class="expchip urgent"><span class="gl warn">clock.badge.exclamationmark</span>Expiring &#183; end of this season</span>
+</div>
+<p class="ratios">Quoted ratios (04 §6.1, dark): result and score content.primary on work 16.74 · week, opponent code and
+printed rating content.secondary on work 9.71 · thread bars content.quiet on work 5.44 (non-text, floor 3) · urgent chip
+text and border state.warning on work 11.21 · normal chip text content.secondary on work 9.71 · urgent glyph chip ink
+state.warning on raised 10.22.</p>
 </div>
 
-<h3>Measured pairs used above — quoted from 04 §6.1</h3>
-<table class="ratios">
-<tr><th>Element</th><th>Pair</th><th>Dark ratio</th><th>Light ratio</th><th>Floor</th></tr>
+<div class="pane lt"><div class="pane-h">Light</div>
+<div class="srf">
+  <div class="form">
+    <div class="fcell"><span class="t10 cs">Wk 4 &#183; OPP-A</span><span class="t12 cp b num">W 27&#8211;14</span><div class="fbarwrap"><div class="fbar" style="height:17px"></div></div><span class="t10 cs num">78</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 5 &#183; OPP-B</span><span class="t12 cp b num">W 24&#8211;7</span><div class="fbarwrap"><div class="fbar" style="height:18px"></div></div><span class="t10 cs num">81</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 6 &#183; OPP-C</span><span class="t12 cp b num">L 17&#8211;24</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="t10 cs num">74</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 7 &#183; OPP-D</span><span class="t12 cp b num">W 31&#8211;12</span><div class="fbarwrap"><div class="fbar" style="height:20px"></div></div><span class="t10 cs num">86</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 8 &#183; OPP-E</span><span class="t12 cp b num">W 20&#8211;16</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="t10 cs num">83</span></div>
+  </div>
+  <div class="sentence" style="border-top:1px solid var(--hair);border-bottom:0">Bounded series: last 5 of 8 recorded
+    games. Older games live in Game Detail, one tap away.</div>
+</div>
+<p class="caption">Partial and empty series</p>
+<div class="srf">
+  <div class="form">
+    <div class="fcell"><span class="t10 cs">Wk 7 &#183; OPP-D</span><span class="t12 cp b num">W 31&#8211;12</span><div class="fbarwrap"><div class="fbar" style="height:14px"></div></div><span class="t10 cs num">72</span></div>
+    <div class="fcell"><span class="t10 cs">Wk 8 &#183; OPP-E</span><span class="t12 cp b num">W 20&#8211;16</span><div class="fbarwrap"><div class="fbar" style="height:11px"></div></div><span class="t10 cs num">64</span></div>
+  </div>
+  <div class="sentence" style="border-top:1px solid var(--hair)">2 games recorded &#8212; the series shows only what the
+    simulation retains.</div>
+  <div class="sentence" style="border-bottom:0">No games recorded yet.</div>
+</div>
+<p class="caption">Contract-expiry chip (F22)</p>
+<div class="srf" style="padding:12px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+  <span class="expchip">Contract ends after next season</span>
+  <span class="expchip urgent"><span class="gl warn">clock.badge.exclamationmark</span>Expiring &#183; end of this season</span>
+</div>
+<p class="ratios">Quoted ratios (04 §6.1, light): result and score content.primary on work 17.64 · week, opponent code and
+printed rating content.secondary on work 7.40 · thread bars content.quiet on work 6.07 (non-text, floor 3) · urgent chip
+text and border state.warning on work 6.76 · normal chip text content.secondary on work 7.40 · urgent glyph chip ink
+state.warning on raised 5.71.</p>
+</div>
+</div>
+
+<p class="note">The partial and empty renditions are component states without a cast identity: the shared world holds no
+two-game player, and the sheet will not invent one to fill a state. The same two-game case backs Card 1's low-confidence
+verdict rendition. The expiry chips are the same component in its two states: the left chip is Player Fourteen's actual
+term, which sits outside the horizon; the right chip is the urgent rendition a term ending inside the horizon draws.</p>
+
+<h3>Measured pairs used on this card — quoted from 04 §6.1</h3>
+<table class="ratiotable">
+<tr><th>Element</th><th>Pair</th><th>Dark</th><th>Light</th><th>Floor</th></tr>
 <tr><td>Result and score (12 pt bold tabular)</td><td>content.primary on world.work</td><td>16.74</td><td>17.64</td><td>4.5 met</td></tr>
-<tr><td>Week/opponent caption, printed rating</td><td>content.secondary on world.work</td><td>9.71</td><td>7.40</td><td>4.5 met</td></tr>
-<tr><td>Rating thread bars (non-text)</td><td>state.info on world.work</td><td>7.73</td><td>6.47</td><td>3 met — the printed 40&#8211;99 number beside each bar carries the value</td></tr>
-<tr><td>Urgent expiry chip text and glyph</td><td>state.warning on world.work</td><td>11.21</td><td>6.76</td><td>4.5 met — urgency also worded ("Expiring") and glyph-changed, never colour alone</td></tr>
-<tr><td>Normal expiry chip text</td><td>content.secondary on world.work</td><td>9.71</td><td>7.40</td><td>4.5 met</td></tr>
+<tr><td>Week and opponent caption, printed rating, normal expiry chip</td><td>content.secondary on world.work</td><td>9.71</td><td>7.40</td><td>4.5 met</td></tr>
+<tr><td>Rating thread bars (non-text)</td><td>content.quiet on world.work</td><td>5.44</td><td>6.07</td><td>3 met — a content-hierarchy role, not a state; the printed 40&#8211;99 number carries the value</td></tr>
+<tr><td>Urgent expiry chip text and border</td><td>state.warning on world.work</td><td>11.21</td><td>6.76</td><td>4.5 met — urgency is also worded ("Expiring") and glyph-marked, never colour alone</td></tr>
+<tr><td>Urgent expiry glyph chip ink</td><td>state.warning on world.raised</td><td>10.22</td><td>5.71</td><td>4.5 met</td></tr>
+<tr><td>Bound and empty sentences</td><td>content.secondary on world.work</td><td>9.71</td><td>7.40</td><td>4.5 met</td></tr>
 </table>
 
-<div class="contract-block">
-<h3>CONTRACT — FormLine, ten points</h3>
-<ol class="contract">
-<li><strong>Appearances and ratios.</strong> Light and dark rendered; all pairs quoted from 04 §6.1 against
-world.work. Non-text thread bars meet the 3:1 floor in both appearances and are redundant with printed
-ratings; the urgent state meets 4.5 and is never colour alone (word plus glyph change plus colour).</li>
-<li><strong>Widths.</strong> Five 84 pt cells plus gaps and padding equal 484 pt — fits every supported width;
-rendered inside the width-proof composition at 844, 852 and 956 pt and at AX5, where the five cells restack
-vertically as one column of result rows, order preserved, nothing dropped.</li>
-<li><strong>Touch.</strong> Interactive elements: each result cell opens its Game Detail (box score) —
-measured 84&#215;64 pt &#8805; the 44&#215;44 pt floor (HIG-verified per 04 §7). The expiry chips are indicators
-(22 pt tall, not tappable, no floor claim); the contract answer lives on the contract surface one route
-away.</li>
-<li><strong>States.</strong> Default (5 of 9, bound stated), partial (2 games recorded — the series shows only
-what the simulation retains, never padded), empty ("No games recorded yet", worded, inside the composition),
-and the expiry chip's two states: normal and urgent-inside-horizon (F22). Selected/disabled/delegated do not
-apply; error and interrupted belong to the owning composition (registry 23).</li>
-<li><strong>Team colour.</strong> Not touched — opponent identity appears as text codes (OP1&#8211;OP5), not
-team-coloured chips, per 04 §5 (opponents use their identity only where comparison requires it); trio
-coverage is carried by Card 1.</li>
-<li><strong>VoiceOver — one sentence per data row (per cell, and per chip).</strong>
-"Week 5, won 31 to 17 against Opponent One, game rating 78."
-"Week 6, lost 13 to 20 against Opponent Two, game rating 66."
-"Week 7, won 24 to 21 against Opponent Three, game rating 71."
-"Week 8, won 27 to 10 against Opponent Four, game rating 84."
-"Week 9, lost 14 to 28 against Opponent Five, game rating 62."
-"Two games recorded." / "No games recorded yet."
-"Contract ends Week 1, 2028." / "Contract expiring, Week 15, 2026, inside the current horizon."</li>
-<li><strong>Motion.</strong> One animation: the thread bars may rise on first appearance. Reduced form,
-named: under Reduce Motion the bars appear complete as a discrete state, no rise, no travel (04 §7). The
-urgent chip does not pulse in either mode.</li>
-<li><strong>Verdict.</strong> No verdict line — a form series is evidence, not judgement ("in form" prose
-would be a verdict the engine cannot yet back). The person surface's verdict slot stays empty with gap ID
-G-02 in place (Card 1); this card's own gap is G-04 (rating definition and last-5 projection), stated in its
-data-source line.</li>
-<li><strong>Density budget (04 §4.5 currencies).</strong> Points: one 80 pt strip (64 pt cells plus 8 pt
-paddings) for five results — the bound is the budget; the series never grows the strip. Taps: 1 per cell to
-Game Detail (evidence exactly one tap away); the five results are co-visible on one surface, so comparison
-across games spends 0 working memory. Learned symbols: 2 of the global &#8804;12 (clock,
-clock.badge.exclamationmark — the urgent form changes the poaching/renewal decision); &#8804;1 glyph per
-chip, within the &#8804;3-per-row cap. Verdict lines: 0.</li>
-<li><strong>Values and identities.</strong> All colours 04 §6.1 hexes; ratings 40&#8211;99 integers with
-tabular numerals; scores integers; type 10/12 pt per §6.2; cell radius 8, surface 10, bars radius 0, spacing
-steps 4/6/8/12 per §6.3. Opponent codes OP1&#8211;OP5 and dates are mechanical placeholders, pending
-generator output; the expiry horizon is a rules constant, not a per-screen judgement.</li>
+<div class="contract">
+<h4>Contract — FormLine</h4>
+<ol>
+<li><strong>Appearances and ratios.</strong> Light and dark rendered; all pairs quoted from 04 §6.1 against work, except
+the urgent glyph chip which is quoted against raised because that is the surface it sits on. Non-text thread bars meet the
+3:1 floor in both appearances and are redundant with the printed rating; the urgent state meets 4.5 and is never colour
+alone (word plus glyph plus colour).</li>
+<li><strong>Widths.</strong> The strip's content measures <strong>476 pt</strong> — five 84 pt cells plus four 8 pt gaps
+plus 12 pt of padding each side (5&#215;84 + 4&#215;8 + 2&#215;12) — which fits every supported width; the strip renders inside the
+composition at 844, 852 and 956 pt and at AX5, where the five cells restack vertically as one column of result rows, order
+preserved, nothing dropped.</li>
+<li><strong>Touch.</strong> Interactive elements: each result cell opens its Game Detail box score — 84 pt wide and at
+least 64 pt tall, above the 44&#215;44 pt floor (HIG-verified per 04 §7). The expiry chips are indicators (22 pt tall, not
+tappable, no floor claim); the contract answer lives on the contract surface one route away.</li>
+<li><strong>States.</strong> Default (5 of 8, bound stated), partial (2 games recorded — the series shows only what the
+simulation retains, never padded), empty ("No games recorded yet", worded, inside the composition), and the expiry chip's
+two states, normal and urgent-inside-horizon (F22). Selected, disabled and delegated do not apply; error and interrupted
+belong to the owning composition (registry 23).</li>
+<li><strong>Team colour.</strong> Not touched — past opponents appear as text codes, not team-coloured chips, per 04 §5
+(opponents use their identity only where comparison or conflict requires it). Trio coverage is carried by Card 1.</li>
+<li><strong>VoiceOver — one sentence per cell and per chip.</strong> <span class="vo">"Week 4, won 27 to 14 against
+Opponent A, game rating 78."</span> <span class="vo">"Week 5, won 24 to 7 against Opponent B, game rating 81."</span>
+<span class="vo">"Week 6, lost 17 to 24 against Opponent C, game rating 74."</span> <span class="vo">"Week 7, won 31 to 12
+against Opponent D, game rating 86."</span> <span class="vo">"Week 8, won 20 to 16 against Opponent E, game rating
+83."</span> <span class="vo">"Last five of eight recorded games."</span> <span class="vo">"Two games recorded."</span>
+<span class="vo">"No games recorded yet."</span> <span class="vo">"Contract ends after next season."</span>
+<span class="vo">"Contract expiring at the end of this season, inside the current horizon."</span></li>
+<li><strong>Motion.</strong> One animation: the thread bars may rise on first appearance. Reduced form, named: under
+Reduce Motion the bars appear complete as a discrete state, no rise, no travel (04 §7). The urgent chip does not pulse in
+either mode.</li>
+<li><strong>Verdict.</strong> No verdict line — a form series is evidence, not judgement ("in form" prose would be a
+verdict the engine cannot yet back). The person surface's verdict slot stays in its empty shipping form with gap ID G-02
+(Card 1); this card's own gap is G-04, stated in its data-source line.</li>
+<li><strong>Density budget (04 §4.5 currencies).</strong> Points: one strip 476 pt wide, its height the cell height plus
+the strip's 8 pt top and bottom padding (each cell is a 10 pt caption, a 12 pt result, a 26 pt bar track and a 10 pt
+rating at 4 pt internal padding and 2 pt gaps, so the cell runs to about 84 pt at default type, well past its 64 pt
+floor).
+The bound is the budget: the series never grows the strip. Taps: 1 per cell to Game Detail, so evidence is exactly one tap
+away; the five results are co-visible on one surface, so comparison across games spends 0 working memory. Learned symbols:
+<strong>1 Status member</strong>, <span class="mono">clock.badge.exclamationmark</span>, already one of §6.6's twelve —
+no growth, and 1 glyph per chip against §4.5's ceiling of 3 per row. The non-urgent chip carries no symbol, because §6.6
+holds no member for it and the words say it. Verdict lines: 0.</li>
+<li><strong>Values and identities.</strong> All colours are 04 §6.1 hexes; ratings are 40&#8211;99 integers in tabular
+numerals; scores are integers; type 10/12 pt per §6.2; cell radius 8, surface 10, bars radius 0, spacing steps 4/6/8/12
+per §6.3. The subject, his five ratings and his contract horizon are shared-world facts; scores, opponent codes and the
+two-game case are sheet-local, pending generator output. The expiry horizon is a rules constant, not a per-screen
+judgement.</li>
 </ol>
 </div>
+</section>
 
-<!-- ================================================================
-     WIDTH PROOFS — identity-band-plus-attributes composition
-     ================================================================ -->
-<h2>Width proofs — the identity-band-plus-attributes composition</h2>
-<p>D15 is settled in 04 §7: the promise window is 852&#215;393 through 956&#215;440 pt with the install floor at
-844&#215;390 pt. The composition below assembles Cards 1&#8211;4 (band, verdict slot, tabs, attribute rows with
-delta marks and confidence cells, form strip) and renders it at all three widths at default type, dark
-appearance (appearance parity is proven per card above), then once at AX5. Each container is exactly the
-stated width; the page scrolls horizontally in this gallery — the composition itself never does (04 §4.5:
-further facts arrive as column sets, never horizontal scroll). What absorbs the width differences: the
-flexible identity/label columns; fixed fact columns and the fixed five-cell form strip do not move. The
-composition carries <strong>24 data items</strong> at every width: band 7 (name, age, position, programme,
-terms, worth band, team chip), verdict-slot statement 1, tabs 4, attribute rows 6, form cells 5, bound
-sentence 1.</p>
+<!-- ================================================================ WIDTH STUDY -->
+<section class="card" id="widths">
+<header>
+<h2>Width study and AX5 <span class="status">the band-plus-attributes composition</span></h2>
+<p class="note">D15 is settled in 04 §7: the promise window is 852&#215;393 through 956&#215;440 pt, with the install floor
+at 844&#215;390 pt. The composition below assembles Cards 1 to 4 — band, verdict slot in its shipping form, tabs,
+attribute rows with delta marks and confidence cells, form strip — and renders at all three widths at default type in the
+dark appearance (appearance parity is proven per card above), then once at AX5. Each container is exactly the stated
+width; the page scrolls horizontally in this gallery, the composition never does (04 §4.5: further facts arrive as column
+sets, never horizontal scroll). What absorbs the difference: the flexible identity and label columns. What it does not
+buy: no additional fact columns, no second dominant object, no change to the 26 pt track, the 44 pt tabs or the
+10&#8211;12 pt micro type.</p>
+<p class="note"><strong>Item count, and the counting rule.</strong> The composition carries <strong>28 data items</strong>
+at every width and at AX5, counted as one item per band fact, one per tab, one per row, one per form cell, plus the
+verdict-slot statement and the bound sentence: band 11 (name, number, class year, age, position, programme, overall, fit,
+terms, worth band, team chip), verdict-slot statement 1, tabs 4, rows 6, form cells 5, bound sentence 1.</p>
+</header>
 
-<div class="wbox scrollx"><p class="meta">844 pt — install floor (below-promise devices render un-clipped forever)</p>
-<div class="rp d wframe" style="width:844px">
+<div class="stage w844"><p class="caption">844 pt — install floor (below-promise devices render un-clipped forever; the
+16e class landscape insets are an unsourced recorded gap per 04 §7, so none is assumed here)</p><div class="win">
+<div class="pane dk" style="min-width:0;padding:8px">
 <div class="srf">
-<div class="band"><div class="plate"></div><div class="id"><div class="t17 cp">Player Fourteen</div><div class="t11 cs">Age 20 &#183; LB &#183; Example State Institute</div><div class="t10 cq num">Terms $1,850,000 through 2029 &#183; Worth $2,400,000&#8211;$3,100,000 (band)</div></div><div class="bandright"><span class="chip" style="background:var(--t1p);color:var(--t1o)"><span class="sec" style="background:var(--t1s)"></span>ESI</span></div></div>
-<div class="verdict-slot">VerdictLine slot &#8212; empty; gap G-02 in place.</div>
+<div class="band"><div class="plate"></div><div class="id"><div class="t17 cp">Player Fourteen <span class="t12 cs num">No. 14</span></div><div class="t11 cs">Senior &#183; Age 22 &#183; QB &#183; Example State</div><div class="t10 cq num">OVR 84 &#183; Fit 82 &#183; Terms expire after next season &#183; Worth $2,400,000&#8211;$3,100,000 (band)</div></div><div class="bandright"><span class="tc t1 hairline"><span class="sb"></span>EXS</span></div></div>
+<div class="vslot">VerdictLine slot &#8212; empty; gap G-02 in place (shipping form).</div>
 <div class="tabs"><div class="tab">Overview</div><div class="tab sel">Attributes</div><div class="tab">Form</div><div class="tab">History</div></div>
 <div class="rows">
-<div class="row"><span class="lbl">Awareness</span><span class="delta pos"><span class="g">arrow.up.right</span>+2</span><span class="t10 cq">development focus, Wk 6</span><span class="val">74</span></div>
-<div class="row"><span class="lbl">Tackling</span><span class="delta pos"><span class="g">arrow.up.right</span>+1</span><span class="t10 cq">practice emphasis, Wk 7</span><span class="val">81</span></div>
-<div class="row"><span class="lbl">Speed</span><span class="delta neg"><span class="g">arrow.down.right</span>&#8722;1</span><span class="t10 cq">ankle injury, Wk 4</span><span class="val">68</span></div>
-<div class="row"><span class="lbl">Discipline</span><span class="t10 cq">no recent change</span><span class="val">77</span></div>
-<div class="row ctl"><span class="lbl">Leadership</span><span class="t11 cs">Unknown</span><button class="btn" type="button">Scout</button></div>
-<div class="row"><span class="lbl">Worth</span><span class="g cs">tag</span><span class="t10 cq">band, 3 observations</span><span class="val">$2,400,000&#8211;$3,100,000</span></div>
+<div class="row"><span class="lbl">Decision-making</span><span class="delta up"><span class="gl pos">arrow.up.right</span>+2</span><span class="t10 cq">film study, Wk 7</span><span class="val">83</span></div>
+<div class="row"><span class="lbl">Short accuracy</span><span class="delta up"><span class="gl pos">arrow.up.right</span>+1</span><span class="t10 cq">practice emphasis, Wk 8</span><span class="val">86</span></div>
+<div class="row"><span class="lbl">Play-action timing</span><span class="delta dn"><span class="gl neg">arrow.down.right</span>&#8722;1</span><span class="t10 cq">reduced reps, Wk 5</span><span class="val">77</span></div>
+<div class="row"><span class="lbl">Deep accuracy</span><span class="t10 cq">no recent change</span><span class="val">79</span></div>
+<div class="row ctl"><span class="lbl">Ceiling</span><span class="t11 cs">Unknown</span><button class="btn" type="button">Scout</button></div>
+<div class="row"><span class="lbl">Worth</span><span class="t10 cq">band, 3 observations</span><span class="val">$2,400,000&#8211;$3,100,000</span></div>
 </div>
 <div class="form" style="border-top:1px solid var(--hair)">
-<div class="fcell"><span class="t10 cs">Wk 5 &#183; OP1</span><span class="t12 cp b num">W 31&#8211;17</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="t10 cs num">78</span></div>
-<div class="fcell"><span class="t10 cs">Wk 6 &#183; OP2</span><span class="t12 cp b num">L 13&#8211;20</span><div class="fbarwrap"><div class="fbar" style="height:13px"></div></div><span class="t10 cs num">66</span></div>
-<div class="fcell"><span class="t10 cs">Wk 7 &#183; OP3</span><span class="t12 cp b num">W 24&#8211;21</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="t10 cs num">71</span></div>
-<div class="fcell"><span class="t10 cs">Wk 8 &#183; OP4</span><span class="t12 cp b num">W 27&#8211;10</span><div class="fbarwrap"><div class="fbar" style="height:22px"></div></div><span class="t10 cs num">84</span></div>
-<div class="fcell"><span class="t10 cs">Wk 9 &#183; OP5</span><span class="t12 cp b num">L 14&#8211;28</span><div class="fbarwrap"><div class="fbar" style="height:11px"></div></div><span class="t10 cs num">62</span></div>
+<div class="fcell"><span class="t10 cs">Wk 4 &#183; OPP-A</span><span class="t12 cp b num">W 27&#8211;14</span><div class="fbarwrap"><div class="fbar" style="height:17px"></div></div><span class="t10 cs num">78</span></div>
+<div class="fcell"><span class="t10 cs">Wk 5 &#183; OPP-B</span><span class="t12 cp b num">W 24&#8211;7</span><div class="fbarwrap"><div class="fbar" style="height:18px"></div></div><span class="t10 cs num">81</span></div>
+<div class="fcell"><span class="t10 cs">Wk 6 &#183; OPP-C</span><span class="t12 cp b num">L 17&#8211;24</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="t10 cs num">74</span></div>
+<div class="fcell"><span class="t10 cs">Wk 7 &#183; OPP-D</span><span class="t12 cp b num">W 31&#8211;12</span><div class="fbarwrap"><div class="fbar" style="height:20px"></div></div><span class="t10 cs num">86</span></div>
+<div class="fcell"><span class="t10 cs">Wk 8 &#183; OPP-E</span><span class="t12 cp b num">W 20&#8211;16</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="t10 cs num">83</span></div>
 </div>
-<div class="sentence" style="border-top:1px solid var(--hair);border-bottom:0">Last 5 of 9 recorded games.</div>
+<div class="sentence" style="border-top:1px solid var(--hair);border-bottom:0">Last 5 of 8 recorded games.</div>
 </div>
-</div></div>
+</div></div></div>
 
-<div class="wbox scrollx"><p class="meta">852 pt — promise floor (852&#215;393; full budget must hold here). The 8 pt gained over 844 is absorbed by side padding; nothing else moves.</p>
-<div class="rp d wframe" style="width:852px">
+<div class="stage w852"><p class="caption">852 pt — promise floor (852&#215;393; the full budget must hold here). The 8 pt
+gained over 844 is absorbed by the flexible label column; nothing else moves.</p><div class="win">
+<div class="pane dk" style="min-width:0;padding:8px">
 <div class="srf">
-<div class="band"><div class="plate"></div><div class="id"><div class="t17 cp">Player Fourteen</div><div class="t11 cs">Age 20 &#183; LB &#183; Example State Institute</div><div class="t10 cq num">Terms $1,850,000 through 2029 &#183; Worth $2,400,000&#8211;$3,100,000 (band)</div></div><div class="bandright"><span class="chip" style="background:var(--t1p);color:var(--t1o)"><span class="sec" style="background:var(--t1s)"></span>ESI</span></div></div>
-<div class="verdict-slot">VerdictLine slot &#8212; empty; gap G-02 in place.</div>
+<div class="band"><div class="plate"></div><div class="id"><div class="t17 cp">Player Fourteen <span class="t12 cs num">No. 14</span></div><div class="t11 cs">Senior &#183; Age 22 &#183; QB &#183; Example State</div><div class="t10 cq num">OVR 84 &#183; Fit 82 &#183; Terms expire after next season &#183; Worth $2,400,000&#8211;$3,100,000 (band)</div></div><div class="bandright"><span class="tc t1 hairline"><span class="sb"></span>EXS</span></div></div>
+<div class="vslot">VerdictLine slot &#8212; empty; gap G-02 in place (shipping form).</div>
 <div class="tabs"><div class="tab">Overview</div><div class="tab sel">Attributes</div><div class="tab">Form</div><div class="tab">History</div></div>
 <div class="rows">
-<div class="row"><span class="lbl">Awareness</span><span class="delta pos"><span class="g">arrow.up.right</span>+2</span><span class="t10 cq">development focus, Wk 6</span><span class="val">74</span></div>
-<div class="row"><span class="lbl">Tackling</span><span class="delta pos"><span class="g">arrow.up.right</span>+1</span><span class="t10 cq">practice emphasis, Wk 7</span><span class="val">81</span></div>
-<div class="row"><span class="lbl">Speed</span><span class="delta neg"><span class="g">arrow.down.right</span>&#8722;1</span><span class="t10 cq">ankle injury, Wk 4</span><span class="val">68</span></div>
-<div class="row"><span class="lbl">Discipline</span><span class="t10 cq">no recent change</span><span class="val">77</span></div>
-<div class="row ctl"><span class="lbl">Leadership</span><span class="t11 cs">Unknown</span><button class="btn" type="button">Scout</button></div>
-<div class="row"><span class="lbl">Worth</span><span class="g cs">tag</span><span class="t10 cq">band, 3 observations</span><span class="val">$2,400,000&#8211;$3,100,000</span></div>
+<div class="row"><span class="lbl">Decision-making</span><span class="delta up"><span class="gl pos">arrow.up.right</span>+2</span><span class="t10 cq">film study, Wk 7</span><span class="val">83</span></div>
+<div class="row"><span class="lbl">Short accuracy</span><span class="delta up"><span class="gl pos">arrow.up.right</span>+1</span><span class="t10 cq">practice emphasis, Wk 8</span><span class="val">86</span></div>
+<div class="row"><span class="lbl">Play-action timing</span><span class="delta dn"><span class="gl neg">arrow.down.right</span>&#8722;1</span><span class="t10 cq">reduced reps, Wk 5</span><span class="val">77</span></div>
+<div class="row"><span class="lbl">Deep accuracy</span><span class="t10 cq">no recent change</span><span class="val">79</span></div>
+<div class="row ctl"><span class="lbl">Ceiling</span><span class="t11 cs">Unknown</span><button class="btn" type="button">Scout</button></div>
+<div class="row"><span class="lbl">Worth</span><span class="t10 cq">band, 3 observations</span><span class="val">$2,400,000&#8211;$3,100,000</span></div>
 </div>
 <div class="form" style="border-top:1px solid var(--hair)">
-<div class="fcell"><span class="t10 cs">Wk 5 &#183; OP1</span><span class="t12 cp b num">W 31&#8211;17</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="t10 cs num">78</span></div>
-<div class="fcell"><span class="t10 cs">Wk 6 &#183; OP2</span><span class="t12 cp b num">L 13&#8211;20</span><div class="fbarwrap"><div class="fbar" style="height:13px"></div></div><span class="t10 cs num">66</span></div>
-<div class="fcell"><span class="t10 cs">Wk 7 &#183; OP3</span><span class="t12 cp b num">W 24&#8211;21</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="t10 cs num">71</span></div>
-<div class="fcell"><span class="t10 cs">Wk 8 &#183; OP4</span><span class="t12 cp b num">W 27&#8211;10</span><div class="fbarwrap"><div class="fbar" style="height:22px"></div></div><span class="t10 cs num">84</span></div>
-<div class="fcell"><span class="t10 cs">Wk 9 &#183; OP5</span><span class="t12 cp b num">L 14&#8211;28</span><div class="fbarwrap"><div class="fbar" style="height:11px"></div></div><span class="t10 cs num">62</span></div>
+<div class="fcell"><span class="t10 cs">Wk 4 &#183; OPP-A</span><span class="t12 cp b num">W 27&#8211;14</span><div class="fbarwrap"><div class="fbar" style="height:17px"></div></div><span class="t10 cs num">78</span></div>
+<div class="fcell"><span class="t10 cs">Wk 5 &#183; OPP-B</span><span class="t12 cp b num">W 24&#8211;7</span><div class="fbarwrap"><div class="fbar" style="height:18px"></div></div><span class="t10 cs num">81</span></div>
+<div class="fcell"><span class="t10 cs">Wk 6 &#183; OPP-C</span><span class="t12 cp b num">L 17&#8211;24</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="t10 cs num">74</span></div>
+<div class="fcell"><span class="t10 cs">Wk 7 &#183; OPP-D</span><span class="t12 cp b num">W 31&#8211;12</span><div class="fbarwrap"><div class="fbar" style="height:20px"></div></div><span class="t10 cs num">86</span></div>
+<div class="fcell"><span class="t10 cs">Wk 8 &#183; OPP-E</span><span class="t12 cp b num">W 20&#8211;16</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="t10 cs num">83</span></div>
 </div>
-<div class="sentence" style="border-top:1px solid var(--hair);border-bottom:0">Last 5 of 9 recorded games.</div>
+<div class="sentence" style="border-top:1px solid var(--hair);border-bottom:0">Last 5 of 8 recorded games.</div>
 </div>
-</div></div>
+</div></div></div>
 
-<div class="wbox scrollx"><p class="meta">956 pt — promise ceiling (956&#215;440). The 104 pt gained over 852 is absorbed by the flexible identity and label columns; the fact-column count is fixed (further facts would arrive as column sets, 04 §4.5).</p>
-<div class="rp d wframe" style="width:956px">
+<div class="stage w956"><p class="caption">956 pt — promise ceiling (956&#215;440). The 104 pt gained over 852 is absorbed
+by the flexible identity and label columns; the fact-column count is fixed.</p><div class="win">
+<div class="pane dk" style="min-width:0;padding:8px">
 <div class="srf">
-<div class="band"><div class="plate"></div><div class="id"><div class="t17 cp">Player Fourteen</div><div class="t11 cs">Age 20 &#183; LB &#183; Example State Institute</div><div class="t10 cq num">Terms $1,850,000 through 2029 &#183; Worth $2,400,000&#8211;$3,100,000 (band)</div></div><div class="bandright"><span class="chip" style="background:var(--t1p);color:var(--t1o)"><span class="sec" style="background:var(--t1s)"></span>ESI</span></div></div>
-<div class="verdict-slot">VerdictLine slot &#8212; empty; gap G-02 in place.</div>
+<div class="band"><div class="plate"></div><div class="id"><div class="t17 cp">Player Fourteen <span class="t12 cs num">No. 14</span></div><div class="t11 cs">Senior &#183; Age 22 &#183; QB &#183; Example State</div><div class="t10 cq num">OVR 84 &#183; Fit 82 &#183; Terms expire after next season &#183; Worth $2,400,000&#8211;$3,100,000 (band)</div></div><div class="bandright"><span class="tc t1 hairline"><span class="sb"></span>EXS</span></div></div>
+<div class="vslot">VerdictLine slot &#8212; empty; gap G-02 in place (shipping form).</div>
 <div class="tabs"><div class="tab">Overview</div><div class="tab sel">Attributes</div><div class="tab">Form</div><div class="tab">History</div></div>
 <div class="rows">
-<div class="row"><span class="lbl">Awareness</span><span class="delta pos"><span class="g">arrow.up.right</span>+2</span><span class="t10 cq">development focus, Wk 6</span><span class="val">74</span></div>
-<div class="row"><span class="lbl">Tackling</span><span class="delta pos"><span class="g">arrow.up.right</span>+1</span><span class="t10 cq">practice emphasis, Wk 7</span><span class="val">81</span></div>
-<div class="row"><span class="lbl">Speed</span><span class="delta neg"><span class="g">arrow.down.right</span>&#8722;1</span><span class="t10 cq">ankle injury, Wk 4</span><span class="val">68</span></div>
-<div class="row"><span class="lbl">Discipline</span><span class="t10 cq">no recent change</span><span class="val">77</span></div>
-<div class="row ctl"><span class="lbl">Leadership</span><span class="t11 cs">Unknown</span><button class="btn" type="button">Scout</button></div>
-<div class="row"><span class="lbl">Worth</span><span class="g cs">tag</span><span class="t10 cq">band, 3 observations</span><span class="val">$2,400,000&#8211;$3,100,000</span></div>
+<div class="row"><span class="lbl">Decision-making</span><span class="delta up"><span class="gl pos">arrow.up.right</span>+2</span><span class="t10 cq">film study, Wk 7</span><span class="val">83</span></div>
+<div class="row"><span class="lbl">Short accuracy</span><span class="delta up"><span class="gl pos">arrow.up.right</span>+1</span><span class="t10 cq">practice emphasis, Wk 8</span><span class="val">86</span></div>
+<div class="row"><span class="lbl">Play-action timing</span><span class="delta dn"><span class="gl neg">arrow.down.right</span>&#8722;1</span><span class="t10 cq">reduced reps, Wk 5</span><span class="val">77</span></div>
+<div class="row"><span class="lbl">Deep accuracy</span><span class="t10 cq">no recent change</span><span class="val">79</span></div>
+<div class="row ctl"><span class="lbl">Ceiling</span><span class="t11 cs">Unknown</span><button class="btn" type="button">Scout</button></div>
+<div class="row"><span class="lbl">Worth</span><span class="t10 cq">band, 3 observations</span><span class="val">$2,400,000&#8211;$3,100,000</span></div>
 </div>
 <div class="form" style="border-top:1px solid var(--hair)">
-<div class="fcell"><span class="t10 cs">Wk 5 &#183; OP1</span><span class="t12 cp b num">W 31&#8211;17</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="t10 cs num">78</span></div>
-<div class="fcell"><span class="t10 cs">Wk 6 &#183; OP2</span><span class="t12 cp b num">L 13&#8211;20</span><div class="fbarwrap"><div class="fbar" style="height:13px"></div></div><span class="t10 cs num">66</span></div>
-<div class="fcell"><span class="t10 cs">Wk 7 &#183; OP3</span><span class="t12 cp b num">W 24&#8211;21</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="t10 cs num">71</span></div>
-<div class="fcell"><span class="t10 cs">Wk 8 &#183; OP4</span><span class="t12 cp b num">W 27&#8211;10</span><div class="fbarwrap"><div class="fbar" style="height:22px"></div></div><span class="t10 cs num">84</span></div>
-<div class="fcell"><span class="t10 cs">Wk 9 &#183; OP5</span><span class="t12 cp b num">L 14&#8211;28</span><div class="fbarwrap"><div class="fbar" style="height:11px"></div></div><span class="t10 cs num">62</span></div>
+<div class="fcell"><span class="t10 cs">Wk 4 &#183; OPP-A</span><span class="t12 cp b num">W 27&#8211;14</span><div class="fbarwrap"><div class="fbar" style="height:17px"></div></div><span class="t10 cs num">78</span></div>
+<div class="fcell"><span class="t10 cs">Wk 5 &#183; OPP-B</span><span class="t12 cp b num">W 24&#8211;7</span><div class="fbarwrap"><div class="fbar" style="height:18px"></div></div><span class="t10 cs num">81</span></div>
+<div class="fcell"><span class="t10 cs">Wk 6 &#183; OPP-C</span><span class="t12 cp b num">L 17&#8211;24</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="t10 cs num">74</span></div>
+<div class="fcell"><span class="t10 cs">Wk 7 &#183; OPP-D</span><span class="t12 cp b num">W 31&#8211;12</span><div class="fbarwrap"><div class="fbar" style="height:20px"></div></div><span class="t10 cs num">86</span></div>
+<div class="fcell"><span class="t10 cs">Wk 8 &#183; OPP-E</span><span class="t12 cp b num">W 20&#8211;16</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="t10 cs num">83</span></div>
 </div>
-<div class="sentence" style="border-top:1px solid var(--hair);border-bottom:0">Last 5 of 9 recorded games.</div>
+<div class="sentence" style="border-top:1px solid var(--hair);border-bottom:0">Last 5 of 8 recorded games.</div>
 </div>
-</div></div>
+</div></div></div>
 
-<!-- AX5 rendition -->
 <h3>AX5 rendition — single column, band first, order preserved, nothing dropped</h3>
-<p>Sizes per sourcing row Q5 (Apple Dynamic Type tables, gate two approved by the owner 2026-08-12), mapped
-through 04 §6.2's production text styles: Title (headline, 17 pt) &#8594; 53 pt; Headline (subheadline,
-15 pt) &#8594; 49 pt; Body/Callout (footnote, 13 pt) &#8594; 44 pt; Caption (caption 1, 12 pt) &#8594; 43 pt;
-caption 2 (11 pt) &#8594; 40 pt. Custom 10 pt micro sizes ride <code>@ScaledMetric</code> and map here to the
-nearest verified row (caption 2 endpoint, 40 pt) — AX5 receives a reflow, never clipped micro-type
-(04 §6.2/§6.4). The composition reflows to one column preserving order — band, verdict slot, tabs,
-attributes, form — and drops nothing: the same 24 data items as the 956 pt render, with delta marks carried
-by their sentence equivalents (T3: AX5 requires the sentence). The plate is a non-text asset and does not
-scale. Rendered in an 852 pt container; AX5 may scroll vertically (04 §7).</p>
+<p class="note"><strong>Sizes come from the five verified Q5 rows and nowhere else</strong> (Apple Dynamic Type tables,
+sourcing row Q5, gate two approved 2026-08-12), mapped through 04 §6.2's production text styles: Display (title 3, 20 pt)
+&#8594; 55 pt; Title (headline, 17 pt) &#8594; 53 pt; Headline (subheadline, 15 pt) &#8594; 49 pt; Body and Callout
+(footnote, 13 pt) &#8594; 44 pt; Caption (caption 1, 12 pt) &#8594; 43 pt. This sheet draws no Display or Headline type,
+so 55 and 49 do not appear below. <strong>Custom 10 pt micro-type rides <span class="mono">@ScaledMetric</span> and is
+drawn here at the Caption 1 endpoint, 43 pt</strong> — the smallest row the sourcing log actually verified.</p>
+<p class="note"><strong>Correction, review F-04.</strong> The previous revision of this sheet routed micro-type to
+"caption 2 (11 pt) &#8594; 40 pt" and called it "the nearest verified row". There is no such row: Q5 verified five mapped
+styles, and a sixth endpoint sitting in a column of sourced ones inherits an authority it does not have. The 40 pt
+endpoint is removed from this sheet rather than kept with a hedge, and micro-type routes to a genuinely verified row.</p>
+<p class="note">The composition reflows to one column preserving order — band, verdict slot, tabs, attributes, form — and
+drops nothing: the same 28 data items as the 956 pt render, with delta marks carried by their sentence equivalents (T3:
+AX5 requires the sentence). The verdict slot stays in its shipping form, per §6.5's rule that the populated form never
+appears at a width or AX5 rendition without the shipping form beside it. The plate is a non-text asset and does not scale.
+Rendered in an 852 pt container; AX5 may scroll vertically (04 §7).</p>
 
-<div class="wbox scrollx">
-<div class="rp d wframe ax" style="width:852px">
+<div class="stage"><div class="win" style="width:852px">
+<div class="pane dk ax" style="min-width:0;padding:8px">
 <div class="srf">
 <div class="band" style="align-items:flex-start">
   <div class="plate"></div>
-  <div class="id" style="white-space:normal">
-    <div class="axt cp" style="white-space:normal">Player Fourteen</div>
-    <div class="axc cs" style="white-space:normal">Age 20, linebacker, Example State Institute</div>
-    <div class="axb cq num" style="white-space:normal">Terms $1,850,000 through 2029</div>
-    <div class="axb cq num" style="white-space:normal">Worth $2,400,000&#8211;$3,100,000 (band)</div>
-    <div style="margin-top:12px"><span class="chip" style="background:var(--t1p);color:var(--t1o);height:44px;font-size:40px;letter-spacing:0;padding:0 16px"><span class="sec" style="background:var(--t1s);width:16px;height:16px"></span>ESI</span></div>
+  <div class="id">
+    <div class="axt cp">Player Fourteen, No. 14</div>
+    <div class="axc cs">Senior, age 22, quarterback, Example State</div>
+    <div class="axb cq num">Overall 84, role fit 82</div>
+    <div class="axb cq num">Terms expire after next season</div>
+    <div class="axb cq num">Worth band $2,400,000&#8211;$3,100,000</div>
+    <div style="margin-top:12px"><span class="tc t1 hairline" style="height:44px;font-size:43px;padding:0 16px"><span class="sb" style="width:8px;height:24px"></span>EXS</span></div>
   </div>
 </div>
-<div class="verdict-slot axc2" style="letter-spacing:0">VerdictLine slot &#8212; empty; gap G-02 in place.</div>
-<div class="tabs" style="height:auto; flex-wrap:wrap">
-  <div class="tab axc2" style="min-height:44px">Overview</div>
-  <div class="tab sel axc2" style="min-height:44px">Attributes</div>
-  <div class="tab axc2" style="min-height:44px">Form</div>
-  <div class="tab axc2" style="min-height:44px">History</div>
+<div class="vslot axc">VerdictLine slot &#8212; empty; gap G-02 in place (shipping form).</div>
+<div class="tabs">
+  <div class="tab axc">Overview</div><div class="tab sel axc">Attributes</div><div class="tab axc">Form</div><div class="tab axc">History</div>
 </div>
 <div class="rows">
-  <div class="row"><span class="axb cp">Awareness 74, up 2 since Week 6 &#8212; development focus.</span></div>
-  <div class="row"><span class="axb cp">Tackling 81, up 1 since Week 7 &#8212; practice emphasis.</span></div>
-  <div class="row"><span class="axb cp">Speed 68, down 1 since Week 4 &#8212; ankle injury.</span></div>
-  <div class="row"><span class="axb cp">Discipline 77, no recent change.</span></div>
-  <div class="row"><div style="width:100%"><div class="axb cp">Leadership: unknown.</div><button class="btn axb" type="button" style="height:auto;min-height:44px;width:100%;margin-top:12px">Scout</button></div></div>
+  <div class="row"><span class="axb cp">Decision-making 83, up 2 since Week 7 &#8212; film study.</span></div>
+  <div class="row"><span class="axb cp">Short accuracy 86, up 1 since Week 8 &#8212; practice emphasis.</span></div>
+  <div class="row"><span class="axb cp">Play-action timing 77, down 1 since Week 5 &#8212; reduced reps.</span></div>
+  <div class="row"><span class="axb cp">Deep accuracy 79, no recent change.</span></div>
+  <div class="row"><div style="width:100%"><div class="axb cp">Ceiling: unknown.</div><button class="btn axb" type="button" style="height:auto;min-height:44px;width:100%;margin-top:12px">Scout</button></div></div>
   <div class="row"><span class="axb cp">Worth: band $2,400,000&#8211;$3,100,000, from 3 observations.</span></div>
 </div>
 <div class="rows" style="border-top:1px solid var(--hair)">
-  <div class="row"><span class="axb cp num">Week 5: won 31&#8211;17, Opponent One, rating 78.</span></div>
-  <div class="row"><span class="axb cp num">Week 6: lost 13&#8211;20, Opponent Two, rating 66.</span></div>
-  <div class="row"><span class="axb cp num">Week 7: won 24&#8211;21, Opponent Three, rating 71.</span></div>
-  <div class="row"><span class="axb cp num">Week 8: won 27&#8211;10, Opponent Four, rating 84.</span></div>
-  <div class="row"><span class="axb cp num">Week 9: lost 14&#8211;28, Opponent Five, rating 62.</span></div>
-  <div class="row"><span class="axc cs">Last 5 of 9 recorded games.</span></div>
+  <div class="row"><span class="axb cp num">Week 4: won 27&#8211;14, Opponent A, rating 78.</span></div>
+  <div class="row"><span class="axb cp num">Week 5: won 24&#8211;7, Opponent B, rating 81.</span></div>
+  <div class="row"><span class="axb cp num">Week 6: lost 17&#8211;24, Opponent C, rating 74.</span></div>
+  <div class="row"><span class="axb cp num">Week 7: won 31&#8211;12, Opponent D, rating 86.</span></div>
+  <div class="row"><span class="axb cp num">Week 8: won 20&#8211;16, Opponent E, rating 83.</span></div>
+  <div class="row"><span class="axc cs">Last 5 of 8 recorded games.</span></div>
 </div>
 </div>
-</div></div>
+</div></div></div>
 
-<h2>Sheet provenance</h2>
-<p class="meta">Authored 2026-08-12 against: <code>docs/04-UX-AND-DESIGN-SYSTEM.md</code> §2, §4 (incl. §4.5),
-§5.1, §6.1&#8211;§6.5, §7 (colour values, measured ratios, type roles, shape/spacing/touch, registry, device
-window — G-07 write-back state); <code>docs/briefs/2026-08-12-reference-library-plan.md</code> §3&#8211;§5 (registry
-grounding, ten-point card contract, sheet mechanics); <code>docs/briefs/2026-08-12-density-model.md</code> §2
-(T2, T3, T9), §3, §5; <code>docs/briefs/2026-08-12-reference-set-findings.md</code> F1&#8211;F3;
-<code>docs/briefs/2026-08-12-reference-set-findings-pass2.md</code> F20&#8211;F22;
-<code>docs/briefs/2026-08-12-sourcing-log.md</code> row Q5; gap register entries G-02, G-03, G-04, G-05
-(<code>docs/briefs/2026-08-12-gap-register.md</code>). This sheet is a rendering; 04 is the only canonical home.
-Self-contained HTML and CSS; no JavaScript, no CDN, no web font, no icon font, no images, no emoji.</p>
+<div class="contract">
+<h4>Contract — the composition</h4>
+<ol>
+<li><strong>Appearances and ratios.</strong> The width study renders in dark only, deliberately: it is a geometry study,
+and every colour pair it uses has already been rendered and quoted in both appearances on Cards 1 to 4. No pair appears
+here that is not in those tables.</li>
+<li><strong>Widths.</strong> 844 (install floor), 852 (promise floor) and 956 pt (ceiling) at default type, plus one AX5
+rendition in an 852 pt container. Nothing clips and nothing scrolls horizontally inside the composition at any
+width.</li>
+<li><strong>Touch.</strong> Four tabs at 44 pt tall and at least 64 pt wide; one Scout action at 84&#215;44 pt minimum on
+a 44 pt row track; five form cells at 84 pt wide and at least 64 pt tall. At AX5 the Scout action becomes full width at a
+44 pt minimum height. Every control is at or above the 44&#215;44 pt floor.</li>
+<li><strong>States.</strong> One state per width — the Attributes region with the verdict slot in its shipping form.
+Alternative states (Form region, verdict target forms, partial and empty series, disabled control) are rendered on Cards 1
+to 4 rather than duplicated at each width, which would multiply the drawing without proving anything the cards do
+not.</li>
+<li><strong>Team colour.</strong> One chip, the dark-primary trio pair with its mandatory content.secondary boundary,
+scaled at AX5 to a 44 pt chip. Trio coverage across all three pairs is on Card 1.</li>
+<li><strong>VoiceOver.</strong> Order per 04 §7: band, verdict slot, tab row, attribute rows, form rows, bound sentence.
+The AX5 rendition is drawn as those sentences, so what is spoken and what is displayed are the same 28 items.</li>
+<li><strong>Motion.</strong> None in the composition beyond the tab crossfade already contracted on Card 1, whose reduced
+form is a discrete swap.</li>
+<li><strong>Verdict.</strong> Every width and the AX5 rendition draw the shipping form only — the empty slot with gap ID
+G-02 — per §6.5: the populated target form never appears at a width or AX5 rendition without the shipping form beside it,
+and it is labelled where it is drawn (Card 1).</li>
+<li><strong>Density budget (04 §4.5 currencies).</strong> One dominant object, the dossier; band 64 pt plus the tab row
+at 46 pt (44 pt of tab between two 1 pt seams) = 110 pt of chrome above the swap region. Rows at 26 pt inside the 24&#8211;28 band, with the single control row at 44 pt.
+28 data items at every width. Taps: any datum on this surface at 0 taps; Game Detail and change history at depth 1.
+Working memory: 0 — nothing here requires remembering a previous screen. Learned symbols: 2, both Change-class members,
+priced on Card 2; the composition adds no Status member. Verdict lines: 0 drawn.</li>
+<li><strong>Values and identities.</strong> Colours, type sizes, radii and spacing as contracted on Cards 1 to 4; AX5
+sizes 53 / 44 / 43 pt from the five verified Q5 rows, with 55 and 49 unused because this sheet draws no Display or
+Headline type. Identities are the shared-world cast, pending generator output.</li>
+</ol>
+</div>
+</section>
+
+<!-- ================================================================ PROVENANCE -->
+<section class="card" id="provenance">
+<header><h2>Sheet provenance</h2></header>
+<p class="meta">Authored 2026-08-12 against: <span class="mono">docs/04-UX-AND-DESIGN-SYSTEM.md</span> §2, §4 (including
+§4.5), §5.1, §6.1&#8211;§6.6, §7 — colour values and measured ratios, type roles, shape, spacing and touch, the component
+registry, the symbol register with its per-class caps, the verdict-state rule and the device window (G-07 write-back
+state); <span class="mono">docs/briefs/2026-08-12-reference-library-plan.md</span> §3&#8211;§5 (registry grounding,
+ten-point card contract, sheet mechanics); <span class="mono">docs/briefs/2026-08-12-reference-shared-world.md</span>
+(the cast, the moment and the figures); <span class="mono">docs/briefs/2026-08-12-density-model.md</span> §2 (T2, T3, T6,
+T9), §3, §5; <span class="mono">docs/briefs/2026-08-12-reference-set-findings.md</span> F1&#8211;F3;
+<span class="mono">docs/briefs/2026-08-12-reference-set-findings-pass2.md</span> F20&#8211;F22;
+<span class="mono">docs/briefs/2026-08-12-sourcing-log.md</span> row Q5; gap register entries G-02, G-03, G-04, G-05
+(<span class="mono">docs/briefs/2026-08-12-gap-register.md</span>).</p>
+<p class="meta">Revised the same day against <span class="mono">docs/reviews/2026-08-12-personnel-proof-review.md</span>:
+<strong>F-05</strong> — re-chromed to the library's shared gallery conventions and class vocabulary
+(<span class="mono">.sheet</span> / <span class="mono">.card</span> / <span class="mono">.rulebox</span> /
+<span class="mono">.modes</span> / <span class="mono">.pane .dk .lt</span> / <span class="mono">.ratios</span> /
+<span class="mono">.contract</span> / <span class="mono">.vo</span>), replacing this sheet's private
+<span class="mono">.contract-block</span> and <span class="mono">.notice</span>; <strong>F-04</strong> — the unverified
+"caption 2 &#8594; 40 pt" AX5 endpoint deleted, micro-type routed to the verified Caption 1 endpoint at 43 pt;
+<strong>F-09</strong> — the FormLine rating thread re-encoded from <span class="mono">state.info</span> to
+<span class="mono">content.quiet</span> with its stated bar-height rule and the printed number retained;
+<strong>F-06</strong> — the dossier redrawn against the shared-world cast; <strong>F-01</strong> — both verdict states
+drawn and labelled per §6.5; <strong>F-13</strong> — a thin-sample, low-confidence verdict drawn, the first in the
+library; <strong>F-03</strong> — the eight undisclosed off-canon chrome values removed and the colour position disclosed
+in the header. Related: the two symbols this sheet drew that §6.6 does not hold
+(<span class="mono">tag</span>, <span class="mono">clock</span>) are gone, so the sheet's spend is 2 Change-class members
+and 1 existing Status member, and the register's total of 21 is unchanged.</p>
+<p class="meta">This sheet is a rendering; 04 is the only canonical home. Self-contained HTML and CSS; no JavaScript, no
+CDN, no web font, no icon font, no images, no emoji.</p>
+</section>
 
 </div>
 </body>

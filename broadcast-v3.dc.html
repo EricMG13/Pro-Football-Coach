@@ -5,11 +5,11 @@
     --d-page:#080A14; --d-work:#111426; --d-raised:#191D32;
     --d-ink:#F4F5FA; --d-ink2:#B8BDCC; --d-quiet:#858CA2;
     --d-action:#9964E8; --d-destr:#F07886; --d-live:#72D7A0; --d-warn:#F0C56C;
-    --d-turf:#163E2A; --d-fline:#F5F7FA; --d-fann:#E7C45D; --d-flive:#C6F24E;
+    --d-turf:#163E2A; --d-tband:#1A452F; --d-fline:#F5F7FA; --d-fann:#E7C45D; --d-flive:#C6F24E;
     --l-page:#F1F2F7; --l-work:#FBFBFD; --l-raised:#E6E8F0;
     --l-ink:#111426; --l-ink2:#4D5366; --l-quiet:#596074;
     --l-action:#6840B0; --l-destr:#A42D32; --l-live:#4A6F00; --l-warn:#765300;
-    --l-turf:#DCE8DF; --l-fline:#0E1218; --l-fann:#7A5200; --l-flive:#4A6F00;
+    --l-turf:#DCE8DF; --l-tband:#D2E0D6; --l-fline:#0E1218; --l-fann:#7A5200; --l-flive:#4A6F00;
     --t1p:#14382A; --t1s:#D9B23C; --t1i:#F2F5F3;  /* trio: dark-primary */
     --t2p:#E9E0C9; --t2s:#6E3038; --t2i:#18202B;  /* trio: light-primary */
     --t3p:#555B66; --t3s:#D9DDE4; --t3i:#FFFFFF;  /* trio: low-chroma */
@@ -32,7 +32,7 @@
   .card .body{padding:14px}
   .duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:840px){.duo{grid-template-columns:1fr}}
-  .appearance{border:1px solid #43475A}
+  .appearance{border:1px solid #43475A;min-width:0}
   .appearance .cap{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#A9ADBA;
         padding:4px 8px;border-bottom:1px solid #43475A}
   .stage{padding:16px 12px}
@@ -74,6 +74,11 @@
   .lt .id .nm{font-weight:900;font-size:15px}
   .lt .id .no{font-weight:900;font-size:15px;font-variant-numeric:tabular-nums}
   .lt .ev{padding:4px 12px;display:flex;flex-direction:column;justify-content:center}
+  /* Gallery only: a two-up stage column is narrower than the device frame, so the why-line wraps
+     inside the stage instead of pushing this sheet into horizontal scroll. The component's
+     full-width rendering is in the width compositions below, where the why-line sits on one line. */
+  .stage .lt .ev{min-width:0}
+  .stage .lt .id{flex:none;white-space:nowrap}
   .lt .ev .what{font-weight:900;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
   .lt .ev .why{font-size:12px}
   .callin{width:300px;max-width:100%}
@@ -88,19 +93,25 @@
   .callin .act .c{font-size:11px}
   .marks{display:flex;gap:6px;align-items:center;padding:6px 8px;width:max-content}
   .marks i{display:block;width:10px;height:10px;border-radius:0}
-  .fieldband{position:relative;height:150px;overflow:hidden}
-  .fieldband .yl{position:absolute;top:0;bottom:0;width:1px}
-  .fieldband .yn{position:absolute;font-size:8px;font-weight:800;transform:translateX(-50%);
+  /* Field-band geometry. These rules are keyed to .fb, the class the width compositions actually
+     use: the line of scrimmage, the first-down line, the defended end-zone labels, the 22 actor
+     discs and the one named actor are all absolutely positioned against the band, so the drawn
+     field matches what 04 §9 requires and what this sheet's contracts claim. */
+  .fb{position:relative;height:150px;overflow:hidden}
+  .fb .yl{position:absolute;top:0;bottom:0;width:1px}
+  .fb .yn{position:absolute;font-size:8px;font-weight:800;transform:translateX(-50%);
                  font-variant-numeric:tabular-nums}
-  .fieldband .mk{position:absolute;top:0;bottom:0;width:3px}
-  .fieldband .ez{position:absolute;top:0;bottom:0;width:8.333%;display:flex;align-items:center;
+  .fb .mk{position:absolute;top:0;bottom:0;width:3px}
+  .fb .ez{position:absolute;top:0;bottom:0;width:8.333%;display:flex;align-items:center;
                  justify-content:center;font-size:9px;font-weight:900;letter-spacing:.08em}
-  .fieldband .ac{position:absolute;width:13px;height:13px;border-radius:50%;display:flex;
+  .fb .ac{position:absolute;width:13px;height:13px;border-radius:50%;display:flex;
                  align-items:center;justify-content:center;font-size:7px;font-weight:900;
                  transform:translate(-50%,-50%);font-variant-numeric:tabular-nums}
-  .fieldband .nm1{position:absolute;font-size:8px;font-weight:900;letter-spacing:.05em;
+  .fb .nm1{position:absolute;font-size:8px;font-weight:900;letter-spacing:.05em;
                   transform:translate(-50%,0)}
-  .measure{font-size:11px;color:#A9ADBA;margin-top:6px}
+  /* .measure carries no colour of its own: it sits inside a rendered stage, so every instance
+     inks itself from a canon field token inline. */
+  .measure{font-size:11px;margin-top:6px}
 </style>
 
 <h1>Broadcast v3 — design-reference sheet</h1>
@@ -114,20 +125,74 @@ home — a value appearing only here has not shipped (reference-library plan §5
 depictions (moving actors, ticking clock, mark fills advancing) depend on the G-06 anchor stream (FSC-011),
 which does not exist yet; the static states drawn on this sheet do not wait for it (plan §5). Nothing drawn
 implies the render can change simulation truth — animation visualises an already-recorded outcome only (04 §9).</p>
-<p class="meta"><strong>Legal.</strong> All identities are mechanical placeholders — "Home Sample", "Away Sample",
-"Player Fourteen", "Coach Sample" — no real school, team, player, coach, city or mark; team colours are the
-synthetic reference trio labelled <em>synthetic — pending generator output</em> (04 §6.1). The name-collision and
-trade-dress tests stay green over everything on this sheet. No emoji. No FM label text.</p>
+<p class="meta"><strong>Legal.</strong> All identities are mechanical placeholders — "Example State", "Example
+Coastal", "Example Union", "Player Fourteen", "Player Seven", "Player Fifty-Four", "Coordinator Sample" — no real
+school, team, player, coach, city or mark; team colours are the synthetic reference trio labelled
+<em>synthetic — pending generator output</em> (04 §6.1). The name-collision and trade-dress tests stay green over
+everything on this sheet. No emoji. No FM label text.</p>
+<p class="meta"><strong>Shared world.</strong> The cast, teams and figures are the fixed set in
+<code>docs/briefs/2026-08-12-reference-shared-world.md</code>, so this sheet and the other seven depict one save
+rather than five (closing review finding F-06). <strong>The depicted moment:</strong> Example Coastal 13,
+Example State 10 — Q3, 07:26, 1st and 10, Example State ball at midfield. Example State is home and wears the
+dark-primary trio pair; Example Coastal is away and wears the light-primary pair; Example Union is the third team
+and wears the low-chroma pair. <strong>Player Fourteen is the quarterback, No. 14</strong>, senior — one name, one
+person, on every sheet. Player Seven is the No. 7 receiver. The call-in is voiced by Coordinator Sample, the
+defensive coordinator; Coach Sample is the head coach the player occupies and never calls in to himself.
+<em>Two identities this sheet draws are not yet in that cast and owe an entry there rather than a local
+invention:</em> Player Fifty-Four, the Example Coastal linebacker who is the protagonist of the second
+LowerThird state, and the Example Union fixture used only to exercise the low-chroma pair.</p>
+<p class="meta"><strong>Off-canon values, disclosed</strong> (this sheet previously disclosed none; review finding
+F-03). <strong>In the device frame: none.</strong> The mow pattern's two tones are now canon — they are
+<code>field.turfBand</code> <code>#1A452F</code> dark / <code>#D2E0D6</code> light, added to 04 §6.1 on
+2026-08-12 and measured <strong>1.10</strong> against dark <code>field.turf</code> and <strong>1.08</strong>
+light. <strong>The band is ground texture and never an information channel:</strong> nothing may be encoded in
+which band a mark falls on, and everything drawn over it keeps its own floor — <code>field.line</code>
+<strong>10.11</strong> dark / <strong>13.75</strong> light on the band, <code>field.annotation</code>
+<strong>6.43 / 5.07</strong>, <code>field.live</code> <strong>8.37 / 4.31</strong> (all quoted from 04 §6.1).
+Two in-frame compositings are canon values at a stated alpha, not new values: end-zone shading is
+<code>world.page</code> at 28% over turf (the end zone also carries its written label and its boundary line, so
+the tint is never the sole cue), and the actor-disc hairline is <code>field.line</code> at 55%.
+<strong>Outside the device frame</strong>, this gallery's own chrome uses eleven values 04 §6.1 does not hold —
+sheet ground <code>#22242B</code> and ink <code>#E8E9EE</code>; caption ink <code>#A9ADBA</code>; contract and
+note ink <code>#C9CCD8</code>; card ground <code>#1B1D26</code>; card, stage and table hairline
+<code>#43475A</code>; contract rule <code>#565B6E</code>; inline-chip boundary <code>#4A4E5C</code>; table-header
+ground <code>#262935</code>; VoiceOver/note/swatch-label ground <code>#14161d</code>; width-strip ground
+<code>#101218</code>. 04 §4.4 permits prototype truth in gallery chrome outside the native device frame; this
+paragraph is that disclosure, as <code>tokens-v3</code> discloses its hairline choice. The rendered surfaces this
+rule guards are the eight component stages and the four frames below — 844, 852, 956 pt and the AX5 rendition —
+and no value above paints inside any of them. The frame captions were moved outside their frames for the same
+reason: prototype copy belongs to gallery chrome, never inside the game frame (04 §4.4).</p>
 <p class="meta"><strong>Sources quoted, never recomputed:</strong> colour values and every contrast ratio are the
 G-07 write-back in 04 §6.1 (measured WCAG 2.2 relative-luminance, verified sourcing rows); type sizes 04 §6.2 and
 Dynamic Type AX5 sizes from sourcing row Q5 (Apple HIG, gate two approved); shape 04 §6.3; Match Day rules 04 §9;
 card contract reference-library plan §4; budget currencies 04 §4.5; mechanisms 01-RESEARCH §6.6 §3.2/§3.3/§3.4 and
 findings F34/F35 (pass-2). Interactive floor 44 × 44 pt, HIG-verified (04 §7). CSS px are read as pt.</p>
+<p class="meta"><strong>Symbols — accounted against 04 §6.6, not priced here.</strong> §6.6 is the one place the
+product's symbol totals are held, in classes with per-class caps; no sheet can know a global figure, and pricing
+one locally was the defect the review raised as F-02. <strong>This sheet's spend against any §6.6 learned class
+is zero.</strong> It draws two §6.6 <em>control furniture</em> members — <code>pause.fill</code> and
+<code>rectangle.3.group</code> — which §6.6 excludes from the learned classes because each carries a visible
+label. It draws none of the Status, Change, Obligation or Session-type members. Three glyphs the earlier revision
+carried have been <strong>dropped, because no §6.6 class holds them</strong> and a sheet may not add one:
+<code>sparkles.tv</code> (Key Moments), <code>hand.raised.fill</code> (Take Over) and <code>speedometer</code>
+(Speed). <code>hand.raised.fill</code> folds into <code>hand.raised</code> — §6.6 makes filled and unfilled
+variants one member — and <code>hand.raised</code> is a <em>Status</em> member, so keeping it would spend a status
+symbol on a control job. All three controls keep their visible text labels, which 04 §6.3 requires of a decision
+control regardless. 04 §6.3 does anticipate an icon-first Speed control, so <code>speedometer</code> owes a §6.6
+control-furniture entry — an owner decision recorded there, not one this sheet can take. Two marks on this sheet
+are not SF Symbols at all and §6.6 holds no broadcast-mark class: the possession wedge and the key-moment mark.
+Each is printed and spoken in the same cell it sits in ("Example State ball"; "3 of 7 remain"), so it is read
+rather than recalled — §6.6's own test for furniture that is not a learned symbol. If the owner reads them as a
+learned class instead, that class and its cap belong in §6.6.</p>
 
 <h2>Token strip — the palette these cards may touch</h2>
 <p class="meta">Field grammar, both appearances, ratios measured on <code>field.turf</code> as composited
 (quoted from 04 §6.1): <code>field.line</code> 11.14 dark / 14.89 light; <code>field.annotation</code>
-7.09 dark / 5.49 light; <code>field.live</code> 9.23 dark / 4.67 light.</p>
+7.09 dark / 5.49 light; <code>field.live</code> 9.23 dark / 4.67 light. The mow band is its own canon role,
+<code>field.turfBand</code> — 1.10 dark / 1.08 light against <code>field.turf</code>, deliberately near-invisible
+— and the same three marks keep their floors on it: <code>field.line</code> 10.11 / 13.75,
+<code>field.annotation</code> 6.43 / 5.07, <code>field.live</code> 8.37 / 4.31. Every one of those figures is
+quoted from 04 §6.1, never recomputed here.</p>
 <div class="swatches">
   <div class="sw"><div class="fill" style="background:var(--d-turf);color:var(--d-fline)">line 11.14</div><div class="lbl">dark field.turf #163E2A · field.line #F5F7FA</div></div>
   <div class="sw"><div class="fill" style="background:var(--d-turf);color:var(--d-fann)">annotation 7.09</div><div class="lbl">dark field.annotation #E7C45D</div></div>
@@ -135,7 +200,15 @@ findings F34/F35 (pass-2). Interactive floor 44 × 44 pt, HIG-verified (04 §7).
   <div class="sw"><div class="fill" style="background:var(--l-turf);color:var(--l-fline)">line 14.89</div><div class="lbl">light field.turf #DCE8DF · field.line #0E1218</div></div>
   <div class="sw"><div class="fill" style="background:var(--l-turf);color:var(--l-fann)">annotation 5.49</div><div class="lbl">light field.annotation #7A5200</div></div>
   <div class="sw"><div class="fill" style="background:var(--l-turf);color:var(--l-flive)">live 4.67</div><div class="lbl">light field.live #4A6F00</div></div>
+  <div class="sw"><div class="fill" style="background:var(--d-tband);color:var(--d-fline)">line 10.11</div><div class="lbl">dark field.turfBand #1A452F · 1.10 on field.turf</div></div>
+  <div class="sw"><div class="fill" style="background:var(--l-tband);color:var(--l-fline)">line 13.75</div><div class="lbl">light field.turfBand #D2E0D6 · 1.08 on field.turf</div></div>
 </div>
+<p class="note"><strong><code>field.turfBand</code> is ground texture, never an information channel</strong>
+(04 §6.1, added 2026-08-12). The two swatches above sit beside their <code>field.turf</code> neighbours precisely
+so the 1.10 / 1.08 separation reads as near-nothing: the band is what a mown field looks like, and nothing on this
+sheet or in production may encode meaning in which band a mark falls on. What it does earn is distance — twelve
+8.333% bands across 120 yards give a 10-yard gauge that survives a delete test — and that gauge is redundant with
+the drawn yard lines and numbers, never the sole cue.</p>
 <p class="meta">Team colour reference trio — <strong>synthetic — pending generator output</strong> (owner
 disposition 2026-08-12; the P2 generator's sampled space is uniformly dark-primary). Floors:
 <code>team.onTeam</code>-on-<code>team.primary</code> 4.5:1; <code>team.secondary</code>-on-<code>team.primary</code>
@@ -159,75 +232,82 @@ Data: recorded outcome read model; anchors G-06.</span></header>
 <p class="meta">One bug, anchored over a dead margin of the field frame — the field owns the usable frame and no
 management furniture appears on it (04 §9). Team cells wear <code>broadcast.home</code> / <code>broadcast.away</code>
 with <code>broadcast.ink</code> on them, mapped here to the synthetic trio (pending generator output). All numerals
-tabular. Score and clock at the Numeral/Display role, 20 pt; identity at Headline 15; situation at Callout 11.</p>
+tabular. Score and clock at the Numeral/Display role, 20 pt; identity at Headline 15; situation at Callout 11.
+The shared world fixes the mapping: <strong>Example State</strong> (STA) is home in the dark-primary pair,
+<strong>Example Coastal</strong> (CST) away in the light-primary pair, <strong>Example Union</strong> (UNI) the
+third team in the low-chroma pair. The first bug in each column is the depicted moment — Example Coastal 13,
+Example State 10, Q3 07:26, 1st and 10, Example State ball.</p>
 <div class="duo">
   <div class="appearance"><div class="cap">Dark appearance — on field.turf #163E2A</div>
     <div class="stage dark">
-      <!-- state: default, away possession -->
+      <!-- state: the depicted moment — Example State possession -->
+      <div class="bug" style="margin-bottom:12px">
+        <div class="cell" style="background:var(--t2p);color:var(--t2i)">
+          <span class="team">CST</span><span class="score num">13</span></div>
+        <div class="cell" style="background:var(--t1p);color:var(--t1i)">
+          <span class="poss" style="border-left:6px solid var(--t1i)" title="possession"></span>
+          <span class="team">STA</span><span class="score num">10</span></div>
+        <div class="sit num" style="background:var(--d-raised);color:var(--d-ink)">
+          Q3 · 07:26<br><span style="color:var(--d-ink2)">1st &amp; 10 · STA ball</span></div>
+      </div>
+      <!-- state: the other possession, clock stopped at end of quarter -->
       <div class="bug" style="margin-bottom:12px">
         <div class="cell" style="background:var(--t2p);color:var(--t2i)">
           <span class="poss" style="border-left:6px solid var(--t2i)" title="possession"></span>
-          <span class="team">AWY</span><span class="score num">13</span></div>
+          <span class="team">CST</span><span class="score num">13</span></div>
         <div class="cell" style="background:var(--t1p);color:var(--t1i)">
-          <span class="team">HOM</span><span class="score num">10</span></div>
+          <span class="team">STA</span><span class="score num">10</span></div>
         <div class="sit num" style="background:var(--d-raised);color:var(--d-ink)">
-          Q3 · 07:42<br><span style="color:var(--d-ink2)">2nd &amp; 7 · AWY ball</span></div>
+          Q3 · 00:00 · CLOCK STOPPED<br><span style="color:var(--d-ink2)">End of quarter · CST ball</span></div>
       </div>
-      <!-- state: home possession, clock stopped at end of quarter -->
-      <div class="bug" style="margin-bottom:12px">
-        <div class="cell" style="background:var(--t2p);color:var(--t2i)">
-          <span class="team">AWY</span><span class="score num">13</span></div>
-        <div class="cell" style="background:var(--t1p);color:var(--t1i)">
-          <span class="poss" style="border-left:6px solid var(--t1i)" title="possession"></span>
-          <span class="team">HOM</span><span class="score num">17</span></div>
-        <div class="sit num" style="background:var(--d-raised);color:var(--d-ink)">
-          Q3 · 00:00 · CLOCK STOPPED<br><span style="color:var(--d-ink2)">End of quarter · HOM ball</span></div>
-      </div>
-      <!-- state: low-chroma opponent, mandatory hairline -->
+      <!-- state: low-chroma pair, mandatory hairline — a different fixture, kickoff -->
       <div class="bug">
         <div class="cell" style="background:var(--t3p);color:var(--t3i);box-shadow:inset 0 0 0 1px var(--t3i)">
-          <span class="team">AWY</span><span class="score num">3</span></div>
+          <span class="poss" style="border-left:6px solid var(--t3i)" title="possession"></span>
+          <span class="team">UNI</span><span class="score num">0</span></div>
         <div class="cell" style="background:var(--t1p);color:var(--t1i)">
-          <span class="poss" style="border-left:6px solid var(--t1i)" title="possession"></span>
-          <span class="team">HOM</span><span class="score num">7</span></div>
+          <span class="team">STA</span><span class="score num">0</span></div>
         <div class="sit num" style="background:var(--d-raised);color:var(--d-ink)">
-          Q1 · 11:05<br><span style="color:var(--d-ink2)">1st &amp; 10 · HOM ball</span></div>
+          Q1 · 15:00<br><span style="color:var(--d-ink2)">Opening kickoff · UNI ball</span></div>
       </div>
       <p class="measure" style="color:var(--d-fline)">Low-chroma cell carries the mandatory hairline
-      (its primary measures 2.67 on dark world.work — below the 3:1 non-text floor, 04 §6.1).</p>
+      (its primary measures 2.67 on dark world.work — below the 3:1 non-text floor, 04 §6.1). That third bug is
+      <strong>Example Union at Example State, a different fixture</strong>, drawn only to exercise the low-chroma
+      pair and the zero-score state — it borrows no figure from the depicted moment.</p>
     </div>
   </div>
   <div class="appearance"><div class="cap">Light appearance — on field.turf #DCE8DF</div>
     <div class="stage light">
       <div class="bug" style="margin-bottom:12px">
         <div class="cell" style="background:var(--t2p);color:var(--t2i)">
-          <span class="poss" style="border-left:6px solid var(--t2i)" title="possession"></span>
-          <span class="team">AWY</span><span class="score num">13</span></div>
+          <span class="team">CST</span><span class="score num">13</span></div>
         <div class="cell" style="background:var(--t1p);color:var(--t1i)">
-          <span class="team">HOM</span><span class="score num">10</span></div>
+          <span class="poss" style="border-left:6px solid var(--t1i)" title="possession"></span>
+          <span class="team">STA</span><span class="score num">10</span></div>
         <div class="sit num" style="background:var(--l-raised);color:var(--l-ink)">
-          Q3 · 07:42<br><span style="color:var(--l-ink2)">2nd &amp; 7 · AWY ball</span></div>
+          Q3 · 07:26<br><span style="color:var(--l-ink2)">1st &amp; 10 · STA ball</span></div>
       </div>
       <div class="bug" style="margin-bottom:12px">
         <div class="cell" style="background:var(--t2p);color:var(--t2i)">
-          <span class="team">AWY</span><span class="score num">13</span></div>
+          <span class="poss" style="border-left:6px solid var(--t2i)" title="possession"></span>
+          <span class="team">CST</span><span class="score num">13</span></div>
         <div class="cell" style="background:var(--t1p);color:var(--t1i)">
-          <span class="poss" style="border-left:6px solid var(--t1i)" title="possession"></span>
-          <span class="team">HOM</span><span class="score num">17</span></div>
+          <span class="team">STA</span><span class="score num">10</span></div>
         <div class="sit num" style="background:var(--l-raised);color:var(--l-ink)">
-          Q3 · 00:00 · CLOCK STOPPED<br><span style="color:var(--l-ink2)">End of quarter · HOM ball</span></div>
+          Q3 · 00:00 · CLOCK STOPPED<br><span style="color:var(--l-ink2)">End of quarter · CST ball</span></div>
       </div>
       <div class="bug">
         <div class="cell" style="background:var(--t3p);color:var(--t3i);box-shadow:inset 0 0 0 1px var(--t3i)">
-          <span class="team">AWY</span><span class="score num">3</span></div>
+          <span class="poss" style="border-left:6px solid var(--t3i)" title="possession"></span>
+          <span class="team">UNI</span><span class="score num">0</span></div>
         <div class="cell" style="background:var(--t1p);color:var(--t1i)">
-          <span class="poss" style="border-left:6px solid var(--t1i)" title="possession"></span>
-          <span class="team">HOM</span><span class="score num">7</span></div>
+          <span class="team">STA</span><span class="score num">0</span></div>
         <div class="sit num" style="background:var(--l-raised);color:var(--l-ink)">
-          Q1 · 11:05<br><span style="color:var(--l-ink2)">1st &amp; 10 · HOM ball</span></div>
+          Q1 · 15:00<br><span style="color:var(--l-ink2)">Opening kickoff · UNI ball</span></div>
       </div>
       <p class="measure" style="color:var(--l-fline)">Team cells are appearance-invariant: generated team colour
-      does not re-derive per appearance; the hairline rule covers the low-contrast case.</p>
+      does not re-derive per appearance; the hairline rule covers the low-contrast case. The same three states are
+      drawn in both columns, so no state exists in only one appearance.</p>
     </div>
   </div>
 </div>
@@ -239,8 +319,10 @@ tabular. Score and clock at the Numeral/Display role, 20 pt; identity at Headlin
   <tr><td>content.primary on world.raised (situation cell)</td><td class="n">15.27</td><td class="n">14.90</td><td>04 §6.1 role table</td></tr>
   <tr><td>content.secondary on world.raised (situation caption line)</td><td class="n">8.86</td><td class="n">6.25</td><td>04 §6.1 role table</td></tr>
 </table>
-<div class="vo">VoiceOver, the whole bug as one sentence: "Away Sample 13, Home Sample 17, third quarter,
-7 minutes 42 seconds, 2nd and 7, Home Sample ball, recorded moment."</div>
+<div class="vo">VoiceOver, the whole bug as one sentence: "Example Coastal 13, Example State 10, third quarter,
+7 minutes 26 seconds, 1st and 10, Example State ball, recorded moment." (Clock-stopped state: "… third quarter,
+no time remaining, clock stopped, end of quarter, Example Coastal ball." Kickoff state: "Example Union 0,
+Example State 0, first quarter, 15 minutes, opening kickoff, Example Union ball.")</div>
 <div class="contract"><h3>Contract — plan §4, ten points</h3><ol>
 <li><strong>Both appearances, ratios stated:</strong> rendered dark and light above; every pair carries its measured
 ratio in the table, quoted from the 04 §6.1 G-07 write-back against the surface actually composited on (canon's
@@ -251,24 +333,30 @@ and the AX5 rendition in the width section below; the bug itself is content-size
 clipping.</li>
 <li><strong>Touch:</strong> the ScoreBug has no interactive elements, so the 44 × 44 pt floor (HIG-verified, 04 §7)
 is not exercised; nothing on it may become a tap target without re-auditing this card.</li>
-<li><strong>States:</strong> default (either possession), clock-stopped/end-of-quarter, and the low-chroma hairline
-case are drawn. Selected, disabled, loading, empty, error, delegated do not apply — the bug is a non-interactive
-readout of a recorded moment; the interrupted/resume state restores it verbatim from the read model (04 §7).</li>
-<li><strong>Team colour:</strong> all three synthetic trio pairs exercised (home dark-primary, away light-primary,
-low-chroma with hairline); floors onTeam/primary 4.5:1 and secondary/primary 3:1 hold per the quoted trio table;
-labelled synthetic — pending generator output, light-primary caveat carried.</li>
+<li><strong>States:</strong> three, drawn in <em>both</em> appearances — the depicted moment (Example State
+possession), the same score with the clock stopped at end of quarter and possession the other way, and the
+low-chroma hairline case at a zero-score kickoff. Both possession sides are therefore drawn in each appearance.
+Selected, disabled, loading, empty, error, delegated do not apply — the bug is a non-interactive readout of a
+recorded moment; the interrupted/resume state restores it verbatim from the read model (04 §7).</li>
+<li><strong>Team colour:</strong> all three synthetic trio pairs exercised — Example State home in dark-primary,
+Example Coastal away in light-primary, Example Union in low-chroma with its mandatory hairline; floors
+onTeam/primary 4.5:1 and secondary/primary 3:1 hold per the quoted trio table; labelled synthetic — pending
+generator output, light-primary caveat carried.</li>
 <li><strong>VoiceOver:</strong> the bug reads as exactly one sentence, written out above; possession is spoken text
-("Home Sample ball"), never the wedge alone.</li>
+("Example State ball"), never the wedge alone.</li>
 <li><strong>Animation:</strong> clock tick = per-second discrete update (no interpolation to reduce); score change
 and possession-wedge flip = discrete value swap under Reduce Motion — no roll, slide or crossfade (04 §7).</li>
 <li><strong>Verdict line:</strong> none — broadcast surfaces carry the causal lower third instead (04 §9); the
 bug states recorded facts only, from the recorded outcome read model (anchors G-06 / FSC-011 for live ticking).</li>
 <li><strong>Density budget (04 §4.5):</strong> points — one 36 pt band over a dead field margin, content-width;
-taps — 0; working memory — 0 (score, situation and possession co-located); learned symbols — 1 (possession wedge,
-counted in the global vocabulary of at most twelve); verdict lines — 0.</li>
+taps — 0; working memory — 0 (score, situation and possession co-located); learned symbols — <strong>0 from any
+04 §6.6 class</strong>: the possession wedge is not an SF Symbol and §6.6 holds no broadcast-mark class, and it is
+read from the printed "STA ball" in the same cell rather than recalled, which is §6.6's own test for furniture
+that is not a learned symbol. Should the owner read it as a learned class instead, that class and its cap belong
+in §6.6, not in this sheet. Verdict lines — 0.</li>
 <li><strong>Traceability:</strong> colours 04 §6.1 (roles + trio); type 20/15/11 = Display–Numeral/Headline/Callout
-per 04 §6.2 with tabular numerals; radius 0 and spacing steps per 04 §6.3; identities mechanical placeholders;
-name-collision and trade-dress tests green.</li>
+per 04 §6.2 with tabular numerals; radius 0 and spacing steps per 04 §6.3; symbols accounted at 04 §6.6;
+identities are the shared-world cast, all mechanical placeholders; name-collision and trade-dress tests green.</li>
 </ol></div>
 </div>
 </section>
@@ -281,8 +369,11 @@ Data: recorded outcome read model; anchors G-06.</span></header>
 (<code>CoachWorldBlankPhotoPlate</code>, 04 §5.1 — no generated face, no initials pretending to be a photograph)
 plus uniform number and name. <strong>One-named-actor rule (F34):</strong> the field names exactly one actor — the
 protagonist of the event — and this card is where that protagonist is met; the named mark on the field and the
-name here are the same person by construction. Attribution to a side is carried textually by the team line;
-the team-colour number cell is identity furniture, never the sole attribution mechanism (pass-2 C13 note).</p>
+name here are the same person by construction. That is now literally true here: the default card's protagonist is
+<strong>Player Fourteen, the No. 14 quarterback</strong> drawn and named on the field below, and the second card's
+protagonist is <strong>Player Fifty-Four</strong>, the No. 54 Example Coastal linebacker who is also one of the 22
+actors on that field. Attribution to a side is carried textually by the team line; the team-colour number cell is
+identity furniture, never the sole attribution mechanism (pass-2 C13 note).</p>
 <div class="duo">
   <div class="appearance"><div class="cap">Dark appearance — on field.turf #163E2A</div>
     <div class="stage dark">
@@ -292,18 +383,18 @@ the team-colour number cell is identity furniture, never the sole attribution me
           <span class="no num" style="font-weight:900;font-size:20px">14</span></div>
         <div class="plate" style="background:var(--d-raised);box-shadow:inset 0 0 0 1px var(--d-quiet)"></div>
         <div class="id" style="color:var(--d-ink)"><div class="nm">PLAYER FOURTEEN</div>
-          <div style="font-size:10px;color:var(--d-ink2)">Home Sample · WR</div></div>
+          <div style="font-size:10px;color:var(--d-ink2)">Example State · QB</div></div>
         <div class="ev" style="border-left:1px solid var(--d-quiet);color:var(--d-ink)">
           <span class="what" style="color:var(--d-live)">Completion · 12 yards</span>
-          <span class="why">First down at the away 18 — the drive stays alive in scoring range.</span></div>
+          <span class="why">Fresh set of downs at midfield — the drive model keeps this possession alive.</span></div>
       </div>
       <!-- two-line why -->
       <div class="lt" style="background:var(--d-work)">
         <div class="cell" style="display:flex;align-items:center;background:var(--t2p);color:var(--t2i);padding:0 8px">
-          <span class="no num" style="font-weight:900;font-size:20px">55</span></div>
+          <span class="no num" style="font-weight:900;font-size:20px">54</span></div>
         <div class="plate" style="background:var(--d-raised);box-shadow:inset 0 0 0 1px var(--d-quiet)"></div>
-        <div class="id" style="color:var(--d-ink)"><div class="nm">PLAYER FIFTY-FIVE</div>
-          <div style="font-size:10px;color:var(--d-ink2)">Away Sample · LB</div></div>
+        <div class="id" style="color:var(--d-ink)"><div class="nm">PLAYER FIFTY-FOUR</div>
+          <div style="font-size:10px;color:var(--d-ink2)">Example Coastal · LB</div></div>
         <div class="ev" style="border-left:1px solid var(--d-quiet);color:var(--d-ink);max-width:300px">
           <span class="what" style="color:var(--d-live)">Sack · loss of 8</span>
           <span class="why">Third and long now — the recorded drive model says a field-goal try
@@ -320,24 +411,27 @@ the team-colour number cell is identity furniture, never the sole attribution me
           <span class="no num" style="font-weight:900;font-size:20px">14</span></div>
         <div class="plate" style="background:var(--l-raised);box-shadow:inset 0 0 0 1px var(--l-quiet)"></div>
         <div class="id" style="color:var(--l-ink)"><div class="nm">PLAYER FOURTEEN</div>
-          <div style="font-size:10px;color:var(--l-ink2)">Home Sample · WR</div></div>
+          <div style="font-size:10px;color:var(--l-ink2)">Example State · QB</div></div>
         <div class="ev" style="border-left:1px solid var(--l-quiet);color:var(--l-ink)">
           <span class="what" style="color:var(--l-live)">Completion · 12 yards</span>
-          <span class="why">First down at the away 18 — the drive stays alive in scoring range.</span></div>
+          <span class="why">Fresh set of downs at midfield — the drive model keeps this possession alive.</span></div>
       </div>
       <div class="lt" style="background:var(--l-work)">
         <div class="cell" style="display:flex;align-items:center;background:var(--t2p);color:var(--t2i);padding:0 8px">
-          <span class="no num" style="font-weight:900;font-size:20px">55</span></div>
+          <span class="no num" style="font-weight:900;font-size:20px">54</span></div>
         <div class="plate" style="background:var(--l-raised);box-shadow:inset 0 0 0 1px var(--l-quiet)"></div>
-        <div class="id" style="color:var(--l-ink)"><div class="nm">PLAYER FIFTY-FIVE</div>
-          <div style="font-size:10px;color:var(--l-ink2)">Away Sample · LB</div></div>
+        <div class="id" style="color:var(--l-ink)"><div class="nm">PLAYER FIFTY-FOUR</div>
+          <div style="font-size:10px;color:var(--l-ink2)">Example Coastal · LB</div></div>
         <div class="ev" style="border-left:1px solid var(--l-quiet);color:var(--l-ink);max-width:300px">
           <span class="what" style="color:var(--l-live)">Sack · loss of 8</span>
           <span class="why">Third and long now — the recorded drive model says a field-goal try
           is the likely end of this possession.</span></div>
       </div>
       <p class="measure" style="color:var(--l-fline)">The why-line is causal prose from the recorded outcome —
-      never an invented adjective (04 §4.4; density model §3).</p>
+      never an invented adjective (04 §4.4; density model §3). It wraps rather than clips in this two-up gallery
+      column, which is narrower than any supported device frame: the default card runs to two lines here and the
+      long-why state to three. In the compositions below it sits on one line at 844 and 852 pt, and on two at
+      956 pt where the live call-in rail narrows the frame — wrapping, never clipping, at every width.</p>
     </div>
   </div>
 </div>
@@ -348,8 +442,10 @@ the team-colour number cell is identity furniture, never the sole attribution me
   <tr><td>state.live on world.work (event word)</td><td class="n">10.37</td><td class="n">5.70</td><td>04 §6.1 role table</td></tr>
   <tr><td>broadcast.ink on number cell (trio onTeam/primary)</td><td class="n">11.74 / 12.47</td><td class="n">11.74 / 12.47</td><td>04 §6.1 trio table</td></tr>
 </table>
-<div class="vo">VoiceOver, the whole card as one sentence: "Player Fourteen, number 14, Home Sample wide receiver:
-completion for 12 yards — first down at the away 18, the drive stays alive in scoring range."</div>
+<div class="vo">VoiceOver, the whole card as one sentence: "Player Fourteen, number 14, Example State quarterback:
+completion for 12 yards — fresh set of downs at midfield, the drive model keeps this possession alive." (Second
+card: "Player Fifty-Four, number 54, Example Coastal linebacker: sack, loss of 8 — third and long now, the
+recorded drive model says a field-goal try is the likely end of this possession.")</div>
 <div class="contract"><h3>Contract — plan §4, ten points</h3><ol>
 <li><strong>Both appearances, ratios stated:</strong> dark and light rendered; every pair's ratio quoted above from
 the 04 §6.1 G-07 write-back against its actual surface (canon's measurement, not recomputed). All pairs meet
@@ -359,9 +455,12 @@ compositions and the AX5 rendition below; the why-line wraps rather than clips.<
 <li><strong>Touch:</strong> no interactive elements — the lower third is a readout; the 44 × 44 pt floor
 (HIG-verified, 04 §7) is not exercised. Inspection of the moment belongs to the Key Moments control, not to this
 card.</li>
-<li><strong>States:</strong> default and long-why (two-line) drawn; absent-between-moments is the empty state,
-stated in place above; interrupted/resume restores the card verbatim from the read model (04 §7); selected,
-disabled, loading, error, delegated do not apply to a non-interactive readout.</li>
+<li><strong>States:</strong> default and long-why drawn, both of them in both appearances. Line counts, stated
+because they differ by frame: in the two-up gallery stage the default takes two lines and the long-why three; in
+the compositions below only the default appears, on one line at 844 and 852 pt and on two at 956 pt where the
+call-in rail narrows the frame. It wraps at every width and clips at none. Absent-between-moments is the empty
+state, stated in place above; interrupted/resume restores the card verbatim from the read model (04 §7);
+selected, disabled, loading, error, delegated do not apply to a non-interactive readout.</li>
 <li><strong>Team colour:</strong> number cell exercised against dark-primary and light-primary trio pairs
 (onTeam/primary 11.74 and 12.47, floors met); low-chroma is exercised on the ScoreBug card with its hairline rule;
 all labelled synthetic — pending generator output.</li>
@@ -374,11 +473,13 @@ VerdictLine — this card is that causal statement, and its source is the record
 (SnapOutcome-class records; anchors G-06 / FSC-011 for live timing). The why-line is engine-owned causality,
 never render-time copywriting.</li>
 <li><strong>Density budget (04 §4.5):</strong> points — one 44 pt-class band over the field's dead foot margin,
-content-width; taps — 0; working memory — 0 (what and why co-located with who); learned symbols — 0 new;
-verdict lines — this is the surface's single causal line (its budget of one, spent here).</li>
+content-width; taps — 0; working memory — 0 (what and why co-located with who); learned symbols — 0 from any
+04 §6.6 class (the card draws no glyph); verdict lines — this is the surface's single causal line (its budget of
+one, spent here).</li>
 <li><strong>Traceability:</strong> colours 04 §6.1; type Display 20 (number), Headline 15 (name), Body 12 (why),
 Callout 11 (event word), Caption 10 (team line) per 04 §6.2, numerals tabular; radius 0 and hairlines per 04 §6.3;
-identities mechanical placeholders; collision and trade-dress tests green.</li>
+symbols accounted at 04 §6.6 (none drawn); identities are the shared-world cast, all mechanical placeholders —
+Player Fifty-Four owes an entry there; collision and trade-dress tests green.</li>
 </ol></div>
 </div>
 </section>
@@ -392,22 +493,36 @@ tempo plus fixed entries — and every other decision arrives as an event like t
 to a named member of staff (staff name is a mechanical placeholder), exposes cost and consequence beside each
 path (04 §4.3), and offers exactly three actions, every one at least 44 pt tall. No deadline clock is drawn
 because the read model supplies none — clocks only when real (04 §2). The card overlays the field's dead right
-margin; the field itself stays free of management furniture (04 §9).</p>
+margin; the field itself stays free of management furniture (04 §9). At the depicted moment Example State has
+the ball, so Coordinator Sample's proposal concerns the next defensive series — a call-in is a proposal, not a
+mid-play intervention, and nothing about it can change what the recorded outcome already holds (04 §9).</p>
+<p class="note"><strong>A cost is a fact, not a state</strong> (review finding F-15). The cost line previously
+inked in <code>state.warning</code>, so every cost read as an alarm. It now takes <code>content.secondary</code>
+— <strong>10.52</strong> dark / <strong>6.84</strong> light on <code>world.page</code>, quoted from 04 §6.1 — the
+same content-hierarchy token as the consequence line, because both are supporting facts about the same action.
+What separates them is the printed word <code>Cost:</code> or <code>Consequence:</code>, never the hue, which is
+04 §6.3's never-colour-alone rule doing the work colour was doing badly. <code>state.warning</code> is retained on
+one thing only: the <code>STAFF CALL-IN</code> header, which marks an unresolved interruption — a state.<br>
+<strong>Both evidence states, in both appearances</strong> (review finding F-12). The earlier revision drew
+Inspect-evidence enabled in dark and disabled in light, which left disabled-in-dark and enabled-in-light undrawn
+while the contract claimed both appearances were rendered — the appearance axis spent to buy a state.
+<code>CLAUDE.md</code>'s coverage-boundary rule governs: an axis a card claims to cover is covered by
+construction, not sampled. Each appearance now draws the card twice, once in each evidence state.</p>
 <div class="duo">
   <div class="appearance"><div class="cap">Dark appearance — on field.turf #163E2A</div>
     <div class="stage dark">
-      <div class="callin" style="background:var(--d-page)">
+      <div class="callin" style="background:var(--d-page);margin-bottom:12px">
         <div class="hd" style="color:var(--d-warn)">STAFF CALL-IN</div>
         <div class="who">
           <div class="plate" style="width:44px;height:50px;background:var(--d-raised);box-shadow:inset 0 0 0 1px var(--d-quiet)"></div>
-          <div><div class="nm" style="color:var(--d-ink)">Coach Sample</div>
+          <div><div class="nm" style="color:var(--d-ink)">Coordinator Sample</div>
           <div class="rl" style="color:var(--d-ink2)">Defensive Coordinator</div></div>
         </div>
         <div class="msg" style="color:var(--d-ink)">Their 88 has beaten single coverage on the last three passing
         downs. I want the double team.</div>
         <div class="act" style="background:var(--d-page);box-shadow:inset 0 0 0 1px var(--d-action)">
           <div class="t" style="color:var(--d-ink)">Accept — double-team their 88</div>
-          <div class="c" style="color:var(--d-warn)">Cost: replaces the base coverage call</div>
+          <div class="c" style="color:var(--d-ink2)">Cost: replaces the base coverage call</div>
           <div class="c" style="color:var(--d-ink2)">Consequence: safety help rotates to 88; the middle opens</div></div>
         <div class="act" style="background:var(--d-page);box-shadow:inset 0 0 0 1px var(--d-quiet)">
           <div class="t" style="color:var(--d-ink)">Dismiss — keep the base call</div>
@@ -416,66 +531,117 @@ margin; the field itself stays free of management furniture (04 §9).</p>
           <div class="t" style="color:var(--d-ink)">Inspect evidence — three recorded plays</div>
           <div class="c" style="color:var(--d-ink2)">Opens the recorded plays; the match pauses while you read</div></div>
       </div>
-      <p class="measure" style="color:var(--d-fline)">Each action row measures 300 × ≥ 44 pt — at or above the
-      44 × 44 pt floor, HIG-verified (04 §7). Accept carries the action.primary boundary; boundary, wording and
-      spoken state mark it — never a coloured fill alone (04 §6.3).</p>
+      <div class="callin" style="background:var(--d-page)">
+        <div class="hd" style="color:var(--d-warn)">STAFF CALL-IN</div>
+        <div class="who">
+          <div class="plate" style="width:44px;height:50px;background:var(--d-raised);box-shadow:inset 0 0 0 1px var(--d-quiet)"></div>
+          <div><div class="nm" style="color:var(--d-ink)">Coordinator Sample</div>
+          <div class="rl" style="color:var(--d-ink2)">Defensive Coordinator</div></div>
+        </div>
+        <div class="msg" style="color:var(--d-ink)">Their 88 has beaten single coverage on the last three passing
+        downs. I want the double team.</div>
+        <div class="act" style="background:var(--d-page);box-shadow:inset 0 0 0 1px var(--d-action)">
+          <div class="t" style="color:var(--d-ink)">Accept — double-team their 88</div>
+          <div class="c" style="color:var(--d-ink2)">Cost: replaces the base coverage call</div>
+          <div class="c" style="color:var(--d-ink2)">Consequence: safety help rotates to 88; the middle opens</div></div>
+        <div class="act" style="background:var(--d-page);box-shadow:inset 0 0 0 1px var(--d-quiet)">
+          <div class="t" style="color:var(--d-ink)">Dismiss — keep the base call</div>
+          <div class="c" style="color:var(--d-ink2)">Consequence: single coverage stands as planned</div></div>
+        <div class="act" style="background:var(--d-page);box-shadow:inset 0 0 0 1px var(--d-quiet);opacity:.55">
+          <div class="t" style="color:var(--d-ink)">Inspect evidence — unavailable, disabled state</div>
+          <div class="c" style="color:var(--d-ink2)">No plays are recorded for this proposal yet; spoken as "dimmed"</div></div>
+      </div>
+      <p class="measure" style="color:var(--d-fline)">Dark, both evidence states: <strong>enabled above,
+      disabled below</strong>. Each action row measures 300 × ≥ 44 pt — at or above the 44 × 44 pt floor,
+      HIG-verified (04 §7). Accept carries the action.primary boundary; boundary, wording and spoken state mark
+      it — never a coloured fill alone (04 §6.3).</p>
     </div>
   </div>
   <div class="appearance"><div class="cap">Light appearance — on field.turf #DCE8DF</div>
     <div class="stage light">
-      <div class="callin" style="background:var(--l-page)">
+      <div class="callin" style="background:var(--l-page);margin-bottom:12px">
         <div class="hd" style="color:var(--l-warn)">STAFF CALL-IN</div>
         <div class="who">
           <div class="plate" style="width:44px;height:50px;background:var(--l-raised);box-shadow:inset 0 0 0 1px var(--l-quiet)"></div>
-          <div><div class="nm" style="color:var(--l-ink)">Coach Sample</div>
+          <div><div class="nm" style="color:var(--l-ink)">Coordinator Sample</div>
           <div class="rl" style="color:var(--l-ink2)">Defensive Coordinator</div></div>
         </div>
         <div class="msg" style="color:var(--l-ink)">Their 88 has beaten single coverage on the last three passing
         downs. I want the double team.</div>
         <div class="act" style="background:var(--l-page);box-shadow:inset 0 0 0 1px var(--l-action)">
           <div class="t" style="color:var(--l-ink)">Accept — double-team their 88</div>
-          <div class="c" style="color:var(--l-warn)">Cost: replaces the base coverage call</div>
+          <div class="c" style="color:var(--l-ink2)">Cost: replaces the base coverage call</div>
+          <div class="c" style="color:var(--l-ink2)">Consequence: safety help rotates to 88; the middle opens</div></div>
+        <div class="act" style="background:var(--l-page);box-shadow:inset 0 0 0 1px var(--l-quiet)">
+          <div class="t" style="color:var(--l-ink)">Dismiss — keep the base call</div>
+          <div class="c" style="color:var(--l-ink2)">Consequence: single coverage stands as planned</div></div>
+        <div class="act" style="background:var(--l-page);box-shadow:inset 0 0 0 1px var(--l-quiet)">
+          <div class="t" style="color:var(--l-ink)">Inspect evidence — three recorded plays</div>
+          <div class="c" style="color:var(--l-ink2)">Opens the recorded plays; the match pauses while you read</div></div>
+      </div>
+      <div class="callin" style="background:var(--l-page)">
+        <div class="hd" style="color:var(--l-warn)">STAFF CALL-IN</div>
+        <div class="who">
+          <div class="plate" style="width:44px;height:50px;background:var(--l-raised);box-shadow:inset 0 0 0 1px var(--l-quiet)"></div>
+          <div><div class="nm" style="color:var(--l-ink)">Coordinator Sample</div>
+          <div class="rl" style="color:var(--l-ink2)">Defensive Coordinator</div></div>
+        </div>
+        <div class="msg" style="color:var(--l-ink)">Their 88 has beaten single coverage on the last three passing
+        downs. I want the double team.</div>
+        <div class="act" style="background:var(--l-page);box-shadow:inset 0 0 0 1px var(--l-action)">
+          <div class="t" style="color:var(--l-ink)">Accept — double-team their 88</div>
+          <div class="c" style="color:var(--l-ink2)">Cost: replaces the base coverage call</div>
           <div class="c" style="color:var(--l-ink2)">Consequence: safety help rotates to 88; the middle opens</div></div>
         <div class="act" style="background:var(--l-page);box-shadow:inset 0 0 0 1px var(--l-quiet)">
           <div class="t" style="color:var(--l-ink)">Dismiss — keep the base call</div>
           <div class="c" style="color:var(--l-ink2)">Consequence: single coverage stands as planned</div></div>
         <div class="act" style="background:var(--l-page);box-shadow:inset 0 0 0 1px var(--l-quiet);opacity:.55">
           <div class="t" style="color:var(--l-ink)">Inspect evidence — unavailable, disabled state</div>
-          <div class="c" style="color:var(--l-ink2)">Spoken as "dimmed"; the reason is stated in the row</div></div>
+          <div class="c" style="color:var(--l-ink2)">No plays are recorded for this proposal yet; spoken as "dimmed"</div></div>
       </div>
-      <p class="measure" style="color:var(--l-fline)">Third row drawn in its disabled state (0.55 opacity plus
-      stated reason plus spoken "dimmed" — never opacity alone).</p>
+      <p class="measure" style="color:var(--l-fline)">Light, both evidence states: <strong>enabled above,
+      disabled below</strong> — the same pair the dark column draws, so neither state borrows the appearance axis
+      to exist. The disabled row states its reason and is spoken "dimmed"; dimming is never the only cue, and an
+      inactive control is outside SC 1.4.3's contrast floor by that success criterion's own exception.</p>
     </div>
   </div>
 </div>
 <table>
   <tr><th>Pair, as composited</th><th class="n">Dark</th><th class="n">Light</th><th>Source</th></tr>
   <tr><td>content.primary on world.page (name, message, action titles)</td><td class="n">18.13</td><td class="n">16.31</td><td>04 §6.1 role table</td></tr>
-  <tr><td>content.secondary on world.page (role, consequence lines)</td><td class="n">10.52</td><td class="n">6.84</td><td>04 §6.1 role table</td></tr>
-  <tr><td>state.warning on world.page (header, cost line)</td><td class="n">12.13</td><td class="n">6.25</td><td>04 §6.1 role table</td></tr>
+  <tr><td>content.secondary on world.page (role, <strong>cost lines</strong>, consequence lines)</td><td class="n">10.52</td><td class="n">6.84</td><td>04 §6.1 role table</td></tr>
+  <tr><td>state.warning on world.page (STAFF CALL-IN header only — an unresolved interruption, which is a state)</td><td class="n">12.13</td><td class="n">6.25</td><td>04 §6.1 role table</td></tr>
   <tr><td>action.primary boundary on world.page (non-text, 3:1 floor)</td><td class="n">5.02</td><td class="n">6.37</td><td>04 §6.1 role table</td></tr>
+  <tr><td>content.quiet boundary on world.page (dismiss/inspect rows, photo plate — non-text, 3:1 floor)</td><td class="n">5.89</td><td class="n">5.61</td><td>04 §6.1 role table</td></tr>
 </table>
-<div class="vo">VoiceOver, one sentence per data row, written out: who — "Coach Sample, Defensive Coordinator";
-proposal — "Their 88 has beaten single coverage on the last three passing downs, I want the double team"; each
-action — "Accept, double-team their 88. Cost: replaces the base coverage call. Consequence: safety help rotates
-to 88, the middle opens. Button." (Dismiss and Inspect evidence read the same title-cost-consequence shape;
-a disabled row adds "dimmed".)</div>
+<div class="vo">VoiceOver, one sentence per data row, written out: who — "Coordinator Sample, Defensive
+Coordinator"; proposal — "Their 88 has beaten single coverage on the last three passing downs, I want the double
+team"; each action — "Accept, double-team their 88. Cost: replaces the base coverage call. Consequence: safety
+help rotates to 88, the middle opens. Button." (Dismiss and Inspect evidence read the same title-cost-consequence
+shape; the disabled row reads "Inspect evidence, unavailable. No plays are recorded for this proposal yet.
+Dimmed.")</div>
 <div class="contract"><h3>Contract — plan §4, ten points</h3><ol>
-<li><strong>Both appearances, ratios stated:</strong> dark and light rendered; every pair quoted above from the
-04 §6.1 G-07 write-back against world.page, the surface the card composites on (canon's measurement, not
-recomputed). Body pairs meet 4.5:1; the action.primary boundary is non-text at the 3:1 floor and measures
-5.02 / 6.37.</li>
+<li><strong>Both appearances, ratios stated:</strong> dark and light rendered, and <em>each appearance renders both
+evidence states</em> — two card instances per column, so the appearance axis is not spent to buy a state (F-12).
+Every pair is quoted above from the 04 §6.1 G-07 write-back against world.page, the surface the card composites on
+(canon's measurement, not recomputed). Body pairs meet 4.5:1 — including the re-inked cost line at
+content.secondary, 10.52 / 6.84; the action.primary and content.quiet boundaries are non-text at the 3:1 floor and
+measure 5.02 / 6.37 and 5.89 / 5.61.</li>
 <li><strong>Widths:</strong> the 300 pt rail (composition width, not a token) fits the 844, 852 and 956 pt
 compositions over the field's dead right margin without clipping; at AX5 it reflows into the single column below
 the field (rendition below).</li>
-<li><strong>Touch:</strong> three interactive elements, each 300 × ≥ 44 pt — measurement printed under the dark
-render; floor HIG-verified (04 §7). Accept, dismiss and inspect-evidence are all reachable without crossing a
-hidden shelf.</li>
-<li><strong>States:</strong> default (all enabled, dark) and disabled-with-stated-reason (light, third row) drawn;
-interrupted — an interrupted decision must disclose what changed before it can be resolved (04 §4.3), so a resumed
-card reopens with a what-changed line above the actions; delegated — when delegation is enabled the proposal
-auto-resolves and the card is replaced by its receipt; loading and empty do not apply (the card exists only when
-a proposal exists); error preserves the authoritative draft and offers recovery (04 §4.3).</li>
+<li><strong>Touch:</strong> three interactive elements per card, each 300 × ≥ 44 pt — measurement printed under the
+dark column; floor HIG-verified (04 §7). Accept, dismiss and inspect-evidence are all reachable without crossing a
+hidden shelf. The disabled inspect row keeps its 44 pt track rather than collapsing, so the layout does not move
+when evidence arrives.</li>
+<li><strong>States:</strong> default (all three enabled) and evidence-unavailable (third row disabled with its
+stated reason) are <strong>both drawn in both appearances</strong> — four card instances, two per column. The axis
+this card claims to cover is covered by construction, not sampled across the appearance axis
+(<code>CLAUDE.md</code>'s coverage-boundary rule; review finding F-12). Interrupted — an interrupted decision must
+disclose what changed before it can be resolved (04 §4.3), so a resumed card reopens with a what-changed line above
+the actions; delegated — when delegation is enabled the proposal auto-resolves and the card is replaced by its
+receipt; loading and empty do not apply (the card exists only when a proposal exists); error preserves the
+authoritative draft and offers recovery (04 §4.3). Those four are stated, not drawn.</li>
 <li><strong>Team colour:</strong> none — the call-in is staff chrome, not team furniture; team colour appears
 nowhere on it, so the trio floors are exercised on the ScoreBug and LowerThird cards instead.</li>
 <li><strong>VoiceOver:</strong> one sentence per data row, written out above; VoiceOver order follows world
@@ -488,11 +654,12 @@ behind the proposal is recorded plays from the recorded outcome read model (anch
 <li><strong>Density budget (04 §4.5):</strong> points — one 300 pt rail over a dead margin, appearing only while
 a proposal is live; taps — 1 to resolve (accept or dismiss), inspect-evidence is the popout at depth 1 with the
 evidence exactly one tap away; working memory — 0 (cost and consequence sit beside each action; evidence opens
-beside the decision); learned symbols — 0; verdict lines — 0.</li>
+beside the decision); learned symbols — 0 from any 04 §6.6 class, the card carrying no glyph at all; verdict
+lines — 0.</li>
 <li><strong>Traceability:</strong> colours 04 §6.1; type Headline 15 (name), Body 12 (message, action titles),
 Callout 11 (cost, consequence, role), Caption 10 (header) per 04 §6.2; radius 0, hairline boundaries, 44 pt floor
-and spacing steps per 04 §6.3; "Coach Sample" is a mechanical placeholder; collision and trade-dress tests
-green.</li>
+and spacing steps per 04 §6.3; symbols accounted at 04 §6.6 (none drawn); "Coordinator Sample" is a mechanical
+placeholder from the shared-world cast; collision and trade-dress tests green.</li>
 </ol></div>
 </div>
 </section>
@@ -581,21 +748,29 @@ change, identical under Reduce Motion — there is nothing continuous to reduce.
 LowerThird. Which moments are key is decided by the engine's drive-granularity record (anchors G-06), never by
 the renderer.</li>
 <li><strong>Density budget (04 §4.5):</strong> points — one caption-height run inside the existing chrome band,
-no new band; taps — 0; working memory — 0; learned symbols — 1 (the key-moment mark, counted in the global
-vocabulary of at most twelve); verdict lines — 0.</li>
+no new band; taps — 0; working memory — 0; learned symbols — <strong>0 from any 04 §6.6 class</strong>: the
+key-moment mark is not an SF Symbol and §6.6 holds no broadcast-mark class, and the count is printed and spoken
+beside it ("3 of 7 remain"), so it is read rather than recalled — §6.6's own test for furniture that is not a
+learned symbol. If the owner reads it as a learned class instead, that class and its cap belong in §6.6.
+Verdict lines — 0.</li>
 <li><strong>Traceability:</strong> colours 04 §6.1; caption 10 and count 11 with tabular numerals per 04 §6.2;
 10 pt square marks at radius 0 with hairline boundaries per 04 §6.3, licensed as diagram marks because the
-spoken and printed count is present (04 §6.2); no identities involved; collision and trade-dress tests green.</li>
+spoken and printed count is present (04 §6.2); symbols accounted at 04 §6.6; no identities involved; collision
+and trade-dress tests green.</li>
 </ol></div>
 </div>
 </section>
 <h2>Field-with-chrome composition — 844, 852 and 956 pt, default type</h2>
 <style>
   .fb{position:relative;height:168px}
+  /* Mow bands: field.turf alternating with field.turfBand (04 §6.1). Twelve 8.333% bands across
+     120 yards = a 10-yard gauge. Ground texture only — nothing is encoded in which band a mark
+     falls on. The end-zone shading over the top is world.page at 28%, a canon value at a stated
+     alpha, and the end zone also carries its written label and its boundary line. */
   .fb.dk{background:linear-gradient(90deg,rgba(8,10,20,.28) 0 8.333%,transparent 8.333% 91.667%,rgba(8,10,20,.28) 91.667%),
-         repeating-linear-gradient(90deg,var(--d-turf) 0 8.333%,#1A452F 8.333% 16.667%)}
+         repeating-linear-gradient(90deg,var(--d-turf) 0 8.333%,var(--d-tband) 8.333% 16.667%)}
   .fb.lt2{background:linear-gradient(90deg,rgba(241,242,247,.28) 0 8.333%,transparent 8.333% 91.667%,rgba(241,242,247,.28) 91.667%),
-         repeating-linear-gradient(90deg,var(--l-turf) 0 8.333%,#D2E0D6 8.333% 16.667%)}
+         repeating-linear-gradient(90deg,var(--l-turf) 0 8.333%,var(--l-tband) 8.333% 16.667%)}
   .fb .yl{position:absolute;top:0;bottom:0;width:1px;opacity:.42}
   .fb.dk .yl{background:var(--d-fline)} .fb.lt2 .yl{background:var(--l-fline)}
   .fb .yn{position:absolute;top:12px;opacity:.72}
@@ -615,8 +790,10 @@ spoken and printed count is present (04 §6.2); no identities involved; collisio
   .ctl .sym{font-family:ui-monospace,Menlo,monospace;font-size:9px;border:1px solid currentColor;
       padding:0 4px;opacity:.85}
   .ctl .t{font-size:11px;font-weight:800}
-  .comp{border:1px solid #43475A;margin:12px 0}
-  .comp .caption{font-size:11px;color:#A9ADBA;padding:4px 8px;background:#14161d}
+  .comp{border:1px solid #43475A;margin:0 0 12px}
+  /* The frame caption sits OUTSIDE the device frame: it is prototype-truth gallery chrome, which
+     04 §4.4 permits only outside the native frame. Nothing inside .comp is off-canon. */
+  .framecap{font-size:11px;color:#A9ADBA;margin:12px 0 4px}
 </style>
 <p class="meta">D15 (option b, 04 §7): promise window 852 × 393 through 956 × 440; install floor 844 × 390 —
 every surface renders un-clipped and reachable there forever. The three containers below are those widths.
@@ -627,17 +804,30 @@ field at 120 : 53.3 within the frame, per the tree's MatchDayView) and hash mark
 positions are to scale. Chrome sits above and below the field band — over dead margins only, never on the
 playing surface; a live CallInCard narrows the field frame from the right while all 120 yards remain in frame.
 Offense direction is recorded data and owns the defended end-zone labels and the side of the first-down line —
-never guessed from colour (04 §9). All 22 actors are represented; exactly three are foregrounded (field.live
-ring); exactly one is named — the protagonist, Player Fourteen (F34). Actor discs and field numbers are diagram
-marks below 10 pt in this compressed band, licensed by 04 §6.2 because the spoken equivalent is stated beneath
-each composition.</p>
+never guessed from colour (04 §9). All 22 actors are represented; exactly three are foregrounded with the
+<code>field.live</code> ring — the passer <span class="num">14</span>, the receiver <span class="num">7</span> and
+the defender covering him <span class="num">24</span>; exactly one is named — the protagonist, Player Fourteen,
+Example State's quarterback (F34). Actor discs and field numbers are diagram marks below 10 pt in this compressed
+band, licensed by 04 §6.2 because the spoken equivalent is stated beneath each composition.</p>
+<p class="meta"><strong>The mow pattern is <code>field.turfBand</code></strong> (04 §6.1) — twelve 8.333% bands
+across the 120 yards, alternating with <code>field.turf</code>, giving a 10-yard distance gauge. It is
+<strong>ground texture and never an information channel</strong>: nothing is encoded in which band a mark falls
+on, the gauge is redundant with the drawn yard lines and numbers, and its contrast is deliberately near-invisible
+at 1.10 dark and 1.08 light. Everything drawn over it keeps its own floor, quoted from 04 §6.1:
+<code>field.line</code> 10.11 dark / 13.75 light on the band, <code>field.annotation</code> 6.43 / 5.07,
+<code>field.live</code> 8.37 / 4.31.</p>
+<p class="meta"><strong>Control glyphs, per 04 §6.6.</strong> Pause and Tactics draw <code>pause.fill</code> and
+<code>rectangle.3.group</code>, both §6.6 control furniture. Speed, Key Moments and Take Over draw no glyph:
+§6.6 holds no member for them and a sheet may not add one. They keep their visible text labels, which 04 §6.3
+requires of a decision control anyway, and the five controls of 04 §9 are all present and named.</p>
 
-<div class="scrollwrap"><div class="comp" style="width:844px">
-  <div class="caption">844 pt — install floor. ScoreBug + KeyMomentsRow chrome band, field, LowerThird, five controls. Dark appearance.</div>
+<div class="scrollwrap">
+  <p class="framecap">844 pt — install floor. ScoreBug + KeyMomentsRow chrome band, field, LowerThird, five controls. Dark appearance. (Caption outside the frame, 04 §4.4.)</p>
+  <div class="comp" style="width:844px">
   <div style="display:flex;align-items:stretch;background:var(--d-raised)">
-    <div class="bug"><div class="cell" style="background:var(--t2p);color:var(--t2i)"><span class="team">AWY</span><span class="score num">13</span></div>
-      <div class="cell" style="background:var(--t1p);color:var(--t1i)"><span class="poss" style="border-left:6px solid var(--t1i)"></span><span class="team">HOM</span><span class="score num">17</span></div>
-      <div class="sit num" style="background:var(--d-raised);color:var(--d-ink)">Q3 · 07:26<br><span style="color:var(--d-ink2)">1st &amp; 10 · HOM ball</span></div></div>
+    <div class="bug"><div class="cell" style="background:var(--t2p);color:var(--t2i)"><span class="team">CST</span><span class="score num">13</span></div>
+      <div class="cell" style="background:var(--t1p);color:var(--t1i)"><span class="poss" style="border-left:6px solid var(--t1i)"></span><span class="team">STA</span><span class="score num">10</span></div>
+      <div class="sit num" style="background:var(--d-raised);color:var(--d-ink)">Q3 · 07:26<br><span style="color:var(--d-ink2)">1st &amp; 10 · STA ball</span></div></div>
     <div style="flex:1"></div>
     <div class="marks" style="background:var(--d-raised)"><span style="font-size:10px;font-weight:800;color:var(--d-ink2)">KEY MOMENTS</span>
       <i style="box-shadow:inset 0 0 0 1px var(--d-quiet)"></i><i style="box-shadow:inset 0 0 0 1px var(--d-quiet)"></i><i style="box-shadow:inset 0 0 0 1px var(--d-quiet)"></i><i style="box-shadow:inset 0 0 0 1px var(--d-quiet)"></i><i style="background:var(--d-live)"></i><i style="background:var(--d-live)"></i><i style="background:var(--d-live)"></i>
@@ -646,43 +836,46 @@ each composition.</p>
   <div class="fb dk">
     <div class="yl" style="left:8.333%"></div><div class="yl" style="left:16.667%"></div><div class="yl" style="left:25%"></div><div class="yl" style="left:33.333%"></div><div class="yl" style="left:41.667%"></div><div class="yl" style="left:50%"></div><div class="yl" style="left:58.333%"></div><div class="yl" style="left:66.667%"></div><div class="yl" style="left:75%"></div><div class="yl" style="left:83.333%"></div><div class="yl" style="left:91.667%"></div>
     <span class="yn num" style="left:16.667%">10</span><span class="yn num" style="left:25%">20</span><span class="yn num" style="left:33.333%">30</span><span class="yn num" style="left:41.667%">40</span><span class="yn num" style="left:50%">50</span><span class="yn num" style="left:58.333%">40</span><span class="yn num" style="left:66.667%">30</span><span class="yn num" style="left:75%">20</span><span class="yn num" style="left:83.333%">10</span>
-    <div class="ez" style="left:0">HOM</div><div class="ez" style="right:0">AWY</div>
+    <div class="ez" style="left:0">STA</div><div class="ez" style="right:0">CST</div>
     <div class="mk ann" style="left:50%" title="Line of scrimmage — field.annotation"></div>
     <div class="mk liv" style="left:58.333%" title="First-down line — field.live"></div>
     <span class="ac h num" style="left:49.7%;top:34%">77</span><span class="ac h num" style="left:49.7%;top:42%">66</span><span class="ac h num" style="left:49.7%;top:50%">50</span><span class="ac h num" style="left:49.7%;top:58%">61</span><span class="ac h num" style="left:49.7%;top:66%">75</span>
-    <span class="ac h num" style="left:47.8%;top:50%">7</span><span class="ac h num" style="left:45.8%;top:60%">28</span><span class="ac h num" style="left:49.7%;top:74%">85</span>
-    <span class="ac h fg num" style="left:50.2%;top:10%">14</span><span class="ac h num" style="left:50.2%;top:90%">11</span><span class="ac h num" style="left:50%;top:24%">19</span>
+    <span class="ac h fg num" style="left:47.8%;top:50%">14</span><span class="ac h num" style="left:45.8%;top:60%">28</span><span class="ac h num" style="left:49.7%;top:74%">85</span>
+    <span class="ac h fg num" style="left:50.2%;top:10%">7</span><span class="ac h num" style="left:50.2%;top:90%">11</span><span class="ac h num" style="left:50%;top:24%">19</span>
     <span class="ac a num" style="left:51.2%;top:38%">90</span><span class="ac a num" style="left:51.2%;top:46%">95</span><span class="ac a num" style="left:51.2%;top:54%">98</span><span class="ac a num" style="left:51.2%;top:62%">93</span>
-    <span class="ac a fg num" style="left:53.5%;top:50%">54</span><span class="ac a num" style="left:53%;top:30%">57</span><span class="ac a num" style="left:53%;top:70%">52</span>
+    <span class="ac a num" style="left:53.5%;top:50%">54</span><span class="ac a num" style="left:53%;top:30%">57</span><span class="ac a num" style="left:53%;top:70%">52</span>
     <span class="ac a fg num" style="left:51.5%;top:6%">24</span><span class="ac a num" style="left:51.5%;top:90%">21</span><span class="ac a num" style="left:57%;top:38%">31</span><span class="ac a num" style="left:57%;top:62%">42</span>
-    <span class="nm1" style="left:50.2%;top:16%">FOURTEEN</span>
+    <span class="nm1" style="left:42%;top:46%">FOURTEEN</span>
   </div>
   <div class="lt" style="background:var(--d-work);width:100%">
     <div class="cell" style="display:flex;align-items:center;background:var(--t1p);color:var(--t1i);padding:0 8px"><span class="num" style="font-weight:900;font-size:20px">14</span></div>
     <div class="plate" style="background:var(--d-raised);box-shadow:inset 0 0 0 1px var(--d-quiet)"></div>
-    <div class="id" style="color:var(--d-ink)"><div class="nm">PLAYER FOURTEEN</div><div style="font-size:10px;color:var(--d-ink2)">Home Sample · WR</div></div>
+    <div class="id" style="color:var(--d-ink)"><div class="nm">PLAYER FOURTEEN</div><div style="font-size:10px;color:var(--d-ink2)">Example State · QB</div></div>
     <div class="ev" style="border-left:1px solid var(--d-quiet);color:var(--d-ink)"><span class="what" style="color:var(--d-live)">Completion · 12 yards</span>
       <span class="why">Fresh set of downs at midfield — the drive model keeps this possession alive.</span></div>
   </div>
   <div class="ctl" style="background:var(--d-raised);color:var(--d-ink)">
-    <button style="background:var(--d-raised);color:var(--d-ink)"><span class="sym">speedometer</span><span class="t">Speed</span></button>
+    <button style="background:var(--d-raised);color:var(--d-ink)"><span class="t">Speed</span></button>
     <button style="background:var(--d-raised);color:var(--d-ink)"><span class="sym">pause.fill</span><span class="t">Pause</span></button>
-    <button style="background:var(--d-live);color:var(--d-page)"><span class="sym">sparkles.tv</span><span class="t">Key Moments</span></button>
-    <button style="background:var(--d-raised);color:var(--d-ink)"><span class="sym">hand.raised.fill</span><span class="t">Take Over</span></button>
+    <button style="background:var(--d-live);color:var(--d-page)"><span class="t">Key Moments</span></button>
+    <button style="background:var(--d-raised);color:var(--d-ink)"><span class="t">Take Over</span></button>
     <button style="background:var(--d-raised);color:var(--d-ink)"><span class="sym">rectangle.3.group</span><span class="t">Tactics</span></button>
   </div>
 </div></div>
-<p class="vo">Spoken equivalent of the 844 pt field: "Recorded moment: Home Sample ball at midfield, first and
-10, first-down line at the away 40, offense moving left to right toward the away end zone, all 22 players
-represented, Player Fourteen split wide at the top of the field." Controls: five, each full-height ≥ 44 pt —
-Speed, Pause, Key Moments (selected — boundary, fill and spoken "selected"), Take Over, Tactics; glyph chips are
-SF Symbol names written as text (04 §6.3 icon rule).</p>
-<div class="scrollwrap"><div class="comp" style="width:852px">
-  <div class="caption">852 pt — promise floor. Same composition, light appearance — both field palettes exercised at width.</div>
+<p class="vo">Spoken equivalent of the 844 pt field: "Recorded moment: Example State ball at midfield, first and
+10, first-down line at the Example Coastal 40, offense moving left to right toward the Example Coastal end zone,
+all 22 players represented, Player Fourteen at quarterback behind the line at midfield, Player Seven split wide at
+the top of the field." Controls: five, each full-height ≥ 44 pt — Speed, Pause, Key Moments (selected — boundary,
+fill and spoken "selected"), Take Over, Tactics. The two glyph chips are SF Symbol names written as text, since
+this sheet uses no icon font (04 §6.3 icon rule); the other three controls carry no glyph because 04 §6.6 holds
+no member for them.</p>
+<div class="scrollwrap">
+  <p class="framecap">852 pt — promise floor. Same composition, light appearance — both field palettes exercised at width. (Caption outside the frame, 04 §4.4.)</p>
+  <div class="comp" style="width:852px">
   <div style="display:flex;align-items:stretch;background:var(--l-raised)">
-    <div class="bug"><div class="cell" style="background:var(--t2p);color:var(--t2i)"><span class="team">AWY</span><span class="score num">13</span></div>
-      <div class="cell" style="background:var(--t1p);color:var(--t1i)"><span class="poss" style="border-left:6px solid var(--t1i)"></span><span class="team">HOM</span><span class="score num">17</span></div>
-      <div class="sit num" style="background:var(--l-raised);color:var(--l-ink)">Q3 · 07:26<br><span style="color:var(--l-ink2)">1st &amp; 10 · HOM ball</span></div></div>
+    <div class="bug"><div class="cell" style="background:var(--t2p);color:var(--t2i)"><span class="team">CST</span><span class="score num">13</span></div>
+      <div class="cell" style="background:var(--t1p);color:var(--t1i)"><span class="poss" style="border-left:6px solid var(--t1i)"></span><span class="team">STA</span><span class="score num">10</span></div>
+      <div class="sit num" style="background:var(--l-raised);color:var(--l-ink)">Q3 · 07:26<br><span style="color:var(--l-ink2)">1st &amp; 10 · STA ball</span></div></div>
     <div style="flex:1"></div>
     <div class="marks" style="background:var(--l-raised)"><span style="font-size:10px;font-weight:800;color:var(--l-ink2)">KEY MOMENTS</span>
       <i style="box-shadow:inset 0 0 0 1px var(--l-quiet)"></i><i style="box-shadow:inset 0 0 0 1px var(--l-quiet)"></i><i style="box-shadow:inset 0 0 0 1px var(--l-quiet)"></i><i style="box-shadow:inset 0 0 0 1px var(--l-quiet)"></i><i style="background:var(--l-live)"></i><i style="background:var(--l-live)"></i><i style="background:var(--l-live)"></i>
@@ -691,29 +884,29 @@ SF Symbol names written as text (04 §6.3 icon rule).</p>
   <div class="fb lt2">
     <div class="yl" style="left:8.333%"></div><div class="yl" style="left:16.667%"></div><div class="yl" style="left:25%"></div><div class="yl" style="left:33.333%"></div><div class="yl" style="left:41.667%"></div><div class="yl" style="left:50%"></div><div class="yl" style="left:58.333%"></div><div class="yl" style="left:66.667%"></div><div class="yl" style="left:75%"></div><div class="yl" style="left:83.333%"></div><div class="yl" style="left:91.667%"></div>
     <span class="yn num" style="left:16.667%">10</span><span class="yn num" style="left:25%">20</span><span class="yn num" style="left:33.333%">30</span><span class="yn num" style="left:41.667%">40</span><span class="yn num" style="left:50%">50</span><span class="yn num" style="left:58.333%">40</span><span class="yn num" style="left:66.667%">30</span><span class="yn num" style="left:75%">20</span><span class="yn num" style="left:83.333%">10</span>
-    <div class="ez" style="left:0">HOM</div><div class="ez" style="right:0">AWY</div>
+    <div class="ez" style="left:0">STA</div><div class="ez" style="right:0">CST</div>
     <div class="mk ann" style="left:50%" title="Line of scrimmage — field.annotation"></div>
     <div class="mk liv" style="left:58.333%" title="First-down line — field.live"></div>
     <span class="ac h num" style="left:49.7%;top:34%">77</span><span class="ac h num" style="left:49.7%;top:42%">66</span><span class="ac h num" style="left:49.7%;top:50%">50</span><span class="ac h num" style="left:49.7%;top:58%">61</span><span class="ac h num" style="left:49.7%;top:66%">75</span>
-    <span class="ac h num" style="left:47.8%;top:50%">7</span><span class="ac h num" style="left:45.8%;top:60%">28</span><span class="ac h num" style="left:49.7%;top:74%">85</span>
-    <span class="ac h fg num" style="left:50.2%;top:10%">14</span><span class="ac h num" style="left:50.2%;top:90%">11</span><span class="ac h num" style="left:50%;top:24%">19</span>
+    <span class="ac h fg num" style="left:47.8%;top:50%">14</span><span class="ac h num" style="left:45.8%;top:60%">28</span><span class="ac h num" style="left:49.7%;top:74%">85</span>
+    <span class="ac h fg num" style="left:50.2%;top:10%">7</span><span class="ac h num" style="left:50.2%;top:90%">11</span><span class="ac h num" style="left:50%;top:24%">19</span>
     <span class="ac a num" style="left:51.2%;top:38%">90</span><span class="ac a num" style="left:51.2%;top:46%">95</span><span class="ac a num" style="left:51.2%;top:54%">98</span><span class="ac a num" style="left:51.2%;top:62%">93</span>
-    <span class="ac a fg num" style="left:53.5%;top:50%">54</span><span class="ac a num" style="left:53%;top:30%">57</span><span class="ac a num" style="left:53%;top:70%">52</span>
+    <span class="ac a num" style="left:53.5%;top:50%">54</span><span class="ac a num" style="left:53%;top:30%">57</span><span class="ac a num" style="left:53%;top:70%">52</span>
     <span class="ac a fg num" style="left:51.5%;top:6%">24</span><span class="ac a num" style="left:51.5%;top:90%">21</span><span class="ac a num" style="left:57%;top:38%">31</span><span class="ac a num" style="left:57%;top:62%">42</span>
-    <span class="nm1" style="left:50.2%;top:16%">FOURTEEN</span>
+    <span class="nm1" style="left:42%;top:46%">FOURTEEN</span>
   </div>
   <div class="lt" style="background:var(--l-work);width:100%">
     <div class="cell" style="display:flex;align-items:center;background:var(--t1p);color:var(--t1i);padding:0 8px"><span class="num" style="font-weight:900;font-size:20px">14</span></div>
     <div class="plate" style="background:var(--l-raised);box-shadow:inset 0 0 0 1px var(--l-quiet)"></div>
-    <div class="id" style="color:var(--l-ink)"><div class="nm">PLAYER FOURTEEN</div><div style="font-size:10px;color:var(--l-ink2)">Home Sample · WR</div></div>
+    <div class="id" style="color:var(--l-ink)"><div class="nm">PLAYER FOURTEEN</div><div style="font-size:10px;color:var(--l-ink2)">Example State · QB</div></div>
     <div class="ev" style="border-left:1px solid var(--l-quiet);color:var(--l-ink)"><span class="what" style="color:var(--l-live)">Completion · 12 yards</span>
       <span class="why">Fresh set of downs at midfield — the drive model keeps this possession alive.</span></div>
   </div>
   <div class="ctl" style="background:var(--l-raised);color:var(--l-ink)">
-    <button style="background:var(--l-raised);color:var(--l-ink)"><span class="sym">speedometer</span><span class="t">Speed</span></button>
+    <button style="background:var(--l-raised);color:var(--l-ink)"><span class="t">Speed</span></button>
     <button style="background:var(--l-raised);color:var(--l-ink)"><span class="sym">pause.fill</span><span class="t">Pause</span></button>
-    <button style="background:var(--l-live);color:var(--l-work)"><span class="sym">sparkles.tv</span><span class="t">Key Moments</span></button>
-    <button style="background:var(--l-raised);color:var(--l-ink)"><span class="sym">hand.raised.fill</span><span class="t">Take Over</span></button>
+    <button style="background:var(--l-live);color:var(--l-work)"><span class="t">Key Moments</span></button>
+    <button style="background:var(--l-raised);color:var(--l-ink)"><span class="t">Take Over</span></button>
     <button style="background:var(--l-raised);color:var(--l-ink)"><span class="sym">rectangle.3.group</span><span class="t">Tactics</span></button>
   </div>
 </div></div>
@@ -723,12 +916,13 @@ the symmetric pairing of canon's measured 5.70 (state.live on world.work, 04 §6
 the symmetric pairing of 11.23 (state.live on world.page). Boundary, printed label and spoken "selected" carry
 the state, never the fill alone (04 §6.3).</p>
 
-<div class="scrollwrap"><div class="comp" style="width:956px">
-  <div class="caption">956 pt — promise ceiling, with a live CallInCard: the rail narrows the field frame from the right; all 120 yards stay in frame. Dark appearance.</div>
+<div class="scrollwrap">
+  <p class="framecap">956 pt — promise ceiling, with a live CallInCard: the rail narrows the field frame from the right; all 120 yards stay in frame. Dark appearance. (Caption outside the frame, 04 §4.4.)</p>
+  <div class="comp" style="width:956px">
   <div style="display:flex;align-items:stretch;background:var(--d-raised)">
-    <div class="bug"><div class="cell" style="background:var(--t2p);color:var(--t2i)"><span class="team">AWY</span><span class="score num">13</span></div>
-      <div class="cell" style="background:var(--t1p);color:var(--t1i)"><span class="poss" style="border-left:6px solid var(--t1i)"></span><span class="team">HOM</span><span class="score num">17</span></div>
-      <div class="sit num" style="background:var(--d-raised);color:var(--d-ink)">Q3 · 07:26<br><span style="color:var(--d-ink2)">1st &amp; 10 · HOM ball</span></div></div>
+    <div class="bug"><div class="cell" style="background:var(--t2p);color:var(--t2i)"><span class="team">CST</span><span class="score num">13</span></div>
+      <div class="cell" style="background:var(--t1p);color:var(--t1i)"><span class="poss" style="border-left:6px solid var(--t1i)"></span><span class="team">STA</span><span class="score num">10</span></div>
+      <div class="sit num" style="background:var(--d-raised);color:var(--d-ink)">Q3 · 07:26<br><span style="color:var(--d-ink2)">1st &amp; 10 · STA ball</span></div></div>
     <div style="flex:1"></div>
     <div class="marks" style="background:var(--d-raised)"><span style="font-size:10px;font-weight:800;color:var(--d-ink2)">KEY MOMENTS</span>
       <i style="box-shadow:inset 0 0 0 1px var(--d-quiet)"></i><i style="box-shadow:inset 0 0 0 1px var(--d-quiet)"></i><i style="box-shadow:inset 0 0 0 1px var(--d-quiet)"></i><i style="box-shadow:inset 0 0 0 1px var(--d-quiet)"></i><i style="background:var(--d-live)"></i><i style="background:var(--d-live)"></i><i style="background:var(--d-live)"></i>
@@ -739,39 +933,39 @@ the state, never the fill alone (04 §6.3).</p>
       <div class="fb dk">
         <div class="yl" style="left:8.333%"></div><div class="yl" style="left:16.667%"></div><div class="yl" style="left:25%"></div><div class="yl" style="left:33.333%"></div><div class="yl" style="left:41.667%"></div><div class="yl" style="left:50%"></div><div class="yl" style="left:58.333%"></div><div class="yl" style="left:66.667%"></div><div class="yl" style="left:75%"></div><div class="yl" style="left:83.333%"></div><div class="yl" style="left:91.667%"></div>
         <span class="yn num" style="left:16.667%">10</span><span class="yn num" style="left:25%">20</span><span class="yn num" style="left:33.333%">30</span><span class="yn num" style="left:41.667%">40</span><span class="yn num" style="left:50%">50</span><span class="yn num" style="left:58.333%">40</span><span class="yn num" style="left:66.667%">30</span><span class="yn num" style="left:75%">20</span><span class="yn num" style="left:83.333%">10</span>
-        <div class="ez" style="left:0">HOM</div><div class="ez" style="right:0">AWY</div>
+        <div class="ez" style="left:0">STA</div><div class="ez" style="right:0">CST</div>
         <div class="mk ann" style="left:50%"></div><div class="mk liv" style="left:58.333%"></div>
         <span class="ac h num" style="left:49.7%;top:34%">77</span><span class="ac h num" style="left:49.7%;top:42%">66</span><span class="ac h num" style="left:49.7%;top:50%">50</span><span class="ac h num" style="left:49.7%;top:58%">61</span><span class="ac h num" style="left:49.7%;top:66%">75</span>
-        <span class="ac h num" style="left:47.8%;top:50%">7</span><span class="ac h num" style="left:45.8%;top:60%">28</span><span class="ac h num" style="left:49.7%;top:74%">85</span>
-        <span class="ac h fg num" style="left:50.2%;top:10%">14</span><span class="ac h num" style="left:50.2%;top:90%">11</span><span class="ac h num" style="left:50%;top:24%">19</span>
+        <span class="ac h fg num" style="left:47.8%;top:50%">14</span><span class="ac h num" style="left:45.8%;top:60%">28</span><span class="ac h num" style="left:49.7%;top:74%">85</span>
+        <span class="ac h fg num" style="left:50.2%;top:10%">7</span><span class="ac h num" style="left:50.2%;top:90%">11</span><span class="ac h num" style="left:50%;top:24%">19</span>
         <span class="ac a num" style="left:51.2%;top:38%">90</span><span class="ac a num" style="left:51.2%;top:46%">95</span><span class="ac a num" style="left:51.2%;top:54%">98</span><span class="ac a num" style="left:51.2%;top:62%">93</span>
-        <span class="ac a fg num" style="left:53.5%;top:50%">54</span><span class="ac a num" style="left:53%;top:30%">57</span><span class="ac a num" style="left:53%;top:70%">52</span>
+        <span class="ac a num" style="left:53.5%;top:50%">54</span><span class="ac a num" style="left:53%;top:30%">57</span><span class="ac a num" style="left:53%;top:70%">52</span>
         <span class="ac a fg num" style="left:51.5%;top:6%">24</span><span class="ac a num" style="left:51.5%;top:90%">21</span><span class="ac a num" style="left:57%;top:38%">31</span><span class="ac a num" style="left:57%;top:62%">42</span>
-        <span class="nm1" style="left:50.2%;top:16%">FOURTEEN</span>
+        <span class="nm1" style="left:42%;top:46%">FOURTEEN</span>
       </div>
       <div class="lt" style="background:var(--d-work);width:100%">
         <div class="cell" style="display:flex;align-items:center;background:var(--t1p);color:var(--t1i);padding:0 8px"><span class="num" style="font-weight:900;font-size:20px">14</span></div>
         <div class="plate" style="background:var(--d-raised);box-shadow:inset 0 0 0 1px var(--d-quiet)"></div>
-        <div class="id" style="color:var(--d-ink)"><div class="nm">PLAYER FOURTEEN</div><div style="font-size:10px;color:var(--d-ink2)">Home Sample · WR</div></div>
+        <div class="id" style="color:var(--d-ink)"><div class="nm">PLAYER FOURTEEN</div><div style="font-size:10px;color:var(--d-ink2)">Example State · QB</div></div>
         <div class="ev" style="border-left:1px solid var(--d-quiet);color:var(--d-ink)"><span class="what" style="color:var(--d-live)">Completion · 12 yards</span>
           <span class="why">Fresh set of downs at midfield — the drive model keeps this possession alive.</span></div>
       </div>
       <div class="ctl" style="background:var(--d-raised);color:var(--d-ink)">
-        <button style="background:var(--d-raised);color:var(--d-ink)"><span class="sym">speedometer</span><span class="t">Speed</span></button>
+        <button style="background:var(--d-raised);color:var(--d-ink)"><span class="t">Speed</span></button>
         <button style="background:var(--d-live);color:var(--d-page)"><span class="sym">pause.fill</span><span class="t">Pause</span></button>
-        <button style="background:var(--d-raised);color:var(--d-ink)"><span class="sym">sparkles.tv</span><span class="t">Key Moments</span></button>
-        <button style="background:var(--d-raised);color:var(--d-ink)"><span class="sym">hand.raised.fill</span><span class="t">Take Over</span></button>
+        <button style="background:var(--d-raised);color:var(--d-ink)"><span class="t">Key Moments</span></button>
+        <button style="background:var(--d-raised);color:var(--d-ink)"><span class="t">Take Over</span></button>
         <button style="background:var(--d-raised);color:var(--d-ink)"><span class="sym">rectangle.3.group</span><span class="t">Tactics</span></button>
       </div>
     </div>
     <div class="callin" style="background:var(--d-page);border-left:1px solid var(--d-quiet)">
       <div class="hd" style="color:var(--d-warn)">STAFF CALL-IN</div>
       <div class="who"><div class="plate" style="width:44px;height:50px;background:var(--d-raised);box-shadow:inset 0 0 0 1px var(--d-quiet)"></div>
-        <div><div class="nm" style="color:var(--d-ink)">Coach Sample</div><div class="rl" style="color:var(--d-ink2)">Defensive Coordinator</div></div></div>
+        <div><div class="nm" style="color:var(--d-ink)">Coordinator Sample</div><div class="rl" style="color:var(--d-ink2)">Defensive Coordinator</div></div></div>
       <div class="msg" style="color:var(--d-ink)">Their 88 has beaten single coverage on the last three passing downs. I want the double team.</div>
-      <div class="act" style="background:var(--d-page);box-shadow:inset 0 0 0 1px var(--d-action)"><div class="t" style="color:var(--d-ink)">Accept — double-team their 88</div><div class="c" style="color:var(--d-warn)">Cost: replaces the base coverage call</div></div>
-      <div class="act" style="background:var(--d-page);box-shadow:inset 0 0 0 1px var(--d-quiet)"><div class="t" style="color:var(--d-ink)">Dismiss — keep the base call</div></div>
-      <div class="act" style="background:var(--d-page);box-shadow:inset 0 0 0 1px var(--d-quiet)"><div class="t" style="color:var(--d-ink)">Inspect evidence — three recorded plays</div></div>
+      <div class="act" style="background:var(--d-page);box-shadow:inset 0 0 0 1px var(--d-action)"><div class="t" style="color:var(--d-ink)">Accept — double-team their 88</div><div class="c" style="color:var(--d-ink2)">Cost: replaces the base coverage call</div><div class="c" style="color:var(--d-ink2)">Consequence: safety help rotates to 88; the middle opens</div></div>
+      <div class="act" style="background:var(--d-page);box-shadow:inset 0 0 0 1px var(--d-quiet)"><div class="t" style="color:var(--d-ink)">Dismiss — keep the base call</div><div class="c" style="color:var(--d-ink2)">Consequence: single coverage stands as planned</div></div>
+      <div class="act" style="background:var(--d-page);box-shadow:inset 0 0 0 1px var(--d-quiet)"><div class="t" style="color:var(--d-ink)">Inspect evidence — three recorded plays</div><div class="c" style="color:var(--d-ink2)">Opens the recorded plays; the match pauses while you read</div></div>
     </div>
   </div>
 </div></div>
@@ -787,27 +981,29 @@ Caption = caption, 12 → <strong>43</strong>. Text below is drawn at those AX5 
 fixed diagram marks — licensed by 04 §6.2 only because the spoken equivalent is present — and the whole 120
 yards remain in frame; AX5 scrolls vertically, never horizontally, and the focused action is reachable without
 crossing a hidden shelf (04 §7). Container: 844 pt, the install floor.</p>
-<div class="scrollwrap"><div class="comp" style="width:844px">
-  <div class="caption">AX5, dark appearance, 844 pt. Reading order: score, situation, field, lower third, key moments, call-in, controls.</div>
+<div class="scrollwrap">
+  <p class="framecap">AX5, dark appearance, 844 pt. Reading order: score, situation, field, lower third, key moments, call-in, controls. (Caption outside the frame, 04 §4.4.)</p>
+  <div class="comp" style="width:844px">
   <div style="background:var(--d-raised);color:var(--d-ink);padding:12px 16px">
-    <div class="num" style="font-size:55px;font-weight:900;line-height:1.1">AWY 13 · HOM 17</div>
-    <div class="num" style="font-size:44px;font-weight:700;line-height:1.15;color:var(--d-ink2)">Q3 · 07:26 · 1st &amp; 10 · HOM ball</div>
+    <div class="num" style="font-size:55px;font-weight:900;line-height:1.1">CST 13 · STA 10</div>
+    <div class="num" style="font-size:44px;font-weight:700;line-height:1.15;color:var(--d-ink2)">Q3 · 07:26 · 1st &amp; 10 · STA ball</div>
   </div>
   <div class="fb dk">
     <div class="yl" style="left:8.333%"></div><div class="yl" style="left:16.667%"></div><div class="yl" style="left:25%"></div><div class="yl" style="left:33.333%"></div><div class="yl" style="left:41.667%"></div><div class="yl" style="left:50%"></div><div class="yl" style="left:58.333%"></div><div class="yl" style="left:66.667%"></div><div class="yl" style="left:75%"></div><div class="yl" style="left:83.333%"></div><div class="yl" style="left:91.667%"></div>
-    <div class="ez" style="left:0">HOM</div><div class="ez" style="right:0">AWY</div>
+    <span class="yn num" style="left:16.667%">10</span><span class="yn num" style="left:25%">20</span><span class="yn num" style="left:33.333%">30</span><span class="yn num" style="left:41.667%">40</span><span class="yn num" style="left:50%">50</span><span class="yn num" style="left:58.333%">40</span><span class="yn num" style="left:66.667%">30</span><span class="yn num" style="left:75%">20</span><span class="yn num" style="left:83.333%">10</span>
+    <div class="ez" style="left:0">STA</div><div class="ez" style="right:0">CST</div>
     <div class="mk ann" style="left:50%"></div><div class="mk liv" style="left:58.333%"></div>
     <span class="ac h num" style="left:49.7%;top:34%">77</span><span class="ac h num" style="left:49.7%;top:42%">66</span><span class="ac h num" style="left:49.7%;top:50%">50</span><span class="ac h num" style="left:49.7%;top:58%">61</span><span class="ac h num" style="left:49.7%;top:66%">75</span>
-    <span class="ac h num" style="left:47.8%;top:50%">7</span><span class="ac h num" style="left:45.8%;top:60%">28</span><span class="ac h num" style="left:49.7%;top:74%">85</span>
-    <span class="ac h fg num" style="left:50.2%;top:10%">14</span><span class="ac h num" style="left:50.2%;top:90%">11</span><span class="ac h num" style="left:50%;top:24%">19</span>
+    <span class="ac h fg num" style="left:47.8%;top:50%">14</span><span class="ac h num" style="left:45.8%;top:60%">28</span><span class="ac h num" style="left:49.7%;top:74%">85</span>
+    <span class="ac h fg num" style="left:50.2%;top:10%">7</span><span class="ac h num" style="left:50.2%;top:90%">11</span><span class="ac h num" style="left:50%;top:24%">19</span>
     <span class="ac a num" style="left:51.2%;top:38%">90</span><span class="ac a num" style="left:51.2%;top:46%">95</span><span class="ac a num" style="left:51.2%;top:54%">98</span><span class="ac a num" style="left:51.2%;top:62%">93</span>
-    <span class="ac a fg num" style="left:53.5%;top:50%">54</span><span class="ac a num" style="left:53%;top:30%">57</span><span class="ac a num" style="left:53%;top:70%">52</span>
+    <span class="ac a num" style="left:53.5%;top:50%">54</span><span class="ac a num" style="left:53%;top:30%">57</span><span class="ac a num" style="left:53%;top:70%">52</span>
     <span class="ac a fg num" style="left:51.5%;top:6%">24</span><span class="ac a num" style="left:51.5%;top:90%">21</span><span class="ac a num" style="left:57%;top:38%">31</span><span class="ac a num" style="left:57%;top:62%">42</span>
-    <span class="nm1" style="left:50.2%;top:16%">FOURTEEN</span>
+    <span class="nm1" style="left:42%;top:46%">FOURTEEN</span>
   </div>
   <div style="background:var(--d-work);color:var(--d-ink);padding:12px 16px">
     <div style="font-size:49px;font-weight:900;line-height:1.1">14 · PLAYER FOURTEEN</div>
-    <div style="font-size:43px;color:var(--d-ink2);line-height:1.15">Home Sample · WR</div>
+    <div style="font-size:43px;color:var(--d-ink2);line-height:1.15">Example State · QB</div>
     <div style="font-size:44px;font-weight:800;color:var(--d-live);line-height:1.15">Completion · 12 yards</div>
     <div style="font-size:44px;line-height:1.2">Fresh set of downs at midfield — the drive model keeps this possession alive.</div>
   </div>
@@ -824,18 +1020,25 @@ crossing a hidden shelf (04 §7). Container: 844 pt, the install floor.</p>
   </div>
   <div style="background:var(--d-page);color:var(--d-ink);padding:12px 16px">
     <div style="font-size:43px;font-weight:800;color:var(--d-warn)">STAFF CALL-IN</div>
-    <div style="font-size:49px;font-weight:900">Coach Sample</div>
+    <div style="font-size:49px;font-weight:900">Coordinator Sample</div>
     <div style="font-size:44px;color:var(--d-ink2)">Defensive Coordinator</div>
     <div style="font-size:44px;line-height:1.2;margin:8px 0">Their 88 has beaten single coverage on the last three passing downs. I want the double team.</div>
-    <div style="min-height:44px;padding:8px;box-shadow:inset 0 0 0 2px var(--d-action);font-size:44px;font-weight:900;margin:8px 0">Accept — double-team their 88</div>
-    <div style="min-height:44px;padding:8px;box-shadow:inset 0 0 0 2px var(--d-quiet);font-size:44px;font-weight:900;margin:8px 0">Dismiss — keep the base call</div>
-    <div style="min-height:44px;padding:8px;box-shadow:inset 0 0 0 2px var(--d-quiet);font-size:44px;font-weight:900;margin:8px 0">Inspect evidence — three recorded plays</div>
+    <div style="min-height:44px;padding:8px;box-shadow:inset 0 0 0 2px var(--d-action);margin:8px 0">
+      <div style="font-size:44px;font-weight:900;line-height:1.2">Accept — double-team their 88</div>
+      <div style="font-size:44px;line-height:1.2;color:var(--d-ink2)">Cost: replaces the base coverage call</div>
+      <div style="font-size:44px;line-height:1.2;color:var(--d-ink2)">Consequence: safety help rotates to 88; the middle opens</div></div>
+    <div style="min-height:44px;padding:8px;box-shadow:inset 0 0 0 2px var(--d-quiet);margin:8px 0">
+      <div style="font-size:44px;font-weight:900;line-height:1.2">Dismiss — keep the base call</div>
+      <div style="font-size:44px;line-height:1.2;color:var(--d-ink2)">Consequence: single coverage stands as planned</div></div>
+    <div style="min-height:44px;padding:8px;box-shadow:inset 0 0 0 2px var(--d-quiet);margin:8px 0">
+      <div style="font-size:44px;font-weight:900;line-height:1.2">Inspect evidence — three recorded plays</div>
+      <div style="font-size:44px;line-height:1.2;color:var(--d-ink2)">Opens the recorded plays; the match pauses while you read</div></div>
   </div>
   <div style="background:var(--d-raised)">
-    <div style="min-height:44px;padding:8px 16px;color:var(--d-ink);font-size:44px;font-weight:800"><span class="sym" style="font-family:ui-monospace,Menlo,monospace;font-size:20px;border:1px solid currentColor;padding:0 4px;vertical-align:middle">speedometer</span> Speed</div>
+    <div style="min-height:44px;padding:8px 16px;color:var(--d-ink);font-size:44px;font-weight:800">Speed</div>
     <div style="min-height:44px;padding:8px 16px;color:var(--d-ink);font-size:44px;font-weight:800"><span class="sym" style="font-family:ui-monospace,Menlo,monospace;font-size:20px;border:1px solid currentColor;padding:0 4px;vertical-align:middle">pause.fill</span> Pause</div>
-    <div style="min-height:44px;padding:8px 16px;color:var(--d-ink);font-size:44px;font-weight:800"><span class="sym" style="font-family:ui-monospace,Menlo,monospace;font-size:20px;border:1px solid currentColor;padding:0 4px;vertical-align:middle">sparkles.tv</span> Key Moments</div>
-    <div style="min-height:44px;padding:8px 16px;color:var(--d-ink);font-size:44px;font-weight:800"><span class="sym" style="font-family:ui-monospace,Menlo,monospace;font-size:20px;border:1px solid currentColor;padding:0 4px;vertical-align:middle">hand.raised.fill</span> Take Over</div>
+    <div style="min-height:44px;padding:8px 16px;color:var(--d-ink);font-size:44px;font-weight:800">Key Moments</div>
+    <div style="min-height:44px;padding:8px 16px;color:var(--d-ink);font-size:44px;font-weight:800">Take Over</div>
     <div style="min-height:44px;padding:8px 16px;color:var(--d-ink);font-size:44px;font-weight:800"><span class="sym" style="font-family:ui-monospace,Menlo,monospace;font-size:20px;border:1px solid currentColor;padding:0 4px;vertical-align:middle">rectangle.3.group</span> Tactics</div>
   </div>
 </div></div>
@@ -848,16 +1051,20 @@ control full-width and at least 44 pt tall.</p>
 <h2>Sheet-level compliance</h2>
 <table>
   <tr><th>Rule</th><th>How this sheet meets it</th></tr>
-  <tr><td>Self-contained</td><td>HTML and CSS only — no JavaScript, no CDN, no web font, no icon font, no images; system type stack; glyphs are SF Symbol names in monospace chips.</td></tr>
+  <tr><td>Self-contained</td><td>HTML and CSS only — no JavaScript, no CDN, no web font, no icon font, no images; system type stack; the two glyphs drawn are SF Symbol names in monospace chips.</td></tr>
   <tr><td>Register</td><td>BROADCAST: radius 0 on every component; field grammar backdrop; chrome over dead margins only; no management furniture on the field (04 §2, §6.3, §9).</td></tr>
-  <tr><td>Values</td><td>Every colour, ratio, type size and spacing step is quoted from 04 §6.1/§6.2/§6.3 (G-07 write-back) or sourcing row Q5 — none recomputed, none invented. CSS px are read as pt.</td></tr>
+  <tr><td>Values</td><td>Every colour, ratio, type size and spacing step is quoted from 04 §6.1/§6.2/§6.3 (G-07 write-back) or sourcing row Q5 — none recomputed, none invented. CSS px are read as pt. <strong>Nothing off-canon paints inside a device frame</strong> — the mow bands are canon <code>field.turfBand</code>; the eleven values this gallery's own chrome uses outside the frames are listed in the header disclosure, as 04 §4.4 permits and requires.</td></tr>
+  <tr><td>Symbols</td><td>Accounted at 04 §6.6, never priced locally. Spend against the learned classes: <strong>0</strong>. Two §6.6 control-furniture members drawn (<code>pause.fill</code>, <code>rectangle.3.group</code>); three glyphs with no §6.6 class dropped; the possession wedge and key-moment mark are printed-and-spoken marks, and if the owner reads them as a learned class, that class belongs in §6.6.</td></tr>
+  <tr><td>Shared world</td><td>One save, one moment: Example Coastal 13, Example State 10, Q3 07:26, 1st and 10. Cast, teams and figures from <code>docs/briefs/2026-08-12-reference-shared-world.md</code>. Player Fourteen is the No. 14 quarterback here and everywhere. Two identities this sheet needs and that brief does not yet hold (Player Fifty-Four; the Example Union fixture) are named as owing an entry there.</td></tr>
   <tr><td>Identities</td><td>Mechanical placeholders only; trio labelled synthetic — pending generator output; collision and trade-dress tests stay green; no emoji anywhere.</td></tr>
   <tr><td>Data source</td><td>Every card: recorded outcome read model; anchors G-06. Live depictions await FSC-011; static states do not. The render cannot change simulation truth (04 §9).</td></tr>
   <tr><td>Canonicity</td><td>This sheet is a rendering. 04 is the only canonical home; a value appearing only here has not shipped (plan §5).</td></tr>
 </table>
-<p class="meta">broadcast-v3.dc.html · group broadcast · sources: 04 §2/§4.5/§6.1/§6.2/§6.3/§6.5/§7/§9;
-reference-library plan §3–§5; density model §5; sourcing log Q5; 01-RESEARCH §6.6 §3.2/§3.3/§3.4;
-pass-2 findings F34/F35 · 2026-08-12.</p>
+<p class="meta">broadcast-v3.dc.html · group broadcast · sources: 04 §2/§4.4/§4.5/§6.1/§6.2/§6.3/§6.5/<strong>§6.6</strong>/§7/§9;
+reference-library plan §3–§5; shared-world brief 2026-08-12; density model §5; sourcing log Q5;
+01-RESEARCH §6.6 §3.2/§3.3/§3.4; pass-2 findings F34/F35 · revised 2026-08-12 against the personnel-proof review
+(F-03 turf tones and disclosure, F-12 both evidence states in both appearances, F-15 cost re-inked, F-06 shared
+world, F-02 symbol accounting moved to 04 §6.6).</p>
 
 </body>
 </html>

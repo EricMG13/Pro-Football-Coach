@@ -125,7 +125,8 @@ p{margin:6px 0}
 .route.dis{opacity:.45}
 /* team chip */
 .tchip{display:inline-flex;align-items:stretch;height:28px;border-radius:8px;overflow:hidden;border:1px solid;flex:none}
-.dk .tchip{border-color:var(--dk-cq)} .lt .tchip{border-color:var(--lt-cq)}
+/* mandatory team-fill boundary — canon names it content.secondary (04 §6.1, 2026-08-12) */
+.dk .tchip{border-color:var(--dk-c2)} .lt .tchip{border-color:var(--lt-c2)}
 .tchip .bar{width:4px;flex:none}
 .tchip .tname{display:flex;align-items:center;padding:0 8px;font-size:12px;font-weight:700;letter-spacing:-0.1px;white-space:nowrap}
 /* desk surface */
@@ -182,16 +183,42 @@ footer{margin-top:36px;font-size:11px;color:var(--g-ink2)}
   <p style="margin-top:8px">Mechanics: self-contained HTML and CSS, no JavaScript, no CDN, no web font, no icon font,
      no images; system type stack; a glyph is an SF Symbol name written as text in a small monospace chip
      (for example <span class="sf">chevron.right</span>). CSS px are read as pt. No emoji anywhere.</p>
-  <p style="margin-top:8px">Identities: every name on this sheet — Example State, Coach Sample, Coordinator Sample —
-     is a mechanical placeholder labelled <em>pending generator output</em>. No real school, team, player, coach,
+  <p style="margin-top:8px">Identities: the shared world of the reference library (brief 2026-08-12, reference-shared-world) —
+     <b>Week 9, preparation day, Example State, record 6-2, next opponent Example Coastal (away)</b>, with Coach Sample as
+     head coach and Coordinator Sample as defensive coordinator. Every name is a mechanical placeholder labelled
+     <em>pending generator output</em>. No real school, team, player, coach,
      city or mark appears. The name-collision and trade-dress tests stay green over everything rendered here.
      The team colour trio is the 04 &sect;6.1 synthetic reference trio, labelled
-     <em>synthetic — pending generator output</em> at every use.</p>
+     <em>synthetic — pending generator output</em> at every use; Example State draws the dark-primary pair,
+     Example Coastal the light-primary pair and Example Union the low-chroma pair.</p>
+  <p style="margin-top:8px"><b>Symbol accounting:</b> this sheet prices no symbol vocabulary of its own. <b>04 &sect;6.6
+     is the authority and the only place the running totals are held</b> — a symbol drawn anywhere in the product must
+     appear in one of its capped classes, and one that does not is a finding under &sect;4.5, not a licence. Reconciled
+     against &sect;6.6, this sheet draws: <span class="sf">person.badge.clock</span> — Obligation class, the
+     <em>delegated</em> member, used for the Delegate control and for the receipt it produces, because one meaning takes
+     one member on every surface; <span class="sf">forward.end.fill</span>,
+     <span class="sf">chevron.up.chevron.down</span> and <span class="sf">chevron.right</span> — control furniture,
+     which &sect;6.6 holds is not a learned class because every marked control here carries a visible or accessible
+     label. Status, Change and Session-type members: none drawn. Learned-symbol spend added by this sheet: <b>0</b>.</p>
   <p class="law">Prototype truth (gallery chrome, outside any device frame): this sheet is a rendering.
      <b>docs/04-UX-AND-DESIGN-SYSTEM.md is the only canonical home for these values; a value appearing only
-     in a sheet has not shipped</b> (library plan &sect;5). Sources: 04 &sect;2, &sect;3, &sect;4 (incl. &sect;4.5),
-     &sect;6.1&ndash;6.5, &sect;7; library plan &sect;3&ndash;5; density model &sect;5; sourcing row Q5 (AX5 sizes);
-     finding F31 (reference-set findings, pass 2).</p>
+     in a sheet has not shipped</b> (library plan &sect;5). <b>Six colour values on this sheet are outside 04 &sect;6.1
+     and are disclosed here rather than implied:</b> <span class="mono">#F4F4F6</span> page ground,
+     <span class="mono">#22252B</span> and <span class="mono">#5A5F6A</span> gallery ink,
+     <span class="mono">#D8DADF</span> gallery rule, <span class="mono">#F7F8FA</span> and
+     <span class="mono">#EFF1F4</span> note grounds. Every one of them is gallery chrome outside the rendered device
+     frames — card grounds, borders, captions, contract blocks and glyph chips — which is the one place 04 &sect;4.4
+     permits prototype truth; <b>no value inside a rendered device frame comes from anywhere but 04 &sect;6.1</b>
+     (the composited exceptions inside frames are the 16% route tint, the 76% press fill and the 45% disabled and
+     panel-border opacities — each a canon hex at a tree-sourced opacity, named as such at its use — plus the dashed
+     inset guides in the width matrix, which are labelled gallery annotation rather than product furniture). Canon now names the hairline colours (04 &sect;6.1, 2026-08-12): a hairline
+     rule draws in <span class="mono">world.raised</span> over <span class="mono">work</span> surfaces, and the
+     mandatory team-fill boundary draws in <span class="mono">content.secondary</span> — the team chips below carry
+     that named boundary, and the remaining seams and dividers on this sheet are drawn in
+     <span class="mono">content.quiet</span>, a case canon does not name, disclosed here with its measured ratio at
+     each use. Sources: 04 &sect;2, &sect;3, &sect;4 (incl. &sect;4.5),
+     &sect;6.1&ndash;6.6, &sect;7; library plan &sect;3&ndash;5; density model &sect;5; sourcing row Q5 (AX5 sizes);
+     finding F31 (reference-set findings, pass 2); review 2026-08-12 personnel-proof, findings F-02 and F-03.</p>
 </header>
 
 <!-- ==================================================================
@@ -297,7 +324,7 @@ footer{margin-top:36px;font-size:11px;color:var(--g-ink2)}
             <div class="spec"><span class="btn live">Continue <span class="chipglyph">forward.end.fill</span></span><span class="lab">role .live — the advance slot<br>when the path is clear</span></div>
           </div>
           <div class="srow" style="margin-top:16px">
-            <div class="spec"><span class="receipt"><span class="ok chipglyph">checkmark</span> Delegated &middot; Coordinator Sample</span><span class="lab">delegated — in-place receipt</span></div>
+            <div class="spec"><span class="receipt"><span class="ok chipglyph">person.badge.clock</span> Delegated &middot; Coordinator Sample</span><span class="lab">delegated — in-place receipt</span></div>
             <div class="spec"><span class="btn violation" style="text-decoration:line-through">Accept offer</span><span class="lab">VIOLATION EXHIBIT, not a specimen:<br>content.primary ink on the violet fill</span></div>
           </div>
         </div></div>
@@ -307,7 +334,7 @@ footer{margin-top:36px;font-size:11px;color:var(--g-ink2)}
           fill boundary: action.primary on work <b>4.64</b>, on raised <b>4.23</b> — non-text, above 3:1; on raised never working prose (04 &sect;6.1)<br>
           Inspect: content.primary on raised <b>15.27</b>; border content.quiet vs raised <b>4.96</b> non-text<br>
           Live fill vs work/raised — <b>10.37</b> / <b>9.46</b>; page ink on the live fill measures <b>11.23</b> (canon 6.1, filled-control ink pairings, 2026-08-12)<br>
-          receipt: checkmark state.positive on raised <b>9.07</b> non-text; text content.secondary on raised <b>8.86</b>
+          receipt: <span class="mono">person.badge.clock</span> in state.positive on raised <b>9.07</b> non-text; text content.secondary on raised <b>8.86</b>
         </p>
       </div>
       <div>
@@ -324,7 +351,7 @@ footer{margin-top:36px;font-size:11px;color:var(--g-ink2)}
             <div class="spec"><span class="btn live">Continue <span class="chipglyph">forward.end.fill</span></span><span class="lab">role .live</span></div>
           </div>
           <div class="srow" style="margin-top:16px">
-            <div class="spec"><span class="receipt"><span class="ok chipglyph">checkmark</span> Delegated &middot; Coordinator Sample</span><span class="lab">delegated — in-place receipt</span></div>
+            <div class="spec"><span class="receipt"><span class="ok chipglyph">person.badge.clock</span> Delegated &middot; Coordinator Sample</span><span class="lab">delegated — in-place receipt</span></div>
           </div>
         </div></div>
         <p class="ratios">
@@ -332,19 +359,19 @@ footer{margin-top:36px;font-size:11px;color:var(--g-ink2)}
           fill boundary: action.primary on page <b>6.37</b>, work <b>6.89</b>, raised <b>5.82</b> (04 &sect;6.1)<br>
           Inspect: content.primary on raised <b>14.90</b>; border content.quiet vs raised <b>5.12</b> non-text<br>
           Live fill vs work/raised — <b>5.70</b> / <b>4.82</b>; work ink on the light live fill measures <b>5.70</b> (canon 6.1, filled-control ink pairings, 2026-08-12)<br>
-          receipt: checkmark state.positive on raised <b>4.95</b> non-text; text content.secondary on raised <b>6.25</b>
+          receipt: <span class="mono">person.badge.clock</span> in state.positive on raised <b>4.95</b> non-text; text content.secondary on raised <b>6.25</b>
         </p>
       </div>
     </div>
     <p class="meas">measured: every control 44 &times; 44 pt minimum (HIG-verified floor, 04 &sect;7) + 8 pt horizontal padding (spacing step, 04 &sect;6.3); control radius 8 pt, hairline border 1 pt (04 &sect;6.3); label body role, bold, 13 pt shipped constant over the 12 pt canon floor (04 &sect;6.2); tabular numerals in any counted label.</p>
     <div class="callout"><b>The measured ink rule (04 &sect;6.1, binding):</b> dark filled violet uses dark page ink — #080A14 on #9964E8 measures <b>5.02</b> and is the body-text pairing. content.primary #F4F5FA on the same fill measures <b>3.61</b>: large text only, <b>never</b> control ink — shown above only as a struck-through violation exhibit. Light-appearance fills are unconstrained: world.work on action.primary measures <b>6.89</b>.</div>
-    <p class="note"><b>Canon/code divergence, flagged not hidden:</b> the shipped style inks filled controls with <span class="mono">palette.page</span> in both appearances. In light that is #F1F2F7 on #6840B0 — a pairing 04 &sect;6.1 does not measure. This sheet renders the canon-measured light ink #FBFBFD (6.89) and refers the divergence to the G-07 code/canon sync check owed by ContractTests rather than inventing a number for the unmeasured pairing.</p>
+    <p class="note"><b>Canon/code divergence, now measured rather than open:</b> the shipped style inks filled controls with <span class="mono">palette.page</span> in both appearances. In light that is #F1F2F7 on #6840B0, and 04 &sect;6.1&rsquo;s filled-control ink pairings (2026-08-12) measure it at <b>6.37</b> — above the 4.5 body floor, so the shipped light ink passes alongside the 6.89 <span class="mono">world.work</span> pairing this sheet renders. Both are legal; which one ships is a G-07 code/canon sync question, not a contrast question, and no number was invented to settle it.</p>
     <p class="note">Disabled controls render at 45% opacity and are inactive; inactive controls sit outside the floors of the SC canon cites (04 &sect;6.1 floors govern active pairings). The spoken state says dimmed. Success shows an exact receipt; failure preserves the authoritative draft and offers recovery (04 &sect;4.3) — those failure surfaces are drawn in failure-v3.</p>
   </div>
   <div class="contract">
     <h4>Contract — library plan &sect;4, ten points</h4>
     <ol>
-      <li><b>Ratios:</b> both appearances rendered; every active pairing quoted from 04 &sect;6.1 — dark ink 5.02 (never 3.61), light ink 6.89, fill boundaries 6.37/6.89/5.82 light and 5.02/4.64/4.23 dark, secondary 15.27/14.90, borders 4.96/5.12, receipt 9.07/8.86 dark and 4.95/6.25 light. The two pairings canon does not measure (page ink on state.live fills; shipped light page-ink on violet) are printed as unwritten and referred to G-07 — not recomputed, not invented.</li>
+      <li><b>Ratios:</b> both appearances rendered; every active pairing quoted from 04 &sect;6.1 — dark ink 5.02 (never 3.61), light ink 6.89, fill boundaries 6.37/6.89/5.82 light and 5.02/4.64/4.23 dark, secondary 15.27/14.90, borders 4.96/5.12, receipt 9.07/8.86 dark and 4.95/6.25 light. The two pairings this card previously carried as unwritten are now measured in canon and quoted from it: page ink on the dark state.live fill 11.23 and work ink on the light state.live fill 5.70, and the shipped light page-ink on violet at 6.37 (04 &sect;6.1, filled-control ink pairings, 2026-08-12) — not recomputed, not invented.</li>
       <li><b>Widths:</b> intrinsically sized controls beside their cause; no width-dependent composition. Exercised in card 5&rsquo;s 844/852/956 matrix as the advance slot, un-clipped. At AX5 the label scales to the Q5 sizes (footnote 13 &rarr; 44 pt) and the control grows with it — card 5&rsquo;s AX5 rendition shows the advance control at that scale, nothing clipped.</li>
       <li><b>Touch:</b> 44 &times; 44 pt minimum printed above; HIG-verified floor per 04 &sect;7.</li>
       <li><b>States:</b> default (three roles), pressed (momentary 76% fill, discrete), disabled (45%, spoken dimmed), and delegated (in-place receipt naming the delegate) all rendered in both appearances. Selected: not applicable — an action control commits, it is not a selection; selection grammar belongs to routes, rows and chips. Loading/error/interrupted live inside the owning decision surface (04 &sect;4.3, &sect;7; drawn in failure-v3).</li>
@@ -352,7 +379,7 @@ footer{margin-top:36px;font-size:11px;color:var(--g-ink2)}
       <li><b>VoiceOver, one sentence per data row:</b> decide — <span class="vo">&ldquo;Accept offer. Button.&rdquo;</span> inspect — <span class="vo">&ldquo;Inspect evidence. Button.&rdquo;</span> delegate — <span class="vo">&ldquo;Delegate to Coordinator Sample. Button.&rdquo;</span> disabled — <span class="vo">&ldquo;Accept offer. Dimmed. Button.&rdquo;</span> live advance — <span class="vo">&ldquo;Continue. Button. Advances time to the next scheduled event.&rdquo;</span> delegated receipt — <span class="vo">&ldquo;Delegated. Weekly plan assigned to Coordinator Sample. Completed by staff when time advances.&rdquo;</span></li>
       <li><b>Motion:</b> the press paint is an instantaneous compositing change, not an animation; there is no travel or reveal to reduce. Under Reduce Motion every downstream transition an action triggers becomes a discrete state change (04 &sect;7). Reduced form of the delegated swap: control is replaced by the receipt in one discrete step, no crossfade.</li>
       <li><b>Verdict:</b> not a READOUT-class card. Chrome and controls carry no verdict line; no verdict slot exists here. Stated per contract point 8.</li>
-      <li><b>Density budget (&sect;4.5):</b> points — one 44 pt control beside its cause; no separate action rail or footer region is ever spent (04 &sect;4.1/&sect;4.3); taps — decide, inspect and delegate are each exactly 1 tap at the object; working memory — 0, the receipt lands in place; learned symbols — 2 drawn from the &le;12 global vocabulary (<span class="mono">checkmark</span> on receipts, <span class="mono">forward.end.fill</span> on the advance; <span class="mono">person.badge.clock</span> supports the visible Delegate label, it never replaces it — 04 &sect;6.3), &le;3 per row respected; verdict lines — 0.</li>
+      <li><b>Density budget (&sect;4.5):</b> points — one 44 pt control beside its cause; no separate action rail or footer region is ever spent (04 &sect;4.1/&sect;4.3); taps — decide, inspect and delegate are each exactly 1 tap at the object; working memory — 0, the receipt lands in place; learned symbols — <b>0 added</b>, reconciled against 04 &sect;6.6, which holds the running totals this card cannot know: <span class="mono">person.badge.clock</span> is the Obligation class&rsquo;s existing <em>delegated</em> member and is used for both the Delegate control and the receipt it produces (one meaning, one member — &sect;6.6&rsquo;s rule, and the reason no second delegated glyph exists anywhere), while <span class="mono">forward.end.fill</span> is control furniture, which &sect;6.6 excludes from the learned load because the control carries its visible label (04 &sect;6.3); &le;3 per row respected; verdict lines — 0.</li>
       <li><b>Tokens and identities:</b> all colour values 04 &sect;6.1 exactly (#9964E8/#6840B0, #080A14, #FBFBFD, #191D32/#E6E8F0, #858CA2/#596074, #72D7A0/#4A6F00, #6FD39A/#1F7048); type body 13/floor 12 — 04 &sect;6.2; radius 8, hairline 1, 44 pt, 8 pt padding — 04 &sect;6.3. Tree-sourced non-canon values named: 76% press, 45% disabled (CoachWorldDeskComponents.swift). Identities: Coordinator Sample — mechanical placeholder, pending generator output; no real name; collision and trade-dress tests stay green.</li>
     </ol>
   </div>
@@ -378,7 +405,7 @@ footer{margin-top:36px;font-size:11px;color:var(--g-ink2)}
                 <div class="phead">Practice load &middot; Tue</div>
                 <div class="drow">Walkthrough<span class="v">40 min</span></div>
                 <div class="drow">Install &middot; red zone<span class="v">25 min</span></div>
-                <div class="drow">Film &middot; opponent<span class="v">20 min</span></div>
+                <div class="drow">Film &middot; Example Coastal<span class="v">20 min</span></div>
               </div>
               <span class="lab">work-elevation panel #111426, 26 pt rows,<br>hairline seams, surface radius 10</span>
             </div>
@@ -406,7 +433,7 @@ footer{margin-top:36px;font-size:11px;color:var(--g-ink2)}
                 <div class="phead">Practice load &middot; Tue</div>
                 <div class="drow">Walkthrough<span class="v">40 min</span></div>
                 <div class="drow">Install &middot; red zone<span class="v">25 min</span></div>
-                <div class="drow">Film &middot; opponent<span class="v">20 min</span></div>
+                <div class="drow">Film &middot; Example Coastal<span class="v">20 min</span></div>
               </div>
               <span class="lab">work-elevation panel #FBFBFD</span>
             </div>
@@ -437,11 +464,11 @@ footer{margin-top:36px;font-size:11px;color:var(--g-ink2)}
       <li><b>Touch:</b> the surface itself is not interactive, so no target applies to it; every control drawn inside it keeps the 44 pt floor (cards 1, 2, 5) — HIG-verified per 04 &sect;7.</li>
       <li><b>States:</b> not applicable as owned states — a surface treatment has no default/selected/disabled/delegated of its own; those belong to the controls and rows inside it (stated per contract point 4). What it does own is rendered: two elevations (work, raised) and the hosting of in-place failure-set states, with the empty case shown and the full set deferred to failure-v3.</li>
       <li><b>Team colour:</b> touches no team.* token. Management never receives a decorative team-colour wash (04 &sect;5); an identity-tinted surface variant (as Coaching HQ&rsquo;s 10% identity rail fill, tree) remains furniture governed by 04 &sect;5, out of this card&rsquo;s scope.</li>
-      <li><b>VoiceOver, one sentence per data row:</b> the surface is not a VoiceOver element; rows inside it speak — <span class="vo">&ldquo;Walkthrough. 40 minutes.&rdquo;</span> <span class="vo">&ldquo;Install, red zone. 25 minutes.&rdquo;</span> <span class="vo">&ldquo;Film, opponent. 20 minutes.&rdquo;</span> empty — <span class="vo">&ldquo;No staff notes yet.&rdquo;</span></li>
+      <li><b>VoiceOver, one sentence per data row:</b> the surface is not a VoiceOver element; rows inside it speak — <span class="vo">&ldquo;Walkthrough. 40 minutes.&rdquo;</span> <span class="vo">&ldquo;Install, red zone. 25 minutes.&rdquo;</span> <span class="vo">&ldquo;Film, Example Coastal. 20 minutes.&rdquo;</span> empty — <span class="vo">&ldquo;No staff notes yet.&rdquo;</span></li>
       <li><b>Motion:</b> the surface animates nothing — no reveal, no parallax, no elevation transition. Under Reduce Motion there is nothing further to reduce; any content swap inside it is a discrete state change (04 &sect;7).</li>
       <li><b>Verdict:</b> not a READOUT-class card. A surface carries no verdict line; verdict grammar belongs to VerdictLine (registry #13, readout-v3). Stated per contract point 8.</li>
       <li><b>Density budget (&sect;4.5):</b> points — 1 pt per hairline seam plus step-scale padding; the treatment adds no chrome band of its own; taps — 0; working memory — 0 (grouping is visual, not sequential); learned symbols — 0; verdict lines — 0.</li>
-      <li><b>Tokens and identities:</b> #111426/#FBFBFD world.work, #191D32/#E6E8F0 world.raised, #F4F5FA/#111426, #B8BDCC/#4D5366, #858CA2/#596074 — 04 &sect;6.1; micro type 11 pt within the 10&ndash;12 band, tabular numerals — 04 &sect;6.2/&sect;6.4; radius 10, hairline 1, 26 pt rows in the 24&ndash;28 track, spacing steps — 04 &sect;6.3. Tree-sourced non-canon value named: 45% border opacity (call sites in CoachingHQView.swift and peers). Row copy is mechanical placeholder scheduling text; no identity, no real name; collision and trade-dress tests stay green.</li>
+      <li><b>Tokens and identities:</b> #111426/#FBFBFD world.work, #191D32/#E6E8F0 world.raised, #F4F5FA/#111426, #B8BDCC/#4D5366, #858CA2/#596074 — 04 &sect;6.1; micro type 11 pt within the 10&ndash;12 band, tabular numerals — 04 &sect;6.2/&sect;6.4; radius 10, hairline 1, 26 pt rows in the 24&ndash;28 track, spacing steps — 04 &sect;6.3. Tree-sourced non-canon value named: 45% border opacity (call sites in CoachingHQView.swift and peers). The seams inside these panels are drawn in content.quiet — a boundary case 04 &sect;6.1 does not name (it names the hairline rule over work as world.raised and the team-fill boundary as content.secondary), disclosed in the header with its measured ratio quoted above. Row copy is the shared world&rsquo;s Week 9 preparation plan against Example Coastal — mechanical placeholders, pending generator output; no real school, team or person; collision and trade-dress tests stay green.</li>
     </ol>
   </div>
 </section>
@@ -634,13 +661,14 @@ footer{margin-top:36px;font-size:11px;color:var(--g-ink2)}
         <div class="vp dk"><div class="pad" style="background:var(--dk-work)">
           <div class="srow">
             <div class="spec"><span class="tchip"><span class="bar" style="background:var(--trio-dk-s)"></span><span class="tname" style="background:var(--trio-dk-p);color:var(--trio-dk-o)">EXS &middot; Example State</span></span><span class="lab">dark-primary #14382A / #D9B23C / #F2F5F3<br>synthetic — pending generator output</span></div>
-            <div class="spec"><span class="tchip"><span class="bar" style="background:var(--trio-lt-s)"></span><span class="tname" style="background:var(--trio-lt-p);color:var(--trio-lt-o)">EXS &middot; Example State</span></span><span class="lab">light-primary #E9E0C9 / #6E3038 / #18202B<br>synthetic — pending generator output</span></div>
-            <div class="spec"><span class="tchip"><span class="bar" style="background:var(--trio-lc-s)"></span><span class="tname" style="background:var(--trio-lc-p);color:var(--trio-lc-o)">EXS &middot; Example State</span></span><span class="lab">low-chroma #555B66 / #D9DDE4 / #FFFFFF<br>synthetic — pending generator output<br>MANDATORY hairline: primary on dark work = 2.67</span></div>
+            <div class="spec"><span class="tchip"><span class="bar" style="background:var(--trio-lt-s)"></span><span class="tname" style="background:var(--trio-lt-p);color:var(--trio-lt-o)">EXC &middot; Example Coastal</span></span><span class="lab">light-primary #E9E0C9 / #6E3038 / #18202B<br>synthetic — pending generator output</span></div>
+            <div class="spec"><span class="tchip"><span class="bar" style="background:var(--trio-lc-s)"></span><span class="tname" style="background:var(--trio-lc-p);color:var(--trio-lc-o)">EXU &middot; Example Union</span></span><span class="lab">low-chroma #555B66 / #D9DDE4 / #FFFFFF<br>synthetic — pending generator output<br>MANDATORY boundary in content.secondary: primary on dark work = 2.67</span></div>
           </div>
         </div></div>
         <p class="ratios">
           onTeam on primary — <b>11.74</b> / <b>12.47</b> / <b>6.83</b>; secondary on primary — <b>6.37</b> / <b>7.45</b> / <b>5.01</b> (04 &sect;6.1 trio floors: 4.5 and 3:1 — all met)<br>
-          low-chroma team.primary #555B66 on dark world.work — <b>2.67</b>, below the 3:1 non-text floor: the hairline boundary is <b>mandatory</b>, 04 &sect;6.1 — the &sect;6.3 boundary rule made mandatory for team colour because generated colour cannot be assumed to clear the floor against every surface. Hairline content.quiet vs work — <b>5.44</b>. All three chips carry the hairline; for low-chroma it is load-bearing.
+          low-chroma team.primary #555B66 on dark world.work — <b>2.67</b>, below the 3:1 non-text floor: the boundary is <b>mandatory</b>, 04 &sect;6.1 — the &sect;6.3 boundary rule made mandatory for team colour because generated colour cannot be assumed to clear the floor against every surface. Canon names the boundary token: the mandatory team-fill boundary draws in <b>content.secondary</b> #B8BDCC, which measures <b>9.71</b> against work (04 &sect;6.1). All three chips carry it; for low-chroma it is load-bearing.<br>
+          the other two trio primaries against dark work are measured too: dark-primary <b>1.41</b>, light-primary <b>13.86</b> (04 &sect;6.1) — the rule is general, not a low-chroma special case.
         </p>
       </div>
       <div>
@@ -648,13 +676,13 @@ footer{margin-top:36px;font-size:11px;color:var(--g-ink2)}
         <div class="vp lt"><div class="pad" style="background:var(--lt-work)">
           <div class="srow">
             <div class="spec"><span class="tchip"><span class="bar" style="background:var(--trio-dk-s)"></span><span class="tname" style="background:var(--trio-dk-p);color:var(--trio-dk-o)">EXS &middot; Example State</span></span><span class="lab">dark-primary — synthetic, pending generator output</span></div>
-            <div class="spec"><span class="tchip"><span class="bar" style="background:var(--trio-lt-s)"></span><span class="tname" style="background:var(--trio-lt-p);color:var(--trio-lt-o)">EXS &middot; Example State</span></span><span class="lab">light-primary — synthetic, pending generator output</span></div>
-            <div class="spec"><span class="tchip"><span class="bar" style="background:var(--trio-lc-s)"></span><span class="tname" style="background:var(--trio-lc-p);color:var(--trio-lc-o)">EXS &middot; Example State</span></span><span class="lab">low-chroma — synthetic, pending generator output</span></div>
+            <div class="spec"><span class="tchip"><span class="bar" style="background:var(--trio-lt-s)"></span><span class="tname" style="background:var(--trio-lt-p);color:var(--trio-lt-o)">EXC &middot; Example Coastal</span></span><span class="lab">light-primary — synthetic, pending generator output<br>MANDATORY boundary: primary on light work = 1.27</span></div>
+            <div class="spec"><span class="tchip"><span class="bar" style="background:var(--trio-lc-s)"></span><span class="tname" style="background:var(--trio-lc-p);color:var(--trio-lc-o)">EXU &middot; Example Union</span></span><span class="lab">low-chroma — synthetic, pending generator output</span></div>
           </div>
         </div></div>
         <p class="ratios">
           in-chip ratios are surface-independent and identical — <b>11.74</b>/<b>6.37</b>, <b>12.47</b>/<b>7.45</b>, <b>6.83</b>/<b>5.01</b> (04 &sect;6.1)<br>
-          chip-fill-vs-light-surface pairings are not measured in canon; the standing hairline boundary carries the edge on every surface, which is why the rule is mandatory rather than stylistic. Hairline content.quiet vs work — <b>6.07</b>.
+          chip fill against light work is measured in canon too: dark-primary <b>12.47</b>, light-primary <b>1.27</b>, low-chroma <b>6.61</b> — light-primary falls below the 3:1 non-text floor here, which is the mirror of the dark case and the reason the boundary is mandatory rather than stylistic. Boundary token, named by canon: content.secondary #4D5366 vs work — <b>7.40</b>.
         </p>
       </div>
     </div>
@@ -717,15 +745,15 @@ footer{margin-top:36px;font-size:11px;color:var(--g-ink2)}
   <div class="contract">
     <h4>Contract — library plan &sect;4, ten points</h4>
     <ol>
-      <li><b>Ratios:</b> both appearances rendered as explicit sections; every pairing quoted from 04 &sect;6.1 — name 15.27/14.90, context 8.86/6.25, divider and seam 4.96/5.12 non-text, advance ink 5.02 dark (the body pairing; 3.61 named as prohibited) and 6.89 light, advance fill boundary 4.23/5.82 non-text, chip pairs 11.74/6.37, 12.47/7.45, 6.83/5.01, and the low-chroma 2.67-on-dark-work case with its mandatory hairline (quiet vs work 5.44/6.07). Pairings canon does not measure (chip fill vs surfaces) are stated as unwritten and covered by the mandatory boundary — nothing recomputed, nothing invented.</li>
+      <li><b>Ratios:</b> both appearances rendered as explicit sections; every pairing quoted from 04 &sect;6.1 — name 15.27/14.90, context 8.86/6.25, divider and seam 4.96/5.12 non-text, advance ink 5.02 dark (the body pairing; 3.61 named as prohibited) and 6.89 light, advance fill boundary 4.23/5.82 non-text, chip pairs 11.74/6.37, 12.47/7.45, 6.83/5.01, and all six canon-measured team-fill-vs-work cases (dark work 1.41/13.86/2.67; light work 12.47/1.27/6.61), each chip carrying the boundary canon names for it — content.secondary, measuring 9.71 dark / 7.40 against work. Boundaries canon does not name (panel borders, seams, dividers) are drawn in content.quiet with its measured ratio printed at each use and disclosed as a sheet choice in the header — nothing recomputed, nothing invented.</li>
       <li><b>Widths:</b> rendered at 844 (install floor), 852 (promise floor) and 956 (ceiling) at default type with per-model insets drawn and labelled, plus one AX5 rendition — single column, order preserved, nothing dropped. No clipping at any of the four.</li>
       <li><b>Touch:</b> every interactive slot &ge;44 &times; 44 pt with the measurement printed (routes: flexible share &times; 44 min; advance: 44 min height; AX5 controls grow with their 44 pt labels) — HIG-verified floor, 04 &sect;7.</li>
       <li><b>States:</b> default (state A), owed (state B — the F31 pair in one fixed chrome slot), route selection (card 1&rsquo;s boundary + value + spoken rule, shown current on Team), AX5 reflow, and suppression: during match, draft-room and signing-day clocks and ceremonies the strip is suppressed entirely — removal, not a disabled paint (04 &sect;3). Disabled advance exists in the shipped tree and is flagged above as pre-F31 (P12). Delegated: not applicable to chrome itself — the advance may land on delegable work, but the slot is never delegated, stated.</li>
-      <li><b>Team colour:</b> the identity chip renders against all three synthetic trio pairs on dark and light work, each labelled synthetic — pending generator output, with floors met (onTeam/primary &ge;4.5: 11.74/12.47/6.83; secondary/primary &ge;3: 6.37/7.45/5.01) and the low-chroma dark-work case carrying its mandatory hairline at the quoted 2.67. The light-primary caveat stands until the generator question closes (P-c: the P2 generator&rsquo;s sampled space is uniformly dark-primary).</li>
+      <li><b>Team colour:</b> the identity chip renders against all three synthetic trio pairs on dark and light work, each labelled synthetic — pending generator output, with floors met (onTeam/primary &ge;4.5: 11.74/12.47/6.83; secondary/primary &ge;3: 6.37/7.45/5.01) and every chip carrying the mandatory boundary in the token canon names for it, content.secondary, with the sub-floor fills quoted from canon (low-chroma 2.67 on dark work, dark-primary 1.41 on dark work, light-primary 1.27 on light work). Example State draws dark-primary, Example Coastal light-primary and Example Union low-chroma, per the shared world. The light-primary caveat stands until the generator question closes (P-c: the P2 generator&rsquo;s sampled space is uniformly dark-primary).</li>
       <li><b>VoiceOver, one sentence per data row:</b> identity cluster — <span class="vo">&ldquo;Example State. Coach Sample. Week 9, preparation. Record 6 and 2.&rdquo;</span> (chip is part of this element, spoken once); routes — <span class="vo">&ldquo;Team. Selected. Button.&rdquo;</span> and peers per card 1; advance A — <span class="vo">&ldquo;Continue. Button. Advances to the next scheduled event.&rdquo;</span> advance B — <span class="vo">&ldquo;Continue to Inbox. Button. 2 obligations due. Advancing opens the Inbox.&rdquo;</span> AX5 menu — <span class="vo">&ldquo;World. Button. Pop-up menu. Office, Team, Recruit, League, Career.&rdquo;</span> Reading order: world context first, local navigation last (04 &sect;7).</li>
       <li><b>Motion:</b> the A-to-B label swap is a discrete swap — no marquee, no crossfade specified; the advance itself triggers travel to the next surface, and under Reduce Motion that travel and any reveal become discrete state changes (04 &sect;7). The route underline does not slide (card 1). Reduced forms named; no other animation exists in this chrome.</li>
       <li><b>Verdict:</b> not a READOUT-class card. The world strip is chrome and carries no verdict line — world state is fact (programme, coach, phase, record, next stop), never judgement. Stated per contract point 8.</li>
-      <li><b>Density budget (&sect;4.5):</b> points — one 48 pt band (52 in HQ) across the window, 12&ndash;13% of the 390&ndash;440 pt frame heights, priced inside &sect;4.5&rsquo;s &ldquo;&asymp;10&ndash;12 data rows after the world strip and a 44 pt header band&rdquo;; taps — world context 0 (always visible), advance 1, any local route 1; working memory — 0: programme, phase, record and next stop are carried by chrome, never remembered; learned symbols — 1 from the &le;12 vocabulary (<span class="mono">forward.end.fill</span> advance; chip and underline are colour-plus-text furniture, not glyphs), &le;3 per row respected; verdict lines — 0.</li>
+      <li><b>Density budget (&sect;4.5):</b> points — one 48 pt band (52 in HQ) across the window, 12&ndash;13% of the 390&ndash;440 pt frame heights, priced inside &sect;4.5&rsquo;s &ldquo;&asymp;10&ndash;12 data rows after the world strip and a 44 pt header band&rdquo;; taps — world context 0 (always visible), advance 1, any local route 1; working memory — 0: programme, phase, record and next stop are carried by chrome, never remembered; learned symbols — <b>0 added</b> against 04 &sect;6.6, the authority for the running totals: <span class="mono">forward.end.fill</span> on the advance and <span class="mono">chevron.up.chevron.down</span> on the AX5 World menu are both control furniture, excluded from the learned load because each control carries its label; the chip and the route underline are colour-plus-text furniture, not glyphs; &le;3 per row respected; verdict lines — 0.</li>
       <li><b>Tokens and identities:</b> every colour 04 &sect;6.1 exactly (surfaces, content roles, action.primary, college.identity, trio hexes); type roles and AX5 sizes 04 &sect;6.2 + sourcing row Q5; spacing steps, radii, 44 pt, 24&ndash;28 pt discipline 04 &sect;6.3; window set and insets 04 &sect;7. Tree values named as tree: 48/52 pt heights, 3 pt underline, 16% tint. Identities: Example State, EXS, Coach Sample — mechanical placeholders, pending generator output; trio labelled synthetic — pending generator output at every use; no real school, team, player, coach, city or mark; the name-collision and trade-dress tests stay green.</li>
     </ol>
   </div>
@@ -734,8 +762,10 @@ footer{margin-top:36px;font-size:11px;color:var(--g-ink2)}
 <footer>
   <p>chrome-v3.dc.html &middot; group chrome &middot; registry entries 1&ndash;5 &middot; 2026-08-12. This sheet is a rendering —
   docs/04-UX-AND-DESIGN-SYSTEM.md is the only canonical home for every value above; a value appearing only in a sheet has not shipped.
-  Divergences flagged herein (light filled-violet ink pairing; state.live ink-on-fill ratio; shipped disabled advance vs F31) belong to
-  the G-07 code/canon sync check and P12, not to this sheet. No JavaScript, no external resource, no image, no emoji.</p>
+  Divergences flagged herein (light filled-violet ink pairing; shipped disabled advance vs F31) belong to
+  the G-07 code/canon sync check and P12, not to this sheet. Symbol totals are held by 04 &sect;6.6, never by this sheet;
+  the six gallery-chrome colour values outside 04 &sect;6.1 are disclosed in the header law paragraph, and no value inside a
+  rendered device frame comes from anywhere but 04 &sect;6.1. No JavaScript, no external resource, no image, no emoji.</p>
 </footer>
 
 </div>

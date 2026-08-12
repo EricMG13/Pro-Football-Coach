@@ -22,14 +22,16 @@ body{
   font-variant-numeric:tabular-nums;
 }
 /* Appearance scopes. .dk / .lt set the full §6.1 palette for everything inside. */
+/* --hair is the canon-named hairline: world.raised over work (04 §6.1, 2026-08-12).
+   --bnd is the canon-named mandatory team-fill boundary: content.secondary. */
 .dk{--page:#080A14;--work:#111426;--raised:#191D32;--ink:#F4F5FA;--ink2:#B8BDCC;
-    --quiet:#858CA2;--hair:#080A14;--act:#9964E8;--actink:#080A14;--destr:#F07886;
+    --quiet:#858CA2;--hair:#191D32;--bnd:#B8BDCC;--act:#9964E8;--actink:#080A14;--destr:#F07886;
     --live:#72D7A0;--pos:#6FD39A;--warn:#F0C56C;--neg:#F07886;--info:#72ADEC;
-    --college:#A861D6;--pro:#5B9DE0;--turf:#163E2A;--fline:#F5F7FA;--fann:#E7C45D;--flive:#C6F24E}
+    --college:#A861D6;--pro:#5B9DE0;--turf:#163E2A;--turfband:#1A452F;--fline:#F5F7FA;--fann:#E7C45D;--flive:#C6F24E}
 .lt{--page:#F1F2F7;--work:#FBFBFD;--raised:#E6E8F0;--ink:#111426;--ink2:#4D5366;
-    --quiet:#596074;--hair:#E6E8F0;--act:#6840B0;--actink:#FBFBFD;--destr:#A42D32;
+    --quiet:#596074;--hair:#E6E8F0;--bnd:#4D5366;--act:#6840B0;--actink:#FBFBFD;--destr:#A42D32;
     --live:#4A6F00;--pos:#1F7048;--warn:#765300;--neg:#A42D32;--info:#205F96;
-    --college:#6840B0;--pro:#2D628B;--turf:#DCE8DF;--fline:#0E1218;--fann:#7A5200;--flive:#4A6F00}
+    --college:#6840B0;--pro:#2D628B;--turf:#DCE8DF;--turfband:#D2E0D6;--fline:#0E1218;--fann:#7A5200;--flive:#4A6F00}
 body.dk{background:var(--page);color:var(--ink)}
 .sheet{max-width:1200px;margin:0 auto}
 h1{font-size:20px;font-weight:800;letter-spacing:-0.2px}
@@ -152,10 +154,28 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
   <p class="law">
     This sheet is a rendering — <b>04 is the only canonical home, and a value appearing only in a sheet has not shipped</b>
     (reference-library plan §5). CSS px are read as pt. Static reference: no motion, no script.
-    All identities are mechanical placeholders labelled <b>pending generator output</b>; no real school, team, player,
-    coach or city name appears; nothing is copied from the reference captures — every colour value on this sheet
-    comes from 04 §6.1 only. DESK register throughout: matte opaque surfaces, hairline rules, near-navy workspace,
-    restrained violet furniture. No emoji. Tabular numerals on all figures.
+    No colour value on this sheet lies outside 04 §6.1: every hex here, gallery chrome included, is a §6.1 production
+    value or a §6.1 synthetic trio value. DESK register throughout: matte opaque surfaces, hairline rules, near-navy
+    workspace, restrained violet furniture. No emoji. Tabular numerals on all figures.
+  </p>
+  <p class="prov" style="margin-top:8px">
+    <b>Shared world.</b> Where this sheet needs content it draws the reference library's one save (brief 2026-08-12,
+    reference-shared-world): <b>Week 9, preparation day, Example State, record 6-2, next opponent Example Coastal
+    (away)</b>, Coach Sample as head coach; Player Fourteen is the quarterback, No. 14, OVR 84, fit 82, and Player
+    Seven the wide receiver, No. 7, OVR 79, fit 75. Teams draw the trio pairs as the world assigns them — Example
+    State dark-primary, Example Coastal light-primary, Example Union low-chroma. All identities are mechanical
+    placeholders labelled <b>pending generator output</b>; no real school, team, player, coach or city name appears,
+    and nothing is copied from the reference captures. Type specimens on Card B (a score, a clock, a money figure) are
+    <em>type specimens</em>, not world data; the brief's figure table owns every number that appears as data.
+  </p>
+  <p class="prov" style="margin-top:8px">
+    <b>Symbol accounting.</b> <b>04 §6.6 is the authority and the only place the product's running symbol totals are
+    held</b> — this sheet prices nothing globally, because no sheet can know the global figure. Reconciled against
+    §6.6's classes, this sheet draws two symbol names as typographic examples only,
+    <span class="sf">chevron.right</span> and <span class="sf">line.3.horizontal.decrease</span>, both members of
+    §6.6's control-furniture class, which is not a learned class because every marked control carries a visible or
+    accessible label. Status, Change, Obligation and Session-type members drawn: none. Learned-symbol spend added by
+    this sheet: <b>0</b>.
   </p>
 </header>
 
@@ -237,12 +257,14 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
           <td><div class="t" style="background:var(--work)"><b style="color:#5B9DE0">Aa</b><span class="r">6.38</span></div></td>
           <td><div class="t" style="background:var(--raised)"><b style="color:#5B9DE0">Aa</b><span class="r">5.81</span></div></td></tr>
         <tr><td class="rl">field.turf</td><td><span class="sw" style="background:#163E2A"></span><span class="hex">#163E2A</span></td><td colspan="3" class="dash">surface — ratio "—" in canon; field inks below are measured on turf</td></tr>
+        <tr><td class="rl">field.turfBand</td><td><span class="sw" style="background:#1A452F"></span><span class="hex">#1A452F</span></td>
+          <td colspan="3"><div class="t" style="background:var(--turf);width:100%;flex-direction:row;gap:8px"><span style="background:var(--turfband);width:60px;height:24px;border-radius:2px"></span><span class="r">1.10 on turf — mow band, never an information channel</span></div></td></tr>
         <tr><td class="rl">field.line</td><td><span class="sw" style="background:#F5F7FA"></span><span class="hex">#F5F7FA</span></td>
-          <td colspan="3"><div class="t" style="background:var(--turf);width:100%"><b style="color:#F5F7FA">Aa</b><span class="r">11.14 on turf</span></div></td></tr>
+          <td colspan="3"><div class="t" style="background:var(--turf);width:100%"><b style="color:#F5F7FA">Aa</b><span class="r">11.14 on turf &middot; 10.11 on the band</span></div></td></tr>
         <tr><td class="rl">field.annotation</td><td><span class="sw" style="background:#E7C45D"></span><span class="hex">#E7C45D</span></td>
-          <td colspan="3"><div class="t" style="background:var(--turf);width:100%"><b style="color:#E7C45D">Aa</b><span class="r">7.09 on turf</span></div></td></tr>
+          <td colspan="3"><div class="t" style="background:var(--turf);width:100%"><b style="color:#E7C45D">Aa</b><span class="r">7.09 on turf &middot; 6.43 on the band</span></div></td></tr>
         <tr><td class="rl">field.live</td><td><span class="sw" style="background:#C6F24E"></span><span class="hex">#C6F24E</span></td>
-          <td colspan="3"><div class="t" style="background:var(--turf);width:100%"><b style="color:#C6F24E">Aa</b><span class="r">9.23 on turf</span></div></td></tr>
+          <td colspan="3"><div class="t" style="background:var(--turf);width:100%"><b style="color:#C6F24E">Aa</b><span class="r">9.23 on turf &middot; 8.37 on the band</span></div></td></tr>
         <tr><td class="rl">broadcast.home / .away / .ink</td><td colspan="4" class="dash">per-match derived from the two generated team identities — canon states no static value; team-colour floors are Card D</td></tr>
       </table>
     </div>
@@ -306,18 +328,20 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
           <td><div class="t" style="background:var(--work)"><b style="color:#2D628B">Aa</b><span class="r">6.29</span></div></td>
           <td><div class="t" style="background:var(--raised)"><b style="color:#2D628B">Aa</b><span class="r">5.31</span></div></td></tr>
         <tr><td class="rl">field.turf</td><td><span class="sw" style="background:#DCE8DF"></span><span class="hex">#DCE8DF</span></td><td colspan="3" class="dash">surface — ratio "—" in canon; field inks below are measured on turf</td></tr>
+        <tr><td class="rl">field.turfBand</td><td><span class="sw" style="background:#D2E0D6"></span><span class="hex">#D2E0D6</span></td>
+          <td colspan="3"><div class="t" style="background:var(--turf);width:100%;flex-direction:row;gap:8px"><span style="background:var(--turfband);width:60px;height:24px;border-radius:2px"></span><span class="r" style="color:#4D5366">1.08 on turf — mow band, never an information channel</span></div></td></tr>
         <tr><td class="rl">field.line</td><td><span class="sw" style="background:#0E1218"></span><span class="hex">#0E1218</span></td>
-          <td colspan="3"><div class="t" style="background:var(--turf);width:100%"><b style="color:#0E1218">Aa</b><span class="r" style="color:#4D5366">14.89 on turf</span></div></td></tr>
+          <td colspan="3"><div class="t" style="background:var(--turf);width:100%"><b style="color:#0E1218">Aa</b><span class="r" style="color:#4D5366">14.89 on turf &middot; 13.75 on the band</span></div></td></tr>
         <tr><td class="rl">field.annotation</td><td><span class="sw" style="background:#7A5200"></span><span class="hex">#7A5200</span></td>
-          <td colspan="3"><div class="t" style="background:var(--turf);width:100%"><b style="color:#7A5200">Aa</b><span class="r" style="color:#4D5366">5.49 on turf</span></div></td></tr>
+          <td colspan="3"><div class="t" style="background:var(--turf);width:100%"><b style="color:#7A5200">Aa</b><span class="r" style="color:#4D5366">5.49 on turf &middot; 5.07 on the band</span></div></td></tr>
         <tr><td class="rl">field.live</td><td><span class="sw" style="background:#4A6F00"></span><span class="hex">#4A6F00</span></td>
-          <td colspan="3"><div class="t" style="background:var(--turf);width:100%"><b style="color:#4A6F00">Aa</b><span class="r" style="color:#4D5366">4.67 on turf</span></div></td></tr>
+          <td colspan="3"><div class="t" style="background:var(--turf);width:100%"><b style="color:#4A6F00">Aa</b><span class="r" style="color:#4D5366">4.67 on turf &middot; 4.31 on the band</span></div></td></tr>
         <tr><td class="rl">broadcast.home / .away / .ink</td><td colspan="4" class="dash">per-match derived from the two generated team identities — canon states no static value; team-colour floors are Card D</td></tr>
       </table>
     </div>
   </div>
   <div class="callout">
-    <h4>The three measured constraints — binding on every consumer (04 §6.1)</h4>
+    <h4>The measured constraints — binding on every consumer (04 §6.1)</h4>
     <ul>
       <li><b>Dark action.primary and college.identity on raised measure 4.23</b> — above the 3:1 non-text/large-text
         floor, below the 4.5:1 body floor. On raised surfaces they may colour controls, icons and large text,
@@ -325,10 +349,31 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
       <li><b>Dark filled-violet controls use dark ink.</b> content.primary on dark action.primary measures 3.61
         (large text only); dark world.page ink on the same fill measures 5.02 and is the body-text pairing.
         Light-appearance fills are unconstrained (world.work on action.primary = 6.89).</li>
-      <li><b>Low-chroma team.primary on dark world.work measures 2.67</b> — below the 3:1 non-text floor. A team chip
-        in that combination carries a hairline boundary; this is 04 §6.3's boundary-value-spoken rule made mandatory
-        rather than stylistic for team colour, because generated colour cannot be assumed to clear the floor against
-        every surface. Rendered in Card D.</li>
+      <li><b>Filled-control ink pairings (04 §6.1, measured 2026-08-12).</b> Dark world.page ink on a dark state.live
+        fill measures <b>11.23</b>; light world.page ink on the light action.primary fill measures <b>6.37</b>, so the
+        shipped light filled-violet ink passes alongside the 6.89 world.work pairing; light world.work ink on the light
+        state.live fill measures <b>5.70</b>. All meet the 4.5:1 body floor.</li>
+      <li><b>Heat-fill badge inks (04 §6.1, measured 2026-08-12).</b> The rule generalises — a filled control or badge
+        inks with the palette's own ground. Dark world.page ink on the dark heat fills: positive <b>10.77</b>, warning
+        <b>12.13</b>, negative <b>7.27</b>. Light world.work ink on the light heat fills: positive <b>5.86</b>, warning
+        <b>6.76</b>, negative <b>6.77</b>. The opposite pairings measure 1.49–3.01 and are not used for text — canon
+        states the range, so no single figure inside it is quoted as if it were measured for one pairing.</li>
+      <li><b>Hairlines and boundaries, named (04 §6.1, 2026-08-12).</b> A hairline rule draws in
+        <b>world.raised</b> over <b>work</b> surfaces; the mandatory team-fill boundary draws in
+        <b>content.secondary</b>. Neither carries meaning alone — §6.3's boundary-value-spoken rule governs. This sheet
+        draws exactly those tokens: its own rules are world.raised over work (#191D32 dark, #E6E8F0 light) and its team
+        chips carry content.secondary (#B8BDCC dark, #4D5366 light). Canon naming these closes the earlier disclosure
+        that canon named no hairline token.</li>
+      <li><b>field.turfBand is a mow band, never an information channel (04 §6.1, added 2026-08-12).</b> The match view
+        draws twelve 8.333% bands across the 120-yard field, giving a 10-yard distance gauge that survives a delete
+        test. Its contrast against field.turf is deliberately near-invisible — <b>1.10</b> dark, <b>1.08</b> light — so
+        it reads as ground texture, and nothing may be encoded in which band a mark falls on. Everything drawn over it
+        keeps its own floor: the on-band ratios are printed in the role tables above.</li>
+      <li><b>Team fills against the work surfaces (04 §6.1, measured 2026-08-12).</b> Dark-primary on dark work
+        <b>1.41</b>, on light work <b>12.47</b>; light-primary on dark work <b>13.86</b>, on light work <b>1.27</b>;
+        low-chroma on dark work <b>2.67</b>, on light work <b>6.61</b>. Every trio primary falls below the 3:1 non-text
+        floor against its tonally-similar surface, so <b>a team-colour fill always carries the boundary</b> — the rule
+        is general, not a low-chroma special case. Rendered in Card D.</li>
     </ul>
     <div class="demo">
       <div class="dk">
@@ -347,8 +392,10 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
   </div>
   <p class="small" style="margin-top:10px">Surface law, quoted: no gradients, glow, glass, fake paper, leather, cork or
     decorative shadow. Surfaces are matte and opaque. Hairlines separate continuous regions; containers exist only for
-    interaction, grouping or clipping. This sheet's own hairlines are solid canon surface values (dark #080A14 on work,
-    light #E6E8F0 on work) — a rendering choice, since canon names no hairline token.</p>
+    interaction, grouping or clipping. <b>Canon now names the hairline</b> (04 §6.1, 2026-08-12): a hairline rule draws
+    in world.raised over work — this sheet draws exactly that, #191D32 dark and #E6E8F0 light, and the earlier note that
+    canon named no hairline token is retired rather than carried forward. The mandatory team-fill boundary is
+    content.secondary; Card D draws it.</p>
 
   <div class="vo">
     <h4>VoiceOver — one sentence per data row, written out</h4>
@@ -370,9 +417,10 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
       <li>College identity, tier furniture only: dark A861D6 measures 5.03, 4.64 and 4.23 to 1 — on raised, controls, icons and large text only; light 6840B0 measures 6.37, 6.89 and 5.82 to 1.</li>
       <li>Pro identity, tier furniture only: dark 5B9DE0 measures 6.90, 6.38 and 5.81 to 1; light 2D628B measures 5.81, 6.29 and 5.31 to 1.</li>
       <li>Field turf, field surface: dark 163E2A, light DCE8DF; surface role.</li>
-      <li>Field line, measured on turf: dark F5F7FA measures 11.14 to 1; light 0E1218 measures 14.89 to 1.</li>
-      <li>Field annotation, measured on turf: dark E7C45D measures 7.09 to 1; light 7A5200 measures 5.49 to 1.</li>
-      <li>Field live, measured on turf: dark C6F24E measures 9.23 to 1; light 4A6F00 measures 4.67 to 1.</li>
+      <li>Field turf band, the mow band: dark 1A452F measures 1.10 to 1 against turf, light D2E0D6 measures 1.08 to 1; deliberately near-invisible ground texture, never an information channel, and nothing is encoded in which band a mark falls on.</li>
+      <li>Field line, measured on turf: dark F5F7FA measures 11.14 to 1, and 10.11 to 1 on the mow band; light 0E1218 measures 14.89 to 1, and 13.75 to 1 on the band.</li>
+      <li>Field annotation, measured on turf: dark E7C45D measures 7.09 to 1, and 6.43 to 1 on the band; light 7A5200 measures 5.49 to 1, and 5.07 to 1 on the band.</li>
+      <li>Field live, measured on turf: dark C6F24E measures 9.23 to 1, and 8.37 to 1 on the band; light 4A6F00 measures 4.67 to 1, and 4.31 to 1 on the band.</li>
       <li>Broadcast home, away and ink: derived per match from the two generated team identities; no static production value; team-colour floors are stated on the team trio card.</li>
     </ul>
   </div>
@@ -391,16 +439,21 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
         Floor is HIG-verified via sourcing row Q1 (Apple default 44, published minimum 28; canon keeps the stricter 44).</li>
       <li><b>States:</b> not applicable — tokens are values, not components; the state.* roles are themselves enumerated
         as data rows. Component states are owed by the component sheets.</li>
-      <li><b>Team colour:</b> carried by Card D against the three synthetic pairs; this card's broadcast row defers to it.</li>
-      <li><b>VoiceOver:</b> one sentence per data row, written out above — 21 sentences for 21 rows.</li>
+      <li><b>Team colour:</b> carried by Card D against the three synthetic pairs; this card's broadcast row defers to it,
+        and the six canon-measured team-fill-vs-work figures are stated in the constraint callout.</li>
+      <li><b>VoiceOver:</b> one sentence per data row, written out above — 22 sentences for the 22 rows drawn in each
+        appearance table.</li>
       <li><b>Animations:</b> none — static, no motion; nothing to reduce.</li>
       <li><b>Verdict line:</b> not a READOUT-class card; no verdict is drawn and none is fabricated.</li>
       <li><b>Density-budget cost (04 §4.5 currencies):</b> points — one dominant object (the role table, over 60% of the
         card) plus two secondary regions (constraint callout, VoiceOver listing); table rows on 24–28 pt tracks; taps 0,
         every pairing co-visible on one surface; working memory 0, dark and light compare side by side; learned symbols 0
-        new; verdict lines 0.</li>
-      <li><b>Traceability:</b> every hex and every ratio on this card appears in 04 §6.1; no other colour source exists on
-        this sheet; no identity appears on this card; nothing is copied from the reference captures.</li>
+        — no symbol is drawn on this card, and 04 §6.6 holds the product's running totals in any case; verdict lines 0.</li>
+      <li><b>Traceability:</b> every hex and every ratio on this card appears in 04 §6.1 — including field.turfBand, the
+        filled-control ink pairings, the heat-fill badge inks, the named hairline and boundary tokens and the six
+        team-fill-vs-work figures, all added to canon on 2026-08-12 and quoted here rather than restated from memory; no
+        other colour source exists on this sheet; no identity appears on this card; nothing is copied from the reference
+        captures.</li>
     </ol>
   </div>
 </section>
@@ -446,6 +499,23 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
     <tr><td class="rl">Footnote (Body/Callout)</td><td>13</td><td>23</td><td>27</td><td>33</td><td>38</td><td>44</td></tr>
     <tr><td class="rl">Caption 1 (Caption)</td><td>12</td><td>22</td><td>26</td><td>32</td><td>37</td><td>43</td></tr>
   </table>
+  <div class="callout" style="border-left-color:var(--destr)">
+    <h4>What is sourced here, and what is not — the closed list</h4>
+    <p class="small"><b>Exactly five Dynamic Type endpoints are sourced</b> (sourcing row Q5, Apple HIG typography
+      tables, gate two approved 2026-08-12), and they are the five rows above: <b>Title 3 → 55</b>,
+      <b>Headline → 53</b>, <b>Subhead → 49</b>, <b>Footnote → 44</b>, <b>Caption 1 → 43</b>. These are the five system
+      styles 04 §6.2's production mapping actually uses, which is why only these five were verified.</p>
+    <p class="small" style="margin-top:6px"><b>Anything outside that list is unverified and must not be cited as
+      sourced — on this sheet or on any sibling.</b> Named explicitly because it was already in circulation:
+      <span class="mono">caption 2 (11 pt) → 40 pt</span> is <b>not</b> a verified endpoint. It does not appear in the
+      table above, it has no Q5 row, and calling it "the nearest verified row" is the exact failure D12 warns about —
+      an accessibility contract built on unverified guidance. Custom micro-type below 12 pt maps to no verified series
+      at all: 04 §6.4 wraps custom sizes in <span class="mono">@ScaledMetric</span>, which reflows rather than landing
+      on a published figure, so the honest statement is "reflows, no verified endpoint", never a plausible number.</p>
+    <p class="small" style="margin-top:6px">A sixth endpoint enters this table only by being sourced and recorded in
+      <span class="mono">docs/briefs/2026-08-12-sourcing-log.md</span> first. Until then the table is the whole of what
+      may be quoted.</p>
+  </div>
   <p class="small" style="margin-top:8px">AX5 concrete specimen, Body at its Q5 size:</p>
   <p style="font-size:44px;line-height:1.15;font-weight:400">Body reflows at 44 pt.</p>
   <p class="small">Rules carried from §6.2: 10–12 pt micro-type is reserved for short labels, ratings, metadata and
@@ -466,6 +536,7 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
       <li>Caption role: floor 10 to 11 points, for metadata, column labels and dense table cells; production caption, 12 points, 43 points at accessibility size 5.</li>
       <li>Numeral role: 10 to 28 points tabular, for table ratings through score, clock, money and rank; custom sizes wrapped in ScaledMetric with monospaced digits, so accessibility sizes reflow rather than map to one verified value.</li>
       <li>Shipped constants: authored floor 12 points and working prose 13 points, at or above the canonical 12 point floor.</li>
+      <li>Sourcing bound: exactly five Dynamic Type endpoints are verified — Title 3 to 55, Headline to 53, Subhead to 49, Footnote to 44, Caption 1 to 43. Any other endpoint, including caption 2 at 11 points, is unverified and is not cited as sourced.</li>
     </ul>
   </div>
 
@@ -481,14 +552,16 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
       <li><b>44 pt floor:</b> no interactive element on this card; the measured 44 pt exemplars are on Cards A, C and E.</li>
       <li><b>States:</b> not applicable — type roles are values, not components.</li>
       <li><b>Team colour:</b> not applicable — no team surface on this card.</li>
-      <li><b>VoiceOver:</b> one sentence per data row, written out above — 8 sentences for 7 role rows plus the constants row.</li>
+      <li><b>VoiceOver:</b> one sentence per data row, written out above — 9 sentences for 7 role rows plus the constants
+        row and the sourcing-bound row.</li>
       <li><b>Animations:</b> none — static, no motion.</li>
       <li><b>Verdict line:</b> not a READOUT-class card; none drawn, none fabricated.</li>
       <li><b>Density-budget cost (04 §4.5):</b> points — one dominant object (the ramp table) plus two secondary regions
-        (Q5 series table, rules note); taps 0; working memory 0 — mapping, floor and AX5 size sit on the same row;
-        learned symbols 0; verdict lines 0.</li>
+        (Q5 series table with its sourcing bound, rules note); taps 0; working memory 0 — mapping, floor and AX5 size sit
+        on the same row; learned symbols 0; verdict lines 0.</li>
       <li><b>Traceability:</b> every role, floor, use, mapping and constant is quoted from 04 §6.2; every AX5 figure is
-        quoted from sourcing row Q5; nothing else is asserted.</li>
+        quoted from sourcing row Q5, and the closed list of five sourced endpoints is printed beside the table so a sixth
+        cannot be inherited by proximity; nothing else is asserted.</li>
     </ol>
   </div>
 </section>
@@ -579,8 +652,9 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
       <li><b>Animations:</b> none — static, no motion.</li>
       <li><b>Verdict line:</b> not a READOUT-class card; none drawn, none fabricated.</li>
       <li><b>Density-budget cost (04 §4.5):</b> points — one dominant object (the scale drawings) plus two secondary
-        regions (tracks-and-selection demos, icon note); taps 0; working memory 0; learned symbols 0 new — the two
-        SF Symbol names shown are names, not adopted vocabulary; verdict lines 0.</li>
+        regions (tracks-and-selection demos, icon note); taps 0; working memory 0; learned symbols 0 — the two SF Symbol
+        names shown are control furniture under 04 §6.6, which excludes them from the learned load because the control
+        carries its label, and §6.6 rather than this card holds the product's totals; verdict lines 0.</li>
       <li><b>Traceability:</b> every step, radius, track height and the 44 pt floor is quoted from 04 §6.3 (touch floor
         cross-verified by §7 and Q1); nothing else is asserted.</li>
     </ol>
@@ -608,7 +682,7 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
     <div class="trio">
       <span class="rl">light-primary</span>
       <div style="background:#E9E0C9;border-radius:8px;padding:12px;margin-top:6px">
-        <div style="color:#18202B;font-size:15px;font-weight:700">Example Tech <span style="font-size:10px;font-weight:400">onTeam on primary 12.47</span></div>
+        <div style="color:#18202B;font-size:15px;font-weight:700">Example Coastal <span style="font-size:10px;font-weight:400">onTeam on primary 12.47</span></div>
         <div style="color:#6E3038;font-size:12px;font-weight:600;margin-top:4px">Conference Twelve <span style="font-size:10px;font-weight:400">secondary on primary 7.45</span></div>
       </div>
       <div class="lab"><span class="sw" style="background:#E9E0C9"></span>team.primary #E9E0C9 — synthetic, pending generator output</div>
@@ -628,18 +702,28 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
   </div>
 
   <div class="callout">
-    <h4>The hairline-boundary constraint, rendered</h4>
+    <h4>The mandatory boundary constraint, rendered</h4>
     <ul>
-      <li><b>Low-chroma team.primary on dark world.work measures 2.67</b> — below the 3:1 non-text floor, so a team chip
-        in that combination carries a hairline boundary: 04 §6.3's boundary-value-spoken rule made mandatory rather than
-        stylistic for team colour, because generated colour cannot be assumed to clear the floor against every surface.</li>
+      <li><b>Every trio primary falls below the 3:1 non-text floor against its tonally-similar work surface</b> — canon's
+        six measurements (04 §6.1, 2026-08-12): dark-primary on dark work <b>1.41</b> and on light work <b>12.47</b>;
+        light-primary on dark work <b>13.86</b> and on light work <b>1.27</b>; low-chroma on dark work <b>2.67</b> and on
+        light work <b>6.61</b>. So the rule is general, not a low-chroma special case: <b>a team-colour fill always
+        carries the boundary</b> — 04 §6.3's boundary-value-spoken rule made mandatory rather than stylistic for team
+        colour, because generated colour cannot be assumed to clear the floor against any given surface.</li>
+      <li><b>Canon names the boundary token: content.secondary</b> (04 §6.1, 2026-08-12). It measures 9.71 on dark work
+        and 7.40 on light work, both above the 3:1 non-text floor, and it carries no meaning alone.</li>
     </ul>
     <div class="demo dk" style="background:#111426;border-radius:8px;padding:12px">
       <div>
-        <span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid #858CA2">Example Union</span>
+        <span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid #B8BDCC">Example Union</span>
         <p class="fig">Mandatory form on dark world.work: chip fill #555B66 (2.67 against #111426, quoted), boundary
-          drawn in content.quiet #858CA2 (5.44 on work, quoted from Card A) — a rendering choice, since canon mandates
-          the hairline but names no hairline token; ink #FFFFFF on the fill is the pair's onTeam (6.83, quoted).</p>
+          drawn in the token canon names for it — content.secondary #B8BDCC, 9.71 on work, quoted from Card A;
+          ink #FFFFFF on the fill is the pair's onTeam (6.83, quoted).</p>
+      </div>
+      <div>
+        <span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid #B8BDCC">Example State</span>
+        <p class="fig">The same boundary on the dark-primary pair, whose fill measures 1.41 against dark work (quoted) —
+          the case that shows the rule is not about low chroma.</p>
       </div>
     </div>
   </div>
@@ -651,7 +735,8 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
       <li>Light-primary pair, synthetic, pending generator output: team primary E9E0C9, secondary 6E3038, on-team 18202B; on-team on primary measures 12.47 to 1 and secondary on primary 7.45 to 1, meeting the floors.</li>
       <li>Low-chroma pair, synthetic, pending generator output: team primary 555B66, secondary D9DDE4, on-team FFFFFF; on-team on primary measures 6.83 to 1 and secondary on primary 5.01 to 1, meeting the floors.</li>
       <li>Floors for every generated pair: on-team on primary at least 4.5 to 1, secondary on primary at least 3 to 1.</li>
-      <li>Constraint: low-chroma team primary on dark world work measures 2.67 to 1, below the 3 to 1 non-text floor, so a team chip in that combination always carries a hairline boundary.</li>
+      <li>Constraint: every trio primary falls below the 3 to 1 non-text floor against its tonally-similar work surface — dark-primary 1.41 on dark work, light-primary 1.27 on light work, low-chroma 2.67 on dark work — so every team-colour fill always carries the boundary.</li>
+      <li>Boundary token: content secondary, measuring 9.71 to 1 on dark work and 7.40 to 1 on light work; it carries no meaning on its own.</li>
     </ul>
   </div>
 
@@ -659,27 +744,31 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
     <h4>Contract — library plan §4, point by point</h4>
     <ol>
       <li><b>Light and dark:</b> team colour is per-pair, not per-appearance; each pair renders on its own primary with
-        both quoted ratios printed, and the one canon-quoted cross-appearance pairing (low-chroma on dark work, 2.67) is
-        rendered in its mandatory hairline form. No unquoted pairing is presented as a claim.</li>
+        both quoted ratios printed, and the six canon-measured fill-against-work pairings are listed with two of them
+        (low-chroma 2.67, dark-primary 1.41) rendered in their mandatory boundary form. No unquoted pairing is presented
+        as a claim.</li>
       <li><b>Widths:</b> three fluid panels that wrap; fits 844 through 956; at AX5 they stack in order, dropping
         nothing; composition-level proof is Card E.</li>
       <li><b>44 pt floor:</b> chips here are identity furniture, not controls — no interactive element on this card;
         measured 44 pt exemplars are on Cards A, C and E.</li>
-      <li><b>States:</b> not applicable to colour values; the one mandated presentation state (hairline boundary on
-        dark work) is rendered.</li>
+      <li><b>States:</b> not applicable to colour values; the one mandated presentation state (the boundary, drawn in
+        content.secondary) is rendered on two of the three pairs.</li>
       <li><b>Team colour:</b> this card is precondition P-c's rendering — all three pairs drawn with floors stated,
         every swatch labelled synthetic — pending generator output, and the light-primary caveat carried: the P2
         generator's sampled space is uniformly dark-primary, so a light-primary pair may not be reachable and the
         generator gap stays raised against P2 rather than hidden.</li>
-      <li><b>VoiceOver:</b> one sentence per data row, written out above — 5 sentences.</li>
+      <li><b>VoiceOver:</b> one sentence per data row, written out above — 6 sentences.</li>
       <li><b>Animations:</b> none — static, no motion.</li>
       <li><b>Verdict line:</b> not a READOUT-class card; none drawn, none fabricated.</li>
       <li><b>Density-budget cost (04 §4.5):</b> points — one dominant object (the trio) plus two secondary regions
         (constraint callout, VoiceOver listing); taps 0; working memory 0 — pairs compare side by side; learned symbols
         0; verdict lines 0.</li>
-      <li><b>Traceability:</b> all nine hexes, four floor-and-ratio pairs and the 2.67 constraint are quoted from
-        04 §6.1; names are placeholders, no real school, team, player, coach or city name; the name-collision and
-        trade-dress tests govern anything the generator later produces for these slots.</li>
+      <li><b>Traceability:</b> all nine hexes, the three measured ratio pairs, the two stated floors, the six team-fill
+        -against-work measurements and the named boundary token are quoted from 04 §6.1 — counted against what is drawn
+        above, not carried forward. Names are the shared world's (brief 2026-08-12): Example State draws the
+        dark-primary pair, Example Coastal the light-primary pair, Example Union the low-chroma pair. All are
+        placeholders — no real school, team, player, coach or city name; the name-collision and trade-dress tests govern
+        anything the generator later produces for these slots.</li>
     </ol>
   </div>
 </section>
@@ -699,7 +788,7 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
     <div class="comp dk">
       <div class="strip">
         <div><span class="team">Example State</span> <span class="pend">pending generator output</span><br>
-          <span class="meta">Week 9 · Record 6–2 · Coach One (placeholder)</span></div>
+          <span class="meta">Coach Sample · Week 9 · Prep · 6-2 · next: at Example Coastal</span></div>
         <span class="spacer"></span><span class="btn">Continue</span>
       </div>
       <table>
@@ -708,13 +797,13 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
         <tr class="rowtrack"><td>7</td><td>WR</td><td>Player Seven — pending generator output</td><td>79</td><td>75</td></tr>
       </table>
       <div class="staterow"><span class="schip" style="color:var(--live)">LIVE</span><span class="schip" style="color:var(--pos)">POSITIVE</span><span class="schip" style="color:var(--warn)">WARNING</span><span class="schip" style="color:var(--neg)">NEGATIVE</span><span class="schip" style="color:var(--info)">INFO</span><span class="small">state.* on work — ratios quoted on Card A; never colour alone, the word is printed</span></div>
-      <div class="teamrow"><span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid var(--quiet)">Example State</span><span class="chip" style="background:#E9E0C9;color:#18202B;border:1px solid var(--quiet)">Example Tech</span><span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid var(--quiet)">Example Union</span><span class="small">hairline mandatory: low-chroma on dark work is 2.67 (quoted); the other two pairings are unquoted in canon, so the chip carries the boundary anyway</span></div>
+      <div class="teamrow"><span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid var(--bnd)">Example State</span><span class="chip" style="background:#E9E0C9;color:#18202B;border:1px solid var(--bnd)">Example Coastal</span><span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid var(--bnd)">Example Union</span><span class="small">boundary mandatory on every chip, drawn in the token canon names for it — content.secondary, 9.71 on dark work (quoted); the fills measure 1.41 dark-primary, 13.86 light-primary and 2.67 low-chroma against dark work (04 §6.1)</span></div>
       <p class="fig">Strip band and Continue control measure 44 pt minimum height (printed note). Table rows on 26 pt tracks; figures tabular.</p>
     </div>
     <div class="comp lt">
       <div class="strip">
         <div><span class="team">Example State</span> <span class="pend">pending generator output</span><br>
-          <span class="meta">Week 9 · Record 6–2 · Coach One (placeholder)</span></div>
+          <span class="meta">Coach Sample · Week 9 · Prep · 6-2 · next: at Example Coastal</span></div>
         <span class="spacer"></span><span class="btn">Continue</span>
       </div>
       <table>
@@ -723,7 +812,7 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
         <tr class="rowtrack"><td>7</td><td>WR</td><td>Player Seven — pending generator output</td><td>79</td><td>75</td></tr>
       </table>
       <div class="staterow"><span class="schip" style="color:var(--live)">LIVE</span><span class="schip" style="color:var(--pos)">POSITIVE</span><span class="schip" style="color:var(--warn)">WARNING</span><span class="schip" style="color:var(--neg)">NEGATIVE</span><span class="schip" style="color:var(--info)">INFO</span><span class="small">state.* on work — ratios quoted on Card A; never colour alone, the word is printed</span></div>
-      <div class="teamrow"><span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid var(--quiet)">Example State</span><span class="chip" style="background:#E9E0C9;color:#18202B;border:1px solid var(--quiet)">Example Tech</span><span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid var(--quiet)">Example Union</span><span class="small">boundary carried on every team chip; only the dark-work low-chroma pairing is canon-quoted (2.67)</span></div>
+      <div class="teamrow"><span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid var(--bnd)">Example State</span><span class="chip" style="background:#E9E0C9;color:#18202B;border:1px solid var(--bnd)">Example Coastal</span><span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid var(--bnd)">Example Union</span><span class="small">boundary carried on every team chip in content.secondary, 7.40 on light work (quoted); the fills measure 12.47 dark-primary, 1.27 light-primary and 6.61 low-chroma against light work (04 §6.1)</span></div>
       <p class="fig" style="color:#596074">Strip band and Continue control measure 44 pt minimum height. 26 pt tracks; figures tabular.</p>
     </div>
   </div></div>
@@ -734,7 +823,7 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
     <div class="comp dk">
       <div class="strip">
         <div><span class="team">Example State</span> <span class="pend">pending generator output</span><br>
-          <span class="meta">Week 9 · Record 6–2 · Coach One (placeholder)</span></div>
+          <span class="meta">Coach Sample · Week 9 · Prep · 6-2 · next: at Example Coastal</span></div>
         <span class="spacer"></span><span class="btn">Continue</span>
       </div>
       <table>
@@ -743,13 +832,13 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
         <tr class="rowtrack"><td>7</td><td>WR</td><td>Player Seven — pending generator output</td><td>79</td><td>75</td></tr>
       </table>
       <div class="staterow"><span class="schip" style="color:var(--live)">LIVE</span><span class="schip" style="color:var(--pos)">POSITIVE</span><span class="schip" style="color:var(--warn)">WARNING</span><span class="schip" style="color:var(--neg)">NEGATIVE</span><span class="schip" style="color:var(--info)">INFO</span><span class="small">state.* on work — ratios quoted on Card A; never colour alone, the word is printed</span></div>
-      <div class="teamrow"><span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid var(--quiet)">Example State</span><span class="chip" style="background:#E9E0C9;color:#18202B;border:1px solid var(--quiet)">Example Tech</span><span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid var(--quiet)">Example Union</span><span class="small">hairline mandatory: low-chroma on dark work is 2.67 (quoted); the other two pairings are unquoted in canon, so the chip carries the boundary anyway</span></div>
+      <div class="teamrow"><span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid var(--bnd)">Example State</span><span class="chip" style="background:#E9E0C9;color:#18202B;border:1px solid var(--bnd)">Example Coastal</span><span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid var(--bnd)">Example Union</span><span class="small">boundary mandatory on every chip, drawn in the token canon names for it — content.secondary, 9.71 on dark work (quoted); the fills measure 1.41 dark-primary, 13.86 light-primary and 2.67 low-chroma against dark work (04 §6.1)</span></div>
       <p class="fig">Strip band and Continue control measure 44 pt minimum height. 26 pt tracks; figures tabular.</p>
     </div>
     <div class="comp lt">
       <div class="strip">
         <div><span class="team">Example State</span> <span class="pend">pending generator output</span><br>
-          <span class="meta">Week 9 · Record 6–2 · Coach One (placeholder)</span></div>
+          <span class="meta">Coach Sample · Week 9 · Prep · 6-2 · next: at Example Coastal</span></div>
         <span class="spacer"></span><span class="btn">Continue</span>
       </div>
       <table>
@@ -758,7 +847,7 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
         <tr class="rowtrack"><td>7</td><td>WR</td><td>Player Seven — pending generator output</td><td>79</td><td>75</td></tr>
       </table>
       <div class="staterow"><span class="schip" style="color:var(--live)">LIVE</span><span class="schip" style="color:var(--pos)">POSITIVE</span><span class="schip" style="color:var(--warn)">WARNING</span><span class="schip" style="color:var(--neg)">NEGATIVE</span><span class="schip" style="color:var(--info)">INFO</span><span class="small">state.* on work — ratios quoted on Card A; never colour alone, the word is printed</span></div>
-      <div class="teamrow"><span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid var(--quiet)">Example State</span><span class="chip" style="background:#E9E0C9;color:#18202B;border:1px solid var(--quiet)">Example Tech</span><span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid var(--quiet)">Example Union</span><span class="small">boundary carried on every team chip; only the dark-work low-chroma pairing is canon-quoted (2.67)</span></div>
+      <div class="teamrow"><span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid var(--bnd)">Example State</span><span class="chip" style="background:#E9E0C9;color:#18202B;border:1px solid var(--bnd)">Example Coastal</span><span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid var(--bnd)">Example Union</span><span class="small">boundary carried on every team chip in content.secondary, 7.40 on light work (quoted); the fills measure 12.47 dark-primary, 1.27 light-primary and 6.61 low-chroma against light work (04 §6.1)</span></div>
       <p class="fig" style="color:#596074">Strip band and Continue control measure 44 pt minimum height. 26 pt tracks; figures tabular.</p>
     </div>
   </div></div>
@@ -769,7 +858,7 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
     <div class="comp dk">
       <div class="strip">
         <div><span class="team">Example State</span> <span class="pend">pending generator output</span><br>
-          <span class="meta">Week 9 · Record 6–2 · Coach One (placeholder)</span></div>
+          <span class="meta">Coach Sample · Week 9 · Prep · 6-2 · next: at Example Coastal</span></div>
         <span class="spacer"></span><span class="btn">Continue</span>
       </div>
       <table>
@@ -778,13 +867,13 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
         <tr class="rowtrack"><td>7</td><td>WR</td><td>Player Seven — pending generator output</td><td>79</td><td>75</td></tr>
       </table>
       <div class="staterow"><span class="schip" style="color:var(--live)">LIVE</span><span class="schip" style="color:var(--pos)">POSITIVE</span><span class="schip" style="color:var(--warn)">WARNING</span><span class="schip" style="color:var(--neg)">NEGATIVE</span><span class="schip" style="color:var(--info)">INFO</span><span class="small">state.* on work — ratios quoted on Card A; never colour alone, the word is printed</span></div>
-      <div class="teamrow"><span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid var(--quiet)">Example State</span><span class="chip" style="background:#E9E0C9;color:#18202B;border:1px solid var(--quiet)">Example Tech</span><span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid var(--quiet)">Example Union</span><span class="small">hairline mandatory: low-chroma on dark work is 2.67 (quoted); the other two pairings are unquoted in canon, so the chip carries the boundary anyway</span></div>
+      <div class="teamrow"><span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid var(--bnd)">Example State</span><span class="chip" style="background:#E9E0C9;color:#18202B;border:1px solid var(--bnd)">Example Coastal</span><span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid var(--bnd)">Example Union</span><span class="small">boundary mandatory on every chip, drawn in the token canon names for it — content.secondary, 9.71 on dark work (quoted); the fills measure 1.41 dark-primary, 13.86 light-primary and 2.67 low-chroma against dark work (04 §6.1)</span></div>
       <p class="fig">Strip band and Continue control measure 44 pt minimum height. 26 pt tracks; figures tabular.</p>
     </div>
     <div class="comp lt">
       <div class="strip">
         <div><span class="team">Example State</span> <span class="pend">pending generator output</span><br>
-          <span class="meta">Week 9 · Record 6–2 · Coach One (placeholder)</span></div>
+          <span class="meta">Coach Sample · Week 9 · Prep · 6-2 · next: at Example Coastal</span></div>
         <span class="spacer"></span><span class="btn">Continue</span>
       </div>
       <table>
@@ -793,7 +882,7 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
         <tr class="rowtrack"><td>7</td><td>WR</td><td>Player Seven — pending generator output</td><td>79</td><td>75</td></tr>
       </table>
       <div class="staterow"><span class="schip" style="color:var(--live)">LIVE</span><span class="schip" style="color:var(--pos)">POSITIVE</span><span class="schip" style="color:var(--warn)">WARNING</span><span class="schip" style="color:var(--neg)">NEGATIVE</span><span class="schip" style="color:var(--info)">INFO</span><span class="small">state.* on work — ratios quoted on Card A; never colour alone, the word is printed</span></div>
-      <div class="teamrow"><span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid var(--quiet)">Example State</span><span class="chip" style="background:#E9E0C9;color:#18202B;border:1px solid var(--quiet)">Example Tech</span><span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid var(--quiet)">Example Union</span><span class="small">boundary carried on every team chip; only the dark-work low-chroma pairing is canon-quoted (2.67)</span></div>
+      <div class="teamrow"><span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid var(--bnd)">Example State</span><span class="chip" style="background:#E9E0C9;color:#18202B;border:1px solid var(--bnd)">Example Coastal</span><span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid var(--bnd)">Example Union</span><span class="small">boundary carried on every team chip in content.secondary, 7.40 on light work (quoted); the fills measure 12.47 dark-primary, 1.27 light-primary and 6.61 low-chroma against light work (04 §6.1)</span></div>
       <p class="fig" style="color:#596074">Strip band and Continue control measure 44 pt minimum height. 26 pt tracks; figures tabular.</p>
     </div>
   </div></div>
@@ -807,13 +896,13 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
       <div class="strip">
         <span class="team">Example State</span>
         <span class="pend">pending generator output</span>
-        <span class="meta">Week 9 · Record 6–2 · Coach One (placeholder)</span>
+        <span class="meta">Coach Sample · Week 9 · Prep · 6-2 · next: at Example Coastal</span>
         <span class="btn">Continue</span>
       </div>
       <div class="fact"><span class="cap">No.</span> 14 · <span class="cap">Pos</span> QB · Player Fourteen — pending generator output · <span class="cap">OVR</span> 84 · <span class="cap">FIT</span> 82</div>
       <div class="fact"><span class="cap">No.</span> 7 · <span class="cap">Pos</span> WR · Player Seven — pending generator output · <span class="cap">OVR</span> 79 · <span class="cap">FIT</span> 75</div>
       <div class="staterow"><span class="schip" style="color:var(--live)">LIVE</span><span class="schip" style="color:var(--pos)">POSITIVE</span><span class="schip" style="color:var(--warn)">WARNING</span><span class="schip" style="color:var(--neg)">NEGATIVE</span><span class="schip" style="color:var(--info)">INFO</span></div>
-      <div class="teamrow"><span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid var(--quiet)">Example State</span><span class="chip" style="background:#E9E0C9;color:#18202B;border:1px solid var(--quiet)">Example Tech</span><span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid var(--quiet)">Example Union</span></div>
+      <div class="teamrow"><span class="chip" style="background:#14382A;color:#F2F5F3;border:1px solid var(--bnd)">Example State</span><span class="chip" style="background:#E9E0C9;color:#18202B;border:1px solid var(--bnd)">Example Coastal</span><span class="chip" style="background:#555B66;color:#FFFFFF;border:1px solid var(--bnd)">Example Union</span></div>
       <p class="fig">Order preserved: world context, then the dominant object as one fact stack per row, then state words,
         then team chips. Every datum of the default composition is present; the Continue control grows with its 44 pt
         text and stays far above the 44 pt floor. Per 04 §4.5, AX5 reflows to one column preserving order and dropping
@@ -845,9 +934,11 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
         the measurement note printed under each; HIG-verified via Q1.</li>
       <li><b>States:</b> the composition shows default state only, stated as such — it is a token summary, not a
         component sheet; the state.* vocabulary itself is rendered as data.</li>
-      <li><b>Team colour:</b> all three synthetic pairs appear as chips with the mandatory hairline boundary; the one
-        canon-quoted pairing (low-chroma on dark work, 2.67) is named, and the boundary is carried on the unquoted
-        pairings precisely because canon quotes no ratio for them.</li>
+      <li><b>Team colour:</b> all three synthetic pairs appear as chips carrying the mandatory boundary in the token
+        canon names for it, content.secondary; all six canon-measured fill-against-work figures are printed beside them
+        (1.41 / 13.86 / 2.67 on dark work, 12.47 / 1.27 / 6.61 on light work), which is what shows the rule to be
+        general rather than a low-chroma exception. Pairs follow the shared world: Example State dark-primary, Example
+        Coastal light-primary, Example Union low-chroma.</li>
       <li><b>VoiceOver:</b> one sentence per data row, written out above — 6 sentences.</li>
       <li><b>Animations:</b> none — static, no motion.</li>
       <li><b>Verdict line:</b> not a READOUT-class card; none drawn, none fabricated.</li>
@@ -864,7 +955,8 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid var(--hair);vertical-a
 <footer style="margin-top:24px">
   <p class="small">End of tokens-v3. Five cards: A colour roles, B type ramp, C shape and spacing, D team trio,
     E width harness. This sheet is a rendering for owner approval; 04 §6.1–§6.3 remain the only canonical home for
-    every value shown. Static, no motion, no script.</p>
+    every value shown, 04 §6.6 for every symbol total, and sourcing row Q5 for the five verified Dynamic Type
+    endpoints — a sixth endpoint is unverified until the sourcing log holds it. Static, no motion, no script.</p>
 </footer>
 
 </div>
