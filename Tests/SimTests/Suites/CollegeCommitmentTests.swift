@@ -368,6 +368,9 @@ private func archivedProspectRoot(
     state.calendar = CalendarState(season: currentSeason, week: 1)
     state.league.season = currentSeason
     state.league.week = state.calendar.week
+    // As in CollegeStateTests' cycle helper: a root whose calendar has moved two seasons past its
+    // professional market is one the engine could never produce, and whole-root integrity says so.
+    state.proMarket = ProMarketState(season: currentSeason)
     state.competition = CompetitionState.bootstrap(
         seed: state.league.seed,
         season: currentSeason,

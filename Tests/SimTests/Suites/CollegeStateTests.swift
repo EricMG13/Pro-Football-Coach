@@ -16,6 +16,12 @@ private func applyingCollegeCycle(
     next.calendar = CalendarState(season: nextSeason, week: 1)
     next.league.season = nextSeason
     next.league.week = 1
+    // The market moves with the calendar or the root is not one the engine could produce.
+    // `GameState.bootstrap` ties the two together and the final-week rollover keeps them in step;
+    // this helper skips the scheduler, so it has to do the same by hand. Without it a second
+    // renewal leaves a season-0 market under a season-2 calendar, which whole-root integrity
+    // correctly rejects as out of phase.
+    next.proMarket = ProMarketState(season: nextSeason)
     next.competition = CompetitionState(
         currentSchedule: SeasonSchedule(
             season: nextSeason,

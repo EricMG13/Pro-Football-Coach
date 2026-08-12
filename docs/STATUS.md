@@ -310,23 +310,30 @@ portal-scheduler compatibility is **9 / 27,823**, and core contracts are **144 /
 bodies, generated news, semantic rivalry narratives, coaching-tree projections, and the 30-season
 history/performance gate remain open.
 
-### The full default suite is red at this checkpoint — **pre-existing, not from the UI slice**
+### The full default suite — **green on 2026-08-12, after a two-failure fix**
 
-`./scripts/verify.sh` on 2026-08-12 ran **602 tests / 747,026 checks with two failing**:
+`./scripts/verify.sh` now passes: **602 tests / 747,027 checks, all passed**, debug build and
+release suite. This is the first full-suite green recorded on this branch, and it took a fix.
+
+The run before it was red with two failures, both reproducible at clean `HEAD` (70a60ed) in a
+detached worktree, so neither came from the personnel UI slice:
 
 - `College management state / two renewals retain exactly the former prospects referenced by hot
-  history` — `threw integrityFailed(issueCount: 1)`, preceded by
-  `Eligibility.swift:17: Precondition failed: Eligibility counters must remain inside the
-  four-season, five-year clock.`
+  history` — `threw integrityFailed(issueCount: 1)`
 - `College commitment integrity / archived commitment and release events bind to the recruiting
   season` — `[The professional free-agency or draft market is malformed or out of phase.]`
 
-Both reproduce at clean `HEAD` (70a60ed) in a detached worktree with none of the personnel work
-applied, so they are not caused by it. The M6/M7 handoff listed only **focused** gates as verified
-— `--pro-market`, `--history-read-model`, `--portal-scheduler`, `--architecture-only`,
-`--core-contracts` — and every one of those is still green. The full default run was not among them,
-and it does not pass. Treat any earlier reading of that handoff as a claim about focused suites
-only.
+**One root cause, in two test helpers, and the engine was right.** `applyingCollegeCycle` and
+`archivedProspectRoot` move the root's calendar and league forward without moving `proMarket` with
+it. `GameState.bootstrap` ties the two together and the final-week scheduler rollover keeps them in
+step, but these helpers skip the scheduler; two renewals therefore left a season-0 market under a
+season-2 calendar. M6's ±1-season plausibility window rejects that root, correctly — it is one the
+engine could never produce. The fix sets the market season alongside the calendar in both helpers.
+No production code changed, and the portal-scheduler replay, which drives the real scheduler across
+two seasons, was green throughout — which is the evidence that the product path was never wrong.
+
+**The M6/M7 handoff listed only focused gates as verified.** The full default run was not among
+them and did not pass. Read that handoff as a claim about focused suites only.
 
 ### Personnel screens — **DEBUG reference fixtures, not career-wired**
 
