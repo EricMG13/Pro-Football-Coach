@@ -249,6 +249,13 @@ Measured constraints, binding on every consumer:
   measures 6.37 (so the shipped light filled-violet ink passes alongside the 6.89 `world.work`
   pairing); light `world.work` ink on the light `state.live` fill measures 5.70. All meet the
   4.5:1 body floor.
+- **Heat-fill badge inks (measured 2026-08-12):** the rule generalises — a filled control or badge
+  inks with the palette's own ground. Dark `world.page` ink on the dark heat fills: positive 10.77,
+  warning 12.13, negative 7.27. Light `world.work` ink on the light heat fills: positive 5.86,
+  warning 6.76, negative 6.77. The opposite pairings measure 1.49–3.01 and are not used for text.
+- **Hairlines and boundaries, named:** a hairline rule draws in `world.raised` over `work`
+  surfaces; the mandatory team-fill boundary draws in `content.secondary`. Neither carries meaning
+  alone (§6.3's boundary-value-spoken rule governs).
 
 **Team colour reference trio (labelled synthetic — pending generator output, owner disposition
 2026-08-12; the P2 generator's sampled space is uniformly dark-primary).** Floors:
