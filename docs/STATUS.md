@@ -310,6 +310,37 @@ portal-scheduler compatibility is **9 / 27,823**, and core contracts are **144 /
 bodies, generated news, semantic rivalry narratives, coaching-tree projections, and the 30-season
 history/performance gate remain open.
 
+**M7A closed 2026-08-12: rival lists live, and the coaching tree exists.** Rival lists were seeded
+once from geography and conference and never touched again, so a rivalry could become the most
+intense in the world while still sitting last in the list that names it. The relationships step now
+reinstalls the order its own intensity implies, through `RivalrySeeder.strongest` — the same ranking
+that seeded the list, so seeding and maintenance cannot disagree. Only the sides of a rivalry that
+actually moved are reordered, so the weekly cost is proportional to the week rather than to all 134
+programmes. `CoachingTreeReadModel` derives who a head coach came up under, and who came up under
+them, from the bounded staff career records M2 already keeps; it is rebuilt after load rather than
+persisted, because a second copy of those facts would be a second authority.
+
+Measured: rivalry order **7 tests / 11 checks**, coaching tree **11 / 25**, core contracts
+**146 / 953**, architecture **25 / 222**, portal-scheduler two-season replay **9 / 27,823**, and the
+full `./scripts/verify.sh` at **620 tests / 747,066 checks, all passed**.
+
+The pinned one-week transition fingerprint moved, deliberately, and is documented at the literal.
+The root pin did not, which is the evidence that generation is unchanged and only the step differs;
+the new value was confirmed identical across two separate processes.
+
+Two things the gates did not catch, recorded because they are the useful part. `ContractTests`
+rejected the coaching tree's first seat index on the first run — every dictionary key type in the
+engine must be `CodingKeyRepresentable` so a map can never encode in hash order — and the
+confidence review found that a fired head coach taking a coordinator job was being made their new
+boss's disciple, inverting the relationship. A disciple's first head-coaching season must postdate
+the seat they shared.
+
+Still open in M7: cold event bodies, generated news, cross-season semantic rivalry narratives, and
+the 30-season history/performance gate. The plan for the next slice is
+`docs/superpowers/plans/2026-08-12-m7a-living-rivalry-and-coaching-tree.md`, whose closing section
+records why cold event bodies are their own milestone: they change a persisted root type and need a
+bound design against FSC-002/FSC-003 and the save-size budget, which is still 84.66 MB at season 20.
+
 ### The full default suite — **green on 2026-08-12, after a two-failure fix**
 
 `./scripts/verify.sh` now passes: **602 tests / 747,027 checks, all passed**, debug build and
