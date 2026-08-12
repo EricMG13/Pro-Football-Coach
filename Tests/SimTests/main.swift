@@ -65,6 +65,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runProgrammeEvolutionTests()
 } else if CommandLine.arguments.contains("--roster-tenure") {
     runRosterTenureTests()
+} else if CommandLine.arguments.contains("--realignment") {
+    runRealignmentTests()
 } else if CommandLine.arguments.contains("--m7-gate") {
     runHistoryGateTests()
 } else if CommandLine.arguments.contains("--pro-soak") {
@@ -124,6 +126,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runNewsFeedTests()
     runProgrammeEvolutionTests()
     runRosterTenureTests()
+    runRealignmentTests()
     runCareerPortalDecisionTests()
     runTacticalManagementTests()
     runTacticalStateTests()

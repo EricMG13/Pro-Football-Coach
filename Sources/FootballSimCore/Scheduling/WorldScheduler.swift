@@ -470,6 +470,10 @@ public enum WorldScheduler {
                             in: nextState
                         )
                     }
+                    // Realignment after evolution, and both before the college cycle rebuilds the
+                    // next season's schedule: the schedule is generated from conference membership,
+                    // so a swap has to land before it is read, not after.
+                    nextState = ConferenceRealignmentSystem.process(in: nextState)
                     nextState.college.reconcileScholarships(with: nextState.programmes)
                     let cycle: CollegeCycleTransition
                     do {
