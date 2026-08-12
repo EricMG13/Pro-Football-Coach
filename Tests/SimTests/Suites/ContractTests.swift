@@ -662,6 +662,7 @@ func runContractTests() {
             let recruiting = uiFiles.first {
                 $0.path.hasSuffix("/RecruitingBoardView.swift")
             }?.text ?? ""
+            let roster = uiFiles.first { $0.path.hasSuffix("/RosterView.swift") }?.text ?? ""
             let deskComponents = uiFiles.first {
                 $0.path.hasSuffix("/CoachWorldDeskComponents.swift")
             }?.text ?? ""
@@ -691,6 +692,17 @@ func runContractTests() {
                    "Recruiting Board must declare deterministic VoiceOver order")
             expect(recruiting.contains("choice.cost") && recruiting.contains("choice.consequence"),
                    "recruiting actions must expose both cost and consequence")
+
+            expect(roster.contains("public struct RosterView"),
+                   "RosterView.swift must expose the production roster screen")
+            expect(roster.contains("let model: RosterReadModel"))
+            expect(roster.contains("Button("))
+            expect(!roster.contains("onTapGesture"))
+            expect(roster.contains("monospacedDigit"))
+            expect(roster.contains("accessibilitySortPriority"))
+            expect(roster.contains("dynamicTypeSize.isAccessibilitySize"))
+            expect(roster.contains("CoachWorldRouteButton"))
+            expect(roster.contains("CoachWorldActionButtonStyle"))
 
             expect(deskComponents.contains("struct CoachWorldActionButtonStyle")
                        && deskComponents.contains("struct CoachWorldRouteButton")
