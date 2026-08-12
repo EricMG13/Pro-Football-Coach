@@ -172,6 +172,7 @@ public struct GameState: Codable, Sendable, Equatable {
         let generated = LeagueGenerator.generate(seed: seed)
         let population = RosterPopulationGenerator.generate(
             seed: seed,
+            season: generated.league.season,
             programmes: generated.programmes,
             proTeams: generated.proTeams
         )

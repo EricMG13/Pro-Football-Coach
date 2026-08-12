@@ -13,9 +13,17 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
 /// move for the rivalry-ordering change, which touched a step rather than a persisted type.
 /// Then again when this stopped hashing the save envelope and started hashing the canonical JSON
 /// body, so a compressed envelope cannot make a determinism pin depend on zlib.
-private let pinnedRootFingerprint: UInt64 = 13_833_728_571_695_481_844
+///
+/// And a third time on 2026-08-12, when bootstrap began issuing professional contracts
+/// (`02` section 4.2a). That is a change to the generated *state*, which is exactly what this pin
+/// exists to notice, so re-pinning is the correct response rather than a workaround — unlike the
+/// compression move above, where the state was identical and only its encoding had changed. The
+/// generation-body pin did not move, and should not have: it hashes `LeagueGenerator.generate`,
+/// and contracts are issued during bootstrap rather than league generation. Both new values were
+/// reproduced in two independent processes before being written here.
+private let pinnedRootFingerprint: UInt64 = 11_751_991_614_650_799_443
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 2_877_422_251_471_580_966
+private let pinnedAdvancedRootFingerprint: UInt64 = 9_105_938_186_369_459_529
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///

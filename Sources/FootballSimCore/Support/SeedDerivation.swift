@@ -18,6 +18,10 @@ public enum SeedScope: UInt64, Sendable, CaseIterable {
     case personnel = 8
     /// Observer-specific knowledge draws, isolated from hidden prospect truth generation.
     case scouting = 9
+    /// Contract terms at bootstrap, isolated so that changing the term spread cannot move a
+    /// roster's ratings, names or ages — those are drawn under `.personnel` and must not shift
+    /// when `02` section 4.2a's spread is retuned.
+    case contract = 10
 }
 
 public extension SeededRandom {

@@ -1,6 +1,8 @@
 // Test entry point. Add each new suite's runner here.
 if CommandLine.arguments.contains("--event-ledger-batch") {
     runEventLedgerBatchTests()
+} else if CommandLine.arguments.contains("--roster-population") {
+    runRosterPopulationTests()
 } else if CommandLine.arguments.contains("--trait-population") {
     runTraitPopulationTests()
 } else if CommandLine.arguments.contains("--portal-matching") {

@@ -46,11 +46,13 @@ func runTraitPopulationTests() {
             let world = LeagueGenerator.generate(seed: seed)
             let firstRoster = RosterPopulationGenerator.generate(
                 seed: seed,
+                season: 0,
                 programmes: world.programmes,
                 proTeams: world.proTeams
             )
             let secondRoster = RosterPopulationGenerator.generate(
                 seed: seed,
+                season: 0,
                 programmes: world.programmes,
                 proTeams: world.proTeams
             )
@@ -101,6 +103,7 @@ func runTraitPopulationTests() {
             let world = LeagueGenerator.generate(seed: seed)
             let population = RosterPopulationGenerator.generate(
                 seed: seed,
+                season: 0,
                 programmes: world.programmes,
                 proTeams: world.proTeams
             )
@@ -163,6 +166,7 @@ func runTraitPopulationTests() {
             let world = LeagueGenerator.generate(seed: seed)
             let population = RosterPopulationGenerator.generate(
                 seed: seed,
+                season: 0,
                 programmes: world.programmes,
                 proTeams: world.proTeams
             )
@@ -219,6 +223,7 @@ func runTraitPopulationTests() {
             let world = LeagueGenerator.generate(seed: seed)
             let population = RosterPopulationGenerator.generate(
                 seed: seed,
+                season: 0,
                 programmes: world.programmes,
                 proTeams: world.proTeams
             )
