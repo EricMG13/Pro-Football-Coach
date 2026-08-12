@@ -443,6 +443,51 @@ growth is the authoritative snapshot, which FSC-003 has always owned. What is ne
 ceiling. **Treat FSC-003 as a release blocker, not a tuning item** — compression, a cold archive and
 chunked or streaming persistence are M9 work that the product cannot ship without.
 
+### The professional soak — **built, and it is red for a real reason**
+
+The M6/M7 handoff listed "run the full both-tier professional soak" as open. It was never written:
+M6 built the entire professional market — free agency, draft, waivers, practice squads, trades,
+sourced contract expiry — and **no soak had ever driven it across seasons**. `--pro-soak` now does,
+asserting per season that all 32 teams stay inside the cap and every roster bound, that no
+professional carries college eligibility, and that the root stays valid, plus a byte-identical
+two-season replay.
+
+**It fails, and the failure is the point.** Over two seasons and 42 weeks:
+
+```text
+phasesSeen=closed/freeAgency  events=[proMarketClosed=1 proMarketOpened=2]
+draftedFinal=0  freeAgents=0  waivers=0
+```
+
+The market opens and closes. **Nothing else ever happens** — no draft pick, no signing, no waiver,
+no trade, across 32 teams and two full seasons.
+
+Two causes, both verified by reading the call graph rather than inferred:
+
+1. **The professional draft has no autonomous driver.** `ProMarketSystem.beginDraft` and
+   `ProMarketSystem.draft` are reachable only from `IntentResolver`, i.e. only when a *promoted*
+   coach submits `CoachIntent.proMarket`. `WorldScheduler` calls `openOffseason` and never either of
+   the others. An unattended world never drafts — and that includes every season of the college
+   phase, before the player is promoted.
+2. **The free-agent pool starts empty by construction.** `openOffseason` fills it from players who
+   are unowned, uncontracted and not college-eligible; at bootstrap every professional is rostered
+   and contracted and every college player is eligible, so the pool is empty and
+   `ProRosterAISystem` — which does run weekly and does skip the controlled team — has nothing to
+   sign.
+
+**The consequence is a product one, not a test one.** Professional rosters take in no new talent for
+the entire pre-promotion career. The promotion arc's premise is that you are promoted into a league
+that has been living without you; today you would be promoted into one that has aged N seasons with
+zero intake.
+
+**Not fixed here, deliberately.** The transaction layer is complete and correct — `beginDraft`,
+`draft` and `rookieContract` all exist and are tested in isolation. What is missing is a driver, and
+writing one requires an offseason-calendar rule that canon does not state: *when does free agency
+yield to the draft, and what happens when the controlled team is on the clock?* Under the doc-first
+amendment rule that belongs in canon before it is built. `--pro-soak` stays red until it is, in the
+same way P4's calibration gate stays red, and it is **not** in the default run, so `verify.sh` is
+unaffected.
+
 ### Preserved pre-rebaseline P0–P4 record
 
 The remainder of this document records the older P-phase foundation and its measurements. It is
