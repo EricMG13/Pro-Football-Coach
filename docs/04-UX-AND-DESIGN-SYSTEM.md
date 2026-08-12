@@ -205,6 +205,61 @@ navigation proportions, panel rhythm and typographic hierarchy. DESK therefore d
 near-navy workspace with restrained violet navigation/action furniture and compact opaque panels.
 The game does not copy FM marks, icons, photographs, club identities or branded artwork.
 
+**Production values (G-07 write-back, 2026-08-12).** These are the shipped values from
+`Sources/ProFootballCoachUI/DesignTokens.swift`, written back so no sheet or view claims a value
+canon does not hold. Every ratio is measured WCAG 2.2 relative-luminance contrast against the
+surface the role is actually composited on (floors: 4.5:1 body text, 3:1 large text and non-text —
+SC 1.4.3/1.4.11, verified sources in `docs/briefs/2026-08-12-sourcing-log.md`). A code/canon sync
+check is owed by `ContractTests` (gap G-07's test half).
+
+| Role | Dark | on page / work / raised | Light | on page / work / raised |
+|---|---|---|---|---|
+| `world.page` | `#080A14` | — | `#F1F2F7` | — |
+| `world.work` | `#111426` | — | `#FBFBFD` | — |
+| `world.raised` | `#191D32` | — | `#E6E8F0` | — |
+| `content.primary` | `#F4F5FA` | 18.13 / 16.74 / 15.27 | `#111426` | 16.31 / 17.64 / 14.90 |
+| `content.secondary` | `#B8BDCC` | 10.52 / 9.71 / 8.86 | `#4D5366` | 6.84 / 7.40 / 6.25 |
+| `content.quiet` | `#858CA2` | 5.89 / 5.44 / 4.96 | `#596074` | 5.61 / 6.07 / 5.12 |
+| `action.primary` | `#9964E8` | 5.02 / 4.64 / **4.23** | `#6840B0` | 6.37 / 6.89 / 5.82 |
+| `action.secondary` | `#B8BDCC` | 10.52 / 9.71 / 8.86 | `#4D5366` | 6.84 / 7.40 / 6.25 |
+| `action.destructive` | `#F07886` | 7.27 / 6.72 / 6.12 | `#A42D32` | 6.26 / 6.77 / 5.72 |
+| `state.live` | `#72D7A0` | 11.23 / 10.37 / 9.46 | `#4A6F00` | 5.27 / 5.70 / 4.82 |
+| `state.positive` | `#6FD39A` | 10.77 / 9.95 / 9.07 | `#1F7048` | 5.41 / 5.86 / 4.95 |
+| `state.warning` | `#F0C56C` | 12.13 / 11.21 / 10.22 | `#765300` | 6.25 / 6.76 / 5.71 |
+| `state.negative` | `#F07886` | 7.27 / 6.72 / 6.12 | `#A42D32` | 6.26 / 6.77 / 5.72 |
+| `state.info` | `#72ADEC` | 8.37 / 7.73 / 7.05 | `#205F96` | 5.98 / 6.47 / 5.47 |
+| `college.identity` | `#A861D6` | 5.03 / 4.64 / **4.23** | `#6840B0` | 6.37 / 6.89 / 5.82 |
+| `pro.identity` | `#5B9DE0` | 6.90 / 6.38 / 5.81 | `#2D628B` | 5.81 / 6.29 / 5.31 |
+| `field.turf` | `#163E2A` | — | `#DCE8DF` | — |
+| `field.line` (on turf) | `#F5F7FA` | 11.14 | `#0E1218` | 14.89 |
+| `field.annotation` (on turf) | `#E7C45D` | 7.09 | `#7A5200` | 5.49 |
+| `field.live` (on turf) | `#C6F24E` | 9.23 | `#4A6F00` | 4.67 |
+
+Measured constraints, binding on every consumer:
+
+- **Dark `action.primary` and `college.identity` on `raised` measure 4.23** — above the 3:1
+  non-text/large-text floor, below the 4.5:1 body floor. On raised surfaces they may colour
+  controls, icons and large text, never working prose.
+- **Dark filled-violet controls use dark ink.** `content.primary` on dark `action.primary` measures
+  3.61 (large text only); dark `world.page` ink on the same fill measures 5.02 and is the body-text
+  pairing. Light-appearance fills are unconstrained (`world.work` on `action.primary` = 6.89).
+- Every other role/surface pairing above meets 4.5:1 in both appearances.
+
+**Team colour reference trio (labelled synthetic — pending generator output, owner disposition
+2026-08-12; the P2 generator's sampled space is uniformly dark-primary).** Floors:
+`team.onTeam`-on-`team.primary` 4.5:1; `team.secondary`-on-`team.primary` 3:1.
+
+| Pair | `team.primary` | `team.secondary` | `team.onTeam` | onTeam/primary | secondary/primary |
+|---|---|---|---|---|---|
+| dark-primary | `#14382A` | `#D9B23C` | `#F2F5F3` | 11.74 | 6.37 |
+| light-primary | `#E9E0C9` | `#6E3038` | `#18202B` | 12.47 | 7.45 |
+| low-chroma | `#555B66` | `#D9DDE4` | `#FFFFFF` | 6.83 | 5.01 |
+
+- **Low-chroma `team.primary` on dark `world.work` measures 2.67** — below the 3:1 non-text floor.
+  A team chip in that combination carries a hairline boundary; this is §6.3's
+  boundary-value-spoken rule made mandatory rather than stylistic for team colour, because
+  generated colour cannot be assumed to clear the floor against every surface.
+
 No gradients, glow, glass, fake paper, leather, cork or decorative shadow. Surfaces are matte and
 opaque. Hairlines separate continuous regions; containers exist only for interaction, grouping or
 clipping.
@@ -240,6 +295,13 @@ sentence is present.
   recognition.
 - Custom sizes are wrapped in `@ScaledMetric` so the default composition remains dense while
   accessibility categories can expand and reflow it.
+- **Production mapping (G-07 write-back, 2026-08-12):** `DesignTokens.swift` maps the roles to
+  system text styles — Display = title3 heavy condensed (20 pt at Large), Title = headline heavy
+  condensed (17 pt), Headline = subheadline semibold condensed (15 pt), Body/Callout = footnote
+  (13 pt), Caption = caption (12 pt) — all Dynamic-Type-scaling by construction (verified per-style
+  tables, sourcing row Q5: Body-class styles reach 44–53 pt at AX5). The shipped constants
+  `authoredFloor = 12` and `workingProse = 13` sit at or above this section's 12 pt floors; the
+  floor is the contract, the constants are the current choice.
 
 ### 6.3 Shape, spacing and touch
 
