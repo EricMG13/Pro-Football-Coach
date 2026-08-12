@@ -122,6 +122,26 @@ func runCoachingTreeTests() {
             expect(branches.allSatisfy { $0.disciples.map(\.staffID) == [cast[2]] })
         }
 
+        test("a head coach who takes a coordinator job is not that head coach's disciple") {
+            // A fired head coach taking a coordinator job and later getting another head-coaching
+            // job is an ordinary career. Calling their new boss their mentor inverts the
+            // relationship: they were a head coach first.
+            let cast = coachingTreeCast(count: 2)
+            let organisation = coachingTreeWorld.programmes.ids[0]
+            let state = coachingTreeState(careers: [
+                StaffCareerRecord(staffID: cast[0], assignments: [
+                    StaffCareerAssignment(season: 2027, organisationID: organisation, role: .headCoach),
+                ]),
+                StaffCareerRecord(staffID: cast[1], assignments: [
+                    StaffCareerAssignment(season: 2024, organisationID: coachingTreeWorld.programmes.ids[1], role: .headCoach),
+                    StaffCareerAssignment(season: 2027, organisationID: organisation, role: .offensiveCoordinator),
+                    StaffCareerAssignment(season: 2030, organisationID: coachingTreeWorld.programmes.ids[2], role: .headCoach),
+                ]),
+            ])
+            expect(CoachingTreeReadModel.build(from: state).branches.isEmpty,
+                   "a coach who was already a head coach did not come up under the seat they joined")
+        }
+
         test("a world with no recorded careers has no tree") {
             expect(CoachingTreeReadModel.build(from: coachingTreeState(careers: [])).branches.isEmpty)
         }

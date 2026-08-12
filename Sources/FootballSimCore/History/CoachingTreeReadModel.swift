@@ -84,6 +84,11 @@ public struct CoachingTreeReadModel: Sendable, Equatable {
                 guard let mentorID = headCoachBySeat[seat], mentorID != career.staffID else {
                     continue
                 }
+                // Came up under them, not alongside them. A fired head coach taking a coordinator
+                // job and later getting another head-coaching job is an ordinary career, and
+                // calling their new boss their mentor inverts the relationship — they held the
+                // bigger chair first.
+                guard becameHeadCoach > assignment.season else { continue }
                 guard claimedMentors.insert(mentorID).inserted else { continue }
                 disciplesByMentor[mentorID, default: []].append(CoachingTreeDisciple(
                     staffID: career.staffID,
