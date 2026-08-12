@@ -601,6 +601,32 @@ rather than pins, and they moved because prestige now feeds recruiting rather th
 and geography. It is not built: it changes league topology, and schedule generation, standings and
 whole-root integrity all read that topology, so it is a milestone-sized slice rather than a rule.
 
+### What is not wired, audited from the code on 2026-08-12
+
+The scheduler marks unbuilt systems inactive by design, so it is the authority rather than any prose.
+**Three of fifteen steps fall through to inactive**, and they are not the same kind of gap:
+
+| Step | Why |
+|---|---|
+| `userGame` | **The player's own match is not in the career loop.** The detailed P3 engine exists and is preserved; every game, the player's included, currently resolves through the abstract simulator. This is the largest single hole in the build and it pairs with FSC-011, which wants the match rendered from recorded anchors. |
+| `expiringInboundEvents` | **Nothing exists to expire.** There is no inbound-event or correspondence state in the engine at all — the inbox is a UI read model fed by sample data. The step awaits an inbox system, not a fix. |
+| `newsAndNarrative` | **Nothing needs doing weekly.** M7C made news a derived projection, and `02` §4.2b requires that presentation text is never persisted, so there is no weekly state change to make. The step is idle by design now rather than unbuilt. |
+
+**A trap that turned out not to be one, recorded so nobody re-finds it.** Whole-root integrity
+refuses a root holding a pending mandatory decision whose deadline has passed, and nothing expires
+decisions — which looks like a way to wedge a save. It is not: `IntentResolver.resolve(.advanceWeek)`
+already refuses to advance while any decision is unresolved (`unresolvedMandatoryDecisions`), so the
+deadline cannot pass with one outstanding. The integrity rule is a hostile-save guard, not a live
+trap.
+
+**Built and reachable by nothing.** `NewsFeedReadModel` and `CoachingTreeReadModel` have zero
+references outside their own files; `WorldHistoryReadModel` has one. All three are correct and
+tested, and no screen or career surface can reach them — they wait on M8.
+
+**Integrity:** one check of 29 is inactive, `contractExpiry`, which activates with roster turnover.
+
+**UI:** six view files against `04`'s 62 canonical screen families, all behind M8's entry gate.
+
 ### Preserved pre-rebaseline P0–P4 record
 
 The remainder of this document records the older P-phase foundation and its measurements. It is
