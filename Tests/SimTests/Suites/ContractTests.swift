@@ -703,6 +703,12 @@ func runContractTests() {
             expect(roster.contains("dynamicTypeSize.isAccessibilitySize"))
             expect(roster.contains("CoachWorldRouteButton"))
             expect(roster.contains("CoachWorldActionButtonStyle"))
+            expect(roster.contains("accessibleRating(\"OVR\", player.overall)"),
+                   "accessibility rows must preserve a distinct overall rating")
+            expect(roster.contains("accessibleRating(\"DEV\", player.development)"),
+                   "accessibility rows must preserve a distinct development rating")
+            expect(roster.contains("accessibleRating(\"COND\", player.condition)"),
+                   "accessibility rows must preserve a distinct condition rating")
 
             expect(deskComponents.contains("struct CoachWorldActionButtonStyle")
                        && deskComponents.contains("struct CoachWorldRouteButton")

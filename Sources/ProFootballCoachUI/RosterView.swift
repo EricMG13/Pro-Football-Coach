@@ -475,11 +475,14 @@ public struct RosterView: View {
                         }
                         Text("\(player.academicYear) · \(player.rosterRole)")
                             .foregroundStyle(palette.contentSecondary.color)
-                        Text(
-                            "OVR \(player.overall) · DEV \(player.development) · "
-                                + "FIT \(player.schemeFit) · COND \(player.condition)"
-                        )
-                        .monospacedDigit()
+                        accessibleRating("OVR", player.overall)
+                        accessibleRating("DEV", player.development)
+                        HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Space.xxs) {
+                            Text("FIT")
+                                .foregroundStyle(palette.contentSecondary.color)
+                            Text(player.schemeFit)
+                        }
+                        accessibleRating("COND", player.condition)
                         Text(player.availability)
                             .foregroundStyle(availabilityColor(player.availability))
                     }
@@ -502,6 +505,16 @@ public struct RosterView: View {
                 .accessibilityLabel(playerAccessibilityLabel(player))
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
+        }
+    }
+
+    private func accessibleRating(_ label: String, _ rating: Int) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Space.xxs) {
+            Text(label)
+                .foregroundStyle(palette.contentSecondary.color)
+            Text("\(rating)")
+                .monospacedDigit()
+                .foregroundStyle(ratingColor(rating))
         }
     }
 
