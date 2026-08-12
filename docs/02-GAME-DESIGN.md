@@ -161,16 +161,34 @@ first one:
    team at 48 players and over the cap still cuts; a team at 53 and comfortably under does not.
 
 **Bootstrap issues contracts, with a staggered term spread.** Every bootstrapped professional gets
-a contract whose remaining years are drawn deterministically so that **roughly a quarter of each
-roster reaches expiry each season**. Without this the league has no expiries until the first
+a contract whose remaining years are drawn deterministically so that **roughly a fifth of each
+roster reaches expiry each season** — terms of one to five years, spread evenly.
+
+*A fifth rather than a quarter, and the reason is a bound rather than a preference.* The free-agent
+pool is capped at 512 entries (`ProMarketState.maximumFreeAgentIDs`, which `03b` requires so the
+pool cannot grow across seasons). Thirty-two rosters of 53 is 1,696 professionals; a quarter of them
+is 424 expiries in one offseason, which fits the bound only if every prior year's unsigned player
+has already left it. A fifth is roughly 339, which leaves real headroom for carryover, and still
+turns over about eleven players per roster per season. Without this the league has no expiries until the first
 contract signed in play runs out, which is several seasons of a dead market; with a flat term every
 roster expires at once, which is a cliff rather than turnover. Salaries are rating-derived and the
 bootstrapped total must be cap-legal at generation, in the same way team colours must pass contrast
 at generation rather than being fixed up later.
 
-**The draft can never deadlock.** Even with both pressures, a team can reach its pick full. A team
-on the clock with a full active roster releases its lowest-value player whose money is not
-guaranteed, and makes the pick. A draft that cannot make a pick is a bug, never a legal state.
+**Cuts are forced by the compliance date, and by nothing else — owner decision, 2026-08-12.** The
+alternative on the table was letting incoming draft picks force a corresponding release, and it is
+rejected: a pick is not a cut instrument, and a league where the draft quietly releases players
+makes the draft the place roster decisions happen instead of the place talent arrives. Beat 2 owns
+cutting. A team over the cap on the compliance date releases until it is legal; a team under it
+cuts nobody, whatever its headcount.
+
+**The draft can never deadlock, and that is an assertion rather than a mechanism.** Expiry frees
+headcount before the draft opens, so a team arriving at its pick with no room is a bug in beat 1,
+not a case for the draft to work around. `--pro-draft-probe` is the instrument: it fails if any
+pick is refused for `activeRosterFull`. *An earlier draft of this section had the pick itself
+release the lowest-value non-guaranteed player. That was written before the owner's decision above
+and was never implemented; it is recorded here as rejected so it is not reintroduced as an
+obvious-looking fix.*
 
 **Falsifiers, instrumented in advance.**
 
@@ -277,6 +295,25 @@ Identity accumulates in the save rather than shipping with it.
   given week, a regional recruiting bonus, a morale effect after a specific outcome.
 - **Conference realignment** driven by performance, market and geography, so the map changes across a
   career.
+
+**How realignment moves the map — added 2026-08-12.** It is a **swap**, not a migration. Each season
+at most `CollegeRules.realignmentSwapsPerSeason` pairs of programmes exchange conferences.
+
+*A swap rather than a move, and the reason is structural rather than stylistic.* A conference holds
+12 to 16 programmes summing to 134 (§11.1), and schedule generation, standings, tiebreaks and
+whole-root topology integrity all read that shape. A one-way move makes one conference 11 and
+another 17, so every one of those has to cope with a size that the rules forbid. A swap leaves every
+conference exactly the size it was, so the map changes while nothing downstream can observe a size
+it was not built for.
+
+The pair chosen is the one that most improves **geographic fit**: each programme is scored by the
+distance from its city to the centroid of its conference's cities, and a swap is taken only when it
+lowers the total. Performance and market enter through prestige, which already follows the table
+(§8) and already moves a programme's standing in the sport. Ties break on programme identity, so the
+same world realigns the same way on every run.
+
+Falsifier: after a swap, every conference still holds a legal number of programmes, and every
+programme still belongs to exactly one.
 
 **Programme evolution — added 2026-08-12.** Prestige was frozen at generation, so a programme that
 won titles for a decade was exactly as prestigious as one that never won — while prestige drives
