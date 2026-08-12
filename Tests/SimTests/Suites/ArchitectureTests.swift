@@ -6,17 +6,26 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
     var value: Int
 }
 
-/// Both pins moved on 2026-08-12 for the same deliberate reason: schema 10 became schema 11 when
+/// Both pins moved twice on 2026-08-12. First when schema 10 became schema 11: when
 /// `DomainEventLedger` gained its bounded season archive. The version and the ledger's shape are
 /// both inside the encoded root, so *every* root fingerprint moves — including a freshly
 /// bootstrapped one that has archived nothing yet. That is why the root pin moves here and did not
 /// move for the rivalry-ordering change, which touched a step rather than a persisted type.
-private let pinnedRootFingerprint: UInt64 = 1_530_522_178_018_711_063
+/// Then again when this stopped hashing the save envelope and started hashing the canonical JSON
+/// body, so a compressed envelope cannot make a determinism pin depend on zlib.
+private let pinnedRootFingerprint: UInt64 = 13_833_728_571_695_481_844
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 6_295_828_161_462_602_203
+private let pinnedAdvancedRootFingerprint: UInt64 = 2_877_422_251_471_580_966
 
+/// Hashes the canonical JSON body, not the save envelope.
+///
+/// It hashed the envelope until 2026-08-12, when the body became zlib-compressed. That would have
+/// made this pin depend on the compression library's output as well as on the world, so a zlib
+/// change in a future OS would break a determinism gate for a reason that has nothing to do with
+/// determinism. What the pin is for is that a given seed produces a given *state*; compression is
+/// transport. `SaveEnvelope`'s own suite owns the round trip.
 private func architectureFingerprint<T: Encodable>(_ value: T) throws -> UInt64 {
-    let bytes = try SaveEnvelope.encode(value)
+    let bytes = try JSONEncoder.stable().encode(value)
     return bytes.reduce(0xCBF2_9CE4_8422_2325) { value, byte in
         (value ^ UInt64(byte)) &* 0x0000_0100_0000_01B3
     }

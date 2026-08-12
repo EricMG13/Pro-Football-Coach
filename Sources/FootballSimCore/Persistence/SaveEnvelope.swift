@@ -35,12 +35,21 @@ public struct SaveEnvelope: Sendable {
 
     private static let magic: [UInt8] = Array("PFC1".utf8)
 
+    /// Flags bit 0: the body is zlib-compressed.
+    ///
+    /// The bit the header reserved from the start. FSC-003 made it urgent rather than theoretical:
+    /// the 30-season gate measured **306.9 MB** of uncompressed JSON, against an 8 MB production
+    /// ceiling, and a league snapshot is the most compressible thing in the build — thousands of
+    /// near-identical records with repeated keys.
+    private static let compressedBodyFlag: UInt8 = 1
+
     public static func encode<T: Encodable>(_ payload: T) throws -> Data {
         var data = Data(magic)
         withUnsafeBytes(of: currentSchemaVersion.littleEndian) { data.append(contentsOf: $0) }
-        data.append(0)                                                  // flags: body uncompressed
+        data.append(compressedBodyFlag)
         data.append(contentsOf: Array(repeating: UInt8(0), count: 7))   // reserved
-        data.append(try JSONEncoder.stable().encode(payload))
+        let body = try JSONEncoder.stable().encode(payload)
+        data.append(try (body as NSData).compressed(using: .zlib) as Data)
         return data
     }
 
@@ -77,12 +86,19 @@ public struct SaveEnvelope: Sendable {
         // "headroom for gzip" into a promise nothing keeps. A compressed body handed to JSONDecoder
         // fails as dataCorrupted, which tells the player nothing.
         let header = Array(data.prefix(headerLength))
-        guard header[8] == 0 else {
+        guard header[8] & ~compressedBodyFlag == 0 else {
             throw SaveEnvelopeError.unsupportedHeaderFlags(found: header[8])
         }
         guard header[9..<16].allSatisfy({ $0 == 0 }) else {
             throw SaveEnvelopeError.reservedHeaderBytesSet
         }
-        return try JSONDecoder.stable().decode(type, from: data.dropFirst(headerLength))
+        // A save written before the flag existed carries an uncompressed body, which is exactly the
+        // compatibility the flag was reserved to provide: the reader branches, the header layout
+        // does not move, and no existing save is invalidated.
+        let stored = data.dropFirst(headerLength)
+        let body = header[8] & compressedBodyFlag == 0
+            ? Data(stored)
+            : try (Data(stored) as NSData).decompressed(using: .zlib) as Data
+        return try JSONDecoder.stable().decode(type, from: body)
     }
 }

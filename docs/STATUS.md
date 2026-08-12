@@ -437,6 +437,21 @@ season 30** — two and a half times the last recorded figure at the same horizo
 before an iPhone is involved, and a week costs **4.55 seconds**, so a 21-week season is about 95
 seconds of simulation.
 
+**Compressed on 2026-08-12, and the picture changed.** `03b` §4 reserved header flags bit 0 for a
+compressed body from the start and the decoder already refused it as unimplemented; claiming that bit
+was the whole change, so the version field does not move and a `flags=0` save still opens. Re-measured
+in release:
+
+```text
+s1=6,627,637B/1.890s  s5=9,516,121B/2.933s  s20=25,659,354B/8.653s  s30=36,032,520B/12.527s
+```
+
+**8.5x smaller: 306.9 MB becomes 36.0 MB at season 30**, and season 1 at 6.6 MB is inside the
+original 8 MB ceiling. Encoding costs more, not less - 10.16 s becomes 12.53 s at season 30 - which
+is the trade compression makes and is worth it at this ratio. **What remains open is encode time on
+device, not size.** Chunked or streaming persistence is the lever `03b` §4 keeps in reserve "if
+measurements require it"; on these numbers size no longer requires it and latency might.
+
 **None of that is the archive.** The archive is bounded to 960 event bodies and 30 digests; the
 growth is the authoritative snapshot, which FSC-003 has always owned. What is new is that it is now
 *measured* past season 20 rather than extrapolated, and the trend is linear in seasons with no

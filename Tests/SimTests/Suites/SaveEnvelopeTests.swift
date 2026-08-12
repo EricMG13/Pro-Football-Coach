@@ -17,6 +17,57 @@ func runSaveEnvelopeTests() {
             expectEqual(restored, payload)
         }
 
+        test("the body is compressed and the flag says so") {
+            // 03b section 4 asked for a gzipped body and the header reserved bit 0 for it. FSC-003
+            // is a release blocker at 306.9 MB after thirty seasons, and the body is JSON.
+            let data = try SaveEnvelope.encode(payload)
+            expectEqual(Array(data.prefix(SaveEnvelope.headerLength))[8], 1,
+                        "the compressed-body flag is not set")
+            expectEqual(try SaveEnvelope.decode(Payload.self, from: data), payload)
+        }
+
+        test("compression actually shrinks a realistic body") {
+            // A tiny payload can compress larger than it started; a save never is tiny. This uses a
+            // repetitive body of the kind a league snapshot actually contains.
+            struct Bulk: Codable, Equatable { let rows: [Payload] }
+            let bulk = Bulk(rows: Array(repeating: payload, count: 2_000))
+            let encoded = try SaveEnvelope.encode(bulk)
+            let plain = try JSONEncoder.stable().encode(bulk)
+            expect(encoded.count < plain.count / 4,
+                   "compressed \(encoded.count) bytes against \(plain.count) uncompressed, "
+                       + "which is not worth the flag")
+            expectEqual(try SaveEnvelope.decode(Bulk.self, from: encoded), bulk)
+        }
+
+        test("an uncompressed body written before the flag existed still opens") {
+            // The flag is the compatibility mechanism the header was designed for, so a save with
+            // flags=0 must keep decoding rather than being refused.
+            var legacy = Data(Array("PFC1".utf8))
+            withUnsafeBytes(of: SaveEnvelope.currentSchemaVersion.littleEndian) {
+                legacy.append(contentsOf: $0)
+            }
+            legacy.append(0)
+            legacy.append(contentsOf: Array(repeating: UInt8(0), count: 7))
+            legacy.append(try JSONEncoder.stable().encode(payload))
+            expectEqual(try SaveEnvelope.decode(Payload.self, from: legacy), payload)
+        }
+
+        test("a corrupt compressed body is refused rather than mis-read") {
+            var data = try SaveEnvelope.encode(payload)
+            data[data.count - 1] ^= 0xFF
+            data[SaveEnvelope.headerLength] ^= 0xFF
+            do {
+                _ = try SaveEnvelope.decode(Payload.self, from: data)
+                expect(false, "a corrupted compressed body decoded")
+            } catch {
+                expect(true)
+            }
+        }
+
+        test("encoding is byte-stable, so determinism survives compression") {
+            expectEqual(try SaveEnvelope.encode(payload), try SaveEnvelope.encode(payload))
+        }
+
         test("the version is readable from the header alone") {
             // This is the requirement 03b section 4 states: readable WITHOUT parsing the whole file.
             // Handing the reader only the first 16 bytes is how the test proves it, because a
@@ -146,17 +197,17 @@ func runSaveEnvelopeTests() {
             }
         }
 
-        test("a set flags bit is refused, so the reserved gzip bit means something") {
-            // The header comment promises the flags byte is headroom for compressing the body
-            // later. A reader that never looks at offset 8 makes that promise fictional: it would
-            // hand gzip bytes to JSONDecoder and report dataCorrupted.
+        test("an unknown flags bit is still refused") {
+            // Bit 0 is now implemented - the body really is compressed - so this guards what is
+            // left: every other bit is headroom nothing has claimed, and a reader that ignores them
+            // would hand a body it does not understand to JSONDecoder and report dataCorrupted.
             var data = try SaveEnvelope.encode(payload)
-            data[8] = 0x01
+            data[8] = 0x03
             do {
                 _ = try SaveEnvelope.decode(Payload.self, from: data)
-                expect(false, "a save claiming a compressed body was opened")
+                expect(false, "a save claiming an unimplemented body format was opened")
             } catch let error as SaveEnvelopeError {
-                expectEqual(error, .unsupportedHeaderFlags(found: 0x01))
+                expectEqual(error, .unsupportedHeaderFlags(found: 0x03))
             }
         }
 
