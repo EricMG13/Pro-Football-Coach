@@ -7385,7 +7385,7 @@ repository** — they are third-party copyrighted captures, and the repo has no 
 | Group | Count | What it is |
 |---|---|---|
 | FM26 desktop, apparently live builds | 12 | Player report ×2, portal/home, calendar, in-game glossary overlay, squad overview + bookmark manager, match-day overview, finances, set-piece designer, squad table, training, data hub |
-| FM Mobile (sideline boards read `FM23 MOBILE`) | 2 | In-match pitch; in-match goal event |
+| FM Mobile (one capture's boards read `FM23 MOBILE`; the second's digit is illegible at capture resolution and may be `21`) | 2 | In-match pitch; in-match goal event |
 | FM25 design-file mocks, watermarked `Work in Progress — taken from FM25 design files and not from a game build` | 3 | Player last-5-matches, redesigned portal, redesigned match day |
 | Marked `NON-FINAL CAPTURE` | 1 | Tactics planner |
 
@@ -7407,8 +7407,11 @@ was displayed vertically, and named that as *"the single precedent for portrait 
 FM Mobile captures show the pitch drawn **landscape, full-bleed, left-to-right, goals at the screen
 edges** — the device is rotated for the match. There is no portrait precedent here.
 
-**One residual, named rather than glossed.** The sideline boards in both captures read `FM23 MOBILE`,
-so this is settled for **FMM23**, not for the current SKU. §6.1 establishes that FM26 Mobile is the
+**One residual, named rather than glossed.** One capture's sideline boards read `FM23 MOBILE`; the
+second's digit is illegible at capture resolution even enlarged, reads more like `21`, and its
+fixture's league composition fits the earlier season (2026-08-12 re-read,
+`docs/briefs/2026-08-12-reference-set-findings.md` §5). The settlement stands on the legible capture
+alone: settled for **FMM23**, not for the current SKU. §6.1 establishes that FM26 Mobile is the
 one edition that did *not* move to the new engine, which makes an orientation change across those
 three years unlikely — but unlikely is not observed. The residual only matters if someone later wants
 to reinstate a portrait precedent; it cannot resurrect one, because a precedent this document has not
@@ -7447,6 +7450,9 @@ Each names where it lands.
    almost no interface cost, and it needs no direct control of play.
    → `04` §3 `CallInCard`; `05` P13. This is the closest thing in the reference set to our call-in
    model, and it is the shape to copy: a named proposal, one-tap accept, explicit dismiss.
+   *(2026-08-12 provenance grade: the two-button in-match suggestion is mock-sourced — it appears in
+   the redesigned-match design-file mock; the shipping analogue is weaker. The pattern stands as
+   adopted; cite it as intent, not as shipping behaviour.)*
 3. **Ambient field, foregrounded event.** The mobile match keeps all 22 as plain numbered dots and
    never tries to make the field itself carry the story. The story arrives as a **lower-third card**
    (scorer portrait, number, name, event, one-line descriptor) and a **one-line commentary banner**.
@@ -7477,6 +7483,9 @@ Each names where it lands.
 9. **The agenda as commitments with a cost.** The redesigned home lists the day's obligations as
    checkboxes with time-to-event beside each (*attend press conference — 1h*), not as news.
    → `04` §4 Inbox, `05` P12. The week should show what it will cost, not only what happened.
+   *(2026-08-12 provenance grade: the costed agenda is mock-sourced — it appears in the
+   redesigned-home design-file mock. The pattern stands as adopted; cite it as intent, not as
+   shipping behaviour.)*
 10. **Status glyph columns.** Squad rows carry a small fixed vocabulary of state chips — injured,
     tired, wants a transfer — plus condition and morale icons.
     → `04` §4 roster. **Inverted for our screen size**: at most three glyphs, and each must be one
@@ -7524,10 +7533,19 @@ being navigable.
 user-configurable shortcut manager, the information architecture has failed. Five tabs, and every
 destination reachable in at most two taps from its tab root.
 
+*(2026-08-12, superseded in place: the five-tab bottom bar was removed by the owner's 2026-08-11
+`04` correction — the world strip plus local routes now govern navigation. The two-tap reach
+constraint survives and is restated in `04` §4.5's density budget; the five-tab framing above is
+historical. The search-field and shortcut-manager tripwires stand unchanged.)*
+
 #### 4.4 Orientation
 
 Owner-fixed: portrait only. The mobile match rotates the device; we cannot, and per §2 we should not
 want to.
+
+*(2026-08-12, superseded in place: false since the owner's 2026-08-10 landscape decision — §2's
+dated note above records the overturn. The app is landscape-only; the observation is preserved as
+written because deleting it would hide what this section believed and when.)*
 
 ### 5. What this does not settle
 

@@ -575,3 +575,43 @@ at that scale (a large flat league is worse than a small textured one).
 
 **Cost of reversal: medium before the engine exists, high after.** The programme count is a constant;
 what it costs to change is the tuning built around it.
+
+## D15 — Device floor, support promise and the design window *(added 2026-08-12; DECIDED 2026-08-12 — option b)*
+
+Evaluated in `docs/briefs/2026-08-12-device-floor-evaluation.md`. Three levers travel under "raise
+the device floor": the deployment target (iOS 26, unchanged), the design window, and the support
+promise. Options considered:
+
+(a) Status quo, corrected ceiling — promise stays iPhone 15-generation and newer; window becomes
+844 × 390 through 956 × 440 once sizes are verified; `e` class stays promised.
+(b) Owner proposal, class reading — promise becomes iPhone 15 Pro and newer, `e` class excluded;
+window 852 × 393 through 956 × 440; performance baseline the A17-Pro class.
+(c) Owner proposal, date reading — `e` class included; layout floor unchanged at 844 × 390.
+
+**Decision: option (b), owner 2026-08-12.** The arithmetic that bounds what this buys: the floor
+move is worth +1.1% field scale, +3 pt of management height, zero additional table rows at the
+canonical 24–28 pt tracks, and no change to the AX5 or width-class structure. Density is not bought
+here; the material contents are the performance baseline and which currently-sold devices the
+promise names. Dropping the `e` line is a market decision the owner has made knowingly.
+
+**What holds regardless:** below-floor devices install anyway (no store mechanism excludes by
+screen size), so the install floor 844 × 390 must render un-clipped and reachable forever; AX5
+remains binding at every floor; the deployment target stays iOS 26.
+
+**Gate before canon rewrite:** every point size and inset in the evaluation is UNVERIFIED
+(AS-6.5-01). The `04` §7 window is not rewritten until sourcing rows Q4–Q5
+(`docs/briefs/2026-08-12-sourcing-log.md`) land and their retrieved values pass gate two.
+
+**Falsifier — instruments, fixed in advance.**
+- `SmallestDeviceLayoutTest`, two-tier: every registry surface renders at the install floor
+  (844 × 390) with no clipping and all controls reachable, and at the promise floor (852 × 393) at
+  full budget. Red at either tier falsifies the chosen window.
+- `PerformanceBudgetTests` plus the D4 Instruments trace on the oldest promised device at shipping
+  scale. If the budgets fail on the A17-Pro class, the choice bought nothing and is falsified.
+- The density claim: one proof screen rendered at 844 × 390 and 852 × 393 side by side. If any
+  surface fits at least one additional data row or sheds a disclosure level at the higher floor,
+  the "worthless in pixels" verdict is falsified and this entry must be re-argued.
+
+**Cost of reversal: low before the `04` §7 window is rewritten and the proof matrix re-rendered;
+medium after.** The churn is proof captures, the two-tier layout test, D4's baseline sentence and
+the `docs/STATUS.md` platform note. No save, engine or schema cost in any direction.

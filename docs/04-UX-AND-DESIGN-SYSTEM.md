@@ -22,9 +22,12 @@ replay. Recruiting, contracts, career history and live football must not inherit
 ### 1.1 What the owner-supplied Football Manager references establish
 
 The eighteen saved references are the visual-density and information-behaviour proxy for the
-management game. They represent desktop-style Football Manager composition adapted for landscape
-iPhone, closest in intent to **Football Manager Touch**, not the simplified Football Manager Mobile
-product. Copy proportions, rhythm and hierarchy; do not copy protected assets or identities.
+management game. They represent desktop-class Football Manager composition adapted for landscape
+iPhone. The capture corpus is desktop FM plus two Football Manager Mobile match frames; it contains
+no Football Manager Touch capture (provenance census:
+`docs/briefs/2026-08-12-reference-set-findings.md` §1), so the desktop-level-functionality-on-iPhone
+target stands as owner intent (testimony recorded 2026-08-12), not as capture evidence. Copy
+proportions, rhythm and hierarchy; do not copy protected assets or identities.
 
 - a player report is organised around a person, club identity and role;
 - a calendar becomes the screen when time is the task;
@@ -128,6 +131,26 @@ A screen fails before scoring if any of these is true:
 - the first viewport is a contents page for the real task rather than the task itself.
 
 Prototype truth disclosure belongs in gallery chrome outside the native device frame.
+
+### 4.5 The density budget
+
+*Adopted 2026-08-12 from `docs/briefs/2026-08-12-density-model.md`.*
+
+Density is spent in five currencies: points, taps, working memory, learned symbols and verdict
+lines. A management screen may spend: one dominant object (at least 60% of the initial viewport) and
+at most two secondary regions; 24–28 pt table tracks with six to nine fact columns beside identity,
+further facts arriving as column sets rather than horizontal scroll; at most three status glyphs per
+row from a global vocabulary of at most twelve, each changing a decision; at most one verdict line
+per readout with its evidence exactly one tap away; popouts to depth one; any task-owned datum
+within two taps. Comparisons happen on one surface; a flow that requires remembering the previous
+screen is over budget regardless of fit. Pixels are spent before taps; working memory is never
+spent. Verdicts, bands and change marks are drawn only where the simulation owns the computation
+behind them: a verdict without an engine baseline, a band without a recorded observation, or a
+change mark without a retained delta is fabrication under §4.4. At AX5 the composition reflows to
+one column preserving order and dropping nothing. A screen is over budget when a second dominant
+object appears, the glyph vocabulary grows to accommodate it, type falls below its floor to make
+something fit, or AX5 loses data. The registry's per-screen budget statements are audited under
+`04b`; a surface the inventory does not price is a finding, not a licence.
 
 ## 5. Identity system
 
@@ -287,6 +310,48 @@ Football Manager Touch density.
    - Use `.presentationDetents([.fraction(0.35), .medium])` for short inspection flows.
    - Selection, drafts, clocks and save boundaries remain in the game model so dismissing an
      overlay restores the exact prior context.
+
+### 6.5 Component registry
+
+*Adopted 2026-08-12 from `docs/briefs/2026-08-12-reference-library-plan.md` §3, including its five
+stated renames/merges relative to the deleted a60f4d9 registry (`AttributeRow` folds into
+`DenseTable` plus `ConfidenceTag`; `Chip` splits into `StatusChip` and `RoleToken`; `Sparkline`
+becomes `FormLine`; `StakeholderCard` and `MapCanvas` defer to their owning families).* §6.4's
+pipeline is this registry's constructor; the P11 three-production-uses rule governs promotion, and
+entries not yet promoted are provisional. Names map 1:1 onto Swift types in
+`Sources/ProFootballCoachUI/`.
+
+| # | Registry name | Purpose |
+|---|---|---|
+| 1 | `CoachWorldRouteButton` | Local-route navigation control |
+| 2 | `CoachWorldActionButtonStyle` | Decide/inspect/delegate action styling with roles |
+| 3 | `coachWorldDeskSurface` | Matte opaque panel treatment, hairline rules |
+| 4 | `CoachWorldBlankPhotoPlate` | Neutral person plate, no generated face |
+| 5 | `WorldStrip` | Programme/club, coach, date/phase, record, next advance |
+| 6 | `IdentityBand` | Person-led stable header for sequenced disclosure |
+| 7 | `DenseTable` | 24–28 pt tracked rows, sortable header, selection rule |
+| 8 | `ColumnSet` | Segmented swap of fact columns over stable identity columns |
+| 9 | `ListControls` | Sort/filter/bounded-search over simulation objects |
+| 10 | `RatingBadge` | Fixed-size numeric badge, printed number plus spoken band |
+| 11 | `DeltaMark` | Per-value recent-change mark with sentence equivalent |
+| 12 | `ConfidenceTag` | Banded value / unknown / observation-count state |
+| 13 | `VerdictLine` | Engine-backed judgement line heading a readout |
+| 14 | `Meter` | Capacity track with defined over-capacity state |
+| 15 | `OpposedBar` | Two-team shared-track comparison |
+| 16 | `FormLine` | Bounded last-N results with rating thread |
+| 17 | `StatusChip` | Closed vocabulary per §4.5; at most three per row |
+| 18 | `RoleToken` | Short role/assignment code mapping list to diagram |
+| 19 | `AgendaRow` | Obligation with cost/time-to-event and completion state |
+| 20 | `ScoreBug` | Teams, score, quarter, clock, down, distance, possession |
+| 21 | `LowerThird` | Causal what-just-happened card on the field |
+| 22 | `CallInCard` | Named staff proposal, accept/dismiss/inspect |
+| 23 | `EmptyState` / `ErrorBanner` / `InterruptedState` | The failure set, inside the owning composition |
+
+Adoption cost, carried knowingly: the registry is an audit surface (each entry needs its
+three-production-uses record or an explicit provisional mark); screen-local implementations of
+5–7, 10, 17 and 19–22 owe extraction refactors when promoted — P11/M8 work, not a silent rename;
+and this section must stay synchronised with `Sources/ProFootballCoachUI/`, enforced through the
+existing `ContractTests.swift` source-contract pattern.
 
 ## 7. Device and accessibility contract
 

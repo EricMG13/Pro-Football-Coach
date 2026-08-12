@@ -271,3 +271,80 @@ and the D6 identity protocol.
 
 Any surface a compiler has not seen is recorded in `docs/STATUS.md` as **unverified — never
 compiled**, naming the files.
+
+---
+
+## 2026-08-12 amendments — density model and reference uplift (appended on owner instruction)
+
+Source: the 2026-08-12 reference-uplift session. The findings live in `docs/briefs/2026-08-12-*.md`;
+the gap register (`docs/briefs/2026-08-12-gap-register.md`) grounds every entry here, and `G-nn`
+references resolve there. **Insertions only; nothing above is renumbered.**
+
+**Plan authority, owner statement 2026-08-12: this file is outdated as build ordering.** The current
+build plan is the Codex checkpoint handoff `docs/HANDOFF-CLAUDE.md` (M-roadmap), being executed in a
+live session at the time of this append. The P-phase forms below remain the detailed record; they
+bind operatively in M-vocabulary as:
+
+- **P10b** = an M7 slice (G-02 verdicts/baselines beside the living-world work) plus the M4
+  remainder (G-05 opponent knowledge) and the detailed-match attribution work (G-11).
+- **P11 entry conditions** = additions to the **M8 production-UI entry gate** — the handoff's
+  "M8 only after its production-UI entry gate" is the binding point: G-07 token write-back, G-08
+  density budget and registry adoption, G-09 test half, G-12 AX5 instrument, G-13 failure set.
+- **P13 dependency** = G-06 anchor contract lands before M8's Match Day surfaces.
+- **P14 gate** = the per-family density-budget statement check applies as M8 families land.
+- The owner directive below (all UI/UX to date is stale reference) governs all M8 design work.
+
+Owner directives recorded 2026-08-12:
+
+- **All UI and UX work to date is stale reference, not design authority.** The core build continues
+  uninterrupted; P11-and-later design work follows the density model
+  (`docs/briefs/2026-08-12-density-model.md`) and the reference-uplift findings once their proposed
+  canon amendments are accepted or amended by the owner.
+- **The density target is the desktop-class Football Manager experience adapted to iPhone**,
+  replicated inside this project's fictional universe. Owner testimony 2026-08-12: the corpus is
+  various FM versions, mainly desktop; the intended experience is the SKU with desktop-level
+  functionality on iPhone. The capture corpus itself evidences desktop FM and not that SKU
+  (`docs/briefs/2026-08-12-reference-set-findings.md` §2); the target stands on the owner's
+  statement and is recorded as testimony, not capture evidence.
+
+### Insertion: P10b — Analytics and evidence authority (between P10 and P11)
+
+Scope: G-02 distributional baselines and engine-owned verdicts; G-03 per-player attribute-change
+record; G-04 form series and the player-game rating definition; G-05 opponent-preparation knowledge
+completion; G-11 detailed-match per-player stat lines. Verdict voice, owner 2026-08-12: verdicts are
+attributed to **named staff** — G-02's staff-voice attribution is a requirement, and the `02`
+amendment naming which judgements exist and who voices them is part of G-02's scope.
+
+**Gates:** G1, G2, G4, G6, plus a verdict-reachability test (every verdict class producible) and the
+soak growth check over the new bounds (G-02 ≤ 1.5 MB, G-03 ≤ 0.6 MB, G-04 ≤ 0.3 MB, G-05 ≤ 0.2 MB,
+G-06 current game only — ≤ 2.6 MB uncompressed total).
+
+Displaces nothing: pure insertion. It may run alongside P10 but must complete before P14's readout
+families. In the milestone vocabulary `docs/STATUS.md` builds by, this is an M7 slice plus the M4
+remainder.
+
+### Amendment: P11 entry conditions
+
+P11's existing scope is unchanged; the following are named as entry conditions it currently assumes
+silently: G-07 (token write-back into `04` §6.1/§6.2 with measured ratios), G-08 (density budget and
+component registry adoption in `04`), G-09's test half (`OrientationPolicyTest` written; two-tier
+`SmallestDeviceLayoutTest` — install floor 844 × 390 no-clipping, promise floor full budget), G-12
+(AX5 reflow contract test enumerating families from `ScreenRegistry.swift` by construction), G-13
+(failure-set designs).
+
+### Amendment: P13 dependency
+
+P13 states its dependency on G-06's anchor contract explicitly (FSC-011 already implies it; the plan
+now says it).
+
+### Amendment: P14 gate
+
+P14's gate includes the per-family density-budget statement check from G-08.
+
+### Recorded seam (escalated, not repaired)
+
+This file's header defers to a Master Build Documentation (`06-BUILD-ROADMAP-AND-GATES.md`) that is
+not a path in this repository; under `docs/DOC-MANIFEST.md`'s rule a document outside the canon
+paths carries no authority. The seam is owner question Q6 in
+`docs/briefs/2026-08-12-gap-register.md` §4. These amendments are phrased in both vocabularies and
+do not resolve it.
