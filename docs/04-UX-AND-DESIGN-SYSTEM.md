@@ -298,8 +298,8 @@ are verified without shrinking working text.
 | Caption | 10–11 pt | metadata, column labels and dense table cells |
 | Numeral | 10–28 pt tabular | table ratings through score, clock, money and rank |
 
-Standard management screens may use 10–12 pt micro-type to reproduce Football Manager Touch
-density. Working prose stays at 12 pt; 10–11 pt is reserved for short labels, ratings, metadata and
+Standard management screens may use 10–12 pt micro-type to reach desktop-class management density
+on landscape iPhone. Working prose stays at 12 pt; 10–11 pt is reserved for short labels, ratings, metadata and
 tabular cells. AX5 scales these semantic roles and reflows to one readable path; it does not preserve
 the dense multi-pane composition. Diagram marks may remain fixed only when an equivalent accessible
 sentence is present.
@@ -336,7 +336,7 @@ sentence is present.
 ### 6.4 High-density SwiftUI component pipeline
 
 The management register deliberately departs from default iOS `List` and `Form` spacing to reach
-Football Manager Touch density.
+desktop-class management density.
 
 1. **Micro-typography and tabular numbers**
    - Ratings and short statistics use 10–12 pt custom system fonts, tight tracking and one-line
@@ -429,6 +429,16 @@ three-production-uses record or an explicit provisional mark); screen-local impl
 5–7, 10, 17 and 19–22 owe extraction refactors when promoted — P11/M8 work, not a silent rename;
 and this section must stay synchronised with `Sources/ProFootballCoachUI/`, enforced through the
 existing `ContractTests.swift` source-contract pattern.
+
+**The definitive design references (owner-approved 2026-08-12).** Eight sheets at the repository
+root render this registry: `tokens-v3.dc.html`, `chrome-v3.dc.html`, `table-v3.dc.html`,
+`person-v3.dc.html`, `readout-v3.dc.html`, `week-v3.dc.html`, `broadcast-v3.dc.html`,
+`failure-v3.dc.html`, with full-page renders and an index in `docs/proofs/design-references/`.
+Every `04` §8 screen family is built against them. They supersede the deleted `*-v2.dc.html`
+library entirely; any earlier rendered library, mockup set or design pass is historical evidence
+and carries no authority. **The sheets remain a rendering — this document is the only canonical
+home, and a value appearing only in a sheet has not shipped.** Where a sheet and `04` disagree,
+`04` wins and the sheet is the defect.
 
 ## 7. Device and accessibility contract
 
@@ -601,8 +611,9 @@ They depict one continuous fictional save: Carson Tech, head coach Eric Mercer, 
 State as the current opponent, and consistent staff/recruit consequences. Personnel photographs are
 neutral blank plates.
 
-Each proof renders at 844 × 390 and 932 × 430, light and dark, default and AX5. It must score at
-least 31/40 under `04b`, with no P0/P1 and none of the §4.4 automatic rejection conditions.
+Each proof renders at 844 × 390 (install floor), 852 × 393 (promise floor) and 956 × 440 (ceiling)
+per §7 and D15, light and dark, default and AX5. It must score at least 31/40 under `04b`, with no
+P0/P1 and none of the §4.4 automatic rejection conditions.
 
 Proof code is reference-only. It does not define SwiftUI architecture, simulation truth or persisted
 data. Production implementation begins only when its read model exists and the owner approves the

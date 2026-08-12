@@ -173,6 +173,10 @@ it here is the only defence P5 allows.
 Film Room gallery.** Those artefacts repeated one application chassis across the game and were
 removed on 2026-08-11. `04` remains the only canonical design and screen-inventory authority.
 
+**They build against the eight `*-v3.dc.html` sheets** — owner-approved 2026-08-12, named in
+`04` §6.5, indexed with renders in `docs/proofs/design-references/`. Those are the definitive
+design references for composition and states; `04` still owns every value.
+
 Before feature SwiftUI begins, three interactive HTML proofs establish the corrected direction:
 Coaching HQ, Recruiting Board and Match Day. They share one continuous save but use three visibly
 different registers. Passing the proof gate demonstrates direction; it does not make reference code

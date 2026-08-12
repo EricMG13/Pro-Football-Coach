@@ -1,5 +1,11 @@
 # UI Adversarial Audit — Latest Design Pass
 
+> **Superseded as design direction, 2026-08-12.** This audit judged a design pass that predates the
+> owner's 2026-08-11 rewrite of `docs/04-UX-AND-DESIGN-SYSTEM.md` and the owner-approved
+> `*-v3.dc.html` reference sheets. It is retained as evidence about craft and as a record of what
+> was found; it is not a specification. Design authority: `04` (values and rules), the eight
+> `*-v3.dc.html` sheets (composition and states, named in `04` §6.5), `04b` (the scoring rubric).
+
 ## Owner disposition — 2026-08-11
 
 The rendered direction reviewed below and the later 34-screen Film Room library are **rejected as

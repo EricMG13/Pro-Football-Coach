@@ -80,6 +80,7 @@ at. **There is no archive as of 2026-08-10** — the superseded documents were d
 | `docs/03-MATCH-ENGINE.md` | Play resolution, seeding contract, off-screen model, calibration harness, soak |
 | `docs/03b-ARCHITECTURE.md` | Module layout, engine/UI boundary, save architecture, test architecture |
 | `docs/04-UX-AND-DESIGN-SYSTEM.md` | Design system, screens, match view, the accessibility contract |
+| `*-v3.dc.html` (8 root sheets) | **The definitive design references** (owner-approved 2026-08-12): composition and states for the `04` §6.5 registry. Renders and index in `docs/proofs/design-references/`. A rendering — `04` still owns every value |
 | `docs/04b-AUDIT-RUBRIC.md` | The audit rubric: five dimensions, 0–4 anchors, P0–P3 severities |
 | `docs/05-IMPLEMENTATION-PLAN.md` | Phased build with per-phase gates |
 | `docs/06-AUDIT-DISPOSITION.md` | Disposition of the prior audit's P0/P1s and systemic patterns |
@@ -88,7 +89,7 @@ at. **There is no archive as of 2026-08-10** — the superseded documents were d
 | `docs/PRE-DEPLOYMENT-CHECKLIST.md` | What must be true before a build goes out |
 | `PRODUCT.md` | Positioning, audience, market gap, v1 scope |
 | `docs/STATUS.md` | Honest state of the build: what exists, what is verified, what is not |
-| `docs/AUDIT.md` | Prior UI audit — evidence about craft, retained read-only |
+| `docs/AUDIT.md` | Prior UI audit — evidence about craft, retained read-only. **Audits a different, portrait build; never a source of design direction** |
 
 **Doc-first amendment rule:** a gameplay question not answered in canon gets answered in canon
 first, then implemented. Never encode a design decision only in code.

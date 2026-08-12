@@ -63,7 +63,7 @@ codebase is "structurally sound and idiomatic". It measures craft. The engagemen
 | 20 | Save and load failures captured into `AppState.lastError` and never shown | **(ii)** Every error path must terminate in a presented surface. **Test:** `ErrorSurfaceTest` asserts no error sink is written without a reader. |
 | 21 | App ships with no orientation policy at all | **(i)** As 17. |
 | 22 | "On the Field" — the one landscape screen — loses all controls when rotated | **(i)** As 17; the screen does not exist. |
-| 23 | iPhone SE portrait: field-goal and punt buttons fall off the bottom of the arcade screen | **(ii)** The smallest supported device is a layout target, not an afterthought. **Test:** `SmallestDeviceLayoutTest` renders every screen at the smallest supported size and fails on off-screen controls. |
+| 23 | iPhone SE portrait: field-goal and punt buttons fall off the bottom of the arcade screen | **(ii)** The smallest supported device is a layout target, not an afterthought. **Test:** `SmallestDeviceLayoutTest`, two-tier since D15 (2026-08-12) — every registry surface renders un-clipped with all controls reachable at the **install floor** 844 × 390, and at full budget at the **promise floor** 852 × 393. Fails on off-screen controls at either tier. |
 | 24 | First-run tutorial clips its own body text at XXXL on a 667pt screen | **(i)** There are no tutorial cards — D9 teaches through the first real week. Whatever replaces them is covered by `DynamicTypeContractTest`. |
 
 **Tally:** 11 structurally impossible, 13 addressed with a named test, 0 retired.

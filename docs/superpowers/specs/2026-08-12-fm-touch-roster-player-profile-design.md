@@ -1,7 +1,14 @@
-# FM-Touch Personnel Example Screens
+# Personnel Example Screens
 
 Date: 2026-08-12
-Status: owner direction approved; implementation awaits written-spec review
+Status: implemented; **superseded as design direction later the same day**
+
+> The examples this spec describes shipped, and the screens exist. As *design direction* it is
+> superseded by the eight owner-approved `*-v3.dc.html` reference sheets (`04` §6.5): a further
+> reading of the capture corpus established that no capture of the Football Manager Touch SKU
+> exists in it, so the density target is stated as desktop-class management density on landscape
+> iPhone rather than by SKU name (`04` §1.1). Read this file as the record of what was built;
+> build new surfaces against the sheets.
 
 ## Goal
 

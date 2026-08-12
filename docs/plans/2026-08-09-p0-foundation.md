@@ -1,5 +1,13 @@
 # P0 — Foundation Implementation Plan
 
+> **HISTORICAL — completed 2026-08-09, and stale in its platform statements.** This plan says
+> "iOS 17+, iPhone-only, portrait-only". All three parts of that are superseded: the deployment
+> target is iOS 26, the app is **landscape-only** (owner, 2026-08-10), and the supported window is
+> 852 × 393 through 956 × 440 with 844 × 390 as the install floor (D15, 2026-08-12). Do not take
+> platform or design direction from this file; `CLAUDE.md`, `docs/04-UX-AND-DESIGN-SYSTEM.md` §7 and
+> `docs/OPEN-DECISIONS.md` D15 hold the current answers, and the definitive design references are
+> the eight `*-v3.dc.html` sheets named in `04` §6.5.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development`
 > (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.

@@ -865,6 +865,9 @@ nothing in the package. `05` P13's owner walkthrough asks it.
 
 `docs/briefs/2026-08-10-claude-design-ui-brief.md` was run. Output is `Tokens.dc.html`,
 `Components.dc.html` and `Screens.dc.html` at the repository root — **untracked, and not canon.**
+*(Superseded 2026-08-12: those sheets are gone, and the `04` §-numbers cited below belong to the
+pre-2026-08-11 structure. The definitive design references are the eight `*-v3.dc.html` sheets
+named in `04` §6.5.)*
 Per the brief, the artefact the build consumes is the write-back into `04`, which is done: §2.1 now
 carries every colour value with its measured ratio, §2.2 the six type roles, §2.3 the radius
 assignment and both elevation definitions, §3 four new component rules, §4 the corrected chassis, and
@@ -911,7 +914,11 @@ walkthrough asks about direction specifically.
 Taken in one session after an adversarial review of the v2 design reference against `04` and `05`.
 
 > Historical record. The 2026-08-11 iOS 26 / iPhone 15-generation support decision at the top of
-> this file supersedes item 1's pre-iPhone-15 fallback obligation.
+> this file supersedes item 1's pre-iPhone-15 fallback obligation. **Superseded again 2026-08-12
+> by D15 (option b):** the promised window is 852 × 393 through 956 × 440 with 844 × 390 kept as
+> the install floor. Item 1's floor/ceiling pair and its 6.54–7.28 pt/yd range are stale; `04` §7
+> and `docs/OPEN-DECISIONS.md` D15 hold the current numbers. What item 1 says about the size-class
+> split, AX5 and the install base still holds.
 
 1. **The SE and mini classes leave the design budget.** Floor 844 × 390, ceiling 932 × 430; the field
    scale range narrows to 6.54–7.28 pt/yd and the management budget rises to 347 pt. **It does not
@@ -950,6 +957,12 @@ floor that `02` §11.3.5's machinery could already serve.
 ---
 
 ### 2026-08-10 — the design reference library is complete
+
+> **SUPERSEDED 2026-08-12.** The `*-v2.dc.html` library described below was deleted
+> (`docs/DOC-MANIFEST.md`). The definitive design references are the eight owner-approved
+> `*-v3.dc.html` sheets at the repository root, indexed in `docs/proofs/design-references/` and
+> named in `04` §6.5. Nothing in this entry carries design authority; it is kept as a record of
+> what was done and when.
 
 Eight `*-v2.dc.html` groups at the repository root: Tokens, Components, Screens, FirstRun, Broadcast,
 Failure, League, Career, Squad, Offseason. **Untracked as canon — `04` is still the only home for the
@@ -990,6 +1003,11 @@ hidden, because v1 was criticised for the same rule.
 ---
 
 ### 2026-08-10 — the design reference library is at 37/40, and canon points at it
+
+> **SUPERSEDED 2026-08-12.** Canon no longer points at the `*-v2.dc.html` sheets — they were
+> deleted, and `04` §6.5 now names the eight owner-approved `*-v3.dc.html` sheets as the definitive
+> design references. Read this entry as history, not as direction: its screen counts, component
+> names, chassis and navigation model all predate the owner's 2026-08-11 `04` rewrite.
 
 **Sixteen `*-v2.dc.html` sheets at the repository root**, indexed in `docs/04-UX-AND-DESIGN-SYSTEM.md`
 and named per-phase in `docs/05-IMPLEMENTATION-PLAN.md` for P11 through P15. `04` remains the only
