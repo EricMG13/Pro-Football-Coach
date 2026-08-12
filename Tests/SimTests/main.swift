@@ -70,6 +70,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runLegalTests()
 } else if CommandLine.arguments.contains("--competition-only") {
     runCompetitionTests()
+} else if CommandLine.arguments.contains("--generation-only") {
+    runGenerationTests()
 } else if CommandLine.arguments.contains("--architecture-only") {
     runArchitectureTests()
 } else if CommandLine.arguments.contains("--m2-soak") {

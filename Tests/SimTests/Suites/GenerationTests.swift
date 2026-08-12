@@ -1,12 +1,20 @@
 import Foundation
 import FootballSimCore
 
-/// Pinned bytes of `SaveEnvelope.encode(LeagueGenerator.generate(seed: 20260810))`.
+/// Pinned bytes of the canonical JSON body of `LeagueGenerator.generate(seed: 20260810)`.
+///
+/// It pinned `SaveEnvelope.encode(...)` until 2026-08-12, when the save body became zlib-compressed
+/// and this dropped from 824,938 bytes to 155,631. That is compression, not a generation change —
+/// and the new body pin, 824,922, is the old one minus exactly the 16-byte header, which is the
+/// arithmetic proof that generation itself did not move.
+/// but the pin could not tell the difference, and a pin that moves when the compression library
+/// moves is a cross-process assertion about zlib rather than about generation. It now hashes the
+/// JSON the generator produces, which is the thing it is actually asserting.
 ///
 /// See "the encoded world matches a pinned digest" below for why these exist and when to change
 /// them.
-private let PINNED_WORLD_BYTES = 824_938
-private let PINNED_WORLD_DIGEST: UInt64 = 11_940_504_972_335_370_785
+private let PINNED_WORLD_BYTES = 824_922
+private let PINNED_WORLD_DIGEST: UInt64 = 10_978_924_493_241_617_378
 
 /// FNV-1a over the bytes, order-sensitive.
 ///
@@ -166,7 +174,7 @@ func runGenerationTests() {
             // This digest changes whenever generation changes, and that is the point — a generation
             // change must be a deliberate edit here rather than a silent one. Regenerate only when
             // the change is intended.
-            let encoded = try SaveEnvelope.encode(world)
+            let encoded = try JSONEncoder.stable().encode(world)
             expectEqual(encoded.count, PINNED_WORLD_BYTES,
                         "the encoded world changed size, so generation changed")
             expectEqual(checksum(encoded), PINNED_WORLD_DIGEST,
@@ -178,12 +186,12 @@ func runGenerationTests() {
         test("the digest would notice a single byte moving") {
             // The self-test. A checksum that returned a constant would make the pin above green
             // forever, which is the shape of a gate that has never failed.
-            let encoded = try SaveEnvelope.encode(world)
+            let encoded = try JSONEncoder.stable().encode(world)
             var mutated = encoded
             mutated[mutated.count / 2] = mutated[mutated.count / 2] &+ 1
             expect(checksum(mutated) != checksum(encoded), "the checksum ignores a changed byte")
             var swapped = encoded
-            swapped.swapAt(SaveEnvelope.headerLength, encoded.count - 1)
+            swapped.swapAt(0, encoded.count - 1)
             expect(checksum(swapped) != checksum(encoded),
                    "the checksum ignores byte ORDER, which is the only thing this pin is for")
         }
