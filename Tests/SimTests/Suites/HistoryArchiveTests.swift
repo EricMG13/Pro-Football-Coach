@@ -11,15 +11,15 @@ func runHistoryArchiveTests() {
     suite("History archive: the season digest") {
         test("an ordinary event is counted and its body is not kept") {
             var digest = SeasonHistoryDigest(season: 3)
-            digest.record(archiveEvent(sequence: 0, season: 3), isNotable: false)
+            digest.record(archiveEvent(sequence: 0, season: 3))
             expectEqual(digest.archivedCount, 1)
             expect(digest.notableEvents.isEmpty)
         }
 
         test("a notable event is counted and its body is kept") {
             var digest = SeasonHistoryDigest(season: 3)
-            let event = archiveEvent(sequence: 0, season: 3)
-            digest.record(event, isNotable: true)
+            let event = archiveNotableEvent(sequence: 0, season: 3)
+            digest.record(event)
             expectEqual(digest.archivedCount, 1)
             expectEqual(digest.notableEvents, [event])
         }
@@ -30,26 +30,47 @@ func runHistoryArchiveTests() {
             var digest = SeasonHistoryDigest(season: 3)
             let total = SeasonHistoryDigest.maximumNotableEvents + 40
             for sequence in 0..<total {
-                digest.record(archiveEvent(sequence: sequence, season: 3), isNotable: true)
+                digest.record(archiveNotableEvent(sequence: sequence, season: 3))
             }
             expectEqual(digest.archivedCount, total)
             expectEqual(digest.notableEvents.count, SeasonHistoryDigest.maximumNotableEvents)
         }
 
-        test("the bodies kept are the earliest, so a finished season stops changing") {
+        test("among equal weights the earliest is kept, so a finished season stops changing") {
             var digest = SeasonHistoryDigest(season: 3)
-            let first = archiveEvent(sequence: 0, season: 3)
+            let first = archiveNotableEvent(sequence: 0, season: 3)
             for sequence in 0...SeasonHistoryDigest.maximumNotableEvents {
-                digest.record(archiveEvent(sequence: sequence, season: 3), isNotable: true)
+                digest.record(archiveNotableEvent(sequence: sequence, season: 3))
             }
             expectEqual(digest.notableEvents.first, first,
-                        "a later event displaced an earlier one, so history is not stable")
+                        "a later event of equal weight displaced an earlier one")
+        }
+
+        test("a heavier event displaces a lighter one even when it arrives last") {
+            // The defect the 30-season gate found. A season archives about 70,000 events into 32
+            // slots; the championship happens in the last week and must still get in.
+            var digest = SeasonHistoryDigest(season: 3)
+            for sequence in 0..<(SeasonHistoryDigest.maximumNotableEvents * 4) {
+                digest.record(archiveLightEvent(sequence: sequence, season: 3))
+            }
+            let title = archiveNotableEvent(sequence: 100_000, season: 3)
+            digest.record(title)
+            expectEqual(digest.notableEvents.first, title,
+                        "the season's championship did not make its own digest")
+        }
+
+        test("bodies are ordered heaviest first, then earliest") {
+            var digest = SeasonHistoryDigest(season: 3)
+            digest.record(archiveLightEvent(sequence: 9, season: 3))
+            digest.record(archiveNotableEvent(sequence: 8, season: 3))
+            digest.record(archiveLightEvent(sequence: 2, season: 3))
+            expectEqual(digest.notableEvents.map(\.sequence), [8, 2, 9])
         }
 
         test("a digest round-trips through the save envelope") {
             var digest = SeasonHistoryDigest(season: 3)
-            digest.record(archiveEvent(sequence: 0, season: 3), isNotable: true)
-            digest.record(archiveEvent(sequence: 1, season: 3), isNotable: false)
+            digest.record(archiveNotableEvent(sequence: 0, season: 3))
+            digest.record(archiveEvent(sequence: 1, season: 3))
             let restored = try SaveEnvelope.decode(
                 SeasonHistoryDigest.self,
                 from: SaveEnvelope.encode(digest)
@@ -63,7 +84,7 @@ func runHistoryArchiveTests() {
     suite("History archive: hostile digests are refused") {
         test("more kept bodies than the bound is refused") {
             let events = (0...SeasonHistoryDigest.maximumNotableEvents).map {
-                archiveEvent(sequence: $0, season: 3)
+                archiveNotableEvent(sequence: $0, season: 3)
             }
             expect(archiveDigestIsRefused(season: 3, archivedCount: events.count, events: events),
                    "a digest over its notable bound decoded")
@@ -72,7 +93,10 @@ func runHistoryArchiveTests() {
         test("more kept bodies than archived events is refused") {
             // A kept body is by definition an archived event, so the count can never be the smaller
             // of the two. This is the accounting a hand-edited save would break first.
-            let events = [archiveEvent(sequence: 0, season: 3), archiveEvent(sequence: 1, season: 3)]
+            let events = [
+                archiveNotableEvent(sequence: 0, season: 3),
+                archiveNotableEvent(sequence: 1, season: 3),
+            ]
             expect(archiveDigestIsRefused(season: 3, archivedCount: 1, events: events),
                    "a digest holding more bodies than it counted decoded")
         }
@@ -82,7 +106,7 @@ func runHistoryArchiveTests() {
                 archiveDigestIsRefused(
                     season: 3,
                     archivedCount: 1,
-                    events: [archiveEvent(sequence: 0, season: 4)]
+                    events: [archiveNotableEvent(sequence: 0, season: 4)]
                 ),
                 "a digest holding another season's event decoded"
             )
@@ -93,12 +117,15 @@ func runHistoryArchiveTests() {
             expect(archiveDigestIsRefused(season: 3, archivedCount: -1, events: []))
         }
 
-        test("out-of-order bodies are refused") {
+        test("bodies out of rank order are refused") {
             expect(
                 archiveDigestIsRefused(
                     season: 3,
                     archivedCount: 2,
-                    events: [archiveEvent(sequence: 5, season: 3), archiveEvent(sequence: 1, season: 3)]
+                    events: [
+                        archiveNotableEvent(sequence: 5, season: 3),
+                        archiveNotableEvent(sequence: 1, season: 3),
+                    ]
                 ),
                 "a digest whose bodies run backwards decoded"
             )
@@ -212,6 +239,20 @@ private func runHistoryArchiveLedgerTests() {
             expect(!restored.archive.isEmpty)
         }
     }
+}
+
+/// A light but still-kept body: an arrival, weight 20 against a season ending's 100.
+private func archiveLightEvent(sequence: Int, season: Int) -> DomainEvent {
+    DomainEvent(
+        id: DomainEvent.deterministicID(rootSeed: 90_703, sequence: sequence),
+        sequence: sequence,
+        occurredAt: CalendarState(season: season, week: 1),
+        payload: .staffHired(
+            staffID: UUID(uuidString: "00000000-0000-4000-8000-00000000000c")!,
+            organisationID: UUID(uuidString: "00000000-0000-4000-8000-00000000000d")!,
+            role: .positionCoach
+        )
+    )
 }
 
 private func archiveNotableEvent(sequence: Int, season: Int) -> DomainEvent {

@@ -33,11 +33,13 @@ public struct SeasonHistoryDigest: Codable, Sendable, Equatable, Identifiable {
         let decodedCount = try container.decode(Int.self, forKey: .archivedCount)
         let decodedEvents = try container.decode([DomainEvent].self, forKey: .notableEvents)
 
-        var previousSequence: Int?
+        var previous: DomainEvent?
+        var sequences: Set<Int> = []
         let orderedWithinSeason = decodedEvents.allSatisfy { event in
-            defer { previousSequence = event.sequence }
+            defer { previous = event }
             return event.occurredAt.season == decodedSeason
-                && (previousSequence.map { event.sequence > $0 } ?? true)
+                && sequences.insert(event.sequence).inserted
+                && (previous.map { Self.ranksBefore($0, event) } ?? true)
         }
 
         // A kept body is by definition an archived event, so the count can never be the smaller of
@@ -60,13 +62,38 @@ public struct SeasonHistoryDigest: Codable, Sendable, Equatable, Identifiable {
         notableEvents = decodedEvents
     }
 
-    /// Folds one archived event in.
+    /// True when `lhs` outranks `rhs` for a place in the sample: heavier first, and among equals the
+    /// one that happened first.
     ///
-    /// Bodies are kept **earliest first** rather than most-recent-first: a finished season must stop
-    /// changing, and a most-recent policy would rewrite 2027's history every time 2031 overflowed.
-    public mutating func record(_ event: DomainEvent, isNotable: Bool) {
+    /// The sequence tie-break is what keeps this deterministic and keeps a finished season stable —
+    /// once a season is over it receives no further events, so its sample stops moving.
+    static func ranksBefore(_ lhs: DomainEvent, _ rhs: DomainEvent) -> Bool {
+        let left = lhs.payload.historicalWeight
+        let right = rhs.payload.historicalWeight
+        return left == right ? lhs.sequence < rhs.sequence : left > right
+    }
+
+    /// Folds one archived event in, keeping the heaviest bodies the season produced.
+    ///
+    /// Ranked rather than first-come. A season archives roughly 70,000 events into 32 slots, so a
+    /// first-come rule fills them in the opening weeks and the championship at the end never gets
+    /// in — which is what the 30-season gate measured before this was ranked.
+    public mutating func record(_ event: DomainEvent) {
         archivedCount += 1
-        guard isNotable, notableEvents.count < Self.maximumNotableEvents else { return }
-        notableEvents.append(event)
+        guard event.payload.historicalWeight > 0 else { return }
+
+        // Nothing to do when the sample is full and this event cannot displace its weakest member,
+        // which is the overwhelmingly common case at scale.
+        if notableEvents.count >= Self.maximumNotableEvents,
+           let weakest = notableEvents.last,
+           !Self.ranksBefore(event, weakest) {
+            return
+        }
+        let insertion = notableEvents.firstIndex { Self.ranksBefore(event, $0) }
+            ?? notableEvents.count
+        notableEvents.insert(event, at: insertion)
+        if notableEvents.count > Self.maximumNotableEvents {
+            notableEvents.removeLast(notableEvents.count - Self.maximumNotableEvents)
+        }
     }
 }

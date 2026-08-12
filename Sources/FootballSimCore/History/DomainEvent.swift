@@ -162,43 +162,35 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
     case proWaiversResolved(count: Int)
     case proMarketClosed(season: Int)
 
-    /// Whether this event's body is worth keeping once it leaves the bounded hot journal.
+    /// How much this event's body is worth keeping once it leaves the bounded hot journal. Zero is
+    /// "never keep".
     ///
-    /// The archive keeps a bounded sample of bodies per season, and this decides what competes for
-    /// that sample. The rule is whether a coach five seasons later would want the event named:
-    /// titles, awards, people arriving and leaving, money and rights changing hands. Not the weekly
-    /// bookkeeping that only matters while it is current.
+    /// **A rank, not a flag, and the gate is why.** A target-scale season archives roughly 70,000
+    /// events against 32 body slots. With a keep-the-first-notable rule those slots filled in the
+    /// opening weeks with rollover joins and hires, and `seasonCompleted` — the champion, the single
+    /// thing a coach would look up five years later — arrives last and could never be kept. The
+    /// 30-season gate printed that on its first run.
+    ///
+    /// The scale is ordinal; only the ordering matters. Titles outrank transactions, transactions
+    /// outrank arrivals, and weekly bookkeeping scores zero because it is either derivable from
+    /// authoritative state or only interesting while current.
     ///
     /// **Exhaustive, with no `default`, deliberately.** A new payload then cannot be added without
-    /// someone deciding whether it belongs in history — the compiler asks. A `default` here would
-    /// silently classify every future event as forgettable, which is exactly the coverage boundary
-    /// `CLAUDE.md` calls a defect.
-    public var isNotable: Bool {
+    /// someone ranking it — the compiler asks. A `default` would silently score every future event
+    /// zero, which is exactly the coverage boundary `CLAUDE.md` calls a defect.
+    public var historicalWeight: Int {
         switch self {
-        case .worldCreated,
-             .seasonCompleted,
-             .postseasonScheduled,
-             .redshirtResolved,
-             .playerDeparted,
-             .playerJoined,
-             .staffHired,
-             .prospectCommitted,
-             .commitmentResolved,
-             .portalEntered,
-             .playerTransferred,
-             .portalWindowCompleted,
-             .proMarketOpened,
-             .proDraftStarted,
-             .proPlayerSigned,
-             .proDraftPick,
-             .proTradeCompleted,
-             .proWaiverClaimed,
-             .proMarketClosed:
-            return true
+        case .seasonCompleted: return 100
+        case .worldCreated: return 90
+        case .postseasonScheduled: return 80
+        case .portalWindowCompleted, .proMarketOpened, .proDraftStarted, .proMarketClosed: return 60
+        case .proDraftPick: return 50
+        case .playerTransferred, .proTradeCompleted, .proWaiverClaimed: return 40
+        case .staffHired: return 35
+        case .prospectCommitted, .commitmentResolved: return 30
+        case .playerJoined, .playerDeparted, .portalEntered, .redshirtResolved, .proPlayerSigned:
+            return 20
 
-        // Weekly bookkeeping. Every one of these is either derivable from authoritative state, or
-        // only interesting while it is current: a recovered player is simply available again, and a
-        // completed game is already in the competition archive with its result.
         case .integrityChecked,
              .weekAdvanced,
              .gameCompleted,
@@ -215,9 +207,12 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
              .proWaiverPlaced,
              .proWaiverExpired,
              .proWaiversResolved:
-            return false
+            return 0
         }
     }
+
+    /// Whether the body is kept at all. Derived, so the rank stays the single definition.
+    public var isNotable: Bool { historicalWeight > 0 }
 
     public var referencedEntityIDs: [UUID] {
         switch self {
@@ -517,11 +512,11 @@ public struct DomainEventLedger: Codable, Sendable, Equatable {
     private mutating func archiving(_ event: DomainEvent) {
         let season = event.occurredAt.season
         if let index = archive.firstIndex(where: { $0.season == season }) {
-            archive[index].record(event, isNotable: event.payload.isNotable)
+            archive[index].record(event)
             return
         }
         var digest = SeasonHistoryDigest(season: season)
-        digest.record(event, isNotable: event.payload.isNotable)
+        digest.record(event)
         // Kept ascending by insertion rather than by sorting the whole archive on every overflow,
         // which happens thousands of times a season.
         let insertion = archive.firstIndex { $0.season > season } ?? archive.count
