@@ -390,6 +390,59 @@ Still open, and not claimed: whether a real *state or minor city* name belongs i
 cities are generated fictional at all. The fix removed the collisions; the policy question is the
 owner's.
 
+### M7B — the historical aggregate archive — **implemented, and it measured a release blocker**
+
+An event that falls out of the bounded hot journal now folds into a `SeasonHistoryDigest` for **its
+own** season rather than vanishing into a global counter. Each digest holds that season's archived
+count plus a bounded, ranked sample of bodies; `DomainEventLedger.digest(forSeason:)` answers
+`docs/roadmap/06`'s second M7 exit clause — surfacing a past season reads that season's aggregate,
+not the journal and not the save. This is the "historical aggregate archive" `docs/roadmap/05` §2
+names. Schema 10 became **11**; both pinned fingerprints moved and were confirmed identical across
+two separate processes.
+
+**The gate found a defect that no unit test would have.** Notability began as a flag and bodies were
+kept first-come. At target scale a season archives roughly 70,000 events into 32 body slots, so
+those slots filled during the opening weeks with rollover joins and hires — and `seasonCompleted`,
+the champion, happens in the final week and could **never** be kept. The digest was structurally
+incapable of holding the most important event of every season it described. Notability is now an
+ordinal `historicalWeight`, ties broken by sequence so equal-weight events keep the earliest and a
+finished season stops changing.
+
+**A planned whole-root integrity check was dropped rather than built.** `archive` is `private(set)`
+and mutated only by `append` and by a decoder that already validates ordering, bounds and the
+count-versus-bodies accounting. No reachable path produces a bad archive, so the check could not be
+made to fail — and a check that cannot fail is prose pretending to be a test, which `CLAUDE.md`
+forbids.
+
+Measured: history archive **20 tests / 147 checks**, core contracts **146 / 955**, architecture
+**25 / 222**, portal-scheduler replay **9 / 27,823**.
+
+#### The 30-season gate, in release — history passes, performance does not
+
+```text
+seasons=30 weeks=630 weekMeanMs=4552.18
+archivedSeasons=30 archivedEvents=2,032,988 hotEvents=4,096 notableBodies=960
+save: s1=42,370,482B/1.516s  s5=70,136,921B/2.370s
+      s20=213,935,579B/7.033s  s30=306,925,923B/10.160s
+```
+
+**The history half of the exit gate is met.** 2.03 million archived events reduce to 30 digests and
+960 retained bodies. The archive is contiguous, ordered, bounded, every retained season carries a
+notable body, and the root stays valid after 630 weeks.
+
+**The performance half is not, and the numbers are worse than anything previously recorded.** M2
+measured **84.66 MB at season 20**; this run measures **213.9 MB at season 20** and **306.9 MB at
+season 30** — two and a half times the last recorded figure at the same horizon, against an original
+8 MB production ceiling. Encoding alone costs **10.2 seconds** at season 30 on a development Mac,
+before an iPhone is involved, and a week costs **4.55 seconds**, so a 21-week season is about 95
+seconds of simulation.
+
+**None of that is the archive.** The archive is bounded to 960 event bodies and 30 digests; the
+growth is the authoritative snapshot, which FSC-003 has always owned. What is new is that it is now
+*measured* past season 20 rather than extrapolated, and the trend is linear in seasons with no
+ceiling. **Treat FSC-003 as a release blocker, not a tuning item** — compression, a cold archive and
+chunked or streaming persistence are M9 work that the product cannot ship without.
+
 ### Preserved pre-rebaseline P0–P4 record
 
 The remainder of this document records the older P-phase foundation and its measurements. It is
