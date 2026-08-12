@@ -65,7 +65,12 @@ struct CoachWorldRouteButton: View {
     let title: String
     let isCurrent: Bool
     let palette: CoachWorldTokens.Palette
+    /// Selection furniture speaks in the programme's colour when a screen has one. Defaulting to
+    /// the tier token keeps every screen that has not been given an identity unchanged.
+    var selection: CoachWorldTokens.ColorValue?
     let action: () -> Void
+
+    private var selectionColour: CoachWorldTokens.ColorValue { selection ?? palette.collegeIdentity }
 
     var body: some View {
         Button(action: action) {
@@ -79,11 +84,11 @@ struct CoachWorldRouteButton: View {
             minHeight: CoachWorldTokens.Shape.minimumTarget
         )
         .padding(.horizontal, CoachWorldTokens.Space.xxs)
-        .background(isCurrent ? palette.collegeIdentity.color.opacity(0.16) : Color.clear)
+        .background(isCurrent ? selectionColour.color.opacity(0.16) : Color.clear)
         .overlay(alignment: .bottom) {
             if isCurrent {
                 Rectangle()
-                    .fill(palette.collegeIdentity.color)
+                    .fill(selectionColour.color)
                     .frame(height: 3)
                     .accessibilityHidden(true)
             }

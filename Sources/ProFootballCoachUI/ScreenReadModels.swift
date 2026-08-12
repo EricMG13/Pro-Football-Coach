@@ -746,15 +746,23 @@ public enum CoachWorldSampleData {
         stableID: "sample-world",
         name: "Sample Football Universe"
     )
+    // Colours are `04` section 6.1's labelled synthetic reference trio, not invented values: the
+    // dark-primary pair for the home programme and the low-chroma pair away, so the fixtures
+    // exercise both the ordinary case and the one that measures 2.67 on dark `work` and therefore
+    // demands a boundary. Trade dress is the generator's contract; these are canon's own cards.
     public static let homeTeam = CoachWorldTeamReference(
         stableID: "sample-carson",
         name: "Carson Tech",
-        abbreviation: "CAR"
+        abbreviation: "CAR",
+        primaryColorHex: "#14382A",
+        secondaryColorHex: "#D9B23C"
     )
     public static let awayTeam = CoachWorldTeamReference(
         stableID: "sample-southern",
         name: "Southern State",
-        abbreviation: "SOU"
+        abbreviation: "SOU",
+        primaryColorHex: "#555B66",
+        secondaryColorHex: "#D9DDE4"
     )
     public static let venue = CoachWorldVenueReference(
         stableID: "sample-venue",

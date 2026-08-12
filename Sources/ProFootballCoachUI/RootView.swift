@@ -51,6 +51,7 @@ private struct DebugCoachingHQRoot: View {
             } else if currentScreen == .playerProfile, let profile = roster.players.first?.profile {
                 PlayerProfileView(
                     model: profile,
+                    team: roster.team,
                     onClose: { currentScreen = .roster },
                     onInspectDevelopment: inspectDevelopment
                 )

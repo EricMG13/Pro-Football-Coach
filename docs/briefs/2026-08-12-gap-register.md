@@ -263,3 +263,27 @@ All ten questions above were put to the owner and disposed the same day:
 9. **Verdict voice: named staff.** G-02's staff-voice attribution is a requirement, not an option;
    lands in `02` when G-02 is implemented.
 10. **Deliverables committed** as docs-only commits, separate from the live session's work.
+
+## 6. Post-sheet additions, 2026-08-12
+
+Two gaps surfaced while drawing the approved reference sheets; same eight-field shape.
+
+| Field | G-14 |
+|---|---|
+| Requirement | Engine-owned load policy: condition-band cut points, dose multipliers and the plan's derived cost (intensity, staff workload) — week-v3 sheet card 3; Practice Plan family |
+| Today | Condition is engine-owned (M2, `Sources/FootballSimCore/People/`); no policy object, no multiplier constants, no derived-cost computation anywhere in `Sources/FootballSimCore/` |
+| Delta | A rules-module policy (5 bands, multipliers as constants per tier), deterministic derived-cost computation, per-team standing rule persisted |
+| Owner doc | `02` (which judgements exist), `03` (computation), rules module (constants) |
+| Phase | M4 remainder / P10b-adjacent |
+| Cost | Trivial save growth (per-team policy, 5 bands); test: determinism + bound. The sheet ships its derived-cost region omitted until this exists |
+| Blocks | Practice Plan derived-cost region; load-policy ladder card's shipping form |
+
+| Field | G-15 |
+|---|---|
+| Requirement | Partial-advance completion record — the interrupted state's "what was preserved" line (failure-v3 card C) needs the engine to expose what completed before interruption |
+| Today | `nothing` — advance is atomic to the caller; no partial-completion read model |
+| Delta | A completion record on the advance boundary (which steps committed, which did not), exposed read-only |
+| Owner doc | `03b` (session/read-model boundary) |
+| Phase | P12 / M8 entry-adjacent |
+| Cost | Small; bounded to the current advance. Test: record matches committed state after induced interruption |
+| Blocks | Truthful interrupted-state copy; resume-preserving guarantees in `04` §7's last clause |

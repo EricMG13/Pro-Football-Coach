@@ -64,6 +64,7 @@ public struct RosterView: View {
         .sheet(item: $presentedProfile) { profile in
             PlayerProfileView(
                 model: profile,
+                team: model.team,
                 onClose: { presentedProfile = nil },
                 onInspectDevelopment: onInspectDevelopment
             )
@@ -72,18 +73,26 @@ public struct RosterView: View {
 
     private var worldStrip: some View {
         HStack(spacing: CoachWorldTokens.Space.xs) {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                Text(model.team.name.uppercased())
-                    .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                    .lineLimit(1)
-                Text(statusMessage ?? worldContextLine)
-                    .font(CoachWorldTokens.TypeRole.caption)
-                    .foregroundStyle(
-                        statusMessage == nil
-                            ? palette.contentSecondary.color
-                            : palette.statePositive.color
-                    )
-                    .lineLimit(1)
+            HStack(spacing: CoachWorldTokens.Space.xs) {
+                uniformMark
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
+                    Text(model.team.name.uppercased())
+                        .font(CoachWorldTokens.TypeRole.headline.weight(.black))
+                        .lineLimit(1)
+                    Text(statusMessage ?? worldContextLine)
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(worldContextInk)
+                        .lineLimit(1)
+                }
+            }
+            .foregroundStyle(identity?.onField.color ?? palette.contentPrimary.color)
+            .padding(.horizontal, CoachWorldTokens.Space.xs)
+            .frame(maxHeight: .infinity)
+            .background(identity?.field.color ?? palette.raised.color)
+            .overlay(alignment: .trailing) {
+                // Canon 6.1: a generated field below 3:1 against the surface behind it is spoken
+                // by a boundary, because the colour alone cannot be relied on to separate them.
+                if identity?.needsBoundary == true { verticalSeam }
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel("\(model.team.name), \(statusMessage ?? worldContextLine)")
@@ -111,6 +120,45 @@ public struct RosterView: View {
         .accessibilitySortPriority(50)
     }
 
+    /// The programme's uniform mark: its abbreviation in the secondary, which `04` section 5 names
+    /// as identity furniture the management frame may carry.
+    private var uniformMark: some View {
+        Text(model.team.abbreviation)
+            .font(CoachWorldTokens.TypeRole.caption.weight(.black))
+            .foregroundStyle(markInk.color)
+            .padding(.horizontal, CoachWorldTokens.Space.xxs)
+            .frame(minWidth: RosterMetric.markWidth, minHeight: RosterMetric.markHeight)
+            .background(
+                (identity?.accent.color ?? palette.collegeIdentity.color),
+                in: RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.rowRadius)
+            )
+            .accessibilityHidden(true)
+    }
+
+    /// Selection speaks in the programme's colour where a reader can see it against the working
+    /// surface, and falls back to the tier token where the generated pair cannot clear 3:1.
+    private var selectionColour: CoachWorldTokens.ColorValue {
+        identity?.selectionRule(on: palette.work) ?? palette.collegeIdentity
+    }
+
+    private var markInk: CoachWorldTokens.ColorValue {
+        guard let accent = identity?.accent else { return palette.page }
+        return accent.mostLegibleInk(from: [palette.page, palette.contentPrimary]) ?? palette.page
+    }
+
+    private var worldContextInk: Color {
+        if statusMessage != nil, identity == nil { return palette.statePositive.color }
+        return (identity?.onField ?? palette.contentSecondary).color
+    }
+
+    private var identity: CoachWorldTeamIdentity? {
+        CoachWorldTeamIdentity(
+            team: model.team,
+            behind: palette.raised,
+            inks: [palette.contentPrimary, palette.page]
+        )
+    }
+
     private var personnelRoutes: some View {
         HStack(spacing: .zero) {
             personnelRoute("Roster", isCurrent: true)
@@ -133,6 +181,7 @@ public struct RosterView: View {
             title: title,
             isCurrent: current,
             palette: palette,
+            selection: selectionColour,
             action: { onNavigate(screen) }
         )
     }
@@ -144,11 +193,11 @@ public struct RosterView: View {
                 .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
         }
         .buttonStyle(.plain)
-        .background(isCurrent ? palette.collegeIdentity.color.opacity(0.16) : Color.clear)
+        .background(isCurrent ? selectionColour.color.opacity(0.16) : Color.clear)
         .overlay(alignment: .bottom) {
             if isCurrent {
                 Rectangle()
-                    .fill(palette.collegeIdentity.color)
+                    .fill(selectionColour.color)
                     .frame(height: RosterMetric.selectedRuleWidth)
                     .accessibilityHidden(true)
             }
@@ -361,13 +410,13 @@ public struct RosterView: View {
             .contentShape(Rectangle())
             .background(
                 isSelected
-                    ? palette.collegeIdentity.color.opacity(0.14)
+                    ? selectionColour.color.opacity(0.14)
                     : palette.raised.color.opacity(0.34)
             )
             .overlay(alignment: .leading) {
                 if isSelected {
                     Rectangle()
-                        .fill(palette.collegeIdentity.color)
+                        .fill(selectionColour.color)
                         .frame(width: RosterMetric.selectedRuleWidth)
                         .accessibilityHidden(true)
                 }
@@ -419,7 +468,7 @@ public struct RosterView: View {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                     Text("#\(selected.number) · \(selected.position)")
                         .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                        .foregroundStyle(palette.collegeIdentity.color)
+                        .foregroundStyle(palette.contentSecondary.color)
                     Text(selected.person.name)
                         .font(CoachWorldTokens.TypeRole.title.weight(.black))
                     Text("\(selected.academicYear) · \(selected.rosterRole)")
@@ -430,7 +479,7 @@ public struct RosterView: View {
             .accessibilityElement(children: .combine)
             .padding(CoachWorldTokens.Space.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(palette.collegeIdentity.color.opacity(0.08))
+            .background(palette.raised.color.opacity(0.5))
 
             inspectorSection("STRENGTHS", selected.profile.strengths.joined(separator: " · "))
             inspectorSection("CONCERN", selected.profile.concern)
@@ -451,7 +500,7 @@ public struct RosterView: View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
             Text(title)
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.collegeIdentity.color)
+                .foregroundStyle(palette.contentSecondary.color)
             Text(value)
                 .font(CoachWorldTokens.TypeRole.body)
                 .fixedSize(horizontal: false, vertical: true)
@@ -514,12 +563,12 @@ public struct RosterView: View {
                     .padding(CoachWorldTokens.Space.md)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
-                        isSelected ? palette.collegeIdentity.color.opacity(0.14) : Color.clear
+                        isSelected ? selectionColour.color.opacity(0.14) : Color.clear
                     )
                     .overlay(alignment: .leading) {
                         if isSelected {
                             Rectangle()
-                                .fill(palette.collegeIdentity.color)
+                                .fill(selectionColour.color)
                                 .frame(width: RosterMetric.selectedRuleWidth)
                                 .accessibilityHidden(true)
                         }
@@ -547,7 +596,7 @@ public struct RosterView: View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
             Text("WORLD")
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.collegeIdentity.color)
+                .foregroundStyle(palette.contentSecondary.color)
             Text("\(model.team.name) · \(model.coach.name)")
                 .font(CoachWorldTokens.TypeRole.headline.weight(.black))
             Text(statusMessage ?? worldContextLine)
@@ -628,6 +677,8 @@ private enum RosterMetric {
     static let headerHeight: CGFloat = 44
     static let rowContentHeight: CGFloat = 28
     static let selectedRuleWidth: CGFloat = 3
+    static let markWidth: CGFloat = 34
+    static let markHeight: CGFloat = 22
     static let tableFraction: CGFloat = 0.64
     static let numberWidth: CGFloat = 28
     static let positionWidth: CGFloat = 34
