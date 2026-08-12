@@ -757,9 +757,61 @@ func runContractTests() {
                    "Player Profile needs both a launch argument and a proof-screen name")
             expect(root.contains("RosterView(") && root.contains("PlayerProfileView("),
                    "the debug root must reach both personnel screens")
+
+            expect(roster.contains("CoachWorldTeamIdentity(") && roster.contains("uniformMark"),
+                   "the world strip must carry generated programme identity, not neutral furniture")
+            expect(roster.contains("selectionColour"),
+                   "selection speaks in programme colour where it is legible")
+            expect(profile.contains("let team: CoachWorldTeamReference"),
+                   "the dossier must know whose uniform the player wears")
         }
 
 #if DEBUG
+        test("generated team colour resolves to legible ink or refuses to paint") {
+            let dark = CoachWorldTokens.dark
+            let inks = [dark.contentPrimary, dark.page]
+
+            for team in [CoachWorldSampleData.homeTeam, CoachWorldSampleData.awayTeam] {
+                guard let identity = CoachWorldTeamIdentity(
+                    team: team, behind: dark.raised, inks: inks
+                ) else {
+                    expect(false, "\(team.name) carries a colour pair and must resolve")
+                    continue
+                }
+                expect(identity.field.contrast(against: identity.onField)
+                           >= CoachWorldTeamIdentity.bodyTextFloor,
+                       "\(team.name) ink measures below the body floor on its own field")
+                guard let rule = identity.selectionRule(on: dark.work) else {
+                    expect(false, "\(team.name) must offer a visible selection rule")
+                    continue
+                }
+                expect(rule.contrast(against: dark.work) >= CoachWorldTeamIdentity.nonTextFloor,
+                       "\(team.name) selection rule measures below the non-text floor")
+            }
+
+            // A field too close to the surface behind it is spoken by a boundary, never left to
+            // colour alone. Both reference primaries are dark, so this fires in dark appearance.
+            let home = CoachWorldTeamIdentity(
+                team: CoachWorldSampleData.homeTeam, behind: dark.raised, inks: inks
+            )
+            expectEqual(home?.needsBoundary, true,
+                        "a dark generated field on a dark strip must carry a boundary")
+
+            let malformed = CoachWorldTeamReference(
+                stableID: "malformed", name: "Malformed", abbreviation: "MAL",
+                primaryColorHex: "not-a-colour", secondaryColorHex: "#D9B23C"
+            )
+            expect(CoachWorldTeamIdentity(team: malformed, behind: dark.raised, inks: inks) == nil,
+                   "a malformed pair falls back to neutral furniture rather than guessing")
+
+            let illegible = CoachWorldTeamReference(
+                stableID: "illegible", name: "Illegible", abbreviation: "ILL",
+                primaryColorHex: "#767676", secondaryColorHex: "#D9DDE4"
+            )
+            expect(CoachWorldTeamIdentity(team: illegible, behind: dark.raised, inks: inks) == nil,
+                   "a field no palette ink can reach 4.5:1 on must refuse to paint")
+        }
+
         test("personnel projections keep stable identities and deterministic sorting") {
             let roster = CoachWorldSampleData.roster
             expectEqual(roster.provenance, .sample)
@@ -817,11 +869,17 @@ func runContractTests() {
                     !choice.cost.isEmpty && !choice.consequence.isEmpty
                 }
             }, "every recruiting choice must name its cost and consequence")
+            // Imported media stays absent: `04` section 5.1 reserves mark and uniform assets for a
+            // future custom universe. Colour is not in that class — the base game generates a pair
+            // under the trade-dress gate, and section 5 lets it own the world strip, which is why
+            // section 6.1 states contrast floors for generated colour at all.
             expect(CoachWorldSampleData.homeTeam.secondaryMarkAsset == nil
                        && CoachWorldSampleData.homeTeam.uniformAsset == nil
-                       && CoachWorldSampleData.homeTeam.primaryColorHex == nil
-                       && CoachWorldSampleData.homeTeam.secondaryColorHex == nil,
-                   "future custom-universe team assets must remain optional")
+                       && CoachWorldSampleData.homeTeam.mark == nil,
+                   "future custom-universe team media must remain absent")
+            expect(CoachWorldSampleData.homeTeam.primaryColorHex != nil
+                       && CoachWorldSampleData.homeTeam.secondaryColorHex != nil,
+                   "a programme fixture carries the generated colour pair the frame paints")
 
             let sample = CoachWorldSampleData.matchDay
             expectEqual(sample.provenance, .sample,

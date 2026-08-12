@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct PlayerProfileView: View {
     public let model: PlayerProfileReadModel
+    public let team: CoachWorldTeamReference
     public let onClose: () -> Void
     public let onInspectDevelopment: (String) -> Void
 
@@ -11,10 +12,12 @@ public struct PlayerProfileView: View {
 
     public init(
         model: PlayerProfileReadModel,
+        team: CoachWorldTeamReference,
         onClose: @escaping () -> Void,
         onInspectDevelopment: @escaping (String) -> Void
     ) {
         self.model = model
+        self.team = team
         self.onClose = onClose
         self.onInspectDevelopment = onInspectDevelopment
     }
@@ -57,18 +60,21 @@ public struct PlayerProfileView: View {
 
     private var identityBand: some View {
         HStack(alignment: .top, spacing: CoachWorldTokens.Space.sm) {
-            CoachWorldBlankPhotoPlate(
-                name: model.person.name,
-                palette: palette,
-                width: ProfileMetric.photoWidth,
-                height: ProfileMetric.photoHeight
-            )
+            VStack(spacing: CoachWorldTokens.Space.xxs) {
+                CoachWorldBlankPhotoPlate(
+                    name: model.person.name,
+                    palette: palette,
+                    width: ProfileMetric.photoWidth,
+                    height: ProfileMetric.photoHeight
+                )
+                uniformMark
+            }
 
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                 Text("#\(model.number)")
                     .font(CoachWorldTokens.TypeRole.headline.weight(.black))
                     .monospacedDigit()
-                    .foregroundStyle(palette.collegeIdentity.color)
+                    .foregroundStyle(numberInk.color)
                 Text(model.person.name)
                     .font(CoachWorldTokens.TypeRole.display)
                     .lineLimit(1)
@@ -92,6 +98,38 @@ public struct PlayerProfileView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel(identityAccessibilityLabel)
         .accessibilitySortPriority(400)
+    }
+
+    /// The player's club: uniform mark in the programme's secondary, which `04` section 5 names as
+    /// identity furniture rather than decoration.
+    private var uniformMark: some View {
+        Text(team.abbreviation)
+            .font(CoachWorldTokens.TypeRole.caption.weight(.black))
+            .foregroundStyle(markInk.color)
+            .padding(.horizontal, CoachWorldTokens.Space.xxs)
+            .frame(minWidth: ProfileMetric.markWidth, minHeight: ProfileMetric.markHeight)
+            .background(
+                (identity?.accent.color ?? palette.collegeIdentity.color),
+                in: RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.rowRadius)
+            )
+            .accessibilityLabel(team.name)
+    }
+
+    private var identity: CoachWorldTeamIdentity? {
+        CoachWorldTeamIdentity(
+            team: team,
+            behind: palette.raised,
+            inks: [palette.contentPrimary, palette.page]
+        )
+    }
+
+    private var numberInk: CoachWorldTokens.ColorValue {
+        identity?.selectionRule(on: palette.raised) ?? palette.collegeIdentity
+    }
+
+    private var markInk: CoachWorldTokens.ColorValue {
+        guard let accent = identity?.accent else { return palette.page }
+        return accent.mostLegibleInk(from: [palette.page, palette.contentPrimary]) ?? palette.page
     }
 
     private func identityFact(_ label: String, _ value: String) -> some View {
@@ -118,7 +156,7 @@ public struct PlayerProfileView: View {
                 .buttonStyle(.plain)
                 .background(
                     activeRoute.rawValue == route.rawValue
-                        ? palette.collegeIdentity.color.opacity(0.16)
+                        ? numberInk.color.opacity(0.16)
                         : Color.clear
                 )
                 .disabled(route != .overview)
@@ -146,7 +184,7 @@ public struct PlayerProfileView: View {
         VStack(spacing: .zero) {
             Text(group.title.uppercased())
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.collegeIdentity.color)
+                .foregroundStyle(palette.contentSecondary.color)
                 .padding(CoachWorldTokens.Space.sm)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityAddTraits(.isHeader)
@@ -220,7 +258,7 @@ public struct PlayerProfileView: View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
             Text(label)
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.collegeIdentity.color)
+                .foregroundStyle(palette.contentSecondary.color)
                 .accessibilityAddTraits(.isHeader)
             Text(value)
                 .font(CoachWorldTokens.TypeRole.body)
@@ -234,7 +272,7 @@ public struct PlayerProfileView: View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
             Text("RECENT FORM")
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.collegeIdentity.color)
+                .foregroundStyle(palette.contentSecondary.color)
                 .accessibilityAddTraits(.isHeader)
             HStack(spacing: CoachWorldTokens.Space.xs) {
                 ForEach(model.recentForm) { entry in
@@ -326,4 +364,6 @@ private enum ProfileMetric {
     static let photoWidth: CGFloat = 64
     static let photoHeight: CGFloat = 72
     static let fieldHeight: CGFloat = 96
+    static let markWidth: CGFloat = 34
+    static let markHeight: CGFloat = 20
 }
