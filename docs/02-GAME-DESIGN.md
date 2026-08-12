@@ -143,6 +143,26 @@ does not hold, and stops at the one they do:
 
 Falsifier: `--pro-soak` fails if a season passes with no `proDraftPick` event.
 
+### 4.2b The news feed — added 2026-08-12
+
+The living world reports itself. `DomainEventPayload` already fixes the mechanism — "Presentation
+text is derived by read-model builders, never persisted as the source of truth" — so a headline is
+computed from a typed event and a save carries facts, never prose. Wording can then change without
+migrating anybody's league.
+
+What is newsworthy is **not a second editorial list**. It is `historicalWeight`, the same rank that
+decides which bodies an archived season keeps: a season worth remembering is a season worth
+reporting, and a payload scoring zero is weekly bookkeeping that never makes the feed. One
+definition of important, used twice.
+
+The feed reads the bounded hot journal **and** the archive's retained bodies, which is what keeps a
+championship reportable long after it has left the hot window — the reason M7B keeps bodies at all.
+It is bounded, because a feed is a screen and not a census, and ordered newest season first with the
+heaviest story leading inside a season: recency alone buries a title under the transactions that
+followed it, and weight alone freezes the same headline at the top forever.
+
+Falsifier: a story that has left the hot journal must still reach the feed.
+
 ### 4.3 Recruiting, in detail (college)
 
 Recruiting is the college tier's signature system and its throughput problem (D3/D4).
