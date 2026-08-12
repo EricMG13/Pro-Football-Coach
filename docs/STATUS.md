@@ -578,6 +578,29 @@ Measured: news feed **8 tests / 14 checks**, core contracts **152 / 978**, archi
 **M7 now has one gap left**: programme evolution and conference movement, both listed in
 `docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md` and unspecified in canon.
 
+### M7D — programme evolution — **implemented and green**
+
+Prestige moves. It was frozen at generation, which left the world unable to evolve in the one
+dimension recruiting, the AI and the job market all read. The final ranking maps to a target and
+prestige steps one point a season toward it — a target with a step rather than a delta, so a
+programme that settles at a rank converges instead of drifting off the scale. `02` §8 carries the
+rule and its falsifier.
+
+Applied at season rollover **after** the people transition, never before: that assignment replaces
+`programmes` wholesale, so prestige written earlier in the step would be silently discarded.
+
+Measured: programme evolution **7 tests / 275 checks**, core contracts **152 / 980**, architecture
+**25 / 222** (the pins do not move — evolution fires at rollover, and the pinned transition is one
+week from bootstrap), and the two-season byte-identical replay **9 / 27,823**.
+
+**The world visibly changed, which is the point.** The portal characterization moved with it:
+entrant windows 385 to 409, transfers 210 to 217, returns 94 to 112. Those are descriptive outputs
+rather than pins, and they moved because prestige now feeds recruiting rather than sitting still.
+
+**M7's last gap is conference movement**, which `02` §8 specifies as driven by performance, market
+and geography. It is not built: it changes league topology, and schedule generation, standings and
+whole-root integrity all read that topology, so it is a milestone-sized slice rather than a rule.
+
 ### Preserved pre-rebaseline P0–P4 record
 
 The remainder of this document records the older P-phase foundation and its measurements. It is

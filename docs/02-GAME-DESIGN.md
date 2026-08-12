@@ -240,6 +240,20 @@ Identity accumulates in the save rather than shipping with it.
 - **Conference realignment** driven by performance, market and geography, so the map changes across a
   career.
 
+**Programme evolution — added 2026-08-12.** Prestige was frozen at generation, so a programme that
+won titles for a decade was exactly as prestigious as one that never won — while prestige drives
+recruiting pull, AI valuations and which jobs a coach is offered. The final table maps to a *target*
+prestige, first at the ceiling and last at the floor, and a programme's prestige steps **one point a
+season** toward it.
+
+A target with a step, not a delta, and the difference matters: win-gain/lose-drop has no restoring
+force and walks a programme off the scale. This converges when a programme settles at a rank, reaches
+the ceiling only by standing there, and lets twenty seasons move a programme twenty points — a
+career-length change rather than a whiplash. A season that produced no table moves nobody.
+
+Falsifier: held at a fixed rank, prestige must stop moving. An evolution that never settles is a
+random walk wearing a rule's clothes.
+
 All of it fictional and original, guarded by the name-collision and trade-dress tests.
 
 ---

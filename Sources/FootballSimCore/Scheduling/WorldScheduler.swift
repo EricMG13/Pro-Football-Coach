@@ -458,6 +458,18 @@ public enum WorldScheduler {
                 nextState.staff = peopleTransition.staff
                 nextState.people = peopleTransition.people
                 if completed.week == SharedRules.inSeasonWeeks {
+                    // After the people transition has been applied, never before it: that assignment
+                    // replaces `programmes` wholesale, so prestige written earlier in this step
+                    // would be silently discarded. The ranking comes from the archive the season
+                    // completion just wrote.
+                    if let archive = nextState.competition.archives.last,
+                       archive.season == completed.season {
+                        nextState = ProgrammeEvolutionSystem.process(
+                            collegeRanking: archive.finalCollegeRanking,
+                            proRanking: archive.finalProRanking,
+                            in: nextState
+                        )
+                    }
                     nextState.college.reconcileScholarships(with: nextState.programmes)
                     let cycle: CollegeCycleTransition
                     do {

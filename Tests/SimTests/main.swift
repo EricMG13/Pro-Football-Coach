@@ -60,6 +60,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runHistoryArchiveTests()
 } else if CommandLine.arguments.contains("--news-feed") {
     runNewsFeedTests()
+} else if CommandLine.arguments.contains("--programme-evolution") {
+    runProgrammeEvolutionTests()
 } else if CommandLine.arguments.contains("--m7-gate") {
     runHistoryGateTests()
 } else if CommandLine.arguments.contains("--pro-soak") {
@@ -115,6 +117,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runCoachingTreeTests()
     runHistoryArchiveTests()
     runNewsFeedTests()
+    runProgrammeEvolutionTests()
     runCareerPortalDecisionTests()
     runTacticalManagementTests()
     runTacticalStateTests()
