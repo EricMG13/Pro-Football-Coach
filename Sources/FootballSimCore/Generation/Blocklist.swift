@@ -36,16 +36,36 @@ public enum Blocklist {
     /// The case that settles it: `docs/PORT-LOG.md` names **`Old Dominion Tech`** as one of the six
     /// real institutions the prior build shipped under a comment reading "Fictional alma maters".
     /// The gate written to catch that failure did not catch the string it names.
-    public static let entries: [[String]] = (institutions + nicknames + conferences + venues + cities
+    /// **Owner decision, 2026-08-12: real location names are permitted, generator included.** The
+    /// city list is therefore no longer an entry here — a school in a real city is the point of the
+    /// decision, and leaving cities in would refuse "Columbus Technical" along with "Columbus".
+    ///
+    /// Institutions still are, and that is not a contradiction: eight real cities are refused as
+    /// institution names, each because it either is a real programme or contains one — Buffalo,
+    /// Cincinnati, Houston, Kansas City, Miami, Pittsburgh, Tulsa, Washington. They are
+    /// refused as the name of a school and permitted as the name of the city it plays in, which is
+    /// why callers must pick `blocks` or `blocksPlaceName` by what kind of name they hold.
+    public static let entries: [[String]] = (institutions + nicknames + conferences + venues
         + people).map(words)
+
+    /// What a *place* name may not be: a venue mark or an identifiable person.
+    ///
+    /// Not institutions, deliberately. The institution list is largely made of place names, so
+    /// checking a city against it would refuse most of the real cities the owner has permitted.
+    public static let placeEntries: [[String]] = (venues + people).map(words)
 
     /// The same entries as single normalised tokens, for the whole-string check.
     public static let names: Set<String> = Set(entries.map { $0.joined() })
+
+    /// `placeEntries` as single normalised tokens.
+    public static let placeNames: Set<String> = Set(placeEntries.map { $0.joined() })
 
     /// The longest entry, in words. Bounds the sliding window; derived rather than inlined, because
     /// `CLAUDE.md` forbids the magic number and because an entry longer than the window would be
     /// silently uncheckable.
     static let longestEntryWords: Int = entries.map(\.count).max() ?? 1
+
+    static let longestPlaceEntryWords: Int = placeEntries.map(\.count).max() ?? 1
 
     private static func words(_ name: String) -> [String] {
         name.split(whereSeparator: { !$0.isLetter && !$0.isNumber })
@@ -60,13 +80,29 @@ public enum Blocklist {
     /// `bojackson`, "Newyorkshire" contains `newyork` — and a legal gate that fails on original
     /// names is a gate that gets weakened rather than obeyed.
     public static func blocks(_ name: String) -> Bool {
+        contains(name, anyOf: names, longestEntryWords: longestEntryWords)
+    }
+
+    /// True if a *place* name is a venue mark or an identifiable person.
+    ///
+    /// The check a caller wants for a city, a region, or a hometown. Real locations are permitted
+    /// by owner decision of 2026-08-12, so this deliberately does not consult the institution list.
+    public static func blocksPlaceName(_ name: String) -> Bool {
+        contains(name, anyOf: placeNames, longestEntryWords: longestPlaceEntryWords)
+    }
+
+    private static func contains(
+        _ name: String,
+        anyOf blocked: Set<String>,
+        longestEntryWords: Int
+    ) -> Bool {
         let candidate = words(name)
         guard !candidate.isEmpty else { return false }
         for start in candidate.indices {
             let longest = Swift.min(longestEntryWords, candidate.count - start)
             guard longest > 0 else { continue }
             for length in 1...longest
-            where names.contains(candidate[start..<(start + length)].joined()) {
+            where blocked.contains(candidate[start..<(start + length)].joined()) {
                 return true
             }
         }
@@ -144,7 +180,13 @@ public enum Blocklist {
         "Lambeau", "Soldier Field", "Arrowhead", "Superdome", "Coliseum",
     ]
 
-    private static let cities = [
+    /// Real city names.
+    ///
+    /// Retained after the 2026-08-12 decision as the **reference for the place boundary**, not as an
+    /// entry list: `LegalTests` asserts the boundary from it, so the dual-use count `CLAUDE.md`
+    /// quotes cannot drift away from the lists it describes. A list nothing reads would be the dead
+    /// flexibility this repository forbids; this one is read by a test.
+    public static let realCities = [
         "Atlanta", "Austin", "Baltimore", "Boston", "Buffalo", "Charlotte", "Chicago", "Cincinnati",
         "Cleveland", "Columbus", "Dallas", "Denver", "Detroit", "Green Bay", "Houston",
         "Indianapolis", "Jacksonville", "Kansas City", "Las Vegas", "Los Angeles", "Miami",

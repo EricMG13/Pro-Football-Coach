@@ -26,10 +26,24 @@ network of any kind.
 
 ## Legal guardrail (absolute)
 
-All schools, teams, conferences, cities, stadiums, players, coaches, marks, logos, colours, fight
-songs, traditions and broadcast identities are **fictional and original**. Never use real
+All schools, teams, conferences, stadiums, players, coaches, marks, logos, colours, fight songs,
+traditions and broadcast identities are **fictional and original**. Never use real
 school/team/player/conference names or logos. Reference titles are mechanics research only — never
 copy protected expression, art, text, audio or UI.
+
+**Real location names are permitted — owner decision 2026-08-12, generator included.** Cities and
+regions may be real, in generated worlds as well as in hand-written copy, so a programme can sit in
+a real city. This does not extend to venues: "Rose Bowl", "Lambeau" and "Death Valley" are marks
+that happen to read as places, and they stay refused.
+
+The line is **what kind of name it is**, not what the string says, because eight real cities are
+also refused as institution names — Buffalo, Cincinnati, Houston, Kansas City, Miami, Pittsburgh,
+Tulsa, Washington — each because it either is a real programme or contains one. Each is refused as
+the name of a *school* and permitted as the name of the *city it plays in*. `Blocklist.blocks` is the institution-kind check and `Blocklist.blocksPlaceName` the
+place-kind one; a caller picks by what it holds. Note the risk this leaves standing, which the
+blocklist cannot see: a fictional programme in a real city, wearing that city's programme's
+colours, can *jointly* identify the real one. The trade-dress test catches the colours; the
+combination is a review obligation and a counsel question.
 
 College football raises this bar: school identity, trade dress and player NIL are among the most
 aggressively enforced IP in sport. Any route around it — bundled "community" real-name files, a
@@ -39,9 +53,12 @@ substitute. Flag anything borderline for the owner to take to counsel; never res
 
 **Two of these are tests, and they must stay green:**
 
-1. **Name collision test** — no generated school, team, city, conference, stadium, player or coach
-   name matches an entry in the maintained blocklist of real ones, at any seed, across N generated
-   leagues.
+1. **Name collision test** — no generated school, team, conference, stadium, player or coach name
+   matches an entry in the maintained blocklist of real ones, at any seed, across N generated
+   leagues. Generated **place** names are swept too, against the venue and person limbs only, so a
+   city called Rose Bowl or Nick Saban is still refused while a city called Columbus is not. The two
+   sweeps must partition every generated name between them: a name that belongs to neither kind is
+   a name nothing checks, and the suite asserts the partition.
 2. **Trade dress test** — no generated primary/secondary colour pair falls within the stated ΔE of a
    real programme's known pair.
 

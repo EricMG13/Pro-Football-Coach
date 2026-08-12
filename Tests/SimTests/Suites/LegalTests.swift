@@ -122,16 +122,72 @@ func stringLiterals(in text: String) -> [String] {
 
 func runLegalTests() {
     suite("Legal: name collision") {
-        test("no generated name in any of the swept leagues is a real name") {
+        test("no generated institution name in any of the swept leagues is a real one") {
             var offenders: [String] = []
             for (index, world) in sweptWorlds.enumerated() {
-                for name in world.everyGeneratedName where Blocklist.blocks(name) {
+                for name in world.everyGeneratedInstitutionName where Blocklist.blocks(name) {
                     offenders.append("seed \(index): \(name)")
                 }
             }
             expect(offenders.isEmpty,
-                   "generated names collide with real ones: "
+                   "generated institution names collide with real ones: "
                        + offenders.prefix(10).joined(separator: ", "))
+        }
+
+        test("no generated place name is a real venue mark or a real person") {
+            var offenders: [String] = []
+            for (index, world) in sweptWorlds.enumerated() {
+                for name in world.everyGeneratedPlaceName where Blocklist.blocksPlaceName(name) {
+                    offenders.append("seed \(index): \(name)")
+                }
+            }
+            expect(offenders.isEmpty,
+                   "generated place names collide with a mark or a person: "
+                       + offenders.prefix(10).joined(separator: ", "))
+        }
+
+        test("the place boundary is exactly the names that are both a city and a programme") {
+            // Derived from the two lists rather than transcribed, so the count CLAUDE.md and STATUS
+            // quote cannot drift away from the lists they describe. Transcribing it by hand gave six,
+            // then seven; it is eight. Kansas City is the one both hand counts missed, because it is
+            // refused for containing the institution word "Kansas" rather than for being a listed
+            // institution itself — which is a thing exact-string comparison cannot see and the word
+            // sequence matcher can.
+            let dualUse = Blocklist.realCities.filter(Blocklist.blocks).sorted()
+            expectEqual(
+                dualUse,
+                ["Buffalo", "Cincinnati", "Houston", "Kansas City", "Miami", "Pittsburgh", "Tulsa",
+                 "Washington"],
+                "the set of names that are both a real city and a real programme has moved, so "
+                    + "CLAUDE.md's guardrail and STATUS's decision entry are now out of date"
+            )
+            for city in Blocklist.realCities {
+                expect(!Blocklist.blocksPlaceName(city),
+                       "\(city) is a real city, and real cities are permitted as places")
+            }
+        }
+
+        test("a real city is allowed as a place and refused as an institution") {
+            // The owner's decision of 2026-08-12, as an assertion rather than a comment. Real
+            // location names are permitted, so a city called Columbus is fine. The school is not
+            // the real school, so Ohio State is still refused, and the six names that are both a
+            // real city and a real programme - Buffalo, Cincinnati, Houston, Miami, Pittsburgh,
+            // Tulsa - are refused as a programme name and allowed as the city it plays in.
+            for city in ["Columbus", "Nashville", "Baltimore", "Green Bay", "Houston", "Miami"] {
+                expect(!Blocklist.blocksPlaceName(city),
+                       "\(city) is a real place and real places are permitted")
+            }
+            for institution in ["Houston", "Miami", "Buffalo", "Cincinnati", "Pittsburgh", "Tulsa"] {
+                expect(Blocklist.blocks(institution),
+                       "\(institution) is a real programme as well as a real city")
+            }
+            expect(Blocklist.blocks("Ohio State"))
+            expect(!Blocklist.blocks("Columbus Technical"),
+                   "a fictional school in a real city is the point of the decision")
+            for mark in ["Rose Bowl", "Death Valley", "Lambeau", "Nick Saban"] {
+                expect(Blocklist.blocksPlaceName(mark),
+                       "\(mark) is a mark or a person, not a location")
+            }
         }
 
         test("the sweep actually looks at every kind of generated name") {
@@ -143,14 +199,26 @@ func runLegalTests() {
             expect(names.count > CollegeRules.programmeCount,
                    "only \(names.count) names swept, which cannot cover 134 programmes")
             for name in [world.programmes[0].name, world.programmes[0].nickname,
-                         world.programmes[0].cityName, world.proTeams[0].nickname,
-                         world.map.regions[0].name, world.league.conferences[0].name] {
-                expect(names.contains(name), "\(name) is generated but not swept")
+                         world.proTeams[0].nickname, world.league.conferences[0].name] {
+                expect(world.everyGeneratedInstitutionName.contains(name),
+                       "\(name) is an institution name and is not swept as one")
+            }
+            for name in [world.programmes[0].cityName, world.map.regions[0].name] {
+                expect(world.everyGeneratedPlaceName.contains(name),
+                       "\(name) is a place name and is not swept as one")
             }
             let identity = world.identities[world.programmes[0].id]!
-            expect(names.contains(identity.venueName), "a venue name is generated but not swept")
-            expect(names.contains(identity.traditions[0].name),
-                   "a tradition name is generated but not swept")
+            expect(world.everyGeneratedInstitutionName.contains(identity.venueName),
+                   "a venue name is generated but not swept as an institution name")
+            expect(world.everyGeneratedInstitutionName.contains(identity.traditions[0].name),
+                   "a tradition name is generated but not swept as an institution name")
+            // Neither kind may quietly drop a name: the split has to partition the sweep, not
+            // sample it.
+            expectEqual(
+                Set(names),
+                Set(world.everyGeneratedInstitutionName).union(world.everyGeneratedPlaceName),
+                "a generated name belongs to neither kind, so nothing checks it"
+            )
         }
 
         test("the collision test catches a planted real name") {
@@ -179,11 +247,15 @@ func runLegalTests() {
             // real institutions the prior build shipped under a comment reading "Fictional alma
             // maters", and blocks() returned false for it while returning true for the bare
             // "Old Dominion" this test used to plant.
+            // "Coastal Green Bay" was here and moved out on 2026-08-12: Green Bay is a city, real
+            // location names are permitted, and a school in a real city is the point of the owner's
+            // decision. "Coastal Boston College" replaces it and keeps the multi-word case, because
+            // a school named after a real school is still refused.
             for planted in ["Clemson Valley", "North Alabama Technical",
                             "Old Dominion Tech", "Delta State Tech",
                             "Ohio State Technical", "North Notre Dame", "Upper Boise State",
                             "The Ohio State University", "Nick Saban Field",
-                            "Coastal Green Bay", "Kyle Field Stadium"] {
+                            "Coastal Boston College", "Kyle Field Stadium"] {
                 expect(Blocklist.blocks(planted), "\(planted) contains a real name and was not blocked")
             }
         }
@@ -270,6 +342,13 @@ func runLegalTests() {
         //
         // Enumerated by walking Sources, not by naming the fixture files, so a screen added tomorrow
         // is swept the day it is added rather than the day someone remembers it.
+        //
+        // This uses the institution-kind check, because a literal has no kind: the scanner sees a
+        // string, not whether it is a hometown or a team name. That is the safe direction — it still
+        // catches a real school typed into source, which is what the sweep exists for — at the cost
+        // of refusing the eight dual-use names in hand-written copy. If a fixture wants a player
+        // from Miami or Kansas City, that is the message it will get, and the fix is to use the
+        // read model's typed place field rather than to weaken this to the place-kind check.
         test("no string literal anywhere in Sources is a real name") {
             var offenders: [String] = []
             for file in swiftFiles(under: "Sources") where !file.path.hasSuffix(blocklistSourcePath) {
@@ -290,12 +369,12 @@ func runLegalTests() {
             // Ohio State named in a comment is not shipped copy
             let team = "Carson Tech"
             /* Michigan */
-            let home = "Columbus, Ohio"
+            let rival = "Notre Dame"
             """
             let found = stringLiterals(in: planted)
-            expectEqual(found, ["Carson Tech", "Columbus, Ohio"])
-            expect(found.filter(Blocklist.blocks) == ["Columbus, Ohio"],
-                   "the planted real city was not the one and only literal caught")
+            expectEqual(found, ["Carson Tech", "Notre Dame"])
+            expect(found.filter(Blocklist.blocks) == ["Notre Dame"],
+                   "the planted real programme was not the one and only literal caught")
         }
 
         test("the scan reaches the fixtures that carry player-facing copy") {

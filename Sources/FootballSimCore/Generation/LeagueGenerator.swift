@@ -36,21 +36,32 @@ public struct GeneratedWorld: Codable, Sendable, Equatable {
     /// So this is a property of the world rather than a list inside the test: a phase that adds a
     /// generated name and forgets to add it here is a visible omission in the model, not an
     /// invisible one in a suite.
+    ///
+    /// Split by kind since 2026-08-12, because real location names are permitted and real school
+    /// names are not. This is the union of the two, so a generated name can never belong to neither
+    /// kind and go unchecked; the suite asserts that the two partition it.
     public var everyGeneratedName: [String] {
+        everyGeneratedInstitutionName + everyGeneratedPlaceName
+    }
+
+    /// Names of *things somebody owns*: schools, teams, conferences, divisions, venues, traditions.
+    ///
+    /// These carry the full blocklist. A fictional school must not be named after a real one, and
+    /// eight real cities are refused here — Buffalo, Cincinnati, Houston, Kansas City, Miami,
+    /// Pittsburgh, Tulsa, Washington — each because it either is a real programme or contains one.
+    /// They are permitted as a place below, which is the whole reason this is split by kind rather
+    /// than swept as one flat list.
+    public var everyGeneratedInstitutionName: [String] {
         var names: [String] = []
-        names.append(contentsOf: map.regions.map(\.name))
-        names.append(contentsOf: map.cities.map(\.name))
         names.append(contentsOf: league.conferences.map(\.name))
         names.append(contentsOf: league.divisions.map(\.name))
         for programme in programmes {
             names.append(programme.name)
             names.append(programme.nickname)
-            names.append(programme.cityName)
         }
         for team in proTeams {
             names.append(team.name)
             names.append(team.nickname)
-            names.append(team.cityName)
         }
         // Looked up through the ordered member arrays rather than by iterating `identities.values`,
         // which is hash-ordered. The collision test does not care about order, but a method whose
@@ -60,6 +71,20 @@ public struct GeneratedWorld: Codable, Sendable, Equatable {
             names.append(identity.venueName)
             names.append(contentsOf: identity.traditions.map(\.name))
         }
+        return names
+    }
+
+    /// Names of *places*: map regions, map cities, and the city a member plays in.
+    ///
+    /// **Owner decision, 2026-08-12: real location names are permitted, generator included.** These
+    /// carry only the venue and person limbs of the blocklist, because a city called Rose Bowl or
+    /// Nick Saban is still wrong while a city called Columbus is now fine.
+    public var everyGeneratedPlaceName: [String] {
+        var names: [String] = []
+        names.append(contentsOf: map.regions.map(\.name))
+        names.append(contentsOf: map.cities.map(\.name))
+        names.append(contentsOf: programmes.map(\.cityName))
+        names.append(contentsOf: proTeams.map(\.cityName))
         return names
     }
 }

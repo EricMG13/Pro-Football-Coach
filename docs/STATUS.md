@@ -788,6 +788,37 @@ no longer on the critical path.
 
 ## Owner decisions taken during the build
 
+### 2026-08-12 — real location names are permitted, generator included
+
+The owner amended the legal guardrail's first sentence: cities and regions may be real, in generated
+worlds as well as in hand-written copy. Venues were offered in the same decision and **not** taken —
+"Rose Bowl", "Lambeau" and "Death Valley" are marks that read as places and stay refused.
+
+**The interesting part is that this could not be implemented by deleting the city list.** Eight
+real cities are also refused as institution names — Buffalo, Cincinnati, Houston, Kansas City,
+Miami, Pittsburgh, Tulsa, Washington — each because it either is a real programme or contains one,
+so a flat blocklist cannot express "permitted as a city, refused as a school".
+The check is now split by the *kind of name* it holds: `Blocklist.blocks` for institution-kind names
+(schools, teams, conferences, divisions, venues, traditions) against the full list, and
+`Blocklist.blocksPlaceName` for place-kind names (map regions, map cities, the city a member plays
+in, hometowns) against the venue and person limbs only. `GeneratedWorld` exposes the two kinds
+separately, and the suite asserts they **partition** every generated name — a name belonging to
+neither kind is a name nothing checks, which is the hole this shape exists to close.
+
+Legal coverage is **21 tests / 98 checks**.
+
+**What this decision does not resolve, stated rather than left implicit.** A fictional programme
+placed in a real city, wearing that city's real programme's colours, can jointly identify the real
+one. The trade-dress test catches the colour pair; the combination is exactly the "individually
+fictional but jointly identifying" gap `Blocklist`'s own header calls a counsel question, and
+permitting real cities makes that gap easier to fall into. It is a review obligation, not a
+threshold, and nothing in the suite asserts it.
+
+**The generator is now permitted to use real place names and does not yet do so.** `NameGrammar`
+still draws cities from its invented stems and endings, so no generated world changed. Populating it
+with real geography is a separate design change that would touch D6's geography-driven rivalry
+seeding, and under the doc-first amendment rule it belongs in canon before it is built.
+
 ### 2026-08-10 — the app is landscape, not portrait
 
 The owner reversed the orientation half of `CLAUDE.md`'s owner-fixed tech stack, citing FM as the
