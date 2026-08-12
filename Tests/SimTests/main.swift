@@ -52,6 +52,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runSaveEnvelopeTests()
     runRulesTests()
     runModelTests()
+} else if CommandLine.arguments.contains("--legal-only") {
+    runLegalTests()
 } else if CommandLine.arguments.contains("--competition-only") {
     runCompetitionTests()
 } else if CommandLine.arguments.contains("--architecture-only") {

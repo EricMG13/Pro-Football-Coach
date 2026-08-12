@@ -43,6 +43,83 @@ let sweptWorlds: [GeneratedWorld] = (0..<LEGAL_SWEEP_LEAGUES).map {
     LeagueGenerator.generate(seed: sweepSeed($0))
 }
 
+/// The one file exempt from the shipped-copy scan, because it *is* the list of real names.
+let blocklistSourcePath = "Generation/Blocklist.swift"
+
+/// Every string literal in `text`, comments discarded.
+///
+/// The inverse of ContractTests' scanner, which keeps the code and blanks the literals to look for
+/// forbidden calls. This one keeps the literals and throws the code away, because the guardrail is
+/// about the strings the app shows a player.
+///
+/// Two deliberate limits, both safe in the direction that matters. An interpolation segment is kept
+/// as its raw source text, so `"#\(model.number)"` is swept as `#model.number)` — identifier words,
+/// which cannot spell a real programme. And a nested block comment ends at its first `*/`, leaving
+/// the rest to be read as code; that can only add literals to the sweep, never hide one.
+///
+/// The one limit that is *not* safe: a raw string literal (`#"..."#`) would have its backslashes
+/// read as escapes, and a swallowed closing quote hides every literal after it in that file. No
+/// source file uses one today. There is no assertion against it because the opener `#"` is
+/// indistinguishable by substring from an ordinary literal holding a `#`, which `RosterView` has.
+func stringLiterals(in text: String) -> [String] {
+    enum Mode { case code, lineComment, blockComment, literal, multilineLiteral }
+    let characters = Array(text)
+    var literals: [String] = []
+    var current = ""
+    var mode = Mode.code
+    var index = 0
+
+    func lookahead(_ offset: Int) -> Character? {
+        let position = index + offset
+        return position < characters.count ? characters[position] : nil
+    }
+    func opensMultiline() -> Bool {
+        lookahead(0) == "\"" && lookahead(1) == "\"" && lookahead(2) == "\""
+    }
+
+    while index < characters.count {
+        let character = characters[index]
+        switch mode {
+        case .code:
+            if character == "/", lookahead(1) == "/" {
+                mode = .lineComment
+                index += 2
+                continue
+            }
+            if character == "/", lookahead(1) == "*" {
+                mode = .blockComment
+                index += 2
+                continue
+            }
+            if opensMultiline() { mode = .multilineLiteral; current = ""; index += 3; continue }
+            if character == "\"" { mode = .literal; current = ""; index += 1; continue }
+        case .lineComment:
+            if character == "\n" { mode = .code }
+        case .blockComment:
+            if character == "*", lookahead(1) == "/" {
+                mode = .code
+                index += 2
+                continue
+            }
+        case .literal:
+            if character == "\\" { index += 2; continue }
+            if character == "\"" { literals.append(current); mode = .code; index += 1; continue }
+            current.append(character)
+        case .multilineLiteral:
+            if character == "\\" { index += 2; continue }
+            if opensMultiline() {
+                literals.append(current.trimmingCharacters(in: .whitespacesAndNewlines))
+                mode = .code
+                index += 3
+                continue
+            }
+            current.append(character)
+        }
+        index += 1
+    }
+    return literals
+}
+
 func runLegalTests() {
     suite("Legal: name collision") {
         test("no generated name in any of the swept leagues is a real name") {
@@ -182,6 +259,53 @@ func runLegalTests() {
             for invented in ["Thornby Ridge", "Ashen Falls Polytechnic", "Iron Kestrels"] {
                 expect(!Blocklist.blocks(invented), "\(invented) is invented and was blocked")
             }
+        }
+    }
+
+    suite("Legal: shipped copy") {
+        // The generated-name sweep covers what the generator emits. It cannot see a real name typed
+        // straight into a source file, and that is the exact failure this file's header records:
+        // "Reading a list and judging it fictional is what produced both failures." The DEBUG screen
+        // fixtures were read and judged fictional, and shipped three cities off the blocklist below.
+        //
+        // Enumerated by walking Sources, not by naming the fixture files, so a screen added tomorrow
+        // is swept the day it is added rather than the day someone remembers it.
+        test("no string literal anywhere in Sources is a real name") {
+            var offenders: [String] = []
+            for file in swiftFiles(under: "Sources") where !file.path.hasSuffix(blocklistSourcePath) {
+                for literal in stringLiterals(in: file.text) where Blocklist.blocks(literal) {
+                    offenders.append("\(file.path): \(literal)")
+                }
+            }
+            expect(offenders.isEmpty,
+                   "shipped copy collides with real names: "
+                       + offenders.prefix(10).joined(separator: ", "))
+        }
+
+        test("the scan reads literals, ignores comments, and catches a planted real name") {
+            // The self-test the other scans in this repository ship: a scan that has never failed is
+            // not known to be a scan. Comments are excluded deliberately — canon cites real
+            // programmes by name to say what must never be generated.
+            let planted = """
+            // Ohio State named in a comment is not shipped copy
+            let team = "Carson Tech"
+            /* Michigan */
+            let home = "Columbus, Ohio"
+            """
+            let found = stringLiterals(in: planted)
+            expectEqual(found, ["Carson Tech", "Columbus, Ohio"])
+            expect(found.filter(Blocklist.blocks) == ["Columbus, Ohio"],
+                   "the planted real city was not the one and only literal caught")
+        }
+
+        test("the scan reaches the fixtures that carry player-facing copy") {
+            // The guard against the sweep passing because it swept nothing.
+            let fixtures = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .filter { $0.text.contains("CoachWorldSampleData") }
+            expect(!fixtures.isEmpty, "no sample-fixture file was scanned")
+            let literals = fixtures.flatMap { stringLiterals(in: $0.text) }
+            expect(literals.contains("Carson Tech"),
+                   "the scan did not reach the fixture team name")
         }
     }
 
