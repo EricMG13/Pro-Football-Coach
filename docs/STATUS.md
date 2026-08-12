@@ -556,6 +556,28 @@ gets cut, and when, is an owner-level design call rather than an implementation 
 invented here. `--pro-soak` and `--pro-draft-probe` stay red until it is answered, in the same way
 P4's calibration gate stays red; **neither is in the default run**, so `verify.sh` is unaffected.
 
+### M7C — the news feed — **implemented and green**
+
+The living world reports itself. `NewsFeedReadModel` renders a headline from each typed payload and
+persists none of it, which is the rule `DomainEventPayload` already stated: presentation text is
+derived by read-model builders, never stored as the source of truth. Wording can change without
+migrating a league.
+
+**Newsworthiness reuses `historicalWeight` rather than inventing a second editorial list** — the same
+rank that decides which bodies an archived season keeps decides what leads the feed. One definition
+of important, used twice. The headline switch is exhaustive with no `default`, so a new payload
+cannot be added without someone deciding whether it is reportable and how it reads.
+
+It reads the hot journal **and** the archive's retained bodies, so a championship stays reportable
+after it leaves the hot window — the test that justifies M7B keeping bodies at all. Ordered newest
+season first with the heaviest story leading inside a season, bounded at 64. `02` §4.2b carries the
+rule and its falsifier.
+
+Measured: news feed **8 tests / 14 checks**, core contracts **152 / 978**, architecture **25 / 222**.
+
+**M7 now has one gap left**: programme evolution and conference movement, both listed in
+`docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md` and unspecified in canon.
+
 ### Preserved pre-rebaseline P0–P4 record
 
 The remainder of this document records the older P-phase foundation and its measurements. It is
