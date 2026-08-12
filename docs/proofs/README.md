@@ -1,11 +1,18 @@
 # FM-proxy proof screens
 
 These screenshots are DEBUG reference fixtures, not simulation outcomes or final art.
-They demonstrate the current Football Manager Touch target: desktop-style information density
-adapted to landscape iPhone, using original fictional identities and native controls rather than
-copied assets. The standard-size reference target uses 10–12 pt dense type; AX5 proofs reflow and scale.
-Both current proof variants use the canonical 844×390 landscape viewport: light/default at 2× and
-dark/AX5 at 3×. AX5 is an accessibility reflow proof, not a density reference.
+They demonstrate the desktop-class density target: desktop-style information density adapted to
+landscape iPhone, using original fictional identities and native controls rather than copied assets.
+The standard-size reference target uses 10–12 pt dense type; AX5 proofs reflow and scale.
+
+**The definitive design references are the eight `*-v3.dc.html` sheets at the repository root**
+(owner-approved 2026-08-12; renders and index in `docs/proofs/design-references/`). These proof
+screenshots are evidence of what the build renders today, not a design authority; where a proof and
+a sheet disagree, the sheet governs, and where a sheet and `04` disagree, `04` governs.
+
+Older proof variants were captured at the 844×390 landscape viewport; the supported window is now
+844 × 390 (install floor) through 956 × 440 (ceiling) per `04` §7 and D15. Light/default renders at
+2× and dark/AX5 at 3×. AX5 is an accessibility reflow proof, not a density reference.
 The canonical component rules are `04-UX-AND-DESIGN-SYSTEM.md` §6.4: 10–12 pt micro-type, tabular
 numbers, zero-inset 24–28 pt rows, adaptive data tiles, heatmap badges and context-preserving
 popovers or detented sheets.

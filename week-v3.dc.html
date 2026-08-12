@@ -1,0 +1,1360 @@
+<!-- @dsCard group="week" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>week-v3 — AgendaRow and the week chronology</title>
+<style>
+  /* Sheet chrome uses the light canon neutrals only (04 §6.1). Treat CSS px as pt. */
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { background:#F1F2F7; color:#111426;
+    font-family:-apple-system, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  body { padding:20px; }
+  .mono { font-family:ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .num { font-variant-numeric:tabular-nums; }
+
+  /* ---- gallery chrome (outside every device frame; prototype truth lives here, 04 §4.4) ---- */
+  .sheet-head { max-width:1200px; margin:0 auto 20px auto; }
+  .sheet-head h1 { font-size:20px; font-weight:800; letter-spacing:-0.2px; }
+  .sheet-head p { font-size:12px; color:#4D5366; margin-top:6px; max-width:1100px; }
+  .card { max-width:1980px; margin:0 auto 20px auto; background:#FBFBFD;
+    border:1px solid #E6E8F0; border-radius:10px; padding:16px; }
+  .card > .kicker { font-size:10px; font-weight:700; letter-spacing:0.4px; color:#596074;
+    text-transform:uppercase; }
+  .card > h2 { font-size:17px; font-weight:800; margin-top:2px; }
+  .card > .sub { font-size:12px; color:#4D5366; margin:4px 0 12px 0; max-width:1100px; }
+  .pair { display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; }
+  .appearance { flex:1 1 420px; min-width:360px; }
+  .appearance > h3 { font-size:11px; font-weight:700; color:#596074;
+    text-transform:uppercase; letter-spacing:0.4px; margin-bottom:6px; }
+  .ratio-note { font-size:10px; color:#596074; margin-top:4px; line-height:1.5; max-width:900px; }
+  .contract { margin-top:16px; border-top:1px solid #E6E8F0; padding-top:12px; }
+  .contract h4 { font-size:11px; font-weight:800; letter-spacing:0.4px; color:#111426; }
+  .contract ol { margin:8px 0 0 20px; }
+  .contract li { font-size:11px; color:#4D5366; margin-bottom:6px; line-height:1.5; max-width:1100px; }
+  .contract .vo { font-style:italic; color:#111426; }
+  .scroll-x { overflow-x:auto; padding-bottom:8px; }
+  .winwrap { overflow-x:auto; border:1px solid #E6E8F0; border-radius:6px;
+    background:#080A14; padding:16px; margin-top:10px; }
+  .winlab { font-family:ui-monospace, "SF Mono", Menlo, monospace; font-size:10px;
+    color:rgba(244,245,250,.65); margin:0 0 8px 0; line-height:1.6; max-width:940px; }
+
+  /* ---- device frames: DESK register, matte opaque, hairlines ---- */
+  .dk { --page:#080A14; --work:#111426; --raised:#191D32; --ink:#F4F5FA; --ink2:#B8BDCC;
+        --quiet:#858CA2; --act:#9964E8; --neg:#F07886; --pos:#6FD39A; --warn:#F0C56C;
+        --info:#72ADEC; --live:#72D7A0; }
+  .lt { --page:#F1F2F7; --work:#FBFBFD; --raised:#E6E8F0; --ink:#111426; --ink2:#4D5366;
+        --quiet:#596074; --act:#6840B0; --neg:#A42D32; --pos:#1F7048; --warn:#765300;
+        --info:#205F96; --live:#4A6F00; }
+  .frame { background:var(--work); border-radius:10px; padding:12px; color:var(--ink); }
+  .dk .frame { border:1px solid #191D32; }
+  .lt .frame { border:1px solid #E6E8F0; }
+  .hairline { border-top:1px solid var(--raised); }
+
+  /* micro type inside frames: 10-12 pt working range, 15 headline, 17 title (04 §6.2) */
+  .f-title { font-size:17px; font-weight:800; letter-spacing:-0.2px; }
+  .f-head  { font-size:15px; font-weight:600; letter-spacing:-0.2px; }
+  .f-body  { font-size:12px; }
+  .f-cap   { font-size:11px; }
+  .f-micro { font-size:10px; letter-spacing:-0.2px; }
+  .q  { color:var(--quiet); }
+  .s2 { color:var(--ink2); }
+
+  /* SF Symbol name as text in a small monospace chip (no icon font, no images) */
+  .sym { display:inline-block; font-family:ui-monospace,"SF Mono",Menlo,monospace;
+    font-size:10px; padding:1px 4px; border-radius:4px; border:1px solid var(--quiet);
+    color:var(--ink2); vertical-align:middle; white-space:nowrap; }
+
+  /* ---- AgendaRow ---- */
+  .agenda { border:1px solid var(--raised); border-radius:8px; overflow:hidden; }
+  .arow { display:flex; align-items:center; gap:8px; min-height:44px; padding:0 8px; }
+  .arow + .arow { border-top:1px solid var(--raised); }
+  .acheck { min-width:44px; min-height:44px; display:flex; align-items:center; flex:none; }
+  .amain { display:flex; flex-direction:column; gap:1px; min-width:0; padding:4px 0; }
+  .atitle { font-size:12px; font-weight:600; color:var(--ink); line-height:1.2; }
+  .asub { font-size:10px; color:var(--ink2); line-height:1.2; }
+  .acost { margin-left:auto; font-size:11px; font-weight:700; white-space:nowrap;
+    font-variant-numeric:tabular-nums; text-align:right; }
+  .acost .c2 { display:block; font-size:10px; font-weight:400; }
+
+  /* ---- week grid ---- */
+  .wkhead { display:flex; justify-content:space-between; gap:8px; font-size:11px;
+    color:var(--quiet); margin-bottom:6px; font-variant-numeric:tabular-nums; }
+  .wk { display:flex; border:1px solid var(--raised); border-radius:10px; overflow:hidden;
+    background:var(--work); }
+  .day { flex:1 1 0; min-width:0; padding:6px; }
+  .day + .day { border-left:1px solid var(--raised); }
+  .dayhead { font-size:10px; font-weight:700; color:var(--ink2); white-space:nowrap;
+    overflow:hidden; padding-bottom:2px; border-bottom:2px solid transparent;
+    font-variant-numeric:tabular-nums; }
+  .day.today .dayhead { color:var(--ink); border-bottom-color:var(--act); }
+  .daymark { height:14px; font-size:10px; font-weight:700; white-space:nowrap;
+    overflow:hidden; margin-top:2px; }
+  .slots { display:flex; flex-direction:column; gap:4px; margin-top:4px; }
+  .schip { height:40px; border:1px solid var(--quiet); background:var(--raised);
+    border-radius:4px; padding:3px 5px; display:flex; flex-direction:column;
+    justify-content:center; gap:2px; min-width:0; }
+  .schip .sy { font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:10px;
+    color:var(--ink2); white-space:nowrap; overflow:hidden; line-height:1.1; }
+  .schip .nm { font-size:10px; font-weight:700; color:var(--ink); white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; line-height:1.1; }
+  .sopen { height:40px; border:1px dashed var(--quiet); border-radius:4px; display:flex;
+    align-items:center; justify-content:center; font-size:10px; font-style:italic;
+    color:var(--quiet); }
+  .sgame { height:128px; border:1px solid var(--quiet); background:var(--raised);
+    border-radius:4px; padding:5px; display:flex; flex-direction:column;
+    justify-content:center; gap:3px; min-width:0; }
+  .sgame div { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.15; }
+  .sempty { height:128px; border:1px dashed var(--quiet); border-radius:4px; padding:5px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    font-size:10px; font-style:italic; color:var(--quiet); text-align:center; }
+  .wkfoot { font-size:10px; color:var(--quiet); margin-top:6px;
+    font-variant-numeric:tabular-nums; line-height:1.5; }
+
+  /* ---- load-policy ladder ---- */
+  .lrow { display:flex; align-items:center; gap:10px; min-height:44px; padding:0 8px; }
+  .lrow + .lrow { border-top:1px solid var(--raised); }
+  .cmark { width:36px; height:10px; border:1px solid var(--quiet); border-radius:4px;
+    position:relative; flex:none; background:var(--work); }
+  .cfill { position:absolute; left:0; top:0; bottom:0; background:var(--ink2);
+    border-radius:3px 0 0 3px; }
+  .bword { width:56px; font-size:11px; font-weight:700; color:var(--ink); flex:none; }
+  .bmult { font-size:12px; font-weight:800; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .bnote { font-size:10px; color:var(--quiet); }
+  .gauge { display:flex; gap:3px; align-items:flex-end; }
+  .gm { width:10px; height:16px; border-radius:4px; border:1px solid var(--quiet);
+    background:var(--work); }
+  .gm.on { background:var(--info); }
+  .staffrow { display:flex; align-items:center; height:26px; font-size:11px;
+    color:var(--ink2); border-top:1px solid var(--raised); padding:0 4px;
+    font-variant-numeric:tabular-nums; }
+  .staffrow .v { margin-left:auto; font-weight:700; color:var(--ink); }
+
+  /* ---- hub tile ---- */
+  .tile { display:flex; align-items:center; gap:10px; min-height:56px;
+    border:1px solid var(--raised); border-radius:8px; padding:8px 10px;
+    background:var(--work); }
+  .tile + .tile { margin-top:8px; }
+  .tbody { display:flex; flex-direction:column; gap:2px; min-width:0; flex:1 1 auto; }
+  .ttitle { font-size:10px; font-weight:700; letter-spacing:0.4px; color:var(--quiet);
+    text-transform:uppercase; }
+  .tsum { font-size:12px; font-weight:600; color:var(--ink);
+    font-variant-numeric:tabular-nums; }
+  .tverdict { font-size:11px; color:var(--ink2); }
+  .tverdict .comp { color:var(--quiet); font-size:10px; }
+  .tpending { display:inline-block; border:1px dashed var(--quiet); border-radius:4px;
+    padding:1px 6px; font-size:10px; color:var(--quiet); }
+  .tabsent { font-size:12px; font-style:italic; color:var(--quiet); }
+
+  /* ---- width matrix ---- */
+  .win { position:relative; background:#080A14; color:#F4F5FA; }
+  .w844 { width:844px; } .w852 { width:852px; } .w956 { width:956px; }
+  .comp { padding-top:8px; padding-bottom:8px; }
+  .w844 .comp, .w852 .comp { padding-left:67px; padding-right:29px; } /* 59+8 / 21+8 */
+  .w956 .comp { padding-left:70px; padding-right:29px; }              /* 62+8 / 21+8 */
+  .gl { position:absolute; top:-4px; bottom:-4px; width:0;
+    border-left:1px dashed rgba(244,245,250,.35); }
+  .stripslot { height:48px; display:flex; align-items:center; padding:0 8px;
+    background:#191D32; border-bottom:1px solid #858CA2; font-size:10px; color:#858CA2;
+    font-family:ui-monospace,"SF Mono",Menlo,monospace; }
+  .obl-label { font-size:10px; font-weight:700; letter-spacing:0.4px; color:#858CA2;
+    text-transform:uppercase; margin:6px 0 2px 0; }
+
+  /* ---- AX5 rendition (dark; sizes per sourcing row Q5 via 04 §6.2 production mapping) ---- */
+  .ax5 { width:852px; background:#080A14; color:#F4F5FA; padding:8px 12px; }
+  .ax5 .ahead { font-size:49px; font-weight:800; letter-spacing:-0.5px; line-height:1.05; }
+  .ax5 .aline { font-size:44px; line-height:1.12; color:#F4F5FA; }
+  .ax5 .ameta { font-size:43px; line-height:1.12; color:#B8BDCC; font-variant-numeric:tabular-nums; }
+  .ax5 .aday { border-top:1px solid #191D32; padding:12px 0; }
+  footer { max-width:1200px; margin:24px auto 0 auto; font-size:11px; color:#596074; }
+</style>
+</head>
+<body>
+
+<div class="sheet-head">
+  <h1>week-v3 — reference sheet, group "week"</h1>
+  <p>Registry entry 19 <span class="mono">AgendaRow</span> (04 §6.5) plus the chronology
+  compositions it lives in — the week grid (density model T6 chronology-as-spine, T10
+  agenda-as-commitments; findings F30, F36), the load-policy ladder (F37, F38) and the hub tile
+  (F10, pass-2 F33) — drawn to the card contract of
+  docs/briefs/2026-08-12-reference-library-plan.md §4. Feeds Coaching HQ, Practice Plan and the
+  offseason command families (04 §8 screens 8, 12, 61, 62). DESK register: near-navy work
+  surfaces, restrained violet furniture, matte opaque, hairline rules, radii 8/8/10, spacing steps
+  4/6/8/12/16/20, dense 24–28 pt fact rows, 10–12 pt micro type with tabular numerals — the
+  desktop-reference density direction of 04 §6.4. Light and dark are rendered side by side as
+  explicit sections using the 04 §6.1 hex values exactly. Every contrast ratio printed on this
+  sheet is quoted from 04 §6.1 as measured there (G-07 write-back); none is recomputed here.</p>
+  <p>Mechanics: self-contained HTML and CSS, no JavaScript, no CDN, no web font, no icon font, no
+  images; system type stack; a glyph is an SF Symbol name written as text in a small monospace
+  chip (for example <span class="mono">figure.run</span>) — production renders the symbol at glyph
+  size; the written name is sheet notation. CSS px are read as pt. No emoji anywhere.</p>
+  <p>Identities: every name on this sheet — Example State, Example Tech, Coach Sample,
+  Coordinator Sample, Trainer Sample — is a mechanical placeholder labelled
+  <em>pending generator output</em>. No real school, team, player, coach, city or mark appears,
+  and no label is copied from any reference capture. The name-collision and trade-dress tests
+  stay green over everything rendered here. No team colour token is used: these are management
+  surfaces and management never receives a decorative team-colour wash (04 §5).</p>
+  <p><b>Prototype truth (gallery chrome, outside any device frame): this sheet is a rendering.
+  docs/04-UX-AND-DESIGN-SYSTEM.md is the only canonical home for these values; a value appearing
+  only in a sheet has not shipped</b> (library plan §5). Sources: 04 §2, §4 (incl. §4.5),
+  §6.1–6.5, §7; library plan §3–5; density model §2 (T6, T10) and §5; sourcing row Q5 (AX5
+  sizes); finding F10 (reference-set findings); findings F30, F33, F36, F37, F38, F39 (pass 2);
+  01-RESEARCH §6.6 §3.9 — the costed agenda, mock-sourced, cited as intent, not as shipping
+  behaviour; gap register G-02; docs/STATUS.md M2. 2026-08-12.</p>
+</div>
+
+<!-- ============================ CARD 1: AgendaRow ============================ -->
+<div class="card">
+  <p class="kicker">Approval card · registry entry 19 of 23</p>
+  <h2>19 — AgendaRow</h2>
+  <p class="sub">An obligation as a commitment with a cost: title, then a named cost or a
+  time-to-event beside it (F30 — deadlines wear their distance wherever they appear; the costed
+  agenda itself is 01-RESEARCH §6.6 §3.9, mock-sourced, adopted as intent), completion state, and
+  a delegated state carrying the named staff receipt (04 §4.3: success shows an exact receipt;
+  04 §3: mandatory work cannot be skipped, it may be explicitly delegated). Grounding:
+  screen-local today in Sources/ProFootballCoachUI/CoachingHQView.swift (obligations with
+  consequence and a delegate action); T10. The row is one tap to its obligation; the leading
+  completion control is its own target. Decide, inspect and delegate stay distinct: the row
+  inspects, the control completes, delegation happens inside the obligation and the row then
+  shows the receipt.</p>
+
+  <div class="pair">
+    <div class="appearance">
+      <h3>Dark — work surface #111426</h3>
+      <div class="dk">
+        <div class="frame" style="padding:8px;">
+          <div class="f-micro q" style="margin:0 0 6px 0;">TODAY'S OBLIGATIONS — 3 OPEN OF 6 · states top to bottom: due (time-to-event), due (named cost), due today, overdue, done, delegated</div>
+          <div class="agenda">
+            <div class="arow">
+              <span class="acheck"><span class="sym">circle</span></span>
+              <span class="amain"><span class="atitle">Signing deadline</span></span>
+              <span class="acost s2 num">2d</span>
+            </div>
+            <div class="arow">
+              <span class="acheck"><span class="sym">circle</span></span>
+              <span class="amain"><span class="atitle">Media availability</span>
+                <span class="asub">costs 1 staff hour</span></span>
+              <span class="acost s2 num">Thu</span>
+            </div>
+            <div class="arow">
+              <span class="acheck"><span class="sym">circle</span></span>
+              <span class="amain"><span class="atitle">Set the travel roster</span>
+                <span class="asub">mandatory</span></span>
+              <span class="acost num" style="color:var(--warn);">today</span>
+            </div>
+            <div class="arow">
+              <span class="acheck"><span class="sym" style="border-color:var(--neg); color:var(--neg);">exclamationmark.triangle</span></span>
+              <span class="amain"><span class="atitle">Confirm the walkthrough plan</span>
+                <span class="asub" style="color:var(--neg);">mandatory — blocks the week advance</span></span>
+              <span class="acost num" style="color:var(--neg);">overdue 1d</span>
+            </div>
+            <div class="arow">
+              <span class="acheck"><span class="sym" style="border-color:var(--pos); color:var(--pos);">checkmark.circle.fill</span></span>
+              <span class="amain"><span class="atitle s2" style="font-weight:400;">Opponent film review</span>
+                <span class="asub">done Tue 0900</span></span>
+              <span class="acost num" style="color:var(--pos);">done</span>
+            </div>
+            <div class="arow">
+              <span class="acheck"><span class="sym">person.fill.checkmark</span></span>
+              <span class="amain"><span class="atitle">Set the practice plan</span>
+                <span class="asub">delegated — Coordinator Sample · receipt: practice plan set, Tue 0900</span></span>
+              <span class="acost s2 num">delegated</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="ratio-note">Quoted ratios on dark work #111426 (04 §6.1): title content.primary
+      #F4F5FA 16.74; cost/receipt content.secondary #B8BDCC 9.71; bound line content.quiet
+      #858CA2 5.44; due-today state.warning #F0C56C 11.21; overdue state.negative #F07886 6.72;
+      done state.positive #6FD39A 9.95. Chip surface world.raised on work is a neutral elevation;
+      state is carried by word plus glyph plus colour, never colour alone (04 §6.1).</p>
+    </div>
+
+    <div class="appearance">
+      <h3>Light — work surface #FBFBFD</h3>
+      <div class="lt">
+        <div class="frame" style="padding:8px;">
+          <div class="f-micro q" style="margin:0 0 6px 0;">TODAY'S OBLIGATIONS — 3 OPEN OF 6 · states top to bottom: due (time-to-event), due (named cost), due today, overdue, done, delegated</div>
+          <div class="agenda">
+            <div class="arow">
+              <span class="acheck"><span class="sym">circle</span></span>
+              <span class="amain"><span class="atitle">Signing deadline</span></span>
+              <span class="acost s2 num">2d</span>
+            </div>
+            <div class="arow">
+              <span class="acheck"><span class="sym">circle</span></span>
+              <span class="amain"><span class="atitle">Media availability</span>
+                <span class="asub">costs 1 staff hour</span></span>
+              <span class="acost s2 num">Thu</span>
+            </div>
+            <div class="arow">
+              <span class="acheck"><span class="sym">circle</span></span>
+              <span class="amain"><span class="atitle">Set the travel roster</span>
+                <span class="asub">mandatory</span></span>
+              <span class="acost num" style="color:var(--warn);">today</span>
+            </div>
+            <div class="arow">
+              <span class="acheck"><span class="sym" style="border-color:var(--neg); color:var(--neg);">exclamationmark.triangle</span></span>
+              <span class="amain"><span class="atitle">Confirm the walkthrough plan</span>
+                <span class="asub" style="color:var(--neg);">mandatory — blocks the week advance</span></span>
+              <span class="acost num" style="color:var(--neg);">overdue 1d</span>
+            </div>
+            <div class="arow">
+              <span class="acheck"><span class="sym" style="border-color:var(--pos); color:var(--pos);">checkmark.circle.fill</span></span>
+              <span class="amain"><span class="atitle s2" style="font-weight:400;">Opponent film review</span>
+                <span class="asub">done Tue 0900</span></span>
+              <span class="acost num" style="color:var(--pos);">done</span>
+            </div>
+            <div class="arow">
+              <span class="acheck"><span class="sym">person.fill.checkmark</span></span>
+              <span class="amain"><span class="atitle">Set the practice plan</span>
+                <span class="asub">delegated — Coordinator Sample · receipt: practice plan set, Tue 0900</span></span>
+              <span class="acost s2 num">delegated</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="ratio-note">Quoted ratios on light work #FBFBFD (04 §6.1): title content.primary
+      #111426 17.64; cost/receipt content.secondary #4D5366 7.40; bound line content.quiet
+      #596074 6.07; due-today state.warning #765300 6.76; overdue state.negative #A42D32 6.77;
+      done state.positive #1F7048 5.86.</p>
+    </div>
+  </div>
+
+  <div class="contract">
+    <h4>CONTRACT — plan §4, ten points</h4>
+    <ol>
+      <li><strong>Both appearances, ratios quoted:</strong> rendered above; every pair carries its
+      04 §6.1 measured ratio against work, the surface it is composited on: 16.74/9.71/5.44 and
+      11.21/6.72/9.95 dark; 17.64/7.40/6.07 and 6.76/6.77/5.86 light. None recomputed. The
+      overdue and due-today states use state.negative and state.warning per canon, word plus
+      glyph carried alongside colour.</li>
+      <li><strong>Widths:</strong> a fluid single-column row; the obligation strip is rendered
+      inside card 2's width matrix at 844 (install floor), 852 (promise floor) and 956 (ceiling)
+      at default type — no clipping, cost chip never dropped — and in the AX5 rendition as full
+      sentences at the Q5 sizes, order preserved.</li>
+      <li><strong>Touch (measured, printed):</strong> the row is 44 pt minimum height and full
+      width — one target ≥ 764 × 44 pt at the narrowest usable width; the leading completion
+      control is its own 44 × 44 pt target (production draws the SF Symbol at about 22 pt inside
+      that area; the written name here is sheet notation). Both meet the HIG-verified 44 pt floor
+      (04 §7).</li>
+      <li><strong>States, not one happy instance:</strong> six drawn in both appearances — due
+      with time-to-event ("Signing deadline — 2d", the F30 shape), due with a named cost
+      ("costs 1 staff hour", §6.6 §3.9 intent), due today (warning), overdue (negative, and the
+      row says what it blocks: the week advance, 04 §3), done (completion state with its
+      timestamp), delegated (with the named staff receipt). Empty-day and congested-day belong to
+      the chronology and are drawn on card 2. Loading is not drawn: obligations exist or they do
+      not (04 §7).</li>
+      <li><strong>Team colour:</strong> not applicable — AgendaRow carries no team.* token;
+      management receives no decorative team wash (04 §5).</li>
+      <li><strong>VoiceOver, one sentence per row, cost and state included:</strong>
+      <span class="vo">"Signing deadline, due in 2 days, not complete. Button, opens the
+      obligation."</span> <span class="vo">"Media availability, costs 1 staff hour, due Thursday,
+      not complete. Button, opens the obligation."</span> <span class="vo">"Set the travel
+      roster, mandatory, due today, not complete. Button, opens the obligation."</span>
+      <span class="vo">"Confirm the walkthrough plan, mandatory, overdue by 1 day, blocks the
+      week advance, not complete. Button, opens the obligation."</span>
+      <span class="vo">"Opponent film review, complete, finished Tuesday 9:00 AM."</span>
+      <span class="vo">"Set the practice plan, delegated to Coordinator Sample, receipt:
+      practice plan set Tuesday 9:00 AM. Button, opens the receipt."</span> The completion
+      control reads <span class="vo">"Mark complete, button"</span> and announces the state
+      change.</li>
+      <li><strong>Animation and reduced form, named:</strong> the completion tick is a short
+      stroke draw-on with a colour crossfade to the done state; under Reduce Motion the
+      completion tick is a discrete state change — the checked form appears complete, no draw-on,
+      no travel, the change announced (04 §7). No other animation exists on this component.</li>
+      <li><strong>Verdict line:</strong> none — an agenda row is an obligation, not a readout;
+      per this sheet's rule the only verdict lines in the week family are on the hub tile
+      (card 4). Zero spent here.</li>
+      <li><strong>Density budget (04 §4.5 currencies):</strong> points — 44 pt per row (the
+      interactive floor governs; the 24–28 pt track is for non-interactive fact rows), six rows
+      plus a 12 pt bound line ≈ 278 pt as a full-day list, or two rows ≈ 102 pt as the HQ strip
+      in card 2; taps — obligation detail exactly 1 tap; working memory — 0, cost and state ride
+      the row; learned symbols — the leading marks (circle, checkmark.circle.fill,
+      person.fill.checkmark) are control affordances always paired with their words and the
+      warning triangle is the shared state mark already priced by the readout sheet, so this
+      component adds 0 new learned status glyphs; ≤ 3 glyphs per row observed (max 1); verdict
+      lines — 0.</li>
+      <li><strong>Traceability:</strong> every colour is a 04 §6.1 hex via the frame variables;
+      type 12/11/10 pt per §6.2 with tabular numerals; spacing 4/6/8 and free-standing list
+      radius 8, internal row radius 0 with hairlines, micro-chip radius 4 (the sibling-sheet
+      convention within §6.3's step system); 44 pt floor per §6.3/§7. Identities are mechanical
+      placeholders labelled pending generator output; the named-cost example follows the
+      mock-sourced §6.6 §3.9 pattern cited as intent with no copied label text.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============================ CARD 2: week-grid composition ============================ -->
+<div class="card">
+  <p class="kicker">Approval card · chronology composition — registry entry 19 in situ</p>
+  <h2>Week grid — sessions-on-days chronology</h2>
+  <p class="sub">The week is the screen when time is the task (T6: chronology is the spine, and
+  time is the natural compression). Seven day columns, each with a stated capacity of three typed
+  session slots; fixtures, travel and rest occupy the same grid cells as practice sessions, so a
+  congested week visibly spends preparation (F36 — the fixture list eats the plan, in place).
+  Day cells carry typed session chips from the closed glyph vocabulary — five session types by
+  construction: <span class="mono">figure.run</span> practice, <span class="mono">film</span>
+  film, <span class="mono">airplane</span> travel, <span class="mono">football</span> game,
+  <span class="mono">moon.zzz</span> rest; a sixth type is a budget breach requiring an owner
+  amendment (04 §4.5 ceiling rule 2). The collection wears its bound at the header (F39 kin, 21
+  slots); the fixture wears its distance ("tomorrow", F30); an empty day states its own absence
+  in place (F33); the arithmetic footer prints what the week spent. Scenario: a short week — the
+  fixture fell on Thursday, so Wednesday holds travel and the game consumes its day.</p>
+
+  <div class="pair">
+    <div class="appearance" style="flex:1 1 100%;">
+      <h3>Dark — work surface #111426 · rendered at the install-floor usable width, 764 pt</h3>
+      <div class="dk scroll-x">
+        <div class="frame" style="padding:8px; width:780px;">
+          <div class="wkhead"><span>PRACTICE WEEK — WEEK 9 · OCT 26 – NOV 1</span><span class="num">21 SLOTS · TODAY WED 29</span></div>
+          <div class="wk">
+            <div class="day">
+              <div class="dayhead">SUN 26</div><div class="daymark"></div>
+              <div class="slots">
+                <div class="schip"><span class="sy">film</span><span class="nm">Review</span></div>
+                <div class="schip"><span class="sy">moon.zzz</span><span class="nm">Recovery</span></div>
+                <div class="sopen">open</div>
+              </div>
+            </div>
+            <div class="day">
+              <div class="dayhead">MON 27</div><div class="daymark"></div>
+              <div class="slots">
+                <div class="schip"><span class="sy">figure.run</span><span class="nm">Install</span></div>
+                <div class="schip"><span class="sy">film</span><span class="nm">Opponent film</span></div>
+                <div class="sopen">open</div>
+              </div>
+            </div>
+            <div class="day">
+              <div class="dayhead">TUE 28</div><div class="daymark"></div>
+              <div class="slots">
+                <div class="schip"><span class="sy">figure.run</span><span class="nm">Full pads</span></div>
+                <div class="schip"><span class="sy">figure.run</span><span class="nm">Situations</span></div>
+                <div class="sopen">open</div>
+              </div>
+            </div>
+            <div class="day today">
+              <div class="dayhead">WED 29 · TODAY</div>
+              <div class="daymark" style="color:var(--warn);">CONGESTED</div>
+              <div class="slots">
+                <div class="schip"><span class="sy">airplane</span><span class="nm">To Example Tech</span></div>
+                <div class="schip"><span class="sy">figure.run</span><span class="nm">Walkthrough</span></div>
+                <div class="schip"><span class="sy">film</span><span class="nm">Final look</span></div>
+              </div>
+            </div>
+            <div class="day">
+              <div class="dayhead">THU 30</div><div class="daymark"></div>
+              <div class="slots">
+                <div class="sgame">
+                  <div class="sy sym" style="align-self:flex-start;">football</div>
+                  <div class="f-micro" style="font-weight:700;">GAME</div>
+                  <div class="f-micro">at Example Tech</div>
+                  <div class="f-micro s2">Away · tomorrow</div>
+                  <div class="f-micro q">consumes all 3 slots</div>
+                </div>
+              </div>
+            </div>
+            <div class="day">
+              <div class="dayhead">FRI 31</div><div class="daymark"></div>
+              <div class="slots">
+                <div class="schip"><span class="sy">moon.zzz</span><span class="nm">Recovery</span></div>
+                <div class="sopen">open</div>
+                <div class="sopen">open</div>
+              </div>
+            </div>
+            <div class="day">
+              <div class="dayhead">SAT 1</div><div class="daymark"></div>
+              <div class="slots">
+                <div class="sempty"><span>No sessions</span><span>3 slots open</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="wkfoot">This week: preparation 7 · game, travel and rest 6 · open 8 — of 21
+          slots. Wed is congested: travel spends 1 of 3 slots the short week needed; Thu's game
+          consumes its day.</div>
+        </div>
+      </div>
+      <p class="ratio-note">Quoted ratios on dark surfaces (04 §6.1): chip name and game lines
+      content.primary #F4F5FA on raised #191D32 15.27; chip symbol line content.secondary #B8BDCC
+      on raised 8.86; day headers content.secondary on work 9.71; CONGESTED state.warning #F0C56C
+      on work 11.21; today underline action.primary #9964E8 on work 4.64 (non-text, above the 3:1
+      floor; the printed word TODAY sits in content.primary at 16.74 — the coloured mark is never
+      the sole carrier); open/empty/footer content.quiet #858CA2 on work 5.44. Hairlines are
+      neutral elevation separations carrying no meaning.</p>
+    </div>
+
+    <div class="appearance" style="flex:1 1 100%;">
+      <h3>Light — work surface #FBFBFD · rendered at the install-floor usable width, 764 pt</h3>
+      <div class="lt scroll-x">
+        <div class="frame" style="padding:8px; width:780px;">
+          <div class="wkhead"><span>PRACTICE WEEK — WEEK 9 · OCT 26 – NOV 1</span><span class="num">21 SLOTS · TODAY WED 29</span></div>
+          <div class="wk">
+            <div class="day">
+              <div class="dayhead">SUN 26</div><div class="daymark"></div>
+              <div class="slots">
+                <div class="schip"><span class="sy">film</span><span class="nm">Review</span></div>
+                <div class="schip"><span class="sy">moon.zzz</span><span class="nm">Recovery</span></div>
+                <div class="sopen">open</div>
+              </div>
+            </div>
+            <div class="day">
+              <div class="dayhead">MON 27</div><div class="daymark"></div>
+              <div class="slots">
+                <div class="schip"><span class="sy">figure.run</span><span class="nm">Install</span></div>
+                <div class="schip"><span class="sy">film</span><span class="nm">Opponent film</span></div>
+                <div class="sopen">open</div>
+              </div>
+            </div>
+            <div class="day">
+              <div class="dayhead">TUE 28</div><div class="daymark"></div>
+              <div class="slots">
+                <div class="schip"><span class="sy">figure.run</span><span class="nm">Full pads</span></div>
+                <div class="schip"><span class="sy">figure.run</span><span class="nm">Situations</span></div>
+                <div class="sopen">open</div>
+              </div>
+            </div>
+            <div class="day today">
+              <div class="dayhead">WED 29 · TODAY</div>
+              <div class="daymark" style="color:var(--warn);">CONGESTED</div>
+              <div class="slots">
+                <div class="schip"><span class="sy">airplane</span><span class="nm">To Example Tech</span></div>
+                <div class="schip"><span class="sy">figure.run</span><span class="nm">Walkthrough</span></div>
+                <div class="schip"><span class="sy">film</span><span class="nm">Final look</span></div>
+              </div>
+            </div>
+            <div class="day">
+              <div class="dayhead">THU 30</div><div class="daymark"></div>
+              <div class="slots">
+                <div class="sgame">
+                  <div class="sy sym" style="align-self:flex-start;">football</div>
+                  <div class="f-micro" style="font-weight:700;">GAME</div>
+                  <div class="f-micro">at Example Tech</div>
+                  <div class="f-micro s2">Away · tomorrow</div>
+                  <div class="f-micro q">consumes all 3 slots</div>
+                </div>
+              </div>
+            </div>
+            <div class="day">
+              <div class="dayhead">FRI 31</div><div class="daymark"></div>
+              <div class="slots">
+                <div class="schip"><span class="sy">moon.zzz</span><span class="nm">Recovery</span></div>
+                <div class="sopen">open</div>
+                <div class="sopen">open</div>
+              </div>
+            </div>
+            <div class="day">
+              <div class="dayhead">SAT 1</div><div class="daymark"></div>
+              <div class="slots">
+                <div class="sempty"><span>No sessions</span><span>3 slots open</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="wkfoot">This week: preparation 7 · game, travel and rest 6 · open 8 — of 21
+          slots. Wed is congested: travel spends 1 of 3 slots the short week needed; Thu's game
+          consumes its day.</div>
+        </div>
+      </div>
+      <p class="ratio-note">Quoted ratios on light surfaces (04 §6.1): chip name and game lines
+      content.primary #111426 on raised #E6E8F0 14.90; chip symbol line content.secondary #4D5366
+      on raised 6.25; day headers content.secondary on work 7.40; CONGESTED state.warning #765300
+      on work 6.76; today underline action.primary #6840B0 on work 6.89 (non-text); open/empty/
+      footer content.quiet #596074 on work 6.07.</p>
+    </div>
+  </div>
+
+  <h3 style="font-size:12px; font-weight:800; margin-top:16px;">Width matrix — the composition at
+  844 (install floor), 852 (promise floor) and 956 (ceiling), default type</h3>
+  <p class="ratio-note">Each window renders the Coaching HQ shape of this composition: the week
+  plan as the dominant object (header, grid, arithmetic footer) with the next-obligation strip as
+  its one secondary region — the decision due now stays in the initial viewport (04 §7). The
+  48 pt world-strip band is drawn as a labelled slot only; the strip itself is chrome-v3 card 5's
+  component. Dashed guides and inset labels are gallery annotation, not product furniture. In
+  these windows the header, footer and obligation strip composite directly on world.page
+  #080A14; the quoted canon ratios there are content.primary 18.13, content.secondary 10.52,
+  content.quiet 5.89 and state.warning 12.13 (04 §6.1, page column) — the grid's own cells keep
+  the work/raised pairings printed above.
+  Vertical arithmetic at default type: strip 48 + week plan ≈ 215 (header ≈ 19, grid ≈ 178,
+  footer ≈ 18) + obligation strip ≈ 110 → ≈ 373 of the 390/393/440 pt window heights — nothing
+  clips vertically at any of the three, and the hub-tile row of card 4 scrolls in below the
+  initial viewport.</p>
+
+  <div class="winwrap">
+    <p class="winlab">844 × 390 — install floor: below-promise devices can always install, so the
+    composition renders un-clipped and reachable here forever (04 §7). Horizontal insets drawn 59
+    sensor / 21 home — the 15-generation and base-16 values canon holds; the one 844 × 390 model
+    (16e) has unsourced landscape insets, recorded as a gap in 04 §7: measure before relying.
+    Usable width 764 pt; day columns ≈ 105 pt.</p>
+    <div class="win w844 dk">
+      <div class="gl" style="left:59px;"></div><div class="gl" style="right:21px;"></div>
+      <div class="stripslot" style="margin-left:59px; margin-right:21px;">WorldStrip slot — 48 pt, chrome-v3 card 5</div>
+      <div class="comp">
+        <div class="wkhead"><span>PRACTICE WEEK — WEEK 9 · OCT 26 – NOV 1</span><span class="num">21 SLOTS · TODAY WED 29</span></div>
+        <div class="wk" style="background:var(--work);">
+          <div class="day">
+            <div class="dayhead">SUN 26</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="schip"><span class="sy">film</span><span class="nm">Review</span></div>
+              <div class="schip"><span class="sy">moon.zzz</span><span class="nm">Recovery</span></div>
+              <div class="sopen">open</div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">MON 27</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="schip"><span class="sy">figure.run</span><span class="nm">Install</span></div>
+              <div class="schip"><span class="sy">film</span><span class="nm">Opponent film</span></div>
+              <div class="sopen">open</div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">TUE 28</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="schip"><span class="sy">figure.run</span><span class="nm">Full pads</span></div>
+              <div class="schip"><span class="sy">figure.run</span><span class="nm">Situations</span></div>
+              <div class="sopen">open</div>
+            </div>
+          </div>
+          <div class="day today">
+            <div class="dayhead">WED 29 · TODAY</div>
+            <div class="daymark" style="color:var(--warn);">CONGESTED</div>
+            <div class="slots">
+              <div class="schip"><span class="sy">airplane</span><span class="nm">To Example Tech</span></div>
+              <div class="schip"><span class="sy">figure.run</span><span class="nm">Walkthrough</span></div>
+              <div class="schip"><span class="sy">film</span><span class="nm">Final look</span></div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">THU 30</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="sgame">
+                <div class="sy sym" style="align-self:flex-start;">football</div>
+                <div class="f-micro" style="font-weight:700;">GAME</div>
+                <div class="f-micro">at Example Tech</div>
+                <div class="f-micro s2">Away · tomorrow</div>
+                <div class="f-micro q">consumes 3 slots</div>
+              </div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">FRI 31</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="schip"><span class="sy">moon.zzz</span><span class="nm">Recovery</span></div>
+              <div class="sopen">open</div>
+              <div class="sopen">open</div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">SAT 1</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="sempty"><span>No sessions</span><span>3 slots open</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="wkfoot">Preparation 7 · game, travel and rest 6 · open 8 — of 21 slots · Wed congested: travel spends 1 slot</div>
+        <div class="obl-label">Next obligations — 2 due</div>
+        <div class="agenda">
+          <div class="arow">
+            <span class="acheck"><span class="sym">circle</span></span>
+            <span class="amain"><span class="atitle">Set the travel roster</span>
+              <span class="asub">mandatory</span></span>
+            <span class="acost num" style="color:var(--warn);">today</span>
+          </div>
+          <div class="arow">
+            <span class="acheck"><span class="sym">circle</span></span>
+            <span class="amain"><span class="atitle">Signing deadline</span></span>
+            <span class="acost s2 num">2d</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="winlab" style="margin-top:16px;">852 × 393 — promise floor: where the full density
+    budget must hold (04 §7, D15 two-tier test). Insets 59 / 21 (15 Pro class). Usable width
+    772 pt; day columns ≈ 106 pt.</p>
+    <div class="win w852 dk">
+      <div class="gl" style="left:59px;"></div><div class="gl" style="right:21px;"></div>
+      <div class="stripslot" style="margin-left:59px; margin-right:21px;">WorldStrip slot — 48 pt, chrome-v3 card 5</div>
+      <div class="comp">
+        <div class="wkhead"><span>PRACTICE WEEK — WEEK 9 · OCT 26 – NOV 1</span><span class="num">21 SLOTS · TODAY WED 29</span></div>
+        <div class="wk" style="background:var(--work);">
+          <div class="day">
+            <div class="dayhead">SUN 26</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="schip"><span class="sy">film</span><span class="nm">Review</span></div>
+              <div class="schip"><span class="sy">moon.zzz</span><span class="nm">Recovery</span></div>
+              <div class="sopen">open</div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">MON 27</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="schip"><span class="sy">figure.run</span><span class="nm">Install</span></div>
+              <div class="schip"><span class="sy">film</span><span class="nm">Opponent film</span></div>
+              <div class="sopen">open</div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">TUE 28</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="schip"><span class="sy">figure.run</span><span class="nm">Full pads</span></div>
+              <div class="schip"><span class="sy">figure.run</span><span class="nm">Situations</span></div>
+              <div class="sopen">open</div>
+            </div>
+          </div>
+          <div class="day today">
+            <div class="dayhead">WED 29 · TODAY</div>
+            <div class="daymark" style="color:var(--warn);">CONGESTED</div>
+            <div class="slots">
+              <div class="schip"><span class="sy">airplane</span><span class="nm">To Example Tech</span></div>
+              <div class="schip"><span class="sy">figure.run</span><span class="nm">Walkthrough</span></div>
+              <div class="schip"><span class="sy">film</span><span class="nm">Final look</span></div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">THU 30</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="sgame">
+                <div class="sy sym" style="align-self:flex-start;">football</div>
+                <div class="f-micro" style="font-weight:700;">GAME</div>
+                <div class="f-micro">at Example Tech</div>
+                <div class="f-micro s2">Away · tomorrow</div>
+                <div class="f-micro q">consumes 3 slots</div>
+              </div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">FRI 31</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="schip"><span class="sy">moon.zzz</span><span class="nm">Recovery</span></div>
+              <div class="sopen">open</div>
+              <div class="sopen">open</div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">SAT 1</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="sempty"><span>No sessions</span><span>3 slots open</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="wkfoot">Preparation 7 · game, travel and rest 6 · open 8 — of 21 slots · Wed congested: travel spends 1 slot</div>
+        <div class="obl-label">Next obligations — 2 due</div>
+        <div class="agenda">
+          <div class="arow">
+            <span class="acheck"><span class="sym">circle</span></span>
+            <span class="amain"><span class="atitle">Set the travel roster</span>
+              <span class="asub">mandatory</span></span>
+            <span class="acost num" style="color:var(--warn);">today</span>
+          </div>
+          <div class="arow">
+            <span class="acheck"><span class="sym">circle</span></span>
+            <span class="amain"><span class="atitle">Signing deadline</span></span>
+            <span class="acost s2 num">2d</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="winlab" style="margin-top:16px;">956 × 440 — ceiling of the promised window
+    (04 §7). Insets drawn 62 sensor / 21 home — the 16 Pro class values canon holds for this
+    size; the 17 generation widens to 62 both sides with 20 pt top and bottom (04 §7). Usable
+    width 873 pt; day columns ≈ 121 pt — the same composition breathes, no new content
+    appears.</p>
+    <div class="win w956 dk">
+      <div class="gl" style="left:62px;"></div><div class="gl" style="right:21px;"></div>
+      <div class="stripslot" style="margin-left:62px; margin-right:21px;">WorldStrip slot — 48 pt, chrome-v3 card 5</div>
+      <div class="comp">
+        <div class="wkhead"><span>PRACTICE WEEK — WEEK 9 · OCT 26 – NOV 1</span><span class="num">21 SLOTS · TODAY WED 29</span></div>
+        <div class="wk" style="background:var(--work);">
+          <div class="day">
+            <div class="dayhead">SUN 26</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="schip"><span class="sy">film</span><span class="nm">Review</span></div>
+              <div class="schip"><span class="sy">moon.zzz</span><span class="nm">Recovery</span></div>
+              <div class="sopen">open</div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">MON 27</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="schip"><span class="sy">figure.run</span><span class="nm">Install</span></div>
+              <div class="schip"><span class="sy">film</span><span class="nm">Opponent film</span></div>
+              <div class="sopen">open</div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">TUE 28</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="schip"><span class="sy">figure.run</span><span class="nm">Full pads</span></div>
+              <div class="schip"><span class="sy">figure.run</span><span class="nm">Situations</span></div>
+              <div class="sopen">open</div>
+            </div>
+          </div>
+          <div class="day today">
+            <div class="dayhead">WED 29 · TODAY</div>
+            <div class="daymark" style="color:var(--warn);">CONGESTED</div>
+            <div class="slots">
+              <div class="schip"><span class="sy">airplane</span><span class="nm">To Example Tech</span></div>
+              <div class="schip"><span class="sy">figure.run</span><span class="nm">Walkthrough</span></div>
+              <div class="schip"><span class="sy">film</span><span class="nm">Final look</span></div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">THU 30</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="sgame">
+                <div class="sy sym" style="align-self:flex-start;">football</div>
+                <div class="f-micro" style="font-weight:700;">GAME</div>
+                <div class="f-micro">at Example Tech</div>
+                <div class="f-micro s2">Away · tomorrow</div>
+                <div class="f-micro q">consumes 3 slots</div>
+              </div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">FRI 31</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="schip"><span class="sy">moon.zzz</span><span class="nm">Recovery</span></div>
+              <div class="sopen">open</div>
+              <div class="sopen">open</div>
+            </div>
+          </div>
+          <div class="day">
+            <div class="dayhead">SAT 1</div><div class="daymark"></div>
+            <div class="slots">
+              <div class="sempty"><span>No sessions</span><span>3 slots open</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="wkfoot">Preparation 7 · game, travel and rest 6 · open 8 — of 21 slots · Wed congested: travel spends 1 slot</div>
+        <div class="obl-label">Next obligations — 2 due</div>
+        <div class="agenda">
+          <div class="arow">
+            <span class="acheck"><span class="sym">circle</span></span>
+            <span class="amain"><span class="atitle">Set the travel roster</span>
+              <span class="asub">mandatory</span></span>
+            <span class="acost num" style="color:var(--warn);">today</span>
+          </div>
+          <div class="arow">
+            <span class="acheck"><span class="sym">circle</span></span>
+            <span class="amain"><span class="atitle">Signing deadline</span></span>
+            <span class="acost s2 num">2d</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:12px; font-weight:800; margin-top:16px;">AX5 rendition — single-column day
+  list, order preserved, nothing dropped</h3>
+  <p class="ratio-note">852 pt window, AX5 category, dark appearance. Sizes per sourcing row Q5
+  mapped through 04 §6.2's production roles: headline role (subheadline style) 15 → 49 pt; body
+  role (footnote style) 13 → 44 pt; caption role (caption style) 12 → 43 pt. The grid reflows to
+  one column in day order Sunday through Saturday; every session, state, bound and the arithmetic
+  footer survives; session-type glyphs are carried by their words at this size (the word is the
+  datum, the glyph its compression — 04 §6.2's diagram-mark rule satisfied by the sentence). AX5
+  may scroll vertically; the due obligation remains reachable without crossing a hidden shelf
+  (04 §7). Text composites on world.page #080A14: content.primary 18.13, content.secondary
+  10.52, state.warning 12.13, content.quiet 5.89 — quoted from 04 §6.1's page column.</p>
+  <div class="scroll-x">
+    <div class="ax5">
+      <div class="ahead">Practice week — Week 9</div>
+      <div class="ameta">Oct 26 – Nov 1 · 21 slots · today Wed 29</div>
+      <div class="aday"><div class="ahead" style="font-size:49px;">Sunday 26</div>
+        <div class="aline">Film — review</div>
+        <div class="aline">Rest — recovery</div>
+        <div class="ameta">1 slot open</div></div>
+      <div class="aday"><div class="ahead" style="font-size:49px;">Monday 27</div>
+        <div class="aline">Practice — install</div>
+        <div class="aline">Film — opponent film</div>
+        <div class="ameta">1 slot open</div></div>
+      <div class="aday"><div class="ahead" style="font-size:49px;">Tuesday 28</div>
+        <div class="aline">Practice — full pads</div>
+        <div class="aline">Practice — situations</div>
+        <div class="ameta">1 slot open</div></div>
+      <div class="aday"><div class="ahead" style="font-size:49px;">Wednesday 29 — today</div>
+        <div class="aline" style="color:#F0C56C;">Congested: travel spends 1 of 3 slots</div>
+        <div class="aline">Travel — to Example Tech</div>
+        <div class="aline">Practice — walkthrough</div>
+        <div class="aline">Film — final look</div>
+        <div class="ameta">No slots open</div></div>
+      <div class="aday"><div class="ahead" style="font-size:49px;">Thursday 30</div>
+        <div class="aline">Game — at Example Tech, away, tomorrow</div>
+        <div class="ameta">Consumes all 3 slots</div></div>
+      <div class="aday"><div class="ahead" style="font-size:49px;">Friday 31</div>
+        <div class="aline">Rest — recovery</div>
+        <div class="ameta">2 slots open</div></div>
+      <div class="aday"><div class="ahead" style="font-size:49px;">Saturday 1</div>
+        <div class="aline" style="color:#858CA2; font-style:italic;">No sessions — 3 slots open</div></div>
+      <div class="aday"><div class="aline">This week: preparation 7, game, travel and rest 6,
+        open 8, of 21 slots.</div></div>
+      <div class="aday"><div class="ahead" style="font-size:49px;">Next obligations — 2 due</div>
+        <div class="aline">Set the travel roster — mandatory, due <span style="color:#F0C56C;">today</span>, not complete</div>
+        <div class="aline">Signing deadline — due in 2 days, not complete</div></div>
+    </div>
+  </div>
+
+  <div class="contract">
+    <h4>CONTRACT — plan §4, ten points</h4>
+    <ol>
+      <li><strong>Both appearances, ratios quoted:</strong> rendered above; every pair carries its
+      04 §6.1 measured ratio against its composited surface — chips on raised 15.27/8.86 dark,
+      14.90/6.25 light; headers and footer on work 9.71/5.44 dark, 7.40/6.07 light; CONGESTED
+      state.warning 11.21/6.76; today mark action.primary 4.64/6.89 non-text with the printed
+      word in content.primary. None recomputed. The width matrix and AX5 rendition reuse the
+      identical dark values.</li>
+      <li><strong>Widths:</strong> rendered at 844 (install floor, 16e insets unsourced — gap
+      carried from 04 §7), 852 (promise floor) and 956 (ceiling) at default type with per-model
+      insets drawn and labelled, plus one AX5 rendition — a single-column day list, Sunday
+      through Saturday order preserved, every session, state, bound and footer present, sizes per
+      sourcing row Q5 (49/44/43 pt). No clipping at any of the four; the 956 rendition adds
+      breathing room, never new content.</li>
+      <li><strong>Touch (measured, printed):</strong> each day cell is one tap target opening its
+      day editor — narrowest cell ≈ 105 × 176 pt at 844, above the 44 × 44 pt HIG-verified floor
+      (04 §7); the obligation rows in the composition are 44 pt tall, full width. Session chips
+      inside a cell are not separate targets at default type; editing happens in the day editor
+      (popout depth 1).</li>
+      <li><strong>States, not one happy instance:</strong> normal days, today (boundary + printed
+      word + spoken state, 04 §6.3), <em>congested-day</em> (state.warning word plus the visible
+      cause: travel occupying a practice slot, cost printed in the footer — F36), game day (the
+      fixture consuming all three slots, wearing Away and its distance "tomorrow" — F36, F30),
+      light day with open slots, and <em>empty-day</em> (absence stated in place: "No sessions —
+      3 slots open", F33). Loading is not drawn; error/interrupted belong to the failure set
+      (registry 23, failure sheet).</li>
+      <li><strong>Team colour:</strong> not applicable — the opponent is named in text
+      ("at Example Tech", placeholder pending generator output); no team.* token appears because
+      management receives no decorative team-colour wash (04 §5).</li>
+      <li><strong>VoiceOver, one sentence per data row (a day cell is the row):</strong>
+      <span class="vo">"Sunday October 26: film, review; rest, recovery; 1 slot open. Button,
+      opens the day."</span> <span class="vo">"Wednesday October 29, today, congested: travel to
+      Example Tech spends 1 of 3 slots; practice, walkthrough; film, final look; no slots open.
+      Button, opens the day."</span> <span class="vo">"Thursday October 30: game at Example Tech,
+      away, tomorrow; consumes all 3 slots. Button, opens the day."</span>
+      <span class="vo">"Saturday November 1: no sessions, 3 slots open. Button, opens the
+      day."</span> Footer: <span class="vo">"This week: 7 slots on preparation, 6 consumed by
+      game, travel and rest, 8 open, of 21."</span> Reading order: week context, then days in
+      order, then arithmetic, then obligations (04 §7).</li>
+      <li><strong>Animation and reduced form, named:</strong> placing or moving a session chip
+      settles it into its slot with a short travel; under Reduce Motion placement is a discrete
+      state change — the chip appears complete in its final slot, no travel (04 §7). The today
+      marker and congestion state are static. No other animation exists.</li>
+      <li><strong>Verdict line:</strong> none — the footer is arithmetic over the plan's own
+      slots (counts, not judgement); per this sheet's rule verdict lines appear only on the hub
+      tile (card 4). Zero spent here.</li>
+      <li><strong>Density budget (04 §4.5 currencies):</strong> points — the week plan (header
+      ≈ 19 + grid ≈ 178 + footer ≈ 18) ≈ 215 pt; with the ≈ 110 pt obligation strip the initial
+      viewport at the install floor spends ≈ 325 of 342 pt below the world strip, dominant object
+      ≈ 63% (≥ 60%), one secondary region of the permitted two; taps — any session or day datum
+      ≤ 1 tap (day editor, popout depth 1), within the ≤ 2-tap reach; working memory — 0, the
+      whole week and its costs share one surface; learned symbols — the closed session-type set
+      spends 5 of the ≤ 12 global vocabulary (figure.run, film, airplane, football, moon.zzz),
+      capped by construction, each paired with its word; ≤ 3 glyphs per day cell observed (max 3
+      chips); a sixth session type is a budget breach requiring owner amendment; verdict
+      lines — 0.</li>
+      <li><strong>Traceability:</strong> every colour is a 04 §6.1 hex; type 11/10 pt micro with
+      tabular numerals per §6.2 (nothing below 10 pt); spacing 4/6/8 steps, surface radius 10,
+      continuous day columns radius 0 with hairlines, micro-chip radius 4 (sibling-sheet
+      convention) per §6.3; window set, insets and their recorded gaps per §7. The 21-slot bound,
+      3-slot day capacity and slot arithmetic are stated bounds worn at the header (F19 kin);
+      capacity constants belong to the tier rules module, never inlined (CLAUDE.md). Identities
+      mechanical placeholders pending generator output.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============================ CARD 3: load-policy ladder ============================ -->
+<div class="card">
+  <p class="kicker">Approval card · chronology composition — standing rule beside the week</p>
+  <h2>Load-policy ladder — condition band to dose multiplier</h2>
+  <p class="sub">A standing rule mapping the roster's condition-band vocabulary to practice-dose
+  multipliers (F37 — dose follows state as a rule, not a day-by-day choice), with the plan's
+  derived cost stated beside the choices (F38 — feasibility is a readout, not an audit): the
+  planned-intensity gauge and the implied staff workload. Each band step is labelled with its
+  numeric effect; the condition mark's fill fraction falls band by band, with the word always
+  beside it (a tinted or filled mark alone is the A6 defect). Staff workload is a worded band —
+  light, moderate, heavy — never a second learned scale (A7). Applies from the next generated
+  practice; day-by-day overrides live in the day editor.</p>
+
+  <div class="pair">
+    <div class="appearance">
+      <h3>Dark — work surface #111426</h3>
+      <div class="dk">
+        <div class="frame" style="padding:8px;">
+          <div class="f-cap q" style="margin-bottom:4px;">PRACTICE LOAD POLICY — STANDING RULE</div>
+          <div style="border:1px solid var(--raised); border-radius:8px; overflow:hidden;">
+            <div class="lrow">
+              <span class="cmark"><span class="cfill" style="width:100%;"></span></span>
+              <span class="bword">Fresh</span>
+              <span class="bmult num">×1.10</span>
+              <span class="bnote">of planned dose</span>
+            </div>
+            <div class="lrow">
+              <span class="cmark"><span class="cfill" style="width:80%;"></span></span>
+              <span class="bword">Ready</span>
+              <span class="bmult num">×1.00</span>
+              <span class="bnote">of planned dose</span>
+            </div>
+            <div class="lrow">
+              <span class="cmark"><span class="cfill" style="width:60%;"></span></span>
+              <span class="bword">Worn</span>
+              <span class="bmult num">×0.85</span>
+              <span class="bnote">of planned dose</span>
+            </div>
+            <div class="lrow">
+              <span class="cmark"><span class="cfill" style="width:40%;"></span></span>
+              <span class="bword">Tired</span>
+              <span class="bmult num">×0.65</span>
+              <span class="bnote">of planned dose</span>
+            </div>
+            <div class="lrow">
+              <span class="cmark"><span class="cfill" style="width:20%;"></span></span>
+              <span class="bword">Spent</span>
+              <span class="bmult num">×0.40</span>
+              <span class="bnote">of planned dose · edited from ×0.50</span>
+            </div>
+          </div>
+          <div class="f-micro q" style="margin-top:4px;">Tap a band to adjust its dose (popout,
+          depth 1). Changes apply from the next generated practice.</div>
+          <div class="hairline" style="margin-top:8px;"></div>
+          <div class="f-cap q" style="margin:8px 0 4px 0;">DERIVED COST OF THIS WEEK'S PLAN — target form, see data source</div>
+          <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;">
+            <div>
+              <div class="f-micro s2" style="margin-bottom:3px;">PLANNED INTENSITY</div>
+              <div class="gauge">
+                <span class="gm on"></span><span class="gm on"></span><span class="gm on"></span>
+                <span class="gm on"></span><span class="gm on"></span><span class="gm on"></span>
+                <span class="gm on"></span><span class="gm"></span><span class="gm"></span><span class="gm"></span>
+              </div>
+              <div class="f-micro" style="margin-top:3px;"><span style="font-weight:700;">High</span> <span class="s2 num">· 7 of 10</span></div>
+            </div>
+            <div style="flex:1 1 240px; min-width:220px;">
+              <div class="f-micro s2" style="margin-bottom:1px;">IMPLIED STAFF WORKLOAD</div>
+              <div class="staffrow"><span>Position coaches</span><span class="v num">6 × moderate</span></div>
+              <div class="staffrow"><span>Coordinators</span><span class="v num">2 × heavy</span></div>
+              <div class="staffrow"><span>Support staff</span><span class="v num">3 × light</span></div>
+            </div>
+          </div>
+          <div class="hairline" style="margin-top:8px;"></div>
+          <div class="f-micro q" style="margin-top:6px;">Data source: condition is engine-owned
+          (M2 — fatigue from recorded workload, deterministic recovery). The band cut points, the
+          dose multipliers and this derived-cost computation have no engine owner and no
+          gap-register entry today; values shown are design placeholders pending the tier rules
+          module. Until the engine owns the computation, the derived-cost region is not rendered
+          in product and the ladder ships alone — raised as a finding per 04 §4.5: a surface the
+          inventory does not price is a finding, not a licence.</div>
+        </div>
+      </div>
+      <p class="ratio-note">Quoted ratios on dark work #111426 (04 §6.1): band word and
+      multiplier content.primary #F4F5FA 16.74; staff rows and mark fill content.secondary
+      #B8BDCC 9.71 (fill is non-text against the work-toned mark well, floor 3:1); notes and
+      data-source line content.quiet #858CA2 5.44; gauge filled marks state.info #72ADEC 7.73
+      (non-text, printed value beside); section labels content.quiet 5.44.</p>
+    </div>
+
+    <div class="appearance">
+      <h3>Light — work surface #FBFBFD</h3>
+      <div class="lt">
+        <div class="frame" style="padding:8px;">
+          <div class="f-cap q" style="margin-bottom:4px;">PRACTICE LOAD POLICY — STANDING RULE</div>
+          <div style="border:1px solid var(--raised); border-radius:8px; overflow:hidden;">
+            <div class="lrow">
+              <span class="cmark"><span class="cfill" style="width:100%;"></span></span>
+              <span class="bword">Fresh</span>
+              <span class="bmult num">×1.10</span>
+              <span class="bnote">of planned dose</span>
+            </div>
+            <div class="lrow">
+              <span class="cmark"><span class="cfill" style="width:80%;"></span></span>
+              <span class="bword">Ready</span>
+              <span class="bmult num">×1.00</span>
+              <span class="bnote">of planned dose</span>
+            </div>
+            <div class="lrow">
+              <span class="cmark"><span class="cfill" style="width:60%;"></span></span>
+              <span class="bword">Worn</span>
+              <span class="bmult num">×0.85</span>
+              <span class="bnote">of planned dose</span>
+            </div>
+            <div class="lrow">
+              <span class="cmark"><span class="cfill" style="width:40%;"></span></span>
+              <span class="bword">Tired</span>
+              <span class="bmult num">×0.65</span>
+              <span class="bnote">of planned dose</span>
+            </div>
+            <div class="lrow">
+              <span class="cmark"><span class="cfill" style="width:20%;"></span></span>
+              <span class="bword">Spent</span>
+              <span class="bmult num">×0.40</span>
+              <span class="bnote">of planned dose · edited from ×0.50</span>
+            </div>
+          </div>
+          <div class="f-micro q" style="margin-top:4px;">Tap a band to adjust its dose (popout,
+          depth 1). Changes apply from the next generated practice.</div>
+          <div class="hairline" style="margin-top:8px;"></div>
+          <div class="f-cap q" style="margin:8px 0 4px 0;">DERIVED COST OF THIS WEEK'S PLAN — target form, see data source</div>
+          <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;">
+            <div>
+              <div class="f-micro s2" style="margin-bottom:3px;">PLANNED INTENSITY</div>
+              <div class="gauge">
+                <span class="gm on"></span><span class="gm on"></span><span class="gm on"></span>
+                <span class="gm on"></span><span class="gm on"></span><span class="gm on"></span>
+                <span class="gm on"></span><span class="gm"></span><span class="gm"></span><span class="gm"></span>
+              </div>
+              <div class="f-micro" style="margin-top:3px;"><span style="font-weight:700;">High</span> <span class="s2 num">· 7 of 10</span></div>
+            </div>
+            <div style="flex:1 1 240px; min-width:220px;">
+              <div class="f-micro s2" style="margin-bottom:1px;">IMPLIED STAFF WORKLOAD</div>
+              <div class="staffrow"><span>Position coaches</span><span class="v num">6 × moderate</span></div>
+              <div class="staffrow"><span>Coordinators</span><span class="v num">2 × heavy</span></div>
+              <div class="staffrow"><span>Support staff</span><span class="v num">3 × light</span></div>
+            </div>
+          </div>
+          <div class="hairline" style="margin-top:8px;"></div>
+          <div class="f-micro q" style="margin-top:6px;">Data source: condition is engine-owned
+          (M2 — fatigue from recorded workload, deterministic recovery). The band cut points, the
+          dose multipliers and this derived-cost computation have no engine owner and no
+          gap-register entry today; values shown are design placeholders pending the tier rules
+          module. Until the engine owns the computation, the derived-cost region is not rendered
+          in product and the ladder ships alone — raised as a finding per 04 §4.5: a surface the
+          inventory does not price is a finding, not a licence.</div>
+        </div>
+      </div>
+      <p class="ratio-note">Quoted ratios on light work #FBFBFD (04 §6.1): band word and
+      multiplier content.primary #111426 17.64; staff rows and mark fill content.secondary
+      #4D5366 7.40; notes and data-source line content.quiet #596074 6.07; gauge filled marks
+      state.info #205F96 6.47 (non-text, printed value beside).</p>
+    </div>
+  </div>
+
+  <div class="contract">
+    <h4>CONTRACT — plan §4, ten points</h4>
+    <ol>
+      <li><strong>Both appearances, ratios quoted:</strong> rendered above with 04 §6.1 measured
+      ratios against work: 16.74/9.71/5.44 and info 7.73 dark; 17.64/7.40/6.07 and info 6.47
+      light. None recomputed. Fill-fraction marks and gauge marks are non-text indicators above
+      the 3:1 floor with their printed word and value always beside them.</li>
+      <li><strong>Widths:</strong> fluid single-column 44 pt rows; the longest row (mark 36 +
+      word 56 + multiplier + note ≈ 320 pt) is under half the narrowest usable width, 764 pt at
+      the install floor — no width-dependent composition, no clipping possible by construction at
+      844, 852 or 956. At AX5 each row restacks vertically (word, then multiplier, then note) at
+      the Q5 sizes (49/44/43 pt) and the derived-cost region follows in order — nothing
+      dropped.</li>
+      <li><strong>Touch (measured, printed):</strong> each band row is one tap target, full width
+      × 44 pt minimum (≥ 764 × 44 pt at the narrowest window) — above the HIG-verified 44 pt
+      floor (04 §7). The gauge and staff rows are readouts, not controls; the staff fact rows use
+      26 pt tracks within the 24–28 pt dense-row band (§6.3) precisely because they are not
+      interactive.</li>
+      <li><strong>States, not one happy instance:</strong> the five-step ladder is drawn in full
+      (fill fraction falling band by band), including one edited step ("Spent ×0.40 · edited from
+      ×0.50") showing the standing rule deviating from its default; the derived-cost region is
+      drawn in its target form and its data-source line states the honest shipping state (region
+      absent until engine-owned). Disabled/loading are not drawn: a policy always has a value;
+      error/interrupted belong to the failure set (registry 23).</li>
+      <li><strong>Team colour:</strong> not applicable — no team.* token on a management policy
+      surface (04 §5).</li>
+      <li><strong>VoiceOver, one sentence per data row:</strong> <span class="vo">"Fresh:
+      practice dose 110 percent of planned load. Button, adjusts this band."</span>
+      <span class="vo">"Spent: practice dose 40 percent of planned load, edited from 50 percent.
+      Button, adjusts this band."</span> Gauge: <span class="vo">"Planned intensity: high, 7 of
+      10."</span> Staff rows: <span class="vo">"Position coaches: 6 assigned, moderate
+      workload."</span> <span class="vo">"Coordinators: 2 assigned, heavy workload."</span>
+      Data-source line read as written.</li>
+      <li><strong>Animation and reduced form, named:</strong> adjusting a multiplier refills the
+      intensity gauge to its new value; under Reduce Motion the gauge is a discrete state change —
+      drawn at rest at the new value with the change announced, no fill travel (04 §7). The
+      ladder rows themselves do not animate.</li>
+      <li><strong>Verdict line:</strong> none — "High" is a banded readout with its printed
+      value, not a judgement sentence, and the whole derived region is target-form pending engine
+      ownership; per this sheet's rule verdict lines appear only on the hub tile (card 4). Zero
+      spent.</li>
+      <li><strong>Density budget (04 §4.5 currencies):</strong> points — five 44 pt rows plus a
+      derived-cost band of ≈ 90 pt ≈ 330 pt as a Practice Plan secondary region or local route;
+      taps — band adjustment 1 tap (popout depth 1), within reach ≤ 2; working memory — 0, rule
+      and consequence share one surface (F38); learned symbols — 0 new (fill marks and gauge are
+      diagram marks with sentence equivalents, words carry the bands); verdict lines — 0. Bands
+      and the derived cost are drawn only where the simulation owns the computation — which it
+      does not yet, so the data-source line carries the gap and the shipping form omits the
+      region (fabrication rule, 04 §4.5).</li>
+      <li><strong>Traceability:</strong> every colour is a 04 §6.1 hex; type 12/11/10 pt with
+      tabular numerals per §6.2; spacing 4/6/8/16, ladder container radius 8, internal rows
+      radius 0 with hairlines, marks radius 4 (sibling convention) per §6.3; 26 pt fact tracks in
+      the 24–28 band. Multipliers and cut points are labelled design placeholders for rules-module
+      constants (CLAUDE.md: no inlined magic numbers — the module owns them when it exists);
+      identities mechanical placeholders pending generator output.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============================ CARD 4: hub tile ============================ -->
+<div class="card">
+  <p class="kicker">Approval card · chronology composition — the hub earns density by summarising</p>
+  <h2>Hub tile — one-line summary with a verdict slot</h2>
+  <p class="sub">Per F10, a hub is composed from other screens' summaries: a tile is a one-line
+  reduction of its system with a verdict slot, and the whole tile opens its full screen — a hub
+  earns density by summarising, not by owning, and this is what separates it from the
+  contents-page screen 04 §4.4 rejects (tiles are summaries with verdicts, not bare links). Per
+  pass-2 F33, a tile can state its own absence in place, converting the hub into a checklist, and
+  the identical tile recurs wherever its system is mentioned. The verdict slot never invents: it
+  names its computation class — G-02, engine-owned verdicts (league-week baselines, percentiles,
+  expectation deltas, sample, confidence, staff voice) — or it is drawn empty with that gap ID.
+  Three states below: verdict-backed (target form once G-02 lands), verdict-pending (shipping
+  form today), and absence stated in place.</p>
+
+  <div class="pair">
+    <div class="appearance">
+      <h3>Dark — tiles on work #111426 over page #080A14</h3>
+      <div class="dk">
+        <div class="frame" style="background:var(--page); border-color:var(--raised);">
+          <div class="tile">
+            <div class="tbody">
+              <div class="ttitle">Team health</div>
+              <div class="tsum num">2 out · 1 limited · 19 fresh</div>
+              <div class="tverdict">Holding up better than most of the league this week —
+                Trainer Sample <span class="comp">· league percentile vs week baseline — G-02 ·
+                sample 9 weeks</span></div>
+            </div>
+            <span class="sym">chevron.right</span>
+          </div>
+          <div class="tile">
+            <div class="tbody">
+              <div class="ttitle">Practice week</div>
+              <div class="tsum num">7 prep · 6 consumed · 8 open of 21</div>
+              <div class="tverdict"><span class="tpending">verdict pending — G-02, no engine
+                baseline yet</span></div>
+            </div>
+            <span class="sym">chevron.right</span>
+          </div>
+          <div class="tile">
+            <div class="tbody">
+              <div class="ttitle">Game plan</div>
+              <div class="tabsent">No plan set — set the weekly keys</div>
+            </div>
+            <span class="sym">chevron.right</span>
+          </div>
+          <div class="f-micro q" style="margin-top:8px;">The middle tile is the shipping form
+          today; the first is the target form once G-02 lands. The third converts the hub into a
+          checklist (F33): the absence is the summary. In production the dashed pending marker
+          collapses to the summary line alone; marker and gap ID are sheet annotation
+          (04 §4.4: prototype truth belongs in gallery chrome).</div>
+        </div>
+      </div>
+      <p class="ratio-note">Quoted ratios (04 §6.1): tile title and pending/absent lines
+      content.quiet #858CA2 on work #111426 5.44; summary content.primary #F4F5FA on work 16.74;
+      verdict sentence content.secondary #B8BDCC on work 9.71; computation tag content.quiet
+      5.44; chevron chip content.secondary 9.71. Tiles are work panels on the page surface — a
+      neutral elevation pairing; text ratios are against work, the surface they composite on.</p>
+    </div>
+
+    <div class="appearance">
+      <h3>Light — tiles on work #FBFBFD over page #F1F2F7</h3>
+      <div class="lt">
+        <div class="frame" style="background:var(--page); border-color:var(--raised);">
+          <div class="tile">
+            <div class="tbody">
+              <div class="ttitle">Team health</div>
+              <div class="tsum num">2 out · 1 limited · 19 fresh</div>
+              <div class="tverdict">Holding up better than most of the league this week —
+                Trainer Sample <span class="comp">· league percentile vs week baseline — G-02 ·
+                sample 9 weeks</span></div>
+            </div>
+            <span class="sym">chevron.right</span>
+          </div>
+          <div class="tile">
+            <div class="tbody">
+              <div class="ttitle">Practice week</div>
+              <div class="tsum num">7 prep · 6 consumed · 8 open of 21</div>
+              <div class="tverdict"><span class="tpending">verdict pending — G-02, no engine
+                baseline yet</span></div>
+            </div>
+            <span class="sym">chevron.right</span>
+          </div>
+          <div class="tile">
+            <div class="tbody">
+              <div class="ttitle">Game plan</div>
+              <div class="tabsent">No plan set — set the weekly keys</div>
+            </div>
+            <span class="sym">chevron.right</span>
+          </div>
+          <div class="f-micro q" style="margin-top:8px;">The middle tile is the shipping form
+          today; the first is the target form once G-02 lands. The third converts the hub into a
+          checklist (F33): the absence is the summary. In production the dashed pending marker
+          collapses to the summary line alone; marker and gap ID are sheet annotation
+          (04 §4.4: prototype truth belongs in gallery chrome).</div>
+        </div>
+      </div>
+      <p class="ratio-note">Quoted ratios (04 §6.1): tile title and pending/absent lines
+      content.quiet #596074 on work #FBFBFD 6.07; summary content.primary #111426 on work 17.64;
+      verdict sentence content.secondary #4D5366 on work 7.40; computation tag content.quiet
+      6.07; chevron chip content.secondary 7.40.</p>
+    </div>
+  </div>
+
+  <div class="contract">
+    <h4>CONTRACT — plan §4, ten points</h4>
+    <ol>
+      <li><strong>Both appearances, ratios quoted:</strong> rendered above; every pair carries
+      its 04 §6.1 measured ratio against work, the surface the text composites on:
+      16.74/9.71/5.44 dark, 17.64/7.40/6.07 light. None recomputed.</li>
+      <li><strong>Widths:</strong> a fluid full-width row; the longest fixed content (title,
+      summary, verdict sentence) wraps within the tile and the narrowest usable width, 764 pt,
+      exceeds the summary line's natural width by construction — no clipping at 844, 852 or 956;
+      the summary's tile grammar is exercised against real windows by card 2's matrix, whose
+      composition this tile summarises. At AX5 the tile restacks title, summary, then verdict at
+      the Q5 sizes (43/44/44 pt for its caption/body roles), order preserved, nothing dropped,
+      and the chevron affordance keeps its spoken "button, opens" equivalent.</li>
+      <li><strong>Touch (measured, printed):</strong> the whole tile is one button — full width ×
+      56 pt minimum drawn here (≥ 764 × 56 pt at the narrowest window), above the HIG-verified
+      44 × 44 pt floor (04 §7). The chevron is part of the tile's single target, not a separate
+      control.</li>
+      <li><strong>States, not one happy instance:</strong> three drawn in both appearances —
+      verdict-backed (target form: sentence, staff voice, computation class G-02, sample),
+      verdict-pending (shipping form: slot drawn empty with the gap ID — the honest degraded form
+      that says less rather than inventing, 04 §4.4), and absence stated in place (F33: the empty
+      system is the summary, phrased as the imperative that resolves it). Loading is not drawn
+      (04 §7: no invented progress); error/interrupted belong to the failure set (registry
+      23).</li>
+      <li><strong>Team colour:</strong> not applicable — no team.* token; hub tiles are
+      management furniture (04 §5).</li>
+      <li><strong>VoiceOver, one sentence per tile:</strong> <span class="vo">"Team health: 2
+      out, 1 limited, 19 fresh. Holding up better than most of the league this week, Trainer
+      Sample, sample 9 weeks. Button, opens Team Health."</span> <span class="vo">"Practice week:
+      7 slots on preparation, 6 consumed, 8 open of 21. No staff verdict is available yet.
+      Button, opens the Practice Plan."</span> <span class="vo">"Game plan: no plan set. Set the
+      weekly keys. Button, opens Game Plan."</span> Reading order: dominant object first on its
+      owning hub, tiles after (04 §7).</li>
+      <li><strong>Animation and reduced form, named:</strong> the weekly verdict swap is a
+      crossfade in place; under Reduce Motion it is a discrete text swap — old sentence out, new
+      sentence in, no fade, no travel (04 §7). Tile press states are instantaneous value changes,
+      not motion.</li>
+      <li><strong>Verdict line:</strong> this card is the week family's only verdict carrier, as
+      required — one verdict line maximum per tile, naming its computation class in place
+      ("league percentile vs week baseline — G-02" with staff voice and sample), and the
+      no-backing form draws the slot empty with the gap-register ID instead of inventing
+      authority (04 §4.4; density model §3). The absence tile spends no verdict at all.</li>
+      <li><strong>Density budget (04 §4.5 currencies):</strong> points — 56 pt minimum per tile,
+      three tiles ≈ 190 pt as hub secondary content below card 2's composition; taps — each
+      tile's full screen exactly 1 tap away, evidence for its verdict 1 tap (the opened screen),
+      within reach ≤ 2; working memory — 0, the summary is the comparison surface; learned
+      symbols — 0 new (chevron.right is the shared navigation affordance already priced by
+      sibling sheets); verdict lines — at most 1 per tile, ≤ 1 per readout as budgeted, and only
+      where G-02 backs it.</li>
+      <li><strong>Traceability:</strong> every colour is a 04 §6.1 hex; type 12/11/10 pt with
+      tabular numerals per §6.2; free-standing tile radius 8, spacing 4/8/10 within §6.3's
+      steps, micro-chip radius 4 (sibling convention); summary counts trace to card 2's grid
+      arithmetic (the recurring-card rule, F33: one representation serves everywhere).
+      Identities — Trainer Sample, Example State's systems — are mechanical placeholders pending
+      generator output; no real name, mark or trade dress; the name-collision and trade-dress
+      tests stay green.</li>
+    </ol>
+  </div>
+</div>
+
+<footer>
+  week-v3.dc.html — one sheet of the eight in the reference library plan (§5). The sheets are a
+  rendering; docs/04-UX-AND-DESIGN-SYSTEM.md is the only canonical home, and a value appearing
+  only in a sheet has not shipped. Registry entry 19 remains provisional until its
+  three-production-uses record exists (04 §6.5, P11 rule). 2026-08-12.
+</footer>
+</body>
+</html>

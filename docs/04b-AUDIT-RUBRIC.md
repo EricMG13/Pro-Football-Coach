@@ -130,7 +130,7 @@ Borderline findings classify upward.
 
 Each production-grade screen family supplies:
 
-- 844 × 390 and 932 × 430 native frames;
+- 844 × 390 (install floor), 852 × 393 (promise floor) and 956 × 440 (ceiling) native frames, per `04` §7 and D15;
 - dark and light appearances;
 - default and AX5 type;
 - sensor-left and sensor-right safe-area ownership;

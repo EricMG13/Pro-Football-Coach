@@ -1,0 +1,810 @@
+<!-- @dsCard group="table" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Table sheet v3 - Pro Football Coach design reference</title>
+<style>
+/* Sheet gallery chrome uses the light-appearance 6.1 values. CSS px are read as pt. */
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#F1F2F7;color:#111426;font:12px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif}
+.sheet{max-width:1280px;margin:0 auto;padding:20px}
+h1{font-size:20px;font-weight:800;letter-spacing:-.2px}
+h2{font-size:17px;font-weight:700;margin:0 0 4px}
+h3{font-size:15px;font-weight:600;margin:16px 0 6px}
+p{margin:6px 0;max-width:76em}
+.meta{color:#4D5366;font-size:11px;letter-spacing:-.2px}
+.rulebox{background:#FBFBFD;border:1px solid #E6E8F0;border-radius:10px;padding:12px 16px;margin:12px 0}
+.card{background:#FBFBFD;border:1px solid #E6E8F0;border-radius:10px;padding:16px;margin:20px 0}
+.card>header{border-bottom:1px solid #E6E8F0;padding-bottom:8px;margin-bottom:12px}
+.status{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#6840B0;border:1px solid #6840B0;border-radius:8px;padding:2px 8px;margin-left:8px;vertical-align:middle}
+.mono{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace}
+.tab{font-variant-numeric:tabular-nums}
+.note{font-size:11px;color:#4D5366;letter-spacing:-.2px;margin:6px 0}
+.gap{font-size:11px;color:#A42D32;letter-spacing:-.2px;margin:6px 0}
+.caption{font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:#4D5366;margin:8px 0 4px}
+/* Side-by-side appearance panes: explicit sections, not media queries. */
+.modes{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.pane{flex:1 1 480px;min-width:360px;border-radius:10px;padding:12px}
+.pane .pane-h{font-size:10px;letter-spacing:.4px;text-transform:uppercase;margin-bottom:8px}
+.dk{background:#080A14;color:#F4F5FA;
+  --page:#080A14;--work:#111426;--raised:#191D32;--tp:#F4F5FA;--ts:#B8BDCC;--tq:#858CA2;
+  --ap:#9964E8;--inkOnAp:#080A14;--de:#F07886;--pos:#6FD39A;--warn:#F0C56C;--neg:#F07886;
+  --info:#72ADEC;--live:#72D7A0;--turf:#163E2A;--fl:#F5F7FA;--fa:#E7C45D;--flv:#C6F24E;
+  --hair:#191D32;--bnd:#B8BDCC}
+.dk .pane-h{color:#B8BDCC}
+.lt{background:#F1F2F7;color:#111426;border:1px solid #E6E8F0;
+  --page:#F1F2F7;--work:#FBFBFD;--raised:#E6E8F0;--tp:#111426;--ts:#4D5366;--tq:#596074;
+  --ap:#6840B0;--inkOnAp:#FBFBFD;--de:#A42D32;--pos:#1F7048;--warn:#765300;--neg:#A42D32;
+  --info:#205F96;--live:#4A6F00;--turf:#DCE8DF;--fl:#0E1218;--fa:#7A5200;--flv:#4A6F00;
+  --hair:#E6E8F0;--bnd:#4D5366}
+.lt .pane-h{color:#4D5366}
+.ratios{font-size:10px;letter-spacing:-.2px;color:var(--tq);margin-top:8px;line-height:1.6}
+/* DESK table grammar: matte opaque work surface radius 10, continuous rows radius 0, hairline rules. */
+.tblwrap{--cols:28px minmax(96px,1fr) 34px 56px 48px 36px 36px 60px 84px 150px;
+  background:var(--work);border-radius:10px;overflow:hidden;border:1px solid var(--hair)}
+.capline{display:flex;justify-content:space-between;align-items:center;height:24px;padding:0 8px;
+  font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:var(--ts)}
+.capline .cnt{font-variant-numeric:tabular-nums;font-weight:700;color:var(--tp);text-transform:none;letter-spacing:0;font-size:11px}
+.thead{display:grid;grid-template-columns:var(--cols);align-items:center;height:44px;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.thead>span{padding:0 4px;font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:var(--ts);overflow:hidden;white-space:nowrap}
+.thead>span.on{color:var(--ap);font-weight:700}
+.row{display:grid;grid-template-columns:var(--cols);align-items:center;height:26px;border-top:1px solid var(--hair);
+  font-size:11px;letter-spacing:-.2px;color:var(--tp)}
+.row:first-of-type{border-top:0}
+.row>*{padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.row .n{font-variant-numeric:tabular-nums;color:var(--ts)}
+.row .nm{font-weight:600}
+.row .fact{color:var(--ts);font-variant-numeric:tabular-nums}
+.row.sel{background:var(--raised);box-shadow:inset 0 0 0 1px var(--ap)}
+.row.dis{color:var(--tq)}
+.row.dis .nm,.row.dis .fact,.row.dis .n{color:var(--tq)}
+.blank{color:var(--tq)}
+/* Chips and tokens. Control radius 8 (6.3). */
+.chip{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border-radius:8px;font-size:10px;letter-spacing:0;white-space:nowrap;vertical-align:middle}
+.plate{background:var(--raised);color:var(--tp);font-weight:700;font-variant-numeric:tabular-nums}
+.row.sel .plate{box-shadow:inset 0 0 0 1px var(--ts)}
+.token{border:1px solid var(--ts);color:var(--ts);background:transparent;font-variant-numeric:tabular-nums}
+.gl{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;background:var(--raised);border-radius:8px;height:18px;padding:0 5px;font-size:10px;display:inline-flex;align-items:center;white-space:nowrap}
+.gl.neg{color:var(--neg)}.gl.warn{color:var(--warn)}.gl.pos{color:var(--pos)}.gl.info{color:var(--info)}.gl.plain{color:var(--ts)}
+.act{color:var(--ap);font-weight:700}
+/* RatingBadge: fixed 20 x 16 pt, radius 3, 10 pt bold mono numeral - 6.4.4 snippet values. */
+.rb{width:20px;height:16px;border-radius:3px;font:700 10px/1 ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+.dk .rb.g{background:#6FD39AD9;color:#080A14}.dk .rb.a{background:#F0C56CD9;color:#080A14}.dk .rb.r{background:#F07886D9;color:#080A14}
+.lt .rb.g{background:#1F7048D9;color:#FBFBFD}.lt .rb.a{background:#765300D9;color:#FBFBFD}.lt .rb.r{background:#A42D32D9;color:#FBFBFD}
+.rbt{width:20px;height:16px;border-radius:3px;border:1px solid var(--hair);background:var(--work);font:700 10px/1 ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+.rbt.g{color:var(--pos)}.rbt.a{color:var(--warn)}.rbt.r{color:var(--neg)}.rbt.u{color:var(--tq)}
+/* Controls: 44 pt touch floor (6.3, Q1-verified). */
+.btn{height:44px;min-width:44px;padding:0 12px;border-radius:8px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;white-space:nowrap}
+.btn.pri{background:var(--ap);color:var(--inkOnAp)}
+.btn.sec{border-color:var(--ts);color:var(--ts);background:transparent}
+.btn.qt{border-color:var(--hair);color:var(--tq);background:transparent}
+.field{height:44px;border:1px solid var(--bnd);border-radius:8px;padding:0 12px;color:var(--tq);background:var(--work);display:inline-flex;align-items:center;gap:6px;font-size:12px}
+.seg{display:inline-flex;height:44px;border:1px solid var(--bnd);border-radius:8px;overflow:hidden;background:var(--work)}
+.seg>span{padding:0 16px;display:inline-flex;align-items:center;font-size:12px;font-weight:600;color:var(--ts);border-left:1px solid var(--hair)}
+.seg>span:first-child{border-left:0}
+.seg>span.on{background:var(--raised);color:var(--tp);box-shadow:inset 0 0 0 1px var(--ap)}
+.ctlrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.bulk{display:flex;gap:8px;align-items:center;min-height:44px;background:var(--raised);border-radius:8px;padding:6px 12px;margin-top:8px;flex-wrap:wrap}
+.bulk .cnt{font-weight:700;font-variant-numeric:tabular-nums;color:var(--tp);font-size:12px}
+.ckcell{display:flex;align-items:center;justify-content:center}
+.ck{width:14px;height:14px;border-radius:3px;border:1px solid var(--ts);display:inline-block}
+.ck.on{background:var(--ap);border-color:var(--ap)}
+.empty{padding:16px;text-align:center;color:var(--ts);font-size:12px}
+/* Team chips: synthetic trio, exact 6.1 values. Low-chroma carries the mandatory hairline. */
+.tc{display:inline-flex;align-items:center;gap:6px;height:20px;padding:0 8px;border-radius:8px;font:700 10px ui-monospace,"SF Mono",Menlo,monospace}
+.tc .sb{width:4px;height:12px;border-radius:2px;display:inline-block}
+.tc.t1{background:#14382A;color:#F2F5F3}.tc.t1 .sb{background:#D9B23C}
+.tc.t2{background:#E9E0C9;color:#18202B}.tc.t2 .sb{background:#6E3038}
+.tc.t3{background:#555B66;color:#FFFFFF}.tc.t3 .sb{background:#D9DDE4}
+.tc.hairline{box-shadow:0 0 0 1px var(--bnd)}
+/* Width stages: geometry study containers. */
+.stage{overflow-x:auto;border:1px dashed #4D5366;border-radius:10px;padding:8px;margin:12px 0;background:#F1F2F7}
+.stage .win{flex:none}
+.w844 .win{width:844px}.w852 .win{width:852px}.w956 .win{width:956px}
+/* AX5 rendition: one fact stack per row, Q5 sizes (footnote 44 pt, caption-1 43 pt at AX5). */
+.ax{background:var(--work);border-radius:10px;border:1px solid var(--hair);overflow:hidden}
+.axrow{border-top:1px solid var(--hair);padding:16px 12px}
+.axrow:first-child{border-top:0}
+.ax .id{font-size:44px;line-height:1.15;font-weight:600;letter-spacing:0;color:var(--tp)}
+.ax .fact-l{font-size:43px;line-height:1.15;color:var(--ts)}
+.ax .fact-l b{color:var(--tp);font-weight:700;font-variant-numeric:tabular-nums}
+/* RoleToken field diagram: field grammar colours, radius 0. */
+.fld{position:relative;height:180px;background:var(--turf);border-radius:0;overflow:hidden}
+.yl{position:absolute;top:0;bottom:0;width:1px;background:var(--fl)}
+.los{position:absolute;top:0;bottom:0;width:2px;background:var(--fa)}
+.dot{position:absolute;width:20px;height:20px;border-radius:50%;border:2px solid var(--fa);color:var(--fa);font:700 10px/1 ui-monospace,"SF Mono",Menlo,monospace;display:flex;align-items:center;justify-content:center;background:transparent}
+.dot.sel{box-shadow:0 0 0 2px var(--flv)}
+.rtlist{background:var(--work);border-radius:10px;border:1px solid var(--hair);overflow:hidden}
+.rtrow{display:grid;grid-template-columns:44px minmax(90px,1fr) minmax(110px,1.4fr);align-items:center;height:26px;border-top:1px solid var(--hair);font-size:11px;letter-spacing:-.2px}
+.rtrow:first-child{border-top:0}
+.rtrow>*{padding:0 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rtrow.sel{background:var(--raised);box-shadow:inset 0 0 0 1px var(--ap)}
+/* Contract block. */
+.contract{border-top:1px solid #E6E8F0;margin-top:16px;padding-top:12px}
+.contract h4{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:#6840B0;margin-bottom:6px}
+.contract ol{margin:0 0 0 18px}
+.contract li{margin:5px 0;font-size:12px}
+.contract .vo{font-style:italic}
+</style>
+</head>
+<body>
+<div class="sheet">
+<h1>Table sheet — v3 <span class="status">group: table</span></h1>
+<p class="meta">Pro Football Coach — DESK register reference sheet. Registry entries 7, 8, 9, 10, 17, 18 of
+<span class="mono">docs/04-UX-AND-DESIGN-SYSTEM.md</span> §6.5, drawn as approval cards. 2026-08-12.</p>
+<div class="rulebox">
+<p><strong>This sheet is a rendering, not canon.</strong> <span class="mono">docs/04-UX-AND-DESIGN-SYSTEM.md</span>
+is the only canonical home; a value appearing only in a sheet has not shipped. Every hex value and every
+contrast ratio below is quoted from 04 §6.1 as written (G-07 write-back); no ratio was recomputed here, and any
+pair canon has not measured is flagged as a gap rather than given an invented number.</p>
+<p>Self-contained HTML and CSS. No JavaScript, no CDN, no web font, no icon font, no images. System type stack;
+a glyph is an SF Symbol name written as text in a small monospace chip standing in for the 16 pt symbol.
+CSS px are read as pt. Light and dark are rendered side by side as explicit sections. Registry entries are
+<strong>provisional</strong> under the P11 three-production-uses rule; these cards are for owner approval.
+All identities are mechanical placeholders — <em>pending generator output</em>; the name-collision and
+trade-dress tests govern anything later generated for them.</p>
+<p class="meta">Sources: 04 §2, §4 (incl. §4.5), §6.1–6.5, §7; briefs 2026-08-12 reference-library-plan §3–5,
+density-model §2/§5/§6, sourcing-log rows Q1/Q4/Q5; findings F17, F18, F19, F20, F21, F23, F24 (pass 2), F3, F8 (pass 1).</p>
+</div>
+
+<!-- ================================================================ CARD 1 -->
+<section class="card" id="dense-table">
+<header>
+<h2>DenseTable <span class="status">Registry 7 — provisional</span></h2>
+<p class="note">24–28 pt tracked rows (drawn at 26 pt), sortable 44 pt header band, selection = boundary plus
+value plus spoken state (6.3). Identity columns (number, name, position) plus <strong>seven fact columns</strong>
+— inside the six-to-nine budget of §4.5. The depth-slot column carries assignment chips (F17/F18/F23); the
+header wears its used-of-capacity count (F19). Continuous table rows: radius 0.</p>
+</header>
+
+<h3>Roster composition — default, selected, sorted, disabled</h3>
+<p class="note">Identities mechanical — pending generator output. Bench-order tokens are drawn as B-numbers
+(the reference's S-numbers collide with the safety position code in this sport; adaptation stated, not silent).
+Sorted state: the OVR header label is set in <span class="mono">action.primary</span> and the capacity line
+names the sort; in production the indicator is the SF Symbol <span class="mono">chevron.down</span> in the
+column header — drawn here as a name chip because this sheet writes glyphs as text.</p>
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark — world.page #080A14</div>
+<div class="tblwrap">
+<div class="capline"><span>Roster <span class="cnt">63 of 70</span></span><span>sorted: OVR descending <span class="gl plain">chevron.down</span></span></div>
+<div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>Slot</span><span class="on">OVR</span><span>Age</span><span>Yr</span><span>Fit</span><span>Value</span><span>Status</span></div>
+<div class="row"><span class="n tab">72</span><span class="nm">Player Fourteen</span><span class="fact">LT</span><span><span class="chip plate">LT1</span></span><span><span class="rbt g">88</span></span><span class="fact">23</span><span class="fact">Sr</span><span class="fact">Ideal</span><span class="fact">$4.2M</span><span><span class="gl warn">bolt.slash</span></span></div>
+<div class="row sel"><span class="n tab">55</span><span class="nm">Player Nine</span><span class="fact">C</span><span><span class="chip plate">C1</span></span><span><span class="rbt a">81</span></span><span class="fact">22</span><span class="fact">Jr</span><span class="fact">Good</span><span class="fact">$2.9M</span><span><span class="gl neg">cross.case</span> <span class="gl warn">exclamationmark.triangle</span> <span class="gl info">clock.badge.exclamationmark</span></span></div>
+<div class="row"><span class="n tab">64</span><span class="nm">Player Twenty</span><span class="fact">LT</span><span><span class="chip token">LT2</span></span><span><span class="rbt a">74</span></span><span class="fact">20</span><span class="fact">So</span><span class="fact">Stretch</span><span class="fact">$1.1M</span><span><span class="gl pos">star</span></span></div>
+<div class="row"><span class="n tab">78</span><span class="nm">Player Thirty-One</span><span class="fact">G</span><span><span class="chip token">B8</span></span><span><span class="rbt r">66</span></span><span class="fact">19</span><span class="fact">Fr</span><span class="fact">Stretch</span><span class="fact">$0.4M</span><span class="blank">—</span></div>
+<div class="row dis"><span class="n tab">51</span><span class="nm">Player Six</span><span class="fact">G</span><span class="blank">—</span><span><span class="rbt u">—</span></span><span class="fact">21</span><span class="fact">Jr</span><span class="blank">—</span><span class="fact">$0.7M</span><span><span class="gl plain">shield.slash</span></span></div>
+</div>
+<p class="ratios">Quoted ratios (04 §6.1, dark): content.primary on work 16.74, on raised 15.27 · content.secondary on work 9.71, on raised 8.86 ·
+content.quiet on work 5.44, on raised 4.96 · action.primary on work 4.64 (body floor met), on raised 4.23 (≥3:1 non-text/large only — the
+selection ring is non-text) · state.negative on raised 6.12 · state.warning on raised 10.22 · state.positive on raised 9.07 · state.info on raised 7.05.</p>
+</div>
+<div class="pane lt"><div class="pane-h">Light — world.page #F1F2F7</div>
+<div class="tblwrap">
+<div class="capline"><span>Roster <span class="cnt">63 of 70</span></span><span>sorted: OVR descending <span class="gl plain">chevron.down</span></span></div>
+<div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>Slot</span><span class="on">OVR</span><span>Age</span><span>Yr</span><span>Fit</span><span>Value</span><span>Status</span></div>
+<div class="row"><span class="n tab">72</span><span class="nm">Player Fourteen</span><span class="fact">LT</span><span><span class="chip plate">LT1</span></span><span><span class="rbt g">88</span></span><span class="fact">23</span><span class="fact">Sr</span><span class="fact">Ideal</span><span class="fact">$4.2M</span><span><span class="gl warn">bolt.slash</span></span></div>
+<div class="row sel"><span class="n tab">55</span><span class="nm">Player Nine</span><span class="fact">C</span><span><span class="chip plate">C1</span></span><span><span class="rbt a">81</span></span><span class="fact">22</span><span class="fact">Jr</span><span class="fact">Good</span><span class="fact">$2.9M</span><span><span class="gl neg">cross.case</span> <span class="gl warn">exclamationmark.triangle</span> <span class="gl info">clock.badge.exclamationmark</span></span></div>
+<div class="row"><span class="n tab">64</span><span class="nm">Player Twenty</span><span class="fact">LT</span><span><span class="chip token">LT2</span></span><span><span class="rbt a">74</span></span><span class="fact">20</span><span class="fact">So</span><span class="fact">Stretch</span><span class="fact">$1.1M</span><span><span class="gl pos">star</span></span></div>
+<div class="row"><span class="n tab">78</span><span class="nm">Player Thirty-One</span><span class="fact">G</span><span><span class="chip token">B8</span></span><span><span class="rbt r">66</span></span><span class="fact">19</span><span class="fact">Fr</span><span class="fact">Stretch</span><span class="fact">$0.4M</span><span class="blank">—</span></div>
+<div class="row dis"><span class="n tab">51</span><span class="nm">Player Six</span><span class="fact">G</span><span class="blank">—</span><span><span class="rbt u">—</span></span><span class="fact">21</span><span class="fact">Jr</span><span class="blank">—</span><span class="fact">$0.7M</span><span><span class="gl plain">shield.slash</span></span></div>
+</div>
+<p class="ratios">Quoted ratios (04 §6.1, light): content.primary on work 17.64, on raised 14.90 · content.secondary on work 7.40, on raised 6.25 ·
+content.quiet on work 6.07, on raised 5.12 · action.primary on work 6.89, on raised 5.82 · state.negative on raised 5.72 ·
+state.warning on raised 5.71 · state.positive on raised 4.95 · state.info on raised 5.47.</p>
+</div>
+</div>
+
+<h3>Scouting-fog composition — fog is per-fact, not per-player (F21), stance as a market answer (F20)</h3>
+<p class="note">A foreign-roster board. Row one mixes an exact public value (age), a banded estimate (value),
+an unknown with its scout action sitting in the cell where the answer would be, and — on row three — the owner's
+stance <em>"Not for sale"</em> as a third answer kind in the value cell. Derived judgement columns (Fit) blank
+under fog. Slot chips carry the opponent's projected lineup order, so the depth chart is the reading order (F23).
+The Team column renders the three synthetic trio chips. Identities pending generator output.</p>
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark</div>
+<div class="tblwrap" style="--cols:28px minmax(96px,1fr) 64px 34px 56px 48px 36px 60px 96px 150px">
+<div class="capline"><span>Example Coastal — roster <span class="cnt">48 of 55</span></span><span>scouted 12 of 48</span></div>
+<div class="thead"><span>No</span><span>Player</span><span>Team</span><span>Pos</span><span>Slot</span><span>OVR</span><span>Age</span><span>Fit</span><span>Value</span><span>Status</span></div>
+<div class="row"><span class="n tab">7</span><span class="nm">Player Thirty</span><span><span class="tc t1"><span class="sb"></span>EXS</span></span><span class="fact">CB</span><span><span class="chip plate">CB1</span></span><span><span class="act">Scout</span></span><span class="fact">21</span><span class="blank">—</span><span class="fact">$1.2M–$1.8M</span><span><span class="gl info">binoculars</span></span></div>
+<div class="row"><span class="n tab">18</span><span class="nm">Player Forty-Two</span><span><span class="tc t2"><span class="sb"></span>ECL</span></span><span class="fact">WR</span><span><span class="chip token">B2</span></span><span><span class="rbt a">77</span></span><span class="fact">24</span><span class="blank">—</span><span class="fact">Unknown</span><span><span class="gl info">binoculars</span> <span class="gl info">calendar.badge.exclamationmark</span></span></div>
+<div class="row"><span class="n tab">31</span><span class="nm">Player Eight</span><span><span class="tc t3 hairline"><span class="sb"></span>EUN</span></span><span class="fact">RB</span><span class="blank">—</span><span><span class="act">Scout</span></span><span class="fact">20</span><span class="blank">—</span><span class="fact">Not for sale</span><span><span class="gl plain">hand.raised</span></span></div>
+</div>
+<p class="ratios">Band and stance text: content.secondary on work 9.71. Unknown / blanks: content.quiet on work 5.44 (metadata licence, never
+working prose). Scout action: action.primary on work 4.64. Low-chroma team chip on dark work measures <strong>2.67</strong> — below the 3:1
+non-text floor — so it carries the mandatory hairline boundary (6.1); drawn in content.secondary, 9.71 on work.</p>
+</div>
+<div class="pane lt"><div class="pane-h">Light</div>
+<div class="tblwrap" style="--cols:28px minmax(96px,1fr) 64px 34px 56px 48px 36px 60px 96px 150px">
+<div class="capline"><span>Example Coastal — roster <span class="cnt">48 of 55</span></span><span>scouted 12 of 48</span></div>
+<div class="thead"><span>No</span><span>Player</span><span>Team</span><span>Pos</span><span>Slot</span><span>OVR</span><span>Age</span><span>Fit</span><span>Value</span><span>Status</span></div>
+<div class="row"><span class="n tab">7</span><span class="nm">Player Thirty</span><span><span class="tc t1"><span class="sb"></span>EXS</span></span><span class="fact">CB</span><span><span class="chip plate">CB1</span></span><span><span class="act">Scout</span></span><span class="fact">21</span><span class="blank">—</span><span class="fact">$1.2M–$1.8M</span><span><span class="gl info">binoculars</span></span></div>
+<div class="row"><span class="n tab">18</span><span class="nm">Player Forty-Two</span><span><span class="tc t2"><span class="sb"></span>ECL</span></span><span class="fact">WR</span><span><span class="chip token">B2</span></span><span><span class="rbt a">77</span></span><span class="fact">24</span><span class="blank">—</span><span class="fact">Unknown</span><span><span class="gl info">binoculars</span> <span class="gl info">calendar.badge.exclamationmark</span></span></div>
+<div class="row"><span class="n tab">31</span><span class="nm">Player Eight</span><span><span class="tc t3 hairline"><span class="sb"></span>EUN</span></span><span class="fact">RB</span><span class="blank">—</span><span><span class="act">Scout</span></span><span class="fact">20</span><span class="blank">—</span><span class="fact">Not for sale</span><span><span class="gl plain">hand.raised</span></span></div>
+</div>
+<p class="ratios">Band and stance text: content.secondary on work 7.40. Unknown / blanks: content.quiet on work 6.07. Scout action:
+action.primary on work 6.89. Canon measured the low-chroma chip only against dark work (2.67); the light-work pair is
+measured at <strong>6.61</strong> (canon 6.1, 2026-08-12) — and canon now generalises the rule: every team fill carries the hairline boundary regardless of surface, because generated colour cannot be assumed to clear the floor.</p>
+</div>
+</div>
+
+<h3>Team-colour chips — synthetic trio, both appearances</h3>
+<p class="note">Labelled <strong>synthetic — pending generator output</strong> (owner disposition 2026-08-12; the P2 generator's
+sampled space is uniformly dark-primary). Floors: team.onTeam on team.primary 4.5:1, team.secondary on team.primary 3:1.
+Quoted from 04 §6.1: dark-primary #14382A / #D9B23C / #F2F5F3 — onTeam 11.74, secondary 6.37 · light-primary #E9E0C9 /
+#6E3038 / #18202B — 12.47, 7.45 · low-chroma #555B66 / #D9DDE4 / #FFFFFF — 6.83, 5.01. All three pass their floors;
+the low-chroma chip's boundary rule is 6.3's boundary-value-spoken rule made mandatory for team colour on dark work.</p>
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark — on world.work</div>
+<div style="background:var(--work);border-radius:10px;padding:12px;display:flex;gap:12px;flex-wrap:wrap">
+<span class="tc t1"><span class="sb"></span>EXS Example State</span>
+<span class="tc t2"><span class="sb"></span>ECL Example Coastal</span>
+<span class="tc t3 hairline"><span class="sb"></span>EUN Example Union</span>
+</div>
+</div>
+<div class="pane lt"><div class="pane-h">Light — on world.work</div>
+<div style="background:var(--work);border-radius:10px;padding:12px;display:flex;gap:12px;flex-wrap:wrap">
+<span class="tc t1"><span class="sb"></span>EXS Example State</span>
+<span class="tc t2"><span class="sb"></span>ECL Example Coastal</span>
+<span class="tc t3 hairline"><span class="sb"></span>EUN Example Union</span>
+</div>
+</div>
+</div>
+
+<h3>Width study — 844, 852 and 956 pt containers, default type</h3>
+<p class="note">Geometry study, rendered once in dark; colour behaviour is identical to the light/dark pair above.
+844 pt is the install floor (16e class — its landscape safe-area insets are an unsourced recorded gap per 04 §7 /
+sourcing row Q4, so no inset is assumed here). 852 pt is the promise floor (59 pt sensor inset leaves ~793 pt usable,
+density-model T8 arithmetic). 956 pt is the ceiling (62 pt inset, ~894 pt usable, Q4 secondary-sourced).
+<strong>What width buys:</strong> the flexible name column widens and truncation disappears. <strong>What it does not
+buy:</strong> no additional fact columns (the six-to-nine budget of §4.5 holds at every width — further facts arrive as
+column sets, never horizontal scroll), no second dominant object, no change to the 26 pt track, the 44 pt header band
+or the 10–12 pt micro type.</p>
+<div class="stage w844"><p class="caption">844 pt — install floor</p><div class="win">
+<div class="pane dk" style="min-width:0;padding:8px">
+<div class="tblwrap">
+<div class="capline"><span>Roster <span class="cnt">63 of 70</span></span><span>sorted: OVR descending</span></div>
+<div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>Slot</span><span class="on">OVR</span><span>Age</span><span>Yr</span><span>Fit</span><span>Value</span><span>Status</span></div>
+<div class="row"><span class="n tab">72</span><span class="nm">Player Fourteen</span><span class="fact">LT</span><span><span class="chip plate">LT1</span></span><span><span class="rbt g">88</span></span><span class="fact">23</span><span class="fact">Sr</span><span class="fact">Ideal</span><span class="fact">$4.2M</span><span><span class="gl warn">bolt.slash</span></span></div>
+<div class="row"><span class="n tab">55</span><span class="nm">Player Nine</span><span class="fact">C</span><span><span class="chip plate">C1</span></span><span><span class="rbt a">81</span></span><span class="fact">22</span><span class="fact">Jr</span><span class="fact">Good</span><span class="fact">$2.9M</span><span><span class="gl neg">cross.case</span> <span class="gl warn">exclamationmark.triangle</span></span></div>
+<div class="row"><span class="n tab">64</span><span class="nm">Player Twenty</span><span class="fact">LT</span><span><span class="chip token">LT2</span></span><span><span class="rbt a">74</span></span><span class="fact">20</span><span class="fact">So</span><span class="fact">Stretch</span><span class="fact">$1.1M</span><span><span class="gl pos">star</span></span></div>
+</div>
+</div></div></div>
+<div class="stage w852"><p class="caption">852 pt — promise floor (~793 pt usable after the 59 pt sensor inset)</p><div class="win">
+<div class="pane dk" style="min-width:0;padding:8px">
+<div class="tblwrap">
+<div class="capline"><span>Roster <span class="cnt">63 of 70</span></span><span>sorted: OVR descending</span></div>
+<div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>Slot</span><span class="on">OVR</span><span>Age</span><span>Yr</span><span>Fit</span><span>Value</span><span>Status</span></div>
+<div class="row"><span class="n tab">72</span><span class="nm">Player Fourteen</span><span class="fact">LT</span><span><span class="chip plate">LT1</span></span><span><span class="rbt g">88</span></span><span class="fact">23</span><span class="fact">Sr</span><span class="fact">Ideal</span><span class="fact">$4.2M</span><span><span class="gl warn">bolt.slash</span></span></div>
+<div class="row"><span class="n tab">55</span><span class="nm">Player Nine</span><span class="fact">C</span><span><span class="chip plate">C1</span></span><span><span class="rbt a">81</span></span><span class="fact">22</span><span class="fact">Jr</span><span class="fact">Good</span><span class="fact">$2.9M</span><span><span class="gl neg">cross.case</span> <span class="gl warn">exclamationmark.triangle</span></span></div>
+<div class="row"><span class="n tab">64</span><span class="nm">Player Twenty</span><span class="fact">LT</span><span><span class="chip token">LT2</span></span><span><span class="rbt a">74</span></span><span class="fact">20</span><span class="fact">So</span><span class="fact">Stretch</span><span class="fact">$1.1M</span><span><span class="gl pos">star</span></span></div>
+</div>
+</div></div></div>
+<div class="stage w956"><p class="caption">956 pt — ceiling (~894 pt usable after the 62 pt inset)</p><div class="win">
+<div class="pane dk" style="min-width:0;padding:8px">
+<div class="tblwrap">
+<div class="capline"><span>Roster <span class="cnt">63 of 70</span></span><span>sorted: OVR descending</span></div>
+<div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>Slot</span><span class="on">OVR</span><span>Age</span><span>Yr</span><span>Fit</span><span>Value</span><span>Status</span></div>
+<div class="row"><span class="n tab">72</span><span class="nm">Player Fourteen</span><span class="fact">LT</span><span><span class="chip plate">LT1</span></span><span><span class="rbt g">88</span></span><span class="fact">23</span><span class="fact">Sr</span><span class="fact">Ideal</span><span class="fact">$4.2M</span><span><span class="gl warn">bolt.slash</span></span></div>
+<div class="row"><span class="n tab">55</span><span class="nm">Player Nine</span><span class="fact">C</span><span><span class="chip plate">C1</span></span><span><span class="rbt a">81</span></span><span class="fact">22</span><span class="fact">Jr</span><span class="fact">Good</span><span class="fact">$2.9M</span><span><span class="gl neg">cross.case</span> <span class="gl warn">exclamationmark.triangle</span></span></div>
+<div class="row"><span class="n tab">64</span><span class="nm">Player Twenty</span><span class="fact">LT</span><span><span class="chip token">LT2</span></span><span><span class="rbt a">74</span></span><span class="fact">20</span><span class="fact">So</span><span class="fact">Stretch</span><span class="fact">$1.1M</span><span><span class="gl pos">star</span></span></div>
+</div>
+</div></div></div>
+
+<h3>AX5 rendition — one fact stack per row, order preserved, nothing dropped</h3>
+<p class="note">Per §4.5 the composition reflows to one column at AX5. Sizes per sourcing row Q5 and the 6.2
+production mapping: Body-class (footnote style, 13 pt at Large) reaches <strong>44 pt</strong> at AX5; Caption-class
+(caption-1, 12 pt) reaches <strong>43 pt</strong>. The fact stack keeps exactly the column order — slot, OVR, age,
+year, fit, value, status — and the status glyphs become their spoken equivalents. Rows expand; micro-type is never
+clipped into an accessibility layout (6.2/6.3).</p>
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark — AX5</div>
+<div class="ax"><div class="axrow">
+<p class="id">72 Player Fourteen, LT</p>
+<p class="fact-l">Slot: <b>LT1, starter</b></p>
+<p class="fact-l">Overall: <b>88</b>, elite band</p>
+<p class="fact-l">Age: <b>23</b> · Year: <b>senior</b></p>
+<p class="fact-l">Role fit: <b>ideal</b></p>
+<p class="fact-l">Value: <b>$4.2M</b></p>
+<p class="fact-l">Status: <b>fatigued</b></p>
+</div></div>
+</div>
+<div class="pane lt"><div class="pane-h">Light — AX5</div>
+<div class="ax"><div class="axrow">
+<p class="id">72 Player Fourteen, LT</p>
+<p class="fact-l">Slot: <b>LT1, starter</b></p>
+<p class="fact-l">Overall: <b>88</b>, elite band</p>
+<p class="fact-l">Age: <b>23</b> · Year: <b>senior</b></p>
+<p class="fact-l">Role fit: <b>ideal</b></p>
+<p class="fact-l">Value: <b>$4.2M</b></p>
+<p class="fact-l">Status: <b>fatigued</b></p>
+</div></div>
+</div>
+</div>
+
+<div class="contract">
+<h4>Contract — DenseTable</h4>
+<ol>
+<li><strong>Appearances and ratios.</strong> Light and dark rendered side by side above; every foreground/background
+pair carries the measured ratio 04 §6.1 states for it, quoted under each pane. Pairs canon has not measured
+(low-chroma team chip on light work; rating-badge ink on heat fill) are flagged as gaps, not given numbers.</li>
+<li><strong>Widths.</strong> The composition renders at 844 (install floor), 852 (promise floor) and 956 pt (ceiling)
+at default type, with what width does and does not buy stated at the stage; one AX5 rendition stacks one fact per
+row in column order, dropping nothing, at Q5 sizes (44/43 pt).</li>
+<li><strong>Touch.</strong> Sortable header band 44 pt tall; every control on this sheet is at least 44 x 44 pt.
+Row tap targets are full-row width at the 26 pt track — the dense-track exception 6.3 defines; primary and
+irreversible actions never live at row height. The in-cell Scout action's visible chip is 18 pt; its hit target
+expands to the 44 pt minimum (stated, since the sheet cannot draw an invisible inset). The 44 pt floor is
+HIG-verified via sourcing row Q1 (Apple's stated minimum is 28 x 28 pt; canon keeps the stricter 44 pt).</li>
+<li><strong>States.</strong> Default, selected (boundary in action.primary + value change to world.raised + spoken
+"selected" — never a coloured fill alone), sorted (header state), disabled (quiet, no tap affordance, spoken
+"dimmed"), fogged (per-fact, F21/F20). Multi-select active and filtered-empty are drawn on the ListControls card
+of this same sheet; the seven required states all appear across the two cards.</li>
+<li><strong>Team colour.</strong> All three synthetic trio pairs render in both appearances, labelled pending
+generator output; floors quoted (11.74/6.37, 12.47/7.45, 6.83/5.01); the low-chroma chip carries its mandatory
+hairline on dark work (2.67 quoted from canon).</li>
+<li><strong>VoiceOver.</strong> One sentence per data row: <span class="vo">"Player Fourteen, left tackle, number
+seventy-two, starter L T one, overall eighty-eight, elite band, age twenty-three, senior, role fit ideal, value
+four point two million dollars, fatigued."</span> Fog row: <span class="vo">"Player Thirty, cornerback, Example
+State, projected starter C B one, overall unknown, scout action available, age twenty-one, value estimated one
+point two to one point eight million dollars, fit not assessed."</span> Selection appends "selected".</li>
+<li><strong>Motion.</strong> Sort reorder animates row travel; under Reduce Motion it is a discrete swap — the
+reordered table appears in one state change (04 §7, Q2 substitutions). Selection and fog changes are already
+discrete.</li>
+<li><strong>Verdict.</strong> Tables carry none. This card has no verdict line and no adjective any engine does not
+own; analytical verdicts live on the readout sheet (readout-v3.dc.html, registry 13–15).</li>
+<li><strong>Density budget (§4.5).</strong> One dominant object (the table); 26 pt tracks inside 24–28; seven fact
+columns beside identity (of nine allowed); at most three status glyphs per row, spending 3 of the 12-symbol
+vocabulary in the worst row; zero verdict lines; any datum on the surface at zero taps, inspection popouts depth
+one; working memory zero — comparison happens on this one surface. Roughly 10–12 data rows fit after the world
+strip and the 44 pt header band.</li>
+<li><strong>Traceability.</strong> Every colour is a 6.1 hex; type sizes 10/11/12/15/17/20 from 6.2; spacing
+4/6/8/12/16/20, radii 8 (controls/chips) / 0 (continuous rows) / 10 (surfaces), 26 pt tracks and the 44 pt floor
+from 6.3; tabular numerals via font-variant-numeric. Named gaps: no hairline colour token exists in 6.1 —
+hairlines here use world.raised on work and the mandatory chip boundary uses content.secondary (both canon
+values; the missing role is flagged for canon, G-07 kin). Identities pending generator output.</li>
+</ol>
+</div>
+</section>
+
+<!-- ================================================================ CARD 2 -->
+<section class="card" id="column-set">
+<header>
+<h2>ColumnSet <span class="status">Registry 8 — provisional</span></h2>
+<p class="note">A segmented switch swaps the fact columns while the identity columns hold position (density model
+T8: the answer to the reference's fifteen columns is never horizontal scroll). One tap per lens; zero working
+memory, because the rows never move and identity never leaves the frame. Segments are 44 pt tall.</p>
+</header>
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark — set "Overview" active, then after one tap, set "Contract"</div>
+<div class="ctlrow"><span class="seg"><span class="on">Overview</span><span>Contract</span><span>Scouting</span></span></div>
+<div class="tblwrap" style="--cols:28px minmax(96px,1fr) 34px 56px 48px 60px 84px">
+<div class="capline"><span>Roster <span class="cnt">63 of 70</span></span><span>set: Overview</span></div>
+<div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>Slot</span><span>OVR</span><span>Fit</span><span>Value</span></div>
+<div class="row"><span class="n tab">72</span><span class="nm">Player Fourteen</span><span class="fact">LT</span><span><span class="chip plate">LT1</span></span><span><span class="rbt g">88</span></span><span class="fact">Ideal</span><span class="fact">$4.2M</span></div>
+<div class="row"><span class="n tab">55</span><span class="nm">Player Nine</span><span class="fact">C</span><span><span class="chip plate">C1</span></span><span><span class="rbt a">81</span></span><span class="fact">Good</span><span class="fact">$2.9M</span></div>
+</div>
+<div class="ctlrow" style="margin-top:12px"><span class="seg"><span>Overview</span><span class="on">Contract</span><span>Scouting</span></span></div>
+<div class="tblwrap" style="--cols:28px minmax(96px,1fr) 34px 64px 44px 64px 84px">
+<div class="capline"><span>Roster <span class="cnt">63 of 70</span></span><span>set: Contract</span></div>
+<div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>Salary</span><span>Yrs</span><span>Gtd</span><span>Expires</span></div>
+<div class="row"><span class="n tab">72</span><span class="nm">Player Fourteen</span><span class="fact">LT</span><span class="fact">$1.8M</span><span class="fact">3</span><span class="fact">$2.4M</span><span class="fact">2029 <span class="gl warn">clock.badge.exclamationmark</span></span></div>
+<div class="row"><span class="n tab">55</span><span class="nm">Player Nine</span><span class="fact">C</span><span class="fact">$1.1M</span><span class="fact">1</span><span class="fact">$0.3M</span><span class="fact">2027</span></div>
+</div>
+<p class="ratios">Active segment: text content.primary on raised 15.27, ring action.primary on raised 4.23 (non-text).
+Inactive segment: content.secondary on work 9.71. Identity cells identical across sets — the held columns are the proof.</p>
+</div>
+<div class="pane lt"><div class="pane-h">Light — same pair of states</div>
+<div class="ctlrow"><span class="seg"><span class="on">Overview</span><span>Contract</span><span>Scouting</span></span></div>
+<div class="tblwrap" style="--cols:28px minmax(96px,1fr) 34px 56px 48px 60px 84px">
+<div class="capline"><span>Roster <span class="cnt">63 of 70</span></span><span>set: Overview</span></div>
+<div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>Slot</span><span>OVR</span><span>Fit</span><span>Value</span></div>
+<div class="row"><span class="n tab">72</span><span class="nm">Player Fourteen</span><span class="fact">LT</span><span><span class="chip plate">LT1</span></span><span><span class="rbt g">88</span></span><span class="fact">Ideal</span><span class="fact">$4.2M</span></div>
+<div class="row"><span class="n tab">55</span><span class="nm">Player Nine</span><span class="fact">C</span><span><span class="chip plate">C1</span></span><span><span class="rbt a">81</span></span><span class="fact">Good</span><span class="fact">$2.9M</span></div>
+</div>
+<div class="ctlrow" style="margin-top:12px"><span class="seg"><span>Overview</span><span class="on">Contract</span><span>Scouting</span></span></div>
+<div class="tblwrap" style="--cols:28px minmax(96px,1fr) 34px 64px 44px 64px 84px">
+<div class="capline"><span>Roster <span class="cnt">63 of 70</span></span><span>set: Contract</span></div>
+<div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>Salary</span><span>Yrs</span><span>Gtd</span><span>Expires</span></div>
+<div class="row"><span class="n tab">72</span><span class="nm">Player Fourteen</span><span class="fact">LT</span><span class="fact">$1.8M</span><span class="fact">3</span><span class="fact">$2.4M</span><span class="fact">2029 <span class="gl warn">clock.badge.exclamationmark</span></span></div>
+<div class="row"><span class="n tab">55</span><span class="nm">Player Nine</span><span class="fact">C</span><span class="fact">$1.1M</span><span class="fact">1</span><span class="fact">$0.3M</span><span class="fact">2027</span></div>
+</div>
+<p class="ratios">Active segment: content.primary on raised 14.90, ring action.primary on raised 5.82 (non-text).
+Inactive segment: content.secondary on work 7.40.</p>
+</div>
+</div>
+<div class="contract">
+<h4>Contract — ColumnSet</h4>
+<ol>
+<li>Light and dark rendered; ratios quoted per pane from 04 §6.1; no pair recomputed.</li>
+<li>Width behaviour: the control and its table inherit the DenseTable width study above — sets swap columns at
+every width; width never adds columns. AX5: the segmented control becomes a full-width stacked choice above the
+one-column fact stack; the active set's facts are the stack, order preserved, nothing dropped (Q5 sizes).</li>
+<li>Touch: segments 44 pt tall (printed); minimum segment width 44 pt; row targets as on DenseTable.</li>
+<li>States: Overview active and Contract active both drawn (default and post-swap); disabled sets would render in
+content.quiet with spoken "dimmed" (stated; not a distinct drawing). Selection inside rows is unchanged by a swap.</li>
+<li>Team colour: not touched by this component — not applicable, stated per the trio rule.</li>
+<li>VoiceOver, one sentence per row in the Contract set: <span class="vo">"Player Fourteen, left tackle, number
+seventy-two, salary one point eight million dollars, three years, two point four million guaranteed, expires
+twenty twenty-nine, expiring inside the horizon."</span> The control announces "Column set, Overview, one of three,
+adjustable".</li>
+<li>Motion: the column swap may crossfade; under Reduce Motion it is a discrete replace — one state change, no
+travel, per 04 §7 and the Q2 substitution list.</li>
+<li>Verdict: none — tables carry no verdict line; analytical verdicts live on the readout sheet.</li>
+<li>Density budget: each set holds five fact columns beside identity here (six to nine allowed); the swap costs
+one tap; working memory zero because identity columns hold; glyph spend one (clock.badge.exclamationmark, F22);
+zero verdict lines.</li>
+<li>Traceability: all values 6.1/6.2/6.3 (segment radius 8, raised active state, hairline dividers via the stated
+world.raised gap-flag). Identities pending generator output.</li>
+</ol>
+</div>
+</section>
+
+<!-- ================================================================ CARD 3 -->
+<section class="card" id="list-controls">
+<header>
+<h2>ListControls <span class="status">Registry 9 — provisional</span></h2>
+<p class="note">Sort, filter and bounded search over <strong>simulation objects</strong> — players, teams, games,
+history — never the app's own screens (density model §6: a result that is a screen name is the budget breached).
+Multi-select turns the table into a worklist with a bulk-action bar (F24). Search is bounded: a stated result cap
+over an engine-backed index, not an unbounded scan.</p>
+</header>
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark — controls, multi-select active, bulk bar</div>
+<div class="ctlrow">
+<span class="btn sec">Sort: OVR <span class="gl plain">chevron.down</span></span>
+<span class="btn sec">Filter: OL <span class="tab">(1)</span></span>
+<span class="field"><span class="gl plain">magnifyingglass</span>Search players — first 50 by relevance</span>
+<span class="btn pri">Select</span>
+</div>
+<div class="tblwrap" style="--cols:32px 28px minmax(96px,1fr) 34px 48px 84px 130px">
+<div class="capline"><span>Board <span class="cnt">18 of 40</span></span><span>multi-select active</span></div>
+<div class="thead"><span></span><span>No</span><span>Player</span><span>Pos</span><span>OVR</span><span>Value</span><span>Status</span></div>
+<div class="row"><span class="ckcell"><span class="ck on"></span></span><span class="n tab">7</span><span class="nm">Player Thirty</span><span class="fact">CB</span><span><span class="act">Scout</span></span><span class="fact">$1.2M–$1.8M</span><span><span class="gl info">binoculars</span></span></div>
+<div class="row"><span class="ckcell"><span class="ck on"></span></span><span class="n tab">18</span><span class="nm">Player Forty-Two</span><span class="fact">WR</span><span><span class="rbt a">77</span></span><span class="fact">Unknown</span><span><span class="gl info">binoculars</span></span></div>
+<div class="row"><span class="ckcell"><span class="ck"></span></span><span class="n tab">31</span><span class="nm">Player Eight</span><span class="fact">RB</span><span><span class="act">Scout</span></span><span class="fact">Not for sale</span><span><span class="gl plain">hand.raised</span></span></div>
+</div>
+<div class="bulk"><span class="cnt">2 selected</span><span class="btn pri">Queue scout</span><span class="btn sec">Shortlist</span><span class="btn qt">Clear</span></div>
+<p class="caption" style="margin-top:16px">Filtered-empty — inside the owning composition (04 §7)</p>
+<div class="tblwrap" style="--cols:28px minmax(96px,1fr) 34px 48px 84px">
+<div class="capline"><span>Board <span class="cnt">0 of 40 shown</span></span><span>filter: K</span></div>
+<div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>OVR</span><span>Value</span></div>
+<div class="empty">No players match Position: K.<br><span class="btn sec" style="margin-top:8px">Clear filter</span></div>
+</div>
+<p class="ratios">Primary button: fill action.primary on work 4.64 (non-text); ink world.page on the violet fill 5.02 —
+the body-text pairing 6.1 names for dark filled-violet controls. Secondary buttons and inactive checkbox: content.secondary
+on work 9.71. Empty-state prose: content.secondary on work 9.71 at 12 pt. Checked boxes: action.primary fill, non-text 4.64.</p>
+</div>
+<div class="pane lt"><div class="pane-h">Light — same states</div>
+<div class="ctlrow">
+<span class="btn sec">Sort: OVR <span class="gl plain">chevron.down</span></span>
+<span class="btn sec">Filter: OL <span class="tab">(1)</span></span>
+<span class="field"><span class="gl plain">magnifyingglass</span>Search players — first 50 by relevance</span>
+<span class="btn pri">Select</span>
+</div>
+<div class="tblwrap" style="--cols:32px 28px minmax(96px,1fr) 34px 48px 84px 130px">
+<div class="capline"><span>Board <span class="cnt">18 of 40</span></span><span>multi-select active</span></div>
+<div class="thead"><span></span><span>No</span><span>Player</span><span>Pos</span><span>OVR</span><span>Value</span><span>Status</span></div>
+<div class="row"><span class="ckcell"><span class="ck on"></span></span><span class="n tab">7</span><span class="nm">Player Thirty</span><span class="fact">CB</span><span><span class="act">Scout</span></span><span class="fact">$1.2M–$1.8M</span><span><span class="gl info">binoculars</span></span></div>
+<div class="row"><span class="ckcell"><span class="ck on"></span></span><span class="n tab">18</span><span class="nm">Player Forty-Two</span><span class="fact">WR</span><span><span class="rbt a">77</span></span><span class="fact">Unknown</span><span><span class="gl info">binoculars</span></span></div>
+<div class="row"><span class="ckcell"><span class="ck"></span></span><span class="n tab">31</span><span class="nm">Player Eight</span><span class="fact">RB</span><span><span class="act">Scout</span></span><span class="fact">Not for sale</span><span><span class="gl plain">hand.raised</span></span></div>
+</div>
+<div class="bulk"><span class="cnt">2 selected</span><span class="btn pri">Queue scout</span><span class="btn sec">Shortlist</span><span class="btn qt">Clear</span></div>
+<p class="caption" style="margin-top:16px">Filtered-empty — inside the owning composition</p>
+<div class="tblwrap" style="--cols:28px minmax(96px,1fr) 34px 48px 84px">
+<div class="capline"><span>Board <span class="cnt">0 of 40 shown</span></span><span>filter: K</span></div>
+<div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>OVR</span><span>Value</span></div>
+<div class="empty">No players match Position: K.<br><span class="btn sec" style="margin-top:8px">Clear filter</span></div>
+</div>
+<p class="ratios">Primary button: fill action.primary on work 6.89 (non-text); ink world.work on the violet fill 6.89 —
+the light-appearance pairing 6.1 states. Secondary controls: content.secondary on work 7.40. Search placeholder:
+content.quiet on work 6.07 (metadata licence).</p>
+</div>
+</div>
+<div class="contract">
+<h4>Contract — ListControls</h4>
+<ol>
+<li>Light and dark rendered; every pair's ratio quoted from 04 §6.1, including both filled-violet ink pairings
+(dark: page ink 5.02; light: work ink 6.89) and the 3.61 large-text-only caveat for content.primary on the dark
+violet fill — which is why no control here sets body text in that pairing.</li>
+<li>Width: the controls row wraps as a single line at 844–956 pt (inherits the DenseTable width study); AX5 stacks
+the four controls full-width in the same order above the one-column list, nothing dropped, Q5 sizes.</li>
+<li>Touch: every control 44 pt tall and at least 44 pt wide (printed); the 14 pt checkbox glyph sits in a
+full-row-height 44-wide hit cell (stated); bulk-bar buttons 44 pt.</li>
+<li>States: default controls, active filter with count, multi-select active (leading checkbox column plus bulk
+bar, F24), filtered-empty with in-composition recovery. Sorted and selected are drawn on the DenseTable card;
+disabled controls render in content.quiet with spoken "dimmed" (stated).</li>
+<li>Team colour: not touched — not applicable, stated.</li>
+<li>VoiceOver, one sentence per row in multi-select: <span class="vo">"Selected, Player Thirty, cornerback, number
+seven, overall unknown, scout action available, value estimated one point two to one point eight million dollars,
+unscouted."</span> The bulk bar announces "Two selected: queue scout, shortlist, or clear."</li>
+<li>Motion: the bulk bar may slide in; under Reduce Motion it appears as a discrete state change; filter results
+replace discretely — no travel, per 04 §7 / Q2.</li>
+<li>Verdict: none — controls carry no judgement; analytical verdicts live on the readout sheet.</li>
+<li>Density budget: the controls spend one secondary region above the dominant table; sort or filter costs one
+tap, search costs one tap plus typing, bulk action one tap over N rows (the throughput purchase of density model
+§6); glyph spend two on this composition (binoculars, hand.raised) plus furniture chevron/magnifier which are
+control glyphs, not status vocabulary; zero verdict lines; working memory zero.</li>
+<li>Traceability: values 6.1/6.2/6.3; bounded-search copy states its bound ("first 50 by relevance") because an
+unbounded list breaches the stated-bound rule (F19 kin); identities pending generator output.</li>
+</ol>
+</div>
+</section>
+
+<!-- ================================================================ CARD 4 -->
+<section class="card" id="rating-badge">
+<header>
+<h2>RatingBadge <span class="status">Registry 10 — provisional</span></h2>
+<p class="note">Fixed-size numeric badge on the 40–99 integer scale: 20 x 16 pt frame, radius 3, 10 pt bold
+monospaced numeral — the 6.4.4 snippet's stated values. Heat scale per 6.4.4: <strong>red below 70, amber 70–84,
+green 85 and up</strong>, drawn with the only canonical red/amber/green — the 6.1 state tokens state.negative,
+state.warning, state.positive. The printed number is always present and colour is never the sole meaning: each
+badge speaks its band. Band words here are sample copy, provisional: elite (85–99), capable (70–84),
+limited (40–69).</p>
+</header>
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark</div>
+<p class="caption">Quotable form — numeral in the state token on world.work, hairline boundary</p>
+<div style="background:var(--work);border-radius:10px;padding:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<span class="rbt r">64</span><span class="rbt r">69</span><span style="color:var(--tq);font-size:10px">| 70 boundary |</span>
+<span class="rbt a">70</span><span class="rbt a">78</span><span class="rbt a">84</span><span style="color:var(--tq);font-size:10px">| 85 boundary |</span>
+<span class="rbt g">85</span><span class="rbt g">92</span><span class="rbt g">99</span>
+<span class="rbt u">—</span><span style="color:var(--tq);font-size:10px">unknown (fog — scout to reveal)</span>
+</div>
+<p class="caption">Production-fill form per the 6.4.4 snippet (state colour at 0.85 alpha) — ink-on-fill now canon-measured (6.1 heat-fill badge inks, 2026-08-12)</p>
+<div style="background:var(--work);border-radius:10px;padding:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<span class="rb r">64</span><span class="rb a">78</span><span class="rb g">92</span>
+<span style="color:var(--tq);font-size:10px">dark fills take page ink — measured 10.77 positive / 12.13 warning / 7.27 negative (canon 6.1)</span>
+</div>
+<p class="ratios">Quoted (dark, as foreground on work): state.negative 6.72 · state.warning 11.21 · state.positive 9.95 ·
+content.quiet (unknown) 5.44. All numeral pairs in the quotable form meet the 4.5:1 body floor.</p>
+</div>
+<div class="pane lt"><div class="pane-h">Light</div>
+<p class="caption">Quotable form</p>
+<div style="background:var(--work);border-radius:10px;padding:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<span class="rbt r">64</span><span class="rbt r">69</span><span style="color:var(--tq);font-size:10px">| 70 boundary |</span>
+<span class="rbt a">70</span><span class="rbt a">78</span><span class="rbt a">84</span><span style="color:var(--tq);font-size:10px">| 85 boundary |</span>
+<span class="rbt g">85</span><span class="rbt g">92</span><span class="rbt g">99</span>
+<span class="rbt u">—</span><span style="color:var(--tq);font-size:10px">unknown (fog — scout to reveal)</span>
+</div>
+<p class="caption">Production-fill form — ink-on-fill unmeasured, flagged</p>
+<div style="background:var(--work);border-radius:10px;padding:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<span class="rb r">64</span><span class="rb a">78</span><span class="rb g">92</span>
+<span style="color:var(--tq);font-size:10px">light fills take work ink — measured 5.86 positive / 6.76 warning / 6.77 negative (canon 6.1)</span>
+</div>
+<p class="ratios">Quoted (light, on work): state.negative 6.77 · state.warning 6.76 · state.positive 5.86 ·
+content.quiet 6.07. All quotable-form pairs meet 4.5:1.</p>
+</div>
+</div>
+<div class="contract">
+<h4>Contract — RatingBadge</h4>
+<ol>
+<li>Light and dark rendered; foreground ratios quoted from 04 §6.1 under each pane. The snippet's translucent-fill
+form is drawn with its canon-measured ink ratios (6.1 heat-fill badge inks, 2026-08-12: dark page ink 7.27&ndash;12.13, light work ink 5.86&ndash;6.77)
+measurement before production fills ship (G-07 kin), with the quotable tint-on-surface form beside it.</li>
+<li>Width: the badge is fixed-size at every container width — width buys nothing and costs nothing. AX5: the
+badge does not scale as a micro-mark; the row's fact stack carries "Overall: 88, elite band" at Q5 sizes
+(44 pt), so nothing is dropped — the sentence replaces the mark, per 6.2's diagram-mark rule.</li>
+<li>Touch: the badge is not itself a control; where it opens inspection the hit target is the full row or a
+44 x 44 pt expansion (printed). No interactive element below 44 pt.</li>
+<li>States: all three heat bands with both threshold boundaries visible (69|70, 84|85), unknown (fog),
+and — on the DenseTable card — the badge inside selected and disabled rows; disabled renders the numeral in
+content.quiet with spoken "dimmed" (stated).</li>
+<li>Team colour: not touched — heat is state colour, never team colour; not applicable, stated.</li>
+<li>VoiceOver, one sentence: <span class="vo">"Overall eighty-eight, elite band."</span> Fog: <span class="vo">"Overall
+unknown, scout to reveal."</span> The printed number plus spoken band is the 6.4.4 contract; colour alone never
+carries the meaning.</li>
+<li>Motion: a rating change may tick the numeral; under Reduce Motion the new value appears as a discrete change
+— no counting animation (04 §7 / Q2).</li>
+<li>Verdict: none — a badge is a value, not a judgement; band words are scale vocabulary, not verdicts.
+Analytical verdicts live on the readout sheet.</li>
+<li>Density budget: one fact column when used in a table (counted inside DenseTable's seven); zero glyph-vocabulary
+spend (the numeral is not a learned symbol; the band words are one learned convention, and A5/A7 forbid any second
+numeric scale beside the 40–99 print); zero taps; zero verdict lines.</li>
+<li>Traceability: frame 20 x 16, radius 3, 10 pt bold monospaced numeral quoted from the 6.4.4 snippet; heat
+thresholds 70 and 85 from 6.4.4; colours from 6.1; tabular numerals per 6.2. Band words provisional pending owner
+adoption; ratings remain 40–99 integers.</li>
+</ol>
+</div>
+</section>
+
+<!-- ================================================================ CARD 5 -->
+<section class="card" id="status-chip">
+<header>
+<h2>StatusChip <span class="status">Registry 17 — provisional</span></h2>
+<p class="note">Closed vocabulary, at most three chips per row, each changing a decision (§4.5). The global cap is
+twelve learned symbols across the whole product; the sample below enumerates exactly twelve — spending the full
+cap — so a real adoption should hold unspent slots: vocabulary growth is the §4.5 leak detector, and the caps are
+testable claims owed a contract test (register entry G-08). Symbols are SF Symbol names written as text; in
+production each renders as a 16 pt symbol with an explicit accessible name (6.3). Colour never carries the state
+alone (A6 tripwire: a tinted name without a chip is a defect).</p>
+</header>
+<h3>Sample vocabulary — 12 of 12, provisional pending owner adoption</h3>
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark</div>
+<div style="background:var(--work);border-radius:10px;padding:12px;font-size:11px;letter-spacing:-.2px">
+<p><span class="gl neg">cross.case</span> injured, out — start someone else</p>
+<p><span class="gl warn">bolt.slash</span> fatigued, load red-line — cut practice load or rotate</p>
+<p><span class="gl neg">shield.slash</span> suspended this game — move to inactives</p>
+<p><span class="gl warn">exclamationmark.triangle</span> one flag from suspension — limit usage</p>
+<p><span class="gl warn">clock.badge.exclamationmark</span> deal expires inside the horizon — extend or plan the loss</p>
+<p><span class="gl info">binoculars</span> unscouted facts on this row — spend a scout action</p>
+<p><span class="gl plain">hand.raised</span> not for sale — drop pursuit or change the offer class</p>
+<p><span class="gl warn">graduationcap</span> eligibility at risk — academic intervention</p>
+<p><span class="gl neg">arrow.uturn.left</span> departure intent — retention decision now</p>
+<p><span class="gl pos">star</span> staff recommendation, attributed — shortlist it</p>
+<p><span class="gl pos">checkmark.seal</span> committed, signed — clear the board slot</p>
+<p><span class="gl info">calendar.badge.exclamationmark</span> visit or deadline due — schedule this week</p>
+</div>
+<p class="caption" style="margin-top:12px">Per-row cap — worst legal row spends three</p>
+<div class="tblwrap" style="--cols:28px minmax(96px,1fr) 34px 220px">
+<div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>Status (max 3)</span></div>
+<div class="row"><span class="n tab">55</span><span class="nm">Player Nine</span><span class="fact">C</span><span><span class="gl neg">cross.case</span> <span class="gl warn">exclamationmark.triangle</span> <span class="gl warn">clock.badge.exclamationmark</span></span></div>
+<div class="row"><span class="n tab">72</span><span class="nm">Player Fourteen</span><span class="fact">LT</span><span><span class="gl warn">bolt.slash</span></span></div>
+<div class="row"><span class="n tab">78</span><span class="nm">Player Thirty-One</span><span class="fact">G</span><span class="blank">—</span></div>
+</div>
+<p class="ratios">Chip text on its raised chip ground, quoted (dark): negative 6.12 · warning 10.22 · positive 9.07 ·
+info 7.05 · plain (content.secondary) 8.86. All meet 4.5:1; the chip ground world.raised on work is the stated
+hairline-gap treatment.</p>
+</div>
+<div class="pane lt"><div class="pane-h">Light</div>
+<div style="background:var(--work);border-radius:10px;padding:12px;font-size:11px;letter-spacing:-.2px">
+<p><span class="gl neg">cross.case</span> injured, out — start someone else</p>
+<p><span class="gl warn">bolt.slash</span> fatigued, load red-line — cut practice load or rotate</p>
+<p><span class="gl neg">shield.slash</span> suspended this game — move to inactives</p>
+<p><span class="gl warn">exclamationmark.triangle</span> one flag from suspension — limit usage</p>
+<p><span class="gl warn">clock.badge.exclamationmark</span> deal expires inside the horizon — extend or plan the loss</p>
+<p><span class="gl info">binoculars</span> unscouted facts on this row — spend a scout action</p>
+<p><span class="gl plain">hand.raised</span> not for sale — drop pursuit or change the offer class</p>
+<p><span class="gl warn">graduationcap</span> eligibility at risk — academic intervention</p>
+<p><span class="gl neg">arrow.uturn.left</span> departure intent — retention decision now</p>
+<p><span class="gl pos">star</span> staff recommendation, attributed — shortlist it</p>
+<p><span class="gl pos">checkmark.seal</span> committed, signed — clear the board slot</p>
+<p><span class="gl info">calendar.badge.exclamationmark</span> visit or deadline due — schedule this week</p>
+</div>
+<p class="caption" style="margin-top:12px">Per-row cap — worst legal row spends three</p>
+<div class="tblwrap" style="--cols:28px minmax(96px,1fr) 34px 220px">
+<div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>Status (max 3)</span></div>
+<div class="row"><span class="n tab">55</span><span class="nm">Player Nine</span><span class="fact">C</span><span><span class="gl neg">cross.case</span> <span class="gl warn">exclamationmark.triangle</span> <span class="gl warn">clock.badge.exclamationmark</span></span></div>
+<div class="row"><span class="n tab">72</span><span class="nm">Player Fourteen</span><span class="fact">LT</span><span><span class="gl warn">bolt.slash</span></span></div>
+<div class="row"><span class="n tab">78</span><span class="nm">Player Thirty-One</span><span class="fact">G</span><span class="blank">—</span></div>
+</div>
+<p class="ratios">Chip text on its raised chip ground, quoted (light): negative 5.72 · warning 5.71 · positive 4.95 ·
+info 5.47 · plain (content.secondary) 6.25. All meet 4.5:1.</p>
+</div>
+</div>
+<div class="contract">
+<h4>Contract — StatusChip</h4>
+<ol>
+<li>Light and dark rendered; every chip-text-on-chip-ground ratio quoted from 04 §6.1 (state tokens on
+world.raised); nothing recomputed.</li>
+<li>Width: chips are fixed-content marks; the status column width is the only width consumer (the sheet's
+name-chip stand-ins widen it to 150–220 pt where production spends 66 pt per the T8 arithmetic — substitution
+stated). AX5: chips become their spoken words inside the one-column fact stack ("fatigued", "deal expiring"),
+order preserved, nothing dropped, Q5 sizes.</li>
+<li>Touch: chips are not controls; where a chip opens its evidence the target is the full row or a 44 x 44 pt
+expansion (printed).</li>
+<li>States: populated rows (one and three chips), the empty dash state, and — via DenseTable — chips inside
+selected, disabled and fogged rows. Severity within one chip type (the reference's two injury grades) is carried
+by the chip's state token, never a new symbol.</li>
+<li>Team colour: not touched — chips use state tokens only; not applicable, stated.</li>
+<li>VoiceOver, one sentence per row: <span class="vo">"Player Nine, center, number fifty-five, status: injured and
+out, one flag from suspension, and contract expiring inside the horizon."</span> Each symbol's accessible name is
+explicit; the name chip is its own label in this sheet.</li>
+<li>Motion: a chip appearing or clearing is a discrete state change already; under Reduce Motion no entrance
+animation remains (04 §7 / Q2).</li>
+<li>Verdict: none — a chip is a state, not a judgement; analytical verdicts live on the readout sheet.</li>
+<li>Density budget: vocabulary spend stated explicitly — this sample spends 12 of the 12-symbol global cap and the
+worst row spends 3 of 3; each chip names the decision it changes, which is the admission test; zero verdict lines;
+zero taps (evidence one tap where a chip opens it).</li>
+<li>Traceability: colours 6.1; chip geometry from 6.3 (radius 8, 18 pt chip in a 26 pt track); glyphs are SF Symbol
+names as text per the sheet rule; the twelve-symbol and three-per-row caps from §4.5; G-08 owes the contract test.
+Identities pending generator output.</li>
+</ol>
+</div>
+</section>
+
+<!-- ================================================================ CARD 6 -->
+<section class="card" id="role-token">
+<header>
+<h2>RoleToken <span class="status">Registry 18 — provisional</span></h2>
+<p class="note">A short assignment code binds a list row to a labelled dot on a small diagram — the list is
+editable, the diagram is readable, neither tries to be both (F9); the token carries its own field locator (F23
+kin). Drawn as the pair: a personnel-package assignment list and its mini field diagram. Tokens are position tags
+(X, Z, H, Y, F); the diagram uses the field grammar tokens of 6.1 at radius 0. Selecting a row highlights its dot;
+selection is boundary plus value plus spoken state on the row, and a non-text ring on the dot.</p>
+</header>
+<div class="modes">
+<div class="pane dk"><div class="pane-h">Dark — list and diagram pair</div>
+<div style="display:flex;gap:12px;flex-wrap:wrap">
+<div class="rtlist" style="flex:1 1 240px">
+<div class="capline"><span>Package: eleven personnel <span class="cnt">5 of 5</span></span></div>
+<div class="rtrow sel"><span><span class="chip plate">X</span></span><span class="nm">Player Nine</span><span class="fact">Boundary receiver</span></div>
+<div class="rtrow"><span><span class="chip plate">Z</span></span><span class="nm">Player Twelve</span><span class="fact">Field receiver</span></div>
+<div class="rtrow"><span><span class="chip plate">H</span></span><span class="nm">Player Four</span><span class="fact">Slot</span></div>
+<div class="rtrow"><span><span class="chip plate">Y</span></span><span class="nm">Player Seven</span><span class="fact">Inline tight end</span></div>
+<div class="rtrow"><span><span class="chip plate">F</span></span><span class="nm">Player Two</span><span class="fact">Back</span></div>
+</div>
+<div style="flex:1 1 280px">
+<div class="fld">
+<span class="yl" style="left:20%"></span><span class="yl" style="left:40%"></span><span class="yl" style="left:60%"></span><span class="yl" style="left:80%"></span>
+<span class="los" style="left:55%"></span>
+<span class="dot sel" style="left:6%;top:14%">X</span>
+<span class="dot" style="left:44%;top:8%">Z</span>
+<span class="dot" style="left:38%;top:30%">H</span>
+<span class="dot" style="left:46%;top:52%">Y</span>
+<span class="dot" style="left:28%;top:64%">F</span>
+</div>
+<p class="ratios">Field grammar, quoted (dark): field.line on turf 11.14 · field.annotation on turf 7.09 (token
+letters and rings) · field.live on turf 9.23 (selection ring, non-text). Diagram marks may stay fixed at AX5 only
+because the equivalent sentence is present (6.2).</p>
+</div>
+</div>
+</div>
+<div class="pane lt"><div class="pane-h">Light — same pair</div>
+<div style="display:flex;gap:12px;flex-wrap:wrap">
+<div class="rtlist" style="flex:1 1 240px">
+<div class="capline"><span>Package: eleven personnel <span class="cnt">5 of 5</span></span></div>
+<div class="rtrow sel"><span><span class="chip plate">X</span></span><span class="nm">Player Nine</span><span class="fact">Boundary receiver</span></div>
+<div class="rtrow"><span><span class="chip plate">Z</span></span><span class="nm">Player Twelve</span><span class="fact">Field receiver</span></div>
+<div class="rtrow"><span><span class="chip plate">H</span></span><span class="nm">Player Four</span><span class="fact">Slot</span></div>
+<div class="rtrow"><span><span class="chip plate">Y</span></span><span class="nm">Player Seven</span><span class="fact">Inline tight end</span></div>
+<div class="rtrow"><span><span class="chip plate">F</span></span><span class="nm">Player Two</span><span class="fact">Back</span></div>
+</div>
+<div style="flex:1 1 280px">
+<div class="fld">
+<span class="yl" style="left:20%"></span><span class="yl" style="left:40%"></span><span class="yl" style="left:60%"></span><span class="yl" style="left:80%"></span>
+<span class="los" style="left:55%"></span>
+<span class="dot sel" style="left:6%;top:14%">X</span>
+<span class="dot" style="left:44%;top:8%">Z</span>
+<span class="dot" style="left:38%;top:30%">H</span>
+<span class="dot" style="left:46%;top:52%">Y</span>
+<span class="dot" style="left:28%;top:64%">F</span>
+</div>
+<p class="ratios">Field grammar, quoted (light): field.line on turf 14.89 · field.annotation on turf 5.49 ·
+field.live on turf 4.67 — above the 3:1 non-text floor, below 4.5:1, so field.live is ring-only here, never
+letter ink.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="contract">
+<h4>Contract — RoleToken</h4>
+<ol>
+<li>Light and dark rendered; field-grammar ratios quoted from 04 §6.1 under each pane, including the light
+field.live 4.67 constraint that keeps it non-text.</li>
+<li>Width: at 844–956 pt the list and diagram sit side by side (the pair is the dominant object); AX5 stacks
+list above diagram, list rows become the one-column fact stack at Q5 sizes, and every dot's meaning survives as
+its row sentence — nothing dropped.</li>
+<li>Touch: list rows are full-row targets at the 26 pt track (dense-track exception, printed); dots are 20 pt
+marks whose hit targets expand to 44 x 44 pt (printed); no primary action lives below 44 pt.</li>
+<li>States: default rows, selected row-and-dot pair (boundary + value + spoken on the row; field.live ring on the
+dot), and the bounded header count (5 of 5, F19). Disabled and fogged token rows follow the DenseTable drawings
+(stated).</li>
+<li>Team colour: not touched — the diagram uses field grammar, never team wash on management surfaces (§5);
+not applicable, stated.</li>
+<li>VoiceOver, one sentence per row: <span class="vo">"X, Player Nine, boundary receiver, left wide, selected."</span>
+The diagram exposes the same sentences in list order, so the dot map never carries unspoken meaning.</li>
+<li>Motion: reassigning a token may travel the dot; under Reduce Motion the dot disappears and reappears at its
+new place as a discrete change (04 §7 / Q2); selection rings never pulse.</li>
+<li>Verdict: none — the pair states assignments, not judgements; role-fit wording stays on the table's Fit column
+(A7: worded verdicts, never a second scale); analytical verdicts live on the readout sheet.</li>
+<li>Density budget: one dominant object (the pair counts as one — same truth twice); tokens spend zero glyph
+vocabulary (position codes are football literacy, not learned symbols — stated as the owner's call to ratify);
+selection zero taps, reassignment one tap per slot; zero verdict lines; working memory zero because list and
+diagram are co-visible.</li>
+<li>Traceability: field.turf, field.line, field.annotation, field.live and all text tokens from 6.1; radius 0 on
+the field, 8 on token chips, 10 on the list surface per 6.3; 26 pt tracks; tabular numerals. Identities pending
+generator output.</li>
+</ol>
+</div>
+</section>
+
+<p class="meta">End of sheet. Rendering only — <span class="mono">docs/04-UX-AND-DESIGN-SYSTEM.md</span> is the
+canonical home for every value above; registry entries remain provisional until their three-production-uses
+records exist (P11). No JavaScript, no network, no images; glyphs are SF Symbol names as text; no emoji;
+identities and team pairs synthetic — pending generator output.</p>
+</div>
+</body>
+</html>
