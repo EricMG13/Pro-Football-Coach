@@ -601,6 +601,57 @@ rather than pins, and they moved because prestige now feeds recruiting rather th
 and geography. It is not built: it changes league topology, and schedule generation, standings and
 whole-root integrity all read that topology, so it is a milestone-sized slice rather than a rule.
 
+### Engagement levers, phase 2 — **written, UNVERIFIED, never compiled**
+
+> **Read this heading literally.** No Swift toolchain and no `xcodebuild` were available in the
+> environment this was written in, and the egress policy refuses `download.swift.org`. Nothing below
+> has been compiled, no test has been run, and no measurement in this section is a measurement.
+> `CLAUDE.md`'s rule applies in full: this is not "green", not "passing" and not "verified". Phase
+> 4C of the prior build shipped uncompiled and the failure was the claim, not the toolchain.
+
+Canon for these changes landed first (commit `6dc10f6`, `02` §2.1/§2.4/§7/§8, `03` §5.1, `04` §4.6,
+`CLAUDE.md`'s engagement-ethics guardrail). This slice implements three of that plan's four engine
+items.
+
+**The game can now initiate a conversation.** `WorldStep.newsAndNarrative` is active and raises the
+week's obligations inside the weekly transaction. They were previously created by `CareerSession`
+*after* `IntentResolver` returned and after integrity had already passed, which is the mechanical
+reason `01` §6.0 could count zero inbound events: nothing inside the fifteen steps ever made one.
+
+**Advancing is always permitted.** The all-or-nothing gate in `IntentResolver` is gone, and
+`IntentResolutionError.unresolvedMandatoryDecisions` with it. `WorldStep.expiringInboundEvents` is
+active and answers any obligation whose deadline elapsed with the delegate's recommendation,
+recording the resolution and emitting `obligationAutoResolved`. This is load-bearing, not cosmetic:
+`WorldIntegrity` rejects a pending decision whose deadline sits before the calendar, and the old gate
+was the only thing keeping that true. An obligation that cannot be applied, or that arrives after the
+resolution log's bound, is still removed from the queue — dropping an audit row is survivable, and
+leaving the decision would make every future advance throw.
+
+**The carousel no longer dead-ends.** `markFired` was terminal: both evaluators guarded on
+`status != .fired` and returned forever, and nothing in the repository produced `.seeking`, so a
+fired save was permanently inert against `02` §7 and D8. Now firing releases the programme as well
+as the job (they were previously able to diverge), `CareerArcSystem.ensureMarketFloor` moves a fired
+coach to seeking and guarantees an offer, `acceptOpportunity` honours the opportunity's own tier
+rather than hardcoding `.professional`, and `CareerProjection.programme` is optional so a sacked
+coach's session still projects instead of hitting a `preconditionFailure`.
+
+**The fog is a band.** `ScoutingSystem` computed an error radius and discarded it; a surface could
+read three bare integers. `ProspectObservation.errorRadius` is now the single definition of the
+fog's width, used both to sample the estimate and to draw `02` §4.3's confidence band.
+
+**Known consequences that need a machine to settle:**
+
+- **The pinned fingerprints in `ArchitectureTests` will move and are now wrong.** Step one emits
+  events before every other step, so global event sequences shift. They must be repinned
+  deliberately, from two rebuilt runs, not adjusted until green.
+- New `DomainEventPayload` cases change the encoded root, so existing saves are expected to be
+  unreadable; the schema version has not been bumped, which is a decision the owner should confirm.
+- The both-tier soak, save-size re-measurement against FSC-003, and a carousel-exit reachability
+  test over seeded careers are all unwritten.
+
+**Not implemented from that plan:** the player dossier (`02` §8's per-person accumulation), which is
+independent of the three above and carries the heaviest save-size risk at ~13,000 players.
+
 ### Preserved pre-rebaseline P0–P4 record
 
 The remainder of this document records the older P-phase foundation and its measurements. It is

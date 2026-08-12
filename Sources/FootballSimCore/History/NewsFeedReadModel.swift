@@ -132,6 +132,19 @@ public struct NewsFeedReadModel: Sendable, Equatable {
             return "\(who(playerID)) at \(who(programmeID)): redshirt \(outcome.rawValue)"
         case let .proPlayerSigned(playerID, teamID, kind, _):
             return "\(who(teamID)) sign \(who(playerID)) (\(kind.rawValue))"
+        case let .coachJobStarted(organisationID, _):
+            return "\(who(organisationID)) appoint a new head coach"
+        case let .coachJobEnded(organisationID, _, reason):
+            switch reason {
+            case .fired:
+                return "\(who(organisationID)) part company with their head coach"
+            case .resigned:
+                return "The head coach of \(who(organisationID)) resigns"
+            case .promoted:
+                return "The head coach of \(who(organisationID)) moves on"
+            }
+        case let .careerOpportunityOffered(_, organisationID, _):
+            return "\(who(organisationID)) approach a new head coach"
 
         // Weekly bookkeeping, scored zero by `historicalWeight` and reported by nobody.
         case .integrityChecked,

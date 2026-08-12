@@ -92,6 +92,71 @@ public enum WorldScheduler {
 
         for step in steps {
             switch step {
+            case .expiringInboundEvents:
+                // Obligations whose deadline elapses with *this* advance, and the offers that go
+                // stale with it. Ordered by identity so the batch is deterministic.
+                //
+                // This step is what makes advancing always legal. `WorldIntegrity` requires that no
+                // pending decision's deadline sits before the calendar, and the old all-or-nothing
+                // gate in `IntentResolver` was the only thing keeping that true — advance was
+                // refused until the queue was empty. With the gate gone (`02` §2.1, amended
+                // 2026-08-12) the invariant is held here instead: an obligation the coach did not
+                // answer is answered by the delegate before the world moves, which is the visible
+                // cost the design asks for rather than a silent lapse or a locked save.
+                var expiryPayloads: [DomainEventPayload] = []
+                let elapsing = nextState.pending.mandatoryDecisions
+                    .filter { occurs($0.deadline, before: next) }
+                    .sorted { $0.id.uuidString < $1.id.uuidString }
+                for decision in elapsing {
+                    // The obligation leaves the queue whatever else happens. Applying the action can
+                    // legitimately fail — a roster moved under a stale redshirt call — and the
+                    // resolution log has a bound it could reach. Neither is a reason to keep a
+                    // decision whose deadline has passed: `WorldIntegrity` rejects exactly that, so
+                    // a `continue` here would throw at step fourteen and leave the save unable to
+                    // advance at all. Dropping the obligation loses an audit row; keeping it loses
+                    // the career.
+                    let option = decision.options.first { $0.id == decision.recommendedOptionID }
+                    if let option,
+                       let applied = CareerMandatoryDecisionSystem.applying(
+                           option.action,
+                           subject: decision.subject,
+                           programmeID: decision.programmeID,
+                           in: nextState
+                       ) {
+                        nextState = applied.state
+                        expiryPayloads.append(contentsOf: applied.eventPayloads)
+                    }
+                    guard nextState.pending.removeDecision(id: decision.id) != nil else { continue }
+                    if let option {
+                        _ = nextState.career.recordResolution(MandatoryDecisionResolution(
+                            decisionID: decision.id,
+                            programmeID: decision.programmeID,
+                            subject: decision.subject,
+                            optionID: option.id,
+                            action: option.action,
+                            decidedAt: completed
+                        ))
+                        expiryPayloads.append(.obligationAutoResolved(
+                            decisionID: decision.id,
+                            programmeID: decision.programmeID,
+                            optionID: option.id
+                        ))
+                    }
+                }
+                for expired in nextState.careerArc.pruneOpportunities(expiringBefore: next) {
+                    expiryPayloads.append(.careerOpportunityExpired(
+                        opportunityID: expired.id,
+                        organisationID: expired.organisationID
+                    ))
+                }
+                try appendEvents(
+                    payloads: expiryPayloads,
+                    occurredAt: completed,
+                    to: &nextState,
+                    emittedEvents: &events
+                )
+                records.append(WorldStepRecord(step: step, status: .executed))
+
             case .marketInteractions:
                 let expiredWaivers = nextState.proMarket.waivers.filter {
                     $0.claimDeadline.season < completed.season
@@ -331,10 +396,17 @@ public enum WorldScheduler {
 
             case .statisticsAndRecords:
                 nextState.competition = CompetitionReducer.rebuildStatistics(from: nextState)
-                CareerArcSystem.evaluateWeek(
+                let weekly = CareerArcSystem.evaluateWeek(
                     after: completed,
                     in: nextState,
                     arc: &nextState.careerArc
+                )
+                applyCareerOutcome(weekly, to: &nextState)
+                try appendEvents(
+                    payloads: weekly.eventPayloads,
+                    occurredAt: completed,
+                    to: &nextState,
+                    emittedEvents: &events
                 )
                 records.append(WorldStepRecord(step: step, status: .executed))
 
@@ -354,6 +426,29 @@ public enum WorldScheduler {
                         }
                     }
                 }
+                records.append(WorldStepRecord(step: step, status: .executed))
+
+            case .newsAndNarrative:
+                // Where the game initiates. Obligations were previously raised by `CareerSession`
+                // *after* the transaction returned and after integrity had already passed, so
+                // nothing inside the fifteen steps ever created one — the mechanical reason
+                // `01` §6.0 could find zero inbound events. Raising them here puts them inside the
+                // week they belong to, and the deadline is the week ahead, so the coach has exactly
+                // that week to answer before step 1 answers for them.
+                nextState = CareerMandatoryDecisionSystem.refresh(in: nextState, deadlineAt: next)
+                // A coach out of work re-enters the market here. `02` §7's floor is a mechanism, not
+                // a promise: fired becomes seeking, and seeking is never empty.
+                let floor = CareerArcSystem.ensureMarketFloor(
+                    at: completed,
+                    in: nextState,
+                    arc: &nextState.careerArc
+                )
+                try appendEvents(
+                    payloads: floor.eventPayloads,
+                    occurredAt: completed,
+                    to: &nextState,
+                    emittedEvents: &events
+                )
                 records.append(WorldStepRecord(step: step, status: .executed))
 
             case .jobAndStaffMarkets:
@@ -432,10 +527,17 @@ public enum WorldScheduler {
                     in: nextState
                 )
                 if completed.week == SharedRules.inSeasonWeeks {
-                    CareerArcSystem.evaluateSeasonEnd(
+                    let seasonEnd = CareerArcSystem.evaluateSeasonEnd(
                         after: completed,
                         in: nextState,
                         arc: &nextState.careerArc
+                    )
+                    applyCareerOutcome(seasonEnd, to: &nextState)
+                    try appendEvents(
+                        payloads: seasonEnd.eventPayloads,
+                        occurredAt: completed,
+                        to: &nextState,
+                        emittedEvents: &events
                     )
                     let completion = PostseasonSystem.completeSeason(
                         after: completed,
@@ -593,6 +695,25 @@ public enum WorldScheduler {
             stepRecords: records,
             emittedEvents: events
         )
+    }
+
+    /// Ends control of the programme a job just ended at.
+    ///
+    /// Job and control have to end together. `markFired` clears `careerArc.currentJob` but knows
+    /// nothing about `career.college`, and leaving that set produced a coach who had been sacked and
+    /// still held the programme — a state `WorldIntegrity` permits only because its
+    /// `controlMatchesJob` clause short-circuits on a nil job.
+    private static func applyCareerOutcome(
+        _ outcome: CareerArcOutcome,
+        to state: inout GameState
+    ) {
+        guard let vacated = outcome.vacatedOrganisationID,
+              state.career.college?.programmeID == vacated else { return }
+        state.career.clearCollege()
+    }
+
+    private static func occurs(_ lhs: CalendarState, before rhs: CalendarState) -> Bool {
+        lhs.season < rhs.season || (lhs.season == rhs.season && lhs.week < rhs.week)
     }
 
     private static func appendEvents(

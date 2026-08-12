@@ -242,12 +242,88 @@ public struct MandatoryDecisionResolution: Codable, Sendable, Equatable, Identif
     }
 }
 
+/// The result of applying one decision option: the new root, and whatever the underlying system
+/// considered worth recording. The payloads matter — a recruiting answer emits interaction events,
+/// and dropping them would make the delegated answer invisible where the chosen one is not.
+public struct MandatoryDecisionApplication: Sendable {
+    public let state: GameState
+    public let eventPayloads: [DomainEventPayload]
+
+    public init(state: GameState, eventPayloads: [DomainEventPayload]) {
+        self.state = state
+        self.eventPayloads = eventPayloads
+    }
+}
+
 public enum CareerMandatoryDecisionSystem {
-    public static func refresh(in state: GameState) -> GameState {
+    /// Applies one decision option's action to the root, or returns `nil` when it cannot be applied.
+    ///
+    /// Shared deliberately. The player answering an obligation and the staff answering it on their
+    /// behalf when its deadline elapses must do the *same thing* — two implementations of "what this
+    /// option means" would let the delegated outcome drift from the chosen one, which is exactly the
+    /// coverage boundary `CLAUDE.md` names as a defect.
+    static func applying(
+        _ action: MandatoryDecisionAction,
+        subject: MandatoryDecisionSubject,
+        programmeID: UUID,
+        in state: GameState
+    ) -> MandatoryDecisionApplication? {
+        var next = state
+        var payloads: [DomainEventPayload] = []
+        switch action {
+        case let .recruiting(recruitingAction):
+            guard let transition = try? CollegeRecruitingSystem.apply(
+                RecruitingActionRequest(
+                    programmeID: programmeID,
+                    prospectID: subject.entityID,
+                    action: recruitingAction
+                ),
+                in: next
+            ) else { return nil }
+            next.prospects = transition.prospects
+            next.college = transition.college
+            next.scouting = transition.scouting
+            payloads = transition.eventPayloads
+        case let .redshirt(plannedAppearanceLimit):
+            if let plannedAppearanceLimit {
+                guard let college = try? CollegeRedshirtSystem.designate(
+                    playerID: subject.entityID,
+                    programmeID: programmeID,
+                    plannedAppearanceLimit: plannedAppearanceLimit,
+                    in: next
+                ) else { return nil }
+                next.college = college
+            } else if next.college.redshirtPlans[subject.entityID] != nil {
+                guard let college = try? CollegeRedshirtSystem.clearDesignation(
+                    playerID: subject.entityID,
+                    programmeID: programmeID,
+                    in: next
+                ) else { return nil }
+                next.college = college
+            }
+        case let .nilAllocation(amount):
+            var applied = false
+            _ = next.college.updateProgramme(programmeID) {
+                applied = $0.setRosterNILAllocation(amount, playerID: subject.entityID)
+            }
+            guard applied else { return nil }
+        case .portalRetention, .portalRelease:
+            // Retention is already resolved by the portal policy before the obligation is raised;
+            // the answer is recorded, and applies no further state change. Kept explicit rather
+            // than folded into a `default` so a future portal write cannot be added silently.
+            break
+        }
+        return MandatoryDecisionApplication(state: next, eventPayloads: payloads)
+    }
+
+    public static func refresh(
+        in state: GameState,
+        deadlineAt: CalendarState? = nil
+    ) -> GameState {
         guard let control = state.career.college,
               let programme = state.programmes[control.programmeID] else { return state }
         if state.college.portal.phase == .awaitingSpring {
-            return refreshSpringPortal(control: control, in: state)
+            return refreshSpringPortal(control: control, deadlineAt: deadlineAt, in: state)
         }
         guard state.calendar.week <= 2,
               state.college.phase == .active,
@@ -301,7 +377,7 @@ public enum CareerMandatoryDecisionSystem {
                 programmeID: control.programmeID,
                 subject: .redshirt(playerID: playerID),
                 createdAt: state.calendar,
-                deadline: state.calendar,
+                deadline: deadlineAt ?? state.calendar,
                 owner: owner,
                 options: [
                     MandatoryDecisionOption(
@@ -354,6 +430,7 @@ public enum CareerMandatoryDecisionSystem {
 
     private static func refreshSpringPortal(
         control: CollegeCareerControl,
+        deadlineAt: CalendarState? = nil,
         in state: GameState
     ) -> GameState {
         guard control.responsibilityOwners[.portalAndRetention] == .user,
@@ -406,7 +483,7 @@ public enum CareerMandatoryDecisionSystem {
                 programmeID: control.programmeID,
                 subject: .portalRetention(playerID: intent.playerID, window: .spring),
                 createdAt: state.calendar,
-                deadline: state.calendar,
+                deadline: deadlineAt ?? state.calendar,
                 owner: .user,
                 options: [
                     MandatoryDecisionOption(

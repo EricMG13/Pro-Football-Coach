@@ -24,7 +24,20 @@ random value, or prose-only event does not satisfy an entry.
 ## Scheduler activation at the current M3 checkpoint
 
 M3 now additionally executes `scoutingKnowledge`, college `marketInteractions`, and college
-`aiDecisions`; each has focused ordering, event, determinism, and integrity tests. The detailed user
-game, relationships/stakeholders, news/narrative, pro markets, and later systems remain visibly
-inactive in their fixed positions. Activation still requires a focused proof of inputs, events,
-determinism, and downstream integrity.
+`aiDecisions`; each has focused ordering, event, determinism, and integrity tests.
+
+**Two more activated 2026-08-12, leaving `userGame` as the only declared no-op.**
+
+- `expiringInboundEvents` answers obligations whose deadline has elapsed with the delegate's
+  recommendation and prunes spent career opportunities. It is load-bearing rather than cosmetic:
+  `IntentResolver` no longer refuses to advance while obligations are pending (`02` §2.1, amended
+  2026-08-12), and `WorldIntegrity` rejects a pending decision whose deadline sits before the
+  calendar, so this step is what keeps the root valid across the week boundary.
+- `newsAndNarrative` raises the week's inbound events *inside* the transaction — they were
+  previously created by `CareerSession` after the scheduler had returned and after integrity had
+  passed — and holds `02` §7's job-market floor, moving a fired coach to seeking and offering them
+  a programme.
+
+**Unverified: neither has been compiled or run.** No Swift toolchain was available when they were
+written, so the focused proofs of inputs, events, determinism and downstream integrity that
+activation normally requires do not yet exist. `docs/STATUS.md` carries the same warning.

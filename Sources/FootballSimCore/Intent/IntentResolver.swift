@@ -11,7 +11,6 @@ public enum CoachIntent: Codable, Sendable, Equatable {
 }
 
 public enum IntentResolutionError: Error, Equatable {
-    case unresolvedMandatoryDecisions(count: Int)
     case recruitingUnavailableDuringPortal
     case tacticalPlanUnavailable
     case tacticalCalendarMismatch
@@ -160,11 +159,11 @@ public enum IntentResolver {
     public static func resolve(_ intent: CoachIntent, in state: GameState) throws -> ResolvedIntent {
         switch intent {
         case .advanceWeek:
-            guard state.pending.mandatoryDecisions.isEmpty else {
-                throw IntentResolutionError.unresolvedMandatoryDecisions(
-                    count: state.pending.mandatoryDecisions.count
-                )
-            }
+            // No gate. Advancing used to be refused while any obligation was pending, which made a
+            // week the smallest thing a player could finish and left an unanswered item able to
+            // lock a save. `02` §2.1 (amended 2026-08-12) replaces that with delegation: the
+            // scheduler's first step answers whatever elapsed with the staff recommendation and
+            // records the cost. See `WorldScheduler.expiringInboundEvents`.
             let transition = try WorldScheduler.advanceWeek(state)
             return ResolvedIntent(
                 state: transition.state,
@@ -275,22 +274,54 @@ public enum IntentResolver {
             guard request.calendar == state.calendar else {
                 throw IntentResolutionError.careerCalendarMismatch
             }
-            guard state.career.college != nil else {
+            // A coach between jobs has no controlled programme and still has a career to run —
+            // accepting the offer that ends that gap is the one action that must remain reachable
+            // (`02` §7). Resigning still requires a job to resign from, which its own guard covers.
+            guard state.career.college != nil
+                    || state.careerArc.currentJob != nil
+                    || !state.careerArc.opportunities.isEmpty else {
                 throw IntentResolutionError.careerArcUnavailable
             }
             var nextState = state
             let applied: Bool
             switch request.action {
             case let .acceptOpportunity(opportunityID):
+                let opportunity = nextState.careerArc.opportunities.first {
+                    $0.id == opportunityID
+                }
                 applied = nextState.careerArc.acceptOpportunity(
                     id: opportunityID,
                     at: request.calendar
                 )
-                if applied {
-                    nextState.career.clearCollege()
+                if applied, let opportunity {
+                    switch opportunity.tier {
+                    case .professional:
+                        nextState.career.clearCollege()
+                    case .college:
+                        // Taking a college job means controlling it. Built directly rather than
+                        // through `CareerControlSystem.startCollegeCareer`, which runs its own
+                        // integrity check — and that check would fail here, because the arc already
+                        // names the new college job while control has not caught up yet. The root
+                        // is validated once, below, when both halves agree.
+                        guard let programme = nextState.programmes[opportunity.organisationID],
+                              let coachID = programme.staffIDs.first(where: {
+                                  nextState.staff[$0]?.role == .headCoach
+                              }) else {
+                            throw IntentResolutionError.careerArcUnavailable
+                        }
+                        nextState.career.clearCollege()
+                        nextState.career.setCollege(CollegeCareerControl(
+                            coachID: coachID,
+                            programmeID: opportunity.organisationID,
+                            startedAt: request.calendar
+                        ))
+                    }
                 }
             case .resign:
                 applied = nextState.careerArc.resign(at: request.calendar)
+                if applied {
+                    nextState.career.clearCollege()
+                }
             }
             guard applied else { throw IntentResolutionError.careerArcUnavailable }
             let integrity = WorldIntegrity.check(nextState)

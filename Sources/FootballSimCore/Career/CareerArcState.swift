@@ -232,6 +232,35 @@ public struct CareerArcState: Codable, Sendable, Equatable {
         return true
     }
 
+    /// Moves a fired coach into the market.
+    ///
+    /// **Why this exists at all.** `markFired` used to be terminal: it set `.fired`, and both career
+    /// evaluators then guarded on `status != .fired` and returned forever, so nothing in the
+    /// repository could ever produce `.seeking` again. A fired save was permanently inert, which is
+    /// the dead end `02` §7 and D8 forbid in as many words. Firing is a transition, not an ending.
+    @discardableResult
+    public mutating func beginSeeking() -> Bool {
+        guard status == .fired, currentJob == nil else { return false }
+        status = .seeking
+        return true
+    }
+
+    /// Drops offers that can no longer be accepted, returning them so a caller can report them.
+    ///
+    /// An offer is spent the moment its deadline passes; keeping it would let `opportunities` fill
+    /// to its bound with offers `acceptOpportunity` already refuses, which is how a coach ends up
+    /// nominally in the market with nothing in it.
+    @discardableResult
+    public mutating func pruneOpportunities(
+        expiringBefore calendar: CalendarState
+    ) -> [CareerOpportunity] {
+        let expired = opportunities.filter { Self.occurs($0.expiresAt, before: calendar) }
+        guard !expired.isEmpty else { return [] }
+        let expiredIDs = Set(expired.map(\.id))
+        opportunities.removeAll { expiredIDs.contains($0.id) }
+        return expired
+    }
+
     @discardableResult
     public mutating func acceptOpportunity(
         id: UUID,
@@ -239,11 +268,12 @@ public struct CareerArcState: Codable, Sendable, Equatable {
     ) -> Bool {
         guard let index = opportunities.firstIndex(where: { $0.id == id }) else { return false }
         let opportunity = opportunities[index]
-        guard opportunity.tier == .professional,
-              !Self.occurs(calendar, before: opportunity.offeredAt),
+        guard !Self.occurs(calendar, before: opportunity.offeredAt),
               !Self.occurs(opportunity.expiresAt, before: calendar),
               jobHistory.count < Self.maximumJobHistory else { return false }
         if let currentJob {
+            // Leaving a job you still hold is a promotion; arriving from the market is not, and the
+            // history entry has already been written by whatever ended the previous job.
             jobHistory.append(CareerJobHistoryEntry(
                 job: currentJob,
                 endedAt: calendar,
@@ -252,7 +282,7 @@ public struct CareerArcState: Codable, Sendable, Equatable {
         }
         self.currentJob = CareerJob(
             organisationID: opportunity.organisationID,
-            tier: .professional,
+            tier: opportunity.tier,
             startedAt: calendar
         )
         opportunities.remove(at: index)
@@ -311,20 +341,48 @@ public struct CareerArcState: Codable, Sendable, Equatable {
     }
 }
 
+/// What a career evaluation did, for a caller that owns state the arc itself cannot reach.
+///
+/// `CareerArcState` knows about jobs; it does not know about `CareerControlState`, and a firing has
+/// to end both together or the world is left with a coach who lost their job and kept their
+/// programme. Returning the intent rather than mutating the root keeps the arc a value type and
+/// leaves the scheduler as the one place that writes the root.
+public struct CareerArcOutcome: Sendable, Equatable {
+    /// Set when a job ended: the organisation whose control must now be released.
+    public var vacatedOrganisationID: UUID?
+    public var eventPayloads: [DomainEventPayload]
+
+    public init(
+        vacatedOrganisationID: UUID? = nil,
+        eventPayloads: [DomainEventPayload] = []
+    ) {
+        self.vacatedOrganisationID = vacatedOrganisationID
+        self.eventPayloads = eventPayloads
+    }
+
+    public static let none = CareerArcOutcome()
+}
+
 public enum CareerArcSystem {
+    @discardableResult
     public static func evaluateWeek(
         after calendar: CalendarState,
         in state: GameState,
         arc: inout CareerArcState
-    ) {
+    ) -> CareerArcOutcome {
         guard calendar.week <= SharedRules.inSeasonWeeks,
               let control = state.career.college,
               let programme = state.programmes[control.programmeID],
-              arc.status != .fired else { return }
-        _ = arc.establishCollegeJob(
-            organisationID: programme.id,
-            at: control.startedAt
-        )
+              arc.status != .fired else { return .none }
+        var outcome = CareerArcOutcome()
+        if arc.currentJob == nil {
+            if arc.establishCollegeJob(organisationID: programme.id, at: control.startedAt) {
+                outcome.eventPayloads.append(.coachJobStarted(
+                    organisationID: programme.id,
+                    tier: .college
+                ))
+            }
+        }
         guard arc.status == .employed,
               let game = state.competition.currentSchedule.games.first(where: {
                   $0.season == calendar.season
@@ -332,7 +390,7 @@ public enum CareerArcSystem {
                       && $0.result != nil
                       && ($0.homeID == programme.id || $0.awayID == programme.id)
               }),
-              let result = game.result else { return }
+              let result = game.result else { return outcome }
 
         let programmeScore: Int
         let opponentScore: Int
@@ -358,25 +416,40 @@ public enum CareerArcSystem {
             }
             return ($0, bias)
         }))
-        if arc.averageSupport < 12 {
-            _ = arc.markFired(at: calendar)
+        if arc.averageSupport < 12, arc.markFired(at: calendar) {
+            outcome.vacatedOrganisationID = programme.id
+            outcome.eventPayloads.append(.coachJobEnded(
+                organisationID: programme.id,
+                tier: .college,
+                reason: .fired
+            ))
         }
+        return outcome
     }
 
+    @discardableResult
     public static func evaluateSeasonEnd(
         after calendar: CalendarState,
         in state: GameState,
         arc: inout CareerArcState
-    ) {
+    ) -> CareerArcOutcome {
         guard calendar.week == SharedRules.inSeasonWeeks,
               let control = state.career.college,
               let programme = state.programmes[control.programmeID],
-              arc.status != .fired else { return }
-        _ = arc.establishCollegeJob(organisationID: programme.id, at: CalendarState(
-            season: calendar.season,
-            week: 1
-        ))
-        guard arc.status == .employed else { return }
+              arc.status != .fired else { return .none }
+        var outcome = CareerArcOutcome()
+        if arc.currentJob == nil {
+            if arc.establishCollegeJob(
+                organisationID: programme.id,
+                at: CalendarState(season: calendar.season, week: 1)
+            ) {
+                outcome.eventPayloads.append(.coachJobStarted(
+                    organisationID: programme.id,
+                    tier: .college
+                ))
+            }
+        }
+        guard arc.status == .employed else { return outcome }
 
         let ranking = state.competition.rankings[.college] ?? state.programmes.ids
         let rank = ranking.firstIndex(of: programme.id) ?? max(0, ranking.count - 1)
@@ -397,8 +470,15 @@ public enum CareerArcSystem {
         }))
 
         if arc.averageSupport < 20 {
-            _ = arc.markFired(at: calendar)
-            return
+            if arc.markFired(at: calendar) {
+                outcome.vacatedOrganisationID = programme.id
+                outcome.eventPayloads.append(.coachJobEnded(
+                    organisationID: programme.id,
+                    tier: .college,
+                    reason: .fired
+                ))
+            }
+            return outcome
         }
         guard performance >= 75, arc.averageSupport >= 70,
               let team = state.proTeams.values
@@ -407,14 +487,14 @@ public enum CareerArcSystem {
                     ? $0.id.uuidString < $1.id.uuidString
                     : $0.prestige > $1.prestige
                 })
-                .first else { return }
+                .first else { return outcome }
         let opportunityID = SeededRandom.derive(
             from: state.league.seed,
             scope: .personnel,
             identifier: team.id
         ) ^ UInt64(calendar.season)
         var rng = SeededRandom(seed: opportunityID)
-        _ = arc.addOpportunity(CareerOpportunity(
+        let opportunity = CareerOpportunity(
             id: rng.uuid(),
             organisationID: team.id,
             tier: .professional,
@@ -422,6 +502,71 @@ public enum CareerArcSystem {
             expiresAt: CalendarState(season: calendar.season + 1, week: 2),
             prestige: team.prestige,
             rationale: .sustainedCollegeSuccess
+        )
+        if arc.addOpportunity(opportunity) {
+            outcome.eventPayloads.append(.careerOpportunityOffered(
+                opportunityID: opportunity.id,
+                organisationID: opportunity.organisationID,
+                tier: opportunity.tier
+            ))
+        }
+        return outcome
+    }
+
+    /// D8's floor, as a mechanism: a coach out of work is never left with nothing to accept.
+    ///
+    /// Runs for a coach who is out of a job — `.fired` moves to `.seeking` here, which is the only
+    /// place that transition happens — and offers a programme when the market is empty. The offer is
+    /// deliberately downward: the least prestigious programme that is not the one that just sacked
+    /// them, which is the lower-league restart the research says players author for themselves when
+    /// a game does not supply it.
+    @discardableResult
+    public static func ensureMarketFloor(
+        at calendar: CalendarState,
+        in state: GameState,
+        arc: inout CareerArcState
+    ) -> CareerArcOutcome {
+        _ = arc.beginSeeking()
+        guard arc.status == .seeking, arc.currentJob == nil else { return .none }
+        guard arc.opportunities.isEmpty else { return .none }
+        let lastOrganisationID = arc.jobHistory.last?.job.organisationID
+        guard let programme = state.programmes.values
+            .filter({ $0.id != lastOrganisationID })
+            .sorted(by: { $0.prestige == $1.prestige
+                ? $0.id.uuidString < $1.id.uuidString
+                : $0.prestige < $1.prestige
+            })
+            .first else { return .none }
+        var rng = SeededRandom(seed: SeededRandom.derive(
+            from: SeededRandom.derive(
+                from: SeededRandom.derive(
+                    from: state.league.seed,
+                    scope: .season,
+                    ordinal: calendar.season
+                ),
+                scope: .week,
+                ordinal: calendar.week
+            ),
+            scope: .personnel,
+            identifier: programme.id
         ))
+        let opportunity = CareerOpportunity(
+            id: rng.uuid(),
+            organisationID: programme.id,
+            tier: .college,
+            offeredAt: calendar,
+            expiresAt: CalendarState(
+                season: calendar.season,
+                week: min(SharedRules.inSeasonWeeks, calendar.week + 4)
+            ),
+            prestige: programme.prestige,
+            rationale: .staffRecommendation
+        )
+        guard arc.addOpportunity(opportunity) else { return .none }
+        return CareerArcOutcome(eventPayloads: [.careerOpportunityOffered(
+            opportunityID: opportunity.id,
+            organisationID: opportunity.organisationID,
+            tier: opportunity.tier
+        )])
     }
 }
