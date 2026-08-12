@@ -1,33 +1,94 @@
 # Claude build handoff
 
-Checkpoint: M6 professional management plus the first M7 living-world/history slice are committed
-on the current branch. Continue from this checkpoint; do not redo the green focused gates.
+Checkpoint: M7 is complete except its narrative slice. Continue from here; do not redo the green
+gates below.
 
-Verified release gates:
+**`docs/STATUS.md` is the truth.** This file is a pointer, not a substitute — the previous version of
+it listed only focused gates and a reader reasonably took that as "the build is green". It was not:
+the full suite was red. Read STATUS before believing any summary, including this one.
 
-- `--pro-market`: 12 tests / 58 checks
-- `--history-read-model`: 4 tests / 24 checks
-- `--portal-scheduler`: 9 tests / 27,823 checks
-- `--architecture-only`: 25 tests / 222 checks
-- `--core-contracts`: 144 tests / 883 checks
-- strict Swift-5 concurrency build and `git diff --check`
+## Verified, on 2026-08-12
 
-Implemented in this checkpoint:
+`./scripts/verify.sh` — **648 tests / 747,291 checks, exit 0**, debug build and release suite. This
+is the whole default run, not a selection.
 
-- sourced professional contract seasons and deterministic expiry
-- practice-squad, trade, waiver, draft/free-agent, and professional roster AI paths
-- rebuildable deterministic history/search projection
-- bounded rivalry-meeting strengthening in the existing relationships scheduler step
-- current M6/M7 status and Future Simulation Contract updates
+Focused gates, each measured rather than estimated:
 
-Next work:
+- `--core-contracts` 152 / 976
+- `--architecture-only` 25 / 222
+- `--generation-only` 34 / 39,143
+- `--legal-only` 22 / 141
+- `--history-archive` 20 / 147
+- `--coaching-tree` 11 / 25
+- `--rivalry-order` 7 / 11
+- `--portal-scheduler` 9 / 27,823 (two-season byte-identical replay)
+- `--m7-gate` 1 / 65, in release, 30 seasons
 
-1. Complete M7: live `Programme.rivalIDs` reordering after rivalry intensity changes, durable cold
-   event bodies, generated news, coaching-tree/history projections, and the 30-season history gate.
-2. Run the full both-tier professional soak and cap-vs-rating calibration.
-3. Continue M8 UI/accessibility/simulator work only after its production-UI entry gate.
-4. Before final product shipping, run the repository-wide confidence review and rewrite tournament.
+Root schema is **11**.
 
-Keep Swift 5 language mode and TestKit. Preserve the actor-owned `CareerSession`, sealed portal
+## What this checkpoint added
+
+- **M7A** — rival lists reorder from the intensity their meetings earned, through the same ranking
+  that seeded them; `CoachingTreeReadModel` derives mentor-to-disciple from bounded staff careers,
+  rebuilt rather than persisted.
+- **M7B** — the historical aggregate archive. An event leaving the bounded hot journal folds into a
+  `SeasonHistoryDigest` for its own season: an archived count plus a bounded, *ranked* sample of
+  bodies. `digest(forSeason:)` surfaces a past season without reading the journal or the save.
+- **Save compression** — `03b` §4's reserved flags bit, claimed. **306.9 MB → 36.0 MB at season 30**,
+  8.5x, with season 1 inside the original 8 MB ceiling.
+- **The legal guardrail now refuses by name-kind**, after the owner permitted real locations.
+- **The personnel UI slice** with four proofs recaptured from current source.
+
+## Red on purpose — read these before touching the professional tier
+
+Neither is in the default run, so `verify.sh` is unaffected. Both name a real defect.
+
+- **`--pro-soak`** — the both-tier professional soak the last handoff listed as open. It had never
+  been written. It asserts cap and roster legality per season for all 32 teams and a byte-identical
+  replay, and it fails because **the professional tier is inert**: rosters bootstrap at 53/53 and
+  never turn over, and no professional holds a contract, so nothing expires and nobody reaches free
+  agency. The 224-prospect draft class generated every season can never be taken.
+- **`--pro-draft-probe`** — reaches the draft directly and reports the thrown reason in seconds
+  rather than twelve minutes.
+- **`--pro-week-walk`** — bisector: reports the exact week a professional step refuses.
+
+**The blocker is FSC-013, not a missing cut policy.** Giving bootstrap professionals contracts was
+tried and reverted. It works in isolation — 317 expire, cap legal, first draft pick succeeds — and
+fails in the scheduler at season 0 week 21, because whole-root integrity validates recorded game
+participants against *current* rosters. Releasing 315 players while that season's results are live
+invalidates every game they played in. FSC-013 named its own activation trigger as "no later than
+professional trades"; the real trigger is earlier — contract expiry at the final week of a live
+season — and the entry now says so. **Professional turnover needs dated roster-tenure history
+first.**
+
+The headless offseason driver is already built and waiting for it: `ProRosterAISystem` signs while
+signings are legal, begins the draft when a pass signs nobody, and picks in draft order, pausing only
+when the controlled professional team is on the clock (`02` §4.2, amended 2026-08-12).
+
+## Next work
+
+1. **M7's last limb — generated news and cross-season narrative.** Blocked on canon: `02` does not
+   specify it, and the doc-first rule says it is answered in canon before it is built. It composes
+   over M7B's archive, which exists.
+2. **Programme evolution and conference movement** — M7 deliverables in
+   `docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md`, unspecified in canon.
+3. **M8 production UI** — gated. Its entry gate needs Coaching HQ, Recruiting Board and Match Day
+   approved together as interactive native-size proofs at 31/40 or better against `04b`. A second
+   session owns the design work.
+4. **FSC-013 dated roster-tenure history** — unblocks the professional tier.
+5. **M9** — where `docs/roadmap/06` puts final calibration, save migrations, performance and the long
+   soak. **P4's match calibration is still failing at 5–6 of 24 bands**, and STATUS is explicit that
+   the gap is model thinness — no per-drive accounting, a thin run game — not constants, so more
+   search over the existing six will not move it.
+
+## Standing constraints
+
+Swift 5 language mode and TestKit. Preserve the actor-owned `CareerSession`, sealed portal
 transactions, copied-root validation, deterministic event ordering, and no SwiftUI access to
 `GameState`.
+
+**Two things that cost real time here.** A second session commits to this branch: stage by explicit
+path, never `git add -A`, and if its uncommitted work does not compile, build in a worktree rather
+than touching its files. And **run the full suite before claiming green** — focused gates missed a
+determinism pin that hashed the save envelope, so compression silently moved it; the full run is what
+caught it.
