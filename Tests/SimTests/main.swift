@@ -49,6 +49,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runSeededRandomTests()
     runSeedDerivationTests()
     runContractTests()
+    runDesignContractTests()
     runSaveEnvelopeTests()
     runRulesTests()
     runModelTests()
@@ -76,6 +77,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runCompetitionTests()
 } else if CommandLine.arguments.contains("--generation-only") {
     runGenerationTests()
+} else if CommandLine.arguments.contains("--design-contracts") {
+    runDesignContractTests()
 } else if CommandLine.arguments.contains("--architecture-only") {
     runArchitectureTests()
 } else if CommandLine.arguments.contains("--m2-soak") {

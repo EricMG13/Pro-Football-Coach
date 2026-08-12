@@ -468,9 +468,13 @@ grid in three different contexts. What is never permitted is an unbounded class.
 | **Obligation** (`AgendaRow`, registry 19) | 2 | `checkmark.circle.fill` (complete), `person.badge.clock` (delegated) | Week plan, inbox, any obligation list |
 | **Session type** (week grid) | 5 | `figure.run`, `film`, `airplane`, `football`, `moon.zzz` | Practice Plan week grid only |
 | **Broadcast marks** (§9) | 2 | possession wedge, key-moment mark | Match Day chrome only; both carry a printed or spoken value beside them, never count alone |
-| **Control furniture** | not a learned class | `chevron.*`, `magnifyingglass`, `line.3.horizontal.decrease`, `rectangle.3.group`, `pause.fill`, `forward.end.fill`, `speedometer`, `plus`, `xmark` | Navigation and controls; every one carries a visible or accessible label, so none is a symbol the player must learn. §6.3 anticipates the icon-first utilities (inspect film, delegate, pause, speed, tactical view) and requires their accessible names to stay explicit |
+| **Empty-state marks** (`EmptyState`, registry 23) | 6 | `person.3`, `person.crop.rectangle`, `list.number`, `checkmark.circle` | Empty and unavailable states only. Enumerated but **not a learned class**: every empty state carries a title and a description sentence, so the mark orients and the words inform. Bounded anyway, because an unbounded class is what this table exists to prevent |
+| **Control furniture** | not a learned class | `chevron.*`, `magnifyingglass`, `line.3.horizontal.decrease`, `rectangle.3.group`, `pause.fill`, `forward.end.fill`, `speedometer`, `checkmark`, `person.2`, `plus`, `xmark` | Navigation and controls; every one carries a visible or accessible label, so none is a symbol the player must learn. §6.3 anticipates the icon-first utilities (inspect film, delegate, pause, speed, tactical view) and requires their accessible names to stay explicit |
 
-**Total learned symbols: 23** (12 status + 2 change + 2 obligation + 5 session + 2 broadcast). Control furniture
+**Total learned symbols: 23** (12 status + 2 change + 2 obligation + 5 session + 2 broadcast). The
+last two rows are **capped but not learned**: a control is read from its label and an empty state
+from its title and description, so neither adds to what the player must recall. They are enumerated
+and bounded regardless, because an unbounded class is the leak this table exists to detect. Control furniture
 is excluded by the rule above — a marked control is read from its label, not recalled from a
 vocabulary. **The 21 is stated so it can be argued with; it is the number the owner is agreeing to
 when a class grows.** Filled and unfilled variants of one symbol are one member: `hand.raised.fill`

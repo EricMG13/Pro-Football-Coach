@@ -1,0 +1,283 @@
+import Foundation
+import ProFootballCoachUI
+
+// The M8 production-UI entry gate, as tests (05, phase P11a).
+//
+// Every assertion here reads its expectation out of `docs/04-UX-AND-DESIGN-SYSTEM.md` at run time
+// rather than restating it. A test that hard-codes the twelve status symbols is a second copy of
+// canon that drifts silently; one that parses the table fails the day canon and the tree disagree,
+// which is the only reason to write it.
+//
+// The reference sheets shipped with every contract block self-reporting its own compliance, and the
+// 2026-08-12 proof review found the predictable result: a column count that did not match its own
+// drawing, a verified-sizes table that grew an unverified row, a symbol budget that only summed
+// across files. Gap G-17 is this file's reason to exist — where a claim is mechanically checkable,
+// it gets mechanically checked.
+//
+// Each scan enumerates its file set by walking a directory, per `CLAUDE.md`'s coverage-boundary
+// rule, and each ships a self-test that plants an offender and asserts the scan catches it. A scan
+// that has never failed is not known to be a scan.
+
+// MARK: - Canon readers
+
+private func canonText() -> String {
+    let url = packageRoot().appendingPathComponent("docs/04-UX-AND-DESIGN-SYSTEM.md")
+    return (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+}
+
+/// Every six-digit hex `04` section 6.1 states, upper-cased and without the leading hash.
+///
+/// The section holds the production values, the field grammar and the synthetic team trio; a sheet
+/// or a view may name any of them and nothing else.
+private func canonHexValues(_ canon: String) -> Set<String> {
+    Set(matches(of: "#([0-9A-Fa-f]{6})\\b", in: canon).map { $0.uppercased() })
+}
+
+/// The symbol register in `04` section 6.6, as class name to (cap, members).
+///
+/// Parses the table rows rather than the prose: a row is `| **Name** (…) | cap | `a`, `b` | where |`.
+/// The Broadcast row names its marks in words rather than as SF Symbols, so it contributes a cap and
+/// no members, which is correct — a drawn wedge is not a symbol literal a scan can find.
+private func canonSymbolClasses(_ canon: String) -> [(name: String, cap: Int, members: Set<String>)] {
+    var classes: [(String, Int, Set<String>)] = []
+    for line in canon.split(separator: "\n", omittingEmptySubsequences: false) {
+        let row = String(line)
+        guard row.hasPrefix("| **"), row.contains("|") else { continue }
+        let cells = row.split(separator: "|", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        guard cells.count >= 4 else { continue }
+        let name = cells[1].replacingOccurrences(of: "*", with: "")
+        guard let cap = Int(cells[2]) else { continue }   // "not a learned class" has no cap
+        let members = Set(matches(of: "`([a-z][a-zA-Z0-9.]*)`", in: cells[3]))
+        classes.append((name, cap, members))
+    }
+    return classes
+}
+
+/// Regex helper returning the first capture group of every match.
+private func matches(of pattern: String, in text: String) -> [String] {
+    guard let expression = try? NSRegularExpression(pattern: pattern) else { return [] }
+    let range = NSRange(text.startIndex..., in: text)
+    return expression.matches(in: text, range: range).compactMap { match in
+        guard match.numberOfRanges > 1,
+              let captured = Range(match.range(at: 1), in: text) else { return nil }
+        return String(text[captured])
+    }
+}
+
+private func designSheets() -> [(name: String, text: String)] {
+    let root = packageRoot()
+    let names = (try? FileManager.default.contentsOfDirectory(atPath: root.path))?
+        .filter { $0.hasSuffix("-v3.dc.html") }
+        .sorted() ?? []
+    return names.compactMap { name in
+        guard let text = try? String(contentsOf: root.appendingPathComponent(name), encoding: .utf8)
+        else { return nil }
+        return (name: name, text: text)
+    }
+}
+
+// MARK: - The suite
+
+func runDesignContractTests() {
+    let canon = canonText()
+
+    suite("Orientation policy") {
+        // CLAUDE.md has claimed since 2026-08-10 that landscape-only is "declared in App/project.yml
+        // and asserted by OrientationPolicyTest". The declaration was real; the test was not, and
+        // nothing noticed for two days. G-09.
+        test("the app declares landscape-only and never a portrait orientation") {
+            let path = packageRoot().appendingPathComponent("App/project.yml")
+            guard let yaml = try? String(contentsOf: path, encoding: .utf8) else {
+                expect(false, "App/project.yml is unreadable at \(path.path)")
+                return
+            }
+
+            let orientationLines = yaml.split(separator: "\n").map(String.init).filter {
+                $0.contains("UISupportedInterfaceOrientations") || $0.contains("UIInterfaceOrientation")
+            }
+            expect(!orientationLines.isEmpty,
+                   "project.yml declares no supported orientations, so the platform picks for us")
+
+            let declaration = orientationLines.joined(separator: "\n")
+            expect(declaration.contains("LandscapeLeft") && declaration.contains("LandscapeRight"),
+                   "both sensor orientations are binding (04 section 7): \(declaration)")
+            expect(!declaration.contains("Portrait"),
+                   "portrait is not a supported orientation (owner decision 2026-08-10): \(declaration)")
+        }
+
+        test("the scan would notice a portrait orientation being added") {
+            let planted = """
+            INFOPLIST_KEY_UISupportedInterfaceOrientations: >-
+              UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft
+            """
+            expect(planted.contains("Portrait"),
+                   "the predicate the real assertion uses must catch a planted portrait value")
+        }
+    }
+
+    suite("Design token sync") {
+        // G-07's test half. The values were written back into 04 section 6.1 on 2026-08-12; nothing
+        // stopped code and canon diverging the next day.
+        test("every colour DesignTokens.swift ships is a value 04 section 6.1 states") {
+            let canonValues = canonHexValues(canon)
+            expect(canonValues.count >= 30,
+                   "parsed only \(canonValues.count) hex values from 04 section 6.1 — the parser, "
+                       + "not the tokens, is what failed")
+
+            let tokenFiles = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .filter { $0.path.hasSuffix("DesignTokens.swift") }
+            expect(!tokenFiles.isEmpty, "DesignTokens.swift not found under Sources/ProFootballCoachUI")
+
+            for file in tokenFiles {
+                let shipped = Set(matches(of: "0x([0-9A-Fa-f]{6})\\b", in: file.text)
+                    .map { $0.uppercased() })
+                let undeclared = shipped.subtracting(canonValues).sorted()
+                expect(undeclared.isEmpty,
+                       "\(file.path) ships \(undeclared.count) colour(s) canon does not hold: "
+                           + "\(undeclared.joined(separator: ", ")). Write them into 04 section 6.1 "
+                           + "with their measured ratios, or remove them.")
+            }
+        }
+
+        test("the scan would notice a colour that canon does not hold") {
+            let canonValues = canonHexValues(canon)
+            let planted = "public static let rogue = ColorValue(hex: 0xABCDEF)"
+            let found = Set(matches(of: "0x([0-9A-Fa-f]{6})\\b", in: planted).map { $0.uppercased() })
+            expect(!found.subtracting(canonValues).isEmpty,
+                   "a planted off-canon colour must not be reported as declared")
+        }
+    }
+
+    suite("Symbol register") {
+        // G-08. Every sheet priced its symbol spend locally and then asserted global compliance,
+        // which no sheet can know — the P1 the 2026-08-12 review named. 04 section 6.6 holds the
+        // register; this asserts the tree against it.
+        test("04 section 6.6 states a register this test can read") {
+            let classes = canonSymbolClasses(canon)
+            expect(classes.count >= 4,
+                   "parsed \(classes.count) symbol classes from 04 section 6.6; the register is the "
+                       + "single place the totals are held and it must be machine-readable")
+            for symbolClass in classes {
+                expect(symbolClass.members.count <= symbolClass.cap,
+                       "class \(symbolClass.name) enumerates \(symbolClass.members.count) members "
+                           + "against its own cap of \(symbolClass.cap)")
+            }
+        }
+
+        test("every SF Symbol the UI draws is a registered member") {
+            let classes = canonSymbolClasses(canon)
+            let registered = classes.reduce(into: Set<String>()) { $0.formUnion($1.members) }
+            // Control furniture is not a learned class: 04 section 6.6 lists it with no cap, so its
+            // members parse into no class. They are still legitimate, so read them from the row.
+            let furniture = Set(matches(of: "`([a-z][a-zA-Z0-9.]*)`",
+                                        in: canon.split(separator: "\n")
+                                            .map(String.init)
+                                            .first { $0.contains("Control furniture") } ?? ""))
+            let permitted = registered.union(furniture)
+            expect(permitted.count >= 12, "the register parsed as \(permitted.count) symbols")
+
+            for file in swiftFiles(under: "Sources/ProFootballCoachUI") {
+                // systemName: "x" is how SwiftUI names a symbol; that is the call this looks for.
+                let drawn = Set(matches(of: "system(?:Name|Image):\\s*\"([^\"]+)\"", in: file.text))
+                let unregistered = drawn.subtracting(permitted)
+                    // A filled variant is the same member as its base (04 section 6.6).
+                    .filter { !permitted.contains($0.replacingOccurrences(of: ".fill", with: "")) }
+                    .sorted()
+                expect(unregistered.isEmpty,
+                       "\(file.path) draws \(unregistered.count) symbol(s) the 04 section 6.6 "
+                           + "register does not hold: \(unregistered.joined(separator: ", ")). "
+                           + "A symbol outside the register is a finding under 04 section 4.5, "
+                           + "not a licence — map it into a class or drop it.")
+            }
+        }
+
+        test("the scan would notice an unregistered symbol") {
+            let classes = canonSymbolClasses(canon)
+            let registered = classes.reduce(into: Set<String>()) { $0.formUnion($1.members) }
+            let planted = #"Image(systemName: "flame.circle.fill")"#
+            let drawn = Set(matches(of: "systemName:\\s*\"([^\"]+)\"", in: planted))
+            expect(!drawn.subtracting(registered).isEmpty,
+                   "a planted unregistered symbol must not be reported as registered")
+        }
+    }
+
+    suite("Design reference sheets") {
+        // G-17. The sheets are the definitive design references (04 section 6.5), so the claims they
+        // make about themselves are load-bearing. These are the ones a machine can settle.
+        test("all eight sheets are present and marked") {
+            let sheets = designSheets()
+            expectEqual(sheets.count, 8, "expected the eight sheets named in 04 section 6.5")
+            for sheet in sheets {
+                let group = sheet.name.replacingOccurrences(of: "-v3.dc.html", with: "")
+                let firstLine = sheet.text.split(separator: "\n", maxSplits: 1).first.map(String.init) ?? ""
+                expectEqual(firstLine.trimmingCharacters(in: .whitespaces),
+                            "<!-- @dsCard group=\"\(group)\" -->",
+                            "\(sheet.name) must open with its @dsCard marker")
+            }
+        }
+
+        test("no sheet reaches outside itself") {
+            // Zero third-party anything is owner-fixed, and a sheet that loads a CDN font is a
+            // dependency the design system cannot ship.
+            for sheet in designSheets() {
+                for (pattern, label) in [("<script", "a script"),
+                                         ("https?://", "an external URL"),
+                                         ("@font-face", "a web font"),
+                                         ("<img", "an image")] {
+                    let hits = matches(of: "(\(pattern))", in: sheet.text).count
+                    expectEqual(hits, 0, "\(sheet.name) contains \(label)")
+                }
+            }
+        }
+
+        test("no sheet quotes a contrast ratio canon does not state") {
+            // The one claim most worth checking: a plausible figure sitting in a row of sourced ones
+            // inherits their authority. Only prose counts — CSS carries line-heights and the week
+            // grid carries dose multipliers, and neither is a contrast claim.
+            let canonRatios = Set(matches(of: "\\b(\\d{1,2}\\.\\d{2})\\b", in: canon))
+            expect(canonRatios.count >= 40,
+                   "parsed \(canonRatios.count) ratios from canon; the parser is what failed")
+
+            for sheet in designSheets() {
+                var prose = sheet.text
+                for pattern in ["<style\\b[\\s\\S]*?</style>", "style\\s*=\\s*\"[^\"]*\"",
+                                "[x×]\\s*\\d\\.\\d{2}"] {
+                    prose = prose.replacingOccurrences(of: pattern, with: " ",
+                                                       options: .regularExpression)
+                }
+                let quoted = Set(matches(of: "\\b(\\d{1,2}\\.\\d{2})\\b", in: prose))
+                let invented = quoted.subtracting(canonRatios)
+                    .filter { (1.0...21.0).contains(Double($0) ?? 0) }
+                    .sorted()
+                expect(invented.isEmpty,
+                       "\(sheet.name) quotes \(invented.count) contrast figure(s) not in 04 "
+                           + "section 6.1: \(invented.joined(separator: ", ")). Ratios are quoted "
+                           + "from canon, never computed at authoring time.")
+            }
+        }
+
+        test("no sheet carries an emoji or a real-world identity") {
+            // The legal guardrail is absolute and the sheets are the artefact most likely to reach
+            // for a familiar name for realism. No emoji is a repo-wide convention.
+            for sheet in designSheets() {
+                let emoji = sheet.text.unicodeScalars.filter {
+                    (0x1F300...0x1FAFF).contains($0.value) || (0x2600...0x27BF).contains($0.value)
+                }
+                expect(emoji.isEmpty, "\(sheet.name) contains an emoji")
+
+                expect(sheet.text.contains("pending generator output"),
+                       "\(sheet.name) must label its synthetic identities")
+            }
+        }
+
+        test("the sheet scan would notice a script and an invented ratio") {
+            let planted = "<p>ratio 7.77</p><script>alert(1)</script>"
+            expectEqual(matches(of: "(<script)", in: planted).count, 1,
+                        "a planted script tag must be caught")
+            let canonRatios = Set(matches(of: "\\b(\\d{1,2}\\.\\d{2})\\b", in: canon))
+            expect(!canonRatios.contains("7.77"),
+                   "the planted ratio must not coincidentally exist in canon")
+        }
+    }
+}
