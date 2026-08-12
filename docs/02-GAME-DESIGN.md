@@ -143,6 +143,44 @@ does not hold, and stops at the one they do:
 
 Falsifier: `--pro-soak` fails if a season passes with no `proDraftPick` event.
 
+### 4.2a Roster turnover — what makes beats 1 and 2 real, added 2026-08-12
+
+The driver above is necessary and was not sufficient, and both gates stayed red to say so: bootstrap
+filled every professional roster to exactly 53/53 and issued **no contracts**, so nothing expired,
+nobody reached free agency, and the draft's first pick hit `activeRosterFull`. Beats 1 and 2 were
+prose with nothing behind them.
+
+**Two pressures, and conflating them is what left this stuck.** Headcount and money are different
+constraints with different mechanisms, and "what forces cuts to 53" is the wrong question for the
+first one:
+
+1. **Headcount is freed by expiry and retirement — beat 1.** This is the turnover engine. A roster
+   drops below 53 because contracts ended, not because anyone was cut. It is what makes room for
+   free agency and the draft, and it is why beat 1 comes first.
+2. **Money is enforced by the cap-compliance date — beat 2.** Cuts happen when the cap binds. A
+   team at 48 players and over the cap still cuts; a team at 53 and comfortably under does not.
+
+**Bootstrap issues contracts, with a staggered term spread.** Every bootstrapped professional gets
+a contract whose remaining years are drawn deterministically so that **roughly a quarter of each
+roster reaches expiry each season**. Without this the league has no expiries until the first
+contract signed in play runs out, which is several seasons of a dead market; with a flat term every
+roster expires at once, which is a cliff rather than turnover. Salaries are rating-derived and the
+bootstrapped total must be cap-legal at generation, in the same way team colours must pass contrast
+at generation rather than being fixed up later.
+
+**The draft can never deadlock.** Even with both pressures, a team can reach its pick full. A team
+on the clock with a full active roster releases its lowest-value player whose money is not
+guaranteed, and makes the pick. A draft that cannot make a pick is a bug, never a legal state.
+
+**Falsifiers, instrumented in advance.**
+
+- `--pro-soak` fails if a season passes with no contract reaching expiry, or if no player reaches
+  free agency by way of one.
+- `--pro-draft-probe` fails if any pick is refused for `activeRosterFull`. That error is now
+  unreachable by construction, so its appearance falsifies the deadlock guard.
+- The bootstrapped league is cap-legal for all 32 teams at season 1, asserted at generation.
+- Expiry is deterministic: the same seed produces the same expiry schedule across processes.
+
 ### 4.2b The news feed — added 2026-08-12
 
 The living world reports itself. `DomainEventPayload` already fixes the mechanism — "Presentation
