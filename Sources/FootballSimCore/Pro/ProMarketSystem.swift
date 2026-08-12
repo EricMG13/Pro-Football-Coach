@@ -420,11 +420,32 @@ public enum ProMarketSystem {
         let nextSeason = calendar.season + 1
         let candidates = state.proTeams.values
             .sorted { $0.id.uuidString < $1.id.uuidString }
-            .flatMap { team in
-                (team.rosterIDs + team.practiceSquadIDs).compactMap { playerID -> (UUID, UUID)? in
-                    guard let contract = state.players[playerID]?.contract,
+            .flatMap { team -> [(UUID, UUID)] in
+                let owned = team.rosterIDs + team.practiceSquadIDs
+                // A 53-man roster carries exactly one kicker and one punter, so expiring contracts
+                // blindly leaves a team with no playable body at that position — and this function's
+                // own integrity check then refuses the root it just built. That was latent until a
+                // generated world began issuing contracts: nothing ever expired, so nothing ever hit
+                // it.
+                //
+                // The last body at a position keeps its deal. That is what a club does with its only
+                // kicker, and it keeps the root valid at every step of an offseason instead of only
+                // once free agency and the draft have refilled it.
+                var remainingByPosition: [Position: Int] = [:]
+                for playerID in owned {
+                    guard let position = state.players[playerID]?.position else { continue }
+                    remainingByPosition[position, default: 0] += 1
+                }
+                return owned.compactMap { playerID -> (UUID, UUID)? in
+                    guard let player = state.players[playerID],
+                          let contract = player.contract,
                           let signedSeason = contract.signedSeason,
                           nextSeason >= signedSeason + contract.years else { return nil }
+                    let minimum = SharedRules.minimumPlayableRosterByPosition[player.position] ?? 0
+                    guard remainingByPosition[player.position, default: 0] > minimum else {
+                        return nil
+                    }
+                    remainingByPosition[player.position, default: 0] -= 1
                     return (team.id, playerID)
                 }
             }

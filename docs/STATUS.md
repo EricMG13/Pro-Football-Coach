@@ -519,7 +519,35 @@ controlled professional team is on the clock. Before promotion no professional t
 it runs to completion unattended. Focused gates are unmoved by it — core contracts **147 / 969**,
 architecture **25 / 222**, pro market **12 / 58**, pro management **6 / 17**.
 
-**It is necessary and not sufficient, and both gates stay red to say so.** The driver cannot fire
+**Roster turnover was attempted on 2026-08-12 and reverted, and the attempt is the finding.**
+Giving bootstrap professionals staggered contracts is the obvious unlock: `expireContracts` already
+removes expiring players from rosters *and* adds them to free agency, and it is already wired into
+the final-week rollover, so contracts alone would open both roster seats and a free-agent pool. It
+worked in isolation - 317 contracts expired, cap legal at 146.35 M of 255 M, and the probe reported
+**"first pick succeeded."**
+
+It then failed in the scheduler, at season 0 week 21, and `--pro-week-walk` names why:
+
+```text
+wouldExpire=315/512  validAfter=false
+issues=Game ... violates its tier, week, participant, or result contract.
+```
+
+**That is FSC-013 firing exactly as written.** Whole-root integrity validates every recorded game
+participant against the roster they belong to *now*, which is truthful only while ownership is stable
+within a live season. Releasing 315 players in the final week of season 0 invalidates every game they
+played in. FSC-013 registers the fix as dated roster-tenure history and names its activation trigger
+as "the first in-season roster-movement system, no later than professional trades" — **the real
+trigger is earlier than that: contract expiry at the final week of a live season.** The entry is
+updated to say so.
+
+Two things were kept from the attempt. `expireContracts` now refuses to expire the last playable body
+at a position, because a 53-man roster carries exactly one kicker and one punter and blind expiry left
+teams without one — a latent defect that could never fire while no professional held a contract.
+And `--pro-week-walk` is a fast bisector that reports the exact week a professional step refuses,
+which turned a twelve-minute opaque soak failure into a named cause in seconds.
+
+**Both gates stay red to say so.** The driver cannot fire
 while every roster sits at 53/53. The remaining work is roster turnover, and it is a design question
 canon only half answers: §4.2 lists "retirements and expiring contracts" and "cap compliance — a hard
 date the player must be legal by" as the first two offseason beats, but bootstrap issues no contracts

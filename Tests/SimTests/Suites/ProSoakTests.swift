@@ -174,8 +174,30 @@ private func proEventName(_ payload: DomainEventPayload) -> String? {
 /// cannot spin the loop forever.
 func runProDraftProbeTests() {
     suite("Professional draft probe") {
-        test("the first draft pick of a bootstrapped world reports why it fails") {
+        test("a draft pick can be made once contracts have expired") {
+            // The sequence 02 section 4.2 states: expiring contracts first, then free agency, then
+            // the draft. Checking the draft at bootstrap - before anything has expired - asks the
+            // wrong question, because every roster is legitimately still full at 53.
             var state = GameState.bootstrap(seed: 96_003)
+            let rollover = CalendarState(season: 0, week: SharedRules.inSeasonWeeks)
+            state.calendar = rollover
+            state.league.week = rollover.week
+            let expiry = try ProMarketSystem.expireContracts(at: rollover, in: state)
+            state = expiry.state
+            expect(!expiry.expiredPlayerIDs.isEmpty,
+                   "no contract expired, so no roster seat ever opens")
+            // Expiry must leave a root the engine would accept at every step of an offseason, not
+            // only once free agency and the draft have refilled it. The last body at a position
+            // keeps its deal precisely so this holds.
+            expect(WorldIntegrity.check(state).isValid,
+                   "expiry left an invalid root: "
+                       + WorldIntegrity.check(state).issues.prefix(3)
+                           .map { "\($0)" }.joined(separator: " | "))
+            print("""
+            Pro expiry probe: expired=\(expiry.expiredPlayerIDs.count) \
+            ledger=\(state.proMarket.freeAgentIDs.count)/\(ProMarketState.maximumFreeAgentIDs) \
+            contractedRemaining=\(state.players.values.filter { $0.contract != nil }.count)
+            """)
             state = try ProMarketSystem.openOffseason(in: state)
             state = try ProMarketSystem.beginDraft(in: state)
 
@@ -203,6 +225,89 @@ func runProDraftProbeTests() {
                 """)
                 expect(false, "the first draft pick of a fresh world cannot be made: \(error)")
             }
+        }
+    }
+}
+
+/// Walks the scheduler a week at a time and reports the exact week a professional step refuses.
+func runProWeekWalkTests() {
+    suite("Professional week walk") {
+        test("every week of the first season advances") {
+            var state = GameState.bootstrap(seed: 96_004)
+            for step in 0..<(SharedRules.inSeasonWeeks + 2) {
+                let before = state.calendar
+                let phase = String(describing: state.proMarket.phase)
+                do {
+                    state = try WorldScheduler.advanceWeek(state).state
+                } catch {
+                    print("""
+                    Pro week walk: threw at step \(step) s\(before.season)w\(before.week) \
+                    phase=\(phase) error=\(error) \
+                    ledger=\(state.proMarket.freeAgentIDs.count)/\(ProMarketState.maximumFreeAgentIDs) \
+                    waivers=\(state.proMarket.waivers.count) \
+                    draftOrder=\(state.proMarket.draftOrder.count) \
+                    nextPick=\(state.proMarket.nextPick)/\(state.proMarket.draftClass.count) \
+                    issues=\(WorldIntegrity.check(state).issues.prefix(3).map { "\($0)" }.joined(separator: " | "))
+                    """)
+                    // Which of the final-week professional calls refuses, and why.
+                    do {
+                        let expiry = try ProMarketSystem.expireContracts(at: before, in: state)
+                        let report = WorldIntegrity.check(expiry.state)
+                        print("""
+                        Pro week walk: expireContracts ok, expired=\(expiry.expiredPlayerIDs.count) \
+                        validAfter=\(report.isValid) \
+                        issues=\(report.issues.prefix(3).map { "\($0)" }.joined(separator: " | "))
+                        """)
+                    } catch {
+                        // Replicate the guarded candidate set to see what the refused root looks
+                        // like, since the thrown error carries nothing.
+                        let nextSeason = before.season + 1
+                        var expiring: [UUID] = []
+                        for team in state.proTeams.values {
+                            let owned = team.rosterIDs + team.practiceSquadIDs
+                            var remaining: [Position: Int] = [:]
+                            for id in owned {
+                                guard let pos = state.players[id]?.position else { continue }
+                                remaining[pos, default: 0] += 1
+                            }
+                            for id in owned {
+                                guard let player = state.players[id],
+                                      let c = player.contract, let s = c.signedSeason,
+                                      nextSeason >= s + c.years else { continue }
+                                let minimum = SharedRules
+                                    .minimumPlayableRosterByPosition[player.position] ?? 0
+                                guard remaining[player.position, default: 0] > minimum else { continue }
+                                remaining[player.position, default: 0] -= 1
+                                expiring.append(id)
+                            }
+                        }
+                        var after = state
+                        for id in expiring { after.players.update(id) { $0.contract = nil } }
+                        for team in state.proTeams.values {
+                            after.proTeams.update(team.id) { copy in
+                                copy.rosterIDs.removeAll { expiring.contains($0) }
+                                copy.practiceSquadIDs.removeAll { expiring.contains($0) }
+                            }
+                        }
+                        let report = WorldIntegrity.check(after)
+                        print("""
+                        Pro week walk: expireContracts threw \(error) \
+                        wouldExpire=\(expiring.count)/\(ProMarketState.maximumFreeAgentIDs) \
+                        validAfter=\(report.isValid) \
+                        issues=\(report.issues.prefix(4).map { "\($0)" }.joined(separator: " | "))
+                        """)
+                    }
+                    do {
+                        _ = try ProMarketSystem.openOffseason(in: state)
+                        print("Pro week walk: openOffseason ok")
+                    } catch {
+                        print("Pro week walk: openOffseason threw \(error)")
+                    }
+                    expect(false, "advanceWeek threw at s\(before.season)w\(before.week): \(error)")
+                    return
+                }
+            }
+            expect(true)
         }
     }
 }

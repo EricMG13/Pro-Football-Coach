@@ -64,6 +64,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runProSoakTests()
 } else if CommandLine.arguments.contains("--pro-draft-probe") {
     runProDraftProbeTests()
+} else if CommandLine.arguments.contains("--pro-week-walk") {
+    runProWeekWalkTests()
 } else if CommandLine.arguments.contains("--legal-only") {
     runLegalTests()
 } else if CommandLine.arguments.contains("--competition-only") {
