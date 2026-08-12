@@ -140,7 +140,10 @@ Density is spent in five currencies: points, taps, working memory, learned symbo
 lines. A management screen may spend: one dominant object (at least 60% of the initial viewport) and
 at most two secondary regions; 24–28 pt table tracks with six to nine fact columns beside identity,
 further facts arriving as column sets rather than horizontal scroll; at most three status glyphs per
-row from a global vocabulary of at most twelve, each changing a decision; at most one verdict line
+row from the global status vocabulary of at most twelve, each changing a decision (that cap governs
+the **status** class; other closed symbol vocabularies are enumerated and capped separately in
+§6.6, and the total learned-symbol load is held there — a symbol not in §6.6 is a finding, not a
+licence); at most one verdict line
 per readout with its evidence exactly one tap away; popouts to depth one; any task-owned datum
 within two taps. Comparisons happen on one surface; a flow that requires remembering the previous
 screen is over budget regardless of fit. Pixels are spent before taps; working memory is never
@@ -231,6 +234,7 @@ check is owed by `ContractTests` (gap G-07's test half).
 | `college.identity` | `#A861D6` | 5.03 / 4.64 / **4.23** | `#6840B0` | 6.37 / 6.89 / 5.82 |
 | `pro.identity` | `#5B9DE0` | 6.90 / 6.38 / 5.81 | `#2D628B` | 5.81 / 6.29 / 5.31 |
 | `field.turf` | `#163E2A` | — | `#DCE8DF` | — |
+| `field.turfBand` | `#1A452F` | 1.10 on `field.turf` | `#D2E0D6` | 1.08 on `field.turf` |
 | `field.line` (on turf) | `#F5F7FA` | 11.14 | `#0E1218` | 14.89 |
 | `field.annotation` (on turf) | `#E7C45D` | 7.09 | `#7A5200` | 5.49 |
 | `field.live` (on turf) | `#C6F24E` | 9.23 | `#4A6F00` | 4.67 |
@@ -253,9 +257,17 @@ Measured constraints, binding on every consumer:
   inks with the palette's own ground. Dark `world.page` ink on the dark heat fills: positive 10.77,
   warning 12.13, negative 7.27. Light `world.work` ink on the light heat fills: positive 5.86,
   warning 6.76, negative 6.77. The opposite pairings measure 1.49–3.01 and are not used for text.
-- **Hairlines and boundaries, named:** a hairline rule draws in `world.raised` over `work`
-  surfaces; the mandatory team-fill boundary draws in `content.secondary`. Neither carries meaning
-  alone (§6.3's boundary-value-spoken rule governs).
+- **Hairlines and boundaries, named.** There are two hairline jobs and they take different values,
+  because they are doing different work:
+  - **Structural rule** — separating continuous regions of one surface. Draws in `world.raised`
+    over `work` (1.10 dark, 1.18 light). It is deliberately near-invisible: it groups, it does not
+    signal, and a rule the eye stops on is a container pretending to be a rule.
+  - **Legible seam** — where a divider must actually be seen, on a `raised` surface or against
+    generated colour. Draws in `content.quiet` (4.96 on dark `raised`, 5.12 on light).
+  - The **mandatory team-fill boundary** is `content.secondary`, which is the legible case at its
+    strongest, and it is required on every team fill (see the team-fill rule below).
+
+  Neither hairline carries meaning alone; §6.3's boundary-value-spoken rule governs.
 
 **Team colour reference trio (labelled synthetic — pending generator output, owner disposition
 2026-08-12; the P2 generator's sampled space is uniformly dark-primary).** Floors:
@@ -267,6 +279,12 @@ Measured constraints, binding on every consumer:
 | light-primary | `#E9E0C9` | `#6E3038` | `#18202B` | 12.47 | 7.45 |
 | low-chroma | `#555B66` | `#D9DDE4` | `#FFFFFF` | 6.83 | 5.01 |
 
+- **`field.turfBand` is a mow band, never an information channel.** Added 2026-08-12: the match view
+  draws twelve 8.333% bands across the 120-yard field, giving a 10-yard distance gauge that survives
+  a delete test. Its contrast against `field.turf` is deliberately near-invisible (1.10 dark, 1.08
+  light) — it must read as ground texture, not as data, and nothing may be encoded in which band a
+  mark falls on. Everything drawn over it keeps its own floor: `field.line` measures 10.11 dark /
+  13.75 light on the band, `field.annotation` 6.43 / 5.07, `field.live` 8.37 / 4.31.
 - **Team fills against the work surfaces (measured 2026-08-12):** dark-primary on dark `work` 1.41,
   on light `work` 12.47; light-primary on dark `work` 13.86, on light `work` 1.27; low-chroma on
   dark `work` 2.67, on light `work` 6.61. Every trio primary falls below the 3:1 non-text floor
@@ -430,6 +448,40 @@ three-production-uses record or an explicit provisional mark); screen-local impl
 and this section must stay synchronised with `Sources/ProFootballCoachUI/`, enforced through the
 existing `ContractTests.swift` source-contract pattern.
 
+### 6.6 The symbol register
+
+*Added 2026-08-12, closing the defect the personnel-proof review names as F-02 and §5: every sheet
+priced its symbol spend locally and then asserted global compliance, which no sheet can know.*
+**This section is the one place the totals are held.** A symbol drawn anywhere in the product must
+appear below; one that does not is a finding under §4.5, not a licence. The enforcing contract test
+is gap G-08, and it walks `Sources/ProFootballCoachUI/ScreenRegistry.swift` by construction rather
+than from a hand list.
+
+Symbols are capped **per class**, because the classes are separate learning surfaces: a coach reads
+a status chip on a roster row, a direction mark beside an attribute, and a session type on a week
+grid in three different contexts. What is never permitted is an unbounded class.
+
+| Class | Cap | Members | Where |
+|---|---:|---|---|
+| **Status** (`StatusChip`, registry 17) | 12 | `cross.case`, `bolt.slash`, `shield.slash`, `exclamationmark.triangle`, `clock.badge.exclamationmark`, `binoculars`, `hand.raised`, `graduationcap`, `arrow.uturn.left`, `star`, `checkmark.seal`, `calendar.badge.exclamationmark` | Any dense row; at most 3 per row |
+| **Change** (`DeltaMark`, registry 11) | 2 | `arrow.up.right`, `arrow.down.right` | Attribute and rating rows |
+| **Obligation** (`AgendaRow`, registry 19) | 2 | `checkmark.circle.fill` (complete), `person.badge.clock` (delegated) | Week plan, inbox, any obligation list |
+| **Session type** (week grid) | 5 | `figure.run`, `film`, `airplane`, `football`, `moon.zzz` | Practice Plan week grid only |
+| **Broadcast marks** (§9) | 2 | possession wedge, key-moment mark | Match Day chrome only; both carry a printed or spoken value beside them, never count alone |
+| **Control furniture** | not a learned class | `chevron.*`, `magnifyingglass`, `line.3.horizontal.decrease`, `rectangle.3.group`, `pause.fill`, `forward.end.fill`, `speedometer`, `plus`, `xmark` | Navigation and controls; every one carries a visible or accessible label, so none is a symbol the player must learn. §6.3 anticipates the icon-first utilities (inspect film, delegate, pause, speed, tactical view) and requires their accessible names to stay explicit |
+
+**Total learned symbols: 23** (12 status + 2 change + 2 obligation + 5 session + 2 broadcast). Control furniture
+is excluded by the rule above — a marked control is read from its label, not recalled from a
+vocabulary. **The 21 is stated so it can be argued with; it is the number the owner is agreeing to
+when a class grows.** Filled and unfilled variants of one symbol are one member: `hand.raised.fill`
+is `hand.raised`, and `circle` is the unchecked state of `checkmark.circle.fill` rather than a
+thirteenth status symbol or a new class. Where two components want the same meaning they take the same member — a
+delegated receipt is `person.badge.clock` on every surface, not `person.fill.checkmark` on one.
+
+Growth rule: a new symbol displaces an existing member of its class or the class cap moves, and a
+class cap moves only by owner decision recorded here. §4.5 names vocabulary growth as the leak
+detector; this table is the detector.
+
 **The definitive design references (owner-approved 2026-08-12).** Eight sheets at the repository
 root render this registry: `tokens-v3.dc.html`, `chrome-v3.dc.html`, `table-v3.dc.html`,
 `person-v3.dc.html`, `readout-v3.dc.html`, `week-v3.dc.html`, `broadcast-v3.dc.html`,
@@ -439,6 +491,17 @@ library entirely; any earlier rendered library, mockup set or design pass is his
 and carries no authority. **The sheets remain a rendering — this document is the only canonical
 home, and a value appearing only in a sheet has not shipped.** Where a sheet and `04` disagree,
 `04` wins and the sheet is the defect.
+
+**The verdict-state rule, one rule for the whole library (2026-08-12).** Registry 13 `VerdictLine`
+has exactly one drawing convention, because three sheets shipped three different ones and each is a
+build instruction. Every surface that will carry a verdict draws **both** states and labels them:
+the **shipping form** is the verdict slot empty with its gap ID in place, because G-02 does not
+exist and §4.4 rejects invented authority; the **target form** is the populated verdict — staff
+name, sample size, confidence, and the computation class that backs it — marked "once G-02 lands".
+The populated form is never the unlabelled default, and never appears at width or AX5 renditions
+without the shipping form beside it. A verdict at high confidence is not the only case worth
+drawing: a thin sample and a low-confidence judgement are what make a simulation honest under
+uncertainty, so a surface that can produce them draws one.
 
 ## 7. Device and accessibility contract
 

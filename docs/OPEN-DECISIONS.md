@@ -486,7 +486,8 @@ built against a gate nobody can run.
 
 The prior build scored **1/4** on accessibility with Reduce Motion at literally zero occurrences and
 3 accessibility modifiers across ~140 KB of view code, against commitments it had written down for
-itself. `04b`'s ≥17/20 gate is unreachable without fixing this.
+itself. `04b`'s gate — ≥31/40 since the owner's 2026-08-11 rubric correction, ≥17/20 when this was
+written — is unreachable without fixing this.
 
 **The contract** (full form in `04`):
 

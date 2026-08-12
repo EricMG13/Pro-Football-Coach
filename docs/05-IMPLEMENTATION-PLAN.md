@@ -31,12 +31,12 @@ Every phase gates on **G1–G4**. Engine phases add **G5–G7**. Milestones add 
 |---|---|
 | **G1 Build green** | `swift build` clean. Asserted only by having run it in the session that claims it — see the D11 note below. |
 | **G2 Tests green** | `swift run -c release SimTests` passes in full. Same rule: run it, or do not claim it. |
-| **G3 Surface audit** | Touched surfaces score **≥17/20 with zero P0/P1** against `docs/04b-AUDIT-RUBRIC.md`, scored on the three **local** dimensions (Accessibility, Performance, Appearance & Theming). |
+| **G3 Surface audit** | Touched surfaces score **≥31/40 with zero P0/P1** against `docs/04b-AUDIT-RUBRIC.md` — its eight dimensions at 0–5 each, owner-approved 2026-08-11. The older ≥17/20 five-dimension frame (Accessibility, Performance, Appearance & Theming) is superseded and the bars are not equivalent. |
 | **G4 Scope** | The diff contains what the phase specifies and nothing else. No opportunistic refactors. |
 | **G5 Calibration** | All bands in `03` §5 hold under TOST. |
 | **G6 Determinism** | Same seed reproduces exactly, **across processes**; **both** determinism source scans pass — no `hashValue`, and no ambient `UUID()`/`Date()` (`03` §3.5). |
 | **G7 Soak** | The 20-season soak passes every assertion in `03` §6 **that the phase's scope can reach** — see the note below. |
-| **G8 Milestone audit** | The two **global** rubric dimensions (Adaptivity, Platform Conformance) score ≥17/20 combined-with-local across the whole app. |
+| **G8 Milestone audit** | The whole app scores **≥31/40 with zero P0/P1** against `04b`'s eight dimensions, with the world-scope dimensions (4 world identity and continuity, 8 craft and resilience) judged across screen families rather than one surface. |
 
 **Legal gates run on every phase that touches generation:** the name-collision test and the
 trade-dress ΔE test.
@@ -337,6 +337,11 @@ component registry adoption in `04`), G-09's test half (`OrientationPolicyTest` 
 (AX5 reflow contract test enumerating families from `ScreenRegistry.swift` by construction), G-13
 (failure-set designs).
 
+*Status 2026-08-12: the doc halves of G-07 and G-08 are done — `04` §6.1/§6.2 hold every shipped
+value with measured ratios, §4.5 the density budget, §6.5 the component registry and the
+verdict-state rule, §6.6 the symbol register. The test halves are P11a above, and they are what the
+gate now waits on.*
+
 ### Amendment: P13 dependency
 
 P13 states its dependency on G-06's anchor contract explicitly (FSC-011 already implies it; the plan
@@ -345,6 +350,70 @@ now says it).
 ### Amendment: P14 gate
 
 P14's gate includes the per-family density-budget statement check from G-08.
+
+### Insertion: P10c — Professional roster turnover (between P10b and P11)
+
+**Blocked on an owner decision, and that is the point of the entry.** `--pro-soak` and
+`--pro-draft-probe` are red for a real reason: bootstrap fills every professional team to exactly
+53/53 and issues no contracts, so nothing expires, nobody reaches free agency, and the 224-prospect
+draft class generated each season can never be taken — the first pick hits `activeRosterFull`.
+`ProRosterAISystem` (canon `02` §4.2) is built and correct; it has nothing to bite on. Both halves
+of professional intake are blocked by one missing mechanic.
+
+Canon half-answers it: `02` §4.2 lists "retirements and expiring contracts" and "cap compliance — a
+hard date the player must be legal by" as the first two offseason beats, but bootstrap issues no
+contracts for anyone to expire and nothing implements the compliance date that would force cuts.
+
+**The two owner questions.** (1) Do bootstrap professionals get contracts, and with what term
+spread? (2) What forces cuts to 53 — a cap-compliance date, incoming draft picks, or both? Deciding
+who gets cut and when is a design call, not an implementation detail, so it is not invented here.
+
+**Gates:** G1, G2, G4, G6, plus `--pro-soak` and `--pro-draft-probe` turning green, which is the
+falsifier: if turnover lands and the draft still cannot make a pick, the diagnosis was wrong.
+Neither gate is in the default run, so `verify.sh` is unaffected while this is open.
+
+**Blocks:** M6 completion, the professional draft, free agency, and every professional-tier surface
+that would read them.
+
+### Insertion: P11a — The M8 production-UI entry gate, as tests (immediately before P11)
+
+The entry conditions named above are currently assertions in prose. This phase makes them
+mechanical, and none of it touches engine work.
+
+- **G-07 test half** — a `ContractTests` sync check so `04` §6.1/§6.2 and
+  `Sources/ProFootballCoachUI/DesignTokens.swift` cannot drift. The values are written back; nothing
+  stops them diverging tomorrow.
+- **G-08** — the symbol-register contract test. `04` §6.6 now holds the product's whole symbol
+  vocabulary in capped classes; the test walks `Sources/ProFootballCoachUI/ScreenRegistry.swift`
+  **by construction** and fails when a surface draws a symbol the register does not hold, or when a
+  class exceeds its cap. The coverage-boundary rule in `CLAUDE.md` forbids a hand list here: the
+  reference library shipped with every sheet pricing its own spend locally and asserting global
+  compliance, which no sheet could know, and the missing global check is exactly this test.
+- **G-09 test half** — `OrientationPolicyTest` (reads `App/project.yml`; `CLAUDE.md` claims it
+  asserts landscape-only and it does not exist) and the two-tier `SmallestDeviceLayoutTest`: every
+  registry surface un-clipped and reachable at the 844 × 390 install floor, at full budget at the
+  852 × 393 promise floor.
+- **G-12** — the AX5 reflow contract, enumerating families from the registry, asserting no datum is
+  dropped and reading order is preserved.
+- **G-13** — the failure-set designs exist on `failure-v3.dc.html`; this phase carries them into the
+  view layer as families land.
+
+**Gates:** G1, G2, G4, plus each test above red-then-green against a deliberately broken fixture, so
+the instrument is proven to fail before it is trusted.
+
+**Blocks:** P11 and everything after it; M8 production UI.
+
+### Amendment: P10b gains G-14 and G-15
+
+Two engine gaps surfaced while drawing the reference sheets, both registered in
+`docs/briefs/2026-08-12-gap-register.md` §6:
+
+- **G-14 — engine-owned load policy.** Condition-band cut points, dose multipliers and the derived
+  cost the practice ladder states. Condition is engine-owned (M2); the policy is not. The week sheet
+  ships its derived-cost region omitted until this exists.
+- **G-15 — partial-advance completion record.** The interrupted state's "what was preserved" line
+  needs the engine to expose what committed before an interruption. Advance is atomic to the caller
+  today, so the copy cannot currently be truthful.
 
 ### Recorded seam (escalated 2026-08-12, resolved same day)
 

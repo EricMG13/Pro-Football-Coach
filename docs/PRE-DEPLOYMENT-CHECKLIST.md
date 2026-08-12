@@ -55,8 +55,9 @@ owner-checked ones are owner-checked because no agent in this project's environm
 
 ## 3. Rubric gate
 
-- [ ] Whole app scores **≥17/20 with zero P0/P1** against `docs/04b-AUDIT-RUBRIC.md`, all five
-      dimensions including the two global ones.
+- [ ] Whole app scores **≥31/40 with zero P0/P1** against `docs/04b-AUDIT-RUBRIC.md`, all eight
+      dimensions, and no automatic design-specificity rejection. (The older ≥17/20 five-dimension
+      frame was superseded by the owner on 2026-08-11; the bars are not equivalent.)
 - [ ] The rubric itself has been re-derived from the tool at least once this release, so `04b` is not
       drifting from the thing it reconstructs.
 

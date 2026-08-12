@@ -110,8 +110,9 @@ Plan → build small → adversarial review → verify → commit.
    **not** a build and must never be reported as one.
 5. **Verification before completion** (`superpowers:verification-before-completion`). The agent
    asserts the machine gates: build green, tests green, calibration bands, cross-process
-   determinism, the soak, the two legal tests, touched surfaces ≥17/20 with zero P0/P1 against
-   `04b`. Simulator demonstration is an **owner** action — hand off a written walkthrough script,
+   determinism, the soak, the two legal tests, touched surfaces **≥31/40 with zero P0/P1** against
+   `04b` (eight dimensions, 0–5 each — the older ≥17/20 five-dimension frame was replaced by the
+   owner on 2026-08-11 and the two bars are not equivalent: 31/40 is 77.5%, 17/20 is 85%). Simulator demonstration is an **owner** action — hand off a written walkthrough script,
    never claim it happened.
 6. **Debugging:** `superpowers:systematic-debugging`. No guess-fixes.
 7. **Scope guard.** Build what the plan specifies. No unrequested refactors, no opportunistic

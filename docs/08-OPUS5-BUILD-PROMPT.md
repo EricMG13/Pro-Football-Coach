@@ -48,7 +48,8 @@ Done is split, because this environment cannot reach half of it.
 - The phase's gates in `05` (G1–G7 as that phase specifies), and G8 if the phase ends a milestone.
 - Calibration bands under TOST; cross-process determinism; the soak, where the phase gates on them.
 - The name-collision and trade-dress tests, on any phase touching generation.
-- Touched surfaces ≥17/20 with zero P0/P1 against `docs/04b-AUDIT-RUBRIC.md`.
+- Touched surfaces **≥31/40 with zero P0/P1** against `docs/04b-AUDIT-RUBRIC.md` (eight dimensions,
+  0–5; the older ≥17/20 frame was superseded by the owner on 2026-08-11).
 
 **Owner-verifiable — you hand these off and never claim them:**
 

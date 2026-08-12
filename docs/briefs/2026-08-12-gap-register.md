@@ -173,7 +173,19 @@ it, and every bound above is written to be enforced by the existing soak growth 
    (`06-BUILD-ROADMAP-AND-GATES.md`) that is **not a path in this repository**; under
    `docs/DOC-MANIFEST.md`'s own rule a document outside the canon paths carries no authority. This
    register is phrased in both vocabularies, but the seam is an escalation (§4 Q6), not something
-   these amendments can repair.
+   these amendments can repair. *(Resolved 2026-08-12: the pack was imported to `docs/roadmap/`
+   with manifest rows, so the header pointer now resolves.)*
+6. **Insert "P10c — Professional roster turnover" between P10b and P11** (G-16), and **"P11a — the
+   M8 production-UI entry gate, as tests" immediately before P11** (G-07/G-08/G-09/G-12/G-13 test
+   halves plus G-17). Both are written out in `docs/05-IMPLEMENTATION-PLAN.md`. Pure insertions;
+   nothing renumbered. P10c is owner-blocked on the turnover decision and P11a is not, so P11a can
+   run while that decision is outstanding.
+7. **Record the review disposition.** `docs/reviews/2026-08-12-personnel-proof-review.md` found two
+   library-wide P1s in the reference sheets, and its §5 is explicit that neither could be fixed
+   inside any one sheet. Both are closed in canon: `04` §6.6 now holds the symbol register with
+   per-class caps and the product-wide total (F-02), and `04` §6.5 carries one verdict-state rule
+   for the whole library (F-01). The remaining P2s are per-sheet edits. G-17 is the enforcement
+   that would have caught all of them mechanically.
 
 ## 3. Tree-versus-document discrepancies found while grounding (report, not fix)
 
@@ -287,3 +299,23 @@ Two gaps surfaced while drawing the approved reference sheets; same eight-field 
 | Phase | P12 / M8 entry-adjacent |
 | Cost | Small; bounded to the current advance. Test: record matches committed state after induced interruption |
 | Blocks | Truthful interrupted-state copy; resume-preserving guarantees in `04` §7's last clause |
+
+| Field | G-16 |
+|---|---|
+| Requirement | Professional roster turnover — the mechanic that makes the professional tier live at all. Surfaced by the both-tier soak, not by the sheets |
+| Today | `Sources/FootballSimCore/Pro/ProRosterAISystem.swift` drives the offseason headlessly and is correct, but bootstrap fills every professional team to exactly 53/53 and issues no contracts (`committedCap=0`), so nothing expires, nobody reaches free agency, and the draft's first pick hits `activeRosterFull`. `--pro-soak` and `--pro-draft-probe` are red and name this |
+| Delta | Contracts issued at bootstrap with a term spread, plus whatever forces cuts to 53 — a cap-compliance date, incoming draft picks, or both. **Owner design decision, not an implementation detail** |
+| Owner doc | `02` §4.2 (which offseason beats exist and in what order), `03` for the computation |
+| Phase | Proposed insertion P10c (§2 amendment 6) |
+| Cost | Save: contracts already have a shape; the addition is per-professional-player contract records at bootstrap, bounded by roster size × 32 teams. Test: the two red gates turning green is the falsifier |
+| Blocks | M6 completion, the professional draft, free agency, every professional-tier surface that would read them |
+
+| Field | G-17 |
+|---|---|
+| Requirement | The reference library's own enforcement — the checks that would have caught this session's review findings mechanically |
+| Today | `nothing`. Every sheet self-reports its contract compliance; `docs/reviews/2026-08-12-personnel-proof-review.md` §5 shows the consequence — a column count that did not match its own drawing, a verified-sizes table that grew an unverified row, a symbol budget that only sums across files |
+| Delta | The G-08 symbol-register test (walks `ScreenRegistry.swift` by construction against `04` §6.6), the G-07 token-sync test, and a sheet-lint pass asserting the mechanically checkable contract claims: first-line marker, no script/CDN/font/image, every hex in `04` §6.1, every quoted ratio matching canon, drawn column counts matching claimed ones |
+| Owner doc | `03b` (test architecture), `04` §6.5/§6.6 (what is asserted) |
+| Phase | P11a |
+| Cost | Test work only, no runtime cost. Turns per-sheet self-reporting into a measured property |
+| Blocks | Trusting any future sheet's contract block; the `04b` scoring of design claims |
