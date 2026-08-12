@@ -282,6 +282,16 @@ compiled**, naming the files.
 
 ---
 
+## Road to beta — the consolidated outstanding list (appended on owner instruction, 2026-08-12)
+
+**`docs/plans/2026-08-12-road-to-beta.md` is the single aggregated list of everything outstanding**,
+ordered by what stands between the build and the owner's stated definition of complete: **a beta
+test on a real iPhone.** It supersedes hunting through session transcripts, and it carries the four
+items that block a device build before any feature does — chief among them that **no session has
+ever compiled this as an iOS app**, only as a SwiftPM package and a headless test executable.
+
+Read it before scheduling any phase below.
+
 ## 2026-08-12 amendments — density model and reference uplift (appended on owner instruction)
 
 Source: the 2026-08-12 reference-uplift session. The findings live in `docs/briefs/2026-08-12-*.md`;
