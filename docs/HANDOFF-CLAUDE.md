@@ -1,7 +1,7 @@
 # Claude build handoff
 
-Checkpoint: M7 is complete except its narrative slice. Continue from here; do not redo the green
-gates below.
+Checkpoint: **M7 is complete except conference realignment.** Continue from here; do not redo the
+green gates below.
 
 **`docs/STATUS.md` is the truth.** This file is a pointer, not a substitute — the previous version of
 it listed only focused gates and a reader reasonably took that as "the build is green". It was not:
@@ -9,12 +9,14 @@ the full suite was red. Read STATUS before believing any summary, including this
 
 ## Verified, on 2026-08-12
 
-`./scripts/verify.sh` — **648 tests / 747,291 checks, exit 0**, debug build and release suite. This
+`./scripts/verify.sh` — **663 tests / 747,584 checks, exit 0**, debug build and release suite. This
 is the whole default run, not a selection.
 
 Focused gates, each measured rather than estimated:
 
-- `--core-contracts` 152 / 976
+- `--core-contracts` 152 / 980
+- `--news-feed` 8 / 14
+- `--programme-evolution` 7 / 275
 - `--architecture-only` 25 / 222
 - `--generation-only` 34 / 39,143
 - `--legal-only` 22 / 141
@@ -37,6 +39,13 @@ Root schema is **11**.
 - **Save compression** — `03b` §4's reserved flags bit, claimed. **306.9 MB → 36.0 MB at season 30**,
   8.5x, with season 1 inside the original 8 MB ceiling.
 - **The legal guardrail now refuses by name-kind**, after the owner permitted real locations.
+- **M7C, the news feed** — headlines rendered from typed payloads over the hot journal *and* the
+  archive's retained bodies, ranked by the same `historicalWeight` that decides what an archived
+  season keeps. Derived, never persisted. `02` §4.2b.
+- **M7D, programme evolution** — prestige was frozen at generation and now steps one point a season
+  toward a target set by the final table. `02` §8. The portal characterization moved with it
+  (385/210/94 entrant windows, transfers, returns became 409/217/112), which is the world evolving
+  rather than a regression: those are descriptive outputs, not pins.
 - **The personnel UI slice** with four proofs recaptured from current source.
 
 ## Red on purpose — read these before touching the professional tier
@@ -67,11 +76,12 @@ when the controlled professional team is on the clock (`02` §4.2, amended 2026-
 
 ## Next work
 
-1. **M7's last limb — generated news and cross-season narrative.** Blocked on canon: `02` does not
-   specify it, and the doc-first rule says it is answered in canon before it is built. It composes
-   over M7B's archive, which exists.
-2. **Programme evolution and conference movement** — M7 deliverables in
-   `docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md`, unspecified in canon.
+1. **Conference realignment — M7's last item.** `02` §8 already specifies the inputs: performance,
+   market and geography. It is not blocked on a decision; it is **milestone-sized**, because it
+   changes league *topology* and schedule generation, standings, tiebreaks and whole-root integrity
+   all read that topology. Budget it as a slice with its own plan, not as a rule.
+2. **Cross-season semantic narrative** — a story that spans seasons rather than reporting one event.
+   The feed reports; nothing yet narrates.
 3. **M8 production UI** — gated. Its entry gate needs Coaching HQ, Recruiting Board and Match Day
    approved together as interactive native-size proofs at 31/40 or better against `04b`. A second
    session owns the design work.
