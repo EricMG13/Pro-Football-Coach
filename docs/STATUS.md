@@ -310,6 +310,48 @@ portal-scheduler compatibility is **9 / 27,823**, and core contracts are **144 /
 bodies, generated news, semantic rivalry narratives, coaching-tree projections, and the 30-season
 history/performance gate remain open.
 
+### The full default suite is red at this checkpoint — **pre-existing, not from the UI slice**
+
+`./scripts/verify.sh` on 2026-08-12 ran **602 tests / 747,026 checks with two failing**:
+
+- `College management state / two renewals retain exactly the former prospects referenced by hot
+  history` — `threw integrityFailed(issueCount: 1)`, preceded by
+  `Eligibility.swift:17: Precondition failed: Eligibility counters must remain inside the
+  four-season, five-year clock.`
+- `College commitment integrity / archived commitment and release events bind to the recruiting
+  season` — `[The professional free-agency or draft market is malformed or out of phase.]`
+
+Both reproduce at clean `HEAD` (70a60ed) in a detached worktree with none of the personnel work
+applied, so they are not caused by it. The M6/M7 handoff listed only **focused** gates as verified
+— `--pro-market`, `--history-read-model`, `--portal-scheduler`, `--architecture-only`,
+`--core-contracts` — and every one of those is still green. The full default run was not among them,
+and it does not pass. Treat any earlier reading of that handoff as a claim about focused suites
+only.
+
+### Personnel screens — **DEBUG reference fixtures, not career-wired**
+
+Roster and Player Profile exist as SwiftUI screens over immutable read models, reachable from the
+DEBUG `--roster` and `--player-profile` entry paths against a fixed seven-player sample. They read a
+sample fixture, not `GameState`, and no career loop reaches them; that wiring is M8 work behind its
+production-UI entry gate. Four proofs at the iPhone 17 Pro Max landscape viewport are in
+`docs/proofs/personnel/`, recaptured 2026-08-12 from the current source. Sorting, selection, and
+selection/sort survival across the dossier sheet were exercised on the booted simulator. Physical-
+device VoiceOver, Voice Control, Switch Control, haptics, and audio remain owner verification.
+
+**A legal-guardrail defect was found in the shipped fixtures and fixed.** The DEBUG sample data
+carried real hometowns — three of them (`Columbus`, `Baltimore`, `Nashville`) sitting directly on
+`Blocklist.cities`, the rest naming real states that are themselves real programme names. The
+generated-name sweep could not see them: it enumerates what the generator emits, and these were
+typed into source. All fixture hometowns are now drawn from the generator's own place and region
+grammar. A new `Legal: shipped copy` sweep reads every string literal under `Sources/` — walking the
+tree rather than naming files, so a screen added tomorrow is swept the day it is added — and fails
+on any that collides with the blocklist. Legal coverage is **19 tests / 78 checks**; the suite runs
+in release, where the DEBUG fixtures do not exist, because it scans source text rather than values.
+
+Still open, and not claimed: whether a real *state or minor city* name belongs in a world whose
+cities are generated fictional at all. The fix removed the collisions; the policy question is the
+owner's.
+
 ### Preserved pre-rebaseline P0–P4 record
 
 The remainder of this document records the older P-phase foundation and its measurements. It is

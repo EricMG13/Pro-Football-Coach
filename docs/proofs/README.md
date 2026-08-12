@@ -16,6 +16,24 @@ popovers or detented sheets.
 | Recruiting Board | `recruiting-board-light-standard.png` | `recruiting-board-dark-ax5.png` |
 | Match Day | `match-day-light-standard.png` | `match-day-dark-ax5.png` |
 
+## Personnel proofs — iPhone 17 Pro Max
+
+`personnel/` holds the Roster and Player Profile pair at the 956 x 440 landscape
+viewport of an iPhone 17 Pro Max, captured from the DEBUG `--roster` and
+`--player-profile` entry paths against the fixed sample roster.
+
+| Proof | Light / default | Dark / AX5 |
+|---|---|---|
+| Roster | `personnel/roster-light-default-iphone17promax.png` | `personnel/roster-dark-ax5-iphone17promax.png` |
+| Player Profile | `personnel/player-light-default-iphone17promax.png` | `personnel/player-dark-ax5-iphone17promax.png` |
+
+`simctl` writes the framebuffer in device-portrait while the app renders
+landscape-only, so each capture is rotated 90 degrees after the fact. The
+geometry is the app's own landscape layout, not a resize. AX5 reflows both
+screens to one scrolling column, so those two frames show the top of that
+column rather than the whole screen; they are accessibility evidence, not the
+density reference.
+
 Personnel and player imagery uses the shared blank-photo treatment. Match Day depicts one recorded frame: all 22 actors,
 model-owned field direction, line of scrimmage, first-down line, score context,
 causal commentary, and exactly five primary controls.
