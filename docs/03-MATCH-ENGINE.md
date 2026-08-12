@@ -175,6 +175,16 @@ the win-rate-vs-rating-gap curve must be materially steeper than pro, because a 
 against a bottom one is not a coin flip. §6.4 found a ~64-point spread across FBS; a generated
 league that does not reproduce that spread fails D6 as well as calibration.
 
+**Narrative-independence band — added 2026-08-12, `CLAUDE.md`'s engagement-ethics guardrail.** The
+margin distribution measured under §5.1's existing bands must be **statistically equivalent to
+itself** when the controlled team is favoured, when it is an underdog, and when it is on a losing
+streak — TOST against the *other conditions' estimates*, not against a fixed band, because a fixed
+band would stop constraining anything the day someone adds a narrative input. This is a tripwire
+against manufacturing drama (a comeback bias, a losing-streak "bounce-back" term), not a discovery:
+today's engine takes no streak, form or momentum input at all, so the assertion holds by
+construction. It is written down now so it fails the day that stops being true rather than the day
+someone notices in a review.
+
 ### 5.2 Overtime band — a note on scar tissue
 
 The prior suite's overtime band was `0.008…0.14`, a seventeen-fold range. That is what widening a

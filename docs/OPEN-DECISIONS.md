@@ -339,12 +339,17 @@ is not jeopardy.
   someone*, which is the thing §6.0 found entirely absent: **zero inbound events; the game never
   initiated a conversation.**
 - **Firing** happens in-season if security bottoms out, not only at year end.
-- **The carousel can never dead-end** — always at least one offer or an explicit year out.
+- **The carousel can never dead-end** — always at least one offer or an explicit year out. The
+  mechanism (`02` §7, added 2026-08-12): firing is a transition to **seeking**, not an ending, and
+  seeking is itself tracked state that guarantees the floor — at least one offer resolves it before a
+  season out of the game is allowed to become a second one.
 
 **Falsifier — instrument: `JeopardyTests` + the soak.** Falsified if, across 200 seeded careers,
 median coach tenure exceeds 9 seasons (nothing threatens the player) or falls below 2.5 (the game is
 capricious); or if job security is observed unchanged across more than 4 consecutive weeks while
-results are moving.
+results are moving; or if any seeded career reaches a `.fired` coach who never transitions to
+`.seeking`, or a `.seeking` coach who runs out the save with no offer and no explicit "year out"
+event — either is the dead end this decision forbids.
 
 **Cost of reversal: medium.**
 

@@ -155,6 +155,22 @@ object appears, the glyph vocabulary grows to accommodate it, type falls below i
 something fit, or AX5 loses data. The registry's per-screen budget statements are audited under
 `04b`; a surface the inventory does not price is a finding, not a licence.
 
+### 4.6 Progressive disclosure — added 2026-08-12
+
+Named explicitly because §4.5 already implies it piecemeal ("popouts to depth one; any task-owned
+datum within two taps") without stating the principle it is an instance of: **every screen shows a
+summary first, and reaches its detail only through a deliberate action on that summary — never the
+reverse.** A row states the verdict a coach needs to act; opening it is where the evidence, the
+sample and the staff voice behind that verdict live. This is not permission for a new component
+class — `DenseTable`, `VerdictLine` and `ConfidenceTag` already carry summary/detail apart — it is
+the rule that governs when a screen may show detail without being asked.
+
+The clearest instance is `02` §2.1's decision floor / desk rail: the floor is one obligation's
+summary surfaced from the inbox; the rail is the inbox itself, and opening any of its rows is what
+reaches that item's options, deadline and consequence. A screen that shows a mandatory decision's
+full detail before the player has chosen to open it has failed this rule even if every fact on it is
+true.
+
 ## 5. Identity system
 
 Identity is structural, not a two-point decorative accent.
@@ -474,40 +490,47 @@ stated renames/merges relative to the deleted a60f4d9 registry (`AttributeRow` f
 `DenseTable` plus `ConfidenceTag`; `Chip` splits into `StatusChip` and `RoleToken`; `Sparkline`
 becomes `FormLine`; `StakeholderCard` and `MapCanvas` defer to their owning families).* §6.4's
 pipeline is this registry's constructor; the P11 three-production-uses rule governs promotion, and
-entries not yet promoted are provisional. Names map 1:1 onto Swift types in
-`Sources/ProFootballCoachUI/`.
+entries not yet promoted are provisional. **Names are the specification a Swift type must satisfy to
+be promoted, not a claim that the type already exists** — corrected 2026-08-12, replacing an earlier
+"map 1:1" claim this table did not earn: a build check found only entries 1–4 have a corresponding
+type in `Sources/ProFootballCoachUI/`; 5–23 are designed and unbuilt. `CLAUDE.md`'s own rule is what
+this correction follows — *"Do not describe prose as if it were a test"* — and a table claiming
+components exist when they don't is prose doing exactly that.
 
-| # | Registry name | Purpose |
-|---|---|---|
-| 1 | `CoachWorldRouteButton` | Local-route navigation control |
-| 2 | `CoachWorldActionButtonStyle` | Decide/inspect/delegate action styling with roles |
-| 3 | `coachWorldDeskSurface` | Matte opaque panel treatment, hairline rules |
-| 4 | `CoachWorldBlankPhotoPlate` | Neutral person plate, no generated face |
-| 5 | `WorldStrip` | Programme/club, coach, date/phase, record, next advance |
-| 6 | `IdentityBand` | Person-led stable header for sequenced disclosure |
-| 7 | `DenseTable` | 24–28 pt tracked rows, sortable header, selection rule |
-| 8 | `ColumnSet` | Segmented swap of fact columns over stable identity columns |
-| 9 | `ListControls` | Sort/filter/bounded-search over simulation objects |
-| 10 | `RatingBadge` | Fixed-size numeric badge, printed number plus spoken band |
-| 11 | `DeltaMark` | Per-value recent-change mark with sentence equivalent |
-| 12 | `ConfidenceTag` | Banded value / unknown / observation-count state |
-| 13 | `VerdictLine` | Engine-backed judgement line heading a readout |
-| 14 | `Meter` | Capacity track with defined over-capacity state |
-| 15 | `OpposedBar` | Two-team shared-track comparison |
-| 16 | `FormLine` | Bounded last-N results with rating thread |
-| 17 | `StatusChip` | Closed vocabulary per §4.5; at most three per row |
-| 18 | `RoleToken` | Short role/assignment code mapping list to diagram |
-| 19 | `AgendaRow` | Obligation with cost/time-to-event and completion state |
-| 20 | `ScoreBug` | Teams, score, quarter, clock, down, distance, possession |
-| 21 | `LowerThird` | Causal what-just-happened card on the field |
-| 22 | `CallInCard` | Named staff proposal, accept/dismiss/inspect |
-| 23 | `EmptyState` / `ErrorBanner` / `InterruptedState` | The failure set, inside the owning composition |
+| # | Registry name | Purpose | Built |
+|---|---|---|---|
+| 1 | `CoachWorldRouteButton` | Local-route navigation control | Yes |
+| 2 | `CoachWorldActionButtonStyle` | Decide/inspect/delegate action styling with roles | Yes |
+| 3 | `coachWorldDeskSurface` | Matte opaque panel treatment, hairline rules | Yes |
+| 4 | `CoachWorldBlankPhotoPlate` | Neutral person plate, no generated face | Yes |
+| 5 | `WorldStrip` | Programme/club, coach, date/phase, record, next advance | No |
+| 6 | `IdentityBand` | Person-led stable header for sequenced disclosure | No |
+| 7 | `DenseTable` | 24–28 pt tracked rows, sortable header, selection rule | No |
+| 8 | `ColumnSet` | Segmented swap of fact columns over stable identity columns | No |
+| 9 | `ListControls` | Sort/filter/bounded-search over simulation objects | No |
+| 10 | `RatingBadge` | Fixed-size numeric badge, printed number plus spoken band | No |
+| 11 | `DeltaMark` | Per-value recent-change mark with sentence equivalent | No |
+| 12 | `ConfidenceTag` | Banded value / unknown / observation-count state | No |
+| 13 | `VerdictLine` | Engine-backed judgement line heading a readout | No |
+| 14 | `Meter` | Capacity track with defined over-capacity state | No |
+| 15 | `OpposedBar` | Two-team shared-track comparison | No |
+| 16 | `FormLine` | Bounded last-N results with rating thread | No |
+| 17 | `StatusChip` | Closed vocabulary per §4.5; at most three per row | No |
+| 18 | `RoleToken` | Short role/assignment code mapping list to diagram | No |
+| 19 | `AgendaRow` | Obligation with cost/time-to-event and completion state | No |
+| 20 | `ScoreBug` | Teams, score, quarter, clock, down, distance, possession | No |
+| 21 | `LowerThird` | Causal what-just-happened card on the field | No |
+| 22 | `CallInCard` | Named staff proposal, accept/dismiss/inspect | No |
+| 23 | `EmptyState` / `ErrorBanner` / `InterruptedState` | The failure set, inside the owning composition | No |
 
 Adoption cost, carried knowingly: the registry is an audit surface (each entry needs its
 three-production-uses record or an explicit provisional mark); screen-local implementations of
-5–7, 10, 17 and 19–22 owe extraction refactors when promoted — P11/M8 work, not a silent rename;
-and this section must stay synchronised with `Sources/ProFootballCoachUI/`, enforced through the
-existing `ContractTests.swift` source-contract pattern.
+5–7, 10, 17 and 19–22 owe extraction refactors when promoted — P11/M8 work, not a silent rename.
+**The claim that this table "stays synchronised with `Sources/ProFootballCoachUI/`, enforced through
+the existing `ContractTests.swift` source-contract pattern" is withdrawn as of the 2026-08-12
+correction above — no such enforcement exists yet.** §6.6's symbol register is the working template
+(canon parsed and scanned against the tree at test time, with a plant self-test); extending that
+pattern to this table is future work, not a standing fact about the table.
 
 ### 6.6 The symbol register
 

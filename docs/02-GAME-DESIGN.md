@@ -29,6 +29,14 @@ management week contained **exactly one mandatory decision, and it was a decisio
 presentation** — which of three ways to watch the game. Everything below exists to make the week a
 place where a coach decides things.
 
+**The inbox is the week's surface, not one beat among eight — added 2026-08-12.** Beat 1 is listed
+first because it *is* first: it is what the week screen shows on open, and every other beat that
+carries a real decision is reachable from it rather than sitting beside it as a separate destination.
+Concretely, the screen has one presentation with two views of the same list — a **decision floor**
+showing whichever mandatory item is most pressing, and a **desk rail** showing the rest of what's
+arrived, mandatory or not. There is no second "home" screen a coach returns to; the inbox is the
+resting state, and beats 2–6 are what opening an item in it leads to.
+
 A regular-season week, in order:
 
 | # | Beat | What the player does | Mandatory? | Budget |
@@ -44,6 +52,20 @@ A regular-season week, in order:
 
 Roughly **6 minutes of management, 10.5 of match**, matching D1's budget. Four mandatory decisions a
 week that a reasonable coach could get wrong, plus the inbox, plus ~25 in-match calls.
+
+**What happens if an item goes unanswered — added 2026-08-12.** Beat 1 says at least one inbox item
+requires an answer; nothing until now said what "requires" means when the player simply doesn't.
+Two wrong answers were available and both were rejected: a silent lapse fails §2.2's own cost test —
+an obligation with no consequence for ignoring it was never really mandatory — and a hard block on
+week advance kills the resumption model in §2.4 below, which depends on advancing always being
+available.
+
+The answer: **every obligation carries a deadline, and an obligation still open when its deadline
+arrives resolves to the delegate's recommendation.** The aftermath (beat 8) reports that it was
+decided for you, and the coach carries the outcome the way they would carry their own choice. This
+is the same principle §3.1 already applies to a call-in the player defers — a coach who trusts their
+staff is playing correctly, not failing to play. Advancing the week is therefore always permitted; an
+unanswered obligation is not a blocker, it is a decision spent on someone else's judgement.
 
 ### 2.2 What makes a decision real
 
@@ -62,6 +84,27 @@ prior build's failure mode, and it belongs in review checklists for every featur
 - **College:** 12 regular-season games, conference championship, then the bracket. ~17 weeks.
 - **Pro:** 17 games plus a bye, then the bracket. ~21 weeks.
 - **Offseason:** the second half of the game, not an interlude (§4).
+
+### 2.4 The session unit — added 2026-08-12
+
+§2.1 budgets the week and the beats inside it, but never named the smallest thing a player can
+finish and walk away from. FM Mobile's research is specific about why this matters: sessions run a
+few minutes to an hour not because of a cliffhanger but because **the cost of the next step is
+always small and the unit is always complete.** A budget without a floor leaves a player with four
+minutes and nothing they can finish.
+
+Two guaranteed units, both smaller than the week itself:
+
+- **An inbox pass.** Open the inbox, read and answer what's there, stop. ~90 s. Advances no week,
+  spends no beat, and is complete the moment the player puts it down — nothing is left half-decided,
+  because §2.1's unanswered-obligation rule means an item not reached simply isn't reached yet.
+- **A delegated week.** Work through the four mandatory beats, then hand the match itself to the
+  coordinator (§3.1's hand-off) rather than watch it. ~6 minutes: the whole management budget, none
+  of the match's 10.5. The result and its consequences arrive in the next inbox pass.
+
+§3.1's take-over/hand-off affordance already supplies the mechanism for the second unit; this section
+names it as a session-boundary guarantee rather than only a pacing and difficulty setting. Nothing
+here promises a third unit inside a live match — resuming mid-drive is out of scope for v1 (§12).
 
 ---
 
@@ -224,6 +267,22 @@ Pressure is continuous, legible, and comes from named people.
 - Firing can happen in-season. The carousel can never dead-end: there is always at least one offer or
   an explicit year out of the game.
 
+**The mechanism behind "never dead-ends" — added 2026-08-12.** Being fired is a state transition,
+not an ending: **fired → seeking → an offer resolves it.** A coach who is fired moves to *seeking*,
+which is itself a job the game tracks — the AD's phone stops ringing but the coach's does not — and
+seeking guarantees the floor D8 already promises: at least one offer surfaces before a season out of
+the game is allowed to become a second, and a season out is always an explicit, visible choice rather
+than the save going quiet. Firing also ends the coach's authority over the programme they lost — job
+and control change together, never one without the other.
+
+**Self-authored jeopardy, staged.** §6.1's research found FM's difficulty is mostly supplied by its
+own community — named challenges, self-imposed constraints — which a new title has no way to
+inherit at launch. Two layers, built in order: **job-market gating** first, because it is emergent
+from systems this game already has (reputation, prestige, expectation) and needs no authored
+content; **named challenges** — a deliberately harder starting job, a region-locked recruiting
+constraint, a "no portal" career — later, as an explicit, selectable layer at save creation, once the
+career loop underneath them is complete enough to be worth constraining.
+
 ---
 
 ## 8. Identity, rivalry and place (D6)
@@ -255,6 +314,37 @@ Falsifier: held at a fixed rank, prestige must stop moving. An evolution that ne
 random walk wearing a rule's clothes.
 
 All of it fictional and original, guarded by the name-collision and trade-dress tests.
+
+**What makes one person matter — added 2026-08-12.** Everything above accumulates for
+*institutions* — a programme, a rivalry, a place. Nothing accumulates for a *person*, and a coaching
+sim without real players to import has to build that attachment or the roster is a spreadsheet with
+names on it. §6.1's research is specific about the cost: the game we cannot copy imports three
+decades of a player's own feelings about a real name for free, and a fictional league starts every
+name at zero.
+
+The pattern to copy is already built for institutions above: one canonical identity, a small bounded
+log of what actually happened, and a single mutator that updates the log and any derived scalar
+together. Applied to a person, the **dossier** a coach can open on any player they've ever
+scouted, signed, developed or lost is built from what is already tracked plus two things that are
+today discarded on purpose:
+
+- **Recruiting origin.** Already kept: who else was chasing them, the offers, the flips, the day they
+  signed. Surface it rather than store it again.
+- **The fog you paid to clear.** §4.3's confidence band exists only while the recruiting cycle runs
+  and is wiped at rollover. The read the coach had *at signing* — what the scouting said this player
+  would become — is worth keeping permanently: it is the receipt for a decision, and it is what makes
+  a later bust or breakout a story about a bet the coach made rather than a number that changed.
+- **Development beats, not just the latest one.** A player who developed is currently indistinguishable
+  from one who has always been what they are; only the most recent evaluation survives. A **small,
+  ranked** record of the beats that actually moved the needle — bounded the way every other
+  save-growing collection in this project is bounded (`CLAUDE.md`), and ranked by size of change
+  rather than kept chronologically, so a career of no-op weeks cannot displace the one that mattered.
+- **Awards, injuries and the portal record** the player already carries or is already discoverable
+  from — the dossier's job is to make them reachable from one player, not to invent new facts.
+
+This is not a second history system. It is a **read** of state that mostly already exists, plus the
+two additions above, and it is deliberately the smallest thing that could make a specific generated
+player — not just a specific generated programme — worth remembering five seasons on.
 
 ---
 
@@ -455,4 +545,5 @@ Stated so scope creep has something to bounce off: no multiplayer, no online any
 universe import/export in v1 (escalated to counsel in `01-RESEARCH.md` §6.2B §3.2; optional person,
 team and venue asset fields remain reserved for a future approved feature), no create-a-school
 editor, no historical seasons, no iPad layout, no portrait. (Orientation flipped by the owner on
-2026-08-10 — `04` §7.)
+2026-08-10 — `04` §7.) No mid-match resumption — §2.4's guaranteed session units stop at the
+delegated week; putting down a live match and resuming inside it, mid-drive, is not a v1 guarantee.

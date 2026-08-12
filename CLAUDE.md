@@ -65,6 +65,35 @@ substitute. Flag anything borderline for the owner to take to counsel; never res
 Everything else in this guardrail is a review checklist item, not an assertion. Do not describe
 prose as if it were a test.
 
+## Engagement-ethics guardrail — added 2026-08-12
+
+This project ships premium, offline, no-IAP, no-ads, no-analytics. That is a genuine product
+commitment and it is **not an ethical defence**, and this guardrail exists because it is easy to
+mistake one for the other. Montefiore & Formosa's account of dark patterns in games locates the
+wrong-making feature in **manipulation that disrespects a player's autonomy**, not in extracting
+money — so the test still applies to a game charging nothing at play time, and player awareness of a
+manipulative mechanic does not neutralise it. A session-extension prompt, a streak, or a manufactured
+near-miss is exactly as manipulative in a game nobody is billed for playing.
+
+**Refused, regardless of engagement benefit:**
+
+- A prompt or nudge to keep playing that carries no in-fiction reason — no "one more" framed as
+  anything other than what it is, a stakeholder or a situation genuinely asking something.
+- Streaks, daily rewards, or any mechanic whose point is punishing a day not played rather than
+  rewarding a day that was.
+- An interruption that is not a decision. Every call-in, inbox item and notification exists because
+  `02` §2.2 found it passes the real-decision test; an interruption that exists only to be noticed
+  fails that test and does not get an exception here for being engaging.
+- A manufactured near-miss, comeback bias, or any deliberate skew of the match outcome toward drama.
+  The match resolves from the model in `03`, never from the narrative situation.
+
+**What this guardrail is, honestly.** Unlike the legal guardrail above, this one has **one**
+assertable limb, not two: the narrative-independence band in `03-MATCH-ENGINE.md` §5.1, which
+requires the margin distribution to be statistically indifferent to whether the controlled team is
+favoured, an underdog, or on a losing streak. The refusal list above is a review checklist, the same
+honesty rule as the legal guardrail: do not describe prose as if it were a test, and do not claim
+this guardrail is enforced more than it actually is.
+
 ## Documents
 
 `docs/DOC-MANIFEST.md` is the authority on what is canon. Its rule has **two limbs, and quoting only
