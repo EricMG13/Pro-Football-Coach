@@ -368,6 +368,20 @@ takeaways and forced fumbles weighted above them in the rules module. That is th
 offensive value it sits beside, so neither side of the ball is scored on a scale the other cannot
 reach.
 
+### 3.12 Advancing more than one week — added 2026-08-13
+
+`advanceWeek` was the only way to move time, so an offseason was a sequence of taps with a measured
+2.83-second wait behind each one. Every management game in the genre offers a
+continue-until-something-happens, and the reason is not impatience: **a week the coach has no
+decision in is a week they should not have to confirm.**
+
+`CareerSession.advance(weeks:)` runs up to the number asked for and **stops the moment something
+wants the coach** — a mandatory decision, a job offer, an employment change, or an error. It reports
+which, by name rather than by leaving a surface to work it out from the week count.
+
+It skips weeks that ask nothing. It never advances past a week that asks something, which is the
+whole difference between a fast-forward and a game playing itself.
+
 ---
 
 ## 4. The offseason

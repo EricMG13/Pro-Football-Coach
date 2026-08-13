@@ -1425,6 +1425,20 @@ Files: `Sources/FootballSimCore/Engine/SnapResolver.swift` (`schemeFitDifferenti
 sites), `Tests/SimTests/Suites/EngineTests.swift` (a `Scheme fit` suite of two tests),
 `Tests/SimTests/main.swift`, `docs/02-GAME-DESIGN.md` (§6).
 
+### Slice 11 — advancing more than one week (G-43) — written, unverified
+
+`advanceWeek` was the only way to move time, so an offseason was a sequence of taps with a measured
+2.83-second wait behind each (B-4). `CareerSession.advance(weeks:)` runs up to the number asked for
+and **stops the moment something wants the coach** — a mandatory decision, a job offer, an employment
+change or an error — and names which rather than leaving a surface to infer it from the week count.
+It skips weeks that ask nothing and never advances past one that asks something, which is the whole
+difference between a fast-forward and a game playing itself.
+
+Files: `Sources/FootballSimCore/Career/CareerSession.swift` (`advance(weeks:)`,
+`CareerAdvanceReceipt`, `CareerAdvanceStop`), `Tests/SimTests/Suites/CareerControlTests.swift` (a new
+`runCareerAdvanceTests` runner, two tests), `Tests/SimTests/main.swift`,
+`docs/02-GAME-DESIGN.md` (§3.12).
+
 **Traditions remain inert, and the repair is larger than it looks.** `02` §8 requires every generated
 tradition to carry a mechanical effect. `TraditionGrammar` produces them and nothing reads one —
 because `Programme` does not persist traditions at all: the generator builds them into an identity

@@ -148,6 +148,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runPortalTransactionTests()
     runPortalSchedulerTests()
     runCareerControlTests()
+    runCareerAdvanceTests()
     runCareerArcTests()
     runProManagementTests()
     runProMarketTests()
