@@ -26,37 +26,48 @@ detailed engine is reachable only from the calibration harness — so it is the 
 change cannot corrupt a save or move a root fingerprint. It is also what match integration needs to
 exist before it is worth integrating.
 
-| # | Slice | Register | State | Status |
-|---|---|---|---|---|
-| 1 | The conversion — PAT and the two-point decision | G-24 | no | **written** |
-| 2 | Penalties | G-22 | no | **written** |
-| 3 | Special teams — kickoffs, returns, onside | G-23 | no | **written** |
-| 4 | Overtime in a played match | G-25 | no | **written** |
-| 5 | In-match injuries | G-26 | no | **written** |
-| 6 | Timeouts and clock management | G-21 | no | **written** (challenges open) |
-| 7 | Weather | G-27 | game-level | **written** |
-| 8 | Statistics vocabulary, both sides of the ball | G-28 | **yes** | **written** |
-| 8b | The played game's box score | G-11 | no | **written** |
-| 9 | Awards and honours | G-29 | **yes** | **written** |
-| 10 | Scheme fit connected to every matchup | G-32 | no | **written** (traditions open) |
-| 11 | Advancing more than one week | G-43 | no | **written** |
-| 12 | Store submission artefacts | G-45 | no | **written** (icon art is owner work) |
-| — | Match integration and the call-in loop | G-18, G-19 | **yes** | not started |
-| — | Inbox and inbound events | G-20 | **yes** | not started |
-| — | Depth chart | G-30 | **yes** | not started |
-| — | Traditions wired to outcomes | G-32b | **yes** | not started |
-| — | Staff as a managed resource | G-31 | **yes** | not started |
-| — | Draft picks as assets, real trades | G-33 | **yes** | not started |
-| — | Contract negotiation | G-34 | **yes** | not started |
-| — | Player morale | G-35 | **yes** | not started |
-| — | Discipline and suspensions | G-36 | **yes** | not started |
-| — | Money — budgets, facilities, wages | G-37 | **yes** | not started |
-| — | The postseason tail | G-38 | **yes** | not started |
-| — | Preseason and camp | G-39 | **yes** | not started |
-| — | Difficulty and match settings | G-42 | **yes** | not started |
-| — | Audio and haptics | G-40, G-41 | no | not started |
-| — | Glossary and in-game help | G-44 | no | not started |
-| — | Challenges (needs sub-outcome truth) | G-21b | no | owner decision first |
+| # | Slice | Register | Status |
+|---|---|---|---|
+| 1 | The conversion — PAT and the two-point decision | G-24 | **written** |
+| 2 | Penalties | G-22 | **written** |
+| 3 | Special teams — kickoffs, returns, onside | G-23 | **written** |
+| 4 | Overtime in a played match | G-25 | **written** |
+| 5 | In-match injuries | G-26 | **written** |
+| 6 | Timeouts and clock management | G-21 | **written**; challenges open |
+| 7 | Weather | G-27 | **written** |
+| 8 | Statistics vocabulary, both sides of the ball | G-28 | **written** |
+| 8b | The played game's box score | G-11 | **written** |
+| 9 | Awards and honours | G-29 | **written** |
+| 10 | Scheme fit connected to every matchup | G-32 | **written**; traditions open |
+| 11 | Advancing more than one week | G-43 | **written** |
+| 12 | Store submission artefacts | G-45 | **written**; icon art is owner work |
+| 13 | The sound and haptics contract | G-40, G-41 | **canon only**, deliberately — see below |
+| 14 | The depth chart | G-30 | **written** |
+| 15 | The coach's own game is played | G-18 | **written** |
+| 16 | The call-in loop, connected | G-19 | **written**; the player is not yet the one answering |
+| 17 | The inbox | G-20 | **written** |
+| 18 | Difficulty | G-42 | **written** |
+| 19 | The glossary | G-44 | **written**; no view yet |
+| 20 | The postseason tail | G-38 | **written** |
+| 21 | Morale | G-35 | **written**; nothing consumes it yet |
+
+## What is not built, and the reason in each case
+
+Not a backlog of things that ran out of time — each of these needs one of the two things this session
+deliberately refused to do blind: **change persisted state** without a compiler to prove decoding, or
+**move a pinned generation fingerprint** it cannot re-measure.
+
+| Item | Register | Why not here |
+|---|---|---|
+| Traditions wired to outcomes | G-32b | `Programme` does not persist traditions; the generator threads them through a shared identity stream, so re-deriving them means giving them their own seed scope — which moves the pinned generation fingerprints |
+| Staff as a managed resource | G-31 | Wages, hiring and firing are new persisted state plus new intents |
+| Draft picks as assets, real trades | G-33 | Picks must become entities that can be owned and traded |
+| Contract negotiation | G-34 | Asking prices, competing bids and agents are new state on the market |
+| Discipline and suspensions | G-36 | A suspension has to persist to have a consequence; the penalty events that would drive it are engine-side and not journalled |
+| Money — budgets, facilities, wages | G-37 | Entirely new persisted state on both organisation kinds |
+| Preseason and camp | G-39 | Changes the shared calendar `02` §11.3.1 fixes, which every dated system reads |
+| Challenges | G-21b | Needs a truth beneath the outcome for a review to contradict — an owner-level modelling decision (`02` §3.9) |
+| Sound and haptics | G-40, G-41 | An owner fork, stated in `04` §7.2: ship silent and say so, or budget a pass. Code with no assets behind it would be dead capability |
 
 **Ordering note, 2026-08-13.** The written slices are the whole match layer plus the record it
 produces. That grouping was not chosen for tidiness: the detailed engine's outputs are not persisted,

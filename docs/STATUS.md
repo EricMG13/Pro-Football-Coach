@@ -1133,6 +1133,19 @@ toolchain** — `swift: command not found` — so:
 - **G1 and G2 are not claimed** for any of it, by anyone;
 - the files are named per slice so a session with a toolchain knows exactly what to build first.
 
+**Where this session got to: twenty-two slices.** The whole match layer (conversion, penalties,
+special teams, overtime, in-play injuries, timeouts, weather), the record it produces (the statistics
+vocabulary, the played game's box score, awards), the loop around it (the depth chart, the coach's
+own game played by the detailed engine, the call-in loop connected, the inbox), and the surrounding
+product (scheme fit, multi-week advance, difficulty, the glossary, the postseason tail, morale, the
+privacy manifest, the sound contract).
+
+**What is not built is not a backlog of things that ran out of time.** Every remaining item —
+traditions, staff, draft picks, negotiation, discipline, money, preseason — needs one of the two
+things this session deliberately refused to do without a compiler: change persisted state without
+being able to prove decoding, or move a pinned generation fingerprint it cannot re-measure.
+`docs/plans/2026-08-13-completeness-build.md` names each with its reason.
+
 **Pins this work moves, and why they are red rather than wrong.** A play-by-play fingerprint is
 pinned as a source literal *because* it can only be produced by running the binary; a session
 without one cannot recompute it. Re-pinning is therefore a named task rather than an edit, and no
