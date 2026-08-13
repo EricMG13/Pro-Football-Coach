@@ -484,8 +484,9 @@ ProfessionalCap` was never touched; the function mutates state directly and vali
 end with the same difference-based guard `expireContracts` established this session, so it is never
 the invariant itself that gets weaker, only what runs before it.
 
-Five unit tests (ordering, already-legal, unfixable, controlled-team-skipped) plus one integration
-test through a real `advanceWeek` all pass, and the architecture fingerprint pins are unchanged —
+Five unit tests (event plumbing, ordering, already-legal, unfixable, controlled-team-skipped) plus
+one integration test through a real `advanceWeek` all pass, and the architecture fingerprint pins
+are unchanged —
 confirming the function is a true no-op under normal bootstrap generation, which is also its honest
 limit: no current signing path can ever put a team over the cap, so nothing in ordinary play reaches
 this code yet. The controlled team's own cap choice is deliberately not built here — every other
