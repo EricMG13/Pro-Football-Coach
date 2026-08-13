@@ -184,6 +184,16 @@ public enum MatchupRules {
     public static let passInterferenceWeight = 8
     public static let personalFoulWeight = 6
 
+    // MARK: - In-play injuries
+
+    /// Chance a snap hurts somebody. `02` §3.8.
+    ///
+    /// Per snap across both teams, so roughly one and a half a game at this engine's play counts.
+    /// Who it lands on is weighted by durability, which is what makes the rating visible on the
+    /// player carrying it rather than only in a team-wide rate. **Not calibrated**: `03` §5.1 has no
+    /// in-play injury band, and one invented here would be fitted to the engine that produced it.
+    public static let injuryChancePerSnap = 0.012
+
     // MARK: - Calibration thresholds
 
     /// 01 section 6.5 defines a blowout as a margin of 17 or more.

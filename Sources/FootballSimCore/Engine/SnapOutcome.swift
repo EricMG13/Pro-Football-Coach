@@ -88,6 +88,9 @@ public struct SnapOutcome: Codable, Sendable, Equatable {
     public let targetID: UUID?
     /// The flag on this snap, accepted or declined. `02` §3.5. Nil on the great majority of snaps.
     public let penalty: PenaltyRecord?
+    /// Anyone hurt on this snap. `02` §3.8. Reported, never applied — the engine cannot reach league
+    /// state and a resolver that mutated it could not be replayed.
+    public let injury: MatchInjury?
 
     public init(
         result: SnapResult,
@@ -97,7 +100,8 @@ public struct SnapOutcome: Codable, Sendable, Equatable {
         ballCarrierID: UUID? = nil,
         passerID: UUID? = nil,
         targetID: UUID? = nil,
-        penalty: PenaltyRecord? = nil
+        penalty: PenaltyRecord? = nil,
+        injury: MatchInjury? = nil
     ) {
         self.result = result
         self.yards = yards
@@ -107,6 +111,7 @@ public struct SnapOutcome: Codable, Sendable, Equatable {
         self.passerID = passerID
         self.targetID = targetID
         self.penalty = penalty
+        self.injury = injury
     }
 
     /// The same outcome with a flag attached — what a declined penalty produces, since the play
@@ -114,7 +119,16 @@ public struct SnapOutcome: Codable, Sendable, Equatable {
     public func recording(_ penalty: PenaltyRecord) -> SnapOutcome {
         SnapOutcome(result: result, yards: yards, secondsElapsed: secondsElapsed,
                     matchups: matchups, ballCarrierID: ballCarrierID, passerID: passerID,
-                    targetID: targetID, penalty: penalty)
+                    targetID: targetID, penalty: penalty, injury: injury)
+    }
+
+    /// The same outcome with an injury attached. Separate from `recording(_: PenaltyRecord)` because
+    /// a snap can carry both, and a single combined setter would invite one overwriting the other.
+    public func recording(_ injury: MatchInjury?) -> SnapOutcome {
+        guard let injury else { return self }
+        return SnapOutcome(result: result, yards: yards, secondsElapsed: secondsElapsed,
+                           matchups: matchups, ballCarrierID: ballCarrierID, passerID: passerID,
+                           targetID: targetID, penalty: penalty, injury: injury)
     }
 
     /// The matchup that decided the snap: the largest-magnitude one of the deciding kind.

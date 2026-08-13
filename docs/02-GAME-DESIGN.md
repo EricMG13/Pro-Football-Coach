@@ -231,6 +231,35 @@ owner-set assumption and says so.
 Falsifier: no game ends level in the college tier; the pro overtime rate sits inside its band; and a
 game that reaches overtime has at least one drive in a quarter past regulation.
 
+### 3.8 Injuries in play — added 2026-08-13
+
+Injuries were produced only by the weekly draw in `PeopleLifecycleSystem`, which runs at scheduler
+step 2 — **before** the week's games at steps 10 and 11. A player's knee went in the middle of the
+week, from accumulated workload, and nobody was ever hurt during a match. In a sport where an injury
+changes the game being played, that is a missing mechanic and not a missing detail.
+
+- **The candidates are the players the snap involved** — the matchups it recorded and whoever handled
+  the ball — not all twenty-two. The engine already records who was in the collision, `04` §5.3 draws
+  the play from that record, and an injury attributed to a player standing on the far hash would
+  contradict the picture beside it.
+- **Durability decides who**, the same way `volatile` decides who draws a flag. A rating that only
+  moved a team-wide rate would never be visible on the player carrying it.
+- **`ironman` decides how long**, which is the second half of the sentence `§11.3.3` writes for it.
+  Recovery, the first half, stays where recovery is.
+- **The severity ladder is shared with the weekly draw**, in the rules module. It was four literals
+  inline in the lifecycle system; two hand-copied ladders that nothing asserts agree is worse than
+  one constant.
+- **The engine reports and never applies.** `SnapResolver` cannot reach league state and must not: a
+  resolver that mutated it could not be replayed. The season layer applies these when the detailed
+  match is integrated, in the same `PlayerInjury` vocabulary.
+- **Anything past a knock forces the player out of the game.** Honouring that needs a depth chart,
+  which does not exist yet; the flag is recorded now so the substitution work has something truthful
+  to read rather than inventing its own.
+
+Falsifier: across a season injuries occur in play, land on players who were in the snap that produced
+them, fall more often on the least durable, and never appear on a snap that a pre-snap penalty
+cancelled.
+
 ---
 
 ## 4. The offseason

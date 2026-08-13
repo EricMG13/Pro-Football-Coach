@@ -1383,6 +1383,124 @@ func runOvertimeTests() {
     }
 }
 
+func runMatchInjuryTests() {
+    let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
+    let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
+
+    suite("Injuries in play") {
+        test("players get hurt in games, and not constantly") {
+            var injuries = 0, snaps = 0
+            for seed in UInt64(1)...40 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                snaps += game.plays.count
+                injuries += game.plays.filter { $0.outcome.injury != nil }.count
+            }
+            expect(injuries > 0,
+                   "nobody was hurt in 40 games, so the whole model is unreachable")
+            let perGame = Double(injuries) / 40
+            expect(perGame < 6,
+                   "\(perGame) injuries a game is a casualty list rather than a football game")
+        }
+
+        test("the injured player was in the snap that hurt them") {
+            // 02 section 3.8. An injury attributed to somebody standing on the far hash would
+            // contradict the causal record 04 section 5.3 draws the play from.
+            var checked = 0
+            for seed in UInt64(1)...40 {
+                for play in GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                    .plays {
+                    guard let injury = play.outcome.injury else { continue }
+                    checked += 1
+                    var involved: Set<UUID> = []
+                    for matchup in play.outcome.matchups {
+                        involved.insert(matchup.attackerID)
+                        involved.insert(matchup.defenderID)
+                    }
+                    if let carrier = play.outcome.ballCarrierID { involved.insert(carrier) }
+                    if let passer = play.outcome.passerID { involved.insert(passer) }
+                    if let target = play.outcome.targetID { involved.insert(target) }
+                    // A snap with no matchups at all — a kneel — falls back to the whole squad,
+                    // which is the one case where the player need not appear above.
+                    if !involved.isEmpty {
+                        expect(involved.contains(injury.playerID),
+                               "seed \(seed): a player was hurt on a snap they were not in")
+                    }
+                }
+            }
+            expect(checked > 0, "no injury was checkable")
+        }
+
+        test("a pre-snap penalty hurts nobody") {
+            for seed in UInt64(1)...40 {
+                for play in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).plays
+                where play.outcome.result == .penalty && play.outcome.matchups.isEmpty {
+                    expect(play.outcome.injury == nil,
+                           "somebody was hurt on a play that never happened")
+                }
+            }
+        }
+
+        test("the least durable get hurt the most") {
+            // Durability decides who, the same way volatile decides who draws a flag.
+            func player(_ index: Int, durability: Int) -> Player {
+                var attributes = Attributes()
+                for attribute in Position.linebacker.ratedAttributes {
+                    attributes[attribute] = Rating(70)
+                }
+                attributes[.durability] = Rating(durability)
+                return Player(
+                    id: UUID(uuidString: String(format: "00000000-0000-4000-B000-%012X", index))!,
+                    firstName: "D", lastName: "\(index)", position: .linebacker, age: 25,
+                    attributes: attributes, potential: Rating(70)
+                )
+            }
+            let glass = player(1, durability: 40)
+            let granite = player(2, durability: 99)
+            let personnel = SnapPersonnel(offense: [glass, granite], defense: [])
+            let outcome = SnapOutcome(
+                result: .gain, yards: 4, secondsElapsed: 6,
+                matchups: [MatchupRecord(kind: .runLane, attackerID: glass.id,
+                                         defenderID: granite.id, leverage: 0.1)]
+            )
+            var glassHits = 0, graniteHits = 0
+            for seed in UInt64(1)...4_000 {
+                var rng = SeededRandom(seed: seed)
+                guard let injury = InjuryModel.draw(in: outcome, personnel: personnel, rng: &rng)
+                else { continue }
+                if injury.playerID == glass.id { glassHits += 1 } else { graniteHits += 1 }
+            }
+            expect(glassHits + graniteHits > 20,
+                   "only \(glassHits + graniteHits) injuries in 4,000 draws")
+            expect(glassHits > graniteHits,
+                   "the 40-durability player was hurt \(glassHits) times against the "
+                       + "99-durability player's \(graniteHits), so durability reads as nothing")
+        }
+
+        test("ironman misses fewer weeks, and the ladder is shared") {
+            expectEqual(PeopleRules.injurySeverity(roll: 0.5).severity, .minor)
+            expectEqual(PeopleRules.injurySeverity(roll: 0.9).severity, .moderate)
+            expectEqual(PeopleRules.injurySeverity(roll: 0.99).severity, .severe)
+            expect(PeopleRules.injuryWeeks(10, ironman: true)
+                       < PeopleRules.injuryWeeks(10, ironman: false),
+                   "ironman changed nothing about the weeks missed")
+            expect(PeopleRules.injuryWeeks(1, ironman: true) >= 1,
+                   "ironman produced an injury of under a week, which the injury type refuses")
+        }
+
+        test("anything past a knock forces the player out") {
+            for seed in UInt64(1)...60 {
+                for play in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).plays {
+                    guard let injury = play.outcome.injury else { continue }
+                    expectEqual(injury.forcedOut, injury.severity != .minor,
+                                "an injury's severity and whether it ended the player's game "
+                                    + "disagree")
+                    expect(injury.weeks >= 1, "an injury cost no weeks at all")
+                }
+            }
+        }
+    }
+}
+
 /// A caller that plays the baseline game and always makes the same conversion choice.
 struct FixedConversionCaller: PlayCaller, Sendable {
     let choice: ConversionChoice

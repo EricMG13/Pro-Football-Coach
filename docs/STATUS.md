@@ -1264,6 +1264,36 @@ clock, the period and drive bounds), `Sources/FootballSimCore/Calibration/Calibr
 `Tests/SimTests/Suites/EngineTests.swift` (an `Overtime` suite of five tests),
 `Tests/SimTests/main.swift`.
 
+### Slice 5 — injuries in play (G-26) — written, unverified
+
+Injuries came only from `PeopleLifecycleSystem`'s weekly draw, which runs at scheduler step 2 —
+**before** the week's games at steps 10 and 11 — so a player's knee went mid-week from accumulated
+workload and nobody was ever hurt in a match.
+
+Canon first (`02` §3.8). Candidates are the players the snap actually involved, taken from the
+matchups it already records, because an injury attributed to somebody on the far hash contradicts the
+picture `04` §5.3 draws from that same record. Durability decides who; `ironman` decides how long. The
+engine **reports and never applies**: `SnapResolver` cannot reach league state and must not, since a
+resolver that mutated it could not be replayed.
+
+**The severity ladder moved to `PeopleRules`**, where it should have been: `0.72`, `0.95` and three
+week ranges were literals inline in the lifecycle system, which `CLAUDE.md` forbids and which would
+have become two hand-copied ladders the moment the engine needed the same one. The weekly path's
+behaviour is unchanged by the move — `ironman` is still unpopulated, so its relief is a no-op there.
+
+Files: `docs/02-GAME-DESIGN.md` (§3.8), `Sources/FootballSimCore/Engine/MatchInjury.swift` (new),
+`Sources/FootballSimCore/Engine/SnapOutcome.swift` (the `injury` field and its setter),
+`Sources/FootballSimCore/Engine/SnapResolver.swift` (stage 5),
+`Sources/FootballSimCore/Rules/PeopleRules.swift` (the shared ladder and `ironman`'s relief),
+`Sources/FootballSimCore/People/PeopleLifecycleSystem.swift` (reads the shared ladder),
+`Sources/FootballSimCore/Rules/MatchupRules.swift` (the per-snap rate),
+`Tests/SimTests/Suites/EngineTests.swift` (an `Injuries in play` suite of six tests),
+`Tests/SimTests/main.swift`, `docs/FUTURE-SIMULATION-CONTRACT.md` (FSC-014 gains `ironman`).
+
+**`forcedOut` is recorded and not yet honoured.** Substituting the injured player needs a depth
+chart, which is slice 12. The flag exists now so that work reads something truthful instead of
+inventing its own.
+
 ---
 
 ## What exists, and what verified it

@@ -57,14 +57,20 @@ public enum SnapResolver {
         case .punt:
             outcome = resolvePunt(personnel, situation, rules, &rng)
         }
-        guard let flag else { return outcome }
         // A kick is not called back by a hold on the offensive line in this model: the kicking game
         // has its own fouls and none of the seven kinds are them. Enforcing a scrimmage flag on a
         // kick would produce a field goal that scores and is simultaneously wiped out.
-        if offensiveCall.playType == .fieldGoal || offensiveCall.playType == .punt {
-            return outcome
+        let flagged: SnapOutcome
+        if let flag, offensiveCall.playType != .fieldGoal, offensiveCall.playType != .punt {
+            flagged = PenaltyModel.applying(flag, to: outcome, situation: situation, rules: rules)
+        } else {
+            flagged = outcome
         }
-        return PenaltyModel.applying(flag, to: outcome, situation: situation, rules: rules)
+
+        // Stage 5: who got hurt. Drawn last, from the players this snap actually involved, and
+        // reported rather than applied — `02` §3.8. A pre-snap flag returned above and carries no
+        // injury, which is correct: nobody was hit on a play that did not happen.
+        return flagged.recording(InjuryModel.draw(in: flagged, personnel: personnel, rng: &rng))
     }
 
     // MARK: - Pass

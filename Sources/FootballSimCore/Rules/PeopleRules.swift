@@ -42,4 +42,38 @@ public enum PeopleRules {
             + Double(SharedRules.ratingRange.upperBound - durability.value)
                 * durabilityInjuryProbabilityScale
     }
+
+    // MARK: - Injury severity
+
+    /// The severity ladder, as constants rather than as literals at a call site.
+    ///
+    /// These four numbers lived inline in `PeopleLifecycleSystem`'s weekly draw — `0.72`, `0.95` and
+    /// the three week ranges — which `CLAUDE.md` forbids and which mattered the moment a second
+    /// caller needed the same ladder: the match engine's in-play injuries (`02` §3.8) would
+    /// otherwise have carried a hand-copied duplicate that nothing asserts agrees.
+    public static let minorInjuryShare = 0.72
+    public static let moderateInjuryShare = 0.95
+    public static let minorInjuryWeeks: ClosedRange<Int> = 1...2
+    public static let moderateInjuryWeeks: ClosedRange<Int> = 3...6
+    public static let severeInjuryWeeks: ClosedRange<Int> = 7...14
+
+    /// Severity and its week range, from one uniform roll.
+    public static func injurySeverity(
+        roll: Double
+    ) -> (severity: InjurySeverity, weeks: ClosedRange<Int>) {
+        if roll < minorInjuryShare { return (.minor, minorInjuryWeeks) }
+        if roll < moderateInjuryShare { return (.moderate, moderateInjuryWeeks) }
+        return (.severe, severeInjuryWeeks)
+    }
+
+    /// What `ironman` is worth: a share of the weeks lost, never below one.
+    ///
+    /// `02` §11.3.3 says the trait "recovers faster, misses fewer weeks". This is the second half of
+    /// that sentence, and the first half stays with recovery in the lifecycle system.
+    public static let ironmanInjuryWeekShare = 0.6
+
+    public static func injuryWeeks(_ weeks: Int, ironman: Bool) -> Int {
+        guard ironman else { return weeks }
+        return max(1, Int((Double(weeks) * ironmanInjuryWeekShare).rounded()))
+    }
 }

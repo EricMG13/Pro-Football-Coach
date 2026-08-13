@@ -129,6 +129,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runPenaltyTests()
     runKickoffTests()
     runOvertimeTests()
+    runMatchInjuryTests()
     runCalibrationTests()
     runArchitectureTests()
     runCompetitionTests()
