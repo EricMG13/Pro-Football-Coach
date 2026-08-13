@@ -1589,6 +1589,23 @@ Files: `Sources/FootballSimCore/Rules/DifficultySettings.swift` (new),
 **Not yet wired to the surfaces that would read it**: the settings screen (6) has no view, and the
 career session does not yet take a difficulty. Those are consumers, and they arrive with the screens.
 
+### Slice 19 — the glossary (G-44) — written, unverified
+
+The density model recorded that the reference product needed an in-game glossary and called it "the
+failure bound made visible". This product ships 62 dense families and had nowhere to look a word up;
+onboarding teaches the first week, not the vocabulary in season nine.
+
+Twenty-three terms — the words this game invents rather than every football word — each one sentence
+long, in five areas so the glossary can be entered from the screen where the word was met. The length
+bound is a contract test rather than a habit.
+
+Files: `Sources/ProFootballCoachUI/Glossary.swift` (new),
+`Tests/SimTests/Suites/GlossaryTests.swift` (new, three tests), `Tests/SimTests/main.swift`,
+`docs/04-UX-AND-DESIGN-SYSTEM.md` (§7.3).
+
+**No view yet.** The data and its contract exist; the screen that renders them arrives with the
+production UI, and until then this is a registry rather than a feature.
+
 **Traditions remain inert, and the repair is larger than it looks.** `02` §8 requires every generated
 tradition to carry a mechanical effect. `TraditionGrammar` produces them and nothing reads one —
 because `Programme` does not persist traditions at all: the generator builds them into an identity

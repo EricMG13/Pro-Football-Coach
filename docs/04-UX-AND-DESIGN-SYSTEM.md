@@ -627,6 +627,23 @@ snapshot versus layout assertion, and which target can host it now that full Xco
 `03b` §5's to decide and the owner's to schedule. An audit under `04b` may not score AX5 above 3 on
 the strength of this suite alone.
 
+### 7.3 The glossary — added 2026-08-13
+
+`docs/briefs/2026-08-12-density-model.md` records that the reference product needed an in-game
+glossary, and calls that "the failure bound made visible": a dense game teaches a vocabulary, and a
+player in season nine still meets a word they have not seen. This product ships 62 dense families and
+had nowhere to look one up. Onboarding (D9) teaches the first week; it does not teach the vocabulary
+afterwards.
+
+- **Definitions, not documentation.** One sentence a player can read while deciding something, in
+  this document's plain register. The bound is a contract test rather than a habit, because a
+  paragraph in a glossary is a manual and nobody reads a manual mid-decision.
+- **The words this game invents**, not every football word. Call-in, scheme fit, the portal, NIL,
+  dead money, redshirt, job security, depth chart — the vocabulary a player meets here and cannot
+  look up anywhere else.
+- **Entered from where the word was met.** Terms carry the area they belong to, so a glossary opened
+  from the cap screen starts among the professional words.
+
 ### 7.2 Sound and haptics — the contract, and the fact that there are none — added 2026-08-13
 
 **There is no audio in this product and no haptics.** Zero occurrences of any audio or haptic API,
