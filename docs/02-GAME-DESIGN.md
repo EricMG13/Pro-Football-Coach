@@ -767,6 +767,32 @@ nothing in save size, which FSC-003 makes a live concern.
   it is the closest thing the game has to a strategic identity.
 - Staff are poached by other programmes when they perform. Continuity is a resource.
 
+### 6.1 Hiring and firing — added 2026-08-13
+
+§6 makes continuity a resource and §4.1 sells "coordinators poached, replacements hired" as an
+offseason beat. Neither was reachable: `CoachIntent` had seven cases and **none concerned staff**,
+vacancies resolved deterministically inside the weekly market step, and a coach could not hire or
+fire anybody. Screens 20 and 21 exist for a system that did not.
+
+- **A replacement, not a firing.** Whole-root integrity requires complete role coverage, so releasing
+  a coordinator on Tuesday and hiring one on Friday is a world that is invalid in between — and this
+  project validates a whole copied root on every transaction. One atomic swap keeps coverage true at
+  every point a save could be written.
+- **The shortlist is generated, not stored.** A persisted pool would have to be aged and pruned, which
+  is save growth and a bounded-collection problem; a market only has to be *stable*, and the same
+  world offers the same people to the same organisation in the same season.
+- **Prestige buys interviews.** Candidates are centred on what the organisation can attract, which is
+  the same argument §8 makes for recruiting and part of why prestige moves at all.
+- **It costs money** — the new salary plus what the outgoing contract still owes — so replacing an
+  expensive coach with a cheap one is not free, and a programme that cannot pay cannot hire. That is
+  what makes it a decision rather than a wish, and it is what §10's reserves are for.
+- **The coach's own seat is not theirs to fill.** §7's carousel decides who holds it; a head coach
+  hiring their own replacement would be resigning through the staff screen.
+
+**Still open:** staff ratings do not change over a career — nobody develops, and a coordinator who
+wins for a decade is exactly as good as the day they arrived. Poaching is also still AI-only: nothing
+comes for the coach's staff because they are performing.
+
 **The spine is connected — added 2026-08-13.** "The roster's fit to it modifies every matchup in the
 engine" was false in both models: `SnapResolver` passed a literal zero for scheme fit at every call
 site, so `MatchupRules.schemeFitWeight` was a constant nothing multiplied, and the abstracted model

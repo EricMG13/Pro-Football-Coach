@@ -1712,6 +1712,28 @@ per week rather than per player), `Sources/FootballSimCore/People/PeopleState.sw
 (`DevelopmentReason.facilities`), `Tests/SimTests/Suites/FinanceTests.swift` (new, five tests),
 `Tests/SimTests/main.swift`, `docs/02-GAME-DESIGN.md` (§10).
 
+### Slice 24 — hiring and firing (G-31) — written, unverified
+
+`02` §6 makes staff continuity a resource and §4.1 sells "coordinators poached, replacements hired".
+Neither was reachable: `CoachIntent` had seven cases and **none concerned staff**, and screens 20 and
+21 existed for a system that did not.
+
+`StaffMarketSystem` replaces one member of staff with a generated candidate, atomically — because
+whole-root integrity requires complete role coverage and a world with a vacancy is a world that
+cannot be saved. The shortlist is generated rather than persisted (a stored pool is save growth; a
+market only has to be stable), prestige decides who takes the interview, and the swap costs the new
+salary plus severance, so a programme that cannot pay cannot hire.
+
+Files: `Sources/FootballSimCore/People/StaffMarketSystem.swift` (new),
+`Sources/FootballSimCore/Rules/PeopleRules.swift` (shortlist size, severance),
+`Tests/SimTests/Suites/StaffMarketTests.swift` (new, five tests), `Tests/SimTests/main.swift`,
+`docs/02-GAME-DESIGN.md` (§6.1).
+
+**Two things it does not do, named in canon rather than implied:** staff ratings still never change
+over a career, so a coordinator who wins for a decade is as good as the day they arrived; and nothing
+poaches the coach's staff for performing. Both are behaviour in the weekly market step rather than
+new state, and both are their own change.
+
 ---
 
 ## What exists, and what verified it

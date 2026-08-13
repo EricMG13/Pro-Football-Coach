@@ -43,6 +43,13 @@ public enum PeopleRules {
                 * durabilityInjuryProbabilityScale
     }
 
+    /// How many people are available for a staff role at once. `02` §6.1. Small: a shortlist is a
+    /// decision, a directory is a search.
+    public static let staffCandidatesPerRole = 5
+    /// What is still owed to the coach being replaced, as a fraction of their salary. Replacing an
+    /// expensive coach with a cheap one is not free.
+    public static let staffSeveranceShare = 2
+
     // MARK: - Morale
 
     /// Where a player sits before anything has happened to them. `02` §5.1.
