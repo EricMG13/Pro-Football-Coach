@@ -138,7 +138,11 @@ Each production-grade screen family supplies:
 - one continuous-save context shared with adjacent screens;
 - exact read-model mapping for every visible fact;
 - keyboard/focus and VoiceOver order;
-- Reduce Motion, sound-off and haptic equivalents;
+- Reduce Motion, sound-off and haptic equivalents. **Read `04` §7.2 before scoring this:** the
+  product currently has no audio and no haptics, so this criterion scores an equivalence to nothing
+  and cannot be failed. Until the owner settles the fork in §7.2 — ship silent and say so, or budget
+  a sound pass — a surface should be scored on Reduce Motion alone rather than credited for a
+  fallback it was never asked for;
 - screenshot and automated interaction evidence;
 - an independent visual review at original pixels.
 

@@ -1458,6 +1458,23 @@ Files: `App/PrivacyInfo.xcprivacy` (new), `App/Assets.xcassets/` (new, two `Cont
 `App/project.yml` (`ASSETCATALOG_COMPILER_APPICON_NAME`),
 `docs/PRE-DEPLOYMENT-CHECKLIST.md` (§4b).
 
+### Slice 13 — the sound and haptics contract (G-40, G-41) — canon only
+
+There is no audio in this product and no haptics: no API call, no asset, no design. The only two
+mentions were `04` §7's accessibility clause and `04b`'s rubric line scoring "sound-off and haptic
+equivalents" — so **the rubric has been scoring a fallback for something that does not exist**, which
+reads as a pass and means nothing.
+
+That is a live defect in an audit instrument, not a missing feature request, and it is fixed the
+honest way: `04` §7.2 now states the absence plainly, states the contract a sound pass would have to
+satisfy if one is budgeted, and puts the fork to the owner — ship silent **and say so**, or build it.
+`04b` now tells a scorer to read that section before crediting the criterion.
+
+**No code.** A `SoundKit` with no assets behind it would be exactly the dead capability this project
+names as its first failure mode, so the slice is canon and rubric only.
+
+Files: `docs/04-UX-AND-DESIGN-SYSTEM.md` (§7 clause, §7.2), `docs/04b-AUDIT-RUBRIC.md`.
+
 **Traditions remain inert, and the repair is larger than it looks.** `02` §8 requires every generated
 tradition to carry a mechanical effect. `TraditionGrammar` produces them and nothing reads one —
 because `Programme` does not persist traditions at all: the generator builds them into an identity
