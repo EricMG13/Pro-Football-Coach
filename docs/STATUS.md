@@ -1541,6 +1541,27 @@ driver), `Tests/SimTests/Suites/MatchIntegrationTests.swift` (a `Call-ins` suite
 and it is honest, but it is **not the player answering**. A surface that pauses a match and asks needs
 a match session the week can suspend on — UI-milestone work, named rather than implied.
 
+### Slice 17 — the inbox (G-20) — written, unverified
+
+`02` §7 records the previous build's failure verbatim — "**zero** inbound events; the game never
+initiated a conversation" — and makes the inbox the primary channel for stakes. It did not exist
+here either: `expiringInboundEvents` was an inactive scheduler step, the read-model provider said so
+in a comment, and the only thing that asked the coach anything was `MandatoryDecision`, whose four
+subjects are all college roster paperwork.
+
+`InboxReadModel` is derived, never stored — the news feed's rule — and is made of three things: the
+pending decisions wearing a sender, stakeholder groups that have moved far enough from neutral to
+speak, and the week's heaviest story by the same `historicalWeight` the archive uses. **A contented
+world is quiet**, deliberately.
+
+Files: `Sources/FootballSimCore/History/InboxReadModel.swift` (new),
+`Tests/SimTests/Suites/InboxTests.swift` (new, five tests), `Tests/SimTests/main.swift` (default run
+and an `--inbox` gate), `docs/02-GAME-DESIGN.md` (§7).
+
+**`expiringInboundEvents` is still inactive and still honest.** Nothing is stored, so nothing
+expires. An item with its own deadline — a recruit who needs an answer by Friday, an offer that
+lapses — needs persisted inbound state and is its own slice.
+
 **Traditions remain inert, and the repair is larger than it looks.** `02` §8 requires every generated
 tradition to carry a mechanical effect. `TraditionGrammar` produces them and nothing reads one —
 because `Programme` does not persist traditions at all: the generator builds them into an identity

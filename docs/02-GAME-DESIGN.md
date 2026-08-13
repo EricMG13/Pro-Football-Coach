@@ -746,6 +746,27 @@ Pressure is continuous, legible, and comes from named people.
 - **Everything arrives as an inbound event.** §6.0's second finding was that the previous build had
   **zero** of these: the game never initiated a conversation. Here, the inbox is the primary channel
   and always has something requiring an answer.
+
+**The inbox, added 2026-08-13 — and what it is made of.** It is **derived, never stored**, for the
+reason the news feed is (§4.2b): a save carries facts and the wording is computed, so copy can change
+without migrating anybody's league. Three kinds of item, in weight order:
+
+1. **What is being asked** — the pending mandatory decisions, wearing a sender. An item that asks is
+   a decision rather than a parallel copy of one, so there is no second decision system to keep in
+   step with the first, and answering an item is the career session's existing path.
+2. **What is being told** — a stakeholder group whose disposition has moved far enough from neutral
+   to say so. **A contented world is quiet**: a channel that speaks every week about nothing is the
+   dashboard this section argues against, and pressure that is always on is not pressure.
+3. **What happened** — the week's heaviest story, ranked by the same `historicalWeight` the archive
+   and the news feed use. One definition of important, used three times rather than three
+   definitions of it.
+
+Bounded at 24 and rebuilt weekly rather than accumulated. Derived items still take a deterministic
+identity from the world seed and the week, so a rebuilt inbox does not reshuffle under a reader.
+
+**What is still missing:** `WorldScheduler.expiringInboundEvents` stays inactive, because nothing is
+stored to expire. An item with its own deadline — a recruit who needs an answer by Friday, an offer
+that lapses — needs persisted inbound state, and that is a schema change with its own slice.
 - Firing can happen in-season. The carousel can never dead-end: there is always at least one offer or
   an explicit year out of the game.
 
