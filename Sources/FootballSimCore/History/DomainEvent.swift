@@ -143,6 +143,7 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
         contract: Contract
     )
     case proContractExpired(playerID: UUID)
+    case proCapComplianceRelease(playerID: UUID, teamID: UUID, deadMoneyAdded: Int)
     case proDraftPick(
         prospectID: UUID,
         teamID: UUID,
@@ -188,7 +189,8 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
         case .playerTransferred, .proTradeCompleted, .proWaiverClaimed: return 40
         case .staffHired: return 35
         case .prospectCommitted, .commitmentResolved: return 30
-        case .playerJoined, .playerDeparted, .portalEntered, .redshirtResolved, .proPlayerSigned:
+        case .playerJoined, .playerDeparted, .portalEntered, .redshirtResolved, .proPlayerSigned,
+             .proCapComplianceRelease:
             return 20
 
         case .integrityChecked,
@@ -272,6 +274,8 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
             return [playerID]
         case let .proDraftPick(prospectID, teamID, _, _):
             return [prospectID, teamID]
+        case let .proCapComplianceRelease(playerID, teamID, _):
+            return [playerID, teamID]
         case let .proPracticeSquadMoved(playerID, teamID, _):
             return [playerID, teamID]
         case let .proTradeCompleted(sourcePlayerID, sourceTeamID, destinationPlayerID, destinationTeamID):

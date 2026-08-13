@@ -143,6 +143,134 @@ does not hold, and stops at the one they do:
 
 Falsifier: `--pro-soak` fails if a season passes with no `proDraftPick` event.
 
+### 4.2a Roster turnover — what makes beats 1 and 2 real, added 2026-08-12
+
+The driver above is necessary and was not sufficient, and both gates stayed red to say so: bootstrap
+filled every professional roster to exactly 53/53 and issued **no contracts**, so nothing expired,
+nobody reached free agency, and the draft's first pick hit `activeRosterFull`. Beats 1 and 2 were
+prose with nothing behind them.
+
+**Two pressures, and conflating them is what left this stuck.** Headcount and money are different
+constraints with different mechanisms, and "what forces cuts to 53" is the wrong question for the
+first one:
+
+1. **Headcount is freed by expiry and retirement — beat 1.** This is the turnover engine. A roster
+   drops below 53 because contracts ended, not because anyone was cut. It is what makes room for
+   free agency and the draft, and it is why beat 1 comes first.
+2. **Money is enforced by the cap-compliance date — beat 2.** Cuts happen when the cap binds. A
+   team at 48 players and over the cap still cuts; a team at 53 and comfortably under does not.
+
+**Bootstrap issues contracts, with a staggered term spread.** Every bootstrapped professional gets
+a contract whose remaining years are drawn deterministically so that **roughly a fifth of each
+roster reaches expiry each season** — terms of one to five years, spread evenly.
+
+*A fifth rather than a quarter, and the reason is a bound rather than a preference.* The free-agent
+pool is capped at 512 entries (`ProMarketState.maximumFreeAgentIDs`, which `03b` requires so the
+pool cannot grow across seasons). Thirty-two rosters of 53 is 1,696 professionals; a quarter of them
+is 424 expiries in one offseason, which fits the bound only if every prior year's unsigned player
+has already left it. A fifth is roughly 339, which leaves real headroom for carryover, and still
+turns over about eleven players per roster per season. Without this the league has no expiries until the first
+contract signed in play runs out, which is several seasons of a dead market; with a flat term every
+roster expires at once, which is a cliff rather than turnover. Salaries are rating-derived and the
+bootstrapped total must be cap-legal at generation, in the same way team colours must pass contrast
+at generation rather than being fixed up later.
+
+**Cuts are forced by the compliance date, and by nothing else — owner decision, 2026-08-12.** The
+alternative on the table was letting incoming draft picks force a corresponding release, and it is
+rejected: a pick is not a cut instrument, and a league where the draft quietly releases players
+makes the draft the place roster decisions happen instead of the place talent arrives. Beat 2 owns
+cutting. A team over the cap on the compliance date releases until it is legal; a team under it
+cuts nobody, whatever its headcount.
+
+**The AI-facing half is built — `ProManagementSystem.enforceCapCompliance`, added 2026-08-13.**
+Every professional team except the one the player controls is released down to cap-legal at the
+week-21 boundary, cheapest dead money first, entirely within the same `advanceWeek` transition that
+already runs beat 1's expiry — so no *persisted* root is ever over the cap, the same guarantee
+`docs/PORT-LOG.md`'s cap-laundering defences already protect. `WorldIntegrity.checkProfessionalCap`
+is untouched: it stays exactly as strict as it has always been, checking the final state only. It
+sits immediately after expiry and before anything downstream takes the season-projected view of the
+root — the college portal's postseason commit does, later in the same step — because the same D-1
+lesson applies here that applied to expiry itself: a hand-built fixture that put one team over the
+cap and skipped this step surfaced as `portalCommitFailed(.postseason)`, not as a cap error, until
+compliance was wired at the right point.
+
+**The controlled team's own cap choice is deliberately not built here.** Every other consequential
+choice in this game — a redshirt, a portal decision, an NIL allocation, a recruiting action — is the
+player's to make through a mandatory decision, never automated out from under them. Forcing releases
+on the player's own roster the same way the AI's are forced would break that pattern, so this pass
+skips the controlled team entirely: if it is ever over cap, the week does not advance until the
+player resolves it themselves, the same behaviour as before this change. A mandatory-decision surface
+for that case is real remaining work, not built here, and needs its own design pass before it is.
+
+Under today's generation this mechanism has no reachable trigger: every signing path already refuses
+anything that would exceed the cap, and every contract this project generates is flat-salaried
+against a cap that only grows, so no current game state can produce an over-cap team at all — proven
+by `--pro-market-root-probe` finding zero, and unchanged by this addition. What legitimate mechanic
+would ever put a team over the cap remains an open question this document does not answer.
+
+**The draft can never deadlock, and that is an assertion rather than a mechanism.** Expiry frees
+headcount before the draft opens, so a team arriving at its pick with no room is a bug in beat 1,
+not a case for the draft to work around. `--pro-draft-probe` is the instrument: it fails if any
+pick is refused for `activeRosterFull`. *An earlier draft of this section had the pick itself
+release the lowest-value non-guaranteed player. That was written before the owner's decision above
+and was never implemented; it is recorded here as rejected so it is not reintroduced as an
+obvious-looking fix.*
+
+**The last body at a position is re-signed, not held on a dead deal — added 2026-08-13.** A 53-man
+roster carries exactly one kicker and one punter, so expiring every run-out contract can leave a
+club with nobody who can play the position. The club keeps that player. What it does *not* do is
+keep the expired contract: a deal whose term has run out is over, and leaving it attached to the
+player is a lie about the books that the cap invariant correctly refuses — a contract is valid only
+while the season is inside its term. The club **re-signs** the player instead, one year at their
+last base salary and no signing bonus, so the deal carries no dead money if the club moves on the
+following year.
+
+*Recorded because the first version held the expired deal and cost two defects.* Eleven of thirty-two
+teams became permanently illegal the moment the root was projected into the next season, and since
+the college portal's commit is what takes that projection, a professional contract rule surfaced as
+`portalCommitFailed(.postseason)` — the defect register's D-1, whose attribution was open. No team
+was ever over the cap. Both are fixed by expiry running at the right point in the week and by this
+rule.
+
+**Falsifiers, instrumented in advance.**
+
+- `--pro-soak` fails if a season passes with no contract reaching expiry, or if no player reaches
+  free agency by way of one.
+- No professional contract survives its own term: at every season boundary, every contract attached
+  to a rostered player has a term that still contains the season about to start.
+- `--pro-draft-probe` fails if any pick is refused for `activeRosterFull`. That error is now
+  unreachable by construction, so its appearance falsifies the deadlock guard.
+- The bootstrapped league is cap-legal for all 32 teams at season 1, asserted at generation.
+- Expiry is deterministic: the same seed produces the same expiry schedule across processes.
+
+### 4.1a Jersey numbers — added 2026-08-13
+
+A number is a **roster-scoped derivation, not a stored field**, and the reason is where uniqueness
+lives. Numbers are unique within a team and meaningless outside one, so storing one on the player
+would put a team's invariant on an object that changes teams — every transfer, draft pick, signing
+and walk-on would have to reassign and resolve collisions, and any path that forgot would produce
+two of the same number with nothing to catch it. Derived per roster, uniqueness holds by
+construction and there is no path to forget.
+
+The rule, in order:
+
+1. Each player has a **preferred number**, drawn from their identifier bytes into the band their
+   position wears. Identifier bytes, never a salted hash — the same clause `03` §3 states for seeds,
+   for the same reason: a per-launch hash gives the same player a different number each launch.
+2. **Uniqueness is per unit, not per roster**, because what a number has to distinguish is two
+   players who could be on the field together. This is also the only rule that can be satisfied: a
+   college roster is 105 players and there are 100 legal numbers, so a roster-wide constraint is not
+   merely stricter than the real one, it is unsatisfiable. Offence, defence and special teams each
+   number independently.
+3. Within a unit, ties are settled by identifier, lowest first. The winner keeps the preferred
+   number; the loser takes the next free number in its band, wrapping.
+4. A band that fills spills into the general range, so a unit can always be numbered.
+
+**The ceiling, stated rather than discovered:** a player's number can change when a *teammate*
+leaves, because the collision order shifts. Real squads renumber rarely and deliberately. If that
+becomes visible — a number moving in a screenshot a player took last week — the fix is to persist
+the assignment per roster, and that is a schema change with a migration, not a tweak.
+
 ### 4.2b The news feed — added 2026-08-12
 
 The living world reports itself. `DomainEventPayload` already fixes the mechanism — "Presentation
@@ -180,6 +308,22 @@ Recruiting is the college tier's signature system and its throughput problem (D3
 **Throughput.** The player never touches more than ~40 recruits a season; the AI runs the other
 ~133 programmes' classes under D3's abstracted model. The week's recruiting beat is 90 seconds
 because the interface is a shortlist with a budget, not a database.
+
+**The weekly contact budget is built — `ProgrammeRecruitingState.contactPointsRemaining`, reset to
+`CollegeRules.weeklyRecruitingContactPoints` (100) every week by `WorldScheduler`.** `contact` and
+`evaluate` spend it directly; `scheduleVisit` draws `CollegeRules.visitContactCost` (30) from the
+same pool rather than a separate visits counter, so `RecruitingBoardReadModel.Capacity`'s "hours"
+field reads the pool and its "visits" field is the pool divided by the visit cost — a real derived
+count, not an invented one. Confirmed live in the shipped app: `HOURS 100h` and `VISITS 3` at week
+one on the bootstrapped default seed, moving when a `contact` action is committed.
+
+*Recorded because the first pass through this section got it wrong.* A search for "budget" and
+"weekly hours" missed the resource under its actual name, and G-01's Recruiting Board provider
+briefly shipped `Capacity.weeklyHoursRemaining`/`officialVisitsRemaining` as `Int?` under a "G-18:
+not built" note — asserting a gap that did not exist. The wrong finding had already reached
+`docs/STATUS.md`, `docs/OWNER-WALKTHROUGH.md` and the plan's own gap register before a closer read
+of `CollegeState.swift` caught it; all three carry a same-day correction rather than a silent edit,
+since a mistake that already shipped a claim is not the same as one caught before it did.
 
 ---
 
@@ -239,6 +383,25 @@ Identity accumulates in the save rather than shipping with it.
   given week, a regional recruiting bonus, a morale effect after a specific outcome.
 - **Conference realignment** driven by performance, market and geography, so the map changes across a
   career.
+
+**How realignment moves the map — added 2026-08-12.** It is a **swap**, not a migration. Each season
+at most `CollegeRules.realignmentSwapsPerSeason` pairs of programmes exchange conferences.
+
+*A swap rather than a move, and the reason is structural rather than stylistic.* A conference holds
+12 to 16 programmes summing to 134 (§11.1), and schedule generation, standings, tiebreaks and
+whole-root topology integrity all read that shape. A one-way move makes one conference 11 and
+another 17, so every one of those has to cope with a size that the rules forbid. A swap leaves every
+conference exactly the size it was, so the map changes while nothing downstream can observe a size
+it was not built for.
+
+The pair chosen is the one that most improves **geographic fit**: each programme is scored by the
+distance from its city to the centroid of its conference's cities, and a swap is taken only when it
+lowers the total. Performance and market enter through prestige, which already follows the table
+(§8) and already moves a programme's standing in the sport. Ties break on programme identity, so the
+same world realigns the same way on every run.
+
+Falsifier: after a swap, every conference still holds a legal number of programmes, and every
+programme still belongs to exactly one.
 
 **Programme evolution — added 2026-08-12.** Prestige was frozen at generation, so a programme that
 won titles for a decade was exactly as prestigious as one that never won — while prestige drives

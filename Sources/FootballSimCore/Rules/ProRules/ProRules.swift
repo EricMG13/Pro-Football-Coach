@@ -98,6 +98,29 @@ public enum ProRules {
     /// instead of asking for an unbounded allocation and trapping.
     public static let contractYearsRange: ClosedRange<Int> = 1...7
 
+    /// How many distinct terms a bootstrapped roster rotates through, so roughly `1/spread` of it
+    /// expires each season (`02` section 4.2a).
+    ///
+    /// Five, not four, and the reason is a bound rather than a preference: expiries land in a
+    /// free-agent pool capped at `ProMarketState.maximumFreeAgentIDs` (512) against
+    /// `teamCount * activeRosterLimit` professionals. A quarter of 1,696 is 424, which fits only if
+    /// every prior year's unsigned player has already left the pool; a fifth is about 339, which
+    /// leaves headroom for carryover and still turns over eleven players per roster per season.
+    public static let bootstrapContractTermSpread = 5
+
+    /// The share of the cap a bootstrapped roster commits, leaving room for the draft class and
+    /// in-season signings. A league that spends its whole cap at generation is non-compliant the
+    /// moment it drafts anyone.
+    public static let bootstrapPayrollPercentOfCap = 85
+
+    /// The floor a bootstrapped deal pays. Weighted shares of a payroll can round to nothing for
+    /// the last man on a roster, and a contract paying zero is not a contract.
+    public static let bootstrapMinimumSalary = 795_000
+
+    /// The season the base cap is stated for; cap growth compounds from here.
+    public static let baseSalaryCapSeason = 0
+
+
     // MARK: - The draft
 
     public static let draftRounds = 7

@@ -301,9 +301,13 @@ func runProMarketTests() {
             expectEqual(first.eventPayloads, second.eventPayloads)
             let aiTeamID = try require(first.state.proTeams.ids.dropFirst().first)
             expectEqual(first.signedPlayerIDs.count, 1)
-            expect(first.state.proTeams[aiTeamID]?.rosterIDs.contains(first.signedPlayerIDs[0]) == true)
+            // `require` rather than `[0]`: an empty signing list is a failure to report, not a
+            // reason to trap. Indexing it here aborted the process and took the rest of the suite
+            // — and, in the full run, every suite after it — down with it.
+            let signedPlayerID = try require(first.signedPlayerIDs.first)
+            expect(first.state.proTeams[aiTeamID]?.rosterIDs.contains(signedPlayerID) == true)
             let controlledTeamID = try require(first.state.proTeams.ids.first)
-            expect(first.state.proTeams[controlledTeamID]?.rosterIDs.contains(first.signedPlayerIDs[0]) == false)
+            expect(first.state.proTeams[controlledTeamID]?.rosterIDs.contains(signedPlayerID) == false)
             expect(WorldIntegrity.check(first.state).isValid)
         }
 
@@ -348,10 +352,19 @@ private func require<T>(_ value: T?) throws -> T {
 }
 
 @discardableResult
+/// Opens one roster slot and puts the player it displaces into the market.
+///
+/// The contract goes with them, and that is not incidental. `openOffseason` builds the free-agent
+/// pool from players who are unowned **and uncontracted**, so before `0deb629` — when a generated
+/// world issued no contracts at all — removing a player from a roster was enough to make them a
+/// free agent. Once bootstrap began issuing contracts it silently stopped being enough: the pool
+/// came back empty, the AI signed nobody, and a test that indexed the first signing crashed the
+/// whole process instead of failing one check.
 private func removeProRosterPlayer(teamID: UUID, in state: inout GameState) -> UUID? {
     guard let playerID = state.proTeams[teamID]?.rosterIDs.first else { return nil }
     _ = state.proTeams.update(teamID) { team in
         team.rosterIDs.removeAll { $0 == playerID }
     }
+    state.players.update(playerID) { $0.contract = nil }
     return playerID
 }

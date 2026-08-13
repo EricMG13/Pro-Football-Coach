@@ -32,6 +32,7 @@ extension Attribute: CodingKeyRepresentable {}
 extension CoachAttribute: CodingKeyRepresentable {}
 extension Position: CodingKeyRepresentable {}
 extension PositionGroup: CodingKeyRepresentable {}
+extension Unit: CodingKeyRepresentable {}
 extension Trait: CodingKeyRepresentable {}
 extension Tier: CodingKeyRepresentable {}
 extension Side: CodingKeyRepresentable {}

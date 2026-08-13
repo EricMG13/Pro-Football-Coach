@@ -15,7 +15,10 @@ public enum MandatoryDecisionSubject: Codable, Sendable, Equatable {
         }
     }
 
-    var entityID: UUID {
+    /// The person the decision is about. Public because a read model must name them: a decision
+    /// headed "Recruiting" rather than "Recruiting: Marcus Reed" is the density defect `04` §4.5
+    /// calls a surface that costs a row and says nothing.
+    public var entityID: UUID {
         switch self {
         case let .recruiting(prospectID): return prospectID
         case let .portalRetention(playerID, _),

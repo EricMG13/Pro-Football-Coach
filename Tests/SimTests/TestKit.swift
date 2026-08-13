@@ -12,9 +12,21 @@ enum TestKit {
     nonisolated(unsafe) private static var testsRun = 0
     nonisolated(unsafe) private static var failedTests = Set<String>()
 
+    /// Reports each suite as it closes, so a run that dies still says how far it got.
+    ///
+    /// It reported only at `finish()` until 2026-08-13. The first full run since `0deb629` hit a
+    /// `try!` inside a test fixture; the process aborted, and because nothing had been printed the
+    /// log was the fatal error and nothing else — no account of the twenty suites that had already
+    /// passed, and no indication of where the run was. That was recoverable only because the
+    /// failure was deterministic and could be hunted down by a second run.
     static func suite(_ name: String, _ body: () -> Void) {
         suiteName = name
+        let testsBefore = testsRun
+        let failuresBefore = failures.count
         body()
+        let failed = failures.count - failuresBefore
+        print("[\(failed == 0 ? "ok  " : "FAIL")] \(name) — \(testsRun - testsBefore) tests"
+            + (failed == 0 ? "" : ", \(failed) failed checks"))
     }
 
     static func test(_ name: String, _ body: () throws -> Void) {

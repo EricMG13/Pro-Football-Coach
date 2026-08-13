@@ -1,9 +1,9 @@
 import SwiftUI
-import ProFootballCoachUI
+import CoachWorldApp
 
 @main
 struct ProFootballCoachApp: App {
     var body: some Scene {
-        WindowGroup { RootView() }
+        WindowGroup { CoachWorldAppRootView() }
     }
 }

@@ -19,6 +19,13 @@ public enum CollegeRules {
     /// rules module owns the shape only.
     public static let conferenceSizeRange: ClosedRange<Int> = 12...16
 
+    /// Pairs of programmes that exchange conferences each season. `02` §8.
+    ///
+    /// Two, so the map is different after a career and recognisable after a season — canon's own
+    /// phrasing is "change the map without churning it". Swaps rather than moves, so every
+    /// conference keeps a legal size by construction.
+    public static let realignmentSwapsPerSeason = 2
+
     // MARK: - The calendar
 
     public static let gamesPerRegularSeason = 12

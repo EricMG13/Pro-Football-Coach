@@ -16,6 +16,7 @@ let package = Package(
     products: [
         .library(name: "FootballSimCore", targets: ["FootballSimCore"]),
         .library(name: "ProFootballCoachUI", targets: ["ProFootballCoachUI"]),
+        .library(name: "CoachWorldApp", targets: ["CoachWorldApp"]),
     ],
     targets: [
         .target(name: "FootballSimCore", path: "Sources/FootballSimCore"),
@@ -24,11 +25,23 @@ let package = Package(
             dependencies: ["FootballSimCore"],
             path: "Sources/ProFootballCoachUI"
         ),
+        // The composition layer. It is the only place allowed to see both the authoritative root
+        // and the screen read models, because mapping one to the other is what it exists to do:
+        // FootballSimCore may not import the UI, and ProFootballCoachUI may not name `GameState`
+        // (`03b` §1, asserted by ContractTests). Neither module can therefore build a truthful read
+        // model on its own. Inside this target the same boundary holds file by file rather than
+        // module by module — a file that imports SwiftUI may not name `GameState` — and the
+        // contract scan enumerates that class by construction rather than by directory.
+        .target(
+            name: "CoachWorldApp",
+            dependencies: ["FootballSimCore", "ProFootballCoachUI"],
+            path: "Sources/CoachWorldApp"
+        ),
         // Hand-rolled harness (see Tests/SimTests/TestKit.swift): XCTest and
         // swift-testing both require full Xcode, so the suite runs as an executable.
         .executableTarget(
             name: "SimTests",
-            dependencies: ["FootballSimCore", "ProFootballCoachUI"],
+            dependencies: ["FootballSimCore", "ProFootballCoachUI", "CoachWorldApp"],
             path: "Tests/SimTests"
         ),
     ],

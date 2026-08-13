@@ -696,8 +696,28 @@ public enum WorldIntegrity {
         let awayParticipants = Set(result.awayParticipantIDs)
         let participants = homeParticipants.union(awayParticipants)
         let lineIDs = result.playerStatistics.map(\.playerID)
-        return homeParticipants.isSubset(of: homeRoster)
-            && awayParticipants.isSubset(of: awayRoster)
+
+        // FSC-013. Checking participants against the roster an organisation holds *now* is truthful
+        // only while ownership never changes inside a live season. The moment anything releases a
+        // player mid-season — a trade, a cut, or a contract expiring in the final week — every game
+        // they had already played became invalid, which is a false accusation about the past rather
+        // than a real defect in it.
+        //
+        // A player's career record already says which organisation they belonged to in which season,
+        // bounded and persisted since M2, so no new state is needed. Tenure legalises a *departure*,
+        // never an impostor: it must name this organisation and this season.
+        func belonged(_ playerID: UUID, to organisationID: UUID) -> Bool {
+            state.people.playerCareers[playerID]?.seasons.contains {
+                $0.organisationID == organisationID && $0.season == game.season
+            } ?? false
+        }
+
+        return homeParticipants.allSatisfy {
+            homeRoster.contains($0) || belonged($0, to: game.homeID)
+        }
+            && awayParticipants.allSatisfy {
+                awayRoster.contains($0) || belonged($0, to: game.awayID)
+            }
             && participants.allSatisfy { state.players[$0] != nil }
             && Set(lineIDs).count == lineIDs.count
             && Set(lineIDs).isSubset(of: participants)

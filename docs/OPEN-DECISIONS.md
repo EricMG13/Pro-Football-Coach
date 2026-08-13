@@ -147,6 +147,27 @@ tuning attempts. Or if per-snap resolution cannot meet D4's frame budget.
 **Cost of reversal: very high.** `03` and `04` both assume matchup-level causality is available to
 narrate. Moving to (b) after `04` is written invalidates the match view's information design.
 
+**Calibration status and sequencing, 2026-08-12.** P4 holds 5–6 of 24 bands. The diagnosis in
+`docs/STATUS.md` is model thinness — no per-drive accounting, a thin run game — rather than
+constants, and that diagnosis matters for what to do next: **the falsifier above has not fired.**
+It fires on five consecutive tuning attempts where no parameter set holds two bands at once, which
+is evidence that the *architecture* cannot be tuned. What the current failures show is a model too
+thin to have the quantities the bands are stated over, which is a different problem with a different
+fix — widen the model, do not tune the grid.
+
+**Sequenced deliberately, not deferred by neglect.** Per-drive accounting is a change to the core
+loop that every calibration number is measured against, so doing it beside another large engine
+change would make a red band impossible to attribute. It is therefore scheduled after conference
+realignment and outside the M8 production-UI path, which does not depend on it: the UI reads
+recorded outcomes, and a recorded outcome is equally recordable whether or not its distribution is
+yet correct. Nothing shippable is blocked by P4 today; what is blocked is claiming the match is
+*calibrated*, and no document claims that.
+
+**The rule that keeps this honest:** tuning attempts against the current model do not count toward
+the falsifier's five, because they are not attempts at the thing being falsified. When per-drive
+accounting exists and the bands still cannot be held simultaneously, that is when D2's falsifier is
+being tested, and the count starts there.
+
 ---
 
 ## D3 — Two-tier simulation

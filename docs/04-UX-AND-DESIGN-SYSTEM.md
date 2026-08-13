@@ -599,6 +599,32 @@ before relying on either. The 44 × 44 pt touch floor is HIG-verified (Apple's s
 - Loading never displays invented percentage progress.
 - Empty, error, interrupted and resume states remain inside the composition they belong to.
 
+### 7.1 What the AX5 contract asserts in the suite — added 2026-08-13
+
+G-12 asks for an AX5 instrument that enumerates families **by construction**. The enumeration is
+settled here; the rendering is not, and the difference is stated rather than blurred.
+
+**The enumeration.** Families come from `CoachWorldScreenID` in `ScreenRegistry.swift`, and a family
+is *landed* when a view named for it exists — `coachingHQ` → `CoachingHQView.swift`. Every one of
+the 62 families is therefore either landed and checked, or pending and named. The suite asserts that
+partition is total, so a view added tomorrow is inside the contract the day its file appears rather
+than the day someone remembers to list it.
+
+**What is asserted of a landed family, and what each clause stands for.**
+
+1. It declares an accessibility-size composition (`dynamicTypeSize.isAccessibilitySize`). A screen
+   with no AX5 branch has not had AX5 considered; this catches the omission, not the quality.
+2. It declares deterministic VoiceOver order (`accessibilitySortPriority`). This is the
+   world-context → dominant-object → evidence → actions → navigation rule above, made checkable.
+
+**What is not asserted, and must not be claimed.** *No datum lost* and *no clipping* are properties
+of a render, and the suite is a headless executable with neither XCTest nor a view host — it cannot
+see a laid-out frame. The two clauses above are the source-visible proxy for having done the work,
+not evidence that the work is correct. **The rendered limb of G-12 stays open**, and its mechanism —
+snapshot versus layout assertion, and which target can host it now that full Xcode is present — is
+`03b` §5's to decide and the owner's to schedule. An audit under `04b` may not score AX5 above 3 on
+the strength of this suite alone.
+
 ## 8. Canonical v1 screen inventory — 62 families
 
 Counting rule: a screen is a distinct player-facing destination or task surface. Loading, empty,

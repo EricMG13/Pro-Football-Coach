@@ -1,6 +1,16 @@
 // Test entry point. Add each new suite's runner here.
+
+// Unbuffered, so the per-suite lines `TestKit.suite` now prints reach the log as they happen.
+//
+// `print` is line-buffered on a terminal and fully buffered down a pipe, which is how every
+// automated run reads it. Together with the per-suite reporting, this is what turns an aborted run
+// from a two-line log into an account of where it got to.
+import Foundation
+setvbuf(stdout, nil, _IONBF, 0)
 if CommandLine.arguments.contains("--event-ledger-batch") {
     runEventLedgerBatchTests()
+} else if CommandLine.arguments.contains("--roster-population") {
+    runRosterPopulationTests()
 } else if CommandLine.arguments.contains("--trait-population") {
     runTraitPopulationTests()
 } else if CommandLine.arguments.contains("--portal-matching") {
@@ -17,6 +27,18 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runProManagementTests()
 } else if CommandLine.arguments.contains("--pro-market") {
     runProMarketTests()
+} else if CommandLine.arguments.contains("--cap-compliance") {
+    runCapComplianceTests()
+} else if CommandLine.arguments.contains("--season-rollover") {
+    runSeasonRolloverTests()
+} else if CommandLine.arguments.contains("--jersey-numbers") {
+    runJerseyNumberTests()
+} else if CommandLine.arguments.contains("--week-advance-timing") {
+    runWeekAdvanceTimingProbe()
+} else if CommandLine.arguments.contains("--pro-market-root-probe") {
+    runProMarketRootProbe()
+} else if CommandLine.arguments.contains("--screen-read-models") {
+    runReadModelProviderTests()
 } else if CommandLine.arguments.contains("--history-read-model") {
     runHistoryReadModelTests()
 } else if CommandLine.arguments.contains("--career-portal-decisions") {
@@ -50,6 +72,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runSeedDerivationTests()
     runContractTests()
     runDesignContractTests()
+    runAccessibilityReflowTests()
     runSaveEnvelopeTests()
     runRulesTests()
     runModelTests()
@@ -63,6 +86,10 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runNewsFeedTests()
 } else if CommandLine.arguments.contains("--programme-evolution") {
     runProgrammeEvolutionTests()
+} else if CommandLine.arguments.contains("--roster-tenure") {
+    runRosterTenureTests()
+} else if CommandLine.arguments.contains("--realignment") {
+    runRealignmentTests()
 } else if CommandLine.arguments.contains("--m7-gate") {
     runHistoryGateTests()
 } else if CommandLine.arguments.contains("--pro-soak") {
@@ -79,6 +106,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runGenerationTests()
 } else if CommandLine.arguments.contains("--design-contracts") {
     runDesignContractTests()
+    runAccessibilityReflowTests()
 } else if CommandLine.arguments.contains("--architecture-only") {
     runArchitectureTests()
 } else if CommandLine.arguments.contains("--m2-soak") {
@@ -121,11 +149,23 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runHistoryArchiveTests()
     runNewsFeedTests()
     runProgrammeEvolutionTests()
+    runRosterTenureTests()
+    runRealignmentTests()
     runCareerPortalDecisionTests()
     runTacticalManagementTests()
     runTacticalStateTests()
     runPortalContractTests()
     runEventLedgerBatchTests()
+    runJerseyNumberTests()
+    runReadModelProviderTests()
+    runCapComplianceTests()
+    runSeasonRolloverTests()
+    // The M8 entry-gate instruments. They ran only under `--design-contracts` and
+    // `--core-contracts` until 2026-08-13, so the no-argument run — the one `verify.sh` makes and
+    // the one every release claim quotes — did not include the orientation policy, the token sync,
+    // the symbol register, the sheet lint or the AX5 contract.
+    runDesignContractTests()
+    runAccessibilityReflowTests()
 }
 
 TestKit.finish()

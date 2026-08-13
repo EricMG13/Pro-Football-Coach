@@ -90,6 +90,7 @@ public enum RosterPopulationGenerator {
 
     public static func generate(
         seed: UInt64,
+        season: Int,
         programmes: [Programme],
         proTeams: [ProTeam]
     ) -> RosterPopulation {
@@ -118,7 +119,11 @@ public enum RosterPopulationGenerator {
                 prestige: team.prestige,
                 tier: .pro
             )
-            players.append(contentsOf: roster)
+            players.append(contentsOf: signed(
+                roster: roster,
+                season: season,
+                seed: SeededRandom.derive(from: seed, scope: .contract, identifier: team.id)
+            ))
             proRosterIDs[team.id] = roster.map(\.id)
         }
 
@@ -127,6 +132,74 @@ public enum RosterPopulationGenerator {
             programmeRosterIDs: programmeRosterIDs,
             proRosterIDs: proRosterIDs
         )
+    }
+
+    /// Issues one contract per professional, per `02` section 4.2a.
+    ///
+    /// Two properties matter more than the numbers, and both are structural rather than tuned.
+    ///
+    /// **The term spread is a rotation, not a draw.** Terms cycle 1…5 through the roster in a
+    /// deterministically shuffled order, so every roster expires close to a fifth of itself each
+    /// season *by construction*. Drawing terms independently would leave the tail teams that expire
+    /// half a roster at once, and a league-wide expiry count is bounded above:
+    /// `ProMarketState.maximumFreeAgentIDs` is 512 against 1,696 professionals, and
+    /// `ProMarketSystem.expireContracts` throws `invalidRoot` rather than overflow the pool.
+    ///
+    /// **Cap legality is allocated, not hoped for.** Salaries are shares of a target payroll rather
+    /// than absolute figures derived from rating, so no rating distribution can push a team over
+    /// the cap. Rating sets the *share*; the cap sets the total. Colours must pass contrast at
+    /// generation instead of being fixed up later, and a payroll is the same obligation: a league
+    /// that starts illegal has no legal move that makes it legal.
+    private static func signed(roster: [Player], season: Int, seed: UInt64) -> [Player] {
+        guard !roster.isEmpty else { return roster }
+
+        // Deal only with what a bootstrapped roster can afford: the cap less the room a draft class
+        // and in-season signings need. Spending the whole cap at generation would make every team
+        // instantly non-compliant the moment it drafted anyone.
+        let cap = ProRules.salaryCap(seasonsAfterBase: max(0, season - ProRules.baseSalaryCapSeason))
+        let targetPayroll = cap * ProRules.bootstrapPayrollPercentOfCap / 100
+
+        // Weight by rating so better players cost more, with a floor so nobody plays for nothing.
+        // The +40 keeps the spread from being savage: a 90 overall costs about twice a 60, not
+        // thirty times.
+        let weights = roster.map { player in max(1, player.overall.value + 40) }
+        let totalWeight = weights.reduce(0, +)
+
+        var rng = SeededRandom(seed: seed)
+        var order = Array(roster.indices)
+        // Fisher-Yates over a seeded stream: the rotation must not correlate term with position,
+        // or every roster would lose its whole secondary in the same offseason.
+        for index in stride(from: order.count - 1, to: 0, by: -1) {
+            order.swapAt(index, rng.int(in: 0...index))
+        }
+
+        var termByIndex = [Int](repeating: 0, count: roster.count)
+        for (rotation, index) in order.enumerated() {
+            termByIndex[index] = rotation % ProRules.bootstrapContractTermSpread + 1
+        }
+
+        // Integer dollars throughout, and the remainder is handed out rather than dropped so the
+        // payroll sums to the target exactly. A dollar lost here is a dollar of cap invented.
+        var allocated = 0
+        var signedRoster: [Player] = []
+        signedRoster.reserveCapacity(roster.count)
+        for (index, player) in roster.enumerated() {
+            let isLast = index == roster.count - 1
+            let share = isLast
+                ? targetPayroll - allocated
+                : targetPayroll * weights[index] / totalWeight
+            let salary = max(ProRules.bootstrapMinimumSalary, share)
+            allocated += share
+            var signed = player
+            signed.contract = Contract(
+                years: termByIndex[index],
+                baseSalaryByYear: Array(repeating: salary, count: termByIndex[index]),
+                signingBonus: 0,
+                signedSeason: season
+            )
+            signedRoster.append(signed)
+        }
+        return signedRoster
     }
 
     private static func generateRoster(
