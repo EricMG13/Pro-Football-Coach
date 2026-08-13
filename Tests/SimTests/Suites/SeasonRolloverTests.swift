@@ -126,5 +126,42 @@ func runSeasonRolloverTests() {
                 expectEqual(error, .invalidRoot)
             }
         }
+
+        test("a compliance-forced release survives a real week-21 boundary") {
+            var state = GameState.bootstrap(seed: 97_006)
+            for _ in 0..<(SharedRules.inSeasonWeeks - 1) {
+                state = try WorldScheduler.advanceWeek(state).state
+            }
+            expectEqual(state.calendar.week, SharedRules.inSeasonWeeks)
+            let teamID = state.proTeams.ids.first { $0 != controlledTeamID(in: state) }
+            guard let teamID, let team = state.proTeams[teamID],
+                  let playerID = team.rosterIDs.first else {
+                expect(false, "no eligible non-controlled team with a rostered player")
+                return
+            }
+            let capLimit = ProRules.salaryCap(seasonsAfterBase: state.calendar.season)
+            state.players.update(playerID) {
+                $0.contract = Contract(
+                    years: 1,
+                    baseSalaryByYear: [capLimit + 1_000_000],
+                    signingBonus: 0
+                )
+            }
+
+            let transition = try WorldScheduler.advanceWeek(state)
+            let snapshot = try ProManagementSystem.capSnapshot(
+                teamID: teamID,
+                in: transition.state
+            )
+            expect(snapshot.isWithinCap,
+                   "a real advanceWeek left a team over the cap after the boundary")
+            expect(WorldIntegrity.check(transition.state).isValid)
+        }
+    }
+}
+
+private func controlledTeamID(in state: GameState) -> UUID? {
+    state.careerArc.currentJob.flatMap { job in
+        job.tier == .professional ? job.organisationID : nil
     }
 }

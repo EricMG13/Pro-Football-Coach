@@ -75,6 +75,7 @@ public enum WorldSchedulerError: Error, Equatable {
     case portalMarketFailed(CollegePortalWindow)
     case portalCommitFailed(CollegePortalWindow)
     case professionalMarketFailed(ProMarketError)
+    case capComplianceFailed(ProManagementError)
 }
 
 /// The versioned, fixed-order weekly transaction. Unbuilt systems remain explicit inactive steps,
@@ -480,6 +481,32 @@ public enum WorldScheduler {
                         )
                     } catch let error as ProMarketError {
                         throw WorldSchedulerError.professionalMarketFailed(error)
+                    }
+                    // Beat 2 (`02` §4.2/§4.2a), right after beat 1's expiry and before anything
+                    // takes the season-projected view a later step in this same block does (the
+                    // college portal's postseason commit): the same D-1 lesson applies here as it
+                    // did to expiry itself. Every professional team but the controlled one is
+                    // forced legal here so nothing downstream ever sees an over-cap root.
+                    do {
+                        let compliance = try ProManagementSystem.enforceCapCompliance(
+                            at: completed,
+                            in: nextState
+                        )
+                        nextState = compliance.state
+                        try appendEvents(
+                            payloads: compliance.releases.map {
+                                .proCapComplianceRelease(
+                                    playerID: $0.playerID,
+                                    teamID: $0.teamID,
+                                    deadMoneyAdded: $0.deadMoneyAdded
+                                )
+                            },
+                            occurredAt: completed,
+                            to: &nextState,
+                            emittedEvents: &events
+                        )
+                    } catch let error as ProManagementError {
+                        throw WorldSchedulerError.capComplianceFailed(error)
                     }
                     // After the people transition has been applied, never before it: that assignment
                     // replaces `programmes` wholesale, so prestige written earlier in this step
