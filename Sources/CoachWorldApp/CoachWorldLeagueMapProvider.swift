@@ -1,0 +1,168 @@
+import Foundation
+import FootballSimCore
+import ProFootballCoachUI
+
+/// `GameState` to `LeagueMapReadModel`, per `04` section 8 family 41.
+///
+/// **The join throughout is `TeamIdentity.homeCityID`, never `Programme.cityName`.** A name join
+/// would in fact be sound today — the generator draws city names without replacement from 570
+/// distinct combinations against the 166 cities a world needs — but `GameMap.generate` keeps a
+/// with-replacement fallback for a smaller name pool, and if that ever fired a name join would
+/// silently collapse two cities into one and place a programme somewhere it does not play. The
+/// engine joins by identifier for the same reason; the recruiting fit cache is the precedent.
+public extension CoachWorldReadModelProvider {
+    /// Nil when no career is under control, which is the only state this cannot describe.
+    static func leagueMap(from state: GameState) -> LeagueMapReadModel? {
+        guard let control = state.career.college,
+              let programme = state.programmes[control.programmeID],
+              let coach = state.staff[control.coachID] else { return nil }
+
+        let calendar = state.calendar
+        // Built once and read 166 times. `GameMap.city(_:)` is a linear scan over every city, so
+        // resolving each member through it would be quadratic in a world that is rebuilt after
+        // every intent.
+        let citiesByID = Dictionary(uniqueKeysWithValues: state.map.cities.map { ($0.id, $0) })
+        let regionsByID = Dictionary(uniqueKeysWithValues: state.map.regions.map { ($0.id, $0) })
+        let conferencesByID = Dictionary(
+            uniqueKeysWithValues: state.league.conferences.map { ($0.id, $0) }
+        )
+        // `EntityStore.values` is sorted by uuidString, so this array — and therefore every rival
+        // list derived from it — is in a deterministic order rather than a hash order.
+        let rivalries = state.rivalries.values
+
+        var places: [LeagueMapReadModel.Place] = []
+        places.reserveCapacity(state.programmes.count + state.proTeams.count)
+
+        for member in state.programmes.values {
+            if let made = place(
+                id: member.id,
+                tierLabel: LeagueMapReadModel.Tier.college,
+                conferenceID: member.conferenceID,
+                prestige: member.prestige.value,
+                isControlled: member.id == programme.id,
+                in: state,
+                citiesByID: citiesByID,
+                regionsByID: regionsByID,
+                conferencesByID: conferencesByID,
+                rivalries: rivalries
+            ) {
+                places.append(made)
+            }
+        }
+        for member in state.proTeams.values {
+            if let made = place(
+                id: member.id,
+                tierLabel: LeagueMapReadModel.Tier.professional,
+                conferenceID: member.conferenceID,
+                prestige: member.prestige.value,
+                // The controlled career is a college job until the promotion arc lands; a
+                // professional team is never the player's own on this screen today.
+                isControlled: false,
+                in: state,
+                citiesByID: citiesByID,
+                regionsByID: regionsByID,
+                conferencesByID: conferencesByID,
+                rivalries: rivalries
+            ) {
+                places.append(made)
+            }
+        }
+
+        return LeagueMapReadModel(
+            snapshotID: snapshotID("map", programme.id, calendar),
+            provenance: .simulationSnapshot,
+            world: worldReference(state),
+            team: teamReference(programme.id, in: state),
+            coach: CoachWorldPersonReference(
+                stableID: coach.id.uuidString,
+                name: coach.fullName,
+                role: label(coach.role)
+            ),
+            seasonLabel: seasonLabel(calendar),
+            weekLabel: weekLabel(calendar),
+            recordLabel: recordLabel(programme.id, in: state),
+            rankLabel: rankLabel(programme.id, in: state),
+            gridWidth: GameMap.width,
+            gridHeight: GameMap.height,
+            regions: state.map.regions.map {
+                LeagueMapReadModel.Region(
+                    stableID: $0.id.uuidString,
+                    name: $0.name,
+                    talentDensity: $0.talentDensity.value
+                )
+            },
+            places: places
+        )
+    }
+
+    // MARK: - One place
+
+    /// A member with no identity or no resolvable city is dropped rather than guessed at.
+    ///
+    /// That cannot happen in a generated world — `LeagueGenerator` writes an identity for all 166
+    /// members and gives each its own city — but a hostile save is not a generated world, and an
+    /// invented coordinate would be a stated fact about where a programme plays.
+    private static func place(
+        id: UUID,
+        tierLabel: String,
+        conferenceID: UUID?,
+        prestige: Int,
+        isControlled: Bool,
+        in state: GameState,
+        citiesByID: [UUID: MapCity],
+        regionsByID: [UUID: MapRegion],
+        conferencesByID: [UUID: Conference],
+        rivalries: [Rivalry]
+    ) -> LeagueMapReadModel.Place? {
+        guard let identity = state.identities[id],
+              let city = citiesByID[identity.homeCityID] else { return nil }
+
+        return LeagueMapReadModel.Place(
+            stableID: id.uuidString,
+            team: teamReference(id, in: state),
+            cityName: city.name,
+            regionID: city.regionID.uuidString,
+            regionName: regionsByID[city.regionID]?.name ?? "Region not set",
+            conferenceName: conferenceID.flatMap { conferencesByID[$0]?.name },
+            tierLabel: tierLabel,
+            isControlled: isControlled,
+            x: city.x,
+            y: city.y,
+            marketSize: city.marketSize.value,
+            prestige: prestige,
+            venueName: identity.venueName,
+            rivals: rivals(of: id, in: state, among: rivalries)
+        )
+    }
+
+    /// The engine's own ordering, by calling the engine's own function.
+    ///
+    /// Re-sorting here would be a second definition of "strongest" that could drift from the one
+    /// the world is actually built and maintained with.
+    private static func rivals(
+        of id: UUID,
+        in state: GameState,
+        among rivalries: [Rivalry]
+    ) -> [LeagueMapReadModel.Rival] {
+        RivalrySeeder.strongest(for: id, among: rivalries).compactMap { otherID in
+            guard let rivalry = rivalries.first(where: {
+                $0.involves(id) && $0.involves(otherID)
+            }) else { return nil }
+            return LeagueMapReadModel.Rival(
+                stableID: otherID.uuidString,
+                name: teamReference(otherID, in: state).name,
+                originLabel: label(rivalry.origin),
+                intensity: rivalry.intensity.value
+            )
+        }
+    }
+
+    /// Wording an enum the root holds. It states no fact the engine does not.
+    static func label(_ origin: Rivalry.Origin) -> String {
+        switch origin {
+        case .geography: return "Neighbours"
+        case .conference: return "Conference"
+        case .both: return "Conference neighbours"
+        }
+    }
+}

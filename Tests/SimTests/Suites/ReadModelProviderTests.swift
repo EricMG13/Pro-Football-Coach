@@ -543,4 +543,153 @@ func runReadModelProviderTests() {
                    "the snapshot identifier did not move with the week")
         }
     }
+
+    suite("Read model provider: league map") {
+        test("every place is a real member standing on its own generated city") {
+            let (state, _) = try startedCareer(seed: 4_070)
+            guard let model = CoachWorldReadModelProvider.leagueMap(from: state) else {
+                expect(false, "a started career produced no league map")
+                return
+            }
+            expectEqual(model.provenance, .simulationSnapshot)
+            expectEqual(model.gridWidth, GameMap.width)
+            expectEqual(model.gridHeight, GameMap.height)
+            expectEqual(model.regions.count, GameMap.regionCount)
+            // Every member of both tiers, and nothing else.
+            expectEqual(model.places.count, state.programmes.count + state.proTeams.count)
+            expectEqual(
+                Set(model.places.map(\.stableID)),
+                Set(state.programmes.ids.map(\.uuidString))
+                    .union(state.proTeams.ids.map(\.uuidString))
+            )
+
+            for place in model.places {
+                guard let id = UUID(uuidString: place.stableID) else {
+                    expect(false, "\(place.team.name) carries an unparseable identifier")
+                    continue
+                }
+                // The identifier join, not the name join: the city is the one the identity names.
+                guard let identity = state.identities[id],
+                      let city = state.map.city(identity.homeCityID) else {
+                    expect(false, "\(place.team.name) resolved to no city")
+                    continue
+                }
+                expectEqual(place.x, city.x)
+                expectEqual(place.y, city.y)
+                expectEqual(place.cityName, city.name)
+                expectEqual(place.marketSize, city.marketSize.value)
+                expectEqual(place.venueName, identity.venueName)
+                expect((0...GameMap.width).contains(place.x),
+                       "\(place.cityName) sits off the grid at x \(place.x)")
+                expect((0...GameMap.height).contains(place.y),
+                       "\(place.cityName) sits off the grid at y \(place.y)")
+                expect(place.regionName != "Region not set",
+                       "\(place.cityName) resolved to no region")
+            }
+        }
+
+        test("no two places share a point, and one place is the controlled programme") {
+            let (state, programme) = try startedCareer(seed: 4_071)
+            guard let model = CoachWorldReadModelProvider.leagueMap(from: state) else {
+                expect(false, "a started career produced no league map")
+                return
+            }
+            // One city per member is a generation property — `LeagueGenerator` walks a single
+            // cursor across a 166-city map. Asserting it here is what would catch a provider that
+            // resolved two members to one city and drew them on top of each other.
+            let coordinates = model.places.map { "\($0.x),\($0.y)" }
+            expectEqual(Set(coordinates).count, coordinates.count,
+                        "two members were placed on one point")
+            expectEqual(model.places.filter(\.isControlled).count, 1)
+            expectEqual(model.places.first(where: \.isControlled)?.stableID,
+                        programme.id.uuidString)
+            // Both tiers are present, and every place is one of the two.
+            let tiers = Set(model.places.map(\.tierLabel))
+            expectEqual(tiers, [LeagueMapReadModel.Tier.college,
+                                LeagueMapReadModel.Tier.professional])
+            expectEqual(
+                model.places.filter { $0.tierLabel == LeagueMapReadModel.Tier.college }.count,
+                state.programmes.count
+            )
+        }
+
+        test("rivals are the engine's own strongest, and never cross a tier") {
+            let (state, _) = try startedCareer(seed: 4_072)
+            guard let model = CoachWorldReadModelProvider.leagueMap(from: state) else {
+                expect(false, "a started career produced no league map")
+                return
+            }
+            let rivalries = state.rivalries.values
+            let tierByID = Dictionary(
+                uniqueKeysWithValues: model.places.map { ($0.stableID, $0.tierLabel) }
+            )
+            for place in model.places {
+                guard let id = UUID(uuidString: place.stableID) else { continue }
+                let expected = RivalrySeeder.strongest(for: id, among: rivalries)
+                expectEqual(place.rivals.map(\.stableID), expected.map(\.uuidString),
+                            "\(place.team.name) shows a rival order the engine did not choose")
+                expect(place.rivals.count <= SharedRules.rivalriesPerProgramme,
+                       "\(place.team.name) shows \(place.rivals.count) rivals, above the bound")
+                for rival in place.rivals {
+                    guard let otherID = UUID(uuidString: rival.stableID) else { continue }
+                    guard let rivalry = rivalries.first(where: {
+                        $0.involves(id) && $0.involves(otherID)
+                    }) else {
+                        expect(false, "\(rival.name) is not a recorded rivalry")
+                        continue
+                    }
+                    expectEqual(rival.intensity, rivalry.intensity.value)
+                    expectEqual(rival.name, model.places
+                        .first { $0.stableID == rival.stableID }?.team.name)
+                    // Rivalries are seeded within a tier, so a college place can never name a
+                    // professional rival. A cross-tier rival would mean the provider matched two
+                    // members the world never pairs.
+                    expectEqual(tierByID[rival.stableID], place.tierLabel,
+                                "\(place.team.name) names a rival from the other tier")
+                }
+            }
+        }
+
+        test("the map states nothing it cannot know") {
+            let (state, _) = try startedCareer(seed: 4_073)
+            guard let model = CoachWorldReadModelProvider.leagueMap(from: state) else {
+                expect(false, "a started career produced no league map")
+                return
+            }
+            // Each of these is empty because the engine holds nothing behind it. Filling one
+            // requires deleting the assertion that names the gap which would justify it.
+            for place in model.places {
+                // No engine system reads `Programme.recruitingReach` — a full source scan finds it
+                // only in its own initialiser and the D6 archetype falsifier — so there is no
+                // grid-unit mapping to draw a radius from.
+                expect(place.reachRadius == nil,
+                       "\(place.team.name) claims a recruiting reach the engine never consumes")
+                for rival in place.rivals {
+                    // `Rivalry.notableMeetings` stores a zero-based season inside a formatted
+                    // string, which would contradict the "Season N+1" labels beside it.
+                    expect(rival.notableMeetings.isEmpty,
+                           "a notable meeting was rendered with its zero-based season")
+                }
+            }
+            // Regions have a name, members and a talent density — never an extent.
+            for region in model.regions {
+                expect(SharedRules.ratingRange.contains(region.talentDensity),
+                       "\(region.name) reports a talent density off the rating scale")
+                guard let source = state.map.regions
+                    .first(where: { $0.id.uuidString == region.stableID }) else {
+                    expect(false, "\(region.name) is not a region the map holds")
+                    continue
+                }
+                expectEqual(region.name, source.name)
+                expectEqual(region.talentDensity, source.talentDensity.value)
+            }
+        }
+
+        test("the same seed builds the same map") {
+            let (first, _) = try startedCareer(seed: 4_074)
+            let (second, _) = try startedCareer(seed: 4_074)
+            expectEqual(CoachWorldReadModelProvider.leagueMap(from: first),
+                        CoachWorldReadModelProvider.leagueMap(from: second))
+        }
+    }
 }
