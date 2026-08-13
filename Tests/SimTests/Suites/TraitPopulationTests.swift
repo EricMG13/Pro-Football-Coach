@@ -160,6 +160,32 @@ func runTraitPopulationTests() {
                    "rating penalties changed the deterministic trait substream")
         }
 
+        test("every active trait follows the eight-percent direction, on its own substream") {
+            // FSC-014's activation. The property that matters is not the rate but the isolation:
+            // each trait draws off its own `Trait.allCases` ordinal, so adding one cannot move
+            // another's assignment — which is what lets the remaining five be activated later
+            // without re-rolling the three that are live.
+            let seed: UInt64 = 84_007
+            let world = LeagueGenerator.generate(seed: seed)
+            let population = RosterPopulationGenerator.generate(
+                seed: seed,
+                season: 0,
+                programmes: world.programmes,
+                proTeams: world.proTeams
+            )
+            let traitLists = population.players.map(\.traits)
+            for trait in activePopulationTraits.sorted(by: { $0.rawValue < $1.rawValue }) {
+                let rate = Double(traitLists.filter { $0.contains(trait) }.count)
+                    / Double(traitLists.count)
+                expectIn(rate, 0.065...0.095,
+                         "\(trait.label) did not follow the 8% population direction")
+            }
+            // Independent draws, so carrying two is roughly the product rather than impossible.
+            let both = traitLists.filter { $0.contains(.ironman) && $0.contains(.volatile) }.count
+            expect(both > 0,
+                   "no player in the league carries two traits, so the draws are not independent")
+        }
+
         test("restless follows eight-percent direction and inactive traits stay unpopulated") {
             expectEqual(PeopleRules.traitPopulationProbability, 0.08)
             let seed: UInt64 = 84_003
@@ -346,5 +372,8 @@ private func isCanonicalTraits(_ traits: [Trait]) -> Bool {
     traits == Trait.allCases.filter(traits.contains)
 }
 
-private let activePopulationTraits: Set<Trait> = [.restless]
+/// The traits generation is allowed to emit. FSC-014's batched activation added `ironman` and
+/// `volatile` on 2026-08-13, once both consumers were live: `ironman` shortens what an injury costs
+/// and `volatile` weights who draws a flag and who turns up in the discipline file.
+private let activePopulationTraits: Set<Trait> = [.ironman, .restless, .volatile]
 private let futureSimulationTraits = Trait.allCases.filter { !activePopulationTraits.contains($0) }

@@ -62,6 +62,7 @@ exist before it is worth integrating.
 | 31 | The locker room reads the room | G-35 tail | **written**; retention left alone, and canon says why |
 | 32 | Difficulty reaches the game | G-42 tail | **written**; corrects a wrong claim in `02` §3.16 |
 | 33 | The draft reads who owns the pick | G-33 tail | **written**; the trade as a coach action is still absent |
+| 34 | `ironman` and `volatile` populated | FSC-014 | **written**; moves every root fingerprint, deliberately |
 
 **Every register row G-18 to G-45 is now either written or escalated to the owner.** The register's
 own §3 anti-false-gap list is unchanged: those were never gaps.
