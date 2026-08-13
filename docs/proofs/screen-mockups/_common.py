@@ -279,7 +279,7 @@ def page(title, kicker, intro, cards_html, index_href="index.html"):
   <p class="mono small" style="margin-top:4px">{kicker}</p>
   {intro}
   <p class="law">{GALLERY_DISCLOSURE} Prototype truth lives here, outside the frames. docs/04-UX-AND-DESIGN-SYSTEM.md is the only canonical home; a value appearing only in a mockup has not shipped. These compositions are not the eight owner-approved *-v3.dc.html sheets and must not be globbed with them.</p>
-  <p class="nav"><a href="{index_href}">All 62 families</a> · <a href="../../../chrome-v3.dc.html">chrome-v3</a> · <a href="../../../tokens-v3.dc.html">tokens-v3</a></p>
+  <p class="nav"><a href="{index_href}">Five first examples</a> · <a href="../../../chrome-v3.dc.html">chrome-v3</a> · <a href="../../../tokens-v3.dc.html">tokens-v3</a></p>
 </header>
 {cards_html}
 <footer>Self-contained HTML and CSS. No JavaScript, no CDN, no web font, no images, no emoji. CSS px are read as pt. Identities are mechanical placeholders pending generator output, from docs/briefs/2026-08-12-reference-shared-world.md. Install-floor device frames are 844 × 390 per 04 §7 / D15.</footer>
@@ -397,46 +397,14 @@ ACQUIRE = [
     ("Market", "market"),
     ("NIL", "nil"),
 ]
-FRONT = [
-    ("Cap", "cap"),
-    ("Negotiate", "negotiate"),
-    ("Cuts", "cuts"),
-    ("Scout", "scout"),
-    ("Board", "dboard"),
-    ("Room", "droom"),
-    ("Market", "fa"),
-]
-LEAGUE = [
-    ("Map", "map"),
-    ("Programme", "programme"),
-    ("Table", "standings"),
-    ("Schedule", "schedule"),
-    ("Picture", "rankings"),
-    ("Bracket", "bracket"),
-    ("Box", "box"),
-    ("Leaders", "stats"),
-    ("Honours", "awards"),
-    ("News", "news"),
-]
-CAREER = [
-    ("Hub", "hub"),
-    ("Security", "security"),
-    ("Voices", "stakeholders"),
-    ("Promotion", "promotion"),
-    ("Carousel", "carousel"),
-    ("Records", "records"),
-    ("Rivals", "rivals"),
-    ("Line", "line"),
-    ("Tree", "tree"),
-]
 
 
 def card(num, name, dominant, register, sheets, honest, frames_html, extra_note=""):
     return f"""<section class="card" id="s{num}">
   <header>
-    <p class="kicker">Family {num} of 62 · {register} register · 04 §8</p>
+    <p class="kicker">First examples · family {num} of 62 · {register} register · 04 §8</p>
     <h2>{name}</h2>
-    <p class="ground">Dominant object: {dominant}. Built against {sheets}. Identities: Example State / Example Coastal / Example Union, Coach Sample, Coordinator Sample, Player Fourteen–Fifty-Four — pending generator output.</p>
+    <p class="ground">Dominant object: {dominant}. Built against {sheets}. Identities: Example State / Example Coastal, Coach Sample, Coordinator Sample, Player Fourteen–Fifty-Four — pending generator output.</p>
   </header>
   <div class="cbody">
     {frames_html}

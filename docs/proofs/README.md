@@ -17,11 +17,12 @@ The canonical component rules are `04-UX-AND-DESIGN-SYSTEM.md` §6.4: 10–12 pt
 numbers, zero-inset 24–28 pt rows, adaptive data tiles, heatmap badges and context-preserving
 popovers or detented sheets.
 
-## Screen mockups — 62 families (2026-08-13)
+## Screen mockups — five first examples (2026-08-13)
 
-`docs/proofs/screen-mockups/` holds landscape HTML mockups of every `04` §8 family, composed from
-the v3 sheets. **Open `docs/proofs/screen-mockups/index.html`.** They are a rendering, not canon,
-and they are not a ninth `*-v3.dc.html` sheet. `04` still owns every value.
+`docs/proofs/screen-mockups/` holds landscape HTML mockups of the five example screens named by
+`04` §10 and the existing personnel proofs: Coaching HQ, Roster, Player Profile, Recruiting Board,
+Match Day. **Open `docs/proofs/screen-mockups/index.html`.** They are a rendering, not canon,
+not the full 62-family inventory, and not a ninth `*-v3.dc.html` sheet. `04` still owns every value.
 
 | Proof | Light / standard | Dark / AX5 |
 |---|---|---|
