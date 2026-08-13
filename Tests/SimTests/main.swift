@@ -29,6 +29,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runProMarketTests()
 } else if CommandLine.arguments.contains("--season-rollover") {
     runSeasonRolloverTests()
+} else if CommandLine.arguments.contains("--jersey-numbers") {
+    runJerseyNumberTests()
 } else if CommandLine.arguments.contains("--week-advance-timing") {
     runWeekAdvanceTimingProbe()
 } else if CommandLine.arguments.contains("--pro-market-root-probe") {
@@ -152,6 +154,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runTacticalStateTests()
     runPortalContractTests()
     runEventLedgerBatchTests()
+    runJerseyNumberTests()
     runReadModelProviderTests()
     runSeasonRolloverTests()
     // The M8 entry-gate instruments. They ran only under `--design-contracts` and

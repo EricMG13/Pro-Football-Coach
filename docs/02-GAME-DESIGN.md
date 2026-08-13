@@ -217,6 +217,34 @@ rule.
 - The bootstrapped league is cap-legal for all 32 teams at season 1, asserted at generation.
 - Expiry is deterministic: the same seed produces the same expiry schedule across processes.
 
+### 4.1a Jersey numbers — added 2026-08-13
+
+A number is a **roster-scoped derivation, not a stored field**, and the reason is where uniqueness
+lives. Numbers are unique within a team and meaningless outside one, so storing one on the player
+would put a team's invariant on an object that changes teams — every transfer, draft pick, signing
+and walk-on would have to reassign and resolve collisions, and any path that forgot would produce
+two of the same number with nothing to catch it. Derived per roster, uniqueness holds by
+construction and there is no path to forget.
+
+The rule, in order:
+
+1. Each player has a **preferred number**, drawn from their identifier bytes into the band their
+   position wears. Identifier bytes, never a salted hash — the same clause `03` §3 states for seeds,
+   for the same reason: a per-launch hash gives the same player a different number each launch.
+2. **Uniqueness is per unit, not per roster**, because what a number has to distinguish is two
+   players who could be on the field together. This is also the only rule that can be satisfied: a
+   college roster is 105 players and there are 100 legal numbers, so a roster-wide constraint is not
+   merely stricter than the real one, it is unsatisfiable. Offence, defence and special teams each
+   number independently.
+3. Within a unit, ties are settled by identifier, lowest first. The winner keeps the preferred
+   number; the loser takes the next free number in its band, wrapping.
+4. A band that fills spills into the general range, so a unit can always be numbered.
+
+**The ceiling, stated rather than discovered:** a player's number can change when a *teammate*
+leaves, because the collision order shifts. Real squads renumber rarely and deliberately. If that
+becomes visible — a number moving in a screenshot a player took last week — the fix is to persist
+the assignment per roster, and that is a schema change with a migration, not a tweak.
+
 ### 4.2b The news feed — added 2026-08-12
 
 The living world reports itself. `DomainEventPayload` already fixes the mechanism — "Presentation

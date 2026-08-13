@@ -30,6 +30,10 @@ public final class CoachWorldStore {
 
     /// Nil only while a career has not been started, which the root view treats as its title state.
     public private(set) var coachingHQ: CoachingHQReadModel?
+    /// Rebuilt alongside the HQ rather than on navigation, so moving between screens is a state
+    /// change rather than a wait. A college roster is 85 rows; the whole model costs microseconds
+    /// beside the seconds a week advance already takes.
+    public private(set) var roster: RosterReadModel?
     /// True while an intent is in flight. Screens disable their commit controls on it.
     public private(set) var isWorking = false
     /// The last receipt or refusal, shown verbatim. Never a guess about what happened.
@@ -40,6 +44,7 @@ public final class CoachWorldStore {
     private init(session: CareerSession, snapshot: GameState) {
         self.session = session
         coachingHQ = CoachWorldReadModelProvider.coachingHQ(from: snapshot)
+        roster = CoachWorldReadModelProvider.roster(from: snapshot)
     }
 
     /// Generates a world from `seed` and takes the job with the least prestige in it.
@@ -121,6 +126,8 @@ public final class CoachWorldStore {
         } catch {
             statusMessage = "\(error)"
         }
-        coachingHQ = CoachWorldReadModelProvider.coachingHQ(from: await session.snapshot())
+        let snapshot = await session.snapshot()
+        coachingHQ = CoachWorldReadModelProvider.coachingHQ(from: snapshot)
+        roster = CoachWorldReadModelProvider.roster(from: snapshot)
     }
 }

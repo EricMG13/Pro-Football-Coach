@@ -19,6 +19,40 @@ public enum SharedRules {
     /// `02` section 6.
     public static let coordinatorCount = 4
 
+    /// `02` section 4.1a. Every legal number, and the band each position wears inside it.
+    ///
+    /// A band is one contiguous range per position rather than the two-or-three ranges a real
+    /// rulebook allows, because the second range buys nothing a reader would notice and costs a
+    /// wrapping rule at every band edge. The table must be total over `Position` —
+    /// `RulesTests` asserts it — so a position added later cannot silently fall back.
+    /// Each unit's bands partition the range: offence 1–19/20–39/40–49/50–79/80–99, defence
+    /// 0–39/40–59/60–99. Offence and defence bands overlap each other freely and are meant to —
+    /// uniqueness is per unit, so a 55 on the line and a 55 at linebacker is not a clash.
+    ///
+    /// Every band is at least as wide as the roster template asks of it, and `JerseyNumberTests`
+    /// asserts that against `CollegeRules.initialRosterByPosition` rather than trusting the
+    /// arithmetic here. The first version sized them from memory of real football and put nine
+    /// edge rushers and nine tackles into ten numbers, which spilled to `#0` on the first screen
+    /// anyone looked at.
+    public static let jerseyNumberRange: ClosedRange<Int> = 0...99
+    public static let jerseyBandByPosition: [Position: ClosedRange<Int>] = [
+        .quarterback: 1...19,
+        .runningBack: 20...39,
+        .tightEnd: 40...49,
+        .leftTackle: 50...79,
+        .guardPosition: 50...79,
+        .center: 50...79,
+        .rightTackle: 50...79,
+        .wideReceiver: 80...99,
+        .cornerback: 0...39,
+        .safety: 0...39,
+        .linebacker: 40...59,
+        .edgeRusher: 60...99,
+        .defensiveTackle: 60...99,
+        .kicker: 1...19,
+        .punter: 1...19,
+    ]
+
     /// `02` section 7: the AD or GM, a booster or ownership bloc, the fanbase, the locker room.
     public static let stakeholderGroupCount = 4
 

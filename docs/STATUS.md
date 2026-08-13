@@ -426,10 +426,27 @@ step is inactive to say so); no staff recommendation appears because G-02 is unb
 its four fields would have to be invented. Filling one now requires deleting an assertion that names
 the register item which would justify it.
 
-**Only Coaching HQ is truthful.** Roster, Player Profile, Match Day and Recruiting Board still have
-no provider. Roster and Player Profile are blocked on something the model does not have: **`Player`
-carries no jersey number**, and `RosterReadModel.PlayerRow.number` is a non-optional `Int`, so a
-truthful roster needs the number added to generation first. Match Day needs G-06 and G-11.
+**Coaching HQ, Roster and Player Profile are truthful; Match Day and Recruiting Board are not.** The
+personnel pair needed something the model did not have — a jersey number — and **G-16 closed the
+same day, as a derivation rather than the schema change first assumed**. Uniqueness belongs to a
+team and a player changes teams, so a stored field would have needed reassignment on every transfer,
+draft pick, signing and walk-on; derived over a roster it holds by construction, with no schema bump
+and no fingerprint re-pin. `02` §4.1a states the rule and `--jersey-numbers` asserts it.
+
+*Two things that rule got wrong first, both caught by tests rather than by reading:* uniqueness
+cannot be roster-wide, because a 105-man college roster does not fit in 100 numbers — it is per
+**unit**, which is also the real rule; and the bands were first sized from memory of real football,
+which put eighteen defensive linemen into ten numbers and spilled a tackle to `#0` on the first
+screen anyone opened. The bands are now sized against `CollegeRules.initialRosterByPosition`, and a
+test asserts that rather than the arithmetic.
+
+The remaining personnel blanks are named in the provider beside the field: no hometown (the root
+records a *prospect's* origin city, not a rostered player's), no staff summary (G-02), and no recent
+form (G-04). Match Day still needs G-06 and G-11.
+
+**Navigation is honest too.** The app root routes Office and Team; every other tab reports
+"<family> is not available yet" rather than presenting an empty screen, which would claim the
+family exists.
 
 **U-4 — the AX5 instrument exists, and its limits are written down.** `--design-contracts` now
 enumerates all 62 families from `CoachWorldScreenID`, resolves each to its view file by convention,

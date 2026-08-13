@@ -269,6 +269,81 @@ func runReadModelProviderTests() {
         }
     }
 
+    suite("Read model provider: personnel") {
+        test("the roster is the programme's own, numbered and accounted for") {
+            let (state, programme) = try startedCareer(seed: 4_050)
+            guard let model = CoachWorldReadModelProvider.roster(from: state) else {
+                expect(false, "a started career produced no roster")
+                return
+            }
+            expectEqual(model.provenance, .simulationSnapshot)
+            expectEqual(model.players.count, programme.rosterIDs.count)
+            expectEqual(Set(model.players.map(\.stableID)),
+                        Set(programme.rosterIDs.map(\.uuidString)))
+            // Per unit, per `02` §4.1a — 105 players do not fit in 100 numbers.
+            for unit in Unit.allCases {
+                let inUnit = model.players.filter { row in
+                    state.players[UUID(uuidString: row.stableID)!]?.position.unit == unit
+                }
+                expectEqual(Set(inUnit.map(\.number)).count, inUnit.count,
+                            "\(unit.rawValue) shows two players wearing one number")
+            }
+            expectEqual(model.rosterLimit, CollegeRules.rosterLimit)
+            expectEqual(
+                model.injuryCount,
+                programme.rosterIDs.filter { state.people.playerLifecycle[$0]?.injury != nil }.count
+            )
+            // Every row's overall is the engine's, not a second scale invented for display.
+            for row in model.players {
+                let player = state.players[UUID(uuidString: row.stableID)!]
+                expectEqual(row.overall, player?.overall.value)
+                expectEqual(row.person.name, player?.fullName)
+            }
+        }
+
+        test("a profile states nothing the root does not hold") {
+            let (state, programme) = try startedCareer(seed: 4_051)
+            guard let playerID = programme.rosterIDs.first,
+                  let model = CoachWorldReadModelProvider.playerProfile(playerID, in: state),
+                  let player = state.players[playerID] else {
+                expect(false, "a rostered player produced no profile")
+                return
+            }
+            expectEqual(model.person.name, player.fullName)
+            // G-04 has no form series and G-02 no staff verdict, so both ship empty rather than
+            // invented. The hometown is the same: the root records a *prospect's* origin city, not
+            // a rostered player's.
+            expectEqual(model.recentForm.count, 0)
+            expectEqual(model.staffSummary, "")
+            expectEqual(model.hometown, "")
+            // Every attribute shown is one this position is actually rated on.
+            let shown = Set(model.attributeGroups.flatMap { $0.attributes }.map(\.label))
+            let rated = Set(player.position.ratedAttributes.map(\.label))
+            expect(shown.isSubset(of: rated),
+                   "the profile shows attributes the position is not rated on: "
+                       + shown.subtracting(rated).sorted().joined(separator: ", "))
+            expect(!shown.isEmpty, "the profile showed no attributes at all")
+        }
+
+        test("no career produces no roster and no profile") {
+            let world = GameState.bootstrap(seed: 4_052)
+            expectEqual(CoachWorldReadModelProvider.roster(from: world), nil)
+            guard let anyPlayerID = world.players.ids.first else { return }
+            expectEqual(CoachWorldReadModelProvider.playerProfile(anyPlayerID, in: world), nil)
+        }
+
+        test("a player outside the controlled roster has no profile") {
+            let (state, programme) = try startedCareer(seed: 4_053)
+            guard let outsiderID = state.players.ids.first(where: {
+                !programme.rosterIDs.contains($0)
+            }) else {
+                expect(false, "every player in the world is on the controlled roster")
+                return
+            }
+            expectEqual(CoachWorldReadModelProvider.playerProfile(outsiderID, in: state), nil)
+        }
+    }
+
     // `CoachWorldStore` itself is deliberately absent from this suite. It is `@MainActor`, and
     // `TestKit.testAsync` blocks the calling thread on a semaphore — a hop back to the main actor
     // deadlocks, as the harness's own comment says. So what is asserted here is everything the

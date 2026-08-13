@@ -15,6 +15,7 @@ public struct CoachWorldAppRootView: View {
     /// and `store == nil` stays true across every suspension point inside the load — so guarding on
     /// the store alone lets two loads, or two world generations, start side by side.
     @State private var hasAttemptedRestore = false
+    @State private var screen: CoachWorldScreenID = .coachingHQ
 
     private let saves: CoachWorldSaveStore
 
@@ -24,27 +25,65 @@ public struct CoachWorldAppRootView: View {
 
     public var body: some View {
         Group {
-            if let store, let model = store.coachingHQ {
-                CoachingHQView(
-                    model: model,
-                    // A save failure has to reach the player while they are playing, so it takes
-                    // the receipt line rather than waiting for a title screen they may not see
-                    // again this session.
-                    statusMessage: failure ?? store.statusMessage,
-                    onCommit: { intentID in Task { await commit(intentID, in: store) } },
-                    onInspect: {},
-                    onDelegate: {},
-                    onContinue: { Task { await advance(store) } },
-                    onOpenCorrespondence: { _ in },
-                    onNavigate: { _ in }
-                )
-                .disabled(store.isWorking)
-                .overlay { if store.isWorking { working } }
+            if let store {
+                career(store)
             } else {
                 title
             }
         }
         .task { await restoreExistingCareer() }
+    }
+
+    /// Which screen is on the glass, and nothing else. A family with no production view reports
+    /// that it has none rather than presenting an empty one — `04` §4.4 again, applied to
+    /// navigation: an empty Depth Chart would claim the screen exists.
+    @ViewBuilder
+    private func career(_ store: CoachWorldStore) -> some View {
+        Group {
+            switch screen {
+            case .roster:
+                if let model = store.roster {
+                    RosterView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onContinue: { screen = .coachingHQ },
+                        onNavigate: { navigate($0, in: store) },
+                        onInspectDevelopment: { _ in }
+                    )
+                }
+            default:
+                if let model = store.coachingHQ {
+                    CoachingHQView(
+                        model: model,
+                        // A save failure has to reach the player while they are playing, so it
+                        // takes the receipt line rather than waiting for a title screen they may
+                        // not see again this session.
+                        statusMessage: failure ?? store.statusMessage,
+                        onCommit: { intentID in Task { await commit(intentID, in: store) } },
+                        onInspect: {},
+                        onDelegate: {},
+                        onContinue: { Task { await advance(store) } },
+                        onOpenCorrespondence: { _ in },
+                        onNavigate: { navigate($0, in: store) }
+                    )
+                }
+            }
+        }
+        .disabled(store.isWorking)
+        .overlay { if store.isWorking { working } }
+    }
+
+    private func navigate(_ destination: CoachWorldScreenID, in store: CoachWorldStore) {
+        switch destination {
+        case .coachingHQ:
+            screen = .coachingHQ
+            failure = nil
+        case .roster where store.roster != nil:
+            screen = .roster
+            failure = nil
+        default:
+            failure = "\(destination.canonicalName) is not available yet"
+        }
     }
 
     private var title: some View {
