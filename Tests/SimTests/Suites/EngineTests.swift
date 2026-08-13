@@ -1501,6 +1501,86 @@ func runMatchInjuryTests() {
     }
 }
 
+func runClockManagementTests() {
+    let home = testPersonnel(offenseSkill: 72, defenseSkill: 71)
+    let away = testPersonnel(offenseSkill: 71, defenseSkill: 72)
+
+    suite("Clock management") {
+        test("timeouts are actually spent") {
+            // They were written at the kickoff, reset at halftime, and decremented nowhere.
+            var spent = 0
+            for seed in UInt64(1)...40 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                for drive in game.drives {
+                    for (index, play) in drive.plays.enumerated() where index > 0 {
+                        let before = drive.plays[index - 1].situation.timeoutsRemaining
+                        let after = play.situation.timeoutsRemaining
+                        for side in Side.allCases {
+                            let used = (before[side] ?? 0) - (after[side] ?? 0)
+                            expect(used >= 0,
+                                   "a side gained a timeout mid-drive, which is not a rule")
+                            spent += used
+                        }
+                    }
+                }
+            }
+            expect(spent > 0, "no timeout was spent in 40 games")
+        }
+
+        test("a timeout is never spent by a team that has none") {
+            for seed in UInt64(1)...40 {
+                for play in GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                    .plays {
+                    for side in Side.allCases {
+                        let remaining = play.situation.timeoutsRemaining[side] ?? 0
+                        expect(remaining >= 0, "a side held \(remaining) timeouts")
+                        expect(remaining <= Tier.college.clockRules.timeoutsPerHalf,
+                               "a side held more timeouts than a half allows")
+                    }
+                }
+            }
+        }
+
+        test("only a trailing side stops the clock") {
+            // The default rule, asserted directly rather than through a game, because the games that
+            // exercise it are exactly the close ones.
+            let caller = BaselinePlayCaller()
+            let rules = Tier.pro.clockRules
+            expect(caller.callsTimeout(secondsRemainingInHalf: 60, trailing: true,
+                                       isOffense: false, rules: rules),
+                   "a trailing defence let a minute run off with timeouts in hand")
+            expect(!caller.callsTimeout(secondsRemainingInHalf: 60, trailing: false,
+                                        isOffense: false, rules: rules),
+                   "a leading defence stopped the clock for its opponent")
+            expect(!caller.callsTimeout(secondsRemainingInHalf: 900, trailing: true,
+                                        isOffense: false, rules: rules),
+                   "a timeout was spent with fifteen minutes left in the half")
+            expect(caller.callsTimeout(
+                secondsRemainingInHalf: MatchupRules.offensiveTimeoutSecondsRemaining,
+                trailing: true, isOffense: true, rules: rules
+            ), "a trailing offence never stops the clock at all")
+            expect(!caller.callsTimeout(
+                secondsRemainingInHalf: MatchupRules.defensiveTimeoutSecondsRemaining,
+                trailing: true, isOffense: true, rules: rules
+            ), "the offence used the defence's wider window")
+        }
+
+        test("halftime hands the timeouts back") {
+            for seed in UInt64(1)...20 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                guard let firstThird = game.drives.first(where: {
+                    ($0.plays.first?.situation.quarter ?? 0) == 3
+                }), let opening = firstThird.plays.first else { continue }
+                for side in Side.allCases {
+                    expectEqual(opening.situation.timeoutsRemaining[side] ?? -1,
+                                Tier.pro.clockRules.timeoutsPerHalf,
+                                "seed \(seed): the second half did not start with a full set")
+                }
+            }
+        }
+    }
+}
+
 /// A caller that plays the baseline game and always makes the same conversion choice.
 struct FixedConversionCaller: PlayCaller, Sendable {
     let choice: ConversionChoice

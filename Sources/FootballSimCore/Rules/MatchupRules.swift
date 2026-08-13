@@ -186,6 +186,18 @@ public enum MatchupRules {
 
     // MARK: - In-play injuries
 
+    // MARK: - Clock management
+
+    /// Inside this many seconds of the half, a trailing defence stops the clock. `02` §3.9.
+    ///
+    /// Larger than the offence's window because the side without the ball is the one that needs the
+    /// clock: it is buying possessions, not seconds.
+    public static let defensiveTimeoutSecondsRemaining = 150
+
+    /// Inside this many seconds, a trailing offence stops it too — late enough that the timeout is
+    /// worth more than the twenty-odd seconds it saves.
+    public static let offensiveTimeoutSecondsRemaining = 50
+
     /// Chance a snap hurts somebody. `02` §3.8.
     ///
     /// Per snap across both teams, so roughly one and a half a game at this engine's play counts.

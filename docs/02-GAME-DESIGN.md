@@ -260,6 +260,35 @@ Falsifier: across a season injuries occur in play, land on players who were in t
 them, fall more often on the least durable, and never appear on a snap that a pre-snap penalty
 cancelled.
 
+### 3.9 Timeouts and the clock — added 2026-08-13
+
+`Situation.timeoutsRemaining` was written at the kickoff, reset at halftime, and **decremented
+nowhere**. A timeout was a number on a scoreboard, while §3.2 sells it as one of the five things a
+coach may change mid-match.
+
+- **Both sides are asked after every snap that left the clock running, defence first.** The side that
+  usually needs the clock stopped is the one without the ball; asking the offence first would let it
+  spend the timeout the defence was about to.
+- **Only a trailing side spends one**, and only inside its own window: a defence from two and a half
+  minutes, an offence from under a minute. The defence's window is wider because it is buying
+  possessions rather than seconds.
+- **The rule is the coordinator's default, not a law.** It lives in the caller, so a coordinator
+  personality can be worse than arithmetic and the player can override it — which is what makes it a
+  decision rather than a simulation detail.
+- **A spent timeout is visible in the situation**, so the determinism fingerprint already sees it and
+  a match view can read the count without the engine keeping a second record of the same fact.
+
+**Challenges are deliberately not built here, and §3.2's promise is outstanding rather than
+withdrawn.** A challenge is a bet on a fact — was the ball out before the knee — and this engine does
+not record facts at that resolution: it resolves a snap to an outcome and a set of duels, with no
+notion of a spot that could have been wrong. Building one would mean inventing a truth beneath the
+outcome so a review could contradict it, which is a modelling decision the owner should take rather
+than one that arrives inside a clock-management change. Recorded as open work in `docs/STATUS.md`;
+the alternative is to strike challenges from §3.2, which is also the owner's call.
+
+Falsifier: timeouts are spent in real games, only by a trailing side, never below zero, and a half
+that ends with a trailing team holding all three inside the last minute is a defect in the rule.
+
 ---
 
 ## 4. The offseason

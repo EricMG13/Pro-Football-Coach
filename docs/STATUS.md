@@ -1294,6 +1294,32 @@ Files: `docs/02-GAME-DESIGN.md` (§3.8), `Sources/FootballSimCore/Engine/MatchIn
 chart, which is slice 12. The flag exists now so that work reads something truthful instead of
 inventing its own.
 
+### Slice 6 — timeouts and the clock (G-21, first half) — written, unverified
+
+`Situation.timeoutsRemaining` was written at the kickoff, reset at halftime and **decremented
+nowhere**, so a timeout was a number on a scoreboard while `02` §3.2 sells it as one of five things a
+coach may change mid-match.
+
+Canon first (`02` §3.9). Both sides are asked after every snap that left the clock running, defence
+first, because the side that usually needs the clock stopped is the one without the ball. Only a
+trailing side spends one, inside its own window — the defence's is wider because it is buying
+possessions rather than seconds. The rule is the caller's default, so a coordinator personality can
+be worse than it and the player can override it.
+
+Files: `docs/02-GAME-DESIGN.md` (§3.9), `Sources/FootballSimCore/Engine/DriveEngine.swift`
+(`PlayCaller.callsTimeout` with the rule as its default, and the spend in the drive loop),
+`Sources/FootballSimCore/Rules/MatchupRules.swift` (both windows),
+`Tests/SimTests/Suites/EngineTests.swift` (a `Clock management` suite of four tests),
+`Tests/SimTests/main.swift`.
+
+**Challenges — G-21's other half — are open, and `02` §3.2's promise stands unmet rather than being
+quietly withdrawn.** A challenge is a bet on a fact ("was the ball out before the knee") and this
+engine holds no facts at that resolution: a snap resolves to an outcome and a set of duels, with no
+spot that could have been wrong. Building one means inventing a truth beneath the outcome for a
+review to contradict, which is an owner-level modelling decision rather than something that should
+arrive inside a clock-management change. `02` §3.9 states the fork: build the sub-outcome truth, or
+strike challenges from §3.2.
+
 ---
 
 ## What exists, and what verified it

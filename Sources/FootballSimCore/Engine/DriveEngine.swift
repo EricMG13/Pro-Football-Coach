@@ -132,6 +132,17 @@ public protocol PlayCaller: Sendable {
         situation: Situation,
         rules: any ClockRules.Type
     ) -> ConversionChoice
+
+    /// Whether this side stops the clock with a timeout. `02` §3.9.
+    ///
+    /// Asked of both sides after every snap that left the clock running, defence first, because the
+    /// side that usually needs the clock stopped is the one without the ball.
+    func callsTimeout(
+        secondsRemainingInHalf: Int,
+        trailing: Bool,
+        isOffense: Bool,
+        rules: any ClockRules.Type
+    ) -> Bool
 }
 
 public extension PlayCaller {
@@ -148,6 +159,21 @@ public extension PlayCaller {
             quarter: situation.quarter,
             quarters: rules.quarters
         ) ? .twoPoint : .kick
+    }
+
+    /// The clock-management rule as the default, for the same reason the conversion chart is one:
+    /// every existing conformance keeps compiling, and none of them silently hoards its timeouts to
+    /// the final whistle.
+    func callsTimeout(
+        secondsRemainingInHalf: Int,
+        trailing: Bool,
+        isOffense: Bool,
+        rules: any ClockRules.Type
+    ) -> Bool {
+        guard trailing else { return false }
+        return secondsRemainingInHalf <= (isOffense
+            ? MatchupRules.offensiveTimeoutSecondsRemaining
+            : MatchupRules.defensiveTimeoutSecondsRemaining)
     }
 }
 
@@ -311,6 +337,34 @@ public enum DriveEngine {
                     > rules.firstDownStopEndsAtSecondsRemaining
             clockRunning = !outcome.result.stopsClock && !firstDownStop
             clockStoppedByFirstDown = firstDownStop
+
+            // `02` §3.9. `Situation.timeoutsRemaining` was written at kickoff, reset at halftime and
+            // decremented nowhere, so a timeout was a number on a scoreboard rather than a decision
+            // — while `02` §3.2 sells it as one of the five things a coach may change mid-match.
+            //
+            // Both sides are asked, defence first: the side that usually needs the clock stopped is
+            // the one without the ball, and asking the offence first would let it spend the timeout
+            // the defence was about to.
+            if clockRunning {
+                let offenceSide = situation.possession
+                for side in [offenceSide.opponent, offenceSide] {
+                    guard let remaining = situation.timeoutsRemaining[side], remaining > 0 else {
+                        continue
+                    }
+                    let margin = side == .home
+                        ? situation.homeScore - situation.awayScore
+                        : situation.awayScore - situation.homeScore
+                    guard caller.callsTimeout(
+                        secondsRemainingInHalf: situation.secondsRemainingInHalf(rules: rules),
+                        trailing: margin < 0,
+                        isOffense: side == offenceSide,
+                        rules: rules
+                    ) else { continue }
+                    situation.timeoutsRemaining[side] = remaining - 1
+                    clockRunning = false
+                    break
+                }
+            }
 
             switch outcome.result {
             case .touchdown:
