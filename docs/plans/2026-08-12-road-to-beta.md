@@ -44,7 +44,7 @@ Carried from `docs/briefs/2026-08-12-gap-register.md`. Ordered by what blocks th
 
 | # | Item | State | Blocks |
 |---|---|---|---|
-| G-01 | Truthful read-model providers per screen family; provenance flips `sample` to `simulationSnapshot` | **Coaching HQ, Roster and Player Profile done**, via the new `CoachWorldApp` composition target, and all three reachable in the shipped app. Match Day still needs G-06/G-11; the other 57 families need views before they need providers | Every truthful surface; B-3 |
+| G-01 | Truthful read-model providers per screen family; provenance flips `sample` to `simulationSnapshot` | **Coaching HQ, Roster, Player Profile and Recruiting Board done**, via the `CoachWorldApp` composition target, and all four reachable in the shipped app. Match Day still needs G-06/G-11; the other 56 families need views before they need providers | Every truthful surface; B-3 |
 | G-02 | Engine-owned verdicts: league-relative baselines, expectation deltas, sample and confidence, staff-voice attribution (owner: **named staff**) | Not started | Every `VerdictLine`; the density model's strongest technique |
 | G-16 | **Jersey numbers.** Found 2026-08-13 while writing G-01's providers, and **closed the same day** — as a roster-scoped *derivation* rather than the schema change first assumed. Uniqueness belongs to a team and a player changes teams, so a stored field would need reassignment on every transfer, draft pick and walk-on; derived, it holds by construction with no schema bump and no fingerprint re-pin. `02` §4.1a states the rule; uniqueness is **per unit**, because 105 college players do not fit in 100 numbers | **Done** (`JerseyNumbers`, `--jersey-numbers`) | Unblocked Roster and Player Profile; box score and match-day actors can now read it |
 | G-03 | Bounded per-player attribute-change record (bound: last 6, discarded on departure) | Not started | `DeltaMark`; Player Profile truthfulness |
@@ -63,7 +63,7 @@ Carried from `docs/briefs/2026-08-12-gap-register.md`. Ordered by what blocks th
 | # | Item | State |
 |---|---|---|
 | P-1 | **Bootstrap contracts** — terms rotate 1–5, ~a fifth expires per season, cap-legal by allocation | **Done** (`0deb629`). Measured: 327 expiries, ledger 327/512, first draft pick succeeds |
-| P-2 | **Cap-compliance cuts (beat 2)** — owner decided cuts are forced by the compliance date and nothing else | **Blocked on an architectural fork — see §6** |
+| P-2 | **Cap-compliance cuts (beat 2)** — owner decided cuts are forced by the compliance date and nothing else | **Not blocked, and not started.** The architectural fork is resolved to (b) — see §6 — but (b) itself is unbuilt: `acquire` still refuses any signing that would exceed the cap, so a team cannot yet reach the over-cap state beat 2 exists to resolve. This is a real engine feature (relax the invariant inside the week-21 window, then enforce compliance by the date) and needs its own phase plan, not a continuation of this session's read-model work |
 | P-3 | Full both-tier professional soak green | The season-boundary blocker is fixed (`fce9e2a`); the soak itself is not re-measured in that session |
 
 ---
@@ -110,7 +110,7 @@ Carried from `docs/briefs/2026-08-12-gap-register.md`. Ordered by what blocks th
 
 | # | Decision | Recommendation |
 |---|---|---|
-| O-1 | **Reframed by evidence, 2026-08-13.** The fork was posed on the assumption that teams go over the cap at the season boundary. They do not: `--pro-market-root-probe` reports **zero over-cap teams** against eleven whose contracts had merely outlived their term, and fixing that removed the whole symptom. The fork is therefore not blocking, and the live question is narrower — whether beat 2 has anything to do at all until free agency and the draft put a team over. Original text: **The cap invariant.** Beat 2 presumes a team *can* be over the cap until a date. The engine forbids it: `acquire` refuses anything that would exceed the cap, and `release` validates the whole root, so an over-cap team could not take its first step back. Either (a) accept the cap as structural and rewrite beat 2 as a continuously-enforced constraint, or (b) make temporary illegality representable inside a bounded window. | **(b), scoped to the week-21 boundary** — opened by expiry, closed by compliance in the same `advanceWeek`, so no *persisted* root is ever illegal and the cap-laundering defence in `PORT-LOG.md` stays intact. `enforceCapCompliance` is written and correct for (b); under (a) it is dead code and should be deleted, not left looking load-bearing |
+| O-1 | **Reframed by evidence, 2026-08-13.** The fork was posed on the assumption that teams go over the cap at the season boundary. They do not: `--pro-market-root-probe` reports **zero over-cap teams** against eleven whose contracts had merely outlived their term, and fixing that removed the whole symptom. The fork is therefore not blocking, and the live question is narrower — whether beat 2 has anything to do at all until free agency and the draft put a team over. Original text: **The cap invariant.** Beat 2 presumes a team *can* be over the cap until a date. The engine forbids it: `acquire` refuses anything that would exceed the cap, and `release` validates the whole root, so an over-cap team could not take its first step back. Either (a) accept the cap as structural and rewrite beat 2 as a continuously-enforced constraint, or (b) make temporary illegality representable inside a bounded window. | **(b), scoped to the week-21 boundary** — opened by expiry, closed by compliance in the same `advanceWeek`, so no *persisted* root is ever illegal and the cap-laundering defence in `PORT-LOG.md` stays intact. **Correction, 2026-08-13: `enforceCapCompliance` does not exist anywhere in this tree.** `grep -rn enforceCapCompliance Sources/` returns nothing; the claim that it is "written and correct" traced only to `docs/plans/2026-08-12-m6-roster-turnover.md`, a planning document, not to code. Beat 2 is unbuilt: `acquire` still refuses anything that would exceed the cap, so a team cannot yet take the first step (b) requires — over-cap signing — let alone be brought back under one. This is real engine work, not a wiring gap, and belongs behind its own `superpowers:writing-plans` phase like any other milestone slice, not a freehand continuation |
 | O-2 | Whether to schedule per-drive accounting now (unblocks D-2) or after M8 | After M8. It is a change to the core loop every calibration number is measured against; doing it beside other engine work makes a red band impossible to attribute |
 | O-3 | B-2 signing and TestFlight setup | Owner-only; cannot be delegated |
 
@@ -119,16 +119,56 @@ Carried from `docs/briefs/2026-08-12-gap-register.md`. Ordered by what blocks th
 ## 7. Suggested order to beta
 
 1. **Settle B-1** — build the app to a device once. Cheapest possible answer to the largest unknown.
-2. **V-1** — full suite green on the current branch.
-3. **G-01** — read-model providers, so a device build shows the world rather than fixtures.
-4. **U-4** — the last M8 entry-gate instrument, then the M8 gate opens.
-5. **U-6** — production views per family, against the approved sheets.
-6. **B-4** — measure D4's budgets on the device that will run the beta.
-7. **D-1** — the portal soak defect, after re-running its attribution.
-8. **O-1**, then **P-2** — the compliance beat, once the invariant question is settled.
-9. **B-2** — signing and TestFlight, owner action, in parallel with 3–6.
-10. **Beta on a real iPhone.**
+   **Done, 2026-08-13:** builds and runs on the iPhone 17 simulator, Debug and Release; the device
+   arm64 slice builds unsigned. Never run on a phone — that step is B-2's, owner-only.
+2. **V-1** — full suite green on the current branch. **Done, 2026-08-13**, after five pre-existing
+   `0deb629` failures and one process-killing crash were found and fixed (`docs/STATUS.md` carries
+   the account) — `729` tests, `756,466` checks at last measurement, no known regressions.
+3. **G-01** — read-model providers, so a device build shows the world rather than fixtures. **Done
+   for four of five already-built screens** — Coaching HQ, Roster, Player Profile, Recruiting
+   Board — all reachable and truthful in the shipped app. Match Day is still blocked on G-06/G-11,
+   real unbuilt engine features, not a wiring gap.
+4. **U-4** — the last M8 entry-gate instrument, then the M8 gate opens. **Enumeration limb done,
+   2026-08-13**; the rendered limb (no datum lost, no clipping) stays open — this harness has no
+   view host, `04` §7.1 says so, and its mechanism is `03b` §5's to decide.
+5. **U-6** — production views per family, against the approved sheets. **Not started.** 56 of 62
+   families have no view at all. Each is real UI-system work — sheet fidelity, the accessibility
+   contract, AX5, adversarial review — and belongs behind its own `superpowers:writing-plans` pass
+   per `CLAUDE.md`'s process, not a freehand continuation of this session's read-model work. This is
+   the largest remaining item on the road to beta.
+6. **B-4** — measure D4's budgets on the device that will run the beta. **Measured on the host,
+   2026-08-13, and already falsified there**: median week advance 2.83 s against a 2.0 s budget,
+   worst 29.6 s at the season boundary. Frame time and the on-device number are still the owner's.
+7. **D-1** — the portal soak defect, after re-running its attribution. **Done, 2026-08-13.** It was
+   never a portal defect: contract expiry ran before the season wrote the career records FSC-013
+   needs, and the "last body at a position" exemption kept an expired contract attached instead of
+   re-signing. Fixed; `--season-rollover` pins the invariant.
+8. **O-1**, then **P-2** — the compliance beat, once the invariant question is settled. **O-1
+   reframed, not answered**: the fork was posed on the assumption teams go over the cap at the
+   season boundary, and the probe shows zero ever do. **P-2 is not started and is not blocked** —
+   `enforceCapCompliance` does not exist in this tree despite an earlier note claiming otherwise
+   (corrected in §6). It is real, unbuilt engine work needing its own phase plan.
+9. **B-2** — signing and TestFlight, owner action, in parallel with 3–6. **Not started; cannot be
+   started by an agent.**
+10. **Beta on a real iPhone.** **Not reached.** Everything an agent could verify without a device or
+    a signing certificate has been verified. `docs/OWNER-WALKTHROUGH.md` is the handoff.
 
 Items in §1 beyond G-01 are what make the surfaces *truthful* rather than merely present; a beta can
 begin without all of them, provided every surface that lacks its engine backing ships without the
 claim rather than with an invented one — which `04` §4.4 and §6.5 already require.
+
+
+## 8. Recruiting Board wired, and a false gap caught the same day
+
+The Recruiting Board provider is done and every field on it is real, including
+`Capacity.weeklyHoursRemaining`/`officialVisitsRemaining` — read from
+`ProgrammeRecruitingState.contactPointsRemaining` (a genuine weekly-reset resource, 100 points,
+reset by `WorldScheduler`) and a derived visit count from the same pool. Confirmed live on the
+simulator: `HOURS 100h`, `VISITS 3` at week one, moving when `Contact` resolves.
+
+**This section briefly recorded a "G-18: recruiting weekly capacity" gap that did not exist.** A
+search for the resource by name missed `contactPointsRemaining`, and the provider shipped the two
+fields as `Int?` with a "not built" note for part of this session. Wrong, and corrected the same
+day once a closer read of `CollegeState.swift` found the real resource — `02` §4.3 carries the full
+account, including the correction itself. No gap number is spent on it: it was never a real gap, so
+G-18 is not reserved and the next one issued should be G-18.

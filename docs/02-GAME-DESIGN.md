@@ -283,6 +283,22 @@ Recruiting is the college tier's signature system and its throughput problem (D3
 ~133 programmes' classes under D3's abstracted model. The week's recruiting beat is 90 seconds
 because the interface is a shortlist with a budget, not a database.
 
+**The weekly contact budget is built — `ProgrammeRecruitingState.contactPointsRemaining`, reset to
+`CollegeRules.weeklyRecruitingContactPoints` (100) every week by `WorldScheduler`.** `contact` and
+`evaluate` spend it directly; `scheduleVisit` draws `CollegeRules.visitContactCost` (30) from the
+same pool rather than a separate visits counter, so `RecruitingBoardReadModel.Capacity`'s "hours"
+field reads the pool and its "visits" field is the pool divided by the visit cost — a real derived
+count, not an invented one. Confirmed live in the shipped app: `HOURS 100h` and `VISITS 3` at week
+one on the bootstrapped default seed, moving when a `contact` action is committed.
+
+*Recorded because the first pass through this section got it wrong.* A search for "budget" and
+"weekly hours" missed the resource under its actual name, and G-01's Recruiting Board provider
+briefly shipped `Capacity.weeklyHoursRemaining`/`officialVisitsRemaining` as `Int?` under a "G-18:
+not built" note — asserting a gap that did not exist. The wrong finding had already reached
+`docs/STATUS.md`, `docs/OWNER-WALKTHROUGH.md` and the plan's own gap register before a closer read
+of `CollegeState.swift` caught it; all three carry a same-day correction rather than a silent edit,
+since a mistake that already shipped a claim is not the same as one caught before it did.
+
 ---
 
 ## 5. Ratings, progression, development

@@ -34,6 +34,7 @@ public final class CoachWorldStore {
     /// change rather than a wait. A college roster is 85 rows; the whole model costs microseconds
     /// beside the seconds a week advance already takes.
     public private(set) var roster: RosterReadModel?
+    public private(set) var recruitingBoard: RecruitingBoardReadModel?
     /// True while an intent is in flight. Screens disable their commit controls on it.
     public private(set) var isWorking = false
     /// The last receipt or refusal, shown verbatim. Never a guess about what happened.
@@ -45,6 +46,7 @@ public final class CoachWorldStore {
         self.session = session
         coachingHQ = CoachWorldReadModelProvider.coachingHQ(from: snapshot)
         roster = CoachWorldReadModelProvider.roster(from: snapshot)
+        recruitingBoard = CoachWorldReadModelProvider.recruitingBoard(from: snapshot)
     }
 
     /// Generates a world from `seed` and takes the job with the least prestige in it.
@@ -114,6 +116,18 @@ public final class CoachWorldStore {
         }
     }
 
+    /// Resolves a recruiting-board choice. `prospectID` is the stable ID a board row carries;
+    /// `intentID` is the action's own case name, mapped back to `RecruitingAction` by
+    /// `CoachWorldReadModelProvider.recruitingAction`.
+    public func actOnProspect(_ prospectID: String, _ intentID: CoachWorldIntentID) async {
+        guard let id = UUID(uuidString: prospectID),
+              let action = CoachWorldReadModelProvider.recruitingAction(for: intentID) else {
+            statusMessage = "That recruiting action is no longer available"
+            return
+        }
+        await run { try await self.session.resolve(.recruiting(prospectID: id, action: action)) }
+    }
+
     /// One place where an intent is run, a refusal is reported and the read models are rebuilt, so
     /// no caller can advance the world and forget to refresh the screen.
     private func run(_ intent: @escaping () async throws -> CareerSessionReceipt) async {
@@ -129,5 +143,6 @@ public final class CoachWorldStore {
         let snapshot = await session.snapshot()
         coachingHQ = CoachWorldReadModelProvider.coachingHQ(from: snapshot)
         roster = CoachWorldReadModelProvider.roster(from: snapshot)
+        recruitingBoard = CoachWorldReadModelProvider.recruitingBoard(from: snapshot)
     }
 }

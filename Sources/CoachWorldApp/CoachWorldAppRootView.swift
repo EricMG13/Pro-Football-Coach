@@ -46,9 +46,21 @@ public struct CoachWorldAppRootView: View {
                     RosterView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
-                        onContinue: { screen = .coachingHQ },
+                        onContinue: { Task { await advance(store) } },
                         onNavigate: { navigate($0, in: store) },
                         onInspectDevelopment: { _ in }
+                    )
+                }
+            case .recruitingBoard:
+                if let model = store.recruitingBoard {
+                    RecruitingBoardView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onAction: { prospectID, intentID in
+                            Task { await actOnProspect(prospectID, intentID, in: store) }
+                        },
+                        onContinue: { Task { await advance(store) } },
+                        onNavigate: { navigate($0, in: store) }
                     )
                 }
             default:
@@ -80,6 +92,9 @@ public struct CoachWorldAppRootView: View {
             failure = nil
         case .roster where store.roster != nil:
             screen = .roster
+            failure = nil
+        case .recruitingBoard where store.recruitingBoard != nil:
+            screen = .recruitingBoard
             failure = nil
         default:
             failure = "\(destination.canonicalName) is not available yet"
@@ -158,6 +173,15 @@ public struct CoachWorldAppRootView: View {
 
     private func commit(_ intentID: CoachWorldIntentID, in store: CoachWorldStore) async {
         await store.commit(intentID)
+        await persistOrReport(store)
+    }
+
+    private func actOnProspect(
+        _ prospectID: String,
+        _ intentID: CoachWorldIntentID,
+        in store: CoachWorldStore
+    ) async {
+        await store.actOnProspect(prospectID, intentID)
         await persistOrReport(store)
     }
 

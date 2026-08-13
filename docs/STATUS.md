@@ -444,9 +444,35 @@ The remaining personnel blanks are named in the provider beside the field: no ho
 records a *prospect's* origin city, not a rostered player's), no staff summary (G-02), and no recent
 form (G-04). Match Day still needs G-06 and G-11.
 
-**Navigation is honest too.** The app root routes Office and Team; every other tab reports
+**Recruiting Board is truthful too, added 2026-08-13.** `Capacity.weeklyHoursRemaining` is
+`ProgrammeRecruitingState.contactPointsRemaining` — a real, weekly-reset resource
+(`CollegeRules.weeklyRecruitingContactPoints`, 100) that `contact` and `evaluate` spend directly.
+`officialVisitsRemaining` is derived from the same pool divided by `CollegeRules.visitContactCost`
+(30), since the engine has one pooled resource rather than a separate visit counter. Confirmed live
+on the simulator: `HOURS 100h` and `VISITS 3` at week one, beside a real `SLOTS` count. Everything
+else on the board is likewise real — its own rank order, position needs, and each prospect's
+evaluation via `RecruitingFitSystem`, the same arithmetic the AI itself reads.
+
+*This section briefly said the opposite.* A search for the budget by name ("weekly hours",
+"contact budget") missed `contactPointsRemaining`, and for part of this session the two fields
+shipped as `Int?` under a "G-18: not built" note that asserted a gap the engine had already closed.
+Corrected the same day, once a closer read of `CollegeState.swift` found it — see `02` §4.3.
+
+A fresh week-one board is empty by design (the AI cycle populates it later), and the screen shows
+an honest empty state — "No prospects on the board" — rather than a table implying data that isn't
+there yet.
+
+**Navigation is honest too.** The app root routes Office, Team and Recruit; every other tab reports
 "<family> is not available yet" rather than presenting an empty screen, which would claim the
 family exists.
+
+**Continue meant two different things depending on which screen you were on, until wiring Roster
+and Recruiting Board caught it.** Every screen carries the same "Continue" control — same icon, same
+label, same position in the world strip — and on Coaching HQ it advances the week. Roster's and
+Recruiting Board's copies of that control were wired to just navigate back to Office instead, so the
+identical-looking button did something different depending on where you tapped it. Both now call
+the same `advance(store)` path Coaching HQ uses, so the refusal a pending decision produces is the
+same refusal everywhere, not a screen-dependent behaviour.
 
 **U-4 — the AX5 instrument exists, and its limits are written down.** `--design-contracts` now
 enumerates all 62 families from `CoachWorldScreenID`, resolves each to its view file by convention,

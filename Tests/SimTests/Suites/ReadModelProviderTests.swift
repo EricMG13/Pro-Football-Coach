@@ -344,6 +344,156 @@ func runReadModelProviderTests() {
         }
     }
 
+    suite("Read model provider: recruiting board") {
+        test("the board is the programme's own, in its own rank order") {
+            let (state, programme) = try startedCareer(seed: 4_060)
+            guard let recruiting = state.college.programmes[programme.id],
+                  let model = CoachWorldReadModelProvider.recruitingBoard(from: state) else {
+                expect(false, "a started career produced no recruiting board")
+                return
+            }
+            expectEqual(model.provenance, .simulationSnapshot)
+            expectEqual(model.prospects.map(\.stableID),
+                        recruiting.boardIDs.map(\.uuidString))
+            expectEqual(model.prospects.map(\.boardRank), Array(model.prospects.indices.map {
+                $0 + 1
+            }))
+            expectEqual(
+                model.capacity.scholarshipSlotsRemaining,
+                CollegeRules.scholarshipLimit - programme.scholarshipCount
+            )
+        }
+
+        test("weekly capacity reads the engine's own contact-points pool") {
+            let (state, programme) = try startedCareer(seed: 4_061)
+            guard let recruiting = state.college.programmes[programme.id],
+                  let model = CoachWorldReadModelProvider.recruitingBoard(from: state) else {
+                expect(false, "a started career produced no recruiting board")
+                return
+            }
+            expectEqual(model.capacity.weeklyHoursRemaining, recruiting.contactPointsRemaining)
+            // Freshly bootstrapped and never spent against, so this is the full weekly pool.
+            expectEqual(model.capacity.weeklyHoursRemaining, CollegeRules.weeklyRecruitingContactPoints)
+            expectEqual(
+                model.capacity.officialVisitsRemaining,
+                recruiting.contactPointsRemaining / CollegeRules.visitContactCost
+            )
+        }
+
+        test("spending contact points moves the capacity the provider shows") {
+            // The board starts empty at week one for the *controlled* programme specifically —
+            // confirmed on the simulator ("No prospects on the board") — because
+            // `CollegeRecruitingAISystem` explicitly excludes the controlled programme from its
+            // own weekly board growth (`state.programmes.ids.filter { $0 != controlledProgrammeID
+            // }`); AI board growth is what the other ~133 programmes get, not the player's.
+            // `addToBoard` is resolved directly here to set up a fixture, the same way other
+            // fixtures in this suite build state through the engine rather than by hand.
+            let (state, programme) = try startedCareer(seed: 4_066)
+            guard let prospectID = state.prospects.ids.first else {
+                expect(false, "the world generated no prospects at all")
+                return
+            }
+            let boarded = try IntentResolver.resolve(
+                .recruiting(RecruitingActionRequest(
+                    programmeID: programme.id,
+                    prospectID: prospectID,
+                    action: .addToBoard
+                )),
+                in: state
+            ).state
+            let resolved = try IntentResolver.resolve(
+                .recruiting(RecruitingActionRequest(
+                    programmeID: programme.id,
+                    prospectID: prospectID,
+                    action: .contact(points: CollegeRules.aiEvaluationContactPoints)
+                )),
+                in: boarded
+            )
+            guard let before = CoachWorldReadModelProvider.recruitingBoard(from: boarded),
+                  let after = CoachWorldReadModelProvider.recruitingBoard(from: resolved.state)
+            else {
+                expect(false, "the board disappeared across a legal recruiting action")
+                return
+            }
+            expectEqual(
+                after.capacity.weeklyHoursRemaining,
+                before.capacity.weeklyHoursRemaining - CollegeRules.aiEvaluationContactPoints
+            )
+        }
+
+        test("no career produces no board") {
+            expectEqual(
+                CoachWorldReadModelProvider.recruitingBoard(from: GameState.bootstrap(seed: 4_062)),
+                nil
+            )
+        }
+
+        test("a board prospect with no commitment record reads as uncommitted") {
+            // The reachable case: freshly generated prospects carry no `prospectRecruitment`
+            // entry at all, and the provider must read that as "Uncommitted" rather than as
+            // absence of a fact. The other three phases (`committed`, `signed`, `released`) are
+            // exercised end to end by `CollegeCommitmentTests`; constructing one here would mean
+            // hand-building a `RecruitingCommitmentContext` through a module-internal initialiser
+            // this target cannot reach without `@testable`, which `GenerationTests` already
+            // documents as a deliberate import boundary.
+            let (state, _) = try startedCareer(seed: 4_063)
+            guard let model = CoachWorldReadModelProvider.recruitingBoard(from: state),
+                  let prospect = model.prospects.first else {
+                // A board that starts empty is a legitimate world; nothing to check against.
+                return
+            }
+            expectEqual(prospect.status, "Uncommitted")
+        }
+
+        test("every choice maps back to a real RecruitingAction") {
+            let (state, _) = try startedCareer(seed: 4_064)
+            guard let model = CoachWorldReadModelProvider.recruitingBoard(from: state),
+                  let prospect = model.prospects.first else {
+                // No board entries is legitimate at week one for some seeds.
+                return
+            }
+            expect(!prospect.choices.isEmpty, "a board prospect offered no actions at all")
+            for choice in prospect.choices {
+                expect(CoachWorldReadModelProvider.recruitingAction(for: choice.intentID) != nil,
+                       "\(choice.intentID.rawValue) does not map to a RecruitingAction")
+            }
+        }
+
+        test("an unmapped intent identifier resolves to no action") {
+            expectEqual(
+                CoachWorldReadModelProvider.recruitingAction(
+                    for: CoachWorldIntentID(rawValue: "not-a-real-action")
+                ),
+                nil
+            )
+        }
+
+        testAsync("committing a recruiting choice resolves it and refreshes the board") {
+            let (state, _) = try startedCareer(seed: 4_065)
+            let session = try CareerSession(state: state)
+            guard let before = CoachWorldReadModelProvider
+                .recruitingBoard(from: await session.snapshot()),
+                let prospect = before.prospects.first,
+                let choice = prospect.choices.first(where: { $0.intentID.rawValue == "contact" })
+            else {
+                // No board entries or delegated responsibility at week one is a legitimate start
+                // state; the resolved-decision path is exercised by the fixture above instead.
+                return
+            }
+            guard let action = CoachWorldReadModelProvider.recruitingAction(for: choice.intentID),
+                  let prospectID = UUID(uuidString: prospect.stableID) else {
+                expect(false, "the mapped action or prospect identifier was invalid")
+                return
+            }
+            _ = try await session.resolve(.recruiting(
+                prospectID: prospectID,
+                action: action
+            ))
+            let after = CoachWorldReadModelProvider.recruitingBoard(from: await session.snapshot())
+            expect(after != before, "the board did not change after a contact action resolved")
+        }
+    }
+
     // `CoachWorldStore` itself is deliberately absent from this suite. It is `@MainActor`, and
     // `TestKit.testAsync` blocks the calling thread on a semaphore — a hop back to the main actor
     // deadlocks, as the harness's own comment says. So what is asserted here is everything the

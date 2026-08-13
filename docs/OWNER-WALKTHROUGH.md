@@ -86,7 +86,14 @@ Numbers are derived per roster, unique **within a unit** — a 105-man roster do
 numbers, and two players who are never on the field together may share one. `#0` on a defensive back
 is legal, not a bug.
 
-**Tap anything else — Recruit, League, Career, Depth.** Each reports "… is not available yet". That
+**Tap Recruit.** The board is truthful: `SLOTS`, `HOURS` and `VISITS` are all real. `HOURS` is the
+engine's own weekly contact-points pool (100, reset every week), and `VISITS` is that pool divided
+by what a visit costs — the engine tracks one shared resource, not two. Committing a `Contact` or
+`Evaluate` choice spends against it and the number moves. At week one the board itself is empty
+("No prospects on the board"), which is correct — the AI recruiting cycle populates it as the
+season runs, not at kickoff.
+
+**Tap anything else — League, Career, Depth.** Each reports "… is not available yet". That
 is deliberate: an empty screen would claim the family exists.
 
 **Things worth your eye that are not defects to file yet:**
