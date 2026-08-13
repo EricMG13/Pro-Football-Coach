@@ -1133,15 +1133,20 @@ toolchain** — `swift: command not found` — so:
 - **G1 and G2 are not claimed** for any of it, by anyone;
 - the files are named per slice so a session with a toolchain knows exactly what to build first.
 
-**Where this session got to: twenty-eight slices, and every register row G-18 to G-45 is now either
-written or escalated.** The whole match layer (conversion, penalties, special teams, overtime,
-in-play injuries, timeouts, weather), the record it produces (the statistics vocabulary, the played
-game's box score, awards), the loop around it (the depth chart, the coach's own game played by the
-detailed engine, the call-in loop connected, the inbox), the surrounding product (scheme fit,
-multi-week advance, difficulty, the glossary, the postseason tail, morale, the privacy manifest, the
-sound contract), and the management systems the register found missing entirely (traditions with
-mechanical bite, money and facilities, hiring and firing, draft picks as assets, contract
-negotiation, discipline and suspensions, preseason camp).
+**Where this session got to: thirty-four slices.** Every register row G-18 to G-45 is written or
+escalated, and every tail those slices left behind is closed too — an injury that ended nobody's
+game, a difficulty nothing read, morale nothing consumed, staff who never changed, a draft that
+ignored who owned the pick, and two traits whose systems read a value no player carried.
+
+The whole match layer (conversion, penalties, special teams, overtime, in-play injuries and the
+substitution they force, timeouts, weather), the record it produces (the statistics vocabulary, the
+played game's box score, awards), the loop around it (the depth chart, the coach's own game played by
+the detailed engine, the call-in loop connected, the inbox), the surrounding product (scheme fit,
+multi-week advance, difficulty on the save and reaching all three of its consumers, the glossary, the
+postseason tail, morale reaching the locker room, the privacy manifest, the sound contract), and the
+management systems the register found missing entirely (traditions with mechanical bite, money and
+facilities, hiring and firing, staff who develop and get poached, draft picks as owned assets the
+draft reads, contract negotiation, discipline and suspensions, preseason camp).
 
 **Two items remain, and neither ran out of time.** Challenges (G-21b) and audio/haptics (G-40, G-41)
 are owner forks, and each is now a numbered decision with an instrumented falsifier —
