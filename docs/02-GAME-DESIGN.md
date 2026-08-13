@@ -1021,6 +1021,32 @@ without migrating anybody's league. Three kinds of item, in weight order:
 Bounded at 24 and rebuilt weekly rather than accumulated. Derived items still take a deterministic
 identity from the world seed and the week, so a rebuilt inbox does not reshuffle under a reader.
 
+### 7.1 The locker room reads the room — added 2026-08-13
+
+All four stakeholders moved on the same signal: the table, with small biases on top. So the locker
+room was a fanbase with a close-game bonus, and §5.1's morale — built the day before — was consumed
+by nothing.
+
+**The locker room now reads morale, and it is the only stakeholder that does.** At season end its
+support carries a term from the share of the roster that is unhappy, so a season in which a quarter
+of the squad is aggrieved costs the coach support whatever the record says — and a settled squad pays
+it back. That is what routes playing time, NIL, injuries, traditions and §5.2's suspensions into
+§7's stakes, which is the whole reason morale was worth deriving.
+
+- **A share of the roster, not a count**, so it means the same thing at a programme carrying
+  eighty-five players and one carrying seventy.
+- **Silent in the middle**, for the reason the inbox is: a locker room with an opinion every season
+  about nothing is the dashboard this section argues against.
+- **At season end, not weekly.** The weekly pass is about the game just played, and a room's mood is
+  a thing a season produces rather than a result.
+
+**Retention already reads these facts, and is deliberately left alone.** The portal's intent policy
+scores playing time, roster path, relationship, NIL, team success and restlessness — morale's own
+inputs under other names — so adding a morale term there would double-count them. What morale
+uniquely adds that the policy cannot see is discipline and traditions, and changing what V1 scores is
+exactly what a versioned policy exists to prevent: that is a **V2**, taken deliberately, not a tail on
+another slice.
+
 **What is still missing:** `WorldScheduler.expiringInboundEvents` stays inactive, because nothing is
 stored to expire. An item with its own deadline — a recruit who needs an answer by Friday, an offer
 that lapses — needs persisted inbound state, and that is a schema change with its own slice.

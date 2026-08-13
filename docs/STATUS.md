@@ -1938,7 +1938,31 @@ Files: `Sources/FootballSimCore/People/StaffDevelopmentSystem.swift` (new),
 `Tests/SimTests/Suites/StaffCareerTests.swift` (new, six tests), `Tests/SimTests/main.swift`,
 `docs/02-GAME-DESIGN.md` (§6.1a).
 
-### The standing gap across slices 19–30
+### Slice 31 — the locker room reads the room (G-35 tail) — written, unverified
+
+Slice 21 built morale and recorded that **nothing consumed it**. Slice 27's discipline became the
+first consumer; this is the second, and the one that matters: all four `02` §7 stakeholders moved on
+the same signal — the table, with small biases — so the locker room was a fanbase with a close-game
+bonus.
+
+Its season-end support now carries a term from the share of the roster that is unhappy. That is what
+routes playing time, NIL, injuries, traditions and suspensions into the career stakes, which is the
+whole reason morale was worth deriving. A share rather than a count, so it means the same at
+eighty-five players and at seventy; silent in the middle, because a locker room with an opinion every
+season about nothing is a dashboard; and at season end rather than weekly, because a room's mood is a
+thing a season produces.
+
+**Retention is deliberately left alone, and canon says why.** The portal's V1 intent policy already
+scores playing time, roster path, relationship, NIL, team success and restlessness — morale's own
+inputs under other names — so a morale term there would double-count them. What morale uniquely adds
+is discipline and traditions, and changing what V1 scores is exactly what a versioned policy exists
+to prevent: that is a V2, taken deliberately.
+
+Files: `Sources/FootballSimCore/Career/CareerArcState.swift` (`CareerArcSystem.mood`, read at season
+end), `Sources/FootballSimCore/Rules/PeopleRules.swift` (the roster-share constants),
+`Tests/SimTests/Suites/MoraleTests.swift` (one test), `docs/02-GAME-DESIGN.md` (§7.1).
+
+### The standing gap across slices 19–31
 
 **None of these read models is on a screen yet.** The inbox, the depth chart, morale, the staff
 shortlist, the glossary, the discipline file, the camp report and the asking price are all

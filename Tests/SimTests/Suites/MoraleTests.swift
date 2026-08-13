@@ -64,6 +64,40 @@ func runMoraleTests() {
             }
         }
 
+        test("the locker room reads the room, and it is the only stakeholder that does") {
+            // `02` §7.1. All four stakeholders moved on the table with small biases on top, so the
+            // locker room was a fanbase with a close-game bonus and morale was consumed by nobody.
+            var state = GameState.bootstrap(seed: 90_010)
+            guard let programmeID = state.programmes.ids.first,
+                  let rosterIDs = state.programmes[programmeID]?.rosterIDs,
+                  !rosterIDs.isEmpty else {
+                expect(false, "a bootstrapped world has no programme")
+                return
+            }
+            // A settled squad: nobody has played, nobody is hurt, nobody is suspended.
+            expectEqual(CareerArcSystem.mood(of: programmeID, in: state),
+                        PeopleRules.lockerRoomMoraleSwing,
+                        "a squad with nothing wrong with it did not read as content")
+
+            // Now suspend a quarter of them. `02` §5.2's cost, arriving in `02` §7's stakes.
+            let unhappyTarget = rosterIDs.count * PeopleRules.mutinousRosterShare / 100 + 1
+            for playerID in rosterIDs.prefix(unhappyTarget) {
+                state.people.updatePlayerLifecycle(playerID) {
+                    $0.suspend(PlayerSuspension(
+                        reason: .teamRules,
+                        occurredAt: state.calendar,
+                        originalWeeks: PeopleRules.maximumSuspensionWeeks,
+                        weeksRemaining: PeopleRules.maximumSuspensionWeeks
+                    ))
+                }
+            }
+            expect(PlayerMorale.unhappy(in: programmeID, state: state).count >= unhappyTarget,
+                   "suspending a quarter of the squad made nobody unhappy")
+            expectEqual(CareerArcSystem.mood(of: programmeID, in: state),
+                        -PeopleRules.lockerRoomMoraleSwing,
+                        "a mutinous squad cost the coach nothing")
+        }
+
         test("the thresholds leave room between unhappy and delighted") {
             // A scale where every player is at one end is a flag with extra steps.
             expect(PeopleRules.unhappyMorale < PeopleRules.baselineMorale,

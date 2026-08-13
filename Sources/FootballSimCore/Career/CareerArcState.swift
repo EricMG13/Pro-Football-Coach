@@ -385,13 +385,20 @@ public enum CareerArcSystem {
             : 100 - rank * 100 / max(1, ranking.count - 1)
         let expectation = min(95, max(40, programme.prestige.value + 10))
         let delta = min(12, max(-12, (performance - expectation) / 5))
+        // `02` §7.1. The locker room is the one stakeholder that should be reading the room rather
+        // than the scoreboard, and until now it read the same table everybody else did with a
+        // close-game bias on top. §5.1's morale is what a locker room actually knows — playing time,
+        // NIL, injuries, what this place does after a result, and since §5.2 who has been suspended
+        // — so a season in which a quarter of the roster is unhappy costs support whatever the
+        // record says.
+        let lockerRoomMood = mood(of: programme.id, in: state)
         _ = arc.applySupport(deltas: Dictionary(uniqueKeysWithValues: CareerStakeholder.allCases.map {
             let bias: Int
             switch $0 {
             case .administration: bias = delta
             case .boosters: bias = delta + (performance >= 70 ? 2 : 0)
             case .fanbase: bias = delta + (performance >= expectation ? 2 : -1)
-            case .lockerRoom: bias = delta / 2
+            case .lockerRoom: bias = delta / 2 + lockerRoomMood
             }
             return ($0, bias)
         }))
@@ -423,5 +430,23 @@ public enum CareerArcSystem {
             prestige: team.prestige,
             rationale: .sustainedCollegeSuccess
         ))
+    }
+
+    /// What the room thinks, as a support bias. `02` §7.1.
+    ///
+    /// A share of the roster rather than a count, so it means the same thing at a programme carrying
+    /// eighty-five players and at one carrying seventy. Silent in the middle for the reason the
+    /// inbox is: a locker room that had an opinion every season about nothing is a dashboard, and
+    /// pressure that is always on is not pressure.
+    public static func mood(of organisationID: UUID, in state: GameState) -> Int {
+        let rosterSize = state.programmes[organisationID]?.rosterIDs.count
+            ?? state.proTeams[organisationID]?.rosterIDs.count
+            ?? 0
+        guard rosterSize > 0 else { return 0 }
+        let unhappy = PlayerMorale.unhappy(in: organisationID, state: state).count
+        let share = unhappy * 100 / rosterSize
+        if share >= PeopleRules.mutinousRosterShare { return -PeopleRules.lockerRoomMoraleSwing }
+        if share <= PeopleRules.contentRosterShare { return PeopleRules.lockerRoomMoraleSwing }
+        return 0
     }
 }

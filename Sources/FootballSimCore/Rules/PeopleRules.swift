@@ -70,6 +70,18 @@ public enum PeopleRules {
     public static let moraleInjuryCost = 8
     public static let moraleInvestmentBonus = 6
 
+    // MARK: - What the locker room reads. `02` §7.1.
+
+    /// The share of a roster that has to be unhappy before the locker room says so, and the share
+    /// below which it is a happy one. Percentages of the roster, from `PlayerMorale.unhappy`.
+    ///
+    /// These live beside morale rather than with the career arc because they are a fact about a
+    /// roster, not about a coach's standing — the arc reads them, it does not define them.
+    public static let mutinousRosterShare = 25
+    public static let contentRosterShare = 8
+    /// What either does to the locker room's support at season end.
+    public static let lockerRoomMoraleSwing = 4
+
     // MARK: - Staff careers. `02` §6.1.
 
     /// Up to this age a coach is still learning the job; past `staffDeclineAge` the years start
