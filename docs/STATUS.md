@@ -359,12 +359,33 @@ a demonstration happened; it was written when no session had a toolchain, and it
 fabricated claims. This session ran the app for real and reports only what the screenshots show.
 **Nothing has run on a phone**, and no part of §4 of `docs/OWNER-WALKTHROUGH.md` has been done.
 
-**V-1 — the full suite was run, and it was red.** `PortalTransactionTests`'s fixture aborted the
-process at season 0 week 21 with `professionalMarketFailed(.invalidRoot)`. The log was two lines:
-the fatal error and the exit code. **The harness reported only at `finish()`**, so an aborted run
-gave no account of the suites that had already passed or of where it had got to; that was survivable
-only because the failure was deterministic and a second run could hunt it. `TestKit.suite` now
-prints a line per suite and `main.swift` unbuffers stdout, so the next abort leaves evidence.
+**V-1 — the full suite was run, and it was red in five places.** `PortalTransactionTests`'s fixture
+aborted the process at season 0 week 21 with `professionalMarketFailed(.invalidRoot)`. The log was
+two lines: the fatal error and the exit code. **The harness reported only at `finish()`**, so an
+aborted run gave no account of the suites that had already passed or of where it had got to.
+`TestKit.suite` now prints a line per suite and `main.swift` unbuffers stdout; the very next run
+used that to name the abort site immediately.
+
+**All five failures predate this session, and that was verified rather than assumed** — `a4a1ca1`
+was checked out into a detached worktree, built, and the suites run there. Every one is a
+consequence of `0deb629` giving a generated world contracts to expire, and every one was invisible
+because the run died before reporting. The plan's "the full suite has not been run since `0deb629`"
+was therefore load-bearing, not housekeeping.
+
+| Suite | What it was | Why |
+|---|---|---|
+| Season-boundary people lifecycle | 33 checks | Asserted every player is on a roster and every professional roster is exactly 53. Beat 1 (`02` §4.2a) *is* players leaving a roster at the season boundary without leaving the world |
+| College management state | 2 checks | Helper jumps the calendar to a later season without the scheduler; contracts stayed behind and 32 teams carried deals that had ended |
+| College commitment integrity | 1 check | Same helper class |
+| College redshirt rollover | 2 checks | Same helper class |
+| M6 professional market | process abort | `removeProRosterPlayer` left the contract attached, so `openOffseason` built an empty free-agent pool and the AI signed nobody; the test then indexed `signedPlayerIDs[0]` after a soft `expect` and trapped, taking every later suite with it |
+
+The three college helpers now roll contracts with the calendar through one shared
+`professionalContractsRolled` (`Tests/SimTests/TestRoots.swift`) rather than three copies. The
+people-lifecycle assertions are replaced by stronger ones — no player exists whom no roster and no
+market accounts for, free agency is non-empty after a boundary, and every professional team still
+has a playable body at every position, which is the invariant the expiry exemption exists to
+protect. The crash became a `require`.
 
 **D-1 — attributed, and it was never a portal defect.** The register asked for the attribution to be
 re-run before anything was fixed, and it was, with `--pro-market-root-probe`. The finding:
@@ -426,6 +447,30 @@ created. They now enumerate "code that draws" by the UI import. Separately, the 
 the one `verify.sh` runs and every release claim quotes — **never included `DesignContractTests` at
 all**, so the orientation policy, token sync, symbol register and sheet lint were only ever checked
 under an explicit flag. Both are fixed.
+
+**V-1 is now green: `719 tests, 755,310 checks, all passed`**, release build, exit 0, run on
+2026-08-13 after the repairs above. That is the first full-suite green since `0deb629`, and it
+includes `DesignContractTests` and the AX5 contract for the first time in a no-argument run.
+
+**B-4 — D4's week-advance budget is already blown, on a development Mac.** `--week-advance-timing`
+measured, twice within 1%: bootstrap **0.15 s**, twenty-one weeks in **95.7 s**, **median 2.83 s per
+week**, **worst 29.6 s** (the season-boundary week), and **one whole-root integrity check 1.01 s**.
+D4 budgets **2.0 s**.
+
+Three things follow, and the first is the one that matters:
+
+1. **The median week is 40% over the budget before a phone is involved.** D4's falsifier does not
+   need a device to fire. About a second of every week is `saveGrowthAndIntegrity` running
+   `WorldIntegrity.check` over 15,766 players — the budget cannot be met while a full-root check is
+   an every-week cost, so this is a structural question for `03b` §5 and D4, not tuning.
+2. **The season-boundary week is 29.6 s.** Expiry, the college cycle, the portal, realignment and
+   the draft class all land in one `advanceWeek`. On a phone this is a minute or more with a
+   spinner, which is why `CoachWorldStore` advances off the main actor — but "responsive while
+   unusable" is not the same as playable.
+3. **Roughly 2 s of that 29.6 s is a cost this session added**, and it is named rather than hidden:
+   `expireContracts` now takes the difference between the root's issues before and after, which is
+   two whole-root checks instead of one. It buys the only week-ordering that satisfies FSC-013 and
+   the cap invariant at once; if the check gets cheaper, this gets cheaper with it.
 
 **What this session did not do.** U-6 (production views for the other 57 families) is untouched and
 is the largest remaining item. B-2 and any device measurement are the owner's. P-2 (cap-compliance

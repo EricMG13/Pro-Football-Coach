@@ -97,10 +97,12 @@ No agent can do any of this, and none of it has been done.
 2. Register the identifier in App Store Connect and create the app record.
 3. Select your phone as the destination and **Run**. That is the first time this software has been
    on hardware.
-4. **Measure before you enjoy it (B-4).** D4 budgets a week advance at 2.0 s and a frame at 16.7 ms,
-   and both are unmeasured on any device. Advance five weeks and time them; if a week takes longer
-   than two seconds on your phone, that is the D4 falsifier firing and it should be recorded before
-   any beta rather than discovered during one.
+4. **Expect the week advance to be slow, because it already is here.** This is not a device
+   question any more: `--week-advance-timing` measured a **median 2.83 s per week** on a
+   development Mac against D4's **2.0 s** budget, with the season-boundary week at **29.6 s**. Your
+   phone will be worse. Time five weeks anyway so the device number exists, but treat D4 as already
+   falsified rather than as something the beta might discover. Frame time (16.7 ms) still needs a
+   device and Instruments and has never been measured.
 5. Archive → Distribute → TestFlight.
 
 **Save size and latency, so it is not a surprise.** A season-1 save is small, but D-3 measured

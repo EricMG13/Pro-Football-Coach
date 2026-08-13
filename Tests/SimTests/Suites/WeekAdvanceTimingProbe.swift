@@ -31,14 +31,22 @@ func runWeekAdvanceTimingProbe(weeks: Int = 21) {
         samples.append(seconds(started.duration(to: clock.now)))
     }
 
+    // Priced separately because the season-boundary week pays for several of them, and one of those
+    // is a cost this session added: `expireContracts` takes the difference between the root's
+    // issues before and after, which is two whole-root checks rather than one.
+    let integrityStarted = clock.now
+    _ = WorldIntegrity.check(state)
+    let integrityDuration = seconds(integrityStarted.duration(to: clock.now))
+
     let sorted = samples.sorted()
     let median = sorted[sorted.count / 2]
     let worst = sorted[sorted.count - 1]
     let total = samples.reduce(0, +)
     print(String(
         format: "TIMING: bootstrap %.3f s; %d weeks in %.3f s; median %.3f s; worst %.3f s; "
+            + "one whole-root integrity check %.3f s; "
             + "D4 budget 2.000 s/week (host measurement, not a device)",
-        seconds(bootstrapDuration), weeks, total, median, worst
+        seconds(bootstrapDuration), weeks, total, median, worst, integrityDuration
     ))
     print("TIMING: worst week is \(worst > 2.0 ? "over" : "inside") the budget on this host")
 }
