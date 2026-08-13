@@ -132,6 +132,8 @@ public struct NewsFeedReadModel: Sendable, Equatable {
             return "\(who(playerID)) at \(who(programmeID)): redshirt \(outcome.rawValue)"
         case let .proPlayerSigned(playerID, teamID, kind, _):
             return "\(who(teamID)) sign \(who(playerID)) (\(kind.rawValue))"
+        case let .proCapComplianceRelease(playerID, teamID, _):
+            return "\(who(teamID)) release \(who(playerID)) to clear cap space"
 
         // Weekly bookkeeping, scored zero by `historicalWeight` and reported by nobody.
         case .integrityChecked,
