@@ -1628,6 +1628,27 @@ Files: `Sources/FootballSimCore/Competition/CompetitionState.swift` (the case an
 `Tests/SimTests/Suites/BowlTests.swift` (new, four tests), `Tests/SimTests/main.swift`,
 `docs/02-GAME-DESIGN.md` (§11.1a).
 
+### Slice 21 — morale (G-35) — written, unverified
+
+`PeopleState` carried health, development and career records and **no notion of how a player felt**,
+so a professional was never unhappy about anything and college dissatisfaction existed only as portal
+intent.
+
+Derived rather than stored: playing time against the team's games, the season the team is having,
+being hurt, and what the programme has invested — all facts the world already holds. A reading is a
+function of the save, so it cannot disagree with the record it is drawn from, and it adds nothing to
+a save size FSC-003 makes a live concern. Readings carry their components, because a number a coach
+cannot explain is a number they cannot act on.
+
+Files: `Sources/FootballSimCore/People/PlayerMorale.swift` (new),
+`Sources/FootballSimCore/Rules/PeopleRules.swift` (thresholds and weights),
+`Tests/SimTests/Suites/MoraleTests.swift` (new, five tests), `Tests/SimTests/main.swift`,
+`docs/02-GAME-DESIGN.md` (§5.1).
+
+**Nothing consumes it yet.** Retention, trade requests and the locker-room stakeholder all *should*
+read morale, and none does — those are consumers and each is its own change. This slice makes the
+reading exist and true; it does not claim the world reacts to it.
+
 **Traditions remain inert, and the repair is larger than it looks.** `02` §8 requires every generated
 tradition to carry a mechanical effect. `TraditionGrammar` produces them and nothing reads one —
 because `Programme` does not persist traditions at all: the generator builds them into an identity

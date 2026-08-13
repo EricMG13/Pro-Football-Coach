@@ -43,6 +43,26 @@ public enum PeopleRules {
                 * durabilityInjuryProbabilityScale
     }
 
+    // MARK: - Morale
+
+    /// Where a player sits before anything has happened to them. `02` §5.1.
+    public static let baselineMorale = 60
+    public static let unhappyMorale = 45
+    public static let delightedMorale = 78
+
+    /// Appearance share, as a percentage of the team's games, at which a player counts as a starter
+    /// or as buried. Between the two they are a rotation player with nothing much to say.
+    public static let starterAppearanceShare = 70
+    public static let benchAppearanceShare = 25
+    /// Win share at which a season counts as contending or as struggling.
+    public static let contendingWinShare = 65
+    public static let strugglingWinShare = 35
+
+    public static let moralePlayingTimeBonus = 14
+    public static let moraleTeamSuccessBonus = 10
+    public static let moraleInjuryCost = 8
+    public static let moraleInvestmentBonus = 6
+
     // MARK: - Injury severity
 
     /// The severity ladder, as constants rather than as literals at a call site.

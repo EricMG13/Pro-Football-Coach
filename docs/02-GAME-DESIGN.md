@@ -734,6 +734,28 @@ since a mistake that already shipped a claim is not the same as one caught befor
 - **Traits** are behavioural (durability, temperament, work ethic, clutch) and have mechanical bite
   in specific systems, never as flavour.
 
+### 5.1 Morale — added 2026-08-13
+
+There was none. `PeopleState` carried health, development and career records and no notion of how a
+player felt, so **a professional was never unhappy about anything** and college dissatisfaction
+existed only as portal intent. Every comparable game models this, and it is what makes a bench full
+of good players a problem rather than an asset.
+
+**Derived from what already happened, not stored and drifted.** Playing time against the team's
+games, the season the team is having, being hurt, and what the programme has invested in you are all
+facts the world already holds — so a reading is a function of the save rather than a second number to
+keep in step with it, it cannot silently disagree with the record it is drawn from, and it costs
+nothing in save size, which FSC-003 makes a live concern.
+
+- **Causal, like a development summary.** A reading carries its components, because a number a coach
+  cannot explain is a number they cannot act on.
+- **Playing time is the loudest term**, which is what the sport says: a good player who does not play
+  is the portal's most common cause and the professional tier's most common trade request.
+- **Winning is worth something to everybody**, so the team term is not weighted by playing time.
+- **Nobody is aggrieved before a game has been played.** A fresh world has no mutiny in it.
+- **NIL is the college investment term**; the professional equivalent is a contract, which is
+  negotiated rather than allocated, and is its own system.
+
 ---
 
 ## 6. Staff and scheme
