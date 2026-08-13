@@ -76,12 +76,27 @@ engine backing to ship without the claim rather than with an invented one:
 `--screen-read-models` asserts each of those blanks, so filling one in future requires deleting an
 assertion that names the register item which justifies it.
 
+**Tap Team.** The Roster is truthful too: 105/105, injuries, open needs, class balance, and a row per
+player with number, position, overall, development, scheme fit, condition and availability — all of
+it out of the root. Selecting a row fills the dossier beside it. Three fields there are blank on
+purpose: no hometown (the root records where a *prospect* came from, not where a rostered player
+grew up), no staff summary (G-02), no recent form (G-04).
+
+Numbers are derived per roster, unique **within a unit** — a 105-man roster does not fit in 100
+numbers, and two players who are never on the field together may share one. `#0` on a defensive back
+is legal, not a bug.
+
+**Tap anything else — Recruit, League, Career, Depth.** Each reports "… is not available yet". That
+is deliberate: an empty screen would claim the family exists.
+
 **Things worth your eye that are not defects to file yet:**
 
-- The world strip is grey rather than programme-coloured. `CoachWorldTeamIdentity` returns nil when
-  no palette ink reaches 4.5:1 on the generated primary, and the honest fallback is neutral
-  furniture. If most programmes look grey, that is **U-7** (light-primary colours unreachable from
-  the generator) showing up on the glass, not a view bug.
+- **The colours.** Coaching HQ's world strip is neutral and the Roster's is the programme's primary,
+  and both are correct: `04` §5 gives programme colour the world-strip field and forbids a colour
+  wash on management panels. What the Roster shows is whatever the generator drew — in the default
+  seed that is a hot magenta. If most programmes look either garish or grey, that is **U-7**
+  (light-primary colours unreachable from the generator) landing on the glass, not a view bug.
+  Judge the generator, not the screen.
 - **Continue** advances a week only once the due decisions are resolved; `IntentResolver` refuses
   `.advanceWeek` while any is open, and the refusal is shown verbatim rather than swallowed.
 - Tapping through to Team / Recruit / League / Career reports "not available yet". Those families
