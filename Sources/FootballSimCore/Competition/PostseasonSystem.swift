@@ -37,14 +37,28 @@ public enum PostseasonSystem {
             )
 
         case CollegeRules.regularSeasonWeeks + CollegeRules.conferenceChampionshipWeeks:
-            let entrants = Array((competition.rankings[.college] ?? []).prefix(
-                CollegeRules.bracketTeams
-            ))
+            let ranking = competition.rankings[.college] ?? []
+            let entrants = Array(ranking.prefix(CollegeRules.bracketTeams))
             appendStage(
                 tier: .college,
                 stage: .quarterfinal,
                 week: completed.week + 1,
                 pairs: highLowPairs(entrants),
+                state: state,
+                competition: &competition,
+                payloads: &payloads
+            )
+            // `02` §11.1a. The tail: the ranked programmes below the bracket play one game each, in
+            // the same week, so the calendar §11.1 fixes at seventeen weeks does not move. Without
+            // it, 126 of 134 programmes ended every season with nothing.
+            let bowlEntrants = Array(
+                ranking.dropFirst(CollegeRules.bracketTeams).prefix(CollegeRules.bowlTeams)
+            )
+            appendStage(
+                tier: .college,
+                stage: .bowl,
+                week: completed.week + 1,
+                pairs: adjacentPairs(bowlEntrants),
                 state: state,
                 competition: &competition,
                 payloads: &payloads
@@ -277,6 +291,21 @@ public enum PostseasonSystem {
             guard game.tier == tier, game.stage == stage, let result = game.result else { return nil }
             return result.homeScore > result.awayScore ? game.homeID : game.awayID
         }
+    }
+
+    /// Pairs a ranked list neighbour by neighbour: ninth plays tenth, eleventh plays twelfth.
+    ///
+    /// Deliberately not the bracket's high-low seeding. A bowl is a prize rather than a route to a
+    /// title, and pairing adjacent ranks is what makes the games competitive — high-low here would
+    /// hand the best of the tail an easy win and call it a reward.
+    static func adjacentPairs(_ ranked: [UUID]) -> [(UUID, UUID)] {
+        var pairs: [(UUID, UUID)] = []
+        var index = 0
+        while index + 1 < ranked.count {
+            pairs.append((ranked[index], ranked[index + 1]))
+            index += 2
+        }
+        return pairs
     }
 
     private static func postseasonSeed(

@@ -2065,6 +2065,29 @@ public enum WorldIntegrity {
         )
         checkChampion(tier: .college, state: state, issues: &issues)
         checkChampion(tier: .pro, state: state, issues: &issues)
+        checkBowls(state: state, issues: &issues)
+    }
+
+    /// `02` §11.1a. A bowl is a prize for the tail, so its participants are exactly the ranked
+    /// programmes below the bracket — never a bracket team, never twice, never a team that is not
+    /// in the ranking at all.
+    private static func checkBowls(state: GameState, issues: inout [IntegrityIssue]) {
+        let games = state.competition.currentSchedule.games.filter {
+            $0.tier == .college && $0.stage == .bowl
+        }
+        guard !games.isEmpty else { return }
+        let participants = games.flatMap { [$0.homeID, $0.awayID] }
+        let ranking = state.competition.rankings[.college] ?? []
+        let eligible = Set(
+            ranking.dropFirst(CollegeRules.bracketTeams).prefix(CollegeRules.bowlTeams)
+        )
+        let bracket = Set(ranking.prefix(CollegeRules.bracketTeams))
+        if Set(participants).count != participants.count
+            || !Set(participants).isSubset(of: eligible)
+            || !Set(participants).isDisjoint(with: bracket)
+            || games.count > CollegeRules.bowlTeams / 2 {
+            issues.append(.invalidPostseason(tier: .college, stage: .bowl))
+        }
     }
 
     private static func checkOpeningBracket(
@@ -2161,6 +2184,9 @@ public enum WorldIntegrity {
             return (1...CollegeRules.regularSeasonWeeks).contains(week)
         case (.college, .conferenceChampionship):
             return week == CollegeRules.regularSeasonWeeks + 1
+        // Bowls are played in the same week as the quarterfinals, which is what keeps the calendar
+        // 02 section 11.1 fixes at seventeen weeks exactly as it was.
+        case (.college, .bowl): return week == CollegeRules.seasonWeeks - 2
         case (.college, .quarterfinal): return week == CollegeRules.seasonWeeks - 2
         case (.college, .semifinal): return week == CollegeRules.seasonWeeks - 1
         case (.college, .championship): return week == CollegeRules.seasonWeeks
@@ -2169,7 +2195,7 @@ public enum WorldIntegrity {
         case (.pro, .quarterfinal): return week == ProRules.seasonWeeks - 2
         case (.pro, .semifinal): return week == ProRules.seasonWeeks - 1
         case (.pro, .championship): return week == ProRules.seasonWeeks
-        case (.pro, .conferenceChampionship): return false
+        case (.pro, .conferenceChampionship), (.pro, .bowl): return false
         }
     }
 

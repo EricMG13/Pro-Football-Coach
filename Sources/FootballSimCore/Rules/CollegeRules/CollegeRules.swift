@@ -38,6 +38,13 @@ public enum CollegeRules {
 
     public static let bracketTeams = 8
 
+    /// Programmes that play a bowl: the ranked teams below the bracket, in pairs. `02` §11.1a.
+    ///
+    /// Forty is a choice about how wide the tail is, not a rule of the sport. It leaves roughly a
+    /// third of the 134 with something to play for in the last week and the rest with a season that
+    /// ended — which is the shape `01` §6.5 describes rather than a prize for everybody.
+    public static let bowlTeams = 40
+
     /// Halving 8 down to 1 takes 3 rounds. Derived so the two cannot disagree.
     ///
     /// `trailingZeroBitCount` is log2 for a power of two and needs no floating point to say so. A

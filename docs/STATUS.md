@@ -1606,6 +1606,28 @@ Files: `Sources/ProFootballCoachUI/Glossary.swift` (new),
 **No view yet.** The data and its contract exist; the screen that renders them arrives with the
 production UI, and until then this is a registry rather than a feature.
 
+### Slice 20 — the postseason tail (G-38) — written, unverified
+
+Ten conference championships and an eight-team bracket meant **126 of 134 programmes ended every
+season with nothing** — against `01-RESEARCH.md` §6.5's own adopted finding that a wide tail of small
+prizes is what keeps the rest of the league playing. The research said yes and canon dropped it.
+
+Twenty bowls, ranks 9 to 48, played in the quarterfinal week so the seventeen-week calendar does not
+move, paired neighbour by neighbour rather than high-low, advancing nothing. Whole-root integrity
+gained a check that bowl participants are exactly the tail — never a bracket team, never twice.
+
+**The new stage sits last in `CompetitionStage.allCases` on purpose.** `PostseasonSystem` derives a
+stage's seed from its index there, so inserting a case anywhere earlier would silently re-seed every
+bracket game in every existing save. There is a test for the ordering, because a future alphabetiser
+would not know.
+
+Files: `Sources/FootballSimCore/Competition/CompetitionState.swift` (the case and
+`advancesBracket`), `Sources/FootballSimCore/Competition/PostseasonSystem.swift` (generation and
+`adjacentPairs`), `Sources/FootballSimCore/Rules/CollegeRules/CollegeRules.swift` (`bowlTeams`),
+`Sources/FootballSimCore/Integrity/WorldIntegrity.swift` (`checkBowls`, and the week rule),
+`Tests/SimTests/Suites/BowlTests.swift` (new, four tests), `Tests/SimTests/main.swift`,
+`docs/02-GAME-DESIGN.md` (§11.1a).
+
 **Traditions remain inert, and the repair is larger than it looks.** `02` §8 requires every generated
 tradition to carry a mechanical effect. `TraditionGrammar` produces them and nothing reads one —
 because `Programme` does not persist traditions at all: the generator builds them into an identity

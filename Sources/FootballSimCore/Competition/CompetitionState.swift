@@ -6,6 +6,25 @@ public enum CompetitionStage: String, Codable, Sendable, CaseIterable, Hashable 
     case quarterfinal
     case semifinal
     case championship
+    /// A one-off postseason game for a programme outside the bracket. `02` §11.1a.
+    ///
+    /// Added 2026-08-13. Without it, 126 of 134 programmes ended every season with nothing —
+    /// against `01-RESEARCH.md` §6.5's own adopted finding that "most seasons end in a minor reward
+    /// rather than nothing" is what keeps the other 129 playing.
+    ///
+    /// **Last in the case list on purpose.** `PostseasonSystem.postseasonSeed` derives a stage's
+    /// seed from its index in `allCases`, so inserting a case anywhere earlier would silently
+    /// re-seed every bracket game that already exists.
+    case bowl
+
+    /// Whether this stage advances a bracket. A bowl does not: it is a prize, and a prize with a
+    /// next round would be a second bracket wearing a different name.
+    public var advancesBracket: Bool {
+        switch self {
+        case .quarterfinal, .semifinal: return true
+        case .regularSeason, .conferenceChampionship, .bowl, .championship: return false
+        }
+    }
 }
 
 /// The bounded team-level output of an abstract or detailed game.

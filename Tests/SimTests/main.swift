@@ -167,6 +167,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runInboxTests()
     runDifficultyTests()
     runGlossaryTests()
+    runBowlTests()
     runProgrammeEvolutionTests()
     runRosterTenureTests()
     runRealignmentTests()

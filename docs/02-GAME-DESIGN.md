@@ -893,12 +893,33 @@ the legal tests.
 | Regular season | 13 weeks: 12 games and 1 bye | §2.3 |
 | Conference championships | week 14 | §2.3 |
 | Bracket | 8 teams, 3 rounds, weeks 15 to 17 | §2.3's ~17 weeks, exactly |
+| Bowls | 20 games, ranks 9–48, week 15 | §11.1a |
 | Season length | 17 weeks | The sum of the four rows above |
 | Scholarships | 85 | The sport's limit. Soak-asserted per programme (`03` §6) |
 | Initial signings per class | 25 | §4.3's "~25 signings" made exact |
 | Roster limit | 105 | Scholarship players plus walk-ons |
 | Eligibility | 4 seasons of competition within a 5-year clock | The redshirt year is the difference, and §4.1's redshirt decision is what spends it |
 | Portal windows | two: after the bracket, and in spring | §4.1 |
+
+### 11.1a The postseason tail — added 2026-08-13
+
+Ten conference championships and an eight-team bracket meant **126 of 134 programmes ended every
+season with nothing.** `01-RESEARCH.md` §6.5 reached the opposite conclusion and this document lost
+it: "Bowl games as a wide tail of small prizes / Most seasons end in a minor reward rather than
+nothing / **Yes.** → D8: 130 programmes, one champion; the tail is what keeps the other 129 playing."
+
+- **Forty programmes, twenty games, ranks 9 to 48.** A choice about how wide the tail is, not a rule
+  of the sport: about a third of the league has something to play for in the last week and the rest
+  has a season that ended.
+- **Played in the same week as the quarterfinals**, so the seventeen-week calendar §11.1 fixes does
+  not move.
+- **Paired neighbour by neighbour** — ninth plays tenth — rather than by the bracket's high-low
+  seeding. A prize whose pairing hands the best of the tail an easy win is a bye with a trophy.
+- **A bowl advances nothing.** It is a prize; a prize with a next round is a second bracket wearing a
+  different name.
+
+Falsifier: bowl participants are exactly the ranked programmes below the bracket, never a bracket
+team, never twice; and the season is still seventeen weeks.
 
 ### 11.2 The pro tier
 
