@@ -494,7 +494,10 @@ func runCompetitionTests() {
             expectEqual(state.competition.archives.count, 1)
             expect(state.programmes[state.competition.archives[0].collegeChampionID] != nil)
             expect(state.proTeams[state.competition.archives[0].proChampionID] != nil)
-            expectEqual(state.competition.archives[0].awards.count, 6)
+            // Two tiers times six award kinds. It was three kinds until the statistical
+            // vocabulary made a defensive season countable (02 section 3.11).
+            expectEqual(state.competition.archives[0].awards.count,
+                        Tier.allCases.count * SeasonAwardKind.allCases.count)
             expectEqual(
                 Set(state.competition.archives[0].awards.map(\.kind)),
                 Set(SeasonAwardKind.allCases)

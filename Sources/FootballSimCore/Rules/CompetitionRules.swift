@@ -28,6 +28,13 @@ public enum CompetitionRules {
     public static let touchdownPointEstimate = 10
     public static let playerAwardTouchdownValue = 50
 
+    /// What a defensive season's events are worth against its tackle count, for the award order.
+    /// `02` §3.11 made these countable; these weights are what make them comparable.
+    public static let awardSackValue = 25
+    public static let awardInterceptionValue = 40
+    public static let awardForcedFumbleValue = 30
+    public static let awardPassDefendedValue = 8
+
     // MARK: - The abstracted box score
 
     /// Rates the abstracted box score derives its counters at. `02` §3.11.

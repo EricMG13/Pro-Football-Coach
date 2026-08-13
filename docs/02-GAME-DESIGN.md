@@ -353,6 +353,21 @@ Falsifier: defenders accumulate; every rate statistic is computable; the team li
 lines agree exactly on sacks and turnovers; an empty line writes one key; and a record written before
 the change still decodes with zeros where the new counters would be.
 
+**Honours follow the record — added 2026-08-13.** There were three award kinds, one of them offensive
+by construction and none of them reachable by a defender. That was not a shortage of honours; it was
+the record having nothing to give one for. With a defensive season countable there are six: champion,
+top offence, top defence, player of the year, and one for each side of the ball. The overall award
+stays, because a season with one outstanding player should be able to say so.
+
+Every kind is awarded in every tier in every season, unconditionally. `WorldIntegrity` requires a
+season archive to hold exactly one of each per tier, so an honour that is withheld in a quiet season
+is an integrity failure waiting to happen rather than a nicety.
+
+A defensive season is valued as volume plus the events that change games — tackles, with sacks,
+takeaways and forced fumbles weighted above them in the rules module. That is the same shape as the
+offensive value it sits beside, so neither side of the ball is scored on a scale the other cannot
+reach.
+
 ---
 
 ## 4. The offseason

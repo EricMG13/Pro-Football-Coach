@@ -4,6 +4,21 @@ public enum SeasonAwardKind: String, Codable, Sendable, CaseIterable, Hashable {
     case champion
     case topOffense
     case playerOfTheYear
+    /// Added 2026-08-13 with the statistical vocabulary (`02` §3.11). Three award kinds, one of them
+    /// offensive by construction and none of them reachable by a defender, was not a shortage of
+    /// honours — it was the record having nothing to give one for.
+    case topDefense
+    case offensivePlayerOfTheYear
+    case defensivePlayerOfTheYear
+
+    /// Whether this honour goes to a team or to a person, so a reader never has to guess which kind
+    /// of identifier `winnerID` holds.
+    public var isTeamAward: Bool {
+        switch self {
+        case .champion, .topOffense, .topDefense: return true
+        case .playerOfTheYear, .offensivePlayerOfTheYear, .defensivePlayerOfTheYear: return false
+        }
+    }
 }
 
 public struct SeasonAward: Codable, Sendable, Equatable {

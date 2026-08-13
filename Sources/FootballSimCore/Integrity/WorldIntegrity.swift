@@ -750,11 +750,12 @@ public enum WorldIntegrity {
                     return award.winnerID == archive.collegeChampionID
                 case (.champion, .pro):
                     return award.winnerID == archive.proChampionID
-                case (.topOffense, .college):
+                case (.topOffense, .college), (.topDefense, .college):
                     return collegeIDs.contains(award.winnerID)
-                case (.topOffense, .pro):
+                case (.topOffense, .pro), (.topDefense, .pro):
                     return proTeamIDs.contains(award.winnerID)
-                case (.playerOfTheYear, _):
+                case (.playerOfTheYear, _), (.offensivePlayerOfTheYear, _),
+                     (.defensivePlayerOfTheYear, _):
                     return playerIDs.contains(award.winnerID)
                 }
             }
