@@ -852,6 +852,41 @@ second decision system to keep in step with the first.
 
 Falsifier: a suspended player takes the field, or a suspension outlives its stated weeks.
 
+### 5.3 Preseason camp — added 2026-08-13
+
+There was none. §11.3.1's calendar is twenty-one weeks and **every one of them is a game week**, so
+the season simply started: no camp, no position battles, no exhibition. Every comparable game opens
+here, and it is where a coach finds out which of last season's problems fixed itself.
+
+**Held at the boundary, not in a week of its own.** Adding a preseason week would move every dated
+system in the game — schedules, contracts, eligibility, the portal windows, the professional market
+phases — for a beat that does not need a week. Camp runs once as the season rolls over, after the
+college cycle and the walk-ons have finished assembling next season's rosters, so the players who
+report to camp are the players who will play. A professional who signs later in the offseason misses
+camp, which is also what happens.
+
+**It is the development pass, asked a different question.** Camp is `DevelopmentSystem` with the
+playing-time term switched off, because nobody has played yet and a camp that credited last season's
+snaps would be rewarding a season that is already over. Coaching, facilities, work ethic and the age
+curve all read exactly as they do in season. A second development model would drift from the first;
+this one cannot.
+
+**The report is derived from the receipt camp left.** A development summary names the attribute and
+the signed delta, so the pre-camp figure is the current one with that delta taken back out — nothing
+is stored twice. A battle is a position whose top two available players are within a stated gap, and
+it was *decided in camp* when reversing camp would put the challenger on top instead.
+
+**The window is stated rather than implied.** A lifecycle record keeps only its most recent
+development summary, so the camp report is readable until the season's first in-season checkpoint
+overwrites it. That is the window in which a coach reads one.
+
+**No exhibition games.** A friendly is a fixture, and fixtures are the schedule's business: it would
+need a game the standings ignore, statistics that do not count and a result nothing archives. That is
+its own change, and it is not what makes camp worth having.
+
+Falsifier: a season rolls over and no player's rating moved at camp, or a camp report names a
+battle at a position where the two players are not actually close.
+
 ---
 
 ## 6. Staff and scheme

@@ -584,6 +584,19 @@ public enum WorldScheduler {
                         to: &nextState,
                         emittedEvents: &events
                     )
+                    // Camp (`02` §5.3), here and nowhere else: after the college cycle and the
+                    // walk-ons have finished assembling next season's rosters, so the players who
+                    // report to camp are the players who will play. Before this point the roster is
+                    // still last season's.
+                    let camp = PreseasonCampSystem.hold(after: completed, in: nextState)
+                    nextState.players = camp.players
+                    nextState.people = camp.people
+                    try appendEvents(
+                        payloads: camp.eventPayloads,
+                        occurredAt: completed,
+                        to: &nextState,
+                        emittedEvents: &events
+                    )
                     do {
                         nextState = try ProMarketSystem.openOffseason(in: nextState)
                     } catch let error as ProMarketError {

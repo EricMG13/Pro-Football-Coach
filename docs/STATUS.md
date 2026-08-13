@@ -1823,11 +1823,45 @@ headline), `Sources/FootballSimCore/Rules/PeopleRules.swift` (the discipline con
 it would have to be remembered, and that is persisted state for a system whose design is that only
 the consequence is stored.
 
-### The standing gap across slices 19–27
+### Slice 28 — preseason camp (G-39) — written, unverified
+
+`02` §11.3.1's calendar is twenty-one weeks and **every one of them is a game week**, so the season
+simply started: no camp, no position battles, no exhibition. The register found "preseason" in canon
+exactly once, as the athletic director's expectation.
+
+Camp is held at the season boundary rather than in a week of its own, because adding a preseason week
+would move every dated system in the game — schedules, contracts, eligibility, portal windows, the
+professional market phases — for a beat that does not need one. It runs after the college cycle and
+the walk-ons have assembled next season's rosters, so the players who report to camp are the players
+who will play.
+
+**It is the development pass, asked a different question**: `DevelopmentSystem.camp` is the same loop
+with the playing-time term switched off, because nobody has played yet. `practice` and `camp` now
+share one private `develop`, so a second development model cannot drift from the first. The report is
+derived from the receipt camp leaves — a development summary names the attribute and the signed
+delta, so the pre-camp figure is the current one with that delta taken back out, and a battle is
+"decided in camp" when reversing camp would put the challenger on top.
+
+Files: `Sources/FootballSimCore/People/PreseasonCamp.swift` (new — `PreseasonCampSystem`,
+`PreseasonCamp`, `CampReport`, `CampBattle`, `CampMovement`),
+`Sources/FootballSimCore/People/DevelopmentSystem.swift` (`camp`, the extracted `develop`),
+`Sources/FootballSimCore/Scheduling/WorldScheduler.swift` (held at the boundary),
+`Sources/FootballSimCore/Rules/PeopleRules.swift` (the camp constants),
+`Tests/SimTests/Suites/PreseasonCampTests.swift` (new, seven tests), `Tests/SimTests/main.swift`,
+`docs/02-GAME-DESIGN.md` (§5.3).
+
+**The behavioural risk, stated because no compiler or soak has seen it.** There is now a third
+development pass per season, so twenty-season rating distributions will sit higher than the soaks
+last measured. It cannot run away — camp respects the same `potential` ceiling and the same ±1 bound
+as in-season development — but the M1 and M2 soak bands are where a real drift would show, and they
+have not been run. **No exhibition games**, and canon says why: a friendly is a fixture, and that is
+the schedule's business.
+
+### The standing gap across slices 19–28
 
 **None of these read models is on a screen yet.** The inbox, the depth chart, morale, the staff
-shortlist, the glossary, the discipline file and the asking price are all engine-side and reachable
-only from tests. `CoachWorldReadModelProvider` builds one typed `CoachingHQReadModel`, and adding a
+shortlist, the glossary, the discipline file, the camp report and the asking price are all
+engine-side and reachable only from tests. `CoachWorldReadModelProvider` builds one typed `CoachingHQReadModel`, and adding a
 surface means changing that model, its views and the design-contract tests together — which is a UI
 phase with its own `04b` gate, not a tail on a systems slice. Recorded here so the absence is a
 stated boundary rather than something a reader discovers.

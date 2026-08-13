@@ -29,6 +29,32 @@ public enum DevelopmentSystem {
         guard PeopleRules.inSeasonDevelopmentWeeks.contains(calendar.week) else {
             return DevelopmentTransition(players: state.players, people: state.people, eventPayloads: [])
         }
+        return develop(at: calendar, in: state, tactical: tactical, countsPlayingTime: true)
+    }
+
+    /// Camp. `02` §5.3, held at the season boundary rather than in a week of its own.
+    ///
+    /// The same pass as in-season practice, with the playing-time term switched off, because nobody
+    /// has played yet: a camp that credited last season's snaps would be rewarding a season that is
+    /// already over. Ungated by week — the boundary decides when this runs, not the calendar, since
+    /// `02` §11.3.1's twenty-one weeks are all game weeks and there is no free one to hold camp in.
+    ///
+    /// **Not a second development model.** It is this one, called with a different question, which
+    /// is the only way the two cannot drift apart.
+    public static func camp(
+        at calendar: CalendarState,
+        in state: GameState,
+        tactical: TacticalState
+    ) -> DevelopmentTransition {
+        develop(at: calendar, in: state, tactical: tactical, countsPlayingTime: false)
+    }
+
+    private static func develop(
+        at calendar: CalendarState,
+        in state: GameState,
+        tactical: TacticalState,
+        countsPlayingTime: Bool
+    ) -> DevelopmentTransition {
         var players = state.players
         var people = state.people
         var payloads: [DomainEventPayload] = []
@@ -41,7 +67,8 @@ public enum DevelopmentSystem {
                 player,
                 coachRating: context.coachRatingByPlayer[id] ?? SharedRules.ratingRange.lowerBound,
                 practiceValue: context.practiceValueByPlayer[id] ?? TacticalPracticePlan.balanced.developmentValue(for: player),
-                played: (state.competition.playerStatistics[id]?.games ?? 0) > 0,
+                played: countsPlayingTime
+                    && (state.competition.playerStatistics[id]?.games ?? 0) > 0,
                 facilities: context.facilityRatingByPlayer[id] ?? SharedRules.ratingRange.lowerBound
             )
             let score = components.reduce(0) { $0 + $1.value }

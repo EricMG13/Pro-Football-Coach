@@ -70,6 +70,15 @@ public enum PeopleRules {
     public static let moraleInjuryCost = 8
     public static let moraleInvestmentBonus = 6
 
+    // MARK: - Preseason camp. `02` §5.3.
+
+    /// How close two players have to be for the job to count as open. Three points of overall is
+    /// inside the noise a camp can move, which is what makes it a battle rather than a depth chart.
+    public static let campBattleRatingGap = 3
+    /// A report is a screen, not a census.
+    public static let maximumCampMovements = 10
+    public static let maximumCampBattles = 8
+
     // MARK: - Discipline. `02` §5.2.
 
     /// The longest a coach can put one of their own players out. Bounded because a suspension is a
