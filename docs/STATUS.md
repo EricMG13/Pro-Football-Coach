@@ -1133,18 +1133,28 @@ toolchain** — `swift: command not found` — so:
 - **G1 and G2 are not claimed** for any of it, by anyone;
 - the files are named per slice so a session with a toolchain knows exactly what to build first.
 
-**Where this session got to: twenty-two slices.** The whole match layer (conversion, penalties,
-special teams, overtime, in-play injuries, timeouts, weather), the record it produces (the statistics
-vocabulary, the played game's box score, awards), the loop around it (the depth chart, the coach's
-own game played by the detailed engine, the call-in loop connected, the inbox), and the surrounding
-product (scheme fit, multi-week advance, difficulty, the glossary, the postseason tail, morale, the
-privacy manifest, the sound contract).
+**Where this session got to: twenty-eight slices, and every register row G-18 to G-45 is now either
+written or escalated.** The whole match layer (conversion, penalties, special teams, overtime,
+in-play injuries, timeouts, weather), the record it produces (the statistics vocabulary, the played
+game's box score, awards), the loop around it (the depth chart, the coach's own game played by the
+detailed engine, the call-in loop connected, the inbox), the surrounding product (scheme fit,
+multi-week advance, difficulty, the glossary, the postseason tail, morale, the privacy manifest, the
+sound contract), and the management systems the register found missing entirely (traditions with
+mechanical bite, money and facilities, hiring and firing, draft picks as assets, contract
+negotiation, discipline and suspensions, preseason camp).
 
-**What is not built is not a backlog of things that ran out of time.** Every remaining item —
-traditions, staff, draft picks, negotiation, discipline, money, preseason — needs one of the two
-things this session deliberately refused to do without a compiler: change persisted state without
-being able to prove decoding, or move a pinned generation fingerprint it cannot re-measure.
-`docs/plans/2026-08-13-completeness-build.md` names each with its reason.
+**Two items remain, and neither ran out of time.** Challenges (G-21b) and audio/haptics (G-40, G-41)
+are owner forks, and each is now a numbered decision with an instrumented falsifier —
+`docs/OPEN-DECISIONS.md` **D16** and **D17**, both `ESCALATED`. A challenge needs a truth beneath the
+snap that this engine does not have; audio needs assets an agent can neither author nor license.
+Building either blind would be inventing an owner's answer.
+
+**How the seven that were blocked got unblocked**, since the technique is the transferable part:
+derive rather than store (the depth chart, morale, the inbox, the staff shortlist, pick identity, the
+discipline file and the camp report are all functions of the save); additive optional fields or
+in-place legacy decoding, so **no schema bump was taken**; and checking a claim before writing it
+down — the traditions blocker was wrong, and the correction is recorded in `02` §8.1 rather than
+quietly dropped.
 
 **Pins this work moves, and why they are red rather than wrong.** A play-by-play fingerprint is
 pinned as a source literal *because* it can only be produced by running the binary; a session
@@ -1153,8 +1163,14 @@ literal here was guessed — a fabricated pin passes while proving nothing.
 
 | Pin | Where | Why it moves |
 |---|---|---|
-| `PINNED_PRO_GAME_FINGERPRINT` | `Tests/SimTests/Suites/EngineTests.swift` | The conversion (slice 1) |
-| `PINNED_COLLEGE_GAME_FINGERPRINT` | `Tests/SimTests/Suites/EngineTests.swift` | The conversion (slice 1) |
+| `PINNED_PRO_GAME_FINGERPRINT` | `Tests/SimTests/Suites/EngineTests.swift` | Every slice that touches snap resolution or the game loop: the conversion (1), penalties (2), kickoffs (3), overtime (4), in-play injuries (5), timeouts (6), weather (7) |
+| `PINNED_COLLEGE_GAME_FINGERPRINT` | `Tests/SimTests/Suites/EngineTests.swift` | The same seven |
+| `pinnedAdvancedRootFingerprint` | `Tests/SimTests/Suites/ArchitectureTests.swift` | The statistics rewrite (slice 8). A week-one root now carries player statistics in the sparse encoding, so the *advanced* root's bytes move even though the generated root's do not |
+
+`pinnedRootFingerprint` — the freshly generated root — is expected to hold, and that expectation is
+itself a check worth running: every persisted addition in these slices is optional and omitted when
+absent, so a world that has not played a game should encode exactly as it did before. If the
+generated-root pin is red, something is being written that should not be.
 
 ### Slice 1 — the conversion (G-24) — written, unverified
 
