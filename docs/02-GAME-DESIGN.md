@@ -714,9 +714,24 @@ was. The genre register found no mention of pick trading anywhere in the tree or
 - **A trade that would change nothing is refused**, not quietly ignored: a transaction that silently
   did nothing is the worst kind of transaction bug.
 
-**Not yet wired into the draft itself.** `ProMarketState` still reads its own `draftOrder`; making
-the book authoritative is a persisted-state change to a type with a strict decoder and a
-validated shape, and it belongs with the draft-day surface that would show a coach what they hold.
+**Wired into the draft — amended 2026-08-13.** This section said the book was not yet authoritative
+and that `ProMarketState` still read `draftOrder` directly, which meant a traded pick changed nothing
+about who picked: the asset existed and the draft ignored it. Who is on the clock now reads
+ownership.
+
+- **Only the traded picks are stored.** A book of all 224 records saying "this club holds its own
+  pick" is save growth for a fact the order already states, against FSC-003. The order stays the
+  default and the persisted list is the exception list — optional and omitted when empty, so a
+  league where nobody has traded a pick encodes exactly as it did before picks were assets.
+- **A pick traded home stops being an exception.** Storing "this club holds its own pick" as an
+  exception that is not one is how an exception list rots.
+- **A trade that would change nothing is refused**, and so is a slot outside the draft.
+- **A new offseason drops what is past and keeps what is ahead.** Entries name their own season, so
+  trading next year's second-rounder — the reason identity is derived from the slot at all — survives
+  the offseason that would otherwise forget it.
+
+What is still absent is the *trade itself* as a coach action: this is the state and the rule, not a
+negotiation. Trading picks for players is a market surface with its own valuation question.
 
 ### 4.2d A player has a price — added 2026-08-13
 

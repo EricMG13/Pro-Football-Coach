@@ -1761,10 +1761,9 @@ Files: `Sources/FootballSimCore/Pro/DraftPick.swift` (new — `DraftPick`, `Draf
 `Tests/SimTests/Suites/DraftPickTests.swift` (new, five tests), `Tests/SimTests/main.swift`,
 `docs/02-GAME-DESIGN.md` (§4.2c).
 
-**Not wired into the draft yet, and canon says so.** `ProMarketState` still reads its own
-`draftOrder`; making the book authoritative is a persisted-state change to a type with a strict
-decoder and a validated shape, and it belongs with the draft-day surface that would show a coach what
-they hold.
+**Wired into the draft in slice 33.** The note that used to sit here said it was not, and that
+`ProMarketState` still read `draftOrder` directly — which meant a traded pick changed nothing about
+who picked.
 
 **Two things the staff slice does not do, named in canon rather than implied:** staff ratings still never change
 over a career, so a coordinator who wins for a decade is as good as the day they arrived; and nothing
@@ -1989,7 +1988,28 @@ Files: `Sources/FootballSimCore/World/GameState.swift` (`difficulty`, `difficult
 (100%) integer division leaves them exactly as they were, and only a non-default difficulty changes
 what a career feels like. That is deliberate: the intended game must be the game the soaks measured.
 
-### The standing gap across slices 19–32
+### Slice 33 — the draft reads who owns the pick (G-33 tail) — written, unverified
+
+Slice 25 built pick ownership and left the draft reading `draftOrder` directly, so **a traded pick
+changed nothing about who picked**: the asset existed and the draft ignored it.
+
+`ProMarketState.tradedPicks` is the exception list, not a book. A record of all 224 picks saying
+"this club holds its own pick" is save growth for a fact the order already states, which FSC-003
+makes a live concern — so the order stays the default, the list carries only what has moved, and it
+is optional and omitted when empty. A league where nobody has traded a pick encodes exactly as it did
+before picks were assets. A pick traded home is removed rather than stored as an exception that is
+not one, a trade that would change nothing is refused, and a new offseason drops entries for seasons
+now past while keeping the ones still ahead — so trading next year's second-rounder, the reason
+identity is derived from the slot at all, survives the offseason.
+
+Files: `Sources/FootballSimCore/Pro/ProMarketState.swift` (`tradedPicks`, `owner(ofPick:)`,
+`tradePick(at:to:)`, `canonicalPicks`, the decoder and shape checks, `open` carrying future trades),
+`Tests/SimTests/Suites/DraftPickTests.swift` (two tests), `docs/02-GAME-DESIGN.md` (§4.2c amended).
+
+**Still absent, and named:** the trade itself as a coach action. This is the state and the rule; a
+pick-for-player trade is a market surface with its own valuation question.
+
+### The standing gap across slices 19–33
 
 **None of these read models is on a screen yet.** The inbox, the depth chart, morale, the staff
 shortlist, the glossary, the discipline file, the camp report and the asking price are all

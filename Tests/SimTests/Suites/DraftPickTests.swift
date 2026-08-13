@@ -67,5 +67,59 @@ func runDraftPickTests() {
             expect(built.contains { $0.id == future.id },
                    "a pick described in advance is not the pick the draft later built")
         }
+
+        test("a traded pick changes who is on the clock") {
+            // The tail slice 25 left open: ownership existed and the draft ignored it, reading
+            // `draftOrder` directly, so trading a pick changed nothing about who picked.
+            var state = GameState.bootstrap(seed: 60_130)
+            do {
+                state = try ProMarketSystem.openOffseason(in: state)
+                state = try ProMarketSystem.beginDraft(in: state)
+            } catch {
+                expect(false, "the draft would not open: \(error)")
+                return
+            }
+            guard let onTheClock = state.proMarket.currentPickTeamID,
+                  let buyer = state.proTeams.ids.first(where: { $0 != onTheClock }) else {
+                expect(false, "a bootstrapped draft has nobody on the clock")
+                return
+            }
+            expectEqual(state.proMarket.owner(ofPick: 0), onTheClock,
+                        "an untraded pick is not held by the club it came from")
+
+            expect(state.proMarket.tradePick(at: 0, to: buyer), "a legal pick trade was refused")
+            expectEqual(state.proMarket.currentPickTeamID, buyer,
+                        "the pick moved and the clock did not")
+            expect(!state.proMarket.tradePick(at: 0, to: buyer),
+                   "a trade to the club that already holds the pick was accepted")
+            expect(!state.proMarket.tradePick(at: ProRules.draftPickCount, to: buyer),
+                   "a pick outside the draft was traded")
+            expect(WorldIntegrity.check(state).isValid, "a traded pick made the world invalid")
+            expectEqual(
+                try? SaveEnvelope.decode(GameState.self, from: SaveEnvelope.encode(state)),
+                state,
+                "a traded pick did not survive a save round trip"
+            )
+
+            // Traded back is not an exception any more, and is not stored as one.
+            expect(state.proMarket.tradePick(at: 0, to: onTheClock))
+            expectEqual(state.proMarket.currentPickTeamID, onTheClock)
+            expect(state.proMarket.tradedPicks == nil,
+                   "a pick traded home is still carried as an exception")
+        }
+
+        test("a league where nobody trades a pick weighs exactly what it did") {
+            // Optional and omitted when empty: 224 records of "this club holds its own pick" is save
+            // growth for a fact `draftOrder` already states, which FSC-003 makes a live concern.
+            let state = GameState.bootstrap(seed: 60_131)
+            expect(state.proMarket.tradedPicks == nil, "a fresh league already has traded picks")
+            guard let bytes = try? JSONEncoder.stable().encode(state.proMarket),
+                  let text = String(data: bytes, encoding: .utf8) else {
+                expect(false, "the market would not encode")
+                return
+            }
+            expect(!text.contains("tradedPicks"),
+                   "every save grew a traded-pick key, so every existing save is stranded")
+        }
     }
 }
