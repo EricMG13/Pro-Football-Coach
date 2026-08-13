@@ -29,10 +29,17 @@ public enum AbstractGameSimulator {
         ))
         let baseline = CompetitionRules.baselinePoints(for: game.tier)
         let deviation = CompetitionRules.scoreDeviation(for: game.tier)
+        // `02` §8.1. A tradition's home-field effect is rating points, converted here at the same
+        // scale every other rating difference uses, so the loudest week in a programme's year is
+        // worth what the generator said it was rather than nothing.
+        let traditionBonus = Double(TraditionEffects.homeFieldBonus(
+            home: game.homeID, against: game.awayID, week: game.week, in: state
+        )) * CompetitionRules.strengthPointScale
         var homeScore = score(
             expectation: baseline
                 + Double(home.offense - away.defense) * CompetitionRules.strengthPointScale
                 + CompetitionRules.homeFieldPoints
+                + traditionBonus
                 + homePlan.pointAdjustment(against: awayPlan),
             deviation: deviation + homePlan.scoreDeviationAdjustment(),
             using: &rng

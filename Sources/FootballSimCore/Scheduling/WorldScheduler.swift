@@ -718,6 +718,11 @@ public enum WorldScheduler {
             for: fixture.awayID, against: fixture.homeID, at: completed, in: state,
             tactical: &state.tactical
         )
+        // `02` §8.1, in the played game as well as the abstracted one: a tradition that only moved
+        // the games nobody watches would be felt least in the one game the coach is at.
+        let traditionBonus = Double(TraditionEffects.homeFieldBonus(
+            home: fixture.homeID, against: fixture.awayID, week: fixture.week, in: state
+        )) / Double(SharedRules.ratingRange.count) * MatchupRules.homeAdvantage
         let record = GameEngine.play(
             tier: fixture.tier,
             home: DepthChart.personnel(offense: homeRoster, defense: homeRoster,
@@ -725,6 +730,7 @@ public enum WorldScheduler {
             away: DepthChart.personnel(offense: awayRoster, defense: awayRoster,
                                        unavailableIDs: out),
             caller: TacticalPlanCaller(offensivePlan: homePlan, defensivePlan: awayPlan),
+            homeFieldAdvantage: MatchupRules.homeAdvantage + traditionBonus,
             week: completed.week,
             // The coordinator answers when the coach is not at the game. `02` §3.1 is explicit that
             // deferring is a real choice rather than a non-answer, and this is a whole game of it —

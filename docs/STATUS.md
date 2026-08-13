@@ -1662,11 +1662,31 @@ Files: `Sources/FootballSimCore/People/PlayerMorale.swift` (new),
 read morale, and none does — those are consumers and each is its own change. This slice makes the
 reading exist and true; it does not claim the world reacts to it.
 
-**Traditions remain inert, and the repair is larger than it looks.** `02` §8 requires every generated
-tradition to carry a mechanical effect. `TraditionGrammar` produces them and nothing reads one —
-because `Programme` does not persist traditions at all: the generator builds them into an identity
-that is dropped except for names and colours. Wiring them is a schema change plus a generation
-change, so it is its own slice and is **not** done here.
+### Slice 22 — traditions do something (G-32b) — written, unverified
+
+**And this slice starts with a correction.** The entry that used to sit here said traditions were
+inert because `Programme` does not persist them, and that wiring them meant a schema change plus a
+generation change. That was wrong: traditions are persisted in `GameState.identities`, alongside
+colours and the venue, and always were. The claim was checked against the wrong type. It is corrected
+in the open — here and in `02` §8.1 — rather than quietly dropped, the same way `02` §4.3 records the
+recruiting-budget mistake, because a wrong finding that has already been written down is not the same
+as one caught before it was.
+
+The real gap was consumption, and it was total: `TraditionGrammar` generated four kinds of effect and
+**nothing read a single one**, so every tradition in every world was exactly the decoration D6 clause
+4 forbids. All four are now read — the loudest week and the rivalry bonus add home-field advantage in
+*both* models, a regional pipeline adds recruiting interest from that region, and a morale tradition
+moves §5.1's morale, which is the first thing in this game with morale for it to move.
+
+No schema change, and no new draws: the values were already generated and already saved.
+
+Files: `Sources/FootballSimCore/Generation/TraditionEffects.swift` (new),
+`Sources/FootballSimCore/Abstracted/AbstractGameSimulator.swift`,
+`Sources/FootballSimCore/Scheduling/WorldScheduler.swift` (the played game reads it too),
+`Sources/FootballSimCore/College/CollegeRecruitingSystem.swift`,
+`Sources/FootballSimCore/People/PlayerMorale.swift`,
+`Tests/SimTests/Suites/TraditionEffectTests.swift` (new, five tests), `Tests/SimTests/main.swift`,
+`docs/02-GAME-DESIGN.md` (§6 corrected, §8.1 added).
 
 ---
 

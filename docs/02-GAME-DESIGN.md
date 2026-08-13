@@ -774,11 +774,10 @@ carried each team's scheme into its profile and never read it. Every matchup now
 **differential** between the two players' `schemeFit` ratings — a matchup is between two people, and
 a scheme that helped both equally should decide nothing.
 
-**Traditions are still inert, and that is a bigger repair than it looks.** §8 requires every
-generated tradition to carry a mechanical effect; `TraditionGrammar` produces them and nothing reads
-one, because `Programme` does not persist its traditions at all — the generator builds them into an
-identity that is dropped except for names and colours. Wiring them is a schema change plus a
-generation change, which is its own slice rather than a line in this one.
+**Traditions are wired too — see §8.1.** An earlier note in this section said they were inert
+because `Programme` does not persist them. They *are* persisted, in `GameState.identities`, and
+always were; the claim was checked against the wrong type and is corrected in §8.1 rather than
+quietly dropped.
 
 ---
 
@@ -866,6 +865,31 @@ career-length change rather than a whiplash. A season that produced no table mov
 
 Falsifier: held at a fixed rank, prestige must stop moving. An evolution that never settles is a
 random walk wearing a rule's clothes.
+
+### 8.1 What a tradition does — added 2026-08-13
+
+D6 clause 4: "A tradition the player cannot feel in the simulation is decoration." The type system
+enforced half of that — a tradition without a `TraditionEffect` does not compile — and **nothing read
+a single effect**, so every tradition in every generated world was exactly the decoration the
+decision forbids.
+
+All four kinds are now read:
+
+- **Loudest week** and **against a rival** both add home-field advantage, in the played game as well
+  as the abstracted one — a tradition that only moved the games nobody watches would be felt least in
+  the one game the coach is at. They **add**: a programme whose loudest week is its rivalry week gets
+  both, which is the game its generated tradition set is describing.
+- **A regional pipeline** adds interest from that region, which is what a recruiting tradition says
+  it is.
+- **A morale effect after a result** moves §5.1's morale, which is the first thing in this game with
+  morale for it to move.
+
+*Recorded because this session got it wrong first.* An earlier note said traditions were inert
+because `Programme` does not persist them and that wiring them meant a schema change. They are
+persisted — in `GameState.identities`, alongside colours and the venue — and always were. The claim
+was checked against the wrong type. It is corrected here in the open, in the same way §4.3 records
+the recruiting-budget mistake, because a wrong finding that has already been written down is not the
+same as one caught before it was.
 
 All of it fictional and original, guarded by the name-collision and trade-dress tests.
 

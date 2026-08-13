@@ -108,6 +108,17 @@ public enum PlayerMorale {
             }
         }
 
+        // 5. What this place does after a result. `02` §8's morale tradition, and §5.1 is the
+        //    first thing in the game with morale for it to move.
+        if let organisationID, let won = lastResultWasWin(for: organisationID, in: state) {
+            let delta = TraditionEffects.moraleDelta(
+                programmeID: organisationID, wonLastGame: won, in: state
+            )
+            if delta != 0 {
+                components.append(MoraleComponent(reason: .teamSuccess, value: delta))
+            }
+        }
+
         let total = components.reduce(PeopleRules.baselineMorale) { $0 + $1.value }
         return MoraleReading(playerID: playerID, value: total, components: components)
     }
@@ -128,6 +139,23 @@ public enum PlayerMorale {
                     ? $0.playerID.uuidString < $1.playerID.uuidString
                     : $0.value < $1.value
             }
+    }
+
+    /// Whether the organisation won its most recent completed game, or nil if it has not played.
+    ///
+    /// Latest by week rather than by array order, because a schedule is not stored in the order it
+    /// is played and "the last result" that read one would be whichever fixture happened to be last
+    /// in the file.
+    static func lastResultWasWin(for organisationID: UUID, in state: GameState) -> Bool? {
+        let played = state.competition.currentSchedule.games.filter {
+            ($0.homeID == organisationID || $0.awayID == organisationID) && $0.result != nil
+        }
+        guard let latest = played.max(by: { $0.week < $1.week }), let result = latest.result else {
+            return nil
+        }
+        let ours = latest.homeID == organisationID ? result.homeScore : result.awayScore
+        let theirs = latest.homeID == organisationID ? result.awayScore : result.homeScore
+        return ours > theirs
     }
 
     private static func organisation(of playerID: UUID, in state: GameState) -> UUID? {
