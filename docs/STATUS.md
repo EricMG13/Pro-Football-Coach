@@ -540,6 +540,40 @@ is the largest remaining item. B-2 and any device measurement are the owner's. P
 cuts) is not built — and the probe's finding that no team is over the cap at the season boundary is
 worth carrying into it, because beat 2 has nothing to do until spending puts a team over.
 
+### 2026-08-13 — P12 week screens, against the v3 design references
+
+U-6's first slice. Plan: `docs/plans/2026-08-13-p12-week-screens.md`. Seven families landed as
+production views, built against `chrome-v3` / `week-v3` / `readout-v3` / `failure-v3` / `table-v3`,
+and wired through `CoachWorldApp` so a shipped career can reach them.
+
+| Family | View | What it shows | What it honestly does not |
+|---|---|---|---|
+| 1 Title / Continue | `TitleContinueView` | career boundary, New career / Continue career | Job Board (still the lowest-prestige auto-start) |
+| 9 Inbox | `InboxView` | queued mandatory decisions as AgendaRows | correspondence (no inbound-event system) |
+| 10 Opponent Report | `OpponentReportFilmRoomView` | opponent, venue, recorded pass/turnover shares | staff verdict and confidence (G-02 / G-05) |
+| 11 Game Plan | `GamePlanView` | three axes; Set plan writes `CareerSessionIntent.tacticalPlan` | a named-staff recommendation |
+| 12 Practice Plan | `PracticePlanView` | four 60-minute buckets and legal presets | a seven-day load grid (G-14); session-type symbols withheld because they belong to that grid |
+| 13 Team Health | `TeamHealthView` | unavailable/injured rows from `PlayerLifecycleState` | a return-to-play intent (none exists) |
+| 15 Aftermath | `AftermathView` | last recorded result and stored plan/review | week-one score (no game has been played) |
+
+Office local routes (Desk / Inbox / Film / Plan / Practice / Health / Review) sit under the world
+strip on HQ and on every week family. Inspect film on HQ navigates to Opponent Report rather than
+opening a sheet that duplicated it. Continue still advances the week, and still refuses while a
+mandatory decision is open, on every one of these surfaces.
+
+Shared chrome promoted from the three existing production uses: `CoachWorldWorldStrip`,
+`CoachWorldOfficeRoutes`, `CoachWorldAgendaRow`, `CoachWorldMeter`, `CoachWorldEmptyState`,
+`CoachWorldErrorBanner`. HQ / Roster / Recruiting world strips were not rewritten.
+
+`--screen-read-models` gains pins for empty correspondence, unrecorded practice minutes, week-one
+aftermath having no result, and game/practice writes round-tripping through `CareerSession`.
+
+**Unverified — never compiled in this session.** This environment has no `swift` / `xcodebuild`.
+Files added or edited: `Sources/ProFootballCoachUI/{CoachWorldChrome,WeekScreenReadModels,TitleContinueView,InboxView,OpponentReportFilmRoomView,GamePlanView,PracticePlanView,TeamHealthView,AftermathView,CoachingHQView,RootView}.swift`, `Sources/CoachWorldApp/{CoachWorldWeekProvider,CoachWorldStore,CoachWorldAppRootView,CoachWorldPersonnelProvider}.swift`, `Tests/SimTests/Suites/{ReadModelProviderTests,AccessibilityReflowTests}.swift`. Do not read the previous paragraph as a green suite.
+
+Landed families are now 12 of 62. Remaining U-6 work is the other 50, starting with P12's Job
+Board / Offer / Appointment if the auto-start is to be replaced, then P14.
+
 ### The full default suite — **green on 2026-08-12, after a two-failure fix**
 
 `./scripts/verify.sh` now passes: **602 tests / 747,027 checks, all passed**, debug build and

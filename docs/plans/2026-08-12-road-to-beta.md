@@ -29,7 +29,7 @@ below this section matters until these are true.
 |---|---|---|---|
 | B-1 | **Answered 2026-08-13: it builds.** Debug and Release for the iPhone 17 simulator, and the arm64 device slice unsigned; installed, launched and photographed. Signing (B-2) is now the only thing between this and a phone. Original text: **There is no iOS app target that builds.** `App/project.yml` declares the app and `Sources/ProFootballCoachUI/` holds views, but the verified build is `swift build` of a SwiftPM package plus a headless test executable. Nothing in this session compiled an `.app`, and no session has. | **Built, run and photographed on the simulator; never on a phone** | `03b` |
 | B-2 | **No signing, bundle identifier, provisioning profile or TestFlight record exists**, and none can be created by an agent — it needs the owner's Apple Developer account. | Owner action, not started | `docs/PRE-DEPLOYMENT-CHECKLIST.md` |
-| B-3 | **Closed 2026-08-13 for Coaching HQ by G-01; open for every other family.** Original text: **The UI is fixture-driven end to end.** `ScreenReadModels.swift` carries `CoachWorldSampleData` with provenance `sample`; `RootView` shows an unavailable state in RELEASE. A device build today shows sample data or nothing. | Coaching HQ truthful; other families still fixture-only | `03b` |
+| B-3 | **Closed 2026-08-13 for Coaching HQ by G-01; open for every family without a provider.** Original text: **The UI is fixture-driven end to end.** | Coaching HQ and the P12 week families plus Roster / Player Profile / Recruiting Board are truthful; remaining families still have no view | `03b` |
 | B-4 | **Measured on the host, 2026-08-13, and D4's week-advance budget is already blown there.** `--week-advance-timing`: median **2.83 s/week** against a 2.0 s budget, worst **29.6 s** at the season boundary, and **1.01 s** of every week is one whole-root integrity check over 15,766 players. The falsifier does not need a phone to fire. Frame time (16.7 ms) is still unmeasured and needs a device and Instruments | **D4 falsified on the host; device still unmeasured** | `docs/OPEN-DECISIONS.md` |
 
 **B-1 is the single largest unknown in this document.** Every other item assumes an app that runs;
@@ -44,7 +44,7 @@ Carried from `docs/briefs/2026-08-12-gap-register.md`. Ordered by what blocks th
 
 | # | Item | State | Blocks |
 |---|---|---|---|
-| G-01 | Truthful read-model providers per screen family; provenance flips `sample` to `simulationSnapshot` | **Coaching HQ, Roster, Player Profile and Recruiting Board done**, via the `CoachWorldApp` composition target, and all four reachable in the shipped app. Match Day still needs G-06/G-11; the other 56 families need views before they need providers | Every truthful surface; B-3 |
+| G-01 | Truthful read-model providers per screen family; provenance flips `sample` to `simulationSnapshot` | **Coaching HQ, Roster, Player Profile, Recruiting Board, Inbox, Opponent Report, Game Plan, Practice Plan, Team Health and Aftermath done**, via the `CoachWorldApp` composition target. Title / Continue is the save-boundary screen, not a simulation snapshot. Match Day still needs G-06/G-11; the other 50 families need views before they need providers | Every truthful surface; B-3 |
 | G-02 | Engine-owned verdicts: league-relative baselines, expectation deltas, sample and confidence, staff-voice attribution (owner: **named staff**) | Not started | Every `VerdictLine`; the density model's strongest technique |
 | G-16 | **Jersey numbers.** Found 2026-08-13 while writing G-01's providers, and **closed the same day** — as a roster-scoped *derivation* rather than the schema change first assumed. Uniqueness belongs to a team and a player changes teams, so a stored field would need reassignment on every transfer, draft pick and walk-on; derived, it holds by construction with no schema bump and no fingerprint re-pin. `02` §4.1a states the rule; uniqueness is **per unit**, because 105 college players do not fit in 100 numbers | **Done** (`JerseyNumbers`, `--jersey-numbers`) | Unblocked Roster and Player Profile; box score and match-day actors can now read it |
 | G-03 | Bounded per-player attribute-change record (bound: last 6, discarded on departure) | Not started | `DeltaMark`; Player Profile truthfulness |
@@ -87,8 +87,8 @@ Carried from `docs/briefs/2026-08-12-gap-register.md`. Ordered by what blocks th
 | U-2 | `04` §6.1/§6.2 token values with measured ratios; §4.5 density budget; §6.5 registry; §6.6 symbol register | **Done** |
 | U-3 | M8 entry-gate tests — orientation, token sync, symbol register, sheet lint | **Done** (`11b9f8e`) |
 | U-4 | **G-12 AX5 reflow contract test**, enumerating families from the registry by construction | **Enumeration limb done 2026-08-13**; all 62 families resolved from `CoachWorldScreenID`, partition asserted total, landed families required to declare an AX5 composition and VoiceOver order. **The rendered limb stays open** — this harness has no view host, and `04` §7.1 says so rather than letting the gate read as more than it is |
-| U-5 | G-13 failure-set views (designs exist on `failure-v3`; view implementations do not) | Not started |
-| U-6 | Production views built against the sheets, per family | Not started (P11–P15 / M8) |
+| U-5 | G-13 failure-set views (designs exist on `failure-v3`; view implementations do not) | **EmptyState and ErrorBanner landed** with the P12 week screens; InterruptedState still unimplemented |
+| U-6 | Production views built against the sheets, per family | **P12 week slice done** (Title, Inbox, Opponent Report, Game Plan, Practice Plan, Team Health, Aftermath). 12 of 62 families now have a view. Remaining 50 are P14 / later P12 entry screens |
 | U-7 | Light-primary team colours unreachable from the generator; card contract uses a labelled synthetic pair | Open against P2 |
 
 ---
@@ -131,11 +131,9 @@ Carried from `docs/briefs/2026-08-12-gap-register.md`. Ordered by what blocks th
 4. **U-4** — the last M8 entry-gate instrument, then the M8 gate opens. **Enumeration limb done,
    2026-08-13**; the rendered limb (no datum lost, no clipping) stays open — this harness has no
    view host, `04` §7.1 says so, and its mechanism is `03b` §5's to decide.
-5. **U-6** — production views per family, against the approved sheets. **Not started.** 56 of 62
-   families have no view at all. Each is real UI-system work — sheet fidelity, the accessibility
-   contract, AX5, adversarial review — and belongs behind its own `superpowers:writing-plans` pass
-   per `CLAUDE.md`'s process, not a freehand continuation of this session's read-model work. This is
-   the largest remaining item on the road to beta.
+5. **U-6** — production views per family, against the approved sheets. **P12 week slice landed
+   2026-08-13** (seven families plus Title / Continue). 50 of 62 families still have no view.
+   Each remaining family is real UI-system work and belongs behind its own `writing-plans` pass.
 6. **B-4** — measure D4's budgets on the device that will run the beta. **Measured on the host,
    2026-08-13, and already falsified there**: median week advance 2.83 s against a 2.0 s budget,
    worst 29.6 s at the season boundary. Frame time and the on-device number are still the owner's.

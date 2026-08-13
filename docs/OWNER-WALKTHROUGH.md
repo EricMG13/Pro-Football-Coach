@@ -93,8 +93,22 @@ by what a visit costs — the engine tracks one shared resource, not two. Commit
 ("No prospects on the board"), which is correct — the AI recruiting cycle populates it as the
 season runs, not at kickoff.
 
-**Tap anything else — League, Career, Depth.** Each reports "… is not available yet". That
-is deliberate: an empty screen would claim the family exists.
+**Tap anything else on the world strip — League, Career.** Each reports "… is not available yet".
+That is deliberate: an empty screen would claim the family exists.
+
+**Office week routes.** Under the world strip, HQ now carries Desk / Inbox / Film / Plan / Practice /
+Health / Review. Those seven families have production views and are career-wired:
+
+- **Inbox** lists the same queued decisions HQ does, as costed agenda rows. Correspondence is empty
+  on purpose — there is no inbound-event system.
+- **Film** is the opponent's recorded pass share and turnover rate, or an honest blank if no
+  scouting snapshot exists yet. There is no staff sermon (G-02).
+- **Plan** is run/pass, tempo and pressure. Set plan writes the engine's tactical plan.
+- **Practice** is four buckets that must sum to 60 minutes. Presets spend that budget exactly. There
+  is no seven-day grid.
+- **Health** lists anyone injured or unavailable. Week one of a new career is usually empty, and
+  that is the news.
+- **Review** is the last recorded result. Week one has not played a game, so it says so.
 
 **Things worth your eye that are not defects to file yet:**
 
@@ -106,8 +120,9 @@ is deliberate: an empty screen would claim the family exists.
   Judge the generator, not the screen.
 - **Continue** advances a week only once the due decisions are resolved; `IntentResolver` refuses
   `.advanceWeek` while any is open, and the refusal is shown verbatim rather than swallowed.
-- Tapping through to Team / Recruit / League / Career reports "not available yet". Those families
-  have no production view — U-6, the largest remaining item.
+- Tapping League or Career reports "not available yet". Those families have no production view.
+  Depth / Development / Staff on the Roster's local route row are the same — they are labels for
+  families that have not landed. The office week row (Inbox through Review) does land.
 
 ## 4. Owner-only: signing and TestFlight (B-2)
 
