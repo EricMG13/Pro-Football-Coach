@@ -24,7 +24,18 @@ Fourteen–Fifty-Four. All names are mechanical placeholders pending generator o
 Inside a frame, empty means empty: no G-02 staff verdict, no G-06 play art. Prototype truth and gap
 IDs live in gallery chrome outside the device frame (`04` §4.4).
 
-## Regenerating
+## Screenshots
+
+Dark appearance, 844 × 390 at 2×:
+
+| Family | PNG |
+|---|---|
+| Coaching HQ | `08-coaching-hq-dark.png` |
+| Roster | `16-roster-dark.png` |
+| Player Profile | `18-player-profile-dark.png` |
+| Recruiting Board | `24-recruiting-board-dark.png` |
+| Match Day | `14-match-day-dark.png` |
+
 
 ```
 python3 docs/proofs/screen-mockups/generate.py
