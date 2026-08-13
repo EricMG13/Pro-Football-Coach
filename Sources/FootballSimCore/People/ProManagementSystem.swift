@@ -182,6 +182,89 @@ public enum ProManagementSystem {
         )
     }
 
+    public struct ProCapComplianceRelease: Sendable, Equatable {
+        public let playerID: UUID
+        public let teamID: UUID
+        public let deadMoneyAdded: Int
+    }
+
+    public struct ProCapComplianceReceipt: Sendable, Equatable {
+        public let state: GameState
+        public let releases: [ProCapComplianceRelease]
+    }
+
+    /// Beat 2 (`02` §4.2), the AI-facing half. Every professional team except the controlled one
+    /// — that one is skipped deliberately; a mandatory decision for the player's own cap choices
+    /// is a separate, unbuilt surface — is released down to cap-legal, cheapest dead money first.
+    ///
+    /// Mutates roster, contract and dead-money state directly rather than delegating to `release`,
+    /// for the same reason `ProMarketSystem.expireContracts` does: `release`'s own internal
+    /// `WorldIntegrity.check` is unconditional, so an intermediate state that is still over cap
+    /// after one release (but less over cap than before) would be self-rejected before a second
+    /// release could run. Validated once at the end instead, against only what this function
+    /// itself introduced — the same difference-based guard `expireContracts` uses, so a root that
+    /// already carries an unrelated issue is not falsely blamed on this pass.
+    ///
+    /// `WorldIntegrity.checkProfessionalCap` itself is untouched and stays exactly as strict as it
+    /// is today: this function's job is to make sure nothing calls it with a still-over-cap root
+    /// once compliance has run, not to relax what it checks.
+    public static func enforceCapCompliance(
+        at calendar: CalendarState,
+        in state: GameState
+    ) throws -> ProCapComplianceReceipt {
+        let controlledTeamID = state.careerArc.currentJob.flatMap { job in
+            job.tier == .professional ? job.organisationID : nil
+        }
+        var next = state
+        var releases: [ProCapComplianceRelease] = []
+        for teamID in state.proTeams.ids where teamID != controlledTeamID {
+            while true {
+                guard let snapshot = try? capSnapshot(teamID: teamID, in: next),
+                      !snapshot.isWithinCap else { break }
+                guard let team = next.proTeams[teamID] else {
+                    throw ProManagementError.missingTeam
+                }
+                let candidates = (team.rosterIDs + team.practiceSquadIDs).compactMap {
+                    playerID -> (UUID, Int)? in
+                    guard let contract = next.players[playerID]?.contract else { return nil }
+                    return (playerID, contract.deadMoney(ifReleasedAtSeason: calendar.season))
+                }
+                // Ties broken by identifier, the same rule every other deterministic ordering in
+                // this project uses, so two processes given the same root release the same player.
+                guard let (playerID, deadMoneyAdded) = candidates.min(by: { lhs, rhs in
+                    lhs.1 == rhs.1 ? lhs.0.uuidString < rhs.0.uuidString : lhs.1 < rhs.1
+                }) else {
+                    // No contracted player remains and the team is still over cap: dead money
+                    // alone exceeds the limit. Nothing left to release makes it legal.
+                    throw ProManagementError.capExceeded
+                }
+                guard team.deadMoney <= Int.max - deadMoneyAdded else {
+                    throw ProManagementError.invalidTeamRoster
+                }
+                next.proTeams.update(teamID) {
+                    $0.rosterIDs.removeAll { $0 == playerID }
+                    $0.practiceSquadIDs.removeAll { $0 == playerID }
+                    $0.deadMoney += deadMoneyAdded
+                }
+                next.players.update(playerID) { $0.contract = nil }
+                if !next.proMarket.freeAgentIDs.contains(playerID) {
+                    guard next.proMarket.addFreeAgent(playerID) else {
+                        throw ProManagementError.invalidRoot
+                    }
+                }
+                releases.append(ProCapComplianceRelease(
+                    playerID: playerID,
+                    teamID: teamID,
+                    deadMoneyAdded: deadMoneyAdded
+                ))
+            }
+        }
+        let inherited = WorldIntegrity.check(state).issues
+        let introduced = WorldIntegrity.check(next).issues.filter { !inherited.contains($0) }
+        guard introduced.isEmpty else { throw ProManagementError.invalidRoot }
+        return ProCapComplianceReceipt(state: next, releases: releases)
+    }
+
     /// Losers draft first from the most recently archived professional ranking; before the first
     /// archive, UUID order is the only stable fallback.
     public static func draftOrder(in state: GameState) -> [UUID] {

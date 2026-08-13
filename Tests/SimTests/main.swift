@@ -27,6 +27,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runProManagementTests()
 } else if CommandLine.arguments.contains("--pro-market") {
     runProMarketTests()
+} else if CommandLine.arguments.contains("--cap-compliance") {
+    runCapComplianceTests()
 } else if CommandLine.arguments.contains("--season-rollover") {
     runSeasonRolloverTests()
 } else if CommandLine.arguments.contains("--jersey-numbers") {
@@ -156,6 +158,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runEventLedgerBatchTests()
     runJerseyNumberTests()
     runReadModelProviderTests()
+    runCapComplianceTests()
     runSeasonRolloverTests()
     // The M8 entry-gate instruments. They ran only under `--design-contracts` and
     // `--core-contracts` until 2026-08-13, so the no-argument run — the one `verify.sh` makes and
