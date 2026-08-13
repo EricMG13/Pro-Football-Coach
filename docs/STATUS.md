@@ -1729,7 +1729,28 @@ Files: `Sources/FootballSimCore/People/StaffMarketSystem.swift` (new),
 `Tests/SimTests/Suites/StaffMarketTests.swift` (new, five tests), `Tests/SimTests/main.swift`,
 `docs/02-GAME-DESIGN.md` (§6.1).
 
-**Two things it does not do, named in canon rather than implied:** staff ratings still never change
+### Slice 25 — draft picks as assets (G-33) — written, unverified
+
+`ProMarketState.draftOrder` was a flat `[UUID]` of team identities, so a pick was a position in a
+list rather than a thing anybody owned — which made trading a pick, trading a future pick, and
+knowing whose pick a slot originally was impossible at once. The register found no mention of pick
+trading anywhere in the tree or the documents.
+
+`DraftPick` is described by its slot and derives its identity from it, so the same world describes
+the same picks and **next year's second-rounder can be traded before next year's draft is built**.
+The original club never changes, which is what lets a readout say "their second-rounder" years later.
+A trade that would change nothing is refused rather than silently ignored.
+
+Files: `Sources/FootballSimCore/Pro/DraftPick.swift` (new — `DraftPick`, `DraftPickBook`),
+`Tests/SimTests/Suites/DraftPickTests.swift` (new, five tests), `Tests/SimTests/main.swift`,
+`docs/02-GAME-DESIGN.md` (§4.2c).
+
+**Not wired into the draft yet, and canon says so.** `ProMarketState` still reads its own
+`draftOrder`; making the book authoritative is a persisted-state change to a type with a strict
+decoder and a validated shape, and it belongs with the draft-day surface that would show a coach what
+they hold.
+
+**Two things the staff slice does not do, named in canon rather than implied:** staff ratings still never change
 over a career, so a coordinator who wins for a decade is as good as the day they arrived; and nothing
 poaches the coach's staff for performing. Both are behaviour in the weekly market step rather than
 new state, and both are their own change.

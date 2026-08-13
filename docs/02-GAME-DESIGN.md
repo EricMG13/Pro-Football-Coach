@@ -665,6 +665,27 @@ leaves, because the collision order shifts. Real squads renumber rarely and deli
 becomes visible — a number moving in a screenshot a player took last week — the fix is to persist
 the assignment per roster, and that is a schema change with a migration, not a tweak.
 
+### 4.2c Draft picks are assets — added 2026-08-13
+
+`ProMarketState.draftOrder` was a flat list of team identities, so **a pick was a position in a list
+rather than a thing anybody owned.** That made three ordinary mechanics of the professional tier
+impossible at once: trading a pick, trading a *future* pick, and knowing whose pick a slot originally
+was. The genre register found no mention of pick trading anywhere in the tree or the documents.
+
+- **A pick is described by its slot** — season, round, and the club whose finish earned it — and its
+  identity is derived from those three rather than drawn. Two runs of the same world describe the
+  same picks, and **next year's second-rounder can be traded before next year's draft is built**,
+  which is the whole reason clubs trade picks at all.
+- **The original club never changes.** That is what lets a readout say "their second-rounder" years
+  later, and what makes a pick a story rather than a slot number.
+- **Ownership decides who is on the clock**, not the order the slots were created in.
+- **A trade that would change nothing is refused**, not quietly ignored: a transaction that silently
+  did nothing is the worst kind of transaction bug.
+
+**Not yet wired into the draft itself.** `ProMarketState` still reads its own `draftOrder`; making
+the book authoritative is a persisted-state change to a type with a strict decoder and a
+validated shape, and it belongs with the draft-day surface that would show a coach what they hold.
+
 ### 4.2b The news feed — added 2026-08-12
 
 The living world reports itself. `DomainEventPayload` already fixes the mechanism — "Presentation

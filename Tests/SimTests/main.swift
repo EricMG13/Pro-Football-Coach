@@ -172,6 +172,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runTraditionEffectTests()
     runFinanceTests()
     runStaffMarketTests()
+    runDraftPickTests()
     runProgrammeEvolutionTests()
     runRosterTenureTests()
     runRealignmentTests()
