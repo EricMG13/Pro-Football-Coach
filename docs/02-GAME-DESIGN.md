@@ -426,6 +426,32 @@ That is `02` §3.1's hand-off, and it is honest — but it is *not* the player a
 pauses a match and asks needs a match session the week can suspend on, which is UI-milestone work and
 is named here rather than implied.
 
+### 3.16 Difficulty — added 2026-08-13
+
+The whole difficulty model was one sentence — §3.1's call-in rate, "tunable from ~12 to ~40 as a
+difficulty and pacing setting" — and it was implemented nowhere: the range existed as a constant and
+nothing read it as a preference, while screen 6 promised "match choices" that were never specified.
+
+**Three named levels and three settings**, because a player deciding how hard this is should not have
+to reason about numbers before they have played a game, and because every setting has to change a
+decision they make or the pressure they are under:
+
+- **Call-ins per game** — §3.1's rate. How often the coach is pulled in.
+- **Delegation** — whether the staff may be handed responsibilities at all. A harder game makes the
+  coach do their own work.
+- **Job-security pressure** — how fast security moves against expectation. An easier game is
+  forgiving; it does **not** freeze the number, because a security figure that cannot move is the
+  prior build's documented failure rather than a difficulty setting.
+
+What is deliberately absent: sliders over hidden multipliers. A difficulty that only scales an
+invisible number produces the "progression too random" complaint §5 records about the reference
+title, arriving from a different direction — the player cannot tell what changed, so they cannot
+learn from it.
+
+**Not persisted in the save.** Difficulty is a property of how someone plays rather than of the
+world, and putting it in `GameState` would mean a schema change to answer a question the save does
+not ask. The app layer owns it.
+
 ### 3.13 Who plays — the depth chart — added 2026-08-13
 
 FSC-008 records the depth chart as the missing piece behind tactical package and role eligibility.

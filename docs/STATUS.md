@@ -1562,6 +1562,33 @@ and an `--inbox` gate), `docs/02-GAME-DESIGN.md` (§7).
 expires. An item with its own deadline — a recruit who needs an answer by Friday, an offer that
 lapses — needs persisted inbound state and is its own slice.
 
+### Slice 18 — difficulty (G-42) — written, unverified
+
+The whole difficulty model was one sentence — `02` §3.1's call-in rate, "tunable from ~12 to ~40 as a
+difficulty and pacing setting" — implemented nowhere. The range existed as a constant and nothing
+read it as a preference, while screen 6 promised "match choices" that were never specified.
+
+Three named levels and three settings, each of which changes a decision the player makes or the
+pressure they are under: the call-in rate, whether the staff may be delegated to at all, and how fast
+job security moves. **Not sliders over hidden multipliers** — a difficulty the player cannot see the
+effect of produces the "progression too random" complaint `02` §5 records, from a different
+direction. And an easier game is forgiving without *freezing* job security, because a security number
+that cannot move is the prior build's documented failure rather than a difficulty setting.
+
+**Stored beside the save, not inside it.** Difficulty is a property of how someone plays rather than
+of the world; putting it in `GameState` would be a schema change to answer a question the save does
+not ask, and it would reset every time a new career started. `CoachWorldSettingsStore` reads defaults
+rather than throwing on an unreadable file — refusing to guess matters for a save, not for a
+preference.
+
+Files: `Sources/FootballSimCore/Rules/DifficultySettings.swift` (new),
+`Sources/CoachWorldApp/CoachWorldSettingsStore.swift` (new),
+`Tests/SimTests/Suites/DifficultyTests.swift` (new, four tests), `Tests/SimTests/main.swift`,
+`docs/02-GAME-DESIGN.md` (§3.16).
+
+**Not yet wired to the surfaces that would read it**: the settings screen (6) has no view, and the
+career session does not yet take a difficulty. Those are consumers, and they arrive with the screens.
+
 **Traditions remain inert, and the repair is larger than it looks.** `02` §8 requires every generated
 tradition to carry a mechanical effect. `TraditionGrammar` produces them and nothing reads one —
 because `Programme` does not persist traditions at all: the generator builds them into an identity
