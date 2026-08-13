@@ -80,6 +80,8 @@ public enum DevelopmentReason: String, Codable, Sendable, CaseIterable, Hashable
     case workEthic
     case decline
     case injuryRecovery
+    /// What the buildings are worth. `02` §10 — added 2026-08-13, when facilities came to exist.
+    case facilities
 }
 
 public struct DevelopmentComponent: Codable, Sendable, Equatable {

@@ -41,7 +41,8 @@ public enum DevelopmentSystem {
                 player,
                 coachRating: context.coachRatingByPlayer[id] ?? SharedRules.ratingRange.lowerBound,
                 practiceValue: context.practiceValueByPlayer[id] ?? TacticalPracticePlan.balanced.developmentValue(for: player),
-                played: (state.competition.playerStatistics[id]?.games ?? 0) > 0
+                played: (state.competition.playerStatistics[id]?.games ?? 0) > 0,
+                facilities: context.facilityRatingByPlayer[id] ?? SharedRules.ratingRange.lowerBound
             )
             let score = components.reduce(0) { $0 + $1.value }
             let delta = score >= PeopleRules.developmentThreshold ? 1 : (score < 0 ? -1 : 0)
@@ -92,6 +93,7 @@ public enum DevelopmentSystem {
     private struct Context {
         let coachRatingByPlayer: [UUID: Int]
         let practiceValueByPlayer: [UUID: Int]
+        let facilityRatingByPlayer: [UUID: Int]
     }
 
     private static func developmentContext(
@@ -121,9 +123,24 @@ public enum DevelopmentSystem {
                 practiceValueByPlayer[playerID] = practicePlan.developmentValue(for: player)
             }
         }
+        // `02` §10. Where each player trains, resolved once per week rather than per player: the
+        // whole point of the context object is that a 15,766-player loop does not walk 166 rosters
+        // once each.
+        var facilityByPlayer: [UUID: Int] = [:]
+        for programme in state.programmes.values {
+            let rating = programme.finances(defaultingFor: .college).facilities.value
+            for playerID in programme.rosterIDs { facilityByPlayer[playerID] = rating }
+        }
+        for team in state.proTeams.values {
+            let rating = team.finances(defaultingFor: .pro).facilities.value
+            for playerID in team.rosterIDs + team.practiceSquadIDs {
+                facilityByPlayer[playerID] = rating
+            }
+        }
         return Context(
             coachRatingByPlayer: ratingByPlayer,
-            practiceValueByPlayer: practiceValueByPlayer
+            practiceValueByPlayer: practiceValueByPlayer,
+            facilityRatingByPlayer: facilityByPlayer
         )
     }
 
@@ -131,7 +148,8 @@ public enum DevelopmentSystem {
         _ player: Player,
         coachRating: Int,
         practiceValue: Int,
-        played: Bool
+        played: Bool,
+        facilities: Int
     ) -> [DevelopmentComponent] {
         let ageValue: Int
         if player.isDeclining {
@@ -165,6 +183,15 @@ public enum DevelopmentSystem {
                 value: player.attributes[.schemeFit].value >= PeopleRules.schemeFitDevelopmentRating ? 1 : 0
             ),
             DevelopmentComponent(reason: .workEthic, value: workValue),
+            // `02` §10. Buildings help; coaching helps more. A facility bonus that outweighed a
+            // position coach would make the staff decorative, so it is one point at the top of the
+            // scale and nothing below it.
+            DevelopmentComponent(
+                reason: .facilities,
+                value: facilities >= FinanceRules.strongFacilityRating
+                    ? FinanceRules.facilityDevelopmentBonus
+                    : 0
+            ),
         ]
     }
 

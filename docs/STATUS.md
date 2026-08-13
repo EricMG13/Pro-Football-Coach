@@ -1688,6 +1688,30 @@ Files: `Sources/FootballSimCore/Generation/TraditionEffects.swift` (new),
 `Tests/SimTests/Suites/TraditionEffectTests.swift` (new, five tests), `Tests/SimTests/main.swift`,
 `docs/02-GAME-DESIGN.md` (§6 corrected, §8.1 added).
 
+### Slice 23 — money and facilities (G-37) — written, unverified
+
+Money existed as the professional cap and the college NIL pot, **neither of which is a budget**: no
+revenue, no facilities, no wage bill, nothing to spend or run out of outside signing players. A rich
+programme and a poor one developed players identically, and `resources` — generated on every
+programme since P2 — changed nothing.
+
+Revenue derives from prestige rather than being stored; facilities are a rating worth one development
+point at the top of the scale, because buildings help and coaching helps more; reserves are real and
+a spend returns whether it could. Staff wages are rating-derived, so continuity costs something.
+
+**The first persisted-state change of this session, and it is additive and optional.** `GameState`
+demands an exact schema match with no migration path, so `finances` is `OrganisationFinances?` on
+both organisation kinds: nil reads as "not generated yet" and derives a default from prestige, never
+as "broke". Old saves decode; new ones carry the field. The root fingerprint moves.
+
+Files: `Sources/FootballSimCore/Model/Finances.swift` (new — `OrganisationFinances`, `FinanceRules`,
+`StaffRole.baseSalary`), `Sources/FootballSimCore/Model/Programme.swift`,
+`Sources/FootballSimCore/Model/ProTeam.swift`,
+`Sources/FootballSimCore/People/DevelopmentSystem.swift` (facilities reach development, resolved once
+per week rather than per player), `Sources/FootballSimCore/People/PeopleState.swift`
+(`DevelopmentReason.facilities`), `Tests/SimTests/Suites/FinanceTests.swift` (new, five tests),
+`Tests/SimTests/main.swift`, `docs/02-GAME-DESIGN.md` (§10).
+
 ---
 
 ## What exists, and what verified it

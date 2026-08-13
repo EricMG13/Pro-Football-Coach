@@ -918,6 +918,34 @@ Fifteen minutes, taught through the first real week rather than through cards. F
 `docs/OPEN-DECISIONS.md` D9. By the end the player has chosen a job with visible stakes, met a
 stakeholder, set a plan, made ~25 calls, seen a consequence, and been given a reason to advance.
 
+## 10. Money — added 2026-08-13
+
+Money existed in exactly two forms: the professional salary cap and the college NIL pot. **Neither is
+a budget.** There was no revenue, no facilities, no wage bill — nothing a coach could spend or run
+out of outside signing players — so a rich programme and a poor one developed players identically and
+"resources", generated on every programme since P2, changed nothing.
+
+- **Revenue is derived from prestige**, not stored. Revenue *is* a consequence of standing, and a
+  stored figure would be one more number to keep in step with it.
+- **Facilities are a rating on the shared 40–99 scale** and are worth one development point at the
+  top of it. Buildings help; coaching helps more. A facility bonus that outweighed a position coach
+  would make the staff decorative, which §6 explicitly is not.
+- **Reserves are what an organisation actually holds.** Spending returns whether it could: a budget
+  that goes negative is a budget nothing enforces.
+- **Staff wages are rating-derived**, like the professional contracts §4.2a generates, for the same
+  reason — a wage that ignored ability would make continuity free, and §6 makes continuity a
+  resource.
+- **Integer dollars**, never floating point, which is `CLAUDE.md`'s rule and why the cap is already
+  an `Int`.
+- **Optional on the organisation.** `GameState` demands an exact schema match with no migration path,
+  so nil means "not generated yet" and never "broke": a save written before money existed reads as an
+  ordinary programme rather than a bankrupt one.
+
+**What is deliberately not here:** ticket prices, facility construction projects, and a coach who can
+be outbid for their own staff. Each needs a surface to spend on and a market to spend into; this
+slice makes money exist and mean something, and says so rather than implying a management layer that
+is not built.
+
 ---
 
 ## 11. League structure and rules constants

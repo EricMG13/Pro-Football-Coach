@@ -54,7 +54,7 @@ func runTraditionEffectTests() {
                 $0 != programmeID && !(state.programmes[programmeID]?.rivalIDs.contains($0) ?? false)
             }!
             let against = state.programmes[programmeID]?.rivalIDs.first ?? stranger
-            state.programmes.update(programmeID) { $0.addRival(against) }
+            _ = state.programmes.update(programmeID) { $0.addRival(against) }
             expect(
                 TraditionEffects.homeFieldBonus(home: programmeID, against: against, week: 3,
                                                 in: state)
