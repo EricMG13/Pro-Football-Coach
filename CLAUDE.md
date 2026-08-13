@@ -54,8 +54,11 @@ substitute. Flag anything borderline for the owner to take to counsel; never res
 **Two of these are tests, and they must stay green:**
 
 1. **Name collision test** — no generated school, team, conference, stadium, player or coach name
-   matches an entry in the maintained blocklist of real ones, at any seed, across N generated
-   leagues. Generated **place** names are swept too, against the venue and person limbs only, so a
+   matches an entry in the maintained blocklist, at any seed, across N generated leagues. Most
+   entries are real names. Some are **near-miss coinages nobody registered**, kept because the name
+   that gets a project sued is the one a careful person reaches for while trying to be safe — see
+   `02` §11.3.5's near-miss rule, and `docs/briefs/2026-08-13-name-equivalents.md` for the review
+   that produced it. Generated **place** names are swept too, against the venue and person limbs only, so a
    city called Rose Bowl or Nick Saban is still refused while a city called Columbus is not. The two
    sweeps must partition every generated name between them: a name that belongs to neither kind is
    a name nothing checks, and the suite asserts the partition.

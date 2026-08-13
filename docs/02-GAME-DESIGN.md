@@ -431,8 +431,37 @@ The attribute sets each emphasises live in the rules module with the schemes.
 | Leagues the legal tests sweep | 200 | Matches D6's falsifier sample, so one generation run serves both |
 
 **What the blocklist covers, and what it cannot.** Institution names, nicknames and mascots,
-conference names, stadium names, city names, and a maintained list of identifiable people. It is
+conference names, stadium and bowl names, rivalry-trophy names, league and governing-body names,
+broadcast and competitor-product marks, and a maintained list of identifiable people. It is
 refreshed per release (`docs/PRE-DEPLOYMENT-CHECKLIST.md`).
+
+**The near-miss rule — added 2026-08-13.** The list holds two different kinds of entry and they
+carry two different claims. Most entries are real marks. Some are **near-miss coinages that nobody
+registered**, and they are here because the name that gets a project sued is rarely the one nobody
+would reach for: it is the one a careful person reaches for *while trying to be safe*. The worked
+example is the IP note that prompted this subsection, which offered "safe alternatives" for four
+marks — and "Southeastern Conference" is the SEC's own name, "Atlantic Coast" is the ACC's, both
+already on this list as real names, while "National Collegiate Association" and "National Pro
+Football" are one word away from the bodies they stand in for. So:
+
+1. **A mark is refused in every form it is written in.** Acronym, numeral and spelled forms are
+   different strings and the normaliser keeps digits, so "Big Twelve" says nothing about "Big 12".
+   A test derives one form from the other over the whole list rather than over remembered examples.
+2. **The slice a limb is drawn from is the limb's real coverage boundary.** A nickname list built
+   from the top division is silent about every other division, and silence reads as green — which
+   is how seven real college nicknames came to sit in the generator's own pools with both legal
+   tests passing.
+3. **A pool word removed is not a mark blocked.** Removing "Southern" from the region pool stops
+   today's generator from spelling the Southern Conference; only a blocklist entry stops
+   tomorrow's.
+4. **The counterweight is a test too.** The game has to say "red zone", "signing day", "combine",
+   "playoff" and "transfer portal". Every entry covering a mark built from those words is longer
+   than the descriptive phrase on purpose, and a test asserts the ordinary vocabulary stays
+   sayable. A gate that blocks the sport's own language is a gate that gets weakened.
+
+**Trade dress covers both tiers.** The colour list is the pro league's pairs as well as the college
+ones. It was a college slice while the generator dressed both, which left every generated pro
+identity checked against the wrong sport's palette.
 
 It is a *denylist*, not a definition of compliance. `01` §7 already records the gap and it is
 restated here because P2 is where someone would otherwise assume the tests are the whole guardrail:

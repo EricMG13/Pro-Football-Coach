@@ -601,6 +601,39 @@ rather than pins, and they moved because prestige now feeds recruiting rather th
 and geography. It is not built: it changes league topology, and schedule generation, standings and
 whole-root integrity all read that topology, so it is a milestone-sized slice rather than a rule.
 
+### 2026-08-13 — the near-miss name list — **written, and UNVERIFIED: never compiled**
+
+An IP note offered to the project was reviewed and turned into blocklist entries. `docs/briefs/
+2026-08-13-name-equivalents.md` carries the review and the whole annotated list; `02` §11.3.5
+carries the doctrine. Headline: the note's own "safe alternatives" were the marks themselves — two
+of its four were already on this repository's blocklist as real names — and that is the class the
+change is built around.
+
+The blocklist went from **274 entries to 482** across six new groups: acronym and numeral forms of
+conference marks whose spelled form was already blocked, conference names outside the top division,
+rivalry-trophy marks, bowl-game marks, award marks and their namesakes, and league, broadcast and
+competitor-product marks. Trade dress went from 39 pairs to 71 — it was a college slice while the
+generator dresses both tiers.
+
+**The finding worth reading twice: seven real college nicknames and one real nickname adjective were
+live in `NameGrammar`'s own pools**, with both legal tests green, because the nickname limb was an
+FBS-and-NFL slice. Valparaiso is Division I and "Beacons" was in the noun pool. All eight are now
+blocked and were replaced one-for-one, so pool counts and the RNG stream are unchanged and only the
+names differ.
+
+**Nothing here has been compiled or run.** There is no `swift` and no `xcodebuild` in this
+environment. Touched files: `Sources/FootballSimCore/Generation/Blocklist.swift`,
+`Sources/FootballSimCore/Generation/NameGrammar.swift`,
+`Tests/SimTests/Suites/LegalTests.swift`. Six new test cases were added and none of them has been
+executed by a compiler.
+
+What stands behind it instead is a Python mirror of the matcher, of every name shape the generator
+can emit, and of `SeededRandom` plus `ColourGenerator.pair` — validated by reproducing results the
+existing suite already asserts (the eight dual-use cities; 0 collisions, 0 fallbacks and 499
+distinct primaries at the seeds `GenerationTests` uses) before being trusted about the new entries.
+§6 of the brief states exactly what it checked. **A mirror is not a build, and this entry is not a
+claim that the suite is green.**
+
 ### Preserved pre-rebaseline P0–P4 record
 
 The remainder of this document records the older P-phase foundation and its measurements. It is
