@@ -178,6 +178,10 @@ public enum CareerControlSystem {
         guard var control = state.career.college,
               let programme = state.programmes[control.programmeID] else { return false }
         if case let .delegated(staffID) = owner {
+            // `02` §3.16. A harder game delegates less, and this is where that is true rather than
+            // a sentence in a settings screen: the hardest level refuses the hand-off entirely, so
+            // the week the difficulty promises is the week the player actually gets.
+            guard state.difficultyOrDefault.allowsDelegation else { return false }
             guard programme.staffIDs.contains(staffID), state.staff[staffID] != nil else {
                 return false
             }

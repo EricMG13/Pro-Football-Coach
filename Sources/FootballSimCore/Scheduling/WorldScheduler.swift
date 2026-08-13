@@ -766,7 +766,11 @@ public enum WorldScheduler {
             // which is exactly what a coach who advances the week without watching has chosen.
             callIns: CallInDriver(
                 plan: controlledIsHome ? homePlan : awayPlan,
-                opponentPlan: controlledIsHome ? awayPlan : homePlan
+                opponentPlan: controlledIsHome ? awayPlan : homePlan,
+                // `02` §3.16, and the reason difficulty lives on the save: the rate is the one
+                // number the whole agency model is priced against (D1's budget), so a setting that
+                // did not reach here was a difficulty that changed nothing about the game.
+                budget: state.difficultyOrDefault.callInsPerGame
             ),
             seed: SeededRandom.derive(from: state.league.seed, scope: .game,
                                       identifier: fixture.id)

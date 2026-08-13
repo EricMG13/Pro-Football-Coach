@@ -459,9 +459,30 @@ invisible number produces the "progression too random" complaint §5 records abo
 title, arriving from a different direction — the player cannot tell what changed, so they cannot
 learn from it.
 
-**Not persisted in the save.** Difficulty is a property of how someone plays rather than of the
-world, and putting it in `GameState` would mean a schema change to answer a question the save does
-not ask. The app layer owns it.
+**On the save, and connected — corrected 2026-08-13.** This section previously said difficulty is
+"not persisted in the save… the app layer owns it", and that was wrong in a way worth stating rather
+than editing away. All three settings are read by *engine* code — the call-in budget by the match
+loop, delegation by the career control system, job-security pressure by the career arc — and the
+engine cannot read an app-layer settings file without breaking the separation `CLAUDE.md` fixes. A
+difficulty the engine cannot see is a difficulty that changes nothing, which is what it was.
+
+It is also the better model on its own terms: difficulty is a property of *a career*, not of a phone.
+Two saves on one device may reasonably be played at two difficulties, and a save carried to another
+device should not quietly change how hard it is.
+
+The schema objection was real and is answered rather than ignored: the field is **optional and
+omitted when absent**, so every save written before it existed still decodes against a schema with no
+migration path, and a world that never set one encodes to exactly the bytes it did before.
+`CoachWorldSettingsStore` keeps the **pre-career** choice — what a new save starts at — and the save
+is authoritative once a career exists.
+
+Where each setting lands:
+
+| Setting | Read by | What it changes |
+|---|---|---|
+| Call-ins per game | the match loop's call-in driver | how often the coach is pulled in — D1's whole time budget |
+| Delegation | `CareerControlSystem.setResponsibility` | the hardest level refuses the hand-off outright |
+| Job-security pressure | the career arc, weekly and at season end | how fast a job is lost, scaled rather than frozen |
 
 ### 3.13 Who plays — the depth chart — added 2026-08-13
 

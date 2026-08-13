@@ -345,7 +345,11 @@ public enum CareerArcSystem {
         }
         let performance = min(100, max(0, 50 + (programmeScore - opponentScore) * 2))
         let expectation = min(95, max(40, programme.prestige.value + 10))
-        let delta = min(4, max(-4, (performance - expectation) / 10))
+        // `02` §3.16. Job security moving weekly is `02` §7's mechanism; how *fast* it moves is the
+        // difficulty. Scaled rather than switched off, because a number that stops moving is the
+        // prior build's failure rather than an easier game.
+        let pressure = state.difficultyOrDefault.jobSecurityPressurePercent
+        let delta = min(4, max(-4, (performance - expectation) / 10)) * pressure / 100
         let won = programmeScore > opponentScore
         let closeGame = abs(programmeScore - opponentScore) <= 7
         _ = arc.applySupport(deltas: Dictionary(uniqueKeysWithValues: CareerStakeholder.allCases.map {
@@ -385,6 +389,7 @@ public enum CareerArcSystem {
             : 100 - rank * 100 / max(1, ranking.count - 1)
         let expectation = min(95, max(40, programme.prestige.value + 10))
         let delta = min(12, max(-12, (performance - expectation) / 5))
+            * state.difficultyOrDefault.jobSecurityPressurePercent / 100
         // `02` §7.1. The locker room is the one stakeholder that should be reading the room rather
         // than the scoreboard, and until now it read the same table everybody else did with a
         // close-game bias on top. §5.1's morale is what a locker room actually knows — playing time,

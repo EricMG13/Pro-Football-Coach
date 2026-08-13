@@ -1962,7 +1962,34 @@ Files: `Sources/FootballSimCore/Career/CareerArcState.swift` (`CareerArcSystem.m
 end), `Sources/FootballSimCore/Rules/PeopleRules.swift` (the roster-share constants),
 `Tests/SimTests/Suites/MoraleTests.swift` (one test), `docs/02-GAME-DESIGN.md` (§7.1).
 
-### The standing gap across slices 19–31
+### Slice 32 — difficulty reaches the game (G-42 tail) — written, unverified
+
+Slice 18 built three levels and three settings and recorded that **nothing read them**: the settings
+screen had no view and the career session did not take a difficulty. The screen was the smaller half.
+All three settings are read by *engine* code — the call-in budget by the match loop, delegation by
+career control, job-security pressure by the career arc — and the engine cannot read an app-layer
+settings file without breaking the separation `CLAUDE.md` fixes.
+
+So `02` §3.16's "not persisted in the save… the app layer owns it" was wrong, and the correction is
+recorded in canon rather than edited away. Difficulty is a property of a *career*: two saves on one
+device may reasonably be played at two difficulties, and a save carried elsewhere should not change
+how hard it is. `GameState.difficulty` is **optional and omitted when absent**, so no existing save is
+stranded and a world that never set one encodes to exactly the bytes it did before — the same
+additive move `finances` and `suspension` used. `CoachWorldSettingsStore` now holds the pre-career
+choice only.
+
+Files: `Sources/FootballSimCore/World/GameState.swift` (`difficulty`, `difficultyOrDefault`),
+`Sources/FootballSimCore/Scheduling/WorldScheduler.swift` (the call-in budget),
+`Sources/FootballSimCore/Career/CareerArcState.swift` (pressure, weekly and at season end),
+`Sources/FootballSimCore/Career/CareerControlState.swift` (delegation refused at the hardest level),
+`Sources/CoachWorldApp/CoachWorldSettingsStore.swift` (the corrected note),
+`Tests/SimTests/Suites/DifficultyTests.swift` (two tests), `docs/02-GAME-DESIGN.md` (§3.16).
+
+**A behavioural note.** Job-security deltas are now scaled by a percentage, so at the default level
+(100%) integer division leaves them exactly as they were, and only a non-default difficulty changes
+what a career feels like. That is deliberate: the intended game must be the game the soaks measured.
+
+### The standing gap across slices 19–32
 
 **None of these read models is on a screen yet.** The inbox, the depth chart, morale, the staff
 shortlist, the glossary, the discipline file, the camp report and the asking price are all

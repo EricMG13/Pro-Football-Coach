@@ -3,10 +3,17 @@ import FootballSimCore
 
 /// Where the player's own settings live. `02` §3.16.
 ///
-/// **Beside the save, not inside it.** Difficulty and accessibility choices are properties of how
-/// someone plays rather than of the world they play in, and putting them in `GameState` would mean a
-/// schema change — and a migration for every existing save — to answer a question the save does not
-/// ask. It also means starting a new career does not silently reset how the player likes to play.
+/// **This file holds the pre-career choice; the save is authoritative once a career exists.** The
+/// original note here said difficulty belongs beside the save rather than inside it, and that was
+/// wrong: all three of its settings are read by *engine* code — the call-in budget by the match
+/// loop, delegation by career control, job-security pressure by the career arc — and the engine
+/// cannot read an app-layer file without breaking the separation `CLAUDE.md` fixes. A difficulty the
+/// engine cannot see changes nothing.
+///
+/// So `GameState.difficulty` carries it, optional and omitted when absent so no existing save is
+/// stranded, and this file answers the one question the save cannot: what a *new* career should
+/// start at. Which also keeps the original point intact — starting a new career does not silently
+/// reset how the player likes to play.
 public struct CoachWorldSettings: Codable, Sendable, Equatable {
     public var difficulty: DifficultySettings.Level
     /// Whether to advance several weeks at a time when nothing is asking. `02` §3.12.
