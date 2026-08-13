@@ -1170,6 +1170,41 @@ index, so adding it cannot shift any snap that preceded it. That property has a 
 identical except for what they do after a touchdown must play the scoring drive snap for snap — and
 that test has not been run.
 
+### Slice 2 — penalties (G-22) — written, unverified
+
+`03` §1.1 listed "penalty" among stage 4's consequences and nothing produced one: no type, no
+constant, no code path, and `02` §11.3.3's `volatile` trait named a Discipline system that did not
+exist.
+
+Canon first (`02` §3.5, `03` §1.1's new stage 0). Seven kinds, each earning its place by changing a
+decision or a drive. The flag is drawn **before** the snap resolves and **unconditionally**, which is
+two determinism properties rather than one: drawn first it cannot shift the stream the snap reads,
+and drawn always it cannot change how many draws a snap consumes. Pre-snap flags replace the play;
+the rest modify the finished outcome. The down is replayed, never advanced. Accept-or-decline is
+resolved optimally for the side holding the decision — a defence keeps its takeaway, an offence keeps
+its touchdown — which is a stated simplification and a future call-in, not a claim about coaches.
+
+Files: `docs/02-GAME-DESIGN.md` (§3.5), `docs/03-MATCH-ENGINE.md` (§1.1 stage 0),
+`Sources/FootballSimCore/Engine/Penalty.swift` (new — `PenaltyKind`, `PenaltyRecord`,
+`PenaltyModel`), `Sources/FootballSimCore/Engine/SnapOutcome.swift` (`SnapResult.penalty`, the
+`penalty` field, `recording(_:)`), `Sources/FootballSimCore/Engine/SnapResolver.swift` (stage 0 and
+the post-play application), `Sources/FootballSimCore/Engine/DriveEngine.swift` (enforcement against
+the chains, and the first-down clock guard), `Sources/FootballSimCore/Rules/MatchupRules.swift`
+(rate, volatile weights, yardages, frequency table),
+`Sources/FootballSimCore/Calibration/CalibrationHarness.swift` (a penalised snap is not an offensive
+play, and accepted penalties per game is now measured),
+`Tests/SimTests/Suites/EngineTests.swift` (a `Penalties` suite of eight tests),
+`Tests/SimTests/main.swift` (registers it), `docs/FUTURE-SIMULATION-CONTRACT.md` (FSC-014).
+
+**`volatile`'s consumer now exists and the trait is still unpopulated, on purpose.** Adding it to
+`TraitPopulationGenerator.activeTraits` changes persisted player bytes and therefore every root
+fingerprint; the remaining trait activations are batched into one slice so that cost is paid once.
+The weighting is tested against hand-built players carrying the trait.
+
+**The penalty rate is not calibrated and does not pretend to be.** `03` §5.1 has no penalty band
+because no source for one has been retrieved. The harness reports the metric so a later session can
+band it from evidence rather than from the engine that produced it.
+
 ---
 
 ## What exists, and what verified it

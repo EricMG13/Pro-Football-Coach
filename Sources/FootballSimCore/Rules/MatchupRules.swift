@@ -154,6 +154,36 @@ public enum MatchupRules {
 
     public static let fumbleChance = 0.012
 
+    // MARK: - Penalties
+
+    /// Chance a snap draws a flag, before the volatile adjustment. `02` §3.5.
+    ///
+    /// **Not calibrated.** Like every other number in this module it is a plain starting point; the
+    /// harness now measures penalties per team-game, and `03` §5.1 gains a band when a source for
+    /// one exists. A rate tuned by eye here would make that band a formality over a number already
+    /// fitted to it.
+    public static let penaltyChancePerSnap = 0.085
+
+    /// How much a fully volatile roster raises that rate, as a multiplier on the volatile share.
+    public static let volatilePenaltyRateBonus = 0.5
+
+    /// How much likelier a volatile player is to be the one flagged. `02` §11.3.3's Discipline bite.
+    public static let volatileOffenderWeight = 3
+
+    public static let minorPenaltyYards = 5
+    public static let majorPenaltyYards = 10
+    public static let severePenaltyYards = 15
+
+    // Relative frequencies. Uniform selection would make pass interference as common as a false
+    // start, which is wrong by an order of magnitude and would double the average cost of a flag.
+    public static let falseStartWeight = 22
+    public static let delayOfGameWeight = 6
+    public static let offensiveHoldingWeight = 24
+    public static let offsideWeight = 14
+    public static let defensiveHoldingWeight = 12
+    public static let passInterferenceWeight = 8
+    public static let personalFoulWeight = 6
+
     // MARK: - Calibration thresholds
 
     /// 01 section 6.5 defines a blowout as a margin of 17 or more.

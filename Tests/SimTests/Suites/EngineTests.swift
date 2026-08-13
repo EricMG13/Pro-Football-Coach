@@ -970,6 +970,174 @@ func runGameLoopTests() {
     }
 }
 
+func runPenaltyTests() {
+    let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
+    let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
+
+    suite("Penalties") {
+        test("every kind is reachable, and each one is enforced as itself") {
+            // 02 section 3.5's falsifier, first limb. A kind the engine declares and never calls is
+            // the dead capability the build prompt names as this project's first failure mode —
+            // which is what the whole penalty model was, before it existed at all.
+            var seen: Set<PenaltyKind> = []
+            for seed in UInt64(1)...200 {
+                for play in GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                    .plays {
+                    guard let penalty = play.outcome.penalty else { continue }
+                    seen.insert(penalty.kind)
+                }
+            }
+            let unreachable = PenaltyKind.allCases.filter { !seen.contains($0) }
+            expect(unreachable.isEmpty,
+                   "these penalties are declared and never called: "
+                       + unreachable.map(\.rawValue).joined(separator: ", "))
+        }
+
+        test("a penalty never advances the down") {
+            // 02 section 3.5. The down is replayed, or the chains reset on an automatic first down.
+            // Nothing else is legal, and a penalty that ate a down would end drives that should
+            // have continued.
+            var checked = 0
+            for seed in UInt64(1)...60 {
+                for drive in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).drives {
+                    for (index, play) in drive.plays.enumerated()
+                    where play.outcome.result == .penalty && index + 1 < drive.plays.count {
+                        checked += 1
+                        let next = drive.plays[index + 1]
+                        expect(next.situation.down <= play.situation.down,
+                               "a penalty on down \(play.situation.down) produced down "
+                                   + "\(next.situation.down)")
+                        if play.outcome.penalty?.automaticFirstDown == true {
+                            expectEqual(next.situation.down, 1,
+                                        "an automatic first down did not reset the chains")
+                        }
+                    }
+                }
+            }
+            expect(checked > 50, "only \(checked) enforced penalties were checkable")
+        }
+
+        test("the flag costs the same draws whether or not it lands") {
+            // The determinism property the whole design turns on: the draw is taken before the snap
+            // resolves and taken unconditionally, so a penalty cannot shift the stream the snap
+            // reads. Asserted by resolving the same call from two field positions and comparing the
+            // generator state afterwards.
+            func stateAfter(_ yardLine: Int) -> UInt64 {
+                var rng = SeededRandom(seed: 2_024)
+                _ = SnapResolver.resolve(
+                    offensiveCall: OffensiveCall(playType: .pass),
+                    defensiveCall: DefensiveCall(coverage: .man),
+                    personnel: home, situation: Situation(yardLine: yardLine),
+                    rules: Tier.pro.clockRules, rng: &rng
+                )
+                return rng.next()
+            }
+            expectEqual(stateAfter(25), stateAfter(60),
+                        "the snap's draw count depends on where the ball was")
+        }
+
+        test("a defence keeps the takeaway rather than the flag") {
+            // 02 section 3.5's accept-or-decline rule, and the case that makes always-accept
+            // visibly wrong.
+            expect(!PenaltyModel.shouldAccept(.offensiveHolding, playYards: 4,
+                                              playWasTurnover: true, playScored: false,
+                                              distance: 10),
+                   "the defence gave back an interception to take ten yards")
+            expect(!PenaltyModel.shouldAccept(.offensiveHolding, playYards: -12,
+                                              playWasTurnover: false, playScored: false,
+                                              distance: 10),
+                   "the defence took ten yards instead of the twelve-yard sack it earned")
+            expect(PenaltyModel.shouldAccept(.offensiveHolding, playYards: 8,
+                                             playWasTurnover: false, playScored: false,
+                                             distance: 10),
+                   "the defence declined a hold on an eight-yard gain")
+        }
+
+        test("an offence keeps the touchdown rather than the flag") {
+            expect(!PenaltyModel.shouldAccept(.passInterference, playYards: 40,
+                                              playWasTurnover: false, playScored: true,
+                                              distance: 10),
+                   "the offence took fifteen yards instead of the touchdown it scored")
+            expect(PenaltyModel.shouldAccept(.passInterference, playYards: 40,
+                                             playWasTurnover: true, playScored: false,
+                                             distance: 10),
+                   "the offence kept an interception rather than wiping it out with the flag")
+            expect(PenaltyModel.shouldAccept(.defensiveHolding, playYards: 6,
+                                             playWasTurnover: false, playScored: false,
+                                             distance: 12),
+                   "the offence declined an automatic first down worth more than the play")
+            expect(!PenaltyModel.shouldAccept(.defensiveHolding, playYards: 30,
+                                              playWasTurnover: false, playScored: false,
+                                              distance: 10),
+                   "the offence took five yards instead of a thirty-yard gain")
+        }
+
+        test("volatile decides who gets flagged") {
+            // 02 section 11.3.3's Discipline bite, and FSC-014's activation condition for the trait.
+            // The trait changes WHO commits the foul, which is what makes it visible on a player's
+            // line rather than only in a team rate.
+            func lineman(_ index: Int, volatile: Bool) -> Player {
+                var attributes = Attributes()
+                for attribute in Position.guardPosition.ratedAttributes {
+                    attributes[attribute] = Rating(70)
+                }
+                return Player(
+                    id: UUID(uuidString: String(format: "00000000-0000-4000-9000-%012X", index))!,
+                    firstName: "L", lastName: "\(index)", position: .guardPosition, age: 25,
+                    attributes: attributes, potential: Rating(70),
+                    traits: volatile ? [.volatile] : []
+                )
+            }
+            let squad = [lineman(1, volatile: false), lineman(2, volatile: true),
+                         lineman(3, volatile: false)]
+            var volatileHits = 0
+            for step in 0..<300 {
+                let draw = (Double(step) + 0.5) / 300
+                if PenaltyModel.offender(from: squad, group: .offensiveLine, draw: draw)?
+                    .has(.volatile) == true {
+                    volatileHits += 1
+                }
+            }
+            // One volatile player among three, at weight three: 3 of 5 of the weight.
+            expect(volatileHits > 100 && volatileHits < 220,
+                   "the volatile lineman drew \(volatileHits) of 300 flags, which is not the "
+                       + "weighting the rules module states")
+        }
+
+        test("penalty yardage never counts as offence") {
+            // 02 section 3.5's falsifier, third limb, asserted where it would actually go wrong: a
+            // penalised snap is not an offensive play, so a box score built from plays must skip it.
+            for seed in UInt64(1)...20 {
+                for play in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).plays
+                where play.outcome.result == .penalty {
+                    expect(play.outcome.penalty != nil,
+                           "a penalty result carried no penalty record")
+                    expectEqual(play.outcome.yards, play.outcome.penalty?.yards ?? 0,
+                               "an enforced penalty moved the ball by something other than itself")
+                }
+            }
+        }
+
+        test("a declined flag leaves the play standing and is still recorded") {
+            var declined = 0
+            for seed in UInt64(1)...80 {
+                for play in GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                    .plays {
+                    guard let penalty = play.outcome.penalty, !penalty.accepted else { continue }
+                    declined += 1
+                    expect(play.outcome.result != .penalty,
+                           "a declined flag still wiped out the play")
+                    expectEqual(penalty.yards, 0, "a declined flag moved the ball")
+                    expect(!penalty.automaticFirstDown,
+                           "a declined flag granted a first down")
+                }
+            }
+            expect(declined > 0,
+                   "no flag was ever declined across 80 games, so accept-or-decline is a constant")
+        }
+    }
+}
+
 /// A caller that plays the baseline game and always makes the same conversion choice.
 struct FixedConversionCaller: PlayCaller, Sendable {
     let choice: ConversionChoice

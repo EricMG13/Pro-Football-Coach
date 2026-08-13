@@ -291,7 +291,12 @@ public enum DriveEngine {
                 preSnap = 0
             }
             situation.secondsRemainingInQuarter -= preSnap + outcome.secondsElapsed
-            let madeFirstDown = outcome.yards >= situation.distance && !outcome.result.isTurnover
+            // A penalty is not a first down however many yards it moved the ball, even when it
+            // grants one: the clock rule this feeds is about the chains being reset by a *play*.
+            // Without the guard, a fifteen-yard flag on first-and-ten would stop the college clock
+            // as though the offence had run for it.
+            let madeFirstDown = outcome.result != .penalty
+                && outcome.yards >= situation.distance && !outcome.result.isTurnover
             let firstDownStop = rules.clockStopsOnFirstDown && madeFirstDown
                 && situation.secondsRemainingInHalf(rules: rules)
                     > rules.firstDownStopEndsAtSecondsRemaining
@@ -322,6 +327,34 @@ public enum DriveEngine {
                 points = -MatchupRules.safetyPoints
             case .interception, .fumbleLost:
                 ending = .turnover
+            case .penalty:
+                // `02` §3.5. The down is replayed unless the flag carries an automatic first down,
+                // so a penalty never advances it — the drive's play bound is what stops a
+                // pathological run of them, the same bound that stops a resolver returning zero
+                // yards forever.
+                situation.yardLine = Swift.min(Swift.max(situation.yardLine + outcome.yards, 1), 99)
+                if outcome.penalty?.automaticFirstDown == true {
+                    situation.down = 1
+                    situation.distance = Swift.min(MatchupRules.yardsForFirstDown,
+                                                   100 - situation.yardLine)
+                } else {
+                    // Enforced against the chains, not against the down. Five yards to a defence
+                    // flagged on third-and-three is a first down; five yards against an offence on
+                    // first-and-ten is first-and-fifteen.
+                    let remaining = situation.distance - outcome.yards
+                    if remaining <= 0 {
+                        situation.down = 1
+                        situation.distance = Swift.min(MatchupRules.yardsForFirstDown,
+                                                       100 - situation.yardLine)
+                    } else {
+                        situation.distance = Swift.min(remaining, 100 - situation.yardLine)
+                    }
+                }
+                if situation.secondsRemainingInQuarter <= 0 {
+                    ending = situation.quarter % 2 == 0 ? .endOfHalf : .endOfQuarter
+                }
+                if ending != nil { break }
+                continue
             case .gain, .sack, .incompletion, .kneel:
                 // Advance the chains and try again.
                 situation.yardLine = Swift.min(Swift.max(situation.yardLine + outcome.yards, 1), 99)

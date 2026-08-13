@@ -38,6 +38,15 @@ Stages, in fixed order (the order is part of the determinism contract):
    - **Kick:** distance, angle, leg strength, snap and hold quality, weather.
 4. **Consequence.** Yards, clock, turnover, penalty, injury, fatigue accumulation.
 
+**Stage 0, added 2026-08-13: the flag.** Penalties are drawn *before* assignment, for every snap,
+whether or not one lands — `02` §3.5 states the model and the reason. Drawn first, a flag cannot
+shift the stream the snap's own resolution reads; drawn unconditionally, its presence cannot change
+how many draws a snap consumes. A pre-snap flag returns immediately and the snap never resolves; the
+rest are applied to the finished outcome, with accept-or-decline resolved optimally for the side
+holding the decision. Penalty yardage is **not** offensive yardage and a penalised snap is **not** an
+offensive play: the calibration harness skips them before counting, or the penalty rate would move
+plays per team-game and yards per play, both of which are banded in §5.1.
+
 ### 1.2 Attribute → outcome mapping
 
 Each matchup names the attributes it reads. This table is the contract between the ratings model in

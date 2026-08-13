@@ -44,6 +44,9 @@ public enum SnapResult: String, Codable, Sendable, CaseIterable {
     case punt
     case safety
     case kneel
+    /// An accepted penalty. The snap either never happened (a pre-snap flag) or was wiped out by
+    /// one, and `SnapOutcome.penalty` carries which. `02` §3.5.
+    case penalty
 
     /// Whether possession changes on this result. The drive loop reads it rather than re-deriving
     /// the rule at each site.
@@ -58,7 +61,7 @@ public enum SnapResult: String, Codable, Sendable, CaseIterable {
     public var stopsClock: Bool {
         switch self {
         case .incompletion, .touchdown, .fieldGoalGood, .fieldGoalMissed, .punt, .safety,
-             .interception:
+             .interception, .penalty:
             return true
         case .gain, .sack, .fumbleLost, .kneel:
             return false
@@ -83,6 +86,8 @@ public struct SnapOutcome: Codable, Sendable, Equatable {
     public let ballCarrierID: UUID?
     public let passerID: UUID?
     public let targetID: UUID?
+    /// The flag on this snap, accepted or declined. `02` §3.5. Nil on the great majority of snaps.
+    public let penalty: PenaltyRecord?
 
     public init(
         result: SnapResult,
@@ -91,7 +96,8 @@ public struct SnapOutcome: Codable, Sendable, Equatable {
         matchups: [MatchupRecord],
         ballCarrierID: UUID? = nil,
         passerID: UUID? = nil,
-        targetID: UUID? = nil
+        targetID: UUID? = nil,
+        penalty: PenaltyRecord? = nil
     ) {
         self.result = result
         self.yards = yards
@@ -100,6 +106,15 @@ public struct SnapOutcome: Codable, Sendable, Equatable {
         self.ballCarrierID = ballCarrierID
         self.passerID = passerID
         self.targetID = targetID
+        self.penalty = penalty
+    }
+
+    /// The same outcome with a flag attached — what a declined penalty produces, since the play
+    /// stands and only the record changes.
+    public func recording(_ penalty: PenaltyRecord) -> SnapOutcome {
+        SnapOutcome(result: result, yards: yards, secondsElapsed: secondsElapsed,
+                    matchups: matchups, ballCarrierID: ballCarrierID, passerID: passerID,
+                    targetID: targetID, penalty: penalty)
     }
 
     /// The matchup that decided the snap: the largest-magnitude one of the deciding kind.
@@ -113,7 +128,10 @@ public struct SnapOutcome: Codable, Sendable, Equatable {
         case .incompletion, .interception: relevant = [.throwing, .routeVersusCoverage]
         case .fieldGoalGood, .fieldGoalMissed: relevant = [.kick]
         case .gain, .touchdown, .fumbleLost: relevant = [.carrierVersusPursuit, .throwing, .runLane]
-        case .punt, .safety, .kneel: relevant = MatchupRecord.Kind.allCases
+        // A penalty's deciding matchup is whichever duel was largest: the flag is the story, and the
+        // duel underneath it is the evidence. A pre-snap flag carries no matchups and returns nil,
+        // which is correct — nothing was contested.
+        case .punt, .safety, .kneel, .penalty: relevant = MatchupRecord.Kind.allCases
         }
         return matchups
             .filter { relevant.contains($0.kind) }

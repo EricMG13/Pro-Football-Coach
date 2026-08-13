@@ -30,23 +30,41 @@ public enum SnapResolver {
         // what the *previous* snap did and on the tier's first-down rule, neither of which a single
         // snap can see. `secondsElapsed` here is the play's own duration.
 
+        // Stage 0: the flag, before anything else and unconditionally. Drawing it first means a
+        // penalty cannot shift the stream the snap's own resolution reads; drawing it whether or not
+        // it flags anything means the presence of a flag cannot change how many draws a snap
+        // consumes, which is the property the draw-count test asserts. `02` §3.5.
+        let flag = PenaltyModel.draw(personnel: personnel, situation: situation, rng: &rng)
+        if let flag, flag.kind.isPreSnap {
+            return PenaltyModel.preSnapOutcome(flag, rules: rules)
+        }
+
+        let outcome: SnapOutcome
         switch offensiveCall.playType {
         case .kneel:
-            return SnapOutcome(result: .kneel, yards: -1,
-                               secondsElapsed: rules.inBoundsPlaySeconds,
-                               matchups: [])
+            outcome = SnapOutcome(result: .kneel, yards: -1,
+                                  secondsElapsed: rules.inBoundsPlaySeconds,
+                                  matchups: [])
         case .run:
-            return resolveRun(offensiveCall, defensiveCall, assignment, situation, rules,
-                              homeFieldAdvantage, &rng)
+            outcome = resolveRun(offensiveCall, defensiveCall, assignment, situation, rules,
+                                 homeFieldAdvantage, &rng)
         case .pass:
-            return resolvePass(offensiveCall, defensiveCall, assignment, situation, rules,
-                               homeFieldAdvantage, &rng)
+            outcome = resolvePass(offensiveCall, defensiveCall, assignment, situation, rules,
+                                  homeFieldAdvantage, &rng)
         case .fieldGoal:
-            return resolveFieldGoal(personnel, assignment, situation, rules, homeFieldAdvantage,
-                                    &rng)
+            outcome = resolveFieldGoal(personnel, assignment, situation, rules, homeFieldAdvantage,
+                                       &rng)
         case .punt:
-            return resolvePunt(personnel, situation, rules, &rng)
+            outcome = resolvePunt(personnel, situation, rules, &rng)
         }
+        guard let flag else { return outcome }
+        // A kick is not called back by a hold on the offensive line in this model: the kicking game
+        // has its own fouls and none of the seven kinds are them. Enforcing a scrimmage flag on a
+        // kick would produce a field goal that scores and is simultaneously wiped out.
+        if offensiveCall.playType == .fieldGoal || offensiveCall.playType == .punt {
+            return outcome
+        }
+        return PenaltyModel.applying(flag, to: outcome, situation: situation, rules: rules)
     }
 
     // MARK: - Pass

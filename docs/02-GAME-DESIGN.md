@@ -129,6 +129,52 @@ the player overrides it through the same call-in surface as any other decision.
 Falsifier: across a calibrated season both choices occur, the kick's success rate exceeds the two-
 point try's, and no conversion appears in any drive's play list.
 
+### 3.5 Penalties — added 2026-08-13
+
+`03` §1.1 listed "penalty" among the consequences a snap can produce and nothing produced one. There
+was no penalty type, constant or code path in the engine, and `§11.3.3`'s `volatile` trait named a
+Discipline system that did not exist — a trait pointing at nothing, which is the dead capability this
+project's build prompt names as its first failure mode.
+
+**Seven kinds, each of which has to change a decision or a drive.** False start, delay of game and
+offensive holding against the offence; offside, defensive holding, pass interference and a personal
+foul against the defence. A kind whose enforcement is identical to another's is the same kind wearing
+a different name, so there is no eighth.
+
+- **The flag is drawn before the snap resolves, for every snap, whether or not it lands.** Drawn
+  first, a penalty cannot shift the random stream the snap's own resolution reads; drawn
+  unconditionally, its presence cannot change how many draws a snap consumes. Both are determinism
+  properties, not style.
+- **Pre-snap flags replace the play**; the others modify it. That is the whole difference between the
+  two groups, and it is why they are distinguished at all.
+- **The down is replayed, never advanced.** A defensive foul that carries an automatic first down
+  resets the chains instead. Enforcement moves the ball and adjusts the distance; the yard line is
+  clamped to the field rather than modelling half-the-distance, which is a simplification stated here
+  rather than discovered later.
+- **Accept or decline is resolved optimally for the side that holds the decision.** A defence keeps a
+  takeaway over ten yards; an offence keeps a touchdown over fifteen. This is deliberately a
+  simplification: a real coach can decline badly, and one day this is a call-in with the two options
+  and their consequences on it. Modelling it as always-accept would be wrong in a specific and
+  visible way — a defence would take ten yards instead of the sack it just earned.
+- **A declined flag is still recorded**, with zero enforced yards, because a box score that hid them
+  would lose the record of a play that nearly did not count.
+- **A flag during the play does not call back a kick.** None of the seven kinds are kicking-game
+  fouls, and enforcing a scrimmage foul on a field goal would produce a kick that scores and is
+  simultaneously wiped out.
+
+**`volatile` bites here, and it bites on the player rather than the team.** A volatile player is
+three times likelier to be the one flagged, and a roster full of them draws flags somewhat more
+often. Who committed the foul is recorded, because a trait a player carries should show up on that
+player's line and not only in a team rate.
+
+**The rate is not calibrated and is not pretending to be.** `03` §5.1 has no penalty band, because no
+source for one has been retrieved; the harness now measures accepted penalties per game so a later
+session can band it from evidence rather than from the engine that produced it.
+
+Falsifier: every kind occurs across a season; a penalty never advances the down; accepted penalty
+yardage never appears in a team's offensive yards; and a defence never accepts a flag that would give
+back a turnover it just made.
+
 ---
 
 ## 4. The offseason

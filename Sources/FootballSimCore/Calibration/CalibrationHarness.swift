@@ -117,6 +117,7 @@ public enum CalibrationHarness {
         var runPlays = 0, explosiveRuns = 0
         var passPlays = 0, explosivePasses = 0
         var pointsInQ4 = 0, pointsTotal = 0
+        var penalties = 0
 
         for sample in samples {
             let game = sample.record
@@ -139,6 +140,14 @@ public enum CalibrationHarness {
                                                     .away: (0, 0, 0, 0, 0, 0)]
             for play in game.plays {
                 let side = play.situation.possession
+                // A snap wiped out by an accepted penalty is not an offensive play and its yardage
+                // is penalty yardage, not offence. Counting it would move plays per team-game and
+                // yards per play — two calibrated bands — by the penalty rate, which is the
+                // accounting mistake `01` §6.5 §8 records real box scores avoiding.
+                if play.outcome.result == .penalty {
+                    penalties += 1
+                    continue
+                }
                 var tally = perSide[side]!
                 tally.plays += 1
                 switch play.outcome.result {
@@ -167,6 +176,11 @@ public enum CalibrationHarness {
                         if play.outcome.yards >= MatchupRules.explosiveRunYards { explosiveRuns += 1 }
                     }
                 case .punt, .kneel:
+                    break
+                case .penalty:
+                    // Unreachable: the guard above skips these before the switch. Enumerated rather
+                    // than swept into a `default`, so adding a result to `SnapResult` keeps failing
+                    // to compile here until someone decides how it is counted.
                     break
                 }
                 perSide[side] = tally
@@ -236,6 +250,13 @@ public enum CalibrationHarness {
             "explosive run rate": rateEstimate(explosiveRuns, runPlays),
             "explosive pass rate": rateEstimate(explosivePasses, passPlays),
             "Q4 share of points": rateEstimate(pointsInQ4, pointsTotal),
+            // Measured, deliberately unbanded. `03` §5.1 has no penalty band because no source for
+            // one has been retrieved, and inventing a target here would make the eventual TOST a
+            // formality over a number fitted to the engine that produced it. Reporting it is what
+            // lets a later session band it from evidence.
+            "accepted penalties per game": meanEstimate(
+                samples.isEmpty ? [] : [Double(penalties) / Double(samples.count)]
+            ),
         ]
     }
 }
