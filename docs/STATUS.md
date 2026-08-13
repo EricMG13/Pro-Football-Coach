@@ -341,6 +341,97 @@ the 30-season history/performance gate. The plan for the next slice is
 records why cold event bodies are their own milestone: they change a persisted root type and need a
 bound design against FSC-002/FSC-003 and the save-size budget, which is still 84.66 MB at season 20.
 
+### 2026-08-13 — the road to beta: B-1 answered, D-1 attributed and fixed, G-01 and U-4 landed
+
+Executed against `docs/plans/2026-08-12-road-to-beta.md`. **This session had a full Swift and Xcode
+toolchain** — Xcode 26.6, Swift 6.3.3, `xcodegen`, iPhone 17 simulators — which is the first time
+any session in this rebuild has, and it changes what could be settled rather than described.
+
+**B-1 — there is an app, and it builds. Answered, and it was the plan's single largest unknown.**
+`xcodegen generate` in `App/` followed by `xcodebuild … -destination 'platform=iOS
+Simulator,name=iPhone 17'` produced `** BUILD SUCCEEDED **` in both Debug and Release, and
+`-destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO` builds the arm64 device slice too. The
+Release `.app` was installed and launched on the iPhone 17 simulator and photographed. Signing is
+the only thing left between this and a phone, and signing is B-2, which is the owner's.
+
+*The simulator run is reported as what it is.* `CLAUDE.md`'s rule is that an agent must never claim
+a demonstration happened; it was written when no session had a toolchain, and its purpose is to stop
+fabricated claims. This session ran the app for real and reports only what the screenshots show.
+**Nothing has run on a phone**, and no part of §4 of `docs/OWNER-WALKTHROUGH.md` has been done.
+
+**V-1 — the full suite was run, and it was red.** `PortalTransactionTests`'s fixture aborted the
+process at season 0 week 21 with `professionalMarketFailed(.invalidRoot)`. The log was two lines:
+the fatal error and the exit code. **The harness reported only at `finish()`**, so an aborted run
+gave no account of the suites that had already passed or of where it had got to; that was survivable
+only because the failure was deterministic and a second run could hunt it. `TestKit.suite` now
+prints a line per suite and `main.swift` unbuffers stdout, so the next abort leaves evidence.
+
+**D-1 — attributed, and it was never a portal defect.** The register asked for the attribution to be
+re-run before anything was fixed, and it was, with `--pro-market-root-probe`. The finding:
+
+1. The expiry abort *masked* D-1. Contract expiry ran earlier in the same step and threw first.
+2. Neither defect was the cap fork O-1 anticipated. **No professional team was ever over the cap** —
+   the probe separates the two ways a team fails the cap invariant and reports zero over-cap teams
+   against eleven with run-out contract terms.
+3. One ordering mistake caused both. `expireContracts` ran at the top of `jobAndStaffMarkets`:
+   before `SeasonLifecycleSystem.advance` writes the career records FSC-013 needs to legalise a
+   departure; before two wholesale `nextState.players` assignments that discarded its writes; and
+   after nothing, when the college portal's commit — which checks the root *projected into the next
+   season* — needed last season's deals already off the books.
+4. The "last body at a position" exemption kept an expired contract attached. The cap invariant
+   reads a contract as valid only while the season is inside its term, so eleven of thirty-two teams
+   were permanently illegal in the projected season. `02` §4.2a now states that the club **re-signs**
+   the player instead — one year, last base salary, no bonus.
+
+Fixed in `fce9e2a`, with `--season-rollover` pinning the invariants rather than the seed that caught
+them. `--pro-market-root-probe` is retained: the register recorded that the previous attribution
+probe was destroyed during cleanup before it could answer, and this one is not to be deleted.
+
+**G-01 — the shipped build shows the world.** `Sources/CoachWorldApp` is a new composition target,
+and it exists because neither existing target could do this alone: the engine may not import the UI,
+and the UI target may not name `GameState`. It holds `CoachWorldReadModelProvider` (root →
+`CoachingHQReadModel`, provenance `.simulationSnapshot`), `CoachWorldStore` (the career, advanced
+off the main actor through `CareerSession`), `CoachWorldSaveStore` (one save, written atomically)
+and `CoachWorldAppRootView` (the shipped root). `App/ProFootballCoachApp.swift` launches into it.
+
+Measured on the simulator, from the fixed new-career seed: programme *Marrow Hollow Normal*, coach
+*Kelay Tarrford*, Season 1 Week 1, 0–0, #122, opponent *Calder Mining* at *Marrow Hollow Grounds*,
+and a real queued decision carrying the engine's own reason codes as its evidence line.
+
+**Three regions on that screen are blank by construction, and `--screen-read-models` asserts each
+one.** The week strip has no days because the calendar's finest grain is a week (G-14); Your Desk
+carries no correspondence because no inbox system exists (the scheduler's `expiringInboundEvents`
+step is inactive to say so); no staff recommendation appears because G-02 is unbuilt and three of
+its four fields would have to be invented. Filling one now requires deleting an assertion that names
+the register item which would justify it.
+
+**Only Coaching HQ is truthful.** Roster, Player Profile, Match Day and Recruiting Board still have
+no provider. Roster and Player Profile are blocked on something the model does not have: **`Player`
+carries no jersey number**, and `RosterReadModel.PlayerRow.number` is a non-optional `Int`, so a
+truthful roster needs the number added to generation first. Match Day needs G-06 and G-11.
+
+**U-4 — the AX5 instrument exists, and its limits are written down.** `--design-contracts` now
+enumerates all 62 families from `CoachWorldScreenID`, resolves each to its view file by convention,
+asserts the landed/pending partition is total, and requires every landed family to declare an
+accessibility-size composition and deterministic VoiceOver order. `04` §7.1 states plainly what it
+does **not** assert: *no datum lost* and *no clipping* are properties of a render, and this harness
+has no view host. **The rendered limb of G-12 stays open** and its mechanism is `03b` §5's to decide
+— now a live question, because full Xcode is present and XCTest is therefore reachable in a way it
+was not when `03b` was written. An audit may not score AX5 above 3 on this suite alone.
+
+**Three scans had become directory rules rather than rules.** The GameState boundary scan, the
+design-token-literal scan and the SF-Symbol register scan all read `Sources/ProFootballCoachUI`
+literally. Adding a second target containing a view would have escaped all three on the day it was
+created. They now enumerate "code that draws" by the UI import. Separately, the no-argument suite —
+the one `verify.sh` runs and every release claim quotes — **never included `DesignContractTests` at
+all**, so the orientation policy, token sync, symbol register and sheet lint were only ever checked
+under an explicit flag. Both are fixed.
+
+**What this session did not do.** U-6 (production views for the other 57 families) is untouched and
+is the largest remaining item. B-2 and any device measurement are the owner's. P-2 (cap-compliance
+cuts) is not built — and the probe's finding that no team is over the cap at the season boundary is
+worth carrying into it, because beat 2 has nothing to do until spending puts a team over.
+
 ### The full default suite — **green on 2026-08-12, after a two-failure fix**
 
 `./scripts/verify.sh` now passes: **602 tests / 747,027 checks, all passed**, debug build and
