@@ -177,7 +177,11 @@ func runDesignContractTests() {
             let permitted = registered.union(furniture)
             expect(permitted.count >= 12, "the register parsed as \(permitted.count) symbols")
 
-            for file in swiftFiles(under: "Sources/ProFootballCoachUI") {
+            // Every file that draws, enumerated by the UI import rather than by directory. It read
+            // `Sources/ProFootballCoachUI` until 2026-08-13, when the composition layer added a
+            // second target containing a view — which would have been outside the register's reach
+            // on the day it was written.
+            for file in swiftFilesImportingUIFramework() {
                 // systemName: "x" is how SwiftUI names a symbol; that is the call this looks for.
                 let drawn = Set(matches(of: "system(?:Name|Image):\\s*\"([^\"]+)\"", in: file.text))
                 let unregistered = drawn.subtracting(permitted)

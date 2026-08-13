@@ -182,6 +182,32 @@ makes the draft the place roster decisions happen instead of the place talent ar
 cutting. A team over the cap on the compliance date releases until it is legal; a team under it
 cuts nobody, whatever its headcount.
 
+**The AI-facing half is built — `ProManagementSystem.enforceCapCompliance`, added 2026-08-13.**
+Every professional team except the one the player controls is released down to cap-legal at the
+week-21 boundary, cheapest dead money first, entirely within the same `advanceWeek` transition that
+already runs beat 1's expiry — so no *persisted* root is ever over the cap, the same guarantee
+`docs/PORT-LOG.md`'s cap-laundering defences already protect. `WorldIntegrity.checkProfessionalCap`
+is untouched: it stays exactly as strict as it has always been, checking the final state only. It
+sits immediately after expiry and before anything downstream takes the season-projected view of the
+root — the college portal's postseason commit does, later in the same step — because the same D-1
+lesson applies here that applied to expiry itself: a hand-built fixture that put one team over the
+cap and skipped this step surfaced as `portalCommitFailed(.postseason)`, not as a cap error, until
+compliance was wired at the right point.
+
+**The controlled team's own cap choice is deliberately not built here.** Every other consequential
+choice in this game — a redshirt, a portal decision, an NIL allocation, a recruiting action — is the
+player's to make through a mandatory decision, never automated out from under them. Forcing releases
+on the player's own roster the same way the AI's are forced would break that pattern, so this pass
+skips the controlled team entirely: if it is ever over cap, the week does not advance until the
+player resolves it themselves, the same behaviour as before this change. A mandatory-decision surface
+for that case is real remaining work, not built here, and needs its own design pass before it is.
+
+Under today's generation this mechanism has no reachable trigger: every signing path already refuses
+anything that would exceed the cap, and every contract this project generates is flat-salaried
+against a cap that only grows, so no current game state can produce an over-cap team at all — proven
+by `--pro-market-root-probe` finding zero, and unchanged by this addition. What legitimate mechanic
+would ever put a team over the cap remains an open question this document does not answer.
+
 **The draft can never deadlock, and that is an assertion rather than a mechanism.** Expiry frees
 headcount before the draft opens, so a team arriving at its pick with no room is a bug in beat 1,
 not a case for the draft to work around. `--pro-draft-probe` is the instrument: it fails if any
@@ -190,14 +216,60 @@ release the lowest-value non-guaranteed player. That was written before the owne
 and was never implemented; it is recorded here as rejected so it is not reintroduced as an
 obvious-looking fix.*
 
+**The last body at a position is re-signed, not held on a dead deal — added 2026-08-13.** A 53-man
+roster carries exactly one kicker and one punter, so expiring every run-out contract can leave a
+club with nobody who can play the position. The club keeps that player. What it does *not* do is
+keep the expired contract: a deal whose term has run out is over, and leaving it attached to the
+player is a lie about the books that the cap invariant correctly refuses — a contract is valid only
+while the season is inside its term. The club **re-signs** the player instead, one year at their
+last base salary and no signing bonus, so the deal carries no dead money if the club moves on the
+following year.
+
+*Recorded because the first version held the expired deal and cost two defects.* Eleven of thirty-two
+teams became permanently illegal the moment the root was projected into the next season, and since
+the college portal's commit is what takes that projection, a professional contract rule surfaced as
+`portalCommitFailed(.postseason)` — the defect register's D-1, whose attribution was open. No team
+was ever over the cap. Both are fixed by expiry running at the right point in the week and by this
+rule.
+
 **Falsifiers, instrumented in advance.**
 
 - `--pro-soak` fails if a season passes with no contract reaching expiry, or if no player reaches
   free agency by way of one.
+- No professional contract survives its own term: at every season boundary, every contract attached
+  to a rostered player has a term that still contains the season about to start.
 - `--pro-draft-probe` fails if any pick is refused for `activeRosterFull`. That error is now
   unreachable by construction, so its appearance falsifies the deadlock guard.
 - The bootstrapped league is cap-legal for all 32 teams at season 1, asserted at generation.
 - Expiry is deterministic: the same seed produces the same expiry schedule across processes.
+
+### 4.1a Jersey numbers — added 2026-08-13
+
+A number is a **roster-scoped derivation, not a stored field**, and the reason is where uniqueness
+lives. Numbers are unique within a team and meaningless outside one, so storing one on the player
+would put a team's invariant on an object that changes teams — every transfer, draft pick, signing
+and walk-on would have to reassign and resolve collisions, and any path that forgot would produce
+two of the same number with nothing to catch it. Derived per roster, uniqueness holds by
+construction and there is no path to forget.
+
+The rule, in order:
+
+1. Each player has a **preferred number**, drawn from their identifier bytes into the band their
+   position wears. Identifier bytes, never a salted hash — the same clause `03` §3 states for seeds,
+   for the same reason: a per-launch hash gives the same player a different number each launch.
+2. **Uniqueness is per unit, not per roster**, because what a number has to distinguish is two
+   players who could be on the field together. This is also the only rule that can be satisfied: a
+   college roster is 105 players and there are 100 legal numbers, so a roster-wide constraint is not
+   merely stricter than the real one, it is unsatisfiable. Offence, defence and special teams each
+   number independently.
+3. Within a unit, ties are settled by identifier, lowest first. The winner keeps the preferred
+   number; the loser takes the next free number in its band, wrapping.
+4. A band that fills spills into the general range, so a unit can always be numbered.
+
+**The ceiling, stated rather than discovered:** a player's number can change when a *teammate*
+leaves, because the collision order shifts. Real squads renumber rarely and deliberately. If that
+becomes visible — a number moving in a screenshot a player took last week — the fix is to persist
+the assignment per roster, and that is a schema change with a migration, not a tweak.
 
 ### 4.2b The news feed — added 2026-08-12
 
@@ -236,6 +308,22 @@ Recruiting is the college tier's signature system and its throughput problem (D3
 **Throughput.** The player never touches more than ~40 recruits a season; the AI runs the other
 ~133 programmes' classes under D3's abstracted model. The week's recruiting beat is 90 seconds
 because the interface is a shortlist with a budget, not a database.
+
+**The weekly contact budget is built — `ProgrammeRecruitingState.contactPointsRemaining`, reset to
+`CollegeRules.weeklyRecruitingContactPoints` (100) every week by `WorldScheduler`.** `contact` and
+`evaluate` spend it directly; `scheduleVisit` draws `CollegeRules.visitContactCost` (30) from the
+same pool rather than a separate visits counter, so `RecruitingBoardReadModel.Capacity`'s "hours"
+field reads the pool and its "visits" field is the pool divided by the visit cost — a real derived
+count, not an invented one. Confirmed live in the shipped app: `HOURS 100h` and `VISITS 3` at week
+one on the bootstrapped default seed, moving when a `contact` action is committed.
+
+*Recorded because the first pass through this section got it wrong.* A search for "budget" and
+"weekly hours" missed the resource under its actual name, and G-01's Recruiting Board provider
+briefly shipped `Capacity.weeklyHoursRemaining`/`officialVisitsRemaining` as `Int?` under a "G-18:
+not built" note — asserting a gap that did not exist. The wrong finding had already reached
+`docs/STATUS.md`, `docs/OWNER-WALKTHROUGH.md` and the plan's own gap register before a closer read
+of `CollegeState.swift` caught it; all three carry a same-day correction rather than a silent edit,
+since a mistake that already shipped a claim is not the same as one caught before it did.
 
 ---
 

@@ -300,7 +300,13 @@ public struct CoachingHQReadModel: Sendable, Equatable {
 public struct RecruitingBoardReadModel: Sendable, Equatable {
     public struct Capacity: Sendable, Equatable {
         public let scholarshipSlotsRemaining: Int
+        /// `ProgrammeRecruitingState.contactPointsRemaining` — a real, weekly-reset engine
+        /// resource that `contact` and `evaluate` spend against directly.
         public let weeklyHoursRemaining: Int
+        /// Derived, not stored: the engine has one pooled points resource, not a separate visit
+        /// counter, and `scheduleVisit` draws `CollegeRules.visitContactCost` from the same pool.
+        /// This is how many visits the remaining points could still afford — a real computed fact,
+        /// the same kind of derivation as `condition` from fatigue elsewhere in this provider.
         public let officialVisitsRemaining: Int
 
         public init(

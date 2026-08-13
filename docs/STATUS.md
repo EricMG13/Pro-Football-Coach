@@ -341,6 +341,205 @@ the 30-season history/performance gate. The plan for the next slice is
 records why cold event bodies are their own milestone: they change a persisted root type and need a
 bound design against FSC-002/FSC-003 and the save-size budget, which is still 84.66 MB at season 20.
 
+### 2026-08-13 — the road to beta: B-1 answered, D-1 attributed and fixed, G-01 and U-4 landed
+
+Executed against `docs/plans/2026-08-12-road-to-beta.md`. **This session had a full Swift and Xcode
+toolchain** — Xcode 26.6, Swift 6.3.3, `xcodegen`, iPhone 17 simulators — which is the first time
+any session in this rebuild has, and it changes what could be settled rather than described.
+
+**B-1 — there is an app, and it builds. Answered, and it was the plan's single largest unknown.**
+`xcodegen generate` in `App/` followed by `xcodebuild … -destination 'platform=iOS
+Simulator,name=iPhone 17'` produced `** BUILD SUCCEEDED **` in both Debug and Release, and
+`-destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO` builds the arm64 device slice too. The
+Release `.app` was installed and launched on the iPhone 17 simulator and photographed. Signing is
+the only thing left between this and a phone, and signing is B-2, which is the owner's.
+
+*The simulator run is reported as what it is.* `CLAUDE.md`'s rule is that an agent must never claim
+a demonstration happened; it was written when no session had a toolchain, and its purpose is to stop
+fabricated claims. This session ran the app for real and reports only what the screenshots show.
+**Nothing has run on a phone**, and no part of §4 of `docs/OWNER-WALKTHROUGH.md` has been done.
+
+**V-1 — the full suite was run, and it was red in five places.** `PortalTransactionTests`'s fixture
+aborted the process at season 0 week 21 with `professionalMarketFailed(.invalidRoot)`. The log was
+two lines: the fatal error and the exit code. **The harness reported only at `finish()`**, so an
+aborted run gave no account of the suites that had already passed or of where it had got to.
+`TestKit.suite` now prints a line per suite and `main.swift` unbuffers stdout; the very next run
+used that to name the abort site immediately.
+
+**All five failures predate this session, and that was verified rather than assumed** — `a4a1ca1`
+was checked out into a detached worktree, built, and the suites run there. Every one is a
+consequence of `0deb629` giving a generated world contracts to expire, and every one was invisible
+because the run died before reporting. The plan's "the full suite has not been run since `0deb629`"
+was therefore load-bearing, not housekeeping.
+
+| Suite | What it was | Why |
+|---|---|---|
+| Season-boundary people lifecycle | 33 checks | Asserted every player is on a roster and every professional roster is exactly 53. Beat 1 (`02` §4.2a) *is* players leaving a roster at the season boundary without leaving the world |
+| College management state | 2 checks | Helper jumps the calendar to a later season without the scheduler; contracts stayed behind and 32 teams carried deals that had ended |
+| College commitment integrity | 1 check | Same helper class |
+| College redshirt rollover | 2 checks | Same helper class |
+| M6 professional market | process abort | `removeProRosterPlayer` left the contract attached, so `openOffseason` built an empty free-agent pool and the AI signed nobody; the test then indexed `signedPlayerIDs[0]` after a soft `expect` and trapped, taking every later suite with it |
+
+The three college helpers now roll contracts with the calendar through one shared
+`professionalContractsRolled` (`Tests/SimTests/TestRoots.swift`) rather than three copies. The
+people-lifecycle assertions are replaced by stronger ones — no player exists whom no roster and no
+market accounts for, free agency is non-empty after a boundary, and every professional team still
+has a playable body at every position, which is the invariant the expiry exemption exists to
+protect. The crash became a `require`.
+
+**D-1 — attributed, and it was never a portal defect.** The register asked for the attribution to be
+re-run before anything was fixed, and it was, with `--pro-market-root-probe`. The finding:
+
+1. The expiry abort *masked* D-1. Contract expiry ran earlier in the same step and threw first.
+2. Neither defect was the cap fork O-1 anticipated. **No professional team was ever over the cap** —
+   the probe separates the two ways a team fails the cap invariant and reports zero over-cap teams
+   against eleven with run-out contract terms.
+3. One ordering mistake caused both. `expireContracts` ran at the top of `jobAndStaffMarkets`:
+   before `SeasonLifecycleSystem.advance` writes the career records FSC-013 needs to legalise a
+   departure; before two wholesale `nextState.players` assignments that discarded its writes; and
+   after nothing, when the college portal's commit — which checks the root *projected into the next
+   season* — needed last season's deals already off the books.
+4. The "last body at a position" exemption kept an expired contract attached. The cap invariant
+   reads a contract as valid only while the season is inside its term, so eleven of thirty-two teams
+   were permanently illegal in the projected season. `02` §4.2a now states that the club **re-signs**
+   the player instead — one year, last base salary, no bonus.
+
+Fixed in `fce9e2a`, with `--season-rollover` pinning the invariants rather than the seed that caught
+them. `--pro-market-root-probe` is retained: the register recorded that the previous attribution
+probe was destroyed during cleanup before it could answer, and this one is not to be deleted.
+
+**G-01 — the shipped build shows the world.** `Sources/CoachWorldApp` is a new composition target,
+and it exists because neither existing target could do this alone: the engine may not import the UI,
+and the UI target may not name `GameState`. It holds `CoachWorldReadModelProvider` (root →
+`CoachingHQReadModel`, provenance `.simulationSnapshot`), `CoachWorldStore` (the career, advanced
+off the main actor through `CareerSession`), `CoachWorldSaveStore` (one save, written atomically)
+and `CoachWorldAppRootView` (the shipped root). `App/ProFootballCoachApp.swift` launches into it.
+
+Measured on the simulator, from the fixed new-career seed: programme *Marrow Hollow Normal*, coach
+*Kelay Tarrford*, Season 1 Week 1, 0–0, #122, opponent *Calder Mining* at *Marrow Hollow Grounds*,
+and a real queued decision carrying the engine's own reason codes as its evidence line.
+
+**Three regions on that screen are blank by construction, and `--screen-read-models` asserts each
+one.** The week strip has no days because the calendar's finest grain is a week (G-14); Your Desk
+carries no correspondence because no inbox system exists (the scheduler's `expiringInboundEvents`
+step is inactive to say so); no staff recommendation appears because G-02 is unbuilt and three of
+its four fields would have to be invented. Filling one now requires deleting an assertion that names
+the register item which would justify it.
+
+**Coaching HQ, Roster and Player Profile are truthful; Match Day and Recruiting Board are not.** The
+personnel pair needed something the model did not have — a jersey number — and **G-16 closed the
+same day, as a derivation rather than the schema change first assumed**. Uniqueness belongs to a
+team and a player changes teams, so a stored field would have needed reassignment on every transfer,
+draft pick, signing and walk-on; derived over a roster it holds by construction, with no schema bump
+and no fingerprint re-pin. `02` §4.1a states the rule and `--jersey-numbers` asserts it.
+
+*Two things that rule got wrong first, both caught by tests rather than by reading:* uniqueness
+cannot be roster-wide, because a 105-man college roster does not fit in 100 numbers — it is per
+**unit**, which is also the real rule; and the bands were first sized from memory of real football,
+which put eighteen defensive linemen into ten numbers and spilled a tackle to `#0` on the first
+screen anyone opened. The bands are now sized against `CollegeRules.initialRosterByPosition`, and a
+test asserts that rather than the arithmetic.
+
+The remaining personnel blanks are named in the provider beside the field: no hometown (the root
+records a *prospect's* origin city, not a rostered player's), no staff summary (G-02), and no recent
+form (G-04). Match Day still needs G-06 and G-11.
+
+**Recruiting Board is truthful too, added 2026-08-13.** `Capacity.weeklyHoursRemaining` is
+`ProgrammeRecruitingState.contactPointsRemaining` — a real, weekly-reset resource
+(`CollegeRules.weeklyRecruitingContactPoints`, 100) that `contact` and `evaluate` spend directly.
+`officialVisitsRemaining` is derived from the same pool divided by `CollegeRules.visitContactCost`
+(30), since the engine has one pooled resource rather than a separate visit counter. Confirmed live
+on the simulator: `HOURS 100h` and `VISITS 3` at week one, beside a real `SLOTS` count. Everything
+else on the board is likewise real — its own rank order, position needs, and each prospect's
+evaluation via `RecruitingFitSystem`, the same arithmetic the AI itself reads.
+
+*This section briefly said the opposite.* A search for the budget by name ("weekly hours",
+"contact budget") missed `contactPointsRemaining`, and for part of this session the two fields
+shipped as `Int?` under a "G-18: not built" note that asserted a gap the engine had already closed.
+Corrected the same day, once a closer read of `CollegeState.swift` found it — see `02` §4.3.
+
+A fresh week-one board is empty by design (the AI cycle populates it later), and the screen shows
+an honest empty state — "No prospects on the board" — rather than a table implying data that isn't
+there yet.
+
+**Navigation is honest too.** The app root routes Office, Team and Recruit; every other tab reports
+"<family> is not available yet" rather than presenting an empty screen, which would claim the
+family exists.
+
+**Continue meant two different things depending on which screen you were on, until wiring Roster
+and Recruiting Board caught it.** Every screen carries the same "Continue" control — same icon, same
+label, same position in the world strip — and on Coaching HQ it advances the week. Roster's and
+Recruiting Board's copies of that control were wired to just navigate back to Office instead, so the
+identical-looking button did something different depending on where you tapped it. Both now call
+the same `advance(store)` path Coaching HQ uses, so the refusal a pending decision produces is the
+same refusal everywhere, not a screen-dependent behaviour.
+
+**P-2's AI-facing half is built, 2026-08-13 — `ProManagementSystem.enforceCapCompliance`.** Went
+through its own `writing-plans`/`executing-plans` phase per `CLAUDE.md`'s process, rather than a
+freehand continuation, because it is real unbuilt engine work: `docs/superpowers/plans/2026-08-13-
+cap-compliance.md` has the full plan and its self-review. Every professional team but the one the
+player controls is released — cheapest dead money first — down to cap-legal at the week-21 boundary,
+inside the same `advanceWeek` transition that already runs beat 1's expiry. `WorldIntegrity.check
+ProfessionalCap` was never touched; the function mutates state directly and validates once at the
+end with the same difference-based guard `expireContracts` established this session, so it is never
+the invariant itself that gets weaker, only what runs before it.
+
+Five unit tests (event plumbing, ordering, already-legal, unfixable, controlled-team-skipped) plus
+one integration test through a real `advanceWeek` all pass, and the architecture fingerprint pins
+are unchanged —
+confirming the function is a true no-op under normal bootstrap generation, which is also its honest
+limit: no current signing path can ever put a team over the cap, so nothing in ordinary play reaches
+this code yet. The controlled team's own cap choice is deliberately not built here — every other
+consequential choice in this game is a mandatory decision the player makes, and automating the
+player's own releases the way the AI's are forced would break that pattern. `02` §4.2a has the full
+account, including what remains open.
+
+**U-4 — the AX5 instrument exists, and its limits are written down.** `--design-contracts` now
+enumerates all 62 families from `CoachWorldScreenID`, resolves each to its view file by convention,
+asserts the landed/pending partition is total, and requires every landed family to declare an
+accessibility-size composition and deterministic VoiceOver order. `04` §7.1 states plainly what it
+does **not** assert: *no datum lost* and *no clipping* are properties of a render, and this harness
+has no view host. **The rendered limb of G-12 stays open** and its mechanism is `03b` §5's to decide
+— now a live question, because full Xcode is present and XCTest is therefore reachable in a way it
+was not when `03b` was written. An audit may not score AX5 above 3 on this suite alone.
+
+**Three scans had become directory rules rather than rules.** The GameState boundary scan, the
+design-token-literal scan and the SF-Symbol register scan all read `Sources/ProFootballCoachUI`
+literally. Adding a second target containing a view would have escaped all three on the day it was
+created. They now enumerate "code that draws" by the UI import. Separately, the no-argument suite —
+the one `verify.sh` runs and every release claim quotes — **never included `DesignContractTests` at
+all**, so the orientation policy, token sync, symbol register and sheet lint were only ever checked
+under an explicit flag. Both are fixed.
+
+**V-1 is now green: `719 tests, 755,310 checks, all passed`**, release build, exit 0, run on
+2026-08-13 after the repairs above. That is the first full-suite green since `0deb629`, and it
+includes `DesignContractTests` and the AX5 contract for the first time in a no-argument run.
+
+**B-4 — D4's week-advance budget is already blown, on a development Mac.** `--week-advance-timing`
+measured, twice within 1%: bootstrap **0.15 s**, twenty-one weeks in **95.7 s**, **median 2.83 s per
+week**, **worst 29.6 s** (the season-boundary week), and **one whole-root integrity check 1.01 s**.
+D4 budgets **2.0 s**.
+
+Three things follow, and the first is the one that matters:
+
+1. **The median week is 40% over the budget before a phone is involved.** D4's falsifier does not
+   need a device to fire. About a second of every week is `saveGrowthAndIntegrity` running
+   `WorldIntegrity.check` over 15,766 players — the budget cannot be met while a full-root check is
+   an every-week cost, so this is a structural question for `03b` §5 and D4, not tuning.
+2. **The season-boundary week is 29.6 s.** Expiry, the college cycle, the portal, realignment and
+   the draft class all land in one `advanceWeek`. On a phone this is a minute or more with a
+   spinner, which is why `CoachWorldStore` advances off the main actor — but "responsive while
+   unusable" is not the same as playable.
+3. **Roughly 2 s of that 29.6 s is a cost this session added**, and it is named rather than hidden:
+   `expireContracts` now takes the difference between the root's issues before and after, which is
+   two whole-root checks instead of one. It buys the only week-ordering that satisfies FSC-013 and
+   the cap invariant at once; if the check gets cheaper, this gets cheaper with it.
+
+**What this session did not do.** U-6 (production views for the other 57 families) is untouched and
+is the largest remaining item. B-2 and any device measurement are the owner's. P-2 (cap-compliance
+cuts) is not built — and the probe's finding that no team is over the cap at the season boundary is
+worth carrying into it, because beat 2 has nothing to do until spending puts a team over.
+
 ### The full default suite — **green on 2026-08-12, after a two-failure fix**
 
 `./scripts/verify.sh` now passes: **602 tests / 747,027 checks, all passed**, debug build and

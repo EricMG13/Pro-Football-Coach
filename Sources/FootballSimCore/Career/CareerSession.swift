@@ -82,6 +82,14 @@ public actor CareerSession {
         Self.makeProjection(from: state)
     }
 
+    /// The authoritative root, for the composition layer that builds screen read models from it.
+    ///
+    /// This is a read-only copy of a value type, so a caller cannot write back through it; the only
+    /// way to change the world remains `resolve`. It exists because a truthful read model needs the
+    /// whole root and `CareerProjection` is deliberately a narrow slice — and because the engine
+    /// cannot build those read models itself without importing the UI, which `03b` §1 forbids.
+    public func snapshot() -> GameState { state }
+
     public func saveData() throws -> Data {
         try Task.checkCancellation()
         return try SaveEnvelope.encode(state)

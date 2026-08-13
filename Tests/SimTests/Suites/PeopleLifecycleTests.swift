@@ -338,7 +338,20 @@ func runPeopleLifecycleTests() {
                 first.programmes.values.flatMap(\.rosterIDs)
                     + first.proTeams.values.flatMap(\.rosterIDs)
             )
-            expectEqual(first.players.count, activeRosterIDs.count)
+            // Every player the store holds is either on a roster or in the professional market.
+            //
+            // This asserted `players.count == activeRosterIDs.count` until 2026-08-13, when
+            // `0deb629` gave a generated world contracts to expire: beat 1 (`02` §4.2a) *is*
+            // players leaving a roster at the season boundary without leaving the world, and the
+            // old equality said that must never happen. The invariant that matters — no player
+            // exists whom nothing accounts for — survives, and is stronger than a count.
+            let accountedIDs = activeRosterIDs
+                .union(first.proTeams.values.flatMap(\.practiceSquadIDs))
+                .union(first.proMarket.freeAgentIDs)
+            expect(Set(first.players.ids).subtracting(accountedIDs).isEmpty,
+                   "players exist that no roster and no market accounts for")
+            expect(!first.proMarket.freeAgentIDs.isEmpty,
+                   "a season boundary passed and no contract reached free agency (02 section 4.2a)")
             expect(!first.people.departedPlayers.isEmpty,
                    "departed identities were not retained in compact history")
             for programme in first.programmes.values {
@@ -357,10 +370,28 @@ func runPeopleLifecycleTests() {
                 })
             }
             for team in first.proTeams.values {
-                expectEqual(team.rosterIDs.count, ProRules.activeRosterLimit)
+                // A professional roster is *below* the limit here, and that is beat 1 working
+                // rather than a defect: `02` §4.2a says a roster drops below 53 because contracts
+                // ended, and that this is what makes room for free agency and the draft. The
+                // assertion was `== activeRosterLimit` until 2026-08-13, which described the world
+                // before `0deb629` gave it any contract to expire.
+                expect(team.rosterIDs.count <= ProRules.activeRosterLimit,
+                       "a professional roster exceeded the limit")
+                expect(team.rosterIDs.count > 0, "a professional roster was emptied")
                 expect(team.rosterIDs.allSatisfy {
                     first.people.playerLifecycle[$0]?.status == .active
                 })
+                // What must still hold at every point of the offseason: somebody can play every
+                // position. That is the invariant the expiry exemption exists to protect.
+                let counts = Dictionary(
+                    grouping: team.rosterIDs.compactMap { first.players[$0]?.position },
+                    by: { $0 }
+                ).mapValues(\.count)
+                for (position, minimum) in SharedRules.minimumPlayableRosterByPosition {
+                    expect(counts[position, default: 0] >= minimum,
+                           "\(team.id) has \(counts[position, default: 0]) at "
+                               + "\(position.rawValue), below the playable minimum of \(minimum)")
+                }
             }
             let departed = initialPlayerIDs.filter {
                 first.people.departedPlayers[$0] != nil

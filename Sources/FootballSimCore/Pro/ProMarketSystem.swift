@@ -418,60 +418,101 @@ public enum ProMarketSystem {
             throw ProMarketError.invalidSeason
         }
         let nextSeason = calendar.season + 1
-        let candidates = state.proTeams.values
-            .sorted { $0.id.uuidString < $1.id.uuidString }
-            .flatMap { team -> [(UUID, UUID)] in
-                let owned = team.rosterIDs + team.practiceSquadIDs
-                // A 53-man roster carries exactly one kicker and one punter, so expiring contracts
-                // blindly leaves a team with no playable body at that position — and this function's
-                // own integrity check then refuses the root it just built. That was latent until a
-                // generated world began issuing contracts: nothing ever expired, so nothing ever hit
-                // it.
-                //
-                // The last body at a position keeps its deal. That is what a club does with its only
-                // kicker, and it keeps the root valid at every step of an offseason instead of only
-                // once free agency and the draft have refilled it.
-                var remainingByPosition: [Position: Int] = [:]
-                for playerID in owned {
-                    guard let position = state.players[playerID]?.position else { continue }
-                    remainingByPosition[position, default: 0] += 1
-                }
-                return owned.compactMap { playerID -> (UUID, UUID)? in
-                    guard let player = state.players[playerID],
-                          let contract = player.contract,
-                          let signedSeason = contract.signedSeason,
-                          nextSeason >= signedSeason + contract.years else { return nil }
-                    let minimum = SharedRules.minimumPlayableRosterByPosition[player.position] ?? 0
-                    guard remainingByPosition[player.position, default: 0] > minimum else {
-                        return nil
-                    }
-                    remainingByPosition[player.position, default: 0] -= 1
-                    return (team.id, playerID)
-                }
+
+        // One pass classifies every owned professional into exactly one of three outcomes: the deal
+        // runs on, the deal ends and the player reaches the market, or the deal ends and the club
+        // re-signs because it has no other body at the position.
+        //
+        // A 53-man roster carries exactly one kicker and one punter, so expiring blindly leaves a
+        // team with nobody who can play the position. That was latent until a generated world began
+        // issuing contracts: nothing ever expired, so nothing ever hit it. The club keeps that
+        // player — but by re-signing, not by leaving a run-out deal attached. The cap invariant
+        // reads a contract as valid only while the season is inside its term, so keeping the
+        // expired one made 11 of 32 teams permanently illegal the moment the root was projected
+        // into the next season, which is exactly what the college portal's commit does. That is how
+        // a professional contract rule surfaced as `portalCommitFailed(.postseason)`.
+        // `02` §4.2a states the rule.
+        var expiring: [(teamID: UUID, playerID: UUID)] = []
+        var resigning: [UUID] = []
+        for team in state.proTeams.values.sorted(by: { $0.id.uuidString < $1.id.uuidString }) {
+            let owned = team.rosterIDs + team.practiceSquadIDs
+            var remainingByPosition: [Position: Int] = [:]
+            for playerID in owned {
+                guard let position = state.players[playerID]?.position else { continue }
+                remainingByPosition[position, default: 0] += 1
             }
-        guard candidates.count <= ProMarketState.maximumFreeAgentIDs else {
+            for playerID in owned {
+                guard let player = state.players[playerID],
+                      let contract = player.contract,
+                      let signedSeason = contract.signedSeason,
+                      nextSeason >= signedSeason + contract.years else { continue }
+                let minimum = SharedRules.minimumPlayableRosterByPosition[player.position] ?? 0
+                guard remainingByPosition[player.position, default: 0] > minimum else {
+                    resigning.append(playerID)
+                    continue
+                }
+                remainingByPosition[player.position, default: 0] -= 1
+                expiring.append((team.id, playerID))
+            }
+        }
+        guard expiring.count <= ProMarketState.maximumFreeAgentIDs else {
             throw ProMarketError.invalidRoot
         }
+
         var next = state
-        var expired: [UUID] = []
-        expired.reserveCapacity(candidates.count)
-        for (teamID, playerID) in candidates {
+        for (teamID, playerID) in expiring {
             next.proTeams.update(teamID) {
                 $0.rosterIDs.removeAll { $0 == playerID }
                 $0.practiceSquadIDs.removeAll { $0 == playerID }
             }
             next.players.update(playerID) { $0.contract = nil }
+            // The membership test is not redundant with `addFreeAgent`, which returns false both
+            // when the pool is full and when the player is already in it. Without it, a player
+            // already on the list would be read as an overflowing pool and refuse the whole root.
             if !next.proMarket.freeAgentIDs.contains(playerID) {
                 guard next.proMarket.addFreeAgent(playerID) else {
                     throw ProMarketError.invalidRoot
                 }
             }
-            expired.append(playerID)
         }
-        guard WorldIntegrity.check(next).isValid else { throw ProMarketError.invalidRoot }
+        // A one-year deal at the player's last base salary, signed for the season about to start.
+        // No signing bonus, so it carries no dead money if the club moves on next year — and since
+        // every contract this project issues is flat-salaried, this never raises a cap hit.
+        for playerID in resigning {
+            guard let salary = next.players[playerID]?.contract?.baseSalaryByYear.last else {
+                continue
+            }
+            next.players.update(playerID) {
+                $0.contract = Contract(
+                    years: 1,
+                    baseSalaryByYear: [salary],
+                    signingBonus: 0
+                ).withSignedSeason(nextSeason)
+            }
+        }
+        // Refuses only what expiry itself introduced, rather than every issue the root happens to
+        // carry when it is called.
+        //
+        // A plain `isValid` was unsatisfiable here. Expiry has to run after
+        // `SeasonLifecycleSystem.advance`, because FSC-013 legalises a departure only once the
+        // player's career record names the season; and it has to run before the college portal
+        // commits, because that commit checks the root projected into the *next* season and the cap
+        // invariant refuses a contract whose term has run out by then. Between those two points the
+        // college rosters are mid-turnover — graduations have happened and the cycle has not
+        // refilled them — so the root legitimately carries positional-coverage issues that expiry
+        // neither caused nor can fix. Blaming this function for them made the only correct position
+        // in the week the one position it refused to run in.
+        //
+        // The difference is taken by construction rather than by naming the checks expiry is
+        // allowed to break, so a check added later is covered the day it is added.
+        let inherited = WorldIntegrity.check(state).issues
+        let introduced = WorldIntegrity.check(next).issues.filter { issue in
+            !inherited.contains(issue)
+        }
+        guard introduced.isEmpty else { throw ProMarketError.invalidRoot }
         return ProContractExpiryReceipt(
             state: next,
-            expiredPlayerIDs: expired.sorted { $0.uuidString < $1.uuidString }
+            expiredPlayerIDs: expiring.map(\.playerID).sorted { $0.uuidString < $1.uuidString }
         )
     }
 

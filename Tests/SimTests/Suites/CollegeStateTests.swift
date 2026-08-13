@@ -22,6 +22,8 @@ private func applyingCollegeCycle(
     // renewal leaves a season-0 market under a season-2 calendar, which whole-root integrity
     // correctly rejects as out of phase.
     next.proMarket = ProMarketState(season: nextSeason)
+    // Contracts move with it too, for the same reason and by the same rule — see `TestRoots.swift`.
+    next = professionalContractsRolled(to: nextSeason, in: next)
     next.competition = CompetitionState(
         currentSchedule: SeasonSchedule(
             season: nextSeason,
