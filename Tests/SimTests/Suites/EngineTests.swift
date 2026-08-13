@@ -1581,6 +1581,65 @@ func runClockManagementTests() {
     }
 }
 
+func runSchemeFitTests() {
+    suite("Scheme fit") {
+        test("the spine moves a matchup") {
+            // 02 section 6 makes scheme identity the spine and says the roster's fit to it modifies
+            // every matchup in the engine. Every call site passed a literal zero, so the spine moved
+            // nothing and schemeFitWeight was a constant nothing multiplied.
+            func player(_ index: Int, fit: Int) -> Player {
+                var attributes = Attributes()
+                for attribute in Position.wideReceiver.ratedAttributes {
+                    attributes[attribute] = Rating(70)
+                }
+                attributes[.schemeFit] = Rating(fit)
+                return Player(
+                    id: UUID(uuidString: String(format: "00000000-0000-4000-D000-%012X", index))!,
+                    firstName: "S", lastName: "\(index)", position: .wideReceiver, age: 24,
+                    attributes: attributes, potential: Rating(70)
+                )
+            }
+            let fits = player(1, fit: 95)
+            let does_not = player(2, fit: 45)
+            expect(SnapResolver.schemeFitDifferential(attacker: fits, defender: does_not) > 0,
+                   "a player who fits the scheme has no edge on one who does not")
+            expect(SnapResolver.schemeFitDifferential(attacker: does_not, defender: fits) < 0,
+                   "the differential is not symmetric")
+            expectClose(SnapResolver.schemeFitDifferential(attacker: fits, defender: fits), 0,
+                        0.000_001,
+                        "two players who fit equally decided a matchup between them")
+        }
+
+        test("a roster that fits its scheme outgains one that does not") {
+            func meanYards(fit: Int) -> Double {
+                var offense = testPersonnel(offenseSkill: 70, defenseSkill: 70).offense
+                offense = offense.map { player in
+                    var copy = player
+                    copy.attributes[.schemeFit] = Rating(fit)
+                    return copy
+                }
+                let personnel = SnapPersonnel(
+                    offense: offense,
+                    defense: testPersonnel(offenseSkill: 70, defenseSkill: 70).defense
+                )
+                var rng = SeededRandom(seed: 6_161)
+                var total = 0
+                for _ in 0..<2_000 {
+                    total += SnapResolver.resolve(
+                        offensiveCall: OffensiveCall(playType: .pass),
+                        defensiveCall: DefensiveCall(coverage: .zoneUnder),
+                        personnel: personnel, situation: Situation(),
+                        rules: Tier.pro.clockRules, rng: &rng
+                    ).yards
+                }
+                return Double(total) / 2_000
+            }
+            expect(meanYards(fit: 95) > meanYards(fit: 45),
+                   "scheme fit changed nothing about what an offence gained")
+        }
+    }
+}
+
 func runWeatherTests() {
     let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
     let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)

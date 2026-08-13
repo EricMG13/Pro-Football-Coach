@@ -98,7 +98,7 @@ public enum SnapResolver {
             let leverage = Leverage.score(
                 attacker: duel.blocker.attributes[.passBlock],
                 defender: duel.rusher.attributes[.passRush],
-                schemeFit: 0,
+                schemeFit: schemeFitDifferential(attacker: duel.blocker, defender: duel.rusher),
                 situationModifier: homeFieldAdvantage - defensiveCall.aggression
                     * MatchupRules.blitzPressureBonus,
                 rng: &rng
@@ -124,7 +124,8 @@ public enum SnapResolver {
             let leverage = Leverage.score(
                 attacker: route.receiver.attributes[.routeRunning],
                 defender: route.defender.attributes[.coverage],
-                schemeFit: 0,
+                schemeFit: schemeFitDifferential(attacker: route.receiver,
+                                                 defender: route.defender),
                 situationModifier: homeFieldAdvantage
                     - defensiveCall.coverage.help(against: offensiveCall.passDepth)
                     + defensiveCall.coverageDrain,
@@ -244,6 +245,7 @@ public enum SnapResolver {
             let leverage = Leverage.score(
                 attacker: duel.blocker.attributes[.runBlock],
                 defender: duel.defender.attributes[.runDefence],
+                schemeFit: schemeFitDifferential(attacker: duel.blocker, defender: duel.defender),
                 situationModifier: homeFieldAdvantage + defensiveCall.coverage.runCost
                     - defensiveCall.aggression * MatchupRules.crashRunBonus,
                 rng: &rng
@@ -306,6 +308,7 @@ public enum SnapResolver {
             let leverage = Leverage.score(
                 attacker: carrying,
                 defender: defender.attributes[.tackling],
+                schemeFit: schemeFitDifferential(attacker: carrier, defender: defender),
                 situationModifier: homeFieldAdvantage + aggression * MatchupRules.aggressionRunBonus
                     - Double(attempt) * MatchupRules.brokenTackleDecay,
                 rng: &rng
@@ -420,6 +423,20 @@ public enum SnapResolver {
         }
         return SnapOutcome(result: .sack, yards: yards, secondsElapsed: elapsed,
                            matchups: matchups, ballCarrierID: passer?.id, passerID: passer?.id)
+    }
+
+    /// How much better this matchup's attacker fits their scheme than the defender fits theirs.
+    ///
+    /// `02` §6 makes scheme identity "the spine" and says "the roster's fit to it modifies every
+    /// matchup in the engine". **Every call site passed a literal zero**, so the spine moved nothing:
+    /// `MatchupRules.schemeFitWeight` was a constant nothing multiplied, and a player's `schemeFit`
+    /// rating was read by the development system and by nobody in the match.
+    ///
+    /// A differential rather than the attacker's fit alone, because a matchup is between two players
+    /// and a scheme that helped both sides equally should decide nothing. On -1...1, which is the
+    /// range `Leverage.score` clamps to anyway.
+    public static func schemeFitDifferential(attacker: Player, defender: Player) -> Double {
+        (normalised(attacker.attributes[.schemeFit]) - normalised(defender.attributes[.schemeFit]))
     }
 
     /// A rating on 0...1, for use as a weight.

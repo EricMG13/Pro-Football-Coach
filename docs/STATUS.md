@@ -1397,6 +1397,40 @@ the plays they came from).
 wired into the season either (G-18). When it is, this is what turns a played game into the same
 `PlayerGameStatistics` the abstracted path already writes.
 
+### Slice 9 — awards on both sides of the ball (G-29) — written, unverified
+
+Three award kinds, one offensive by construction and none reachable by a defender. Six now, and
+every kind is awarded in every tier every season **unconditionally** — `WorldIntegrity` requires a
+season archive to hold exactly one of each per tier, so an award withheld for want of a threshold is
+an integrity failure waiting for a quiet season.
+
+Files: `Sources/FootballSimCore/Competition/RecordsAndAwards.swift` (three kinds and
+`isTeamAward`), `Sources/FootballSimCore/Competition/PostseasonSystem.swift` (the two orderings and
+the defensive value), `Sources/FootballSimCore/Rules/CompetitionRules.swift` (the weights),
+`Sources/FootballSimCore/Integrity/WorldIntegrity.swift` (which kinds name a team),
+`Tests/SimTests/Suites/CompetitionTests.swift` (the count is now derived from the enum rather than
+the literal 6), `docs/02-GAME-DESIGN.md` (§3.11).
+
+### Slice 10 — scheme fit, connected (G-32, first half) — written, unverified
+
+`02` §6 calls scheme identity "the spine" and says "the roster's fit to it modifies every matchup in
+the engine". It was false in both models: `SnapResolver` passed a literal `0` at all four call sites,
+so `MatchupRules.schemeFitWeight` was a constant nothing multiplied, and a player's `schemeFit`
+rating was read by the development system and by nobody in the match.
+
+Every matchup now reads the **differential** between the two players' fit, because a matchup is
+between two people and a scheme that helped both equally should decide nothing.
+
+Files: `Sources/FootballSimCore/Engine/SnapResolver.swift` (`schemeFitDifferential`, four call
+sites), `Tests/SimTests/Suites/EngineTests.swift` (a `Scheme fit` suite of two tests),
+`Tests/SimTests/main.swift`, `docs/02-GAME-DESIGN.md` (§6).
+
+**Traditions remain inert, and the repair is larger than it looks.** `02` §8 requires every generated
+tradition to carry a mechanical effect. `TraditionGrammar` produces them and nothing reads one —
+because `Programme` does not persist traditions at all: the generator builds them into an identity
+that is dropped except for names and colours. Wiring them is a schema change plus a generation
+change, so it is its own slice and is **not** done here.
+
 ---
 
 ## What exists, and what verified it

@@ -624,6 +624,19 @@ since a mistake that already shipped a claim is not the same as one caught befor
   it is the closest thing the game has to a strategic identity.
 - Staff are poached by other programmes when they perform. Continuity is a resource.
 
+**The spine is connected — added 2026-08-13.** "The roster's fit to it modifies every matchup in the
+engine" was false in both models: `SnapResolver` passed a literal zero for scheme fit at every call
+site, so `MatchupRules.schemeFitWeight` was a constant nothing multiplied, and the abstracted model
+carried each team's scheme into its profile and never read it. Every matchup now reads the
+**differential** between the two players' `schemeFit` ratings — a matchup is between two people, and
+a scheme that helped both equally should decide nothing.
+
+**Traditions are still inert, and that is a bigger repair than it looks.** §8 requires every
+generated tradition to carry a mechanical effect; `TraditionGrammar` produces them and nothing reads
+one, because `Programme` does not persist its traditions at all — the generator builds them into an
+identity that is dropped except for names and colours. Wiring them is a schema change plus a
+generation change, which is its own slice rather than a line in this one.
+
 ---
 
 ## 7. Stakes (D8)
