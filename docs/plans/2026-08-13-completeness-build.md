@@ -57,6 +57,7 @@ exist before it is worth integrating.
 | 26 | Contract negotiation | G-34 | **written**; free agency is now cap-bound |
 | 27 | Discipline and suspensions | G-36 | **written** |
 | 28 | Preseason camp | G-39 | **written**; no exhibition games, and canon says why |
+| 29 | A player forced out actually leaves | G-26 tail | **written**; does not move the pins |
 
 **Every register row G-18 to G-45 is now either written or escalated to the owner.** The register's
 own §3 anti-false-gap list is unchanged: those were never gaps.

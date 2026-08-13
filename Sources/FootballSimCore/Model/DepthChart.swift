@@ -57,12 +57,19 @@ public enum DepthChart {
         defense: [Player],
         unavailableIDs: Set<UUID> = []
     ) -> SnapPersonnel {
-        SnapPersonnel(
-            offense: unit(from: offense, template: offensiveTemplate,
-                          unavailableIDs: unavailableIDs),
-            defense: unit(from: defense, template: defensiveTemplate,
-                          unavailableIDs: unavailableIDs)
-        )
+        let offensiveUnit = unit(from: offense, template: offensiveTemplate,
+                                 unavailableIDs: unavailableIDs)
+        let defensiveUnit = unit(from: defense, template: defensiveTemplate,
+                                 unavailableIDs: unavailableIDs)
+        // The bench: everybody available who is not already on the field, best first. This is what
+        // `02` §3.8's `forcedOut` had nothing to hand the snap to — without it an injury bad enough
+        // to end a player's game ended nothing at all, because the eleven never changed.
+        let onField = Set(offensiveUnit.map(\.id)).union(defensiveUnit.map(\.id))
+        var seen: Set<UUID> = []
+        let bench = ordered(offense + defense, unavailableIDs: unavailableIDs).filter {
+            !onField.contains($0.id) && !unavailableIDs.contains($0.id) && seen.insert($0.id).inserted
+        }
+        return SnapPersonnel(offense: offensiveUnit, defense: defensiveUnit, reserves: bench)
     }
 
     /// The offensive formation, as positions. Two specialists ride along because a drive can end in

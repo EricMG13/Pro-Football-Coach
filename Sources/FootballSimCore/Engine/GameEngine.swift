@@ -172,6 +172,11 @@ public enum GameEngine {
         var afterTurnover = false
         var clockRunning = false
         var driver = callIns
+        // `02` §3.8. A player forced out stays out: the drive loop replaces them for the rest of
+        // that drive, and these carry the same substitutions into every drive after it. Without
+        // this the injury would heal at the drive boundary, which is worse than not modelling it.
+        var home = home
+        var away = away
 
         // `02` §3.6. Every possession used to begin at a constant, so there was no return game, no
         // onside kick and no field-position variance anywhere in the sport this engine simulates.
@@ -224,6 +229,12 @@ public enum GameEngine {
             ))
             pendingKickoff = nil
             situation = next
+            // The same rule the drive loop just applied, applied to the copies that outlive it.
+            // Replaying the drive's own plays rather than asking it what it did keeps `run`'s
+            // signature and gives the identical answer: the choice is deterministic and the bench
+            // is the same, so the sequence lands in the same place.
+            home = home.substituting(forcedOutIn: drive.plays)
+            away = away.substituting(forcedOutIn: drive.plays)
 
             // A score is followed by a kickoff, and a safety by a free kick from the side that gave
             // the points up — which is the same side in both cases, the one that was on offence.
@@ -305,6 +316,11 @@ public enum GameEngine {
         situation: inout Situation,
         drives: inout [DriveRecord]
     ) {
+        // Mutable for the same reason regulation's are: `02` §3.8's forced-out player stays out,
+        // and an overtime that put them back on the field would be the one part of the game where
+        // an injury healed itself.
+        var home = home
+        var away = away
         // The toss. Deterministic like everything else — it comes from the game's own seed, so a
         // replay tosses the same way.
         var rng = SeededRandom(seed: SeededRandom.derive(from: seed, scope: .game, ordinal: 1))
@@ -341,6 +357,8 @@ public enum GameEngine {
                     )
                     ordinal += 1
                     drives.append(drive)
+                    home = home.substituting(forcedOutIn: drive.plays)
+                    away = away.substituting(forcedOutIn: drive.plays)
                     situation.homeScore = next.homeScore
                     situation.awayScore = next.awayScore
                     situation.quarter = start.quarter
@@ -382,6 +400,8 @@ public enum GameEngine {
                 ))
                 pendingKickoff = nil
                 situation = next
+                home = home.substituting(forcedOutIn: drive.plays)
+                away = away.substituting(forcedOutIn: drive.plays)
                 if drive.ending == .touchdown || drive.ending == .fieldGoal
                     || drive.ending == .safety {
                     pendingKickoff = resolveKickoff(

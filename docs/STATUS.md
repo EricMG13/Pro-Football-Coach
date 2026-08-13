@@ -1873,7 +1873,33 @@ as in-season development — but the M1 and M2 soak bands are where a real drift
 have not been run. **No exhibition games**, and canon says why: a friendly is a fixture, and that is
 the schedule's business.
 
-### The standing gap across slices 19–28
+### Slice 29 — a player forced out actually leaves (G-26 tail) — written, unverified
+
+Slice 5 recorded `MatchInjury.forcedOut` and **never honoured it**, because there was no depth chart
+to hand the snap to. Slice 14 built one. So until now a player whose game was over took every
+remaining snap of it: the injury changed a line in the record and nothing in the match, which is the
+decoration D6 clause 4 forbids.
+
+The substitution happens on the **next snap**, not at the next drive — waiting for the boundary would
+leave a torn knee taking another dozen snaps, which is the shape of the original defect rather than a
+smaller version of it. The replacement comes off `DepthChart`'s bench, best at the position then best
+in the group, and **consumes no draw**: a substitution that rolled dice would push the injured
+player's bad luck into the stream every other snap reads. A side with nobody to bring on plays with
+them, because eleven is a rule of the sport and the resolver cannot resolve a ten-man formation.
+
+Files: `Sources/FootballSimCore/Engine/Assignment.swift` (`SnapPersonnel.reserves`, `contains`,
+`substituting(outPlayerID:)`, `substituting(forcedOutIn:)`),
+`Sources/FootballSimCore/Model/DepthChart.swift` (the bench),
+`Sources/FootballSimCore/Engine/DriveEngine.swift` (mid-drive),
+`Sources/FootballSimCore/Engine/GameEngine.swift` (carried across drives and into overtime),
+`Tests/SimTests/Suites/SubstitutionTests.swift` (new, seven tests), `Tests/SimTests/main.swift`,
+`docs/02-GAME-DESIGN.md` (§3.8 amended, including its falsifier).
+
+**This slice does not move the pins**, and that is a property rather than luck: the pinned games are
+built by `testPersonnel`, which has no bench, so no substitution can fire in them. `reserves` is
+defaulted to empty precisely so a hand-built fixture keeps meaning what it meant.
+
+### The standing gap across slices 19–29
 
 **None of these read models is on a screen yet.** The inbox, the depth chart, morale, the staff
 shortlist, the glossary, the discipline file, the camp report and the asking price are all

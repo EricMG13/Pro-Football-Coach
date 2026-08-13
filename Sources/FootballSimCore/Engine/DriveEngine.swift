@@ -284,6 +284,11 @@ public enum DriveEngine {
         var points = 0
         var conversion: ConversionRecord?
         var afterTurnover = isAfterTurnover
+        // Both sides are mutable through the drive because `02` §3.8's `forcedOut` is honoured
+        // here: a player whose game ends is off the field for the *next* snap, not at the next
+        // drive. Waiting for the drive boundary would leave a torn knee taking a dozen more snaps.
+        var offense = offense
+        var defense = defense
 
         for playIndex in 0..<MatchupRules.maximumPlaysPerDrive {
             // 03 section 3 clause 6: league -> season -> week -> game -> drive -> snap. The
@@ -309,6 +314,15 @@ public enum DriveEngine {
             plays.append(PlayRecord(situation: situation, offensiveCall: offensiveCall,
                                     defensiveCall: defensiveCall, outcome: outcome,
                                     callInTriggers: triggers))
+
+            // The player is off. Applied to both sides rather than to the one that "should" hold
+            // them, because a snap involves twenty-two people and the record does not say which
+            // shirt the injured one was wearing — `substituting` is a no-op on the side that does
+            // not have them, which is cheaper than a lookup that could be wrong.
+            if let injury = outcome.injury, injury.forcedOut {
+                offense = offense.substituting(outPlayerID: injury.playerID)
+                defense = defense.substituting(outPlayerID: injury.playerID)
+            }
 
             // The drive loop is the clock authority. The pre-snap clock only runs if it was
             // running: after an incompletion, a score, or a first down under the college rule, the

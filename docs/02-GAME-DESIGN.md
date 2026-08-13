@@ -252,13 +252,24 @@ changes the game being played, that is a missing mechanic and not a missing deta
 - **The engine reports and never applies.** `SnapResolver` cannot reach league state and must not: a
   resolver that mutated it could not be replayed. The season layer applies these when the detailed
   match is integrated, in the same `PlayerInjury` vocabulary.
-- **Anything past a knock forces the player out of the game.** Honouring that needs a depth chart,
-  which does not exist yet; the flag is recorded now so the substitution work has something truthful
-  to read rather than inventing its own.
+- **Anything past a knock forces the player out of the game, and that is now honoured** (amended
+  2026-08-13, once §3.13's depth chart existed to hand the snap to). The rules, in order:
+  - **The next snap, not the next drive.** The drive loop substitutes immediately. Waiting for the
+    drive boundary would leave a torn knee taking another dozen snaps, which is the shape of the
+    original defect rather than a smaller version of it.
+  - **They stay out.** The game loop carries every substitution into the drives that follow it and
+    into overtime. An injury that healed at a boundary would be worse than not modelling one.
+  - **The bench comes from the depth chart** — everybody available who is not already on the field —
+    and the replacement is the best of them at the position, then in the group.
+  - **No draw is consumed.** A substitution that rolled dice would push the injured player's bad luck
+    into the stream every other snap reads.
+  - **A side with nobody to bring on plays with them.** Eleven is a rule of the sport, and a
+    ten-man formation is one the resolver has no way to resolve — the same argument §3.13's chart
+    makes when it falls back to any available body.
 
 Falsifier: across a season injuries occur in play, land on players who were in the snap that produced
-them, fall more often on the least durable, and never appear on a snap that a pre-snap penalty
-cancelled.
+them, fall more often on the least durable, never appear on a snap that a pre-snap penalty
+cancelled, and **a player forced out takes no further snap in that game.**
 
 ### 3.9 Timeouts and the clock — added 2026-08-13
 
