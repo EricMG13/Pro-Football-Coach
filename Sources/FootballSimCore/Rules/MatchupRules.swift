@@ -290,4 +290,32 @@ public enum MatchupRules {
     /// have no room for one. Both are far above any real drive or game.
     public static let maximumPlaysPerDrive = 40
     public static let maximumDrivesPerGame = 60
+
+    // MARK: - Overtime
+
+    /// How far each side starts from the goal line in an alternating-possession overtime. `02` §3.7.
+    public static let overtimeYardsToGoal = 25
+
+    /// Seconds a timed overtime period lasts.
+    public static let overtimePeriodSeconds = 600
+
+    /// The clock an untimed overtime possession is given.
+    ///
+    /// An alternating-possession overtime has no game clock, and the drive loop is clock-driven, so
+    /// the possession is handed more seconds than any drive can consume rather than the loop being
+    /// taught a second way to end. Bounded either way by the play cap.
+    public static let overtimeUntimedSeconds = 3_600
+
+    /// Timeouts each side carries into an overtime period.
+    public static let overtimeTimeouts = 1
+
+    /// How many alternating periods before the game is recorded as a tie.
+    ///
+    /// A tie is an honest outcome and an unbounded loop is not. `03` §5.1's college tie band is
+    /// exactly zero, so if this bound is ever reached in calibration the model is wrong somewhere
+    /// upstream and the band says so.
+    public static let maximumOvertimePeriods = 8
+
+    /// Drive bound inside a timed overtime period.
+    public static let maximumOvertimeDrives = 30
 }

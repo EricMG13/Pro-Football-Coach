@@ -205,6 +205,32 @@ Falsifier: across a season, touchbacks, returns, at least one return touchdown a
 recovered onside kick all occur; a kickoff never leaves the ball with a team that did not legally get
 it; and a game's drive points plus its kickoff points equal the scoreboard.
 
+### 3.7 Overtime — added 2026-08-13
+
+A played game ended at the end of regulation whatever the score, and recorded the tie.
+`ClockRules.overtime` had declared `alternatingPossessions` for college and `timedPeriod` for pro
+since the engine was built, and nothing read it — so the tier difference `01` §4.7 calls "a
+structural rule difference, not a band" was a value with no consumer.
+
+- **College plays alternating possessions.** Each side starts twenty-five yards from the goal line
+  with one timeout, and the period ends when both have had the ball. There is no game clock, so the
+  drive loop — which is clock-driven — is handed more seconds than a possession can consume rather
+  than being taught a second way to end.
+- **Pro plays a timed period.** Ten minutes, opened by a kickoff, drives as usual, and whoever leads
+  when it expires wins. Still level at the end and the game is a tie, which is an honest outcome; an
+  unbounded loop is not.
+- **The toss comes from the game's seed**, so a replay tosses the same way.
+- **Eight alternating periods is the bound.** `01` §6.5's college tie band is exactly zero, so if
+  that bound is ever reached the model is wrong upstream and the band is what says so.
+
+This closes three rows that `CalibrationBands.unimplementedMetrics` listed as waiting on overtime:
+the overtime rate, the college tie rate, and the share settled in a single period. The first two now
+carry bands transcribed from `01` §6.5 with its grades attached — the overtime rate is still an
+owner-set assumption and says so.
+
+Falsifier: no game ends level in the college tier; the pro overtime rate sits inside its band; and a
+game that reaches overtime has at least one drive in a quarter past regulation.
+
 ---
 
 ## 4. The offseason

@@ -1300,6 +1300,89 @@ func runKickoffTests() {
     }
 }
 
+func runOvertimeTests() {
+    // Evenly matched rosters, because a mismatch produces very few ties to overtime.
+    let home = testPersonnel(offenseSkill: 71, defenseSkill: 71)
+    let away = testPersonnel(offenseSkill: 71, defenseSkill: 71)
+
+    suite("Overtime") {
+        test("a college game never ends level") {
+            // 01 section 4.7: a structural rule difference, not a band. Alternating possessions
+            // cannot end level, so a college tie is a defect upstream rather than a rare outcome.
+            var overtimeGames = 0
+            for seed in UInt64(1)...150 {
+                let game = GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                expect(game.winner != nil, "seed \(seed) ended a college game level")
+                if game.drives.contains(where: {
+                    ($0.plays.first?.situation.quarter ?? 0) > Tier.college.clockRules.quarters
+                }) { overtimeGames += 1 }
+            }
+            expect(overtimeGames > 0,
+                   "no college game in 150 reached overtime, so the branch is unreachable")
+        }
+
+        test("overtime happens, and not often") {
+            var overtimes = 0
+            for seed in UInt64(1)...200 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                let periods = Set(game.drives.compactMap { $0.plays.first?.situation.quarter }
+                    .filter { $0 > Tier.pro.clockRules.quarters })
+                if !periods.isEmpty {
+                    overtimes += 1
+                    expectEqual(periods.count, 1,
+                                "a timed overtime ran more than one period")
+                }
+            }
+            expect(overtimes > 0, "no pro game in 200 reached overtime")
+            expect(overtimes * 3 < 200,
+                   "\(overtimes) of 200 pro games went to overtime, which is not a rare event")
+        }
+
+        test("both sides get the ball in an alternating overtime") {
+            // The rule that makes the format fair, and the one an implementation loses by checking
+            // the score after each possession instead of after each period.
+            for seed in UInt64(1)...150 {
+                let game = GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                let regulation = Tier.college.clockRules.quarters
+                let byPeriod = Dictionary(
+                    grouping: game.drives.filter {
+                        ($0.plays.first?.situation.quarter ?? 0) > regulation
+                    },
+                    by: { $0.plays.first?.situation.quarter ?? 0 }
+                )
+                for (period, drives) in byPeriod {
+                    expectEqual(Set(drives.map(\.offense)).count, 2,
+                                "seed \(seed) period \(period): one side did not get the ball")
+                }
+            }
+        }
+
+        test("overtime is deterministic, toss included") {
+            let first = GameEngine.play(tier: .college, home: home, away: away, seed: 4_242)
+            let second = GameEngine.play(tier: .college, home: home, away: away, seed: 4_242)
+            expectEqual(first.playByPlayFingerprint, second.playByPlayFingerprint,
+                        "the same seed produced a different overtime")
+            expectEqual(first.homeScore, second.homeScore)
+            expectEqual(first.awayScore, second.awayScore)
+        }
+
+        test("an overtime possession starts where the rules say") {
+            var checked = 0
+            for seed in UInt64(1)...150 {
+                let game = GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                for drive in game.drives
+                where (drive.plays.first?.situation.quarter ?? 0)
+                    > Tier.college.clockRules.quarters {
+                    checked += 1
+                    expectEqual(drive.startYardLine, 100 - MatchupRules.overtimeYardsToGoal,
+                                "an overtime possession did not start at the stated spot")
+                }
+            }
+            expect(checked > 0, "no overtime possession was checkable")
+        }
+    }
+}
+
 /// A caller that plays the baseline game and always makes the same conversion choice.
 struct FixedConversionCaller: PlayCaller, Sendable {
     let choice: ConversionChoice

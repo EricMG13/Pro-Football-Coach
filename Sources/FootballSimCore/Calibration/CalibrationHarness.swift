@@ -118,6 +118,7 @@ public enum CalibrationHarness {
         var passPlays = 0, explosivePasses = 0
         var pointsInQ4 = 0, pointsTotal = 0
         var penalties = 0
+        var overtimeGames = 0, overtimeInOnePeriod = 0
 
         for sample in samples {
             let game = sample.record
@@ -132,6 +133,18 @@ public enum CalibrationHarness {
             }
             if Swift.abs(game.homeScore - game.awayScore) >= MatchupRules.blowoutMargin {
                 blowouts += 1
+            }
+            // Overtime, measurable now that it exists. A period is a quarter past regulation, which
+            // is how both formats mark themselves: the alternating one counts up per period and the
+            // timed one uses exactly one.
+            let regulationQuarters = game.tier.clockRules.quarters
+            let overtimePeriods = Set(
+                game.drives.compactMap { $0.plays.first?.situation.quarter }
+                    .filter { $0 > regulationQuarters }
+            )
+            if !overtimePeriods.isEmpty {
+                overtimeGames += 1
+                if overtimePeriods.count == 1 { overtimeInOnePeriod += 1 }
             }
             _ = sample.awaySkill
 
@@ -265,6 +278,8 @@ public enum CalibrationHarness {
             "accepted penalties per game": meanEstimate(
                 samples.isEmpty ? [] : [Double(penalties) / Double(samples.count)]
             ),
+            "overtime rate": rateEstimate(overtimeGames, samples.count),
+            "overtime settled in one period": rateEstimate(overtimeInOnePeriod, overtimeGames),
         ]
     }
 }

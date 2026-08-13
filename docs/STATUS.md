@@ -1237,6 +1237,33 @@ moves a return by at most the return scale, so from the fielding spot no leverag
 produce reaches the end zone. It is now its own bounded draw. A branch nothing can enter is the dead
 capability this project names as its first failure mode, and a threshold there would have shipped one.
 
+### Slice 4 — overtime (G-25) — written, unverified
+
+A played game ended at the end of regulation whatever the score. `ClockRules.overtime` had declared
+`alternatingPossessions` for college and `timedPeriod` for pro since P3, and **nothing read it** — the
+tier difference `01` §4.7 calls "a structural rule difference, not a band" was a value with no
+consumer.
+
+Canon first (`02` §3.7). College plays alternating possessions from twenty-five yards out with one
+timeout each, and the period ends when both sides have had the ball. Pro plays a ten-minute timed
+period opened by a kickoff; whoever leads at its end wins, and a game still level is a tie, which is
+honest where an unbounded loop is not. The toss comes from the game's own seed.
+
+**This closes three rows of `CalibrationBands.unimplementedMetrics`** — the overtime rate, the college
+tie rate and the share settled in one period — all of which said "overtime, which P6 owns". The
+harness now measures them and two bands are transcribed from `01` §6.5 with its grades intact: the
+pro overtime rate at `0.03…0.09` still marked as an owner-set assumption, and the college tie rate at
+exactly zero, which `01` §4.7 argues is structural rather than tunable.
+
+Files: `docs/02-GAME-DESIGN.md` (§3.7), `Sources/FootballSimCore/Engine/GameEngine.swift`
+(`playOvertime`, two loops rather than one parameterised one, because the formats are different
+games), `Sources/FootballSimCore/Rules/MatchupRules.swift` (start spot, period length, the untimed
+clock, the period and drive bounds), `Sources/FootballSimCore/Calibration/CalibrationBands.swift`
+(three rows leave `unimplementedMetrics`; three bands added),
+`Sources/FootballSimCore/Calibration/CalibrationHarness.swift` (overtime detection),
+`Tests/SimTests/Suites/EngineTests.swift` (an `Overtime` suite of five tests),
+`Tests/SimTests/main.swift`.
+
 ---
 
 ## What exists, and what verified it

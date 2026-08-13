@@ -224,8 +224,124 @@ public enum GameEngine {
             }
         }
 
+        // `02` §3.7. Regulation used to end the game whatever the score: the engine recorded the tie
+        // and `ClockRules.overtime` — which has said `alternatingPossessions` for college and
+        // `timedPeriod` for pro since P3 — was read by nothing.
+        if situation.homeScore == situation.awayScore {
+            playOvertime(home: home, away: away, caller: caller, rules: rules,
+                         homeFieldAdvantage: homeFieldAdvantage, seed: seed,
+                         situation: &situation, drives: &drives)
+        }
+
         return GameRecord(homeScore: situation.homeScore, awayScore: situation.awayScore,
                           drives: drives, tier: tier)
+    }
+
+    /// Plays overtime in whichever format the tier declares. `02` §3.7.
+    ///
+    /// The two formats are genuinely different games and are written as two loops rather than one
+    /// parameterised one: an alternating-possession overtime has no clock and guarantees both sides
+    /// the ball, and a timed period has a clock and guarantees nothing. Folding them together would
+    /// mean a flag inside every line of both.
+    private static func playOvertime(
+        home: SnapPersonnel,
+        away: SnapPersonnel,
+        caller: some PlayCaller,
+        rules: any ClockRules.Type,
+        homeFieldAdvantage: Double,
+        seed: UInt64,
+        situation: inout Situation,
+        drives: inout [DriveRecord]
+    ) {
+        // The toss. Deterministic like everything else — it comes from the game's own seed, so a
+        // replay tosses the same way.
+        var rng = SeededRandom(seed: SeededRandom.derive(from: seed, scope: .game, ordinal: 1))
+        let firstPossession: Side = rng.chance(0.5) ? .home : .away
+        // Past every ordinal regulation used: drives took 0..<maximum, the kickoffs took the
+        // negatives, and the halftime kick took maximum + 1.
+        var ordinal = MatchupRules.maximumDrivesPerGame + 2
+
+        switch rules.overtime {
+        case .alternatingPossessions:
+            for period in 0..<MatchupRules.maximumOvertimePeriods {
+                for side in [firstPossession, firstPossession.opponent] {
+                    let start = Situation(
+                        down: 1,
+                        distance: Swift.min(MatchupRules.yardsForFirstDown,
+                                            MatchupRules.overtimeYardsToGoal),
+                        yardLine: 100 - MatchupRules.overtimeYardsToGoal,
+                        possession: side,
+                        homeScore: situation.homeScore,
+                        awayScore: situation.awayScore,
+                        quarter: rules.quarters + period + 1,
+                        secondsRemainingInQuarter: MatchupRules.overtimeUntimedSeconds,
+                        timeoutsRemaining: [.home: MatchupRules.overtimeTimeouts,
+                                            .away: MatchupRules.overtimeTimeouts]
+                    )
+                    let (drive, next) = DriveEngine.run(
+                        from: start,
+                        offense: side == .home ? home : away,
+                        defense: side == .home ? away : home,
+                        caller: caller, rules: rules, homeFieldAdvantage: homeFieldAdvantage,
+                        driveSeed: SeededRandom.derive(from: seed, scope: .drive, ordinal: ordinal),
+                        isAfterTurnover: false, clockRunning: false
+                    )
+                    ordinal += 1
+                    drives.append(drive)
+                    situation.homeScore = next.homeScore
+                    situation.awayScore = next.awayScore
+                    situation.quarter = start.quarter
+                }
+                // Both sides have had the ball, which is the rule that makes this format fair and
+                // the reason the check sits outside the inner loop rather than inside it.
+                if situation.homeScore != situation.awayScore { break }
+            }
+
+        case .timedPeriod:
+            situation.quarter = rules.quarters + 1
+            situation.secondsRemainingInQuarter = MatchupRules.overtimePeriodSeconds
+            situation.timeoutsRemaining = [.home: MatchupRules.overtimeTimeouts,
+                                           .away: MatchupRules.overtimeTimeouts]
+            var pendingKickoff: KickoffRecord? = resolveKickoff(
+                kickingSide: firstPossession.opponent, home: home, away: away, caller: caller,
+                rules: rules, homeFieldAdvantage: homeFieldAdvantage, seed: seed,
+                ordinal: ordinal, situation: &situation
+            )
+            ordinal += 1
+            var afterTurnover = false
+            var clockRunning = false
+
+            for _ in 0..<MatchupRules.maximumOvertimeDrives {
+                guard situation.secondsRemainingInQuarter > 0 else { break }
+                let offense = situation.possession == .home ? home : away
+                let defense = situation.possession == .home ? away : home
+                let (drive, next) = DriveEngine.run(
+                    from: situation, offense: offense, defense: defense, caller: caller,
+                    rules: rules, homeFieldAdvantage: homeFieldAdvantage,
+                    driveSeed: SeededRandom.derive(from: seed, scope: .drive, ordinal: ordinal),
+                    isAfterTurnover: afterTurnover, clockRunning: clockRunning
+                )
+                ordinal += 1
+                drives.append(DriveRecord(
+                    offense: drive.offense, plays: drive.plays, ending: drive.ending,
+                    pointsScored: drive.pointsScored, startYardLine: drive.startYardLine,
+                    conversion: drive.conversion, startingKickoff: pendingKickoff
+                ))
+                pendingKickoff = nil
+                situation = next
+                if drive.ending == .touchdown || drive.ending == .fieldGoal
+                    || drive.ending == .safety {
+                    pendingKickoff = resolveKickoff(
+                        kickingSide: drive.offense, home: home, away: away, caller: caller,
+                        rules: rules, homeFieldAdvantage: homeFieldAdvantage, seed: seed,
+                        ordinal: ordinal, situation: &situation
+                    )
+                    ordinal += 1
+                }
+                afterTurnover = drive.ending == .turnover || drive.ending == .downs
+                clockRunning = false
+            }
+        }
     }
 
     /// Resolves one kickoff and moves the game to the receiving team's first-and-ten. `02` §3.6.

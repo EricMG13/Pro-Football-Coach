@@ -40,6 +40,11 @@ public enum CalibrationBands {
         Band("safeties per game", tier: .pro, 0.005, 0.05, estimator: .mean,
              confidence: "provisional [U]"),
         Band("tie rate", tier: .pro, 0.000, 0.020, estimator: .rate, confidence: "[P]"),
+        // Transcribed from `01` §6.5's narrowed row, not invented here, and carrying its grade: the
+        // owner has still to set it. The prior suite's `0.008…0.14` is the seventeen-fold range
+        // `03` §5.2 keeps as scar tissue.
+        Band("overtime rate", tier: .pro, 0.03, 0.09, estimator: .rate,
+             confidence: "[ASSUMPTION] — owner to set, 01 section 6.5"),
     ]
 
     public static let college: [Band] = [
@@ -54,6 +59,12 @@ public enum CalibrationBands {
              confidence: "[Q]"),
         Band("offensive plays per team-game", tier: .college, 67, 75, estimator: .mean,
              confidence: "[ASSUMPTION] blocked on 01 section 4.2"),
+        // `01` §4.7 is explicit that this is a structural rule difference rather than a band to
+        // tune: alternating possessions cannot end level, so a college tie is a defect somewhere
+        // upstream and the band says exactly zero rather than "nearly zero".
+        Band("tie rate", tier: .college, 0.0, 0.0, estimator: .rate, confidence: "[C]"),
+        Band("overtime settled in one period", tier: .college, 0.65, 0.78, estimator: .rate,
+             confidence: "[Q]"),
     ]
 
     public static var all: [Band] { pro + college }
@@ -68,7 +79,6 @@ public enum CalibrationBands {
         ("best-vs-worst win rate", "a league with a talent ordering — P6's schedule"),
         ("points per drive", "drive-level accounting the harness does not yet aggregate"),
         ("touchdowns of 40+ yards per game", "play-length accounting"),
-        ("overtime rate", "overtime, which P6 owns"),
         ("TE target share", "per-player stat lines, which P3 does not produce"),
         ("RB target share", "per-player stat lines"),
         ("max single-receiver target share", "per-player stat lines"),
@@ -76,8 +86,6 @@ public enum CalibrationBands {
         ("blowout rate, non-conference mismatch", "schedule context, which P6 owns"),
         ("blowout rate, power conference game", "conference tiering, which P6 owns"),
         ("average margin by context", "schedule context, which P6 owns"),
-        ("college tie rate (exactly zero)", "overtime, which P6 owns"),
-        ("overtime settled in one period", "overtime, which P6 owns"),
         ("title-capable share of programmes", "a season, which P6 owns"),
         ("college completion percentage, pass/rush yards, sacks, interceptions, points per drive",
          "unset in 01 section 6.5 itself, see its section 4.9"),
