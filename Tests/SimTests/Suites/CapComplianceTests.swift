@@ -88,5 +88,71 @@ func runCapComplianceTests() {
                 try SaveEnvelope.encode(state)
             )
         }
+
+        test("a team with no releasable path to legality throws rather than persists") {
+            var state = GameState.bootstrap(seed: 62_003)
+            let teamID = state.proTeams.ids[0]
+            guard let team = state.proTeams[teamID], let onlyPlayerID = team.rosterIDs.first else {
+                expect(false, "the fixture team has no rostered players")
+                return
+            }
+            for playerID in team.rosterIDs + team.practiceSquadIDs where playerID != onlyPlayerID {
+                _ = state.proTeams.update(teamID) { squad in
+                    squad.rosterIDs.removeAll { $0 == playerID }
+                    squad.practiceSquadIDs.removeAll { $0 == playerID }
+                }
+            }
+            // Dead money already on the books, alone, exceeds the cap. No release of the one
+            // remaining contracted player can ever bring committedCap back under the limit,
+            // because releasing it only adds more dead money on top.
+            let capLimit = ProRules.salaryCap(seasonsAfterBase: state.calendar.season)
+            _ = state.proTeams.update(teamID) { $0.deadMoney = capLimit + 1 }
+            state.players.update(onlyPlayerID) {
+                $0.contract = Contract(years: 1, baseSalaryByYear: [1], signingBonus: 0)
+            }
+
+            do {
+                _ = try ProManagementSystem.enforceCapCompliance(at: state.calendar, in: state)
+                expect(false, "an unfixable over-cap team did not throw")
+            } catch ProManagementError.capExceeded {
+                expect(true)
+            } catch {
+                expect(false, "wrong error: \(error)")
+            }
+        }
+
+        test("the controlled team is never auto-released from") {
+            var state = GameState.bootstrap(seed: 62_004)
+            let teamID = state.proTeams.ids[0]
+            guard let team = state.proTeams[teamID], team.rosterIDs.count >= 1 else {
+                expect(false, "the fixture team has no rostered players")
+                return
+            }
+            state.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: teamID,
+                    tier: .professional,
+                    startedAt: state.calendar
+                ),
+                status: .employed
+            )
+            let capLimit = ProRules.salaryCap(seasonsAfterBase: state.calendar.season)
+            let overCapPlayerID = team.rosterIDs[0]
+            state.players.update(overCapPlayerID) {
+                $0.contract = Contract(
+                    years: 1,
+                    baseSalaryByYear: [capLimit + 1_000_000],
+                    signingBonus: 0
+                )
+            }
+
+            let receipt = try ProManagementSystem.enforceCapCompliance(
+                at: state.calendar,
+                in: state
+            )
+            expect(receipt.releases.isEmpty, "the controlled team was released from")
+            expect(receipt.state.players[overCapPlayerID]?.contract != nil,
+                   "the controlled team's over-cap contract was force-released")
+        }
     }
 }
