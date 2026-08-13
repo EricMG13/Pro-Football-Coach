@@ -379,23 +379,6 @@ public enum WorldScheduler {
                             emittedEvents: &events
                         )
                     }
-                    do {
-                        let expiry = try ProMarketSystem.expireContracts(
-                            at: completed,
-                            in: nextState
-                        )
-                        nextState = expiry.state
-                        try appendEvents(
-                            payloads: expiry.expiredPlayerIDs.map {
-                                .proContractExpired(playerID: $0)
-                            },
-                            occurredAt: completed,
-                            to: &nextState,
-                            emittedEvents: &events
-                        )
-                    } catch let error as ProMarketError {
-                        throw WorldSchedulerError.professionalMarketFailed(error)
-                    }
                     if nextState.proMarket.phase != .closed {
                         let closedSeason = nextState.proMarket.season
                         do {
@@ -458,6 +441,46 @@ public enum WorldScheduler {
                 nextState.staff = peopleTransition.staff
                 nextState.people = peopleTransition.people
                 if completed.week == SharedRules.inSeasonWeeks {
+                    // Contracts expire here: after the people transition and the college cycle have
+                    // been applied, and before anything projects the root into the new season. It
+                    // used to run at the top of this step, which was wrong in three ways that only
+                    // became visible once `0deb629` made a generated world issue contracts at all —
+                    // nothing expired before that, so the ordering had never been exercised.
+                    //
+                    // 1. FSC-013 legalises a departure only when the player's *career record* names
+                    //    that organisation for that season, and `SeasonLifecycleSystem.advance`
+                    //    writes those rows later in this same step. Expiring first therefore
+                    //    invalidated every completed professional game the departing player had
+                    //    appeared in, and `expireContracts` refused its own candidate root.
+                    // 2. The people transition and the college cycle each assign `nextState.players`
+                    //    wholesale, so a cleared contract written before them was discarded.
+                    // 3. The portal commit checks the whole root *projected into the target season*
+                    //    (`CollegePortalTransactionV1`), and the cap invariant refuses a contract
+                    //    whose term has run out by the projected season. Last season's deals had to
+                    //    be off the books before that projection is taken, or the college portal
+                    //    fails on a professional cap that nothing in the portal touched. That is
+                    //    the `portalCommitFailed(.postseason)` this defect register carried as D-1
+                    //    with its attribution open; it was never a portal defect.
+                    //
+                    // `openOffseason` later recomputes the free-agent pool from unowned,
+                    // uncontracted players, so expiring here is also what puts them in the market.
+                    do {
+                        let expiry = try ProMarketSystem.expireContracts(
+                            at: completed,
+                            in: nextState
+                        )
+                        nextState = expiry.state
+                        try appendEvents(
+                            payloads: expiry.expiredPlayerIDs.map {
+                                .proContractExpired(playerID: $0)
+                            },
+                            occurredAt: completed,
+                            to: &nextState,
+                            emittedEvents: &events
+                        )
+                    } catch let error as ProMarketError {
+                        throw WorldSchedulerError.professionalMarketFailed(error)
+                    }
                     // After the people transition has been applied, never before it: that assignment
                     // replaces `programmes` wholesale, so prestige written earlier in this step
                     // would be silently discarded. The ranking comes from the archive the season

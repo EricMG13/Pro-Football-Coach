@@ -19,6 +19,12 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runProManagementTests()
 } else if CommandLine.arguments.contains("--pro-market") {
     runProMarketTests()
+} else if CommandLine.arguments.contains("--season-rollover") {
+    runSeasonRolloverTests()
+} else if CommandLine.arguments.contains("--pro-market-root-probe") {
+    runProMarketRootProbe()
+} else if CommandLine.arguments.contains("--screen-read-models") {
+    runReadModelProviderTests()
 } else if CommandLine.arguments.contains("--history-read-model") {
     runHistoryReadModelTests()
 } else if CommandLine.arguments.contains("--career-portal-decisions") {
@@ -134,6 +140,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runTacticalStateTests()
     runPortalContractTests()
     runEventLedgerBatchTests()
+    runReadModelProviderTests()
+    runSeasonRolloverTests()
 }
 
 TestKit.finish()

@@ -190,10 +190,28 @@ release the lowest-value non-guaranteed player. That was written before the owne
 and was never implemented; it is recorded here as rejected so it is not reintroduced as an
 obvious-looking fix.*
 
+**The last body at a position is re-signed, not held on a dead deal — added 2026-08-13.** A 53-man
+roster carries exactly one kicker and one punter, so expiring every run-out contract can leave a
+club with nobody who can play the position. The club keeps that player. What it does *not* do is
+keep the expired contract: a deal whose term has run out is over, and leaving it attached to the
+player is a lie about the books that the cap invariant correctly refuses — a contract is valid only
+while the season is inside its term. The club **re-signs** the player instead, one year at their
+last base salary and no signing bonus, so the deal carries no dead money if the club moves on the
+following year.
+
+*Recorded because the first version held the expired deal and cost two defects.* Eleven of thirty-two
+teams became permanently illegal the moment the root was projected into the next season, and since
+the college portal's commit is what takes that projection, a professional contract rule surfaced as
+`portalCommitFailed(.postseason)` — the defect register's D-1, whose attribution was open. No team
+was ever over the cap. Both are fixed by expiry running at the right point in the week and by this
+rule.
+
 **Falsifiers, instrumented in advance.**
 
 - `--pro-soak` fails if a season passes with no contract reaching expiry, or if no player reaches
   free agency by way of one.
+- No professional contract survives its own term: at every season boundary, every contract attached
+  to a rostered player has a term that still contains the season about to start.
 - `--pro-draft-probe` fails if any pick is refused for `activeRosterFull`. That error is now
   unreachable by construction, so its appearance falsifies the deadlock guard.
 - The bootstrapped league is cap-legal for all 32 teams at season 1, asserted at generation.

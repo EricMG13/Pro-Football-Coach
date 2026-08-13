@@ -418,6 +418,7 @@ public enum ProMarketSystem {
             throw ProMarketError.invalidSeason
         }
         let nextSeason = calendar.season + 1
+        var retained: [UUID] = []
         let candidates = state.proTeams.values
             .sorted { $0.id.uuidString < $1.id.uuidString }
             .flatMap { team -> [(UUID, UUID)] in
@@ -428,9 +429,13 @@ public enum ProMarketSystem {
                 // generated world began issuing contracts: nothing ever expired, so nothing ever hit
                 // it.
                 //
-                // The last body at a position keeps its deal. That is what a club does with its only
-                // kicker, and it keeps the root valid at every step of an offseason instead of only
-                // once free agency and the draft have refilled it.
+                // The last body at a position is kept, which is what a club does with its only
+                // kicker. It is kept by *re-signing* it, not by leaving a deal that has run out
+                // attached to the player: the cap invariant reads a contract as valid only while
+                // the season is inside its term, so keeping a run-out deal made 11 of 32 teams
+                // permanently illegal from the moment the root was projected into the next season —
+                // which is what the college portal commit does, and how a professional contract
+                // rule surfaced as `portalCommitFailed(.postseason)`. `02` §4.2a states the rule.
                 var remainingByPosition: [Position: Int] = [:]
                 for playerID in owned {
                     guard let position = state.players[playerID]?.position else { continue }
@@ -443,6 +448,7 @@ public enum ProMarketSystem {
                           nextSeason >= signedSeason + contract.years else { return nil }
                     let minimum = SharedRules.minimumPlayableRosterByPosition[player.position] ?? 0
                     guard remainingByPosition[player.position, default: 0] > minimum else {
+                        retained.append(playerID)
                         return nil
                     }
                     remainingByPosition[player.position, default: 0] -= 1
@@ -468,7 +474,42 @@ public enum ProMarketSystem {
             }
             expired.append(playerID)
         }
-        guard WorldIntegrity.check(next).isValid else { throw ProMarketError.invalidRoot }
+        // The re-signing half of the same rule. A one-year deal at the player's last base salary,
+        // signed for the season about to start: the old deal ended, and the club kept the player
+        // because it has no other body at that position. No signing bonus, so it carries no dead
+        // money if the club moves on next year.
+        for playerID in retained {
+            guard let salary = next.players[playerID]?.contract?.baseSalaryByYear.last else {
+                continue
+            }
+            next.players.update(playerID) {
+                $0.contract = Contract(
+                    years: 1,
+                    baseSalaryByYear: [salary],
+                    signingBonus: 0
+                ).withSignedSeason(nextSeason)
+            }
+        }
+        // Refuses only what expiry itself introduced, rather than every issue the root happens to
+        // carry when it is called.
+        //
+        // A plain `isValid` was unsatisfiable here. Expiry has to run after
+        // `SeasonLifecycleSystem.advance`, because FSC-013 legalises a departure only once the
+        // player's career record names the season; and it has to run before the college portal
+        // commits, because that commit checks the root projected into the *next* season and the cap
+        // invariant refuses a contract whose term has run out by then. Between those two points the
+        // college rosters are mid-turnover — graduations have happened and the cycle has not
+        // refilled them — so the root legitimately carries positional-coverage issues that expiry
+        // neither caused nor can fix. Blaming this function for them made the only correct position
+        // in the week the one position it refused to run in.
+        //
+        // The difference is taken by construction rather than by naming the checks expiry is
+        // allowed to break, so a check added later is covered the day it is added.
+        let inherited = WorldIntegrity.check(state).issues
+        let introduced = WorldIntegrity.check(next).issues.filter { issue in
+            !inherited.contains(issue)
+        }
+        guard introduced.isEmpty else { throw ProMarketError.invalidRoot }
         return ProContractExpiryReceipt(
             state: next,
             expiredPlayerIDs: expired.sorted { $0.uuidString < $1.uuidString }
