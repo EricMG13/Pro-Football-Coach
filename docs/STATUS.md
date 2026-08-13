@@ -1790,6 +1790,48 @@ may reach the draft sooner. The loop is self-correcting in argument — candidat
 descending order and a replacement-level player asks the minimum, so any club with real cap room
 signs somebody — but that argument is unverified, and `ProSoakTests` is where it would be falsified.
 
+### Slice 27 — discipline and suspensions (G-36) — written, unverified
+
+`02` §2.1 beat 5 lists discipline among the weekly roster actions and §11.3.3 names Discipline as the
+authoritative system for the `volatile` trait. **Neither existed** — no incident, no suspension, no
+discipline state, and nothing that read `volatile` off the field. The beat the week is built around
+was a heading with nothing under it.
+
+The incident is derived from a deterministic per-player weekly draw; only the consequence is stored.
+A suspension is shaped like `PlayerInjury` on purpose: it counts down on the same weekly tick and
+makes the same `isAvailable` false, so every depth chart, personnel package and match handles it
+without being taught anything. Who turns up in the file is `volatile` plus §5.1's unhappiness plus a
+small base rate, and being suspended costs morale — so a coach who suspends everybody has a locker
+room that is likelier to be in the file next week.
+
+**Additive against a schema with no migration path.** `PlayerLifecycleState.suspension` is optional
+and omitted when absent, so a world in which nobody is suspended encodes to exactly the bytes it did
+before — there is a test that asserts the key is missing rather than trusting the argument.
+
+Files: `Sources/FootballSimCore/People/DisciplineSystem.swift` (new),
+`Sources/FootballSimCore/People/PeopleState.swift` (`DisciplineIncidentKind`, `PlayerSuspension`,
+the lifecycle field, `serveSuspensionWeek`, `suspend`, `isAvailable`),
+`Sources/FootballSimCore/People/PeopleLifecycleSystem.swift` (the weekly countdown),
+`Sources/FootballSimCore/People/PlayerMorale.swift` (the discipline component),
+`Sources/FootballSimCore/History/DomainEvent.swift` (`playerSuspended`, `playerReinstated`, their
+rank and referenced entities), `Sources/FootballSimCore/History/NewsFeedReadModel.swift` (the
+headline), `Sources/FootballSimCore/Rules/PeopleRules.swift` (the discipline constants),
+`Tests/SimTests/Suites/DisciplineTests.swift` (new, eight tests), `Tests/SimTests/main.swift`,
+`docs/02-GAME-DESIGN.md` (§5.2).
+
+**Two responses, not three, and canon says why.** A warning is missing on purpose: to mean anything
+it would have to be remembered, and that is persisted state for a system whose design is that only
+the consequence is stored.
+
+### The standing gap across slices 19–27
+
+**None of these read models is on a screen yet.** The inbox, the depth chart, morale, the staff
+shortlist, the glossary, the discipline file and the asking price are all engine-side and reachable
+only from tests. `CoachWorldReadModelProvider` builds one typed `CoachingHQReadModel`, and adding a
+surface means changing that model, its views and the design-contract tests together — which is a UI
+phase with its own `04b` gate, not a tail on a systems slice. Recorded here so the absence is a
+stated boundary rather than something a reader discovers.
+
 ---
 
 ## What exists, and what verified it

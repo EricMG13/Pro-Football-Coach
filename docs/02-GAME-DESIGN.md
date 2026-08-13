@@ -817,6 +817,41 @@ nothing in save size, which FSC-003 makes a live concern.
 - **NIL is the college investment term**; the professional equivalent is a contract, which is
   negotiated rather than allocated, and is its own system.
 
+### 5.2 Discipline — added 2026-08-13
+
+§2.1 beat 5 lists discipline among the weekly roster actions and §11.3.3 names Discipline as the
+authoritative system for the `volatile` trait. **Neither existed.** There was no incident, no
+suspension, no discipline state, and nothing read `volatile` off the field — so the beat the week is
+built around was a heading with nothing under it, and the trait's named consumer was a promise.
+
+**The incident is derived; only the consequence is stored.** A week's file comes from a deterministic
+draw over the roster, so the same save shows the same names every time it is opened and nothing has
+to be kept in step with the roster. A suspension has to outlive the week it was handed down in, so
+that — and only that — is persisted, as an optional beside the injury it is shaped like.
+
+- **Four kinds, not free text**: timekeeping, conduct, team rules, off-field. The kind decides what
+  the suspension is worth, and a string cannot be reasoned about. Nothing here is a crime; this is a
+  football team's own discipline, which is the only kind a coach actually administers.
+- **Who turns up in the file** is `volatile` plus unhappiness plus a small base rate. That is the one
+  place §5.1's morale meets the roster: the player nobody plays and nobody pays is the one who misses
+  meetings. Suspending them costs morale in turn, so a coach who suspends everybody has a locker room
+  that is *more* likely to be in the file next week. Discipline is a decision, not a free action.
+- **The response is the coach's.** The game recommends and never acts: a simulation that suspended
+  players on the coach's behalf would be administering its own discipline.
+- **Two responses, not three.** A warning is missing on purpose — to mean anything it would have to
+  be remembered, since a second warning is worse than a first, and that is persisted state for a
+  system whose design is that only the consequence is stored. A button that recorded nothing and
+  changed nothing is the decoration D6 clause 4 forbids.
+- **A suspension is an absence, and the game already knows what one of those is.** It makes the same
+  `isAvailable` false that an injury does, on the same weekly countdown, so every depth chart,
+  personnel package and match handles it without being taught anything.
+
+**Not in the inbox, and that is a choice.** §2.1 makes discipline a roster action rather than a
+message, and an inbox item that asked for an answer outside the mandatory-decision path would be a
+second decision system to keep in step with the first.
+
+Falsifier: a suspended player takes the field, or a suspension outlives its stated weeks.
+
 ---
 
 ## 6. Staff and scheme

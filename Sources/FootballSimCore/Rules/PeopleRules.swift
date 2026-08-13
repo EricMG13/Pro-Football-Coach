@@ -70,6 +70,38 @@ public enum PeopleRules {
     public static let moraleInjuryCost = 8
     public static let moraleInvestmentBonus = 6
 
+    // MARK: - Discipline. `02` §5.2.
+
+    /// The longest a coach can put one of their own players out. Bounded because a suspension is a
+    /// stored countdown and an unbounded one is a player removed from the game by a screen.
+    public static let maximumSuspensionWeeks = 8
+
+    /// How often a settled, contented professional gets into trouble in a given week. Small: an
+    /// incident every week is a soap opera, and one a season across a roster is a football team.
+    public static let baseIncidentProbability = 0.004
+    /// What `volatile` adds to that. `02` §11.3.3 names Discipline as the trait's authoritative
+    /// system, and this is the half of it that decides who turns up in the file.
+    public static let volatileIncidentProbability = 0.020
+    /// What being unhappy adds. Morale is derived (`02` §5.1), so this is the one place the two
+    /// systems meet: a player nobody plays and nobody pays is the one who misses meetings.
+    public static let unhappyIncidentProbability = 0.012
+
+    /// What a coach is advised to give for each kind, in weeks. Advice, not enforcement — `02` §5.2
+    /// makes the response the coach's, and a game that suspended players on the coach's behalf would
+    /// be administering its own discipline.
+    public static let recommendedSuspensionWeeks: [DisciplineIncidentKind: Int] = [
+        .timekeeping: 0,
+        .conduct: 1,
+        .teamRules: 2,
+        .offField: 4,
+    ]
+
+    /// What being suspended costs morale, per week of the suspension, to a stated floor. A player
+    /// who is punished feels worse about the place, which is the loop that makes discipline a
+    /// decision rather than a free action.
+    public static let moraleSuspensionCostPerWeek = 4
+    public static let maximumMoraleSuspensionCost = 20
+
     // MARK: - Injury severity
 
     /// The severity ladder, as constants rather than as literals at a call site.

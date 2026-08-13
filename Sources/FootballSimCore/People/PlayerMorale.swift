@@ -8,6 +8,7 @@ public enum MoraleReason: String, Codable, Sendable, CaseIterable {
     case injury
     case investment
     case newArrival
+    case discipline
 }
 
 public struct MoraleComponent: Sendable, Equatable {
@@ -94,6 +95,19 @@ public enum PlayerMorale {
         //    between a season and a lost one, and a coach should be able to see it coming.
         if state.people.playerLifecycle[playerID]?.injury != nil {
             components.append(MoraleComponent(reason: .injury, value: -PeopleRules.moraleInjuryCost))
+        }
+
+        // 3b. Being suspended. `02` §5.2, and the loop that makes discipline a decision rather than
+        //     a free action: a coach who suspends everybody has a locker room full of players who
+        //     are then more likely to be in the file next week.
+        if let suspension = state.people.playerLifecycle[playerID]?.suspension {
+            components.append(MoraleComponent(
+                reason: .discipline,
+                value: -Swift.min(
+                    suspension.originalWeeks * PeopleRules.moraleSuspensionCostPerWeek,
+                    PeopleRules.maximumMoraleSuspensionCost
+                )
+            ))
         }
 
         // 4. What the programme has put into them. College only, because NIL is the college tier's
