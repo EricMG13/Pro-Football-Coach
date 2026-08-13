@@ -371,6 +371,17 @@ contracts for anyone to expire and nothing implements the compliance date that w
 spread? (2) What forces cuts to 53 — a cap-compliance date, incoming draft picks, or both? Deciding
 who gets cut and when is a design call, not an implementation detail, so it is not invented here.
 
+**Agent-recommended answer recorded 2026-08-13, pending owner confirmation** — `02` §4.2 now carries
+a proposed answer to both questions (staggered bootstrap contract terms; no new cut mechanic, since
+`ProManagementSystem.acquire` already enforces the 53 cap on every acquisition path). It is written
+into canon per the doc-first amendment rule so it is inspectable and overridable, not because the
+owner has ruled. The root cause blocking it — not a missing mechanic but a step-order bug in
+`WorldScheduler`'s final week, traced to the exact call site — and two candidate fixes are in
+`docs/plans/2026-08-13-p10c-professional-roster-turnover.md`. That plan is unexecuted: this session
+has no Swift toolchain (D11(b) reverts to unresolved in a sandboxed container), so the fix is
+specified to TDD-implementation-ready precision but not written as code, per the risk of a blind,
+unverifiable change near this project's pinned determinism fingerprints.
+
 **Gates:** G1, G2, G4, G6, plus `--pro-soak` and `--pro-draft-probe` turning green, which is the
 falsifier: if turnover lands and the draft still cannot make a pick, the diagnosis was wrong.
 Neither gate is in the default run, so `verify.sh` is unaffected while this is open.

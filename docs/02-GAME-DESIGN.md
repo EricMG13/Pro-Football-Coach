@@ -143,6 +143,35 @@ does not hold, and stops at the one they do:
 
 Falsifier: `--pro-soak` fails if a season passes with no `proDraftPick` event.
 
+**Bootstrap contract terms and the 53-man cut mechanism — agent-recommended 2026-08-13, pending
+owner confirmation.** `docs/05-IMPLEMENTATION-PLAN.md`'s P10c named two open owner questions
+blocking professional roster turnover. Recorded here per the doc-first amendment rule so
+implementation has a canon basis; **this is a recommendation, not an owner ruling**, and stays
+labelled as such until the owner confirms or overrides it.
+
+1. **Do bootstrap professionals get contracts, and with what term spread?** Recommendation: yes,
+   every bootstrap professional is issued an authoritative contract (`signedSeason = 0`) at
+   `GameState.bootstrap`, with `years` drawn 1–4 on a distribution skewed toward the middle
+   (roughly 10/30/35/25 percent for 1/2/3/4 years) rather than uniform. A uniform spread front-loads
+   too much of the league into free agency in the same season; a skewed spread staggers turnover the
+   way a real league's contract calendar does, without needing new state to model it. Salary follows
+   the existing `ProMarketSystem.rookieContract` formula (`1,000,000 + overall × 25,000`) scaled by a
+   small veteran premium, since no other wage curve exists yet to draw from.
+2. **What forces cuts to 53?** Recommendation: nothing new. `ProManagementSystem.acquire` already
+   throws `activeRosterFull` whenever a team is at `ProRules.activeRosterLimit`, on every acquisition
+   path (free agency, draft, waiver claim, promotion from practice squad) — so no roster can ever be
+   built past 53 regardless of how vacancies open. The "hard date" §4.2 item 2 names is therefore not
+   a separate mechanic to build; it is the same final week that already runs `expireContracts`, which
+   is the sole source of vacancies once a season's free agents and draft picks have already filled
+   what they can.
+
+**This recommendation does not by itself unblock P10c.** `docs/FUTURE-SIMULATION-CONTRACT.md`
+FSC-013 is the load-bearing blocker: issuing bootstrap contracts makes `expireContracts` release
+real players at the final week of a *live* season, and the whole-root integrity check that validates
+recorded game participants against the *current* roster then rejects that season's own just-played
+games. The contract-term recommendation above is only safe to build once FSC-013's fix lands —
+`docs/plans/2026-08-13-p10c-professional-roster-turnover.md` sequences both.
+
 ### 4.2b The news feed — added 2026-08-12
 
 The living world reports itself. `DomainEventPayload` already fixes the mechanism — "Presentation
@@ -239,6 +268,44 @@ Identity accumulates in the save rather than shipping with it.
   given week, a regional recruiting bonus, a morale effect after a specific outcome.
 - **Conference realignment** driven by performance, market and geography, so the map changes across a
   career.
+
+**Conference realignment mechanism — agent-recommended 2026-08-13, pending owner confirmation.**
+`docs/STATUS.md` names this M7's last open gap and `docs/roadmap/06-BUILD-ROADMAP-AND-GATES.md` lists
+it unspecified; recorded here per the doc-first amendment rule so the M7-closing implementation has a
+canon basis, not because the owner has ruled on the constants below.
+
+1. **Trigger — a sustained prestige/conference mismatch, not a per-season table shuffle.** A
+   programme is a *realignment candidate* when its prestige has sat more than one full
+   standard-deviation above its own conference's mean prestige for **3 consecutive seasons** (a
+   market pulling it upward) or more than one standard-deviation below for the same span (a
+   programme its conference has outgrown). Three seasons matches programme evolution's own pace — a
+   fast trigger would fight the one-point-a-season prestige walk that produced the mismatch in the
+   first place.
+2. **Geography constrains the destination.** A candidate may only move to a conference containing at
+   least one current member within `GameMap`'s existing region-adjacency data (the same data
+   `docs/02-GAME-DESIGN.md` §8's rivalry seeding already reads), never to an arbitrary conference —
+   "market" pulls a programme toward a conference it is already geographically plausible for, it does
+   not teleport it.
+3. **Size stays inside `02` §11.1's 12–16 band.** A move is only legal if the destination conference is
+   below 16 after the join and the origin conference stays at or above 12 after the departure. When no
+   legal destination exists, the candidate simply does not move that season — realignment is not
+   guaranteed to fire every time a candidate qualifies, which is consistent with real conference
+   realignment being lumpy rather than continuous.
+4. **Cadence — evaluated once a season, at the same rollover point programme evolution already runs**
+   (`WorldScheduler`'s `.jobAndStaffMarkets` final-week block, after the people transition, alongside
+   `ProgrammeEvolutionSystem`), so the two systems read the same freshly-evaluated prestige and the
+   map never changes mid-season.
+5. **Falsifier, matching the existing programme-evolution falsifier's shape:** a programme held at a
+   fixed prestige relative to its conference peers must never realign — realignment fires on the
+   mismatch, not on a clock, so a static world produces a static map.
+
+**What this does not resolve.** Schedule generation, standings, rivalry continuity and whole-root
+integrity all read conference membership; a programme changing conference mid-career needs its
+rivalry list, historical conference-championship eligibility and schedule generation all updated
+consistently in the same rollover step. That sequencing work, and the constants above (one
+standard deviation, three seasons, the 12–16 band already in canon), are scoped in
+`docs/plans/2026-08-13-m7-conference-movement.md` rather than implemented blind in this session — it
+is schema- and topology-touching in the same way `docs/plans/2026-08-13-p10c-professional-roster-turnover.md`'s fix is, and this session has no toolchain to verify a change of that shape.
 
 **Programme evolution — added 2026-08-12.** Prestige was frozen at generation, so a programme that
 won titles for a decade was exactly as prestigious as one that never won — while prestige drives
