@@ -371,6 +371,8 @@ private func archivedProspectRoot(
     // As in CollegeStateTests' cycle helper: a root whose calendar has moved two seasons past its
     // professional market is one the engine could never produce, and whole-root integrity says so.
     state.proMarket = ProMarketState(season: currentSeason)
+    // Contracts move with it too, for the same reason and by the same rule — see `TestRoots.swift`.
+    state = professionalContractsRolled(to: currentSeason, in: state)
     state.competition = CompetitionState.bootstrap(
         seed: state.league.seed,
         season: currentSeason,

@@ -1050,6 +1050,10 @@ func runCollegeRedshirtTests() {
             linked.calendar = completed.advancedWeek()
             linked.league.season = linked.calendar.season
             linked.league.week = linked.calendar.week
+            // The calendar has crossed a season boundary without the scheduler, so the professional
+            // market and its contracts have to be carried over by hand — see `TestRoots.swift`.
+            linked.proMarket = ProMarketState(season: linked.calendar.season)
+            linked = professionalContractsRolled(to: linked.calendar.season, in: linked)
             linked.competition = CompetitionState.bootstrap(
                 seed: linked.league.seed,
                 season: linked.calendar.season,
