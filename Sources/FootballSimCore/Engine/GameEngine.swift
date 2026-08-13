@@ -90,6 +90,18 @@ public struct GameRecord: Codable, Sendable, Equatable {
                     mix(Int((matchup.leverage * 1_000_000).rounded()))
                 }
             }
+            // The conversion is not in `plays` by design (`02` §3.4), so it needs mixing here or
+            // the determinism gate would be blind to a whole class of outcome — including the
+            // difference between a kick and a two-point try, which is a coaching decision.
+            if let conversion = drive.conversion {
+                mix(index(conversion.choice))
+                mix(conversion.points)
+                mix(conversion.succeeded ? 1 : 0)
+                mix(index(conversion.outcome.result))
+                mix(conversion.outcome.yards)
+            } else {
+                mix(-1)
+            }
         }
         return value
     }

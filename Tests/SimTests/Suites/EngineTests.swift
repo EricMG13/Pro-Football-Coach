@@ -2,6 +2,14 @@ import Foundation
 import FootballSimCore
 
 /// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
+///
+/// **RE-PIN REQUIRED — the values below predate the conversion (`02` §3.4, 2026-08-13).** A
+/// touchdown was worth a flat seven and is now six plus a try that can miss, so the score after the
+/// first touchdown of the pinned game differs and every call the baseline caller makes from there is
+/// resolved against a different score. Both literals are therefore expected to be red until a
+/// session with a toolchain runs the pinned game twice in separate processes and writes the measured
+/// values here. They were **not** guessed: a fabricated pin passes while proving nothing, which is
+/// worse than a red one. The re-pin task is recorded in `docs/STATUS.md`.
 private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 151_802_325_001_383_283
 private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 17_135_830_121_998_607_854
 
@@ -821,5 +829,184 @@ func runGameLoopTests() {
             expectEqual(restored, game)
             expectEqual(restored.playByPlayFingerprint, game.playByPlayFingerprint)
         }
+    }
+
+    suite("Conversion") {
+        test("the chart is arithmetic, and only in the last quarter") {
+            // 02 section 3.4. Pure, so this is the one part of the conversion that can be asserted
+            // without resolving a snap.
+            for deficit in MatchupRules.twoPointDeficits {
+                expect(MatchupRules.twoPointIsIndicated(deficitAfterTouchdown: deficit,
+                                                        quarter: 4, quarters: 4),
+                       "the chart declined to go for two at a deficit of \(deficit)")
+                expect(!MatchupRules.twoPointIsIndicated(deficitAfterTouchdown: deficit,
+                                                         quarter: 1, quarters: 4),
+                       "the chart went for two in the first quarter at \(deficit)")
+            }
+            for deficit in [0, 1, 3, 4, 6, 7, 8, 14] {
+                expect(!MatchupRules.twoPointIsIndicated(deficitAfterTouchdown: deficit,
+                                                         quarter: 4, quarters: 4),
+                       "the chart went for two at \(deficit), which one point does not change")
+            }
+            // Leading is not a deficit, and a chart that read the sign backwards would go for two
+            // while ahead by exactly the amounts above.
+            for lead in [2, 5, 10, 12, 16, 18] {
+                expect(!MatchupRules.twoPointIsIndicated(deficitAfterTouchdown: -lead,
+                                                         quarter: 4, quarters: 4),
+                       "the chart went for two while leading by \(lead)")
+            }
+        }
+
+        test("every touchdown carries a try, and the try is not a scrimmage play") {
+            var touchdowns = 0
+            for seed in UInt64(1)...40 {
+                for drive in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).drives
+                where drive.ending == .touchdown {
+                    touchdowns += 1
+                    guard let conversion = drive.conversion else {
+                        expect(false, "seed \(seed): a touchdown drive carried no try")
+                        continue
+                    }
+                    expectEqual(drive.pointsScored,
+                                MatchupRules.touchdownPoints + conversion.points,
+                                "the drive's points and its try disagree")
+                    expect((0...MatchupRules.twoPointPoints).contains(conversion.points),
+                           "a try was worth \(conversion.points)")
+                    expect(conversion.succeeded == (conversion.points > 0),
+                           "a try's success flag and its points disagree")
+                    // 02 section 3.4: recorded beside the drive, never inside its play list,
+                    // because a try counted as a snap corrupts every per-play rate 03 section 5.1
+                    // calibrates.
+                    expect(!drive.plays.contains { $0.outcome == conversion.outcome },
+                           "the try was also recorded as a scrimmage play")
+                }
+            }
+            expect(touchdowns > 50, "only \(touchdowns) touchdowns were scored across 40 games")
+        }
+
+        test("a kick can miss") {
+            // The whole reason the try is resolved through the kicker matchup rather than added as
+            // a constant. A flat seven points per touchdown is what this replaced.
+            var kicks = 0, missed = 0
+            for seed in UInt64(1)...120 {
+                for drive in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).drives {
+                    guard let conversion = drive.conversion, conversion.choice == .kick else {
+                        continue
+                    }
+                    kicks += 1
+                    if !conversion.succeeded { missed += 1 }
+                }
+            }
+            expect(kicks > 100, "only \(kicks) extra points were attempted across 120 games")
+            expect(missed > 0,
+                   "\(kicks) extra points were kicked and none missed, so the kick is a constant "
+                       + "wearing a matchup's clothes")
+            expect(missed * 4 < kicks,
+                   "\(missed) of \(kicks) extra points missed, which is not a routine kick")
+        }
+
+        test("the kick converts more often than the two-point try") {
+            // 02 section 3.4's falsifier. If going for two were free the decision would fail
+            // section 2.2's third test, which requires the choice to cost something.
+            func rate(_ choice: ConversionChoice) -> Double {
+                var attempts = 0, made = 0
+                for seed in UInt64(1)...60 {
+                    for drive in GameEngine.play(tier: .pro, home: home, away: away,
+                                                 caller: FixedConversionCaller(choice: choice),
+                                                 seed: seed).drives {
+                        guard let conversion = drive.conversion else { continue }
+                        attempts += 1
+                        if conversion.succeeded { made += 1 }
+                    }
+                }
+                expect(attempts > 50, "only \(attempts) tries of \(choice.rawValue) were attempted")
+                return attempts == 0 ? 0 : Double(made) / Double(attempts)
+            }
+            let kick = rate(.kick)
+            let two = rate(.twoPoint)
+            expect(kick > two,
+                   "the kick converted \(kick) against the two-point try's \(two), so going for "
+                       + "two costs nothing")
+        }
+
+        test("the try draws from its own stream, so it cannot move the drive that scored") {
+            // The property that makes adding the conversion safe: it derives its generator from the
+            // drive under a reserved ordinal past the last legal play index. Asserted through the
+            // consequence — two games identical except for what they do after a touchdown must
+            // play the scoring drive itself identically, snap for snap.
+            let kicking = GameEngine.play(tier: .pro, home: home, away: away,
+                                          caller: FixedConversionCaller(choice: .kick), seed: 31)
+            let going = GameEngine.play(tier: .pro, home: home, away: away,
+                                        caller: FixedConversionCaller(choice: .twoPoint), seed: 31)
+            guard let first = kicking.drives.firstIndex(where: { $0.ending == .touchdown }),
+                  let same = going.drives.firstIndex(where: { $0.ending == .touchdown })
+            else {
+                expect(false, "seed 31 scored no touchdown, so this asserts nothing")
+                return
+            }
+            expectEqual(first, same, "the two games diverged before the first touchdown")
+            expectEqual(kicking.drives[first].plays, going.drives[same].plays,
+                        "the choice of try changed the drive that produced it")
+            expect(kicking.drives[first].conversion?.choice == .kick
+                       && going.drives[same].conversion?.choice == .twoPoint,
+                   "the caller's conversion choice was not honoured")
+        }
+
+        test("a caller that answers a try with a punt is overruled") {
+            // A try is a scrimmage down by definition. Most callers branch on fourth down and a try
+            // is a first, so a caller that returns a kick here is answering a question it was not
+            // asked.
+            let game = GameEngine.play(tier: .pro, home: home, away: away,
+                                       caller: PuntingConversionCaller(), seed: 7)
+            var tries = 0
+            for drive in game.drives {
+                guard let conversion = drive.conversion else { continue }
+                tries += 1
+                expect(conversion.outcome.result != .punt,
+                       "a two-point try was punted")
+            }
+            expect(tries > 0, "seed 7 produced no tries at all")
+        }
+    }
+}
+
+/// A caller that plays the baseline game and always makes the same conversion choice.
+struct FixedConversionCaller: PlayCaller, Sendable {
+    let choice: ConversionChoice
+
+    func offensiveCall(for situation: Situation, rules: any ClockRules.Type) -> OffensiveCall {
+        BaselinePlayCaller().offensiveCall(for: situation, rules: rules)
+    }
+
+    func defensiveCall(for situation: Situation, rules: any ClockRules.Type) -> DefensiveCall {
+        BaselinePlayCaller().defensiveCall(for: situation, rules: rules)
+    }
+
+    func conversionChoice(deficitAfterTouchdown: Int, situation: Situation,
+                          rules: any ClockRules.Type) -> ConversionChoice {
+        choice
+    }
+}
+
+/// A caller that hands the two-point try a punt, to prove the engine refuses it.
+struct PuntingConversionCaller: PlayCaller, Sendable {
+    func offensiveCall(for situation: Situation, rules: any ClockRules.Type) -> OffensiveCall {
+        // Only the try is answered with a punt; ordinary downs stay sane, or the game never
+        // reaches a touchdown to convert.
+        if situation.down == 1,
+           situation.distance == MatchupRules.twoPointYardsToGoal,
+           situation.yardsToGoal == MatchupRules.twoPointYardsToGoal {
+            return OffensiveCall(playType: .punt)
+        }
+        return BaselinePlayCaller().offensiveCall(for: situation, rules: rules)
+    }
+
+    func defensiveCall(for situation: Situation, rules: any ClockRules.Type) -> DefensiveCall {
+        BaselinePlayCaller().defensiveCall(for: situation, rules: rules)
+    }
+
+    func conversionChoice(deficitAfterTouchdown: Int, situation: Situation,
+                          rules: any ClockRules.Type) -> ConversionChoice {
+        .twoPoint
     }
 }

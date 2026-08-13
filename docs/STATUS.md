@@ -1120,6 +1120,58 @@ watching the suite turn red; the detail is in the fix commit. Three consequences
 
 ---
 
+## 2026-08-13 — the completeness build — **written, and never compiled**
+
+Executing `docs/plans/2026-08-13-completeness-build.md`, which builds out the genre register in
+`docs/briefs/2026-08-13-genre-completeness-review.md` (G-18 to G-45).
+
+**Read this before believing anything below it.** The session doing this work has **no Swift
+toolchain** — `swift: command not found` — so:
+
+- **nothing in this section has been compiled**, no test in it has been run, and no measurement in
+  it exists. Every number quoted is from an older session that did run something;
+- **G1 and G2 are not claimed** for any of it, by anyone;
+- the files are named per slice so a session with a toolchain knows exactly what to build first.
+
+**Pins this work moves, and why they are red rather than wrong.** A play-by-play fingerprint is
+pinned as a source literal *because* it can only be produced by running the binary; a session
+without one cannot recompute it. Re-pinning is therefore a named task rather than an edit, and no
+literal here was guessed — a fabricated pin passes while proving nothing.
+
+| Pin | Where | Why it moves |
+|---|---|---|
+| `PINNED_PRO_GAME_FINGERPRINT` | `Tests/SimTests/Suites/EngineTests.swift` | The conversion (slice 1) |
+| `PINNED_COLLEGE_GAME_FINGERPRINT` | `Tests/SimTests/Suites/EngineTests.swift` | The conversion (slice 1) |
+
+### Slice 1 — the conversion (G-24) — written, unverified
+
+A touchdown was worth a flat seven: `extraPointPoints` was added to `touchdownPoints`
+unconditionally, so the kick could not miss and the two-point try did not exist.
+
+Canon first (`02` §3.4): the kick is a field goal from the fifteen and resolves through the same
+kicker matchup as every other kick; the two-point try is one snap from the two through the same snap
+resolver; neither consumes game clock, because the clock is stopped for the try and the kickoff after
+it is a touchback; and the try is recorded **beside** the drive rather than inside its play list,
+because a try counted as a scrimmage play corrupts every per-play rate `03` §5.1 calibrates. The
+go-for-two chart is a rules-module function of the deficit and the quarter, not a coordinator's
+taste.
+
+Files: `docs/02-GAME-DESIGN.md` (§3.4), `Sources/FootballSimCore/Rules/MatchupRules.swift`
+(`twoPointPoints`, `extraPointKickYardsToGoal`, `twoPointYardsToGoal`, `conversionSeedOrdinal`,
+`twoPointDeficits`, `twoPointIsIndicated`), `Sources/FootballSimCore/Engine/DriveEngine.swift`
+(`ConversionChoice`, `ConversionRecord`, `DriveRecord.conversion`, `PlayCaller.conversionChoice`
+with the chart as its default, `DriveEngine.resolveConversion`),
+`Sources/FootballSimCore/Engine/GameEngine.swift` (the fingerprint mixes the try, or the determinism
+gate would be blind to a whole class of outcome), `Tests/SimTests/Suites/EngineTests.swift` (a
+`Conversion` suite of six tests, plus two test callers).
+
+The try draws from a generator derived from the drive under an ordinal one past the last legal play
+index, so adding it cannot shift any snap that preceded it. That property has a test — two games
+identical except for what they do after a touchdown must play the scoring drive snap for snap — and
+that test has not been run.
+
+---
+
 ## What exists, and what verified it
 
 | Artefact | State | Verified by |

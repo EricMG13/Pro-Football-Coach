@@ -169,6 +169,46 @@ public enum MatchupRules {
     public static let fieldGoalPoints = 3
     public static let safetyPoints = 2
 
+    // MARK: - The conversion
+
+    /// Points a converted two-point try is worth. `02` §3.4.
+    public static let twoPointPoints = 2
+
+    /// Yards to the goal line the extra-point kick is snapped from. Through
+    /// `fieldGoalSnapDistance` this is a 32-yard kick, which is the routine attempt the difficulty
+    /// curve was rebased around.
+    public static let extraPointKickYardsToGoal = 15
+
+    /// Yards to the goal line the two-point try is snapped from.
+    public static let twoPointYardsToGoal = 2
+
+    /// The seed ordinal the conversion draws under.
+    ///
+    /// One past the last legal play index, so a try can never collide with a snap's stream and
+    /// adding the try cannot shift the drive that produced it — the same reason each snap derives
+    /// its own seed rather than sharing the drive's generator.
+    public static let conversionSeedOrdinal = maximumPlaysPerDrive
+
+    /// Deficits that two points change the shape of, with the touchdown already on the board.
+    ///
+    /// The classic chart, and it is arithmetic rather than taste: at 2 the try ties the game, at 5
+    /// it makes the next score a field goal, at 10 and 18 it sets up two scores that finish level,
+    /// and at 12 and 16 it puts the deficit inside one possession.
+    public static let twoPointDeficits: Set<Int> = [2, 5, 10, 12, 16, 18]
+
+    /// Whether the chart says go for two. `02` §3.4.
+    ///
+    /// Gated on the final quarter because a margin bought in the first is one the remaining three
+    /// erase, which is what real charts encode and what keeps the kick the default.
+    public static func twoPointIsIndicated(
+        deficitAfterTouchdown: Int,
+        quarter: Int,
+        quarters: Int
+    ) -> Bool {
+        guard quarter >= quarters else { return false }
+        return twoPointDeficits.contains(deficitAfterTouchdown)
+    }
+
     // MARK: - Drive and game
 
     public static let yardsForFirstDown = 10

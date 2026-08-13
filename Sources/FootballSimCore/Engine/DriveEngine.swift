@@ -50,21 +50,58 @@ public enum DriveEnding: String, Codable, Sendable, CaseIterable {
     }
 }
 
+/// What the offence did with the try after a touchdown. `02` §3.4.
+public enum ConversionChoice: String, Codable, Sendable, CaseIterable {
+    case kick, twoPoint
+}
+
+/// The try after a touchdown.
+///
+/// **Recorded beside the drive rather than inside its play list.** A box score that counted
+/// conversions as offensive snaps would corrupt every per-play rate `03` §5.1 calibrates — plays per
+/// game, yards per play, completion rate — because a try is a scrimmage down that is not a scrimmage
+/// play. `02` §3.4 states the rule; this field is where it is kept.
+public struct ConversionRecord: Codable, Sendable, Equatable {
+    public let choice: ConversionChoice
+    public let succeeded: Bool
+    /// 0, 1 or 2. Already included in the drive's `pointsScored`.
+    public let points: Int
+    /// The snap it resolved through, so the try has the same causal record every other play has.
+    public let outcome: SnapOutcome
+
+    public init(choice: ConversionChoice, succeeded: Bool, points: Int, outcome: SnapOutcome) {
+        self.choice = choice
+        self.succeeded = succeeded
+        self.points = points
+        self.outcome = outcome
+    }
+}
+
 public struct DriveRecord: Codable, Sendable, Equatable {
     public let offense: Side
     public let plays: [PlayRecord]
     public let ending: DriveEnding
     public let pointsScored: Int
     public let startYardLine: Int
+    /// Present exactly when the drive ended in a touchdown. `02` §3.4.
+    public let conversion: ConversionRecord?
 
+    /// `conversion` is defaulted so the dozens of existing constructions of a drive — every test
+    /// fixture and the fingerprint's own mutation checks — keep meaning what they meant.
     public init(offense: Side, plays: [PlayRecord], ending: DriveEnding, pointsScored: Int,
-                startYardLine: Int) {
+                startYardLine: Int, conversion: ConversionRecord? = nil) {
         self.offense = offense
         self.plays = plays
         self.ending = ending
         self.pointsScored = pointsScored
         self.startYardLine = startYardLine
+        self.conversion = conversion
     }
+
+    // Decoding a record written before the conversion existed still works: the property is
+    // optional, and synthesized decoding reads an optional with `decodeIfPresent`, so an absent
+    // key is nil rather than a throw. No hand-written decoder is needed to get that, and one
+    // written by hand here would be a second copy of the synthesized behaviour to keep in step.
 }
 
 /// Chooses the calls. P10 replaces this with real coordinator AI against a stated bar; P3 needs
@@ -75,6 +112,34 @@ public struct DriveRecord: Codable, Sendable, Equatable {
 public protocol PlayCaller: Sendable {
     func offensiveCall(for situation: Situation, rules: any ClockRules.Type) -> OffensiveCall
     func defensiveCall(for situation: Situation, rules: any ClockRules.Type) -> DefensiveCall
+    /// Kick the extra point, or go for two. `02` §3.4.
+    ///
+    /// - Parameter deficitAfterTouchdown: how far the scoring side trails **with the touchdown
+    ///   already on the board**. Negative means they lead. The chart is written against this number
+    ///   rather than against the pre-snap score, because that is the number a coach on the sideline
+    ///   is actually looking at.
+    func conversionChoice(
+        deficitAfterTouchdown: Int,
+        situation: Situation,
+        rules: any ClockRules.Type
+    ) -> ConversionChoice
+}
+
+public extension PlayCaller {
+    /// The chart, as the default. A caller only overrides this to be *worse* than arithmetic, which
+    /// is a legitimate thing for a coordinator personality to be — but the default is the chart, so
+    /// every existing conformance keeps compiling and none of them silently kicks forever.
+    func conversionChoice(
+        deficitAfterTouchdown: Int,
+        situation: Situation,
+        rules: any ClockRules.Type
+    ) -> ConversionChoice {
+        MatchupRules.twoPointIsIndicated(
+            deficitAfterTouchdown: deficitAfterTouchdown,
+            quarter: situation.quarter,
+            quarters: rules.quarters
+        ) ? .twoPoint : .kick
+    }
 }
 
 /// The stand-in caller for P3. Situationally sane, not good.
@@ -181,6 +246,7 @@ public enum DriveEngine {
         // and downs were endings the loop could never produce. The reachability test found it.
         var ending: DriveEnding?
         var points = 0
+        var conversion: ConversionRecord?
         var afterTurnover = isAfterTurnover
 
         for playIndex in 0..<MatchupRules.maximumPlaysPerDrive {
@@ -235,7 +301,15 @@ public enum DriveEngine {
             switch outcome.result {
             case .touchdown:
                 ending = .touchdown
-                points = MatchupRules.touchdownPoints + MatchupRules.extraPointPoints
+                // Six, and then the try — which can miss. It used to be six plus one, always, so
+                // `02` §3.4's decision did not exist and the kick could not be missed by a kicker
+                // who cannot kick.
+                let resolved = resolveConversion(
+                    after: situation, offense: offense, defense: defense, caller: caller,
+                    rules: rules, homeFieldAdvantage: homeFieldAdvantage, driveSeed: driveSeed
+                )
+                conversion = resolved
+                points = MatchupRules.touchdownPoints + resolved.points
             case .fieldGoalGood:
                 ending = .fieldGoal
                 points = MatchupRules.fieldGoalPoints
@@ -304,7 +378,76 @@ public enum DriveEngine {
         }
 
         return (DriveRecord(offense: start.possession, plays: plays, ending: finalEnding,
-                            pointsScored: Swift.abs(points), startYardLine: start.yardLine),
+                            pointsScored: Swift.abs(points), startYardLine: start.yardLine,
+                            conversion: conversion),
                 next)
+    }
+
+    /// Resolves the try after a touchdown. `02` §3.4.
+    ///
+    /// Draws from its own generator, derived from the drive under a reserved ordinal one past the
+    /// last legal play index. That is what makes adding the try harmless to everything before it:
+    /// no snap's stream moves, and a try that consumes a variable number of draws — the two-point
+    /// snap can break tackles — cannot shift anything, because nothing reads this generator after it.
+    ///
+    /// - Parameter situation: the situation the touchdown was scored *from*, so the score it carries
+    ///   does not yet include the six points.
+    static func resolveConversion(
+        after situation: Situation,
+        offense: SnapPersonnel,
+        defense: SnapPersonnel,
+        caller: some PlayCaller,
+        rules: any ClockRules.Type,
+        homeFieldAdvantage: Double,
+        driveSeed: UInt64
+    ) -> ConversionRecord {
+        var rng = SeededRandom(seed: SeededRandom.derive(
+            from: driveSeed, scope: .snap, ordinal: MatchupRules.conversionSeedOrdinal
+        ))
+        // `scoreDifferential` is already from the scoring side's perspective, so the deficit with
+        // the touchdown on the board is its negation plus the six points just scored.
+        let deficitAfterTouchdown = -(situation.scoreDifferential + MatchupRules.touchdownPoints)
+        let choice = caller.conversionChoice(
+            deficitAfterTouchdown: deficitAfterTouchdown, situation: situation, rules: rules
+        )
+        let personnel = SnapPersonnel(offense: offense.offense, defense: defense.defense)
+
+        var trySituation = situation
+        trySituation.down = 1
+        switch choice {
+        case .kick:
+            trySituation.yardLine = 100 - MatchupRules.extraPointKickYardsToGoal
+            trySituation.distance = MatchupRules.extraPointKickYardsToGoal
+            let outcome = SnapResolver.resolve(
+                offensiveCall: OffensiveCall(playType: .fieldGoal),
+                defensiveCall: caller.defensiveCall(for: trySituation, rules: rules),
+                personnel: personnel, situation: trySituation, rules: rules,
+                homeFieldAdvantage: homeFieldAdvantage, rng: &rng
+            )
+            let good = outcome.result == .fieldGoalGood
+            return ConversionRecord(choice: .kick, succeeded: good,
+                                    points: good ? MatchupRules.extraPointPoints : 0,
+                                    outcome: outcome)
+        case .twoPoint:
+            trySituation.yardLine = 100 - MatchupRules.twoPointYardsToGoal
+            trySituation.distance = MatchupRules.twoPointYardsToGoal
+            var call = caller.offensiveCall(for: trySituation, rules: rules)
+            // A try is a scrimmage down by definition. A caller that answers one with a punt, a
+            // kick or a kneel is answering a question it was not asked — most callers branch on
+            // fourth down and this is a first — so the call is replaced rather than obeyed.
+            if call.playType != .run, call.playType != .pass {
+                call.playType = .run
+            }
+            let outcome = SnapResolver.resolve(
+                offensiveCall: call,
+                defensiveCall: caller.defensiveCall(for: trySituation, rules: rules),
+                personnel: personnel, situation: trySituation, rules: rules,
+                homeFieldAdvantage: homeFieldAdvantage, rng: &rng
+            )
+            let good = outcome.result == .touchdown
+            return ConversionRecord(choice: .twoPoint, succeeded: good,
+                                    points: good ? MatchupRules.twoPointPoints : 0,
+                                    outcome: outcome)
+        }
     }
 }

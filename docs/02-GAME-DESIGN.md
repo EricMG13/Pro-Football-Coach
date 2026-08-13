@@ -95,6 +95,40 @@ full game-plan edit. Substitutions are automatic within the depth chart, overrid
 Per season: ~500 in-match calls, ~340 management decisions, plus the offseason. The previous build
 offered roughly 20 in a season. The difference is not tone; it is two orders of magnitude.
 
+### 3.4 The conversion — added 2026-08-13
+
+A touchdown is six points and then a decision, and the decision is the point of adding it: the kick
+is nearly free and worth one, the two-point try is a snap from the two and worth two. It passes all
+three of §2.2's tests — two defensible answers, a consequence inside the same game, and a cost
+measured in the point you did not simply take.
+
+*Recorded because the engine scored a touchdown as seven points and never asked.* `extraPointPoints`
+was added to `touchdownPoints` unconditionally, so the kick could not miss, the two-point try did not
+exist, and one of the sport's few genuinely famous coaching decisions was absent.
+
+- **The kick** is a field goal from the fifteen, resolved through the same kicker matchup as every
+  other kick rather than through a special-cased probability. A kicker who cannot kick can miss one,
+  which is what makes carrying a bad kicker a roster cost rather than a rounding error.
+- **The two-point try** is one snap from the two, resolved by the same snap resolver. Reaching the
+  goal line converts; everything else is nothing. A caller that answers a try with a punt or a field
+  goal has its call replaced by a run, because the try is a scrimmage down by definition.
+- **Neither consumes game clock.** The clock is stopped for the try and restarts at the kickoff,
+  which under this engine's touchback model burns nothing. Charging a few seconds here would move
+  plays-per-game, which is a calibrated band in `03` §5.1, for no gain in truth.
+- **The try is not a scrimmage play.** It is recorded beside the drive, never inside its play list,
+  because a box score that counted conversions as offensive snaps would corrupt every per-play rate
+  the calibration harness measures.
+
+**When to go for two is a rules-module chart, not a coordinator's taste**, because it is arithmetic
+rather than judgement: with the touchdown already on the board, a deficit of 2, 5, 10, 12, 16 or 18
+is one that two points changes the shape of. Outside the final quarter the kick is taken, which is
+what real charts do — a two-point try in the first quarter buys a margin the remaining three
+quarters will erase. `MatchupRules.twoPointIsIndicated` owns the chart, the coordinator reads it, and
+the player overrides it through the same call-in surface as any other decision.
+
+Falsifier: across a calibrated season both choices occur, the kick's success rate exceeds the two-
+point try's, and no conversion appears in any drive's play list.
+
 ---
 
 ## 4. The offseason
