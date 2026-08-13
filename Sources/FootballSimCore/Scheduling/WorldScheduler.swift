@@ -245,10 +245,16 @@ public enum WorldScheduler {
 
             case .nonUserGames:
                 nextState.tactical.prepare(for: completed)
+                // The coach's own fixture is left for `userGame`, which plays it with the detailed
+                // engine. Before 2026-08-13 this step played every game including theirs, so the
+                // match at the centre of the product was resolved by the model built for the games
+                // nobody watches — and `userGame` was an inactive step in the scheduler.
+                let controlledID = nextState.career.college?.programmeID
                 let dueGames = nextState.competition.currentSchedule.games.filter {
                     $0.season == completed.season
                         && $0.week == completed.week
                         && $0.result == nil
+                        && !($0.homeID == controlledID || $0.awayID == controlledID)
                 }
                 var tacticalPlans: [UUID: TacticalPlan] = [:]
                 tacticalPlans.reserveCapacity(dueGames.count * 2)
@@ -316,6 +322,19 @@ public enum WorldScheduler {
                     to: &nextState,
                     emittedEvents: &events
                 )
+                records.append(WorldStepRecord(step: step, status: .executed))
+
+            case .userGame:
+                // `02` §3.14. This step was declared and inactive, so every game in a career —
+                // including the coach's own — was resolved by the abstracted model, and
+                // `GameEngine.play` had exactly one caller in the tree: the calibration harness.
+                guard let played = try playControlledGame(
+                    at: completed, in: &nextState, events: &events
+                ) else {
+                    records.append(WorldStepRecord(step: step, status: .inactive))
+                    break
+                }
+                _ = played
                 records.append(WorldStepRecord(step: step, status: .executed))
 
             case .standingsAndRankings:
@@ -647,6 +666,108 @@ public enum WorldScheduler {
             stepRecords: records,
             emittedEvents: events
         )
+    }
+
+    /// Plays the controlled team's fixture with the detailed engine. `02` §3.14.
+    ///
+    /// Returns nil — an inactive step — when there is no controlled career, or the coach's team is
+    /// idle this week, or their fixture has already been recorded. Those are the ordinary cases and
+    /// none of them is an error.
+    ///
+    /// The result is recorded through the **same** `ScheduledGameResult` the abstracted path uses,
+    /// so standings, statistics, records, the archive and whole-root integrity never learn which
+    /// engine produced a game. A second path for played games would be a second set of consumers to
+    /// keep in step, and the first divergence would be silent.
+    private static func playControlledGame(
+        at completed: CalendarState,
+        in state: inout GameState,
+        events: inout [DomainEvent]
+    ) throws -> ScheduledGame? {
+        guard let control = state.career.college else { return nil }
+        let controlledID = control.programmeID
+        guard let fixture = state.competition.currentSchedule.games.first(where: {
+            $0.season == completed.season && $0.week == completed.week && $0.result == nil
+                && ($0.homeID == controlledID || $0.awayID == controlledID)
+        }) else { return nil }
+
+        func roster(_ organisationID: UUID) -> [Player] {
+            let ids = state.programmes[organisationID]?.rosterIDs
+                ?? state.proTeams[organisationID]?.rosterIDs
+                ?? []
+            return ids.compactMap { state.players[$0] }
+        }
+        // Availability is the lifecycle's answer, not a second one: a player the week already knows
+        // is hurt does not take the field, which is what `DepthChart` was built to express.
+        func unavailable(_ players: [Player]) -> Set<UUID> {
+            Set(players.filter { state.people.playerLifecycle[$0.id]?.isAvailable != true }
+                .map(\.id))
+        }
+        let homeRoster = roster(fixture.homeID)
+        let awayRoster = roster(fixture.awayID)
+        guard !homeRoster.isEmpty, !awayRoster.isEmpty else { return nil }
+        let out = unavailable(homeRoster).union(unavailable(awayRoster))
+
+        // Both game plans, through the same system the abstracted path uses, so the coach's
+        // mandatory week-three decision is worth the same whether they watch the game or not.
+        let homePlan = TacticalPlanSystem.plan(
+            for: fixture.homeID, against: fixture.awayID, at: completed, in: state,
+            tactical: &state.tactical
+        )
+        let awayPlan = TacticalPlanSystem.plan(
+            for: fixture.awayID, against: fixture.homeID, at: completed, in: state,
+            tactical: &state.tactical
+        )
+        let record = GameEngine.play(
+            tier: fixture.tier,
+            home: DepthChart.personnel(offense: homeRoster, defense: homeRoster,
+                                       unavailableIDs: out),
+            away: DepthChart.personnel(offense: awayRoster, defense: awayRoster,
+                                       unavailableIDs: out),
+            caller: TacticalPlanCaller(offensivePlan: homePlan, defensivePlan: awayPlan),
+            week: completed.week,
+            seed: SeededRandom.derive(from: state.league.seed, scope: .game,
+                                      identifier: fixture.id)
+        )
+        let summary = BoxScore.summary(
+            for: record,
+            homeParticipantIDs: homeRoster.map(\.id),
+            awayParticipantIDs: awayRoster.map(\.id)
+        )
+
+        let completedGames: [ScheduledGame]
+        do {
+            completedGames = try state.competition.currentSchedule.recordResults([
+                ScheduledGameResult(gameID: fixture.id, summary: summary),
+            ])
+        } catch let error as ScheduleResultRecordingError {
+            if case let .unknownGameID(gameID) = error {
+                throw WorldSchedulerError.scheduledGameMissing(gameID)
+            }
+            throw WorldSchedulerError.scheduleResultRecordingFailed(error)
+        }
+        guard let played = completedGames.first, let result = played.result else {
+            throw WorldSchedulerError.scheduledGameResultMissing(fixture.id)
+        }
+        try appendEvents(
+            payloads: [.gameCompleted(
+                gameID: played.id,
+                homeID: played.homeID,
+                awayID: played.awayID,
+                stage: played.stage,
+                homeScore: result.homeScore,
+                awayScore: result.awayScore
+            )],
+            occurredAt: completed,
+            to: &state,
+            emittedEvents: &events
+        )
+        TacticalPlanSystem.recordReviews(
+            for: played,
+            result: result,
+            at: completed,
+            in: &state.tactical
+        )
+        return played
     }
 
     private static func appendEvents(

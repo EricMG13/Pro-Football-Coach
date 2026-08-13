@@ -164,6 +164,79 @@ public struct BoxScore: Sendable, Equatable {
         )
     }
 
+    /// Turns a played game into the same `GameSummary` the abstracted path produces. `02` §3.14.
+    ///
+    /// The season records both kinds of game through one shape, so nothing downstream — standings,
+    /// statistics, records, integrity, the archive — has to know or care which engine produced a
+    /// result. A second summary shape for played games would be a second set of consumers to keep
+    /// in step, and the first divergence would be silent.
+    public static func summary(
+        for game: GameRecord,
+        homeParticipantIDs: [UUID],
+        awayParticipantIDs: [UUID]
+    ) -> GameSummary {
+        let box = build(from: game)
+        return GameSummary(
+            homeScore: game.homeScore,
+            awayScore: game.awayScore,
+            homeStatistics: teamLine(for: .home, in: game, lines: box.home),
+            awayStatistics: teamLine(for: .away, in: game, lines: box.away),
+            homeParticipantIDs: homeParticipantIDs,
+            awayParticipantIDs: awayParticipantIDs,
+            playerStatistics: box.all.filter { !$0.isEmpty }
+        )
+    }
+
+    /// One side's team line, summed from the plays it ran rather than from its box score.
+    ///
+    /// Yardage comes from the plays because a team's offensive yards include what its linemen did
+    /// and its box score does not credit them — and penalty yardage is counted here and nowhere
+    /// else, because `02` §3.5 keeps it out of offence.
+    private static func teamLine(
+        for side: Side,
+        in game: GameRecord,
+        lines: [PlayerGameStatistics]
+    ) -> TeamGameStatistics {
+        var passing = 0, rushing = 0, turnovers = 0, penalties = 0, penaltyYards = 0
+        for drive in game.drives {
+            for play in drive.plays {
+                // Flags are counted against whoever committed them, which is **not** whoever had
+                // the ball: half of them are defensive, and attributing every flag on a drive to the
+                // offence would put a defensive holding on the offence's discipline record.
+                if let flag = play.outcome.penalty, flag.against == side {
+                    penalties += 1
+                    if flag.accepted { penaltyYards += Swift.abs(flag.yards) }
+                }
+                guard drive.offense == side else { continue }
+                switch play.outcome.result {
+                case .interception, .fumbleLost:
+                    turnovers += 1
+                case .gain, .touchdown, .sack:
+                    if play.offensiveCall.playType == .pass {
+                        passing += play.outcome.yards
+                    } else if play.offensiveCall.playType == .run {
+                        rushing += play.outcome.yards
+                    }
+                case .incompletion, .fieldGoalGood, .fieldGoalMissed, .punt, .safety, .kneel,
+                     .penalty:
+                    break
+                }
+            }
+        }
+        let score = side == .home ? game.homeScore : game.awayScore
+        return TeamGameStatistics(
+            points: score,
+            offensiveYards: passing + rushing,
+            passingYards: passing,
+            rushingYards: rushing,
+            turnovers: turnovers,
+            sacksAllowed: lines.reduce(0) { $0 + $1.sacksTaken },
+            interceptionsThrown: lines.reduce(0) { $0 + $1.interceptionsThrown },
+            penalties: penalties,
+            penaltyYards: penaltyYards
+        )
+    }
+
     /// The defender the throw was contested by, which is the one the throwing matchup names.
     private static func throwDefender(in outcome: SnapOutcome) -> UUID? {
         outcome.matchups.first { $0.kind == .throwing }?.defenderID

@@ -35,6 +35,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runJerseyNumberTests()
 } else if CommandLine.arguments.contains("--depth-chart") {
     runDepthChartTests()
+} else if CommandLine.arguments.contains("--match-integration") {
+    runMatchIntegrationTests()
 } else if CommandLine.arguments.contains("--week-advance-timing") {
     runWeekAdvanceTimingProbe()
 } else if CommandLine.arguments.contains("--pro-market-root-probe") {
@@ -169,6 +171,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runEventLedgerBatchTests()
     runJerseyNumberTests()
     runDepthChartTests()
+    runMatchIntegrationTests()
     runReadModelProviderTests()
     runCapComplianceTests()
     runSeasonRolloverTests()

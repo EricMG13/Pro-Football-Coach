@@ -214,6 +214,11 @@ public enum MatchupRules {
     /// How late the season must be before snow is reachable at all.
     public static let snowRequiresLateness = 0.5
 
+    /// How far a game plan moves a call's aggression, per step of the plan. `02` §3.14.
+    ///
+    /// Small on purpose: a plan is a lean on situational football, not a script that replaces it.
+    public static let planAggressionStep = 0.25
+
     // MARK: - Clock management
 
     /// Inside this many seconds of the half, a trailing defence stops the clock. `02` §3.9.

@@ -368,6 +368,37 @@ takeaways and forced fumbles weighted above them in the rules module. That is th
 offensive value it sits beside, so neither side of the ball is scored on a scale the other cannot
 reach.
 
+### 3.14 The coach's own game is played — added 2026-08-13
+
+`GameEngine.play` had exactly one caller in the entire tree: the calibration harness. The scheduler's
+`userGame` step was declared and fell through to inactive, so **every game in a career — including
+the coach's own — was resolved by the abstracted model**, whose team strength is an average rating
+blended with prestige. The 630 seconds §2.1 budgets for the match, 64 % of the week, resolved as a
+number.
+
+- **`nonUserGames` now skips the controlled team's fixture** and `userGame` plays it. One game, one
+  recorder; a fixture recorded twice would either throw or silently overwrite.
+- **Both engines produce the same `GameSummary`.** Standings, statistics, records, the archive and
+  whole-root integrity never learn which engine produced a result. A second summary shape for played
+  games would be a second set of consumers to keep in step, and the first divergence would be silent.
+- **Both teams' game plans reach the field**, through the same `TacticalPlanSystem` the abstracted
+  path uses. Without that, the played match would be the one game the week's mandatory game-plan
+  decision could not touch — which would make the decision worth *less* when the coach watches than
+  when they do not.
+- **A plan leans, it does not script.** The caller wraps the baseline, which knows situational
+  football; the plan flips early-down calls, moves tempo and changes the rush. It never talks a coach
+  out of a field goal, because §3.1 has the coordinator calling plays *inside* the plan.
+- **Availability is the lifecycle's answer**, not a second one. A player the week already knows is
+  hurt does not take the field, through §3.13's chart.
+
+**What this still does not do.** The match is *played*, not *watched*: the call-in loop (§3.1) has no
+runtime path, so the coach's game resolves without ever pulling them in. That is the next slice and
+it is named rather than implied.
+
+Falsifier: the `userGame` step executes in a week the controlled team plays; no fixture carries two
+results; whole-root integrity holds after a played game; the same seed replays it exactly; and two
+opposite game plans produce different games.
+
 ### 3.13 Who plays — the depth chart — added 2026-08-13
 
 FSC-008 records the depth chart as the missing piece behind tactical package and role eligibility.

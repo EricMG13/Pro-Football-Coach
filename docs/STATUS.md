@@ -1493,6 +1493,35 @@ Files: `Sources/FootballSimCore/Model/DepthChart.swift` (new),
 run and a `--depth-chart` gate), `docs/02-GAME-DESIGN.md` (§3.13),
 `docs/FUTURE-SIMULATION-CONTRACT.md` (FSC-008's first limb closes; role assignment stays open).
 
+### Slice 15 — the coach's own game is played (G-18) — written, unverified
+
+`GameEngine.play` had exactly one caller in the tree — the calibration harness — and the scheduler's
+`userGame` step fell through to inactive, so every game in a career including the coach's own was
+resolved by the abstracted model. The 630 seconds `02` §2.1 budgets for the match resolved as a
+number.
+
+`nonUserGames` now skips the controlled fixture and `userGame` plays it with the detailed engine,
+through `DepthChart.personnel` (slice 14) for who takes the field, `TacticalPlanCaller` for both
+game plans, and `BoxScore.summary` so the result is the **same `GameSummary`** the abstracted path
+produces. Nothing downstream learns which engine ran.
+
+Files: `Sources/FootballSimCore/Scheduling/WorldScheduler.swift` (`playControlledGame`, the
+`nonUserGames` exclusion, `userGame` activated),
+`Sources/FootballSimCore/Engine/TacticalPlanCaller.swift` (new),
+`Sources/FootballSimCore/Engine/BoxScore.swift` (`summary(for:...)` and the team line),
+`Sources/FootballSimCore/Rules/MatchupRules.swift` (`planAggressionStep`),
+`Tests/SimTests/Suites/MatchIntegrationTests.swift` (new, five tests),
+`Tests/SimTests/main.swift`, `docs/02-GAME-DESIGN.md` (§3.14).
+
+**This activates a scheduler step, which is exactly the kind of change `docs/FUTURE-SIMULATION-CONTRACT.md`
+says must come with a focused proof of inputs, events, determinism and downstream integrity.** The
+tests are written for all four and **none has been run.** A session with a toolchain should treat
+this slice as the first thing to verify: it changes what a career's results are made of, and the
+root fingerprints move with it.
+
+**The match is played, not watched.** The call-in loop still has no runtime path — the coach's game
+resolves without pulling them in. G-19 is the next slice.
+
 **Traditions remain inert, and the repair is larger than it looks.** `02` §8 requires every generated
 tradition to carry a mechanical effect. `TraditionGrammar` produces them and nothing reads one —
 because `Programme` does not persist traditions at all: the generator builds them into an identity
