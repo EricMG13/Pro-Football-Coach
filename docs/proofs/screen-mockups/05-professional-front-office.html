@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Professional front office — families 34–40</title>
+<style>
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#F4F4F6;color:#22252B;font-size:13px;line-height:1.5;
+  padding:28px 20px 72px;
+}
+.wrap{max-width:980px;margin:0 auto}
+h1{font-size:21px;font-weight:800;letter-spacing:-0.2px}
+h2{font-size:16px;font-weight:700;letter-spacing:-0.1px}
+p{margin:6px 0}
+.mono{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace}
+.small{font-size:11px;color:#5A5F6A}
+.gallery-head{background:#FFFFFF;border:1px solid #D8DADF;border-radius:8px;padding:18px 20px;margin-bottom:8px}
+.gallery-head p{font-size:12px;color:#5A5F6A}
+.gallery-head .law{color:#22252B;border-left:3px solid #22252B;padding:6px 12px;background:#F7F8FA;margin-top:10px;font-size:12px}
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}
+.toc a{font-size:12px;color:#22252B;text-decoration:none;border:1px solid #D8DADF;border-radius:8px;padding:8px 12px;min-height:44px;display:inline-flex;align-items:center;background:#FFFFFF}
+.card{background:#FFFFFF;border:1px solid #D8DADF;border-radius:8px;margin:26px 0;overflow:hidden}
+.card>header{padding:14px 18px;border-bottom:1px solid #D8DADF}
+.card>header .kicker{font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.08em;color:#5A5F6A;text-transform:uppercase;margin-bottom:4px}
+.card>header .ground{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#5A5F6A;margin-top:6px;line-height:1.6}
+.cbody{padding:16px 18px 18px;overflow-x:auto}
+.appear-label{font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#5A5F6A;margin:0 0 6px}
+.note{font-size:12px;color:#5A5F6A;margin-top:10px}
+.callout{border:1px solid #D8DADF;border-left:3px solid #22252B;background:#F7F8FA;padding:10px 14px;margin-top:12px;font-size:12px}
+.nav{margin:8px 0 0;font-size:12px}
+.nav a{color:#22252B}
+footer{margin-top:36px;font-size:11px;color:#5A5F6A}
+
+/* ---- 04 §6.1 inside frames ---- */
+.dk{
+  --page:#080A14;--work:#111426;--raised:#191D32;
+  --ink:#F4F5FA;--ink2:#B8BDCC;--quiet:#858CA2;
+  --act:#9964E8;--onact:#080A14;--destr:#F07886;--pos:#6FD39A;--warn:#F0C56C;
+  --info:#72ADEC;--live:#72D7A0;--college:#A861D6;--pro:#5B9DE0;
+  --turf:#163E2A;--tband:#1A452F;--fline:#F5F7FA;--fann:#E7C45D;--flive:#C6F24E;
+  --hair:#191D32;--bnd:#B8BDCC;
+}
+.lt{
+  --page:#F1F2F7;--work:#FBFBFD;--raised:#E6E8F0;
+  --ink:#111426;--ink2:#4D5366;--quiet:#596074;
+  --act:#6840B0;--onact:#FBFBFD;--destr:#A42D32;--pos:#1F7048;--warn:#765300;
+  --info:#205F96;--live:#4A6F00;--college:#6840B0;--pro:#2D628B;
+  --turf:#DCE8DF;--tband:#D2E0D6;--fline:#0E1218;--fa:#7A5200;--flive:#4A6F00;
+  --hair:#E6E8F0;--bnd:#4D5366;
+}
+.device{
+  width:844px;height:390px;overflow:hidden;position:relative;
+  background:var(--page);color:var(--ink);
+  border-radius:12px;flex:none;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+.dk.device{box-shadow:0 0 0 1px #191D32}
+.lt.device{box-shadow:0 0 0 1px #E6E8F0}
+.num{font-variant-numeric:tabular-nums}
+.q{color:var(--quiet)}
+.s2{color:var(--ink2)}
+.col{color:var(--college)}
+.pro{color:var(--pro)}
+.pos{color:var(--pos)}
+.neg{color:var(--destr)}
+.warn{color:var(--warn)}
+.live{color:var(--live)}
+
+.strip{display:flex;align-items:center;gap:6px;height:48px;padding:0 29px 0 67px;background:var(--raised);border-bottom:1px solid var(--quiet);flex:none}
+.sid{display:flex;flex-direction:column;gap:2px;min-width:0;justify-content:center}
+.sname{font-size:15px;font-weight:800;letter-spacing:-0.2px;text-transform:uppercase;white-space:nowrap;font-stretch:87.5%}
+.smeta{font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--ink2)}
+.sdiv{width:1px;align-self:stretch;margin:6px 0;flex:none;background:var(--quiet)}
+.routes{display:flex;flex:1 1 0;min-width:0}
+.route{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;position:relative;font-size:12px;font-weight:700;letter-spacing:-0.1px;white-space:nowrap;color:var(--ink)}
+.route.cur::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px}
+.dk .route.cur.office{background:rgba(168,97,214,.16)}.dk .route.cur.office::after{background:var(--college)}
+.lt .route.cur.office{background:rgba(104,64,176,.16)}.lt .route.cur.office::after{background:var(--college)}
+.dk .route.cur.team{background:rgba(168,97,214,.16)}.dk .route.cur.team::after{background:var(--college)}
+.lt .route.cur.team{background:rgba(104,64,176,.16)}.lt .route.cur.team::after{background:var(--college)}
+.dk .route.cur.recruit{background:rgba(168,97,214,.16)}.dk .route.cur.recruit::after{background:var(--college)}
+.lt .route.cur.recruit{background:rgba(104,64,176,.16)}.lt .route.cur.recruit::after{background:var(--college)}
+.dk .route.cur.league{background:rgba(91,157,224,.16)}.dk .route.cur.league::after{background:var(--pro)}
+.lt .route.cur.league{background:rgba(45,98,139,.16)}.lt .route.cur.league::after{background:var(--pro)}
+.dk .route.cur.career{background:rgba(168,97,214,.16)}.dk .route.cur.career::after{background:var(--college)}
+.lt .route.cur.career{background:rgba(104,64,176,.16)}.lt .route.cur.career::after{background:var(--college)}
+.dk .route.cur.front{background:rgba(91,157,224,.16)}.dk .route.cur.front::after{background:var(--pro)}
+.lt .route.cur.front{background:rgba(45,98,139,.16)}.lt .route.cur.front::after{background:var(--pro)}
+.route.dis{opacity:.45}
+
+.tchip{display:inline-flex;align-items:stretch;height:28px;border-radius:8px;overflow:hidden;border:1px solid var(--ink2);flex:none}
+.tchip .bar{width:4px;flex:none}
+.tchip .tname{display:flex;align-items:center;padding:0 8px;font-size:12px;font-weight:700;letter-spacing:-0.1px;white-space:nowrap}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;padding:0 12px;border-radius:8px;border:1px solid transparent;font-size:13px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap}
+.btn.primary{background:var(--act);color:var(--onact);border-color:var(--act)}
+.btn.secondary{background:var(--raised);color:var(--ink);border-color:var(--quiet)}
+.btn.live{background:var(--live);color:var(--page);border-color:var(--live)}
+.btn.destr{background:var(--destr);color:var(--page);border-color:var(--destr)}
+.btn.disabled{opacity:.45}
+.btn.ghost{background:transparent;color:var(--ink2);border-color:var(--quiet)}
+.sym{display:inline-block;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;padding:1px 5px;border:1px solid currentColor;border-radius:4px;opacity:.85;font-weight:400}
+
+.local{display:flex;height:44px;padding:0 29px 0 67px;background:var(--page);border-bottom:1px solid var(--quiet);flex:none}
+.local .route{font-size:12px}
+
+.body{display:flex;gap:8px;padding:8px 29px 8px 67px;min-height:0;flex:1;overflow:hidden}
+.body.full{padding:16px 40px 16px 67px}
+.body.match{padding:0;gap:0;display:block}
+.colstack{display:flex;flex-direction:column;min-width:0;min-height:0}
+.grow{flex:1 1 0;min-width:0}
+.rail{flex:none}
+
+.panel{border-radius:10px;border:1px solid rgba(133,140,162,.45);overflow:hidden;background:var(--work);min-width:0;min-height:0}
+.lt .panel{border-color:rgba(89,96,116,.45)}
+.panel.raised{background:var(--raised)}
+.panel.fill{display:flex;flex-direction:column}
+.phead{padding:8px;font-size:12px;font-weight:700;letter-spacing:-0.1px;display:flex;align-items:center;gap:8px}
+.phead .k{margin-left:auto;font-size:10px;font-weight:600;color:var(--quiet);letter-spacing:.08em;text-transform:uppercase}
+.drow{display:flex;align-items:center;height:26px;padding:0 8px;font-size:11px;letter-spacing:-0.2px;white-space:nowrap;border-top:1px solid var(--hair);color:var(--ink2)}
+.drow .v{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700;font-size:11px;color:var(--ink)}
+.drow.empty{font-style:italic;color:var(--quiet)}
+.pad{padding:8px}
+
+.f-display{font-size:20px;font-weight:800;letter-spacing:-0.3px;line-height:1.05}
+.f-title{font-size:17px;font-weight:800;letter-spacing:-0.2px;line-height:1.1}
+.f-head{font-size:15px;font-weight:600;letter-spacing:-0.2px}
+.f-body{font-size:12px}
+.f-cap{font-size:11px}
+.f-micro{font-size:10px;letter-spacing:-0.2px}
+
+.plate{border-radius:8px;border:1px solid var(--quiet);background:var(--raised);flex:none}
+.ident{display:flex;gap:8px;align-items:flex-start}
+.ident .nm{font-size:15px;font-weight:800;letter-spacing:-0.2px}
+
+.agenda{border:1px solid var(--hair);border-radius:8px;overflow:hidden;background:var(--work)}
+.arow{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 8px}
+.arow + .arow{border-top:1px solid var(--hair)}
+.arow.sel{box-shadow:inset 0 0 0 1px var(--act);background:var(--raised)}
+.acheck{min-width:44px;min-height:44px;display:flex;align-items:center;flex:none}
+.amain{display:flex;flex-direction:column;gap:1px;min-width:0;padding:4px 0}
+.atitle{font-size:12px;font-weight:600;line-height:1.2}
+.asub{font-size:10px;color:var(--ink2);line-height:1.2}
+.acost{margin-left:auto;font-size:11px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}
+.acost .c2{display:block;font-size:10px;font-weight:400;color:var(--ink2)}
+
+.tbl{background:var(--work);border-radius:10px;overflow:hidden;border:1px solid var(--hair);min-width:0;display:flex;flex-direction:column}
+.capline{display:flex;justify-content:space-between;align-items:center;height:24px;padding:0 8px;font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:var(--ink2)}
+.capline .cnt{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink);text-transform:none;letter-spacing:0;font-size:11px}
+.thead,.trow{display:grid;align-items:center}
+.thead{height:44px;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.thead>span{padding:0 4px;font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:var(--ink2);overflow:hidden;white-space:nowrap}
+.thead>span.on{color:var(--act);font-weight:700}
+.trow{height:26px;border-top:1px solid var(--hair);font-size:11px;letter-spacing:-0.2px;color:var(--ink)}
+.trow:first-of-type{border-top:0}
+.trow>*{padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.trow .n{font-variant-numeric:tabular-nums;color:var(--ink2)}
+.trow .nm{font-weight:600}
+.trow.sel{background:var(--raised);box-shadow:inset 0 0 0 1px var(--act)}
+.trow.dis{color:var(--quiet);box-shadow:inset 2px 0 0 var(--quiet)}
+.trow.dis .nm,.trow.dis .n{color:var(--quiet)}
+.rb{width:20px;height:16px;border-radius:3px;font:700 10px/1 ui-monospace,"SF Mono",Menlo,monospace;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+.dk .rb.g{background:#6FD39AD9;color:#080A14}.dk .rb.a{background:#F0C56CD9;color:#080A14}.dk .rb.r{background:#F07886D9;color:#080A14}
+.lt .rb.g{background:#1F7048D9;color:#FBFBFD}.lt .rb.a{background:#765300D9;color:#FBFBFD}.lt .rb.r{background:#A42D32D9;color:#FBFBFD}
+.chip{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border-radius:8px;font-size:10px;white-space:nowrap;border:1px solid var(--quiet);color:var(--ink2)}
+.chip.neg{border-color:var(--destr);color:var(--destr)}
+.token{border:1px solid var(--ink2);color:var(--ink2);background:transparent;font-variant-numeric:tabular-nums;border-radius:8px;height:18px;padding:0 6px;font-size:10px;display:inline-flex;align-items:center}
+
+.meter{height:10px;border:1px solid var(--quiet);border-radius:4px;position:relative;background:var(--work);overflow:hidden}
+.mfill{position:absolute;left:0;top:0;bottom:0;background:var(--ink2)}
+.mfill.over{background:var(--destr)}
+.mfill.ok{background:var(--pos)}
+.opposed{height:10px;border-radius:4px;overflow:hidden;display:flex;border:1px solid var(--quiet)}
+.opposed .h{background:#14382A}.opposed .a{background:#E9E0C9}
+
+.choice{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 8px;border:1px solid var(--hair);border-radius:8px;background:var(--work)}
+.choice + .choice{margin-top:6px}
+.choice.sel{box-shadow:inset 0 0 0 1px var(--act);background:var(--raised)}
+.choice .mark{width:14px;height:14px;border-radius:8px;border:1px solid var(--quiet);flex:none}
+.choice.sel .mark{background:var(--act);border-color:var(--act)}
+.receipt{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border-radius:8px;border:1px solid var(--quiet);background:var(--raised);font-size:12px;font-weight:600;color:var(--ink2)}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:16px;text-align:center;flex:1}
+.empty .et{font-size:15px;font-weight:700}
+.empty .ed{font-size:12px;color:var(--ink2);max-width:42ch}
+
+.wk{display:flex;border:1px solid var(--hair);border-radius:10px;overflow:hidden;background:var(--work)}
+.day{flex:1 1 0;min-width:0;padding:6px;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.day + .day{border-left:1px solid var(--hair)}
+.dayhead{font-size:10px;font-weight:700;color:var(--ink2);font-variant-numeric:tabular-nums}
+.day.today{background:var(--college);color:var(--page)}
+.day.today .dayhead{color:var(--page)}
+
+.verdict{min-height:44px;padding:8px;border:1px dashed var(--quiet);border-radius:8px;font-size:12px;color:var(--quiet);font-style:italic}
+
+.ctlrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.seg{display:inline-flex;height:44px;border:1px solid var(--bnd);border-radius:8px;overflow:hidden;background:var(--work)}
+.seg>span{padding:0 12px;display:inline-flex;align-items:center;font-size:12px;font-weight:600;color:var(--ink2);border-left:1px solid var(--hair)}
+.seg>span:first-child{border-left:0}
+.seg>span.on{background:var(--raised);color:var(--ink);box-shadow:inset 0 0 0 1px var(--act)}
+.field{height:44px;border:1px solid var(--bnd);border-radius:8px;padding:0 12px;color:var(--quiet);background:var(--work);display:inline-flex;align-items:center;gap:6px;font-size:12px;min-width:160px}
+
+/* Broadcast */
+.fieldcanvas{position:relative;width:100%;height:100%;background:repeating-linear-gradient(90deg,var(--turf) 0 70px,var(--tband) 70px 140px)}
+.ylines{position:absolute;inset:18px 48px 72px 48px;background:repeating-linear-gradient(90deg,transparent 0 27px,rgba(245,247,250,.28) 27px 28px);border-left:2px solid var(--fline);border-right:2px solid var(--fline)}
+.los{position:absolute;top:18px;bottom:72px;width:2px;background:var(--fline);left:412px}
+.fd{position:absolute;top:18px;bottom:72px;width:2px;background:var(--fann);left:482px}
+.dot{position:absolute;width:8px;height:8px;border-radius:8px;border:1px solid}
+.dot.home{background:#14382A;border-color:#D9B23C}
+.dot.away{background:#E9E0C9;border-color:#6E3038}
+.dot.fg{width:10px;height:10px;box-shadow:0 0 0 2px var(--flive)}
+.bug{display:flex;align-items:stretch;position:absolute;top:8px;left:67px;font-variant-numeric:tabular-nums;border-radius:0}
+.bug .cell{display:flex;align-items:center;gap:6px;padding:0 8px;min-height:36px}
+.bug .team{font-weight:800;font-size:15px}
+.bug .score{font-weight:800;font-size:20px}
+.bug .sit{font-size:11px;font-weight:700;line-height:1.3;padding:4px 8px;background:var(--page);color:var(--ink)}
+.poss{width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:7px solid var(--fline)}
+.lower{position:absolute;left:67px;bottom:56px;display:flex;align-items:stretch;max-width:420px}
+.lower .plate{width:34px;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.lower .id{padding:4px 8px;background:var(--page)}
+.lower .id .nm{font-weight:800;font-size:15px}
+.lower .ev{padding:4px 12px;background:var(--raised);font-size:12px}
+.callin{position:absolute;right:29px;top:52px;width:240px;background:var(--page);border:1px solid var(--quiet);padding:8px}
+.callin .h{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--live);margin-bottom:4px}
+.mcontrols{position:absolute;left:67px;right:29px;bottom:8px;display:flex;gap:8px;align-items:center}
+.mcontrols .btn{border-radius:0}
+
+.mapgrid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);gap:4px;flex:1}
+.region{border:1px solid var(--quiet);border-radius:8px;background:var(--raised);padding:8px;display:flex;flex-direction:column;justify-content:flex-end;min-height:0}
+.region.home{box-shadow:inset 0 0 0 1px var(--act)}
+.region .rn{font-size:11px;font-weight:700}
+.region .rm{font-size:10px;color:var(--ink2)}
+
+.tree{display:flex;justify-content:center;align-items:flex-start;gap:24px;padding:12px}
+.tnode{text-align:center}
+.tnode .nm{font-size:12px;font-weight:700}
+.tkids{display:flex;gap:16px;margin-top:12px;justify-content:center}
+
+.bracket{display:flex;gap:12px;flex:1;min-width:0}
+.bcol{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:8px}
+.bcell{border:1px solid var(--hair);border-radius:8px;padding:6px 8px;background:var(--work);font-size:11px}
+.bcell.live{box-shadow:inset 0 0 0 1px var(--live)}
+
+.timeline{display:flex;flex-direction:column;gap:0;flex:1;overflow:hidden}
+.titem{display:flex;gap:8px;min-height:44px;align-items:center;border-bottom:1px solid var(--hair);padding:0 8px}
+.tdot{width:8px;height:8px;border-radius:8px;background:var(--college);flex:none}
+
+.job{flex:1;border:1px solid var(--hair);border-radius:10px;background:var(--work);padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.job.rec{box-shadow:inset 0 0 0 1px var(--act)}
+.job .rank{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--quiet);font-weight:700}
+
+.screen{display:flex;flex-direction:column;height:100%}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="gallery-head">
+  <h1>Professional front office — families 34–40</h1>
+  <p class="mono small" style="margin-top:4px">screen mockups · 04 §8 · Front Office</p>
+  <p style="margin-top:10px">A labelled second moment: Coach Sample at Example Union (low-chroma trio), not Week 9 college. Cap figures are the shared-world meter ($259,997,200 against $255,400,000, 101.8%). Draft Room suppresses world navigation because the clock is real. Steel geometry, transaction receipts, clocks only when real.</p>
+  <p class="law">Gallery chrome outside every device frame uses six values 04 does not own, disclosed here per 04 §4.4 and chrome-v3: #F4F4F6 page, #FFFFFF card, #22252B / #5A5F6A gallery ink, #D8DADF rule, #F7F8FA / #EFF1F4 note grounds. No value inside a rendered device frame comes from anywhere but 04 §6.1 (composited exceptions: 16% college/pro route tint, 45% disabled and panel-border opacities — each a canon hex at a tree-sourced opacity). Prototype truth lives here, outside the frames. docs/04-UX-AND-DESIGN-SYSTEM.md is the only canonical home; a value appearing only in a mockup has not shipped. These compositions are not the eight owner-approved *-v3.dc.html sheets and must not be globbed with them.</p>
+  <p class="nav"><a href="index.html">All 62 families</a> · <a href="../../../chrome-v3.dc.html">chrome-v3</a> · <a href="../../../tokens-v3.dc.html">tokens-v3</a></p>
+</header>
+<section class="card" id="s34">
+  <header>
+    <p class="kicker">Family 34 of 62 · Front Office register · 04 §8</p>
+    <h2>Cap & Contracts</h2>
+    <p class="ground">Dominant object: legal ledger, commitments and future years. Built against readout-v3, table-v3. Identities: Example State / Example Coastal / Example Union, Coach Sample, Coordinator Sample, Player Fourteen–Fifty-Four — pending generator output.</p>
+  </header>
+  <div class="cbody">
+    <p class="appear-label">Dark appearance — 04 §6.1 dark values</p><div class="device dk"><div class="screen">
+  <div class="strip">
+  <span class="tchip"><span class="bar" style="background:#D9DDE4"></span><span class="tname" style="background:#555B66;color:#FFFFFF">EXU</span></span>
+  <div class="sid"><span class="sname">Example Union</span><span class="smeta">Coach Sample · Offseason · Cap week</span></div>
+  <div class="sdiv"></div>
+  <div class="routes"><div class="route">Office</div><div class="route">Roster</div><div class="route cur front">Front Office</div><div class="route">League</div><div class="route">Career</div></div>
+  <button class="btn live">Continue</button>
+</div>
+  <div class="local"><div class="route cur office">Cap</div><div class="route">Negotiate</div><div class="route">Cuts</div><div class="route">Scout</div><div class="route">Board</div><div class="route">Room</div><div class="route">Market</div></div>
+  <div class="body">
+    <div class="panel fill grow">
+      <div class="phead">Legal ledger<div class="k">over capacity</div></div>
+      <div class="pad">
+        <div class="f-cap num">$259,997,200 committed · $255,400,000 cap</div>
+        <div class="meter" style="margin-top:8px"><div class="mfill over" style="width:100%"></div></div>
+        <div class="f-micro neg num" style="margin-top:6px">Overage $4,597,200 — 101.8%</div>
+      </div>
+      <div class="drow">Next season<div class="v">$9–15M over (band)</div></div>
+      <div class="drow">Two seasons out<div class="v">$8M under to $2M over</div></div>
+    </div>
+    <div class="panel fill" style="width:240px">
+      <div class="phead">Player Fourteen</div>
+      <div class="drow">Remaining<div class="v">$2,400,000</div></div>
+      <div class="drow">Market<div class="v">$3.0–4.5M</div></div>
+      <div class="pad"><button class="btn secondary" style="width:100%">Open negotiation</button></div>
+    </div>
+  </div>
+</div></div>
+    <p class="note">Over-capacity meter is the shared-world figure. Future years are bands because they are projections.</p>
+    <div class="callout">Pro / promotion surfaces are a labelled second moment (Example Union, low-chroma trio), not the Week 9 college desk.</div>
+  </div>
+</section>
+
+<section class="card" id="s35">
+  <header>
+    <p class="kicker">Family 35 of 62 · Front Office register · 04 §8</p>
+    <h2>Contract Negotiation</h2>
+    <p class="ground">Dominant object: term, guarantee, role and cap consequence. Built against readout-v3, person-v3. Identities: Example State / Example Coastal / Example Union, Coach Sample, Coordinator Sample, Player Fourteen–Fifty-Four — pending generator output.</p>
+  </header>
+  <div class="cbody">
+    <p class="appear-label">Dark appearance — 04 §6.1 dark values</p><div class="device dk"><div class="screen">
+  <div class="strip">
+  <span class="tchip"><span class="bar" style="background:#D9DDE4"></span><span class="tname" style="background:#555B66;color:#FFFFFF">EXU</span></span>
+  <div class="sid"><span class="sname">Example Union</span><span class="smeta">Coach Sample · Offseason · Cap week</span></div>
+  <div class="sdiv"></div>
+  <div class="routes"><div class="route">Office</div><div class="route">Roster</div><div class="route cur front">Front Office</div><div class="route">League</div><div class="route">Career</div></div>
+  <button class="btn live">Continue</button>
+</div>
+  <div class="local"><div class="route">Cap</div><div class="route cur office">Negotiate</div><div class="route">Cuts</div><div class="route">Scout</div><div class="route">Board</div><div class="route">Room</div><div class="route">Market</div></div>
+  <div class="body">
+    <div class="panel fill grow">
+      <div class="phead">Term and guarantee<div class="k">Player Fourteen</div></div>
+      <div class="drow">Years<div class="v">3</div></div>
+      <div class="drow">Guarantee<div class="v">$6,000,000</div></div>
+      <div class="drow">Role<div class="v">starting QB</div></div>
+      <div class="drow">Cap this year<div class="v">adds to the overage</div></div>
+    </div>
+    <div class="panel fill" style="width:220px">
+      <div class="phead">Actions</div>
+      <button class="btn primary" style="margin:8px">Send offer</button>
+      <button class="btn ghost" style="margin:0 8px 8px">Walk away</button>
+    </div>
+  </div>
+</div></div>
+    <p class="note">Attached to Player Fourteen. Sending an offer is the object; there is no footer Commit.</p>
+    <div class="callout">Pro / promotion surfaces are a labelled second moment (Example Union, low-chroma trio), not the Week 9 college desk.</div>
+  </div>
+</section>
+
+<section class="card" id="s36">
+  <header>
+    <p class="kicker">Family 36 of 62 · Front Office register · 04 §8</p>
+    <h2>Roster Cuts & Transactions</h2>
+    <p class="ground">Dominant object: legality deadline and loss of depth. Built against table-v3, chrome-v3. Identities: Example State / Example Coastal / Example Union, Coach Sample, Coordinator Sample, Player Fourteen–Fifty-Four — pending generator output.</p>
+  </header>
+  <div class="cbody">
+    <p class="appear-label">Dark appearance — 04 §6.1 dark values</p><div class="device dk"><div class="screen">
+  <div class="strip">
+  <span class="tchip"><span class="bar" style="background:#D9DDE4"></span><span class="tname" style="background:#555B66;color:#FFFFFF">EXU</span></span>
+  <div class="sid"><span class="sname">Example Union</span><span class="smeta">Coach Sample · Offseason · Cap week</span></div>
+  <div class="sdiv"></div>
+  <div class="routes"><div class="route">Office</div><div class="route">Roster</div><div class="route cur front">Front Office</div><div class="route">League</div><div class="route">Career</div></div>
+  <button class="btn live">Continue</button>
+</div>
+  <div class="local"><div class="route">Cap</div><div class="route">Negotiate</div><div class="route cur office">Cuts</div><div class="route">Scout</div><div class="route">Board</div><div class="route">Room</div><div class="route">Market</div></div>
+  <div class="body">
+    <div class="tbl grow">
+      <div class="capline">Roster cuts<div class="cnt">deadline owns the action</div></div>
+      <div class="thead" style="grid-template-columns:minmax(140px,1fr) 40px 40px 90px"><span class="on">Player</span><span>Pos</span><span>OVR</span><span>If cut</span></div>
+      <div class="trow sel" style="grid-template-columns:minmax(140px,1fr) 40px 40px 90px"><span class="nm">Player Nine</span><span class="n">RB</span><span><span class="rb a">72</span></span><span class="n">lose depth</span></div>
+    </div>
+    <div class="panel fill" style="width:200px">
+      <div class="phead">Legality</div>
+      <div class="drow">Current<div class="v">over cap</div></div>
+      <div class="pad"><button class="btn destr" style="width:100%">Cut</button></div>
+    </div>
+  </div>
+</div></div>
+    <p class="note">Cut is destructive and labelled. Depth loss is named on the row.</p>
+    <div class="callout">Pro / promotion surfaces are a labelled second moment (Example Union, low-chroma trio), not the Week 9 college desk.</div>
+  </div>
+</section>
+
+<section class="card" id="s37">
+  <header>
+    <p class="kicker">Family 37 of 62 · Front Office register · 04 §8</p>
+    <h2>Pro Scouting Board</h2>
+    <p class="ground">Dominant object: uncertain draft and market evaluations. Built against table-v3, person-v3. Identities: Example State / Example Coastal / Example Union, Coach Sample, Coordinator Sample, Player Fourteen–Fifty-Four — pending generator output.</p>
+  </header>
+  <div class="cbody">
+    <p class="appear-label">Dark appearance — 04 §6.1 dark values</p><div class="device dk"><div class="screen">
+  <div class="strip">
+  <span class="tchip"><span class="bar" style="background:#D9DDE4"></span><span class="tname" style="background:#555B66;color:#FFFFFF">EXU</span></span>
+  <div class="sid"><span class="sname">Example Union</span><span class="smeta">Coach Sample · Offseason · Cap week</span></div>
+  <div class="sdiv"></div>
+  <div class="routes"><div class="route">Office</div><div class="route">Roster</div><div class="route cur front">Front Office</div><div class="route">League</div><div class="route">Career</div></div>
+  <button class="btn live">Continue</button>
+</div>
+  <div class="local"><div class="route">Cap</div><div class="route">Negotiate</div><div class="route">Cuts</div><div class="route cur office">Scout</div><div class="route">Board</div><div class="route">Room</div><div class="route">Market</div></div>
+  <div class="body" style="flex-direction:column">
+    <div class="tbl grow">
+      <div class="capline">Uncertain evaluations<div class="cnt">bands where the sim does not own a point</div></div>
+      <div class="thead" style="grid-template-columns:minmax(140px,1fr) 40px 50px 70px"><span class="on">Prospect</span><span>Pos</span><span>Band</span><span>Conf</span></div>
+      <div class="trow sel" style="grid-template-columns:minmax(140px,1fr) 40px 50px 70px"><span class="nm">Prospect Fourteen</span><span class="n">QB</span><span class="n">80–88</span><span class="n">Med</span></div>
+      <div class="trow" style="grid-template-columns:minmax(140px,1fr) 40px 50px 70px"><span class="nm">Prospect Seven</span><span class="n">WR</span><span class="n">74–82</span><span class="n">Low</span></div>
+    </div>
+  </div>
+</div></div>
+    <p class="note">Bands, not point OVRs, where the sim does not own a point.</p>
+    <div class="callout">Pro / promotion surfaces are a labelled second moment (Example Union, low-chroma trio), not the Week 9 college desk.</div>
+  </div>
+</section>
+
+<section class="card" id="s38">
+  <header>
+    <p class="kicker">Family 38 of 62 · Front Office register · 04 §8</p>
+    <h2>Draft Board</h2>
+    <p class="ground">Dominant object: ranked prospects, needs and scouting investment. Built against table-v3. Identities: Example State / Example Coastal / Example Union, Coach Sample, Coordinator Sample, Player Fourteen–Fifty-Four — pending generator output.</p>
+  </header>
+  <div class="cbody">
+    <p class="appear-label">Dark appearance — 04 §6.1 dark values</p><div class="device dk"><div class="screen">
+  <div class="strip">
+  <span class="tchip"><span class="bar" style="background:#D9DDE4"></span><span class="tname" style="background:#555B66;color:#FFFFFF">EXU</span></span>
+  <div class="sid"><span class="sname">Example Union</span><span class="smeta">Coach Sample · Offseason · Cap week</span></div>
+  <div class="sdiv"></div>
+  <div class="routes"><div class="route">Office</div><div class="route">Roster</div><div class="route cur front">Front Office</div><div class="route">League</div><div class="route">Career</div></div>
+  <button class="btn live">Continue</button>
+</div>
+  <div class="local"><div class="route">Cap</div><div class="route">Negotiate</div><div class="route">Cuts</div><div class="route">Scout</div><div class="route cur office">Board</div><div class="route">Room</div><div class="route">Market</div></div>
+  <div class="body" style="flex-direction:column">
+    <div class="tbl grow">
+      <div class="capline">Draft board<div class="cnt">needs: edge, QB depth</div></div>
+      <div class="thead" style="grid-template-columns:36px minmax(140px,1fr) 40px 50px 80px"><span class="on">Rk</span><span>Prospect</span><span>Pos</span><span>Band</span><span>Need</span></div>
+      <div class="trow sel" style="grid-template-columns:36px minmax(140px,1fr) 40px 50px 80px"><span class="n">1</span><span class="nm">Prospect Fifty-Four</span><span class="n">DE</span><span class="n">82–90</span><span class="n">edge</span></div>
+      <div class="trow" style="grid-template-columns:36px minmax(140px,1fr) 40px 50px 80px"><span class="n">2</span><span class="nm">Prospect Fourteen</span><span class="n">QB</span><span class="n">80–88</span><span class="n">depth</span></div>
+    </div>
+  </div>
+</div></div>
+    <p class="note">Need column is why a row is on the board.</p>
+    <div class="callout">Pro / promotion surfaces are a labelled second moment (Example Union, low-chroma trio), not the Week 9 college desk.</div>
+  </div>
+</section>
+
+<section class="card" id="s39">
+  <header>
+    <p class="kicker">Family 39 of 62 · Front Office / Ceremony register · 04 §8</p>
+    <h2>Draft Room</h2>
+    <p class="ground">Dominant object: timed pick sequence and trade-off at the clock. Built against chrome-v3, week-v3. Identities: Example State / Example Coastal / Example Union, Coach Sample, Coordinator Sample, Player Fourteen–Fifty-Four — pending generator output.</p>
+  </header>
+  <div class="cbody">
+    <p class="appear-label">Dark appearance — 04 §6.1 dark values</p><div class="device dk"><div class="screen">
+  <div class="body full" style="flex-direction:column;gap:8px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="tchip"><span class="bar" style="background:#D9DDE4"></span><span class="tname" style="background:#555B66;color:#FFFFFF">EXU</span></span>
+      <div class="f-title">Draft Room</div>
+      <div class="f-head num live" style="margin-left:auto">00:42</div>
+    </div>
+    <div style="display:flex;gap:8px;flex:1">
+      <div class="panel fill grow">
+        <div class="phead">On the clock<div class="k">Example Union · pick 18</div></div>
+        <div class="drow">Board 1<div class="v">Prospect Fifty-Four · DE</div></div>
+        <div class="drow">Trade offer<div class="v">none live</div></div>
+      </div>
+      <div class="panel fill" style="width:240px">
+        <div class="phead">At the clock</div>
+        <button class="btn primary" style="margin:8px;width:calc(100% - 16px)">Draft P54</button>
+        <button class="btn ghost" style="margin:0 8px 8px;width:calc(100% - 16px)">Listen for trade</button>
+      </div>
+    </div>
+  </div>
+</div></div>
+    <p class="note">No world strip. Clock is live. Pick 18 is a labelled beat, not a copied real draft.</p>
+    <div class="callout">Pro / promotion surfaces are a labelled second moment (Example Union, low-chroma trio), not the Week 9 college desk.</div>
+  </div>
+</section>
+
+<section class="card" id="s40">
+  <header>
+    <p class="kicker">Family 40 of 62 · Front Office register · 04 §8</p>
+    <h2>Free Agency</h2>
+    <p class="ground">Dominant object: live market waves, competing bidders and offers. Built against table-v3, week-v3. Identities: Example State / Example Coastal / Example Union, Coach Sample, Coordinator Sample, Player Fourteen–Fifty-Four — pending generator output.</p>
+  </header>
+  <div class="cbody">
+    <p class="appear-label">Dark appearance — 04 §6.1 dark values</p><div class="device dk"><div class="screen">
+  <div class="strip">
+  <span class="tchip"><span class="bar" style="background:#D9DDE4"></span><span class="tname" style="background:#555B66;color:#FFFFFF">EXU</span></span>
+  <div class="sid"><span class="sname">Example Union</span><span class="smeta">Coach Sample · Offseason · Cap week</span></div>
+  <div class="sdiv"></div>
+  <div class="routes"><div class="route">Office</div><div class="route">Roster</div><div class="route cur front">Front Office</div><div class="route">League</div><div class="route">Career</div></div>
+  <button class="btn live">Continue</button>
+</div>
+  <div class="local"><div class="route">Cap</div><div class="route">Negotiate</div><div class="route">Cuts</div><div class="route">Scout</div><div class="route">Board</div><div class="route">Room</div><div class="route cur office">Market</div></div>
+  <div class="body">
+    <div class="tbl grow">
+      <div class="capline">Live market<div class="cnt">wave 1</div></div>
+      <div class="thead" style="grid-template-columns:minmax(140px,1fr) 40px 50px 90px"><span class="on">Player</span><span>Pos</span><span>OVR</span><span>Bidders</span></div>
+      <div class="trow sel" style="grid-template-columns:minmax(140px,1fr) 40px 50px 90px"><span class="nm">Player Fourteen</span><span class="n">QB</span><span><span class="rb a">84</span></span><span class="n">2 clubs</span></div>
+    </div>
+    <div class="panel fill" style="width:220px">
+      <div class="phead">Our offer</div>
+      <div class="drow">Term<div class="v">3 years</div></div>
+      <div class="pad"><button class="btn primary" style="width:100%">Bid</button></div>
+    </div>
+  </div>
+</div></div>
+    <p class="note">Wave 1. Bidders are a count the market owns; no invented rival-club drama copy.</p>
+    <div class="callout">Pro / promotion surfaces are a labelled second moment (Example Union, low-chroma trio), not the Week 9 college desk.</div>
+  </div>
+</section>
+
+<footer>Self-contained HTML and CSS. No JavaScript, no CDN, no web font, no images, no emoji. CSS px are read as pt. Identities are mechanical placeholders pending generator output, from docs/briefs/2026-08-12-reference-shared-world.md. Install-floor device frames are 844 × 390 per 04 §7 / D15.</footer>
+</div>
+</body>
+</html>

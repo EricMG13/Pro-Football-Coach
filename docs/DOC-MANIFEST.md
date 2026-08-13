@@ -232,6 +232,12 @@ library. Every `04` §8 screen family is built against them; the M8 production-U
 
 Full-page renders and an index live in `docs/proofs/design-references/`.
 
+Landscape compositions of the 62 `04` §8 families, built against these sheets, live in
+`docs/proofs/screen-mockups/`. **They are not this library.** They are not listed in the table
+above, they must not be named `*-v3.dc.html`, and they carry no authority. A cold builder who treats
+them as a substitute for `04` or for the eight sheets is making the same mistake this section exists
+to prevent.
+
 **Their authority is bounded, and the bound is the point.** The sheets are a *rendering*:
 `docs/04-UX-AND-DESIGN-SYSTEM.md` is the only canonical home for values, and a value appearing only
 in a sheet has not shipped. Where a sheet and `04` disagree, `04` wins and the sheet is the defect.

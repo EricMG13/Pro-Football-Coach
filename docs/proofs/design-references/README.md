@@ -29,3 +29,6 @@ not yet, and a density-budget cost in the `04` §4.5 currencies.
 
 All identities are mechanical placeholders labelled *pending generator output*; sample content is
 fictional and original per the `CLAUDE.md` legal guardrail.
+
+Full-screen compositions of the 62 `04` §8 families live in `docs/proofs/screen-mockups/`. Those
+files consume this library; they do not replace it and they are not canon.
