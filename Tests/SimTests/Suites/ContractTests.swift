@@ -143,6 +143,17 @@ private func importsUIFramework(_ line: String) -> Bool {
     return uiModules.contains(String(rest.prefix { $0.isLetter || $0.isNumber || $0 == "_" }))
 }
 
+/// Every Swift file anywhere under `Sources/` that brings a UI framework into scope.
+///
+/// The class "code that draws" defined by what makes code draw, so a target added tomorrow is
+/// covered the day it is added rather than the day someone remembers it (`CLAUDE.md`: a test's
+/// coverage boundary must not become the quality boundary).
+func swiftFilesImportingUIFramework() -> [(path: String, text: String)] {
+    swiftFiles(under: "Sources").filter { file in
+        file.text.split(separator: "\n").contains { importsUIFramework(String($0)) }
+    }
+}
+
 private func referencesAuthoritativeRoot(_ line: String) -> Bool {
     line.split { character in
         !(character.isLetter || character.isNumber || character == "_")
@@ -490,15 +501,59 @@ func runContractTests() {
                    "the scan matched a module whose name merely starts with SwiftUI")
         }
 
-        test("the UI target never owns or reads the authoritative root") {
-            let views = swiftFiles(under: "Sources/ProFootballCoachUI")
-            expect(!views.isEmpty, "found no UI sources to scan — the scan would pass vacuously")
+        test("no file that imports a UI framework owns or reads the authoritative root") {
+            // Enumerated by construction rather than by directory. This scan read
+            // `Sources/ProFootballCoachUI` until 2026-08-13, which made the directory the rule
+            // instead of the rule the rule: `Sources/CoachWorldApp` — the composition layer G-01
+            // added, which by design sees both the root and the read models — would have been
+            // outside it on the day it was created, and every future target after that. The class
+            // this defends is "code that draws", and what defines that class is the UI import.
+            let views = swiftFilesImportingUIFramework()
+            expect(views.count >= 8,
+                   "found \(views.count) UI-importing sources — the scan would pass vacuously")
+            // The enumeration itself is asserted, because a scan that silently stops finding the
+            // views is indistinguishable from a scan that finds them clean.
+            for known in [
+                "CoachingHQView", "RosterView", "MatchDayView", "PlayerProfileView",
+                "RecruitingBoardView", "RootView", "CoachWorldAppRootView",
+            ] {
+                expect(views.contains { $0.path.hasSuffix("/\(known).swift") },
+                       "\(known).swift is not in the UI-importing enumeration")
+            }
             let offenders = offendingLines(in: views, where: referencesAuthoritativeRoot)
             expect(
                 offenders.isEmpty,
                 "UI code consumes immutable read models and intents, never GameState: "
                     + offenders.joined(separator: ", ")
             )
+        }
+
+        test("the composition layer is where the root and the read models meet") {
+            // The other half of the boundary. G-01 needed one place that sees both, and the risk of
+            // creating it is that it becomes a second UI layer with the root in scope. So it is
+            // asserted to exist, to hold the root, and to keep the two in separate files.
+            let composition = swiftFiles(under: "Sources/CoachWorldApp")
+            expect(!composition.isEmpty, "the composition layer is missing")
+            let holdsRoot = composition.filter { file in
+                file.text.split(separator: "\n").contains {
+                    referencesAuthoritativeRoot(String($0))
+                }
+            }
+            expect(!holdsRoot.isEmpty,
+                   "no file in the composition layer reads the root, so nothing can be truthful")
+            for file in holdsRoot {
+                expect(!file.text.split(separator: "\n").contains {
+                    importsUIFramework(String($0))
+                }, "\(file.path) both draws and holds the authoritative root")
+            }
+        }
+
+        test("the shipped application root is the composition root, not the proof harness") {
+            let shell = swiftFiles(under: "App")
+            expect(!shell.isEmpty, "the application target has no sources")
+            let entryPoint = shell.first { $0.text.contains("@main") }?.text ?? ""
+            expect(entryPoint.contains("CoachWorldAppRootView"),
+                   "a release build must launch into the simulated world, not into a fixture")
         }
 
         test("the authoritative-root UI scan catches code but ignores prose") {
@@ -587,7 +642,9 @@ func runContractTests() {
             // DESIGN.md wrote this rule down and the prior build accumulated 43 literal spacings,
             // 25 literal radii and 9 hard-coded font sizes against it. A rule nothing enforces is a
             // wish.
-            let views = swiftFiles(under: "Sources/ProFootballCoachUI")
+            // Enumerated by the UI import, not by directory: the rule is about code that draws,
+            // and the composition layer added a second target that does.
+            let views = swiftFilesImportingUIFramework()
             expect(!views.isEmpty, "found no view sources to scan — the scan would pass vacuously")
             let offenders = offendingLines(in: views, where: containsDesignTokenLiteral)
             expect(

@@ -16,6 +16,8 @@ targets:
         product: FootballSimCore
       - package: ProFootballCoach
         product: ProFootballCoachUI
+      - package: ProFootballCoach
+        product: CoachWorldApp
     settings:
       base:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
