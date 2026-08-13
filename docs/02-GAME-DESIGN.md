@@ -314,6 +314,45 @@ sky as much as to a player.
 Falsifier: every condition occurs across a season; completion rate and field-goal rate are both lower
 in snow than in clear weather; and a game replays with the same conditions it was first played in.
 
+### 3.11 What a game records — added 2026-08-13
+
+The statistical vocabulary was four numbers: passing, rushing and receiving yards, and touchdowns.
+All three yardage figures are offensive, so **every defender and every specialist in the world
+accumulated nothing**, in any season, ever — and no rate statistic was computable anywhere in the
+game, because nothing counted an attempt.
+
+That is not a missing readout. It caps awards, records, scouting, player valuation and half of the
+density model's analytical surfaces at the offensive skill positions, permanently and invisibly. A
+`§11.3.3` trait can have mechanical bite that nothing can ever see, and a defender can have a career
+with no evidence in it.
+
+The vocabulary is now the one a box score needs: attempts and completions, carries, targets and
+receptions, interceptions thrown and sacks taken; tackles, sacks, interceptions, passes defended and
+forced fumbles; field goals and tries attempted and made; punts and returns. Thrown touchdowns and
+scored touchdowns are counted separately, because they are different things and adding them
+double-counts every scoring pass.
+
+Three rules keep it honest:
+
+- **Sparsely written.** A line stores only its non-zero counters. FSC-003 is a release blocker about
+  save size, and widening a per-player-per-game record from four fields to twenty-six without this
+  would be a straightforward way to make it worse.
+- **Derived, never re-drawn.** The abstracted model computes its counters arithmetically from the
+  team totals it has already produced. A box score that rolled its own numbers would consume draws,
+  moving every seeded output that exists today, and could contradict the team line it came from.
+- **One number, two views.** A defence's sacks *are* the offence's sacks taken; takeaways are
+  giveaways. They are derived from a single figure rather than from two plausible ones, so the two
+  halves of a box score cannot disagree.
+
+A season record is the sum of its games in the same vocabulary, rather than a second differently
+shaped record to keep in step. Records written before this widening still read: the old flat
+counters are recognised on decode, which is why the root schema version does not move — `GameState`
+requires an exact match with no migration path, so a bump would reject every existing save outright.
+
+Falsifier: defenders accumulate; every rate statistic is computable; the team line and the player
+lines agree exactly on sacks and turnovers; an empty line writes one key; and a record written before
+the change still decodes with zeros where the new counters would be.
+
 ---
 
 ## 4. The offseason

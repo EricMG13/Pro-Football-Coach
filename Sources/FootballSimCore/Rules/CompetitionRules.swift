@@ -28,6 +28,37 @@ public enum CompetitionRules {
     public static let touchdownPointEstimate = 10
     public static let playerAwardTouchdownValue = 50
 
+    // MARK: - The abstracted box score
+
+    /// Rates the abstracted box score derives its counters at. `02` §3.11.
+    ///
+    /// **Derivations, not draws.** Each one turns a yardage total the simulator already produced
+    /// into the count that total implies, so a box score cannot contradict the team line it came
+    /// from and no seeded output moves because these exist. **Not calibrated**: `03` §5.1 bands
+    /// yards and rates, not counts, and a number fitted here by eye would make the eventual band a
+    /// formality.
+    public static let yardsPerCompletion = 11
+    public static let completionPercentEstimate = 62
+    public static let yardsPerCarry = 4
+    public static let fieldGoalPercentEstimate = 80
+    /// What share of a team's touchdowns were thrown rather than run.
+    public static let passingTouchdownPercent = 62
+    public static let sacksPerHundredPassYards = 1
+    public static let basePenaltiesPerGame = 5
+    public static let penaltyVarianceModulus = 4
+    public static let averagePenaltyYards = 9
+    public static let basePuntsPerGame = 8
+    /// Every this many offensive yards is one fewer punt: a team that moves the ball punts less.
+    public static let yardsPerFewerPunt = 90
+    /// Tackles are counted per hundred plays the opponent ran, which is what makes the number scale
+    /// with the tier's tempo rather than being a flat per-game figure.
+    public static let tacklesPerHundredPlays = 95
+    public static let abstractedRunnersPerGame = 2
+    public static let abstractedReceiversPerGame = 4
+    public static let abstractedTacklersPerGame = 8
+    /// Plays an abstracted team is treated as having run, for counters that scale with volume.
+    public static let abstractedPlaysPerGame = 64
+
     public static func baselinePoints(for tier: Tier) -> Double {
         tier == .college ? collegeBaselinePoints : proBaselinePoints
     }

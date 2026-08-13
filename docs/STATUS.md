@@ -1351,6 +1351,39 @@ Files: `docs/02-GAME-DESIGN.md` (§3.10), `Sources/FootballSimCore/Engine/Weathe
 
 ---
 
+### Slice 8 — the statistical vocabulary (G-28) — written, unverified
+
+The vocabulary was four numbers — passing, rushing and receiving yards, and touchdowns — all three
+of them offensive. **Every defender and every specialist in the world accumulated nothing**, in any
+season, and no rate statistic was computable anywhere because nothing counted an attempt. That caps
+awards, records, scouting, valuation and half the density model's analytical surfaces at the
+offensive skill positions.
+
+Canon first (`02` §3.11). The line now carries what a box score needs on both sides of the ball, with
+thrown and scored touchdowns counted separately. Three rules keep it honest: lines are **sparsely
+written** (FSC-003 is a release blocker about save size); counters are **derived, never re-drawn**,
+so no seeded output moves and a box score cannot contradict the team line it came from; and a
+defence's sacks *are* the offence's sacks taken, from one number rather than two plausible ones.
+
+**No schema bump, and that is deliberate.** `GameState` requires an exact version match with no
+migration path, so bumping would reject every existing save outright. The season record instead reads
+both shapes — the nested one it writes now, and the flat four-counter one it wrote before — which is
+a migration done in place for six lines.
+
+Files: `docs/02-GAME-DESIGN.md` (§3.11), `Sources/FootballSimCore/Competition/Statistics.swift`
+(rewritten: twenty-six counters, sparse `Codable`, `+`, the legacy read),
+`Sources/FootballSimCore/Abstracted/AbstractBoxScore.swift` (new — the derivations),
+`Sources/FootballSimCore/Abstracted/AbstractGameSimulator.swift` (cuts full lines; its old
+four-counter line cutter is gone), `Sources/FootballSimCore/Rules/CompetitionRules.swift` (the
+derivation rates), `Tests/SimTests/Suites/BoxScoreTests.swift` (new, six tests),
+`Tests/SimTests/main.swift`.
+
+**Still open in this area:** the *detailed* engine does not yet produce per-player lines (G-11). It
+records who was in every duel, so the attribution is a pure function over a `GameRecord` waiting to
+be written — but it is not written here, and `docs/STATUS.md` should not be read as saying otherwise.
+
+---
+
 ## What exists, and what verified it
 
 | Artefact | State | Verified by |

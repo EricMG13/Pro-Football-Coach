@@ -71,15 +71,55 @@ public enum AbstractGameSimulator {
             tacticalPlan: awayPlan,
             using: &rng
         )
+        // `02` §3.11. The counters are derived from the totals above rather than drawn, so the box
+        // score cannot contradict the team line it came from and no seeded output moves because it
+        // exists. The two contexts are computed first because each side's defence is scored from
+        // what the *other* side gave up — a defence's sacks are the offence's sacks taken, exactly,
+        // rather than approximately.
+        let homeContext = AbstractBoxScore.context(for: homeStats, opposingDefense: away.defense)
+        let awayContext = AbstractBoxScore.context(for: awayStats, opposingDefense: home.defense)
+        let homeTouchdowns = max(0, homeScore / CompetitionRules.touchdownPointEstimate)
+        let awayTouchdowns = max(0, awayScore / CompetitionRules.touchdownPointEstimate)
+        let statistics = AbstractBoxScore.offensiveLines(
+            roster: home.roster, statistics: homeStats, context: homeContext,
+            touchdowns: homeTouchdowns
+        ) + AbstractBoxScore.offensiveLines(
+            roster: away.roster, statistics: awayStats, context: awayContext,
+            touchdowns: awayTouchdowns
+        ) + AbstractBoxScore.defensiveLines(
+            roster: home.roster, opponentContext: awayContext,
+            opponentPlays: CompetitionRules.abstractedPlaysPerGame
+        ) + AbstractBoxScore.defensiveLines(
+            roster: away.roster, opponentContext: homeContext,
+            opponentPlays: CompetitionRules.abstractedPlaysPerGame
+        )
         return GameSummary(
             homeScore: homeScore,
             awayScore: awayScore,
-            homeStatistics: homeStats,
-            awayStatistics: awayStats,
+            homeStatistics: withCounters(homeStats, homeContext),
+            awayStatistics: withCounters(awayStats, awayContext),
             homeParticipantIDs: home.roster.map(\.id),
             awayParticipantIDs: away.roster.map(\.id),
-            playerStatistics: playerLines(roster: home.roster, statistics: homeStats)
-                + playerLines(roster: away.roster, statistics: awayStats)
+            playerStatistics: statistics.filter { !$0.isEmpty }
+        )
+    }
+
+    /// The team line with its derived counters attached, so the team record and the player lines
+    /// carry the same numbers rather than two versions of them.
+    private static func withCounters(
+        _ statistics: TeamGameStatistics,
+        _ context: AbstractBoxScore.TeamContext
+    ) -> TeamGameStatistics {
+        TeamGameStatistics(
+            points: statistics.points,
+            offensiveYards: statistics.offensiveYards,
+            passingYards: statistics.passingYards,
+            rushingYards: statistics.rushingYards,
+            turnovers: statistics.turnovers,
+            sacksAllowed: context.sacksAllowed,
+            interceptionsThrown: context.interceptionsThrown,
+            penalties: context.penalties,
+            penaltyYards: context.penaltyYards
         )
     }
 
@@ -188,58 +228,4 @@ public enum AbstractGameSimulator {
         )
     }
 
-    private static func playerLines(
-        roster: [Player],
-        statistics: TeamGameStatistics
-    ) -> [PlayerGameStatistics] {
-        var lines: [PlayerGameStatistics] = []
-        let ranked = roster.sorted {
-            $0.overall == $1.overall
-                ? $0.id.uuidString < $1.id.uuidString
-                : $0.overall > $1.overall
-        }
-        if let quarterback = ranked.first(where: { $0.position == .quarterback }) {
-            lines.append(PlayerGameStatistics(
-                playerID: quarterback.id,
-                passingYards: statistics.passingYards,
-                touchdowns: max(0, statistics.points / CompetitionRules.touchdownPointEstimate)
-            ))
-        }
-        let runners = Array(ranked.filter { $0.position == .runningBack }.prefix(2))
-        lines.append(contentsOf: distributedLines(
-            players: runners,
-            total: statistics.rushingYards,
-            keyPath: .rushing
-        ))
-        let receivers = Array(ranked.filter {
-            $0.position == .wideReceiver || $0.position == .tightEnd
-        }.prefix(4))
-        lines.append(contentsOf: distributedLines(
-            players: receivers,
-            total: statistics.passingYards,
-            keyPath: .receiving
-        ))
-        return lines
-    }
-
-    private enum YardageKind { case rushing, receiving }
-
-    private static func distributedLines(
-        players: [Player],
-        total: Int,
-        keyPath: YardageKind
-    ) -> [PlayerGameStatistics] {
-        guard !players.isEmpty else { return [] }
-        let share = total / players.count
-        let remainder = total % players.count
-        return players.enumerated().map { index, player in
-            let yards = share + (index < remainder ? 1 : 0)
-            switch keyPath {
-            case .rushing:
-                return PlayerGameStatistics(playerID: player.id, rushingYards: yards)
-            case .receiving:
-                return PlayerGameStatistics(playerID: player.id, receivingYards: yards)
-            }
-        }
-    }
 }
