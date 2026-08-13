@@ -368,6 +368,29 @@ takeaways and forced fumbles weighted above them in the rules module. That is th
 offensive value it sits beside, so neither side of the ball is scored on a scale the other cannot
 reach.
 
+### 3.13 Who plays — the depth chart — added 2026-08-13
+
+FSC-008 records the depth chart as the missing piece behind tactical package and role eligibility.
+Two other things could not be true without it: the abstracted model rated a team by whole-unit
+averages, so **a starter and a fifth-stringer contributed equally to every result**, and §3.8's
+`forcedOut` — an injury bad enough to end a player's game — had nothing to hand the snap to.
+
+**Derived, not stored**, exactly as jersey numbers are (§4.1a) and for the same reasons. Order is a
+team's fact about players who change teams; availability changes weekly; a stored chart would need
+re-sorting after every injury, signing, transfer and cut, and any path that forgot would leave an
+injured player starting. Derived, it is right by construction.
+
+- **Unavailable players fall to the bottom, not off.** A chart that dropped the injured could not
+  show a coach who is missing and where they would have been.
+- **A lineup is eleven a side.** A position with nobody available falls through to the next-best
+  player in the group and then to the next-best body at all, because eleven players is a rule of the
+  sport and a roster hole is not a reason to line up with ten.
+- **Only overrides are worth persisting** — what a coach *changes* against the derivation. That
+  needs a surface to change it on, so it lands with the roster screens rather than here.
+
+Falsifier: the chart is a pure function of the roster and its availability, identical however the
+roster is ordered; a lineup never plays a player twice; and an unavailable player never starts.
+
 ### 3.12 Advancing more than one week — added 2026-08-13
 
 `advanceWeek` was the only way to move time, so an offseason was a sequence of taps with a measured

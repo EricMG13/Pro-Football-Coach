@@ -1475,6 +1475,24 @@ names as its first failure mode, so the slice is canon and rubric only.
 
 Files: `docs/04-UX-AND-DESIGN-SYSTEM.md` (§7 clause, §7.2), `docs/04b-AUDIT-RUBRIC.md`.
 
+### Slice 14 — the depth chart (G-30) — written, unverified
+
+FSC-008 named it as the missing piece behind tactical package and role eligibility. Two other things
+could not be true without it: the abstracted model rated a team by whole-unit averages, so a starter
+and a fifth-stringer contributed equally to every result, and §3.8's `forcedOut` had nothing to hand
+the snap to.
+
+Derived rather than stored — the jersey-number argument, applied again: order is a team's fact about
+players who change teams, availability changes weekly, and a stored chart would need re-sorting after
+every injury, signing, transfer and cut. `DepthChart.personnel(offense:defense:)` is also what a
+played match has been missing: `SnapPersonnel` says substitution happens above it, and until now
+nothing was above it.
+
+Files: `Sources/FootballSimCore/Model/DepthChart.swift` (new),
+`Tests/SimTests/Suites/DepthChartTests.swift` (new, five tests), `Tests/SimTests/main.swift` (default
+run and a `--depth-chart` gate), `docs/02-GAME-DESIGN.md` (§3.13),
+`docs/FUTURE-SIMULATION-CONTRACT.md` (FSC-008's first limb closes; role assignment stays open).
+
 **Traditions remain inert, and the repair is larger than it looks.** `02` §8 requires every generated
 tradition to carry a mechanical effect. `TraditionGrammar` produces them and nothing reads one —
 because `Programme` does not persist traditions at all: the generator builds them into an identity

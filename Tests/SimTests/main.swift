@@ -33,6 +33,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runSeasonRolloverTests()
 } else if CommandLine.arguments.contains("--jersey-numbers") {
     runJerseyNumberTests()
+} else if CommandLine.arguments.contains("--depth-chart") {
+    runDepthChartTests()
 } else if CommandLine.arguments.contains("--week-advance-timing") {
     runWeekAdvanceTimingProbe()
 } else if CommandLine.arguments.contains("--pro-market-root-probe") {
@@ -166,6 +168,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runPortalContractTests()
     runEventLedgerBatchTests()
     runJerseyNumberTests()
+    runDepthChartTests()
     runReadModelProviderTests()
     runCapComplianceTests()
     runSeasonRolloverTests()
