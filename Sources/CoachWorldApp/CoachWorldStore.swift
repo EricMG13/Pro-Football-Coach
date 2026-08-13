@@ -29,24 +29,28 @@ public final class CoachWorldStore {
     public static let defaultSeed: UInt64 = 20_260_812
 
     /// Nil only while a career has not been started, which the root view treats as its title state.
-    public private(set) var coachingHQ: CoachingHQReadModel?
+    public private(set) var coachingHQ: CoachingHQReadModel? = nil
     /// Rebuilt alongside the HQ rather than on navigation, so moving between screens is a state
     /// change rather than a wait. A college roster is 85 rows; the whole model costs microseconds
     /// beside the seconds a week advance already takes.
-    public private(set) var roster: RosterReadModel?
-    public private(set) var recruitingBoard: RecruitingBoardReadModel?
+    public private(set) var roster: RosterReadModel? = nil
+    public private(set) var recruitingBoard: RecruitingBoardReadModel? = nil
+    public private(set) var inbox: InboxReadModel? = nil
+    public private(set) var opponentReport: OpponentReportReadModel? = nil
+    public private(set) var gamePlan: GamePlanReadModel? = nil
+    public private(set) var practicePlan: PracticePlanReadModel? = nil
+    public private(set) var teamHealth: TeamHealthReadModel? = nil
+    public private(set) var aftermath: AftermathReadModel? = nil
     /// True while an intent is in flight. Screens disable their commit controls on it.
     public private(set) var isWorking = false
     /// The last receipt or refusal, shown verbatim. Never a guess about what happened.
-    public private(set) var statusMessage: String?
+    public private(set) var statusMessage: String? = nil
 
     private let session: CareerSession
 
     private init(session: CareerSession, snapshot: GameState) {
         self.session = session
-        coachingHQ = CoachWorldReadModelProvider.coachingHQ(from: snapshot)
-        roster = CoachWorldReadModelProvider.roster(from: snapshot)
-        recruitingBoard = CoachWorldReadModelProvider.recruitingBoard(from: snapshot)
+        apply(snapshot)
     }
 
     /// Generates a world from `seed` and takes the job with the least prestige in it.
@@ -128,6 +132,24 @@ public final class CoachWorldStore {
         await run { try await self.session.resolve(.recruiting(prospectID: id, action: action)) }
     }
 
+    public func setGamePlan(
+        runPass: CoachWorldRunPassChoice,
+        tempo: CoachWorldTempoChoice,
+        pressure: CoachWorldPressureChoice
+    ) async {
+        let plan = CoachWorldReadModelProvider.tacticalPlan(
+            runPass: runPass,
+            tempo: tempo,
+            pressure: pressure
+        )
+        await run { try await self.session.resolve(.tacticalPlan(plan)) }
+    }
+
+    public func setPracticePreset(_ preset: CoachWorldPracticePreset) async {
+        let plan = CoachWorldReadModelProvider.practicePlan(for: preset)
+        await run { try await self.session.resolve(.practicePlan(plan)) }
+    }
+
     /// One place where an intent is run, a refusal is reported and the read models are rebuilt, so
     /// no caller can advance the world and forget to refresh the screen.
     private func run(_ intent: @escaping () async throws -> CareerSessionReceipt) async {
@@ -140,9 +162,18 @@ public final class CoachWorldStore {
         } catch {
             statusMessage = "\(error)"
         }
-        let snapshot = await session.snapshot()
+        apply(await session.snapshot())
+    }
+
+    private func apply(_ snapshot: GameState) {
         coachingHQ = CoachWorldReadModelProvider.coachingHQ(from: snapshot)
         roster = CoachWorldReadModelProvider.roster(from: snapshot)
         recruitingBoard = CoachWorldReadModelProvider.recruitingBoard(from: snapshot)
+        inbox = CoachWorldReadModelProvider.inbox(from: snapshot)
+        opponentReport = CoachWorldReadModelProvider.opponentReport(from: snapshot)
+        gamePlan = CoachWorldReadModelProvider.gamePlan(from: snapshot)
+        practicePlan = CoachWorldReadModelProvider.practicePlan(from: snapshot)
+        teamHealth = CoachWorldReadModelProvider.teamHealth(from: snapshot)
+        aftermath = CoachWorldReadModelProvider.aftermath(from: snapshot)
     }
 }

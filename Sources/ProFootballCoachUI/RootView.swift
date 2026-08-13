@@ -32,6 +32,13 @@ private struct DebugCoachingHQRoot: View {
             ("--roster", "roster", .roster),
             ("--match-day", "match", .matchDay),
             ("--recruiting-board", "recruiting", .recruitingBoard),
+            ("--inbox", "inbox", .inbox),
+            ("--opponent-report", "film", .opponentReportFilmRoom),
+            ("--game-plan", "plan", .gamePlan),
+            ("--practice-plan", "practice", .practicePlan),
+            ("--team-health", "health", .teamHealth),
+            ("--aftermath", "aftermath", .aftermath),
+            ("--title", "title", .titleContinue),
         ]
         let requested = entries.first {
             CommandLine.arguments.contains($0.argument) || proofScreen == $0.proofName
@@ -71,12 +78,66 @@ private struct DebugCoachingHQRoot: View {
                     onContinue: { statusMessage = "No later recruiting event is available yet" },
                     onNavigate: navigate
                 )
+            } else if currentScreen == .inbox {
+                InboxView(
+                    model: CoachWorldSampleData.inbox,
+                    statusMessage: statusMessage,
+                    onContinue: { statusMessage = "No later event is available yet" },
+                    onNavigate: navigate
+                )
+            } else if currentScreen == .opponentReportFilmRoom {
+                OpponentReportFilmRoomView(
+                    model: CoachWorldSampleData.opponentReport,
+                    statusMessage: statusMessage,
+                    onContinue: { statusMessage = "No later event is available yet" },
+                    onNavigate: navigate
+                )
+            } else if currentScreen == .gamePlan {
+                GamePlanView(
+                    model: CoachWorldSampleData.gamePlan,
+                    statusMessage: statusMessage,
+                    onContinue: { statusMessage = "No later event is available yet" },
+                    onNavigate: navigate,
+                    onSetPlan: { _, _, _ in
+                        statusMessage = "Plan set · sample fixture, not a career write"
+                    }
+                )
+            } else if currentScreen == .practicePlan {
+                PracticePlanView(
+                    model: CoachWorldSampleData.practicePlan,
+                    statusMessage: statusMessage,
+                    onContinue: { statusMessage = "No later event is available yet" },
+                    onNavigate: navigate,
+                    onSetPreset: { preset in
+                        statusMessage = "\(preset.rawValue) set · sample fixture, not a career write"
+                    }
+                )
+            } else if currentScreen == .teamHealth {
+                TeamHealthView(
+                    model: CoachWorldSampleData.teamHealth,
+                    statusMessage: statusMessage,
+                    onContinue: { statusMessage = "No later event is available yet" },
+                    onNavigate: navigate
+                )
+            } else if currentScreen == .aftermath {
+                AftermathView(
+                    model: CoachWorldSampleData.aftermath,
+                    statusMessage: statusMessage,
+                    onContinue: { statusMessage = "No later event is available yet" },
+                    onNavigate: navigate
+                )
+            } else if currentScreen == .titleContinue {
+                TitleContinueView(
+                    model: CoachWorldSampleData.titleContinue,
+                    onNewCareer: { statusMessage = "New career is the shipped composition root, not this proof" },
+                    onContinueCareer: { statusMessage = "Continue career is the shipped composition root, not this proof" }
+                )
             } else {
                 CoachingHQView(
                     model: coachingHQ,
                     statusMessage: statusMessage,
                     onCommit: commit,
-                    onInspect: { statusMessage = "Film opened · decision unchanged" },
+                    onInspect: { navigate(.opponentReportFilmRoom) },
                     onDelegate: delegate,
                     onContinue: { statusMessage = "No later event is available yet" },
                     onOpenCorrespondence: openCorrespondence,
@@ -105,13 +166,10 @@ private struct DebugCoachingHQRoot: View {
     }
 
     private func openCorrespondence(_ stableID: String) {
-        guard let item = coachingHQ.correspondence.first(where: {
-            $0.stableID == stableID
-        }) else {
-            statusMessage = "That message is no longer available"
-            return
+        navigate(.inbox)
+        if let item = coachingHQ.correspondence.first(where: { $0.stableID == stableID }) {
+            statusMessage = "\(item.subject) opened"
         }
-        statusMessage = "\(item.subject) opened"
     }
 
     private func assignRecruitingWork(
@@ -158,7 +216,16 @@ private struct DebugCoachingHQRoot: View {
     }
 
     private func navigate(_ screen: CoachWorldScreenID) {
-        guard screen == .coachingHQ || screen == .recruitingBoard || screen == .roster else {
+        guard screen == .coachingHQ
+                || screen == .recruitingBoard
+                || screen == .roster
+                || screen == .inbox
+                || screen == .opponentReportFilmRoom
+                || screen == .gamePlan
+                || screen == .practicePlan
+                || screen == .teamHealth
+                || screen == .aftermath
+        else {
             statusMessage = "\(screen.canonicalName) is not available yet"
             return
         }

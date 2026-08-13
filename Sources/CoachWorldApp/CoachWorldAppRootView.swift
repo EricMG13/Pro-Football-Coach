@@ -63,19 +63,84 @@ public struct CoachWorldAppRootView: View {
                         onNavigate: { navigate($0, in: store) }
                     )
                 }
+            case .inbox:
+                if let model = store.inbox {
+                    InboxView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onContinue: { Task { await advance(store) } },
+                        onNavigate: { navigate($0, in: store) }
+                    )
+                }
+            case .opponentReportFilmRoom:
+                if let model = store.opponentReport {
+                    OpponentReportFilmRoomView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onContinue: { Task { await advance(store) } },
+                        onNavigate: { navigate($0, in: store) }
+                    )
+                }
+            case .gamePlan:
+                if let model = store.gamePlan {
+                    GamePlanView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onContinue: { Task { await advance(store) } },
+                        onNavigate: { navigate($0, in: store) },
+                        onSetPlan: { runPass, tempo, pressure in
+                            Task {
+                                await store.setGamePlan(
+                                    runPass: runPass, tempo: tempo, pressure: pressure
+                                )
+                                await persistOrReport(store)
+                            }
+                        }
+                    )
+                }
+            case .practicePlan:
+                if let model = store.practicePlan {
+                    PracticePlanView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onContinue: { Task { await advance(store) } },
+                        onNavigate: { navigate($0, in: store) },
+                        onSetPreset: { preset in
+                            Task {
+                                await store.setPracticePreset(preset)
+                                await persistOrReport(store)
+                            }
+                        }
+                    )
+                }
+            case .teamHealth:
+                if let model = store.teamHealth {
+                    TeamHealthView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onContinue: { Task { await advance(store) } },
+                        onNavigate: { navigate($0, in: store) }
+                    )
+                }
+            case .aftermath:
+                if let model = store.aftermath {
+                    AftermathView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onContinue: { Task { await advance(store) } },
+                        onNavigate: { navigate($0, in: store) }
+                    )
+                }
             default:
                 if let model = store.coachingHQ {
                     CoachingHQView(
                         model: model,
-                        // A save failure has to reach the player while they are playing, so it
-                        // takes the receipt line rather than waiting for a title screen they may
-                        // not see again this session.
                         statusMessage: failure ?? store.statusMessage,
                         onCommit: { intentID in Task { await commit(intentID, in: store) } },
-                        onInspect: {},
+                        onInspect: { navigate(.opponentReportFilmRoom, in: store) },
                         onDelegate: {},
                         onContinue: { Task { await advance(store) } },
-                        onOpenCorrespondence: { _ in },
+                        onOpenCorrespondence: { _ in navigate(.inbox, in: store) },
                         onNavigate: { navigate($0, in: store) }
                     )
                 }
@@ -86,39 +151,28 @@ public struct CoachWorldAppRootView: View {
     }
 
     private func navigate(_ destination: CoachWorldScreenID, in store: CoachWorldStore) {
-        switch destination {
-        case .coachingHQ:
-            screen = .coachingHQ
-            failure = nil
-        case .roster where store.roster != nil:
-            screen = .roster
-            failure = nil
-        case .recruitingBoard where store.recruitingBoard != nil:
-            screen = .recruitingBoard
-            failure = nil
-        default:
+        let allowed: Set<CoachWorldScreenID> = [
+            .coachingHQ, .roster, .recruitingBoard, .inbox, .opponentReportFilmRoom,
+            .gamePlan, .practicePlan, .teamHealth, .aftermath,
+        ]
+        guard allowed.contains(destination) else {
             failure = "\(destination.canonicalName) is not available yet"
+            return
         }
+        screen = destination
+        failure = nil
     }
 
     private var title: some View {
-        VStack(spacing: CoachWorldTokens.Space.md) {
-            Text("Pro Football Coach")
-                .font(CoachWorldTokens.TypeRole.display.weight(.black))
-            if let failure {
-                Text(failure)
-                    .font(CoachWorldTokens.TypeRole.body)
-                    .multilineTextAlignment(.center)
-            }
-            if isStarting {
-                ProgressView("Building the world")
-            } else {
-                Button("New career") { Task { await startNewCareer() } }
-                    .buttonStyle(.borderedProminent)
-                    .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-            }
-        }
-        .padding(CoachWorldTokens.Space.xl)
+        TitleContinueView(
+            model: TitleContinueReadModel(
+                hasExistingSave: saves.hasSave,
+                isStarting: isStarting,
+                failure: failure
+            ),
+            onNewCareer: { Task { await startNewCareer() } },
+            onContinueCareer: { Task { await retryLoad() } }
+        )
     }
 
     private var working: some View {
@@ -137,6 +191,11 @@ public struct CoachWorldAppRootView: View {
     /// established for the screen proofs: an environment variable names what to walk into, so a
     /// screen can be reached and photographed without a hand on the device. It starts the same
     /// career the button starts, with the same seed and through the same code path.
+    private func retryLoad() async {
+        hasAttemptedRestore = false
+        await restoreExistingCareer()
+    }
+
     private func restoreExistingCareer() async {
         guard !hasAttemptedRestore else { return }
         hasAttemptedRestore = true

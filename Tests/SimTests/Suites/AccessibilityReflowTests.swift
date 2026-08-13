@@ -77,7 +77,7 @@ func runAccessibilityReflowTests() {
         test("the family-to-file convention resolves the views that exist") {
             // The guard against the enumeration silently finding nothing: if the naming convention
             // drifts, every family becomes "pending" and the two clauses above pass over an empty
-            // set. These five are the production screens `05` records as built.
+            // set. These are the production screens currently landed.
             let landed = Set(landedFamilies().landed.map(\.screen))
             for screen in [
                 CoachWorldScreenID.coachingHQ,
@@ -85,6 +85,13 @@ func runAccessibilityReflowTests() {
                 .roster,
                 .playerProfile,
                 .recruitingBoard,
+                .titleContinue,
+                .inbox,
+                .opponentReportFilmRoom,
+                .gamePlan,
+                .practicePlan,
+                .teamHealth,
+                .aftermath,
             ] {
                 expect(landed.contains(screen),
                        "\(screen.canonicalName) did not resolve to \(viewFileName(for: screen))")

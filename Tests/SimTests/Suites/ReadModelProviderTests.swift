@@ -543,4 +543,127 @@ func runReadModelProviderTests() {
                    "the snapshot identifier did not move with the week")
         }
     }
+
+    suite("Read model provider: week families") {
+        test("inbox correspondence is empty because no inbox system exists") {
+            let (state, _) = try startedCareer(seed: 4_110)
+            expectEqual(CoachWorldReadModelProvider.inbox(from: state)?.correspondence.count, 0)
+            expectEqual(
+                CoachWorldReadModelProvider.inbox(from: state)?.provenance,
+                .simulationSnapshot
+            )
+        }
+
+        test("inbox commitments are the queued mandatory decisions") {
+            let (state, programme) = try startedCareer(seed: 4_111)
+            guard let model = CoachWorldReadModelProvider.inbox(from: state) else {
+                expect(false, "a started career produced no inbox")
+                return
+            }
+            let queued = state.pending.mandatoryDecisions.filter { $0.programmeID == programme.id }
+            expectEqual(model.commitments.count, queued.count)
+            expectEqual(
+                Set(model.commitments.map(\.stableID)),
+                Set(queued.map { $0.id.uuidString })
+            )
+            expectEqual(model.frame.mandatoryDueCount, queued.count)
+        }
+
+        test("opponent report does not invent pass rate without a scouting snapshot") {
+            let (state, _) = try startedCareer(seed: 4_112)
+            guard let model = CoachWorldReadModelProvider.opponentReport(from: state) else {
+                expect(false, "a started career produced no opponent report")
+                return
+            }
+            let hasSnapshot = model.opponent.flatMap { opponent in
+                UUID(uuidString: opponent.stableID).flatMap { state.tactical.scouting(for: $0) }
+            } != nil
+            if hasSnapshot {
+                expect(model.passRate != nil, "a recorded snapshot must show its pass share")
+            } else {
+                expectEqual(model.passRate, nil)
+                expectEqual(model.turnoverRate, nil)
+            }
+        }
+
+        test("an unplanned week records no practice minutes") {
+            let (state, _) = try startedCareer(seed: 4_113)
+            guard let model = CoachWorldReadModelProvider.practicePlan(from: state) else {
+                expect(false, "a started career produced no practice plan")
+                return
+            }
+            expectEqual(model.isRecordedThisWeek, false)
+            expectEqual(model.spentMinutes, 0)
+            expectEqual(model.weeklyMinutes, TacticalPracticePlan.weeklyMinutes)
+        }
+
+        testAsync("setting a practice preset spends the budget exactly") {
+            let (state, _) = try startedCareer(seed: 4_114)
+            let session = try CareerSession(state: state)
+            _ = try await session.resolve(
+                .practicePlan(CoachWorldReadModelProvider.practicePlan(for: .install))
+            )
+            guard let model = CoachWorldReadModelProvider.practicePlan(
+                from: await session.snapshot()
+            ) else {
+                expect(false, "a recorded practice plan produced no read model")
+                return
+            }
+            expectEqual(model.isRecordedThisWeek, true)
+            expectEqual(model.matchingPreset, .install)
+            expectEqual(model.spentMinutes, TacticalPracticePlan.weeklyMinutes)
+            expectEqual(model.installMinutes, 30)
+        }
+
+        testAsync("setting a game plan is what the read model then shows") {
+            let (state, _) = try startedCareer(seed: 4_115)
+            let session = try CareerSession(state: state)
+            let plan = CoachWorldReadModelProvider.tacticalPlan(
+                runPass: .runHeavy,
+                tempo: .hurry,
+                pressure: .contain
+            )
+            _ = try await session.resolve(.tacticalPlan(plan))
+            guard let model = CoachWorldReadModelProvider.gamePlan(
+                from: await session.snapshot()
+            ) else {
+                expect(false, "a recorded game plan produced no read model")
+                return
+            }
+            expectEqual(model.runPass, .runHeavy)
+            expectEqual(model.tempo, .hurry)
+            expectEqual(model.pressure, .contain)
+        }
+
+        test("team health counts match the lifecycle records") {
+            let (state, programme) = try startedCareer(seed: 4_116)
+            guard let model = CoachWorldReadModelProvider.teamHealth(from: state) else {
+                expect(false, "a started career produced no team health")
+                return
+            }
+            let players = programme.rosterIDs.compactMap { state.players[$0] }
+            let injured = players.filter { state.people.playerLifecycle[$0.id]?.injury != nil }
+            let available = players.filter {
+                state.people.playerLifecycle[$0.id]?.isAvailable ?? true
+            }
+            expectEqual(model.rosterCount, players.count)
+            expectEqual(model.injuredCount, injured.count)
+            expectEqual(model.availableCount, available.count)
+            expectEqual(model.rows.count, players.filter {
+                let life = state.people.playerLifecycle[$0.id]
+                return life?.injury != nil || life?.isAvailable == false
+            }.count)
+        }
+
+        test("week one aftermath has no result") {
+            let (state, _) = try startedCareer(seed: 4_117)
+            guard let model = CoachWorldReadModelProvider.aftermath(from: state) else {
+                expect(false, "a started career produced no aftermath")
+                return
+            }
+            expectEqual(model.hasResult, false)
+            expectEqual(model.ourScore, nil)
+            expectEqual(model.opponent, nil)
+        }
+    }
 }

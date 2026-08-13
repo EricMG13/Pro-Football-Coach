@@ -14,7 +14,6 @@ public struct CoachingHQView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var deskGap = CoachWorldTokens.Space.xs
     @State private var selectedChoiceID: CoachWorldIntentID?
-    @State private var showsEvidence = false
 
     public init(
         model: CoachingHQReadModel,
@@ -47,14 +46,12 @@ public struct CoachingHQView: View {
                 accessibleLayout
             } else {
                 worldStrip
+                officeRoutes
                 standardLayout
             }
         }
         .foregroundStyle(palette.contentPrimary.color)
         .background(palette.page.color.ignoresSafeArea())
-        .sheet(isPresented: $showsEvidence) {
-            evidenceSheet
-        }
     }
 
     private var worldStrip: some View {
@@ -105,6 +102,15 @@ public struct CoachingHQView: View {
         .background(palette.raised.color)
         .overlay(alignment: .bottom) { seam }
         .accessibilitySortPriority(50)
+    }
+
+    private var officeRoutes: some View {
+        CoachWorldOfficeRoutes(
+            current: .coachingHQ,
+            palette: palette,
+            isAccessibilitySize: dynamicTypeSize.isAccessibilitySize,
+            onNavigate: onNavigate
+        )
     }
 
     private var worldMenu: some View {
@@ -164,6 +170,7 @@ public struct CoachingHQView: View {
                     identityRail
                     deskWire
                 }
+                officeRoutes
             }
             .padding(CoachWorldTokens.Space.sm)
         }
@@ -375,7 +382,6 @@ public struct CoachingHQView: View {
     private var filmButton: some View {
         Button {
             onInspect()
-            showsEvidence = true
         } label: {
             Image(systemName: "film")
                 .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
@@ -504,25 +510,6 @@ public struct CoachingHQView: View {
         ContentUnavailableView("No mandatory work", systemImage: "checkmark.circle",
                                description: Text(statusMessage ?? model.week.nextDeadline))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var evidenceSheet: some View {
-        NavigationStack {
-            List {
-                if let recommendation = model.staffRecommendation {
-                    Section("Staff verdict") {
-                        Text(recommendation.verdict).font(.headline)
-                        Text(recommendation.reason)
-                        Text("Confidence: \(recommendation.confidence)")
-                    }
-                }
-                Section("Evidence") {
-                    ForEach(model.decision?.evidence ?? [], id: \.self, content: Text.init)
-                }
-            }
-            .navigationTitle("Opponent film")
-            .toolbar { Button("Done") { showsEvidence = false } }
-        }
     }
 
     private var mandatoryCount: Int {

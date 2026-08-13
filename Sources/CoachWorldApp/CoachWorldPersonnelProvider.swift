@@ -123,7 +123,7 @@ public extension CoachWorldReadModelProvider {
 
     // MARK: - Fields
 
-    private static func person(_ player: Player) -> CoachWorldPersonReference {
+    static func person(_ player: Player) -> CoachWorldPersonReference {
         CoachWorldPersonReference(
             stableID: "\(player.id.uuidString)-person",
             name: player.fullName,
@@ -190,7 +190,7 @@ public extension CoachWorldReadModelProvider {
         return ""
     }
 
-    private static func condition(_ player: Player, in state: GameState) -> Int {
+    static func condition(_ player: Player, in state: GameState) -> Int {
         guard let lifecycle = state.people.playerLifecycle[player.id] else { return 100 }
         let range = PeopleRules.fatigueRange
         let span = range.upperBound - range.lowerBound
@@ -198,7 +198,7 @@ public extension CoachWorldReadModelProvider {
         return 100 - (lifecycle.fatigue - range.lowerBound) * 100 / span
     }
 
-    private static func availability(_ player: Player, in state: GameState) -> String {
+    static func availability(_ player: Player, in state: GameState) -> String {
         guard let lifecycle = state.people.playerLifecycle[player.id] else { return "Available" }
         if let injury = lifecycle.injury {
             return "Out \(injury.weeksRemaining) week(s)"
