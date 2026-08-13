@@ -6,6 +6,10 @@ public enum StaffMarketError: Error, Sendable, Equatable {
     case unknownCandidate
     case cannotAfford(needed: Int, available: Int)
     case cannotReplaceHeadCoach
+    /// The swap would leave a world that cannot be saved. Checked rather than assumed, because this
+    /// system writes to four places at once and an atomic transaction that trusted itself is how
+    /// the missing career record below went unnoticed in the first place.
+    case invalidRoot
 }
 
 /// A coach the organisation could hire. Generated, never persisted.
@@ -120,8 +124,22 @@ public enum StaffMarketSystem {
             throw StaffMarketError.cannotAfford(needed: cost, available: finances.reserves)
         }
 
-        _ = next.staff.remove(incumbentID)
+        // The outgoing coach is out of work, not deleted. Removing them from `staff` while their
+        // career record stayed behind produced an `orphanStaffCareer`, so **every hire this system
+        // made was an invalid root** — a defect in this file, found while building §6.1's poaching
+        // and fixed here rather than worked around there. An unemployed coach is a legal thing in
+        // this world: it is exactly what an aged-out coordinator already becomes.
         next.staff.insert(candidate.staff)
+        // And the new one needs a career, for the same reason: whole-root integrity requires one per
+        // staff entity, and requires its latest assignment to name the organisation they work for.
+        next.people.insert(
+            staff: candidate.staff,
+            assignment: StaffCareerAssignment(
+                season: state.calendar.season,
+                organisationID: organisationID,
+                role: candidate.staff.role
+            )
+        )
         if next.programmes[organisationID] != nil {
             _ = next.programmes.update(organisationID) { programme in
                 programme.staffIDs.removeAll { $0 == incumbentID }
@@ -135,6 +153,7 @@ public enum StaffMarketSystem {
                 team.finances = finances
             }
         }
+        guard WorldIntegrity.check(next).isValid else { throw StaffMarketError.invalidRoot }
         return next
     }
 }

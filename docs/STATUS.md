@@ -1899,7 +1899,46 @@ Files: `Sources/FootballSimCore/Engine/Assignment.swift` (`SnapPersonnel.reserve
 built by `testPersonnel`, which has no bench, so no substitution can fire in them. `reserves` is
 defaulted to empty precisely so a hand-built fixture keeps meaning what it meant.
 
-### The standing gap across slices 19–29
+### Slice 30 — staff have careers (G-31 tail) — written, unverified
+
+`02` §6.1 recorded two things as open, and they were the same absence stated twice: **nothing about a
+coach ever changed.** Ratings never moved, so a coordinator who won for a decade was exactly as good
+as the day they arrived and §6's "continuity is a resource" bought nothing; and nothing ever came for
+anybody's staff, so §4.1's "coordinators poached" described a market that did not exist.
+
+Development is bounded exactly as a player's is — one attribute, one point, once a season — from
+experience, age, how the organisation finished and continuity. Reputation follows *results* rather
+than ability, because reputation is what other clubs see. How a season went is read from the archived
+final ranking rather than the standings: development runs at the boundary, after the table has rolled
+over, so standings at that moment describe a season nobody has played — and the archive is what
+prestige moves on, so a good season means one thing in this game rather than two.
+
+Poaching is four things at once, because integrity requires exactly one coach per role at every point
+a save could be written: the coordinator moves, the poacher's incumbent is moved aside into
+unemployment, the raided club hires a generated replacement, and both career records are written. The
+offseason's moves are refused wholesale rather than applied in part if the result does not validate.
+**The coach's own staff are not exempt** — that is §4.1's beat — and a delegation pointing at somebody
+who has just left reverts to the coach, because a dangling delegation is an invalid root.
+
+**A defect in slice 24, found here and fixed rather than worked around.** `StaffMarketSystem.replace`
+removed the outgoing coach from the staff store while leaving their career record behind, and gave
+the incoming coach no career record at all. Both are integrity failures, so **every hire that system
+made produced a root that could not be saved** — and nothing caught it because no test asserted
+integrity after a hire. The outgoing coach is now unemployed rather than deleted, the incoming one
+gets a career, the transaction validates the whole root before returning, and there is now a test
+that would have caught it.
+
+Files: `Sources/FootballSimCore/People/StaffDevelopmentSystem.swift` (new),
+`Sources/FootballSimCore/People/StaffPoachingSystem.swift` (new),
+`Sources/FootballSimCore/People/PeopleState.swift` (`StaffCareerRecord.append`,
+`PeopleState.updateStaffCareer`),
+`Sources/FootballSimCore/People/StaffMarketSystem.swift` (the defect, and an integrity guard),
+`Sources/FootballSimCore/Scheduling/WorldScheduler.swift` (both, at the boundary),
+`Sources/FootballSimCore/Rules/PeopleRules.swift` (the staff-career constants),
+`Tests/SimTests/Suites/StaffCareerTests.swift` (new, six tests), `Tests/SimTests/main.swift`,
+`docs/02-GAME-DESIGN.md` (§6.1a).
+
+### The standing gap across slices 19–30
 
 **None of these read models is on a screen yet.** The inbox, the depth chart, morale, the staff
 shortlist, the glossary, the discipline file, the camp report and the asking price are all

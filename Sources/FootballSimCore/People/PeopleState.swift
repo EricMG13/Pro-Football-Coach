@@ -846,6 +846,23 @@ public struct StaffCareerRecord: Codable, Sendable, Equatable, Identifiable {
             assignments: decodedAssignments
         )
     }
+
+    /// Records a move. `02` §6.1.
+    ///
+    /// There was no way to add one: `assignments` is `private(set)` and only `insert(staff:)` ever
+    /// wrote it, so a career record held the job a coach was generated into and nothing else —
+    /// which was true enough while nobody in the world ever changed jobs.
+    ///
+    /// Non-decreasing in season, and bounded, exactly as the decoder demands. Refusing rather than
+    /// trapping, because the caller is a transaction that can decline to move somebody.
+    @discardableResult
+    public mutating func append(_ assignment: StaffCareerAssignment) -> Bool {
+        guard assignments.last.map({ assignment.season >= $0.season }) ?? true else { return false }
+        assignments = Array(
+            (assignments + [assignment]).suffix(PeopleRules.careerSeasonHistoryLimit)
+        )
+        return true
+    }
 }
 
 public struct DepartedPlayerIdentity: Codable, Sendable, Equatable, Identifiable {
@@ -1015,6 +1032,18 @@ public struct PeopleState: Codable, Sendable, Equatable {
             recruitingOrigin: recruitingOrigin,
             portalWindows: []
         )
+    }
+
+    @discardableResult
+    public mutating func updateStaffCareer(
+        _ id: UUID,
+        _ mutation: (inout StaffCareerRecord) -> Void
+    ) -> Bool {
+        guard var career = staffCareers[id] else { return false }
+        mutation(&career)
+        guard career.staffID == id else { return false }
+        staffCareers[id] = career
+        return true
     }
 
     public mutating func insert(staff: Staff, assignment: StaffCareerAssignment) {

@@ -931,9 +931,51 @@ fire anybody. Screens 20 and 21 exist for a system that did not.
 - **The coach's own seat is not theirs to fill.** §7's carousel decides who holds it; a head coach
   hiring their own replacement would be resigning through the staff screen.
 
-**Still open:** staff ratings do not change over a career — nobody develops, and a coordinator who
-wins for a decade is exactly as good as the day they arrived. Poaching is also still AI-only: nothing
-comes for the coach's staff because they are performing.
+### 6.1a Staff have careers — added 2026-08-13
+
+§6.1 recorded two things as open and they are now closed. Both were the same absence stated twice:
+**nothing about a coach ever changed**, so §6's "continuity is a resource" bought nothing and §4.1's
+"coordinators poached" was a sentence about a market that did not exist.
+
+**Coaches develop, bounded exactly as players are** — one attribute, one point, once a season. The
+terms are experience up to the age at which a coach has seen the job, decline past a stated age, how
+their organisation finished, and continuity: a coach who has been somewhere long enough to know it
+gets more out of the same season, which is the one place §6's resource pays.
+
+**Reputation follows results, not ability**, because reputation is what other clubs see. A
+coordinator on a winning team becomes poachable whether or not they actually got better, which is
+both true to the sport and the thing that makes a good season cost you something.
+
+**How a season went is read from the archived final ranking**, not the standings. Development runs at
+the boundary, after the table has rolled over, so the standings at that moment describe a season
+nobody has played. The archive is also what prestige moves on — one definition of a good season,
+used twice.
+
+**Coordinators are poached when they perform.** A club with a stated prestige gap over yours, whose
+own man is worse, takes them. Every poaching is four things at once, because whole-root integrity
+requires exactly one coach per role at every point a save could be written: the coordinator moves,
+the poacher's incumbent is moved aside into unemployment, the losing club hires a generated
+replacement, and both career records are written. The whole offseason's moves are refused wholesale
+rather than applied in part if the result does not validate — a half-applied offseason is the kind of
+corruption a save carries forever.
+
+- **The coach's staff are not exempt, and that is the point.** When the person poached held a
+  delegated responsibility, the delegation reverts to the coach: a delegation pointing at somebody
+  who now works elsewhere is an invalid root, and quietly keeping it would be worse than the loss.
+- **Head coaches are the carousel's business** (§7), not the staff market's. A head coach poached out
+  of their own seat would be resigning by simulation.
+- **Bounded per offseason**, and nobody moves twice. A market that moved everybody every year would
+  make continuity unbuyable rather than valuable.
+- **A lateral move is not a poaching.** Without a prestige gap, equals would trade coordinators
+  forever.
+
+**A defect found while building this, recorded rather than quietly fixed.** §6.1's hiring removed the
+outgoing coach from the staff store while leaving their career record behind, and gave the incoming
+coach no career record at all — two integrity failures, which means **every hire that system made
+produced a root that could not be saved**. Nothing caught it because no test asserted integrity after
+a hire. The outgoing coach is now unemployed rather than deleted (which is what an aged-out
+coordinator already becomes), the incoming one gets a career, and the transaction validates the whole
+root before it returns.
 
 **The spine is connected — added 2026-08-13.** "The roster's fit to it modifies every matchup in the
 engine" was false in both models: `SnapResolver` passed a literal zero for scheme fit at every call

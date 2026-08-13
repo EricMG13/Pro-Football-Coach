@@ -70,6 +70,47 @@ public enum PeopleRules {
     public static let moraleInjuryCost = 8
     public static let moraleInvestmentBonus = 6
 
+    // MARK: - Staff careers. `02` §6.1.
+
+    /// Up to this age a coach is still learning the job; past `staffDeclineAge` the years start
+    /// taking something back. Both sit inside `staffAgeRange`, which is the hiring window.
+    public static let staffLearningAge = 45
+    public static let staffDeclineAge = 62
+    /// Seasons in one place before continuity is worth anything. `02` §6 calls continuity a
+    /// resource; this is the one place it pays.
+    public static let staffSettledSeasons = 3
+
+    public static let staffExperienceValue = 2
+    public static let staffAgeCost = 2
+    public static let staffResultValue = 2
+    public static let staffContinuityValue = 1
+    public static let staffDevelopmentNoise: ClosedRange<Int> = -2...2
+    /// The score a season has to reach before a rating moves at all. Bounded exactly as player
+    /// development is — one attribute, one point, once a season — because a system that can move a
+    /// rating faster turns a twenty-season career into a range nobody designed.
+    public static let staffDevelopmentThreshold = 3
+    /// What a winning or losing season does to what other clubs see.
+    public static let staffReputationStep = 2
+
+    /// Where a coach's organisation has to finish for the season to count as a success or a
+    /// failure, as a percentile of the final ranking with 100 at the top.
+    ///
+    /// A percentile rather than a win share, because staff development runs at the season boundary
+    /// — after the table has rolled over — and the archived ranking is the only description of the
+    /// completed season still standing at that moment. It is also what prestige is moved by, so
+    /// "a good season" means one thing in this game rather than two.
+    public static let staffSuccessPercentile = 70
+    public static let staffFailurePercentile = 30
+
+    /// How many coordinators change hands in one offseason, at most. A market that moved everybody
+    /// every year would make continuity unbuyable rather than valuable.
+    public static let maximumPoachingsPerSeason = 6
+    /// The reputation a coordinator needs before anybody comes for them.
+    public static let poachableReputation = 68
+    /// How much more prestigious the poacher has to be. A lateral move is not a poaching, and
+    /// without a gap the market would churn between equals forever.
+    public static let poachingPrestigeGap = 8
+
     // MARK: - Preseason camp. `02` §5.3.
 
     /// How close two players have to be for the job to count as open. Three points of overall is

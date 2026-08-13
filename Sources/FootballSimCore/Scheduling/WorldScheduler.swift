@@ -584,6 +584,22 @@ public enum WorldScheduler {
                         to: &nextState,
                         emittedEvents: &events
                     )
+                    // Staff have careers now (`02` §6.1). Development first, because reputation is
+                    // what the market reads and a coordinator's winning season has to be on the
+                    // record before anybody comes for them.
+                    let staffDevelopment = StaffDevelopmentSystem.process(
+                        after: completed,
+                        in: nextState
+                    )
+                    nextState.staff = staffDevelopment.staff
+                    let poaching = StaffPoachingSystem.process(after: completed, in: nextState)
+                    nextState = poaching.state
+                    try appendEvents(
+                        payloads: poaching.eventPayloads,
+                        occurredAt: completed,
+                        to: &nextState,
+                        emittedEvents: &events
+                    )
                     // Camp (`02` §5.3), here and nowhere else: after the college cycle and the
                     // walk-ons have finished assembling next season's rosters, so the players who
                     // report to camp are the players who will play. Before this point the roster is
