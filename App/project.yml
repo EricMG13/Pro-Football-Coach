@@ -29,6 +29,11 @@ targets:
         # matters. OrientationPolicyTest reads this file, so it cannot drift from 04.
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_CFBundleDisplayName: "Pro Football Coach"
+        # The icon set exists and is empty: its Contents.json declares the single 1024 slot iOS
+        # wants and no artwork fills it yet. That is a build warning and an App Store validation
+        # failure at submission — both of which are better than the previous state, where there was
+        # no asset catalog at all and nothing said the icon was missing.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SWIFT_VERSION: "5.10"
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES

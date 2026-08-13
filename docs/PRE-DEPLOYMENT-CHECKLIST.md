@@ -77,6 +77,27 @@ owner-checked ones are owner-checked because no agent in this project's environm
 - [ ] The D1 timing protocol has been run and the measured season time is inside 6–8 hours.
 - [ ] The D9 onboarding protocol has been run with someone who has not seen the game.
 
+## 4b. Store submission artefacts — added 2026-08-13
+
+Each of these blocks submission on its own, and none of them was on this list. They are small
+individually, which is exactly why a checklist has to name them: the build can be perfect and the
+upload still refused.
+
+- [ ] **App icon** present at 1024×1024 in `App/Assets.xcassets/AppIcon.appiconset`. The set exists
+      and is **empty** — the slot is declared, the artwork is not drawn. Owner or designer work.
+- [ ] **Launch screen** acceptable. The project generates one
+      (`INFOPLIST_KEY_UILaunchScreen_Generation`), which is legal and plain; replace it or accept it
+      deliberately rather than by default.
+- [ ] **Privacy manifest** (`App/PrivacyInfo.xcprivacy`) present, and its declarations still match
+      the code — currently: no tracking, no collected data, one required-reason API
+      (file timestamps, C617.1, for the save file). A manifest that has fallen behind the code is a
+      false claim rather than an omission.
+- [ ] Store screenshots for every device class in the promise, in **landscape**, since the app has
+      no portrait mode.
+- [ ] Age rating questionnaire completed; no user-generated content, no gambling, no purchases.
+- [ ] Localisation decided: English-only is a legitimate answer and belongs in the listing metadata
+      rather than being discovered by a reviewer.
+
 ## 5. Release hygiene
 
 - [ ] `docs/STATUS.md` is honest: everything unverified is named as unverified, with its files.

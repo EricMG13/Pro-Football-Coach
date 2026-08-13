@@ -1439,6 +1439,25 @@ Files: `Sources/FootballSimCore/Career/CareerSession.swift` (`advance(weeks:)`,
 `runCareerAdvanceTests` runner, two tests), `Tests/SimTests/main.swift`,
 `docs/02-GAME-DESIGN.md` (§3.12).
 
+### Slice 12 — store submission artefacts (G-45, in part) — written, unverified
+
+`App/` held two files. There was no asset catalog, no app icon, and **no privacy manifest** — which
+Apple requires for App Store submission and which must declare required-reason API use. The
+pre-deployment checklist had rows for version numbers and backup/restore and none for any of it, so
+the omission was invisible to the process meant to catch it.
+
+Now: `App/PrivacyInfo.xcprivacy` declaring what this product is — no tracking, no collected data, and
+the one required-reason API it touches (file timestamps, reason C617.1, for the save file); an asset
+catalog with the 1024 icon slot **declared and empty**, so the build warns and submission fails
+loudly instead of the icon being missing silently; and a new checklist section 4b naming icon, launch
+screen, manifest, screenshots, age rating and the localisation decision.
+
+**The icon artwork itself is owner or designer work** and is not invented here.
+
+Files: `App/PrivacyInfo.xcprivacy` (new), `App/Assets.xcassets/` (new, two `Contents.json`),
+`App/project.yml` (`ASSETCATALOG_COMPILER_APPICON_NAME`),
+`docs/PRE-DEPLOYMENT-CHECKLIST.md` (§4b).
+
 **Traditions remain inert, and the repair is larger than it looks.** `02` §8 requires every generated
 tradition to carry a mechanical effect. `TraditionGrammar` produces them and nothing reads one —
 because `Programme` does not persist traditions at all: the generator builds them into an identity

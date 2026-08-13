@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  The privacy manifest. Apple requires one for App Store submission, and this app had none.
+
+  Everything here is a statement about a product that collects nothing: no analytics, no network,
+  no accounts, no IAP, no tracking. `PRODUCT.md` makes the absence a feature, and
+  `docs/PRE-DEPLOYMENT-CHECKLIST.md` §5 requires it to be verified by inspection — this file is
+  where that verification is declared to Apple rather than only to ourselves.
+
+  The one required-reason API this app touches is file timestamps, through `FileManager` in
+  `CoachWorldSaveStore`: writing the save atomically and checking whether one exists. Reason code
+  C617.1 is "times for files inside the app container, to display to the person or for the app's own
+  use" — which is exactly what a single-save career file is.
+
+  If a later change adds a category — user defaults, disk space, system boot time — it gets a row
+  here in the same commit. A manifest that silently falls behind the code is worse than none,
+  because it is a claim rather than an omission.
+-->
+<plist version="1.0">
+<dict>
+    <key>NSPrivacyTracking</key>
+    <false/>
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array/>
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>C617.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>
