@@ -182,6 +182,32 @@ makes the draft the place roster decisions happen instead of the place talent ar
 cutting. A team over the cap on the compliance date releases until it is legal; a team under it
 cuts nobody, whatever its headcount.
 
+**The AI-facing half is built — `ProManagementSystem.enforceCapCompliance`, added 2026-08-13.**
+Every professional team except the one the player controls is released down to cap-legal at the
+week-21 boundary, cheapest dead money first, entirely within the same `advanceWeek` transition that
+already runs beat 1's expiry — so no *persisted* root is ever over the cap, the same guarantee
+`docs/PORT-LOG.md`'s cap-laundering defences already protect. `WorldIntegrity.checkProfessionalCap`
+is untouched: it stays exactly as strict as it has always been, checking the final state only. It
+sits immediately after expiry and before anything downstream takes the season-projected view of the
+root — the college portal's postseason commit does, later in the same step — because the same D-1
+lesson applies here that applied to expiry itself: a hand-built fixture that put one team over the
+cap and skipped this step surfaced as `portalCommitFailed(.postseason)`, not as a cap error, until
+compliance was wired at the right point.
+
+**The controlled team's own cap choice is deliberately not built here.** Every other consequential
+choice in this game — a redshirt, a portal decision, an NIL allocation, a recruiting action — is the
+player's to make through a mandatory decision, never automated out from under them. Forcing releases
+on the player's own roster the same way the AI's are forced would break that pattern, so this pass
+skips the controlled team entirely: if it is ever over cap, the week does not advance until the
+player resolves it themselves, the same behaviour as before this change. A mandatory-decision surface
+for that case is real remaining work, not built here, and needs its own design pass before it is.
+
+Under today's generation this mechanism has no reachable trigger: every signing path already refuses
+anything that would exceed the cap, and every contract this project generates is flat-salaried
+against a cap that only grows, so no current game state can produce an over-cap team at all — proven
+by `--pro-market-root-probe` finding zero, and unchanged by this addition. What legitimate mechanic
+would ever put a team over the cap remains an open question this document does not answer.
+
 **The draft can never deadlock, and that is an assertion rather than a mechanism.** Expiry frees
 headcount before the draft opens, so a team arriving at its pick with no room is a bug in beat 1,
 not a case for the draft to work around. `--pro-draft-probe` is the instrument: it fails if any
