@@ -289,6 +289,31 @@ the alternative is to strike challenges from §3.2, which is also the owner's ca
 Falsifier: timeouts are spent in real games, only by a trailing side, never below zero, and a half
 that ends with a trailing team holding all three inside the last minute is a defect in the rule.
 
+### 3.10 Weather — added 2026-08-13
+
+`03` §1.1's Kick row named weather as an input and nothing else in the engine had ever heard of it:
+no state, no derivation, no effect. A November game played exactly like a September one.
+
+Four conditions — clear, wind, rain, snow — because each has to change a decision. A fifth that read
+like a third of another would be flavour, and `§5`'s rule against decorative traits applies to the
+sky as much as to a player.
+
+- **Wind costs a kick more than it costs a throw**, rain costs both and loosens the ball, snow costs
+  everything. Two tables rather than one weather term, because a single number would make a windy day
+  and a wet one the same day with different words.
+- **It is drawn from the game's own seed** when the caller does not state it, so a replay plays the
+  same weather, and a scheduler that knows the venue can override it.
+- **Late weeks are colder**: the clear share falls as the season runs, and snow is unreachable until
+  the season is late enough for it. That is a season shape, not a climate model — this game has a
+  generated map with real regions on it, and tying weather to latitude is a larger piece of work with
+  a larger claim behind it. The simplification is stated rather than hidden.
+- **The calibration harness walks the week across its sample.** The real seasons those bands come
+  from contain November; a harness that played every game in September would calibrate the engine
+  against conditions the game does not have.
+
+Falsifier: every condition occurs across a season; completion rate and field-goal rate are both lower
+in snow than in clear weather; and a game replays with the same conditions it was first played in.
+
 ---
 
 ## 4. The offseason

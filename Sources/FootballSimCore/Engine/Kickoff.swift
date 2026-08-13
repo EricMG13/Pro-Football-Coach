@@ -88,6 +88,7 @@ public enum KickoffModel {
         kickingSide: Side,
         kicking: SnapPersonnel,
         receiving: SnapPersonnel,
+        weather: Weather = .clear,
         rng: inout SeededRandom
     ) -> KickoffRecord {
         let kicker = kicking.offensive(.kicker).first
@@ -111,8 +112,11 @@ public enum KickoffModel {
             // Leg strength buys touchbacks, which is the whole reason a kicker's leg is rated
             // separately from their accuracy.
             let leg = kicker.map { SnapResolver.normalised($0.attributes[.legStrength]) } ?? 0.5
+            // Wind and snow keep kicks in the field of play, which is where the return game comes
+            // from on the days it matters most.
             let touchbackChance = MatchupRules.kickoffTouchbackChance
                 + leg * MatchupRules.legStrengthTouchbackHelp
+                - weather.kickPenalty
             let touchback = rng.chance(touchbackChance)
             guard !touchback else {
                 return KickoffRecord(type: .deep, kickingSide: kickingSide, touchback: true,

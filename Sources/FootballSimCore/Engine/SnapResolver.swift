@@ -21,6 +21,7 @@ public enum SnapResolver {
         situation: Situation,
         rules: any ClockRules.Type,
         homeFieldAdvantage: Double = 0,
+        weather: Weather = .clear,
         rng: inout SeededRandom
     ) -> SnapOutcome {
         let assignment = Assignment.assign(offensiveCall: offensiveCall,
@@ -47,13 +48,13 @@ public enum SnapResolver {
                                   matchups: [])
         case .run:
             outcome = resolveRun(offensiveCall, defensiveCall, assignment, situation, rules,
-                                 homeFieldAdvantage, &rng)
+                                 homeFieldAdvantage, weather, &rng)
         case .pass:
             outcome = resolvePass(offensiveCall, defensiveCall, assignment, situation, rules,
-                                  homeFieldAdvantage, &rng)
+                                  homeFieldAdvantage, weather, &rng)
         case .fieldGoal:
             outcome = resolveFieldGoal(personnel, assignment, situation, rules, homeFieldAdvantage,
-                                       &rng)
+                                       weather, &rng)
         case .punt:
             outcome = resolvePunt(personnel, situation, rules, &rng)
         }
@@ -86,6 +87,7 @@ public enum SnapResolver {
         _ situation: Situation,
         _ rules: any ClockRules.Type,
         _ homeFieldAdvantage: Double,
+        _ weather: Weather,
         _ rng: inout SeededRandom
     ) -> SnapOutcome {
         var matchups: [MatchupRecord] = []
@@ -175,7 +177,8 @@ public enum SnapResolver {
             situationModifier: homeFieldAdvantage
                 + target.element.score * MatchupRules.opennessThrowHelp
                 - pressure * MatchupRules.pressureThrowPenalty
-                + offensiveCall.aggression * MatchupRules.aggressionThrowBonus,
+                + offensiveCall.aggression * MatchupRules.aggressionThrowBonus
+                - weather.passPenalty,
             rng: &rng
         )
         // The defender covering the TARGET, not routes[0]. The target is the argmax over
@@ -212,7 +215,7 @@ public enum SnapResolver {
         let gained = air + afterCatch
         return finish(gained: gained, situation: situation, elapsed: elapsed, matchups: matchups,
                       carrier: target.element.receiver, passer: passer,
-                      target: target.element.receiver, rng: &rng)
+                      target: target.element.receiver, weather: weather, rng: &rng)
     }
 
     /// How attractive a target is: openness, pulled toward progression order as decision falls.
@@ -232,6 +235,7 @@ public enum SnapResolver {
         _ situation: Situation,
         _ rules: any ClockRules.Type,
         _ homeFieldAdvantage: Double,
+        _ weather: Weather,
         _ rng: inout SeededRandom
     ) -> SnapOutcome {
         var matchups: [MatchupRecord] = []
@@ -266,7 +270,7 @@ public enum SnapResolver {
         let gained = Int((lane * MatchupRules.laneYardScale * outside).rounded()) + broken
         return finish(gained: gained, situation: situation,
                       elapsed: rules.inBoundsPlaySeconds, matchups: matchups,
-                      carrier: carrier, passer: nil, target: nil, rng: &rng)
+                      carrier: carrier, passer: nil, target: nil, weather: weather, rng: &rng)
     }
 
     /// The carrier against pursuit, with a bounded break-tackle chain.
@@ -324,6 +328,7 @@ public enum SnapResolver {
         _ situation: Situation,
         _ rules: any ClockRules.Type,
         _ homeFieldAdvantage: Double,
+        _ weather: Weather,
         _ rng: inout SeededRandom
     ) -> SnapOutcome {
         let distance = situation.yardsToGoal + MatchupRules.fieldGoalSnapDistance
@@ -339,7 +344,8 @@ public enum SnapResolver {
             attacker: kicker.attributes[.kickAccuracy],
             defender: difficulty,
             situationModifier: homeFieldAdvantage
-                + normalised(kicker.attributes[.legStrength]) * MatchupRules.legStrengthHelp,
+                + normalised(kicker.attributes[.legStrength]) * MatchupRules.legStrengthHelp
+                - weather.kickPenalty,
             rng: &rng
         )
         let record = MatchupRecord(kind: .kick, attackerID: kicker.id, defenderID: blocker.id,
@@ -377,12 +383,13 @@ public enum SnapResolver {
         carrier: Player,
         passer: Player?,
         target: Player?,
+        weather: Weather,
         rng: inout SeededRandom
     ) -> SnapOutcome {
         // The fumble draw is taken unconditionally, before the touchdown branch, so the number of
         // draws a snap consumes does not depend on where the ball ended up. A branch that skipped
         // it would couple the stream to the field position.
-        let fumble = rng.chance(MatchupRules.fumbleChance)
+        let fumble = rng.chance(MatchupRules.fumbleChance * weather.fumbleMultiplier)
         if fumble {
             return SnapOutcome(result: .fumbleLost, yards: gained, secondsElapsed: elapsed,
                                matchups: matchups, ballCarrierID: carrier.id, passerID: passer?.id,

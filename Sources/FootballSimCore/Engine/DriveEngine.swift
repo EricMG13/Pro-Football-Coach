@@ -267,6 +267,7 @@ public enum DriveEngine {
         caller: some PlayCaller,
         rules: any ClockRules.Type,
         homeFieldAdvantage: Double,
+        weather: Weather = .clear,
         driveSeed: UInt64,
         isAfterTurnover: Bool,
         clockRunning: Bool
@@ -302,6 +303,7 @@ public enum DriveEngine {
                 situation: situation, rules: rules,
                 homeFieldAdvantage: situation.possession == .home ? homeFieldAdvantage
                                                                   : -homeFieldAdvantage,
+                weather: weather,
                 rng: &rng
             )
             plays.append(PlayRecord(situation: situation, offensiveCall: offensiveCall,
@@ -374,7 +376,8 @@ public enum DriveEngine {
                 // who cannot kick.
                 let resolved = resolveConversion(
                     after: situation, offense: offense, defense: defense, caller: caller,
-                    rules: rules, homeFieldAdvantage: homeFieldAdvantage, driveSeed: driveSeed
+                    rules: rules, homeFieldAdvantage: homeFieldAdvantage, weather: weather,
+                    driveSeed: driveSeed
                 )
                 conversion = resolved
                 points = MatchupRules.touchdownPoints + resolved.points
@@ -495,6 +498,7 @@ public enum DriveEngine {
         caller: some PlayCaller,
         rules: any ClockRules.Type,
         homeFieldAdvantage: Double,
+        weather: Weather = .clear,
         driveSeed: UInt64
     ) -> ConversionRecord {
         var rng = SeededRandom(seed: SeededRandom.derive(
@@ -518,7 +522,7 @@ public enum DriveEngine {
                 offensiveCall: OffensiveCall(playType: .fieldGoal),
                 defensiveCall: caller.defensiveCall(for: trySituation, rules: rules),
                 personnel: personnel, situation: trySituation, rules: rules,
-                homeFieldAdvantage: homeFieldAdvantage, rng: &rng
+                homeFieldAdvantage: homeFieldAdvantage, weather: weather, rng: &rng
             )
             let good = outcome.result == .fieldGoalGood
             return ConversionRecord(choice: .kick, succeeded: good,
@@ -538,7 +542,7 @@ public enum DriveEngine {
                 offensiveCall: call,
                 defensiveCall: caller.defensiveCall(for: trySituation, rules: rules),
                 personnel: personnel, situation: trySituation, rules: rules,
-                homeFieldAdvantage: homeFieldAdvantage, rng: &rng
+                homeFieldAdvantage: homeFieldAdvantage, weather: weather, rng: &rng
             )
             let good = outcome.result == .touchdown
             return ConversionRecord(choice: .twoPoint, succeeded: good,

@@ -41,6 +41,12 @@ public enum CalibrationHarness {
     /// covers even games and mismatches rather than only the middle.
     public static let matchupsPerSeed = 12
 
+    /// How many weeks of a season the sample walks through, for weather. `02` §3.10.
+    ///
+    /// The longer tier's regular season, so both tiers see the same spread of conditions and a
+    /// college band is not measured against a colder sample than a pro one.
+    public static let seasonWeeksSampled = 18
+
     /// A game and the talent it was played at, so the favourite can be identified.
     struct SampledGame {
         let record: GameRecord
@@ -51,14 +57,20 @@ public enum CalibrationHarness {
     /// Runs the harness and tests every band for the tier.
     public static func run(tier: Tier, seeds: [UInt64]) -> CalibrationReport {
         var games: [SampledGame] = []
-        for seed in seeds {
+        for (seedIndex, seed) in seeds.enumerated() {
             for matchup in 0..<matchupsPerSeed {
                 let ladder = talentLadder(matchup: matchup)
+                // The week is walked across the sample so the weather the bands are measured
+                // against is a season's spread rather than one week's. The real seasons these
+                // bands come from contain November, so a harness that played every game in
+                // September would calibrate the engine against conditions the game does not have.
+                let week = (seedIndex * matchupsPerSeed + matchup) % seasonWeeksSampled + 1
                 games.append(SampledGame(record: GameEngine.play(
                     tier: tier,
                     home: CalibrationRoster.team(skill: ladder.home, seed: seed &+ UInt64(matchup)),
                     away: CalibrationRoster.team(skill: ladder.away,
                                                  seed: seed &+ UInt64(matchup) &+ 500_000),
+                    week: week,
                     seed: SeededRandom.derive(from: seed, scope: .game, ordinal: matchup)
                 ), homeSkill: ladder.home, awaySkill: ladder.away))
             }

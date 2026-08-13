@@ -186,6 +186,34 @@ public enum MatchupRules {
 
     // MARK: - In-play injuries
 
+    // MARK: - Weather
+
+    /// Leverage a throw loses to the conditions. `02` §3.10.
+    public static let windPassPenalty = 0.10
+    public static let rainPassPenalty = 0.12
+    public static let snowPassPenalty = 0.18
+
+    /// Leverage a kick loses. Wind costs a kick more than it costs a throw, which is why these are
+    /// two tables rather than one weather term.
+    public static let windKickPenalty = 0.22
+    public static let rainKickPenalty = 0.10
+    public static let snowKickPenalty = 0.26
+
+    /// How much likelier the ball comes loose.
+    public static let windFumbleMultiplier = 1.1
+    public static let rainFumbleMultiplier = 1.6
+    public static let snowFumbleMultiplier = 1.9
+
+    /// The week by which the season counts as fully late, for the weather draw.
+    public static let weatherLateWeek = 16
+    public static let clearWeatherShare = 0.74
+    /// How much of that share a fully late season gives up.
+    public static let lateSeasonClearWeatherLoss = 0.28
+    public static let windShareOfAdverse = 0.45
+    public static let rainShareOfAdverse = 0.35
+    /// How late the season must be before snow is reachable at all.
+    public static let snowRequiresLateness = 0.5
+
     // MARK: - Clock management
 
     /// Inside this many seconds of the half, a trailing defence stops the clock. `02` §3.9.

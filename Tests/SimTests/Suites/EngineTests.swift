@@ -1581,6 +1581,80 @@ func runClockManagementTests() {
     }
 }
 
+func runWeatherTests() {
+    let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
+    let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
+
+    suite("Weather") {
+        test("every condition is reachable, and late seasons are colder") {
+            var early: [Weather: Int] = [:]
+            var late: [Weather: Int] = [:]
+            for seed in UInt64(1)...2_000 {
+                var rng = SeededRandom(seed: seed)
+                early[Weather.draw(week: 1, rng: &rng), default: 0] += 1
+                var lateRNG = SeededRandom(seed: seed)
+                late[Weather.draw(week: MatchupRules.weatherLateWeek, rng: &lateRNG), default: 0] += 1
+            }
+            for condition in Weather.allCases {
+                expect((late[condition] ?? 0) > 0,
+                       "\(condition.rawValue) never happens even in a late season")
+            }
+            expect((early[.snow] ?? 0) == 0,
+                   "it snowed in week one, which the season shape forbids")
+            expect((late[.clear] ?? 0) < (early[.clear] ?? 0),
+                   "a late season was as clear as an early one, so the season shape does nothing")
+        }
+
+        test("snow costs the passing game and the kicking game") {
+            // 02 section 3.10's falsifier. Asserted on the rules rather than through a season,
+            // because a season's worth of games is a slow way to compare two constants.
+            expect(Weather.snow.passPenalty > Weather.clear.passPenalty,
+                   "snow costs a throw nothing")
+            expect(Weather.snow.kickPenalty > Weather.clear.kickPenalty,
+                   "snow costs a kick nothing")
+            expect(Weather.wind.kickPenalty > Weather.wind.passPenalty,
+                   "wind costs a kick no more than a throw, so the two tables are one table")
+            expect(Weather.rain.fumbleMultiplier > Weather.wind.fumbleMultiplier,
+                   "rain is no wetter than wind")
+            expectEqual(Weather.clear.fumbleMultiplier, 1,
+                        "clear weather changed the fumble rate")
+        }
+
+        test("conditions reach the field") {
+            func completionRate(_ weather: Weather) -> Double {
+                var rng = SeededRandom(seed: 5_150)
+                var attempts = 0, completions = 0
+                for _ in 0..<3_000 {
+                    let outcome = SnapResolver.resolve(
+                        offensiveCall: OffensiveCall(playType: .pass, passDepth: .mid),
+                        defensiveCall: DefensiveCall(coverage: .zoneUnder),
+                        personnel: home, situation: Situation(), rules: Tier.pro.clockRules,
+                        weather: weather, rng: &rng
+                    )
+                    switch outcome.result {
+                    case .incompletion, .interception: attempts += 1
+                    case .gain, .touchdown, .fumbleLost: attempts += 1; completions += 1
+                    default: break
+                    }
+                }
+                return attempts == 0 ? 0 : Double(completions) / Double(attempts)
+            }
+            expect(completionRate(.clear) > completionRate(.snow),
+                   "passes were completed as often in snow as in the sun")
+        }
+
+        test("a game replays in the weather it was played in") {
+            let first = GameEngine.play(tier: .pro, home: home, away: away, week: 14, seed: 909)
+            let second = GameEngine.play(tier: .pro, home: home, away: away, week: 14, seed: 909)
+            expectEqual(first.weather, second.weather, "the same game drew different weather")
+            expectEqual(first.playByPlayFingerprint, second.playByPlayFingerprint)
+            let stated = GameEngine.play(tier: .pro, home: home, away: away, week: 14,
+                                         weather: .snow, seed: 909)
+            expectEqual(stated.weather, .snow, "a stated condition was overridden by the draw")
+        }
+    }
+}
+
 /// A caller that plays the baseline game and always makes the same conversion choice.
 struct FixedConversionCaller: PlayCaller, Sendable {
     let choice: ConversionChoice

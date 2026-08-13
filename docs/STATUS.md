@@ -1320,6 +1320,35 @@ review to contradict, which is an owner-level modelling decision rather than som
 arrive inside a clock-management change. `02` §3.9 states the fork: build the sub-outcome truth, or
 strike challenges from §3.2.
 
+### Slice 7 — weather (G-27) — written, unverified
+
+`03` §1.1's Kick row named weather as an input and nothing else in the engine had ever heard of it:
+no state, no derivation, no effect, so a November game played exactly like a September one.
+
+Canon first (`02` §3.10). Four conditions, each changing a decision; two penalty tables rather than
+one weather term, because a single number makes a windy day and a wet one the same day with
+different words. Conditions are drawn from the game's own seed when the caller does not state them,
+so a replay plays the same weather and a scheduler that knows the venue can override it. Late weeks
+are colder and snow is unreachable early — a season shape, stated as the simplification it is rather
+than presented as a climate model over the generated map.
+
+**The calibration harness now walks the week across its sample.** The real seasons its bands come
+from contain November; a harness that played every game in September would calibrate the engine
+against conditions the game does not have. This does move the measured completion and field-goal
+rates, which is a real change to what P4's bands are being tested against, and it is the honest
+direction rather than the convenient one.
+
+Files: `docs/02-GAME-DESIGN.md` (§3.10), `Sources/FootballSimCore/Engine/Weather.swift` (new),
+`Sources/FootballSimCore/Engine/SnapResolver.swift`,
+`Sources/FootballSimCore/Engine/DriveEngine.swift`,
+`Sources/FootballSimCore/Engine/GameEngine.swift` (`GameRecord.weather`, threading, the fingerprint),
+`Sources/FootballSimCore/Engine/Kickoff.swift` (conditions keep kicks in play),
+`Sources/FootballSimCore/Rules/MatchupRules.swift` (two penalty tables, the season shape),
+`Sources/FootballSimCore/Calibration/CalibrationHarness.swift` (the week walk),
+`Tests/SimTests/Suites/EngineTests.swift` (a `Weather` suite of four tests),
+`Tests/SimTests/main.swift`.
+
+
 ---
 
 ## What exists, and what verified it

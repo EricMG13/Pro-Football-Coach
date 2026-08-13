@@ -6,12 +6,17 @@ public struct GameRecord: Codable, Sendable, Equatable {
     public let awayScore: Int
     public let drives: [DriveRecord]
     public let tier: Tier
+    /// What it was played in. `02` §3.10. Defaulted so every existing construction of a record — the
+    /// fingerprint's own mutation checks among them — keeps meaning what it meant.
+    public let weather: Weather
 
-    public init(homeScore: Int, awayScore: Int, drives: [DriveRecord], tier: Tier) {
+    public init(homeScore: Int, awayScore: Int, drives: [DriveRecord], tier: Tier,
+                weather: Weather = .clear) {
         self.homeScore = homeScore
         self.awayScore = awayScore
         self.drives = drives
         self.tier = tier
+        self.weather = weather
     }
 
     public var winner: Side? {
@@ -46,6 +51,7 @@ public struct GameRecord: Codable, Sendable, Equatable {
         }
 
         mix(homeScore); mix(awayScore); mix(drives.count); mix(index(tier))
+        mix(index(weather))
         for drive in drives {
             mix(drive.pointsScored)
             mix(drive.startYardLine)
@@ -132,9 +138,16 @@ public enum GameEngine {
         away: SnapPersonnel,
         caller: some PlayCaller = BaselinePlayCaller(),
         homeFieldAdvantage: Double = MatchupRules.homeAdvantage,
+        week: Int = 1,
+        weather: Weather? = nil,
         seed: UInt64
     ) -> GameRecord {
         let rules = tier.clockRules
+        // Drawn from the game's own seed under the game scope when the caller does not state it, so
+        // a replay plays the same weather and a scheduler that knows the venue can override it.
+        var weatherRNG = SeededRandom(seed: SeededRandom.derive(from: seed, scope: .game,
+                                                                ordinal: 2))
+        let conditions = weather ?? Weather.draw(week: week, rng: &weatherRNG)
         var situation = Situation(
             yardLine: MatchupRules.kickoffTouchbackYardLine,
             possession: .home,
@@ -152,7 +165,8 @@ public enum GameEngine {
         // personnel and sits *between* possessions, where neither side's `Situation` is authoritative.
         var pendingKickoff: KickoffRecord? = resolveKickoff(
             kickingSide: .away, home: home, away: away, caller: caller, rules: rules,
-            homeFieldAdvantage: homeFieldAdvantage, seed: seed, ordinal: 0, situation: &situation
+            homeFieldAdvantage: homeFieldAdvantage, weather: conditions, seed: seed, ordinal: 0,
+            situation: &situation
         )
 
         for driveIndex in 0..<MatchupRules.maximumDrivesPerGame {
@@ -164,7 +178,7 @@ public enum GameEngine {
             let driveSeed = SeededRandom.derive(from: seed, scope: .drive, ordinal: driveIndex)
             let (drive, next) = DriveEngine.run(
                 from: situation, offense: offense, defense: defense, caller: caller, rules: rules,
-                homeFieldAdvantage: homeFieldAdvantage, driveSeed: driveSeed,
+                homeFieldAdvantage: homeFieldAdvantage, weather: conditions, driveSeed: driveSeed,
                 isAfterTurnover: afterTurnover, clockRunning: clockRunning
             )
             drives.append(DriveRecord(
@@ -182,8 +196,8 @@ public enum GameEngine {
             if drive.ending == .touchdown || drive.ending == .fieldGoal || drive.ending == .safety {
                 pendingKickoff = resolveKickoff(
                     kickingSide: drive.offense, home: home, away: away, caller: caller,
-                    rules: rules, homeFieldAdvantage: homeFieldAdvantage, seed: seed,
-                    ordinal: driveIndex + 1, situation: &situation
+                    rules: rules, homeFieldAdvantage: homeFieldAdvantage, weather: conditions,
+                    seed: seed, ordinal: driveIndex + 1, situation: &situation
                 )
             }
             // 02 section 3.1's trigger, threaded across the drive boundary. It was a local of
@@ -212,8 +226,8 @@ public enum GameEngine {
                     pendingKickoff = resolveKickoff(
                         kickingSide: situation.possession.opponent, home: home, away: away,
                         caller: caller, rules: rules, homeFieldAdvantage: homeFieldAdvantage,
-                        seed: seed, ordinal: MatchupRules.maximumDrivesPerGame + 1,
-                        situation: &situation
+                        weather: conditions, seed: seed,
+                        ordinal: MatchupRules.maximumDrivesPerGame + 1, situation: &situation
                     )
                     clockRunning = false
                     afterTurnover = false
@@ -229,12 +243,12 @@ public enum GameEngine {
         // `timedPeriod` for pro since P3 — was read by nothing.
         if situation.homeScore == situation.awayScore {
             playOvertime(home: home, away: away, caller: caller, rules: rules,
-                         homeFieldAdvantage: homeFieldAdvantage, seed: seed,
+                         homeFieldAdvantage: homeFieldAdvantage, weather: conditions, seed: seed,
                          situation: &situation, drives: &drives)
         }
 
         return GameRecord(homeScore: situation.homeScore, awayScore: situation.awayScore,
-                          drives: drives, tier: tier)
+                          drives: drives, tier: tier, weather: conditions)
     }
 
     /// Plays overtime in whichever format the tier declares. `02` §3.7.
@@ -249,6 +263,7 @@ public enum GameEngine {
         caller: some PlayCaller,
         rules: any ClockRules.Type,
         homeFieldAdvantage: Double,
+        weather: Weather,
         seed: UInt64,
         situation: inout Situation,
         drives: inout [DriveRecord]
@@ -283,6 +298,7 @@ public enum GameEngine {
                         offense: side == .home ? home : away,
                         defense: side == .home ? away : home,
                         caller: caller, rules: rules, homeFieldAdvantage: homeFieldAdvantage,
+                        weather: weather,
                         driveSeed: SeededRandom.derive(from: seed, scope: .drive, ordinal: ordinal),
                         isAfterTurnover: false, clockRunning: false
                     )
@@ -304,7 +320,7 @@ public enum GameEngine {
                                            .away: MatchupRules.overtimeTimeouts]
             var pendingKickoff: KickoffRecord? = resolveKickoff(
                 kickingSide: firstPossession.opponent, home: home, away: away, caller: caller,
-                rules: rules, homeFieldAdvantage: homeFieldAdvantage, seed: seed,
+                rules: rules, homeFieldAdvantage: homeFieldAdvantage, weather: weather, seed: seed,
                 ordinal: ordinal, situation: &situation
             )
             ordinal += 1
@@ -317,7 +333,7 @@ public enum GameEngine {
                 let defense = situation.possession == .home ? away : home
                 let (drive, next) = DriveEngine.run(
                     from: situation, offense: offense, defense: defense, caller: caller,
-                    rules: rules, homeFieldAdvantage: homeFieldAdvantage,
+                    rules: rules, homeFieldAdvantage: homeFieldAdvantage, weather: weather,
                     driveSeed: SeededRandom.derive(from: seed, scope: .drive, ordinal: ordinal),
                     isAfterTurnover: afterTurnover, clockRunning: clockRunning
                 )
@@ -333,8 +349,8 @@ public enum GameEngine {
                     || drive.ending == .safety {
                     pendingKickoff = resolveKickoff(
                         kickingSide: drive.offense, home: home, away: away, caller: caller,
-                        rules: rules, homeFieldAdvantage: homeFieldAdvantage, seed: seed,
-                        ordinal: ordinal, situation: &situation
+                        rules: rules, homeFieldAdvantage: homeFieldAdvantage, weather: weather,
+                        seed: seed, ordinal: ordinal, situation: &situation
                     )
                     ordinal += 1
                 }
@@ -356,6 +372,7 @@ public enum GameEngine {
         caller: some PlayCaller,
         rules: any ClockRules.Type,
         homeFieldAdvantage: Double,
+        weather: Weather,
         seed: UInt64,
         ordinal: Int,
         situation: inout Situation
@@ -378,7 +395,7 @@ public enum GameEngine {
             quarters: rules.quarters
         )
         var record = KickoffModel.resolve(type: type, kickingSide: kickingSide, kicking: kicking,
-                                          receiving: receiving, rng: &rng)
+                                          receiving: receiving, weather: weather, rng: &rng)
 
         if record.returnTouchdown {
             // The try after a return touchdown goes through the same path every other touchdown's
@@ -391,6 +408,7 @@ public enum GameEngine {
                 after: scoring, offense: receiving, defense: kicking, caller: caller, rules: rules,
                 homeFieldAdvantage: receivingSide == .home ? homeFieldAdvantage
                                                            : -homeFieldAdvantage,
+                weather: weather,
                 driveSeed: kickoffSeed
             )
             let points = MatchupRules.touchdownPoints + conversion.points
