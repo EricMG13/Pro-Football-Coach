@@ -474,6 +474,25 @@ identical-looking button did something different depending on where you tapped i
 the same `advance(store)` path Coaching HQ uses, so the refusal a pending decision produces is the
 same refusal everywhere, not a screen-dependent behaviour.
 
+**P-2's AI-facing half is built, 2026-08-13 — `ProManagementSystem.enforceCapCompliance`.** Went
+through its own `writing-plans`/`executing-plans` phase per `CLAUDE.md`'s process, rather than a
+freehand continuation, because it is real unbuilt engine work: `docs/superpowers/plans/2026-08-13-
+cap-compliance.md` has the full plan and its self-review. Every professional team but the one the
+player controls is released — cheapest dead money first — down to cap-legal at the week-21 boundary,
+inside the same `advanceWeek` transition that already runs beat 1's expiry. `WorldIntegrity.check
+ProfessionalCap` was never touched; the function mutates state directly and validates once at the
+end with the same difference-based guard `expireContracts` established this session, so it is never
+the invariant itself that gets weaker, only what runs before it.
+
+Five unit tests (ordering, already-legal, unfixable, controlled-team-skipped) plus one integration
+test through a real `advanceWeek` all pass, and the architecture fingerprint pins are unchanged —
+confirming the function is a true no-op under normal bootstrap generation, which is also its honest
+limit: no current signing path can ever put a team over the cap, so nothing in ordinary play reaches
+this code yet. The controlled team's own cap choice is deliberately not built here — every other
+consequential choice in this game is a mandatory decision the player makes, and automating the
+player's own releases the way the AI's are forced would break that pattern. `02` §4.2a has the full
+account, including what remains open.
+
 **U-4 — the AX5 instrument exists, and its limits are written down.** `--design-contracts` now
 enumerates all 62 families from `CoachWorldScreenID`, resolves each to its view file by convention,
 asserts the landed/pending partition is total, and requires every landed family to declare an
