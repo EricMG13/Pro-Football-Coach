@@ -686,6 +686,46 @@ was. The genre register found no mention of pick trading anywhere in the tree or
 the book authoritative is a persisted-state change to a type with a strict decoder and a
 validated shape, and it belongs with the draft-day surface that would show a coach what they hold.
 
+### 4.2d A player has a price — added 2026-08-13
+
+§4.2 sells free agency as "waves, with competing bidders and a market that reprices as it moves".
+**There was no negotiation at all.** `ProMarketSystem.signFreeAgent` took a fully-formed `Contract`
+and applied it, so a club could sign the best player in the pool for the league minimum and nothing
+in the game objected; the league's own AI did exactly that, offering every free agent
+`rookieContract` — the same money for a 75-overall veteran as for an undrafted rookie. Free agency
+ran every offseason and nobody was ever negotiating.
+
+- **A player asks for a price, and it is theirs.** It comes from ability, above a stated replacement
+  rating below which a club can find the same player for nothing. An offer under the asking price is
+  refused, and the refusal carries both figures so a screen can say what the gap is.
+- **Age shortens the term, it does not cut the rate.** A player past their position's decline age
+  asks for what they are worth, for fewer years. Charging a veteran twice for their age — less money
+  *and* less security — is a punishment the genre does not model and the player would read as a bug.
+- **Standing is worth real money, but it is not a discount.** A player will take less to join a
+  better club, and that is one of the few things everybody knows about this market. They will not
+  take less than they are asking for, however famous the club: a club that could underpay by being
+  famous would make the biggest club in the league permanently the cheapest, which inverts the
+  pressure the tier is supposed to put on a good team.
+- **A short deal is worth less than its money says**, because it puts the player back on the market
+  sooner than they wanted.
+- **Ties break on identity**, so the same market resolves the same way in every process.
+
+**Every figure is a share of the cap, never a number of dollars.** The cap compounds at 7% a season,
+so it roughly quadruples across a twenty-season career: a star whose price is written in fixed
+dollars costs 5% of the cap in season zero and 1.3% in season twenty, and the market quietly stops
+existing halfway through the game the player actually plays. This is the same shape as the
+seed-from-`hashValue` defect — no single-season test can see it — and it is why the rate, the
+minimum, the value of prestige and the short-term penalty are all stated in ten-thousandths of the
+cap.
+
+**Calibrated against the generated payroll, not picked.** §4.2a's bootstrap commits 85% of the cap
+across 53 players, which is about 160 basis points each; a mid-band player asks about 155. So a
+whole roster re-signed at its asking price costs slightly more than the cap. That is the intended
+shape: keep a core, let depth walk, replace it at the minimum.
+
+Falsifier: a club signs a starter for the league minimum, or the same player's asking price is a
+materially different share of the cap in season twenty than in season zero.
+
 ### 4.2b The news feed — added 2026-08-12
 
 The living world reports itself. `DomainEventPayload` already fixes the mechanism — "Presentation

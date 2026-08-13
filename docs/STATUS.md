@@ -1755,6 +1755,41 @@ over a career, so a coordinator who wins for a decade is as good as the day they
 poaches the coach's staff for performing. Both are behaviour in the weekly market step rather than
 new state, and both are their own change.
 
+### Slice 26 — a player has a price (G-34) — written, unverified
+
+`02` §4.2 sells free agency as "waves, with competing bidders and a market that reprices as it moves".
+**There was no negotiation at all.** `signFreeAgent` applied whatever contract it was handed, so a
+club could sign the best player in the pool for the league minimum — and the league's own AI did
+exactly that, offering every free agent `rookieContract`, the same money for a 75-overall veteran as
+for an undrafted rookie.
+
+`ContractNegotiation` is pure value functions, so an asking price can be shown to a coach *before*
+they commit to it. A player asks by ability above a replacement rating, age shortens the term rather
+than cutting the rate, standing is worth real money but never a discount, a short deal is worth less
+than its money says, and ties break on identity. `ProMarketSystem.signFreeAgent` now refuses an offer
+under the asking price and reports both figures; the AI offers the asking price and walks down the
+pool when it cannot pay.
+
+**Every figure is a share of the cap, in basis points.** The cap compounds at 7% a season and roughly
+quadruples over a career, so a price in fixed dollars decays to a quarter of itself by season twenty
+and the market stops existing halfway through the game. No single-season test can see that — the same
+shape as the seed-from-`hashValue` defect — so there is a test that fixes the asking price as a share
+of the cap in season zero and season twenty.
+
+Files: `Sources/FootballSimCore/Pro/ContractNegotiation.swift` (new),
+`Sources/FootballSimCore/Rules/ProRules/ProRules.swift` (negotiation constants, cap-share helpers),
+`Sources/FootballSimCore/Pro/ProMarketSystem.swift` (`belowAskingPrice`, the gate),
+`Sources/FootballSimCore/Pro/ProRosterAISystem.swift` (the AI offers the asking price),
+`Tests/SimTests/Suites/ContractNegotiationTests.swift` (new, seven tests),
+`Tests/SimTests/Suites/ProMarketTests.swift` (two signings raised to the asking price),
+`Tests/SimTests/main.swift`, `docs/02-GAME-DESIGN.md` (§4.2d).
+
+**The behavioural risk, stated because no compiler or soak has seen it.** Free agency is now
+cap-bound where it previously was not, so the AI will sign fewer players per pass and the offseason
+may reach the draft sooner. The loop is self-correcting in argument — candidates are walked in
+descending order and a replacement-level player asks the minimum, so any club with real cap room
+signs somebody — but that argument is unverified, and `ProSoakTests` is where it would be falsified.
+
 ---
 
 ## What exists, and what verified it

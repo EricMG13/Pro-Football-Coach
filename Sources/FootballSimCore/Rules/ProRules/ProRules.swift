@@ -121,6 +121,69 @@ public enum ProRules {
     public static let baseSalaryCapSeason = 0
 
 
+    // MARK: - Negotiation. `02` §4.2d.
+
+    /// **Every figure in this market is a share of the cap, never a number of dollars.** The cap
+    /// compounds at `capGrowthPercentPerYear`, so it roughly quadruples across a twenty-season
+    /// career; a star whose price was written in fixed dollars would cost 5% of the cap in season
+    /// zero and 1.3% in season twenty, which is a market that stops existing halfway through the
+    /// game the player actually plays. Shares are in ten-thousandths so the arithmetic stays
+    /// integer, per `CLAUDE.md`.
+    public static let basisPointScale = 10_000
+
+    /// The least a professional deal can pay in a year, as a share of the cap. Set to land beside
+    /// `bootstrapMinimumSalary` in the base season so a generated league and a negotiated deal do
+    /// not disagree about what the bottom of the market is.
+    public static let minimumSalaryBasisPoints = 31
+
+    /// The rating at which a professional is replaceable, and so asks for the minimum. Pro rosters
+    /// generate in a band around `RosterPopulationGenerator.baseRating`; below this a club can find
+    /// the same player for nothing, which is what a floor means.
+    public static let replacementRating = 55
+
+    /// What one rating point above replacement adds to an annual demand, as a share of the cap.
+    ///
+    /// Calibrated against the generated payroll rather than picked: `bootstrapPayrollPercentOfCap`
+    /// over `activeRosterLimit` is about 160 basis points for an average professional, and a
+    /// mid-band player at this rate asks for about 155. A whole roster re-signed at its asking
+    /// price therefore costs slightly more than the cap, which is the intended shape — you keep a
+    /// core, let depth walk, and replace it at the minimum.
+    public static let askingBasisPointsPerRatingPoint = 12
+
+    /// Signing bonus, as a share of the annual rate.
+    public static let signingBonusPercent = 60
+
+    /// Term by career stage. A declining player asks for what they are worth, for fewer years.
+    public static let youngPlayerAge = 25
+    public static let youngContractYears = 5
+    public static let primeContractYears = 4
+    public static let decliningContractYears = 2
+
+    /// What one prestige point is worth to a player weighing two offers, as a share of the cap.
+    /// Real money rather than a tiebreak: taking less to join a contender is one of the few things
+    /// everybody knows about this market. Across the whole league's prestige span this is worth
+    /// about a quarter of a mid-sized deal — enough to lose a bidding war, not enough to win one
+    /// from nothing.
+    public static let prestigeValueBasisPointsPerPoint = 3
+
+    /// What each year short of the asking term costs an offer's value, as a share of the cap.
+    public static let shortTermPenaltyBasisPoints = 35
+
+    /// The cap-relative minimum for a season.
+    public static func minimumSalary(seasonsAfterBase seasons: Int) -> Int {
+        salaryCap(seasonsAfterBase: seasons) * minimumSalaryBasisPoints / basisPointScale
+    }
+
+    /// Turns a share of the cap into dollars for a season.
+    public static func capShare(basisPoints: Int, seasonsAfterBase seasons: Int) -> Int {
+        salaryCap(seasonsAfterBase: seasons) * basisPoints / basisPointScale
+    }
+
+    /// Seasons since the cap's base year, floored at zero, so callers do not each re-derive it.
+    public static func seasonsAfterBase(_ season: Int) -> Int {
+        Swift.max(0, season - baseSalaryCapSeason)
+    }
+
     // MARK: - The draft
 
     public static let draftRounds = 7

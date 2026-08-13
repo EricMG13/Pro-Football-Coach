@@ -49,6 +49,9 @@ public enum ProMarketError: Error, Sendable, Equatable {
     case waiverNotFound
     case waiverClaimExpired
     case waiverClaimInvalid
+    /// The offer does not clear what the player is asking for (`02` §4.2d). Both figures are
+    /// carried so a screen can say what the gap is rather than only that there is one.
+    case belowAskingPrice(asked: Int, offered: Int)
     case invalidRoot
 }
 
@@ -156,6 +159,17 @@ public enum ProMarketSystem {
         }
         guard contract.signedSeason == nil || contract.signedSeason == state.proMarket.season else {
             throw ProMarketError.invalidRoot
+        }
+        // The player has a price, and it is theirs rather than the club's. Without this a team
+        // signed the best man in the pool for the league minimum, which is the defect `02` §4.2d
+        // records: free agency ran, but nobody was ever negotiating.
+        if let player = state.players[playerID] {
+            let asked = ContractNegotiation
+                .askingPrice(for: player, season: state.proMarket.season)
+                .totalValue
+            guard contract.totalValue >= asked else {
+                throw ProMarketError.belowAskingPrice(asked: asked, offered: contract.totalValue)
+            }
         }
         var next = state
         guard next.proMarket.removeFreeAgent(playerID) else {
