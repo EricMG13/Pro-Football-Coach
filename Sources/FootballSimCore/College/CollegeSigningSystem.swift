@@ -228,7 +228,12 @@ public enum CollegeSigningSystem {
                         finalInterest: relationship.interest,
                         finalNILAllocation: promisedNIL,
                         overallAtSigning: prospect.overall,
-                        recruitingPriorities: prospect.priorities
+                        recruitingPriorities: prospect.priorities,
+                        scoutingAtSigning: scoutingSnapshot(
+                            for: prospect,
+                            observedBy: programmeID,
+                            in: state
+                        )
                     )
                 )
                 guard programmes.update(programmeID, {
@@ -271,6 +276,33 @@ public enum CollegeSigningSystem {
             signings: signings,
             resolutions: resolutions,
             eventPayloads: resolutionPayloads + joinPayloads
+        )
+    }
+
+    /// Freezes the signing programme's read of a prospect at the moment it becomes irreversible.
+    ///
+    /// Taken here rather than anywhere later because `ScoutingState` does not survive the rollover:
+    /// `CollegeCycleSystem` clears it wholesale, so a week after signing there is nothing left to
+    /// snapshot. Absent when the programme never evaluated the prospect, or evaluated them only
+    /// partially — a half-filled estimate is not a weaker claim, it is a different one, and
+    /// collapsing it to an overall would invent confidence the coach never had.
+    private static func scoutingSnapshot(
+        for prospect: Prospect,
+        observedBy programmeID: UUID,
+        in state: GameState
+    ) -> ProspectScoutingSnapshot? {
+        guard let observation = state.scouting.observation(
+            observerID: programmeID,
+            prospectID: prospect.id
+        ) else { return nil }
+        let rated = prospect.position.ratedAttributes
+        let values = rated.compactMap { observation.estimatedAttributes[$0]?.value }
+        guard !rated.isEmpty, values.count == rated.count else { return nil }
+        return ProspectScoutingSnapshot(
+            estimatedOverall: Rating(values.reduce(0, +) / values.count),
+            estimatedPotential: observation.estimatedPotential,
+            confidence: observation.confidence,
+            errorRadius: observation.errorRadius
         )
     }
 }

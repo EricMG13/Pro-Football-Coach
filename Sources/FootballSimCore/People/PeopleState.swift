@@ -181,6 +181,121 @@ public struct DevelopmentSummary: Codable, Sendable, Equatable {
     public var appliedDelta: Int { attributeChanges.reduce(0) { $0 + $1.delta } }
 }
 
+/// One development week worth remembering, flattened for storage.
+///
+/// The engine reasons in `DevelopmentSummary`; this is what survives into the save. The nested form
+/// carries up to eight components and sixteen attribute changes, and keeping six of those per player
+/// across ~13,000 players would cost megabytes against a save already blocked on size (FSC-003).
+/// Five scalars answer what a dossier actually asks — when, what moved, by how much, how much
+/// pressure was behind it, and which reason led — and drop only detail that was already derivable
+/// from the week it happened in.
+///
+/// A beat with `delta == 0` is a **miss**, and it is deliberately storable: `02` §8's dossier wants
+/// the week the work did not land as much as the week it did. `pressure` is what separates a near
+/// miss from a flat nothing, and it is why misses can outrank each other rather than tying at zero.
+public struct DevelopmentBeat: Codable, Sendable, Equatable {
+    public let occurredAt: CalendarState
+    public let attribute: Attribute?
+    public let delta: Int
+    public let pressure: Int
+    public let leadingReason: DevelopmentReason?
+
+    public init(
+        occurredAt: CalendarState,
+        attribute: Attribute?,
+        delta: Int,
+        pressure: Int,
+        leadingReason: DevelopmentReason?
+    ) {
+        precondition(
+            Self.isValid(attribute: attribute, delta: delta, pressure: pressure),
+            "A development beat is outside its legal shape."
+        )
+        self.occurredAt = occurredAt
+        self.attribute = attribute
+        self.delta = delta
+        self.pressure = pressure
+        self.leadingReason = leadingReason
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let decodedAttribute = try container.decodeIfPresent(Attribute.self, forKey: .attribute)
+        let decodedDelta = try container.decode(Int.self, forKey: .delta)
+        let decodedPressure = try container.decode(Int.self, forKey: .pressure)
+        guard Self.isValid(
+            attribute: decodedAttribute,
+            delta: decodedDelta,
+            pressure: decodedPressure
+        ) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .delta,
+                in: container,
+                debugDescription: "A development beat is outside its legal shape."
+            )
+        }
+        occurredAt = try container.decode(CalendarState.self, forKey: .occurredAt)
+        attribute = decodedAttribute
+        delta = decodedDelta
+        pressure = decodedPressure
+        leadingReason = try container.decodeIfPresent(
+            DevelopmentReason.self,
+            forKey: .leadingReason
+        )
+    }
+
+    /// A beat that changed nothing. Kept, not discarded — see the type comment.
+    public var isMiss: Bool { delta == 0 }
+
+    /// Retention rank. Movement first, then the pressure behind it.
+    ///
+    /// Scaled so no amount of pressure can outrank actual movement: an attribute that shifted is
+    /// always the better story than one that nearly did. Within each tier the comparison is by
+    /// magnitude, so a decline ranks alongside an equivalent gain rather than below it — losing a
+    /// point is exactly as memorable as gaining one.
+    var significance: Int {
+        abs(delta) * 1_000 + min(abs(pressure), 999)
+    }
+
+    private static func isValid(attribute: Attribute?, delta: Int, pressure: Int) -> Bool {
+        // A non-zero delta names the attribute it moved; a miss names none. The two must agree, or
+        // the dossier can render "improved" with nothing to point at.
+        (attribute == nil) == (delta == 0)
+            && PeopleRules.attributeDevelopmentRange.contains(delta)
+            && abs(pressure)
+                <= PeopleRules.maximumDevelopmentComponents
+                    * max(
+                        abs(PeopleRules.developmentComponentRange.lowerBound),
+                        abs(PeopleRules.developmentComponentRange.upperBound)
+                    )
+    }
+}
+
+extension DevelopmentSummary {
+    /// Flattens this week into the form the save keeps.
+    ///
+    /// The leading reason is the largest-magnitude component, ties broken on the reason's own name
+    /// so the choice is stable across runs rather than dependent on component ordering.
+    public var beat: DevelopmentBeat {
+        let change = attributeChanges.max { abs($0.delta) < abs($1.delta) }
+        let leading = components
+            .filter { $0.value != 0 }
+            .sorted {
+                abs($0.value) == abs($1.value)
+                    ? $0.reason.rawValue < $1.reason.rawValue
+                    : abs($0.value) > abs($1.value)
+            }
+            .first
+        return DevelopmentBeat(
+            occurredAt: occurredAt,
+            attribute: change.map(\.attribute),
+            delta: change?.delta ?? 0,
+            pressure: explainedDelta,
+            leadingReason: leading?.reason
+        )
+    }
+}
+
 public struct PlayerLifecycleState: Codable, Sendable, Equatable, Identifiable {
     public var id: UUID { playerID }
     public let playerID: UUID
@@ -352,6 +467,80 @@ public struct PlayerCareerSeason: Codable, Sendable, Equatable {
     }
 }
 
+/// What the programme believed it was signing, at the moment it signed.
+///
+/// The fog a coach paid to clear, frozen. `ScoutingState` is wiped wholesale at every rollover
+/// (`CollegeCycleSystem`), so once the class signs there is no way back to the estimate the decision
+/// was actually made on — this is the one genuinely lossy fact in recruiting, and the reason it is
+/// persisted rather than projected.
+///
+/// Held against `PlayerRecruitingOrigin.overallAtSigning`, which is the truth, it lets a dossier say
+/// what no other record can: *you thought 78, give or take 4, and you were 62% sure — he was 71.*
+/// Four scalars, and the estimated attribute spread is deliberately not among them; the collapsed
+/// overall is what a retrospective asks about, and the per-attribute dictionary would multiply the
+/// cost by the position's rated-attribute count for detail nothing reads.
+public struct ProspectScoutingSnapshot: Codable, Sendable, Equatable {
+    public let estimatedOverall: Rating
+    public let estimatedPotential: Rating
+    public let confidence: Int
+    public let errorRadius: Int
+
+    public init(
+        estimatedOverall: Rating,
+        estimatedPotential: Rating,
+        confidence: Int,
+        errorRadius: Int
+    ) {
+        precondition(
+            Self.isValid(confidence: confidence, errorRadius: errorRadius),
+            "A scouting snapshot is outside its legal shape."
+        )
+        self.estimatedOverall = estimatedOverall
+        self.estimatedPotential = estimatedPotential
+        self.confidence = confidence
+        self.errorRadius = errorRadius
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let decodedConfidence = try container.decode(Int.self, forKey: .confidence)
+        let decodedRadius = try container.decode(Int.self, forKey: .errorRadius)
+        guard Self.isValid(confidence: decodedConfidence, errorRadius: decodedRadius) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .confidence,
+                in: container,
+                debugDescription: "A scouting snapshot is outside its legal shape."
+            )
+        }
+        estimatedOverall = try container.decode(Rating.self, forKey: .estimatedOverall)
+        estimatedPotential = try container.decode(Rating.self, forKey: .estimatedPotential)
+        confidence = decodedConfidence
+        errorRadius = decodedRadius
+    }
+
+    /// The band the estimate was quoted with, clamped to the legal rating range.
+    public var estimatedOverallBand: ClosedRange<Int> {
+        let low = max(SharedRules.ratingRange.lowerBound, estimatedOverall.value - errorRadius)
+        let high = min(SharedRules.ratingRange.upperBound, estimatedOverall.value + errorRadius)
+        return low...max(low, high)
+    }
+
+    /// Whether the truth fell inside the band the coach was shown.
+    ///
+    /// The honest scoreboard for a scouting department: the band is a claim, and this is whether the
+    /// claim held. It is not a quality judgement on the signing — a bust inside the band was
+    /// correctly described and badly chosen.
+    public func bandContained(_ truth: Rating) -> Bool {
+        estimatedOverallBand.contains(truth.value)
+    }
+
+    private static func isValid(confidence: Int, errorRadius: Int) -> Bool {
+        CollegeRules.knowledgeConfidenceRange.contains(confidence)
+            && errorRadius >= 1
+            && errorRadius <= SharedRules.ratingRange.upperBound
+    }
+}
+
 public struct PlayerRecruitingOrigin: Codable, Sendable, Equatable {
     public let originCityID: UUID
     public let commitmentHistory: [RecruitingCommitmentContext]
@@ -360,6 +549,9 @@ public struct PlayerRecruitingOrigin: Codable, Sendable, Equatable {
     public let finalNILAllocation: Int
     public let overallAtSigning: Rating
     public let recruitingPriorities: [RecruitingPitch: Rating]
+    /// Absent for a player who arrived without being scouted — a walk-on, or a class signed by a
+    /// programme that never spent an evaluation on them.
+    public let scoutingAtSigning: ProspectScoutingSnapshot?
 
     public var signingSeason: Int { signedAt.season }
     public var programmeID: UUID { commitmentHistory.last!.winner.programmeID }
@@ -378,7 +570,8 @@ public struct PlayerRecruitingOrigin: Codable, Sendable, Equatable {
         finalInterest: Int,
         finalNILAllocation: Int,
         overallAtSigning: Rating,
-        recruitingPriorities: [RecruitingPitch: Rating]
+        recruitingPriorities: [RecruitingPitch: Rating],
+        scoutingAtSigning: ProspectScoutingSnapshot? = nil
     ) {
         precondition(Self.isValid(
             commitmentHistory: commitmentHistory,
@@ -394,6 +587,7 @@ public struct PlayerRecruitingOrigin: Codable, Sendable, Equatable {
         self.finalNILAllocation = finalNILAllocation
         self.overallAtSigning = overallAtSigning
         self.recruitingPriorities = recruitingPriorities
+        self.scoutingAtSigning = scoutingAtSigning
     }
 
     public init(from decoder: any Decoder) throws {
@@ -429,6 +623,10 @@ public struct PlayerRecruitingOrigin: Codable, Sendable, Equatable {
         finalNILAllocation = decodedNIL
         overallAtSigning = try container.decode(Rating.self, forKey: .overallAtSigning)
         recruitingPriorities = decodedPriorities
+        scoutingAtSigning = try container.decodeIfPresent(
+            ProspectScoutingSnapshot.self,
+            forKey: .scoutingAtSigning
+        )
     }
 
     var isValid: Bool {
@@ -480,6 +678,14 @@ public struct PlayerCareerRecord: Codable, Sendable, Equatable, Identifiable {
     public private(set) var portalWindows: [CollegePortalWindowRecord]
     public private(set) var endedAt: CalendarState?
     public private(set) var endStatus: PlayerLifecycleStatus?
+    /// The weeks worth remembering, chronological, bounded and **ranked on eviction**.
+    ///
+    /// Stored in the order they happened because that is how a dossier reads them, but what survives
+    /// truncation is chosen by `DevelopmentBeat.significance`, not by age. Keeping the newest six
+    /// would fill the ring with the plateau every long career ends in and evict the breakout that
+    /// made the player worth remembering — the same failure `DomainEventPayload.historicalWeight`
+    /// exists to prevent in the event journal, at a different scale.
+    public private(set) var developmentBeats: [DevelopmentBeat]
 
     public init(
         playerID: UUID,
@@ -487,9 +693,11 @@ public struct PlayerCareerRecord: Codable, Sendable, Equatable, Identifiable {
         seasons: [PlayerCareerSeason] = [],
         portalWindows: [CollegePortalWindowRecord],
         endedAt: CalendarState? = nil,
-        endStatus: PlayerLifecycleStatus? = nil
+        endStatus: PlayerLifecycleStatus? = nil,
+        developmentBeats: [DevelopmentBeat] = []
     ) {
         let normalizedSeasons = Array(seasons.suffix(PeopleRules.careerSeasonHistoryLimit))
+        let normalizedBeats = Self.retaining(developmentBeats)
         precondition(
             Self.seasonsAreChronological(normalizedSeasons)
                 && (endedAt == nil) == (endStatus == nil)
@@ -507,6 +715,38 @@ public struct PlayerCareerRecord: Codable, Sendable, Equatable, Identifiable {
         self.portalWindows = portalWindows
         self.endedAt = endedAt
         self.endStatus = endStatus
+        self.developmentBeats = normalizedBeats
+    }
+
+    /// Selects the beats to keep and returns them chronologically.
+    ///
+    /// Ranked by significance, then by recency so a tie between two equally significant weeks keeps
+    /// the later one, then by the calendar itself so the result cannot depend on input order — the
+    /// same beats in a different sequence must produce the same ring, or a save round-trip could
+    /// change what a player remembers.
+    private static func retaining(_ beats: [DevelopmentBeat]) -> [DevelopmentBeat] {
+        guard beats.count > PeopleRules.developmentBeatLimit else {
+            return beats.sorted(by: chronological)
+        }
+        return beats
+            .sorted {
+                if $0.significance != $1.significance { return $0.significance > $1.significance }
+                return chronological($1, $0)
+            }
+            .prefix(PeopleRules.developmentBeatLimit)
+            .sorted(by: chronological)
+    }
+
+    private static func chronological(_ lhs: DevelopmentBeat, _ rhs: DevelopmentBeat) -> Bool {
+        if lhs.occurredAt.season != rhs.occurredAt.season {
+            return lhs.occurredAt.season < rhs.occurredAt.season
+        }
+        if lhs.occurredAt.week != rhs.occurredAt.week {
+            return lhs.occurredAt.week < rhs.occurredAt.week
+        }
+        // Two beats in the same week can only differ by what moved. Ordered on the attribute's own
+        // name so the tie is broken identically on every run.
+        return (lhs.attribute?.rawValue ?? "") < (rhs.attribute?.rawValue ?? "")
     }
 
     public init(from decoder: any Decoder) throws {
@@ -531,6 +771,10 @@ public struct PlayerCareerRecord: Codable, Sendable, Equatable, Identifiable {
             defer { previousSeason = season.season }
             return previousSeason.map { season.season > $0 } ?? true
         }
+        let decodedBeats = try container.decodeIfPresent(
+            [DevelopmentBeat].self,
+            forKey: .developmentBeats
+        ) ?? []
         guard decodedSeasons.count <= PeopleRules.careerSeasonHistoryLimit,
               chronological,
               Self.portalHistoryIsValid(
@@ -540,7 +784,12 @@ public struct PlayerCareerRecord: Codable, Sendable, Equatable, Identifiable {
                   endedAt: decodedEndedAt
               ),
               (decodedEndedAt == nil) == (decodedEndStatus == nil),
-              decodedEndStatus != .active else {
+              decodedEndStatus != .active,
+              // Rejected rather than silently truncated. `init` would trim an over-long ring to the
+              // bound, which on a decode path would let a tampered or future-schema save load with a
+              // ring quietly different from the one it stored — the save would still be wrong, just
+              // no longer detectably so.
+              decodedBeats.count <= PeopleRules.developmentBeatLimit else {
             throw DecodingError.dataCorruptedError(
                 forKey: .seasons,
                 in: container,
@@ -553,8 +802,22 @@ public struct PlayerCareerRecord: Codable, Sendable, Equatable, Identifiable {
             seasons: decodedSeasons,
             portalWindows: decodedPortalWindows,
             endedAt: decodedEndedAt,
-            endStatus: decodedEndStatus
+            endStatus: decodedEndStatus,
+            developmentBeats: decodedBeats
         )
+    }
+
+    /// Records one development week, evicting the least significant beat when the ring is full.
+    ///
+    /// Returns whether the beat was kept. A beat that arrives already less significant than every
+    /// beat held is dropped rather than stored and immediately evicted, so the return value means
+    /// "this is part of the player's history" rather than "this was received".
+    @discardableResult
+    public mutating func recordDevelopmentBeat(_ beat: DevelopmentBeat) -> Bool {
+        let next = Self.retaining(developmentBeats + [beat])
+        guard next.contains(beat) else { return false }
+        developmentBeats = next
+        return true
     }
 
     @discardableResult

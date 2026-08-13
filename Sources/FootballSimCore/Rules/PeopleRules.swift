@@ -9,6 +9,16 @@ public enum PeopleRules {
     public static let maximumInjuryWeeks = 52
     public static let maximumDevelopmentComponents = 8
     public static let maximumAttributeChangesPerSummary = 16
+
+    /// Development beats retained per player, ranked rather than chronological.
+    ///
+    /// Six, and the number is a save-size decision as much as a design one. A twenty-season career
+    /// produces development every eligible week across roughly 13,000 players, so anything kept here
+    /// is multiplied five figures — the reason `DevelopmentBeat` is a flat five fields instead of the
+    /// nested `DevelopmentSummary` the engine works in. Six is enough to hold the arc a coach would
+    /// retell (the breakout, the plateau, the decline) and short enough that the whole ring costs
+    /// about what one extra season of `PlayerCareerSeason` history would.
+    public static let developmentBeatLimit = 6
     public static let developmentComponentRange: ClosedRange<Int> = -2...2
     public static let attributeDevelopmentRange: ClosedRange<Int> = -1...1
     public static let playerAgeRange: ClosedRange<Int> = 16...60

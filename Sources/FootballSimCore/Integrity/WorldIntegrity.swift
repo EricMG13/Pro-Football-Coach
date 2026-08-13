@@ -831,7 +831,21 @@ public enum WorldIntegrity {
                 return endedAt.season == lastSeason.season
                     && endedAt.week == SharedRules.inSeasonWeeks
             } ?? true
-            return seasonsAreChronological && seasonsAreValid && endIsValid
+            // The development ring, on the same terms as every other collection that grows across
+            // seasons: bounded, ordered, and never ahead of the calendar. Checked here rather than in
+            // a check of its own so it is enumerated over the same set of players — active and
+            // departed — that the rest of this closure already covers.
+            let beatsAreChronological = zip(
+                career.developmentBeats,
+                career.developmentBeats.dropFirst()
+            ).allSatisfy { !occurs($1.occurredAt, before: $0.occurredAt) }
+            let beatsAreValid = career.developmentBeats.count
+                <= PeopleRules.developmentBeatLimit
+                && beatsAreChronological
+                && career.developmentBeats.allSatisfy {
+                    !occurs(state.calendar, before: $0.occurredAt)
+                }
+            return seasonsAreChronological && seasonsAreValid && endIsValid && beatsAreValid
         }
         let recruitingOriginIsValid: (PlayerRecruitingOrigin?) -> Bool = { origin in
             origin.map { origin in

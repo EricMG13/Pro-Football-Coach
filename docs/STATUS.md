@@ -639,6 +639,26 @@ coach's session still projects instead of hitting a `preconditionFailure`.
 read three bare integers. `ProspectObservation.errorRadius` is now the single definition of the
 fog's width, used both to sample the estimate and to draw `02` §4.3's confidence band.
 
+**A player is remembered as a person.** `02` §8's per-person accumulation, the fourth engine item,
+implemented as a projection over two small persisted additions rather than a stored dossier:
+
+- `PlayerDossierReadModel` is **not `Codable`**, following `CoachingTreeReadModel`'s stated reason —
+  `PeopleState` is the authority, and a persisted second copy becomes a second authority that can
+  disagree. It builds one player at a time rather than sweeping the world, so opening a dossier does
+  not pay `NewsFeedReadModel.names(in:)`'s full name-dictionary cost.
+- `ProspectScoutingSnapshot` freezes what the programme believed at signing. `ScoutingState` is
+  cleared wholesale at every rollover, so this is genuinely unrecoverable otherwise — held against
+  `overallAtSigning`, which is the truth, it is what lets a dossier say *you thought 78 ±4 and he was
+  71*. Four scalars, absent when the programme never scouted the player.
+- `PlayerCareerRecord.developmentBeats` keeps six weeks per player, **evicted by significance rather
+  than by age**. Chronological retention would fill the ring with the plateau every long career ends
+  in and drop the breakout that made the player worth remembering. `DevelopmentBeat` is a flat five
+  fields rather than the nested `DevelopmentSummary` the engine works in, because six of the latter
+  across ~13,000 players is megabytes against a save already blocked on size.
+
+Both persisted additions decode with `decodeIfPresent`, so they are backward-compatible on their own
+— unlike the new event payloads above, they do not by themselves invalidate an existing save.
+
 **Known consequences that need a machine to settle:**
 
 - **The pinned fingerprints in `ArchitectureTests` will move and are now wrong.** Step one emits
@@ -647,10 +667,15 @@ fog's width, used both to sample the estimate and to draw `02` §4.3's confidenc
 - New `DomainEventPayload` cases change the encoded root, so existing saves are expected to be
   unreadable; the schema version has not been bumped, which is a decision the owner should confirm.
 - The both-tier soak, save-size re-measurement against FSC-003, and a carousel-exit reachability
-  test over seeded careers are all unwritten.
+  test over seeded careers are all unwritten. The dossier's ring is the only new growth term and is
+  the one most worth measuring: six beats times ~13,000 players is the whole of its cost.
+- `PlayerDossierTests` is written and registered in `Tests/SimTests/main.swift` but, like everything
+  else in this section, **has never been run**.
 
-**Not implemented from that plan:** the player dossier (`02` §8's per-person accumulation), which is
-independent of the three above and carries the heaviest save-size risk at ~13,000 players.
+**The adversarial review this phase is owed has not happened.** A workflow was launched for it and
+every one of its seventeen agents failed with a terminal error, returning nothing; the run was
+stopped rather than left to look like coverage. `CLAUDE.md` §4 requires a review before the phase is
+declared done, so **Phase 2 is not done** — the code is written and the review is outstanding.
 
 ### Preserved pre-rebaseline P0–P4 record
 
