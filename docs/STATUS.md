@@ -1205,6 +1205,38 @@ The weighting is tested against hand-built players carrying the trait.
 because no source for one has been retrieved. The harness reports the metric so a later session can
 band it from evidence rather than from the engine that produced it.
 
+### Slice 3 — kickoffs, returns and the onside kick (G-23) — written, unverified
+
+Every possession in the game began at a constant. The opening kick, halftime and every kick after a
+score all spotted the ball at `kickoffTouchbackYardLine`, so there was no return game, no
+field-position variance, and no onside kick — which removes the trailing team's last mechanism and
+most of what makes the last three minutes of a football game worth watching. The special-teams
+coordinator on all 2,158 generated staffs had nothing to coordinate.
+
+Canon first (`02` §3.6). A deep kick is a touchback or a return, with leg strength buying touchbacks;
+a return is one matchup and can score; the kick after a return touchdown is a touchback **by stated
+rule**, because a chain of them is an unbounded loop guarding a once-a-season play; an onside kick is
+a flat chance rather than a duel, because it is a scramble among ten players and naming two of them
+would be a false causal record; and it is attempted only in the final quarter, trailing, inside three
+minutes, by a deficit it could still save.
+
+Files: `docs/02-GAME-DESIGN.md` (§3.6), `Sources/FootballSimCore/Engine/Kickoff.swift` (new —
+`KickoffType`, `KickoffRecord`, `KickoffModel`), `Sources/FootballSimCore/Engine/GameEngine.swift`
+(`resolveKickoff` owns the whole transition; the fingerprint mixes it),
+`Sources/FootballSimCore/Engine/DriveEngine.swift` (`DriveRecord.startingKickoff`),
+`Sources/FootballSimCore/Rules/MatchupRules.swift` (touchback chance, leg help, return scale,
+breakaway chance, onside chance and its gates),
+`Sources/FootballSimCore/Calibration/CalibrationHarness.swift` (return points join the total, or the
+Q4 share is a ratio over a number that disagrees with the scoreboard),
+`Tests/SimTests/Suites/EngineTests.swift` (a `Kickoffs` suite of seven tests),
+`Tests/SimTests/main.swift`.
+
+**One design change was forced by reachability, and it is worth recording.** The return touchdown was
+first written as a threshold on the coverage matchup. That branch cannot be entered: the matchup
+moves a return by at most the return scale, so from the fielding spot no leverage a returner can
+produce reaches the end zone. It is now its own bounded draw. A branch nothing can enter is the dead
+capability this project names as its first failure mode, and a threshold there would have shipped one.
+
 ---
 
 ## What exists, and what verified it

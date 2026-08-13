@@ -85,17 +85,26 @@ public struct DriveRecord: Codable, Sendable, Equatable {
     public let startYardLine: Int
     /// Present exactly when the drive ended in a touchdown. `02` §3.4.
     public let conversion: ConversionRecord?
+    /// The kickoff that handed this drive the ball, when one did. `02` §3.6.
+    ///
+    /// Attached to the drive that *received* rather than the one that scored, because it is what
+    /// explains this drive's `startYardLine` — and because the opening kickoff belongs to no scoring
+    /// drive at all. `DriveEngine` cannot fill it in: a kickoff needs both teams' personnel and the
+    /// game's clock, so `GameEngine` owns it and attaches it here.
+    public let startingKickoff: KickoffRecord?
 
-    /// `conversion` is defaulted so the dozens of existing constructions of a drive — every test
-    /// fixture and the fingerprint's own mutation checks — keep meaning what they meant.
+    /// `conversion` and `startingKickoff` are defaulted so the existing constructions of a drive —
+    /// every test fixture and the fingerprint's own mutation checks — keep meaning what they meant.
     public init(offense: Side, plays: [PlayRecord], ending: DriveEnding, pointsScored: Int,
-                startYardLine: Int, conversion: ConversionRecord? = nil) {
+                startYardLine: Int, conversion: ConversionRecord? = nil,
+                startingKickoff: KickoffRecord? = nil) {
         self.offense = offense
         self.plays = plays
         self.ending = ending
         self.pointsScored = pointsScored
         self.startYardLine = startYardLine
         self.conversion = conversion
+        self.startingKickoff = startingKickoff
     }
 
     // Decoding a record written before the conversion existed still works: the property is

@@ -175,6 +175,36 @@ Falsifier: every kind occurs across a season; a penalty never advances the down;
 yardage never appears in a team's offensive yards; and a defence never accepts a flag that would give
 back a turnover it just made.
 
+### 3.6 Kickoffs, returns and the onside kick — added 2026-08-13
+
+Every possession in this game began at a constant. The opening kick, halftime, and every kick after
+a score all spotted the ball at the same yard line, so there was no return game, no field-position
+variance, and no onside kick — which removes the trailing team's last mechanism and, with it, most
+of what makes the final three minutes of a football game worth watching. The special-teams
+coordinator on every staff had nothing to coordinate.
+
+- **A deep kick is a touchback or a return.** Leg strength buys touchbacks, which is why a kicker's
+  leg is rated apart from their accuracy: it is field position, bought before the ball is fielded.
+- **A return is one matchup**, the returner's speed against the coverage unit's best tackler, and it
+  can reach the end zone. A return touchdown scores six and takes the try through the same path
+  every other touchdown does.
+- **The kickoff after a return touchdown is a touchback by rule.** A chain of return touchdowns is an
+  unbounded loop guarding a play that happens about once a season. The bound is stated here rather
+  than discovered in a hang.
+- **An onside kick is a flat chance, not a duel.** It is a scramble among ten players for a bouncing
+  ball; naming two of them and resolving a matchup would be a false causal record, and `04` §5.3
+  reads that record. Recovering one is the only way a kickoff does not change possession.
+- **It is attempted only when it could matter**: the final quarter, trailing, inside three minutes of
+  the half, and by a deficit an onside kick can still save. Outside that the kicking team kicks deep
+  and trusts its defence, which is what real teams do and what keeps recovering one an event.
+- **The kickoff is attached to the drive that received it**, not the one that scored, because it is
+  what explains that drive's starting field position — and because the opening kickoff belongs to no
+  scoring drive at all.
+
+Falsifier: across a season, touchbacks, returns, at least one return touchdown and at least one
+recovered onside kick all occur; a kickoff never leaves the ball with a team that did not legally get
+it; and a game's drive points plus its kickoff points equal the scoreboard.
+
 ---
 
 ## 4. The offseason

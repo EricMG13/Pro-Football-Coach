@@ -102,6 +102,19 @@ public struct GameRecord: Codable, Sendable, Equatable {
             } else {
                 mix(-1)
             }
+            // Same reasoning as the conversion: a kickoff is not a play, so nothing above would see
+            // an onside kick that changed hands or a return that scored.
+            if let kickoff = drive.startingKickoff {
+                mix(index(kickoff.type))
+                mix(index(kickoff.kickingSide))
+                mix(kickoff.recoveredByKickingTeam ? 1 : 0)
+                mix(kickoff.touchback ? 1 : 0)
+                mix(kickoff.returnYards)
+                mix(kickoff.resultingYardLine)
+                mix(kickoff.points)
+            } else {
+                mix(-2)
+            }
         }
         return value
     }
@@ -133,6 +146,15 @@ public enum GameEngine {
         var afterTurnover = false
         var clockRunning = false
 
+        // `02` §3.6. Every possession used to begin at a constant, so there was no return game, no
+        // onside kick and no field-position variance anywhere in the sport this engine simulates.
+        // The kickoff is resolved here rather than in the drive loop because it needs both teams'
+        // personnel and sits *between* possessions, where neither side's `Situation` is authoritative.
+        var pendingKickoff: KickoffRecord? = resolveKickoff(
+            kickingSide: .away, home: home, away: away, caller: caller, rules: rules,
+            homeFieldAdvantage: homeFieldAdvantage, seed: seed, ordinal: 0, situation: &situation
+        )
+
         for driveIndex in 0..<MatchupRules.maximumDrivesPerGame {
             let offense = situation.possession == .home ? home : away
             let defense = situation.possession == .home ? away : home
@@ -145,8 +167,25 @@ public enum GameEngine {
                 homeFieldAdvantage: homeFieldAdvantage, driveSeed: driveSeed,
                 isAfterTurnover: afterTurnover, clockRunning: clockRunning
             )
-            drives.append(drive)
+            drives.append(DriveRecord(
+                offense: drive.offense, plays: drive.plays, ending: drive.ending,
+                pointsScored: drive.pointsScored, startYardLine: drive.startYardLine,
+                conversion: drive.conversion, startingKickoff: pendingKickoff
+            ))
+            pendingKickoff = nil
             situation = next
+
+            // A score is followed by a kickoff, and a safety by a free kick from the side that gave
+            // the points up — which is the same side in both cases, the one that was on offence.
+            // `DriveEngine`'s epilogue has already flipped possession and spotted the touchback, so
+            // this replaces that default rather than competing with it.
+            if drive.ending == .touchdown || drive.ending == .fieldGoal || drive.ending == .safety {
+                pendingKickoff = resolveKickoff(
+                    kickingSide: drive.offense, home: home, away: away, caller: caller,
+                    rules: rules, homeFieldAdvantage: homeFieldAdvantage, seed: seed,
+                    ordinal: driveIndex + 1, situation: &situation
+                )
+            }
             // 02 section 3.1's trigger, threaded across the drive boundary. It was a local of
             // DriveEngine.run that nothing ever set to true, so the trigger was declared and could
             // not fire — dead capability in the call-in system, which is the one system the
@@ -167,9 +206,15 @@ public enum GameEngine {
                     situation.timeoutsRemaining = [.home: rules.timeoutsPerHalf,
                                                    .away: rules.timeoutsPerHalf]
                     situation.possession = situation.possession.opponent
-                    situation.yardLine = MatchupRules.kickoffTouchbackYardLine
-                    situation.down = 1
-                    situation.distance = MatchupRules.yardsForFirstDown
+                    // The second half opens with a kickoff like the first, from whoever is not
+                    // receiving. The manual flip above still decides who that is; this resolves the
+                    // kick rather than assuming a touchback.
+                    pendingKickoff = resolveKickoff(
+                        kickingSide: situation.possession.opponent, home: home, away: away,
+                        caller: caller, rules: rules, homeFieldAdvantage: homeFieldAdvantage,
+                        seed: seed, ordinal: MatchupRules.maximumDrivesPerGame + 1,
+                        situation: &situation
+                    )
                     clockRunning = false
                     afterTurnover = false
                 }
@@ -181,5 +226,78 @@ public enum GameEngine {
 
         return GameRecord(homeScore: situation.homeScore, awayScore: situation.awayScore,
                           drives: drives, tier: tier)
+    }
+
+    /// Resolves one kickoff and moves the game to the receiving team's first-and-ten. `02` §3.6.
+    ///
+    /// Owns the whole transition — who kicks, who ends up with the ball, where, and what a return
+    /// touchdown does to the score — because splitting those across the drive loop and this one is
+    /// how a possession ends up flipped twice.
+    private static func resolveKickoff(
+        kickingSide: Side,
+        home: SnapPersonnel,
+        away: SnapPersonnel,
+        caller: some PlayCaller,
+        rules: any ClockRules.Type,
+        homeFieldAdvantage: Double,
+        seed: UInt64,
+        ordinal: Int,
+        situation: inout Situation
+    ) -> KickoffRecord {
+        // Negative ordinals are the kickoff's reserved space inside the drive scope: `derive`
+        // reinterprets the ordinal bit-for-bit rather than converting it, so -(n + 1) cannot
+        // collide with drive n's own stream however many drives a game runs.
+        let kickoffSeed = SeededRandom.derive(from: seed, scope: .drive, ordinal: -(ordinal + 1))
+        var rng = SeededRandom(seed: kickoffSeed)
+        let receivingSide = kickingSide.opponent
+        let kicking = kickingSide == .home ? home : away
+        let receiving = receivingSide == .home ? home : away
+        let kickingScore = kickingSide == .home ? situation.homeScore : situation.awayScore
+        let receivingScore = receivingSide == .home ? situation.homeScore : situation.awayScore
+
+        let type = KickoffModel.chooseType(
+            trailingBy: receivingScore - kickingScore,
+            secondsRemainingInHalf: situation.secondsRemainingInHalf(rules: rules),
+            quarter: situation.quarter,
+            quarters: rules.quarters
+        )
+        var record = KickoffModel.resolve(type: type, kickingSide: kickingSide, kicking: kicking,
+                                          receiving: receiving, rng: &rng)
+
+        if record.returnTouchdown {
+            // The try after a return touchdown goes through the same path every other touchdown's
+            // does. The kickoff that follows is a touchback by rule rather than another return: a
+            // chain of return touchdowns is an unbounded loop guarding a play that happens about
+            // once a season, and `02` §3.6 states the bound rather than hiding it.
+            var scoring = situation
+            scoring.possession = receivingSide
+            let conversion = DriveEngine.resolveConversion(
+                after: scoring, offense: receiving, defense: kicking, caller: caller, rules: rules,
+                homeFieldAdvantage: receivingSide == .home ? homeFieldAdvantage
+                                                           : -homeFieldAdvantage,
+                driveSeed: kickoffSeed
+            )
+            let points = MatchupRules.touchdownPoints + conversion.points
+            if receivingSide == .home {
+                situation.homeScore += points
+            } else {
+                situation.awayScore += points
+            }
+            record = KickoffRecord(
+                type: record.type, kickingSide: kickingSide, touchback: record.touchback,
+                returnYards: record.returnYards,
+                resultingYardLine: MatchupRules.kickoffTouchbackYardLine,
+                points: points, returnTouchdown: true,
+                kickerID: record.kickerID, returnerID: record.returnerID
+            )
+            situation.possession = kickingSide
+            situation.yardLine = MatchupRules.kickoffTouchbackYardLine
+        } else {
+            situation.possession = record.recoveredByKickingTeam ? kickingSide : receivingSide
+            situation.yardLine = record.resultingYardLine
+        }
+        situation.down = 1
+        situation.distance = Swift.min(MatchupRules.yardsForFirstDown, 100 - situation.yardLine)
+        return record
     }
 }

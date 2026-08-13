@@ -199,6 +199,14 @@ public enum CalibrationHarness {
                 pointsTotal += drive.pointsScored
                 if drive.plays.last?.situation.quarter == 4 { pointsInQ4 += drive.pointsScored }
             }
+            // Points a kickoff return scored belong to the game's points even though no drive
+            // produced them. Leaving them out would make the Q4 share a ratio over a total that
+            // does not match the scoreboard.
+            for drive in game.drives {
+                guard let kickoff = drive.startingKickoff, kickoff.points > 0 else { continue }
+                pointsTotal += kickoff.points
+                if drive.plays.first?.situation.quarter == 4 { pointsInQ4 += kickoff.points }
+            }
 
             // The favourite is the better roster, not the home team. It was `winner == .home`,
             // which measures home-field advantage twice and the favourite band not at all — the

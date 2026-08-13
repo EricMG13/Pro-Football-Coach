@@ -243,6 +243,40 @@ public enum MatchupRules {
 
     public static let yardsForFirstDown = 10
     public static let kickoffTouchbackYardLine = 25
+
+    // MARK: - Kickoffs
+
+    /// Chance a deep kickoff reaches the end zone with no return, before leg strength.
+    public static let kickoffTouchbackChance = 0.52
+    /// How much a maximum leg adds to that chance. The reason leg strength is rated apart from
+    /// accuracy: it buys touchbacks, and touchbacks are field position.
+    public static let legStrengthTouchbackHelp = 0.22
+    /// Where a returned kick is fielded, from the receiving team's own goal line.
+    public static let kickoffReturnStartYardLine = 5
+    /// Yards a perfectly average return gains from there.
+    public static let baseKickoffReturnYards = 18
+    /// How far a won or lost coverage matchup moves that, in yards per leverage unit.
+    public static let kickoffReturnYardScale = 22.0
+    /// Chance a return that beat its coverage breaks all the way.
+    ///
+    /// A separate draw rather than a threshold on the matchup, because the matchup cannot reach the
+    /// end zone from the fielding spot at any leverage — a threshold there would be a branch nothing
+    /// could enter.
+    public static let kickoffBreakawayChance = 0.006
+
+    /// Chance the kicking team recovers an onside kick.
+    ///
+    /// Flat, and low. It is a scramble for a bouncing ball among ten players, so the trailing team's
+    /// last mechanism is a real one that usually fails — which is what makes recovering one the
+    /// moment it is.
+    public static let onsideRecoveryChance = 0.12
+    /// Where the recovering team starts either way, from its own goal line.
+    public static let onsideRecoveryYardLine = 45
+    /// Inside this many seconds of the half, a trailing team may try one.
+    public static let onsideKickSecondsRemaining = 180
+    /// Beyond this deficit an onside kick cannot save the game, so the kicking team kicks deep and
+    /// trusts its defence instead.
+    public static let onsideKickMaximumDeficit = 16
     /// Where a punt that reaches the goal line spots the receiving team. Without it a deep punt
     /// clamped the receiver to its own 1, which happened on 2 percent of measured punts.
     public static let puntTouchbackYardLine = 20

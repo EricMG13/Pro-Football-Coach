@@ -1138,6 +1138,168 @@ func runPenaltyTests() {
     }
 }
 
+func runKickoffTests() {
+    let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
+    let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
+
+    suite("Kickoffs") {
+        test("a kickoff is not a constant any more") {
+            // Every possession used to begin at kickoffTouchbackYardLine, which is what made the
+            // whole return game, and the onside kick with it, unreachable.
+            var startingLines: Set<Int> = []
+            var touchbacks = 0, returns = 0
+            for seed in UInt64(1)...40 {
+                for drive in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).drives {
+                    guard let kickoff = drive.startingKickoff else { continue }
+                    startingLines.insert(kickoff.resultingYardLine)
+                    if kickoff.touchback { touchbacks += 1 } else { returns += 1 }
+                    expect((1...99).contains(kickoff.resultingYardLine),
+                           "a kickoff spotted the ball off the field at "
+                               + "\(kickoff.resultingYardLine)")
+                }
+            }
+            expect(touchbacks > 0, "no kickoff was ever a touchback")
+            expect(returns > 0, "no kickoff was ever returned")
+            expect(startingLines.count > 3,
+                   "kickoffs produced \(startingLines.count) distinct starting positions, which is "
+                       + "a constant with extra steps")
+        }
+
+        test("the opening drive and the second half both start from a kick") {
+            for seed in UInt64(1)...20 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                expect(game.drives.first?.startingKickoff != nil,
+                       "seed \(seed): the opening drive was not started by a kickoff")
+                // Opening kick, second-half kick, and one per score. Two is the floor a game that
+                // ended nil-nil would still have to meet, and the halftime kick is the one a model
+                // that only kicked after scores would miss.
+                let kicked = game.drives.filter { $0.startingKickoff != nil }.count
+                expect(kicked >= 2,
+                       "seed \(seed) had \(kicked) kickoffs, so halftime is not kicking off")
+            }
+        }
+
+        test("an onside kick is only tried when it could matter") {
+            // 02 section 3.6. Outside the final quarter, or from in front, or from too far behind,
+            // the kicking team kicks deep.
+            expectEqual(KickoffModel.chooseType(trailingBy: 6, secondsRemainingInHalf: 90,
+                                                quarter: 4, quarters: 4), .onside)
+            expectEqual(KickoffModel.chooseType(trailingBy: 6, secondsRemainingInHalf: 90,
+                                                quarter: 2, quarters: 4), .deep,
+                        "an onside kick was tried in the first half")
+            expectEqual(KickoffModel.chooseType(trailingBy: -6, secondsRemainingInHalf: 90,
+                                                quarter: 4, quarters: 4), .deep,
+                        "an onside kick was tried while leading")
+            expectEqual(KickoffModel.chooseType(trailingBy: 6, secondsRemainingInHalf: 600,
+                                                quarter: 4, quarters: 4), .deep,
+                        "an onside kick was tried with ten minutes left")
+            expectEqual(KickoffModel.chooseType(
+                trailingBy: MatchupRules.onsideKickMaximumDeficit + 1,
+                secondsRemainingInHalf: 60, quarter: 4, quarters: 4
+            ), .deep, "an onside kick was tried from a deficit it cannot save")
+        }
+
+        test("a recovered onside kick is the only kickoff that keeps possession") {
+            var recovered = 0, attempted = 0
+            for seed in UInt64(1)...400 {
+                var rng = SeededRandom(seed: seed)
+                let record = KickoffModel.resolve(type: .onside, kickingSide: .home,
+                                                  kicking: home, receiving: away, rng: &rng)
+                attempted += 1
+                if record.recoveredByKickingTeam {
+                    recovered += 1
+                    expectEqual(record.resultingYardLine, MatchupRules.onsideRecoveryYardLine,
+                                "a recovered onside kick spotted the ball somewhere else")
+                } else {
+                    expectEqual(record.resultingYardLine,
+                                100 - MatchupRules.onsideRecoveryYardLine,
+                                "a failed onside kick did not give up the short field")
+                }
+            }
+            expect(recovered > 0, "no onside kick was recovered in \(attempted) attempts")
+            expect(recovered * 3 < attempted,
+                   "\(recovered) of \(attempted) onside kicks were recovered, which would make it "
+                       + "the trailing team's first choice rather than its last")
+        }
+
+        test("a return can score, and the kick after it does not") {
+            // The bound 02 section 3.6 states, asserted rather than trusted: a chain of return
+            // touchdowns is an unbounded loop guarding a once-a-season play.
+            var scored = 0
+            for seed in UInt64(1)...500 {
+                for drive in GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                    .drives {
+                    guard let kickoff = drive.startingKickoff, kickoff.returnTouchdown else {
+                        continue
+                    }
+                    scored += 1
+                    expect(kickoff.points >= MatchupRules.touchdownPoints,
+                           "a return touchdown scored \(kickoff.points)")
+                    expectEqual(kickoff.resultingYardLine, MatchupRules.kickoffTouchbackYardLine,
+                                "the kickoff after a return touchdown was itself a return")
+                }
+            }
+            expect(scored > 0,
+                   "no kickoff was returned for a touchdown in 500 games, so the branch is "
+                       + "declared and unreachable")
+        }
+
+        test("the scoreboard equals the drives plus the returns") {
+            // 02 section 3.6's falsifier. A return touchdown scores outside any drive, so a total
+            // built from drives alone would silently disagree with the score it is printed beside.
+            for seed in UInt64(1)...40 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                var home_ = 0, away_ = 0
+                for drive in game.drives {
+                    if drive.ending == .safety {
+                        // The defence scores a safety, so it belongs to the other side.
+                        if drive.offense == .home { away_ += drive.pointsScored }
+                        else { home_ += drive.pointsScored }
+                    } else if drive.offense == .home {
+                        home_ += drive.pointsScored
+                    } else {
+                        away_ += drive.pointsScored
+                    }
+                    if let kickoff = drive.startingKickoff, kickoff.points > 0 {
+                        // The return is scored by the side that received, which is whoever did not
+                        // kick.
+                        if kickoff.kickingSide == .home { away_ += kickoff.points }
+                        else { home_ += kickoff.points }
+                    }
+                }
+                expectEqual(home_, game.homeScore,
+                            "seed \(seed): the home drives and returns do not add up to the score")
+                expectEqual(away_, game.awayScore,
+                            "seed \(seed): the away drives and returns do not add up to the score")
+            }
+        }
+
+        test("a stronger leg buys more touchbacks") {
+            // The reason leg strength is rated apart from accuracy at all.
+            func touchbackRate(leg: Int) -> Double {
+                var attributes = Attributes()
+                for attribute in Position.kicker.ratedAttributes { attributes[attribute] = Rating(60) }
+                attributes[.legStrength] = Rating(leg)
+                let kicker = Player(
+                    id: UUID(uuidString: "00000000-0000-4000-A000-00000000000\(leg > 70 ? 1 : 2)")!,
+                    firstName: "K", lastName: "K", position: .kicker, age: 25,
+                    attributes: attributes, potential: Rating(60)
+                )
+                let kicking = SnapPersonnel(offense: [kicker], defense: home.defense)
+                var made = 0
+                for seed in UInt64(1)...600 {
+                    var rng = SeededRandom(seed: seed)
+                    if KickoffModel.resolve(type: .deep, kickingSide: .home, kicking: kicking,
+                                            receiving: away, rng: &rng).touchback { made += 1 }
+                }
+                return Double(made) / 600
+            }
+            expect(touchbackRate(leg: 95) > touchbackRate(leg: 45),
+                   "leg strength bought no touchbacks, so it is a rating nothing reads")
+        }
+    }
+}
+
 /// A caller that plays the baseline game and always makes the same conversion choice.
 struct FixedConversionCaller: PlayCaller, Sendable {
     let choice: ConversionChoice
