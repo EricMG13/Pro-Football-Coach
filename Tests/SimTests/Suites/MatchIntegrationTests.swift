@@ -139,3 +139,114 @@ func runMatchIntegrationTests() {
         }
     }
 }
+
+/// A handler that always takes the aggressive option, to prove an answer changes the game.
+struct AttackingCallInHandler: MatchCallInHandler {
+    func answer(_ proposal: TacticalCallInProposal, current: TacticalPlan) -> TacticalCallInAction {
+        proposal.options.contains { $0.action == .attack } ? .attack : proposal.recommendation
+    }
+}
+
+/// A handler that answers with an option nobody offered, to prove the engine refuses it.
+struct LyingCallInHandler: MatchCallInHandler {
+    func answer(_ proposal: TacticalCallInProposal, current: TacticalPlan) -> TacticalCallInAction {
+        // `trustCoordinator` is always on the card, so this names the one action the driver has to
+        // fall back from only when it is absent — which is why the assertion checks the record
+        // rather than the plan.
+        .attack
+    }
+}
+
+func runCallInTests() {
+    let home = testPersonnel(offenseSkill: 73, defenseSkill: 71)
+    let away = testPersonnel(offenseSkill: 71, defenseSkill: 73)
+
+    suite("Call-ins") {
+        test("a played game raises call-ins at a rate 02 section 3.1 would recognise") {
+            // TacticalCallInSystem.proposal built exactly what 02 section 3.1 specifies and had no
+            // production caller at all: it was reachable only from a unit test.
+            var raised = 0
+            for seed in UInt64(1)...12 {
+                let game = GameEngine.play(
+                    tier: .pro, home: home, away: away,
+                    callIns: CallInDriver(plan: .balanced, opponentPlan: .balanced),
+                    seed: seed
+                )
+                expect(!game.callIns.isEmpty, "seed \(seed) raised no call-in at all")
+                expect(game.callIns.count <= SharedRules.defaultCallInsPerGame,
+                       "seed \(seed) raised \(game.callIns.count) call-ins, past its budget")
+                raised += game.callIns.count
+            }
+            expect(raised > 12, "only \(raised) call-ins across twelve games")
+        }
+
+        test("a game without a driver raises none") {
+            // Every game in the world the coach does not control, and the reason the driver is
+            // optional rather than always-on.
+            let game = GameEngine.play(tier: .pro, home: home, away: away, seed: 3_003)
+            expect(game.callIns.isEmpty, "a game nobody was watching raised a call-in")
+        }
+
+        test("the answer changes the game") {
+            // The whole point. If answering changed nothing, the call-in would be the previous
+            // build's failure with more steps: a decision about presentation.
+            let deferred = GameEngine.play(
+                tier: .pro, home: home, away: away,
+                callIns: CallInDriver(plan: .balanced, opponentPlan: .balanced),
+                seed: 8_181
+            )
+            let attacked = GameEngine.play(
+                tier: .pro, home: home, away: away,
+                callIns: CallInDriver(plan: .balanced, opponentPlan: .balanced,
+                                      handler: AttackingCallInHandler()),
+                seed: 8_181
+            )
+            expect(deferred.playByPlayFingerprint != attacked.playByPlayFingerprint,
+                   "answering every call-in differently produced the same game")
+            expect(attacked.callIns.contains { !$0.deferred },
+                   "the attacking handler never actually departed from the recommendation")
+            expect(deferred.callIns.allSatisfy(\.deferred),
+                   "the coordinator's own handler did not take its own recommendation")
+        }
+
+        test("the budget is honoured and bounded by the tunable range") {
+            let tight = GameEngine.play(
+                tier: .college, home: home, away: away,
+                callIns: CallInDriver(plan: .balanced, opponentPlan: .balanced, budget: 12),
+                seed: 4_004
+            )
+            expect(tight.callIns.count <= 12, "a twelve call-in budget raised \(tight.callIns.count)")
+            let clamped = CallInDriver(plan: .balanced, opponentPlan: .balanced, budget: 500)
+            expectEqual(clamped.budget, SharedRules.callInsPerGameRange.upperBound,
+                        "the budget escaped 02 section 3.1's tunable range")
+        }
+
+        test("the same answers replay the same game") {
+            func play() -> UInt64 {
+                GameEngine.play(
+                    tier: .pro, home: home, away: away,
+                    callIns: CallInDriver(plan: .balanced, opponentPlan: .balanced,
+                                          handler: AttackingCallInHandler()),
+                    seed: 9_119
+                ).playByPlayFingerprint
+            }
+            expectEqual(play(), play(), "the same answers produced a different game")
+        }
+
+        test("every raised call-in names its trigger and what was recommended") {
+            let game = GameEngine.play(
+                tier: .college, home: home, away: away,
+                callIns: CallInDriver(plan: .balanced, opponentPlan: .balanced,
+                                      handler: LyingCallInHandler()),
+                seed: 7_007
+            )
+            for callIn in game.callIns {
+                expect(CallInTrigger.allCases.contains(callIn.trigger),
+                       "a call-in carried no trigger")
+                expect((1...4).contains(callIn.situation.down),
+                       "a call-in was raised on down \(callIn.situation.down)")
+                expect(callIn.driveIndex >= 0, "a call-in came from no drive")
+            }
+        }
+    }
+}

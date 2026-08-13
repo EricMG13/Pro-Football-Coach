@@ -9,14 +9,18 @@ public struct GameRecord: Codable, Sendable, Equatable {
     /// What it was played in. `02` §3.10. Defaulted so every existing construction of a record — the
     /// fingerprint's own mutation checks among them — keeps meaning what it meant.
     public let weather: Weather
+    /// Every call-in the game raised, and what was answered. `02` §3.15. Empty when the game was
+    /// played without a driver, which is every game in the world the coach does not control.
+    public let callIns: [MatchCallInRecord]
 
     public init(homeScore: Int, awayScore: Int, drives: [DriveRecord], tier: Tier,
-                weather: Weather = .clear) {
+                weather: Weather = .clear, callIns: [MatchCallInRecord] = []) {
         self.homeScore = homeScore
         self.awayScore = awayScore
         self.drives = drives
         self.tier = tier
         self.weather = weather
+        self.callIns = callIns
     }
 
     public var winner: Side? {
@@ -52,6 +56,14 @@ public struct GameRecord: Codable, Sendable, Equatable {
 
         mix(homeScore); mix(awayScore); mix(drives.count); mix(index(tier))
         mix(index(weather))
+        // The answers changed the game, so the gate has to see them: two runs that differ only in
+        // what a coach said at a call-in are different games and must fingerprint differently.
+        mix(callIns.count)
+        for callIn in callIns {
+            mix(callIn.driveIndex)
+            mix(index(callIn.trigger))
+            mix(index(callIn.chosen))
+        }
         for drive in drives {
             mix(drive.pointsScored)
             mix(drive.startYardLine)
@@ -140,6 +152,7 @@ public enum GameEngine {
         homeFieldAdvantage: Double = MatchupRules.homeAdvantage,
         week: Int = 1,
         weather: Weather? = nil,
+        callIns: CallInDriver? = nil,
         seed: UInt64
     ) -> GameRecord {
         let rules = tier.clockRules
@@ -158,6 +171,7 @@ public enum GameEngine {
         var drives: [DriveRecord] = []
         var afterTurnover = false
         var clockRunning = false
+        var driver = callIns
 
         // `02` §3.6. Every possession used to begin at a constant, so there was no return game, no
         // onside kick and no field-position variance anywhere in the sport this engine simulates.
@@ -176,11 +190,33 @@ public enum GameEngine {
             // generator through the whole game means a drive that ran long cannot shift the stream
             // the next drive reads.
             let driveSeed = SeededRandom.derive(from: seed, scope: .drive, ordinal: driveIndex)
-            let (drive, next) = DriveEngine.run(
-                from: situation, offense: offense, defense: defense, caller: caller, rules: rules,
-                homeFieldAdvantage: homeFieldAdvantage, weather: conditions, driveSeed: driveSeed,
-                isAfterTurnover: afterTurnover, clockRunning: clockRunning
-            )
+            // `02` §3.15. The call-in is raised before the drive because that is the decision the
+            // proposal models: every option it offers is a whole `TacticalPlan`, so what it asks is
+            // what the offence does from here rather than which play runs next.
+            let drive: DriveRecord
+            let next: Situation
+            if driver != nil {
+                let plan = driver!.planForDrive(
+                    index: driveIndex, situation: situation, isAfterTurnover: afterTurnover,
+                    rules: rules
+                )
+                // Two branches rather than one, because the caller's type differs and the loop is
+                // generic over it. The alternative — erasing to `any PlayCaller` — would put an
+                // existential in the hot path of every snap of every game in the world.
+                (drive, next) = DriveEngine.run(
+                    from: situation, offense: offense, defense: defense,
+                    caller: TacticalPlanCaller(offensivePlan: plan,
+                                               defensivePlan: driver!.opponentPlan),
+                    rules: rules, homeFieldAdvantage: homeFieldAdvantage, weather: conditions,
+                    driveSeed: driveSeed, isAfterTurnover: afterTurnover, clockRunning: clockRunning
+                )
+            } else {
+                (drive, next) = DriveEngine.run(
+                    from: situation, offense: offense, defense: defense, caller: caller,
+                    rules: rules, homeFieldAdvantage: homeFieldAdvantage, weather: conditions,
+                    driveSeed: driveSeed, isAfterTurnover: afterTurnover, clockRunning: clockRunning
+                )
+            }
             drives.append(DriveRecord(
                 offense: drive.offense, plays: drive.plays, ending: drive.ending,
                 pointsScored: drive.pointsScored, startYardLine: drive.startYardLine,
@@ -248,7 +284,8 @@ public enum GameEngine {
         }
 
         return GameRecord(homeScore: situation.homeScore, awayScore: situation.awayScore,
-                          drives: drives, tier: tier, weather: conditions)
+                          drives: drives, tier: tier, weather: conditions,
+                          callIns: driver?.raised ?? [])
     }
 
     /// Plays overtime in whichever format the tier declares. `02` §3.7.

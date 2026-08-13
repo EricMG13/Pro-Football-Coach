@@ -709,6 +709,7 @@ public enum WorldScheduler {
 
         // Both game plans, through the same system the abstracted path uses, so the coach's
         // mandatory week-three decision is worth the same whether they watch the game or not.
+        let controlledIsHome = fixture.homeID == controlledID
         let homePlan = TacticalPlanSystem.plan(
             for: fixture.homeID, against: fixture.awayID, at: completed, in: state,
             tactical: &state.tactical
@@ -725,6 +726,13 @@ public enum WorldScheduler {
                                        unavailableIDs: out),
             caller: TacticalPlanCaller(offensivePlan: homePlan, defensivePlan: awayPlan),
             week: completed.week,
+            // The coordinator answers when the coach is not at the game. `02` §3.1 is explicit that
+            // deferring is a real choice rather than a non-answer, and this is a whole game of it —
+            // which is exactly what a coach who advances the week without watching has chosen.
+            callIns: CallInDriver(
+                plan: controlledIsHome ? homePlan : awayPlan,
+                opponentPlan: controlledIsHome ? awayPlan : homePlan
+            ),
             seed: SeededRandom.derive(from: state.league.seed, scope: .game,
                                       identifier: fixture.id)
         )

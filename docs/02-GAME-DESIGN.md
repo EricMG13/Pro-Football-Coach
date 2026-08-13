@@ -399,6 +399,33 @@ Falsifier: the `userGame` step executes in a week the controlled team plays; no 
 results; whole-root integrity holds after a played game; the same seed replays it exactly; and two
 opposite game plans produce different games.
 
+### 3.15 The call-in loop, connected — added 2026-08-13
+
+`TacticalCallInSystem.proposal` built exactly what §3.1 specifies — at most three options, each with
+its rationale and its risk, plus the coordinator's recommendation — and had **no production caller**.
+It was reachable only from a unit test. The agency model this game is designed around, ~25 calls a
+game and ~500 a season against the previous build's ~20, existed as a function nobody invoked.
+
+- **The engine raises, counts and applies; the caller answers.** That seam is what lets one loop
+  serve a coordinator that defers, a player at a phone, and a test — without the engine knowing
+  which.
+- **A call-in is raised per drive, not per snap**, because that is the decision the proposal models:
+  every option it offers *is* a whole `TacticalPlan`, so what it asks is what the offence does from
+  here rather than which play runs next.
+- **Deferring is answering.** §3.1 says a coach who trusts their coordinator is playing correctly, so
+  the default handler takes the recommendation and a whole deferred game is a legitimate game.
+- **The budget is the tunable one** from §3.1 — 25 by default, clamped to 12–40 — and it is spent by
+  raising, not by answering.
+- **An answer that names an option nobody offered is treated as a deferral.** A handler is allowed to
+  be wrong; the engine is not allowed to act on a plan that was never on the card.
+- **The answers are in the record and in the fingerprint.** Two runs that differ only in what a coach
+  said are different games, and the determinism gate has to see that.
+
+**What a coach advancing the week gets today**: the coordinator answers every call-in of their game.
+That is `02` §3.1's hand-off, and it is honest — but it is *not* the player answering. A surface that
+pauses a match and asks needs a match session the week can suspend on, which is UI-milestone work and
+is named here rather than implied.
+
 ### 3.13 Who plays — the depth chart — added 2026-08-13
 
 FSC-008 records the depth chart as the missing piece behind tactical package and role eligibility.

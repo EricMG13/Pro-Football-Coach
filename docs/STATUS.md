@@ -1519,8 +1519,27 @@ tests are written for all four and **none has been run.** A session with a toolc
 this slice as the first thing to verify: it changes what a career's results are made of, and the
 root fingerprints move with it.
 
-**The match is played, not watched.** The call-in loop still has no runtime path — the coach's game
-resolves without pulling them in. G-19 is the next slice.
+### Slice 16 — the call-in loop, connected (G-19) — written, unverified
+
+`TacticalCallInSystem.proposal` built exactly what `02` §3.1 specifies and had **no production
+caller** — reachable only from a unit test. The agency model the whole game is designed around
+existed as a function nobody invoked.
+
+`CallInDriver` is the seam: the engine raises a call-in per drive, counts it against `02` §3.1's
+tunable budget, applies the answer, and records what was asked and answered; `MatchCallInHandler`
+decides *who* answers, so one loop serves a deferring coordinator, a player at a phone, and a test.
+The answers are mixed into the play-by-play fingerprint, because two runs that differ only in what a
+coach said are different games.
+
+Files: `Sources/FootballSimCore/Engine/CallInDriver.swift` (new),
+`Sources/FootballSimCore/Engine/GameEngine.swift` (`GameRecord.callIns`, the per-drive raise, the
+fingerprint), `Sources/FootballSimCore/Scheduling/WorldScheduler.swift` (the played game gets a
+driver), `Tests/SimTests/Suites/MatchIntegrationTests.swift` (a `Call-ins` suite of six tests),
+`Tests/SimTests/main.swift`, `docs/02-GAME-DESIGN.md` (§3.15).
+
+**A coach advancing the week gets the coordinator answering their call-ins.** That is §3.1's hand-off
+and it is honest, but it is **not the player answering**. A surface that pauses a match and asks needs
+a match session the week can suspend on — UI-milestone work, named rather than implied.
 
 **Traditions remain inert, and the repair is larger than it looks.** `02` §8 requires every generated
 tradition to carry a mechanical effect. `TraditionGrammar` produces them and nothing reads one —
