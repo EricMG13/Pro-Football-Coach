@@ -30,6 +30,31 @@ public struct CareerRecruitingProspectProjection: Sendable, Equatable, Identifia
     public let estimatedOverall: Int?
     public let estimatedPotential: Int?
     public let confidence: Int?
+    /// Half-width of the band around the two estimates, in rating points. `nil` when the programme
+    /// has never scouted this prospect and there is no estimate to qualify.
+    ///
+    /// `02` §4.3 requires the displayed rating to carry a visible confidence band rather than a bare
+    /// number pretending to certainty. The engine computed this radius at sample time and then threw
+    /// it away; the three bare integers above were all a surface could read.
+    public let estimateRadius: Int?
+
+    public var estimatedOverallRange: ClosedRange<Int>? {
+        guard let estimatedOverall, let estimateRadius else { return nil }
+        return Self.band(around: estimatedOverall, radius: estimateRadius)
+    }
+
+    public var estimatedPotentialRange: ClosedRange<Int>? {
+        guard let estimatedPotential, let estimateRadius else { return nil }
+        return Self.band(around: estimatedPotential, radius: estimateRadius)
+    }
+
+    /// Clamped to the rating scale, because a band that runs past 99 advertises a certainty the
+    /// scale cannot hold.
+    private static func band(around value: Int, radius: Int) -> ClosedRange<Int> {
+        let lower = max(SharedRules.ratingRange.lowerBound, value - radius)
+        let upper = min(SharedRules.ratingRange.upperBound, value + radius)
+        return lower...max(lower, upper)
+    }
 }
 
 public struct CollegeProgrammeProjection: Sendable, Equatable, Identifiable {
@@ -47,9 +72,15 @@ public struct CollegeProgrammeProjection: Sendable, Equatable, Identifiable {
 
 public struct CareerProjection: Sendable, Equatable {
     public let calendar: CalendarState
-    public let programme: CollegeProgrammeProjection
+    /// `nil` between jobs. A sacked coach still has a career, and the session that survives the
+    /// sacking has to be able to describe it — this used to be non-optional behind a
+    /// `preconditionFailure`, which was safe only because nothing could ever take the job away.
+    public let programme: CollegeProgrammeProjection?
     public let recruitingBoard: [CareerRecruitingProspectProjection]
     public let mandatoryDecisions: [MandatoryDecision]
+    public let employmentStatus: CareerEmploymentStatus
+    /// What the coach may accept. `02` §7 guarantees this is non-empty while out of work.
+    public let opportunities: [CareerOpportunity]
 }
 
 public enum CareerSessionResult: Sendable, Equatable {
@@ -68,7 +99,11 @@ public actor CareerSession {
     private var state: GameState
 
     public init(state: GameState) throws {
-        guard state.career.college != nil else {
+        // A save whose coach is between jobs still opens: it has a career arc, a market, and a week
+        // to advance. Requiring a controlled programme here would make being sacked unloadable.
+        guard state.career.college != nil
+                || state.careerArc.currentJob != nil
+                || !state.careerArc.jobHistory.isEmpty else {
             throw CareerSessionError.missingControlledCareer
         }
         let prepared = CareerMandatoryDecisionSystem.refresh(in: state)
@@ -89,7 +124,16 @@ public actor CareerSession {
 
     public func resolve(_ intent: CareerSessionIntent) throws -> CareerSessionReceipt {
         try Task.checkCancellation()
-        guard let control = state.career.college else {
+        // Two intents outlive the job. Advancing must stay available or a sacked coach's save is
+        // frozen at the week they were sacked, and accepting an offer is the only way back in —
+        // between them they are what stops `02` §7's carousel dead-ending.
+        let control: CollegeCareerControl
+        switch (state.career.college, intent) {
+        case let (existing?, _):
+            control = existing
+        case (nil, .advanceWeek), (nil, .career):
+            return try resolveWithoutControl(intent)
+        case (nil, _):
             throw CareerSessionError.missingControlledCareer
         }
         let coachIntent: CoachIntent
@@ -118,9 +162,9 @@ public actor CareerSession {
                 plan: plan
             ))
         case let .career(action):
-            if case .acceptOpportunity = action {
-                throw CareerSessionError.invalidState
-            }
+            // Accepting used to be refused here outright, which meant the promotion `02` §9 sells
+            // was unreachable through the only actor the game has. It is reachable now, and the
+            // projection tolerates the controlled programme going away as a result.
             coachIntent = .career(CareerArcRequest(
                 calendar: state.calendar,
                 action: action
@@ -134,7 +178,32 @@ public actor CareerSession {
         }
         let resolved = try IntentResolver.resolve(coachIntent, in: state)
         try Task.checkCancellation()
-        state = CareerMandatoryDecisionSystem.refresh(in: resolved.state)
+        // No refresh here any more: obligations are raised inside the weekly transaction, at the
+        // scheduler's `newsAndNarrative` step. Raising them again out here would be the second
+        // generator, and the one that ran after integrity had already passed.
+        state = resolved.state
+        return CareerSessionReceipt(
+            projection: Self.makeProjection(from: state),
+            result: .intent(resolved.result)
+        )
+    }
+
+    /// The reduced surface available to a coach between jobs.
+    private func resolveWithoutControl(
+        _ intent: CareerSessionIntent
+    ) throws -> CareerSessionReceipt {
+        let coachIntent: CoachIntent
+        switch intent {
+        case .advanceWeek:
+            coachIntent = .advanceWeek
+        case let .career(action):
+            coachIntent = .career(CareerArcRequest(calendar: state.calendar, action: action))
+        default:
+            throw CareerSessionError.missingControlledCareer
+        }
+        let resolved = try IntentResolver.resolve(coachIntent, in: state)
+        try Task.checkCancellation()
+        state = resolved.state
         return CareerSessionReceipt(
             projection: Self.makeProjection(from: state),
             result: .intent(resolved.result)
@@ -156,43 +225,28 @@ public actor CareerSession {
         guard let option = decision.options.first(where: { $0.id == optionID }) else {
             throw CareerSessionError.missingDecisionOption
         }
-        var candidate = state
-        switch option.action {
-        case let .recruiting(action):
-            candidate = try IntentResolver.resolve(
-                .recruiting(RecruitingActionRequest(
-                    programmeID: control.programmeID,
-                    prospectID: decision.subject.entityID,
-                    action: action
-                )),
-                in: candidate
-            ).state
-        case let .redshirt(plannedAppearanceLimit):
-            if let plannedAppearanceLimit {
-                candidate.college = try CollegeRedshirtSystem.designate(
-                    playerID: decision.subject.entityID,
-                    programmeID: control.programmeID,
-                    plannedAppearanceLimit: plannedAppearanceLimit,
-                    in: candidate
-                )
-            } else if candidate.college.redshirtPlans[decision.subject.entityID] != nil {
-                candidate.college = try CollegeRedshirtSystem.clearDesignation(
-                    playerID: decision.subject.entityID,
-                    programmeID: control.programmeID,
-                    in: candidate
-                )
+        // The same application the scheduler uses when the deadline elapses and the delegate
+        // answers instead. One definition of what an option means, so the two outcomes cannot drift.
+        guard let application = CareerMandatoryDecisionSystem.applying(
+            option.action,
+            subject: decision.subject,
+            programmeID: control.programmeID,
+            in: state
+        ) else { throw CareerSessionError.decisionActionFailed }
+        var candidate = application.state
+        for payload in application.eventPayloads {
+            let event = DomainEvent(
+                id: DomainEvent.deterministicID(
+                    rootSeed: candidate.league.seed,
+                    sequence: candidate.history.nextSequence
+                ),
+                sequence: candidate.history.nextSequence,
+                occurredAt: candidate.calendar,
+                payload: payload
+            )
+            guard candidate.history.append(event) else {
+                throw CareerSessionError.decisionActionFailed
             }
-        case let .nilAllocation(amount):
-            var applied = false
-            _ = candidate.college.updateProgramme(control.programmeID) {
-                applied = $0.setRosterNILAllocation(
-                    amount,
-                    playerID: decision.subject.entityID
-                )
-            }
-            guard applied else { throw CareerSessionError.decisionActionFailed }
-        case .portalRetention, .portalRelease:
-            break
         }
         guard candidate.pending.removeDecision(id: decisionID) != nil,
               candidate.career.recordResolution(MandatoryDecisionResolution(
@@ -218,7 +272,14 @@ public actor CareerSession {
         guard let control = state.career.college,
               let programme = state.programmes[control.programmeID],
               let recruiting = state.college.programmes[control.programmeID] else {
-            preconditionFailure("A career session lost its controlled programme.")
+            return CareerProjection(
+                calendar: state.calendar,
+                programme: nil,
+                recruitingBoard: [],
+                mandatoryDecisions: state.pending.mandatoryDecisions,
+                employmentStatus: state.careerArc.status,
+                opportunities: state.careerArc.opportunities
+            )
         }
         let board = recruiting.boardIDs.compactMap { prospectID
             -> CareerRecruitingProspectProjection? in
@@ -248,7 +309,8 @@ public actor CareerSession {
                 nilAllocation: recruiting.nilState.recruitingReservations[prospectID] ?? 0,
                 estimatedOverall: estimatedOverall,
                 estimatedPotential: observation?.estimatedPotential.value,
-                confidence: observation?.confidence
+                confidence: observation?.confidence,
+                estimateRadius: observation?.errorRadius
             )
         }
         return CareerProjection(
@@ -264,7 +326,9 @@ public actor CareerSession {
                 responsibilityOwners: control.responsibilityOwners
             ),
             recruitingBoard: board,
-            mandatoryDecisions: state.pending.mandatoryDecisions
+            mandatoryDecisions: state.pending.mandatoryDecisions,
+            employmentStatus: state.careerArc.status,
+            opportunities: state.careerArc.opportunities
         )
     }
 }

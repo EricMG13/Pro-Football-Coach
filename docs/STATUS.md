@@ -601,6 +601,82 @@ rather than pins, and they moved because prestige now feeds recruiting rather th
 and geography. It is not built: it changes league topology, and schedule generation, standings and
 whole-root integrity all read that topology, so it is a milestone-sized slice rather than a rule.
 
+### Engagement levers, phase 2 — **written, UNVERIFIED, never compiled**
+
+> **Read this heading literally.** No Swift toolchain and no `xcodebuild` were available in the
+> environment this was written in, and the egress policy refuses `download.swift.org`. Nothing below
+> has been compiled, no test has been run, and no measurement in this section is a measurement.
+> `CLAUDE.md`'s rule applies in full: this is not "green", not "passing" and not "verified". Phase
+> 4C of the prior build shipped uncompiled and the failure was the claim, not the toolchain.
+
+Canon for these changes landed first (commit `6dc10f6`, `02` §2.1/§2.4/§7/§8, `03` §5.1, `04` §4.6,
+`CLAUDE.md`'s engagement-ethics guardrail). This slice implements three of that plan's four engine
+items.
+
+**The game can now initiate a conversation.** `WorldStep.newsAndNarrative` is active and raises the
+week's obligations inside the weekly transaction. They were previously created by `CareerSession`
+*after* `IntentResolver` returned and after integrity had already passed, which is the mechanical
+reason `01` §6.0 could count zero inbound events: nothing inside the fifteen steps ever made one.
+
+**Advancing is always permitted.** The all-or-nothing gate in `IntentResolver` is gone, and
+`IntentResolutionError.unresolvedMandatoryDecisions` with it. `WorldStep.expiringInboundEvents` is
+active and answers any obligation whose deadline elapsed with the delegate's recommendation,
+recording the resolution and emitting `obligationAutoResolved`. This is load-bearing, not cosmetic:
+`WorldIntegrity` rejects a pending decision whose deadline sits before the calendar, and the old gate
+was the only thing keeping that true. An obligation that cannot be applied, or that arrives after the
+resolution log's bound, is still removed from the queue — dropping an audit row is survivable, and
+leaving the decision would make every future advance throw.
+
+**The carousel no longer dead-ends.** `markFired` was terminal: both evaluators guarded on
+`status != .fired` and returned forever, and nothing in the repository produced `.seeking`, so a
+fired save was permanently inert against `02` §7 and D8. Now firing releases the programme as well
+as the job (they were previously able to diverge), `CareerArcSystem.ensureMarketFloor` moves a fired
+coach to seeking and guarantees an offer, `acceptOpportunity` honours the opportunity's own tier
+rather than hardcoding `.professional`, and `CareerProjection.programme` is optional so a sacked
+coach's session still projects instead of hitting a `preconditionFailure`.
+
+**The fog is a band.** `ScoutingSystem` computed an error radius and discarded it; a surface could
+read three bare integers. `ProspectObservation.errorRadius` is now the single definition of the
+fog's width, used both to sample the estimate and to draw `02` §4.3's confidence band.
+
+**A player is remembered as a person.** `02` §8's per-person accumulation, the fourth engine item,
+implemented as a projection over two small persisted additions rather than a stored dossier:
+
+- `PlayerDossierReadModel` is **not `Codable`**, following `CoachingTreeReadModel`'s stated reason —
+  `PeopleState` is the authority, and a persisted second copy becomes a second authority that can
+  disagree. It builds one player at a time rather than sweeping the world, so opening a dossier does
+  not pay `NewsFeedReadModel.names(in:)`'s full name-dictionary cost.
+- `ProspectScoutingSnapshot` freezes what the programme believed at signing. `ScoutingState` is
+  cleared wholesale at every rollover, so this is genuinely unrecoverable otherwise — held against
+  `overallAtSigning`, which is the truth, it is what lets a dossier say *you thought 78 ±4 and he was
+  71*. Four scalars, absent when the programme never scouted the player.
+- `PlayerCareerRecord.developmentBeats` keeps six weeks per player, **evicted by significance rather
+  than by age**. Chronological retention would fill the ring with the plateau every long career ends
+  in and drop the breakout that made the player worth remembering. `DevelopmentBeat` is a flat five
+  fields rather than the nested `DevelopmentSummary` the engine works in, because six of the latter
+  across ~13,000 players is megabytes against a save already blocked on size.
+
+Both persisted additions decode with `decodeIfPresent`, so they are backward-compatible on their own
+— unlike the new event payloads above, they do not by themselves invalidate an existing save.
+
+**Known consequences that need a machine to settle:**
+
+- **The pinned fingerprints in `ArchitectureTests` will move and are now wrong.** Step one emits
+  events before every other step, so global event sequences shift. They must be repinned
+  deliberately, from two rebuilt runs, not adjusted until green.
+- New `DomainEventPayload` cases change the encoded root, so existing saves are expected to be
+  unreadable; the schema version has not been bumped, which is a decision the owner should confirm.
+- The both-tier soak, save-size re-measurement against FSC-003, and a carousel-exit reachability
+  test over seeded careers are all unwritten. The dossier's ring is the only new growth term and is
+  the one most worth measuring: six beats times ~13,000 players is the whole of its cost.
+- `PlayerDossierTests` is written and registered in `Tests/SimTests/main.swift` but, like everything
+  else in this section, **has never been run**.
+
+**The adversarial review this phase is owed has not happened.** A workflow was launched for it and
+every one of its seventeen agents failed with a terminal error, returning nothing; the run was
+stopped rather than left to look like coverage. `CLAUDE.md` §4 requires a review before the phase is
+declared done, so **Phase 2 is not done** — the code is written and the review is outstanding.
+
 ### Preserved pre-rebaseline P0–P4 record
 
 The remainder of this document records the older P-phase foundation and its measurements. It is

@@ -20,6 +20,18 @@ public struct ProspectObservation: Codable, Sendable, Equatable {
     public let lastUpdated: CalendarState
     public let evidenceCount: Int
 
+    /// How far an estimate at this confidence may sit from the truth, in rating points, either side.
+    ///
+    /// The single definition of the fog's width. `ScoutingSystem` samples inside this radius and
+    /// `02` §4.3's visible confidence band is drawn from it, so an estimate is never displayed as
+    /// tighter or looser than the one that produced it. It narrows to one and never reaches zero:
+    /// a coach's read of a recruit is never perfect.
+    public static func errorRadius(forConfidence confidence: Int) -> Int {
+        max(1, (CollegeRules.maximumProspectKnowledgeConfidence - confidence + 9) / 10)
+    }
+
+    public var errorRadius: Int { Self.errorRadius(forConfidence: confidence) }
+
     public init(
         prospectID: UUID,
         estimatedAttributes: [Attribute: Rating],

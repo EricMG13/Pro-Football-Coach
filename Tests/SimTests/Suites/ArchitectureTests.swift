@@ -255,9 +255,13 @@ func runArchitectureTests() {
             expectEqual(transition.snapshot.completed, CalendarState(season: 0, week: 1))
             expectEqual(transition.snapshot.next, CalendarState(season: 0, week: 2))
             expectEqual(transition.stepRecords.map(\.step), WorldScheduler.steps)
+            // Two steps were activated on 2026-08-12: `expiringInboundEvents` answers obligations
+            // whose deadline elapsed, and `newsAndNarrative` raises the week's inbound events and
+            // holds `02` §7's job-market floor. `userGame` is the only declared no-op left.
             expectEqual(
                 transition.stepRecords.filter { $0.status == .executed }.map(\.step),
                 [
+                    .expiringInboundEvents,
                     .injuriesAndRecovery,
                     .practiceAndDevelopment,
                     .scoutingKnowledge,
@@ -267,6 +271,7 @@ func runArchitectureTests() {
                     .standingsAndRankings,
                     .statisticsAndRecords,
                     .relationshipsAndStakeholders,
+                    .newsAndNarrative,
                     .jobAndStaffMarkets,
                     .saveGrowthAndIntegrity,
                     .weekSnapshot,
@@ -274,7 +279,7 @@ func runArchitectureTests() {
             )
             expectEqual(
                 transition.stepRecords.filter { $0.status == .inactive }.count,
-                WorldScheduler.steps.count - 12
+                WorldScheduler.steps.count - 14
             )
         }
 
@@ -316,12 +321,28 @@ func runArchitectureTests() {
                 recommendedOptionID: optionA,
                 reasons: [MandatoryDecisionReason(code: .deadline, value: 0)]
             ))
-            do {
-                _ = try IntentResolver.resolve(.advanceWeek, in: state)
-                expect(false, "advance week bypassed a mandatory decision")
-            } catch let error as IntentResolutionError {
-                expectEqual(error, .unresolvedMandatoryDecisions(count: 1))
-            }
+            // Advancing is always permitted (`02` §2.1, amended 2026-08-12). The invariant that
+            // replaces the old gate is that the queue cannot carry an elapsed deadline across the
+            // boundary: `WorldIntegrity` rejects a pending decision whose deadline sits before the
+            // calendar, so step one either answers it or the world would fail its own check.
+            let advanced = try IntentResolver.resolve(.advanceWeek, in: state)
+            expect(
+                advanced.state.pending.mandatoryDecisions.allSatisfy {
+                    !($0.deadline.season < advanced.state.calendar.season
+                        || ($0.deadline.season == advanced.state.calendar.season
+                            && $0.deadline.week < advanced.state.calendar.week))
+                },
+                "no pending obligation may survive the advance with an elapsed deadline"
+            )
+            expect(WorldIntegrity.check(advanced.state).isValid)
+            // And the expiry step is the thing that did it, executed rather than inactive.
+            let transition = try WorldScheduler.advanceWeek(state)
+            expect(
+                transition.stepRecords.contains {
+                    $0.step == .expiringInboundEvents && $0.status == .executed
+                },
+                "the expiring-inbound-events step must be active, not a declared no-op"
+            )
         }
 
         test("advance week returns a projection and events, not invented UI state") {

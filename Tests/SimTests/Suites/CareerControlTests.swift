@@ -196,12 +196,35 @@ func runCareerControlTests() {
             )
             expectEqual(restored, state)
 
-            do {
-                _ = try IntentResolver.resolve(.advanceWeek, in: state)
-                expect(false, "advance week bypassed a typed mandatory decision")
-            } catch let error as IntentResolutionError {
-                expectEqual(error, .unresolvedMandatoryDecisions(count: 1))
+            // `02` §2.1, amended 2026-08-12: an unanswered obligation no longer blocks the week.
+            // It is answered by the delegate at its deadline and the cost is recorded, which is
+            // what makes an inbox pass a complete session unit (§2.4) rather than a half-finished
+            // one the player cannot put down.
+            let advanced = try IntentResolver.resolve(.advanceWeek, in: state)
+            expect(
+                advanced.state.pending.mandatoryDecisions.isEmpty,
+                "an elapsed obligation should have been answered by the delegate"
+            )
+            expect(
+                advanced.state.career.mandatoryDecisionResolutions.contains {
+                    $0.decisionID == decision.id && $0.optionID == decision.recommendedOptionID
+                },
+                "the delegate's answer should be recorded against the decision"
+            )
+            guard case let .weekAdvanced(_, emittedEvents) = advanced.result else {
+                expect(false, "advance week returned the wrong result kind")
+                return
             }
+            expect(
+                emittedEvents.contains {
+                    if case let .obligationAutoResolved(decisionID, _, _) = $0.payload {
+                        return decisionID == decision.id
+                    }
+                    return false
+                },
+                "the delegated answer should be visible as an event, not applied silently"
+            )
+            expect(WorldIntegrity.check(advanced.state).isValid)
         }
 
         testAsync("career session derives programme authority and projects only observed recruiting truth") {
@@ -221,8 +244,9 @@ func runCareerControlTests() {
             ))
             let projection = receipt.projection
 
-            expectEqual(projection.programme.id, programmeID)
-            expectEqual(projection.programme.name, controlled.programmes[programmeID]!.name)
+            expectEqual(projection.programme?.id, programmeID)
+            expectEqual(projection.programme?.name, controlled.programmes[programmeID]!.name)
+            expectEqual(projection.employmentStatus, .employed)
             expectEqual(projection.recruitingBoard.count, 1)
             expectEqual(projection.recruitingBoard[0].prospectID, prospectID)
             expectEqual(projection.recruitingBoard[0].estimatedOverall, nil)

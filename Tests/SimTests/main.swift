@@ -126,6 +126,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runTacticalStateTests()
     runPortalContractTests()
     runEventLedgerBatchTests()
+    runPlayerDossierTests()
 }
 
 TestKit.finish()

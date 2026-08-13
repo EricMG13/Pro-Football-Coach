@@ -161,6 +161,23 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
     case proWaiverExpired(playerID: UUID, teamID: UUID)
     case proWaiversResolved(count: Int)
     case proMarketClosed(season: Int)
+    case coachJobStarted(organisationID: UUID, tier: CareerJobTier)
+    case coachJobEnded(
+        organisationID: UUID,
+        tier: CareerJobTier,
+        reason: CareerExitReason
+    )
+    case careerOpportunityOffered(
+        opportunityID: UUID,
+        organisationID: UUID,
+        tier: CareerJobTier
+    )
+    case careerOpportunityExpired(opportunityID: UUID, organisationID: UUID)
+    case obligationAutoResolved(
+        decisionID: UUID,
+        programmeID: UUID,
+        optionID: UUID
+    )
 
     /// How much this event's body is worth keeping once it leaves the bounded hot journal. Zero is
     /// "never keep".
@@ -183,8 +200,12 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
         case .seasonCompleted: return 100
         case .worldCreated: return 90
         case .postseasonScheduled: return 80
+        // A coach taking or losing a job is the spine of the career the save exists to tell, so it
+        // outranks every transaction and sits just under the season's own result.
+        case .coachJobStarted, .coachJobEnded: return 70
         case .portalWindowCompleted, .proMarketOpened, .proDraftStarted, .proMarketClosed: return 60
         case .proDraftPick: return 50
+        case .careerOpportunityOffered: return 45
         case .playerTransferred, .proTradeCompleted, .proWaiverClaimed: return 40
         case .staffHired: return 35
         case .prospectCommitted, .commitmentResolved: return 30
@@ -206,7 +227,12 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
              .proPracticeSquadMoved,
              .proWaiverPlaced,
              .proWaiverExpired,
-             .proWaiversResolved:
+             .proWaiversResolved,
+             // An offer nobody took and an obligation the staff answered are both only interesting
+             // while current: the first is derivable from the offer that preceded it, and the second
+             // is already recorded as a resolution on the career.
+             .careerOpportunityExpired,
+             .obligationAutoResolved:
             return 0
         }
     }
@@ -282,6 +308,15 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
             return [playerID, sourceTeamID, destinationTeamID]
         case let .proWaiverExpired(playerID, teamID):
             return [playerID, teamID]
+        case let .coachJobStarted(organisationID, _),
+             let .coachJobEnded(organisationID, _, _),
+             let .careerOpportunityOffered(_, organisationID, _),
+             let .careerOpportunityExpired(_, organisationID):
+            // The organisation only. A decision or opportunity identity is not an entity in any
+            // store, and naming one here would make integrity's reference check fail on it.
+            return [organisationID]
+        case let .obligationAutoResolved(_, programmeID, _):
+            return [programmeID]
         default:
             return []
         }

@@ -52,10 +52,9 @@ public enum ScoutingSystem {
                 observerID: assignment.observerID,
                 prospectID: assignment.prospectID
             ))
-            let errorRadius = max(
-                1,
-                (CollegeRules.maximumProspectKnowledgeConfidence - confidence + 9) / 10
-            )
+            // Derived from the confidence this observation will carry, so the band a surface draws
+            // from `ProspectObservation.errorRadius` is the same width the estimate was sampled in.
+            let errorRadius = ProspectObservation.errorRadius(forConfidence: confidence)
             let estimates = Dictionary(uniqueKeysWithValues: prospect.position.ratedAttributes.map {
                 attribute in
                 let truth = prospect.attributes[attribute].value

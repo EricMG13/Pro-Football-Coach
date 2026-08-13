@@ -46,13 +46,15 @@ public enum DevelopmentSystem {
             let score = components.reduce(0) { $0 + $1.value }
             let delta = score >= PeopleRules.developmentThreshold ? 1 : (score < 0 ? -1 : 0)
             guard delta != 0, let attribute = developmentAttribute(player, delta: delta) else {
-                people.updatePlayerLifecycle(id) {
-                    $0.recordDevelopment(DevelopmentSummary(
+                record(
+                    DevelopmentSummary(
                         occurredAt: calendar,
                         components: components,
                         attributeChanges: []
-                    ))
-                }
+                    ),
+                    for: id,
+                    in: &people
+                )
                 continue
             }
             let oldRating = player.attributes[attribute]
@@ -63,13 +65,15 @@ public enum DevelopmentSystem {
             ))
             let applied = newValue - oldRating.value
             guard applied != 0 else {
-                people.updatePlayerLifecycle(id) {
-                    $0.recordDevelopment(DevelopmentSummary(
+                record(
+                    DevelopmentSummary(
                         occurredAt: calendar,
                         components: components,
                         attributeChanges: []
-                    ))
-                }
+                    ),
+                    for: id,
+                    in: &people
+                )
                 continue
             }
             players.update(id) { $0.attributes[attribute] = Rating(newValue) }
@@ -78,7 +82,7 @@ public enum DevelopmentSystem {
                 components: components,
                 attributeChanges: [AttributeDevelopment(attribute: attribute, delta: applied)]
             )
-            people.updatePlayerLifecycle(id) { $0.recordDevelopment(summary) }
+            record(summary, for: id, in: &people)
             payloads.append(.playerDeveloped(
                 playerID: id,
                 attribute: attribute,
@@ -87,6 +91,21 @@ public enum DevelopmentSystem {
             ))
         }
         return DevelopmentTransition(players: players, people: people, eventPayloads: payloads)
+    }
+
+    /// Writes one development week to both places that keep it.
+    ///
+    /// `lastDevelopment` is this week and is overwritten; the career ring is the player's history and
+    /// is retained by significance. Both are written here, through one call, because the two drifting
+    /// apart is the defect: a dossier that disagreed with the week screen about what just happened
+    /// would have no way to be right.
+    private static func record(
+        _ summary: DevelopmentSummary,
+        for id: UUID,
+        in people: inout PeopleState
+    ) {
+        people.updatePlayerLifecycle(id) { $0.recordDevelopment(summary) }
+        people.updatePlayerCareer(id) { $0.recordDevelopmentBeat(summary.beat) }
     }
 
     private struct Context {
