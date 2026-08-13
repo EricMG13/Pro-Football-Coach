@@ -114,6 +114,64 @@ func runBoxScoreTests() {
             expectEqual(decoded.tackles, 0, "a legacy record invented a defensive statistic")
         }
 
+        test("a played game produces per-player lines") {
+            // G-11. The detailed engine recorded every duel and every ball handler and nothing
+            // turned it into a line, so a played match had a scoreboard and no box score — while the
+            // abstracted model, which resolves the games nobody watches, had one.
+            let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
+            let away = testPersonnel(offenseSkill: 70, defenseSkill: 71)
+            let game = GameEngine.play(tier: .pro, home: home, away: away, seed: 4_711)
+            let box = BoxScore.build(from: game)
+
+            expect(!box.home.isEmpty && !box.away.isEmpty, "a side produced no lines at all")
+            expect(box.all.contains { $0.tackles > 0 }, "nobody made a tackle")
+            expect(box.all.contains { $0.passAttempts > 0 }, "nobody attempted a pass")
+            expect(box.all.contains { $0.carries > 0 }, "nobody carried the ball")
+            for line in box.all {
+                expect(line.completions <= line.passAttempts,
+                       "a passer completed more than they attempted")
+                expect(line.receptions <= line.targets,
+                       "a receiver caught more than they were thrown")
+            }
+        }
+
+        test("the lines add up to the plays they came from") {
+            let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
+            let away = testPersonnel(offenseSkill: 70, defenseSkill: 71)
+            for seed in UInt64(1)...12 {
+                let game = GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                let box = BoxScore.build(from: game)
+                for side in [box.home, box.away] {
+                    expectEqual(side.reduce(0) { $0 + $1.passingYards },
+                                side.reduce(0) { $0 + $1.receivingYards },
+                                "seed \(seed): passing yards and receiving yards disagree")
+                    expectEqual(side.reduce(0) { $0 + $1.completions },
+                                side.reduce(0) { $0 + $1.receptions },
+                                "seed \(seed): completions and receptions disagree")
+                }
+                let sacks = box.all.reduce(0) { $0 + $1.sacks }
+                let taken = box.all.reduce(0) { $0 + $1.sacksTaken }
+                expectEqual(sacks, taken, "seed \(seed): sacks made and sacks taken disagree")
+                let thrown = box.all.reduce(0) { $0 + $1.interceptionsThrown }
+                let caught = box.all.reduce(0) { $0 + $1.interceptions }
+                expectEqual(thrown, caught, "seed \(seed): interceptions thrown and caught disagree")
+                expectEqual(box.all.reduce(0) { $0 + $1.sacks },
+                            game.plays.filter { $0.outcome.result == .sack }.count,
+                            "seed \(seed): the sacks on the lines are not the sacks in the game")
+            }
+        }
+
+        test("reading a game does not change it") {
+            // 03 section 1.3's honesty invariant, applied to evidence rather than to rendering.
+            let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
+            let away = testPersonnel(offenseSkill: 70, defenseSkill: 71)
+            let game = GameEngine.play(tier: .pro, home: home, away: away, seed: 2_112)
+            let before = game.playByPlayFingerprint
+            expectEqual(BoxScore.build(from: game), BoxScore.build(from: game),
+                        "the same game produced two different box scores")
+            expectEqual(game.playByPlayFingerprint, before, "building a box score changed the game")
+        }
+
         test("a season is the sum of its games") {
             let id = UUID(uuidString: "00000000-0000-4000-C000-000000000003")!
             var season = PlayerSeasonStatistics(playerID: id)

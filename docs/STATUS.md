@@ -1378,9 +1378,24 @@ four-counter line cutter is gone), `Sources/FootballSimCore/Rules/CompetitionRul
 derivation rates), `Tests/SimTests/Suites/BoxScoreTests.swift` (new, six tests),
 `Tests/SimTests/main.swift`.
 
-**Still open in this area:** the *detailed* engine does not yet produce per-player lines (G-11). It
-records who was in every duel, so the attribution is a pure function over a `GameRecord` waiting to
-be written — but it is not written here, and `docs/STATUS.md` should not be read as saying otherwise.
+### Slice 8b — the played game's box score (G-11) — written, unverified
+
+The detailed engine recorded every duel and every ball handler and nothing turned that into a line,
+so a played match had a scoreboard and no box score — while the abstracted model, which resolves the
+games nobody watches, had one.
+
+`BoxScore.build(from:)` is a pure function over a finished `GameRecord`. It derives and never
+re-resolves, which is `03` §1.3's honesty invariant applied to evidence: reading a game cannot change
+it. The tackle goes to whoever won the duel that ended the play — `decidingMatchup`, the same answer
+the match view uses to draw it — so the statistics and the picture cannot tell different stories.
+
+Files: `Sources/FootballSimCore/Engine/BoxScore.swift` (new),
+`Tests/SimTests/Suites/BoxScoreTests.swift` (three further tests, including that the lines add up to
+the plays they came from).
+
+**What this does not do:** it is not wired into the season, because the detailed engine is not
+wired into the season either (G-18). When it is, this is what turns a played game into the same
+`PlayerGameStatistics` the abstracted path already writes.
 
 ---
 
