@@ -49,25 +49,45 @@ exist before it is worth integrating.
 | 18 | Difficulty | G-42 | **written** |
 | 19 | The glossary | G-44 | **written**; no view yet |
 | 20 | The postseason tail | G-38 | **written** |
-| 21 | Morale | G-35 | **written**; nothing consumes it yet |
+| 21 | Morale | G-35 | **written**; consumed by discipline since slice 27 |
+| 22 | Traditions do something | G-32b | **written**; a wrong finding corrected in the open |
+| 23 | Money, facilities and wages | G-37 | **written** |
+| 24 | Hiring and firing | G-31 | **written**; staff ratings still never change |
+| 25 | Draft picks as assets | G-33 | **written**; not yet authoritative for the draft itself |
+| 26 | Contract negotiation | G-34 | **written**; free agency is now cap-bound |
+| 27 | Discipline and suspensions | G-36 | **written** |
+| 28 | Preseason camp | G-39 | **written**; no exhibition games, and canon says why |
+
+**Every register row G-18 to G-45 is now either written or escalated to the owner.** The register's
+own §3 anti-false-gap list is unchanged: those were never gaps.
 
 ## What is not built, and the reason in each case
 
-Not a backlog of things that ran out of time — each of these needs one of the two things this session
-deliberately refused to do blind: **change persisted state** without a compiler to prove decoding, or
-**move a pinned generation fingerprint** it cannot re-measure.
+Two items remain, and **neither is a thing that ran out of time.** Each is a fork the owner has to
+take, and each is now a numbered decision with an instrumented falsifier rather than a paragraph in a
+brief — `docs/OPEN-DECISIONS.md` D16 and D17, both `ESCALATED`.
 
-| Item | Register | Why not here |
-|---|---|---|
-| Traditions wired to outcomes | G-32b | `Programme` does not persist traditions; the generator threads them through a shared identity stream, so re-deriving them means giving them their own seed scope — which moves the pinned generation fingerprints |
-| Staff as a managed resource | G-31 | Wages, hiring and firing are new persisted state plus new intents |
-| Draft picks as assets, real trades | G-33 | Picks must become entities that can be owned and traded |
-| Contract negotiation | G-34 | Asking prices, competing bids and agents are new state on the market |
-| Discipline and suspensions | G-36 | A suspension has to persist to have a consequence; the penalty events that would drive it are engine-side and not journalled |
-| Money — budgets, facilities, wages | G-37 | Entirely new persisted state on both organisation kinds |
-| Preseason and camp | G-39 | Changes the shared calendar `02` §11.3.1 fixes, which every dated system reads |
-| Challenges | G-21b | Needs a truth beneath the outcome for a review to contradict — an owner-level modelling decision (`02` §3.9) |
-| Sound and haptics | G-40, G-41 | An owner fork, stated in `04` §7.2: ship silent and say so, or budget a pass. Code with no assets behind it would be dead capability |
+| Item | Register | Decision | Why not here |
+|---|---|---|---|
+| Challenges | G-21b | **D16** | A challenge is a bet on a fact, and a snap has no fact at that resolution — no spot, no forward progress, no moment the ball came loose. Building one means inventing a truth beneath the outcome, which changes what a snap *is* and moves every determinism pin. `02` §3.9 states it; D16 prices the three options and recommends striking the promise unless a later milestone needs a spot anyway |
+| Sound and haptics | G-40, G-41 | **D17** | Audio is an asset commitment, and an agent can neither author nor license a crowd bed. Code with nothing behind it is dead capability. `04` §7.2 carries the contract if it is built; D17 recommends shipping silent **and saying so**, because the part that must change either way is the accessibility clause that currently claims equivalents for a channel that does not exist |
+
+### What was blocked before, and what unblocked it
+
+The earlier version of this table listed seven more items, each blocked on "changes persisted state
+without a compiler" or "moves a pinned fingerprint". Six were unblocked by the same three moves,
+recorded here because they are the reusable technique rather than luck:
+
+1. **Derive rather than store.** The depth chart, morale, the inbox, the staff shortlist, pick
+   identity, the discipline file and the camp report are all functions of the save. Nothing new is
+   persisted, so nothing can strand a league or move a generation fingerprint.
+2. **Additive optional fields, or in-place legacy decoding.** `finances` and `suspension` are
+   optional and omitted when absent, so a world without them encodes to exactly the bytes it did
+   before; `PlayerSeasonStatistics` reads the old flat keys in place. **No schema bump was taken.**
+3. **Check the claim before writing it down.** The traditions entry above said `Programme` does not
+   persist traditions. It does, in `GameState.identities`, and always did — the claim had been
+   checked against the wrong type. The correction is recorded in `02` §8.1 and `docs/STATUS.md`
+   rather than quietly dropped.
 
 **Ordering note, 2026-08-13.** The written slices are the whole match layer plus the record it
 produces. That grouping was not chosen for tidiness: the detailed engine's outputs are not persisted,
@@ -91,3 +111,25 @@ migration fixture (P16) when it stops being.
    existing conformances keep compiling; new state is additive with defaulted decoding.
 5. **Scope guard.** No opportunistic refactors of code a slice does not need.
 6. `docs/STATUS.md` gains one entry per slice, naming the files and the unverified status.
+
+## What a toolchain session has to do first
+
+The plan is complete in the sense the instruction meant — every register row is written or
+escalated — and **incomplete in the only sense that matters for shipping**: none of it has been
+compiled. In order:
+
+1. **Build.** `swift build` and `swift test`. Expect compile errors: 28 slices of Swift were written
+   against a repository nobody could type-check, and the honest prior is that some of it does not
+   compile the first time.
+2. **Re-pin what moved.** `EngineTests`'s two play-by-play fingerprint literals move with any change
+   to snap resolution — penalties, kickoffs, weather, in-play injuries and the conversion all touch
+   it. Recompute them by running the binary twice in **separate processes**; that separation is the
+   whole point of the pin. **A fabricated pin is worse than a red one.**
+3. **Re-run the soaks and re-read the bands.** M1, M2 and the pro soak. Two slices are expected to
+   move numbers: camp adds a third development pass per season, and negotiation makes free agency
+   cap-bound for the first time. Both are bounded by construction — camp respects `potential`, and a
+   replacement-level free agent asks the minimum — but "bounded in argument" is not "measured".
+4. **Re-run the two legal tests**, which nothing in these slices should have touched, precisely
+   because that is the kind of claim worth checking rather than assuming.
+5. **Then, and only then**, `docs/STATUS.md`'s twenty-eight "written, unverified" entries can start
+   becoming something else.
