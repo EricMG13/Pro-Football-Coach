@@ -7,7 +7,13 @@
 // from a two-line log into an account of where it got to.
 import Foundation
 setvbuf(stdout, nil, _IONBF, 0)
-if CommandLine.arguments.contains("--event-ledger-batch") {
+if CommandLine.arguments.contains("--catalog") {
+    SuiteCatalog.printCatalog()
+} else if CommandLine.arguments.contains("--commitment-coverage") {
+    runCommitmentCoverageTest()
+} else if CommandLine.arguments.contains("--save-document") {
+    runSaveDocumentTests()
+} else if CommandLine.arguments.contains("--event-ledger-batch") {
     runEventLedgerBatchTests()
 } else if CommandLine.arguments.contains("--roster-population") {
     runRosterPopulationTests()
@@ -166,6 +172,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     // the symbol register, the sheet lint or the AX5 contract.
     runDesignContractTests()
     runAccessibilityReflowTests()
+    runCommitmentCoverageTest()
+    runSaveDocumentTests()
 }
 
 TestKit.finish()

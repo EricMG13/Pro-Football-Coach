@@ -21,9 +21,11 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
 /// generation-body pin did not move, and should not have: it hashes `LeagueGenerator.generate`,
 /// and contracts are issued during bootstrap rather than league generation. Both new values were
 /// reproduced in two independent processes before being written here.
-private let pinnedRootFingerprint: UInt64 = 11_751_991_614_650_799_443
+/// The application root then moved from schema 11 to schema 12; these values were independently
+/// reproduced after that migration and are intentionally pinned to the new root contract.
+private let pinnedRootFingerprint: UInt64 = 11_754_806_364_418_451_928
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 9_105_938_186_369_459_529
+private let pinnedAdvancedRootFingerprint: UInt64 = 696_885_492_462_968_224
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///

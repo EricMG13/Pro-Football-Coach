@@ -1,4 +1,5 @@
 import SwiftUI
+import FootballSimCore
 import ProFootballCoachUI
 
 /// The shipped application root: the screen the beta actually launches into.
@@ -16,11 +17,12 @@ public struct CoachWorldAppRootView: View {
     /// the store alone lets two loads, or two world generations, start side by side.
     @State private var hasAttemptedRestore = false
     @State private var screen: CoachWorldScreenID = .coachingHQ
+    @State private var recoveryRequired = false
 
-    private let saves: CoachWorldSaveStore
+    @State private var coordinator: SaveCoordinator
 
     public init(saves: CoachWorldSaveStore = CoachWorldSaveStore()) {
-        self.saves = saves
+        _coordinator = State(initialValue: SaveCoordinator(storage: saves))
     }
 
     public var body: some View {
@@ -89,12 +91,15 @@ public struct CoachWorldAppRootView: View {
         switch destination {
         case .coachingHQ:
             screen = .coachingHQ
+            store.setPresentationRoute(String(destination.rawValue))
             failure = nil
         case .roster where store.roster != nil:
             screen = .roster
+            store.setPresentationRoute(String(destination.rawValue))
             failure = nil
         case .recruitingBoard where store.recruitingBoard != nil:
             screen = .recruitingBoard
+            store.setPresentationRoute(String(destination.rawValue))
             failure = nil
         default:
             failure = "\(destination.canonicalName) is not available yet"
@@ -112,6 +117,14 @@ public struct CoachWorldAppRootView: View {
             }
             if isStarting {
                 ProgressView("Building the world")
+            } else if recoveryRequired {
+                Button("Retry restore") {
+                    hasAttemptedRestore = false
+                    recoveryRequired = false
+                    Task { await restoreExistingCareer() }
+                }
+                Button("Use backup") { Task { await recoverFromBackup() } }
+                Button("Replace with a new career") { Task { await startNewCareer() } }
             } else {
                 Button("New career") { Task { await startNewCareer() } }
                     .buttonStyle(.borderedProminent)
@@ -140,17 +153,50 @@ public struct CoachWorldAppRootView: View {
     private func restoreExistingCareer() async {
         guard !hasAttemptedRestore else { return }
         hasAttemptedRestore = true
-        guard saves.hasSave else {
-            if ProcessInfo.processInfo.environment["PROOF_NEW_CAREER"] != nil {
-                await startNewCareer()
-            }
-            return
-        }
         do {
-            store = try await CoachWorldStore.load(from: saves.read())
+            let outcome = try await coordinator.load()
+            guard case let .loaded(document, _) = outcome else {
+                if ProcessInfo.processInfo.environment["PROOF_NEW_CAREER"] != nil {
+                    await startNewCareer()
+                }
+                return
+            }
+            store = try await CoachWorldStore.load(document: document)
+            if let restored = Int(document.presentation.route),
+               let destination = CoachWorldScreenID(rawValue: restored) {
+                screen = destination
+            }
         } catch {
-            failure = "That save could not be opened: \(error)"
+            failure = Self.saveErrorMessage(error)
+            recoveryRequired = true
         }
+    }
+
+    private func recoverFromBackup() async {
+        do {
+            let document = try await coordinator.recover(using: .useBackup)
+            store = try await CoachWorldStore.load(document: document)
+            if let restored = Int(document.presentation.route),
+               let destination = CoachWorldScreenID(rawValue: restored) {
+                screen = destination
+            }
+            failure = nil
+            recoveryRequired = false
+        } catch {
+            failure = "The backup could not be opened: \(error)"
+        }
+    }
+
+    private static func saveErrorMessage(_ error: Error) -> String {
+        if let envelope = error as? SaveEnvelopeError,
+           case .futureVersion = envelope {
+            return "This save was made by a newer version of Pro Football Coach."
+        }
+        if let document = error as? SaveDocumentError,
+           case .futureDocumentVersion = document {
+            return "This save was made by a newer version of Pro Football Coach."
+        }
+        return "That save could not be opened. Retry, use the backup, or explicitly replace it."
     }
 
     private func startNewCareer() async {
@@ -190,7 +236,9 @@ public struct CoachWorldAppRootView: View {
     /// before a long career is playable. It is an `await` off the main actor, so it delays the next
     /// intent rather than the current frame.
     private func persist(_ store: CoachWorldStore) async throws {
-        try saves.write(await store.save())
+        let document = try await store.saveDocument()
+        await coordinator.requestSave(document, reason: .userAction)
+        try await coordinator.flush(reason: .explicit)
     }
 
     /// A failed autosave is reported, never swallowed. `try?` here would leave the player playing a
