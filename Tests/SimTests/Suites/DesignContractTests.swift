@@ -68,7 +68,7 @@ private func matches(of pattern: String, in text: String) -> [String] {
 private func designSheets() -> [(name: String, text: String)] {
     let root = packageRoot()
     let names = (try? FileManager.default.contentsOfDirectory(atPath: root.path))?
-        .filter { $0.hasSuffix("-v3.dc.html") }
+        .filter { $0.hasSuffix("-v4.dc.html") }
         .sorted() ?? []
     return names.compactMap { name in
         guard let text = try? String(contentsOf: root.appendingPathComponent(name), encoding: .utf8)
@@ -209,11 +209,11 @@ func runDesignContractTests() {
     suite("Design reference sheets") {
         // G-17. The sheets are the definitive design references (04 section 6.5), so the claims they
         // make about themselves are load-bearing. These are the ones a machine can settle.
-        test("all eight sheets are present and marked") {
+        test("all ten sheets are present and marked") {
             let sheets = designSheets()
-            expectEqual(sheets.count, 8, "expected the eight sheets named in 04 section 6.5")
+            expectEqual(sheets.count, 10, "expected the ten sheets named in 04 section 6.5")
             for sheet in sheets {
-                let group = sheet.name.replacingOccurrences(of: "-v3.dc.html", with: "")
+                let group = sheet.name.replacingOccurrences(of: "-v4.dc.html", with: "")
                 let firstLine = sheet.text.split(separator: "\n", maxSplits: 1).first.map(String.init) ?? ""
                 expectEqual(firstLine.trimmingCharacters(in: .whitespaces),
                             "<!-- @dsCard group=\"\(group)\" -->",
