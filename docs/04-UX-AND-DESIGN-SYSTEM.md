@@ -403,12 +403,17 @@ that rule.
 
 | World | Role | Values |
 |---|---|---|
-| Pitch | ground (with `world.haze`, `world.night`) | `#03060B` |
+| Pitch | ground | `#12203A` (`world.haze`), `#060A12` (`world.page` at night), `#03060B` |
+| Pitch | turf plane | `#37A868` (hot, the centre), `#1C6E42` (`field.turf`), `#072616` (deep, the far edge) |
+| Pitch | overhead lamps | `#FFF2CE` α0.55 — **the brightest ground any panel sits over** |
+| Pitch | mown band | `#FFFFFF` α0.055, twelve bands (§6.1's band rule) |
 | Pitch | vignette | `#080E1A` α0.34, `#04080E` α0.80 |
 | Pitch, after | ground | `#0B1A16`, `#060D10`, `#03060A` |
 | Pitch, after | vignette | `#050A0E` α0.86, `#081216` α0.30, `#03060A` α0.88 |
-| Facility | ground | `#1A1420` (with `world.room`, `world.roomDeep`) |
+| Facility | ground | `#1A1420`, `#100E16` (`world.room`), `#07060B` (`world.roomDeep`) |
+| Desk | ground | `#100E16`, `#07060B` — the same room, unlit |
 | Facility | floor | `#1A1421`, `#0C0912`, `#05040A` |
+| Facility | warm overhead pools | `#FFCE6A` |
 | Facility | vignette | `#08060D` α0.55, `#0C0912` α0.12, `#040308` α0.86 |
 | Facility | window band | `#0A1322`, `#0B1626`, `#080D18` |
 | Facility | distant stadium glow | `#78FFBE` α0.28, `#50C896` α0.07 |
@@ -562,9 +567,11 @@ Three things are settled here because the prototype and this section disagree:
   are read as shapes rather than words.
 - **A gradient type fill is measured at its worst stop.** Floodlit's `litFill()` runs a headline
   from white to `#93A8C0` so it reads as lit from above. The contrast that counts is the bottom of
-  the glyph, not the top: `#93A8C0` measures 8.12 / 7.14 / 6.16 on page / work / raised and 6.23 on
-  the deep panel over the brightest turf, so it clears the body floor everywhere and is permitted.
-  Any future gradient fill is measured the same way, and the rule is general.
+  the glyph, not the top: `#93A8C0` measures 8.12 / 7.14 / 6.16 on page / work / raised, 6.65 on the
+  deep panel over the brightest turf and **5.85** over the worst lamp-lit ground, so it clears the
+  body floor everywhere and is permitted. Any future gradient fill is measured the same way, and the
+  rule is general. *(The deep-panel figures were 6.23 and 5.25 while the fill stood at α 0.78; they
+  rose with the correction to 0.82 in §6.1.)*
 - **Fixed point sizes do not survive the port.** Every size Floodlit authored as a literal —
   including the 66 pt day name and the 34 pt gauge figure — is wrapped in `@ScaledMetric` against
   the role it belongs to, per the bullet above. A fixed-size display figure inside a fixed-height
