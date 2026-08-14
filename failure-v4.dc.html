@@ -1,0 +1,787 @@
+<!-- @dsCard group="failure" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>failure-v4 — Coach's World failure and interruption states, Floodlit (04 §6.5 registry 23)</title>
+<style>
+/* ============================================================================
+   failure-v4.dc.html — self-contained HTML+CSS. No JavaScript, no CDN, no
+   web font, no icon font, no images. CSS px read as pt. Supersedes
+   failure-v3, which rendered the retired violet system. Registry 23:
+   EmptyState, ErrorBanner, InterruptedState, plus the loading and delegated
+   states drawn beside them inside their owning compositions.
+   ============================================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#060A12}
+body{font-family:-apple-system,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
+  font-size:13px;line-height:1.5;padding:24px 16px 64px;color:#F6FAFF;font-variant-numeric:tabular-nums}
+.sheet{max-width:1260px;margin:0 auto}
+h1{font-size:20px;font-weight:800;letter-spacing:-0.2px}
+.kicker{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:#8496AC;margin-bottom:4px}
+.prov{font-size:11px;color:#A9BACE;margin-top:8px;max-width:84em}
+.prov b{color:#F6FAFF;font-weight:600}
+.law{font-size:11px;color:#A9BACE;border-left:3px solid #FFC53D;background:#141A26;
+  padding:8px 12px;margin-top:10px;max-width:84em}
+.card{background:#141A26;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;
+  padding:16px 18px 18px;margin-top:20px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.05) 0%, transparent 42%)}
+.card>*{position:relative}
+.card>h2{font-size:17px;font-weight:800;letter-spacing:-0.2px}
+.sub{font-size:11px;color:#8496AC;margin:2px 0 12px}
+h3{font-size:13px;font-weight:700;margin:16px 0 6px}
+p{margin:6px 0}
+.small{font-size:11px;color:#A9BACE}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;background:#1E2735;
+  border:1px solid #1E2735;border-radius:3px 14px 3px 14px;padding:1px 5px;color:#A9BACE;white-space:nowrap}
+.callout{background:#060A12;border:1px solid #1E2735;border-left:3px solid #FFB03A;
+  border-radius:4px 22px 4px 22px;padding:10px 12px;margin-top:12px}
+.callout h4{font-size:11px;font-weight:700;margin-bottom:4px}
+.callout li{font-size:11px;color:#A9BACE;margin:4px 0 4px 16px}
+.callout li b{color:#F6FAFF}
+.fig{font-size:10px;color:#8496AC;margin-top:4px}
+.vo,.contract{margin-top:14px;border-top:1px solid #1E2735;padding-top:10px}
+.vo h4,.contract h4{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:#FFC53D;margin-bottom:6px;font-weight:700}
+.vo ul{list-style:none}
+.vo li{font-size:11px;color:#A9BACE;margin:3px 0;padding-left:12px;border-left:2px solid #1E2735}
+.contract ol{margin-left:18px}
+.contract li{font-size:11px;color:#A9BACE;margin:4px 0}
+.contract li b{color:#F6FAFF;font-weight:600}
+.duo{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;margin-top:8px}
+.pane{background:#060A12;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;padding:14px;flex:1 1 480px;min-width:0}
+.pane.lt{background:#EDF1F6;color:#0B111C;border-color:#DCE3EC}
+.pane h4{font-size:11px;font-weight:700;margin-bottom:8px}
+
+/* World strip (chrome-v4 card 5 grammar) */
+.wstrip{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.13);border-radius:4px 22px 4px 22px;padding:6px 10px;
+  min-height:44px;position:relative;overflow:hidden;margin-bottom:10px}
+.wstrip::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.08) 0%, transparent 42%)}
+.wstrip>*{position:relative}
+.pane.lt .wstrip{background:#FFFFFF;border-color:#DCE3EC}
+.tchip{width:22px;height:22px;border-radius:3px 14px 3px 14px;background:#14382A;color:#F2F5F3;
+  font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sid{display:flex;flex-direction:column;flex-shrink:0}
+.sname{font-size:12px;font-weight:800;letter-spacing:-0.2px}
+.smeta{font-size:9.5px;color:#A9BACE}
+.pane.lt .smeta{color:#414B5C}
+.sdiv{width:1px;align-self:stretch;background:rgba(255,255,255,.13);margin:0 2px}
+.pane.lt .sdiv{background:#DCE3EC}
+.routes{display:flex;gap:4px;flex:1;min-width:0}
+.pill{padding:4px 9px;border-radius:3px 14px 3px 14px;font-size:10px;font-weight:700;
+  border:1px solid rgba(255,255,255,.13);color:#A9BACE;min-height:26px;display:flex;align-items:center;
+  white-space:nowrap}
+.pill.sel{background:#FFC53D;color:#150F02;border-color:#FFC53D}
+.pane.lt .pill{border-color:#DCE3EC;color:#414B5C}
+.pane.lt .pill.sel{background:#7A5200;color:#FAFBFD;border-color:#7A5200}
+.gobtn{display:inline-flex;align-items:center;min-width:44px;min-height:32px;
+  padding:0 12px;border-radius:16px 16px 16px 4px;background:#FFC53D;color:#150F02;
+  font-size:11px;font-weight:800;flex-shrink:0;white-space:nowrap}
+.gobtn.disabled{opacity:.45}
+.pane.lt .gobtn{background:#7A5200;color:#FAFBFD}
+
+/* Desk panel: caption band, header band, dense rows */
+.panel{background:#141A26;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;overflow:hidden}
+.pane.lt .panel{background:#FAFBFD;border-color:#DCE3EC}
+.pcap{display:flex;justify-content:space-between;align-items:center;min-height:24px;padding:4px 10px;
+  font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#8496AC}
+.pane.lt .pcap{color:#566274}
+.pcap b{color:#F6FAFF;font-variant-numeric:tabular-nums;text-transform:none;letter-spacing:0;font-size:11px;font-weight:700}
+.pane.lt .pcap b{color:#0B111C}
+.thead{display:flex;gap:8px;padding:0 10px;height:22px;align-items:center;
+  border-top:1px solid rgba(255,255,255,.13);border-bottom:1px solid rgba(255,255,255,.13);
+  font-size:9px;color:#8496AC;text-transform:uppercase;letter-spacing:.04em}
+.pane.lt .thead{border-color:#DCE3EC;color:#566274}
+.trow{display:flex;align-items:center;gap:8px;min-height:26px;padding:4px 10px;
+  border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:#A9BACE}
+.pane.lt .trow{border-top-color:#EDF1F6;color:#414B5C}
+.trow .v{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700;color:#F6FAFF}
+.pane.lt .trow .v{color:#0B111C}
+
+/* status glyph tag (text stand-in for SF Symbol) */
+.gl{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:9px;padding:1px 5px;
+  border-radius:3px 14px 3px 14px;border:1px solid rgba(255,255,255,.13);white-space:nowrap;flex-shrink:0}
+.gl.neg{color:#FF8E9C;border-color:rgba(255,142,156,.35)}
+.gl.warn{color:#FFB03A;border-color:rgba(255,176,58,.35)}
+.gl.pos{color:#7DF0B6;border-color:rgba(125,240,182,.35)}
+.gl.info{color:#9CC8EE;border-color:rgba(156,200,238,.35)}
+.gl.plain{color:#A9BACE}
+.pane.lt .gl.neg{color:#A3202F}.pane.lt .gl.warn{color:#704C00}.pane.lt .gl.pos{color:#14653C}
+.pane.lt .gl.info{color:#1E5A8C}.pane.lt .gl.plain{color:#414B5C}
+
+/* EmptyState region — replaces only the rows region; chrome above stays populated-table chrome */
+.emptyblock{padding:18px 14px;text-align:center}
+.emptyglyph{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:9px;color:#8496AC;
+  background:rgba(255,255,255,.06);border-radius:3px 14px 3px 14px;padding:2px 7px;display:inline-block;
+  margin-bottom:8px}
+.pane.lt .emptyglyph{color:#566274;background:#EDF1F6}
+.emptyt{font-size:13px;font-weight:700;color:#F6FAFF}
+.pane.lt .emptyt{color:#0B111C}
+.emptyw{font-size:11px;color:#A9BACE;margin-top:4px}
+.pane.lt .emptyw{color:#414B5C}
+.emptybtn{display:inline-flex;align-items:center;min-height:32px;padding:0 14px;margin-top:10px;
+  border-radius:16px 16px 16px 4px;font-size:11px;font-weight:700}
+.emptybtn.pri{background:#FFC53D;color:#150F02}
+.pane.lt .emptybtn.pri{background:#7A5200;color:#FAFBFD}
+.emptybtn.sec{border:1px solid #A9BACE;color:#A9BACE}
+.pane.lt .emptybtn.sec{border-color:#414B5C;color:#414B5C}
+.emptydiv{border-top:1px solid rgba(255,255,255,.13);padding-top:2px}
+.pane.lt .emptydiv{border-top-color:#DCE3EC}
+
+/* ErrorBanner */
+.banner{background:rgba(255,142,156,.08);border:1px solid rgba(255,142,156,.4);
+  border-radius:4px 22px 4px 22px;padding:12px 14px;margin-bottom:10px}
+.pane.lt .banner{background:rgba(163,32,47,.06)}
+.banner .bt{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;color:#FF8E9C}
+.pane.lt .banner .bt{color:#A3202F}
+.banner .bb{font-size:11px;color:#A9BACE;margin-top:4px}
+.pane.lt .banner .bb{color:#414B5C}
+
+/* InterruptedState */
+.iblock{background:rgba(255,176,58,.08);border:1px solid rgba(255,176,58,.4);
+  border-radius:4px 22px 4px 22px;padding:12px 14px;margin-bottom:10px}
+.pane.lt .iblock{background:rgba(112,76,0,.06)}
+.iblock .bt{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;color:#F6FAFF}
+.pane.lt .iblock .bt{color:#0B111C}
+.iblock .bt .gl{color:#FFB03A}
+.pane.lt .iblock .bt .gl{color:#704C00}
+.iblock .bb{font-size:11px;color:#A9BACE;margin-top:4px}
+.pane.lt .iblock .bb{color:#414B5C}
+
+/* Shipping/target state split (readout-v4 grammar) */
+.statelabel{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:#8496AC;margin:10px 0 4px}
+.pane.lt .statelabel{color:#566274}
+.emptyslot{border:1px dashed rgba(255,255,255,.2);border-radius:3px 14px 3px 14px;padding:8px 10px;
+  font-size:11px;color:#8496AC}
+.pane.lt .emptyslot{border-color:#DCE3EC;color:#566274}
+
+/* Loading */
+.loadb{padding:14px 10px}
+.loadb .lt1{font-size:13px;font-weight:700;color:#F6FAFF}
+.pane.lt .loadb .lt1{color:#0B111C}
+.loadb .lt2{font-size:11px;color:#A9BACE;margin-top:2px}
+.pane.lt .loadb .lt2{color:#414B5C}
+.track{height:4px;border-radius:2px;background:rgba(255,255,255,.10);margin-top:12px;position:relative;overflow:hidden}
+.pane.lt .track{background:#DCE3EC}
+.track .puck{position:absolute;top:0;bottom:0;left:34%;width:30%;border-radius:2px;background:#FFC53D}
+.pane.lt .track .puck{background:#7A5200}
+
+/* Delegated receipt row */
+.rrow{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 10px;
+  border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:#A9BACE}
+.pane.lt .rrow{border-top-color:#EDF1F6;color:#414B5C}
+.rrow .who{color:#F6FAFF;font-weight:600;font-size:11px;display:block}
+.pane.lt .rrow .who{color:#0B111C}
+.rrow .terms{font-size:10px;color:#8496AC;display:block;margin-top:1px}
+.pane.lt .rrow .terms{color:#566274}
+.rrow .tail{margin-left:auto}
+
+/* Violation exhibit — gallery chrome, not a specimen */
+.violation{display:inline-flex;align-items:center;gap:8px;border:1px dashed #A3202F;color:#FF8E9C;
+  border-radius:3px 14px 3px 14px;padding:6px 12px;font-size:11px;margin-top:10px}
+.violation .x{text-decoration:line-through;font-weight:700}
+</style>
+</head>
+<body class="dk">
+<div class="sheet">
+
+<header>
+  <div class="kicker">@dsCard group="failure" — sheet 10 of 10, floodlit canon amendment §6.5 registry 23</div>
+  <h1>Pro Football Coach — failure and interruption states, failure-v4</h1>
+  <p class="prov">
+    <b>Supersedes failure-v3</b>, which rendered the retired violet system. Renders 04 §6.5 registry
+    23: <span class="mono">EmptyState</span>, <span class="mono">ErrorBanner</span>,
+    <span class="mono">InterruptedState</span> — "the failure set, inside the owning composition" —
+    plus loading and delegated-receipt, drawn beside them because a failure state cannot be judged
+    without its neighbours: what an interruption looks like only means something next to what
+    running and resuming look like. This is the sheet chrome-v4 card 5 defers to for these five
+    states, and the one this container can genuinely render and inspect.
+  </p>
+  <p class="law">
+    This sheet is a rendering — 04 is the only canonical home. "Loading never displays invented
+    percentage progress" and "Empty, error, interrupted and resume states remain inside the
+    composition they belong to" (04 §7). Registry 23 is provisional under the P11
+    three-production-uses rule; these cards are the approval input, not the promotion. The
+    InterruptedState's preserved-items line is governed by the verdict-state rule's shipping/target
+    pattern: the shipping form ships today because <b>G-15</b> (partial-advance completion record)
+    does not exist; the target form is labelled "once G-15 lands" and is never the unlabelled
+    default.
+  </p>
+</header>
+
+<!-- ================================================================ CARD A -->
+<section class="card" id="card-1">
+  <h2>Card 1 — EmptyState (registry 23): inside the roster table</h2>
+  <p class="sub">Owning composition: Roster (04 §8 family 16). The table chrome — world strip,
+    filter fields, caption band, header band — is exactly what the populated table draws
+    (table-v4 card 1 grammar); only the rows region is replaced. The region states what is empty,
+    why (simulation-owned, never display copy), and the one action that fills it. State A's cause
+    is the world's (two named players injured); state B's cause is the player's own filter — two
+    different whys, two different filling actions, one pattern.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark — world-caused, then filter-caused</h4>
+      <div class="wstrip">
+        <span class="tchip">EXS</span>
+        <div class="sid"><span class="sname">Example State</span><span class="smeta">Coach Sample · Week 9 · Prep · 6-2</span></div>
+        <div class="sdiv"></div>
+        <div class="routes"><span class="pill">Office</span><span class="pill sel">Team</span><span class="pill">Recruit</span></div>
+        <span class="gobtn">Continue</span>
+      </div>
+      <div class="panel">
+        <div class="pcap"><span>Roster — Tight ends, game-ready</span><b>0 of 63 shown</b></div>
+        <div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>OVR</span></div>
+        <div class="emptyblock">
+          <span class="emptyglyph">person.3</span>
+          <p class="emptyt">No tight ends are game-ready.</p>
+          <p class="emptyw">Player Eleven and Player Twenty-Six are out injured.</p>
+          <span class="emptybtn pri">Open depth chart</span>
+        </div>
+        <div class="emptydiv"></div>
+        <div class="pcap"><span>State B — region only, chrome identical</span></div>
+        <div class="emptyblock">
+          <p class="emptyt">No players match these filters.</p>
+          <p class="emptyw">Position TE and Game-ready hide all 63 players.</p>
+          <span class="emptybtn sec">Clear filters</span>
+        </div>
+      </div>
+      <p class="fig">Quoted (04 §6.1, dark): title content.primary on work 16.62 · why-line and caption
+        content.secondary on work 8.79 · strip name content.primary on raised 14.34, meta
+        content.secondary on raised 7.59 · Clear-filters outline content.secondary on work 8.79 ·
+        Open-depth-chart fill vs work non-text 9.53, ink goldInk on gold 12.08 · team chip onTeam/primary
+        11.74, secondary/primary 6.37 (mandatory hairline — the fill measures 1.35 on dark work, below
+        the 3:1 floor).</p>
+    </div>
+    <div class="pane lt">
+      <h4>Light — same two states</h4>
+      <div class="wstrip">
+        <span class="tchip">EXS</span>
+        <div class="sid"><span class="sname">Example State</span><span class="smeta">Coach Sample · Week 9 · Prep · 6-2</span></div>
+        <div class="sdiv"></div>
+        <div class="routes"><span class="pill">Office</span><span class="pill sel">Team</span><span class="pill">Recruit</span></div>
+        <span class="gobtn">Continue</span>
+      </div>
+      <div class="panel">
+        <div class="pcap"><span>Roster — Tight ends, game-ready</span><b>0 of 63 shown</b></div>
+        <div class="thead"><span>No</span><span>Player</span><span>Pos</span><span>OVR</span></div>
+        <div class="emptyblock">
+          <span class="emptyglyph">person.3</span>
+          <p class="emptyt">No tight ends are game-ready.</p>
+          <p class="emptyw">Player Eleven and Player Twenty-Six are out injured.</p>
+          <span class="emptybtn pri">Open depth chart</span>
+        </div>
+        <div class="emptydiv"></div>
+        <div class="pcap"><span>State B — region only, chrome identical</span></div>
+        <div class="emptyblock">
+          <p class="emptyt">No players match these filters.</p>
+          <p class="emptyw">Position TE and Game-ready hide all 63 players.</p>
+          <span class="emptybtn sec">Clear filters</span>
+        </div>
+      </div>
+      <p class="fig">Quoted (04 §6.1, light): title content.primary on work 18.25 · why-line and caption
+        content.secondary on work 8.50 · strip name content.primary on raised 14.62, meta
+        content.secondary on raised 6.81 · Clear-filters outline content.secondary on work 8.50 ·
+        Open-depth-chart fill vs work non-text 6.68, ink is the fill (light has no separate fill
+        form) · team chip pair ratios are surface-independent (11.74 / 6.37); the hairline is drawn
+        anyway because 04 §6.1 makes it mandatory for every team fill, not a per-surface judgement.</p>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per state</h4>
+    <ul>
+      <li>State A: "Roster, tight ends, game-ready, empty: no tight ends are game-ready; Player
+        Eleven and Player Twenty-Six are out injured; Open depth chart, button."</li>
+      <li>State B: "Roster, empty: no players match these filters; position tight end and
+        game-ready hide all sixty-three players; Clear filters, button."</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> quoted above — dark 16.62/8.79/14.34/7.59/9.53/12.08, light
+        18.25/8.50/14.62/6.81/6.68. None recomputed.</li>
+      <li><b>Widths:</b> fluid at every supported width; the emptyblock is content-centred and never
+        clips. At AX5 the region reflows in place — title, why-line, action — order preserved.</li>
+      <li><b>Touch:</b> Open depth chart and Clear filters each measure 32 pt drawn, sitting inside a
+        44 pt hit target per §6.3; strip routes and Continue meet the 44 × 44 pt floor.</li>
+      <li><b>States:</b> two instances drawn — world-caused and player-caused — because their
+        why-lines and filling actions differ; the populated table's default/selected/disabled belong
+        to table-v4 card 1. The empty region never appears while rows exist.</li>
+      <li><b>Team colour:</b> strip chip only — dark-primary trio, mandatory hairline, pending
+        generator output. The empty region itself touches no team token.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> no animation of its own — a discrete state. When rows later arrive the
+        region-to-rows change is a 160 ms crossfade in production; under Reduce Motion it is a
+        discrete swap, no fade, no travel (04 §7, Q2).</li>
+      <li><b>Verdict:</b> none — an empty region reports fact, never judgement.</li>
+      <li><b>Density budget:</b> points — 0 added, the region replaces only the rows it stands in for;
+        taps — 1 to the filling action, both states; working memory — 0, the cause is printed in
+        place; learned symbols — 1 added (<span class="mono">person.3</span>, the Empty-state marks
+        class's first drawn use across this library, cap 6, not a learned class per §6.6 — the title
+        and description carry the meaning, the mark only orients).</li>
+      <li><b>Tokens:</b> colours 04 §6.1 exactly; row shape 3/14/3/14, panel shape 4/22/4/22,
+        action shape 16/16/16/4 per §6.3; sizes 13/11/9.5 pt map to §6.2 roles. Identities mechanical,
+        pending generator output.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================================================================ CARD B -->
+<section class="card" id="card-2">
+  <h2>Card 2 — ErrorBanner (registry 23): inside a readout panel</h2>
+  <p class="sub">Owning composition: the NIL allocation readout (04 §8 family 33). The banner
+    answers what failed, what is preserved, and offers the retry action, in state.negative. The
+    ledger below keeps full contrast and keeps working — "Failure preserves the authoritative draft
+    and offers recovery" (04 §4.3). A band inside the panel, never a full-screen takeover.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark — write failure, draft preserved</h4>
+      <div class="wstrip">
+        <span class="tchip">EXS</span>
+        <div class="sid"><span class="sname">Example State</span><span class="smeta">Coach Sample · Week 9 · Prep · 6-2</span></div>
+        <div class="sdiv"></div>
+        <div class="routes"><span class="pill">Office</span><span class="pill">Team</span><span class="pill sel">Recruit</span></div>
+        <span class="gobtn">Continue</span>
+      </div>
+      <div class="banner">
+        <p class="bt"><span class="gl neg">exclamationmark.triangle</span> This change did not save.</p>
+        <p class="bb">Your allocation draft is kept below.</p>
+        <span class="emptybtn pri" style="margin-top:8px">Save again</span>
+      </div>
+      <div class="panel">
+        <div class="pcap"><span>NIL ledger — allocation draft</span><b>$300,000 unallocated</b></div>
+        <div class="trow"><span>Programme pool</span><span class="v">$1,200,000</span></div>
+        <div class="trow"><span>Committed to roster</span><span class="v">$900,000</span></div>
+        <div class="trow"><span>Draft change — Player Nine</span><span class="v">+$150,000</span></div>
+      </div>
+      <p class="fig">Quoted (04 §6.1, dark): banner title state.negative ink on raised 6.87 (above the
+        4.5 body floor) · boundary non-text 6.87 · preserved-line content.secondary on raised 7.59 ·
+        Save-again fill vs raised non-text 9.53, ink goldInk on gold 12.08 · ledger labels
+        content.secondary on work 8.79, amounts content.primary on work 16.62. The ledger keeps full
+        contrast because it keeps working.</p>
+    </div>
+    <div class="pane lt">
+      <h4>Light — same failure</h4>
+      <div class="wstrip">
+        <span class="tchip">EXS</span>
+        <div class="sid"><span class="sname">Example State</span><span class="smeta">Coach Sample · Week 9 · Prep · 6-2</span></div>
+        <div class="sdiv"></div>
+        <div class="routes"><span class="pill">Office</span><span class="pill">Team</span><span class="pill sel">Recruit</span></div>
+        <span class="gobtn">Continue</span>
+      </div>
+      <div class="banner">
+        <p class="bt"><span class="gl neg">exclamationmark.triangle</span> This change did not save.</p>
+        <p class="bb">Your allocation draft is kept below.</p>
+        <span class="emptybtn pri" style="margin-top:8px">Save again</span>
+      </div>
+      <div class="panel">
+        <div class="pcap"><span>NIL ledger — allocation draft</span><b>$300,000 unallocated</b></div>
+        <div class="trow"><span>Programme pool</span><span class="v">$1,200,000</span></div>
+        <div class="trow"><span>Committed to roster</span><span class="v">$900,000</span></div>
+        <div class="trow"><span>Draft change — Player Nine</span><span class="v">+$150,000</span></div>
+      </div>
+      <p class="fig">Quoted (04 §6.1, light): banner title state.negative ink on raised 5.79 (above 4.5)
+        · boundary non-text 5.79 · preserved-line content.secondary on raised 6.81 · Save-again fill
+        vs raised non-text 5.35, ink is the fill (light has no separate fill form) · ledger labels
+        content.secondary on work 8.50, amounts content.primary on work 18.25.</p>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — the banner reads as one sentence: what failed, what is preserved, what to do</h4>
+    <ul>
+      <li>"This change did not save; your allocation draft is kept on this screen; Save again,
+        button."</li>
+      <li>Ledger rows keep their own sentences, e.g. "Programme pool, one million two hundred
+        thousand dollars."</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> dark 6.87/6.87/7.59/9.53/12.08, light 5.79/5.79/6.81/5.35, all quoted from
+        04 §6.1 against the surface actually composited on. None recomputed.</li>
+      <li><b>Widths:</b> a fluid band inside its owning panel; its only fixed-size member is the
+        32 pt-tall retry control. At AX5 the banner reflows to one column — glyph name spoken,
+        title, preserved line, full-width retry — order preserved, nothing dropped.</li>
+      <li><b>Touch:</b> Save again measures 32 pt drawn, inside a 44 pt hit target. The banner body
+        is not a control.</li>
+      <li><b>States:</b> the error state of its owning readout, drawn with the draft preserved and
+        the screen usable. A second failure re-presents the same banner, never a stacked pile.</li>
+      <li><b>Team colour:</b> strip chip only, as card 1. The banner touches no team token — error is
+        a semantic state, never a team colour.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> a 160 ms fade on entry in production; under Reduce Motion the banner appears
+        complete in one discrete step (04 §7, Q2). It never shakes, pulses or bounces in any mode.</li>
+      <li><b>Verdict:</b> none — "this change did not save" is a fact the persistence layer owns, not
+        a judgement.</li>
+      <li><b>Density budget:</b> points — one raised band inside the panel's flow, the ledger is
+        pushed, not covered; taps — 1 to retry, 0 to recover the draft (it never left the screen);
+        working memory — 0; learned symbols — 0 added, exclamationmark.triangle is an existing Status
+        member (cap 12).</li>
+      <li><b>Tokens:</b> colours 04 §6.1 exactly; banner shape 4/22/4/22 per §6.3; title and body at
+        §6.2 roles; money integer dollars, tabular. The failure cause claims no engine surface that
+        does not exist — save-write handling is a persistence contract (03b) and this card draws its
+        player-facing shape only.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================================================================ CARD C -->
+<section class="card" id="card-3">
+  <h2>Card 3 — InterruptedState (registry 23): advance interrupted, resume in place</h2>
+  <p class="sub">Owning composition: Coaching HQ (04 §8 family 8) — the screen that owns the advance
+    owns its interruption. What happened, what was preserved, a single resume action, copy short and
+    plain: no blame, no jargon. The rows beneath stay at full contrast — the week is still the
+    screen. The shipping form leads because <span class="mono">G-15</span> (partial-advance
+    completion record) does not exist; the target form is labelled and never the default.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark — shipping form, today</h4>
+      <div class="wstrip">
+        <span class="tchip">EXS</span>
+        <div class="sid"><span class="sname">Example State</span><span class="smeta">Coach Sample · Week 9 · Prep · 6-2</span></div>
+        <div class="sdiv"></div>
+        <div class="routes"><span class="pill sel">Office</span><span class="pill">Team</span><span class="pill">Recruit</span></div>
+        <span class="gobtn">Continue</span>
+      </div>
+      <div class="iblock">
+        <p class="bt"><span class="gl warn">exclamationmark.triangle</span> Advance interrupted</p>
+        <p class="bb">The advance stopped during Wednesday practice. Progress is saved to that
+          point — no engine record of exactly what committed exists yet (G-15).</p>
+        <span class="emptybtn pri" style="margin-top:8px">Resume advance</span>
+      </div>
+      <div class="statelabel">Target form — once G-15 lands</div>
+      <div class="iblock">
+        <p class="bt"><span class="gl warn">exclamationmark.triangle</span> Advance interrupted</p>
+        <p class="bb">The advance stopped during Wednesday practice. Saved up to that point:
+          practice results and two injury updates.</p>
+        <span class="emptybtn pri" style="margin-top:8px">Resume advance</span>
+      </div>
+      <div class="panel">
+        <div class="pcap"><span>Week 9 — obligations</span><b>2 of 3 done</b></div>
+        <div class="trow"><span class="gl pos">checkmark.circle.fill</span><span>Tue — Game plan</span><span class="v">Done</span></div>
+        <div class="trow"><span class="gl info">clock.badge.exclamationmark</span><span>Thu — Opponent film</span><span class="v">Waiting</span></div>
+      </div>
+      <p class="fig">Quoted (04 §6.1, dark): block title content.primary on raised 14.34 · boundary
+        and glyph state.warning ink on raised 8.25 (as text also clears 4.5) · body content.secondary
+        on raised 7.59 · Resume-advance fill vs raised non-text 9.53, ink goldInk on gold 12.08 ·
+        agenda rows content.secondary on work 8.79, values content.primary on work 16.62 ·
+        checkmark.circle.fill state.positive ink on work 12.45 non-text · clock.badge.exclamationmark
+        state.info ink on work 9.88 non-text.</p>
+    </div>
+    <div class="pane lt">
+      <h4>Light — same two forms</h4>
+      <div class="wstrip">
+        <span class="tchip">EXS</span>
+        <div class="sid"><span class="sname">Example State</span><span class="smeta">Coach Sample · Week 9 · Prep · 6-2</span></div>
+        <div class="sdiv"></div>
+        <div class="routes"><span class="pill sel">Office</span><span class="pill">Team</span><span class="pill">Recruit</span></div>
+        <span class="gobtn">Continue</span>
+      </div>
+      <div class="iblock">
+        <p class="bt"><span class="gl warn">exclamationmark.triangle</span> Advance interrupted</p>
+        <p class="bb">The advance stopped during Wednesday practice. Progress is saved to that
+          point — no engine record of exactly what committed exists yet (G-15).</p>
+        <span class="emptybtn pri" style="margin-top:8px">Resume advance</span>
+      </div>
+      <div class="statelabel">Target form — once G-15 lands</div>
+      <div class="iblock">
+        <p class="bt"><span class="gl warn">exclamationmark.triangle</span> Advance interrupted</p>
+        <p class="bb">The advance stopped during Wednesday practice. Saved up to that point:
+          practice results and two injury updates.</p>
+        <span class="emptybtn pri" style="margin-top:8px">Resume advance</span>
+      </div>
+      <div class="panel">
+        <div class="pcap"><span>Week 9 — obligations</span><b>2 of 3 done</b></div>
+        <div class="trow"><span class="gl pos">checkmark.circle.fill</span><span>Tue — Game plan</span><span class="v">Done</span></div>
+        <div class="trow"><span class="gl info">clock.badge.exclamationmark</span><span>Thu — Opponent film</span><span class="v">Waiting</span></div>
+      </div>
+      <p class="fig">Quoted (04 §6.1, light): block title content.primary on raised 14.62 · boundary
+        and glyph state.warning ink on raised 5.97 · body content.secondary on raised 6.81 ·
+        Resume-advance fill vs raised non-text 5.35, ink is the fill · rows content.secondary on work
+        8.50, values content.primary on work 18.25 · checkmark.circle.fill state.positive ink on work
+        6.86 · clock.badge.exclamationmark state.info ink on work 7.00.</p>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver, one sentence — shipping form, then target form</h4>
+    <ul>
+      <li>Shipping: "Advance interrupted; the advance stopped during Wednesday practice; progress is
+        saved to that point; Resume advance, button."</li>
+      <li>Target, once G-15 lands: "Advance interrupted; the advance stopped during Wednesday
+        practice and everything up to that point is saved, including practice results and two
+        injury updates; Resume advance, button."</li>
+      <li>Following rows keep their own sentences, e.g. "Tuesday, game plan, done."</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> dark 14.34/8.25/7.59/9.53/12.08/8.79/16.62/12.45/9.88, light
+        14.62/5.97/6.81/5.35/8.50/18.25/6.86/7.00. None recomputed.</li>
+      <li><b>Widths:</b> a fluid band inside the owning screen's flow; only fixed member is the
+        32 pt resume control. At AX5 both forms reflow to one column — title, preserved line,
+        full-width resume — order preserved.</li>
+      <li><b>Touch:</b> Resume advance measures 32 pt drawn, inside a 44 pt hit target — one action
+        by design, not a choice pair; abandoning a partial advance is not offered.</li>
+      <li><b>States:</b> the interrupted state of its owning screen, drawn in both the shipping form
+        (today) and the target form (once G-15 lands), per the verdict-state rule's shipping/target
+        pattern extended to any gap-carrying region. Cold resume restores this exact surface at the
+        last durable boundary (04 §3).</li>
+      <li><b>Team colour:</b> strip chip only, as card 1. The interruption block uses state.warning,
+        never a team colour.</li>
+      <li><b>VoiceOver:</b> written out above, for both forms.</li>
+      <li><b>Motion:</b> no entrance animation — an interruption is discovered, not performed.
+        Resuming replaces the block with the running advance (card 4); under Reduce Motion that
+        replacement is a discrete swap, no fade or travel (04 §7, Q2).</li>
+      <li><b>Verdict:</b> none — "progress is saved" and "saved up to that point" are facts of the
+        durable boundary, not judgements.</li>
+      <li><b>Density budget:</b> points — one raised band at the top of the week plan's flow, the
+        plan keeps its rows; taps — 1 to resume; working memory — 0, what is preserved is printed in
+        the block; learned symbols — 0 added, exclamationmark.triangle and
+        clock.badge.exclamationmark are existing Status members, checkmark.circle.fill is the
+        Obligation class's complete member.</li>
+      <li><b>Tokens:</b> colours 04 §6.1 exactly; block shape 4/22/4/22 per §6.3. Engine dependency
+        stated, not hidden: the preserved-items line needs the advance to record what completed
+        before the boundary. That is <span class="mono">G-15</span>
+        (docs/05-IMPLEMENTATION-PLAN.md, P10b amendment; owner doc 03b) — until it lands, the target
+        form's named preserved items are the sheet's illustration of the shape, not a claim the
+        engine can produce that list, and the shipping form is what ships.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================================================================ CARD D -->
+<section class="card" id="card-4">
+  <h2>Card 4 — Loading: named, indeterminate, no invented percentage</h2>
+  <p class="sub">Owning composition: the Coaching HQ advance region while the simulation runs. The
+    state names what is loading ("Simulating Week 9" and its fixture) and draws an indeterminate
+    track — no number is drawn because the engine owns no fraction of this work. The strip's advance
+    slot is drawn disabled while the advance runs; a running advance cannot be advanced again
+    (04 §3).</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark — advance running, in place</h4>
+      <div class="wstrip">
+        <span class="tchip">EXS</span>
+        <div class="sid"><span class="sname">Example State</span><span class="smeta">Coach Sample · Week 9 · Prep · 6-2</span></div>
+        <div class="sdiv"></div>
+        <div class="routes"><span class="pill sel">Office</span><span class="pill">Team</span><span class="pill">Recruit</span></div>
+        <span class="gobtn disabled">Continue</span>
+      </div>
+      <div class="panel">
+        <div class="pcap"><span>Advancing</span></div>
+        <div class="loadb">
+          <p class="lt1">Simulating Week 9</p>
+          <p class="lt2">Example State at Example Coastal</p>
+          <div class="track"><span class="puck"></span></div>
+        </div>
+      </div>
+      <div class="violation"><span class="x">Simulating Week 9 — 37%</span><span>invented percentage
+        progress, prohibited by 04 §7 — no engine computation owns that number</span></div>
+      <p class="fig">Quoted (04 §6.1, dark): name-line content.primary on work 16.62 · fixture line
+        content.secondary on work 8.79 · track puck action.primary fill vs work non-text 11.04 ·
+        disabled Continue at 45% opacity (tree value, chrome-v4 card 2 note).</p>
+    </div>
+    <div class="pane lt">
+      <h4>Light — same state</h4>
+      <div class="wstrip">
+        <span class="tchip">EXS</span>
+        <div class="sid"><span class="sname">Example State</span><span class="smeta">Coach Sample · Week 9 · Prep · 6-2</span></div>
+        <div class="sdiv"></div>
+        <div class="routes"><span class="pill sel">Office</span><span class="pill">Team</span><span class="pill">Recruit</span></div>
+        <span class="gobtn disabled">Continue</span>
+      </div>
+      <div class="panel">
+        <div class="pcap"><span>Advancing</span></div>
+        <div class="loadb">
+          <p class="lt1">Simulating Week 9</p>
+          <p class="lt2">Example State at Example Coastal</p>
+          <div class="track"><span class="puck"></span></div>
+        </div>
+      </div>
+      <p class="fig">Quoted (04 §6.1, light): name-line content.primary on work 18.25 · fixture line
+        content.secondary on work 8.50 · track puck action.primary fill vs work non-text 6.68 ·
+        disabled Continue 45% opacity.</p>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver, one sentence</h4>
+    <ul>
+      <li>"Simulating Week 9, Example State at Example Coastal, in progress." — spoken once with the
+        busy trait; no percentage is spoken because none exists.</li>
+      <li>The disabled advance slot reads "Continue, dimmed, button."</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> dark 16.62/8.79/11.04, light 18.25/8.50/6.68, quoted from 04 §6.1 against
+        work. The track groove is a surface seam, carrying no information alone; the puck clears the
+        3.0 non-text floor in both appearances.</li>
+      <li><b>Widths:</b> the label pair and track are fluid, spanning the panel at every width. At
+        AX5 the state stacks in one column — name line, fixture line, then the track — nothing
+        width-dependent.</li>
+      <li><b>Touch:</b> no interactive element in the loading region — nothing to press, nothing to
+        cancel mid-write at this boundary; the disabled advance slot is drawn at 32 pt, dimmed.</li>
+      <li><b>States:</b> the loading state of its owning region, proving the two rules — names what
+        is loading, no invented percentage. The violation exhibit shows the rejected form as gallery
+        chrome, outside the frame. On completion the region swaps to the result surface; on
+        interruption, to card 3; never to a blank.</li>
+      <li><b>Team colour:</b> strip chip only, as card 1. The track uses action furniture, never team
+        colour.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> one animation — the indeterminate puck travels the track on a repeating
+        cycle. Reduced form, named: under Reduce Motion the travel is removed entirely and the state
+        renders as static text with a static track, no moving member (04 §7, Q2).</li>
+      <li><b>Verdict:</b> none — a loading state additionally may not imply progress it cannot
+        compute, the same fabrication rule (04 §4.4) applied to time.</li>
+      <li><b>Density budget:</b> points — about 60 pt of the advance region; taps — 0, nothing is
+        asked of the player while the engine works; working memory — 0; learned symbols — 0, the
+        track is furniture, not a glyph.</li>
+      <li><b>Tokens:</b> colours 04 §6.1 exactly; track height 4, radii 2 (the track's own cap, half
+        its height, not a new token) per §6.3. The fixture named is simulation truth, not
+        decoration.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================================================================ CARD E -->
+<section class="card" id="card-5">
+  <h2>Card 5 — Delegated: named staff, in-place receipt</h2>
+  <p class="sub">Owning composition: the week plan's obligations (04 §8 families 8/12). "Mandatory
+    work cannot be skipped. It may be explicitly delegated when the system supports it" (04 §3), and
+    "Success shows an exact receipt" (04 §4.3). The delegated obligation stays in its row — who did
+    it, exactly what they chose — and the row is the inspect route. Extends chrome-v4 card 2's
+    delegated control into its owning composition.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark — the receipt among its sibling obligations</h4>
+      <div class="wstrip">
+        <span class="tchip">EXS</span>
+        <div class="sid"><span class="sname">Example State</span><span class="smeta">Coach Sample · Week 9 · Prep · 6-2</span></div>
+        <div class="sdiv"></div>
+        <div class="routes"><span class="pill sel">Office</span><span class="pill">Team</span><span class="pill">Recruit</span></div>
+        <span class="gobtn">Continue</span>
+      </div>
+      <div class="panel">
+        <div class="pcap"><span>Week 9 — obligations</span><b>2 of 3 done</b></div>
+        <div class="trow"><span class="gl pos">checkmark.circle.fill</span><span>Game plan</span><span class="v">Done Tue</span></div>
+        <div class="rrow">
+          <span class="gl pos">person.badge.clock</span>
+          <span><span class="who">Practice plan — set by Coordinator Sample</span><span class="terms">Red-zone emphasis · Moderate load</span></span>
+          <span class="tail gl plain">chevron.right</span>
+        </div>
+        <div class="trow"><span class="gl info">clock.badge.exclamationmark</span><span>Opponent film</span><span class="v">Due Thu</span></div>
+      </div>
+      <p class="fig">Quoted (04 §6.1, dark): receipt name content.primary on work 16.62 · terms
+        content.secondary on work 8.79 · checkmark.circle.fill and person.badge.clock state.positive
+        ink on work 12.45 non-text (meaning carried by "Done" and "set by", never colour alone) ·
+        chevron.right content.secondary on work 8.79 non-text.</p>
+    </div>
+    <div class="pane lt">
+      <h4>Light — same receipt</h4>
+      <div class="wstrip">
+        <span class="tchip">EXS</span>
+        <div class="sid"><span class="sname">Example State</span><span class="smeta">Coach Sample · Week 9 · Prep · 6-2</span></div>
+        <div class="sdiv"></div>
+        <div class="routes"><span class="pill sel">Office</span><span class="pill">Team</span><span class="pill">Recruit</span></div>
+        <span class="gobtn">Continue</span>
+      </div>
+      <div class="panel">
+        <div class="pcap"><span>Week 9 — obligations</span><b>2 of 3 done</b></div>
+        <div class="trow"><span class="gl pos">checkmark.circle.fill</span><span>Game plan</span><span class="v">Done Tue</span></div>
+        <div class="rrow">
+          <span class="gl pos">person.badge.clock</span>
+          <span><span class="who">Practice plan — set by Coordinator Sample</span><span class="terms">Red-zone emphasis · Moderate load</span></span>
+          <span class="tail gl plain">chevron.right</span>
+        </div>
+        <div class="trow"><span class="gl info">clock.badge.exclamationmark</span><span>Opponent film</span><span class="v">Due Thu</span></div>
+      </div>
+      <p class="fig">Quoted (04 §6.1, light): receipt name content.primary on work 18.25 · terms
+        content.secondary on work 8.50 · checkmark.circle.fill and person.badge.clock state.positive
+        ink on work 6.86 non-text · chevron.right content.secondary on work 8.50 non-text.</p>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver, one sentence</h4>
+    <ul>
+      <li>"Practice plan set by Coordinator Sample, red-zone emphasis, moderate load; button, opens
+        the plan." The completion glyph is spoken as part of the sentence ("set by"), not as a
+        separate tick announcement.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> dark 16.62/8.79/12.45, light 18.25/8.50/6.86, quoted from 04 §6.1 against
+        work. None recomputed.</li>
+      <li><b>Widths:</b> a full-width row of its panel; the terms line gains length with width. At
+        AX5 the row reflows to one column — the delegated mark spoken as part of the sentence,
+        who-line, terms, the inspect route as a full-width control — order preserved.</li>
+      <li><b>Touch:</b> the receipt row is itself the interactive element — 44 pt minimum height,
+        full panel width. Sibling 26 pt rows are not controls on this screen.</li>
+      <li><b>States:</b> the delegated state of an obligation, drawn in place among sibling states
+        (done, waiting) so the plan never shows a hole where delegated work happened. The
+        pre-delegation control and its pressed/disabled states are chrome-v4 card 2's specimens, not
+        repeated here.</li>
+      <li><b>Team colour:</b> strip chip only, as card 1. Staff identity is a name, not a colour.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> when delegation completes, the pending row crossfades to the receipt row
+        (160 ms) in production; under Reduce Motion the control is replaced by the receipt in one
+        discrete step, no crossfade — the same reduced form chrome-v4 card 2 names.</li>
+      <li><b>Verdict:</b> none — a receipt is the record of a completed transaction, not a judgement
+        of its quality. Whether the delegated plan was any good is a readout's question, answered
+        elsewhere only where the engine owns the computation (G-02).</li>
+      <li><b>Density budget:</b> points — the receipt spends 44 pt where a pending row spends 26, a
+        net 18 pt for who-and-what printed in place; taps — 1 to inspect the delegated plan; working
+        memory — 0; learned symbols — 0 added, checkmark.circle.fill and person.badge.clock are the
+        Obligation class's two members, clock.badge.exclamationmark is an existing Status member and
+        chevron.right is control furniture — at most 2 glyphs on this row, within the three-per-row
+        cap.</li>
+      <li><b>Tokens:</b> colours 04 §6.1 exactly; row heights 26/44, radius 0 on continuous rows per
+        §6.3. "Coordinator Sample" is a mechanical staff placeholder, pending generator output; the
+        receipt's terms are the delegation transaction's own record (04 §4.3), not display copy.</li>
+    </ol>
+  </div>
+</section>
+
+<div class="callout">
+  <h4>What this sheet does not decide</h4>
+  <ul>
+    <li><b>Token values</b> — 04 §6.1 owns them.</li>
+    <li><b>The ListControls implementation</b> behind the filter fields — G-10.</li>
+    <li><b>The persistence contract</b> behind the error banner — 03b.</li>
+    <li><b>The partial-advance completion record</b> the interrupted state's target form needs —
+      <b>G-15</b>, named in card 3, owner doc 03b.</li>
+    <li><b>Whether registry 23 is promoted</b> — the P11 three-production-uses rule governs; these
+      cards are the approval input, not the promotion. The failure set was noted undrawn in every
+      prior pass; after owner review of this sheet, that note in `docs/STATUS.md` can close.</li>
+  </ul>
+</div>
+
+<p class="fig" style="margin-top:16px">End of failure-v4. Five cards, registry 23 plus its loading
+  and delegated neighbours. 04 §4.4, §4.5, §6.1, §6.3, §6.6, §7 remain the only canonical home for
+  every value and rule shown. Static, no motion, no script. Identities: Example State, Coach Sample,
+  Coordinator Sample and the reference library's shared cast — pending generator output; local
+  placeholders (Player Eleven, Player Twenty-Six, Player Nine) carry no fact a sibling sheet depends
+  on.</p>
+
+</div>
+</body>
+</html>
