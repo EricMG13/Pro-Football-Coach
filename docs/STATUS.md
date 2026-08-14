@@ -2046,6 +2046,74 @@ stated boundary rather than something a reader discovers.
 
 ---
 
+### 2026-08-14 — the completeness build compiles, and the test suite is partially red
+
+Picked up branch `claude/missing-game-features-vcrzwz` — a separate session's copy of the 34-slice
+completeness build above — on a machine with the toolchain (Swift 6.3.3, Xcode 26.6). `swift build`
+had never been run against this tree; it now has.
+
+**Five defects found, root-caused before fixing, all one species: written across 34 slices with no
+compiler in the loop, so nothing caught them.**
+
+1. `PlayerGameStatistics` (`Statistics.swift`) hand-writes both `init(from:)` and `encode(to:)`.
+   Swift synthesizes `CodingKeys` only as a byproduct of synthesizing the coding methods themselves
+   — with both hand-written, nothing synthesizes it, yet both bodies reference `CodingKeys` cases
+   directly. Every sibling `Codable` type in the file writes at most one custom method, which is why
+   only this one broke. Fixed with an explicit `CodingKeys` enum.
+2. `CompetitionReducer.swift`'s two calls to `StandingRow.record(...)` used the signature from
+   before it gained a `win: Bool` parameter and renamed `conferenceGame` to `conference`; the callers
+   were never updated. Fixed by computing `win` from the score comparison at each call site, the same
+   comparison already used two lines below for `headToHeadWinner`.
+3. Three test-only visibility gaps — `PostseasonSystem.adjacentPairs`, `InboxReadModel.disposition`,
+   `StaffDevelopmentSystem.employer` — sat at the default `internal` level, but `SimTests` is a
+   separate module that deliberately never uses `@testable import` (`GenerationTests.swift`'s header
+   states the rule and why: reaching for `@testable` there was rejected once already, in favour of
+   reimplementing `SeededRandom.fnv1a`'s checksum independently rather than exposing the internal).
+   `employer` sits beside the already-`public` `employerStanding`, which calls it — plainly just
+   missed. Promoted all three to `public`; no behavioural change.
+
+**Result: `swift build` is clean, first time on this tree** — the whole package (all four targets:
+`FootballSimCore`, `ProFootballCoachUI`, `CoachWorldApp`, `SimTests`) compiles with zero errors,
+warnings only (two `var`s that should be `let`, left alone — out of scope for a compile pass).
+
+**The test run was started, then deliberately stopped before finishing, on instruction.**
+`./scripts/verify.sh` reached the release build (`188.53 s`) and completed at least 104 suites before
+being stopped mid-run (last suite seen: "College portal atomic transaction"). **This is a lower
+bound, not a result.** An unknown number of suites after that point were never reached, and
+`TestKit.finish()` — the only place per-check failure detail (`file:line` and message) prints — never
+ran, because the harness accumulates failures silently and reports them only at the end. Suite
+pass/fail tallies were captured; nothing more specific is known, and nothing more specific is
+claimed.
+
+**Nine of the ~104 suites reached had failures, 14 failed checks total:**
+
+| Suite | Tests | Failed checks |
+|---|---|---|
+| Contracts | 23 | 1 |
+| Snap resolution | 13 | 4 |
+| Game loop | 17 | 2 |
+| Conversion | 6 | 1 |
+| Substitution | 7 | 1 |
+| Band tables | 5 | 1 |
+| Authoritative game state | 9 | 2 |
+| Abstract competition results | 13 | 1 |
+| Postseason and rollover | 2 | 1 |
+
+**Two clusters that look plausible from the suite names alone — a hypothesis, not a finding, and
+untested against any actual failure message.** `Snap resolution`, `Game loop`, `Conversion` and
+`Substitution` all sit on the same play-resolution path and are adjacent slices (in-play
+injury/substitution, the conversion play); they may share one root cause. `Contracts`, `Authoritative
+game state`, `Abstract competition results` and `Postseason and rollover` all touch competition/root
+state and may be downstream of the same `StandingRow.record` signature this session already had to
+fix once — or may be unrelated. Neither guess has been checked against a real failure message, per
+`CLAUDE.md`'s no-guess-fixes rule, and neither should be trusted until the suite runs to completion.
+
+**What is not claimed: tests green, a fixed engine, or that fourteen is the total failure count.**
+Suites beyond "College portal atomic transaction" — by prior full-suite counts, roughly a third of
+the suite — were never reached this session.
+
+---
+
 ## What exists, and what verified it
 
 | Artefact | State | Verified by |
