@@ -113,7 +113,14 @@ public enum ProRosterAISystem {
                     return $0.id.uuidString < $1.id.uuidString
                 }
             for candidate in candidates {
-                let contract = ProMarketSystem.rookieContract(for: candidate)
+                // The asking price, not a rookie deal. Every club in the league used to sign the
+                // best man in the pool for `rookieContract` — the same money for a 75-overall
+                // veteran as for an undrafted rookie — so the cap never bound anybody and the
+                // best free agents always went to whichever club sorted first.
+                let contract = ContractNegotiation.askingPrice(
+                    for: candidate,
+                    season: next.proMarket.season
+                )
                 do {
                     next = try ProMarketSystem.signFreeAgent(
                         playerID: candidate.id,
@@ -122,6 +129,8 @@ public enum ProRosterAISystem {
                         in: next
                     )
                 } catch ProManagementError.capExceeded {
+                    continue
+                } catch ProMarketError.belowAskingPrice {
                     continue
                 } catch ProManagementError.activeRosterFull {
                     break

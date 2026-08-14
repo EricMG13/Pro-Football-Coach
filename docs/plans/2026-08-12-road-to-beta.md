@@ -173,3 +173,17 @@ fields as `Int?` with a "not built" note for part of this session. Wrong, and co
 day once a closer read of `CollegeState.swift` found the real resource — `02` §4.3 carries the full
 account, including the correction itself. No gap number is spent on it: it was never a real gap, so
 G-18 is not reserved and the next one issued should be G-18.
+
+---
+
+## 9. The completeness build (34 slices), on branch `claude/missing-game-features-vcrzwz`
+
+Not part of this document's original scope. A separate session wrote 34 more slices after this list
+was assembled — `docs/STATUS.md`'s "2026-08-13 — the completeness build" — entirely without a
+toolchain, so none of it had ever been compiled. This section tracks bringing that work up to the
+same bar as everything above.
+
+| # | Item | State |
+|---|---|---|
+| C-1 | The completeness build compiles | **Done, 2026-08-14.** Five defects fixed, all root-caused: a `Codable`/`CodingKeys` synthesis gap, a stale call site against a changed function signature, and three test-only visibility gaps. All the same species — written without a compiler in the loop. `docs/STATUS.md`'s 2026-08-14 entry has the full account |
+| C-2 | The completeness build's test suite is green | **Not reached.** The run was started and deliberately stopped mid-suite on instruction: at least 104 suites completed (an unknown number after that point were never reached), 9 failing, 14 failed checks — a lower bound, not a result. `TestKit.finish()`, the only place per-check failure detail prints, never ran. Two suite-name-level clusters are suspected — the play-resolution suites (Snap resolution, Game loop, Conversion, Substitution) and the competition/root-state suites (Contracts, Authoritative game state, Abstract competition results, Postseason and rollover) — but neither is checked against a real failure message yet. Needs a full, uninterrupted run before any fix is attempted |

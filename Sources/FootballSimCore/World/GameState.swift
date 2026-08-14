@@ -75,6 +75,22 @@ public struct GameState: Codable, Sendable, Equatable {
     public var scouting: ScoutingState
     public var tactical: TacticalState
     public var proMarket: ProMarketState
+    /// How hard this career is. `02` §3.16.
+    ///
+    /// **On the save, not on the device.** Difficulty decides the call-in rate, whether the week can
+    /// be delegated and how fast a job is lost — all of which are properties of a career rather than
+    /// of the phone it is played on, and none of which the engine could read from an app-layer
+    /// settings file without breaking the separation `CLAUDE.md` fixes. `CoachWorldSettingsStore`
+    /// keeps the *pre-career* choice, which is what a new save starts at; once a career exists this
+    /// is authoritative.
+    ///
+    /// Optional and omitted when absent, so every save written before difficulty existed still
+    /// decodes against a schema with no migration path, and a world that never set one encodes to
+    /// exactly the bytes it did before.
+    public var difficulty: DifficultySettings?
+
+    /// The difficulty in force, which is the stated default when a save predates the setting.
+    public var difficultyOrDefault: DifficultySettings { difficulty ?? .default }
 
     public init(
         version: Int = GameState.schemaVersion,
@@ -97,7 +113,8 @@ public struct GameState: Codable, Sendable, Equatable {
         college: CollegeState,
         scouting: ScoutingState = ScoutingState(),
         tactical: TacticalState? = nil,
-        proMarket: ProMarketState? = nil
+        proMarket: ProMarketState? = nil,
+        difficulty: DifficultySettings? = nil
     ) {
         precondition(
             version == GameState.schemaVersion,
@@ -124,6 +141,7 @@ public struct GameState: Codable, Sendable, Equatable {
         self.scouting = scouting
         self.tactical = tactical ?? TacticalState(calendar: calendar)
         self.proMarket = proMarket ?? ProMarketState(season: calendar.season)
+        self.difficulty = difficulty
     }
 
     public init(from decoder: any Decoder) throws {
@@ -157,6 +175,7 @@ public struct GameState: Codable, Sendable, Equatable {
         scouting = try container.decode(ScoutingState.self, forKey: .scouting)
         tactical = try container.decode(TacticalState.self, forKey: .tactical)
         proMarket = try container.decode(ProMarketState.self, forKey: .proMarket)
+        difficulty = try container.decodeIfPresent(DifficultySettings.self, forKey: .difficulty)
 
         let integrity = WorldIntegrity.check(self)
         guard integrity.isValid else {

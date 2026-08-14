@@ -70,10 +70,14 @@ func runProMarketTests() {
             state.people.insert(player: player)
             state = try ProMarketSystem.openOffseason(in: state)
             expect(state.proMarket.freeAgentIDs.contains(player.id))
+            // The asking price, because since `02` §4.2d a player will not take less than one.
             let signed = try ProMarketSystem.signFreeAgent(
                 playerID: player.id,
                 teamID: teamID,
-                contract: Contract(years: 2, baseSalaryByYear: [1_000_000, 1_200_000], signingBonus: 0),
+                contract: ContractNegotiation.askingPrice(
+                    for: player,
+                    season: state.proMarket.season
+                ),
                 in: state
             )
             expect(signed.proTeams[teamID]?.rosterIDs.contains(player.id) == true)
@@ -235,10 +239,20 @@ func runProMarketTests() {
             let playerID = try require(state.proTeams[teamID]?.rosterIDs.first)
             _ = removeProRosterPlayer(teamID: teamID, in: &state)
             state = try ProMarketSystem.openOffseason(in: state)
+            // Asking-price money, but deliberately without a start season, because the property
+            // under test is that signing stamps one on.
+            let asking = ContractNegotiation.askingPrice(
+                for: try require(state.players[playerID]),
+                season: state.proMarket.season
+            )
             state = try ProMarketSystem.signFreeAgent(
                 playerID: playerID,
                 teamID: teamID,
-                contract: Contract(years: 1, baseSalaryByYear: [1_000_000], signingBonus: 200_000),
+                contract: Contract(
+                    years: asking.years,
+                    baseSalaryByYear: asking.baseSalaryByYear,
+                    signingBonus: asking.signingBonus
+                ),
                 in: state
             )
             expectEqual(state.players[playerID]?.contract?.signedSeason, state.proMarket.season)

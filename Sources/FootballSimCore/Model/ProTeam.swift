@@ -12,6 +12,10 @@ public struct ProTeam: Codable, Sendable, Equatable, Identifiable {
     public var scheme: SchemeIdentity
     public var prestige: Rating
 
+    /// What this club earns and has built. `02` §10. Optional for the same reason a programme's is:
+    /// an additive optional is the only shape that does not strand a save written before money.
+    public var finances: OrganisationFinances?
+
     public var rosterIDs: [UUID]
     public var practiceSquadIDs: [UUID]
     public var staffIDs: [UUID]
@@ -32,7 +36,8 @@ public struct ProTeam: Codable, Sendable, Equatable, Identifiable {
         rosterIDs: [UUID] = [],
         practiceSquadIDs: [UUID] = [],
         staffIDs: [UUID] = [],
-        deadMoney: Int = 0
+        deadMoney: Int = 0,
+        finances: OrganisationFinances? = nil
     ) {
         self.id = id
         self.name = name
@@ -46,6 +51,17 @@ public struct ProTeam: Codable, Sendable, Equatable, Identifiable {
         self.practiceSquadIDs = practiceSquadIDs
         self.staffIDs = staffIDs
         self.deadMoney = deadMoney
+        self.finances = finances
+    }
+
+    /// The finances this club has, or the ones its standing implies. Nil means "not generated yet",
+    /// never "broke".
+    public func finances(defaultingFor tier: Tier = .pro) -> OrganisationFinances {
+        finances ?? OrganisationFinances(
+            facilities: prestige,
+            reserves: OrganisationFinances.annualRevenue(prestige: prestige, tier: tier)
+                / FinanceRules.openingReserveShare
+        )
     }
 
     public var rosterLegality: RosterLegality {

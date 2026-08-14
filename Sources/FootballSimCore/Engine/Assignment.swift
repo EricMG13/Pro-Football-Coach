@@ -16,10 +16,63 @@ public enum SnapRole: String, Codable, Sendable, CaseIterable {
 public struct SnapPersonnel: Sendable, Equatable {
     public let offense: [Player]
     public let defense: [Player]
+    /// The bench. `02` §3.8.
+    ///
+    /// Defaulted to empty so every existing caller compiles unchanged, and empty is honest: a
+    /// personnel package built by hand for a test has no bench, and a side with no bench simply
+    /// cannot replace anybody — which is exactly what the substitution rule below then does.
+    public let reserves: [Player]
 
-    public init(offense: [Player], defense: [Player]) {
+    public init(offense: [Player], defense: [Player], reserves: [Player] = []) {
         self.offense = offense
         self.defense = defense
+        self.reserves = reserves
+    }
+
+    public func contains(playerID: UUID) -> Bool {
+        offense.contains { $0.id == playerID } || defense.contains { $0.id == playerID }
+    }
+
+    /// The same side with one player replaced from the bench. `02` §3.8.
+    ///
+    /// `MatchInjury.forcedOut` was recorded and **never honoured**: a player whose game was over
+    /// took every remaining snap of it, so an injury changed a line in the record and nothing in the
+    /// match. That is the decoration D6 clause 4 forbids, and it is also the reason `DepthChart`
+    /// exists — its own documentation says `forcedOut` "had nothing to hand the snap to".
+    ///
+    /// **No draw is consumed.** The replacement is the best reserve at the position, then the best
+    /// in the group, chosen by the same ranking the depth chart uses. A substitution that rolled
+    /// dice would put the injured player's bad luck into the stream every other snap reads.
+    ///
+    /// **A side that cannot replace somebody plays on with them.** Eleven players is a rule of the
+    /// sport, and dropping to ten would give the resolver a formation it has no way to resolve —
+    /// the same argument `DepthChart.unit` makes when it falls back to any available body.
+    public func substituting(outPlayerID id: UUID) -> SnapPersonnel {
+        let onOffense = offense.contains { $0.id == id }
+        let unit = onOffense ? offense : defense
+        guard let out = unit.first(where: { $0.id == id }) else { return self }
+        let replacement = Self.ranked(reserves.filter { $0.position == out.position }).first
+            ?? Self.ranked(reserves.filter { $0.position.group == out.position.group }).first
+        guard let replacement else { return self }
+        let replaced = unit.map { $0.id == id ? replacement : $0 }
+        return SnapPersonnel(
+            offense: onOffense ? replaced : offense,
+            defense: onOffense ? defense : replaced,
+            reserves: reserves.filter { $0.id != replacement.id }
+        )
+    }
+
+    /// Every forced-out injury in a set of plays, applied in the order they happened.
+    ///
+    /// One definition, called from two places: the drive loop substitutes mid-drive so the next
+    /// snap is short a man, and the game loop carries the same substitutions forward so the next
+    /// drive does not un-injure him. Two copies of this rule would eventually disagree about who is
+    /// on the field, and nothing would notice.
+    public func substituting(forcedOutIn plays: [PlayRecord]) -> SnapPersonnel {
+        plays.reduce(self) { personnel, play in
+            guard let injury = play.outcome.injury, injury.forcedOut else { return personnel }
+            return personnel.substituting(outPlayerID: injury.playerID)
+        }
     }
 
     public func offensive(_ position: Position) -> [Player] {

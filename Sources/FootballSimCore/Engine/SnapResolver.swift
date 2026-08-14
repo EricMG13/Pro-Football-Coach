@@ -21,6 +21,7 @@ public enum SnapResolver {
         situation: Situation,
         rules: any ClockRules.Type,
         homeFieldAdvantage: Double = 0,
+        weather: Weather = .clear,
         rng: inout SeededRandom
     ) -> SnapOutcome {
         let assignment = Assignment.assign(offensiveCall: offensiveCall,
@@ -30,23 +31,47 @@ public enum SnapResolver {
         // what the *previous* snap did and on the tier's first-down rule, neither of which a single
         // snap can see. `secondsElapsed` here is the play's own duration.
 
+        // Stage 0: the flag, before anything else and unconditionally. Drawing it first means a
+        // penalty cannot shift the stream the snap's own resolution reads; drawing it whether or not
+        // it flags anything means the presence of a flag cannot change how many draws a snap
+        // consumes, which is the property the draw-count test asserts. `02` §3.5.
+        let flag = PenaltyModel.draw(personnel: personnel, situation: situation, rng: &rng)
+        if let flag, flag.kind.isPreSnap {
+            return PenaltyModel.preSnapOutcome(flag, rules: rules)
+        }
+
+        let outcome: SnapOutcome
         switch offensiveCall.playType {
         case .kneel:
-            return SnapOutcome(result: .kneel, yards: -1,
-                               secondsElapsed: rules.inBoundsPlaySeconds,
-                               matchups: [])
+            outcome = SnapOutcome(result: .kneel, yards: -1,
+                                  secondsElapsed: rules.inBoundsPlaySeconds,
+                                  matchups: [])
         case .run:
-            return resolveRun(offensiveCall, defensiveCall, assignment, situation, rules,
-                              homeFieldAdvantage, &rng)
+            outcome = resolveRun(offensiveCall, defensiveCall, assignment, situation, rules,
+                                 homeFieldAdvantage, weather, &rng)
         case .pass:
-            return resolvePass(offensiveCall, defensiveCall, assignment, situation, rules,
-                               homeFieldAdvantage, &rng)
+            outcome = resolvePass(offensiveCall, defensiveCall, assignment, situation, rules,
+                                  homeFieldAdvantage, weather, &rng)
         case .fieldGoal:
-            return resolveFieldGoal(personnel, assignment, situation, rules, homeFieldAdvantage,
-                                    &rng)
+            outcome = resolveFieldGoal(personnel, assignment, situation, rules, homeFieldAdvantage,
+                                       weather, &rng)
         case .punt:
-            return resolvePunt(personnel, situation, rules, &rng)
+            outcome = resolvePunt(personnel, situation, rules, &rng)
         }
+        // A kick is not called back by a hold on the offensive line in this model: the kicking game
+        // has its own fouls and none of the seven kinds are them. Enforcing a scrimmage flag on a
+        // kick would produce a field goal that scores and is simultaneously wiped out.
+        let flagged: SnapOutcome
+        if let flag, offensiveCall.playType != .fieldGoal, offensiveCall.playType != .punt {
+            flagged = PenaltyModel.applying(flag, to: outcome, situation: situation, rules: rules)
+        } else {
+            flagged = outcome
+        }
+
+        // Stage 5: who got hurt. Drawn last, from the players this snap actually involved, and
+        // reported rather than applied — `02` §3.8. A pre-snap flag returned above and carries no
+        // injury, which is correct: nobody was hit on a play that did not happen.
+        return flagged.recording(InjuryModel.draw(in: flagged, personnel: personnel, rng: &rng))
     }
 
     // MARK: - Pass
@@ -62,6 +87,7 @@ public enum SnapResolver {
         _ situation: Situation,
         _ rules: any ClockRules.Type,
         _ homeFieldAdvantage: Double,
+        _ weather: Weather,
         _ rng: inout SeededRandom
     ) -> SnapOutcome {
         var matchups: [MatchupRecord] = []
@@ -72,7 +98,7 @@ public enum SnapResolver {
             let leverage = Leverage.score(
                 attacker: duel.blocker.attributes[.passBlock],
                 defender: duel.rusher.attributes[.passRush],
-                schemeFit: 0,
+                schemeFit: schemeFitDifferential(attacker: duel.blocker, defender: duel.rusher),
                 situationModifier: homeFieldAdvantage - defensiveCall.aggression
                     * MatchupRules.blitzPressureBonus,
                 rng: &rng
@@ -98,7 +124,8 @@ public enum SnapResolver {
             let leverage = Leverage.score(
                 attacker: route.receiver.attributes[.routeRunning],
                 defender: route.defender.attributes[.coverage],
-                schemeFit: 0,
+                schemeFit: schemeFitDifferential(attacker: route.receiver,
+                                                 defender: route.defender),
                 situationModifier: homeFieldAdvantage
                     - defensiveCall.coverage.help(against: offensiveCall.passDepth)
                     + defensiveCall.coverageDrain,
@@ -151,7 +178,8 @@ public enum SnapResolver {
             situationModifier: homeFieldAdvantage
                 + target.element.score * MatchupRules.opennessThrowHelp
                 - pressure * MatchupRules.pressureThrowPenalty
-                + offensiveCall.aggression * MatchupRules.aggressionThrowBonus,
+                + offensiveCall.aggression * MatchupRules.aggressionThrowBonus
+                - weather.passPenalty,
             rng: &rng
         )
         // The defender covering the TARGET, not routes[0]. The target is the argmax over
@@ -188,7 +216,7 @@ public enum SnapResolver {
         let gained = air + afterCatch
         return finish(gained: gained, situation: situation, elapsed: elapsed, matchups: matchups,
                       carrier: target.element.receiver, passer: passer,
-                      target: target.element.receiver, rng: &rng)
+                      target: target.element.receiver, weather: weather, rng: &rng)
     }
 
     /// How attractive a target is: openness, pulled toward progression order as decision falls.
@@ -208,6 +236,7 @@ public enum SnapResolver {
         _ situation: Situation,
         _ rules: any ClockRules.Type,
         _ homeFieldAdvantage: Double,
+        _ weather: Weather,
         _ rng: inout SeededRandom
     ) -> SnapOutcome {
         var matchups: [MatchupRecord] = []
@@ -216,6 +245,7 @@ public enum SnapResolver {
             let leverage = Leverage.score(
                 attacker: duel.blocker.attributes[.runBlock],
                 defender: duel.defender.attributes[.runDefence],
+                schemeFit: schemeFitDifferential(attacker: duel.blocker, defender: duel.defender),
                 situationModifier: homeFieldAdvantage + defensiveCall.coverage.runCost
                     - defensiveCall.aggression * MatchupRules.crashRunBonus,
                 rng: &rng
@@ -242,7 +272,7 @@ public enum SnapResolver {
         let gained = Int((lane * MatchupRules.laneYardScale * outside).rounded()) + broken
         return finish(gained: gained, situation: situation,
                       elapsed: rules.inBoundsPlaySeconds, matchups: matchups,
-                      carrier: carrier, passer: nil, target: nil, rng: &rng)
+                      carrier: carrier, passer: nil, target: nil, weather: weather, rng: &rng)
     }
 
     /// The carrier against pursuit, with a bounded break-tackle chain.
@@ -278,6 +308,7 @@ public enum SnapResolver {
             let leverage = Leverage.score(
                 attacker: carrying,
                 defender: defender.attributes[.tackling],
+                schemeFit: schemeFitDifferential(attacker: carrier, defender: defender),
                 situationModifier: homeFieldAdvantage + aggression * MatchupRules.aggressionRunBonus
                     - Double(attempt) * MatchupRules.brokenTackleDecay,
                 rng: &rng
@@ -300,6 +331,7 @@ public enum SnapResolver {
         _ situation: Situation,
         _ rules: any ClockRules.Type,
         _ homeFieldAdvantage: Double,
+        _ weather: Weather,
         _ rng: inout SeededRandom
     ) -> SnapOutcome {
         let distance = situation.yardsToGoal + MatchupRules.fieldGoalSnapDistance
@@ -315,7 +347,8 @@ public enum SnapResolver {
             attacker: kicker.attributes[.kickAccuracy],
             defender: difficulty,
             situationModifier: homeFieldAdvantage
-                + normalised(kicker.attributes[.legStrength]) * MatchupRules.legStrengthHelp,
+                + normalised(kicker.attributes[.legStrength]) * MatchupRules.legStrengthHelp
+                - weather.kickPenalty,
             rng: &rng
         )
         let record = MatchupRecord(kind: .kick, attackerID: kicker.id, defenderID: blocker.id,
@@ -353,12 +386,13 @@ public enum SnapResolver {
         carrier: Player,
         passer: Player?,
         target: Player?,
+        weather: Weather,
         rng: inout SeededRandom
     ) -> SnapOutcome {
         // The fumble draw is taken unconditionally, before the touchdown branch, so the number of
         // draws a snap consumes does not depend on where the ball ended up. A branch that skipped
         // it would couple the stream to the field position.
-        let fumble = rng.chance(MatchupRules.fumbleChance)
+        let fumble = rng.chance(MatchupRules.fumbleChance * weather.fumbleMultiplier)
         if fumble {
             return SnapOutcome(result: .fumbleLost, yards: gained, secondsElapsed: elapsed,
                                matchups: matchups, ballCarrierID: carrier.id, passerID: passer?.id,
@@ -389,6 +423,20 @@ public enum SnapResolver {
         }
         return SnapOutcome(result: .sack, yards: yards, secondsElapsed: elapsed,
                            matchups: matchups, ballCarrierID: passer?.id, passerID: passer?.id)
+    }
+
+    /// How much better this matchup's attacker fits their scheme than the defender fits theirs.
+    ///
+    /// `02` §6 makes scheme identity "the spine" and says "the roster's fit to it modifies every
+    /// matchup in the engine". **Every call site passed a literal zero**, so the spine moved nothing:
+    /// `MatchupRules.schemeFitWeight` was a constant nothing multiplied, and a player's `schemeFit`
+    /// rating was read by the development system and by nobody in the match.
+    ///
+    /// A differential rather than the attacker's fit alone, because a matchup is between two players
+    /// and a scheme that helped both sides equally should decide nothing. On -1...1, which is the
+    /// range `Leverage.score` clamps to anyway.
+    public static func schemeFitDifferential(attacker: Player, defender: Player) -> Double {
+        (normalised(attacker.attributes[.schemeFit]) - normalised(defender.attributes[.schemeFit]))
     }
 
     /// A rating on 0...1, for use as a weight.

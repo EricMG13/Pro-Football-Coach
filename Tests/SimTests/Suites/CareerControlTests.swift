@@ -528,3 +528,55 @@ func runCareerPortalDecisionTests() {
         }
     }
 }
+
+func runCareerAdvanceTests() {
+    suite("Advancing more than one week") {
+        testAsync("an advance stops the moment something wants the coach") {
+            // 02 section 3.12. advanceWeek was the only way to move time, so an offseason was a
+            // sequence of taps with a measured 2.83-second wait behind each one.
+            let source = GameState.bootstrap(seed: 98_040)
+            let controlled = try CareerControlSystem.startCollegeCareer(
+                at: source.programmes.ids[0],
+                in: source
+            ).state
+            let session = try CareerSession(state: controlled)
+            let before = await session.projection().calendar
+
+            let receipt = try await session.advance(weeks: 4)
+
+            expect(receipt.weeksAdvanced >= 0 && receipt.weeksAdvanced <= 4,
+                   "an advance of four weeks moved \(receipt.weeksAdvanced)")
+            let after = receipt.projection.calendar
+            if receipt.weeksAdvanced == 0 {
+                expectEqual(after, before, "no weeks advanced but the calendar moved")
+                expect(receipt.stoppedBecause != .reachedRequestedWeeks,
+                       "an advance that moved nothing claimed it finished the run")
+            } else {
+                expect(after != before, "weeks advanced and the calendar did not move")
+            }
+            if receipt.stoppedBecause == .mandatoryDecision {
+                expect(!receipt.projection.mandatoryDecisions.isEmpty,
+                       "the advance stopped for a decision that is not there")
+            }
+            if receipt.stoppedBecause == .reachedRequestedWeeks {
+                expectEqual(receipt.weeksAdvanced, 4,
+                           "the run claimed to finish without finishing")
+            }
+        }
+
+        testAsync("asking for no weeks does nothing") {
+            let source = GameState.bootstrap(seed: 98_041)
+            let controlled = try CareerControlSystem.startCollegeCareer(
+                at: source.programmes.ids[0],
+                in: source
+            ).state
+            let session = try CareerSession(state: controlled)
+            let before = await session.projection().calendar
+            let receipt = try await session.advance(weeks: 0)
+            expectEqual(receipt.weeksAdvanced, 0)
+            expectEqual(receipt.projection.calendar, before)
+            let negative = try await session.advance(weeks: -5)
+            expectEqual(negative.weeksAdvanced, 0, "a negative advance moved time")
+        }
+    }
+}

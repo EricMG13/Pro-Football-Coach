@@ -61,6 +61,14 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
         weeks: Int
     )
     case playerRecovered(playerID: UUID)
+    /// A coach suspended one of their own players. `02` §5.2.
+    case playerSuspended(
+        playerID: UUID,
+        organisationID: UUID,
+        reason: DisciplineIncidentKind,
+        weeks: Int
+    )
+    case playerReinstated(playerID: UUID)
     case playerDeveloped(
         playerID: UUID,
         attribute: Attribute,
@@ -192,12 +200,16 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
         case .playerJoined, .playerDeparted, .portalEntered, .redshirtResolved, .proPlayerSigned,
              .proCapComplianceRelease:
             return 20
+        // A coach benching one of their own is news the week it happens and forgotten by the next
+        // season, which is what this rank is for. Coming back is not news at all.
+        case .playerSuspended: return 15
 
         case .integrityChecked,
              .weekAdvanced,
              .gameCompleted,
              .playerInjured,
              .playerRecovered,
+             .playerReinstated,
              .playerDeveloped,
              .prospectEvaluated,
              .recruitingInteraction,
@@ -224,8 +236,11 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
             return participantIDs
         case let .seasonCompleted(_, collegeChampionID, proChampionID):
             return [collegeChampionID, proChampionID]
-        case let .playerInjured(playerID, _, _, _), let .playerRecovered(playerID):
+        case let .playerInjured(playerID, _, _, _), let .playerRecovered(playerID),
+             let .playerReinstated(playerID):
             return [playerID]
+        case let .playerSuspended(playerID, organisationID, _, _):
+            return [playerID, organisationID]
         case let .playerDeveloped(playerID, _, _, _):
             return [playerID]
         case let .redshirtResolved(playerID, programmeID, _, _, _):

@@ -42,6 +42,14 @@ public struct Programme: Codable, Sendable, Equatable, Identifiable {
     /// How far from home the programme can recruit before distance bites. `02` §4.3.
     public var recruitingReach: Rating
 
+    /// What this programme earns, owes and has built. `02` §10.
+    ///
+    /// Optional, and nil means "not generated yet" rather than "broke": `finances(tier:)` derives a
+    /// default from prestige, so a save written before money existed reads as an ordinary programme
+    /// rather than failing to decode. `GameState` demands an exact schema match with no migration,
+    /// so an additive optional is the only shape that does not strand every existing save.
+    public var finances: OrganisationFinances?
+
     public var rosterIDs: [UUID]
     public var scholarshipCount: Int
     public var staffIDs: [UUID]
@@ -71,7 +79,8 @@ public struct Programme: Codable, Sendable, Equatable, Identifiable {
         rosterIDs: [UUID] = [],
         scholarshipCount: Int = 0,
         staffIDs: [UUID] = [],
-        rivalIDs: [UUID] = []
+        rivalIDs: [UUID] = [],
+        finances: OrganisationFinances? = nil
     ) {
         self.id = id
         self.name = name
@@ -89,6 +98,19 @@ public struct Programme: Codable, Sendable, Equatable, Identifiable {
         self.scholarshipCount = scholarshipCount
         self.staffIDs = staffIDs
         self.rivalIDs = Array(rivalIDs.prefix(SharedRules.rivalriesPerProgramme))
+        self.finances = finances
+    }
+
+    /// The finances this programme has, or the ones its standing implies.
+    ///
+    /// Nil means "not generated yet", never "broke", so a save from before money existed reads as an
+    /// ordinary programme instead of a bankrupt one.
+    public func finances(defaultingFor tier: Tier = .college) -> OrganisationFinances {
+        finances ?? OrganisationFinances(
+            facilities: resources,
+            reserves: OrganisationFinances.annualRevenue(prestige: prestige, tier: tier)
+                / FinanceRules.openingReserveShare
+        )
     }
 
     /// Routed through the memberwise initialiser so a save written before the bound existed is
@@ -111,7 +133,8 @@ public struct Programme: Codable, Sendable, Equatable, Identifiable {
             rosterIDs: try container.decode([UUID].self, forKey: .rosterIDs),
             scholarshipCount: try container.decode(Int.self, forKey: .scholarshipCount),
             staffIDs: try container.decode([UUID].self, forKey: .staffIDs),
-            rivalIDs: try container.decode([UUID].self, forKey: .rivalIDs)
+            rivalIDs: try container.decode([UUID].self, forKey: .rivalIDs),
+            finances: try container.decodeIfPresent(OrganisationFinances.self, forKey: .finances)
         )
     }
 

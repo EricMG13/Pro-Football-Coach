@@ -1,4 +1,4 @@
-# Open Decisions — D1–D14
+# Open Decisions — D1–D17
 
 The decision register required by `docs/reviews/2026-08-09-spec-prompt-v4.md` §5. Every decision
 carries: options considered, the choice, the reason, **a falsifier that names its instrument**, and
@@ -28,6 +28,9 @@ assumptions, cheap to change. `ESCALATED` — blocking owner question, do not bu
 | D12 | Accessibility contract | DECIDED (REVERSIBLE) |
 | D13 | Content volume | DECIDED |
 | D14 | Build order and league size | DECIDED (REVERSIBLE) — added in v4 execution |
+| D15 | Device floor and the design window | **DECIDED 2026-08-12** — option (b) |
+| D16 | Whether a snap has a truth beneath its outcome | **ESCALATED** — added 2026-08-13 |
+| D17 | Audio and haptics: ship silent, or budget a pass | **ESCALATED** — added 2026-08-13 |
 
 ---
 
@@ -640,3 +643,79 @@ the 17e remain unsourced and are recorded as gaps, not guessed.
 **Cost of reversal: low before the `04` §7 window is rewritten and the proof matrix re-rendered;
 medium after.** The churn is proof captures, the two-tier layout test, D4's baseline sentence and
 the `docs/STATUS.md` platform note. No save, engine or schema cost in any direction.
+
+---
+
+## D16 — Whether a snap has a truth beneath its outcome *(added 2026-08-13; ESCALATED)*
+
+Raised by `docs/briefs/2026-08-13-genre-completeness-review.md` (G-21b) and recorded in `02` §3.9.
+`02` §3.2 promises the coach a challenge. **The engine cannot serve one and no amount of surface work
+changes that**: `SnapResolver` resolves a snap to an outcome and a set of duels, and there is no spot,
+no forward progress and no moment a ball came loose — so there is nothing for a review to contradict.
+A challenge needs a *truth beneath the outcome*, and inventing one is a modelling decision, not a
+clock-management change.
+
+Options:
+
+(a) **Strike challenges from `02` §3.2.** Timeouts stay, the promise goes, canon stops describing a
+    mechanic the engine has no way to run. Zero cost today.
+(b) **Give the snap a spot.** The resolver records a yard line and a possession moment as facts that
+    can be *wrong by a stated amount*, a review draws against that error, and the challenge becomes a
+    bet on it. This is a change to what a snap *is*, and every determinism pin in the project moves
+    with it.
+(c) **Fake it** — a challenge that draws a coin-flip reversal against no underlying fact. Named here
+    only to refuse it: `02` D6 clause 4 forbids a mechanic the player cannot feel as real, and a
+    review that overturns nothing in particular is exactly that.
+
+**Recommendation: (a) now, (b) only if a later match-presentation milestone needs a spot for its own
+reasons** — FSC-011's animation anchor stream is the one thing on the roadmap that would plausibly
+introduce one, and if it does, (b) becomes nearly free and should be revisited then.
+
+**Falsifier — instrument: `EngineTests` snap-record assertions.** Under (a), falsified if any canon
+document still offers the coach a challenge — a grep of `02` and `04` for the promise is the check,
+and it runs by hand at phase gate. Under (b), falsified if a recorded spot is never wrong (the review
+mechanic is decoration) or if reversals exceed a stated band of challenged plays, measured over the
+soak.
+
+**Cost of reversal: (a) is cheap to undo and (b) is not.** Adding a spot later is additive to the
+snap record and moves both play-by-play fingerprints; removing one after surfaces read it is a save
+change. Deciding (a) today costs nothing but a paragraph.
+
+---
+
+## D17 — Audio and haptics: ship silent, or budget a pass *(added 2026-08-13; ESCALATED)*
+
+Raised by the same register (G-40, G-41) and written up as a contract in `04` §7.2. **There is no
+audio in this product and no haptics** — zero occurrences of any audio or haptic API, zero assets.
+The two mentions in canon are both *accessibility fallbacks*, and `04b`'s rubric line has therefore
+been scoring "sound-off and haptic equivalents" for a channel that does not exist, which reads as a
+pass and means nothing.
+
+Options:
+
+(a) **Ship silent, deliberately, and say so.** `04` §7's clause and `04b`'s rubric line are rewritten
+    to assert that the product carries no audio channel. A silent game is a legitimate choice; a
+    silent game whose accessibility contract claims equivalents for its audio is a false claim, and
+    that is the part that has to change either way.
+(b) **Budget a sound pass**, against the contract already written in `04` §7.2: nothing is only
+    audible, the match is the only surface that earns continuous audio, management gets haptics
+    rather than sound, one control honoured everywhere, and nothing audible is missing from the
+    accessibility tree.
+
+**Recommendation: (a) for v1.** The reason is not taste. Audio is an *asset* commitment — a crowd bed,
+a whistle, contact layers — and an agent cannot author or license any of it; code with nothing behind
+it is dead capability, which is why no code was written for this. Haptics alone are tempting because
+they need no assets, but a management screen that buzzes with no audio anywhere is a half-channel,
+and `04` §7.2's contract deliberately pairs them.
+
+**Falsifier — instruments, fixed in advance.**
+- Under (a): `DesignContractTests` asserts that no accessibility clause in the registry claims an
+  audio equivalent, and a source scan asserts zero audio and haptic API use. Red at either falsifies
+  the claim that the product is silent by design rather than by omission.
+- Under (b): `04` §7.2's own falsifier — every sound has a named visual equivalent in the registry,
+  the match view plays nothing while VoiceOver speaks, and turning audio off changes no outcome and
+  hides no datum.
+
+**Cost of reversal: low.** Adding audio later is additive to the app layer and touches no engine, no
+save and no fingerprint. What is *not* cheap to reverse is shipping with an accessibility contract
+that describes a channel the build does not have, which is why this is escalated rather than left.

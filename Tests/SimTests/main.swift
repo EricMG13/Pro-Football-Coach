@@ -33,6 +33,11 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runSeasonRolloverTests()
 } else if CommandLine.arguments.contains("--jersey-numbers") {
     runJerseyNumberTests()
+} else if CommandLine.arguments.contains("--depth-chart") {
+    runDepthChartTests()
+} else if CommandLine.arguments.contains("--match-integration") {
+    runMatchIntegrationTests()
+    runCallInTests()
 } else if CommandLine.arguments.contains("--week-advance-timing") {
     runWeekAdvanceTimingProbe()
 } else if CommandLine.arguments.contains("--pro-market-root-probe") {
@@ -84,6 +89,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runHistoryArchiveTests()
 } else if CommandLine.arguments.contains("--news-feed") {
     runNewsFeedTests()
+} else if CommandLine.arguments.contains("--inbox") {
+    runInboxTests()
 } else if CommandLine.arguments.contains("--programme-evolution") {
     runProgrammeEvolutionTests()
 } else if CommandLine.arguments.contains("--roster-tenure") {
@@ -126,6 +133,15 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runEngineTests()
     runSnapResolverTests()
     runGameLoopTests()
+    runPenaltyTests()
+    runKickoffTests()
+    runOvertimeTests()
+    runMatchInjuryTests()
+    runSubstitutionTests()
+    runClockManagementTests()
+    runWeatherTests()
+    runSchemeFitTests()
+    runBoxScoreTests()
     runCalibrationTests()
     runArchitectureTests()
     runCompetitionTests()
@@ -140,6 +156,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runPortalTransactionTests()
     runPortalSchedulerTests()
     runCareerControlTests()
+    runCareerAdvanceTests()
     runCareerArcTests()
     runProManagementTests()
     runProMarketTests()
@@ -148,6 +165,19 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runCoachingTreeTests()
     runHistoryArchiveTests()
     runNewsFeedTests()
+    runInboxTests()
+    runDifficultyTests()
+    runGlossaryTests()
+    runBowlTests()
+    runMoraleTests()
+    runTraditionEffectTests()
+    runFinanceTests()
+    runStaffMarketTests()
+    runStaffCareerTests()
+    runDraftPickTests()
+    runContractNegotiationTests()
+    runDisciplineTests()
+    runPreseasonCampTests()
     runProgrammeEvolutionTests()
     runRosterTenureTests()
     runRealignmentTests()
@@ -157,6 +187,9 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runPortalContractTests()
     runEventLedgerBatchTests()
     runJerseyNumberTests()
+    runDepthChartTests()
+    runMatchIntegrationTests()
+    runCallInTests()
     runReadModelProviderTests()
     runCapComplianceTests()
     runSeasonRolloverTests()

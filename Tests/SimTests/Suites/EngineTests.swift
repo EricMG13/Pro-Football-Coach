@@ -2,6 +2,14 @@ import Foundation
 import FootballSimCore
 
 /// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
+///
+/// **RE-PIN REQUIRED — the values below predate the conversion (`02` §3.4, 2026-08-13).** A
+/// touchdown was worth a flat seven and is now six plus a try that can miss, so the score after the
+/// first touchdown of the pinned game differs and every call the baseline caller makes from there is
+/// resolved against a different score. Both literals are therefore expected to be red until a
+/// session with a toolchain runs the pinned game twice in separate processes and writes the measured
+/// values here. They were **not** guessed: a fabricated pin passes while proving nothing, which is
+/// worse than a red one. The re-pin task is recorded in `docs/STATUS.md`.
 private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 151_802_325_001_383_283
 private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 17_135_830_121_998_607_854
 
@@ -821,5 +829,928 @@ func runGameLoopTests() {
             expectEqual(restored, game)
             expectEqual(restored.playByPlayFingerprint, game.playByPlayFingerprint)
         }
+    }
+
+    suite("Conversion") {
+        test("the chart is arithmetic, and only in the last quarter") {
+            // 02 section 3.4. Pure, so this is the one part of the conversion that can be asserted
+            // without resolving a snap.
+            for deficit in MatchupRules.twoPointDeficits {
+                expect(MatchupRules.twoPointIsIndicated(deficitAfterTouchdown: deficit,
+                                                        quarter: 4, quarters: 4),
+                       "the chart declined to go for two at a deficit of \(deficit)")
+                expect(!MatchupRules.twoPointIsIndicated(deficitAfterTouchdown: deficit,
+                                                         quarter: 1, quarters: 4),
+                       "the chart went for two in the first quarter at \(deficit)")
+            }
+            for deficit in [0, 1, 3, 4, 6, 7, 8, 14] {
+                expect(!MatchupRules.twoPointIsIndicated(deficitAfterTouchdown: deficit,
+                                                         quarter: 4, quarters: 4),
+                       "the chart went for two at \(deficit), which one point does not change")
+            }
+            // Leading is not a deficit, and a chart that read the sign backwards would go for two
+            // while ahead by exactly the amounts above.
+            for lead in [2, 5, 10, 12, 16, 18] {
+                expect(!MatchupRules.twoPointIsIndicated(deficitAfterTouchdown: -lead,
+                                                         quarter: 4, quarters: 4),
+                       "the chart went for two while leading by \(lead)")
+            }
+        }
+
+        test("every touchdown carries a try, and the try is not a scrimmage play") {
+            var touchdowns = 0
+            for seed in UInt64(1)...40 {
+                for drive in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).drives
+                where drive.ending == .touchdown {
+                    touchdowns += 1
+                    guard let conversion = drive.conversion else {
+                        expect(false, "seed \(seed): a touchdown drive carried no try")
+                        continue
+                    }
+                    expectEqual(drive.pointsScored,
+                                MatchupRules.touchdownPoints + conversion.points,
+                                "the drive's points and its try disagree")
+                    expect((0...MatchupRules.twoPointPoints).contains(conversion.points),
+                           "a try was worth \(conversion.points)")
+                    expect(conversion.succeeded == (conversion.points > 0),
+                           "a try's success flag and its points disagree")
+                    // 02 section 3.4: recorded beside the drive, never inside its play list,
+                    // because a try counted as a snap corrupts every per-play rate 03 section 5.1
+                    // calibrates.
+                    expect(!drive.plays.contains { $0.outcome == conversion.outcome },
+                           "the try was also recorded as a scrimmage play")
+                }
+            }
+            expect(touchdowns > 50, "only \(touchdowns) touchdowns were scored across 40 games")
+        }
+
+        test("a kick can miss") {
+            // The whole reason the try is resolved through the kicker matchup rather than added as
+            // a constant. A flat seven points per touchdown is what this replaced.
+            var kicks = 0, missed = 0
+            for seed in UInt64(1)...120 {
+                for drive in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).drives {
+                    guard let conversion = drive.conversion, conversion.choice == .kick else {
+                        continue
+                    }
+                    kicks += 1
+                    if !conversion.succeeded { missed += 1 }
+                }
+            }
+            expect(kicks > 100, "only \(kicks) extra points were attempted across 120 games")
+            expect(missed > 0,
+                   "\(kicks) extra points were kicked and none missed, so the kick is a constant "
+                       + "wearing a matchup's clothes")
+            expect(missed * 4 < kicks,
+                   "\(missed) of \(kicks) extra points missed, which is not a routine kick")
+        }
+
+        test("the kick converts more often than the two-point try") {
+            // 02 section 3.4's falsifier. If going for two were free the decision would fail
+            // section 2.2's third test, which requires the choice to cost something.
+            func rate(_ choice: ConversionChoice) -> Double {
+                var attempts = 0, made = 0
+                for seed in UInt64(1)...60 {
+                    for drive in GameEngine.play(tier: .pro, home: home, away: away,
+                                                 caller: FixedConversionCaller(choice: choice),
+                                                 seed: seed).drives {
+                        guard let conversion = drive.conversion else { continue }
+                        attempts += 1
+                        if conversion.succeeded { made += 1 }
+                    }
+                }
+                expect(attempts > 50, "only \(attempts) tries of \(choice.rawValue) were attempted")
+                return attempts == 0 ? 0 : Double(made) / Double(attempts)
+            }
+            let kick = rate(.kick)
+            let two = rate(.twoPoint)
+            expect(kick > two,
+                   "the kick converted \(kick) against the two-point try's \(two), so going for "
+                       + "two costs nothing")
+        }
+
+        test("the try draws from its own stream, so it cannot move the drive that scored") {
+            // The property that makes adding the conversion safe: it derives its generator from the
+            // drive under a reserved ordinal past the last legal play index. Asserted through the
+            // consequence — two games identical except for what they do after a touchdown must
+            // play the scoring drive itself identically, snap for snap.
+            let kicking = GameEngine.play(tier: .pro, home: home, away: away,
+                                          caller: FixedConversionCaller(choice: .kick), seed: 31)
+            let going = GameEngine.play(tier: .pro, home: home, away: away,
+                                        caller: FixedConversionCaller(choice: .twoPoint), seed: 31)
+            guard let first = kicking.drives.firstIndex(where: { $0.ending == .touchdown }),
+                  let same = going.drives.firstIndex(where: { $0.ending == .touchdown })
+            else {
+                expect(false, "seed 31 scored no touchdown, so this asserts nothing")
+                return
+            }
+            expectEqual(first, same, "the two games diverged before the first touchdown")
+            expectEqual(kicking.drives[first].plays, going.drives[same].plays,
+                        "the choice of try changed the drive that produced it")
+            expect(kicking.drives[first].conversion?.choice == .kick
+                       && going.drives[same].conversion?.choice == .twoPoint,
+                   "the caller's conversion choice was not honoured")
+        }
+
+        test("a caller that answers a try with a punt is overruled") {
+            // A try is a scrimmage down by definition. Most callers branch on fourth down and a try
+            // is a first, so a caller that returns a kick here is answering a question it was not
+            // asked.
+            let game = GameEngine.play(tier: .pro, home: home, away: away,
+                                       caller: PuntingConversionCaller(), seed: 7)
+            var tries = 0
+            for drive in game.drives {
+                guard let conversion = drive.conversion else { continue }
+                tries += 1
+                expect(conversion.outcome.result != .punt,
+                       "a two-point try was punted")
+            }
+            expect(tries > 0, "seed 7 produced no tries at all")
+        }
+    }
+}
+
+func runPenaltyTests() {
+    let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
+    let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
+
+    suite("Penalties") {
+        test("every kind is reachable, and each one is enforced as itself") {
+            // 02 section 3.5's falsifier, first limb. A kind the engine declares and never calls is
+            // the dead capability the build prompt names as this project's first failure mode —
+            // which is what the whole penalty model was, before it existed at all.
+            var seen: Set<PenaltyKind> = []
+            for seed in UInt64(1)...200 {
+                for play in GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                    .plays {
+                    guard let penalty = play.outcome.penalty else { continue }
+                    seen.insert(penalty.kind)
+                }
+            }
+            let unreachable = PenaltyKind.allCases.filter { !seen.contains($0) }
+            expect(unreachable.isEmpty,
+                   "these penalties are declared and never called: "
+                       + unreachable.map(\.rawValue).joined(separator: ", "))
+        }
+
+        test("a penalty never advances the down") {
+            // 02 section 3.5. The down is replayed, or the chains reset on an automatic first down.
+            // Nothing else is legal, and a penalty that ate a down would end drives that should
+            // have continued.
+            var checked = 0
+            for seed in UInt64(1)...60 {
+                for drive in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).drives {
+                    for (index, play) in drive.plays.enumerated()
+                    where play.outcome.result == .penalty && index + 1 < drive.plays.count {
+                        checked += 1
+                        let next = drive.plays[index + 1]
+                        expect(next.situation.down <= play.situation.down,
+                               "a penalty on down \(play.situation.down) produced down "
+                                   + "\(next.situation.down)")
+                        if play.outcome.penalty?.automaticFirstDown == true {
+                            expectEqual(next.situation.down, 1,
+                                        "an automatic first down did not reset the chains")
+                        }
+                    }
+                }
+            }
+            expect(checked > 50, "only \(checked) enforced penalties were checkable")
+        }
+
+        test("the flag costs the same draws whether or not it lands") {
+            // The determinism property the whole design turns on: the draw is taken before the snap
+            // resolves and taken unconditionally, so a penalty cannot shift the stream the snap
+            // reads. Asserted by resolving the same call from two field positions and comparing the
+            // generator state afterwards.
+            func stateAfter(_ yardLine: Int) -> UInt64 {
+                var rng = SeededRandom(seed: 2_024)
+                _ = SnapResolver.resolve(
+                    offensiveCall: OffensiveCall(playType: .pass),
+                    defensiveCall: DefensiveCall(coverage: .man),
+                    personnel: home, situation: Situation(yardLine: yardLine),
+                    rules: Tier.pro.clockRules, rng: &rng
+                )
+                return rng.next()
+            }
+            expectEqual(stateAfter(25), stateAfter(60),
+                        "the snap's draw count depends on where the ball was")
+        }
+
+        test("a defence keeps the takeaway rather than the flag") {
+            // 02 section 3.5's accept-or-decline rule, and the case that makes always-accept
+            // visibly wrong.
+            expect(!PenaltyModel.shouldAccept(.offensiveHolding, playYards: 4,
+                                              playWasTurnover: true, playScored: false,
+                                              distance: 10),
+                   "the defence gave back an interception to take ten yards")
+            expect(!PenaltyModel.shouldAccept(.offensiveHolding, playYards: -12,
+                                              playWasTurnover: false, playScored: false,
+                                              distance: 10),
+                   "the defence took ten yards instead of the twelve-yard sack it earned")
+            expect(PenaltyModel.shouldAccept(.offensiveHolding, playYards: 8,
+                                             playWasTurnover: false, playScored: false,
+                                             distance: 10),
+                   "the defence declined a hold on an eight-yard gain")
+        }
+
+        test("an offence keeps the touchdown rather than the flag") {
+            expect(!PenaltyModel.shouldAccept(.passInterference, playYards: 40,
+                                              playWasTurnover: false, playScored: true,
+                                              distance: 10),
+                   "the offence took fifteen yards instead of the touchdown it scored")
+            expect(PenaltyModel.shouldAccept(.passInterference, playYards: 40,
+                                             playWasTurnover: true, playScored: false,
+                                             distance: 10),
+                   "the offence kept an interception rather than wiping it out with the flag")
+            expect(PenaltyModel.shouldAccept(.defensiveHolding, playYards: 6,
+                                             playWasTurnover: false, playScored: false,
+                                             distance: 12),
+                   "the offence declined an automatic first down worth more than the play")
+            expect(!PenaltyModel.shouldAccept(.defensiveHolding, playYards: 30,
+                                              playWasTurnover: false, playScored: false,
+                                              distance: 10),
+                   "the offence took five yards instead of a thirty-yard gain")
+        }
+
+        test("volatile decides who gets flagged") {
+            // 02 section 11.3.3's Discipline bite, and FSC-014's activation condition for the trait.
+            // The trait changes WHO commits the foul, which is what makes it visible on a player's
+            // line rather than only in a team rate.
+            func lineman(_ index: Int, volatile: Bool) -> Player {
+                var attributes = Attributes()
+                for attribute in Position.guardPosition.ratedAttributes {
+                    attributes[attribute] = Rating(70)
+                }
+                return Player(
+                    id: UUID(uuidString: String(format: "00000000-0000-4000-9000-%012X", index))!,
+                    firstName: "L", lastName: "\(index)", position: .guardPosition, age: 25,
+                    attributes: attributes, potential: Rating(70),
+                    traits: volatile ? [.volatile] : []
+                )
+            }
+            let squad = [lineman(1, volatile: false), lineman(2, volatile: true),
+                         lineman(3, volatile: false)]
+            var volatileHits = 0
+            for step in 0..<300 {
+                let draw = (Double(step) + 0.5) / 300
+                if PenaltyModel.offender(from: squad, group: .offensiveLine, draw: draw)?
+                    .has(.volatile) == true {
+                    volatileHits += 1
+                }
+            }
+            // One volatile player among three, at weight three: 3 of 5 of the weight.
+            expect(volatileHits > 100 && volatileHits < 220,
+                   "the volatile lineman drew \(volatileHits) of 300 flags, which is not the "
+                       + "weighting the rules module states")
+        }
+
+        test("penalty yardage never counts as offence") {
+            // 02 section 3.5's falsifier, third limb, asserted where it would actually go wrong: a
+            // penalised snap is not an offensive play, so a box score built from plays must skip it.
+            for seed in UInt64(1)...20 {
+                for play in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).plays
+                where play.outcome.result == .penalty {
+                    expect(play.outcome.penalty != nil,
+                           "a penalty result carried no penalty record")
+                    expectEqual(play.outcome.yards, play.outcome.penalty?.yards ?? 0,
+                               "an enforced penalty moved the ball by something other than itself")
+                }
+            }
+        }
+
+        test("a declined flag leaves the play standing and is still recorded") {
+            var declined = 0
+            for seed in UInt64(1)...80 {
+                for play in GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                    .plays {
+                    guard let penalty = play.outcome.penalty, !penalty.accepted else { continue }
+                    declined += 1
+                    expect(play.outcome.result != .penalty,
+                           "a declined flag still wiped out the play")
+                    expectEqual(penalty.yards, 0, "a declined flag moved the ball")
+                    expect(!penalty.automaticFirstDown,
+                           "a declined flag granted a first down")
+                }
+            }
+            expect(declined > 0,
+                   "no flag was ever declined across 80 games, so accept-or-decline is a constant")
+        }
+    }
+}
+
+func runKickoffTests() {
+    let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
+    let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
+
+    suite("Kickoffs") {
+        test("a kickoff is not a constant any more") {
+            // Every possession used to begin at kickoffTouchbackYardLine, which is what made the
+            // whole return game, and the onside kick with it, unreachable.
+            var startingLines: Set<Int> = []
+            var touchbacks = 0, returns = 0
+            for seed in UInt64(1)...40 {
+                for drive in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).drives {
+                    guard let kickoff = drive.startingKickoff else { continue }
+                    startingLines.insert(kickoff.resultingYardLine)
+                    if kickoff.touchback { touchbacks += 1 } else { returns += 1 }
+                    expect((1...99).contains(kickoff.resultingYardLine),
+                           "a kickoff spotted the ball off the field at "
+                               + "\(kickoff.resultingYardLine)")
+                }
+            }
+            expect(touchbacks > 0, "no kickoff was ever a touchback")
+            expect(returns > 0, "no kickoff was ever returned")
+            expect(startingLines.count > 3,
+                   "kickoffs produced \(startingLines.count) distinct starting positions, which is "
+                       + "a constant with extra steps")
+        }
+
+        test("the opening drive and the second half both start from a kick") {
+            for seed in UInt64(1)...20 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                expect(game.drives.first?.startingKickoff != nil,
+                       "seed \(seed): the opening drive was not started by a kickoff")
+                // Opening kick, second-half kick, and one per score. Two is the floor a game that
+                // ended nil-nil would still have to meet, and the halftime kick is the one a model
+                // that only kicked after scores would miss.
+                let kicked = game.drives.filter { $0.startingKickoff != nil }.count
+                expect(kicked >= 2,
+                       "seed \(seed) had \(kicked) kickoffs, so halftime is not kicking off")
+            }
+        }
+
+        test("an onside kick is only tried when it could matter") {
+            // 02 section 3.6. Outside the final quarter, or from in front, or from too far behind,
+            // the kicking team kicks deep.
+            expectEqual(KickoffModel.chooseType(trailingBy: 6, secondsRemainingInHalf: 90,
+                                                quarter: 4, quarters: 4), .onside)
+            expectEqual(KickoffModel.chooseType(trailingBy: 6, secondsRemainingInHalf: 90,
+                                                quarter: 2, quarters: 4), .deep,
+                        "an onside kick was tried in the first half")
+            expectEqual(KickoffModel.chooseType(trailingBy: -6, secondsRemainingInHalf: 90,
+                                                quarter: 4, quarters: 4), .deep,
+                        "an onside kick was tried while leading")
+            expectEqual(KickoffModel.chooseType(trailingBy: 6, secondsRemainingInHalf: 600,
+                                                quarter: 4, quarters: 4), .deep,
+                        "an onside kick was tried with ten minutes left")
+            expectEqual(KickoffModel.chooseType(
+                trailingBy: MatchupRules.onsideKickMaximumDeficit + 1,
+                secondsRemainingInHalf: 60, quarter: 4, quarters: 4
+            ), .deep, "an onside kick was tried from a deficit it cannot save")
+        }
+
+        test("a recovered onside kick is the only kickoff that keeps possession") {
+            var recovered = 0, attempted = 0
+            for seed in UInt64(1)...400 {
+                var rng = SeededRandom(seed: seed)
+                let record = KickoffModel.resolve(type: .onside, kickingSide: .home,
+                                                  kicking: home, receiving: away, rng: &rng)
+                attempted += 1
+                if record.recoveredByKickingTeam {
+                    recovered += 1
+                    expectEqual(record.resultingYardLine, MatchupRules.onsideRecoveryYardLine,
+                                "a recovered onside kick spotted the ball somewhere else")
+                } else {
+                    expectEqual(record.resultingYardLine,
+                                100 - MatchupRules.onsideRecoveryYardLine,
+                                "a failed onside kick did not give up the short field")
+                }
+            }
+            expect(recovered > 0, "no onside kick was recovered in \(attempted) attempts")
+            expect(recovered * 3 < attempted,
+                   "\(recovered) of \(attempted) onside kicks were recovered, which would make it "
+                       + "the trailing team's first choice rather than its last")
+        }
+
+        test("a return can score, and the kick after it does not") {
+            // The bound 02 section 3.6 states, asserted rather than trusted: a chain of return
+            // touchdowns is an unbounded loop guarding a once-a-season play.
+            var scored = 0
+            for seed in UInt64(1)...500 {
+                for drive in GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                    .drives {
+                    guard let kickoff = drive.startingKickoff, kickoff.returnTouchdown else {
+                        continue
+                    }
+                    scored += 1
+                    expect(kickoff.points >= MatchupRules.touchdownPoints,
+                           "a return touchdown scored \(kickoff.points)")
+                    expectEqual(kickoff.resultingYardLine, MatchupRules.kickoffTouchbackYardLine,
+                                "the kickoff after a return touchdown was itself a return")
+                }
+            }
+            expect(scored > 0,
+                   "no kickoff was returned for a touchdown in 500 games, so the branch is "
+                       + "declared and unreachable")
+        }
+
+        test("the scoreboard equals the drives plus the returns") {
+            // 02 section 3.6's falsifier. A return touchdown scores outside any drive, so a total
+            // built from drives alone would silently disagree with the score it is printed beside.
+            for seed in UInt64(1)...40 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                var home_ = 0, away_ = 0
+                for drive in game.drives {
+                    if drive.ending == .safety {
+                        // The defence scores a safety, so it belongs to the other side.
+                        if drive.offense == .home { away_ += drive.pointsScored }
+                        else { home_ += drive.pointsScored }
+                    } else if drive.offense == .home {
+                        home_ += drive.pointsScored
+                    } else {
+                        away_ += drive.pointsScored
+                    }
+                    if let kickoff = drive.startingKickoff, kickoff.points > 0 {
+                        // The return is scored by the side that received, which is whoever did not
+                        // kick.
+                        if kickoff.kickingSide == .home { away_ += kickoff.points }
+                        else { home_ += kickoff.points }
+                    }
+                }
+                expectEqual(home_, game.homeScore,
+                            "seed \(seed): the home drives and returns do not add up to the score")
+                expectEqual(away_, game.awayScore,
+                            "seed \(seed): the away drives and returns do not add up to the score")
+            }
+        }
+
+        test("a stronger leg buys more touchbacks") {
+            // The reason leg strength is rated apart from accuracy at all.
+            func touchbackRate(leg: Int) -> Double {
+                var attributes = Attributes()
+                for attribute in Position.kicker.ratedAttributes { attributes[attribute] = Rating(60) }
+                attributes[.legStrength] = Rating(leg)
+                let kicker = Player(
+                    id: UUID(uuidString: "00000000-0000-4000-A000-00000000000\(leg > 70 ? 1 : 2)")!,
+                    firstName: "K", lastName: "K", position: .kicker, age: 25,
+                    attributes: attributes, potential: Rating(60)
+                )
+                let kicking = SnapPersonnel(offense: [kicker], defense: home.defense)
+                var made = 0
+                for seed in UInt64(1)...600 {
+                    var rng = SeededRandom(seed: seed)
+                    if KickoffModel.resolve(type: .deep, kickingSide: .home, kicking: kicking,
+                                            receiving: away, rng: &rng).touchback { made += 1 }
+                }
+                return Double(made) / 600
+            }
+            expect(touchbackRate(leg: 95) > touchbackRate(leg: 45),
+                   "leg strength bought no touchbacks, so it is a rating nothing reads")
+        }
+    }
+}
+
+func runOvertimeTests() {
+    // Evenly matched rosters, because a mismatch produces very few ties to overtime.
+    let home = testPersonnel(offenseSkill: 71, defenseSkill: 71)
+    let away = testPersonnel(offenseSkill: 71, defenseSkill: 71)
+
+    suite("Overtime") {
+        test("a college game never ends level") {
+            // 01 section 4.7: a structural rule difference, not a band. Alternating possessions
+            // cannot end level, so a college tie is a defect upstream rather than a rare outcome.
+            var overtimeGames = 0
+            for seed in UInt64(1)...150 {
+                let game = GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                expect(game.winner != nil, "seed \(seed) ended a college game level")
+                if game.drives.contains(where: {
+                    ($0.plays.first?.situation.quarter ?? 0) > Tier.college.clockRules.quarters
+                }) { overtimeGames += 1 }
+            }
+            expect(overtimeGames > 0,
+                   "no college game in 150 reached overtime, so the branch is unreachable")
+        }
+
+        test("overtime happens, and not often") {
+            var overtimes = 0
+            for seed in UInt64(1)...200 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                let periods = Set(game.drives.compactMap { $0.plays.first?.situation.quarter }
+                    .filter { $0 > Tier.pro.clockRules.quarters })
+                if !periods.isEmpty {
+                    overtimes += 1
+                    expectEqual(periods.count, 1,
+                                "a timed overtime ran more than one period")
+                }
+            }
+            expect(overtimes > 0, "no pro game in 200 reached overtime")
+            expect(overtimes * 3 < 200,
+                   "\(overtimes) of 200 pro games went to overtime, which is not a rare event")
+        }
+
+        test("both sides get the ball in an alternating overtime") {
+            // The rule that makes the format fair, and the one an implementation loses by checking
+            // the score after each possession instead of after each period.
+            for seed in UInt64(1)...150 {
+                let game = GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                let regulation = Tier.college.clockRules.quarters
+                let byPeriod = Dictionary(
+                    grouping: game.drives.filter {
+                        ($0.plays.first?.situation.quarter ?? 0) > regulation
+                    },
+                    by: { $0.plays.first?.situation.quarter ?? 0 }
+                )
+                for (period, drives) in byPeriod {
+                    expectEqual(Set(drives.map(\.offense)).count, 2,
+                                "seed \(seed) period \(period): one side did not get the ball")
+                }
+            }
+        }
+
+        test("overtime is deterministic, toss included") {
+            let first = GameEngine.play(tier: .college, home: home, away: away, seed: 4_242)
+            let second = GameEngine.play(tier: .college, home: home, away: away, seed: 4_242)
+            expectEqual(first.playByPlayFingerprint, second.playByPlayFingerprint,
+                        "the same seed produced a different overtime")
+            expectEqual(first.homeScore, second.homeScore)
+            expectEqual(first.awayScore, second.awayScore)
+        }
+
+        test("an overtime possession starts where the rules say") {
+            var checked = 0
+            for seed in UInt64(1)...150 {
+                let game = GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                for drive in game.drives
+                where (drive.plays.first?.situation.quarter ?? 0)
+                    > Tier.college.clockRules.quarters {
+                    checked += 1
+                    expectEqual(drive.startYardLine, 100 - MatchupRules.overtimeYardsToGoal,
+                                "an overtime possession did not start at the stated spot")
+                }
+            }
+            expect(checked > 0, "no overtime possession was checkable")
+        }
+    }
+}
+
+func runMatchInjuryTests() {
+    let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
+    let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
+
+    suite("Injuries in play") {
+        test("players get hurt in games, and not constantly") {
+            var injuries = 0, snaps = 0
+            for seed in UInt64(1)...40 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                snaps += game.plays.count
+                injuries += game.plays.filter { $0.outcome.injury != nil }.count
+            }
+            expect(injuries > 0,
+                   "nobody was hurt in 40 games, so the whole model is unreachable")
+            let perGame = Double(injuries) / 40
+            expect(perGame < 6,
+                   "\(perGame) injuries a game is a casualty list rather than a football game")
+        }
+
+        test("the injured player was in the snap that hurt them") {
+            // 02 section 3.8. An injury attributed to somebody standing on the far hash would
+            // contradict the causal record 04 section 5.3 draws the play from.
+            var checked = 0
+            for seed in UInt64(1)...40 {
+                for play in GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                    .plays {
+                    guard let injury = play.outcome.injury else { continue }
+                    checked += 1
+                    var involved: Set<UUID> = []
+                    for matchup in play.outcome.matchups {
+                        involved.insert(matchup.attackerID)
+                        involved.insert(matchup.defenderID)
+                    }
+                    if let carrier = play.outcome.ballCarrierID { involved.insert(carrier) }
+                    if let passer = play.outcome.passerID { involved.insert(passer) }
+                    if let target = play.outcome.targetID { involved.insert(target) }
+                    // A snap with no matchups at all — a kneel — falls back to the whole squad,
+                    // which is the one case where the player need not appear above.
+                    if !involved.isEmpty {
+                        expect(involved.contains(injury.playerID),
+                               "seed \(seed): a player was hurt on a snap they were not in")
+                    }
+                }
+            }
+            expect(checked > 0, "no injury was checkable")
+        }
+
+        test("a pre-snap penalty hurts nobody") {
+            for seed in UInt64(1)...40 {
+                for play in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).plays
+                where play.outcome.result == .penalty && play.outcome.matchups.isEmpty {
+                    expect(play.outcome.injury == nil,
+                           "somebody was hurt on a play that never happened")
+                }
+            }
+        }
+
+        test("the least durable get hurt the most") {
+            // Durability decides who, the same way volatile decides who draws a flag.
+            func player(_ index: Int, durability: Int) -> Player {
+                var attributes = Attributes()
+                for attribute in Position.linebacker.ratedAttributes {
+                    attributes[attribute] = Rating(70)
+                }
+                attributes[.durability] = Rating(durability)
+                return Player(
+                    id: UUID(uuidString: String(format: "00000000-0000-4000-B000-%012X", index))!,
+                    firstName: "D", lastName: "\(index)", position: .linebacker, age: 25,
+                    attributes: attributes, potential: Rating(70)
+                )
+            }
+            let glass = player(1, durability: 40)
+            let granite = player(2, durability: 99)
+            let personnel = SnapPersonnel(offense: [glass, granite], defense: [])
+            let outcome = SnapOutcome(
+                result: .gain, yards: 4, secondsElapsed: 6,
+                matchups: [MatchupRecord(kind: .runLane, attackerID: glass.id,
+                                         defenderID: granite.id, leverage: 0.1)]
+            )
+            var glassHits = 0, graniteHits = 0
+            for seed in UInt64(1)...4_000 {
+                var rng = SeededRandom(seed: seed)
+                guard let injury = InjuryModel.draw(in: outcome, personnel: personnel, rng: &rng)
+                else { continue }
+                if injury.playerID == glass.id { glassHits += 1 } else { graniteHits += 1 }
+            }
+            expect(glassHits + graniteHits > 20,
+                   "only \(glassHits + graniteHits) injuries in 4,000 draws")
+            expect(glassHits > graniteHits,
+                   "the 40-durability player was hurt \(glassHits) times against the "
+                       + "99-durability player's \(graniteHits), so durability reads as nothing")
+        }
+
+        test("ironman misses fewer weeks, and the ladder is shared") {
+            expectEqual(PeopleRules.injurySeverity(roll: 0.5).severity, .minor)
+            expectEqual(PeopleRules.injurySeverity(roll: 0.9).severity, .moderate)
+            expectEqual(PeopleRules.injurySeverity(roll: 0.99).severity, .severe)
+            expect(PeopleRules.injuryWeeks(10, ironman: true)
+                       < PeopleRules.injuryWeeks(10, ironman: false),
+                   "ironman changed nothing about the weeks missed")
+            expect(PeopleRules.injuryWeeks(1, ironman: true) >= 1,
+                   "ironman produced an injury of under a week, which the injury type refuses")
+        }
+
+        test("anything past a knock forces the player out") {
+            for seed in UInt64(1)...60 {
+                for play in GameEngine.play(tier: .pro, home: home, away: away, seed: seed).plays {
+                    guard let injury = play.outcome.injury else { continue }
+                    expectEqual(injury.forcedOut, injury.severity != .minor,
+                                "an injury's severity and whether it ended the player's game "
+                                    + "disagree")
+                    expect(injury.weeks >= 1, "an injury cost no weeks at all")
+                }
+            }
+        }
+    }
+}
+
+func runClockManagementTests() {
+    let home = testPersonnel(offenseSkill: 72, defenseSkill: 71)
+    let away = testPersonnel(offenseSkill: 71, defenseSkill: 72)
+
+    suite("Clock management") {
+        test("timeouts are actually spent") {
+            // They were written at the kickoff, reset at halftime, and decremented nowhere.
+            var spent = 0
+            for seed in UInt64(1)...40 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                for drive in game.drives {
+                    for (index, play) in drive.plays.enumerated() where index > 0 {
+                        let before = drive.plays[index - 1].situation.timeoutsRemaining
+                        let after = play.situation.timeoutsRemaining
+                        for side in Side.allCases {
+                            let used = (before[side] ?? 0) - (after[side] ?? 0)
+                            expect(used >= 0,
+                                   "a side gained a timeout mid-drive, which is not a rule")
+                            spent += used
+                        }
+                    }
+                }
+            }
+            expect(spent > 0, "no timeout was spent in 40 games")
+        }
+
+        test("a timeout is never spent by a team that has none") {
+            for seed in UInt64(1)...40 {
+                for play in GameEngine.play(tier: .college, home: home, away: away, seed: seed)
+                    .plays {
+                    for side in Side.allCases {
+                        let remaining = play.situation.timeoutsRemaining[side] ?? 0
+                        expect(remaining >= 0, "a side held \(remaining) timeouts")
+                        expect(remaining <= Tier.college.clockRules.timeoutsPerHalf,
+                               "a side held more timeouts than a half allows")
+                    }
+                }
+            }
+        }
+
+        test("only a trailing side stops the clock") {
+            // The default rule, asserted directly rather than through a game, because the games that
+            // exercise it are exactly the close ones.
+            let caller = BaselinePlayCaller()
+            let rules = Tier.pro.clockRules
+            expect(caller.callsTimeout(secondsRemainingInHalf: 60, trailing: true,
+                                       isOffense: false, rules: rules),
+                   "a trailing defence let a minute run off with timeouts in hand")
+            expect(!caller.callsTimeout(secondsRemainingInHalf: 60, trailing: false,
+                                        isOffense: false, rules: rules),
+                   "a leading defence stopped the clock for its opponent")
+            expect(!caller.callsTimeout(secondsRemainingInHalf: 900, trailing: true,
+                                        isOffense: false, rules: rules),
+                   "a timeout was spent with fifteen minutes left in the half")
+            expect(caller.callsTimeout(
+                secondsRemainingInHalf: MatchupRules.offensiveTimeoutSecondsRemaining,
+                trailing: true, isOffense: true, rules: rules
+            ), "a trailing offence never stops the clock at all")
+            expect(!caller.callsTimeout(
+                secondsRemainingInHalf: MatchupRules.defensiveTimeoutSecondsRemaining,
+                trailing: true, isOffense: true, rules: rules
+            ), "the offence used the defence's wider window")
+        }
+
+        test("halftime hands the timeouts back") {
+            for seed in UInt64(1)...20 {
+                let game = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                guard let firstThird = game.drives.first(where: {
+                    ($0.plays.first?.situation.quarter ?? 0) == 3
+                }), let opening = firstThird.plays.first else { continue }
+                for side in Side.allCases {
+                    expectEqual(opening.situation.timeoutsRemaining[side] ?? -1,
+                                Tier.pro.clockRules.timeoutsPerHalf,
+                                "seed \(seed): the second half did not start with a full set")
+                }
+            }
+        }
+    }
+}
+
+func runSchemeFitTests() {
+    suite("Scheme fit") {
+        test("the spine moves a matchup") {
+            // 02 section 6 makes scheme identity the spine and says the roster's fit to it modifies
+            // every matchup in the engine. Every call site passed a literal zero, so the spine moved
+            // nothing and schemeFitWeight was a constant nothing multiplied.
+            func player(_ index: Int, fit: Int) -> Player {
+                var attributes = Attributes()
+                for attribute in Position.wideReceiver.ratedAttributes {
+                    attributes[attribute] = Rating(70)
+                }
+                attributes[.schemeFit] = Rating(fit)
+                return Player(
+                    id: UUID(uuidString: String(format: "00000000-0000-4000-D000-%012X", index))!,
+                    firstName: "S", lastName: "\(index)", position: .wideReceiver, age: 24,
+                    attributes: attributes, potential: Rating(70)
+                )
+            }
+            let fits = player(1, fit: 95)
+            let does_not = player(2, fit: 45)
+            expect(SnapResolver.schemeFitDifferential(attacker: fits, defender: does_not) > 0,
+                   "a player who fits the scheme has no edge on one who does not")
+            expect(SnapResolver.schemeFitDifferential(attacker: does_not, defender: fits) < 0,
+                   "the differential is not symmetric")
+            expectClose(SnapResolver.schemeFitDifferential(attacker: fits, defender: fits), 0,
+                        0.000_001,
+                        "two players who fit equally decided a matchup between them")
+        }
+
+        test("a roster that fits its scheme outgains one that does not") {
+            func meanYards(fit: Int) -> Double {
+                var offense = testPersonnel(offenseSkill: 70, defenseSkill: 70).offense
+                offense = offense.map { player in
+                    var copy = player
+                    copy.attributes[.schemeFit] = Rating(fit)
+                    return copy
+                }
+                let personnel = SnapPersonnel(
+                    offense: offense,
+                    defense: testPersonnel(offenseSkill: 70, defenseSkill: 70).defense
+                )
+                var rng = SeededRandom(seed: 6_161)
+                var total = 0
+                for _ in 0..<2_000 {
+                    total += SnapResolver.resolve(
+                        offensiveCall: OffensiveCall(playType: .pass),
+                        defensiveCall: DefensiveCall(coverage: .zoneUnder),
+                        personnel: personnel, situation: Situation(),
+                        rules: Tier.pro.clockRules, rng: &rng
+                    ).yards
+                }
+                return Double(total) / 2_000
+            }
+            expect(meanYards(fit: 95) > meanYards(fit: 45),
+                   "scheme fit changed nothing about what an offence gained")
+        }
+    }
+}
+
+func runWeatherTests() {
+    let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
+    let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
+
+    suite("Weather") {
+        test("every condition is reachable, and late seasons are colder") {
+            var early: [Weather: Int] = [:]
+            var late: [Weather: Int] = [:]
+            for seed in UInt64(1)...2_000 {
+                var rng = SeededRandom(seed: seed)
+                early[Weather.draw(week: 1, rng: &rng), default: 0] += 1
+                var lateRNG = SeededRandom(seed: seed)
+                late[Weather.draw(week: MatchupRules.weatherLateWeek, rng: &lateRNG), default: 0] += 1
+            }
+            for condition in Weather.allCases {
+                expect((late[condition] ?? 0) > 0,
+                       "\(condition.rawValue) never happens even in a late season")
+            }
+            expect((early[.snow] ?? 0) == 0,
+                   "it snowed in week one, which the season shape forbids")
+            expect((late[.clear] ?? 0) < (early[.clear] ?? 0),
+                   "a late season was as clear as an early one, so the season shape does nothing")
+        }
+
+        test("snow costs the passing game and the kicking game") {
+            // 02 section 3.10's falsifier. Asserted on the rules rather than through a season,
+            // because a season's worth of games is a slow way to compare two constants.
+            expect(Weather.snow.passPenalty > Weather.clear.passPenalty,
+                   "snow costs a throw nothing")
+            expect(Weather.snow.kickPenalty > Weather.clear.kickPenalty,
+                   "snow costs a kick nothing")
+            expect(Weather.wind.kickPenalty > Weather.wind.passPenalty,
+                   "wind costs a kick no more than a throw, so the two tables are one table")
+            expect(Weather.rain.fumbleMultiplier > Weather.wind.fumbleMultiplier,
+                   "rain is no wetter than wind")
+            expectEqual(Weather.clear.fumbleMultiplier, 1,
+                        "clear weather changed the fumble rate")
+        }
+
+        test("conditions reach the field") {
+            func completionRate(_ weather: Weather) -> Double {
+                var rng = SeededRandom(seed: 5_150)
+                var attempts = 0, completions = 0
+                for _ in 0..<3_000 {
+                    let outcome = SnapResolver.resolve(
+                        offensiveCall: OffensiveCall(playType: .pass, passDepth: .mid),
+                        defensiveCall: DefensiveCall(coverage: .zoneUnder),
+                        personnel: home, situation: Situation(), rules: Tier.pro.clockRules,
+                        weather: weather, rng: &rng
+                    )
+                    switch outcome.result {
+                    case .incompletion, .interception: attempts += 1
+                    case .gain, .touchdown, .fumbleLost: attempts += 1; completions += 1
+                    default: break
+                    }
+                }
+                return attempts == 0 ? 0 : Double(completions) / Double(attempts)
+            }
+            expect(completionRate(.clear) > completionRate(.snow),
+                   "passes were completed as often in snow as in the sun")
+        }
+
+        test("a game replays in the weather it was played in") {
+            let first = GameEngine.play(tier: .pro, home: home, away: away, week: 14, seed: 909)
+            let second = GameEngine.play(tier: .pro, home: home, away: away, week: 14, seed: 909)
+            expectEqual(first.weather, second.weather, "the same game drew different weather")
+            expectEqual(first.playByPlayFingerprint, second.playByPlayFingerprint)
+            let stated = GameEngine.play(tier: .pro, home: home, away: away, week: 14,
+                                         weather: .snow, seed: 909)
+            expectEqual(stated.weather, .snow, "a stated condition was overridden by the draw")
+        }
+    }
+}
+
+/// A caller that plays the baseline game and always makes the same conversion choice.
+struct FixedConversionCaller: PlayCaller, Sendable {
+    let choice: ConversionChoice
+
+    func offensiveCall(for situation: Situation, rules: any ClockRules.Type) -> OffensiveCall {
+        BaselinePlayCaller().offensiveCall(for: situation, rules: rules)
+    }
+
+    func defensiveCall(for situation: Situation, rules: any ClockRules.Type) -> DefensiveCall {
+        BaselinePlayCaller().defensiveCall(for: situation, rules: rules)
+    }
+
+    func conversionChoice(deficitAfterTouchdown: Int, situation: Situation,
+                          rules: any ClockRules.Type) -> ConversionChoice {
+        choice
+    }
+}
+
+/// A caller that hands the two-point try a punt, to prove the engine refuses it.
+struct PuntingConversionCaller: PlayCaller, Sendable {
+    func offensiveCall(for situation: Situation, rules: any ClockRules.Type) -> OffensiveCall {
+        // Only the try is answered with a punt; ordinary downs stay sane, or the game never
+        // reaches a touchdown to convert.
+        if situation.down == 1,
+           situation.distance == MatchupRules.twoPointYardsToGoal,
+           situation.yardsToGoal == MatchupRules.twoPointYardsToGoal {
+            return OffensiveCall(playType: .punt)
+        }
+        return BaselinePlayCaller().offensiveCall(for: situation, rules: rules)
+    }
+
+    func defensiveCall(for situation: Situation, rules: any ClockRules.Type) -> DefensiveCall {
+        BaselinePlayCaller().defensiveCall(for: situation, rules: rules)
+    }
+
+    func conversionChoice(deficitAfterTouchdown: Int, situation: Situation,
+                          rules: any ClockRules.Type) -> ConversionChoice {
+        .twoPoint
     }
 }

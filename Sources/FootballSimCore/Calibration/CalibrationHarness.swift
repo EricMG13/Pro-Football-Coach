@@ -41,6 +41,12 @@ public enum CalibrationHarness {
     /// covers even games and mismatches rather than only the middle.
     public static let matchupsPerSeed = 12
 
+    /// How many weeks of a season the sample walks through, for weather. `02` §3.10.
+    ///
+    /// The longer tier's regular season, so both tiers see the same spread of conditions and a
+    /// college band is not measured against a colder sample than a pro one.
+    public static let seasonWeeksSampled = 18
+
     /// A game and the talent it was played at, so the favourite can be identified.
     struct SampledGame {
         let record: GameRecord
@@ -51,14 +57,20 @@ public enum CalibrationHarness {
     /// Runs the harness and tests every band for the tier.
     public static func run(tier: Tier, seeds: [UInt64]) -> CalibrationReport {
         var games: [SampledGame] = []
-        for seed in seeds {
+        for (seedIndex, seed) in seeds.enumerated() {
             for matchup in 0..<matchupsPerSeed {
                 let ladder = talentLadder(matchup: matchup)
+                // The week is walked across the sample so the weather the bands are measured
+                // against is a season's spread rather than one week's. The real seasons these
+                // bands come from contain November, so a harness that played every game in
+                // September would calibrate the engine against conditions the game does not have.
+                let week = (seedIndex * matchupsPerSeed + matchup) % seasonWeeksSampled + 1
                 games.append(SampledGame(record: GameEngine.play(
                     tier: tier,
                     home: CalibrationRoster.team(skill: ladder.home, seed: seed &+ UInt64(matchup)),
                     away: CalibrationRoster.team(skill: ladder.away,
                                                  seed: seed &+ UInt64(matchup) &+ 500_000),
+                    week: week,
                     seed: SeededRandom.derive(from: seed, scope: .game, ordinal: matchup)
                 ), homeSkill: ladder.home, awaySkill: ladder.away))
             }
@@ -117,6 +129,8 @@ public enum CalibrationHarness {
         var runPlays = 0, explosiveRuns = 0
         var passPlays = 0, explosivePasses = 0
         var pointsInQ4 = 0, pointsTotal = 0
+        var penalties = 0
+        var overtimeGames = 0, overtimeInOnePeriod = 0
 
         for sample in samples {
             let game = sample.record
@@ -132,6 +146,18 @@ public enum CalibrationHarness {
             if Swift.abs(game.homeScore - game.awayScore) >= MatchupRules.blowoutMargin {
                 blowouts += 1
             }
+            // Overtime, measurable now that it exists. A period is a quarter past regulation, which
+            // is how both formats mark themselves: the alternating one counts up per period and the
+            // timed one uses exactly one.
+            let regulationQuarters = game.tier.clockRules.quarters
+            let overtimePeriods = Set(
+                game.drives.compactMap { $0.plays.first?.situation.quarter }
+                    .filter { $0 > regulationQuarters }
+            )
+            if !overtimePeriods.isEmpty {
+                overtimeGames += 1
+                if overtimePeriods.count == 1 { overtimeInOnePeriod += 1 }
+            }
             _ = sample.awaySkill
 
             var perSide: [Side: (plays: Int, pass: Int, rush: Int, sacks: Int, ints: Int,
@@ -139,6 +165,14 @@ public enum CalibrationHarness {
                                                     .away: (0, 0, 0, 0, 0, 0)]
             for play in game.plays {
                 let side = play.situation.possession
+                // A snap wiped out by an accepted penalty is not an offensive play and its yardage
+                // is penalty yardage, not offence. Counting it would move plays per team-game and
+                // yards per play — two calibrated bands — by the penalty rate, which is the
+                // accounting mistake `01` §6.5 §8 records real box scores avoiding.
+                if play.outcome.result == .penalty {
+                    penalties += 1
+                    continue
+                }
                 var tally = perSide[side]!
                 tally.plays += 1
                 switch play.outcome.result {
@@ -168,6 +202,11 @@ public enum CalibrationHarness {
                     }
                 case .punt, .kneel:
                     break
+                case .penalty:
+                    // Unreachable: the guard above skips these before the switch. Enumerated rather
+                    // than swept into a `default`, so adding a result to `SnapResult` keeps failing
+                    // to compile here until someone decides how it is counted.
+                    break
                 }
                 perSide[side] = tally
             }
@@ -184,6 +223,14 @@ public enum CalibrationHarness {
             for drive in game.drives where drive.ending == .touchdown || drive.ending == .fieldGoal {
                 pointsTotal += drive.pointsScored
                 if drive.plays.last?.situation.quarter == 4 { pointsInQ4 += drive.pointsScored }
+            }
+            // Points a kickoff return scored belong to the game's points even though no drive
+            // produced them. Leaving them out would make the Q4 share a ratio over a total that
+            // does not match the scoreboard.
+            for drive in game.drives {
+                guard let kickoff = drive.startingKickoff, kickoff.points > 0 else { continue }
+                pointsTotal += kickoff.points
+                if drive.plays.first?.situation.quarter == 4 { pointsInQ4 += kickoff.points }
             }
 
             // The favourite is the better roster, not the home team. It was `winner == .home`,
@@ -236,6 +283,15 @@ public enum CalibrationHarness {
             "explosive run rate": rateEstimate(explosiveRuns, runPlays),
             "explosive pass rate": rateEstimate(explosivePasses, passPlays),
             "Q4 share of points": rateEstimate(pointsInQ4, pointsTotal),
+            // Measured, deliberately unbanded. `03` §5.1 has no penalty band because no source for
+            // one has been retrieved, and inventing a target here would make the eventual TOST a
+            // formality over a number fitted to the engine that produced it. Reporting it is what
+            // lets a later session band it from evidence.
+            "accepted penalties per game": meanEstimate(
+                samples.isEmpty ? [] : [Double(penalties) / Double(samples.count)]
+            ),
+            "overtime rate": rateEstimate(overtimeGames, samples.count),
+            "overtime settled in one period": rateEstimate(overtimeInOnePeriod, overtimeGames),
         ]
     }
 }

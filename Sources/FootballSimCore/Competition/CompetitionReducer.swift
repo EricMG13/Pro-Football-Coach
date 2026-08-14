@@ -30,14 +30,16 @@ public enum CompetitionReducer {
             let isConferenceGame = conferenceByID[game.homeID] != nil
                 && conferenceByID[game.homeID] == conferenceByID[game.awayID]
             rowsByID[game.homeID]?.record(
+                win: result.homeScore > result.awayScore,
+                conference: isConferenceGame,
                 pointsFor: result.homeScore,
-                pointsAgainst: result.awayScore,
-                conferenceGame: isConferenceGame
+                pointsAgainst: result.awayScore
             )
             rowsByID[game.awayID]?.record(
+                win: result.awayScore > result.homeScore,
+                conference: isConferenceGame,
                 pointsFor: result.awayScore,
-                pointsAgainst: result.homeScore,
-                conferenceGame: isConferenceGame
+                pointsAgainst: result.homeScore
             )
             headToHeadWinner[teamPairKey(game.homeID, game.awayID)] = result.homeScore > result.awayScore
                 ? game.homeID

@@ -37,14 +37,28 @@ public enum PostseasonSystem {
             )
 
         case CollegeRules.regularSeasonWeeks + CollegeRules.conferenceChampionshipWeeks:
-            let entrants = Array((competition.rankings[.college] ?? []).prefix(
-                CollegeRules.bracketTeams
-            ))
+            let ranking = competition.rankings[.college] ?? []
+            let entrants = Array(ranking.prefix(CollegeRules.bracketTeams))
             appendStage(
                 tier: .college,
                 stage: .quarterfinal,
                 week: completed.week + 1,
                 pairs: highLowPairs(entrants),
+                state: state,
+                competition: &competition,
+                payloads: &payloads
+            )
+            // `02` §11.1a. The tail: the ranked programmes below the bracket play one game each, in
+            // the same week, so the calendar §11.1 fixes at seventeen weeks does not move. Without
+            // it, 126 of 134 programmes ended every season with nothing.
+            let bowlEntrants = Array(
+                ranking.dropFirst(CollegeRules.bracketTeams).prefix(CollegeRules.bowlTeams)
+            )
+            appendStage(
+                tier: .college,
+                stage: .bowl,
+                week: completed.week + 1,
+                pairs: adjacentPairs(bowlEntrants),
                 state: state,
                 competition: &competition,
                 payloads: &payloads
@@ -279,6 +293,21 @@ public enum PostseasonSystem {
         }
     }
 
+    /// Pairs a ranked list neighbour by neighbour: ninth plays tenth, eleventh plays twelfth.
+    ///
+    /// Deliberately not the bracket's high-low seeding. A bowl is a prize rather than a route to a
+    /// title, and pairing adjacent ranks is what makes the games competitive — high-low here would
+    /// hand the best of the tail an easy win and call it a reward.
+    public static func adjacentPairs(_ ranked: [UUID]) -> [(UUID, UUID)] {
+        var pairs: [(UUID, UUID)] = []
+        var index = 0
+        while index + 1 < ranked.count {
+            pairs.append((ranked[index], ranked[index + 1]))
+            index += 2
+        }
+        return pairs
+    }
+
     private static func postseasonSeed(
         root: UInt64,
         season: Int,
@@ -317,6 +346,19 @@ public enum PostseasonSystem {
                     value: topOffense.value.points
                 ))
             }
+            // The defensive half, reachable now that a team line records what it did rather than
+            // only what it scored. Fewest points conceded, which the standings already carry, so
+            // this reads a number the season already has rather than inventing a rating for it.
+            if let topDefense = (competition.standings[tier] ?? [])
+                .filter({ ids.contains($0.id) && $0.games > 0 })
+                .min(by: defensiveOrder) {
+                awards.append(SeasonAward(
+                    kind: .topDefense,
+                    tier: tier,
+                    winnerID: topDefense.id,
+                    value: topDefense.pointsAgainst
+                ))
+            }
         }
 
         let collegePlayers = Set(state.programmes.values.flatMap(\.rosterIDs))
@@ -330,6 +372,25 @@ public enum PostseasonSystem {
                     tier: tier,
                     winnerID: player.key,
                     value: playerAwardValue(player.value)
+                ))
+            }
+            // Split by side of the ball, which the vocabulary can answer now. The overall award
+            // stays: a season with one outstanding player should say so, and the two side awards
+            // are what make a defender's season visible at all.
+            let side = competition.playerStatistics.filter { ids.contains($0.key) }
+            // No value guard, and that is not laziness: `WorldIntegrity` requires every award kind
+            // to appear exactly once per tier in a season archive, so an award that is sometimes
+            // withheld is an integrity failure waiting for a quiet season.
+            if let offensive = side.max(by: offensiveAwardOrder) {
+                awards.append(SeasonAward(
+                    kind: .offensivePlayerOfTheYear, tier: tier, winnerID: offensive.key,
+                    value: playerAwardValue(offensive.value)
+                ))
+            }
+            if let defensive = side.max(by: defensiveAwardOrder) {
+                awards.append(SeasonAward(
+                    kind: .defensivePlayerOfTheYear, tier: tier, winnerID: defensive.key,
+                    value: defensiveAwardValue(defensive.value)
                 ))
             }
         }
@@ -355,6 +416,43 @@ public enum PostseasonSystem {
         let rhsValue = playerAwardValue(rhs.value)
         if lhsValue != rhsValue { return lhsValue < rhsValue }
         return lhs.key.uuidString > rhs.key.uuidString
+    }
+
+    /// Fewest points conceded wins, ties broken by identity so the same season always names the
+    /// same team.
+    private static func defensiveOrder(_ lhs: StandingRow, _ rhs: StandingRow) -> Bool {
+        if lhs.pointsAgainst != rhs.pointsAgainst { return lhs.pointsAgainst < rhs.pointsAgainst }
+        return lhs.id.uuidString < rhs.id.uuidString
+    }
+
+    private static func offensiveAwardOrder(
+        _ lhs: Dictionary<UUID, PlayerSeasonStatistics>.Element,
+        _ rhs: Dictionary<UUID, PlayerSeasonStatistics>.Element
+    ) -> Bool {
+        let lhsValue = playerAwardValue(lhs.value)
+        let rhsValue = playerAwardValue(rhs.value)
+        if lhsValue != rhsValue { return lhsValue < rhsValue }
+        return lhs.key.uuidString > rhs.key.uuidString
+    }
+
+    private static func defensiveAwardOrder(
+        _ lhs: Dictionary<UUID, PlayerSeasonStatistics>.Element,
+        _ rhs: Dictionary<UUID, PlayerSeasonStatistics>.Element
+    ) -> Bool {
+        let lhsValue = defensiveAwardValue(lhs.value)
+        let rhsValue = defensiveAwardValue(rhs.value)
+        if lhsValue != rhsValue { return lhsValue < rhsValue }
+        return lhs.key.uuidString > rhs.key.uuidString
+    }
+
+    /// What a defensive season is worth, in the same shape as the offensive one: volume plus the
+    /// events that change games. The weights live in `CompetitionRules` rather than here.
+    private static func defensiveAwardValue(_ statistics: PlayerSeasonStatistics) -> Int {
+        statistics.tackles
+            + statistics.sacks * CompetitionRules.awardSackValue
+            + statistics.interceptions * CompetitionRules.awardInterceptionValue
+            + statistics.forcedFumbles * CompetitionRules.awardForcedFumbleValue
+            + statistics.passesDefended * CompetitionRules.awardPassDefendedValue
     }
 
     private static func playerAwardValue(_ statistics: PlayerSeasonStatistics) -> Int {

@@ -595,7 +595,9 @@ before relying on either. The 44 × 44 pt touch floor is HIG-verified (Apple's s
 - AX5 may scroll vertically. The focused action remains reachable without crossing a hidden shelf.
 - VoiceOver order follows world context → dominant object → evidence → actions → local navigation.
 - Reduce Motion replaces travel, reveal and field animation with discrete state changes.
-- Sound and haptics have visual and spoken equivalents.
+- Sound and haptics have visual and spoken equivalents. **See §7.2: as of 2026-08-13 there is
+  neither sound nor haptics, so this clause and `04b`'s scoring of it currently assert an
+  equivalence to nothing.**
 - Loading never displays invented percentage progress.
 - Empty, error, interrupted and resume states remain inside the composition they belong to.
 
@@ -624,6 +626,60 @@ not evidence that the work is correct. **The rendered limb of G-12 stays open**,
 snapshot versus layout assertion, and which target can host it now that full Xcode is present — is
 `03b` §5's to decide and the owner's to schedule. An audit under `04b` may not score AX5 above 3 on
 the strength of this suite alone.
+
+### 7.3 The glossary — added 2026-08-13
+
+`docs/briefs/2026-08-12-density-model.md` records that the reference product needed an in-game
+glossary, and calls that "the failure bound made visible": a dense game teaches a vocabulary, and a
+player in season nine still meets a word they have not seen. This product ships 62 dense families and
+had nowhere to look one up. Onboarding (D9) teaches the first week; it does not teach the vocabulary
+afterwards.
+
+- **Definitions, not documentation.** One sentence a player can read while deciding something, in
+  this document's plain register. The bound is a contract test rather than a habit, because a
+  paragraph in a glossary is a manual and nobody reads a manual mid-decision.
+- **The words this game invents**, not every football word. Call-in, scheme fit, the portal, NIL,
+  dead money, redshirt, job security, depth chart — the vocabulary a player meets here and cannot
+  look up anywhere else.
+- **Entered from where the word was met.** Terms carry the area they belong to, so a glossary opened
+  from the cap screen starts among the professional words.
+
+### 7.2 Sound and haptics — the contract, and the fact that there are none — added 2026-08-13
+
+**There is no audio in this product and no haptics.** Zero occurrences of any audio or haptic API,
+zero assets, and no sound design anywhere in canon. The only two mentions were §7's accessibility
+clause above and `04b`'s rubric line scoring "sound-off and haptic equivalents" — so the rubric has
+been scoring a *fallback for something that does not exist*, which reads as a pass and means nothing.
+
+That is unusual for a football game. The match view holds the player for 630 seconds a week with a
+crowd that makes no noise, a whistle that never blows and a snap that lands in silence, and the
+management week has no feedback of any kind for a decision landing.
+
+**The decision is the owner's and it is a real fork**, not an oversight to be quietly closed:
+
+1. **Ship silent, deliberately.** Legitimate, cheap, and it must then be *said*: this clause and
+   `04b`'s line get rewritten to assert that the product carries no audio channel, so the rubric
+   stops scoring a phantom. A silent game is a choice; a silent game whose accessibility contract
+   claims to have equivalents for its audio is a false claim.
+2. **Budget a sound pass**, in which case the contract below is what it must satisfy.
+
+**If sound is built, the contract is:**
+
+- **Nothing is only audible.** Every sound has a visual and a spoken equivalent, which is the clause
+  §7 already carries and the reason it exists.
+- **The match is the only place that earns continuous audio** — crowd bed, whistle, contact — and it
+  ducks under VoiceOver rather than competing with it.
+- **Management surfaces get haptics, not sound**: a decision committed, a deadline passed, a
+  mandatory item cleared. A management screen that chimes is a notification, and this product has no
+  notifications.
+- **One control, honoured everywhere**: a single audio-and-haptics setting on screen 6, respected by
+  every surface, with the system's silent switch and Reduce Motion both obeyed without being asked
+  twice.
+- **No audio in the accessibility trees.** A VoiceOver user who turns sound off loses nothing that
+  was not also drawn.
+
+Falsifier, once built: every sound has a named visual equivalent in the registry; the match view
+plays nothing while VoiceOver speaks; and turning audio off changes no outcome and hides no datum.
 
 ## 8. Canonical v1 screen inventory — 62 families
 

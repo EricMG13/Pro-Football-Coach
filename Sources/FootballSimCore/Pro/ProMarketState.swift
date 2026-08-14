@@ -153,6 +153,14 @@ public struct ProMarketState: Codable, Sendable, Equatable {
     public private(set) var observations: [ProDraftObservation]
     public private(set) var archivedDraftProspectIDs: [UUID]
     public private(set) var waivers: [ProWaiverEntry]
+    /// Picks whose owner is not the club they came from. `02` §4.2c.
+    ///
+    /// **Only the traded ones.** A book of all 224 picks would be 224 records of "this club holds
+    /// its own pick", persisted every season for a fact `draftOrder` already states — save growth
+    /// for nothing, against FSC-003. So the order remains the default and this is the exception
+    /// list, which is also why it is optional and omitted when empty: a league where nobody has
+    /// traded a pick encodes exactly as it did before picks were assets.
+    public private(set) var tradedPicks: [DraftPick]?
 
     public init(
         season: Int = 0,
@@ -164,7 +172,8 @@ public struct ProMarketState: Codable, Sendable, Equatable {
         freeAgentIDs: [UUID] = [],
         observations: [ProDraftObservation] = [],
         archivedDraftProspectIDs: [UUID] = [],
-        waivers: [ProWaiverEntry] = []
+        waivers: [ProWaiverEntry] = [],
+        tradedPicks: [DraftPick]? = nil
     ) {
         self.season = max(0, season)
         self.phase = phase
@@ -176,6 +185,9 @@ public struct ProMarketState: Codable, Sendable, Equatable {
         self.observations = Self.canonicalObservations(observations)
         self.archivedDraftProspectIDs = Self.canonicalIDs(archivedDraftProspectIDs)
         self.waivers = Self.canonicalWaivers(waivers)
+        // Canonical and bounded: at most one entry per slot, ordered by identity so two runs of the
+        // same league produce the same bytes, and an untraded pick is never stored.
+        self.tradedPicks = Self.canonicalPicks(tradedPicks)
         precondition(isValidShape(proTeamIDs: nil), "Professional market state is invalid.")
     }
 
@@ -194,6 +206,7 @@ public struct ProMarketState: Codable, Sendable, Equatable {
             forKey: .archivedDraftProspectIDs
         )
         let waivers = try container.decode([ProWaiverEntry].self, forKey: .waivers)
+        let tradedPicks = try container.decodeIfPresent([DraftPick].self, forKey: .tradedPicks)
         guard season >= 0,
               draftClass.count <= Self.maximumDraftClassSize,
               Set(draftClass.map(\.id)).count == draftClass.count,
@@ -212,7 +225,9 @@ public struct ProMarketState: Codable, Sendable, Equatable {
               waivers.count <= Self.maximumWaivers,
               Set(waivers.map(\.id)).count == waivers.count,
               Set(waivers.map(\.playerID)).count == waivers.count,
-              waivers.allSatisfy({ !$0.claimDeadlineIsBeforeOpened }) else {
+              waivers.allSatisfy({ !$0.claimDeadlineIsBeforeOpened }),
+              (tradedPicks ?? []).count <= ProRules.draftPickCount,
+              Set((tradedPicks ?? []).map(\.id)).count == (tradedPicks ?? []).count else {
             throw DecodingError.dataCorruptedError(
                 forKey: .draftClass,
                 in: container,
@@ -229,13 +244,65 @@ public struct ProMarketState: Codable, Sendable, Equatable {
             freeAgentIDs: freeAgentIDs,
             observations: observations,
             archivedDraftProspectIDs: archivedDraftProspectIDs,
-            waivers: waivers
+            waivers: waivers,
+            tradedPicks: tradedPicks
         )
     }
 
+    /// Who is on the clock, reading ownership rather than the order the slots were created in.
+    ///
+    /// `02` §4.2c built pick ownership and left this reading `draftOrder` directly, so a traded pick
+    /// changed nothing about who picked — the asset existed and the draft ignored it.
     public var currentPickTeamID: UUID? {
         guard phase == .draft, nextPick < draftOrder.count else { return nil }
-        return draftOrder[nextPick]
+        return owner(ofPick: nextPick)
+    }
+
+    /// The club holding a given overall pick number, which is the club it came from unless somebody
+    /// traded for it.
+    public func owner(ofPick index: Int) -> UUID? {
+        guard index >= 0, index < draftOrder.count else { return nil }
+        let original = draftOrder[index]
+        guard let tradedPicks, !tradedPicks.isEmpty else { return original }
+        let identity = DraftPick.identity(
+            season: season,
+            round: index / ProRules.draftPicksPerRound + 1,
+            originalTeamID: original
+        )
+        return tradedPicks.first { $0.id == identity }?.ownerID ?? original
+    }
+
+    /// Records a pick changing hands, or refuses.
+    ///
+    /// Refuses a move to the club that already holds it and a slot outside the draft, for the reason
+    /// `DraftPickBook.transfer` does: a trade that silently did nothing is the worst kind of
+    /// transaction bug. A pick traded back to the club it came from is *removed* from the exception
+    /// list rather than stored as an exception that is not one.
+    @discardableResult
+    public mutating func tradePick(at index: Int, to teamID: UUID) -> Bool {
+        guard index >= 0, index < draftOrder.count, owner(ofPick: index) != teamID else {
+            return false
+        }
+        let original = draftOrder[index]
+        let round = index / ProRules.draftPicksPerRound + 1
+        var picks = (tradedPicks ?? []).filter {
+            $0.id != DraftPick.identity(season: season, round: round, originalTeamID: original)
+        }
+        if teamID != original {
+            picks.append(DraftPick(season: season, round: round, originalTeamID: original,
+                                   ownerID: teamID))
+        }
+        tradedPicks = Self.canonicalPicks(picks)
+        return true
+    }
+
+    static func canonicalPicks(_ picks: [DraftPick]?) -> [DraftPick]? {
+        guard let picks else { return nil }
+        var seen: Set<UUID> = []
+        let canonical = picks
+            .filter { $0.isTraded && seen.insert($0.id).inserted }
+            .sorted { $0.id.uuidString < $1.id.uuidString }
+        return canonical.isEmpty ? nil : Array(canonical.prefix(ProRules.draftPickCount))
     }
 
     @discardableResult
@@ -262,6 +329,13 @@ public struct ProMarketState: Codable, Sendable, Equatable {
         self.draftedProspectIDs = []
         self.freeAgentIDs = Self.canonicalIDs(freeAgentIDs)
         self.observations = []
+        // Last season's trades are spent, and a pick traded *forward* is not: entries name their own
+        // season, so the rule is to drop what is now in the past and keep what is still to come.
+        // Clearing everything would make trading next year's second-rounder — the reason pick
+        // identity is derived from the slot at all — a thing the market forgot every offseason.
+        self.tradedPicks = Self.canonicalPicks(
+            (self.tradedPicks ?? []).filter { $0.season >= season }
+        )
         return true
     }
 
@@ -368,6 +442,16 @@ public struct ProMarketState: Codable, Sendable, Equatable {
             && Set(waivers.map(\.playerID)).count == waivers.count
             && waivers.allSatisfy { !$0.claimDeadlineIsBeforeOpened }
             && (proTeamIDs.map { Set(draftOrder).isSubset(of: $0) } ?? true)
+            // A traded pick has to belong to a club that exists and to a slot this league has, or
+            // the draft would stop on a name nobody can find.
+            && (tradedPicks ?? []).count <= ProRules.draftPickCount
+            && Set((tradedPicks ?? []).map(\.id)).count == (tradedPicks ?? []).count
+            && (tradedPicks ?? []).allSatisfy { $0.isTraded && $0.season >= season }
+            && (proTeamIDs.map { ids in
+                (tradedPicks ?? []).allSatisfy {
+                    ids.contains($0.ownerID) && ids.contains($0.originalTeamID)
+                }
+            } ?? true)
     }
 
     private static func canonicalProspects(_ values: [ProDraftProspect]) -> [ProDraftProspect] {

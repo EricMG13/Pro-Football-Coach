@@ -25,6 +25,12 @@ public enum PeopleLifecycleSystem {
                     recoveredIDs.insert(id)
                     payloads.append(.playerRecovered(playerID: id))
                 }
+                // Time served counts down on the same tick, because there is exactly one place in
+                // this game where a week passes for a player and a suspension that expired anywhere
+                // else would be a second calendar to keep in step. `02` §5.2.
+                if lifecycle.serveSuspensionWeek() {
+                    payloads.append(.playerReinstated(playerID: id))
+                }
             }
         }
 
@@ -70,19 +76,13 @@ public enum PeopleLifecycleSystem {
                 durability: player.attributes[.durability]
             )
             guard rng.chance(probability) else { continue }
-            let severityRoll = rng.double01()
-            let severity: InjurySeverity
-            let weeks: Int
-            if severityRoll < 0.72 {
-                severity = .minor
-                weeks = rng.int(in: 1...2)
-            } else if severityRoll < 0.95 {
-                severity = .moderate
-                weeks = rng.int(in: 3...6)
-            } else {
-                severity = .severe
-                weeks = rng.int(in: 7...14)
-            }
+            // The ladder is `PeopleRules`' now rather than four literals here, because the match
+            // engine's in-play injuries (`02` §3.8) need the same one and a hand-copied duplicate is
+            // two ladders that nothing asserts agree.
+            let ladder = PeopleRules.injurySeverity(roll: rng.double01())
+            let severity = ladder.severity
+            let weeks = PeopleRules.injuryWeeks(rng.int(in: ladder.weeks),
+                                                ironman: player.has(.ironman))
             let injury = PlayerInjury(
                 area: rng.pick(InjuryArea.allCases),
                 severity: severity,

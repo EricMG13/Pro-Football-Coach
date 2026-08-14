@@ -95,6 +95,432 @@ full game-plan edit. Substitutions are automatic within the depth chart, overrid
 Per season: ~500 in-match calls, ~340 management decisions, plus the offseason. The previous build
 offered roughly 20 in a season. The difference is not tone; it is two orders of magnitude.
 
+### 3.4 The conversion — added 2026-08-13
+
+A touchdown is six points and then a decision, and the decision is the point of adding it: the kick
+is nearly free and worth one, the two-point try is a snap from the two and worth two. It passes all
+three of §2.2's tests — two defensible answers, a consequence inside the same game, and a cost
+measured in the point you did not simply take.
+
+*Recorded because the engine scored a touchdown as seven points and never asked.* `extraPointPoints`
+was added to `touchdownPoints` unconditionally, so the kick could not miss, the two-point try did not
+exist, and one of the sport's few genuinely famous coaching decisions was absent.
+
+- **The kick** is a field goal from the fifteen, resolved through the same kicker matchup as every
+  other kick rather than through a special-cased probability. A kicker who cannot kick can miss one,
+  which is what makes carrying a bad kicker a roster cost rather than a rounding error.
+- **The two-point try** is one snap from the two, resolved by the same snap resolver. Reaching the
+  goal line converts; everything else is nothing. A caller that answers a try with a punt or a field
+  goal has its call replaced by a run, because the try is a scrimmage down by definition.
+- **Neither consumes game clock.** The clock is stopped for the try and restarts at the kickoff,
+  which under this engine's touchback model burns nothing. Charging a few seconds here would move
+  plays-per-game, which is a calibrated band in `03` §5.1, for no gain in truth.
+- **The try is not a scrimmage play.** It is recorded beside the drive, never inside its play list,
+  because a box score that counted conversions as offensive snaps would corrupt every per-play rate
+  the calibration harness measures.
+
+**When to go for two is a rules-module chart, not a coordinator's taste**, because it is arithmetic
+rather than judgement: with the touchdown already on the board, a deficit of 2, 5, 10, 12, 16 or 18
+is one that two points changes the shape of. Outside the final quarter the kick is taken, which is
+what real charts do — a two-point try in the first quarter buys a margin the remaining three
+quarters will erase. `MatchupRules.twoPointIsIndicated` owns the chart, the coordinator reads it, and
+the player overrides it through the same call-in surface as any other decision.
+
+Falsifier: across a calibrated season both choices occur, the kick's success rate exceeds the two-
+point try's, and no conversion appears in any drive's play list.
+
+### 3.5 Penalties — added 2026-08-13
+
+`03` §1.1 listed "penalty" among the consequences a snap can produce and nothing produced one. There
+was no penalty type, constant or code path in the engine, and `§11.3.3`'s `volatile` trait named a
+Discipline system that did not exist — a trait pointing at nothing, which is the dead capability this
+project's build prompt names as its first failure mode.
+
+**Seven kinds, each of which has to change a decision or a drive.** False start, delay of game and
+offensive holding against the offence; offside, defensive holding, pass interference and a personal
+foul against the defence. A kind whose enforcement is identical to another's is the same kind wearing
+a different name, so there is no eighth.
+
+- **The flag is drawn before the snap resolves, for every snap, whether or not it lands.** Drawn
+  first, a penalty cannot shift the random stream the snap's own resolution reads; drawn
+  unconditionally, its presence cannot change how many draws a snap consumes. Both are determinism
+  properties, not style.
+- **Pre-snap flags replace the play**; the others modify it. That is the whole difference between the
+  two groups, and it is why they are distinguished at all.
+- **The down is replayed, never advanced.** A defensive foul that carries an automatic first down
+  resets the chains instead. Enforcement moves the ball and adjusts the distance; the yard line is
+  clamped to the field rather than modelling half-the-distance, which is a simplification stated here
+  rather than discovered later.
+- **Accept or decline is resolved optimally for the side that holds the decision.** A defence keeps a
+  takeaway over ten yards; an offence keeps a touchdown over fifteen. This is deliberately a
+  simplification: a real coach can decline badly, and one day this is a call-in with the two options
+  and their consequences on it. Modelling it as always-accept would be wrong in a specific and
+  visible way — a defence would take ten yards instead of the sack it just earned.
+- **A declined flag is still recorded**, with zero enforced yards, because a box score that hid them
+  would lose the record of a play that nearly did not count.
+- **A flag during the play does not call back a kick.** None of the seven kinds are kicking-game
+  fouls, and enforcing a scrimmage foul on a field goal would produce a kick that scores and is
+  simultaneously wiped out.
+
+**`volatile` bites here, and it bites on the player rather than the team.** A volatile player is
+three times likelier to be the one flagged, and a roster full of them draws flags somewhat more
+often. Who committed the foul is recorded, because a trait a player carries should show up on that
+player's line and not only in a team rate.
+
+**The rate is not calibrated and is not pretending to be.** `03` §5.1 has no penalty band, because no
+source for one has been retrieved; the harness now measures accepted penalties per game so a later
+session can band it from evidence rather than from the engine that produced it.
+
+Falsifier: every kind occurs across a season; a penalty never advances the down; accepted penalty
+yardage never appears in a team's offensive yards; and a defence never accepts a flag that would give
+back a turnover it just made.
+
+### 3.6 Kickoffs, returns and the onside kick — added 2026-08-13
+
+Every possession in this game began at a constant. The opening kick, halftime, and every kick after
+a score all spotted the ball at the same yard line, so there was no return game, no field-position
+variance, and no onside kick — which removes the trailing team's last mechanism and, with it, most
+of what makes the final three minutes of a football game worth watching. The special-teams
+coordinator on every staff had nothing to coordinate.
+
+- **A deep kick is a touchback or a return.** Leg strength buys touchbacks, which is why a kicker's
+  leg is rated apart from their accuracy: it is field position, bought before the ball is fielded.
+- **A return is one matchup**, the returner's speed against the coverage unit's best tackler, and it
+  can reach the end zone. A return touchdown scores six and takes the try through the same path
+  every other touchdown does.
+- **The kickoff after a return touchdown is a touchback by rule.** A chain of return touchdowns is an
+  unbounded loop guarding a play that happens about once a season. The bound is stated here rather
+  than discovered in a hang.
+- **An onside kick is a flat chance, not a duel.** It is a scramble among ten players for a bouncing
+  ball; naming two of them and resolving a matchup would be a false causal record, and `04` §5.3
+  reads that record. Recovering one is the only way a kickoff does not change possession.
+- **It is attempted only when it could matter**: the final quarter, trailing, inside three minutes of
+  the half, and by a deficit an onside kick can still save. Outside that the kicking team kicks deep
+  and trusts its defence, which is what real teams do and what keeps recovering one an event.
+- **The kickoff is attached to the drive that received it**, not the one that scored, because it is
+  what explains that drive's starting field position — and because the opening kickoff belongs to no
+  scoring drive at all.
+
+Falsifier: across a season, touchbacks, returns, at least one return touchdown and at least one
+recovered onside kick all occur; a kickoff never leaves the ball with a team that did not legally get
+it; and a game's drive points plus its kickoff points equal the scoreboard.
+
+### 3.7 Overtime — added 2026-08-13
+
+A played game ended at the end of regulation whatever the score, and recorded the tie.
+`ClockRules.overtime` had declared `alternatingPossessions` for college and `timedPeriod` for pro
+since the engine was built, and nothing read it — so the tier difference `01` §4.7 calls "a
+structural rule difference, not a band" was a value with no consumer.
+
+- **College plays alternating possessions.** Each side starts twenty-five yards from the goal line
+  with one timeout, and the period ends when both have had the ball. There is no game clock, so the
+  drive loop — which is clock-driven — is handed more seconds than a possession can consume rather
+  than being taught a second way to end.
+- **Pro plays a timed period.** Ten minutes, opened by a kickoff, drives as usual, and whoever leads
+  when it expires wins. Still level at the end and the game is a tie, which is an honest outcome; an
+  unbounded loop is not.
+- **The toss comes from the game's seed**, so a replay tosses the same way.
+- **Eight alternating periods is the bound.** `01` §6.5's college tie band is exactly zero, so if
+  that bound is ever reached the model is wrong upstream and the band is what says so.
+
+This closes three rows that `CalibrationBands.unimplementedMetrics` listed as waiting on overtime:
+the overtime rate, the college tie rate, and the share settled in a single period. The first two now
+carry bands transcribed from `01` §6.5 with its grades attached — the overtime rate is still an
+owner-set assumption and says so.
+
+Falsifier: no game ends level in the college tier; the pro overtime rate sits inside its band; and a
+game that reaches overtime has at least one drive in a quarter past regulation.
+
+### 3.8 Injuries in play — added 2026-08-13
+
+Injuries were produced only by the weekly draw in `PeopleLifecycleSystem`, which runs at scheduler
+step 2 — **before** the week's games at steps 10 and 11. A player's knee went in the middle of the
+week, from accumulated workload, and nobody was ever hurt during a match. In a sport where an injury
+changes the game being played, that is a missing mechanic and not a missing detail.
+
+- **The candidates are the players the snap involved** — the matchups it recorded and whoever handled
+  the ball — not all twenty-two. The engine already records who was in the collision, `04` §5.3 draws
+  the play from that record, and an injury attributed to a player standing on the far hash would
+  contradict the picture beside it.
+- **Durability decides who**, the same way `volatile` decides who draws a flag. A rating that only
+  moved a team-wide rate would never be visible on the player carrying it.
+- **`ironman` decides how long**, which is the second half of the sentence `§11.3.3` writes for it.
+  Recovery, the first half, stays where recovery is.
+- **The severity ladder is shared with the weekly draw**, in the rules module. It was four literals
+  inline in the lifecycle system; two hand-copied ladders that nothing asserts agree is worse than
+  one constant.
+- **The engine reports and never applies.** `SnapResolver` cannot reach league state and must not: a
+  resolver that mutated it could not be replayed. The season layer applies these when the detailed
+  match is integrated, in the same `PlayerInjury` vocabulary.
+- **Anything past a knock forces the player out of the game, and that is now honoured** (amended
+  2026-08-13, once §3.13's depth chart existed to hand the snap to). The rules, in order:
+  - **The next snap, not the next drive.** The drive loop substitutes immediately. Waiting for the
+    drive boundary would leave a torn knee taking another dozen snaps, which is the shape of the
+    original defect rather than a smaller version of it.
+  - **They stay out.** The game loop carries every substitution into the drives that follow it and
+    into overtime. An injury that healed at a boundary would be worse than not modelling one.
+  - **The bench comes from the depth chart** — everybody available who is not already on the field —
+    and the replacement is the best of them at the position, then in the group.
+  - **No draw is consumed.** A substitution that rolled dice would push the injured player's bad luck
+    into the stream every other snap reads.
+  - **A side with nobody to bring on plays with them.** Eleven is a rule of the sport, and a
+    ten-man formation is one the resolver has no way to resolve — the same argument §3.13's chart
+    makes when it falls back to any available body.
+
+Falsifier: across a season injuries occur in play, land on players who were in the snap that produced
+them, fall more often on the least durable, never appear on a snap that a pre-snap penalty
+cancelled, and **a player forced out takes no further snap in that game.**
+
+### 3.9 Timeouts and the clock — added 2026-08-13
+
+`Situation.timeoutsRemaining` was written at the kickoff, reset at halftime, and **decremented
+nowhere**. A timeout was a number on a scoreboard, while §3.2 sells it as one of the five things a
+coach may change mid-match.
+
+- **Both sides are asked after every snap that left the clock running, defence first.** The side that
+  usually needs the clock stopped is the one without the ball; asking the offence first would let it
+  spend the timeout the defence was about to.
+- **Only a trailing side spends one**, and only inside its own window: a defence from two and a half
+  minutes, an offence from under a minute. The defence's window is wider because it is buying
+  possessions rather than seconds.
+- **The rule is the coordinator's default, not a law.** It lives in the caller, so a coordinator
+  personality can be worse than arithmetic and the player can override it — which is what makes it a
+  decision rather than a simulation detail.
+- **A spent timeout is visible in the situation**, so the determinism fingerprint already sees it and
+  a match view can read the count without the engine keeping a second record of the same fact.
+
+**Challenges are deliberately not built here, and §3.2's promise is outstanding rather than
+withdrawn.** A challenge is a bet on a fact — was the ball out before the knee — and this engine does
+not record facts at that resolution: it resolves a snap to an outcome and a set of duels, with no
+notion of a spot that could have been wrong. Building one would mean inventing a truth beneath the
+outcome so a review could contradict it, which is a modelling decision the owner should take rather
+than one that arrives inside a clock-management change. Recorded as open work in `docs/STATUS.md`;
+the alternative is to strike challenges from §3.2, which is also the owner's call.
+
+Falsifier: timeouts are spent in real games, only by a trailing side, never below zero, and a half
+that ends with a trailing team holding all three inside the last minute is a defect in the rule.
+
+### 3.10 Weather — added 2026-08-13
+
+`03` §1.1's Kick row named weather as an input and nothing else in the engine had ever heard of it:
+no state, no derivation, no effect. A November game played exactly like a September one.
+
+Four conditions — clear, wind, rain, snow — because each has to change a decision. A fifth that read
+like a third of another would be flavour, and `§5`'s rule against decorative traits applies to the
+sky as much as to a player.
+
+- **Wind costs a kick more than it costs a throw**, rain costs both and loosens the ball, snow costs
+  everything. Two tables rather than one weather term, because a single number would make a windy day
+  and a wet one the same day with different words.
+- **It is drawn from the game's own seed** when the caller does not state it, so a replay plays the
+  same weather, and a scheduler that knows the venue can override it.
+- **Late weeks are colder**: the clear share falls as the season runs, and snow is unreachable until
+  the season is late enough for it. That is a season shape, not a climate model — this game has a
+  generated map with real regions on it, and tying weather to latitude is a larger piece of work with
+  a larger claim behind it. The simplification is stated rather than hidden.
+- **The calibration harness walks the week across its sample.** The real seasons those bands come
+  from contain November; a harness that played every game in September would calibrate the engine
+  against conditions the game does not have.
+
+Falsifier: every condition occurs across a season; completion rate and field-goal rate are both lower
+in snow than in clear weather; and a game replays with the same conditions it was first played in.
+
+### 3.11 What a game records — added 2026-08-13
+
+The statistical vocabulary was four numbers: passing, rushing and receiving yards, and touchdowns.
+All three yardage figures are offensive, so **every defender and every specialist in the world
+accumulated nothing**, in any season, ever — and no rate statistic was computable anywhere in the
+game, because nothing counted an attempt.
+
+That is not a missing readout. It caps awards, records, scouting, player valuation and half of the
+density model's analytical surfaces at the offensive skill positions, permanently and invisibly. A
+`§11.3.3` trait can have mechanical bite that nothing can ever see, and a defender can have a career
+with no evidence in it.
+
+The vocabulary is now the one a box score needs: attempts and completions, carries, targets and
+receptions, interceptions thrown and sacks taken; tackles, sacks, interceptions, passes defended and
+forced fumbles; field goals and tries attempted and made; punts and returns. Thrown touchdowns and
+scored touchdowns are counted separately, because they are different things and adding them
+double-counts every scoring pass.
+
+Three rules keep it honest:
+
+- **Sparsely written.** A line stores only its non-zero counters. FSC-003 is a release blocker about
+  save size, and widening a per-player-per-game record from four fields to twenty-six without this
+  would be a straightforward way to make it worse.
+- **Derived, never re-drawn.** The abstracted model computes its counters arithmetically from the
+  team totals it has already produced. A box score that rolled its own numbers would consume draws,
+  moving every seeded output that exists today, and could contradict the team line it came from.
+- **One number, two views.** A defence's sacks *are* the offence's sacks taken; takeaways are
+  giveaways. They are derived from a single figure rather than from two plausible ones, so the two
+  halves of a box score cannot disagree.
+
+A season record is the sum of its games in the same vocabulary, rather than a second differently
+shaped record to keep in step. Records written before this widening still read: the old flat
+counters are recognised on decode, which is why the root schema version does not move — `GameState`
+requires an exact match with no migration path, so a bump would reject every existing save outright.
+
+Falsifier: defenders accumulate; every rate statistic is computable; the team line and the player
+lines agree exactly on sacks and turnovers; an empty line writes one key; and a record written before
+the change still decodes with zeros where the new counters would be.
+
+**Honours follow the record — added 2026-08-13.** There were three award kinds, one of them offensive
+by construction and none of them reachable by a defender. That was not a shortage of honours; it was
+the record having nothing to give one for. With a defensive season countable there are six: champion,
+top offence, top defence, player of the year, and one for each side of the ball. The overall award
+stays, because a season with one outstanding player should be able to say so.
+
+Every kind is awarded in every tier in every season, unconditionally. `WorldIntegrity` requires a
+season archive to hold exactly one of each per tier, so an honour that is withheld in a quiet season
+is an integrity failure waiting to happen rather than a nicety.
+
+A defensive season is valued as volume plus the events that change games — tackles, with sacks,
+takeaways and forced fumbles weighted above them in the rules module. That is the same shape as the
+offensive value it sits beside, so neither side of the ball is scored on a scale the other cannot
+reach.
+
+### 3.14 The coach's own game is played — added 2026-08-13
+
+`GameEngine.play` had exactly one caller in the entire tree: the calibration harness. The scheduler's
+`userGame` step was declared and fell through to inactive, so **every game in a career — including
+the coach's own — was resolved by the abstracted model**, whose team strength is an average rating
+blended with prestige. The 630 seconds §2.1 budgets for the match, 64 % of the week, resolved as a
+number.
+
+- **`nonUserGames` now skips the controlled team's fixture** and `userGame` plays it. One game, one
+  recorder; a fixture recorded twice would either throw or silently overwrite.
+- **Both engines produce the same `GameSummary`.** Standings, statistics, records, the archive and
+  whole-root integrity never learn which engine produced a result. A second summary shape for played
+  games would be a second set of consumers to keep in step, and the first divergence would be silent.
+- **Both teams' game plans reach the field**, through the same `TacticalPlanSystem` the abstracted
+  path uses. Without that, the played match would be the one game the week's mandatory game-plan
+  decision could not touch — which would make the decision worth *less* when the coach watches than
+  when they do not.
+- **A plan leans, it does not script.** The caller wraps the baseline, which knows situational
+  football; the plan flips early-down calls, moves tempo and changes the rush. It never talks a coach
+  out of a field goal, because §3.1 has the coordinator calling plays *inside* the plan.
+- **Availability is the lifecycle's answer**, not a second one. A player the week already knows is
+  hurt does not take the field, through §3.13's chart.
+
+**What this still does not do.** The match is *played*, not *watched*: the call-in loop (§3.1) has no
+runtime path, so the coach's game resolves without ever pulling them in. That is the next slice and
+it is named rather than implied.
+
+Falsifier: the `userGame` step executes in a week the controlled team plays; no fixture carries two
+results; whole-root integrity holds after a played game; the same seed replays it exactly; and two
+opposite game plans produce different games.
+
+### 3.15 The call-in loop, connected — added 2026-08-13
+
+`TacticalCallInSystem.proposal` built exactly what §3.1 specifies — at most three options, each with
+its rationale and its risk, plus the coordinator's recommendation — and had **no production caller**.
+It was reachable only from a unit test. The agency model this game is designed around, ~25 calls a
+game and ~500 a season against the previous build's ~20, existed as a function nobody invoked.
+
+- **The engine raises, counts and applies; the caller answers.** That seam is what lets one loop
+  serve a coordinator that defers, a player at a phone, and a test — without the engine knowing
+  which.
+- **A call-in is raised per drive, not per snap**, because that is the decision the proposal models:
+  every option it offers *is* a whole `TacticalPlan`, so what it asks is what the offence does from
+  here rather than which play runs next.
+- **Deferring is answering.** §3.1 says a coach who trusts their coordinator is playing correctly, so
+  the default handler takes the recommendation and a whole deferred game is a legitimate game.
+- **The budget is the tunable one** from §3.1 — 25 by default, clamped to 12–40 — and it is spent by
+  raising, not by answering.
+- **An answer that names an option nobody offered is treated as a deferral.** A handler is allowed to
+  be wrong; the engine is not allowed to act on a plan that was never on the card.
+- **The answers are in the record and in the fingerprint.** Two runs that differ only in what a coach
+  said are different games, and the determinism gate has to see that.
+
+**What a coach advancing the week gets today**: the coordinator answers every call-in of their game.
+That is `02` §3.1's hand-off, and it is honest — but it is *not* the player answering. A surface that
+pauses a match and asks needs a match session the week can suspend on, which is UI-milestone work and
+is named here rather than implied.
+
+### 3.16 Difficulty — added 2026-08-13
+
+The whole difficulty model was one sentence — §3.1's call-in rate, "tunable from ~12 to ~40 as a
+difficulty and pacing setting" — and it was implemented nowhere: the range existed as a constant and
+nothing read it as a preference, while screen 6 promised "match choices" that were never specified.
+
+**Three named levels and three settings**, because a player deciding how hard this is should not have
+to reason about numbers before they have played a game, and because every setting has to change a
+decision they make or the pressure they are under:
+
+- **Call-ins per game** — §3.1's rate. How often the coach is pulled in.
+- **Delegation** — whether the staff may be handed responsibilities at all. A harder game makes the
+  coach do their own work.
+- **Job-security pressure** — how fast security moves against expectation. An easier game is
+  forgiving; it does **not** freeze the number, because a security figure that cannot move is the
+  prior build's documented failure rather than a difficulty setting.
+
+What is deliberately absent: sliders over hidden multipliers. A difficulty that only scales an
+invisible number produces the "progression too random" complaint §5 records about the reference
+title, arriving from a different direction — the player cannot tell what changed, so they cannot
+learn from it.
+
+**On the save, and connected — corrected 2026-08-13.** This section previously said difficulty is
+"not persisted in the save… the app layer owns it", and that was wrong in a way worth stating rather
+than editing away. All three settings are read by *engine* code — the call-in budget by the match
+loop, delegation by the career control system, job-security pressure by the career arc — and the
+engine cannot read an app-layer settings file without breaking the separation `CLAUDE.md` fixes. A
+difficulty the engine cannot see is a difficulty that changes nothing, which is what it was.
+
+It is also the better model on its own terms: difficulty is a property of *a career*, not of a phone.
+Two saves on one device may reasonably be played at two difficulties, and a save carried to another
+device should not quietly change how hard it is.
+
+The schema objection was real and is answered rather than ignored: the field is **optional and
+omitted when absent**, so every save written before it existed still decodes against a schema with no
+migration path, and a world that never set one encodes to exactly the bytes it did before.
+`CoachWorldSettingsStore` keeps the **pre-career** choice — what a new save starts at — and the save
+is authoritative once a career exists.
+
+Where each setting lands:
+
+| Setting | Read by | What it changes |
+|---|---|---|
+| Call-ins per game | the match loop's call-in driver | how often the coach is pulled in — D1's whole time budget |
+| Delegation | `CareerControlSystem.setResponsibility` | the hardest level refuses the hand-off outright |
+| Job-security pressure | the career arc, weekly and at season end | how fast a job is lost, scaled rather than frozen |
+
+### 3.13 Who plays — the depth chart — added 2026-08-13
+
+FSC-008 records the depth chart as the missing piece behind tactical package and role eligibility.
+Two other things could not be true without it: the abstracted model rated a team by whole-unit
+averages, so **a starter and a fifth-stringer contributed equally to every result**, and §3.8's
+`forcedOut` — an injury bad enough to end a player's game — had nothing to hand the snap to.
+
+**Derived, not stored**, exactly as jersey numbers are (§4.1a) and for the same reasons. Order is a
+team's fact about players who change teams; availability changes weekly; a stored chart would need
+re-sorting after every injury, signing, transfer and cut, and any path that forgot would leave an
+injured player starting. Derived, it is right by construction.
+
+- **Unavailable players fall to the bottom, not off.** A chart that dropped the injured could not
+  show a coach who is missing and where they would have been.
+- **A lineup is eleven a side.** A position with nobody available falls through to the next-best
+  player in the group and then to the next-best body at all, because eleven players is a rule of the
+  sport and a roster hole is not a reason to line up with ten.
+- **Only overrides are worth persisting** — what a coach *changes* against the derivation. That
+  needs a surface to change it on, so it lands with the roster screens rather than here.
+
+Falsifier: the chart is a pure function of the roster and its availability, identical however the
+roster is ordered; a lineup never plays a player twice; and an unavailable player never starts.
+
+### 3.12 Advancing more than one week — added 2026-08-13
+
+`advanceWeek` was the only way to move time, so an offseason was a sequence of taps with a measured
+2.83-second wait behind each one. Every management game in the genre offers a
+continue-until-something-happens, and the reason is not impatience: **a week the coach has no
+decision in is a week they should not have to confirm.**
+
+`CareerSession.advance(weeks:)` runs up to the number asked for and **stops the moment something
+wants the coach** — a mandatory decision, a job offer, an employment change, or an error. It reports
+which, by name rather than by leaving a surface to work it out from the week count.
+
+It skips weeks that ask nothing. It never advances past a week that asks something, which is the
+whole difference between a fast-forward and a game playing itself.
+
 ---
 
 ## 4. The offseason
@@ -271,6 +697,82 @@ leaves, because the collision order shifts. Real squads renumber rarely and deli
 becomes visible — a number moving in a screenshot a player took last week — the fix is to persist
 the assignment per roster, and that is a schema change with a migration, not a tweak.
 
+### 4.2c Draft picks are assets — added 2026-08-13
+
+`ProMarketState.draftOrder` was a flat list of team identities, so **a pick was a position in a list
+rather than a thing anybody owned.** That made three ordinary mechanics of the professional tier
+impossible at once: trading a pick, trading a *future* pick, and knowing whose pick a slot originally
+was. The genre register found no mention of pick trading anywhere in the tree or the documents.
+
+- **A pick is described by its slot** — season, round, and the club whose finish earned it — and its
+  identity is derived from those three rather than drawn. Two runs of the same world describe the
+  same picks, and **next year's second-rounder can be traded before next year's draft is built**,
+  which is the whole reason clubs trade picks at all.
+- **The original club never changes.** That is what lets a readout say "their second-rounder" years
+  later, and what makes a pick a story rather than a slot number.
+- **Ownership decides who is on the clock**, not the order the slots were created in.
+- **A trade that would change nothing is refused**, not quietly ignored: a transaction that silently
+  did nothing is the worst kind of transaction bug.
+
+**Wired into the draft — amended 2026-08-13.** This section said the book was not yet authoritative
+and that `ProMarketState` still read `draftOrder` directly, which meant a traded pick changed nothing
+about who picked: the asset existed and the draft ignored it. Who is on the clock now reads
+ownership.
+
+- **Only the traded picks are stored.** A book of all 224 records saying "this club holds its own
+  pick" is save growth for a fact the order already states, against FSC-003. The order stays the
+  default and the persisted list is the exception list — optional and omitted when empty, so a
+  league where nobody has traded a pick encodes exactly as it did before picks were assets.
+- **A pick traded home stops being an exception.** Storing "this club holds its own pick" as an
+  exception that is not one is how an exception list rots.
+- **A trade that would change nothing is refused**, and so is a slot outside the draft.
+- **A new offseason drops what is past and keeps what is ahead.** Entries name their own season, so
+  trading next year's second-rounder — the reason identity is derived from the slot at all — survives
+  the offseason that would otherwise forget it.
+
+What is still absent is the *trade itself* as a coach action: this is the state and the rule, not a
+negotiation. Trading picks for players is a market surface with its own valuation question.
+
+### 4.2d A player has a price — added 2026-08-13
+
+§4.2 sells free agency as "waves, with competing bidders and a market that reprices as it moves".
+**There was no negotiation at all.** `ProMarketSystem.signFreeAgent` took a fully-formed `Contract`
+and applied it, so a club could sign the best player in the pool for the league minimum and nothing
+in the game objected; the league's own AI did exactly that, offering every free agent
+`rookieContract` — the same money for a 75-overall veteran as for an undrafted rookie. Free agency
+ran every offseason and nobody was ever negotiating.
+
+- **A player asks for a price, and it is theirs.** It comes from ability, above a stated replacement
+  rating below which a club can find the same player for nothing. An offer under the asking price is
+  refused, and the refusal carries both figures so a screen can say what the gap is.
+- **Age shortens the term, it does not cut the rate.** A player past their position's decline age
+  asks for what they are worth, for fewer years. Charging a veteran twice for their age — less money
+  *and* less security — is a punishment the genre does not model and the player would read as a bug.
+- **Standing is worth real money, but it is not a discount.** A player will take less to join a
+  better club, and that is one of the few things everybody knows about this market. They will not
+  take less than they are asking for, however famous the club: a club that could underpay by being
+  famous would make the biggest club in the league permanently the cheapest, which inverts the
+  pressure the tier is supposed to put on a good team.
+- **A short deal is worth less than its money says**, because it puts the player back on the market
+  sooner than they wanted.
+- **Ties break on identity**, so the same market resolves the same way in every process.
+
+**Every figure is a share of the cap, never a number of dollars.** The cap compounds at 7% a season,
+so it roughly quadruples across a twenty-season career: a star whose price is written in fixed
+dollars costs 5% of the cap in season zero and 1.3% in season twenty, and the market quietly stops
+existing halfway through the game the player actually plays. This is the same shape as the
+seed-from-`hashValue` defect — no single-season test can see it — and it is why the rate, the
+minimum, the value of prestige and the short-term penalty are all stated in ten-thousandths of the
+cap.
+
+**Calibrated against the generated payroll, not picked.** §4.2a's bootstrap commits 85% of the cap
+across 53 players, which is about 160 basis points each; a mid-band player asks about 155. So a
+whole roster re-signed at its asking price costs slightly more than the cap. That is the intended
+shape: keep a core, let depth walk, replace it at the minimum.
+
+Falsifier: a club signs a starter for the league minimum, or the same player's asking price is a
+materially different share of the cap in season twenty than in season zero.
+
 ### 4.2b The news feed — added 2026-08-12
 
 The living world reports itself. `DomainEventPayload` already fixes the mechanism — "Presentation
@@ -340,6 +842,98 @@ since a mistake that already shipped a claim is not the same as one caught befor
 - **Traits** are behavioural (durability, temperament, work ethic, clutch) and have mechanical bite
   in specific systems, never as flavour.
 
+### 5.1 Morale — added 2026-08-13
+
+There was none. `PeopleState` carried health, development and career records and no notion of how a
+player felt, so **a professional was never unhappy about anything** and college dissatisfaction
+existed only as portal intent. Every comparable game models this, and it is what makes a bench full
+of good players a problem rather than an asset.
+
+**Derived from what already happened, not stored and drifted.** Playing time against the team's
+games, the season the team is having, being hurt, and what the programme has invested in you are all
+facts the world already holds — so a reading is a function of the save rather than a second number to
+keep in step with it, it cannot silently disagree with the record it is drawn from, and it costs
+nothing in save size, which FSC-003 makes a live concern.
+
+- **Causal, like a development summary.** A reading carries its components, because a number a coach
+  cannot explain is a number they cannot act on.
+- **Playing time is the loudest term**, which is what the sport says: a good player who does not play
+  is the portal's most common cause and the professional tier's most common trade request.
+- **Winning is worth something to everybody**, so the team term is not weighted by playing time.
+- **Nobody is aggrieved before a game has been played.** A fresh world has no mutiny in it.
+- **NIL is the college investment term**; the professional equivalent is a contract, which is
+  negotiated rather than allocated, and is its own system.
+
+### 5.2 Discipline — added 2026-08-13
+
+§2.1 beat 5 lists discipline among the weekly roster actions and §11.3.3 names Discipline as the
+authoritative system for the `volatile` trait. **Neither existed.** There was no incident, no
+suspension, no discipline state, and nothing read `volatile` off the field — so the beat the week is
+built around was a heading with nothing under it, and the trait's named consumer was a promise.
+
+**The incident is derived; only the consequence is stored.** A week's file comes from a deterministic
+draw over the roster, so the same save shows the same names every time it is opened and nothing has
+to be kept in step with the roster. A suspension has to outlive the week it was handed down in, so
+that — and only that — is persisted, as an optional beside the injury it is shaped like.
+
+- **Four kinds, not free text**: timekeeping, conduct, team rules, off-field. The kind decides what
+  the suspension is worth, and a string cannot be reasoned about. Nothing here is a crime; this is a
+  football team's own discipline, which is the only kind a coach actually administers.
+- **Who turns up in the file** is `volatile` plus unhappiness plus a small base rate. That is the one
+  place §5.1's morale meets the roster: the player nobody plays and nobody pays is the one who misses
+  meetings. Suspending them costs morale in turn, so a coach who suspends everybody has a locker room
+  that is *more* likely to be in the file next week. Discipline is a decision, not a free action.
+- **The response is the coach's.** The game recommends and never acts: a simulation that suspended
+  players on the coach's behalf would be administering its own discipline.
+- **Two responses, not three.** A warning is missing on purpose — to mean anything it would have to
+  be remembered, since a second warning is worse than a first, and that is persisted state for a
+  system whose design is that only the consequence is stored. A button that recorded nothing and
+  changed nothing is the decoration D6 clause 4 forbids.
+- **A suspension is an absence, and the game already knows what one of those is.** It makes the same
+  `isAvailable` false that an injury does, on the same weekly countdown, so every depth chart,
+  personnel package and match handles it without being taught anything.
+
+**Not in the inbox, and that is a choice.** §2.1 makes discipline a roster action rather than a
+message, and an inbox item that asked for an answer outside the mandatory-decision path would be a
+second decision system to keep in step with the first.
+
+Falsifier: a suspended player takes the field, or a suspension outlives its stated weeks.
+
+### 5.3 Preseason camp — added 2026-08-13
+
+There was none. §11.3.1's calendar is twenty-one weeks and **every one of them is a game week**, so
+the season simply started: no camp, no position battles, no exhibition. Every comparable game opens
+here, and it is where a coach finds out which of last season's problems fixed itself.
+
+**Held at the boundary, not in a week of its own.** Adding a preseason week would move every dated
+system in the game — schedules, contracts, eligibility, the portal windows, the professional market
+phases — for a beat that does not need a week. Camp runs once as the season rolls over, after the
+college cycle and the walk-ons have finished assembling next season's rosters, so the players who
+report to camp are the players who will play. A professional who signs later in the offseason misses
+camp, which is also what happens.
+
+**It is the development pass, asked a different question.** Camp is `DevelopmentSystem` with the
+playing-time term switched off, because nobody has played yet and a camp that credited last season's
+snaps would be rewarding a season that is already over. Coaching, facilities, work ethic and the age
+curve all read exactly as they do in season. A second development model would drift from the first;
+this one cannot.
+
+**The report is derived from the receipt camp left.** A development summary names the attribute and
+the signed delta, so the pre-camp figure is the current one with that delta taken back out — nothing
+is stored twice. A battle is a position whose top two available players are within a stated gap, and
+it was *decided in camp* when reversing camp would put the challenger on top instead.
+
+**The window is stated rather than implied.** A lifecycle record keeps only its most recent
+development summary, so the camp report is readable until the season's first in-season checkpoint
+overwrites it. That is the window in which a coach reads one.
+
+**No exhibition games.** A friendly is a fixture, and fixtures are the schedule's business: it would
+need a game the standings ignore, statistics that do not count and a result nothing archives. That is
+its own change, and it is not what makes camp worth having.
+
+Falsifier: a season rolls over and no player's rating moved at camp, or a camp report names a
+battle at a position where the two players are not actually close.
+
 ---
 
 ## 6. Staff and scheme
@@ -350,6 +944,86 @@ since a mistake that already shipped a claim is not the same as one caught befor
   roster's fit to it modifies every matchup in the engine. Changing scheme is expensive and slow —
   it is the closest thing the game has to a strategic identity.
 - Staff are poached by other programmes when they perform. Continuity is a resource.
+
+### 6.1 Hiring and firing — added 2026-08-13
+
+§6 makes continuity a resource and §4.1 sells "coordinators poached, replacements hired" as an
+offseason beat. Neither was reachable: `CoachIntent` had seven cases and **none concerned staff**,
+vacancies resolved deterministically inside the weekly market step, and a coach could not hire or
+fire anybody. Screens 20 and 21 exist for a system that did not.
+
+- **A replacement, not a firing.** Whole-root integrity requires complete role coverage, so releasing
+  a coordinator on Tuesday and hiring one on Friday is a world that is invalid in between — and this
+  project validates a whole copied root on every transaction. One atomic swap keeps coverage true at
+  every point a save could be written.
+- **The shortlist is generated, not stored.** A persisted pool would have to be aged and pruned, which
+  is save growth and a bounded-collection problem; a market only has to be *stable*, and the same
+  world offers the same people to the same organisation in the same season.
+- **Prestige buys interviews.** Candidates are centred on what the organisation can attract, which is
+  the same argument §8 makes for recruiting and part of why prestige moves at all.
+- **It costs money** — the new salary plus what the outgoing contract still owes — so replacing an
+  expensive coach with a cheap one is not free, and a programme that cannot pay cannot hire. That is
+  what makes it a decision rather than a wish, and it is what §10's reserves are for.
+- **The coach's own seat is not theirs to fill.** §7's carousel decides who holds it; a head coach
+  hiring their own replacement would be resigning through the staff screen.
+
+### 6.1a Staff have careers — added 2026-08-13
+
+§6.1 recorded two things as open and they are now closed. Both were the same absence stated twice:
+**nothing about a coach ever changed**, so §6's "continuity is a resource" bought nothing and §4.1's
+"coordinators poached" was a sentence about a market that did not exist.
+
+**Coaches develop, bounded exactly as players are** — one attribute, one point, once a season. The
+terms are experience up to the age at which a coach has seen the job, decline past a stated age, how
+their organisation finished, and continuity: a coach who has been somewhere long enough to know it
+gets more out of the same season, which is the one place §6's resource pays.
+
+**Reputation follows results, not ability**, because reputation is what other clubs see. A
+coordinator on a winning team becomes poachable whether or not they actually got better, which is
+both true to the sport and the thing that makes a good season cost you something.
+
+**How a season went is read from the archived final ranking**, not the standings. Development runs at
+the boundary, after the table has rolled over, so the standings at that moment describe a season
+nobody has played. The archive is also what prestige moves on — one definition of a good season,
+used twice.
+
+**Coordinators are poached when they perform.** A club with a stated prestige gap over yours, whose
+own man is worse, takes them. Every poaching is four things at once, because whole-root integrity
+requires exactly one coach per role at every point a save could be written: the coordinator moves,
+the poacher's incumbent is moved aside into unemployment, the losing club hires a generated
+replacement, and both career records are written. The whole offseason's moves are refused wholesale
+rather than applied in part if the result does not validate — a half-applied offseason is the kind of
+corruption a save carries forever.
+
+- **The coach's staff are not exempt, and that is the point.** When the person poached held a
+  delegated responsibility, the delegation reverts to the coach: a delegation pointing at somebody
+  who now works elsewhere is an invalid root, and quietly keeping it would be worse than the loss.
+- **Head coaches are the carousel's business** (§7), not the staff market's. A head coach poached out
+  of their own seat would be resigning by simulation.
+- **Bounded per offseason**, and nobody moves twice. A market that moved everybody every year would
+  make continuity unbuyable rather than valuable.
+- **A lateral move is not a poaching.** Without a prestige gap, equals would trade coordinators
+  forever.
+
+**A defect found while building this, recorded rather than quietly fixed.** §6.1's hiring removed the
+outgoing coach from the staff store while leaving their career record behind, and gave the incoming
+coach no career record at all — two integrity failures, which means **every hire that system made
+produced a root that could not be saved**. Nothing caught it because no test asserted integrity after
+a hire. The outgoing coach is now unemployed rather than deleted (which is what an aged-out
+coordinator already becomes), the incoming one gets a career, and the transaction validates the whole
+root before it returns.
+
+**The spine is connected — added 2026-08-13.** "The roster's fit to it modifies every matchup in the
+engine" was false in both models: `SnapResolver` passed a literal zero for scheme fit at every call
+site, so `MatchupRules.schemeFitWeight` was a constant nothing multiplied, and the abstracted model
+carried each team's scheme into its profile and never read it. Every matchup now reads the
+**differential** between the two players' `schemeFit` ratings — a matchup is between two people, and
+a scheme that helped both equally should decide nothing.
+
+**Traditions are wired too — see §8.1.** An earlier note in this section said they were inert
+because `Programme` does not persist them. They *are* persisted, in `GameState.identities`, and
+always were; the claim was checked against the wrong type and is corrected in §8.1 rather than
+quietly dropped.
 
 ---
 
@@ -365,6 +1039,53 @@ Pressure is continuous, legible, and comes from named people.
 - **Everything arrives as an inbound event.** §6.0's second finding was that the previous build had
   **zero** of these: the game never initiated a conversation. Here, the inbox is the primary channel
   and always has something requiring an answer.
+
+**The inbox, added 2026-08-13 — and what it is made of.** It is **derived, never stored**, for the
+reason the news feed is (§4.2b): a save carries facts and the wording is computed, so copy can change
+without migrating anybody's league. Three kinds of item, in weight order:
+
+1. **What is being asked** — the pending mandatory decisions, wearing a sender. An item that asks is
+   a decision rather than a parallel copy of one, so there is no second decision system to keep in
+   step with the first, and answering an item is the career session's existing path.
+2. **What is being told** — a stakeholder group whose disposition has moved far enough from neutral
+   to say so. **A contented world is quiet**: a channel that speaks every week about nothing is the
+   dashboard this section argues against, and pressure that is always on is not pressure.
+3. **What happened** — the week's heaviest story, ranked by the same `historicalWeight` the archive
+   and the news feed use. One definition of important, used three times rather than three
+   definitions of it.
+
+Bounded at 24 and rebuilt weekly rather than accumulated. Derived items still take a deterministic
+identity from the world seed and the week, so a rebuilt inbox does not reshuffle under a reader.
+
+### 7.1 The locker room reads the room — added 2026-08-13
+
+All four stakeholders moved on the same signal: the table, with small biases on top. So the locker
+room was a fanbase with a close-game bonus, and §5.1's morale — built the day before — was consumed
+by nothing.
+
+**The locker room now reads morale, and it is the only stakeholder that does.** At season end its
+support carries a term from the share of the roster that is unhappy, so a season in which a quarter
+of the squad is aggrieved costs the coach support whatever the record says — and a settled squad pays
+it back. That is what routes playing time, NIL, injuries, traditions and §5.2's suspensions into
+§7's stakes, which is the whole reason morale was worth deriving.
+
+- **A share of the roster, not a count**, so it means the same thing at a programme carrying
+  eighty-five players and one carrying seventy.
+- **Silent in the middle**, for the reason the inbox is: a locker room with an opinion every season
+  about nothing is the dashboard this section argues against.
+- **At season end, not weekly.** The weekly pass is about the game just played, and a room's mood is
+  a thing a season produces rather than a result.
+
+**Retention already reads these facts, and is deliberately left alone.** The portal's intent policy
+scores playing time, roster path, relationship, NIL, team success and restlessness — morale's own
+inputs under other names — so adding a morale term there would double-count them. What morale
+uniquely adds that the policy cannot see is discipline and traditions, and changing what V1 scores is
+exactly what a versioned policy exists to prevent: that is a **V2**, taken deliberately, not a tail on
+another slice.
+
+**What is still missing:** `WorldScheduler.expiringInboundEvents` stays inactive, because nothing is
+stored to expire. An item with its own deadline — a recruit who needs an answer by Friday, an offer
+that lapses — needs persisted inbound state, and that is a schema change with its own slice.
 - Firing can happen in-season. The carousel can never dead-end: there is always at least one offer or
   an explicit year out of the game.
 
@@ -417,6 +1138,31 @@ career-length change rather than a whiplash. A season that produced no table mov
 Falsifier: held at a fixed rank, prestige must stop moving. An evolution that never settles is a
 random walk wearing a rule's clothes.
 
+### 8.1 What a tradition does — added 2026-08-13
+
+D6 clause 4: "A tradition the player cannot feel in the simulation is decoration." The type system
+enforced half of that — a tradition without a `TraditionEffect` does not compile — and **nothing read
+a single effect**, so every tradition in every generated world was exactly the decoration the
+decision forbids.
+
+All four kinds are now read:
+
+- **Loudest week** and **against a rival** both add home-field advantage, in the played game as well
+  as the abstracted one — a tradition that only moved the games nobody watches would be felt least in
+  the one game the coach is at. They **add**: a programme whose loudest week is its rivalry week gets
+  both, which is the game its generated tradition set is describing.
+- **A regional pipeline** adds interest from that region, which is what a recruiting tradition says
+  it is.
+- **A morale effect after a result** moves §5.1's morale, which is the first thing in this game with
+  morale for it to move.
+
+*Recorded because this session got it wrong first.* An earlier note said traditions were inert
+because `Programme` does not persist them and that wiring them meant a schema change. They are
+persisted — in `GameState.identities`, alongside colours and the venue — and always were. The claim
+was checked against the wrong type. It is corrected here in the open, in the same way §4.3 records
+the recruiting-budget mistake, because a wrong finding that has already been written down is not the
+same as one caught before it was.
+
 All of it fictional and original, guarded by the name-collision and trade-dress tests.
 
 ---
@@ -444,6 +1190,34 @@ Fifteen minutes, taught through the first real week rather than through cards. F
 `docs/OPEN-DECISIONS.md` D9. By the end the player has chosen a job with visible stakes, met a
 stakeholder, set a plan, made ~25 calls, seen a consequence, and been given a reason to advance.
 
+## 10. Money — added 2026-08-13
+
+Money existed in exactly two forms: the professional salary cap and the college NIL pot. **Neither is
+a budget.** There was no revenue, no facilities, no wage bill — nothing a coach could spend or run
+out of outside signing players — so a rich programme and a poor one developed players identically and
+"resources", generated on every programme since P2, changed nothing.
+
+- **Revenue is derived from prestige**, not stored. Revenue *is* a consequence of standing, and a
+  stored figure would be one more number to keep in step with it.
+- **Facilities are a rating on the shared 40–99 scale** and are worth one development point at the
+  top of it. Buildings help; coaching helps more. A facility bonus that outweighed a position coach
+  would make the staff decorative, which §6 explicitly is not.
+- **Reserves are what an organisation actually holds.** Spending returns whether it could: a budget
+  that goes negative is a budget nothing enforces.
+- **Staff wages are rating-derived**, like the professional contracts §4.2a generates, for the same
+  reason — a wage that ignored ability would make continuity free, and §6 makes continuity a
+  resource.
+- **Integer dollars**, never floating point, which is `CLAUDE.md`'s rule and why the cap is already
+  an `Int`.
+- **Optional on the organisation.** `GameState` demands an exact schema match with no migration path,
+  so nil means "not generated yet" and never "broke": a save written before money existed reads as an
+  ordinary programme rather than a bankrupt one.
+
+**What is deliberately not here:** ticket prices, facility construction projects, and a coach who can
+be outbid for their own staff. Each needs a surface to spend on and a market to spend into; this
+slice makes money exist and mean something, and says so rather than implying a management layer that
+is not built.
+
 ---
 
 ## 11. League structure and rules constants
@@ -465,12 +1239,33 @@ the legal tests.
 | Regular season | 13 weeks: 12 games and 1 bye | §2.3 |
 | Conference championships | week 14 | §2.3 |
 | Bracket | 8 teams, 3 rounds, weeks 15 to 17 | §2.3's ~17 weeks, exactly |
+| Bowls | 20 games, ranks 9–48, week 15 | §11.1a |
 | Season length | 17 weeks | The sum of the four rows above |
 | Scholarships | 85 | The sport's limit. Soak-asserted per programme (`03` §6) |
 | Initial signings per class | 25 | §4.3's "~25 signings" made exact |
 | Roster limit | 105 | Scholarship players plus walk-ons |
 | Eligibility | 4 seasons of competition within a 5-year clock | The redshirt year is the difference, and §4.1's redshirt decision is what spends it |
 | Portal windows | two: after the bracket, and in spring | §4.1 |
+
+### 11.1a The postseason tail — added 2026-08-13
+
+Ten conference championships and an eight-team bracket meant **126 of 134 programmes ended every
+season with nothing.** `01-RESEARCH.md` §6.5 reached the opposite conclusion and this document lost
+it: "Bowl games as a wide tail of small prizes / Most seasons end in a minor reward rather than
+nothing / **Yes.** → D8: 130 programmes, one champion; the tail is what keeps the other 129 playing."
+
+- **Forty programmes, twenty games, ranks 9 to 48.** A choice about how wide the tail is, not a rule
+  of the sport: about a third of the league has something to play for in the last week and the rest
+  has a season that ended.
+- **Played in the same week as the quarterfinals**, so the seventeen-week calendar §11.1 fixes does
+  not move.
+- **Paired neighbour by neighbour** — ninth plays tenth — rather than by the bracket's high-low
+  seeding. A prize whose pairing hands the best of the tail an easy win is a bye with a trophy.
+- **A bowl advances nothing.** It is a prize; a prize with a next round is a second bracket wearing a
+  different name.
+
+Falsifier: bowl participants are exactly the ranked programmes below the bracket, never a bracket
+team, never twice; and the season is still seventeen weeks.
 
 ### 11.2 The pro tier
 

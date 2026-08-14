@@ -62,6 +62,32 @@ public struct CareerSessionReceipt: Sendable, Equatable {
     public let result: CareerSessionResult
 }
 
+/// Why a multi-week advance stopped. `02` §3.12.
+///
+/// Named rather than inferred from the week count, because "it ran out of weeks" and "it hit a job
+/// offer in week three" are different events and a surface that has to work out which by arithmetic
+/// will eventually get it wrong.
+public enum CareerAdvanceStop: String, Codable, Sendable, CaseIterable {
+    case reachedRequestedWeeks
+    case mandatoryDecision
+    case jobOffer
+    case employmentChanged
+    case failed
+}
+
+public struct CareerAdvanceReceipt: Sendable, Equatable {
+    public let weeksAdvanced: Int
+    public let stoppedBecause: CareerAdvanceStop
+    public let projection: CareerProjection
+
+    public init(weeksAdvanced: Int, stoppedBecause: CareerAdvanceStop,
+                projection: CareerProjection) {
+        self.weeksAdvanced = weeksAdvanced
+        self.stoppedBecause = stoppedBecause
+        self.projection = projection
+    }
+}
+
 /// Actor-owned career state. No suspension occurs between validation and commit, so an intent
 /// cannot re-enter the session against a partially applied `GameState`.
 public actor CareerSession {
@@ -146,6 +172,54 @@ public actor CareerSession {
         return CareerSessionReceipt(
             projection: Self.makeProjection(from: state),
             result: .intent(resolved.result)
+        )
+    }
+
+    /// Advances up to `weeks` weeks, stopping the moment something wants the coach. `02` §3.12.
+    ///
+    /// `advanceWeek` was the only way to move time, so an offseason was a sequence of taps with a
+    /// measured 2.83-second wait behind each (B-4). Every management game in the genre offers a
+    /// continue-until-something-happens, and the reason is not impatience: a week the coach has no
+    /// decision in is a week they should not have to confirm.
+    ///
+    /// **It stops rather than skipping.** A mandatory decision, a job offer, an employment change or
+    /// an error ends the run and says which — the point is to skip the weeks that ask nothing, never
+    /// to advance past the ones that ask something.
+    public func advance(weeks: Int) throws -> CareerAdvanceReceipt {
+        var completed = 0
+        var stop = CareerAdvanceStop.reachedRequestedWeeks
+        while completed < max(0, weeks) {
+            try Task.checkCancellation()
+            if !state.pending.mandatoryDecisions.isEmpty {
+                stop = .mandatoryDecision
+                break
+            }
+            let employmentBefore = state.careerArc.status
+            let opportunitiesBefore = state.careerArc.opportunities.count
+            do {
+                _ = try resolve(.advanceWeek)
+            } catch {
+                stop = .failed
+                break
+            }
+            completed += 1
+            if state.careerArc.status != employmentBefore {
+                stop = .employmentChanged
+                break
+            }
+            if state.careerArc.opportunities.count > opportunitiesBefore {
+                stop = .jobOffer
+                break
+            }
+            if !state.pending.mandatoryDecisions.isEmpty {
+                stop = .mandatoryDecision
+                break
+            }
+        }
+        return CareerAdvanceReceipt(
+            weeksAdvanced: completed,
+            stoppedBecause: stop,
+            projection: Self.makeProjection(from: state)
         )
     }
 

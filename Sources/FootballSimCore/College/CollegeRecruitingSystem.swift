@@ -229,7 +229,14 @@ public enum RecruitingFitSystem {
         let relationship = recruiting?.relationships[prospectID]
         let maximumDistance = GameMap.width * GameMap.width + GameMap.height * GameMap.height
         let distance = min(maximumDistance, origin.squaredDistance(to: baseline.home))
-        let proximity = 10 - distance * 10 / maximumDistance
+        // `02` §8.1. A pipeline into a region is worth interest from that region — which is what a
+        // recruiting tradition says it is, and what nothing read until now.
+        let pipeline = TraditionEffects.recruitingBonus(
+            programmeID: programmeID,
+            prospectRegionID: origin.regionID,
+            in: state
+        )
+        let proximity = min(10, 10 - distance * 10 / maximumDistance + pipeline)
         let prestige = (baseline.prestige - SharedRules.ratingRange.lowerBound) * 10 / 59
         let rosterCount = baseline.rosterCounts[prospect.position] ?? 0
         let target = max(1, CollegeRules.initialRosterByPosition[prospect.position] ?? 1)
