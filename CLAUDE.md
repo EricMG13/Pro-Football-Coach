@@ -81,7 +81,7 @@ at. **There is no archive as of 2026-08-10** — the superseded documents were d
 | `docs/03b-ARCHITECTURE.md` | Module layout, engine/UI boundary, save architecture, test architecture |
 | `docs/04-UX-AND-DESIGN-SYSTEM.md` | Design system, screens, match view, the accessibility contract |
 | `*-v3.dc.html` (8 root sheets) | **The definitive design references** (owner-approved 2026-08-12): composition and states for the `04` §6.5 registry. Renders and index in `docs/proofs/design-references/`. A rendering — `04` still owns every value |
-| `docs/04b-AUDIT-RUBRIC.md` | The audit rubric: five dimensions, 0–4 anchors, P0–P3 severities |
+| `docs/04b-AUDIT-RUBRIC.md` | The audit rubric: eight dimensions, 0–5 anchors, P0–P3 severities (owner-corrected 2026-08-11; supersedes an earlier five-dimension 0–4 frame) |
 | `docs/05-IMPLEMENTATION-PLAN.md` | Phased build with per-phase gates |
 | `docs/06-AUDIT-DISPOSITION.md` | Disposition of the prior audit's P0/P1s and systemic patterns |
 | `docs/OPEN-DECISIONS.md` | Decision register D1–D14, each with an instrumented falsifier. **D11 closed 2026-08-09** |
@@ -137,9 +137,10 @@ Agent environments frequently have **no `swift` and no `xcodebuild`**, and the e
   iPhone 15-generation hardware and newer.** Offline. **Zero third-party app dependencies.**
   Third-party agent skills are development tooling only and must never be linked into the app.
   - **Changed from portrait-only by the owner on 2026-08-10.** Landscape is what lets the whole
-    120-yard field sit in frame at once with no camera pan — the arithmetic is in `04` §5.2 and the
-    consequences for every other screen are in `04` §4. It is declared in `App/project.yml` and
-    asserted by `OrientationPolicyTest`. Portrait is not a supported orientation.
+    120-yard field sit in frame at once with no camera pan — the arithmetic is in `01-RESEARCH.md`
+    §6.5 and the device window it resolves to is `04` §7 (rewritten 2026-08-12 under D15). It is
+    declared in `App/project.yml` and asserted by `OrientationPolicyTest`. Portrait is not a
+    supported orientation.
 - The 2D match view renders in **SwiftUI `Canvas` + `TimelineView`**. No SpriteKit, no Metal.
 - **Strict engine/UI separation.** The simulation runs headless and contains zero `import SwiftUI`.
 - **Determinism.** A given seed plus a given input state reproduces a match exactly, **across
