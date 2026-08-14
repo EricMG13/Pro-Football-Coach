@@ -352,11 +352,25 @@ Measured constraints, binding on every consumer:
 - **Body text over a lit world requires the deep panel — this is a contrast rule, not a taste
   one.** Floodlit's standard panel fill is white at 0.055; composited over the brightest point of
   the lit pitch (`#37A868`) it resolves to `#42AD70`, on which `content.primary` measures **2.69**
-  and `content.secondary` **1.42**. The deep fill `#08070E` is therefore specified at **α ≥ 0.78**,
-  not the 0.70 the prototype shipped, because 0.70 leaves `content.quiet` at 4.30 over that worst
-  case. At 0.78 the panel composites to `#122A22` over the brightest turf and to `#08080F` over
-  night, and `content.primary` / `content.secondary` / `content.quiet` measure 14.52 / 7.68 / 5.03
-  at worst. A standard panel may carry labels and figures over a lit world; it may not carry prose.
+  and `content.secondary` **1.42**. The deep fill `#08070E` is therefore specified at **α ≥ 0.82**,
+  not the 0.70 the prototype shipped. At 0.82 the panel composites to `#10241E` over the brightest
+  turf and to `#08080F` over night, and `content.primary` / `content.secondary` / `content.quiet`
+  measure 13.62 / 7.21 / **4.72** at the true worst case. A standard panel may carry labels and
+  figures over a lit world; it may not carry prose.
+
+  **Corrected from α ≥ 0.78 on 2026-08-14, and the correction is the interesting part.** The 0.78
+  figure was derived against bare `#37A868` — the brightest *turf* — and that is not the brightest
+  thing a panel actually sits over. Two lighter grounds were missed: the mown stripe lays white at
+  0.055 over the turf, and the pitch's **lamp beams** lay `#FFF2CE` at 0.55 over that. Composited,
+  the worst ground under a panel is `#AAD3A4`, not `#37A868`, and at 0.78 `content.quiet` measures
+  **4.23** there — a body-floor failure the original derivation could not see because it never
+  composited the light sources. The facility's stadium light bar is the next worst at 4.74, and the
+  film room's dust motes at 5.31. **0.82 is the lowest value that clears 4.5 against all of them**
+  (4.72); 0.80 reaches only 4.48 and still fails. The beam figure is deliberately pessimistic — a
+  2 pt beam under `blur(7)` never reaches its nominal 0.55 at any pixel — so the real margin is
+  wider than 4.72, and the rule holds without depending on composition keeping panels away from
+  light. `Palette.turfEdge` `#4FD08C` is brighter still but is **declared and never drawn**; it is
+  excluded on that basis, and the day it is drawn this derivation is void.
 - **`content.quiet` is `#8496AC`, not Floodlit's `#65788F`.** The prototype value measures
   4.37 / 3.85 / **3.32** and fails the body floor on every surface. The lift is a correction, and it
   is recorded here so it is not silently reverted to match the prototype.
@@ -520,8 +534,18 @@ Three things are settled here because the prototype and this section disagree:
 
 ### 6.3 Shape, spacing and touch
 
-- Base spacing steps: 4, 6, 8, 12, 16, 20. **Unchanged under Floodlit** — the prototype's 7, 9, 11,
-  14, 15 and 21 snap to this scale on import. A design system with two spacing scales has none.
+- Base spacing steps: 4, 6, 8, 12, 16, 20. **Unchanged under Floodlit** — the prototype's values
+  snap to this scale on import. A design system with two spacing scales has none.
+
+  The measured set is wider than the first pass recorded: the imported half uses
+  0, 1, 2, 3, 5, 7, 8, 9, 10, 11, 12, 14, 18 and 30. **The snap, stated once so it is not
+  re-decided per call site (2026-08-14):** 2 and 3 → **4**; 5 and 7 → **6**; 9 and 10 → **8**;
+  11 and 14 → **12**; 18 → **16**; 30 → **20**. `0` stays `.zero`, which is an absence of spacing
+  rather than a step, and `1` is `Shape.hairline`, which is a rule width and not spacing at all.
+  Two of these are judgement rather than arithmetic and are called out so a reviewer can disagree:
+  **14 → 12** rounds down where 16 is equally near, because 14 is used as a panel inset and the
+  panel scale below it is 12; **30 → 20** is the one genuine compression, and any site where 20
+  visibly fails is a layout question to raise, not a licence to reintroduce 30.
 - **Corners are cut asymmetrically (2026-08-14).** A panel reads as a deliberate shape rather than a
   default card because its four radii differ. `RoundedRectangle` cannot express this, so the shape
   is drawn by hand as `CutCorner(topLeading:topTrailing:bottomTrailing:bottomLeading:)`:
@@ -643,7 +667,7 @@ depends on; 29–32 are the proportion vocabulary; 33–35 are drawn identity ma
 | # | Registry name | Purpose |
 |---|---|---|
 | 24 | `CutCorner` | The asymmetric panel/row/action shape of §6.3, with its inset conformance |
-| 25 | `GlassPanel` | Blurred pane at depth: standard and deep, the deep fill at α ≥ 0.78 per §6.1 |
+| 25 | `GlassPanel` | Blurred pane at depth: standard and deep, the deep fill at α ≥ 0.82 per §6.1 |
 | 26 | `GrainOverlay` | Fixed-seed noise tile above every screen; dropped under Reduce Transparency |
 | 27 | `WorldBackdrop` | The register made visible — pitch, facility, film room, desk |
 | 28 | `Stage` | Safe-area-owning content inset; owns physical edges, never a fixed device rect |
@@ -664,6 +688,21 @@ replacement for one, and §6.1's heat banding gives the third.
 **Promotion status.** Entries 24–35 enter **provisional** under the P11 three-production-uses rule,
 exactly as 5–23 did. They are drawn from a prototype with five screens, so none has three production
 uses yet; the proof gate in §10 is where 24–32 earn theirs.
+
+**Entries 5–23 are built ahead of that rule — owner decision, 2026-08-14.** The rule below says a
+screen-local implementation owes its extraction *when promoted*, and promotion wants three
+production uses; with five screens built, most of 5–23 would wait on families that do not exist.
+The owner directed that all nineteen be built as named types in the design-system phase instead, so
+the 59 remaining families are built against a standing registry rather than against nine extractions
+and ten absences. **Every one of 5–23 therefore ships provisional**, on fewer than three uses, and
+the three-uses rule still governs promotion *out* of provisional — this decision changes when a type
+is written, not what earns it a permanent place. The nine with existing implementations
+(5–7, 10, 17, 19–22) are extractions and carry their real use counts; the ten without
+(8, 9, 11–16, 18, 23) are written against the §6.5 reference sheets that specify them —
+`table-v4` for `ColumnSet` and `ListControls`, `person-v4` for `DeltaMark` and `ConfidenceTag`,
+`readout-v4` for `Meter` and `OpposedBar`, `failure-v4` for the failure set — so none is invented
+against an imagined screen. Where a sheet and a later real use disagree, the use wins and the type
+is corrected; that is the cost this decision knowingly takes on.
 
 Adoption cost, carried knowingly: the registry is an audit surface (each entry needs its
 three-production-uses record or an explicit provisional mark); screen-local implementations of
@@ -693,7 +732,7 @@ grid in three different contexts. What is never permitted is an unbounded class.
 | **Broadcast marks** (§9) | 3 | possession wedge, key-moment mark, timeout mark (`TimeoutMarks`, registry 35) | Match Day chrome only; each carries a printed or spoken value beside it, never counts alone |
 | **Rating marks** (§5 identity) | 1 | star blade (`StarRating`, registry 33) | Recruiting and draft evaluation only; always beside its printed figure |
 | **Empty-state marks** (`EmptyState`, registry 23) | 6 | `person.3`, `person.crop.rectangle`, `list.number`, `checkmark.circle` | Empty and unavailable states only. Enumerated but **not a learned class**: every empty state carries a title and a description sentence, so the mark orients and the words inform. Bounded anyway, because an unbounded class is what this table exists to prevent |
-| **Control furniture** | not a learned class | `chevron.*`, `magnifyingglass`, `line.3.horizontal.decrease`, `rectangle.3.group`, `pause.fill`, `forward.end.fill`, `speedometer`, `checkmark`, `person.2`, `plus`, `xmark` | Navigation and controls; every one carries a visible or accessible label, so none is a symbol the player must learn. §6.3 anticipates the icon-first utilities (inspect film, delegate, pause, speed, tactical view) and requires their accessible names to stay explicit |
+| **Control furniture** | not a learned class | `chevron.right`, `chevron.up`, `chevron.down`, `magnifyingglass`, `line.3.horizontal.decrease`, `rectangle.3.group`, `pause.fill`, `forward.end.fill`, `speedometer`, `checkmark`, `circle`, `sparkles.tv`, `person.2`, `plus`, `xmark` | Navigation and controls; every one carries a visible or accessible label, so none is a symbol the player must learn. §6.3 anticipates the icon-first utilities (inspect film, delegate, pause, speed, tactical view) and requires their accessible names to stay explicit |
 
 **Total learned symbols: 25** (12 status + 2 change + 2 obligation + 5 session + 3 broadcast +
 1 rating). **Moved from 23 on 2026-08-14 by the owner decision adopting Floodlit**, which brings two
@@ -711,6 +750,34 @@ when a class grows.** Filled and unfilled variants of one symbol are one member:
 is `hand.raised`, and `circle` is the unchecked state of `checkmark.circle.fill` rather than a
 thirteenth status symbol or a new class. Where two components want the same meaning they take the same member — a
 delegated receipt is `person.badge.clock` on every surface, not `person.fill.checkmark` on one.
+
+**The chevron family is enumerated per direction, not globbed (corrected 2026-08-14).** The control
+furniture row read `chevron.*` until this date, and the glob was **invisible to the test that reads
+this table**: the register reader captures members with `` `([a-z][a-zA-Z0-9.]*)` `` and the `*`
+blocks the closing backtick, so `chevron.*` contributed no members at all and *any* chevron the UI
+drew would have been reported unregistered. It went unnoticed because the second defect below hid
+the only chevrons in the tree. A direction is now an explicit member: `chevron.right` (disclosure
+and inspect route), `chevron.up`/`chevron.down` (sort direction on `DenseTable`'s sortable header).
+`chevron.left` is deliberately absent — no surface carries a back affordance, because §3 keeps
+navigation in the composition; it joins the row when one is designed, not before.
+
+**Selection reuses the obligation glyph rather than minting a third circle.** A choice list marks
+its selected row with `checkmark.circle.fill` — already a member, as the Obligation class's
+*complete* — against `circle` unselected, which the growth rule above already treats as that
+symbol's unchecked state and which is now listed so the test can see it. `record.circle.fill` is
+**not** a member and must not be drawn.
+
+**The register's enforcing scan has a coverage boundary, and it is being closed in the same phase
+(recorded 2026-08-14).** G-08's test matches `system(?:Name|Image):\s*"…"` — a literal *immediately*
+after the label — so a symbol named by a ternary, a variable or a helper's return value is invisible
+to it. Five symbols were being drawn in production and seen by nothing: `chevron.up`/`chevron.down`
+(`RosterView`, ternary), `record.circle.fill`/`circle` (`CoachingHQView`, ternary) and `sparkles.tv`
+(`MatchDayView`, via a `(title:symbol:)` helper). This is the coverage-boundary defect `CLAUDE.md`
+names — *"the test's coverage boundary became the quality boundary"* — wearing a contract's clothes,
+and the register's claim above to hold **every** symbol the product draws was false while it stood.
+The scan is widened to tokenise string literals properly (`LegalTests` already carries the state
+machine that does this) and to test every symbol-shaped literal in a drawing file against this
+table. This paragraph stays until that limb is green on a machine with a compiler.
 
 Growth rule: a new symbol displaces an existing member of its class or the class cap moves, and a
 class cap moves only by owner decision recorded here. §4.5 names vocabulary growth as the leak

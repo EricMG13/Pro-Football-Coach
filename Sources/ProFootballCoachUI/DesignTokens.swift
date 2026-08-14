@@ -130,6 +130,8 @@ public enum CoachWorldTokens {
     public static let fieldLabel = ColorValue(hex: 0xFFE196)
 
     /// The opaque equivalent of the deep glass panel, and what every panel becomes under Reduce
-    /// Transparency. `04` §6.1 specifies α ≥ 0.78 for the fill this flattens.
-    public static let deepPanelOpacity: Double = 0.78
+    /// Transparency. `04` §6.1 specifies α ≥ 0.82 for the fill this flattens — raised from 0.78 on
+    /// 2026-08-14, because the original derivation composited bare turf and missed the mown stripe
+    /// and the lamp beams above it, where 0.78 left `content.quiet` at 4.23.
+    public static let deepPanelOpacity: Double = 0.82
 }

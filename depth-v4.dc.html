@@ -229,7 +229,7 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid #1E2735;vertical-align
   <div class="lit-ground" style="margin-top:10px">
     <div class="panel-deep">
       <div class="t" style="color:#F6FAFF">Deep panel</div>
-      <div class="s" style="color:#A9BACE">#08070E at α ≥ 0.78. content.quiet measures 5.03 here at
+      <div class="s" style="color:#A9BACE">#08070E at α ≥ 0.82. content.quiet measures 4.72 here at
         worst — clears the body floor. This panel may carry prose.</div>
     </div>
   </div>
@@ -240,10 +240,15 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid #1E2735;vertical-align
         pitch (#37A868) it resolves to #42AD70, on which content.primary measures <b>2.69</b> and
         content.secondary <b>1.42</b> — well below even the 3:1 non-text floor. A standard panel is
         for labels and figures, never prose, when it sits over a lit world.</li>
-      <li><b>The deep fill is #08070E at α ≥ 0.78</b> — not the 0.70 the prototype shipped, which
-        left content.quiet at 4.30 over that same worst case. At 0.78 the panel composites to
-        #122A22 over the brightest turf and to #08080F over night; content.primary / secondary /
-        quiet measure 14.52 / 7.68 / 5.03 at worst — all clear the body floor.</li>
+      <li><b>The deep fill is #08070E at α ≥ 0.82</b> — not the 0.70 the prototype shipped.
+        At 0.82 the panel composites to #10241E over the brightest turf and to #08080F over night;
+        content.primary / secondary / quiet measure 13.62 / 7.21 / 4.72 at the true worst case —
+        all clear the body floor.</li>
+      <li><b>Corrected from α ≥ 0.78 on 2026-08-14.</b> That figure was derived against bare turf,
+        which is not the brightest ground a panel sits over: the mown stripe lays white at 0.055
+        over it and the pitch's lamp beams lay #FFF2CE at 0.55 over that, giving #AAD3A4 — where
+        0.78 left content.quiet at <b>4.23</b>, below the body floor. 0.82 is the lowest value that
+        clears 4.5 against every world's light source; 0.80 reaches only 4.48.</li>
       <li><b>At most two material panels are live per screen</b> — the dominant object's and one
         secondary region's. Every other panel takes the opaque equivalent (world.work / world.raised
         from Card A of tokens-v4). A screen that wants a third has a composition problem, not a
@@ -258,7 +263,7 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid #1E2735;vertical-align
     <ul>
       <li>World level: the backdrop itself, atmosphere, carries no text.</li>
       <li>Standard panel: white fill at 0.055 opacity: over the brightest lit world, content primary measures 2.69 to 1, below the body floor — labels and figures only.</li>
-      <li>Deep panel: fill 08070E at 0.78 opacity or greater: content quiet measures 5.03 to 1 at worst, clearing the body floor — may carry working prose.</li>
+      <li>Deep panel: fill 08070E at 0.82 opacity or greater: content quiet measures 4.72 to 1 at worst, clearing the body floor — may carry working prose.</li>
       <li>Budget: at most two material panels live per screen; every other panel takes its opaque equivalent.</li>
     </ul>
   </div>
@@ -278,7 +283,7 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid #1E2735;vertical-align
       <li><b>Verdict line:</b> not a READOUT-class card.</li>
       <li><b>Density-budget cost:</b> the two-material-panel budget is stated here as the rule other
         cards' density statements assume.</li>
-      <li><b>Traceability:</b> every ratio and the α ≥ 0.78 figure are quoted from 04 §6.1 as amended
+      <li><b>Traceability:</b> every ratio and the α ≥ 0.82 figure are quoted from 04 §6.1 as amended
         2026-08-14.</li>
     </ol>
   </div>
@@ -381,7 +386,7 @@ td{font-size:11px;padding:4px 8px;border-bottom:1px solid #1E2735;vertical-align
       <div class="lit-ground" style="height:150px">
         <div class="panel-deep" style="width:100%">
           <div class="t" style="color:#F6FAFF">Prep report</div>
-          <div class="s" style="color:#A9BACE">Deep glass at 0.78, sheen upper left, grain above.</div>
+          <div class="s" style="color:#A9BACE">Deep glass at 0.82, sheen upper left, grain above.</div>
         </div>
       </div>
     </div>
