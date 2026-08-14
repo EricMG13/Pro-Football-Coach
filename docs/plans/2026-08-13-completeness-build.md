@@ -124,18 +124,24 @@ The plan is complete in the sense the instruction meant — every register row i
 escalated — and **incomplete in the only sense that matters for shipping**: none of it has been
 compiled. In order:
 
-1. **Build.** `swift build` and `swift test`. Expect compile errors: 28 slices of Swift were written
+1. **Build.** `swift build` and `swift test`. Expect compile errors: 34 slices of Swift were written
    against a repository nobody could type-check, and the honest prior is that some of it does not
    compile the first time.
 2. **Re-pin what moved.** `EngineTests`'s two play-by-play fingerprint literals move with any change
-   to snap resolution — penalties, kickoffs, weather, in-play injuries and the conversion all touch
-   it. Recompute them by running the binary twice in **separate processes**; that separation is the
-   whole point of the pin. **A fabricated pin is worse than a red one.**
-3. **Re-run the soaks and re-read the bands.** M1, M2 and the pro soak. Two slices are expected to
-   move numbers: camp adds a third development pass per season, and negotiation makes free agency
-   cap-bound for the first time. Both are bounded by construction — camp respects `potential`, and a
-   replacement-level free agent asks the minimum — but "bounded in argument" is not "measured".
+   to snap resolution — penalties, kickoffs, weather, in-play injuries, the conversion and the
+   forced-out substitution all touch it. `ArchitectureTests`'s two root fingerprints move too:
+   `pinnedAdvancedRootFingerprint` for the statistics rewrite and the trait activation, and
+   `pinnedRootFingerprint` for the trait activation alone — every other persisted addition in this
+   branch is optional and omitted when absent, so if the generated-root pin moves for any other
+   reason, treat that as a finding rather than routine. Recompute each by running the binary twice
+   in **separate processes**; that separation is the whole point of the pin. **A fabricated pin is
+   worse than a red one.**
+3. **Re-run the soaks and re-read the bands.** M1, M2 and the pro soak. Three slices are expected to
+   move numbers: camp adds a third development pass per season, negotiation makes free agency
+   cap-bound for the first time, and staff poaching moves coordinators between clubs every offseason.
+   All three are bounded by construction — camp respects `potential`, a replacement-level free agent
+   asks the minimum, and poaching is capped per season — but "bounded in argument" is not "measured".
 4. **Re-run the two legal tests**, which nothing in these slices should have touched, precisely
    because that is the kind of claim worth checking rather than assuming.
-5. **Then, and only then**, `docs/STATUS.md`'s twenty-eight "written, unverified" entries can start
+5. **Then, and only then**, `docs/STATUS.md`'s thirty-four "written, unverified" entries can start
    becoming something else.
