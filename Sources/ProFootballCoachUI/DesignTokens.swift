@@ -52,6 +52,94 @@ public enum CoachWorldTokens {
         public static let squareCut = Cut(0, 0, 0, 0)
     }
 
+    /// The proportion vocabulary of `04` §6.5 entries 29–32.
+    ///
+    /// **The proportion rule:** where a datum is a share of a whole, the form is an arc, not a bar
+    /// — the same primitive from a 26 pt table cell to a 212 pt dial, which is what holds the
+    /// language together at density. `ShareBar` is the stated exception, for comparisons that must
+    /// sit inline in a row. An arc always keeps its printed figure: the ring is a second reading of
+    /// a number, never a replacement for one.
+    public enum Gauge {
+        /// The large form.
+        public static let arcLineWidth: CGFloat = 11
+        /// The table-scale ring — the smallest size at which the arc still reads.
+        public static let ringDiameter: CGFloat = 26
+        /// Ring stroke as a fraction of diameter, with a floor so it survives at table scale.
+        public static let ringWidthRatio: CGFloat = 0.135
+        public static let ringWidthFloor: CGFloat = 3
+        /// The dial: concentric arcs, one per attribute, radius carrying the value.
+        public static let dialDiameter: CGFloat = 212
+        public static let dialLineWidth: CGFloat = 7
+        public static let dialTrackSpacing: CGFloat = 10
+        public static let dialCoreInset: CGFloat = 6
+        /// The inline share.
+        public static let shareBarHeight: CGFloat = 4
+
+        /// Ratings are 40–99 (`CLAUDE.md`), so a full ring is 99 and an empty one 40. A gauge that
+        /// ran 0–99 would show every player as three-quarters full and read as noise.
+        public static let ratingScale: ClosedRange<Double> = 40...99
+
+        /// The arc's gradient, light stop to deep. Non-text by construction: `04` §6.5's
+        /// proportion rule keeps a printed figure beside every arc, so these carry no reading of
+        /// their own. The light stop is the same value `fieldLabel` takes — one gold, two jobs,
+        /// which is fine where neither job is text on the other.
+        public static let arcLight = ColorValue(hex: 0xFFE196)
+        public static let arcDeep = ColorValue(hex: 0xD89713)
+
+        /// The unfilled part of any arc. Non-text by construction — the printed figure carries the
+        /// value, so the track needs to be visible, not legible.
+        public static let track = AtmosphereStop(0xFFFFFF, alpha: 0.09)
+        public static let dialTrack = AtmosphereStop(0xFFFFFF, alpha: 0.06)
+        public static let dialCoreHighlight = AtmosphereStop(0xFFFFFF, alpha: 0.14)
+    }
+
+    /// Controls — `04` §6.5 entries 1, 2 and the drawn marks 33–35.
+    public enum Control {
+        /// The committing action. `04` §6.3's 44 pt floor is the minimum height, not a suggestion.
+        public static let actionHeight: CGFloat = 44
+        public static let actionCompactHeight: CGFloat = 36
+        public static let actionTextSize: CGFloat = 14
+        public static let actionCompactTextSize: CGFloat = 12
+        public static let actionInset: CGFloat = 20
+        public static let actionCompactInset: CGFloat = 16
+        /// Tracking as a fraction of size, for the uppercase action label.
+        public static let actionTracking: Double = 0.09
+        /// The gold field's own light — a committing action is the one thing that glows, because
+        /// it is the one thing that moves the game forward (`04` §5).
+        public static let actionGlowRadius: CGFloat = 13
+        public static let actionGlowOffsetY: CGFloat = 2
+        public static let actionGlowOpacity: Double = 0.45
+
+        /// The route pill. 12 pt, which is `TypeRole.authoredFloor` — the chrome sheet draws it at
+        /// 12 and `04` §6.2 floors authored type there, so the two agree.
+        public static let pillTextSize: CGFloat = 12
+        public static let pillInset: CGFloat = 13
+        public static let pillHeight: CGFloat = 32
+        public static let pillTracking: CGFloat = 1
+        public static let pillGhostFill = AtmosphereStop(0xFFFFFF, alpha: 0.04)
+        public static let ghostFill = AtmosphereStop(0xFFFFFF, alpha: 0.05)
+
+        /// Recruiting stars, drawn as blades. `04` §6.6 caps the Rating-marks class at one member,
+        /// and it is always beside its printed figure.
+        public static let bladeHeight: CGFloat = 12
+        public static let bladeAspect: CGFloat = 0.667
+        public static let bladeGap: CGFloat = 2
+        public static let bladeEmpty = AtmosphereStop(0xFFFFFF, alpha: 0.14)
+
+        /// Timeouts remaining; a filled mark is one in hand. A Broadcast-marks member (§6.6),
+        /// so it always carries a printed or spoken count beside it.
+        public static let timeoutMarkWidth: CGFloat = 13
+        public static let timeoutMarkHeight: CGFloat = 3
+        public static let timeoutGap: CGFloat = 3
+        public static let timeoutSpent = AtmosphereStop(0xFFFFFF, alpha: 0.22)
+
+        /// The club mark's boundary. Team fills always carry one (`04` §6.1's team-fill rule),
+        /// because generated colour cannot be assumed to clear the floor against any surface.
+        public static let markBoundary = AtmosphereStop(0xFFFFFF, alpha: 0.34)
+        public static let pennantWidth: CGFloat = 20
+        public static let pennantHeight: CGFloat = 24
+    }
+
     /// Depth, as `04` §6.1 permits it: real elevation, never decorative shadow.
     ///
     /// `04` §6.1 forbids "decorative shadow" and "depth that is not real depth". A panel held above

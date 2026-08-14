@@ -414,6 +414,7 @@ that rule.
 | Desk | ground | `#100E16`, `#07060B` — the same room, unlit |
 | Facility | floor | `#1A1421`, `#0C0912`, `#05040A` |
 | Facility | warm overhead pools | `#FFCE6A` |
+| Gauge | arc gradient | `#FFE196` (light stop, the same value `field.label` takes) → `#D89713` (deep stop) — non-text: an arc always keeps its printed figure |
 | Facility | vignette | `#08060D` α0.55, `#0C0912` α0.12, `#040308` α0.86 |
 | Facility | window band | `#0A1322`, `#0B1626`, `#080D18` |
 | Facility | distant stadium glow | `#78FFBE` α0.28, `#50C896` α0.07 |
