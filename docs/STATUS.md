@@ -883,6 +883,84 @@ The three proof screens (`04` §10) have not been rebuilt. U-6's finding stands 
 entry: 57 families still have no production view. What changed is that they now have a verified,
 ten-sheet design reference to build against instead of a stale eight-sheet one.
 
+### 2026-08-14 — Phase 1: the design system exists in Swift, and none of it has compiled
+
+**All 35 of `04` §6.5's registry entries now resolve to a Swift type.** Before this phase four did;
+the other 31 were anonymous inline code inside five screens, or absent entirely. Canon has claimed
+since 2026-08-12 that registry "names map 1:1 onto Swift types in `Sources/ProFootballCoachUI/`",
+and that claim was false for 31 of 35 the whole time, because no test read the table. It is now
+enforced rather than asserted.
+
+**What landed.** `Sources/ProFootballCoachUI/DesignSystem/` — 13 files: `Stage`, `CutCorner`,
+`GlassPanel`, `GrainOverlay`, `WorldBackdrop`, `Typography`, `Rules`, `Gauges`, `Controls`,
+`Marks`, `Readouts`, `DenseTable`, `ListControls`, `Chrome`, `Broadcast`, `FailureStates`, plus the
+appearance environment. `DesignTokens.swift` grew the atmosphere, glass, gauge, control, mark and
+table namespaces. Floodlit's `Tokens`, `Support`, `Atmosphere` and `Components` were imported and
+reworked; its `Screens`, `Fixtures`, `Gallery` and all 5,332 lines of `LandscapeScreens` were not.
+
+**Three corrections the grounding forced, each recorded where it belongs:**
+
+1. **The deep-panel floor was wrong.** Phase 0 derived α ≥ 0.78 against bare turf (`#37A868`) as
+   "the brightest point of the lit pitch". It is not the brightest ground a panel sits over: the
+   mown stripe lays white at 0.055 over the turf and the pitch's lamp beams lay `#FFF2CE` at 0.55
+   over that, giving `#AAD3A4`, where 0.78 left `content.quiet` at **4.23** — a body-floor failure
+   the original derivation could not see because it never composited the light sources. Corrected to
+   **0.82** (4.72 at the true worst case; 0.80 reaches only 4.48). Canon, both sheets that quote the
+   figures, their renders and `DesignTokens` moved together.
+2. **The symbol register had two live defects.** `chevron.*` could not be parsed by the test that
+   reads the table — the `*` blocks the closing backtick — so the glob contributed no members and
+   any chevron would have failed. It went unnoticed because of the second defect: G-08's scan
+   matches a literal *immediately* after `systemName:`, so five symbols named by ternaries and a
+   helper were being drawn and seen by nothing (`chevron.up`/`chevron.down`, `record.circle.fill`,
+   `circle`, `sparkles.tv`). The register's claim to hold every drawn symbol was false while both
+   stood. Chevrons are now enumerated, `record.circle.fill` is replaced by the registered
+   `checkmark.circle.fill`, and **every symbol-shaped literal in the UI target is a §6.6 member**.
+3. **The Floodlit bundle carries no HTML prototypes for fifteen screens**, contrary to the
+   programme plan. There is one HTML file covering four screens; the ten unported screens have a
+   one-line description each. **Recruiting Board — one of `04` §10's three proof screens — has no
+   Floodlit design at all.** Its sources for Phase 3 are `table-v4`, `person-v4` and `04` §8.
+
+**What Phase 1 deliberately did not do.** The five existing screens are **not** visually re-skinned
+onto the new components. The phase plan included it; it is deferred rather than forgotten, because
+`04` §10's proof gate rebuilds three of the five (Coaching HQ, Recruiting Board, Match Day) in
+Phase 3 — re-skinning them now, uncompiled, would be discarded within one phase while adding a
+large unverifiable diff. The extractions that are *not* wasted were done: the appearance resolves
+once at each root instead of five times, registry 1 is one type again, registry 1–4 became public
+(they were internal, which is why the composition root hand-rolled a `.borderedProminent` button
+rather than using registry 2), and `ContractTests:716`'s 62 hard-coded substrings became a
+registry-enumerated check.
+
+**Defects the extraction surfaced in existing code**, none of them cosmetic: `seam`/`verticalSeam`
+were **nine** hand-copied properties across five files at two opacities, and one omitted
+`.accessibilityHidden`, so `CoachingHQView` announced its hairlines to VoiceOver as elements.
+`DenseTable` existed twice and had diverged — `RecruitingBoardView`'s copy had no `ScrollView` and
+no `LazyVStack`, so **the recruiting board does not scroll and is not lazy**. `ratingColor` was two
+byte-identical copies and nothing else used the thresholds, so Recruiting Board's ratings were
+simply unbanded. `RatingBadge` was never drawn at all — three screens coloured the rating text and
+stopped, which loses the band entirely for anyone who cannot see hue. `ConfidenceTag` was spoken but
+never drawn. `ErrorBanner` and `InterruptedState` existed in no form: errors were a
+`statusMessage: String?` threaded into five different world-strip context lines, so a failed write
+and a routing message read identically and neither offered recovery.
+
+**Verification, stated exactly.** **Nothing in this phase has been compiled.** No `swift`, no
+`xcodebuild`, egress to `download.swift.org` refused, and the repository has no CI — so the first
+compile is the owner's. What ran here are replicas of the suites' own logic against the real files:
+token sync (89 canon hexes, zero undeclared), the sheet-ratio lint (all ten sheets clean), the
+symbol register widened to read computed names (zero unregistered), `ContractTests:641`'s
+seven-marker token-literal scan (clean across the target), both limbs of the rewritten
+`ContractTests` test (37 registry names parsed, all resolving; all five screens passing the
+invariant limb), and a brace/paren balance sweep over 136 files. **That is not a test run and is
+not reported as one** — it catches structure and text, never types. Every file listed above is
+**unverified — never compiled**. `./scripts/verify.sh` on the owner's Mac is the gate; the last
+measured baseline is 719 tests / 755,310 checks from 2026-08-13, now stale by more than thirty
+commits.
+
+**Named risks carried forward.** `PitchPlane(perspective: 0.55)` has never rendered and its author
+states it is a guess against a different CSS unit — Match Day's field may read flat or wildly
+skewed on first run. Stacked `.ultraThinMaterial` over a 3D-transformed plane is the heaviest thing
+the system draws and P13's 16.7 ms ceiling is unmeasured; `04` §6.1's two-material budget is the
+mitigation. Type sizes were tuned against Arial Narrow rather than SF Pro condensed.
+
 ### What is not wired, audited from the code on 2026-08-12
 
 The scheduler marks unbuilt systems inactive by design, so it is the authority rather than any prose.
