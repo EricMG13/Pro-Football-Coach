@@ -639,16 +639,22 @@ trusted. `--screen-read-models` is green with the fix: **34 tests, 9,244 checks*
 consistent with the added assertion volume); `--core-contracts` remains green at **174 tests, 1,175
 checks**.
 
-**The full no-argument suite could not be re-measured after the fix in this session, and that is
-stated rather than papered over with the pre-fix number.** Three consecutive attempts at
-`swift run -c release SimTests` were terminated by the environment before completing — one exited
-silently with no output and no exit code, one exited `137` (SIGKILL) with no output at all, one was
-moved to background and then left no trace — despite the host reporting 244 GB free disk and over a
-million free memory pages at the time, ruling out local resource exhaustion as the cause. A
-debug-mode run (`swift run SimTests`, no `-c release`) was started and left running in the
-background; if it completes, its count is recorded in a following entry, and if not, the honest
-state is: the two suites that touch this session's changed code are confirmed green after the fix,
-and the full-suite figure above is stale by exactly the checks this paragraph describes.
+**The full no-argument suite could not be re-measured in release configuration after the fix in this
+session, and that is stated rather than papered over with the pre-fix number.** Three consecutive
+attempts at `swift run -c release SimTests` were terminated by the environment before completing —
+one exited silently with no output and no exit code, one exited `137` (SIGKILL) with no output at
+all, one was moved to background and then left no trace — despite the host reporting 244 GB free
+disk and over a million free memory pages at the time, ruling out local resource exhaustion as the
+cause. A debug-mode run (`swift run SimTests`, no `-c release`) was started instead, and it survived
+one session/process boundary — the harness marked it `stopped` with no completion record when the
+prior process exited, mid-run, and it was relaunched from the same clean tree rather than assumed
+finished. The relaunch completed on its own: **`753 tests, 765,555 checks, all passed`, debug build,
+exit `0`.** That is 3 tests and 1,868 checks more than the pre-fix release measurement; the check
+growth matches the confidence-review fix's added assertions exactly (`--screen-read-models` alone
+gained 1,823 of them), and the small additional test-count difference was not independently isolated
+in this session — worth a closer look if a release-mode run is attempted again, but not a reason to
+doubt the green result, since every suite this session touched was separately confirmed green under
+`--screen-read-models` and `--core-contracts` regardless.
 
 **A resource-contention finding worth recording, not a code defect.** The first attempt at this
 measurement stalled for hours with no error and no crash — `sample`'s stack for the wrapper process
