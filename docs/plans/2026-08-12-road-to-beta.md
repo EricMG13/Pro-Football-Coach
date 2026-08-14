@@ -88,7 +88,7 @@ Carried from `docs/briefs/2026-08-12-gap-register.md`. Ordered by what blocks th
 | U-3 | M8 entry-gate tests — orientation, token sync, symbol register, sheet lint | **Done** (`11b9f8e`) |
 | U-4 | **G-12 AX5 reflow contract test**, enumerating families from the registry by construction | **Enumeration limb done 2026-08-13**; all 62 families resolved from `CoachWorldScreenID`, partition asserted total, landed families required to declare an AX5 composition and VoiceOver order. **The rendered limb stays open** — this harness has no view host, and `04` §7.1 says so rather than letting the gate read as more than it is |
 | U-5 | G-13 failure-set views (designs exist on `failure-v3`; view implementations do not) | Not started |
-| U-6 | Production views built against the sheets, per family | Not started (P11–P15 / M8) |
+| U-6 | Production views built against the sheets, per family | **Started 2026-08-13**: League Map (family 41) landed and wired to the shipped `League` route, with a read model, provider and its own contract-suite assertions (`docs/superpowers/plans/2026-08-13-league-map.md`). 56 of 62 families remain, each real UI-system work behind its own `writing-plans` pass, not a freehand continuation |
 | U-7 | Light-primary team colours unreachable from the generator; card contract uses a labelled synthetic pair | Open against P2 |
 
 ---
@@ -113,6 +113,7 @@ Carried from `docs/briefs/2026-08-12-gap-register.md`. Ordered by what blocks th
 | O-1 | **Reframed by evidence, 2026-08-13.** The fork was posed on the assumption that teams go over the cap at the season boundary. They do not: `--pro-market-root-probe` reports **zero over-cap teams** against eleven whose contracts had merely outlived their term, and fixing that removed the whole symptom. The fork is therefore not blocking, and the live question is narrower — whether beat 2 has anything to do at all until free agency and the draft put a team over. Original text: **The cap invariant.** Beat 2 presumes a team *can* be over the cap until a date. The engine forbids it: `acquire` refuses anything that would exceed the cap, and `release` validates the whole root, so an over-cap team could not take its first step back. Either (a) accept the cap as structural and rewrite beat 2 as a continuously-enforced constraint, or (b) make temporary illegality representable inside a bounded window. | **(b), scoped to the week-21 boundary** — opened by expiry, closed by compliance in the same `advanceWeek`, so no *persisted* root is ever illegal and the cap-laundering defence in `PORT-LOG.md` stays intact. **Correction, 2026-08-13: `enforceCapCompliance` does not exist anywhere in this tree.** `grep -rn enforceCapCompliance Sources/` returns nothing; the claim that it is "written and correct" traced only to `docs/plans/2026-08-12-m6-roster-turnover.md`, a planning document, not to code. Beat 2 is unbuilt: `acquire` still refuses anything that would exceed the cap, so a team cannot yet take the first step (b) requires — over-cap signing — let alone be brought back under one. This is real engine work, not a wiring gap, and belongs behind its own `superpowers:writing-plans` phase like any other milestone slice, not a freehand continuation. **The forcing half of (b) is now built** — see the P-2 row above and `02` §4.2a. The invariant itself (`WorldIntegrity.checkProfessionalCap`) was never touched; only a function that runs before it was added |
 | O-2 | Whether to schedule per-drive accounting now (unblocks D-2) or after M8 | After M8. It is a change to the core loop every calibration number is measured against; doing it beside other engine work makes a red band impossible to attribute |
 | O-3 | B-2 signing and TestFlight setup | Owner-only; cannot be delegated |
+| O-4 | **Career Hub's chronology, found blocking U-6 2026-08-13.** Four families (52 Career Hub, 53 Job Security, 54 Stakeholders, 55 Promotion Decision) all need a career-arc history the engine does not keep: `CareerArcState.jobHistory` is empty until a firing/promotion/resignation, no season retains the coach's own W-L past a rollover, `DomainEventPayload` has no hired/fired/promoted/resigned case at all, and `CareerSession.resolve` throws on `.acceptOpportunity` so the promotion arc has no reachable path through the actor the shipped app uses. Full account in `docs/STATUS.md`'s 2026-08-13 League Map entry. This is milestone-sized engine and canon work — a career-arc domain event, per-season record retention, and the promotion-accept path — not a view-layer gap | Scope as its own milestone slice behind `superpowers:writing-plans`, decided before any of the four dependent families is attempted. Recommend after U-6's remaining independently-buildable families (League Map's pattern — engine truth already sufficient) are exhausted, since those return working screens sooner |
 
 ---
 
@@ -131,10 +132,12 @@ Carried from `docs/briefs/2026-08-12-gap-register.md`. Ordered by what blocks th
 4. **U-4** — the last M8 entry-gate instrument, then the M8 gate opens. **Enumeration limb done,
    2026-08-13**; the rendered limb (no datum lost, no clipping) stays open — this harness has no
    view host, `04` §7.1 says so, and its mechanism is `03b` §5's to decide.
-5. **U-6** — production views per family, against the approved sheets. **Not started.** 56 of 62
-   families have no view at all. Each is real UI-system work — sheet fidelity, the accessibility
-   contract, AX5, adversarial review — and belongs behind its own `superpowers:writing-plans` pass
-   per `CLAUDE.md`'s process, not a freehand continuation of this session's read-model work. This is
+5. **U-6** — production views per family, against the approved sheets. **Started 2026-08-13**: League
+   Map (family 41) landed. 56 of 62 families still have no view. Each is real UI-system work — sheet
+   fidelity, the accessibility contract, AX5, adversarial review — and belongs behind its own
+   `superpowers:writing-plans` pass per `CLAUDE.md`'s process, not a freehand continuation. Four of
+   the 56 (Career Hub, Job Security, Stakeholders, Promotion Decision) are blocked on engine work
+   named at O-4 and cannot be attempted as view-only slices. This is
    the largest remaining item on the road to beta.
 6. **B-4** — measure D4's budgets on the device that will run the beta. **Measured on the host,
    2026-08-13, and already falsified there**: median week advance 2.83 s against a 2.0 s budget,

@@ -63,6 +63,19 @@ public struct CoachWorldAppRootView: View {
                         onNavigate: { navigate($0, in: store) }
                     )
                 }
+            case .leagueMap:
+                if let model = store.leagueMap {
+                    LeagueMapView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        // The same `advance` path every other screen uses, so a pending decision
+                        // refuses identically here. Roster and Recruiting Board once wired their
+                        // copy of this control to a navigation instead, which made one button do
+                        // two different things depending on where it was tapped.
+                        onContinue: { Task { await advance(store) } },
+                        onNavigate: { navigate($0, in: store) }
+                    )
+                }
             default:
                 if let model = store.coachingHQ {
                     CoachingHQView(
@@ -95,6 +108,9 @@ public struct CoachWorldAppRootView: View {
             failure = nil
         case .recruitingBoard where store.recruitingBoard != nil:
             screen = .recruitingBoard
+            failure = nil
+        case .leagueMap where store.leagueMap != nil:
+            screen = .leagueMap
             failure = nil
         default:
             failure = "\(destination.canonicalName) is not available yet"
