@@ -823,6 +823,57 @@ func runContractTests() {
                    "the dossier must know whose uniform the player wears")
         }
 
+        test("League Map is a read-model surface that invents no place and no reach") {
+            let map = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .first { $0.path.hasSuffix("/LeagueMapView.swift") }?.text ?? ""
+            expect(map.contains("public struct LeagueMapView"),
+                   "LeagueMapView.swift must expose the production map screen")
+            expect(map.contains("let model: LeagueMapReadModel"),
+                   "League Map must consume an immutable read model")
+            expect(map.contains("Button("), "League Map must use native buttons")
+            expect(!map.contains("onTapGesture"),
+                   "a place is selected with a Button, so it is focusable and has a spoken label")
+            expect(map.contains("monospacedDigit"))
+            expect(map.contains("accessibilitySortPriority"))
+            expect(map.contains("dynamicTypeSize.isAccessibilitySize"))
+            expect(map.contains("CoachWorldRouteButton")
+                       && map.contains("CoachWorldActionButtonStyle"),
+                   "world routes and Continue use the shared controls, not screen-local copies")
+
+            let provider = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldLeagueMapProvider.swift") }?.text ?? ""
+            expect(!provider.isEmpty, "CoachWorldLeagueMapProvider.swift not found")
+            // The join that matters. `cityName` is a display string, and `GameMap` keeps a
+            // with-replacement fallback for a smaller name pool; if it fired, a name join would
+            // collapse two cities and draw a programme where it does not play.
+            expect(provider.contains("homeCityID"),
+                   "the provider must join a member to its city by identifier, never by name")
+            // No engine system reads `recruitingReach`, so no radius may be drawn from it.
+            expect(!provider.contains("recruitingReach") && !map.contains("recruitingReach"),
+                   "a reach radius would invent a grid-unit mapping the engine does not have")
+            expect(provider.contains("RivalrySeeder.strongest"),
+                   "rival order is the engine's own, not a second definition that can drift")
+        }
+
+        // `04` section 5 names `CoachWorldTeamIdentity` the sole resolution point for generated
+        // colour and calls the rule source-scannable. Nothing scanned it until League Map landed,
+        // and a view reading a hex directly is exactly how the legibility gates get bypassed —
+        // the gates are inside that initialiser.
+        test("no view resolves a generated colour except through the identity type") {
+            for file in swiftFilesImportingUIFramework() {
+                let isResolutionPoint = file.path.hasSuffix("/TeamIdentity.swift")
+                guard !isResolutionPoint else { continue }
+                let code = codeLines(of: file.text)
+                for property in ["primaryColorHex", "secondaryColorHex"] {
+                    expect(!code.contains(where: { $0.contains(property) }),
+                           "\(file.path) reads \(property) directly. Generated colour resolves "
+                               + "through CoachWorldTeamIdentity, which is where the contrast "
+                               + "floors live and where a pair that cannot be read is refused "
+                               + "(04 section 5).")
+                }
+            }
+        }
+
 #if DEBUG
         test("generated team colour resolves to legible ink or refuses to paint") {
             let dark = CoachWorldTokens.dark

@@ -23,6 +23,7 @@ private struct DebugCoachingHQRoot: View {
     @State private var recruitingBoard = CoachWorldSampleData.recruitingBoard
     private let matchDay = CoachWorldSampleData.matchDay
     private let roster = CoachWorldSampleData.roster
+    private let leagueMap = CoachWorldLeagueMapSampleData.leagueMap
     @State private var statusMessage: String?
 
     init() {
@@ -32,6 +33,7 @@ private struct DebugCoachingHQRoot: View {
             ("--roster", "roster", .roster),
             ("--match-day", "match", .matchDay),
             ("--recruiting-board", "recruiting", .recruitingBoard),
+            ("--league-map", "map", .leagueMap),
         ]
         let requested = entries.first {
             CommandLine.arguments.contains($0.argument) || proofScreen == $0.proofName
@@ -69,6 +71,13 @@ private struct DebugCoachingHQRoot: View {
                     statusMessage: statusMessage,
                     onAction: assignRecruitingWork,
                     onContinue: { statusMessage = "No later recruiting event is available yet" },
+                    onNavigate: navigate
+                )
+            } else if currentScreen == .leagueMap {
+                LeagueMapView(
+                    model: leagueMap,
+                    statusMessage: statusMessage,
+                    onContinue: { statusMessage = "No later event is available yet" },
                     onNavigate: navigate
                 )
             } else {
@@ -158,7 +167,8 @@ private struct DebugCoachingHQRoot: View {
     }
 
     private func navigate(_ screen: CoachWorldScreenID) {
-        guard screen == .coachingHQ || screen == .recruitingBoard || screen == .roster else {
+        guard screen == .coachingHQ || screen == .recruitingBoard || screen == .roster
+            || screen == .leagueMap else {
             statusMessage = "\(screen.canonicalName) is not available yet"
             return
         }

@@ -35,6 +35,7 @@ public final class CoachWorldStore {
     /// beside the seconds a week advance already takes.
     public private(set) var roster: RosterReadModel?
     public private(set) var recruitingBoard: RecruitingBoardReadModel?
+    public private(set) var leagueMap: LeagueMapReadModel?
     /// True while an intent is in flight. Screens disable their commit controls on it.
     public private(set) var isWorking = false
     /// The last receipt or refusal, shown verbatim. Never a guess about what happened.
@@ -44,9 +45,20 @@ public final class CoachWorldStore {
 
     private init(session: CareerSession, snapshot: GameState) {
         self.session = session
+        rebuildScreens(from: snapshot)
+    }
+
+    /// Every screen model, in one place.
+    ///
+    /// It was two identical lists — one here at construction and one at the end of `run` — until
+    /// League Map made it three lines in each. A screen added to one list and not the other looks
+    /// correct on launch and then goes stale after the first intent, which is the kind of defect
+    /// that survives a reading. One list cannot disagree with itself.
+    private func rebuildScreens(from snapshot: GameState) {
         coachingHQ = CoachWorldReadModelProvider.coachingHQ(from: snapshot)
         roster = CoachWorldReadModelProvider.roster(from: snapshot)
         recruitingBoard = CoachWorldReadModelProvider.recruitingBoard(from: snapshot)
+        leagueMap = CoachWorldReadModelProvider.leagueMap(from: snapshot)
     }
 
     /// Generates a world from `seed` and takes the job with the least prestige in it.
@@ -140,9 +152,6 @@ public final class CoachWorldStore {
         } catch {
             statusMessage = "\(error)"
         }
-        let snapshot = await session.snapshot()
-        coachingHQ = CoachWorldReadModelProvider.coachingHQ(from: snapshot)
-        roster = CoachWorldReadModelProvider.roster(from: snapshot)
-        recruitingBoard = CoachWorldReadModelProvider.recruitingBoard(from: snapshot)
+        rebuildScreens(from: await session.snapshot())
     }
 }
