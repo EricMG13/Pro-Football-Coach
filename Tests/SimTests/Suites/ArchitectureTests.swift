@@ -19,11 +19,16 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
 /// exists to notice, so re-pinning is the correct response rather than a workaround — unlike the
 /// compression move above, where the state was identical and only its encoding had changed. The
 /// generation-body pin did not move, and should not have: it hashes `LeagueGenerator.generate`,
-/// and contracts are issued during bootstrap rather than league generation. Both new values were
-/// reproduced in two independent processes before being written here.
-private let pinnedRootFingerprint: UInt64 = 11_751_991_614_650_799_443
+/// and contracts are issued during bootstrap rather than league generation.
+///
+/// And a fourth time on 2026-08-13, when `PlayerLifecycleState` gained `recentChanges:
+/// [AttributeChangeRecord]` (G-03). `PlayerLifecycleState` is part of the encoded root for every
+/// player, so its shape changing moves both pins even though a freshly bootstrapped world has an
+/// empty `recentChanges` on every player — the *schema*, not the data, is what this pin hashes.
+/// Both new values were reproduced in two independent processes before being written here.
+private let pinnedRootFingerprint: UInt64 = 6_735_950_923_359_132_109
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 9_105_938_186_369_459_529
+private let pinnedAdvancedRootFingerprint: UInt64 = 6_996_707_937_587_777_139
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///

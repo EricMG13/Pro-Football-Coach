@@ -336,6 +336,14 @@ since a mistake that already shipped a claim is not the same as one caught befor
 - **Development** is driven by: age curve, practice allocation, playing time, coaching quality at the
   position, scheme fit, and a per-player development trait. It is not random; §6.0 found "progression
   too random" was a top community complaint about the reference title.
+- **Recorded changes.** Every development event that actually moves an attribute (a nonzero delta)
+  is kept in a bounded per-player history of the last 6 changes — attribute, direction, cause and
+  season/week — discarded when the player leaves the league. **Cause** is the single development
+  factor (age curve, practice, playing time, coaching, scheme fit, work ethic) whose contribution had
+  the largest magnitude that event; a tie is broken by that factor's fixed evaluation order (age
+  curve or decline first, then practice, playing time, coaching, scheme fit, work ethic), so the
+  record is always deterministic and reproducible from the same seed. This is a rules constant, not
+  a per-screen judgement (`03b`) — added 2026-08-13, closing gap G-03.
 - **Decline** begins at position-specific ages and is visible before it is punishing.
 - **Traits** are behavioural (durability, temperament, work ethic, clutch) and have mechanical bite
   in specific systems, never as flavour.

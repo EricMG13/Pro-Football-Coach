@@ -154,6 +154,142 @@ func runPeopleLifecycleTests() {
                 return false
             })
         }
+
+        test("a development event with a real attribute change appends a recentChanges entry") {
+            var lifecycle = PlayerLifecycleState(
+                playerID: UUID(uuidString: "00000000-0000-4000-8000-000000008101")!
+            )
+            let calendar = CalendarState(season: 2, week: 8)
+            let components = [
+                DevelopmentComponent(reason: .ageCurve, value: 2),
+                DevelopmentComponent(reason: .practice, value: 1),
+                DevelopmentComponent(reason: .playingTime, value: 1),
+                DevelopmentComponent(reason: .coaching, value: 0),
+                DevelopmentComponent(reason: .schemeFit, value: 0),
+                DevelopmentComponent(reason: .workEthic, value: 0),
+            ]
+            let summary = DevelopmentSummary(
+                occurredAt: calendar,
+                components: components,
+                attributeChanges: [AttributeDevelopment(attribute: .speed, delta: 1)]
+            )
+
+            lifecycle.recordDevelopment(summary)
+
+            expectEqual(lifecycle.recentChanges.count, 1)
+            expectEqual(lifecycle.recentChanges.last?.attribute, .speed)
+            expectEqual(lifecycle.recentChanges.last?.delta, 1)
+            expectEqual(lifecycle.recentChanges.last?.cause, .ageCurve)
+            expectEqual(lifecycle.recentChanges.last?.occurredAt, calendar)
+        }
+
+        test("a tied dominant cause is broken by fixed component evaluation order") {
+            var lifecycle = PlayerLifecycleState(
+                playerID: UUID(uuidString: "00000000-0000-4000-8000-000000008106")!
+            )
+            let tiedComponents = [
+                DevelopmentComponent(reason: .practice, value: 1),
+                DevelopmentComponent(reason: .coaching, value: 1),
+            ]
+            let summary = DevelopmentSummary(
+                occurredAt: CalendarState(season: 4, week: 8),
+                components: tiedComponents,
+                attributeChanges: [AttributeDevelopment(attribute: .strength, delta: 1)]
+            )
+
+            lifecycle.recordDevelopment(summary)
+
+            expectEqual(lifecycle.recentChanges.last?.cause, .practice)
+        }
+
+        test("recentChanges is bounded to 6 and evicts the oldest first") {
+            var lifecycle = PlayerLifecycleState(
+                playerID: UUID(uuidString: "00000000-0000-4000-8000-000000008102")!
+            )
+            let dominant = [DevelopmentComponent(reason: .practice, value: 2)]
+
+            for week in 1...7 {
+                let summary = DevelopmentSummary(
+                    occurredAt: CalendarState(season: 1, week: week),
+                    components: dominant,
+                    attributeChanges: [AttributeDevelopment(attribute: .speed, delta: 1)]
+                )
+                lifecycle.recordDevelopment(summary)
+            }
+
+            expectEqual(lifecycle.recentChanges.count, PeopleRules.recentChangeHistoryLimit)
+            expectEqual(lifecycle.recentChanges.first?.occurredAt, CalendarState(season: 1, week: 2))
+            expectEqual(lifecycle.recentChanges.last?.occurredAt, CalendarState(season: 1, week: 7))
+        }
+
+        test("a development event with no attribute change leaves recentChanges untouched") {
+            var lifecycle = PlayerLifecycleState(
+                playerID: UUID(uuidString: "00000000-0000-4000-8000-000000008103")!
+            )
+            let summary = DevelopmentSummary(
+                occurredAt: CalendarState(season: 3, week: 16),
+                components: [DevelopmentComponent(reason: .decline, value: -1)],
+                attributeChanges: []
+            )
+
+            lifecycle.recordDevelopment(summary)
+
+            expect(lifecycle.recentChanges.isEmpty)
+            expect(lifecycle.lastDevelopment != nil)
+        }
+
+        test("persisted recentChanges over the bound of 6 is rejected") {
+            let lifecycle = PlayerLifecycleState(
+                playerID: UUID(uuidString: "00000000-0000-4000-8000-000000008104")!
+            )
+            var object = try JSONSerialization.jsonObject(
+                with: JSONEncoder().encode(lifecycle)
+            ) as! [String: Any]
+            let oneChange = try JSONSerialization.jsonObject(
+                with: JSONEncoder().encode(AttributeChangeRecord(
+                    occurredAt: CalendarState(season: 1, week: 1),
+                    attribute: .speed,
+                    delta: 1,
+                    cause: .practice
+                ))
+            ) as! [String: Any]
+            object["recentChanges"] = Array(repeating: oneChange, count: 7)
+            let corrupted = try JSONSerialization.data(withJSONObject: object)
+
+            do {
+                _ = try JSONDecoder().decode(PlayerLifecycleState.self, from: corrupted)
+                expect(false, "a recentChanges array over its bound decoded")
+            } catch {
+                expect(true)
+            }
+        }
+
+        test("archiving a player discards recentChanges with the rest of the lifecycle state") {
+            var state = PeopleState()
+            let player = Player(
+                id: UUID(uuidString: "00000000-0000-4000-8000-000000008105")!,
+                firstName: "Test",
+                lastName: "Player",
+                position: .quarterback,
+                age: 22,
+                attributes: Attributes(),
+                potential: Rating(60)
+            )
+            state.insert(player: player)
+            state.updatePlayerLifecycle(player.id) { lifecycle in
+                lifecycle.recordDevelopment(DevelopmentSummary(
+                    occurredAt: CalendarState(season: 1, week: 8),
+                    components: [DevelopmentComponent(reason: .practice, value: 2)],
+                    attributeChanges: [AttributeDevelopment(attribute: .speed, delta: 1)]
+                ))
+            }
+            expectEqual(state.playerLifecycle[player.id]?.recentChanges.count, 1)
+
+            state.archive(player: player, status: .retired)
+
+            expect(state.playerLifecycle[player.id] == nil)
+            expect(state.departedPlayers[player.id] != nil)
+        }
     }
 
 

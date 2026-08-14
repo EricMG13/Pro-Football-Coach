@@ -47,14 +47,14 @@ Carried from `docs/briefs/2026-08-12-gap-register.md`. Ordered by what blocks th
 | G-01 | Truthful read-model providers per screen family; provenance flips `sample` to `simulationSnapshot` | **Coaching HQ, Roster, Player Profile and Recruiting Board done**, via the `CoachWorldApp` composition target, and all four reachable in the shipped app. Match Day still needs G-06/G-11; the other 56 families need views before they need providers | Every truthful surface; B-3 |
 | G-02 | Engine-owned verdicts: league-relative baselines, expectation deltas, sample and confidence, staff-voice attribution (owner: **named staff**) | Not started | Every `VerdictLine`; the density model's strongest technique |
 | G-16 | **Jersey numbers.** Found 2026-08-13 while writing G-01's providers, and **closed the same day** — as a roster-scoped *derivation* rather than the schema change first assumed. Uniqueness belongs to a team and a player changes teams, so a stored field would need reassignment on every transfer, draft pick and walk-on; derived, it holds by construction with no schema bump and no fingerprint re-pin. `02` §4.1a states the rule; uniqueness is **per unit**, because 105 college players do not fit in 100 numbers | **Done** (`JerseyNumbers`, `--jersey-numbers`) | Unblocked Roster and Player Profile; box score and match-day actors can now read it |
-| G-03 | Bounded per-player attribute-change record (bound: last 6, discarded on departure) | Not started | `DeltaMark`; Player Profile truthfulness |
+| G-03 | Bounded per-player attribute-change record (bound: last 6, discarded on departure) | **Done, 2026-08-13.** `PlayerLifecycleState.recentChanges: [AttributeChangeRecord]`, appended by `recordDevelopment(_:)` and bounded to `PeopleRules.recentChangeHistoryLimit = 6`; cause is derived from the existing `DevelopmentSummary.components`, no new parameter, no call-site changes. Departure was already handled — `PeopleState.archive` deletes the whole lifecycle record, proven by test rather than assumed. Read-model wiring (`CoachWorldPersonnelProvider`) is untouched; this pass is engine-only, per this session's backend-only scope | `DeltaMark`; Player Profile truthfulness |
 | G-04 | Per-player form series and an engine-owned player-game rating definition | Not started | `FormLine`; recent-form surfaces |
-| G-05 | Opponent-preparation knowledge boundary with graded confidence | Partial — prospect/portal/draft fog exists; opponent open (FSC-007) | Opponent Report density |
+| G-05 | Opponent-preparation knowledge boundary with graded confidence | **Investigated, 2026-08-14, larger than scoped.** `TacticalState.opponentScouting` is a single global dict keyed only by observed team — not observer-scoped at all — and `TacticalPlanSystem.plan` recomputes it from perfect current-season stats on every call, feeding straight into the tactical AI's play-calling decisions. A faithful fix (mirroring `ScoutingState`'s `ProspectObservation` pattern) changes what the tactical AI decides off, the same category of core-loop change O-2 flagged for per-drive accounting. Needs its own investigation into `ScoutingSystem.process` before a plan can be written | Opponent Report density |
 | G-06 | Match animation anchor stream (FSC-011) | Not started | P13 Match Day; broadcast live depictions |
 | G-10 | Throughput primitives — filter, bounded search, multi-select over simulation objects | Sorting only exists | Market, board and standings families at scale |
 | G-11 | Detailed-match per-player stat lines | Abstract model has them; detailed engine does not | Box score; played-match verdicts; P4 band coverage |
-| G-14 | Engine-owned load policy: condition bands, dose multipliers, derived cost | Not started | Practice Plan derived-cost region |
-| G-15 | Partial-advance completion record | Not started | Truthful interrupted-state copy |
+| G-14 | Engine-owned load policy: condition bands, dose multipliers, derived cost | **Designed, not planned or built, 2026-08-14.** `TacticalPracticePlan.conditioningMinutes`/`recoveryMinutes` are validated but read by nothing; `PeopleLifecycleSystem.processHealth` recovers fatigue by one flat constant regardless of team or plan. Sketch: derived cost (intensity, staff workload) as a pure additive method on `TacticalPracticePlan` (near-zero risk); 5 condition bands + per-tier recovery multiplier wired into `processHealth` (a real behavioural change to existing fatigue arithmetic — size as its own task). Needs a `02` amendment before code | Practice Plan derived-cost region |
+| G-15 | Partial-advance completion record | **Plan written and self-reviewed, 2026-08-14, not executed** — `docs/superpowers/plans/2026-08-14-partial-advance-record.md`. Design: wrap `advanceWeek`'s unchanged body in one `do/catch`, add `WorldSchedulerError.interrupted(committedSteps:committedEvents:underlying:)`. Impact-checked: exactly one call site outside `WorldScheduler.swift` pattern-matches a specific error case, and the plan updates it. Zero source changed yet | Truthful interrupted-state copy |
 
 ---
 
@@ -173,3 +173,26 @@ fields as `Int?` with a "not built" note for part of this session. Wrong, and co
 day once a closer read of `CollegeState.swift` found the real resource — `02` §4.3 carries the full
 account, including the correction itself. No gap number is spent on it: it was never a real gap, so
 G-18 is not reserved and the next one issued should be G-18.
+
+---
+
+## 9. Scope narrowed to backend-only, 2026-08-14
+
+By owner direction this and the prior session stopped working the UI inventory (U-4's rendered limb,
+U-5, U-6, U-7's UI half) and work the engine gap register instead — G-02 through G-15, plus P-2's
+remainder, P-3, and D-2/D-3/D-4 — until told otherwise. §1's table above carries the per-item state.
+
+**Order actually worked, 2026-08-13/14:** G-03 done and committed. G-15 designed and planned in full
+(`docs/superpowers/plans/2026-08-14-partial-advance-record.md`) but not executed. G-14 sketched.
+G-05 investigated and found larger than a single session's sketch — deferred with reasons recorded
+in §1. U-7's engine half re-confirmed as already fully diagnosed by an earlier session, unscheduled.
+G-02, G-04, G-06, G-11, P-2's remainder, P-3, D-2, D-3, D-4 not touched this session.
+
+**`docs/STATUS.md`'s "Outstanding, backend-only scope — 2026-08-14" section is the detailed account**
+for every item above — what's designed, what's merely sketched, what's untouched, and why, so the
+next session does not have to re-derive any of it. This section is the index; that one is the
+record.
+
+**A clean, single, unbroken full-suite run is owed before further work builds on G-03** — see
+`docs/STATUS.md`'s note on how G-03 was verified (two partial runs assembled honestly, not one clean
+pass, both interrupted by process-management issues rather than by anything the tests found wrong).

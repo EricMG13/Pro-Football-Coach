@@ -540,6 +540,160 @@ is the largest remaining item. B-2 and any device measurement are the owner's. P
 cuts) is not built — and the probe's finding that no team is over the cap at the season boundary is
 worth carrying into it, because beat 2 has nothing to do until spending puts a team over.
 
+**Scope narrowed to backend-only, 2026-08-13.** By owner direction this session stops working the UI
+inventory (U-4's rendered limb, U-5, U-6, U-7) and works the engine gap register — G-02 through G-15
+— plus P-2's remainder, P-3, and D-2/D-3/D-4, in that order unless a dependency forces otherwise.
+
+**G-03 — bounded per-player attribute-change record, done 2026-08-13.**
+`Sources/FootballSimCore/People/PeopleState.swift` gained `AttributeChangeRecord{occurredAt,
+attribute, delta, cause}` and `PlayerLifecycleState.recentChanges: [AttributeChangeRecord]`, bounded
+to `PeopleRules.recentChangeHistoryLimit = 6` (`Sources/FootballSimCore/Rules/PeopleRules.swift`).
+`recordDevelopment(_:)` keeps its exact original signature — all 3 call sites in
+`DevelopmentSystem.practice` are unchanged — and now *appends* rather than only overwriting
+`lastDevelopment`; "cause" is derived from the summary's own `components` (the dominant one by
+`|value|`, ties broken by the fixed evaluation order), so no new parameter carries a design decision
+that canon does not already state. `docs/02-GAME-DESIGN.md` §5 was amended with the cause-derivation
+rule before/alongside the code, per the doc-first amendment rule. "Discarded on departure" needed no
+new code — `PeopleState.archive` already deletes the whole `PlayerLifecycleState`, and a test now
+proves that rather than leaving it assumed. Six new tests in `Tests/SimTests/Suites/
+PeopleLifecycleTests.swift` ("People lifecycle state" suite, 7 → 13): a real change is recorded with
+the right attribute/delta/cause; a tied dominant cause is broken by the fixed component evaluation
+order (the one case the first test's data doesn't exercise, since its components happen to have a
+unique maximum); the 6-entry bound evicts oldest-first; a no-op development event (empty
+`attributeChanges`) leaves the ring untouched; a persisted ring over 6 entries is rejected on decode;
+archiving a player removes the ring with everything else. Explicitly **not** done in this pass:
+`CoachWorldPersonnelProvider` still ships `recentForm: []`/no `DeltaMark` data — read-model wiring is
+UI-adjacent and out of scope for backend-only work; the engine now has real, tested, bounded data
+ready for it when that work resumes.
+
+**A note on how G-03 was verified, honestly.** No single unbroken `swift run -c release SimTests`
+pass completed in this session — both full-suite runs were interrupted (the first by an
+over-aggressive `| tail -80` on its own captured log, which truncated what was read rather than what
+ran; the second by this session's own process cleanup killing the wrong PID, mid-suite, at the
+~28-minute mark, while chasing down CPU contention from two unrelated peer sessions' own `SimTests`
+runs in other worktrees on the same machine). What is actually verified, assembled honestly from what
+did complete:
+- The first run completed all suites through to the end **except** one test with two failing
+  checks — `"Authoritative game state" / "root and scheduler fingerprints are pinned across
+  processes"` — which is the expected, correct consequence of adding a field to
+  `PlayerLifecycleState` (it is part of the encoded root), not a defect. Every other suite in that
+  run, roughly 70 of them, passed.
+- The two pinned fingerprints (`pinnedRootFingerprint`, `pinnedAdvancedRootFingerprint` in
+  `Tests/SimTests/Suites/ArchitectureTests.swift`) were re-measured and reproduced **twice**, in two
+  independent `--architecture-only` process invocations, matching the file's own established
+  precedent for re-pinning (the comment above the constants documents all four times they have moved
+  and why). New values written; a fourth paragraph added to that comment explaining this move.
+- The second run, launched after the re-pin, reached `"College portal scheduler lifecycle"` (roughly
+  suite 45 of ~70, ~28 minutes in) with everything green, **including** `"Authoritative game state"`
+  with the new pins — before being killed. Nothing after that point was re-confirmed in that specific
+  run, but every one of those later suites (Jersey numbers, Cap compliance, Read model providers, M4
+  tactical, M6 professional, realignment, history, news feed, and the rest) had already passed in the
+  *first* run, with this session's G-03 code already in the tree — `detect_changes` confirms G-03
+  touches only `PlayerLifecycleState`/`DevelopmentSummary`/`PeopleRules` and their own direct test
+  files, so nothing in that later group has a code-level reason to behave differently between the two
+  runs. This is assembled evidence across two partial runs, not one clean pass, and is recorded as
+  exactly that rather than as a claimed "full suite green" — `swift build` was also run clean on its
+  own (debug mode) earlier in this session, separately from either background run.
+- `mcp__gitnexus__detect_changes` was run before commit: 51 changed symbols across 7 files, medium
+  risk, exactly one affected process (`MakeReplacements → PlayerLifecycleState`), consistent with an
+  additive field.
+
+**A clean, single, unbroken full-suite run is still owed** for G-03 and should be the first thing the
+next session does before building on top of it further.
+
+### Outstanding, backend-only scope — 2026-08-14
+
+Everything left in the engine gap register, professional tier, defect list, and performance items,
+with what this session actually learned or designed for each so the next one does not re-derive it.
+UI items (U-4's rendered limb, U-5, U-6, U-7's UI half) stay out of scope per the standing narrowing
+above; U-7's generator half is engine code and is listed below.
+
+**Immediately actionable — a plan already exists:**
+
+- **G-15 — partial-advance completion record.** Fully designed and written to
+  `docs/superpowers/plans/2026-08-14-partial-advance-record.md`, self-reviewed, but **not executed —
+  zero source code changed for this gap.** Design: wrap `WorldScheduler.advanceWeek`'s existing body
+  (unchanged, every one of its ~24 throw sites untouched) in one `do/catch` that re-throws a new
+  `indirect case interrupted(committedSteps:committedEvents:underlying:)` on `WorldSchedulerError`.
+  Impact-checked: exactly one call site outside `WorldScheduler.swift` pattern-matches a specific
+  error case (`EventLedgerBatchTests.swift:270`) and the plan updates it. Next session should read
+  the plan file and run it via `executing-plans` before touching anything else.
+
+**Designed, not yet planned or built:**
+
+- **G-14 — engine-owned load policy (condition bands, dose multipliers, derived cost).**
+  `Sources/FootballSimCore/Tactical/TacticalPractice.swift`'s `TacticalPracticePlan` currently reads
+  only `installMinutes`/`positionFocusMinutes` for `developmentValue(for:)`;
+  `conditioningMinutes`/`recoveryMinutes` are validated (must sum to the 60-minute weekly budget) but
+  **read by nothing** — confirmed by reading the whole file and its one caller. Separately,
+  `PeopleLifecycleSystem.processHealth` recovers fatigue by one flat constant
+  (`PeopleRules.weeklyFatigueRecovery = 10`) for every player regardless of team or plan; it has
+  access to `state.tactical` already but never reads it. This session sketched, not yet written to
+  canon or a plan: 5 condition bands over `fatigue: 0...100` (even 20-point splits), a per-tier
+  recovery multiplier (pro > college, reflecting facility/staff quality), and a derived-cost pair
+  (intensity, staff workload) as a **pure, additive** new method on `TacticalPracticePlan` — that
+  half needs no wiring into `WorldScheduler` at all and is close to zero-risk. The
+  condition-band/dose-multiplier half **does** change `processHealth`'s existing fatigue-recovery
+  arithmetic for every player, which is a real behavioural change, not purely additive — size it as
+  its own task inside the plan and review it with that in mind. Needs a `docs/02-GAME-DESIGN.md`
+  amendment (no existing canon states any of these numbers) before code, per the doc-first rule.
+
+**Investigated, larger than initially scoped:**
+
+- **G-05 — opponent-preparation knowledge boundary.** `Sources/FootballSimCore/Tactical/
+  TacticalState.swift`'s `opponentScouting: [UUID: OpponentScoutingSnapshot]` is a **single global
+  dict keyed only by the observed team**, not observer-scoped at all — any organisation that plays a
+  given opponent overwrites the one shared snapshot for that opponent, and `TacticalPlanSystem.plan`
+  recomputes it from perfect, current-season `TeamSeasonStatistics` on every single call
+  (`OpponentScoutingSnapshot.from(...)`), then feeds it straight into
+  `TacticalCoordinatorSystem.plan(for:coordinatorRating:)`, which is what actually steers the
+  tactical AI's run/pass bias, tempo and pressure. Closing this gap properly (observer-scoped storage
+  mirroring `Sources/FootballSimCore/College/ScoutingState.swift`'s `ProspectObservation` pattern —
+  `confidence`, `evidenceCount`, anti-resampling) means the tactical AI would start deciding off
+  *estimated* rather than perfect opponent tendencies — a real behavioural change to the core loop,
+  the same category O-2 flagged for per-drive accounting. Needs its own dedicated investigation into
+  `ScoutingSystem.process` (the M3 producer that builds confidence over multiple weeks) as the
+  template before a plan can be written — bigger than a single session's idle-time sketch, deferred
+  rather than rushed.
+- **U-7 — colour generator's light-primary reachable space (engine half).** Already fully diagnosed
+  in a prior session (`Sources/FootballSimCore/Generation/ColourGenerator.swift`'s
+  `saturatedColour(using:)` draws lightness uniformly from `12...78`, so no primary can exceed
+  L = 0.78, and the contrast floor that was meant to catch this is documented in the source itself as
+  unable to reject anything below L ≈ 0.179 — see `docs/STATUS.md`'s existing U-7 entries further
+  down and `docs/briefs/2026-08-12-gap-register.md`). Owner decision on file: labelled synthetic pair
+  for the card contract until the generator's reachable space changes; the generator fix itself
+  remains unscheduled. Untouched this session.
+
+**Not investigated this session — carried from the register as-is:**
+
+- **G-02 — engine-owned verdicts** (league-relative baselines, expectation deltas, sample/confidence,
+  named-staff attribution). No percentile/baseline machinery exists anywhere in
+  `Sources/FootballSimCore/`; `MandatoryDecision`'s `recommendedOptionID` is a single inline
+  comparison, not attributed to any staff identity. Largest remaining G-item by design surface.
+- **G-04 — per-player form series and an engine-owned player-game rating.** Blocked in practice on
+  G-11 (below) — there is nothing to form a series *from* until the detailed engine produces
+  per-player lines; the abstract model's per-player stats exist but are divide-by-N allocations, not
+  attribution, so a "form" built from them would not be truthful either.
+- **G-06 — match animation anchor stream (FSC-011).** No coordinate system exists anywhere in the
+  engine. Blocks Match Day; large.
+- **G-11 — detailed-match per-player stat lines.** The detailed engine (`Sources/FootballSimCore/
+  Engine/`) records per-snap `ballCarrierID`/`passerID`/`targetID`/matchup outcomes but aggregates
+  none of it into a box score; `PlayerGameStatistics` itself only has 4 fields (no attempts,
+  completions, carries, targets, receptions, sacks, tackles, interceptions) even for the abstract
+  model that does populate it. Gates 3 of the 16 pro calibration bands. Large.
+- **P-2 — controlled-team mandatory-decision half.** The AI-facing half (`enforceCapCompliance`) is
+  done and wired; the controlled (player's own) team still has no forced-cut mandatory-decision
+  surface when it goes over cap. Not started.
+- **P-3 — full both-tier professional soak, re-measured.** The season-boundary blocker (D-1) is
+  fixed; the soak itself (`--pro-soak`, ~12+ minutes even alone) has not been re-run since.
+- **D-2 — match calibration.** Explicitly deferred by owner decision (O-2) until after M8 — "a change
+  to the core loop every calibration number is measured against." Do not start ahead of that
+  decision.
+- **D-3 / D-4 — save-encode latency and the whole-root integrity check cost.** D-4's finding (one
+  integrity check costs 1.01s, half the week-advance budget) is a `03b` §5 question about *how often*
+  the whole root must be checked, not a tuning problem — needs an owner-level architecture decision
+  before an agent should restructure it.
+
 ### The full default suite — **green on 2026-08-12, after a two-failure fix**
 
 `./scripts/verify.sh` now passes: **602 tests / 747,027 checks, all passed**, debug build and

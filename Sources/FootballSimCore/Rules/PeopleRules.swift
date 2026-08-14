@@ -9,6 +9,7 @@ public enum PeopleRules {
     public static let maximumInjuryWeeks = 52
     public static let maximumDevelopmentComponents = 8
     public static let maximumAttributeChangesPerSummary = 16
+    public static let recentChangeHistoryLimit = 6
     public static let developmentComponentRange: ClosedRange<Int> = -2...2
     public static let attributeDevelopmentRange: ClosedRange<Int> = -1...1
     public static let playerAgeRange: ClosedRange<Int> = 16...60
