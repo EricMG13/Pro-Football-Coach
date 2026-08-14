@@ -298,7 +298,7 @@ public enum PostseasonSystem {
     /// Deliberately not the bracket's high-low seeding. A bowl is a prize rather than a route to a
     /// title, and pairing adjacent ranks is what makes the games competitive — high-low here would
     /// hand the best of the tail an easy win and call it a reward.
-    static func adjacentPairs(_ ranked: [UUID]) -> [(UUID, UUID)] {
+    public static func adjacentPairs(_ ranked: [UUID]) -> [(UUID, UUID)] {
         var pairs: [(UUID, UUID)] = []
         var index = 0
         while index + 1 < ranked.count {

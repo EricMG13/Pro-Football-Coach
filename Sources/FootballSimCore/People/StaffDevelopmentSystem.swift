@@ -141,7 +141,7 @@ public enum StaffDevelopmentSystem {
         return (ranking.count - 1 - index) * 100 / (ranking.count - 1)
     }
 
-    static func employer(of staffID: UUID, in state: GameState) -> UUID? {
+    public static func employer(of staffID: UUID, in state: GameState) -> UUID? {
         if let programme = state.programmes.values.first(where: {
             $0.staffIDs.contains(staffID)
         }) { return programme.id }

@@ -183,7 +183,7 @@ public struct InboxReadModel: Sendable, Equatable {
     ///
     /// Silence at the middle is deliberate: a channel that speaks every week about nothing is the
     /// dashboard `02` §7 is arguing against, and pressure that is always on is not pressure.
-    static func disposition(_ stakeholder: CareerStakeholder, support: Int) -> String? {
+    public static func disposition(_ stakeholder: CareerStakeholder, support: Int) -> String? {
         switch stakeholder {
         case .administration:
             if support <= InboxWeights.alarmedSupport { return "The athletic director wants to talk" }

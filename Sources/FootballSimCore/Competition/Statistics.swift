@@ -154,6 +154,21 @@ public struct PlayerGameStatistics: Codable, Sendable, Equatable {
         self.kickReturnYards = max(0, kickReturnYards)
     }
 
+    /// Written by hand because both `init(from:)` and `encode(to:)` below are hand-written — Swift
+    /// only synthesizes `CodingKeys` as a byproduct of synthesizing the coding methods themselves,
+    /// and with both provided there is nothing left to synthesize.
+    private enum CodingKeys: String, CodingKey {
+        case playerID
+        case passAttempts, completions, passingYards, passingTouchdowns, interceptionsThrown,
+            sacksTaken
+        case carries, rushingYards
+        case targets, receptions, receivingYards
+        case touchdowns, fumblesLost
+        case tackles, sacks, interceptions, passesDefended, forcedFumbles
+        case fieldGoalsAttempted, fieldGoalsMade, extraPointsAttempted, extraPointsMade
+        case punts, puntYards, kickReturns, kickReturnYards
+    }
+
     /// Sparse decoding: an absent counter is zero, which is also what makes a line written before
     /// this vocabulary existed still readable.
     public init(from decoder: any Decoder) throws {
