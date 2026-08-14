@@ -131,7 +131,7 @@ public extension CoachWorldReadModelProvider {
             marketSize: city.marketSize.value,
             prestige: prestige,
             venueName: identity.venueName,
-            rivals: rivals(of: id, in: state, among: rivalries)
+            rivals: rivals(of: id, tierLabel: tierLabel, in: state, among: rivalries)
         )
     }
 
@@ -141,6 +141,7 @@ public extension CoachWorldReadModelProvider {
     /// the world is actually built and maintained with.
     private static func rivals(
         of id: UUID,
+        tierLabel: String,
         in state: GameState,
         among rivalries: [Rivalry]
     ) -> [LeagueMapReadModel.Rival] {
@@ -151,18 +152,27 @@ public extension CoachWorldReadModelProvider {
             return LeagueMapReadModel.Rival(
                 stableID: otherID.uuidString,
                 name: teamReference(otherID, in: state).name,
-                originLabel: label(rivalry.origin),
+                originLabel: label(rivalry.origin, tierLabel: tierLabel),
                 intensity: rivalry.intensity.value
             )
         }
     }
 
-    /// Wording an enum the root holds. It states no fact the engine does not.
-    static func label(_ origin: Rivalry.Origin) -> String {
+    /// Wording an enum the root holds, tier-aware. It states no fact the engine does not — and
+    /// getting that requires the tier: `LeagueGenerator` seeds professional rivalries by passing
+    /// each team's *division* id into the same field college seeding fills with a real conference
+    /// id (`conferenceID: team.divisionID`), because the seeder itself is tier-blind and only ever
+    /// asks "do these two share the id in this slot". A professional `Rivalry.origin` of
+    /// `.conference` or `.both` therefore means *same division*, a materially tighter grouping than
+    /// the professional 16-team conference this same `Place` already names in `conferenceName`.
+    /// Calling it "Conference" would restate a different, larger group under the word for a smaller
+    /// one on the same screen.
+    static func label(_ origin: Rivalry.Origin, tierLabel: String) -> String {
+        let sharedGroup = tierLabel == LeagueMapReadModel.Tier.professional ? "Division" : "Conference"
         switch origin {
         case .geography: return "Neighbours"
-        case .conference: return "Conference"
-        case .both: return "Conference neighbours"
+        case .conference: return sharedGroup
+        case .both: return "\(sharedGroup) neighbours"
         }
     }
 }

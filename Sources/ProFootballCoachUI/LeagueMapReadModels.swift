@@ -34,8 +34,11 @@ public struct LeagueMapReadModel: Sendable, Equatable {
     public struct Rival: Sendable, Equatable, Identifiable {
         public let stableID: String
         public let name: String
-        /// Why the rivalry exists, worded from `Rivalry.Origin`. Wording an enum the engine holds
-        /// states no fact the root does not.
+        /// Why the rivalry exists, worded from `Rivalry.Origin` and the place's own tier. Wording
+        /// an enum the engine holds states no fact the root does not — but for a professional
+        /// place, a `.conference`/`.both` origin is seeded from a shared *division*, not the
+        /// 16-team conference this place's own `Place.conferenceName` names, so the word used here
+        /// deliberately differs from that field.
         public let originLabel: String
         public let intensity: Int
         /// Always empty in v1. The engine stores each meeting as a pre-formatted string carrying a

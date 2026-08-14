@@ -583,8 +583,23 @@ func runReadModelProviderTests() {
                        "\(place.cityName) sits off the grid at x \(place.x)")
                 expect((0...GameMap.height).contains(place.y),
                        "\(place.cityName) sits off the grid at y \(place.y)")
+                expectEqual(place.regionID, city.regionID.uuidString)
+                expectEqual(
+                    place.regionName,
+                    state.map.regions.first { $0.id == city.regionID }?.name ?? "Region not set"
+                )
                 expect(place.regionName != "Region not set",
                        "\(place.cityName) resolved to no region")
+
+                let ownerConferenceID = state.programmes[id]?.conferenceID
+                    ?? state.proTeams[id]?.conferenceID
+                expectEqual(
+                    place.conferenceName,
+                    ownerConferenceID.flatMap { conferenceID in
+                        state.league.conferences.first { $0.id == conferenceID }?.name
+                    },
+                    "\(place.team.name)'s conference does not match the one it actually belongs to"
+                )
             }
         }
 
@@ -646,6 +661,23 @@ func runReadModelProviderTests() {
                     // members the world never pairs.
                     expectEqual(tierByID[rival.stableID], place.tierLabel,
                                 "\(place.team.name) names a rival from the other tier")
+                    // `LeagueGenerator` seeds professional rivalries by passing each team's
+                    // *division* id into the field college seeding fills with a real conference
+                    // id (`conferenceID: team.divisionID`), so a professional `.conference`/`.both`
+                    // origin means "same division" — a materially different, tighter group than
+                    // the 16-team conference the place's own `conferenceName` already names.
+                    // Wording it "Conference" would restate a bigger group under a smaller one's
+                    // name on the same screen.
+                    if place.tierLabel == LeagueMapReadModel.Tier.professional {
+                        expect(!rival.originLabel.contains("Conference"),
+                               "\(place.team.name)'s rival \(rival.name) is labelled "
+                                   + "\"\(rival.originLabel)\" but professional rivalries share a "
+                                   + "division, never the 16-team conference")
+                    } else {
+                        expect(!rival.originLabel.contains("Division"),
+                               "\(place.team.name)'s rival \(rival.name) is labelled "
+                                   + "\"\(rival.originLabel)\" but college has no divisions")
+                    }
                 }
             }
         }
