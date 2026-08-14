@@ -25,6 +25,12 @@ public enum PeopleLifecycleSystem {
                     recoveredIDs.insert(id)
                     payloads.append(.playerRecovered(playerID: id))
                 }
+                // Time served counts down on the same tick, because there is exactly one place in
+                // this game where a week passes for a player and a suspension that expired anywhere
+                // else would be a second calendar to keep in step. `02` §5.2.
+                if lifecycle.serveSuspensionWeek() {
+                    payloads.append(.playerReinstated(playerID: id))
+                }
             }
         }
 

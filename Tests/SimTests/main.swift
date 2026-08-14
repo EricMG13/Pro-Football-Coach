@@ -41,6 +41,8 @@ if CommandLine.arguments.contains("--catalog") {
     runJerseyNumberTests()
 } else if CommandLine.arguments.contains("--depth-chart") {
     runDepthChartTests()
+} else if CommandLine.arguments.contains("--discipline") {
+    runDisciplineTests()
 } else if CommandLine.arguments.contains("--week-advance-timing") {
     runWeekAdvanceTimingProbe()
 } else if CommandLine.arguments.contains("--pro-market-root-probe") {
@@ -156,6 +158,7 @@ if CommandLine.arguments.contains("--catalog") {
     runCoachingTreeTests()
     runHistoryArchiveTests()
     runNewsFeedTests()
+    runDisciplineTests()
     runProgrammeEvolutionTests()
     runRosterTenureTests()
     runRealignmentTests()
