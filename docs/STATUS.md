@@ -540,6 +540,100 @@ is the largest remaining item. B-2 and any device measurement are the owner's. P
 cuts) is not built — and the probe's finding that no team is over the cap at the season boundary is
 worth carrying into it, because beat 2 has nothing to do until spending puts a team over.
 
+### 2026-08-13 — League Map lands, and Career Hub is found to be blocked on engine work
+
+The first family of U-6's 57 outstanding screens is built: `LeagueMapView`, plus
+`CoachWorldLeagueMapProvider` and its read model. The shipped `League` route in the world strip
+(`CoachingHQView.swift:106,115`, `RosterView.swift:106`, `RecruitingBoardView.swift:78,163`) reached
+"League Map is not available yet" before this session; it now reaches a real screen. Plan:
+`docs/superpowers/plans/2026-08-13-league-map.md`.
+
+**The join is by identifier, never by name.** `TeamIdentity.homeCityID` resolves through
+`GameMap.city(_:)`; `Programme.cityName` and `ProTeam.cityName` are display strings only. A
+name-keyed join would in fact be sound at today's scale — the generator draws city names without
+replacement from 570 distinct combinations against 166 cities needed — but `GameMap.generate` keeps
+a with-replacement fallback for a smaller name pool, and if that ever fired a name join would
+silently collapse two cities into one and place a programme where it does not play. The engine
+itself joins by identifier for the same reason (the recruiting fit cache is the existing precedent);
+this session found no reason to do otherwise.
+
+**Three things this screen deliberately does not draw, each because the engine holds nothing behind
+it.** No recruiting-reach radius: `Programme.recruitingReach` exists on the model, but a full source
+scan finds no system that reads it outside its own initialiser and the D6 archetype falsifier —
+drawing a circle from it would invent a grid-unit mapping that is not there. No region outline:
+regions have a generated centre and a member list, never an extent, so an outline would be a UI
+invention presented as territory. No `notableMeetings` text: the stored strings carry a zero-based
+season inside a formatted sentence, which would contradict the "Season N+1" convention every other
+label on the screen already uses. All three are pinned by tests that assert the field ships empty,
+per `04` section 4.4.
+
+**A gap in the contract suite was found and closed, not just avoided.** `04` section 5 has called
+`CoachWorldTeamIdentity` "the sole resolution point for generated colour" and describes the rule as
+"source-scannable" since 2026-08-12 — but nothing had ever written that scan. League Map's markers
+were the first new surface to need team colour since that sentence was added, which is what
+surfaced it. `ContractTests.swift` now asserts no UI-importing file reads `primaryColorHex` or
+`secondaryColorHex` directly, and the assertion was verified against a planted violation before
+being trusted (`LeagueMapView.swift` momentarily reading the hex directly, confirmed to fail the new
+check, then reverted).
+
+**`CoachWorldStore` carried two separately maintained lists of screen models — the constructor and
+the end of `run(_:)` — until a third screen made the duplication visible.** A model added to one and
+not the other would build correctly and then go stale after the first intent, silently. Both call
+sites now go through one `rebuildScreens(from:)` function; the class of defect is closed rather than
+avoided once more by hand.
+
+**Career Hub (family 52) was scoped for this same session and turned out not to be buildable.** Its
+dominant object per `04` section 8 is "chronological story of the coach", and the chronology does
+not exist in the engine:
+
+- `CareerArcState.jobHistory` is empty by construction — nothing writes to it except a firing, a
+  promotion or a resignation, none of which happen at a fresh career.
+- No per-season record for the coach survives a season boundary. `SeasonArchive` keeps champions and
+  final ranking arrays but not standings, and `completeSeason` replaces `CompetitionState` wholesale
+  — a season's W-L is unrecoverable once the next season starts.
+- `DomainEventPayload` has no hired/fired/promoted/resigned case of any kind, and its
+  `historicalWeight` switch is exhaustive with no `default` — the absence is enforced by the
+  compiler, not an oversight in one switch that a case could be added to later without review.
+- At a fresh career, `careerArc.status == .seeking` and `currentJob == nil` while `career.college`
+  names a live, controlled programme. Both states are legal under `CareerArcState.isValid` and
+  `WorldIntegrity.checkCareerArc`. A Career Hub rendering `careerArc` verbatim would tell an employed
+  coach they are unemployed.
+- `CareerSession.resolve` explicitly throws `CareerSessionError.invalidState` on
+  `.career(.acceptOpportunity)`, because accepting clears `career.college` and that breaks the
+  session's own precondition. The promotion arc — a v1 feature per `CLAUDE.md`, not a stretch goal —
+  has no reachable path through the actor the shipped app uses. This blocks screen 55 (Promotion
+  Decision) as well as Career Hub.
+
+This is engine and canon work, not a view. Per `CLAUDE.md`'s doc-first amendment rule, a gameplay
+question not answered in canon gets answered there first: whether the coach's per-season record
+should be retained past a rollover, what a career-arc domain event looks like, and how the
+promotion path is meant to reach the app's actor are all owner-level design calls, not
+implementation details this session could invent. The `Career` route in the world strip still
+reaches "Career Hub is not available yet", truthfully.
+
+**Measured: `750 tests, 763,687 checks, all passed`**, release build, exit 0 — the read-model
+suite gained the planned 5 tests and the contract suite gained 2 (743 → 750 against the prior
+session's `743`), with `DesignContractTests`, `AccessibilityReflowTests` and the new colour-scan
+assertion all in the same no-argument run. `AX5 contract: 6 landed, 56 pending` (was 5 / 57).
+
+**A resource-contention finding worth recording, not a code defect.** The first attempt at this
+measurement stalled for hours with no error and no crash — `sample`'s stack for the wrapper process
+showed only `-[NSConcreteTask waitUntilExit]`, which is `swift run` correctly waiting on its own
+child; the child binary itself was confirmed to be genuinely computing (99%+ CPU, `TIME` climbing at
+wall-clock pace, not blocked on a lock or semaphore). The cause was several `swift run -c release
+SimTests` invocations left running concurrently across the session, some going back hours, all
+competing for the same physical cores. One characterization inside the run logged
+`runtimeMs=17899532` (≈4h58m) for a computation that completes in low hundreds of milliseconds under
+STATUS.md's other recorded conditions — clean evidence of contention-induced starvation rather than
+a hang, since the process resumed making normal progress within seconds of the competing processes
+being killed. No code changed as a result; the finding is process hygiene, recorded because the
+symptom (a suite that appears stuck for hours with zero error output) would otherwise read as a
+build defect the next time it happens.
+
+**What this session did not do.** U-6's remaining 56 families are untouched. No simulator run and no
+device measurement are claimed. Career Hub, Standings, and every screen this session found to depend
+on unbuilt engine state remain open, named above rather than attempted with fabricated data.
+
 ### The full default suite — **green on 2026-08-12, after a two-failure fix**
 
 `./scripts/verify.sh` now passes: **602 tests / 747,027 checks, all passed**, debug build and
