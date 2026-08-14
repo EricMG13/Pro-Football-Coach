@@ -329,6 +329,13 @@ differently. The inks are in the table; the fills are:
 | `state.info` fill | `#6FA8DC` | 7.84 / 6.89 / 5.95 |
 | `college.identity` fill | `#B07BD6` | 6.27 / 5.52 / 4.76 |
 
+**Light appearance has no separate fill form.** Every light-appearance state ink in the table above
+already clears 4.5:1 against all three surfaces — `state.live` `#A3202F` measures 6.60/7.23/5.79,
+and the rest are stronger — so there is nothing a lighter fill would buy that the ink does not
+already have. In light appearance the ink **is** the fill; a chip, a rule and a sentence all draw
+the same value. The fill/ink split above is a dark-appearance-only consequence of the accent colours
+sitting between the 3:1 and 4.5:1 floors on `raised`, and it does not generalise.
+
 Measured constraints, binding on every consumer:
 
 - **Every ink role meets 4.5:1 against all three surfaces in both appearances.** The worst pairing
