@@ -1,0 +1,509 @@
+<!-- @dsCard group="chrome" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>chrome-v4 — Coach's World chrome, Floodlit (04 §6.5 registry 1–5)</title>
+<style>
+/* ============================================================================
+   chrome-v4.dc.html — self-contained HTML+CSS. No JavaScript, no CDN, no web
+   font, no icon font, no images. CSS px read as pt. Supersedes chrome-v3,
+   which rendered the retired violet system. Renders 04 §6.5 registry 1-5:
+   the route control, the action styles, the desk surface, the blank photo
+   plate, and the world strip.
+   ============================================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#060A12}
+body{
+  font-family:-apple-system,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
+  font-size:13px;line-height:1.5;padding:24px 16px 64px;color:#F6FAFF;
+  font-variant-numeric:tabular-nums;
+}
+.sheet{max-width:1200px;margin:0 auto}
+h1{font-size:20px;font-weight:800;letter-spacing:-0.2px}
+.kicker{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:#8496AC;margin-bottom:4px}
+.prov{font-size:11px;color:#A9BACE;margin-top:8px;max-width:82em}
+.prov b{color:#F6FAFF;font-weight:600}
+.law{font-size:11px;color:#A9BACE;border-left:3px solid #FFC53D;
+  background:#141A26;padding:8px 12px;margin-top:10px;max-width:82em}
+.card{background:#141A26;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;
+  padding:16px 18px 18px;margin-top:20px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.05) 0%, transparent 42%)}
+.card>*{position:relative}
+.card>h2{font-size:17px;font-weight:800;letter-spacing:-0.2px}
+.sub{font-size:11px;color:#8496AC;margin:2px 0 12px}
+h3{font-size:13px;font-weight:700;margin:16px 0 6px}
+p{margin:6px 0}
+.small{font-size:11px;color:#A9BACE}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;
+  background:#1E2735;border:1px solid #1E2735;border-radius:3px 14px 3px 14px;
+  padding:1px 5px;color:#A9BACE;white-space:nowrap}
+table{border-collapse:collapse;width:100%}
+th{font-size:10px;color:#8496AC;text-transform:uppercase;letter-spacing:.06em;
+  text-align:left;padding:4px 8px;border-bottom:1px solid #1E2735;font-weight:600}
+td{font-size:11px;padding:4px 8px;border-bottom:1px solid #1E2735;vertical-align:middle;color:#F6FAFF}
+.rl{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;color:#F6FAFF;white-space:nowrap}
+.duo{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;margin-top:8px}
+.pane{background:#060A12;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;
+  padding:14px;flex:1 1 460px;min-width:0}
+.pane.lt{background:#EDF1F6;color:#0B111C;border-color:#DCE3EC}
+.pane h4{font-size:11px;font-weight:700;margin-bottom:8px;color:inherit}
+.callout{background:#060A12;border:1px solid #1E2735;
+  border-left:3px solid #FFB03A;border-radius:4px 22px 4px 22px;padding:10px 12px;margin-top:12px}
+.callout h4{font-size:11px;font-weight:700;margin-bottom:4px}
+.callout li{font-size:11px;color:#A9BACE;margin:4px 0 4px 16px}
+.callout li b{color:#F6FAFF}
+.fig{font-size:10px;color:#8496AC;margin-top:4px}
+.vo,.contract{margin-top:14px;border-top:1px solid #1E2735;padding-top:10px}
+.vo h4,.contract h4{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;
+  letter-spacing:.08em;text-transform:uppercase;color:#FFC53D;margin-bottom:6px;font-weight:700}
+.vo ul{list-style:none}
+.vo li{font-size:11px;color:#A9BACE;margin:3px 0;padding-left:12px;border-left:2px solid #1E2735}
+.contract ol{margin-left:18px}
+.contract li{font-size:11px;color:#A9BACE;margin:4px 0}
+.contract li b{color:#F6FAFF;font-weight:600}
+.srow{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+.spec{display:flex;flex-direction:column;align-items:center;gap:6px}
+.spec .lab{font-size:10px;color:#8496AC;text-align:center;max-width:130px}
+.pane.lt .spec .lab{color:#566274}
+
+/* Pill / route control */
+.routes{display:flex;gap:6px}
+.pill{padding:6px 14px;border-radius:3px 14px 3px 14px;font-size:12px;font-weight:700;
+  border:1px solid rgba(255,255,255,.13);color:#A9BACE;min-height:32px;display:flex;align-items:center}
+.pill.sel{background:#FFC53D;color:#150F02;border-color:#FFC53D}
+.pill.dis{opacity:.45}
+.pane.lt .pill{border-color:#DCE3EC;color:#414B5C}
+.pane.lt .pill.sel{background:#7A5200;color:#FAFBFD;border-color:#7A5200}
+
+/* GoButton */
+.gobtn{display:inline-flex;align-items:center;gap:6px;min-width:44px;min-height:44px;
+  padding:0 18px;border-radius:22px 22px 22px 5px;background:#FFC53D;color:#150F02;
+  font-size:14px;font-weight:800;flex-shrink:0;white-space:nowrap}
+.gobtn.ghost{background:transparent;border:1px solid rgba(255,255,255,.13);color:#F6FAFF}
+.gobtn.pressed{opacity:.76}
+.gobtn.disabled{opacity:.45}
+.pane.lt .gobtn{background:#7A5200;color:#FAFBFD}
+.pane.lt .gobtn.ghost{border-color:#DCE3EC;color:#0B111C}
+.receipt{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#A9BACE;
+  background:#1E2735;padding:6px 12px;border-radius:3px 14px 3px 14px}
+.receipt .ok{color:#7DF0B6}
+
+/* Desk surface (opaque) vs glass */
+.desksurf{background:#141A26;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;padding:14px}
+.pane.lt .desksurf{background:#FAFBFD;border-color:#DCE3EC}
+.glasssurf{position:relative;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.13);
+  border-radius:4px 22px 4px 22px;padding:14px;overflow:hidden;backdrop-filter:blur(6px)}
+.glasssurf::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.10) 0%, transparent 42%)}
+
+/* Blank photo plate */
+.plate{background:#1E2735;border:1px solid rgba(255,255,255,.13);border-radius:3px 14px 3px 14px}
+.pane.lt .plate{background:#DCE3EC;border-color:#DCE3EC}
+
+/* World strip */
+.wstrip{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.13);border-radius:4px 22px 4px 22px;padding:8px 14px;
+  min-height:48px;position:relative;overflow:hidden}
+.wstrip::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.08) 0%, transparent 42%)}
+.wstrip>*{position:relative}
+.pane.lt .wstrip{background:#FFFFFF;border-color:#DCE3EC}
+.tchip{width:26px;height:26px;border-radius:3px 14px 3px 14px;background:#14382A;color:#F2F5F3;
+  font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sid{display:flex;flex-direction:column;flex-shrink:0}
+.sname{font-size:15px;font-weight:800;letter-spacing:-0.2px}
+.smeta{font-size:11px;color:#A9BACE}
+.pane.lt .smeta{color:#414B5C}
+.sdiv{width:1px;align-self:stretch;background:rgba(255,255,255,.13);margin:0 2px}
+.pane.lt .sdiv{background:#DCE3EC}
+.spacer{flex:1}
+</style>
+</head>
+<body class="dk">
+<div class="sheet">
+
+<header>
+  <div class="kicker">@dsCard group="chrome" — sheet 4 of 10, floodlit canon amendment §6.5 registry 1–5</div>
+  <h1>Pro Football Coach — chrome, chrome-v4</h1>
+  <p class="prov">
+    <b>Supersedes chrome-v3</b>, which rendered the retired violet system. Renders 04 §6.5 registry
+    1–5: <span class="mono">CoachWorldRouteButton</span> (registry 1, now Floodlit's
+    <span class="mono">Pill</span> geometry), <span class="mono">CoachWorldActionButtonStyle</span>
+    (registry 2, now <span class="mono">GoButton</span>), <span class="mono">coachWorldDeskSurface</span>
+    (registry 3 — the opaque fallback every panel takes beyond the two-material-panel budget),
+    <span class="mono">CoachWorldBlankPhotoPlate</span> (registry 4), and
+    <span class="mono">WorldStrip</span> (registry 5). Values quoted from
+    <span class="hex">docs/04-UX-AND-DESIGN-SYSTEM.md</span> §6.1 as amended 2026-08-14.
+  </p>
+  <p class="law">
+    This sheet is a rendering — 04 is the only canonical home. Static reference: no motion, no
+    script. Identities are mechanical placeholders labelled pending generator output, drawn from the
+    reference library's one save (Example State, Coach Sample, Week 9, 6-2).
+  </p>
+</header>
+
+<section class="card" id="card-1">
+  <h2>Card 1 — CoachWorldRouteButton (registry 1): local-route navigation</h2>
+  <p class="sub">A task provides only the local routes it needs — Office, Personnel, Acquisition/Front
+    Office, League, Career; labels may move or collapse, the information architecture stays stable.
+    Floodlit's row shape (3/14/3/14) replaces the flat 8/8/0/10 the pill previously took.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark appearance</h4>
+      <div class="routes">
+        <span class="pill">Office</span><span class="pill sel">Team</span><span class="pill">Recruit</span>
+        <span class="pill dis">League</span><span class="pill">Career</span>
+      </div>
+      <p class="fig">Selected: gold fill, dark ink #150F02 (12.08 on gold, quoted from tokens-v4).
+        Default: content.secondary on the row shape, no fill. Disabled: 45% opacity (tree value).</p>
+    </div>
+    <div class="pane lt">
+      <h4>Light appearance</h4>
+      <div class="routes">
+        <span class="pill">Office</span><span class="pill sel">Team</span><span class="pill">Recruit</span>
+        <span class="pill dis">League</span><span class="pill">Career</span>
+      </div>
+      <p class="fig">Selected: #7A5200 fill, work ink #FAFBFD (6.68 on tokens-v4's action.primary
+        light role). Default: content.secondary.</p>
+    </div>
+  </div>
+  <div class="callout">
+    <h4>Selection rule unchanged (04 §6.3)</h4>
+    <ul>
+      <li>The current route carries <b>boundary</b> (the gold fill itself, which at ≥3:1 against
+        the strip is a legible boundary in its own right), <b>value</b> (the bold label) and
+        <b>spoken state</b> (VoiceOver adds the selected trait) — never a coloured fill alone
+        without the other two.</li>
+      <li>Disabled is a momentary-illegality paint (45% opacity), distinct from suppression: match,
+        draft-room clocks and ceremonies remove routes entirely rather than dimming them (04 §3).</li>
+      <li>Pro tier swaps the selected fill's identity role from college to pro furniture where a
+        route needs tier colouring — gold stays the default selection colour; tier colour is reserved
+        for the six slots §5 names.</li>
+    </ul>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per state, written out</h4>
+    <ul>
+      <li>Default: "Office. Button."</li>
+      <li>Selected: "Team. Selected. Button."</li>
+      <li>Disabled: "League. Dimmed. Button."</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> both appearances rendered; the selected fill's ink is quoted from
+        tokens-v4's filled-control rule (12.08 dark, 6.68 light); default label is content.secondary,
+        quoted on tokens-v4 Card A.</li>
+      <li><b>Widths:</b> intrinsically sized, routes share the strip flexibly; exercised in Card 5's
+        width matrix. At AX5 labels may collapse into a world menu, IA stable, per 04 §3.</li>
+      <li><b>Touch:</b> 44 × 44 pt minimum; the row shape's visual height (32 pt) sits inside a
+        44 pt hit target, per §6.3.</li>
+      <li><b>States:</b> default, selected, disabled rendered above. Loading/empty/error/interrupted
+        are not applicable to a navigation control and live in the owning composition (failure-v4).</li>
+      <li><b>Team colour:</b> touches no team.* token; selection uses action.primary (gold) or tier
+        furniture only, per §5.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> the selection mark does not travel between routes — an instantaneous
+        discrete swap; any downstream transition follows Reduce Motion's discrete-state rule.</li>
+      <li><b>Verdict:</b> not a READOUT-class card; no verdict slot.</li>
+      <li><b>Density budget:</b> points — 0 additional, routes live inside the strip's existing band;
+        taps — 1 per route, inside the 2-tap reach rule; working memory — 0; learned symbols — 0.</li>
+      <li><b>Tokens:</b> gold #FFC53D / #7A5200 action.primary, #150F02 / #FAFBFD ink, row shape
+        3/14/3/14 — all quoted from 04 §6.1/§6.3 as amended 2026-08-14. No real name appears.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-2">
+  <h2>Card 2 — GoButton, superseding CoachWorldActionButtonStyle (registry 2)</h2>
+  <p class="sub">Decide, Inspect and Delegate remain distinct; the control is attached to the object
+    being changed; a generic footer Commit is prohibited. Gold is allowed to be a field only on the
+    committing action — the one control that moves the game forward.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark appearance</h4>
+      <div class="srow">
+        <div class="spec"><span class="gobtn">Accept offer</span><span class="lab">Decide — solid gold, dark ink 12.08 (quoted)</span></div>
+        <div class="spec"><span class="gobtn ghost">Inspect evidence</span><span class="lab">Inspect — ghost, outlined</span></div>
+        <div class="spec"><span class="gobtn ghost">Delegate</span><span class="lab">Delegate — ghost, explicit label</span></div>
+      </div>
+      <div class="srow" style="margin-top:14px">
+        <div class="spec"><span class="gobtn pressed">Accept offer</span><span class="lab">pressed — 76% opacity</span></div>
+        <div class="spec"><span class="gobtn disabled">Accept offer</span><span class="lab">disabled — 45% opacity</span></div>
+        <div class="spec"><span class="receipt"><span class="ok">✓</span> Delegated · Coordinator Sample</span><span class="lab">delegated — in-place receipt</span></div>
+      </div>
+    </div>
+    <div class="pane lt">
+      <h4>Light appearance</h4>
+      <div class="srow">
+        <div class="spec"><span class="gobtn">Accept offer</span><span class="lab">Decide — solid #7A5200, work ink 6.68</span></div>
+        <div class="spec"><span class="gobtn ghost">Inspect evidence</span><span class="lab">Inspect — ghost</span></div>
+        <div class="spec"><span class="gobtn ghost">Delegate</span><span class="lab">Delegate — ghost</span></div>
+      </div>
+      <div class="srow" style="margin-top:14px">
+        <div class="spec"><span class="gobtn pressed">Accept offer</span><span class="lab">pressed — 76%</span></div>
+        <div class="spec"><span class="gobtn disabled">Accept offer</span><span class="lab">disabled — 45%</span></div>
+        <div class="spec"><span class="receipt"><span class="ok">✓</span> Delegated · Coordinator Sample</span><span class="lab">delegated receipt</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="callout">
+    <h4>Gold is the one field, everywhere else is outlined (04 §5, 2026-08-14)</h4>
+    <ul>
+      <li><b>A gold field is permitted only on the committing action.</b> Inspect and Delegate take
+        the ghost form — outlined, no fill — so that gold reading as "the thing that advances the
+        game" stays true across every screen, not diluted across every button.</li>
+      <li><b>A filled control inks with the ground, never with content.primary.</b> #150F02 (or the
+        equivalent world.page ink) on the gold fill measures 12.08 dark; content.primary on the
+        same fill measures 1.51 and is never used there — quoted from tokens-v4's constraint
+        callout.</li>
+      <li><b>Delegate produces a receipt, not a state change to itself</b> — the control is replaced
+        by the receipt, one discrete step, no crossfade.</li>
+    </ul>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per state, written out</h4>
+    <ul>
+      <li>Decide: "Accept offer. Button."</li>
+      <li>Inspect: "Inspect evidence. Button."</li>
+      <li>Delegate: "Delegate to Coordinator Sample. Button."</li>
+      <li>Disabled: "Accept offer. Dimmed. Button."</li>
+      <li>Delegated receipt: "Delegated. Assigned to Coordinator Sample. Completed by staff when time advances."</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> both appearances rendered; the solid form's ink pairing is quoted from
+        tokens-v4 (12.08 dark, 6.68 light); the ghost form's border is content.secondary, quoted on
+        tokens-v4 Card A.</li>
+      <li><b>Widths:</b> intrinsically sized beside their cause; exercised in Card 5's width matrix
+        as the advance slot.</li>
+      <li><b>Touch:</b> 44 × 44 pt minimum, printed in the action shape (22/22/22/5).</li>
+      <li><b>States:</b> solid, ghost, pressed, disabled and delegated rendered in both appearances.
+        Selected is not applicable — an action commits, it does not select.</li>
+      <li><b>Team colour:</b> touches no team.* token.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> the press paint is an instantaneous compositing change; delegated swap is
+        a discrete replacement, no crossfade, under Reduce Motion's rule.</li>
+      <li><b>Verdict:</b> not a READOUT-class card.</li>
+      <li><b>Density budget:</b> points — one 44 pt control beside its cause, no separate action rail;
+        taps — decide, inspect, delegate each 1 tap; working memory — 0; learned symbols — 0 new
+        (the checkmark shown is a placeholder for the same delegated glyph §6.6 already registers).</li>
+      <li><b>Tokens:</b> action shape 22/22/22/5, gold #FFC53D/#7A5200, ink #150F02/#FAFBFD — 04
+        §6.1/§6.3 as amended 2026-08-14. Coordinator Sample is a placeholder, pending generator
+        output.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-3">
+  <h2>Card 3 — coachWorldDeskSurface (registry 3): the opaque fallback</h2>
+  <p class="sub">Every panel beyond the two live material panels a screen may spend takes this
+    treatment — matte, opaque, hairline-bordered. It is not a competing system to glass; it is what
+    glass degrades to under the budget in depth-v4 Card B, and what every panel becomes under Reduce
+    Transparency.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark appearance — desk surface beside a glass panel</h4>
+      <div style="display:flex;gap:10px">
+        <div class="desksurf" style="flex:1"><div style="font-size:12px;font-weight:700">Desk surface</div><div style="font-size:10px;color:#8496AC;margin-top:3px">world.work fill, hairline border, no blur cost</div></div>
+        <div class="glasssurf" style="flex:1"><div style="font-size:12px;font-weight:700">Glass surface</div><div style="font-size:10px;color:#A9BACE;margin-top:3px">for comparison — the material form, Card B of depth-v4</div></div>
+      </div>
+    </div>
+    <div class="pane lt">
+      <h4>Light appearance — opaque throughout</h4>
+      <div class="desksurf"><div style="font-size:12px;font-weight:700">Desk surface</div><div style="font-size:10px;color:#566274;margin-top:3px">Light appearance has no glass convention at all — every panel is this treatment.</div></div>
+    </div>
+  </div>
+  <p class="small">Hairlines separate continuous regions; containers exist only for interaction,
+    grouping or clipping — unchanged from the retired system. What changed is only what a container
+    is allowed to look like when it is one of the screen's two material panels, which depth-v4 owns.</p>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence, written out</h4>
+    <ul><li>Desk surface: matte opaque panel, world.work fill, hairline border — the fallback treatment beyond the two-material-panel budget.</li></ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> the desk surface carries no ink of its own — content placed on it takes the
+        ratios already quoted on tokens-v4 Card A for world.work/raised.</li>
+      <li><b>Widths:</b> fills its container at any width.</li>
+      <li><b>Touch:</b> not applicable — a surface, not a control.</li>
+      <li><b>States:</b> one state; it does not vary.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> none.</li>
+      <li><b>Verdict:</b> not a READOUT-class card.</li>
+      <li><b>Density budget:</b> not applicable — a surface treatment, not a priced region.</li>
+      <li><b>Tokens:</b> world.work/raised fills, content.quiet hairline — 04 §6.1; row/panel radii —
+        §6.3.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-4">
+  <h2>Card 4 — CoachWorldBlankPhotoPlate (registry 4): neutral person plate</h2>
+  <p class="sub">A deliberate neutral photo plate — no generated face, no initials pretending to be a
+    photograph. Recognition comes from name, role, uniform, team, relationships and history.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark appearance</h4>
+      <div class="srow">
+        <div class="spec"><div class="plate" style="width:52px;height:64px"></div><span class="lab">52×64 — roster inspector</span></div>
+        <div class="spec"><div class="plate" style="width:64px;height:72px"></div><span class="lab">64×72 — profile identity band</span></div>
+        <div class="spec" style="max-width:230px"><div style="display:flex;gap:8px;align-items:flex-start"><div class="plate" style="width:52px;height:64px"></div><div style="display:flex;flex-direction:column;gap:2px;padding-top:2px"><span style="font-size:15px;font-weight:800;letter-spacing:-0.2px">COACH SAMPLE</span><span style="font-size:12px;color:#A9BACE">Head Coach · Example State</span></div></div><span class="lab">in situ — recognition by name, role and team, never a face</span></div>
+      </div>
+    </div>
+    <div class="pane lt">
+      <h4>Light appearance</h4>
+      <div class="srow">
+        <div class="spec"><div class="plate" style="width:52px;height:64px"></div><span class="lab">52×64</span></div>
+        <div class="spec"><div class="plate" style="width:64px;height:72px"></div><span class="lab">64×72</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="callout">
+    <h4>What the plate must never become (04 §5.1, legal guardrail)</h4>
+    <ul>
+      <li>No generated face, no initials-as-photograph, no network-fetched portrait. The base UI
+        never fetches identity assets.</li>
+      <li>The plate face is deliberately empty — fill and hairline only, unchanged by Floodlit's
+        depth model; a plate never takes the glass treatment, because a blur over nothing is still
+        nothing, and the flat form states that honestly.</li>
+    </ul>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence, written out</h4>
+    <ul><li>"No photo set for Coach Sample." — the shipped accessibility label, quoted exactly.</li></ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> the plate is non-text furniture; its hairline boundary is content.quiet
+        against world.raised, quoted on tokens-v4 Card A (4.97 dark, 4.78 light).</li>
+      <li><b>Widths:</b> fixed bounded geometry at shipped sizes; identity text beside it scales
+        and reflows.</li>
+      <li><b>Touch:</b> not interactive; the containing row supplies the target.</li>
+      <li><b>States:</b> one visual state — the plate is the missing-photo state by design.</li>
+      <li><b>Team colour:</b> touches no team.* token — deliberately neutral.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> animates nothing — no shimmer, no placeholder pulse.</li>
+      <li><b>Verdict:</b> not a READOUT-class card.</li>
+      <li><b>Density budget:</b> points — fixed spends, bounded by construction; taps 0; learned
+        symbols 0.</li>
+      <li><b>Tokens:</b> world.raised fill, content.quiet hairline — 04 §6.1; row radius — §6.3.
+        Coach Sample, Example State are placeholders, pending generator output.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-5">
+  <h2>Card 5 — WorldStrip (registry 5): programme, coach, date/phase, record, advance</h2>
+  <p class="sub">World state, not an app toolbar — Continue advances only to the next unresolved
+    obligation or scheduled event; clocks and ceremonies suppress it entirely. Now a glass surface
+    (one of the screen's two material panels) rather than the flat raised bar it took before.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark appearance — path clear</h4>
+      <div class="wstrip">
+        <span class="tchip">EXS</span>
+        <div class="sid">
+          <span class="sname">Example State</span>
+          <span class="smeta">Coach Sample · Week 9 · Prep · 6-2</span>
+        </div>
+        <div class="sdiv"></div>
+        <div class="routes"><span class="pill">Office</span><span class="pill sel">Team</span></div>
+        <span class="spacer"></span>
+        <span class="gobtn">Continue</span>
+      </div>
+      <p class="fig" style="text-align:left">State A — path clear: the fixed slot reads "Continue" and
+        advances to the next scheduled event. The strip is standard-depth glass — one of the
+        screen's two material panels.</p>
+    </div>
+    <div class="pane lt">
+      <h4>Light appearance — obligation pending</h4>
+      <div class="wstrip">
+        <span class="tchip">EXS</span>
+        <div class="sid">
+          <span class="sname">Example State</span>
+          <span class="smeta">Coach Sample · Week 9 · Prep · 6-2</span>
+        </div>
+        <div class="sdiv"></div>
+        <div class="routes"><span class="pill">Office</span><span class="pill sel">Team</span></div>
+        <span class="spacer"></span>
+        <span class="gobtn ghost">2 due</span>
+      </div>
+      <p class="fig" style="text-align:left">State B — obligation pending: the slot names the count
+        rather than offering to advance; tapping it opens the obligation, not the calendar.</p>
+    </div>
+  </div>
+  <div class="callout">
+    <h4>Suppression, not dimming</h4>
+    <ul>
+      <li>Match, draft-room clocks, signing-day clocks and ceremonies suppress the strip entirely —
+        it is removed, not dimmed, per 04 §3. Match Day owns the whole frame per §9; no world strip
+        appears there at all.</li>
+      <li>The strip is the one full-bleed team field per management screen (§5) — the pennant chip
+        carries the generated colour; nothing else on the strip does.</li>
+    </ul>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per element, written out</h4>
+    <ul>
+      <li>Programme: Example State, pending generator output.</li>
+      <li>Coach: Coach Sample, head coach.</li>
+      <li>Week: 9, preparation phase.</li>
+      <li>Record: 6 and 2.</li>
+      <li>Advance: Continue, advances time to the next scheduled event — or, when an obligation is pending, "2 due", opens the obligation.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> both appearances rendered; strip is standard-depth glass over the
+        composition's world — content ratios are quoted on tokens-v4 Card A and depth-v4 Card B.</li>
+      <li><b>Widths:</b> the strip is full-width and reflows its internal spacing; exercised at
+        844/852/956 without clipping.</li>
+      <li><b>Touch:</b> the Continue control measures 44 × 44 pt minimum.</li>
+      <li><b>States:</b> path-clear and obligation-pending shown; suppressed (absent entirely) is
+        stated rather than drawn, since there is nothing to draw.</li>
+      <li><b>Team colour:</b> the strip is the one full-bleed team field per management screen — the
+        pennant chip only.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> the strip does not animate on its own; Reduce Motion governs whatever
+        transition Continue triggers.</li>
+      <li><b>Verdict:</b> not a READOUT-class card.</li>
+      <li><b>Density budget:</b> points — one dominant object's context header, not itself the
+        dominant object; taps — Continue and each route are 1 tap; learned symbols 0.</li>
+      <li><b>Tokens:</b> glass standard depth (tokens-v4/depth-v4), gold action shape, team trio
+        chip — all quoted 04 §6.1/§6.5. Example State, Coach Sample are placeholders, pending
+        generator output.</li>
+    </ol>
+  </div>
+</section>
+
+<footer style="margin-top:24px">
+  <p class="small">End of chrome-v4. Five cards, registry 1–5. Supersedes chrome-v3. 04 §6.1, §6.3
+    and §6.5 remain the only canonical home for every value and rule shown. Static, no motion, no
+    script.</p>
+</footer>
+
+</div>
+</body>
+</html>
