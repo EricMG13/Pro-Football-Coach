@@ -39,9 +39,9 @@ public struct ColumnSetControl: View {
     public var body: some View {
         HStack(spacing: CoachWorldTokens.Space.xxs) {
             ForEach(sets, id: \.id) { set in
-                CoachWorldRoutePill(
-                    set.title,
-                    isSelected: set.id == selected,
+                CoachWorldRouteButton(
+                    title: set.title,
+                    isCurrent: set.id == selected,
                     action: { onSelect(set.id) }
                 )
             }

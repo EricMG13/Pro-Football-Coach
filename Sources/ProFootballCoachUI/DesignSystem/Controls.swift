@@ -112,69 +112,6 @@ public struct GoButton: View {
     }
 }
 
-/// Registry 1 — a local-route control. Selected takes the gold field; the rest stay outlined.
-public struct CoachWorldRoutePill: View {
-    @Environment(\.coachWorldPalette) private var palette
-    @Environment(\.coachWorldFills) private var fills
-    @ScaledMetric(relativeTo: .caption) private var textSize =
-        CoachWorldTokens.Control.pillTextSize
-
-    private let title: String
-    private let isSelected: Bool
-    private let tint: Color?
-    private let action: () -> Void
-
-    public init(
-        _ title: String,
-        isSelected: Bool = false,
-        tint: Color? = nil,
-        action: @escaping () -> Void
-    ) {
-        self.title = title
-        self.isSelected = isSelected
-        self.tint = tint
-        self.action = action
-    }
-
-    public var body: some View {
-        Button(action: action) {
-            Text(title.uppercased())
-                .font(CoachWorldTokens.TypeRole.display(textSize))
-                .tracking(CoachWorldTokens.Control.pillTracking)
-                .foregroundStyle(ink)
-                .lineLimit(1)
-                .padding(.horizontal, CoachWorldTokens.Control.pillInset)
-                .frame(minHeight: CoachWorldTokens.Control.pillHeight)
-                // The drawn height is 32; the hit target is the 44 pt floor `04` §6.3 requires.
-                .contentShape(Rectangle())
-                .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-                .background { field }
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-
-    private var ink: Color {
-        isSelected ? fills.onFill.color : (tint ?? palette.contentSecondary.color)
-    }
-
-    @ViewBuilder private var field: some View {
-        let shape = CutCorner.row
-        if isSelected {
-            shape.fill(LinearGradient(
-                colors: [CoachWorldTokens.Gauge.arcLight.color, palette.actionPrimary.color],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            ))
-        } else {
-            shape.fill(CoachWorldTokens.Control.pillGhostFill.color)
-                .overlay(shape.strokeBorder(
-                    tint?.opacity(0.42) ?? CoachWorldTokens.Glass.edge.color,
-                    lineWidth: CoachWorldTokens.Shape.hairline
-                ))
-        }
-    }
-}
-
 /// Registry 33 — a recruiting star rating, drawn as blades rather than clip-art stars.
 ///
 /// `04` §6.6's Rating-marks class, cap 1, and it is **always beside its printed figure**: the

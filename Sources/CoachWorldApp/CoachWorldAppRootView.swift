@@ -23,6 +23,8 @@ public struct CoachWorldAppRootView: View {
         self.saves = saves
     }
 
+    @Environment(\.colorScheme) private var colorScheme
+
     public var body: some View {
         Group {
             if let store {
@@ -31,6 +33,10 @@ public struct CoachWorldAppRootView: View {
                 title
             }
         }
+        // Resolved once, here, and read from the environment below. Every screen used to carry its
+        // own identical copy of this rule — five places to edit and nothing that notices when only
+        // four are.
+        .coachWorldAppearance(colorScheme)
         .task { await restoreExistingCareer() }
     }
 
