@@ -140,6 +140,52 @@ public enum CoachWorldTokens {
         public static let pennantHeight: CGFloat = 24
     }
 
+    /// Marks and chips — `04` §6.5 entries 10–12, 17, 18.
+    public enum Mark {
+        /// The rating badge, exactly as `04` §6.4 item 4 specifies it.
+        public static let badgeWidth: CGFloat = 20
+        public static let badgeHeight: CGFloat = 16
+        public static let badgeRadius: CGFloat = 3
+        public static let badgeFillOpacity: Double = 0.85
+        public static let badgeTextSize: CGFloat = 10
+
+        /// Status and role chips.
+        public static let chipTextSize: CGFloat = 10
+        public static let chipInset: CGFloat = 5
+        public static let chipHeight: CGFloat = 18
+        /// `04` §6.6: at most three status glyphs on any dense row.
+        public static let statusChipsPerRow = 3
+
+        /// The on-field role token — a short code mapping a list row to a diagram position.
+        public static let roleTokenSize: CGFloat = 18
+        public static let roleTokenTextSize: CGFloat = 9
+    }
+
+    /// The dense table — `04` §6.5 entries 7–9, sized by §6.3 and §6.4.
+    public enum Table {
+        /// `04` §6.3: dense rows use explicit 24–28 pt tracks in the default composition.
+        public static let rowHeight: CGFloat = 26
+        /// The sortable header band, which is a control and so takes the 44 pt floor.
+        public static let headerHeight: CGFloat = 44
+        /// The caption band above the header, carrying the count.
+        public static let captionHeight: CGFloat = 24
+        public static let cellInset: CGFloat = 6
+        public static let cellTextSize: CGFloat = 11
+        public static let headerTextSize: CGFloat = 10
+
+        /// The selected row's boundary. `04` §6.3: selection gets boundary, value and spoken state,
+        /// never a coloured fill alone.
+        public static let selectionRuleWidth: CGFloat = 3
+        public static let selectionFillOpacity: Double = 0.14
+        /// An unavailable row is dimmed, not blanked — the facts stay readable.
+        public static let unavailableOpacity: Double = 0.62
+
+        /// `04` §4.5 prices the table at six to nine fact columns beside identity.
+        public static let factColumnCeiling = 9
+        /// `WorldHistoryReadModel.search` is proven over a ≤32,768 index; the control matches it.
+        public static let searchIndexBound = 32_768
+    }
+
     /// Depth, as `04` §6.1 permits it: real elevation, never decorative shadow.
     ///
     /// `04` §6.1 forbids "decorative shadow" and "depth that is not real depth". A panel held above
