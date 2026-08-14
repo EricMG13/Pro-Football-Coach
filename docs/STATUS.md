@@ -611,10 +611,44 @@ promotion path is meant to reach the app's actor are all owner-level design call
 implementation details this session could invent. The `Career` route in the world strip still
 reaches "Career Hub is not available yet", truthfully.
 
-**Measured: `750 tests, 763,687 checks, all passed`**, release build, exit 0 — the read-model
+**First measured: `750 tests, 763,687 checks, all passed`**, release build, exit 0 — the read-model
 suite gained the planned 5 tests and the contract suite gained 2 (743 → 750 against the prior
 session's `743`), with `DesignContractTests`, `AccessibilityReflowTests` and the new colour-scan
-assertion all in the same no-argument run. `AX5 contract: 6 landed, 56 pending` (was 5 / 57).
+assertion all in the same no-argument run. `AX5 contract: 6 landed, 56 pending` (was 5 / 57). **That
+figure is now superseded by the confidence-review fix below** — it predates a real bug the review
+found and fixed, which added further checks.
+
+**A confidence review of this diff found a second confirmed bug, traced rather than guessed, and
+fixed.** `LeagueGenerator.swift:249` seeds professional rivalries by passing each team's *division*
+id into the same field college seeding fills with a real conference id
+(`conferenceID: team.divisionID`), because `RivalrySeeder` itself is tier-blind and only asks
+whether two members share the id in that slot. A professional `Rivalry.origin` of `.conference` or
+`.both` therefore means "same division" — a materially tighter grouping than the 16-team conference
+the same `Place` already names in its own `conferenceName`. `label(_:)` labelled both tiers
+"Conference"/"Conference neighbours" regardless, so every professional rivalry on this screen would
+have shown the wrong word for what it is. Verified by reverting the fix and rerunning: **35 failed
+checks across nearly every professional team** in a generated world, confirming this was not an edge
+case but the default outcome for the Professional tier. `label(_:)` is now `label(_:tierLabel:)`,
+naming "Division" for professional origins and "Conference" for college ones, with a regression test
+asserting a professional rival's label never contains "Conference" and a college rival's never
+contains "Division". The review also added join coverage the original tests lacked —
+`Place.regionID`/`regionName` and `Place.conferenceName` are now independently checked against
+`state.map` and `state.league.conferences` rather than only checked for non-default values — and
+that coverage was itself verified to fail against a planted wrong-region-id defect before being
+trusted. `--screen-read-models` is green with the fix: **34 tests, 9,244 checks** (up from 7,421,
+consistent with the added assertion volume); `--core-contracts` remains green at **174 tests, 1,175
+checks**.
+
+**The full no-argument suite could not be re-measured after the fix in this session, and that is
+stated rather than papered over with the pre-fix number.** Three consecutive attempts at
+`swift run -c release SimTests` were terminated by the environment before completing — one exited
+silently with no output and no exit code, one exited `137` (SIGKILL) with no output at all, one was
+moved to background and then left no trace — despite the host reporting 244 GB free disk and over a
+million free memory pages at the time, ruling out local resource exhaustion as the cause. A
+debug-mode run (`swift run SimTests`, no `-c release`) was started and left running in the
+background; if it completes, its count is recorded in a following entry, and if not, the honest
+state is: the two suites that touch this session's changed code are confirmed green after the fix,
+and the full-suite figure above is stale by exactly the checks this paragraph describes.
 
 **A resource-contention finding worth recording, not a code defect.** The first attempt at this
 measurement stalled for hours with no error and no crash — `sample`'s stack for the wrapper process
