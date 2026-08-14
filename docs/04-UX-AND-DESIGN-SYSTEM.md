@@ -392,6 +392,44 @@ Measured constraints, binding on every consumer:
 
   Neither hairline carries meaning alone; §6.3's boundary-value-spoken rule governs.
 
+**Atmosphere values (added 2026-08-14 with the Floodlit import).** The worlds in §2 are painted from
+gradients, and their stops are shipped values like any other — canon holds every value the tree
+ships, so they are stated here rather than left as literals in a view, which §6.1's own rule calls a
+defect. **They are backdrop, not surface:** nothing draws text on them directly. What sits over a
+world is a panel, and the deep-panel rule above is what governs legibility there; these values
+matter because they set the ground that rule is measured against. A ratio is therefore not stated
+per stop — the meaningful measurement is the worst composited ground, `#AAD3A4`, already carried by
+that rule.
+
+| World | Role | Values |
+|---|---|---|
+| Pitch | ground (with `world.haze`, `world.night`) | `#03060B` |
+| Pitch | vignette | `#080E1A` α0.34, `#04080E` α0.80 |
+| Pitch, after | ground | `#0B1A16`, `#060D10`, `#03060A` |
+| Pitch, after | vignette | `#050A0E` α0.86, `#081216` α0.30, `#03060A` α0.88 |
+| Facility | ground | `#1A1420` (with `world.room`, `world.roomDeep`) |
+| Facility | floor | `#1A1421`, `#0C0912`, `#05040A` |
+| Facility | vignette | `#08060D` α0.55, `#0C0912` α0.12, `#040308` α0.86 |
+| Facility | window band | `#0A1322`, `#0B1626`, `#080D18` |
+| Facility | distant stadium glow | `#78FFBE` α0.28, `#50C896` α0.07 |
+| Facility | stadium light bar | `#B4FFDC` α0.66 |
+| Facility | mullions | `#06050A` α0.9 |
+| Film room | ground | `#0E1826`, `#070C15`, `#04060B` |
+| Film room | projector throw | `#B0D6FF` α0.20 → α0.02 |
+| Film room | dust motes | `#C8E1FF` α0.5 |
+| Desk | vignette | `#07060C` α0.82, `#0A0810` α0.60, `#030307` α0.94 |
+
+**Two of these do carry content, and are measured.** The exception exists because a value that reads
+as atmosphere can still end up under a figure:
+
+- **`#93A8C0` — the display gradient's lower stop.** The largest type is filled with a gradient from
+  white to this value, so a headline reads as lit from above. It is **text**, and §6.2's worst-stop
+  rule makes this stop the one that must clear the floor: it measures **8.12 / 7.14 / 6.16** on
+  page / work / raised, so the headline holds at its dimmest point on every surface.
+- **`#060B14` α0.72 — the `AttributeDial` core**, which carries the one number summarising the ring
+  around it. Composited over the worst deep panel it resolves to `#0F141A`, on which
+  `content.primary` measures **17.65** and `content.secondary` **9.34**.
+
 **Team colour reference trio (labelled synthetic — pending generator output, owner disposition
 2026-08-12; the P2 generator's sampled space is uniformly dark-primary).** Floors:
 `team.onTeam`-on-`team.primary` 4.5:1; `team.secondary`-on-`team.primary` 3:1.
