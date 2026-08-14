@@ -5,10 +5,11 @@ They demonstrate the desktop-class density target: desktop-style information den
 landscape iPhone, using original fictional identities and native controls rather than copied assets.
 The standard-size reference target uses 10–12 pt dense type; AX5 proofs reflow and scale.
 
-**The definitive design references are the eight `*-v3.dc.html` sheets at the repository root**
-(owner-approved 2026-08-12; renders and index in `docs/proofs/design-references/`). These proof
-screenshots are evidence of what the build renders today, not a design authority; where a proof and
-a sheet disagree, the sheet governs, and where a sheet and `04` disagree, `04` governs.
+**The definitive design references are the ten `*-v4.dc.html` sheets at the repository root**
+(redrawn in Floodlit 2026-08-14, superseding the deleted `*-v3.dc.html` set; renders and index in
+`docs/proofs/design-references/`). These proof screenshots are evidence of what the build renders
+today, not a design authority; where a proof and a sheet disagree, the sheet governs, and where a
+sheet and `04` disagree, `04` governs.
 
 Older proof variants were captured at the 844×390 landscape viewport; the supported window is now
 844 × 390 (install floor) through 956 × 440 (ceiling) per `04` §7 and D15. Light/default renders at
