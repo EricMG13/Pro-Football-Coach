@@ -187,6 +187,20 @@ wash §4.4 rejects. Within the slots:
   surface refuses team paint and renders neutral; §6.1's mandatory hairline boundary applies to
   every team fill in every slot.
 
+**Gold is not team colour (2026-08-14).** Floodlit's gold is `action.primary`, and the restraint
+rules above do not touch it. Three consequences, stated because the two are easy to confuse:
+
+- **A gold field is permitted on the committing action, and nowhere else.** It is the one control
+  on a screen that moves the game forward, and it is the only element allowed to take the accent as
+  a fill; everything else that looks interactive is outlined. This does not consume the screen's one
+  full-bleed team field, which remains the world strip's.
+- **On the field, gold is `field.annotation` — the first-down rule.** The two uses never co-occur,
+  because §9 forbids management chrome on the match view, so no screen shows a gold action and a
+  gold first-down line together.
+- **A generated team colour near the accent still renders as itself.** The programme owns its
+  colour; the action is told apart by shape, boundary and position, not by hue. This is the same
+  reasoning as "team colour never inks meaning", applied in the other direction.
+
 ### 5.1 People and future custom universes
 
 The base product uses a deliberate neutral photo plate for players and personnel. It contains no
@@ -254,67 +268,104 @@ SwiftUI implementation.
 | `field.turf`, `field.line`, `field.annotation`, `field.live` | field grammar |
 | `broadcast.home`, `broadcast.away`, `broadcast.ink` | per-match derived roles |
 
-The owner-supplied Football Manager captures are the temporary production proxy for density,
-navigation proportions, panel rhythm and typographic hierarchy. DESK therefore defaults to a
-near-navy workspace with restrained violet navigation/action furniture and compact opaque panels.
-The game does not copy FM marks, icons, photographs, club identities or branded artwork.
+The owner-supplied Football Manager captures remain the production proxy for **density, navigation
+proportions, panel rhythm and typographic hierarchy** — that is what §4.5 prices and what they are
+for. They are no longer the proxy for colour or surface treatment. The game does not copy FM marks,
+icons, photographs, club identities or branded artwork.
 
-**Production values (G-07 write-back, 2026-08-12).** These are the shipped values from
-`Sources/ProFootballCoachUI/DesignTokens.swift`, written back so no sheet or view claims a value
-canon does not hold. Every ratio is measured WCAG 2.2 relative-luminance contrast against the
-surface the role is actually composited on (floors: 4.5:1 body text, 3:1 large text and non-text —
-SC 1.4.3/1.4.11, verified sources in `docs/briefs/2026-08-12-sourcing-log.md`). A code/canon sync
-check is owed by `ContractTests` (gap G-07's test half).
+**The visual language is Floodlit (owner decision, 2026-08-14).** The Coach's World remains the
+product premise — the registers in §2, the world navigation in §3 and the composition rules in §4 are
+unchanged. Floodlit is how that premise is *painted*: a single lit world seen at night or indoors,
+with glass panels held at depth under one light, proportions drawn as arcs, and film grain over
+everything. Its `World` backdrop is the register made visible — the pitch when the screen is about
+the field, the facility floor when it is about the programme, the footage itself in the film room.
+The light appearance is the same places by day, not an inversion of the night values.
+
+**Production values (Floodlit write-back, 2026-08-14; supersedes the 2026-08-12 G-07 table).** These
+are the values `Sources/ProFootballCoachUI/DesignTokens.swift` ships, written back so no sheet or
+view claims a value canon does not hold. Every ratio is measured WCAG 2.2 relative-luminance contrast
+against the surface the role is actually composited on (floors: 4.5:1 body text, 3:1 large text and
+non-text — SC 1.4.3/1.4.11, verified sources in `docs/briefs/2026-08-12-sourcing-log.md`). The
+derivation and its three findings are in `docs/plans/2026-08-14-floodlit-canon-amendment.md`; the
+code/canon sync check is `DesignContractTests`' token-sync suite.
+
+The three neutral elevations are the **opaque equivalents** of Floodlit's surfaces: what a panel
+measures as for contrast purposes, and the flat fill it falls back to when the blur budget in this
+section is exceeded. `world.work` is Floodlit's standard glass composited over `world.page`.
 
 | Role | Dark | on page / work / raised | Light | on page / work / raised |
 |---|---|---|---|---|
-| `world.page` | `#080A14` | — | `#F1F2F7` | — |
-| `world.work` | `#111426` | — | `#FBFBFD` | — |
-| `world.raised` | `#191D32` | — | `#E6E8F0` | — |
-| `content.primary` | `#F4F5FA` | 18.13 / 16.74 / 15.27 | `#111426` | 16.31 / 17.64 / 14.90 |
-| `content.secondary` | `#B8BDCC` | 10.52 / 9.71 / 8.86 | `#4D5366` | 6.84 / 7.40 / 6.25 |
-| `content.quiet` | `#858CA2` | 5.89 / 5.44 / 4.96 | `#596074` | 5.61 / 6.07 / 5.12 |
-| `action.primary` | `#9964E8` | 5.02 / 4.64 / **4.23** | `#6840B0` | 6.37 / 6.89 / 5.82 |
-| `action.secondary` | `#B8BDCC` | 10.52 / 9.71 / 8.86 | `#4D5366` | 6.84 / 7.40 / 6.25 |
-| `action.destructive` | `#F07886` | 7.27 / 6.72 / 6.12 | `#A42D32` | 6.26 / 6.77 / 5.72 |
-| `state.live` | `#72D7A0` | 11.23 / 10.37 / 9.46 | `#4A6F00` | 5.27 / 5.70 / 4.82 |
-| `state.positive` | `#6FD39A` | 10.77 / 9.95 / 9.07 | `#1F7048` | 5.41 / 5.86 / 4.95 |
-| `state.warning` | `#F0C56C` | 12.13 / 11.21 / 10.22 | `#765300` | 6.25 / 6.76 / 5.71 |
-| `state.negative` | `#F07886` | 7.27 / 6.72 / 6.12 | `#A42D32` | 6.26 / 6.77 / 5.72 |
-| `state.info` | `#72ADEC` | 8.37 / 7.73 / 7.05 | `#205F96` | 5.98 / 6.47 / 5.47 |
-| `college.identity` | `#A861D6` | 5.03 / 4.64 / **4.23** | `#6840B0` | 6.37 / 6.89 / 5.82 |
-| `pro.identity` | `#5B9DE0` | 6.90 / 6.38 / 5.81 | `#2D628B` | 5.81 / 6.29 / 5.31 |
-| `field.turf` | `#163E2A` | — | `#DCE8DF` | — |
-| `field.turfBand` | `#1A452F` | 1.10 on `field.turf` | `#D2E0D6` | 1.08 on `field.turf` |
-| `field.line` (on turf) | `#F5F7FA` | 11.14 | `#0E1218` | 14.89 |
-| `field.annotation` (on turf) | `#E7C45D` | 7.09 | `#7A5200` | 5.49 |
-| `field.live` (on turf) | `#C6F24E` | 9.23 | `#4A6F00` | 4.67 |
+| `world.page` | `#060A12` | — | `#EDF1F6` | — |
+| `world.work` | `#141A26` | — | `#FAFBFD` | — |
+| `world.raised` | `#1E2735` | — | `#DCE3EC` | — |
+| `content.primary` | `#F6FAFF` | 18.90 / 16.62 / 14.34 | `#0B111C` | 16.66 / 18.25 / 14.62 |
+| `content.secondary` | `#A9BACE` | 10.00 / 8.79 / 7.59 | `#414B5C` | 7.76 / 8.50 / 6.81 |
+| `content.quiet` | `#8496AC` | 6.55 / 5.76 / 4.97 | `#566274` | 5.45 / 5.97 / 4.78 |
+| `action.primary` | `#FFC53D` | 12.55 / 11.04 / 9.53 | `#7A5200` | 6.10 / 6.68 / 5.35 |
+| `action.secondary` | `#A9BACE` | 10.00 / 8.79 / 7.59 | `#414B5C` | 7.76 / 8.50 / 6.81 |
+| `action.destructive` | `#FF8E9C` | 9.06 / 7.96 / 6.87 | `#A3202F` | 6.60 / 7.23 / 5.79 |
+| `state.live` | `#FF8E9C` | 9.06 / 7.96 / 6.87 | `#A3202F` | 6.60 / 7.23 / 5.79 |
+| `state.positive` | `#7DF0B6` | 14.16 / 12.45 / 10.75 | `#14653C` | 6.26 / 6.86 / 5.49 |
+| `state.warning` | `#FFB03A` | 10.87 / 9.56 / 8.25 | `#704C00` | 6.80 / 7.45 / 5.97 |
+| `state.negative` | `#FF8E9C` | 9.06 / 7.96 / 6.87 | `#A3202F` | 6.60 / 7.23 / 5.79 |
+| `state.info` | `#9CC8EE` | 11.24 / 9.88 / 8.53 | `#1E5A8C` | 6.39 / 7.00 / 5.61 |
+| `college.identity` | `#C79AE4` | 8.65 / 7.61 / 6.57 | `#6A3E9C` | 6.65 / 7.29 / 5.84 |
+| `pro.identity` | `#9CC8EE` | 11.24 / 9.88 / 8.53 | `#26608D` | 5.90 / 6.46 / 5.17 |
+| `field.turf` | `#1C6E42` | — | `#D9E7DD` | — |
+| `field.turfBand` | `#1F764A` | 1.12 on `field.turf` | `#D0E0D5` | 1.07 on `field.turf` |
+| `field.line` (on turf) | `#F5F7FA` | 5.83 | `#0E1218` | 14.69 |
+| `field.annotation` (on turf) | `#FFC53D` | **3.96** | `#7A5200` | 5.41 |
+| `field.live` (on turf) | `#C6F24E` | 4.83 | `#3F6300` | 5.48 |
+
+**State fills, distinct from the state inks above.** Floodlit separates the colour that fills a chip
+or indicator from the colour that carries text, and canon holds both because they measure
+differently. The inks are in the table; the fills are:
+
+| Fill | Dark | on page / work / raised |
+|---|---|---|
+| `state.live` / `state.negative` / `action.destructive` fill | `#FF3B54` | 5.67 / 4.98 / **4.30** |
+| `state.positive` fill | `#37E08A` | 11.50 / 10.11 / 8.73 |
+| `state.warning` fill | `#FFB03A` | 10.87 / 9.56 / 8.25 |
+| `state.info` fill | `#6FA8DC` | 7.84 / 6.89 / 5.95 |
+| `college.identity` fill | `#B07BD6` | 6.27 / 5.52 / 4.76 |
 
 Measured constraints, binding on every consumer:
 
-- **Dark `action.primary` and `college.identity` on `raised` measure 4.23** — above the 3:1
-  non-text/large-text floor, below the 4.5:1 body floor. On raised surfaces they may colour
-  controls, icons and large text, never working prose.
-- **Dark filled-violet controls use dark ink.** `content.primary` on dark `action.primary` measures
-  3.61 (large text only); dark `world.page` ink on the same fill measures 5.02 and is the body-text
-  pairing. Light-appearance fills are unconstrained (`world.work` on `action.primary` = 6.89).
-- Every other role/surface pairing above meets 4.5:1 in both appearances.
-- **Filled-control ink pairings (measured 2026-08-12, same method):** dark `world.page` ink on a
-  dark `state.live` fill measures 11.23; light `world.page` ink on the light `action.primary` fill
-  measures 6.37 (so the shipped light filled-violet ink passes alongside the 6.89 `world.work`
-  pairing); light `world.work` ink on the light `state.live` fill measures 5.70. All meet the
-  4.5:1 body floor.
-- **Heat-fill badge inks (measured 2026-08-12):** the rule generalises — a filled control or badge
-  inks with the palette's own ground. Dark `world.page` ink on the dark heat fills: positive 10.77,
-  warning 12.13, negative 7.27. Light `world.work` ink on the light heat fills: positive 5.86,
-  warning 6.76, negative 6.77. The opposite pairings measure 1.49–3.01 and are not used for text.
+- **Every ink role meets 4.5:1 against all three surfaces in both appearances.** The worst pairing
+  is `content.quiet` on `raised` — 4.97 dark, 4.78 light — and it is the value the legible seam also
+  takes, so the two floors move together.
+- **The state fills are not inks.** `#FF3B54` measures **4.30** on `raised`: above the 3:1
+  non-text/large-text floor, below the 4.5:1 body floor. It fills chips, rules and indicators and
+  colours large text; working prose in that role takes the ink form `#FF8E9C` (6.87 on `raised`).
+  The same separation governs every state role, which is why the two tables are kept apart.
+- **A filled control inks with the ground, never with `content.primary`.** Floodlit's `goldInk`
+  `#150F02` on the gold fill measures 12.08, on positive 11.07, on warning 10.47, on live 5.45.
+  `content.primary` on those same fills measures 1.51 / 1.64 / 1.74 / 3.34 and is never used on
+  them. `world.page` is an equivalent ink (12.55 on gold) and either may be named.
+- **Body text over a lit world requires the deep panel — this is a contrast rule, not a taste
+  one.** Floodlit's standard panel fill is white at 0.055; composited over the brightest point of
+  the lit pitch (`#37A868`) it resolves to `#42AD70`, on which `content.primary` measures **2.69**
+  and `content.secondary` **1.42**. The deep fill `#08070E` is therefore specified at **α ≥ 0.78**,
+  not the 0.70 the prototype shipped, because 0.70 leaves `content.quiet` at 4.30 over that worst
+  case. At 0.78 the panel composites to `#122A22` over the brightest turf and to `#08080F` over
+  night, and `content.primary` / `content.secondary` / `content.quiet` measure 14.52 / 7.68 / 5.03
+  at worst. A standard panel may carry labels and figures over a lit world; it may not carry prose.
+- **`content.quiet` is `#8496AC`, not Floodlit's `#65788F`.** The prototype value measures
+  4.37 / 3.85 / **3.32** and fails the body floor on every surface. The lift is a correction, and it
+  is recorded here so it is not silently reverted to match the prototype.
+- **`field.annotation` at 3.96 on turf is a non-text indicator** — the first-down rule — and clears
+  the 3:1 floor for that use only. A *label* drawn on the field takes the light form `#FFE196`
+  (4.90 on turf). One gold cannot do both jobs and the two are named separately.
 - **Hairlines and boundaries, named.** There are two hairline jobs and they take different values,
   because they are doing different work:
   - **Structural rule** — separating continuous regions of one surface. Draws in `world.raised`
-    over `work` (1.10 dark, 1.18 light). It is deliberately near-invisible: it groups, it does not
+    over `work` (1.16 dark, 1.25 light). It is deliberately near-invisible: it groups, it does not
     signal, and a rule the eye stops on is a container pretending to be a rule.
   - **Legible seam** — where a divider must actually be seen, on a `raised` surface or against
-    generated colour. Draws in `content.quiet` (4.96 on dark `raised`, 5.12 on light).
+    generated colour. Draws in `content.quiet` (4.97 on dark `raised`, 4.78 on light).
+  - **Glass edge** — Floodlit's panels also carry a 1 pt hairline tracing the cut shape, which is
+    what makes a pane read as glass rather than a hole. It is a **structural** rule by the test
+    above and carries no meaning; it never substitutes for the legible seam.
   - The **mandatory team-fill boundary** is `content.secondary`, which is the legible case at its
     strongest, and it is required on every team fill (see the team-fill rule below).
 
@@ -332,21 +383,64 @@ Measured constraints, binding on every consumer:
 
 - **`field.turfBand` is a mow band, never an information channel.** Added 2026-08-12: the match view
   draws twelve 8.333% bands across the 120-yard field, giving a 10-yard distance gauge that survives
-  a delete test. Its contrast against `field.turf` is deliberately near-invisible (1.10 dark, 1.08
+  a delete test. Its contrast against `field.turf` is deliberately near-invisible (1.12 dark, 1.07
   light) — it must read as ground texture, not as data, and nothing may be encoded in which band a
-  mark falls on. Everything drawn over it keeps its own floor: `field.line` measures 10.11 dark /
-  13.75 light on the band, `field.annotation` 6.43 / 5.07, `field.live` 8.37 / 4.31.
-- **Team fills against the work surfaces (measured 2026-08-12):** dark-primary on dark `work` 1.41,
-  on light `work` 12.47; light-primary on dark `work` 13.86, on light `work` 1.27; low-chroma on
-  dark `work` 2.67, on light `work` 6.61. Every trio primary falls below the 3:1 non-text floor
+  mark falls on. Everything drawn over it keeps its own floor: `field.line` measures 5.22 dark /
+  13.68 light on the band, `field.annotation` 3.55 / 5.04 (non-text), `field.live` 4.32 / 5.11.
+  **The band count is twelve, not Floodlit's twenty.** The prototype's `MownBands` draws twenty
+  alternating bands, which yields a six-yard gauge and fails the delete test this rule exists to
+  pass. Canon governs; the port takes twelve.
+- **Team fills against the work surfaces (re-measured 2026-08-14 against the Floodlit surfaces):**
+  dark-primary on dark `work` 1.35, on light `work` 12.45; light-primary on dark `work` 13.25, on
+  light `work` 1.27; low-chroma on dark `work` 2.55, on light `work` 6.60. Every trio primary falls below the 3:1 non-text floor
   against its tonally-similar surface, so the rule is general, not a low-chroma special case:
   **a team-colour fill always carries the hairline boundary**, because generated colour cannot be
   assumed to clear the floor against any given surface. This is §6.3's boundary-value-spoken rule
   made mandatory for team colour.
 
-No gradients, glow, glass, fake paper, leather, cork or decorative shadow. Surfaces are matte and
-opaque. Hairlines separate continuous regions; containers exist only for interaction, grouping or
-clipping.
+**Surface treatment — rewritten 2026-08-14 for Floodlit.** The prior rule was *"No gradients, glow,
+glass, fake paper, leather, cork or decorative shadow. Surfaces are matte and opaque."* Floodlit is
+built on the first three, so the rule is restated around what it was actually protecting: no imitated
+material, no depth that is not real depth, and no decoration that survives a delete test.
+
+**Permitted, and constitutive of the system:**
+
+- **The lit world.** A screen happens somewhere. The backdrop is one of the register's worlds —
+  pitch, facility floor, film room, or the desk density they recede into — and it is drawn with
+  gradient because light falls off. The world never carries data.
+- **Glass at depth under one light.** A panel blurs what is behind it, carries a hairline at its
+  cut edge, and takes a sheen from the upper left. **The light direction is the same on every
+  screen and in every world**; a sheen from another direction is a defect, not a variant.
+- **Grain over everything.** A fixed-seed noise tile at low opacity, identical between runs so it
+  can be cached. It is texture, not information.
+- **Glow** where a real light source is depicted — a floodlight shaft, a projector throw, a lit
+  marker on the field. Glow that emanates from a control or a card is not a light source.
+
+**Still forbidden, and the reasons are unchanged:**
+
+- Imitated material: fake paper, leather, cork, wood, brushed metal, stitching, torn edges.
+- Shadow that does not encode the depth order in this section. A card is not lifted because a
+  shadow was added; the shadow follows the depth, never the other way round.
+- Gradient inside a control to suggest a physical button, and gradient used to carry a value —
+  proportion is drawn as an arc per §6.5, never as a colour ramp.
+- More than the depth levels named here: world, standard panel, deep panel. A panel over a panel
+  over a panel is a container pretending to be hierarchy.
+
+**Blur budget.** `.ultraThinMaterial` over a 3D-transformed world is the most expensive thing the
+product draws, and P13 gates on a 16.7 ms frame. **At most two material panels are live per screen**
+— the dominant object's and one secondary region's. Every other panel takes the opaque equivalent
+from the table above. A screen that wants a third has a composition problem, not a performance
+problem.
+
+**Reduce Transparency flattens the system, and this is binding.** When the accessibility setting is
+on, every panel takes its opaque equivalent, the grain is dropped, and the world is replaced by
+`world.page`. The composition, the depth order and every contrast ratio in this section must survive
+that substitution unchanged — which is what the opaque equivalents are for, and why they are the
+values the ratios are measured against rather than the composited glass. This joins Reduce Motion in
+§7 as a setting with a defined reduced form, and it is testable by construction: a surface with no
+Reduce Transparency branch has not had it considered.
+
+Hairlines separate continuous regions; containers exist only for interaction, grouping or clipping.
 
 ### 6.2 Typography
 
@@ -397,12 +491,44 @@ sentence is present.
   `authoredFloor = 12` and `workingProse = 13` sit at or above this section's 12 pt floors; the
   floor is the contract, the constants are the current choice.
 
+**Floodlit mapping (2026-08-14).** The ramp does not move. Floodlit's display face is the system
+family at `.width(.condensed)`, which is what this section already mandates for Display, Title and
+Headline, so the visual change is carried by colour, surface and composition rather than by type.
+Three things are settled here because the prototype and this section disagree:
+
+- **The micro-label moves to 10 pt.** Floodlit's `Label3` — the tracked uppercase field label used
+  throughout — ships at 9 pt with 0.2 em tracking. That is below this section's 10 pt Caption floor
+  and below `04b` §8's authored-type check. It is a **Caption** and its floor is 10 pt. Its tracking
+  is kept: uppercase micro-labels are the one place tracking above −0.2 pt is correct, because they
+  are read as shapes rather than words.
+- **A gradient type fill is measured at its worst stop.** Floodlit's `litFill()` runs a headline
+  from white to `#93A8C0` so it reads as lit from above. The contrast that counts is the bottom of
+  the glyph, not the top: `#93A8C0` measures 8.12 / 7.14 / 6.16 on page / work / raised and 6.23 on
+  the deep panel over the brightest turf, so it clears the body floor everywhere and is permitted.
+  Any future gradient fill is measured the same way, and the rule is general.
+- **Fixed point sizes do not survive the port.** Every size Floodlit authored as a literal —
+  including the 66 pt day name and the 34 pt gauge figure — is wrapped in `@ScaledMetric` against
+  the role it belongs to, per the bullet above. A fixed-size display figure inside a fixed-height
+  container is the exact defect `AUDIT.md` recorded 19 times in the prior build.
+
 ### 6.3 Shape, spacing and touch
 
-- Base spacing steps: 4, 6, 8, 12, 16, 20.
-- DESK control radius: 8 pt; free-standing row radius: 8 pt; continuous table row radius: 0;
-  surface radius: 10 pt.
-- Broadcast radius: 0.
+- Base spacing steps: 4, 6, 8, 12, 16, 20. **Unchanged under Floodlit** — the prototype's 7, 9, 11,
+  14, 15 and 21 snap to this scale on import. A design system with two spacing scales has none.
+- **Corners are cut asymmetrically (2026-08-14).** A panel reads as a deliberate shape rather than a
+  default card because its four radii differ. `RoundedRectangle` cannot express this, so the shape
+  is drawn by hand as `CutCorner(topLeading:topTrailing:bottomTrailing:bottomLeading:)`:
+
+  | Shape | Radii (TL / TR / BR / BL) | Use |
+  |---|---|---|
+  | Panel | 4 / 22 / 4 / 22 | any surface holding content |
+  | Row | 3 / 14 / 3 / 14 | table rows, chips, free-standing rows |
+  | Action | 22 / 22 / 22 / 5 | the committing control — soft on three corners, cut on the last |
+
+  Continuous table row radius stays 0: a run of rows is one surface, and cutting each row's corners
+  turns a table into a stack of cards. Broadcast radius stays 0.
+- The **9-degree college cut** in §5 is identity furniture and is separate from these radii. The two
+  never appear on the same element.
 - Primary actions and irreversible controls remain at least 44 × 44 pt.
 - Dense table rows use explicit 24–28 pt tracks in the default composition. AX5 expands and reflows
   them rather than forcing micro-type into an accessibility layout.
@@ -503,6 +629,35 @@ entries not yet promoted are provisional. Names map 1:1 onto Swift types in
 | 22 | `CallInCard` | Named staff proposal, accept/dismiss/inspect |
 | 23 | `EmptyState` / `ErrorBanner` / `InterruptedState` | The failure set, inside the owning composition |
 
+**Floodlit primitives (added 2026-08-14).** The same 1:1 naming rule applies: each maps onto a Swift
+type in `Sources/ProFootballCoachUI/`. Entries 24–28 are the surface and depth vocabulary §6.1 now
+depends on; 29–32 are the proportion vocabulary; 33–35 are drawn identity marks.
+
+| # | Registry name | Purpose |
+|---|---|---|
+| 24 | `CutCorner` | The asymmetric panel/row/action shape of §6.3, with its inset conformance |
+| 25 | `GlassPanel` | Blurred pane at depth: standard and deep, the deep fill at α ≥ 0.78 per §6.1 |
+| 26 | `GrainOverlay` | Fixed-seed noise tile above every screen; dropped under Reduce Transparency |
+| 27 | `WorldBackdrop` | The register made visible — pitch, facility, film room, desk |
+| 28 | `Stage` | Safe-area-owning content inset; owns physical edges, never a fixed device rect |
+| 29 | `ArcGauge` | A proportion as an arc — the large form |
+| 30 | `ValueRing` | The table-scale ring: a value inside its own proportion |
+| 31 | `AttributeDial` | Concentric arcs, one per attribute, radius carrying the value |
+| 32 | `ShareBar` | A horizontal share where a comparison sits in a row rather than a ring |
+| 33 | `StarRating` | Recruiting stars drawn as blades |
+| 34 | `Pennant` | The club mark as a depicted object |
+| 35 | `TimeoutMarks` | Timeouts remaining; a filled mark is one in hand |
+
+**The proportion rule (29–32).** Where a datum is a share of a whole, the form is an arc, not a bar
+— the same primitive from a 26 pt table cell to a 212 pt dial, which is what holds the language
+together at density. `ShareBar` is the stated exception, for comparisons that must sit inline in a
+row. An arc always keeps its printed figure: the ring is a second reading of a number, never a
+replacement for one, and §6.1's heat banding gives the third.
+
+**Promotion status.** Entries 24–35 enter **provisional** under the P11 three-production-uses rule,
+exactly as 5–23 did. They are drawn from a prototype with five screens, so none has three production
+uses yet; the proof gate in §10 is where 24–32 earn theirs.
+
 Adoption cost, carried knowingly: the registry is an audit surface (each entry needs its
 three-production-uses record or an explicit provisional mark); screen-local implementations of
 5–7, 10, 17 and 19–22 owe extraction refactors when promoted — P11/M8 work, not a silent rename;
@@ -528,16 +683,23 @@ grid in three different contexts. What is never permitted is an unbounded class.
 | **Change** (`DeltaMark`, registry 11) | 2 | `arrow.up.right`, `arrow.down.right` | Attribute and rating rows |
 | **Obligation** (`AgendaRow`, registry 19) | 2 | `checkmark.circle.fill` (complete), `person.badge.clock` (delegated) | Week plan, inbox, any obligation list |
 | **Session type** (week grid) | 5 | `figure.run`, `film`, `airplane`, `football`, `moon.zzz` | Practice Plan week grid only |
-| **Broadcast marks** (§9) | 2 | possession wedge, key-moment mark | Match Day chrome only; both carry a printed or spoken value beside them, never count alone |
+| **Broadcast marks** (§9) | 3 | possession wedge, key-moment mark, timeout mark (`TimeoutMarks`, registry 35) | Match Day chrome only; each carries a printed or spoken value beside it, never counts alone |
+| **Rating marks** (§5 identity) | 1 | star blade (`StarRating`, registry 33) | Recruiting and draft evaluation only; always beside its printed figure |
 | **Empty-state marks** (`EmptyState`, registry 23) | 6 | `person.3`, `person.crop.rectangle`, `list.number`, `checkmark.circle` | Empty and unavailable states only. Enumerated but **not a learned class**: every empty state carries a title and a description sentence, so the mark orients and the words inform. Bounded anyway, because an unbounded class is what this table exists to prevent |
 | **Control furniture** | not a learned class | `chevron.*`, `magnifyingglass`, `line.3.horizontal.decrease`, `rectangle.3.group`, `pause.fill`, `forward.end.fill`, `speedometer`, `checkmark`, `person.2`, `plus`, `xmark` | Navigation and controls; every one carries a visible or accessible label, so none is a symbol the player must learn. §6.3 anticipates the icon-first utilities (inspect film, delegate, pause, speed, tactical view) and requires their accessible names to stay explicit |
 
-**Total learned symbols: 23** (12 status + 2 change + 2 obligation + 5 session + 2 broadcast). The
-last two rows are **capped but not learned**: a control is read from its label and an empty state
+**Total learned symbols: 25** (12 status + 2 change + 2 obligation + 5 session + 3 broadcast +
+1 rating). **Moved from 23 on 2026-08-14 by the owner decision adopting Floodlit**, which brings two
+drawn marks with it: the timeout mark and the recruiting star blade. Both are drawn shapes rather
+than SF Symbols, so they sit outside §6.3's one-line-family rule and are held to the same
+displacement discipline instead. Floodlit's `Pennant` is **not** counted: a club mark is identity
+furniture under §5, not a vocabulary item the player learns.
+
+The last two rows of the table are **capped but not learned**: a control is read from its label and an empty state
 from its title and description, so neither adds to what the player must recall. They are enumerated
 and bounded regardless, because an unbounded class is the leak this table exists to detect. Control furniture
 is excluded by the rule above — a marked control is read from its label, not recalled from a
-vocabulary. **The 23 is stated so it can be argued with; it is the number the owner is agreeing to
+vocabulary. **The 25 is stated so it can be argued with; it is the number the owner is agreeing to
 when a class grows.** Filled and unfilled variants of one symbol are one member: `hand.raised.fill`
 is `hand.raised`, and `circle` is the unchecked state of `checkmark.circle.fill` rather than a
 thirteenth status symbol or a new class. Where two components want the same meaning they take the same member — a
@@ -590,11 +752,19 @@ the 15 generation and base 16; 62/21 for the 16 Pro class; 62 sides with 20 top 
 before relying on either. The 44 × 44 pt touch floor is HIG-verified (Apple's stated minimum is
 28 × 28 pt; this contract keeps the stricter 44 pt).
 
-- Safe areas are owned at physical edges, not guessed from a preferred orientation.
+- Safe areas are owned at physical edges, not guessed from a preferred orientation. **Floodlit's
+  `Metrics.device` (844 × 390) is a preview reference frame only** — the size its prototype gallery
+  renders at. It is never a layout constraint, never a `.frame(width:height:)` on a screen, and no
+  view resolves a position against it. Composition is proportional across the window above.
 - The initial viewport contains the dominant object and any decision due now.
 - AX5 may scroll vertically. The focused action remains reachable without crossing a hidden shelf.
 - VoiceOver order follows world context → dominant object → evidence → actions → local navigation.
 - Reduce Motion replaces travel, reveal and field animation with discrete state changes.
+- **Reduce Transparency flattens the visual system (added 2026-08-14).** Every panel takes the
+  opaque equivalent named in §6.1, the grain is dropped and the world is replaced by `world.page`.
+  Composition, depth order and every measured contrast ratio survive the substitution unchanged —
+  which is why §6.1 measures against the opaque equivalents rather than the composited glass. A
+  surface with no Reduce Transparency branch has not had it considered.
 - Sound and haptics have visual and spoken equivalents.
 - Loading never displays invented percentage progress.
 - Empty, error, interrupted and resume states remain inside the composition they belong to.
@@ -750,9 +920,16 @@ Match is the strongest game-authenticity gate.
   formation dots per §6.5 #18's role tokens, the line-of-scrimmage and first-down rules, and the
   §6.6 broadcast marks. Route-tree and formation notation are drawn conventions of the sport, not
   protected expression; a specific playbook's diagrams are someone's expression and are never
-  reproduced. Every fixed diagram mark carries §6.2's accessible-sentence equivalent. Until G-06
-  supplies recorded routes, sheets and views draw play art in target form only, labelled "once
-  G-06 lands".
+  reproduced. Every fixed diagram mark carries §6.2's accessible-sentence equivalent.
+- **The anchor contract (G-06, specified 2026-08-14; `03` owns the computation).** The view is
+  handed, per snap: offense direction, line of scrimmage, first-down line, ball point, a point per
+  actor with its display token, emphasis flags, route polylines where the resolution recorded one,
+  playback phase and the causal commentary. The UI may interpolate between anchors, fade, highlight
+  and zoom within safe bounds, and draw the stadium and field. It may **not** choose a route, alter
+  an outcome, invent a missed assignment, or infer a matchup from the animation. Anchors are derived
+  from the same resolution the commentary is built from, so the picture and the spoken sentence
+  cannot diverge — that identity is the reason the contract exists, and it is what makes the
+  VoiceOver limb of §7 true rather than parallel.
 - Offense direction is recorded data. It owns defended end-zone labels and whether the first-down
   line lies left or right of the line of scrimmage; the view never guesses from home/away colour.
 - All 22 actors are represented; no more than three are visually foregrounded at once.
