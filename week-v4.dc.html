@@ -1,0 +1,416 @@
+<!-- @dsCard group="week" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>week-v4 — Coach's World week chronology, Floodlit (04 §6.5 registry 19)</title>
+<style>
+/* ============================================================================
+   week-v4.dc.html — self-contained HTML+CSS+inline SVG. No JavaScript, no
+   CDN, no web font, no icon font, no raster images. CSS px read as pt.
+   Supersedes week-v3, which rendered the retired violet system. Registry 19:
+   AgendaRow, plus the week grid, load-policy ladder and hub tile
+   compositions it appears in.
+   ============================================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#060A12}
+body{font-family:-apple-system,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
+  font-size:13px;line-height:1.5;padding:24px 16px 64px;color:#F6FAFF;font-variant-numeric:tabular-nums}
+.sheet{max-width:1260px;margin:0 auto}
+h1{font-size:20px;font-weight:800;letter-spacing:-0.2px}
+.kicker{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:#8496AC;margin-bottom:4px}
+.prov{font-size:11px;color:#A9BACE;margin-top:8px;max-width:84em}
+.prov b{color:#F6FAFF;font-weight:600}
+.law{font-size:11px;color:#A9BACE;border-left:3px solid #FFC53D;background:#141A26;
+  padding:8px 12px;margin-top:10px;max-width:84em}
+.card{background:#141A26;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;
+  padding:16px 18px 18px;margin-top:20px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.05) 0%, transparent 42%)}
+.card>*{position:relative}
+.card>h2{font-size:17px;font-weight:800;letter-spacing:-0.2px}
+.sub{font-size:11px;color:#8496AC;margin:2px 0 12px}
+h3{font-size:13px;font-weight:700;margin:16px 0 6px}
+p{margin:6px 0}
+.small{font-size:11px;color:#A9BACE}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;background:#1E2735;
+  border:1px solid #1E2735;border-radius:3px 14px 3px 14px;padding:1px 5px;color:#A9BACE;white-space:nowrap}
+.callout{background:#060A12;border:1px solid #1E2735;border-left:3px solid #FFB03A;
+  border-radius:4px 22px 4px 22px;padding:10px 12px;margin-top:12px}
+.callout h4{font-size:11px;font-weight:700;margin-bottom:4px}
+.callout li{font-size:11px;color:#A9BACE;margin:4px 0 4px 16px}
+.callout li b{color:#F6FAFF}
+.fig{font-size:10px;color:#8496AC;margin-top:4px}
+.vo,.contract{margin-top:14px;border-top:1px solid #1E2735;padding-top:10px}
+.vo h4,.contract h4{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:#FFC53D;margin-bottom:6px;font-weight:700}
+.vo ul{list-style:none}
+.vo li{font-size:11px;color:#A9BACE;margin:3px 0;padding-left:12px;border-left:2px solid #1E2735}
+.contract ol{margin-left:18px}
+.contract li{font-size:11px;color:#A9BACE;margin:4px 0}
+.contract li b{color:#F6FAFF;font-weight:600}
+.duo{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;margin-top:8px}
+.pane{background:#060A12;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;padding:14px;flex:1 1 480px;min-width:0}
+.pane.lt{background:#EDF1F6;color:#0B111C;border-color:#DCE3EC}
+.pane h4{font-size:11px;font-weight:700;margin-bottom:8px}
+.cap{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#8496AC;margin-bottom:6px}
+.pane.lt .cap{color:#566274}
+
+/* AgendaRow */
+.arow{display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 0;
+  border-bottom:1px solid rgba(255,255,255,.06)}
+.pane.lt .arow{border-bottom-color:#EDF1F6}
+.acheck{width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.acheck.warn{border-color:#FFB03A;color:#FFB03A}
+.acheck.neg{border-color:#FF8E9C;color:#FF8E9C;background:rgba(255,142,156,.12)}
+.acheck.pos{border-color:#7DF0B6;color:#7DF0B6;background:rgba(125,240,182,.18)}
+.acheck.dele{border-color:#A9BACE;color:#A9BACE}
+.amain{flex:1;min-width:0}
+.atitle{font-size:12px;font-weight:600}
+.asub{display:block;font-size:10px;color:#8496AC;margin-top:1px}
+.pane.lt .asub{color:#566274}
+.acost{font-size:11px;font-weight:700;font-family:ui-monospace,"SF Mono",Menlo,monospace;flex-shrink:0}
+
+/* Week grid */
+.wkhead{display:flex;justify-content:space-between;font-size:10px;color:#A9BACE;margin-bottom:6px}
+.pane.lt .wkhead{color:#414B5C}
+.wk{display:flex;gap:6px;overflow-x:auto}
+.day{flex:0 0 100px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+  border-radius:4px 22px 4px 22px;padding:6px}
+.pane.lt .day{background:#FFFFFF;border-color:#DCE3EC}
+.dayhead{font-size:9px;font-weight:700;color:#8496AC;margin-bottom:4px}
+.pane.lt .dayhead{color:#566274}
+.schip{display:flex;align-items:center;gap:4px;font-size:9px;padding:3px 5px;margin-bottom:3px;
+  border-radius:3px 14px 3px 14px;background:rgba(255,255,255,.06)}
+.pane.lt .schip{background:#EDF1F6}
+.sy{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:8px;color:#FFC53D}
+.pane.lt .sy{color:#7A5200}
+.sopen{font-size:9px;color:#8496AC;padding:3px 5px}
+.pane.lt .sopen{color:#566274}
+
+/* Load-policy ladder */
+.lrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.pane.lt .lrow{border-bottom-color:#EDF1F6}
+.cmark{position:relative;width:16px;height:16px;border-radius:3px;background:rgba(255,255,255,.08);
+  overflow:hidden;flex-shrink:0}
+.cfill{position:absolute;left:0;bottom:0;right:0;background:#FFC53D}
+.bword{font-size:12px;font-weight:700;width:64px}
+.bmult{font-size:11px;font-family:ui-monospace,"SF Mono",Menlo,monospace;color:#A9BACE}
+.pane.lt .bmult{color:#414B5C}
+.bnote{font-size:10px;color:#8496AC}
+.pane.lt .bnote{color:#566274}
+
+/* Hub tile */
+.tile{display:flex;align-items:center;gap:10px;padding:10px;margin-bottom:6px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:4px 22px 4px 22px}
+.pane.lt .tile{background:#FFFFFF;border-color:#DCE3EC}
+.ttitle{font-size:13px;font-weight:700}
+.tsum{font-size:10px;color:#A9BACE;font-family:ui-monospace,"SF Mono",Menlo,monospace;margin-top:2px}
+.pane.lt .tsum{color:#414B5C}
+.tverdict{font-size:10px;color:#8496AC;margin-top:3px}
+.pane.lt .tverdict{color:#566274}
+.tverdict b{color:#F6FAFF;font-weight:600}
+.pane.lt .tverdict b{color:#0B111C}
+.tempty{font-size:10px;color:#8496AC;font-style:normal;margin-top:3px;border:1px dashed rgba(255,255,255,.2);
+  border-radius:3px 14px 3px 14px;padding:4px 8px;display:inline-block}
+.pane.lt .tempty{border-color:#DCE3EC;color:#566274}
+</style>
+</head>
+<body class="dk">
+<div class="sheet">
+
+<header>
+  <div class="kicker">@dsCard group="week" — sheet 8 of 10, floodlit canon amendment §6.5 registry 19</div>
+  <h1>Pro Football Coach — week chronology, week-v4</h1>
+  <p class="prov">
+    <b>Supersedes week-v3</b>, which rendered the retired violet system. Renders 04 §6.5 registry
+    19: <span class="mono">AgendaRow</span>, plus the week grid, load-policy ladder and hub tile
+    compositions it appears in. Session-type glyphs are their own §6.6 class, capped at 5, drawn as
+    SF Symbol names in text per this sheet's own convention.
+  </p>
+  <p class="law">
+    This sheet is a rendering — 04 is the only canonical home. The load-policy ladder's derived-cost
+    region ships omitted until G-14 exists, per the shipping/target rule — it is not drawn as if it
+    already worked.
+  </p>
+</header>
+
+<section class="card" id="card-1">
+  <h2>Card 1 — AgendaRow (registry 19): a commitment with a cost</h2>
+  <p class="sub">Title, then a named cost or a time-to-event beside it — deadlines wear their
+    distance wherever they appear. Completion state and a delegated state carrying the named staff
+    receipt. The row is one tap to its obligation; the leading completion control is its own target.</p>
+  <div class="duo">
+    <div class="pane dk" style="flex:1 1 100%">
+      <h4>Dark — today's obligations, 4 open of 6</h4>
+      <div class="cap">TODAY'S OBLIGATIONS — 4 OPEN OF 6</div>
+      <div class="arow"><span class="acheck"></span><span class="amain"><span class="atitle">Signing deadline</span></span><span class="acost">2d</span></div>
+      <div class="arow"><span class="acheck"></span><span class="amain"><span class="atitle">Media availability</span><span class="asub">costs 1 staff hour</span></span><span class="acost">Thu</span></div>
+      <div class="arow"><span class="acheck warn"></span><span class="amain"><span class="atitle">Set the travel roster</span><span class="asub">mandatory</span></span><span class="acost" style="color:#FFB03A">today</span></div>
+      <div class="arow"><span class="acheck neg">!</span><span class="amain"><span class="atitle">Confirm the walkthrough plan</span><span class="asub" style="color:#FF8E9C">mandatory — blocks the week advance</span></span><span class="acost" style="color:#FF8E9C">overdue 1d</span></div>
+      <div class="arow"><span class="acheck pos"></span><span class="amain"><span class="atitle" style="font-weight:400">Opponent film review</span><span class="asub">done Tue 0900</span></span><span class="acost" style="color:#7DF0B6">done</span></div>
+      <div class="arow"><span class="acheck dele">⋯</span><span class="amain"><span class="atitle">Set the practice plan</span><span class="asub">delegated — Coordinator Sample · receipt: practice plan set, Tue 0900</span></span><span class="acost">delegated</span></div>
+    </div>
+  </div>
+  <p class="fig" style="text-align:left">States top to bottom: due (time-to-event), due (named
+    cost), due today, overdue (blocks advance), done, delegated. State is carried by word plus glyph
+    plus colour, never colour alone.</p>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Signing deadline, due in 2 days.</li>
+      <li>Confirm the walkthrough plan, mandatory, blocks the week advance, overdue by 1 day.</li>
+      <li>Set the practice plan, delegated to Coordinator Sample, completed Tuesday 9am.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> title content.primary, cost/receipt content.secondary, state roles for
+        warning/negative/positive — all quoted from tokens-v4 Card A.</li>
+      <li><b>Widths:</b> the agenda list is fluid at every supported width; at AX5 each row becomes
+        a labelled fact stack, nothing dropped.</li>
+      <li><b>Touch:</b> the leading completion control is a 44 pt target, independent of the row's
+        own tap-to-inspect target.</li>
+      <li><b>States:</b> due (time-to-event), due (named cost), due today, overdue, done, delegated
+        — all six shown.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> completing an obligation replaces its row state as a discrete change, not
+        a strike-through animation, under Reduce Motion.</li>
+      <li><b>Verdict:</b> none — an obligation is a commitment, not a judgement.</li>
+      <li><b>Density budget:</b> Obligation class, 2 members (complete, delegated) — capped in 04
+        §6.6, not repriced here.</li>
+      <li><b>Tokens:</b> state roles — 04 §6.1 as amended 2026-08-14; Obligation class cap — §6.6.
+        Coordinator Sample is a placeholder, pending generator output.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-2">
+  <h2>Card 2 — Week grid: sessions-on-days chronology</h2>
+  <p class="sub">Seven day columns, each with a stated capacity of three typed session slots.
+    Fixtures, travel and rest occupy the same grid cells as practice sessions, so a congested week
+    visibly spends preparation. Five session types by construction — a sixth is a budget breach
+    requiring an owner amendment.</p>
+  <div class="pane dk" style="flex:1 1 100%">
+    <div class="wkhead"><span>PRACTICE WEEK — WEEK 9 · OCT 26–NOV 1</span><span>21 SLOTS · TODAY WED 29</span></div>
+    <div class="wk">
+      <div class="day"><div class="dayhead">SUN 26</div>
+        <div class="schip"><span class="sy">film</span> Review</div>
+        <div class="schip"><span class="sy">moon.zzz</span> Recovery</div>
+        <div class="sopen">open</div>
+      </div>
+      <div class="day"><div class="dayhead">MON 27</div>
+        <div class="schip"><span class="sy">figure.run</span> Install</div>
+        <div class="schip"><span class="sy">film</span> Opp film</div>
+        <div class="sopen">open</div>
+      </div>
+      <div class="day"><div class="dayhead">TUE 28</div>
+        <div class="schip"><span class="sy">figure.run</span> Install</div>
+        <div class="schip"><span class="sy">figure.run</span> Situational</div>
+        <div class="schip"><span class="sy">film</span> Review</div>
+      </div>
+      <div class="day" style="border-color:#FFC53D"><div class="dayhead" style="color:#FFC53D">WED 29 · TODAY</div>
+        <div class="schip"><span class="sy">airplane</span> Travel</div>
+        <div class="sopen">open</div>
+        <div class="sopen">open</div>
+      </div>
+      <div class="day"><div class="dayhead">THU 30</div>
+        <div class="schip"><span class="sy">football</span> Game</div>
+      </div>
+      <div class="day"><div class="dayhead">FRI 31</div>
+        <div class="schip"><span class="sy">moon.zzz</span> Recovery</div>
+        <div class="sopen">open</div>
+        <div class="sopen">open</div>
+      </div>
+      <div class="day"><div class="dayhead">SAT 1</div>
+        <div class="sopen">open</div>
+        <div class="sopen">open</div>
+        <div class="sopen">open</div>
+      </div>
+    </div>
+    <p class="fig" style="text-align:left">A short week: the fixture fell Thursday, so Wednesday
+      holds travel and the game consumes its own day entirely. The header wears the bound (21 slots)
+      and today's marker; an empty day states its own absence in place rather than leaving a blank
+      that reads as unloaded content.</p>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per day, written out</h4>
+    <ul>
+      <li>Wednesday the 29th, today: travel, then two open slots.</li>
+      <li>Thursday the 30th: game day, the day's one slot.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> chip and day-cell text quoted from tokens-v4 Card A; today's column
+        boundary in gold at ≥3:1.</li>
+      <li><b>Widths:</b> the grid scrolls horizontally at the install floor and fits without
+        scrolling from the promise floor up; at AX5 it becomes seven day sections stacked in order.</li>
+      <li><b>Touch:</b> each session chip is a 44 pt target where it opens detail.</li>
+      <li><b>States:</b> loaded day, open slot, today's column, and a game day that consumes its
+        whole capacity — all shown.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> moving a session between days animates in product; Reduce Motion replaces
+        it with a discrete appear/disappear.</li>
+      <li><b>Verdict:</b> none — a chronology, not a judgement.</li>
+      <li><b>Density budget:</b> Session-type class, 5 members, capped in 04 §6.6, week grid only.</li>
+      <li><b>Tokens:</b> gold today-marker, content roles — 04 §6.1 as amended 2026-08-14; the
+        21-slot bound and five session types — §6.6.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-3">
+  <h2>Card 3 — Load-policy ladder: condition band to dose multiplier</h2>
+  <p class="sub">A standing rule mapping the roster's condition-band vocabulary to practice-dose
+    multipliers, with the plan's derived cost stated beside the choices. The derived-cost region
+    ships omitted until G-14 exists — the shipping form of a card that will one day carry a target.</p>
+  <div class="pane dk" style="flex:1 1 100%">
+    <div class="cap">PRACTICE LOAD POLICY — STANDING RULE</div>
+    <div class="lrow"><span class="cmark"><span class="cfill" style="height:100%"></span></span><span class="bword">Fresh</span><span class="bmult">×1.10</span><span class="bnote">of planned dose</span></div>
+    <div class="lrow"><span class="cmark"><span class="cfill" style="height:80%"></span></span><span class="bword">Ready</span><span class="bmult">×1.00</span><span class="bnote">of planned dose</span></div>
+    <div class="lrow"><span class="cmark"><span class="cfill" style="height:60%"></span></span><span class="bword">Worn</span><span class="bmult">×0.85</span><span class="bnote">of planned dose</span></div>
+    <div class="lrow"><span class="cmark"><span class="cfill" style="height:40%"></span></span><span class="bword">Tired</span><span class="bmult">×0.65</span><span class="bnote">of planned dose</span></div>
+    <div class="lrow"><span class="cmark"><span class="cfill" style="height:20%"></span></span><span class="bword">Spent</span><span class="bmult">×0.40</span><span class="bnote">of planned dose</span></div>
+    <p class="fig" style="text-align:left">Tap a band to adjust its dose. Staff workload is a
+      worded band — light, moderate, heavy — never a second learned scale beside the 40–99 rating
+      print.</p>
+    <div class="callout">
+      <h4>Derived cost of this week's plan — target form, omitted until G-14</h4>
+      <ul>
+        <li>Planned intensity and implied staff workload are the target form's two regions — an
+          ArcGauge (gauge-v4) for intensity, worded bands for workload.</li>
+        <li>The card ships without this region today, per the shipping/target rule: no cost is
+          computed without G-14's load-policy engine work, so none is drawn as if it were.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per band, written out</h4>
+    <ul>
+      <li>Fresh: dose multiplier ×1.10.</li>
+      <li>Spent: dose multiplier ×0.40, the floor of the ladder.</li>
+      <li>Derived cost: not yet available. Engine-owned load policy has not landed for this surface.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> band word content.primary, multiplier content.secondary, condition-mark
+        fill action.primary — quoted from tokens-v4.</li>
+      <li><b>Widths:</b> the ladder fits every supported width; at AX5 each band becomes a labelled
+        row.</li>
+      <li><b>Touch:</b> each band row is a 44 pt tap target to adjust its dose (popout, depth 1).</li>
+      <li><b>States:</b> five condition bands shown; the derived-cost region's shipping (omitted)
+        form is drawn per the honest-degraded rule.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> adjusting a band's dose opens a popout as a discrete reveal under Reduce
+        Motion, not a slide.</li>
+      <li><b>Verdict:</b> none on the ladder itself; the derived-cost target form is evidence, not
+        a verdict.</li>
+      <li><b>Density budget:</b> zero learned symbols — the condition mark is a filled proportion,
+        not an SF Symbol.</li>
+      <li><b>Tokens:</b> gold fill, content roles — 04 §6.1 as amended 2026-08-14; the multipliers
+        are rules constants, per `02` §2.1a's load-policy specification and G-14.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-4">
+  <h2>Card 4 — Hub tile: one-line summary with a verdict slot</h2>
+  <p class="sub">A hub is composed from other screens' summaries: a tile is a one-line reduction of
+    its system with a verdict slot, and the whole tile opens its full screen. Four states drawn,
+    because the verdict-state rule requires both the shipping and target forms, and a thin sample at
+    low confidence is what makes a simulation honest under uncertainty.</p>
+  <div class="pane dk" style="flex:1 1 100%">
+    <div class="tile">
+      <div class="tbody">
+        <div class="ttitle">Team health</div>
+        <div class="tsum">2 out · 1 limited · 19 fresh</div>
+        <div class="tverdict"><b>Holding up better than most of the league this week</b> — Analyst
+          Sample · sample 9 weeks · confidence high</div>
+      </div>
+      <span class="small">›</span>
+    </div>
+    <div class="tile">
+      <div class="tbody">
+        <div class="ttitle">Recruiting board</div>
+        <div class="tsum">14 tracked · 3 visits booked · 1 decision due</div>
+        <div class="tverdict"><b>Too early to call how this board is going</b> — Analyst Sample ·
+          sample 2 weeks · confidence low</div>
+      </div>
+      <span class="small">›</span>
+    </div>
+    <div class="tile">
+      <div class="tbody">
+        <div class="ttitle">Cap ledger</div>
+        <div class="tsum">$259,997,200 of $255,400,000</div>
+        <div class="tempty">verdict slot empty — no engine baseline exists (G-02)</div>
+      </div>
+      <span class="small">›</span>
+    </div>
+    <div class="tile">
+      <div class="tbody">
+        <div class="ttitle">Staff continuity</div>
+        <div class="tempty">Nothing to report — no staff departures or offers this week</div>
+      </div>
+      <span class="small">›</span>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per tile, written out</h4>
+    <ul>
+      <li>Team health: 2 out, 1 limited, 19 fresh. Analyst Sample: holding up better than most of the league this week, sample 9 weeks, confidence high.</li>
+      <li>Recruiting board: 14 tracked, 3 visits booked, 1 decision due. Analyst Sample: too early to call how this board is going, sample 2 weeks, confidence low.</li>
+      <li>Cap ledger: 259,997,200 of 255,400,000 dollars committed. No staff verdict is available yet.</li>
+      <li>Staff continuity: nothing to report this week.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> title content.primary, summary content.secondary tabular, verdict prose
+        content.quiet with the sentence in content.primary — all quoted from tokens-v4.</li>
+      <li><b>Widths:</b> tiles stack in a fluid column at every supported width; at AX5 each tile's
+        internal stack already matches the one-column form.</li>
+      <li><b>Touch:</b> each whole tile is a 44 pt minimum target, opening its full screen.</li>
+      <li><b>States:</b> verdict at high confidence, verdict at low confidence, verdict-pending
+        (shipping form, gap ID), and absence stated in place — four states, all drawn.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> a tile's verdict updates as a discrete text swap under Reduce Motion, not a
+        crossfade.</li>
+      <li><b>Verdict:</b> each tile carries at most one verdict line, per §4.5's budget.</li>
+      <li><b>Density budget:</b> a hub is composed from summaries, never owns detail — a tile that
+        tries to be its own full screen is the contents-page failure §4.4 rejects.</li>
+      <li><b>Tokens:</b> content roles — 04 §6.1 as amended 2026-08-14. Analyst Sample is a
+        placeholder, pending generator output.</li>
+    </ol>
+  </div>
+</section>
+
+<footer style="margin-top:24px">
+  <p class="small">End of week-v4. Four cards, registry 19 plus its three compositions. Supersedes
+    week-v3. 04 §6.1, §6.3, §6.5 and §6.6 remain the only canonical home for every value and rule
+    shown. Static, no motion, no script.</p>
+</footer>
+
+</div>
+</body>
+</html>

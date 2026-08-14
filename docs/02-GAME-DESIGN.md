@@ -45,6 +45,34 @@ A regular-season week, in order:
 Roughly **6 minutes of management, 10.5 of match**, matching D1's budget. Four mandatory decisions a
 week that a reasonable coach could get wrong, plus the inbox, plus ~25 in-match calls.
 
+### 2.1a The depth chart and personnel packages — added 2026-08-14
+
+Beat 5 above says "depth chart" and §3.2 lets the player change personnel packages mid-match. Neither
+existed as a system. They are one system, and it sits under the week rather than beside it.
+
+**The depth chart is an ordering with a reason.** Per position, an ordered list of players, with the
+top entry the starter. It is set by the player, defaulted by the coordinator AI, and it is what the
+match engine reads when it assigns roles — so a depth chart the player never touches still produces a
+defensible team, and one they do touch changes the game. Three properties make it a decision rather
+than a sort:
+
+- **Succession is visible.** Behind every starter is who plays if he cannot, and how far the drop is.
+  A thin position is the screen's subject, not a footnote — an unavailable starter with no cover is
+  the loudest thing on it.
+- **Ordering has a cost.** Playing a young player develops him (§5) and costs current performance.
+  Playing the best available maximises this week and develops nobody.
+- **Availability is not a choice.** Injury, suspension and eligibility remove a player from the
+  chart; the chart shows the hole rather than silently promoting the next name.
+
+**A personnel package is a named group for a situation.** Base, nickel, dime, heavy, and their
+offensive counterparts — each a set of position slots filled from the depth chart, bound to the
+situations it is used in. The engine reads the package the situation selects; the player overrides
+per position. Packages are drawn from the depth chart rather than duplicating it, so a change to the
+chart propagates and the two can never disagree.
+
+Bounds: at most **8 packages per side**, and a package names at most 11 slots. These are rules
+constants and land in the tier rules module per §11, never inline.
+
 ### 2.2 What makes a decision real
 
 A decision qualifies for the week only if it passes three tests, applied at design time:
@@ -291,6 +319,25 @@ followed it, and weight alone freezes the same headline at the top forever.
 
 Falsifier: a story that has left the hot journal must still reach the feed.
 
+### 4.2c Contract negotiation (pro) — added 2026-08-14
+
+Signing a player took a contract the front office handed it: there was no asking price, no player
+valuation and no counteroffer, so free agency was a purchase rather than a negotiation.
+
+- **The player's side has a number, and it is not the cap number.** He values years, guarantee and
+  role, weighted by age, position scarcity, his own rating and how much he is wanted elsewhere. A
+  28-year-old at a scarce position wants guarantee; a 24-year-old at a deep one wants years.
+- **Role is a term.** A starter's snap share is part of what is being negotiated, and promising it
+  costs the depth chart (§2.1a) rather than money. Breaking it later has a locker-room consequence
+  through §7's stakeholder triggers.
+- **A counteroffer is a real answer**, with a stated reason: too short, not enough guaranteed, the
+  role is not credible given who is ahead of him. The player can move one term and hold the rest.
+- **The cap consequence is visible while the terms move**, not after committing. Dead money on a
+  future release is part of what is being decided now, and `04` §8 prices screen 35 so that it is on
+  the same surface.
+- Negotiations are bounded and expire. A player who is not signed goes elsewhere, and the pool is
+  capped at the 512 §4.2 already states.
+
 ### 4.3 Recruiting, in detail (college)
 
 Recruiting is the college tier's signature system and its throughput problem (D3/D4).
@@ -351,6 +398,46 @@ since a mistake that already shipped a claim is not the same as one caught befor
   it is the closest thing the game has to a strategic identity.
 - Staff are poached by other programmes when they perform. Continuity is a resource.
 
+### 6.1 The staff market, and what poaching costs — added 2026-08-14
+
+"Staff are poached when they perform" was a principle with no mechanism: staff were replaced
+deterministically whenever a slot emptied, so continuity was never actually at risk and the player
+never competed for anyone.
+
+- **There is a candidate pool**, bounded and refreshed at the season boundary, holding staff who are
+  unemployed or reachable. A candidate carries the same four ratings as an employed coordinator, a
+  scheme preference, and a reputation that sets what they will accept.
+- **A hire is a negotiation with two terms**: length and role. A coordinator who could be a head
+  coach elsewhere wants a shorter deal; one rebuilding a reputation wants a longer one. There is no
+  salary bidding in the college tier — reputation, scheme fit and the head coach's own standing are
+  the currency.
+- **Poaching runs against the player, not only for them.** A coordinator whose unit performs draws
+  interest from programmes with more prestige. The player sees the interest before the departure and
+  can spend against it: promotion, responsibility, or a longer deal. Sometimes nothing works, and
+  that is the point of continuity being a resource.
+- **Departure has a scheme cost.** A coordinator carries the scheme he installed; the replacement
+  brings his own affinity, and §6.2's adoption cost applies if it differs.
+- The carousel never dead-ends for staff either: a slot always fills, at the quality the programme
+  can attract.
+
+### 6.2 Scheme change, priced — added 2026-08-14
+
+"Expensive and slow" was the whole specification. What it means:
+
+- **Adoption is a season-long cost, not a toggle.** A roster's fit to a new scheme is what modifies
+  matchups; changing the scheme changes the fit of every player at once, and most get worse before
+  they get better.
+- The cost is paid in three places: **matchup fit** while the roster is mismatched, **practice
+  minutes** diverted to install for as long as adoption runs, and **staff affinity** — a coordinator
+  running a scheme he does not know is worse at it.
+- **Recruiting compounds it.** Players were recruited to fit the old scheme; the new one wants
+  different archetypes, and the class that fixes that is years away.
+- A change made at the season boundary costs less than one made mid-season. Mid-season change is
+  permitted, because a coach in trouble reaching for it is a real football decision, and it should be
+  a bad one most of the time.
+
+The multipliers and the adoption period are rules constants and land in the tier rules module.
+
 ---
 
 ## 7. Stakes (D8)
@@ -367,6 +454,60 @@ Pressure is continuous, legible, and comes from named people.
   and always has something requiring an answer.
 - Firing can happen in-season. The carousel can never dead-end: there is always at least one offer or
   an explicit year out of the game.
+
+### 7.1 The inbound event economy — added 2026-08-14
+
+"Everything arrives as an inbound event" and "the inbox always has something requiring an answer"
+named the channel without specifying it. The week's first beat costs 90 seconds and is mandatory, so
+what arrives has to be worth that.
+
+**An inbound event has five parts**: who it is from (a named person, never "the system"), what they
+want, what answering costs, what happens if it expires, and a deadline. An event with no cost and no
+expiry is a notification, and notifications do not belong in the inbox.
+
+**The kinds, and what each is for:**
+
+| Kind | From | The decision it forces |
+|---|---|---|
+| Stakeholder pressure | AD/GM, boosters, fans, locker room | Spend standing now, or carry the disposition |
+| Player matter | a player or his position coach | Playing time, discipline, role, development focus |
+| Staff matter | a coordinator or position coach | Responsibility, continuity, the poaching answer of §6.1 |
+| Recruit or prospect | a recruit, his coach, or a scout | Where the week's contact budget goes |
+| Media | a reporter | A public answer that moves fan and booster disposition |
+| Programme | the institution | Facilities, compliance, scheduling |
+
+**Costs are the week's real currencies**, not a separate resource: contact points, practice minutes,
+stakeholder standing, and the player's own 90 seconds. An event that costs none of them is not a
+decision under §2.2 and is cut.
+
+**Expiry is a consequence, not a cleanup.** An unanswered event resolves against the player — the
+recruit takes the silence as an answer, the coordinator concludes he is not valued. `WorldScheduler`
+has always reserved the step for this; it runs.
+
+**Bounds.** At most **32 live events**, at most **8 arriving per week**, and at least one requiring
+an answer. Archived events fold into the season digest like every other domain event. These are rules
+constants and land in the shared rules module.
+
+### 7.2 The job market — added 2026-08-14
+
+§9's promotion arc covers college to pro. It did not cover how a career *starts*, and the opening
+screens of the game depend on it: three defensible starting jobs, an offer with terms, and an
+appointment.
+
+- **An opening is a programme with a vacancy, a stated expectation and a reason it is open** — fired,
+  promoted away, retired. The reason predicts the job: a programme that fired a coach for missing a
+  bowl expects a bowl.
+- **Three defensible starts, not a difficulty picker.** The opening set at career start is generated
+  so no option is strictly best: a high-prestige job with an impatient board, a stable job with a
+  low ceiling, a broken job with time. Each is a real career.
+- **Fit evidence is the verdict**, and it is engine-owned per `03` §1.6: the programme's archetype
+  against the coach's premise, its roster against his scheme, its expectation against its resources.
+  A named person voices it.
+- **Openings run all career long**, not only at the start. Programmes fire and hire around the
+  player every season, which is what makes the carousel a world rather than a menu that appears when
+  he is sacked. Interest in the player is a function of his record against expectation, not his
+  record.
+- Bounds: at most **32 tracked openings** at a time; interest is retained per programme and decays.
 
 ---
 
@@ -402,6 +543,15 @@ same world realigns the same way on every run.
 
 Falsifier: after a swap, every conference still holds a legal number of programmes, and every
 programme still belongs to exactly one.
+
+**A swap leaves a record — added 2026-08-14.** Realignment ran silently: it moved programmes and
+emitted nothing, so the map could change under a coach with no way to see that it had, and screen 51
+could only ever show the current membership. A swap now emits a typed domain event carrying both
+programmes, both conferences, the season, and the standing that drove it. That makes three things
+true at once: the news feed can report it under §4.2b's existing weight rule, the Realignment Event
+surface can show before and after rather than only after, and a rivalry broken by a swap (§8) has a
+cause the player can find. It is a normal domain event and folds into the season digest like any
+other — no new retention rule.
 
 **Programme evolution — added 2026-08-12.** Prestige was frozen at generation, so a programme that
 won titles for a decade was exactly as prestigious as one that never won — while prestige drives
@@ -589,7 +739,7 @@ The attribute sets each emphasises live in the rules module with the schemes.
 | Colour space for the trade-dress test | CIE L\*a\*b\*, CIE76 ΔE | The cheapest perceptual distance that is not RGB. No dependency, and the choice is stated so it can be argued with |
 | Trade-dress collision threshold | ΔE **25**, on *both* members of the pair | A pair collides only when primary *and* secondary are both close. One shared colour is not trade dress — half the sport wears navy |
 | Orientation | Checked both ways round | Swapping primary and secondary does not make a pair original |
-| Contrast floors for team colours | 4.5:1 for `team.onTeam` on `team.primary`; 3:1 for `team.secondary` on `team.primary` | `04` §2.1's table. Both checked *at generation time*, so a pair that cannot carry legible text is regenerated rather than shipped. Requiring one foreground to work on *both* members was tried first and is unsatisfiable — it rules out every dark-plus-light identity |
+| Contrast floors for team colours | 4.5:1 for `team.onTeam` on `team.primary`; 3:1 for `team.secondary` on `team.primary` | `04` §6.1's team colour reference trio table. Both checked *at generation time*, so a pair that cannot carry legible text is regenerated rather than shipped. Requiring one foreground to work on *both* members was tried first and is unsatisfiable — it rules out every dark-plus-light identity |
 | Generation retry budget | 64 attempts per programme, then a deterministic fallback pair | A generator that can loop forever is a hang. The fallback is drawn from a pre-verified set and is itself covered by both tests |
 | Leagues the legal tests sweep | 200 | Matches D6's falsifier sample, so one generation run serves both |
 

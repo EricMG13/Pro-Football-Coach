@@ -412,7 +412,9 @@ public struct CoachingHQView: View {
             selectedChoiceID = choice.intentID
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Space.sm) {
-                Image(systemName: selected ? "record.circle.fill" : "circle")
+                // `04` §6.6: selection reuses the Obligation class's complete mark against the
+                // unchecked `circle`, rather than minting a third circle nobody registered.
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                     HStack {

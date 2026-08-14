@@ -1,0 +1,591 @@
+<!-- @dsCard group="table" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>table-v4 — Coach's World dense table family, Floodlit (04 §6.5 registry 7–10, 17, 18)</title>
+<style>
+/* ============================================================================
+   table-v4.dc.html — self-contained HTML+CSS. No JavaScript, no CDN, no web
+   font, no icon font, no images. CSS px read as pt. Supersedes table-v3,
+   which rendered the retired violet system. Registry 7-10, 17, 18: DenseTable,
+   ColumnSet, ListControls, RatingBadge, StatusChip, RoleToken.
+   ============================================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#060A12}
+body{font-family:-apple-system,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
+  font-size:13px;line-height:1.5;padding:24px 16px 64px;color:#F6FAFF;font-variant-numeric:tabular-nums}
+.sheet{max-width:1240px;margin:0 auto}
+h1{font-size:20px;font-weight:800;letter-spacing:-0.2px}
+.kicker{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:#8496AC;margin-bottom:4px}
+.prov{font-size:11px;color:#A9BACE;margin-top:8px;max-width:84em}
+.prov b{color:#F6FAFF;font-weight:600}
+.law{font-size:11px;color:#A9BACE;border-left:3px solid #FFC53D;background:#141A26;
+  padding:8px 12px;margin-top:10px;max-width:84em}
+.card{background:#141A26;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;
+  padding:16px 18px 18px;margin-top:20px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.05) 0%, transparent 42%)}
+.card>*{position:relative}
+.card>h2{font-size:17px;font-weight:800;letter-spacing:-0.2px}
+.sub{font-size:11px;color:#8496AC;margin:2px 0 12px}
+h3{font-size:13px;font-weight:700;margin:16px 0 6px}
+p{margin:6px 0}
+.small{font-size:11px;color:#A9BACE}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;background:#1E2735;
+  border:1px solid #1E2735;border-radius:3px 14px 3px 14px;padding:1px 5px;color:#A9BACE;white-space:nowrap}
+.rl{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;color:#F6FAFF;white-space:nowrap}
+.callout{background:#060A12;border:1px solid #1E2735;border-left:3px solid #FFB03A;
+  border-radius:4px 22px 4px 22px;padding:10px 12px;margin-top:12px}
+.callout h4{font-size:11px;font-weight:700;margin-bottom:4px}
+.callout li{font-size:11px;color:#A9BACE;margin:4px 0 4px 16px}
+.callout li b{color:#F6FAFF}
+.fig{font-size:10px;color:#8496AC;margin-top:4px}
+.vo,.contract{margin-top:14px;border-top:1px solid #1E2735;padding-top:10px}
+.vo h4,.contract h4{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:#FFC53D;margin-bottom:6px;font-weight:700}
+.vo ul{list-style:none}
+.vo li{font-size:11px;color:#A9BACE;margin:3px 0;padding-left:12px;border-left:2px solid #1E2735}
+.contract ol{margin-left:18px}
+.contract li{font-size:11px;color:#A9BACE;margin:4px 0}
+.contract li b{color:#F6FAFF;font-weight:600}
+.duo{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;margin-top:8px}
+.pane{background:#060A12;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;padding:14px;flex:1 1 480px;min-width:0}
+.pane.lt{background:#EDF1F6;color:#0B111C;border-color:#DCE3EC}
+.pane h4{font-size:11px;font-weight:700;margin-bottom:8px}
+
+/* dense table */
+.tbl{width:100%;border-collapse:collapse}
+.tbl thead th{font-size:9.5px;color:#8496AC;text-transform:uppercase;letter-spacing:.05em;
+  text-align:left;padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.13);font-weight:700}
+.pane.lt .tbl thead th{color:#566274;border-bottom-color:#DCE3EC}
+.tbl thead th.on{color:#FFC53D}
+.pane.lt .tbl thead th.on{color:#7A5200}
+.tbl td{font-size:11px;padding:0 6px;height:26px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:middle}
+.pane.lt .tbl td{border-bottom-color:#EDF1F6}
+.tbl tr.sel td{background:rgba(255,197,61,.10);border-top:1px solid #FFC53D;border-bottom:1px solid #FFC53D}
+.tbl tr.dis td{opacity:.62}
+.tbl tr.dis td:first-child{box-shadow:inset 3px 0 0 #8496AC}
+.caption{display:flex;justify-content:space-between;font-size:10px;color:#8496AC;margin-bottom:4px}
+.caption b{color:#F6FAFF}
+.pane.lt .caption{color:#566274}
+.pane.lt .caption b{color:#0B111C}
+
+/* rating forms */
+.vring{position:relative;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px}
+.vring svg{position:absolute;inset:0}
+.vring span{position:relative;font-size:9px;font-weight:800}
+.badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:16px;
+  border-radius:3px;font-size:10px;font-weight:800;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.badge.r{color:#FF8E9C;border:1px solid rgba(255,142,156,.4)}
+.badge.a{color:#FFB03A;border:1px solid rgba(255,176,58,.4)}
+.badge.g{color:#7DF0B6;border:1px solid rgba(125,240,182,.4)}
+.badge.u{color:#8496AC;border:1px solid rgba(255,255,255,.13)}
+.pane.lt .badge.r{color:#A3202F;border-color:rgba(163,32,47,.4)}
+.pane.lt .badge.a{color:#704C00;border-color:rgba(112,76,0,.4)}
+.pane.lt .badge.g{color:#14653C;border-color:rgba(20,101,60,.4)}
+.pane.lt .badge.u{color:#566274;border-color:#DCE3EC}
+.badgefill{display:inline-flex;align-items:center;justify-content:center;width:24px;height:16px;
+  border-radius:3px;font-size:10px;font-weight:800;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.badgefill.r{background:#FF3B54;color:#150F02}
+.badgefill.a{background:#FFB03A;color:#150F02}
+.badgefill.g{background:#37E08A;color:#150F02}
+
+/* status glyph tag (text stand-in for SF Symbol) */
+.gl{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:9px;padding:1px 5px;
+  border-radius:3px 14px 3px 14px;border:1px solid rgba(255,255,255,.13);white-space:nowrap}
+.gl.neg{color:#FF8E9C;border-color:rgba(255,142,156,.35)}
+.gl.warn{color:#FFB03A;border-color:rgba(255,176,58,.35)}
+.gl.pos{color:#7DF0B6;border-color:rgba(125,240,182,.35)}
+.gl.info{color:#9CC8EE;border-color:rgba(156,200,238,.35)}
+.gl.plain{color:#A9BACE}
+.pane.lt .gl.neg{color:#A3202F}.pane.lt .gl.warn{color:#704C00}.pane.lt .gl.pos{color:#14653C}
+.pane.lt .gl.info{color:#1E5A8C}.pane.lt .gl.plain{color:#414B5C}
+
+/* team trio chip */
+.tc{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:2px 6px 2px 2px;
+  border-radius:3px 14px 3px 14px;border:1px solid #A9BACE}
+.tc .sb{width:12px;height:12px;border-radius:2px}
+.tc.t1{background:#14382A;color:#F2F5F3}.tc.t1 .sb{background:#D9B23C}
+.tc.t2{background:#E9E0C9;color:#18202B}.tc.t2 .sb{background:#6E3038}
+.tc.t3{background:#555B66;color:#FFFFFF}.tc.t3 .sb{background:#D9DDE4}
+
+/* list controls */
+.ctlrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.ctlbtn{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 12px;font-size:11px;font-weight:700;
+  border-radius:3px 14px 3px 14px;border:1px solid rgba(255,255,255,.13);color:#F6FAFF}
+.ctlbtn.pri{background:#FFC53D;color:#150F02;border-color:#FFC53D}
+.pane.lt .ctlbtn{border-color:#DCE3EC;color:#0B111C}
+.pane.lt .ctlbtn.pri{background:#7A5200;color:#FAFBFD;border-color:#7A5200}
+.field{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;font-size:11px;color:#8496AC;
+  border:1px solid rgba(255,255,255,.13);border-radius:3px 14px 3px 14px;flex:3 1 260px;white-space:nowrap}
+.pane.lt .field{color:#566274;border-color:#DCE3EC}
+.ck{width:16px;height:16px;border-radius:3px;border:1px solid #A9BACE;display:inline-block}
+.ck.on{background:#FFC53D;border-color:#FFC53D}
+.bulk{display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 12px;
+  background:rgba(255,197,61,.08);border:1px solid rgba(255,197,61,.3);border-radius:3px 14px 3px 14px;font-size:11px}
+.empty{padding:20px;text-align:center;color:#8496AC;font-size:12px}
+
+/* RoleToken field diagram */
+.fld{position:relative;height:150px;border-radius:0;background:#1C6E42;overflow:hidden}
+.pane.lt .fld{background:#D9E7DD}
+.yl{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,.15)}
+.pane.lt .yl{background:rgba(0,0,0,.1)}
+.los{position:absolute;top:0;bottom:0;width:2px;background:#F5F7FA}
+.pane.lt .los{background:#0E1218}
+.dot{position:absolute;width:20px;height:20px;border-radius:50%;background:rgba(6,10,18,.7);
+  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#FFE196;
+  transform:translate(-50%,-50%)}
+.dot.sel{box-shadow:0 0 0 2px #C6F24E}
+.pane.lt .dot{color:#7A5200}
+</style>
+</head>
+<body class="dk">
+<div class="sheet">
+
+<header>
+  <div class="kicker">@dsCard group="table" — sheet 5 of 10, floodlit canon amendment §6.5 registry 7–10, 17, 18</div>
+  <h1>Pro Football Coach — dense table family, table-v4</h1>
+  <p class="prov">
+    <b>Supersedes table-v3</b>, which rendered the retired violet system. Renders 04 §6.5 registry
+    7–10, 17, 18: <span class="mono">DenseTable</span>, <span class="mono">ColumnSet</span>,
+    <span class="mono">ListControls</span>, <span class="mono">RatingBadge</span>,
+    <span class="mono">StatusChip</span>, <span class="mono">RoleToken</span>. Shared world: Example
+    State, Week 9, roster and watch board identical to the reference library's one save. Identities
+    pending generator output.
+  </p>
+  <p class="law">
+    This sheet is a rendering — 04 is the only canonical home. Continuous table rows keep radius 0
+    even under Floodlit — a run of rows is one surface, and cutting each row's corners turns a table
+    into a stack of cards (04 §6.3). Rows sit on the opaque work surface, never glass: a table is
+    read continuously, and blur cost is not spent on something read continuously.
+  </p>
+</header>
+
+<section class="card" id="card-1">
+  <h2>Card 1 — DenseTable (registry 7): 24–28 pt tracked rows</h2>
+  <p class="sub">Identity columns (number, name, position) plus seven fact columns — inside the
+    six-to-nine budget of §4.5. Continuous rows, radius 0. Rating cells use ValueRing (gauge-v4);
+    status uses at most three chips per row.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark — Roster, sorted by overall descending</h4>
+      <div class="caption"><span>Roster <b>63 of 70</b></span><span>sorted: OVR ↓</span></div>
+      <table class="tbl">
+        <thead><tr><th>No</th><th>Player</th><th>Pos</th><th>Slot</th><th class="on">OVR</th><th>Age</th><th>Fit</th><th>Value</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="rl">72</td><td>Player Seventy-Two</td><td>LT</td><td><span class="badge u" style="border-color:rgba(255,255,255,.13)">LT1</span></td>
+            <td><span class="vring"><svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="9.5" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="3.5"/><circle cx="13" cy="13" r="9.5" fill="none" stroke="#7DF0B6" stroke-width="3.5" stroke-dasharray="59.7" stroke-dashoffset="4.5" transform="rotate(-90 13 13)"/></svg><span>88</span></span></td>
+            <td>20</td><td>Ideal</td><td>$4.2M</td><td class="small">—</td></tr>
+          <tr><td class="rl">14</td><td>Player Fourteen</td><td>QB</td><td><span class="badge u" style="border-color:rgba(255,255,255,.13)">QB1</span></td>
+            <td><span class="vring"><svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="9.5" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="3.5"/><circle cx="13" cy="13" r="9.5" fill="none" stroke="#FFB03A" stroke-width="3.5" stroke-dasharray="59.7" stroke-dashoffset="9.6" transform="rotate(-90 13 13)"/></svg><span>84</span></span></td>
+            <td>22</td><td>Ideal</td><td>$3.9M</td><td><span class="gl warn">clock</span></td></tr>
+          <tr class="dis"><td class="rl">51</td><td>Player Fifty-One</td><td>LB</td><td><span class="badge u" style="border-color:rgba(255,255,255,.13)">LB1</span></td>
+            <td><span class="vring"><svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="9.5" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="3.5"/><circle cx="13" cy="13" r="9.5" fill="none" stroke="#FFB03A" stroke-width="3.5" stroke-dasharray="59.7" stroke-dashoffset="14.4" transform="rotate(-90 13 13)"/></svg><span>81</span></span></td>
+            <td>22</td><td>Good</td><td>$2.6M</td><td><span class="gl neg">shield.slash</span></td></tr>
+          <tr class="sel"><td class="rl">55</td><td>Player Fifty-Five</td><td>C</td><td><span class="badge u" style="border-color:rgba(255,255,255,.13)">C1</span></td>
+            <td><span class="vring"><svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="9.5" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="3.5"/><circle cx="13" cy="13" r="9.5" fill="none" stroke="#FFB03A" stroke-width="3.5" stroke-dasharray="59.7" stroke-dashoffset="16.9" transform="rotate(-90 13 13)"/></svg><span>80</span></span></td>
+            <td>22</td><td>Good</td><td>$2.9M</td><td><span class="gl neg">cross.case</span> <span class="gl warn">triangle</span></td></tr>
+          <tr><td class="rl">7</td><td>Player Seven</td><td>WR</td><td><span class="badge u" style="border-color:rgba(255,255,255,.13)">WR2</span></td>
+            <td><span class="vring"><svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="9.5" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="3.5"/><circle cx="13" cy="13" r="9.5" fill="none" stroke="#FFB03A" stroke-width="3.5" stroke-dasharray="59.7" stroke-dashoffset="19.4" transform="rotate(-90 13 13)"/></svg><span>79</span></span></td>
+            <td>19</td><td>Good</td><td>$1.2–1.8M</td><td><span class="gl info">binoculars</span></td></tr>
+        </tbody>
+      </table>
+      <p class="fig">Unavailable row (51): dimmed facts content.quiet on work — 5.76, quoted from
+        tokens-v4 — above the body floor, so the retained values stay readable, which is the point
+        of retaining rather than blanking them. The rating ring keeps full colour undimmed; only the
+        row's leading edge and prose dim. Selected row (55): boundary in gold at ≥3:1, value, and
+        spoken "selected" — never the fill alone.</p>
+    </div>
+    <div class="pane lt">
+      <h4>Light — same board</h4>
+      <div class="caption"><span>Roster <b>63 of 70</b></span><span>sorted: OVR ↓</span></div>
+      <table class="tbl">
+        <thead><tr><th>No</th><th>Player</th><th>Pos</th><th>Slot</th><th class="on">OVR</th><th>Age</th><th>Fit</th><th>Value</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="rl">72</td><td>Player Seventy-Two</td><td>LT</td><td class="small">LT1</td>
+            <td><span class="badge g">88</span></td><td>20</td><td>Ideal</td><td>$4.2M</td><td class="small">—</td></tr>
+          <tr><td class="rl">14</td><td>Player Fourteen</td><td>QB</td><td class="small">QB1</td>
+            <td><span class="badge a">84</span></td><td>22</td><td>Ideal</td><td>$3.9M</td><td><span class="gl warn">clock</span></td></tr>
+          <tr class="dis"><td class="rl">51</td><td>Player Fifty-One</td><td>LB</td><td class="small">LB1</td>
+            <td><span class="badge a">81</span></td><td>22</td><td>Good</td><td>$2.6M</td><td><span class="gl neg">shield.slash</span></td></tr>
+        </tbody>
+      </table>
+      <p class="fig">Light appearance uses the flat RatingBadge form here, to show both rating forms
+        are legal on the same family — the ring is preferred at single-column density, the badge at
+        six-plus adjacent ratings where six arcs would be busier than six flat marks.</p>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Row: number 72, Player Seventy-Two, left tackle, slot LT1, overall 88, elite band, age 20, fit ideal, value $4.2M.</li>
+      <li>Row: number 51, Player Fifty-One, linebacker, overall 81, unavailable this game — suspended, shield with a slash.</li>
+      <li>Row: number 55, Player Fifty-Five, centre, selected, overall 80, injury concern, schedule conflict.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> quoted from tokens-v4 Card A throughout — content roles on work/raised, the
+        state fills on their non-text/large-text floors where used as badge colour.</li>
+      <li><b>Widths:</b> nine-column table fits the promise floor; at AX5 the table becomes a
+        one-column fact stack per row, Q5 sizes, nothing dropped.</li>
+      <li><b>Touch:</b> a selectable row is a 44 pt hit target even though its visual track is 26 pt.</li>
+      <li><b>States:</b> default, selected, unavailable (dimmed but not blanked), sorted (header
+        marked) all shown.</li>
+      <li><b>Team colour:</b> not touched on this card — team fills appear on the watch-board card.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> a sort re-orders rows with a discrete re-layout, not a travelling animation,
+        under Reduce Motion's rule.</li>
+      <li><b>Verdict:</b> none — a table states facts; verdicts live on readout-v4.</li>
+      <li><b>Density budget:</b> nine columns, three identity plus... — restated: three identity
+        columns, six fact columns, at the budget's own upper bound; at most two status glyphs shown
+        per row (row 55), inside the three-per-row cap.</li>
+      <li><b>Tokens:</b> row radius 0, 26 pt track, content/state roles from 04 §6.1/§6.3 as amended
+        2026-08-14. Identities pending generator output.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-2">
+  <h2>Card 2 — ColumnSet (registry 8): fact columns swap over stable identity</h2>
+  <p class="sub">Where a screen has more facts than the six-to-nine budget seats at once, further
+    facts arrive as a segmented column set rather than horizontal scroll — identity (number, name,
+    position) stays fixed while the fact columns behind a segmented control swap.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark — "Performance" set active</h4>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <span class="ctlbtn pri">Performance</span><span class="ctlbtn">Health</span><span class="ctlbtn">Contract</span>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>No</th><th>Player</th><th>OVR</th><th>Snaps</th><th>Form</th></tr></thead>
+        <tbody>
+          <tr><td class="rl">14</td><td>Player Fourteen</td><td><span class="badge a">84</span></td><td>612</td><td class="small">last 5: 81·79·84·83·80</td></tr>
+        </tbody>
+      </table>
+      <p class="fig">Switching to Health swaps Snaps/Form for Fatigue/Injury without moving the
+        identity columns — the player's row never re-sorts or re-locates under a set change.</p>
+    </div>
+    <div class="pane lt">
+      <h4>Light — "Health" set active</h4>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <span class="ctlbtn">Performance</span><span class="ctlbtn pri">Health</span><span class="ctlbtn">Contract</span>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>No</th><th>Player</th><th>OVR</th><th>Fatigue</th><th>Injury</th></tr></thead>
+        <tbody>
+          <tr><td class="rl">14</td><td>Player Fourteen</td><td><span class="badge a">84</span></td><td>Moderate</td><td class="small">None</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence, written out</h4>
+    <ul><li>Column set: three sets available, Performance, Health, Contract; Performance active; identity columns number and player stay fixed across all three.</li></ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> the segmented control uses the same solid/ghost forms as GoButton on
+        chrome-v4; content ratios unchanged from Card 1.</li>
+      <li><b>Widths:</b> the set control fits beside the table header at every supported width; at
+        AX5 it stacks above the one-column fact stack.</li>
+      <li><b>Touch:</b> each segment 44 pt tall minimum.</li>
+      <li><b>States:</b> active/inactive segment shown; the underlying rows carry Card 1's states
+        unchanged.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> a set change swaps the fact columns as a discrete replacement, not a slide.</li>
+      <li><b>Verdict:</b> none.</li>
+      <li><b>Density budget:</b> a column set does not add to the six-to-nine count — it is how a
+        screen exceeds nine facts without breaching the budget or resorting to horizontal scroll.</li>
+      <li><b>Tokens:</b> segmented control per GoButton's solid/ghost forms (chrome-v4); table per
+        Card 1.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-3">
+  <h2>Card 3 — ListControls (registry 9): sort, filter, bounded search, multi-select</h2>
+  <p class="sub">Sort, filter and bounded search over simulation objects — never the app's own
+    screens. Multi-select turns the table into a worklist with a bulk-action bar. Search is bounded:
+    a stated result cap over an engine-backed index — <span class="mono">WorldHistoryReadModel.search</span>
+    is the proven mechanism this reuses (G-10).</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark — multi-select active, bulk bar</h4>
+      <div class="ctlrow">
+        <span class="ctlbtn">Sort: OVR ↓</span>
+        <span class="ctlbtn">Filter: Age under 22 <span class="small">(1)</span></span>
+        <span class="field"><span class="mono" style="border:none;background:none;padding:0">magnifyingglass</span> Search players — first 50 by relevance</span>
+        <span class="ctlbtn pri">Select</span>
+      </div>
+      <div class="caption"><span>Watch board <b>18 of 40</b></span><span>multi-select active</span></div>
+      <table class="tbl">
+        <thead><tr><th></th><th>No</th><th>Player</th><th>Pos</th><th>OVR</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ck on"></span></td><td class="rl">7</td><td>Player Seven</td><td>WR</td><td><span class="badge a">79</span></td><td><span class="gl info">binoculars</span></td></tr>
+          <tr><td><span class="ck"></span></td><td class="rl">31</td><td>Player Thirty-One</td><td>RB</td><td><span class="badge a">77</span></td><td class="small">Not for sale</td></tr>
+          <tr><td><span class="ck on"></span></td><td class="rl">18</td><td>Player Eighteen</td><td>CB</td><td class="ctlbtn" style="height:20px;padding:0 8px;font-size:9px">Scout</td><td><span class="gl info">binoculars</span></td></tr>
+        </tbody>
+      </table>
+      <div class="bulk"><span><b>2 selected</b></span><span class="ctlbtn pri">Queue scout</span><span class="ctlbtn">Shortlist</span><span class="ctlbtn">Clear</span></div>
+      <p class="fig" style="margin-top:10px">Filtered-empty, inside the owning composition:</p>
+      <div class="empty">No players match Position: K.<br><span class="ctlbtn" style="display:inline-flex;margin-top:8px">Clear filter</span></div>
+    </div>
+    <div class="pane lt">
+      <h4>Light — same states</h4>
+      <div class="ctlrow">
+        <span class="ctlbtn">Sort: OVR ↓</span>
+        <span class="ctlbtn">Filter: Age under 22 <span class="small">(1)</span></span>
+        <span class="field"><span class="mono" style="border:none;background:none;padding:0">magnifyingglass</span> Search players</span>
+        <span class="ctlbtn pri">Select</span>
+      </div>
+      <div class="caption"><span>Watch board <b>18 of 40</b></span><span>multi-select active</span></div>
+      <table class="tbl">
+        <thead><tr><th></th><th>No</th><th>Player</th><th>Pos</th><th>OVR</th></tr></thead>
+        <tbody>
+          <tr><td><span class="ck on"></span></td><td class="rl">7</td><td>Player Seven</td><td>WR</td><td><span class="badge a">79</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="callout">
+    <h4>The bound is stated, per the leak this table exists to prevent</h4>
+    <ul>
+      <li>"Search players — first 50 by relevance" states its cap in the placeholder itself. An
+        unbounded scan over the full population is never presented as a search.</li>
+      <li>A result that is a screen name, rather than a simulation object, is the budget breached —
+        list controls search players, teams, games and history, never the app's own navigation.</li>
+    </ul>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Selected, Player Seven, wide receiver, number seven, overall seventy-nine, market unscouted.</li>
+      <li>Bulk bar: "Two selected: queue scout, shortlist, or clear."</li>
+      <li>Filtered empty: "No players match Position: K." with a clear-filter action.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> controls use GoButton's solid/ghost forms; checked boxes take gold fill,
+        quoted from tokens-v4.</li>
+      <li><b>Widths:</b> the control row wraps at any supported width; at AX5 the four controls
+        stack full-width above the one-column list.</li>
+      <li><b>Touch:</b> every control 44 pt tall; the checkbox's hit cell is the full row height.</li>
+      <li><b>States:</b> default controls, active filter with count, multi-select with bulk bar,
+        filtered-empty with in-composition recovery.</li>
+      <li><b>Team colour:</b> not touched.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> the bulk bar appears as a discrete state change under Reduce Motion; filter
+        results replace discretely, no travel.</li>
+      <li><b>Verdict:</b> none — controls carry no judgement.</li>
+      <li><b>Density budget:</b> controls spend one secondary region above the dominant table; sort
+        or filter costs one tap; bulk action is one tap over N rows — the throughput purchase G-10
+        buys. Status glyphs: two distinct members shown (binoculars, shield-class), inside caps.</li>
+      <li><b>Tokens:</b> GoButton forms, gold checked state — 04 §6.1/§6.3/§6.5. The bound is stated
+        in copy per this card's own rule.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-4">
+  <h2>Card 4 — RatingBadge (registry 10): the flat heat-scale form</h2>
+  <p class="sub">Fixed-size numeral badge: red below 70, amber 70–84, green 85 upward — §6.4's heat
+    rule, drawn with the state fills from tokens-v4. The printed number is always present; colour is
+    never the sole carrier.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark — quotable and production-fill forms</h4>
+      <p class="small">Quotable — numeral in the state ink, no fill:</p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0">
+        <span class="badge r">64</span><span class="badge r">69</span>
+        <span class="small">| 70 |</span>
+        <span class="badge a">70</span><span class="badge a">78</span><span class="badge a">84</span>
+        <span class="small">| 85 |</span>
+        <span class="badge g">85</span><span class="badge g">92</span><span class="badge g">99</span>
+        <span class="badge u">—</span><span class="small">unknown, fog</span>
+      </div>
+      <p class="small">Production fill — state colour, ground ink:</p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0">
+        <span class="badgefill r">64</span><span class="badgefill a">78</span><span class="badgefill g">92</span>
+        <span class="small">dark fills take goldInk #150F02 — 10.47 warning / 11.07 positive / 5.45 live, quoted from tokens-v4</span>
+      </div>
+    </div>
+    <div class="pane lt">
+      <h4>Light — same forms</h4>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0">
+        <span class="badge r">64</span><span class="badge a">78</span><span class="badge g">92</span>
+        <span class="badge u">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence, written out</h4>
+    <ul>
+      <li>Overall eighty-eight, elite band.</li>
+      <li>Overall unknown, scout to reveal.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> quotable-form ink quoted from tokens-v4's state roles; production-fill ink
+        quoted from the filled-control rule (goldInk on state fills).</li>
+      <li><b>Widths:</b> fixed-size at every container width — width buys nothing, costs nothing. At
+        AX5 the mark does not scale; the fact stack carries "Overall: 88, elite band" instead.</li>
+      <li><b>Touch:</b> not itself a control; the containing row supplies the target.</li>
+      <li><b>States:</b> three heat bands plus unknown (fog) shown, with both threshold boundaries
+        visible.</li>
+      <li><b>Team colour:</b> not touched — heat is state colour, never team colour.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> a rating change appears as a discrete value change, no counting animation.</li>
+      <li><b>Verdict:</b> none — a value, not a judgement.</li>
+      <li><b>Density budget:</b> one fact column when used in a table; zero glyph-vocabulary spend —
+        the numeral is not a learned symbol.</li>
+      <li><b>Tokens:</b> state fills and inks — 04 §6.1 as amended 2026-08-14; heat thresholds 70/85
+        — §6.4.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-5">
+  <h2>Card 5 — StatusChip (registry 17): the twelve-member Status class</h2>
+  <p class="sub">Closed vocabulary, at most three chips per row, each changing a decision. The
+    authority is 04 §6.6, not this sheet — this card quotes the class in its stated order rather
+    than pricing it independently.</p>
+  <div class="duo">
+    <div class="pane dk" style="flex:1 1 100%">
+      <h4>Dark — all twelve members, quoted from §6.6</h4>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="gl neg">cross.case</span><span class="gl neg">bolt.slash</span><span class="gl neg">shield.slash</span>
+        <span class="gl warn">exclamationmark.triangle</span><span class="gl warn">clock.badge.exclamationmark</span>
+        <span class="gl info">binoculars</span><span class="gl plain">hand.raised</span><span class="gl plain">graduationcap</span>
+        <span class="gl plain">arrow.uturn.left</span><span class="gl pos">star</span><span class="gl pos">checkmark.seal</span>
+        <span class="gl warn">calendar.badge.exclamationmark</span>
+      </div>
+      <p class="fig">Twelve of twelve is the class, not a budget this card spent — drawing all
+        twelve here uses none of it up, because a screen's spend is the chips it shows, at most
+        three per row. Growth is still governed: a new status symbol displaces an existing member,
+        or the cap moves only by owner decision recorded in §6.6.</p>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence, written out</h4>
+    <ul><li>Twelve status marks, each carrying a printed or contextual word beside it — colour is never the sole meaning.</li></ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> each chip's ink is its state role, quoted from tokens-v4.</li>
+      <li><b>Widths:</b> the class list wraps at any width; individual chip usages sit inside table
+        rows per Card 1.</li>
+      <li><b>Touch:</b> chips are not independently interactive; the row supplies the target.</li>
+      <li><b>States:</b> the class itself has no state — usage states are drawn on Card 1.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> written out above; production usage speaks the specific chip's meaning
+        in context, per Card 1's row sentences.</li>
+      <li><b>Motion:</b> none.</li>
+      <li><b>Verdict:</b> none.</li>
+      <li><b>Density budget:</b> the class cap (12) is priced once, in 04 §6.6 — this card is not a
+        second pricing.</li>
+      <li><b>Tokens:</b> state roles from 04 §6.1; the class and its cap from §6.6 as amended
+        2026-08-14 (unchanged at 12 by the Floodlit move — only the Rating and Broadcast classes
+        grew).</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-6">
+  <h2>Card 6 — RoleToken (registry 18): list-to-diagram binding</h2>
+  <p class="sub">A short assignment code binds a list row to a labelled dot on a small diagram — the
+    list is editable, the diagram is readable, neither tries to be both. The diagram uses field
+    grammar at radius 0. Letters on the field are field.label, not field.annotation — they are text,
+    and the two gold forms are not interchangeable.</p>
+  <div class="duo">
+    <div class="pane dk" style="flex:1 1 100%">
+      <h4>Dark — package list and its mini field diagram</h4>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <div style="flex:1 1 240px">
+          <div class="caption"><span>Package: eleven personnel <b>5 of 5</b></span></div>
+          <table class="tbl">
+            <tbody>
+              <tr class="sel"><td class="small" style="width:30px">X</td><td>Player Seven</td><td class="small">Boundary receiver</td></tr>
+              <tr><td class="small">Z</td><td>Player Twelve</td><td class="small">Field receiver</td></tr>
+              <tr><td class="small">H</td><td>Player Four</td><td class="small">Slot</td></tr>
+              <tr><td class="small">Y</td><td>Player Eighty</td><td class="small">Inline tight end</td></tr>
+              <tr><td class="small">F</td><td>Player Two</td><td class="small">Back</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="flex:1 1 280px">
+          <div class="fld">
+            <span class="yl" style="left:20%"></span><span class="yl" style="left:40%"></span>
+            <span class="yl" style="left:60%"></span><span class="yl" style="left:80%"></span>
+            <span class="los" style="left:55%"></span>
+            <span class="dot sel" style="left:6%;top:14%">X</span>
+            <span class="dot" style="left:44%;top:8%">Z</span>
+            <span class="dot" style="left:38%;top:30%">H</span>
+            <span class="dot" style="left:46%;top:52%">Y</span>
+            <span class="dot" style="left:28%;top:64%">F</span>
+          </div>
+          <p class="fig">Field grammar, dark: field.line (los) 5.83 on turf · field.label (letters)
+            4.90 on turf · field.live (selection ring) 4.83 on turf — non-text, ring only.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul><li>X, Player Seven, boundary receiver, left wide, selected. The diagram exposes the same sentences in list order.</li></ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> field.line, field.label and field.live quoted from tokens-v4's field-role
+        table.</li>
+      <li><b>Widths:</b> list and diagram sit side by side at the promise floor and up; at AX5 they
+        stack, list becomes a fact stack, every dot's meaning survives as its row sentence.</li>
+      <li><b>Touch:</b> list rows are full-row targets; dots expand to 44×44 pt hit targets.</li>
+      <li><b>States:</b> default rows, selected row-and-dot pair (boundary, value, spoken state on
+        the row; field.live ring on the dot).</li>
+      <li><b>Team colour:</b> not touched — field grammar only.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> reassigning a token travels the dot in product; Reduce Motion replaces it
+        with a discrete appear/disappear at the new position.</li>
+      <li><b>Verdict:</b> none — assignments, not judgements.</li>
+      <li><b>Density budget:</b> the pair counts as one dominant object; position codes are football
+        literacy, not learned symbols.</li>
+      <li><b>Tokens:</b> field.line/label/live — 04 §6.1 as amended 2026-08-14; radius 0 on the
+        field, row shape on the list — §6.3.</li>
+    </ol>
+  </div>
+</section>
+
+<footer style="margin-top:24px">
+  <p class="small">End of table-v4. Six cards, registry 7–10, 17, 18. Supersedes table-v3. 04 §6.1,
+    §6.3, §6.5 and §6.6 remain the only canonical home for every value and rule shown. Static, no
+    motion, no script.</p>
+</footer>
+
+</div>
+</body>
+</html>

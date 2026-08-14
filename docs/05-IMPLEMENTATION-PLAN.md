@@ -173,9 +173,10 @@ it here is the only defence P5 allows.
 Film Room gallery.** Those artefacts repeated one application chassis across the game and were
 removed on 2026-08-11. `04` remains the only canonical design and screen-inventory authority.
 
-**They build against the eight `*-v3.dc.html` sheets** — owner-approved 2026-08-12, named in
+**They build against the ten `*-v4.dc.html` sheets** — redrawn in Floodlit 2026-08-14, named in
 `04` §6.5, indexed with renders in `docs/proofs/design-references/`. Those are the definitive
-design references for composition and states; `04` still owns every value.
+design references for composition and states; `04` still owns every value. They supersede the
+deleted `*-v3.dc.html` set, which rendered the retired violet system.
 
 Before feature SwiftUI begins, three interactive proof screens establish the corrected direction:
 Coaching HQ, Recruiting Board and Match Day. **Proof medium amended 2026-08-12:** the proofs are
@@ -408,7 +409,7 @@ mechanical, and none of it touches engine work.
   852 × 393 promise floor.
 - **G-12** — the AX5 reflow contract, enumerating families from the registry, asserting no datum is
   dropped and reading order is preserved.
-- **G-13** — the failure-set designs exist on `failure-v3.dc.html`; this phase carries them into the
+- **G-13** — the failure-set designs exist on `failure-v4.dc.html`; this phase carries them into the
   view layer as families land.
 
 **Gates:** G1, G2, G4, plus each test above red-then-green against a deliberately broken fixture, so

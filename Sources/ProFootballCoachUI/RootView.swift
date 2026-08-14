@@ -1,9 +1,18 @@
 import SwiftUI
 
 public struct RootView: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     public init() {}
 
     public var body: some View {
+        content
+            // The DEBUG proof root resolves the appearance the same way the shipped root does, so
+            // a proof screen and its production twin cannot diverge on palette resolution.
+            .coachWorldAppearance(colorScheme)
+    }
+
+    @ViewBuilder private var content: some View {
 #if DEBUG
         DebugCoachingHQRoot()
 #else

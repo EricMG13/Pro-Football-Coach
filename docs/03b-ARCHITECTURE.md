@@ -61,7 +61,18 @@ them. Specifically:
   plan, a roster change), the engine returns a new state.
 - The match view consumes a **stream of `MatchFrame`** produced ahead of rendering. The snap is
   resolved first, the animation is choreographed to the recorded outcome second. Rendering cannot
-  change a result, and a test asserts it.
+  change a result, and a test asserts it. `MatchFrame` carries the spatial anchors `03` §1.4
+  specifies, derived at read time from the recorded outcome and never persisted.
+
+**The intent surface must reach both tiers — added 2026-08-14.** `CoachIntent` carries pro management
+and pro market actions, but the session that the UI actually holds exposes only six intents and
+routes none of them, so the entire professional front office is unreachable from the app however
+complete the engine beneath it is. The same gap silently blocks the promotion decision, which the
+session explicitly rejects. The rule this restates: **an intent the engine resolves and the session
+cannot reach is a dead capability**, which `08` names as a standing failure mode. The session's intent
+surface is therefore the union of what the resolver handles, and a source scan asserts the two stay
+equal — enumerated by construction from the resolver's own cases, so an intent added tomorrow is
+covered the day it appears rather than the day someone remembers this paragraph.
 
 ---
 
@@ -88,6 +99,29 @@ unknown-field defaults for forward compatibility.
 - A newer-version save is refused with a plain message, never partially opened.
 - Every collection that can grow across seasons carries a bound, enumerated in D7 and verified by
   the soak's growth check rather than by inspection.
+
+**Bounds for the systems added 2026-08-14.** Each is stated here before it is built, because a bound
+retrofitted after a soak is a bound chosen to fit the number it produced. All are per-save unless
+noted, and all are discarded rather than archived when they leave the window.
+
+| Collection | Bound | Note |
+|---|---|---|
+| Per-player attribute change ring | last 6 changes per active player | Discarded on departure. `03` §1.5's sample travels with it |
+| Player-game ratings | derived, not stored | Computed from retained results; zero save cost |
+| Verdict baselines | current season + 1 prior | League-week aggregates, discarded beyond the window |
+| Spatial anchors | derived, not stored | `03` §1.4; a pure function of the recorded outcome |
+| User `GameRecord` | the current week's game only | Evicted at the week boundary; the abstracted summary persists as before |
+| Inbound events | 32 live, 8 arriving per week | `02` §7.1; archived events fold into the season digest |
+| Job-market openings | 32 tracked | `02` §7.2; interest decays rather than accumulating |
+| Staff candidate pool | refreshed at the season boundary | `02` §6.1; not cumulative across seasons |
+| Depth charts | one ordering per position per organisation | `02` §2.1a; packages reference it rather than copying it |
+| Personnel packages | 8 per side, 11 slots each | Rules constants, per tier |
+| Contract negotiations | live negotiations expire within their window | `02` §4.2c; the free-agent pool cap of 512 already bounds the population |
+
+The two derived rows are the ones worth noticing: the anchors and the ratings are the most
+screen-visible additions in this programme and they cost the save nothing, because both are functions
+of state the engine already keeps. A projection that could be derived and was stored anyway is how
+the prior build reached 8.3 MB.
 
 ---
 

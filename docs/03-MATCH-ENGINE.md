@@ -58,6 +58,78 @@ The engine owns every probability. The match view measures and dramatises; it ca
 outcome. A test asserts that rendering a play cannot alter its recorded result — the prior build's
 "one engine, one truth" invariant, worth keeping.
 
+### 1.4 Spatial anchors (G-06) — added 2026-08-14
+
+`04` §9 requires the complete 120-yard field with all 22 actors. The model above resolves *duels*,
+not positions: `Situation` carries one integer for the field and `Assignment` produces pairings with
+no geometry. So the anchors are a **derivation from the resolution**, specified here because they are
+simulation truth. A view that computed them would be inventing football.
+
+**The rule that makes this honest.** An anchor is only drawn where the resolution already decided
+something. A blocker's point comes from the protection duel he is in and how that duel resolved; a
+receiver's polyline comes from his assigned route's depth bucket and the openness the route matchup
+produced. Nothing is drawn from a physics model, because there is no physics model, and nothing is
+smoothed into plausibility. Where the resolution recorded no route — a run play's backside receiver —
+the actor has a point and no polyline, and the view draws him standing.
+
+**Per snap, the engine emits:**
+
+| Anchor | Derived from |
+|---|---|
+| Offense direction | the drive's possession and end-zone assignment. **Recorded, never inferred from home/away colour** |
+| Line of scrimmage | `Situation.yardLine` |
+| First-down line | `yardLine + distance`, on the side offense direction dictates |
+| Ball point | the ball carrier's point, or the spot on a dead ball |
+| Actor point, ×22 | assignment role and its matchup's resolved leverage, laid on the formation the call specified |
+| Display token | position ID and jersey number, from `JerseyNumbers` |
+| Emphasis flag | set on the actors in `decidingMatchup`; at most three, per `04` §9 |
+| Route polyline | the receiver's `PassDepth` bucket and lane, present only where the resolution assigned a route |
+| Playback phase | pre-snap, snap, development, decision, outcome, dead |
+| Commentary | the causal sentence, built from `decidingMatchup` |
+
+**The identity that the accessibility contract rests on.** The commentary and the anchors are built
+from the same `MatchupRecord` in the same pass. This is not a convention to be observed — it is the
+reason a VoiceOver sentence and the picture cannot describe different plays, which `04` §7 asserts
+and which no test can check if the two are computed separately. Build them together or the guarantee
+is words.
+
+**Determinism.** Anchors are a pure function of the recorded outcome plus the snap seed. Replaying a
+saved game reproduces every point exactly, across processes. They are derived at read time and not
+persisted; the bound is therefore zero, and §7's budget carries only the `GameRecord` itself.
+
+### 1.5 The player-game rating (G-04) — added 2026-08-14
+
+`04` §6.5's `FormLine` shows a last-N thread of per-game ratings. **No such rating exists**, and a UI
+that computed one would be inventing the judgement it is supposed to display.
+
+The rating is deterministic, position-aware, and derived from the participation and production the
+game already records. It reads the player's own matchup record where a detailed game was played, and
+falls back to the abstracted box score where one was not — the two must agree in distribution, which
+is a §5 band, not an assumption.
+
+- Scale is 40–99, the same scale as every other rating in the product, so it needs no second legend.
+- The definition is per position group: a guard's rating cannot read receiving yards.
+- **Sample is carried with the value.** A rating from four snaps is not a rating from sixty, and the
+  `ConfidenceTag` that displays it needs the count to say so.
+- A player who did not appear has no rating. Not zero, not an average — absent.
+
+### 1.6 Verdict computation (G-02) — added 2026-08-14
+
+`04` §6.5's `VerdictLine` heads a readout with a judgement, and `04` §4.4 rejects *"an AI-style
+verdict [that] invents authority without sample, staff ownership or uncertainty"*. The engine
+therefore owns the judgement, not the view, and owns it in a form that can state its own basis.
+
+- **Baselines are league-week aggregates**, computed deterministically per metric across the tier, so
+  "his third-down rate is unusually high" means high against a distribution the engine holds rather
+  than against a number someone chose.
+- **A verdict carries four things**: the claim, the sample it rests on, a confidence band, and the
+  named staff member whose judgement it is. `02` §6's staff already have `gamePlanning`,
+  `development` and `recruiting` ratings; a weak coordinator's read is weaker and may be wrong, and
+  that is a feature — it is what makes staff quality legible.
+- **A verdict the engine cannot back is not rendered.** No fallback text, no hedged generality. The
+  slot is empty and `04` §6.1's honest-degraded form applies.
+- Aggregates are bounded to the current season plus one prior and discarded beyond it.
+
 ---
 
 ## 2. Clock and situation

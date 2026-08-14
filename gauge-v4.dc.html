@@ -1,0 +1,500 @@
+<!-- @dsCard group="gauge" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gauge-v4 — Coach's World proportion vocabulary, Floodlit (04 §6.5 registry 29–35)</title>
+<style>
+/* ============================================================================
+   gauge-v4.dc.html — self-contained HTML+CSS+inline SVG. No JavaScript, no
+   CDN, no web font, no icon font, no raster images. CSS px read as pt.
+   New sheet — no v3 equivalent. Renders 04 §6.5 registry entries 29-35: the
+   proportion vocabulary (ArcGauge, ValueRing, AttributeDial, ShareBar) and
+   the drawn marks (StarRating, Pennant, TimeoutMarks).
+   ============================================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#060A12}
+body{
+  font-family:-apple-system,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
+  font-size:13px;line-height:1.5;padding:24px 16px 64px;color:#F6FAFF;
+  font-variant-numeric:tabular-nums;
+}
+.sheet{max-width:1200px;margin:0 auto}
+h1{font-size:20px;font-weight:800;letter-spacing:-0.2px}
+.kicker{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:#8496AC;margin-bottom:4px}
+.prov{font-size:11px;color:#A9BACE;margin-top:8px;max-width:82em}
+.prov b{color:#F6FAFF;font-weight:600}
+.law{font-size:11px;color:#A9BACE;border-left:3px solid #FFC53D;
+  background:#141A26;padding:8px 12px;margin-top:10px;max-width:82em}
+.card{background:#141A26;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;
+  padding:16px 18px 18px;margin-top:20px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.05) 0%, transparent 42%)}
+.card>*{position:relative}
+.card>h2{font-size:17px;font-weight:800;letter-spacing:-0.2px}
+.sub{font-size:11px;color:#8496AC;margin:2px 0 12px}
+h3{font-size:13px;font-weight:700;margin:16px 0 6px}
+p{margin:6px 0}
+.small{font-size:11px;color:#A9BACE}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;
+  background:#1E2735;border:1px solid #1E2735;border-radius:3px 14px 3px 14px;
+  padding:1px 5px;color:#A9BACE;white-space:nowrap}
+table{border-collapse:collapse;width:100%}
+th{font-size:10px;color:#8496AC;text-transform:uppercase;letter-spacing:.06em;
+  text-align:left;padding:4px 8px;border-bottom:1px solid #1E2735;font-weight:600}
+td{font-size:11px;padding:4px 8px;border-bottom:1px solid #1E2735;vertical-align:middle;color:#F6FAFF}
+.rl{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;color:#F6FAFF;white-space:nowrap}
+.callout{background:#060A12;border:1px solid #1E2735;
+  border-left:3px solid #FFB03A;border-radius:4px 22px 4px 22px;padding:10px 12px;margin-top:12px}
+.callout h4{font-size:11px;font-weight:700;margin-bottom:4px}
+.callout li{font-size:11px;color:#A9BACE;margin:4px 0 4px 16px}
+.callout li b{color:#F6FAFF}
+.fig{font-size:10px;color:#8496AC;margin-top:4px;max-width:26em;text-align:center}
+.vo,.contract{margin-top:14px;border-top:1px solid #1E2735;padding-top:10px}
+.vo h4,.contract h4{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;
+  letter-spacing:.08em;text-transform:uppercase;color:#FFC53D;margin-bottom:6px;font-weight:700}
+.vo ul{list-style:none}
+.vo li{font-size:11px;color:#A9BACE;margin:3px 0;padding-left:12px;border-left:2px solid #1E2735}
+.contract ol{margin-left:18px}
+.contract li{font-size:11px;color:#A9BACE;margin:4px 0}
+.contract li b{color:#F6FAFF;font-weight:600}
+.demo{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;margin-top:10px}
+.spec{display:flex;flex-direction:column;align-items:center;gap:6px}
+.spec .lab{font-size:10px;color:#8496AC;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.gaugewrap{position:relative;display:flex;align-items:center;justify-content:center}
+.gaugewrap .center{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.centerval{font-weight:800;color:#F6FAFF;letter-spacing:-0.3px}
+.centerlab{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:#8496AC;margin-top:1px}
+/* ShareBar */
+.sharebar{position:relative;height:4px;border-radius:2px;background:rgba(255,255,255,.09);overflow:hidden}
+.sharebar .fill{position:absolute;left:0;top:0;bottom:0;background:#FFC53D;border-radius:2px}
+/* Star rating blades */
+.blade{display:inline-block;width:0;height:0;
+  border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:12px solid #FFC53D;
+  transform:rotate(0deg);margin:0 1px}
+.blade.off{border-bottom-color:rgba(255,255,255,.14)}
+/* Pennant */
+.pennant{width:0;height:0;border-top:9px solid transparent;border-bottom:9px solid transparent;
+  border-left:15px solid #14382A;display:inline-block;vertical-align:middle}
+/* Timeout marks */
+.tomark{width:9px;height:9px;border-radius:2px;display:inline-block;margin:0 2px}
+.tomark.filled{background:#F6FAFF}
+.tomark.spent{background:transparent;border:1.5px solid rgba(255,255,255,.35)}
+</style>
+</head>
+<body class="dk">
+<div class="sheet">
+
+<header>
+  <div class="kicker">@dsCard group="gauge" — sheet 3 of 10, floodlit canon amendment §6.5</div>
+  <h1>Pro Football Coach — proportion vocabulary, gauge-v4</h1>
+  <p class="prov">
+    <b>New sheet — no v3 equivalent.</b> Renders 04 §6.5 registry entries 29–35: the four proportion
+    primitives (<span class="mono">ArcGauge</span>, <span class="mono">ValueRing</span>,
+    <span class="mono">AttributeDial</span>, <span class="mono">ShareBar</span>) and the three drawn
+    marks (<span class="mono">StarRating</span>, <span class="mono">Pennant</span>,
+    <span class="mono">TimeoutMarks</span>). Arcs are drawn as real SVG stroke geometry at the
+    product's own diameters and stroke widths, not approximated.
+  </p>
+  <p class="law">
+    This sheet is a rendering — 04 is the only canonical home. Static reference: no motion, no
+    script. Figures shown (82%, 84 overall, star counts) are type specimens matching the reference
+    library's shared world (Player Fourteen, OVR 84), not simulated data.
+  </p>
+</header>
+
+<section class="card" id="card-a">
+  <h2>Card A — ArcGauge (registry 29): the large form</h2>
+  <p class="sub">Where a datum is a share of a whole, the form is an arc, not a bar — the same
+    primitive from a 26 pt table cell to a 212 pt dial. ArcGauge is the large scale: a proportion
+    that owns real screen area, such as Coaching HQ's game-plan completion.</p>
+  <div class="demo">
+    <div class="spec">
+      <div class="gaugewrap" style="width:118px;height:118px">
+        <svg width="118" height="118" viewBox="0 0 118 118">
+          <circle cx="59" cy="59" r="53.5" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="11"/>
+          <circle cx="59" cy="59" r="53.5" fill="none" stroke="#FFC53D" stroke-width="11"
+            stroke-linecap="round" stroke-dasharray="336.1" stroke-dashoffset="60.5"
+            transform="rotate(-90 59 59)"/>
+        </svg>
+        <div class="center">
+          <div class="centerval" style="font-size:26px">82<span style="font-size:13px">%</span></div>
+          <div class="centerlab">GAME PLAN</div>
+        </div>
+      </div>
+      <div class="lab">118 pt · 11 pt stroke · value 0.82</div>
+    </div>
+    <div class="spec">
+      <div class="gaugewrap" style="width:80px;height:80px">
+        <svg width="80" height="80" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="35.5" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="8"/>
+          <circle cx="40" cy="40" r="35.5" fill="none" stroke="#FF8E9C" stroke-width="8"
+            stroke-linecap="round" stroke-dasharray="223.1" stroke-dashoffset="149.4"
+            transform="rotate(-90 40 40)"/>
+        </svg>
+        <div class="center">
+          <div class="centerval" style="font-size:16px">33<span style="font-size:9px">%</span></div>
+          <div class="centerlab" style="font-size:7.5px">RISK</div>
+        </div>
+      </div>
+      <div class="lab">80 pt · 8 pt stroke · state.negative</div>
+    </div>
+  </div>
+  <p class="fig" style="text-align:left">Start angle −90 (twelve o'clock). Colours are a second
+    reading of a printed figure and never replace it — both specimens above print their value in
+    the centre. Track colour is white at 0.09 opacity in both appearances; the fill takes the role
+    the datum calls for (action.primary for a neutral share, a state role where the share itself is
+    a judgement).</p>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Game plan completion: 82 percent installed, drawn as an arc gauge, 118 points, gold fill.</li>
+      <li>Risk gauge: 33 percent, drawn as an arc gauge, 80 points, negative-state fill.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Light and dark:</b> dark shown; light appearance takes the same geometry with the
+        light-appearance ink/fill roles from tokens-v4 Card A — no new pairing.</li>
+      <li><b>Widths:</b> intrinsically sized, unaffected by screen width.</li>
+      <li><b>44 pt floor:</b> not applicable — a readout, not a control.</li>
+      <li><b>States:</b> neutral (gold) and judgement (state role) shown.</li>
+      <li><b>Team colour:</b> never — an arc gauge's fill is action.primary or a state role, not
+        team colour, per §5's six-slot restraint.</li>
+      <li><b>VoiceOver:</b> one sentence per gauge, written out above; the printed figure is the
+        accessible value, not the arc's sweep.</li>
+      <li><b>Animations:</b> in product, the arc animates to its value on appearance; Reduce Motion
+        renders it complete immediately, since the end state is what the value already asserts.</li>
+      <li><b>Verdict line:</b> the gauge is evidence for a verdict line elsewhere on its screen, not
+        a verdict itself — it prints a share, not a judgement.</li>
+      <li><b>Density-budget cost:</b> one dominant-object-class element; counts toward the one
+        allowed per screen when it is the dominant object, as on Coaching HQ.</li>
+      <li><b>Traceability:</b> the proportion rule and the four-scale claim are quoted from 04 §6.5;
+        the track opacity is quoted from Floodlit's shipped `Color.white.opacity(0.09)`, restated
+        here as a specification rather than a canon colour token, since track opacity is not a
+        §6.1 role.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-b">
+  <h2>Card B — ValueRing (registry 30): the table-scale ring</h2>
+  <p class="sub">A value inside its own proportion, 26 pt by default — the smallest size the arc
+    still reads at. Used in dense tables where a bare number would lose its context.</p>
+  <div class="demo" style="align-items:center">
+    <div class="spec">
+      <div class="gaugewrap" style="width:26px;height:26px">
+        <svg width="26" height="26" viewBox="0 0 26 26">
+          <circle cx="13" cy="13" r="9.5" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="3.5"/>
+          <circle cx="13" cy="13" r="9.5" fill="none" stroke="#FFC53D" stroke-width="3.5"
+            stroke-dasharray="59.7" stroke-dashoffset="9.6" transform="rotate(-90 13 13)"/>
+        </svg>
+        <div class="center"><div class="centerval" style="font-size:9px">84</div></div>
+      </div>
+      <div class="lab">26 pt · 84/100</div>
+    </div>
+    <div class="spec">
+      <div class="gaugewrap" style="width:32px;height:32px">
+        <svg width="32" height="32" viewBox="0 0 32 32">
+          <circle cx="16" cy="16" r="11.7" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="4.3"/>
+          <circle cx="16" cy="16" r="11.7" fill="none" stroke="#7DF0B6" stroke-width="4.3"
+            stroke-dasharray="73.5" stroke-dashoffset="7.4" transform="rotate(-90 16 16)"/>
+        </svg>
+        <div class="center"><div class="centerval" style="font-size:11px">90</div></div>
+      </div>
+      <div class="lab">32 pt · 90/100 · positive tint</div>
+    </div>
+    <div style="flex:1 1 260px;min-width:220px">
+      <table>
+        <tr><th>No.</th><th>Pos</th><th>Player</th><th style="text-align:center">OVR</th></tr>
+        <tr><td>14</td><td>QB</td><td>Player Fourteen — pending generator output</td>
+          <td style="text-align:center"><span class="gaugewrap" style="width:26px;height:26px;display:inline-flex">
+            <svg width="26" height="26" viewBox="0 0 26 26">
+              <circle cx="13" cy="13" r="9.5" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="3.5"/>
+              <circle cx="13" cy="13" r="9.5" fill="none" stroke="#FFC53D" stroke-width="3.5"
+                stroke-dasharray="59.7" stroke-dashoffset="9.6" transform="rotate(-90 13 13)"/>
+            </svg>
+            <div class="center"><div class="centerval" style="font-size:9px">84</div></div>
+          </span></td></tr>
+      </table>
+      <p class="fig" style="text-align:left">In a dense table, the ring replaces a bare rating cell
+        — it is a second reading, not a decoration: the printed number is still the fact, and the
+        ring's fraction of a full turn is the same 84/100 restated visually.</p>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Overall rating: 84 of 100, drawn as a value ring, 26 points, gold fill.</li>
+      <li>Overall rating: 90 of 100, drawn as a value ring, 32 points, positive-state fill.</li>
+      <li>Table row: number 14, quarterback, Player Fourteen, pending generator output, overall 84 drawn as a value ring in the rating column.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Light and dark:</b> geometry unchanged; ink/fill roles from tokens-v4.</li>
+      <li><b>Widths:</b> a 26 pt ring fits any dense-table column width in the six-to-nine budget.</li>
+      <li><b>44 pt floor:</b> not applicable — a readout inside a row, not a tap target on its own;
+        the row itself carries the 24–28 pt track and, where tappable, the row's own 44 pt target.</li>
+      <li><b>States:</b> neutral and heat-banded (positive) shown; §6.4's heat rule — red below 70,
+        amber 70–84, green 85 upward — applies to the fill colour, never replacing the printed
+        number.</li>
+      <li><b>Team colour:</b> never.</li>
+      <li><b>VoiceOver:</b> one sentence per ring, written out above.</li>
+      <li><b>Animations:</b> none at table scale — a list of these animating independently would be
+        motion noise; Reduce Motion is therefore moot here by design, not by exemption.</li>
+      <li><b>Verdict line:</b> not a verdict; evidence.</li>
+      <li><b>Density-budget cost:</b> a fact column inside the table, one of the six to nine §4.5
+        allows.</li>
+      <li><b>Traceability:</b> the 26 pt default and "smallest size the arc still reads at" are
+        quoted from 04 §6.5; the heat bands are quoted from §6.4.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-c">
+  <h2>Card C — AttributeDial (registry 31): concentric arcs, radius carrying the value</h2>
+  <p class="sub">Six arcs, one per attribute, at increasing radius — a player elite everywhere except
+    one trait reads as a ring with a bite taken out of it, recognisable before a single number is
+    read.</p>
+  <div class="demo" style="justify-content:center">
+    <div class="spec">
+      <div class="gaugewrap" style="width:212px;height:212px">
+        <svg width="212" height="212" viewBox="0 0 212 212">
+          <!-- six tracks, radius carrying value; scale 40-99 -->
+          <circle cx="106" cy="106" r="99" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="7"/>
+          <circle cx="106" cy="106" r="99" fill="none" stroke="#FFC53D" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="622.0" stroke-dashoffset="116.0" transform="rotate(-90 106 106)"/>
+          <circle cx="106" cy="106" r="89" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="7"/>
+          <circle cx="106" cy="106" r="89" fill="none" stroke="#9CC8EE" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="559.2" stroke-dashoffset="170.6" transform="rotate(-90 106 106)"/>
+          <circle cx="106" cy="106" r="79" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="7"/>
+          <circle cx="106" cy="106" r="79" fill="none" stroke="#7DF0B6" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="496.4" stroke-dashoffset="75.7" transform="rotate(-90 106 106)"/>
+          <circle cx="106" cy="106" r="69" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="7"/>
+          <circle cx="106" cy="106" r="69" fill="none" stroke="#FFB03A" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="433.5" stroke-dashoffset="271.9" transform="rotate(-90 106 106)"/>
+          <circle cx="106" cy="106" r="59" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="7"/>
+          <circle cx="106" cy="106" r="59" fill="none" stroke="#C79AE4" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="370.7" stroke-dashoffset="144.5" transform="rotate(-90 106 106)"/>
+          <circle cx="106" cy="106" r="49" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="7"/>
+          <circle cx="106" cy="106" r="49" fill="none" stroke="#FF8E9C" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="307.9" stroke-dashoffset="151.3" transform="rotate(-90 106 106)"/>
+          <circle cx="106" cy="106" r="40" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.13)" stroke-width="1"/>
+        </svg>
+        <div class="center">
+          <div class="centerval" style="font-size:42px">84</div>
+          <div class="centerlab" style="font-size:9px">OVERALL</div>
+        </div>
+      </div>
+      <div class="lab">212 pt · 7 pt stroke · 10 pt track spacing · six tracks</div>
+    </div>
+    <div style="flex:1 1 260px;min-width:240px">
+      <table>
+        <tr><th>Attribute</th><th style="text-align:right">Value</th><th>Track colour</th></tr>
+        <tr><td>Arm strength</td><td style="text-align:right">88</td><td><span class="mono">#FFC53D gold</span></td></tr>
+        <tr><td>Accuracy</td><td style="text-align:right">81</td><td><span class="mono">#9CC8EE info</span></td></tr>
+        <tr><td>Decision</td><td style="text-align:right">90</td><td><span class="mono">#7DF0B6 positive</span></td></tr>
+        <tr><td>Poise</td><td style="text-align:right">62</td><td><span class="mono">#FFB03A warning</span></td></tr>
+        <tr><td>Mobility</td><td style="text-align:right">76</td><td><span class="mono">#C79AE4 college</span></td></tr>
+        <tr><td>Release</td><td style="text-align:right">70</td><td><span class="mono">#FF8E9C live</span></td></tr>
+      </table>
+      <p class="fig" style="text-align:left">Values are on the 40–99 scale, so a full ring is 99 and
+        an empty one is 40 — never 0–100, which would make every real player's ring look
+        artificially incomplete. The core carries the one number that summarises the rest: overall.</p>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Attribute dial for Player Fourteen, pending generator output: overall 84.</li>
+      <li>Arm strength 88, accuracy 81, decision 90, poise 62, mobility 76, release 70, each on the 40 to 99 scale.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Light and dark:</b> track colours are the same state/action/tier roles as elsewhere;
+        no new pairing.</li>
+      <li><b>Widths:</b> 212 pt fits comfortably inside the promise-floor width as the dominant
+        object of a profile screen; reflows in place at every supported width.</li>
+      <li><b>44 pt floor:</b> not applicable — a readout.</li>
+      <li><b>States:</b> a full six-attribute set shown; a player missing a rated attribute for his
+        position simply omits that track rather than drawing an empty one.</li>
+      <li><b>Team colour:</b> never — every track is a content/state/tier role.</li>
+      <li><b>VoiceOver:</b> one sentence for the whole and one for the six values, written out above
+        — read as a list, not as six separate arc traversals.</li>
+      <li><b>Animations:</b> each ring animates in on appearance in product; Reduce Motion renders
+        all six complete immediately.</li>
+      <li><b>Verdict line:</b> the dial is evidence; Player Profile's verdict line sits above it
+        under `04` §6.1's honest-degraded rule.</li>
+      <li><b>Density-budget cost:</b> the dominant object of Player Profile (18), priced at
+        `04` §8 as one dominant object plus two secondary regions.</li>
+      <li><b>Traceability:</b> the 40–99 scale, 212 pt default, 7 pt stroke and 10 pt spacing are
+        quoted from Floodlit's shipped `AttributeDial` parameters, restated as specification.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-d">
+  <h2>Card D — ShareBar (registry 32): the stated exception</h2>
+  <p class="sub">A horizontal share, used where a comparison must sit in a row rather than a ring —
+    rival programmes competing for the same recruit is the canonical case, because several shares
+    must be scanned in one glance rather than read one ring at a time.</p>
+  <div class="demo" style="flex-direction:column;align-items:stretch;gap:10px;max-width:420px">
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+        <span>Example State</span><span class="rl">62%</span>
+      </div>
+      <div class="sharebar"><div class="fill" style="width:62%;background:#FFC53D"></div></div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+        <span>Example Coastal</span><span class="rl">28%</span>
+      </div>
+      <div class="sharebar"><div class="fill" style="width:28%;background:#9CC8EE"></div></div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+        <span>Example Union</span><span class="rl">10%</span>
+      </div>
+      <div class="sharebar"><div class="fill" style="width:10%;background:#A9BACE"></div></div>
+    </div>
+  </div>
+  <p class="fig" style="text-align:left">4 pt default height. The printed percentage is the fact;
+    the bar's length is the second reading — the same relationship every proportion primitive on
+    this sheet holds.</p>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Recruiting share, Example State: 62 percent, drawn as a horizontal share bar.</li>
+      <li>Recruiting share, Example Coastal: 28 percent.</li>
+      <li>Recruiting share, Example Union: 10 percent.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Light and dark:</b> track white at 0.09 in both; fill takes the role assigned per row
+        (here, a mix of action.primary, state.info and content.secondary to distinguish three
+        rivals — team colour is not used, since this is a comparison, not identity).</li>
+      <li><b>Widths:</b> fluid, fills its column.</li>
+      <li><b>44 pt floor:</b> not applicable — a readout.</li>
+      <li><b>States:</b> three shares shown side by side, the comparison case the primitive exists
+        for.</li>
+      <li><b>Team colour:</b> deliberately not used here — see above.</li>
+      <li><b>VoiceOver:</b> one sentence per bar, written out above.</li>
+      <li><b>Animations:</b> in product a share bar animates to its width on data change; Reduce
+        Motion renders the new width immediately.</li>
+      <li><b>Verdict line:</b> evidence, not a verdict.</li>
+      <li><b>Density-budget cost:</b> a comparison region, priced as one of the two secondary
+        regions §4.5 allows.</li>
+      <li><b>Traceability:</b> the 4 pt default height and the stated exception to the
+        arc-not-bar rule are quoted from 04 §6.5.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-e">
+  <h2>Card E — StarRating, Pennant, TimeoutMarks (registry 33–35): the drawn marks</h2>
+  <p class="sub">Three marks drawn as shapes rather than SF Symbols, each with its own closed-class
+    accounting in 04 §6.6.</p>
+
+  <h3>StarRating (registry 33) — recruiting stars as blades</h3>
+  <div class="demo" style="align-items:center">
+    <div>
+      <span class="blade"></span><span class="blade"></span><span class="blade"></span><span class="blade"></span><span class="blade off"></span>
+      <span class="small" style="margin-left:8px">4 of 5 — always beside its printed figure</span>
+    </div>
+  </div>
+  <p class="fig" style="text-align:left">Blades, not clip-art stars — a thin triangular wedge rather
+    than a five-point outline, which keeps the mark legible at 12 pt and avoids the generic-app
+    signature §4.4 warns against. Capped at 1 member in the Rating-marks class (04 §6.6), used only
+    in recruiting and draft evaluation, always printed beside the numeral it restates.</p>
+
+  <h3>Pennant (registry 34) — the club mark</h3>
+  <div class="demo" style="align-items:center">
+    <div><span class="pennant"></span><span class="small" style="margin-left:8px">A depicted object — it keeps its values everywhere it appears, unlike a swatch</span></div>
+  </div>
+  <p class="fig" style="text-align:left">Not counted in §6.6's learned-symbol totals — a club mark
+    is identity furniture under §5, not a vocabulary item the player learns; every programme's
+    pennant is generated, never a chosen icon from a shared set.</p>
+
+  <h3>TimeoutMarks (registry 35) — timeouts remaining</h3>
+  <div class="demo" style="align-items:center">
+    <div>
+      <span class="tomark filled"></span><span class="tomark filled"></span><span class="tomark spent"></span>
+      <span class="small" style="margin-left:8px">2 of 3 remaining — a filled mark is one in hand</span>
+    </div>
+  </div>
+  <p class="fig" style="text-align:left">Member of the Broadcast-marks class (04 §6.6), capped at 3
+    alongside the possession wedge and the key-moment mark; drawn only in Match Day chrome, always
+    beside the printed count.</p>
+
+  <div class="callout">
+    <h4>Symbol accounting for this sheet</h4>
+    <ul>
+      <li><b>StarRating</b> is the sole member of the Rating-marks class, cap 1 (04 §6.6, moved from
+        23 to 25 total learned symbols on 2026-08-14 to admit this and TimeoutMarks).</li>
+      <li><b>TimeoutMarks</b> joins the Broadcast-marks class, which moves from cap 2 to cap 3.</li>
+      <li><b>Pennant is not a learned symbol</b> — generated identity furniture, excluded by the
+        same rule that excludes team colour itself from the vocabulary a player must recall.</li>
+      <li>Learned-symbol spend added by this sheet: <b>2</b> (1 rating-class member, 1 broadcast-class
+        member) — reconciled against §6.6's authoritative total, not asserted independently.</li>
+    </ul>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Star rating: 4 of 5 blades filled.</li>
+      <li>Club pennant: a depicted identity mark, generated per programme.</li>
+      <li>Timeouts remaining: 2 of 3, filled marks first.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Light and dark:</b> StarRating fill is action.primary in both; TimeoutMarks uses
+        content.primary filled / content.quiet-bordered spent in both; Pennant carries generated
+        team colour per §5's uniform-mark slot.</li>
+      <li><b>Widths:</b> all three are intrinsically sized inline marks.</li>
+      <li><b>44 pt floor:</b> not applicable — none is an independent tap target; where a mark sits
+        inside a tappable row, the row carries the floor.</li>
+      <li><b>States:</b> filled/unfilled shown for both StarRating and TimeoutMarks.</li>
+      <li><b>Team colour:</b> Pennant only, per §5.</li>
+      <li><b>VoiceOver:</b> one sentence per mark, written out above.</li>
+      <li><b>Animations:</b> none for StarRating or Pennant; a TimeoutMarks change in product marks
+        the used slot with a brief fade, and Reduce Motion renders the new state immediately.</li>
+      <li><b>Verdict line:</b> none of the three is a verdict.</li>
+      <li><b>Density-budget cost:</b> each is a glyph, not a region — counted against §6.6's symbol
+        totals, not against §4.5's region budget.</li>
+      <li><b>Traceability:</b> class membership and caps are quoted from 04 §6.6 as amended
+        2026-08-14; nothing on this card asserts a symbol not in that table.</li>
+    </ol>
+  </div>
+</section>
+
+<footer style="margin-top:24px">
+  <p class="small">End of gauge-v4. Five cards: A ArcGauge, B ValueRing, C AttributeDial, D ShareBar,
+    E the three drawn marks with their §6.6 accounting. New sheet, no v3 equivalent. 04 §6.5 and
+    §6.6 remain the only canonical home for every rule and total shown. Static, no motion, no
+    script.</p>
+</footer>
+
+</div>
+</body>
+</html>

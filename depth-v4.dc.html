@@ -1,0 +1,502 @@
+<!-- @dsCard group="depth" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>depth-v4 — Coach's World depth model, Floodlit (04 §6.5 registry 24–28)</title>
+<style>
+/* ============================================================================
+   depth-v4.dc.html — self-contained HTML+CSS. No JavaScript, no CDN, no web
+   font, no icon font, no images. CSS px are read as pt throughout this sheet.
+   New sheet — no v3 equivalent. Renders 04 §6.5 registry entries 24-28: the
+   five worlds, the three depth levels, the cut-corner shapes and Stage.
+   ============================================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#060A12}
+body{
+  font-family:-apple-system,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
+  font-size:13px;line-height:1.5;padding:24px 16px 64px;color:#F6FAFF;
+  font-variant-numeric:tabular-nums;
+}
+.sheet{max-width:1200px;margin:0 auto}
+h1{font-size:20px;font-weight:800;letter-spacing:-0.2px}
+.kicker{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:#8496AC;margin-bottom:4px}
+.prov{font-size:11px;color:#A9BACE;margin-top:8px;max-width:82em}
+.prov b{color:#F6FAFF;font-weight:600}
+.law{font-size:11px;color:#A9BACE;border-left:3px solid #FFC53D;
+  background:#141A26;padding:8px 12px;margin-top:10px;max-width:82em}
+.card{background:#141A26;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;
+  padding:16px 18px 18px;margin-top:20px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.05) 0%, transparent 42%)}
+.card>*{position:relative}
+.card>h2{font-size:17px;font-weight:800;letter-spacing:-0.2px}
+.sub{font-size:11px;color:#8496AC;margin:2px 0 12px}
+h3{font-size:13px;font-weight:700;margin:16px 0 6px}
+p{margin:6px 0}
+.small{font-size:11px;color:#A9BACE}
+.mono,.sf{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;
+  background:#1E2735;border:1px solid #1E2735;border-radius:3px 14px 3px 14px;
+  padding:1px 5px;color:#A9BACE;white-space:nowrap}
+table{border-collapse:collapse;width:100%}
+th{font-size:10px;color:#8496AC;text-transform:uppercase;letter-spacing:.06em;
+  text-align:left;padding:4px 8px;border-bottom:1px solid #1E2735;font-weight:600}
+td{font-size:11px;padding:4px 8px;border-bottom:1px solid #1E2735;vertical-align:middle;color:#F6FAFF}
+.rl{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;color:#F6FAFF;white-space:nowrap}
+.callout{background:#060A12;border:1px solid #1E2735;
+  border-left:3px solid #FFB03A;border-radius:4px 22px 4px 22px;padding:10px 12px;margin-top:12px}
+.callout h4{font-size:11px;font-weight:700;margin-bottom:4px}
+.callout li{font-size:11px;color:#A9BACE;margin:4px 0 4px 16px}
+.callout li b{color:#F6FAFF}
+.fig{font-size:10px;color:#8496AC;margin-top:4px;max-width:26em}
+.vo,.contract{margin-top:14px;border-top:1px solid #1E2735;padding-top:10px}
+.vo h4,.contract h4{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;
+  letter-spacing:.08em;text-transform:uppercase;color:#FFC53D;margin-bottom:6px;font-weight:700}
+.vo ul{list-style:none}
+.vo li{font-size:11px;color:#A9BACE;margin:3px 0;padding-left:12px;border-left:2px solid #1E2735}
+.contract ol{margin-left:18px}
+.contract li{font-size:11px;color:#A9BACE;margin:4px 0}
+.contract li b{color:#F6FAFF;font-weight:600}
+
+/* ---- the five worlds, drawn as approximations of WorldBackdrop ---- */
+.worldgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:10px}
+.world{position:relative;height:150px;border-radius:4px 22px 4px 22px;overflow:hidden;
+  border:1px solid #1E2735;display:flex;align-items:flex-end;padding:10px}
+.world .lab{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  background:rgba(6,10,18,.55);padding:3px 8px;border-radius:3px 14px 3px 14px;color:#F6FAFF}
+.w-pitch{background:
+  radial-gradient(ellipse 900px 380px at 30% -20%, rgba(255,255,255,.18), transparent 55%),
+  repeating-linear-gradient(100deg, #1F764A 0 10%, #1C6E42 10% 20%),
+  linear-gradient(160deg, #37A868 0%, #163E2A 100%)}
+.w-pitch-after{background:linear-gradient(180deg, #0A1A12 0%, #060A12 70%)}
+.w-facility{background:
+  radial-gradient(circle 260px at 22% 30%, rgba(255,206,106,.20), transparent 65%),
+  radial-gradient(circle 260px at 78% 70%, rgba(255,206,106,.14), transparent 65%),
+  linear-gradient(180deg, #0E1220 0%, #07060B 100%)}
+.w-desk{background:linear-gradient(180deg, #0B0F1A 0%, #060A12 100%)}
+.w-filmroom{background:
+  radial-gradient(ellipse 700px 300px at 50% 0%, rgba(159,196,240,.14), transparent 60%),
+  linear-gradient(180deg, #0A0D16 0%, #050508 100%)}
+
+/* ---- the three depth levels ---- */
+.depthgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:10px}
+.lit-ground{position:relative;height:190px;border-radius:4px 22px 4px 22px;overflow:hidden;
+  background:
+    radial-gradient(ellipse 900px 380px at 30% -20%, rgba(255,255,255,.18), transparent 55%),
+    repeating-linear-gradient(100deg, #1F764A 0 10%, #1C6E42 10% 20%),
+    linear-gradient(160deg, #37A868 0%, #163E2A 100%);
+  padding:16px}
+.panel-std{position:relative;width:210px;padding:12px;border-radius:4px 22px 4px 22px;
+  background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.13);overflow:hidden;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.panel-std::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.10) 0%, transparent 42%)}
+.panel-deep{position:relative;width:210px;padding:12px;border-radius:4px 22px 4px 22px;
+  background:rgba(8,7,14,.78);border:1px solid rgba(255,255,255,.13);overflow:hidden;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.panel-deep::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.10) 0%, transparent 42%)}
+.panel-std .t,.panel-deep .t{position:relative;font-size:13px;font-weight:700}
+.panel-std .s,.panel-deep .s{position:relative;font-size:11px;margin-top:3px}
+
+/* ---- grain overlay demo ---- */
+.grain-demo{position:relative;height:120px;border-radius:4px 22px 4px 22px;overflow:hidden;
+  background:linear-gradient(160deg, #37A868 0%, #163E2A 100%)}
+.grain-demo::after{content:"";position:absolute;inset:0;mix-blend-mode:overlay;opacity:.5;
+  background-image:
+    radial-gradient(circle at 10% 20%, #fff 0, transparent 1px),
+    radial-gradient(circle at 35% 65%, #fff 0, transparent 1px),
+    radial-gradient(circle at 60% 15%, #000 0, transparent 1px),
+    radial-gradient(circle at 80% 50%, #fff 0, transparent 1px),
+    radial-gradient(circle at 25% 85%, #000 0, transparent 1px),
+    radial-gradient(circle at 90% 80%, #fff 0, transparent 1px),
+    radial-gradient(circle at 50% 40%, #000 0, transparent 1px),
+    radial-gradient(circle at 15% 50%, #fff 0, transparent 1px);
+  background-size:38px 38px;background-repeat:repeat}
+
+/* ---- Reduce Transparency comparison ---- */
+.rt-pair{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.rt-col{flex:1 1 260px}
+.rt-col h4{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#8496AC;margin-bottom:6px}
+
+/* ---- Stage / safe-area diagram ---- */
+.stagebox{position:relative;height:180px;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;
+  background:#060A12;overflow:hidden}
+.stagebox .zone{position:absolute;background:rgba(255,176,58,.12);border:1px dashed #FFB03A}
+.stagebox .content{position:absolute;background:rgba(255,255,255,.04);border:1px solid #1E2735;
+  display:flex;align-items:center;justify-content:center;font-size:10px;color:#8496AC}
+</style>
+</head>
+<body class="dk">
+<div class="sheet">
+
+<header>
+  <div class="kicker">@dsCard group="depth" — sheet 2 of 10, floodlit canon amendment §6.1, §6.5</div>
+  <h1>Pro Football Coach — depth model, depth-v4</h1>
+  <p class="prov">
+    <b>New sheet — no v3 equivalent.</b> Renders 04 §6.5 registry entries 24–28
+    (<span class="mono">CutCorner</span>, <span class="mono">GlassPanel</span>,
+    <span class="mono">GrainOverlay</span>, <span class="mono">WorldBackdrop</span>,
+    <span class="mono">Stage</span>) and §6.1's surface-treatment clause as rewritten 2026-08-14.
+    Every ratio quoted is from <span class="hex">docs/04-UX-AND-DESIGN-SYSTEM.md</span> §6.1;
+    CSS gradients here approximate a 3D-transformed pitch and radial light pools — the native
+    render is authoritative (§6.2's width-axis rule generalises: what CSS approximates, SwiftUI
+    settles).
+  </p>
+  <p class="law">
+    This sheet is a rendering — 04 is the only canonical home. Static reference: no motion, no
+    script. What is drawn here is the depth vocabulary itself, not a feature screen — no identity,
+    no simulated data, nothing to label pending generator output.
+  </p>
+</header>
+
+<section class="card" id="card-a">
+  <h2>Card A — The five worlds (registry 27, WorldBackdrop)</h2>
+  <p class="sub">The single variable that changes between screens. One is live at a time; it recedes
+    into desk density without ever vanishing, so every screen still happens somewhere.</p>
+  <div class="worldgrid">
+    <div class="world w-pitch"><span class="lab">pitch — lit turf, tilted away from the viewer</span></div>
+    <div class="world w-pitch-after"><span class="lab">pitchAfter — the same field, floodlights down</span></div>
+    <div class="world w-facility"><span class="lab">facility — the floor at night, two warm pools</span></div>
+    <div class="world w-desk"><span class="lab">desk — the world recedes; density rises</span></div>
+    <div class="world w-filmroom"><span class="lab">filmRoom — the one place the light goes cold</span></div>
+  </div>
+  <div class="callout">
+    <h4>The rule this registers</h4>
+    <ul>
+      <li><b>A screen happens somewhere.</b> No screen renders on a bare surface with no world
+        beneath it — the world may recede to desk density, but desk is still a world, drawn with
+        gradient because light falls off.</li>
+      <li><b>The world never carries data.</b> Nothing about which world is live, nor any detail
+        within it, encodes a fact the player must read. It is atmosphere, exactly as the mow band
+        in §6.1 is ground texture rather than an information channel.</li>
+      <li><b>Light direction is constant.</b> Every world's highlight falls from the upper left —
+        the same direction a GlassPanel's sheen takes, so a panel and the world it sits over never
+        contradict each other about where the light is.</li>
+      <li><b>filmRoom is the one exception</b> to constant light: its throw is described as cold,
+        from behind the viewer onto the screen, because it depicts a projector rather than daylight
+        or floodlights. It is drawn that way deliberately, not by inconsistency.</li>
+    </ul>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Pitch world: lit turf on a plane tilted away from the viewer, for any screen about the field.</li>
+      <li>Pitch-after world: the same field with the floodlights lowered, for the moment immediately following a match.</li>
+      <li>Facility world: the floor of the building at night under two warm light pools, for any screen about the programme.</li>
+      <li>Desk world: the world recedes into density, for management surfaces with the most information per screen.</li>
+      <li>Film room world: the one place the light goes cold, a projector's throw from behind the viewer, for opponent report and film review.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Light and dark:</b> the worlds are a dark-appearance convention — see Card E for what
+        light appearance draws instead.</li>
+      <li><b>Widths:</b> the grid reflows at any width; a world itself is a full-bleed backdrop and
+        has no fixed size.</li>
+      <li><b>44 pt floor:</b> not applicable — no interactive element on this card.</li>
+      <li><b>States:</b> the five worlds are themselves the enumerated states of one component.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> one sentence per world, written out above.</li>
+      <li><b>Animations:</b> none on this static sheet; in product, a world transition crossfades and
+        Reduce Motion replaces the crossfade with a cut, per §7.</li>
+      <li><b>Verdict line:</b> not a READOUT-class card.</li>
+      <li><b>Density-budget cost:</b> the world is atmosphere, not a priced region under §4.5 — it
+        never counts against the two-secondary-region budget.</li>
+      <li><b>Traceability:</b> the five names and the constant-light rule are quoted from 04 §6.5;
+        no colour value on this card is asserted as a §6.1 production value — these are atmosphere
+        renderings, not token swatches.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-b">
+  <h2>Card B — Three depth levels (registry 25, GlassPanel; the deep-panel contrast rule)</h2>
+  <p class="sub">World, standard panel, deep panel — and no fourth level. A panel over a panel over a
+    panel is a container pretending to be hierarchy.</p>
+  <div class="lit-ground">
+    <div class="panel-std">
+      <div class="t" style="color:#F6FAFF">Standard panel</div>
+      <div class="s" style="color:#A9BACE">White at 0.055. Labels and figures only — content.primary
+        measures 2.69 here (the brightest turf), below the body floor.</div>
+    </div>
+  </div>
+  <div class="lit-ground" style="margin-top:10px">
+    <div class="panel-deep">
+      <div class="t" style="color:#F6FAFF">Deep panel</div>
+      <div class="s" style="color:#A9BACE">#08070E at α ≥ 0.82. content.quiet measures 4.72 here at
+        worst — clears the body floor. This panel may carry prose.</div>
+    </div>
+  </div>
+  <div class="callout">
+    <h4>Body text over a lit world requires the deep panel — a contrast rule, not a taste one</h4>
+    <ul>
+      <li><b>The standard fill is white at 0.055.</b> Composited over the brightest point of the lit
+        pitch (#37A868) it resolves to #42AD70, on which content.primary measures <b>2.69</b> and
+        content.secondary <b>1.42</b> — well below even the 3:1 non-text floor. A standard panel is
+        for labels and figures, never prose, when it sits over a lit world.</li>
+      <li><b>The deep fill is #08070E at α ≥ 0.82</b> — not the 0.70 the prototype shipped.
+        At 0.82 the panel composites to #10241E over the brightest turf and to #08080F over night;
+        content.primary / secondary / quiet measure 13.62 / 7.21 / 4.72 at the true worst case —
+        all clear the body floor.</li>
+      <li><b>Corrected from α ≥ 0.78 on 2026-08-14.</b> That figure was derived against bare turf,
+        which is not the brightest ground a panel sits over: the mown stripe lays white at 0.055
+        over it and the pitch's lamp beams lay #FFF2CE at 0.55 over that, giving #AAD3A4 — where
+        0.78 left content.quiet at <b>4.23</b>, below the body floor. 0.82 is the lowest value that
+        clears 4.5 against every world's light source; 0.80 reaches only 4.48.</li>
+      <li><b>At most two material panels are live per screen</b> — the dominant object's and one
+        secondary region's. Every other panel takes the opaque equivalent (world.work / world.raised
+        from Card A of tokens-v4). A screen that wants a third has a composition problem, not a
+        performance problem.</li>
+      <li><b>The blur cost is real.</b> .ultraThinMaterial over a 3D-transformed world is the most
+        expensive thing the product draws, and the P13 gate is a 16.7 ms frame.</li>
+    </ul>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>World level: the backdrop itself, atmosphere, carries no text.</li>
+      <li>Standard panel: white fill at 0.055 opacity: over the brightest lit world, content primary measures 2.69 to 1, below the body floor — labels and figures only.</li>
+      <li>Deep panel: fill 08070E at 0.82 opacity or greater: content quiet measures 4.72 to 1 at worst, clearing the body floor — may carry working prose.</li>
+      <li>Budget: at most two material panels live per screen; every other panel takes its opaque equivalent.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Light and dark:</b> dark rendered above; light appearance has no glass convention at all
+        — see Card E, where the light rendition is drawn fully opaque.</li>
+      <li><b>Widths:</b> both panels are intrinsically sized and reflow at any width.</li>
+      <li><b>44 pt floor:</b> not applicable — demonstration panels, not controls.</li>
+      <li><b>States:</b> the two panel depths are the enumerated states; Card E adds the Reduce
+        Transparency flattened state.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> one sentence per row, written out above.</li>
+      <li><b>Animations:</b> none on this sheet.</li>
+      <li><b>Verdict line:</b> not a READOUT-class card.</li>
+      <li><b>Density-budget cost:</b> the two-material-panel budget is stated here as the rule other
+        cards' density statements assume.</li>
+      <li><b>Traceability:</b> every ratio and the α ≥ 0.82 figure are quoted from 04 §6.1 as amended
+        2026-08-14.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-c">
+  <h2>Card C — CutCorner and the glass edge (registry 24; hairline job three)</h2>
+  <p class="sub">A rectangle with four independent corner radii, drawn by hand because
+    RoundedRectangle cannot express it. The panel demo below carries its glass edge — the hairline
+    that traces the cut, which is what makes a pane read as glass rather than a hole.</p>
+  <div class="lit-ground" style="height:150px">
+    <div class="panel-std" style="width:260px">
+      <div class="t" style="color:#F6FAFF">Panel 4/22/4/22</div>
+      <div class="s" style="color:#A9BACE">1 pt hairline at rgba(255,255,255,.13) traces this shape —
+        the glass edge. It is a structural rule under §6.1's hairline test: it carries no meaning
+        and never substitutes for the legible seam.</div>
+    </div>
+  </div>
+  <p class="small" style="margin-top:8px">The full radii family — panel 4/22/4/22, row 3/14/3/14,
+    action 22/22/22/5 — is drawn to exact scale on <span class="mono">tokens-v4</span> Card C. This
+    card adds only the glass edge, which is specific to a panel over a world and does not apply to
+    the opaque row and action shapes.</p>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Glass edge: a one point hairline tracing a panel's cut shape, structural, carrying no meaning, never substituting for the legible seam.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Light and dark:</b> the glass edge is a dark-appearance convention, drawn at
+        rgba(255,255,255,.13); light appearance has no glass panels to edge.</li>
+      <li><b>Widths:</b> the demo panel is intrinsically sized.</li>
+      <li><b>44 pt floor:</b> not applicable.</li>
+      <li><b>States:</b> not applicable — a shape, not a component with states.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> one sentence, written out above.</li>
+      <li><b>Animations:</b> none.</li>
+      <li><b>Verdict line:</b> not a READOUT-class card.</li>
+      <li><b>Density-budget cost:</b> not applicable — geometry, not a priced region.</li>
+      <li><b>Traceability:</b> the glass-edge rule is quoted from 04 §6.1 as amended 2026-08-14;
+        the radii family is quoted in full on tokens-v4 Card C rather than duplicated here.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-d">
+  <h2>Card D — Grain (registry 26, GrainOverlay)</h2>
+  <p class="sub">A fixed-seed noise tile drawn above every screen in .overlay blend at low opacity.
+    Flat vector on flat dark is what reads as machine-made; grain is texture, not information.</p>
+  <div class="grain-demo"></div>
+  <p class="fig">Approximated here with repeated radial dots at 50% opacity in mix-blend-mode:
+    overlay — the product's grain is a 128 px noise tile from a fixed seed, identical between runs
+    so it can be cached; this CSS approximation is not that asset.</p>
+  <div class="callout">
+    <h4>Grain and Reduce Transparency</h4>
+    <ul>
+      <li><b>Grain is dropped entirely under Reduce Transparency</b> (04 §7) — it is a texture
+        layer, not information, and removing it costs nothing a player needs.</li>
+      <li><b>Grain never encodes a value.</b> Two renders of the same screen differ only in whatever
+        the world or data changed; the grain tile is identical, which is why it can be cached rather
+        than generated per frame.</li>
+    </ul>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence, written out</h4>
+    <ul><li>Grain overlay: fixed-seed texture above every screen, carries no information, dropped under Reduce Transparency.</li></ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Light and dark:</b> grain is a dark-appearance convention; not drawn in light.</li>
+      <li><b>Widths:</b> full-bleed, any width.</li>
+      <li><b>44 pt floor:</b> not applicable.</li>
+      <li><b>States:</b> present / absent (Reduce Transparency), the only two states.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> one sentence, written out above.</li>
+      <li><b>Animations:</b> none — the tile is static by design, not merely on this sheet.</li>
+      <li><b>Verdict line:</b> not a READOUT-class card.</li>
+      <li><b>Density-budget cost:</b> not applicable — atmosphere, never priced.</li>
+      <li><b>Traceability:</b> the Reduce Transparency behaviour is quoted from 04 §7 as amended
+        2026-08-14.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-e">
+  <h2>Card E — Reduce Transparency, the flattened form (04 §7, added 2026-08-14)</h2>
+  <p class="sub">Every panel takes its opaque equivalent, grain drops, the world becomes world.page.
+    Composition and depth order survive unchanged — which is the whole reason §6.1 measures ratios
+    against these opaque values rather than the composited glass in the first place.</p>
+  <div class="rt-pair">
+    <div class="rt-col">
+      <h4>Default — glass over the pitch world</h4>
+      <div class="lit-ground" style="height:150px">
+        <div class="panel-deep" style="width:100%">
+          <div class="t" style="color:#F6FAFF">Prep report</div>
+          <div class="s" style="color:#A9BACE">Deep glass at 0.82, sheen upper left, grain above.</div>
+        </div>
+      </div>
+    </div>
+    <div class="rt-col">
+      <h4>Reduce Transparency — flattened</h4>
+      <div style="height:150px;border-radius:4px 22px 4px 22px;background:#060A12;padding:16px;border:1px solid #1E2735">
+        <div style="width:100%;padding:12px;border-radius:4px 22px 4px 22px;background:#141A26;border:1px solid #1E2735">
+          <div style="font-size:13px;font-weight:700;color:#F6FAFF">Prep report</div>
+          <div style="font-size:11px;margin-top:3px;color:#A9BACE">Opaque world.work fill, no sheen,
+            no grain. world.page replaces the pitch. Same corner shape, same ink, same ratios.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="callout">
+    <h4>What must survive the flattening, stated as a test</h4>
+    <ul>
+      <li><b>Same composition.</b> Every region present, at the same size and position.</li>
+      <li><b>Same depth order.</b> What was in front stays in front, now expressed by fill contrast
+        (raised over work over page) rather than by blur.</li>
+      <li><b>Same ratios.</b> Every figure in Card A/B of tokens-v4 is measured against the opaque
+        values, so this substitution changes nothing about legibility — it is not a degraded mode,
+        it is the mode the numbers were always describing.</li>
+      <li><b>A surface with no Reduce Transparency branch has not had it considered</b> — the same
+        by-construction standard §7.1 already applies to the AX5 branch.</li>
+    </ul>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Default rendition: deep glass panel over the pitch world, sheen from the upper left, grain above.</li>
+      <li>Reduce Transparency rendition: opaque work-surface fill, no sheen, no grain, world replaced by world page; same composition, same depth order, same measured ratios.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Light and dark:</b> the flattening is shown in dark; light appearance is already opaque
+        throughout, so Reduce Transparency changes nothing further there.</li>
+      <li><b>Widths:</b> both renditions are intrinsically sized and reflow.</li>
+      <li><b>44 pt floor:</b> not applicable on this card.</li>
+      <li><b>States:</b> default and Reduce Transparency, side by side.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> one sentence per rendition, written out above.</li>
+      <li><b>Animations:</b> none — the setting is binary, not a transition to choreograph.</li>
+      <li><b>Verdict line:</b> not a READOUT-class card.</li>
+      <li><b>Density-budget cost:</b> unchanged by the setting — this is the point being tested.</li>
+      <li><b>Traceability:</b> the Reduce Transparency clause is quoted from 04 §7 as amended
+        2026-08-14; the opaque values are quoted from §6.1's world.work role.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-f">
+  <h2>Card F — Stage (registry 28): safe areas at physical edges</h2>
+  <p class="sub">A screen's content area clears the sensor housing on the leading edge and the home
+    indicator at the bottom. 04 §7's insets, per model class, drawn at exact proportion for the
+    852 pt promise floor.</p>
+  <div class="stagebox">
+    <div class="zone" style="left:0;top:0;bottom:0;width:59px" title="sensor 59pt"></div>
+    <div class="zone" style="left:0;right:0;bottom:0;height:21px" title="home 21pt"></div>
+    <div class="content" style="left:59px;right:20px;top:14px;bottom:21px">content area — clears sensor (59), home (21), gutter (20)</div>
+  </div>
+  <table style="margin-top:10px">
+    <tr><th>Device class</th><th>Sensor edge</th><th>Home edge</th></tr>
+    <tr><td class="rl">15 generation, base 16</td><td>59 pt</td><td>21 pt</td></tr>
+    <tr><td class="rl">16 Pro class</td><td>62 pt</td><td>21 pt</td></tr>
+    <tr><td class="rl">17 generation</td><td>62 pt (sides)</td><td>20 pt (top and bottom)</td></tr>
+  </table>
+  <p class="fig">16e and 17e landscape insets are unsourced — measure before relying on either
+    (04 §7). Safe areas are owned at physical edges, never guessed from a preferred orientation.</p>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Sensor housing inset: 59 points for the 15 generation and base 16, 62 points for the 16 Pro class and the 17 generation sides.</li>
+      <li>Home indicator inset: 21 points for the 15 and 16 generations, 20 points top and bottom for the 17 generation.</li>
+      <li>Safe areas are owned at physical edges, never guessed from a preferred sensor orientation.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Light and dark:</b> geometry is appearance-independent.</li>
+      <li><b>Widths:</b> drawn at the 852 pt promise floor; the same proportional insets apply at
+        every supported width, and the insets themselves change only by device class, not by
+        content width.</li>
+      <li><b>44 pt floor:</b> not applicable — no control on this card.</li>
+      <li><b>States:</b> not applicable.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> one sentence per row, written out above.</li>
+      <li><b>Animations:</b> none.</li>
+      <li><b>Verdict line:</b> not a READOUT-class card.</li>
+      <li><b>Density-budget cost:</b> not applicable — Stage owns layout, not content.</li>
+      <li><b>Traceability:</b> every inset is quoted from 04 §7, including its two named sourcing
+        gaps (16e, 17e).</li>
+    </ol>
+  </div>
+</section>
+
+<footer style="margin-top:24px">
+  <p class="small">End of depth-v4. Six cards: A the five worlds, B the three depth levels and the
+    deep-panel rule, C CutCorner and the glass edge, D grain, E Reduce Transparency, F Stage. New
+    sheet, no v3 equivalent. 04 §6.1, §6.5 and §7 remain the only canonical home for every value and
+    rule shown. Static, no motion, no script.</p>
+</footer>
+
+</div>
+</body>
+</html>

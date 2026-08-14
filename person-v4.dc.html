@@ -1,0 +1,429 @@
+<!-- @dsCard group="person" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>person-v4 — Coach's World person surfaces, Floodlit (04 §6.5 registry 6, 11, 12, 16)</title>
+<style>
+/* ============================================================================
+   person-v4.dc.html — self-contained HTML+CSS+inline SVG. No JavaScript, no
+   CDN, no web font, no icon font, no raster images. CSS px read as pt.
+   Supersedes person-v3, which rendered the retired violet system. Registry
+   6, 11, 12, 16: IdentityBand, DeltaMark, ConfidenceTag, FormLine.
+   ============================================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#060A12}
+body{font-family:-apple-system,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
+  font-size:13px;line-height:1.5;padding:24px 16px 64px;color:#F6FAFF;font-variant-numeric:tabular-nums}
+.sheet{max-width:1240px;margin:0 auto}
+h1{font-size:20px;font-weight:800;letter-spacing:-0.2px}
+.kicker{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:#8496AC;margin-bottom:4px}
+.prov{font-size:11px;color:#A9BACE;margin-top:8px;max-width:84em}
+.prov b{color:#F6FAFF;font-weight:600}
+.law{font-size:11px;color:#A9BACE;border-left:3px solid #FFC53D;background:#141A26;
+  padding:8px 12px;margin-top:10px;max-width:84em}
+.card{background:#141A26;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;
+  padding:16px 18px 18px;margin-top:20px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.05) 0%, transparent 42%)}
+.card>*{position:relative}
+.card>h2{font-size:17px;font-weight:800;letter-spacing:-0.2px}
+.sub{font-size:11px;color:#8496AC;margin:2px 0 12px}
+h3{font-size:13px;font-weight:700;margin:16px 0 6px}
+p{margin:6px 0}
+.small{font-size:11px;color:#A9BACE}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;background:#1E2735;
+  border:1px solid #1E2735;border-radius:3px 14px 3px 14px;padding:1px 5px;color:#A9BACE;white-space:nowrap}
+.callout{background:#060A12;border:1px solid #1E2735;border-left:3px solid #FFB03A;
+  border-radius:4px 22px 4px 22px;padding:10px 12px;margin-top:12px}
+.callout h4{font-size:11px;font-weight:700;margin-bottom:4px}
+.callout li{font-size:11px;color:#A9BACE;margin:4px 0 4px 16px}
+.callout li b{color:#F6FAFF}
+.fig{font-size:10px;color:#8496AC;margin-top:4px}
+.vo,.contract{margin-top:14px;border-top:1px solid #1E2735;padding-top:10px}
+.vo h4,.contract h4{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:#FFC53D;margin-bottom:6px;font-weight:700}
+.vo ul{list-style:none}
+.vo li{font-size:11px;color:#A9BACE;margin:3px 0;padding-left:12px;border-left:2px solid #1E2735}
+.contract ol{margin-left:18px}
+.contract li{font-size:11px;color:#A9BACE;margin:4px 0}
+.contract li b{color:#F6FAFF;font-weight:600}
+.duo{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;margin-top:8px}
+.pane{background:#060A12;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;padding:14px;flex:1 1 480px;min-width:0}
+.pane.lt{background:#EDF1F6;color:#0B111C;border-color:#DCE3EC}
+.pane h4{font-size:11px;font-weight:700;margin-bottom:8px}
+
+/* Identity band — standard glass; desk world recedes to near-black so the
+   standard fill clears the body floor without needing the deep form */
+.band{position:relative;display:flex;align-items:center;gap:12px;padding:12px;
+  background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.13);
+  border-radius:4px 22px 4px 22px;overflow:hidden}
+.band::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.10) 0%, transparent 42%)}
+.band>*{position:relative}
+.pane.lt .band{background:#FFFFFF;border-color:#DCE3EC}
+.plate{width:52px;height:64px;border-radius:3px 14px 3px 14px;background:#1E2735;
+  border:1px solid rgba(255,255,255,.13);flex-shrink:0}
+.pane.lt .plate{background:#DCE3EC;border-color:#DCE3EC}
+.idname{font-size:17px;font-weight:800;letter-spacing:-0.2px}
+.idmeta{font-size:11px;color:#A9BACE}
+.pane.lt .idmeta{color:#414B5C}
+.idfacts{font-size:10px;color:#8496AC}
+.pane.lt .idfacts{color:#566274}
+.bandright{margin-left:auto}
+.tc{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:2px 6px 2px 2px;
+  border-radius:3px 14px 3px 14px;border:1px solid #A9BACE;background:#14382A;color:#F2F5F3}
+.tc .sb{width:12px;height:12px;border-radius:2px;background:#D9B23C}
+.vslot{margin-top:8px;padding:8px 10px;border:1px dashed rgba(255,255,255,.18);border-radius:3px 14px 3px 14px;
+  font-size:10px;color:#8496AC}
+.pane.lt .vslot{border-color:#DCE3EC;color:#566274}
+.tabs{display:flex;gap:4px;margin-top:10px;border-bottom:1px solid rgba(255,255,255,.13)}
+.pane.lt .tabs{border-bottom-color:#DCE3EC}
+.tab{font-size:11px;font-weight:700;padding:8px 4px;color:#8496AC;border-bottom:2px solid transparent}
+.tab.sel{color:#FFC53D;border-bottom-color:#FFC53D}
+.pane.lt .tab{color:#566274}
+.pane.lt .tab.sel{color:#7A5200;border-bottom-color:#7A5200}
+.rows{margin-top:8px}
+.row{display:flex;align-items:center;gap:10px;height:26px;border-bottom:1px solid rgba(255,255,255,.06)}
+.pane.lt .row{border-bottom-color:#EDF1F6}
+.row.ctl{height:44px}
+.lbl{font-size:11px;flex:1 1 auto;min-width:120px}
+.val{font-size:12px;font-weight:700;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+
+/* DeltaMark */
+.delta{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;
+  font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.delta.up{color:#7DF0B6}
+.delta.dn{color:#FF8E9C}
+.pane.lt .delta.up{color:#14653C}
+.pane.lt .delta.dn{color:#A3202F}
+.arrow{display:inline-block;width:0;height:0}
+.arrow.up{border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:6px solid currentColor}
+.arrow.dn{border-left:4px solid transparent;border-right:4px solid transparent;border-top:6px solid currentColor}
+
+/* ConfidenceTag */
+.stance{font-size:11px;font-weight:700;padding:4px 10px;border-radius:3px 14px 3px 14px;
+  background:#1E2735;color:#F6FAFF}
+.pane.lt .stance{background:#DCE3EC;color:#0B111C}
+.ctlbtn{display:inline-flex;align-items:center;height:32px;padding:0 12px;font-size:11px;font-weight:700;
+  border-radius:3px 14px 3px 14px;background:#FFC53D;color:#150F02}
+.ctlbtn.dis{opacity:.45;background:rgba(255,255,255,.06);color:#8496AC}
+.pane.lt .ctlbtn{background:#7A5200;color:#FAFBFD}
+.pane.lt .ctlbtn.dis{background:#EDF1F6;color:#566274}
+
+/* FormLine */
+.formwrap{display:flex;gap:10px;align-items:flex-end;margin-top:10px}
+.fcell{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.fweek{font-size:9px;color:#8496AC}
+.pane.lt .fweek{color:#566274}
+.fresult{font-size:11px;font-weight:800;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.fbarwrap{height:44px;display:flex;align-items:flex-end}
+.fbar{width:14px;background:#FFC53D;border-radius:2px 2px 0 0}
+.frating{font-size:10px;color:#A9BACE;font-weight:700}
+.pane.lt .frating{color:#414B5C}
+</style>
+</head>
+<body class="dk">
+<div class="sheet">
+
+<header>
+  <div class="kicker">@dsCard group="person" — sheet 6 of 10, floodlit canon amendment §6.5 registry 6, 11, 12, 16</div>
+  <h1>Pro Football Coach — person surfaces, person-v4</h1>
+  <p class="prov">
+    <b>Supersedes person-v3</b>, which rendered the retired violet system. Renders 04 §6.5 registry
+    6, 11, 12, 16: <span class="mono">IdentityBand</span>, <span class="mono">DeltaMark</span>,
+    <span class="mono">ConfidenceTag</span>, <span class="mono">FormLine</span>. Subject: Player
+    Fourteen (quarterback) for the band and form; Player Seven (wide receiver) for the confidence
+    states — both fixed by the reference library's one save.
+  </p>
+  <p class="law">
+    This sheet is a rendering — 04 is the only canonical home. The identity band sits over the DESK
+    register, which recedes to near-black — a standard glass panel clears the body floor there
+    without needing the deep form depth-v4 specifies for a panel over a lit world.
+  </p>
+</header>
+
+<section class="card" id="card-1">
+  <h2>Card 1 — IdentityBand (registry 6): the stable anchor of sequenced disclosure</h2>
+  <p class="sub">The band carries name, number, class year, age, position, programme, overall, fit,
+    terms and worth band, and stays fixed while detail levels swap beneath it. Every surface that
+    will carry a verdict draws both forms — the empty shipping slot with its gap ID, and the
+    populated target form, never the unlabelled default (04 §6.1's honest-degraded rule).</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark — Attributes selected</h4>
+      <div class="band">
+        <div class="plate"></div>
+        <div>
+          <div class="idname">Player Fourteen <span class="small">No. 14</span></div>
+          <div class="idmeta">Senior · Age 22 · QB · Example State</div>
+          <div class="idfacts">OVR 84 · Fit 82 · Terms expire after next season · Worth $2.4M–$3.1M (band)</div>
+        </div>
+        <div class="bandright"><span class="tc"><span class="sb"></span>EXS</span></div>
+      </div>
+      <div class="vslot">VerdictLine slot — drawn empty. Gap G-02: no engine baseline, sample or
+        confidence computation exists, so no verdict is fabricated here. This is the shipping form.</div>
+      <div class="tabs">
+        <span class="tab">Overview</span><span class="tab sel">Attributes</span><span class="tab">Form</span><span class="tab">History</span>
+      </div>
+      <div class="rows">
+        <div class="row"><span class="lbl">Decision-making</span><span class="delta up"><span class="arrow up"></span>+2</span><span class="idfacts">film study, Wk 7</span><span class="val">83</span></div>
+        <div class="row"><span class="lbl">Short accuracy</span><span class="delta up"><span class="arrow up"></span>+1</span><span class="idfacts">practice emphasis, Wk 8</span><span class="val">86</span></div>
+        <div class="row"><span class="lbl">Play-action timing</span><span class="delta dn"><span class="arrow dn"></span>−1</span><span class="idfacts">reduced reps, Wk 5</span><span class="val">77</span></div>
+        <div class="row"><span class="lbl">Deep accuracy</span><span class="idfacts">no recent change</span><span class="val">79</span></div>
+      </div>
+    </div>
+    <div class="pane dk">
+      <h4>Dark — Form selected, band unchanged</h4>
+      <div class="band">
+        <div class="plate"></div>
+        <div>
+          <div class="idname">Player Fourteen <span class="small">No. 14</span></div>
+          <div class="idmeta">Senior · Age 22 · QB · Example State</div>
+          <div class="idfacts">OVR 84 · Fit 82 · Terms expire after next season · Worth $2.4M–$3.1M (band)</div>
+        </div>
+        <div class="bandright"><span class="tc"><span class="sb"></span>EXS</span></div>
+      </div>
+      <div class="vslot">VerdictLine slot — drawn empty; gap G-02 in place, as above.</div>
+      <div class="tabs">
+        <span class="tab">Overview</span><span class="tab">Attributes</span><span class="tab sel">Form</span><span class="tab">History</span>
+      </div>
+      <div class="formwrap">
+        <div class="fcell"><span class="fweek">Wk 4 · A</span><span class="fresult">W 27–14</span><div class="fbarwrap"><div class="fbar" style="height:17px"></div></div><span class="frating">78</span></div>
+        <div class="fcell"><span class="fweek">Wk 5 · B</span><span class="fresult">W 24–7</span><div class="fbarwrap"><div class="fbar" style="height:18px"></div></div><span class="frating">81</span></div>
+        <div class="fcell"><span class="fweek">Wk 6 · C</span><span class="fresult">L 17–24</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="frating">74</span></div>
+        <div class="fcell"><span class="fweek">Wk 7 · D</span><span class="fresult">W 31–12</span><div class="fbarwrap"><div class="fbar" style="height:20px"></div></div><span class="frating">86</span></div>
+        <div class="fcell"><span class="fweek">Wk 8 · E</span><span class="fresult">W 20–16</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="frating">83</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="small">The band markup is identical in both states — only the region beneath the tab row
+    swaps. That is what sequenced disclosure means: the anchor never moves, the detail level does.</p>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per element, written out</h4>
+    <ul>
+      <li>Player Fourteen, number 14, senior, age 22, quarterback, Example State, overall 84, fit 82, terms expire after next season, worth 2.4 to 3.1 million dollars, a band.</li>
+      <li>Verdict: not yet available. Engine-owned judgement has not landed for this surface.</li>
+      <li>Tabs: Overview, Attributes selected, Form, History.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> band text takes the content roles quoted on tokens-v4 Card A; the standard
+        glass fill over the desk world's near-black ground clears the body floor without the deep
+        form.</li>
+      <li><b>Widths:</b> the band fits every supported width; at AX5 it stays the fixed header while
+        the tab content becomes a one-column stack.</li>
+      <li><b>Touch:</b> each tab is 44 pt tall minimum.</li>
+      <li><b>States:</b> Attributes and Form regions shown, band unchanged between them; the verdict
+        slot's shipping (empty) form is drawn — the target form is never the unlabelled default.</li>
+      <li><b>Team colour:</b> the trio chip only, per §5's uniform-mark slot.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> switching tabs replaces the lower region as a discrete swap, not a slide,
+        under Reduce Motion's rule; the band never re-animates.</li>
+      <li><b>Verdict:</b> the empty shipping slot is drawn per 04 §6.1's honest-degraded form; no
+        verdict is fabricated.</li>
+      <li><b>Density budget:</b> the band plus one tab region is the dominant object of Player
+        Profile (18), priced at `04` §8.</li>
+      <li><b>Tokens:</b> standard glass depth, cut-corner shapes — 04 §6.1/§6.3/§6.5 as amended
+        2026-08-14. Player Fourteen, Example State are placeholders, pending generator output.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-2">
+  <h2>Card 2 — DeltaMark (registry 11): per-value recent-change mark</h2>
+  <p class="sub">Capped at 2 members (arrow up-right, arrow down-right — 04 §6.6's Change class),
+    always beside its printed value and its cause. A mark without a retained delta is fabrication —
+    G-03 owns the bounded per-player change ring this reads from.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark</h4>
+      <div class="rows">
+        <div class="row"><span class="lbl">Decision-making</span><span class="delta up"><span class="arrow up"></span>+2</span><span class="idfacts">film study, Wk 7</span><span class="val">83</span></div>
+        <div class="row"><span class="lbl">Play-action timing</span><span class="delta dn"><span class="arrow dn"></span>−1</span><span class="idfacts">reduced reps, Wk 5</span><span class="val">77</span></div>
+        <div class="row"><span class="lbl">Deep accuracy</span><span class="idfacts">no recent change</span><span class="val">79</span></div>
+      </div>
+    </div>
+    <div class="pane lt">
+      <h4>Light</h4>
+      <div class="rows">
+        <div class="row"><span class="lbl">Decision-making</span><span class="delta up"><span class="arrow up"></span>+2</span><span class="idfacts">film study, Wk 7</span><span class="val">83</span></div>
+        <div class="row"><span class="lbl">Play-action timing</span><span class="delta dn"><span class="arrow dn"></span>−1</span><span class="idfacts">reduced reps, Wk 5</span><span class="val">77</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="callout">
+    <h4>What the mark must never do</h4>
+    <ul>
+      <li>Never colour alone — the direction is also printed as a signed number, and the cause
+        ("film study, Wk 7") is always present, not implied.</li>
+      <li>No third arrow. Unchanged rows carry no mark at all rather than a neutral third symbol —
+        the Change class stays at its 2-member cap.</li>
+    </ul>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Decision-making, up 2, from film study in week 7, now 83.</li>
+      <li>Play-action timing, down 1, from reduced reps in week 5, now 77.</li>
+      <li>Deep accuracy, no recent change, 79.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> state.positive/state.live ink, quoted from tokens-v4.</li>
+      <li><b>Widths:</b> inline with the row, reflows with it.</li>
+      <li><b>Touch:</b> not interactive; the row supplies the target where the row itself is tappable.</li>
+      <li><b>States:</b> up, down, unchanged (no mark) shown.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> a new change appears as a discrete mark, not a counting animation.</li>
+      <li><b>Verdict:</b> none — a delta is a retained fact, not a judgement.</li>
+      <li><b>Density budget:</b> zero glyph-vocabulary spend beyond the 2-member Change class already
+        priced in 04 §6.6.</li>
+      <li><b>Tokens:</b> state.positive/negative — 04 §6.1; Change class cap — §6.6.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-3">
+  <h2>Card 3 — ConfidenceTag (registry 12): banded value, unknown, observation count</h2>
+  <p class="sub">Fog is per-fact, not per-player — one list mixes exact staff observation, a banded
+    estimate, an unknown with its resolving action, and a stance. A band without a recorded
+    observation is fabrication; the observation count is part of the component, not decoration.</p>
+  <div class="duo">
+    <div class="pane dk" style="flex:1 1 100%">
+      <h4>Dark — Player Seven, one fact list, four knowledge states</h4>
+      <div class="rows">
+        <div class="row"><span class="lbl">Age</span><span class="idfacts">public record</span><span class="val">19</span></div>
+        <div class="row"><span class="lbl">Overall</span><span class="idfacts">staff observation, exact</span><span class="val">79</span></div>
+        <div class="row"><span class="lbl">Worth</span><span class="idfacts">band, 3 observations</span><span class="val">$1.4M–$2.2M</span></div>
+        <div class="row ctl"><span class="lbl">Portal interest</span><span class="idmeta">Unknown</span><span class="ctlbtn">Scout</span></div>
+        <div class="row ctl"><span class="lbl">Rival offer level</span><span class="idmeta">Unknown</span><span class="ctlbtn dis">Scout — contact budget spent</span></div>
+        <div class="row"><span class="lbl">Availability</span><span class="stance">Not for sale</span></div>
+        <div class="row"><span class="lbl">Observations</span><span class="idfacts">last: Wk 8</span><span class="val">3</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="fig">The four states in one list: <b>exact</b> (age, overall), <b>banded</b> (worth, with
+    its observation count stated), <b>unknown with action</b> (Scout sits in the cell where the
+    answer would be), and <b>stance</b> ("Not for sale" — a refusal is a first-class answer alongside
+    a price). The disabled Scout states its reason in words. No symbol is drawn — a banded estimate
+    has no §6.6 member, and this card does not grow a class to get one.</p>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Age, nineteen, public record.</li>
+      <li>Overall, seventy-nine, staff observation.</li>
+      <li>Worth, band, one million four hundred thousand to two million two hundred thousand dollars, from three observations.</li>
+      <li>Portal interest, unknown. Scout, button.</li>
+      <li>Rival offer level, unknown. Scout, button, dimmed, contact budget spent.</li>
+      <li>Availability, not for sale.</li>
+      <li>Observations, three, most recent week 8.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> exact values and labels quoted from tokens-v4; Scout fill inks with the
+        ground per the filled-control rule.</li>
+      <li><b>Widths:</b> the fact list reflows; band endpoints are the widest cells and the flexible
+        label column absorbs the difference at the install floor.</li>
+      <li><b>Touch:</b> the Scout control is 44 pt tall, its row expanding from the 26 pt dense track
+        so the target never overlaps adjacent rows.</li>
+      <li><b>States:</b> exact, banded, unknown-with-action, stance, and disabled-with-reason all
+        shown in one list, per-fact fog.</li>
+      <li><b>Team colour:</b> not touched.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> a band narrowing on a new observation is a discrete swap, not an
+        interpolation, under Reduce Motion.</li>
+      <li><b>Verdict:</b> none — knowledge, not judgement.</li>
+      <li><b>Density budget:</b> seven dense rows at 26 pt, two control rows at 44 pt — the only
+        rows allowed to exceed the dense track; zero learned symbols.</li>
+      <li><b>Tokens:</b> content roles, gold action fill — 04 §6.1 as amended 2026-08-14. Player
+        Seven, Example State are placeholders, pending generator output.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-4">
+  <h2>Card 4 — FormLine (registry 16): bounded last-N results with rating thread</h2>
+  <p class="sub">Last 5 games, each a result plus a per-game rating (G-04's deterministic,
+    position-aware definition) — never a raw stat count masquerading as a trend. Bounded, so the
+    line never grows unbounded across a career.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark</h4>
+      <div class="formwrap">
+        <div class="fcell"><span class="fweek">Wk 4</span><span class="fresult">W 27–14</span><div class="fbarwrap"><div class="fbar" style="height:17px"></div></div><span class="frating">78</span></div>
+        <div class="fcell"><span class="fweek">Wk 5</span><span class="fresult">W 24–7</span><div class="fbarwrap"><div class="fbar" style="height:18px"></div></div><span class="frating">81</span></div>
+        <div class="fcell"><span class="fweek">Wk 6</span><span class="fresult">L 17–24</span><div class="fbarwrap"><div class="fbar" style="height:15px"></div></div><span class="frating">74</span></div>
+        <div class="fcell"><span class="fweek">Wk 7</span><span class="fresult">W 31–12</span><div class="fbarwrap"><div class="fbar" style="height:20px"></div></div><span class="frating">86</span></div>
+        <div class="fcell"><span class="fweek">Wk 8</span><span class="fresult">W 20–16</span><div class="fbarwrap"><div class="fbar" style="height:19px"></div></div><span class="frating">83</span></div>
+      </div>
+    </div>
+    <div class="pane lt">
+      <h4>Light — no appearance (absence, not a zero)</h4>
+      <div class="formwrap">
+        <div class="fcell"><span class="fweek">Wk 6</span><span class="idfacts">Bye</span><div class="fbarwrap"></div><span class="idfacts">—</span></div>
+        <div class="fcell"><span class="fweek">Wk 7</span><span class="idfacts">DNP</span><div class="fbarwrap"></div><span class="idfacts">—</span></div>
+      </div>
+      <p class="fig" style="text-align:left">A bye or a game the player did not appear in draws no
+        bar and no rating — never a zero, which would read as the worst possible game rather than
+        no game at all.</p>
+    </div>
+  </div>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per game, written out</h4>
+    <ul>
+      <li>Week 4, win 27 to 14, rating 78.</li>
+      <li>Week 7, win 31 to 12, rating 86 — the strongest game of the five shown.</li>
+      <li>Week 6, bye. No rating — the player did not play.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> bar fill is action.primary (gold); result and rating text quoted from
+        tokens-v4's content roles.</li>
+      <li><b>Widths:</b> five cells fit any supported width; at AX5 the thread becomes a labelled
+        one-column list, one game per row.</li>
+      <li><b>Touch:</b> not independently interactive; where the line opens a game detail, each cell
+        is a 44 pt target.</li>
+      <li><b>States:</b> played (bar plus rating) and absent (bye/DNP, no bar, no rating) shown.</li>
+      <li><b>Team colour:</b> not applicable.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> a new game appends with a discrete insert, not a growing-bar animation,
+        under Reduce Motion.</li>
+      <li><b>Verdict:</b> none — a form line is a retained series, not a judgement; a verdict built
+        from it lives in a VerdictLine elsewhere on the same screen.</li>
+      <li><b>Density budget:</b> one secondary region beside the identity band; bounded at last 5,
+        so the line never grows across a career.</li>
+      <li><b>Tokens:</b> action.primary bar, content roles — 04 §6.1 as amended 2026-08-14; the
+        rating definition is G-04, `03` §1.5.</li>
+    </ol>
+  </div>
+</section>
+
+<footer style="margin-top:24px">
+  <p class="small">End of person-v4. Four cards, registry 6, 11, 12, 16. Supersedes person-v3. 04
+    §6.1, §6.3, §6.5 and §6.6 remain the only canonical home for every value and rule shown. Static,
+    no motion, no script.</p>
+</footer>
+
+</div>
+</body>
+</html>

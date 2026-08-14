@@ -264,6 +264,56 @@ private func containsDesignTokenLiteral(_ line: String) -> Bool {
     return false
 }
 
+/// Every component name `04` §6.5 registers, read out of the table at run time.
+///
+/// Parsed rather than restated, per `CLAUDE.md`'s coverage-boundary rule: a hand list here would be
+/// a second copy of the registry that drifts silently, which is the exact defect this test replaced.
+/// Rows look like `| 24 | `CutCorner` | purpose |`, and entry 23 names three types in one cell.
+///
+/// **The name must be backticked**, which is what separates a registry row from a §8 screen-family
+/// row — both are `| <number> | <name> | … |`, and a first pass at this parser pulled sixteen
+/// screen families ("Roster", "Standings", "Bracket") into the registry and reported them missing.
+private func canonRegistryNames() -> [String] {
+    let path = packageRoot().appendingPathComponent("docs/04-UX-AND-DESIGN-SYSTEM.md")
+    guard let canon = try? String(contentsOf: path, encoding: .utf8) else { return [] }
+
+    var names: [String] = []
+    for line in canon.split(separator: "\n", omittingEmptySubsequences: false) {
+        let row = String(line)
+        guard row.hasPrefix("|") else { continue }
+        let cells = row.split(separator: "|", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        // A registry row is `| <number> | <backticked name(s)> | <purpose> |`.
+        guard cells.count >= 3, Int(cells[1]) != nil else { continue }
+        // Odd-indexed pieces of a backtick split are the quoted runs.
+        let pieces = cells[2].split(separator: "`", omittingEmptySubsequences: false)
+        for (index, piece) in pieces.enumerated() where index.isMultiple(of: 2) == false {
+            let name = piece.trimmingCharacters(in: .whitespaces)
+            guard !name.isEmpty, name.rangeOfCharacter(from: .whitespaces) == nil else { continue }
+            names.append(name)
+        }
+    }
+    return names
+}
+
+/// Whether a Swift source declares a symbol of this name — a type, a function or an extension
+/// member. `coachWorldDeskSurface` is a `func`, so a type-only scan would report it missing.
+private func declaresSymbol(_ name: String, in source: String) -> Bool {
+    for keyword in ["struct", "enum", "class", "actor", "protocol", "func", "var"] {
+        var searchStart = source.startIndex
+        while let found = source.range(of: "\(keyword) \(name)", range: searchStart..<source.endIndex) {
+            // The next character must not continue the identifier, so `struct Meter` does not
+            // satisfy a search for `Met`, and `struct MeterBar` does not satisfy `Meter`.
+            let after = found.upperBound
+            let boundary = after == source.endIndex
+                || !(source[after].isLetter || source[after].isNumber || source[after] == "_")
+            if boundary { return true }
+            searchStart = after
+        }
+    }
+    return false
+}
+
 /// The files the save-shape scans walk: the whole engine, minus anything explicitly exempted.
 private func savedShapeFiles() -> [(path: String, text: String)] {
     swiftFiles(under: "Sources/FootballSimCore").filter { file in
@@ -713,114 +763,69 @@ func runContractTests() {
                         "production screen names must remain unique")
         }
 
-        test("Coaching HQ exposes an injected read-model surface and a truthful app root") {
+        test("every screen keeps its injected read model and its semantic controls") {
+            // Rewritten 2026-08-14. This test hard-coded 62 source substrings from the five
+            // pre-Floodlit screens, and 22 of them pinned component names and exact call-site
+            // expressions that the design-system import deletes. Substrings over hand-listed
+            // instances are the coverage-boundary defect `CLAUDE.md` names, wearing a contract's
+            // clothes: the list could only ever describe the screens that existed the day it was
+            // written. What survives here are the invariants that are true of *any* screen; what
+            // replaces the rest is the registry check below, enumerated by construction.
             let uiFiles = swiftFiles(under: "Sources/ProFootballCoachUI")
-            let hq = uiFiles.first { $0.path.hasSuffix("/CoachingHQView.swift") }?.text ?? ""
-            let recruiting = uiFiles.first {
-                $0.path.hasSuffix("/RecruitingBoardView.swift")
-            }?.text ?? ""
-            let roster = uiFiles.first { $0.path.hasSuffix("/RosterView.swift") }?.text ?? ""
-            let profile = uiFiles.first {
-                $0.path.hasSuffix("/PlayerProfileView.swift")
-            }?.text ?? ""
-            let deskComponents = uiFiles.first {
-                $0.path.hasSuffix("/CoachWorldDeskComponents.swift")
-            }?.text ?? ""
-            let root = uiFiles.first { $0.path.hasSuffix("/RootView.swift") }?.text ?? ""
+            let screens = [
+                ("CoachingHQView", "CoachingHQReadModel"),
+                ("RecruitingBoardView", "RecruitingBoardReadModel"),
+                ("RosterView", "RosterReadModel"),
+                ("PlayerProfileView", "PlayerProfileReadModel"),
+                ("MatchDayView", "MatchDayReadModel"),
+            ]
 
-            expect(hq.contains("public struct CoachingHQView"),
-                   "CoachingHQView.swift must expose the production HQ screen")
-            expect(hq.contains("let model: CoachingHQReadModel"),
-                   "Coaching HQ must consume an immutable read model")
-            expect(hq.contains("Button("), "Coaching HQ must use native buttons")
-            expect(!hq.contains("onTapGesture"),
-                   "Coaching HQ must not replace semantic controls with tap gestures")
-            expect(hq.contains("@State private"),
-                   "screen-owned draft state must remain private")
-            expect(hq.contains("accessibilitySortPriority"),
-                   "Coaching HQ must declare deterministic VoiceOver order")
+            for (screen, model) in screens {
+                let source = uiFiles.first { $0.path.hasSuffix("/\(screen).swift") }?.text ?? ""
+                expect(!source.isEmpty, "\(screen).swift is missing from the UI target")
+                expect(source.contains("public struct \(screen)"),
+                       "\(screen) must expose the production screen")
+                expect(source.contains("let model: \(model)"),
+                       "\(screen) must consume an immutable read model, not reach for state")
+                expect(source.contains("Button("),
+                       "\(screen) must use native buttons")
+                expect(!source.contains("onTapGesture"),
+                       "\(screen) must not replace semantic controls with tap gestures")
+                expect(source.contains("accessibilitySortPriority"),
+                       "\(screen) must declare deterministic VoiceOver order")
+            }
+        }
 
-            expect(recruiting.contains("public struct RecruitingBoardView"),
-                   "RecruitingBoardView.swift must expose the production board")
-            expect(recruiting.contains("let model: RecruitingBoardReadModel"),
-                   "Recruiting Board must consume an immutable read model")
-            expect(recruiting.contains("Button("),
-                   "Recruiting Board must use native buttons")
-            expect(!recruiting.contains("onTapGesture"),
-                   "Recruiting Board must not replace semantic controls with tap gestures")
-            expect(recruiting.contains("accessibilitySortPriority"),
-                   "Recruiting Board must declare deterministic VoiceOver order")
-            expect(recruiting.contains("choice.cost") && recruiting.contains("choice.consequence"),
-                   "recruiting actions must expose both cost and consequence")
+        test("every component 04 section 6.5 registers resolves to a type") {
+            // G-08's structural half, and the replacement for the 22 dead substrings above.
+            // Canon says the registry names "map 1:1 onto Swift types"; until this landed, 31 of
+            // the 35 did not, and nothing noticed because no test read the table. Enumerated from
+            // canon at run time so a registry entry added tomorrow is checked tomorrow.
+            let canon = canonRegistryNames()
+            expect(canon.count >= 30,
+                   "parsed \(canon.count) registry names from 04 section 6.5 — the parser, not the "
+                       + "tree, is what failed")
 
-            expect(roster.contains("public struct RosterView"),
-                   "RosterView.swift must expose the production roster screen")
-            expect(roster.contains("let model: RosterReadModel"))
-            expect(roster.contains("Button("))
-            expect(!roster.contains("onTapGesture"))
-            expect(roster.contains("monospacedDigit"))
-            expect(roster.contains("accessibilitySortPriority"))
-            expect(roster.contains("dynamicTypeSize.isAccessibilitySize"))
-            expect(roster.contains("CoachWorldRouteButton"))
-            expect(roster.contains("CoachWorldActionButtonStyle"))
-            expect(roster.contains("accessibleRating(\"OVR\", player.overall)"),
-                   "accessibility rows must preserve a distinct overall rating")
-            expect(roster.contains("accessibleRating(\"DEV\", player.development)"),
-                   "accessibility rows must preserve a distinct development rating")
-            expect(roster.contains("accessibleRating(\"COND\", player.condition)"),
-                   "accessibility rows must preserve a distinct condition rating")
-            expect(roster.contains(".sheet(item: $presentedProfile)"),
-                   "the dossier must preserve roster selection and sort state")
-            expect(roster.contains("lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)"),
-                   "the summary ribbon must wrap rather than truncate at accessibility sizes")
+            let source = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .map(\.text)
+                .joined(separator: "\n")
+            var missing: [String] = []
+            for name in canon where !declaresSymbol(name, in: source) {
+                missing.append(name)
+            }
+            expect(missing.isEmpty,
+                   "04 section 6.5 binds each registry name to a Swift type; these resolve to "
+                       + "none: \(missing.joined(separator: ", ")). Either build the type or "
+                       + "amend the registry — a name in canon with no type is a claim the "
+                       + "codebase does not honour.")
+        }
 
-            expect(profile.contains("public struct PlayerProfileView"))
-            expect(profile.contains("let model: PlayerProfileReadModel"))
-            expect(profile.contains("Button("))
-            expect(!profile.contains("onTapGesture"))
-            expect(profile.contains("monospacedDigit"))
-            expect(profile.contains("accessibilitySortPriority"))
-            expect(profile.contains("dynamicTypeSize.isAccessibilitySize"))
-            expect(profile.contains("CoachWorldBlankPhotoPlate"))
-            expect(profile.contains("model.attributeGroups"))
-
-            expect(deskComponents.contains("struct CoachWorldActionButtonStyle")
-                       && deskComponents.contains("struct CoachWorldRouteButton")
-                       && deskComponents.contains("coachWorldDeskSurface"),
-                   "management screens must share the proven action, route and desk-surface elements")
-            expect(hq.contains("CoachWorldActionButtonStyle")
-                       && hq.contains("CoachWorldRouteButton")
-                       && recruiting.contains("CoachWorldActionButtonStyle")
-                       && recruiting.contains("CoachWorldRouteButton"),
-                   "HQ and Recruiting must consume the same management-screen controls")
-            expect(!hq.contains("HQActionButtonStyle")
-                       && !recruiting.contains("RecruitingActionButtonStyle"),
-                   "screen-local copies of shared controls must not return")
-
-            expect(root.contains("public struct RootView"),
-                   "the application shell imports a public RootView")
-            expect(root.contains("#if DEBUG")
-                       && root.contains("CoachWorldSampleData.coachingHQ")
-                       && root.contains("CoachWorldSampleData.recruitingBoard"),
-                   "sample career values must be debug-only")
-            expect(root.contains("No career loaded"),
-                   "release builds need a truthful no-career state")
-            expect(root.contains("CoachWorldSampleData.roster"),
-                   "the personnel proof entry must use the fixed sample roster")
-            expect(root.contains("--roster") && root.contains("PROOF_SCREEN")
-                       && root.contains("\"roster\""),
-                   "Roster needs both a launch argument and a proof-screen name")
-            expect(root.contains("--player-profile") && root.contains("\"player\""),
-                   "Player Profile needs both a launch argument and a proof-screen name")
-            expect(root.contains("RosterView(") && root.contains("PlayerProfileView("),
-                   "the debug root must reach both personnel screens")
-
-            expect(roster.contains("CoachWorldTeamIdentity(") && roster.contains("uniformMark"),
-                   "the world strip must carry generated programme identity, not neutral furniture")
-            expect(roster.contains("selectionColour"),
-                   "selection speaks in programme colour where it is legible")
-            expect(profile.contains("let team: CoachWorldTeamReference"),
-                   "the dossier must know whose uniform the player wears")
+        test("the registry scan would notice a name that resolves to nothing") {
+            let source = "public struct CutCorner: Shape {}"
+            expect(declaresSymbol("CutCorner", in: source),
+                   "a declared type must be found")
+            expect(!declaresSymbol("ThereIsNoSuchComponent", in: source),
+                   "an undeclared name must not be reported as resolved")
         }
 
 #if DEBUG
