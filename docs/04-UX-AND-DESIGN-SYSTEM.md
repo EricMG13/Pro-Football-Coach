@@ -802,107 +802,120 @@ error, success, disabled, delegated, interrupted, confirmation, first-week teach
 are states beneath their owning screen. Tabs that preserve the same object and task are modes, not
 new screens.
 
+**Density spend (added 2026-08-14).** §4.5 prices density in five currencies and states that *"a
+surface the inventory does not price is a finding, not a licence"*. Each family below therefore
+carries its spend, in one line, in this notation:
+
+`R<n>` secondary regions beside the dominant object (§4.5 allows two) · `T<n>` fact columns in the
+dense table beside identity (six to nine, or `T–` for no table) · `G<n>` status glyphs at most per
+row (three) · `V<n>` verdict lines (one per readout) · `<n>tap` deepest path to any task-owned datum
+(two).
+
+A family at `R2 T9 G3 V1 2tap` is at the ceiling on every currency and has no room left; most sit
+well under. Where a family exceeds a limb, the exception is stated in its row and is a finding until
+the owner records otherwise.
+
 ### Entry and system — 7
 
-| # | Screen | Dominant object |
-|---:|---|---|
-| 1 | Title / Continue | current career and durable boundary |
-| 2 | New Career & Coach Identity | coach premise and generated universe |
-| 3 | Job Board | three defensible starting jobs |
-| 4 | Offer | terms and accept/decline consequence |
-| 5 | Appointment | stakeholder handoff and programme identity |
-| 6 | Settings & Accessibility | device, match and accessibility choices |
-| 7 | World Search | bounded index across people, teams, games and history |
+| # | Screen | Dominant object | Density spend |
+|---:|---|---|---|
+| 1 | Title / Continue | current career and durable boundary | `R0 T– G0 V0 1tap` |
+| 2 | New Career & Coach Identity | coach premise and generated universe | `R2 T– G0 V0 2tap` |
+| 3 | Job Board | three defensible starting jobs | `R1 T6 G2 V1 2tap` — fit evidence is the verdict |
+| 4 | Offer | terms and accept/decline consequence | `R1 T– G1 V1 1tap` |
+| 5 | Appointment | stakeholder handoff and programme identity | `R2 T– G2 V1 1tap` |
+| 6 | Settings & Accessibility | device, match and accessibility choices | `R0 T– G0 V0 2tap` — a settings list, not a dense table |
+| 7 | World Search | bounded index across people, teams, games and history | `R1 T6 G2 V0 2tap` |
 
 ### Week and match — 8
 
-| # | Screen | Dominant object |
-|---:|---|---|
-| 8 | Coaching HQ | current week plan and next obligation |
-| 9 | Inbox | conversations and commitments with cost |
-| 10 | Opponent Report / Film Room | observed film, staff interpretation and confidence |
-| 11 | Game Plan | weekly tactical keys and trade-offs |
-| 12 | Practice Plan | scarce practice minutes across units |
-| 13 | Team Health | availability, fatigue, injury and return decisions |
-| 14 | Match Day | full field, score, current cause and call-ins |
-| 15 | Aftermath | result, causal review and recovery consequence |
+| # | Screen | Dominant object | Density spend |
+|---:|---|---|---|
+| 8 | Coaching HQ | current week plan and next obligation | `R2 T– G2 V1 2tap` — week ribbon plus the decision due now |
+| 9 | Inbox | conversations and commitments with cost | `R1 T6 G3 V0 2tap` |
+| 10 | Opponent Report / Film Room | observed film, staff interpretation and confidence | `R2 T7 G2 V1 2tap` — the one weekly screen in the Film Room register |
+| 11 | Game Plan | weekly tactical keys and trade-offs | `R2 T– G2 V1 2tap` |
+| 12 | Practice Plan | scarce practice minutes across units | `R1 T– G2 V1 2tap` — session-type glyphs are the week grid's own class |
+| 13 | Team Health | availability, fatigue, injury and return decisions | `R1 T7 G3 V1 2tap` |
+| 14 | Match Day | full field, score, current cause and call-ins | `R0 T– G3 V1 1tap` — **the field owns the frame; §9 governs, not this budget.** No secondary region, no management chrome, and the call-in is the one verdict |
+| 15 | Aftermath | result, causal review and recovery consequence | `R2 T7 G2 V1 2tap` |
 
 ### Team and staff — 8
 
-| # | Screen | Dominant object |
-|---:|---|---|
-| 16 | Roster | sortable legal team sheet |
-| 17 | Depth Chart | spatial roles, packages and succession |
-| 18 | Player Profile | role, story, form, confidence and history |
-| 19 | Development Plan | current focus, staff ownership and opportunity cost |
-| 20 | Staff Room | assignments, continuity and unit performance |
-| 21 | Staff Market & Profile | candidate comparison, contract and scheme relationship |
-| 22 | Scheme Book | offensive/defensive identity and adoption cost |
-| 23 | Personnel Packages | situation-specific on-field assignments |
+| # | Screen | Dominant object | Density spend |
+|---:|---|---|---|
+| 16 | Roster | sortable legal team sheet | `R1 T9 G3 V1 2tap` — at the column ceiling; further facts arrive as column sets |
+| 17 | Depth Chart | spatial roles, packages and succession | `R2 T– G2 V1 2tap` — the diagram is the dominant object, the succession stack one region |
+| 18 | Player Profile | role, story, form, confidence and history | `R2 T7 G3 V1 2tap` — identity band stays put while detail levels swap beneath it |
+| 19 | Development Plan | current focus, staff ownership and opportunity cost | `R2 T6 G2 V1 2tap` |
+| 20 | Staff Room | assignments, continuity and unit performance | `R1 T7 G2 V1 2tap` |
+| 21 | Staff Market & Profile | candidate comparison, contract and scheme relationship | `R2 T8 G3 V1 2tap` |
+| 22 | Scheme Book | offensive/defensive identity and adoption cost | `R2 T6 G1 V1 2tap` |
+| 23 | Personnel Packages | situation-specific on-field assignments | `R2 T– G2 V1 2tap` — diagram-dominant, same shape as 17 |
 
 ### College acquisition and offseason — 10
 
-| # | Screen | Dominant object |
-|---:|---|---|
-| 24 | Recruiting Board | ranked live target board |
-| 25 | Prospect Profile | evaluation, relationship, fit and uncertainty |
-| 26 | Shortlist | monitored prospects and next contact |
-| 27 | Contact & Visit Planner | weekly contact budget and scheduled visits |
-| 28 | Class Overview | needs, commitments, capacity and class history |
-| 29 | Signing Day | timed commitment feed and unresolved choices |
-| 30 | Portal Hub | window, roster exposure and movement summary |
-| 31 | Retention Decisions | departure risk, promise and NIL trade-offs |
-| 32 | Portal Market | available players, fit, competition and capacity |
-| 33 | NIL Allocation | finite programme pool distributed across the roster |
+| # | Screen | Dominant object | Density spend |
+|---:|---|---|---|
+| 24 | Recruiting Board | ranked live target board | `R2 T8 G3 V1 2tap` |
+| 25 | Prospect Profile | evaluation, relationship, fit and uncertainty | `R2 T7 G3 V1 2tap` — confidence bands, never invented precision |
+| 26 | Shortlist | monitored prospects and next contact | `R1 T7 G3 V0 2tap` |
+| 27 | Contact & Visit Planner | weekly contact budget and scheduled visits | `R2 T6 G2 V1 2tap` — the budget meter is the dominant object |
+| 28 | Class Overview | needs, commitments, capacity and class history | `R2 T7 G2 V1 2tap` |
+| 29 | Signing Day | timed commitment feed and unresolved choices | `R2 T6 G3 V1 1tap` — a live feed; unresolved choices stay one tap away |
+| 30 | Portal Hub | window, roster exposure and movement summary | `R2 T6 G2 V1 2tap` |
+| 31 | Retention Decisions | departure risk, promise and NIL trade-offs | `R2 T7 G3 V1 2tap` |
+| 32 | Portal Market | available players, fit, competition and capacity | `R2 T9 G3 V1 2tap` — at the column ceiling |
+| 33 | NIL Allocation | finite programme pool distributed across the roster | `R2 T6 G2 V1 2tap` — allocation ring dominant, deal rows beneath |
 
 ### Professional front office — 7
 
-| # | Screen | Dominant object |
-|---:|---|---|
-| 34 | Cap & Contracts | legal ledger, commitments and future years |
-| 35 | Contract Negotiation | term, guarantee, role and cap consequence |
-| 36 | Roster Cuts & Transactions | legality deadline and loss of depth |
-| 37 | Pro Scouting Board | uncertain draft and market evaluations |
-| 38 | Draft Board | ranked prospects, needs and scouting investment |
-| 39 | Draft Room | timed pick sequence and trade-off at the clock |
-| 40 | Free Agency | live market waves, competing bidders and offers |
+| # | Screen | Dominant object | Density spend |
+|---:|---|---|---|
+| 34 | Cap & Contracts | legal ledger, commitments and future years | `R2 T9 G3 V1 2tap` — at the column ceiling; future years arrive as a column set |
+| 35 | Contract Negotiation | term, guarantee, role and cap consequence | `R2 T6 G2 V1 1tap` — the cap consequence is visible while the terms move |
+| 36 | Roster Cuts & Transactions | legality deadline and loss of depth | `R2 T8 G3 V1 2tap` |
+| 37 | Pro Scouting Board | uncertain draft and market evaluations | `R2 T8 G3 V1 2tap` |
+| 38 | Draft Board | ranked prospects, needs and scouting investment | `R2 T8 G3 V1 2tap` |
+| 39 | Draft Room | timed pick sequence and trade-off at the clock | `R2 T6 G2 V1 1tap` — a clock is running; nothing task-owned is more than one tap |
+| 40 | Free Agency | live market waves, competing bidders and offers | `R2 T8 G3 V1 2tap` |
 
 ### League and competition — 11
 
-| # | Screen | Dominant object |
-|---:|---|---|
-| 41 | League Map | place, distance, regions and rivalry context |
-| 42 | Team / Programme Profile | identity, trajectory, venue and history |
-| 43 | Standings | current competitive order and tiebreak meaning |
-| 44 | Schedule | season chronology and preparation rhythm |
-| 45 | Rankings & Playoff Picture | selection position, neighbours and path |
-| 46 | Bracket / Postseason | live elimination path |
-| 47 | Game Detail / Box Score | result, drives, turning points and participation |
-| 48 | Statistics & Leaders | bounded comparison with context and sample |
-| 49 | Awards & Honours | season and career recognition |
-| 50 | News | editorial world events, bounded newest-first |
-| 51 | Realignment Event | map change, cause and consequence |
+| # | Screen | Dominant object | Density spend |
+|---:|---|---|---|
+| 41 | League Map | place, distance, regions and rivalry context | `R2 T– G2 V0 2tap` — the map is the dominant object |
+| 42 | Team / Programme Profile | identity, trajectory, venue and history | `R2 T7 G2 V1 2tap` |
+| 43 | Standings | current competitive order and tiebreak meaning | `R1 T8 G2 V1 2tap` — tiebreak meaning is the verdict |
+| 44 | Schedule | season chronology and preparation rhythm | `R1 T6 G3 V0 2tap` |
+| 45 | Rankings & Playoff Picture | selection position, neighbours and path | `R2 T7 G2 V1 2tap` |
+| 46 | Bracket / Postseason | live elimination path | `R1 T– G2 V0 2tap` — the bracket is the dominant object |
+| 47 | Game Detail / Box Score | result, drives, turning points and participation | `R2 T9 G2 V1 2tap` — at the column ceiling; drives arrive as a column set |
+| 48 | Statistics & Leaders | bounded comparison with context and sample | `R2 T9 G2 V1 2tap` — sample and confidence stated, never a bare rank |
+| 49 | Awards & Honours | season and career recognition | `R1 T6 G1 V0 2tap` — Ceremony register |
+| 50 | News | editorial world events, bounded newest-first | `R1 T– G2 V0 2tap` — a bounded feed, not a table |
+| 51 | Realignment Event | map change, cause and consequence | `R2 T6 G1 V1 2tap` — before and after on one surface |
 
 ### Career and legacy — 9
 
-| # | Screen | Dominant object |
-|---:|---|---|
-| 52 | Career Hub | chronological story of the coach |
-| 53 | Job Security | expectation, movement, cause and jeopardy |
-| 54 | Stakeholders | relationships, voices and recent triggers |
-| 55 | Promotion Decision | college-to-pro offer with a real decline path |
-| 56 | Coaching Carousel | open jobs, interest and non-dead-end outcomes |
-| 57 | Record Book | bounded records across the save |
-| 58 | Rivalries | history, current stakes and accumulated strength |
-| 59 | Career Line | roles, seasons, records and defining moments |
-| 60 | Coaching Tree | staff relationships and career descendants |
+| # | Screen | Dominant object | Density spend |
+|---:|---|---|---|
+| 52 | Career Hub | chronological story of the coach | `R2 T– G2 V1 2tap` — chronology, not a summary dashboard |
+| 53 | Job Security | expectation, movement, cause and jeopardy | `R2 T6 G2 V1 2tap` — the board-confidence arc is dominant |
+| 54 | Stakeholders | relationships, voices and recent triggers | `R2 T6 G2 V1 2tap` — four groups, each with its trigger |
+| 55 | Promotion Decision | college-to-pro offer with a real decline path | `R2 T– G1 V1 1tap` — decline is as reachable as accept |
+| 56 | Coaching Carousel | open jobs, interest and non-dead-end outcomes | `R2 T7 G3 V1 2tap` |
+| 57 | Record Book | bounded records across the save | `R1 T7 G1 V0 2tap` |
+| 58 | Rivalries | history, current stakes and accumulated strength | `R2 T6 G2 V1 2tap` |
+| 59 | Career Line | roles, seasons, records and defining moments | `R1 T7 G2 V0 2tap` — chronology again, per §4.5 |
+| 60 | Coaching Tree | staff relationships and career descendants | `R1 T– G1 V0 2tap` — the tree is the dominant object |
 
 ### Offseason command — 2
 
-| # | Screen | Dominant object |
-|---:|---|---|
-| 61 | College Offseason | dated sequence linking signing, portal, NIL, staff and carousel |
-| 62 | Pro Offseason | dated sequence linking cuts, contracts, market, draft, staff and carousel |
+| # | Screen | Dominant object | Density spend |
+|---:|---|---|---|
+| 61 | College Offseason | dated sequence linking signing, portal, NIL, staff and carousel | `R1 T– G3 V1 1tap` — a dated sequence that opens the real task screens; it never becomes a hub of tiles |
+| 62 | Pro Offseason | dated sequence linking cuts, contracts, market, draft, staff and carousel | `R1 T– G3 V1 1tap` — same shape as 61 |
 
 Any new surface requires an amendment here, a read-model owner, a navigation location and a reason it
 cannot be a mode of an existing family.
