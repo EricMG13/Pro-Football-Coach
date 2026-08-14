@@ -1,8 +1,9 @@
-// Render one *-v3.dc.html sheet headless, at 1600pt wide, full content height,
-// then downscale to 1280px — same recipe docs/proofs/README.md documents for
-// the committed PNGs ("headless Chrome at 1600 pt wide, cropped to content,
-// downscaled to 1280 px"). Used first to prove the pipeline against a sheet
-// whose committed render we can compare against, then reused for the v4 set.
+// Render one *-v4.dc.html sheet headless, at 1600pt wide, full content height.
+// Downscaling to 1280px — the recipe docs/proofs/README.md documents for the
+// committed PNGs ("headless Chrome at 1600 pt wide, cropped to content,
+// downscaled to 1280 px") — is a separate step this script does not perform.
+// Used first to prove the pipeline against a v3 sheet whose committed render
+// could be compared against, then reused for the full v4 set.
 const { chromium } = require('playwright');
 const path = require('path');
 
