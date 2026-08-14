@@ -1,0 +1,376 @@
+<!-- @dsCard group="readout" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>readout-v4 — Coach's World analytical readouts, Floodlit (04 §6.5 registry 13–15)</title>
+<style>
+/* ============================================================================
+   readout-v4.dc.html — self-contained HTML+CSS. No JavaScript, no CDN, no
+   web font, no icon font, no images. CSS px read as pt. Supersedes
+   readout-v3, which rendered the retired violet system. Registry 13-15:
+   VerdictLine, Meter, OpposedBar.
+   ============================================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#060A12}
+body{font-family:-apple-system,"SF Pro Text","Helvetica Neue",system-ui,sans-serif;
+  font-size:13px;line-height:1.5;padding:24px 16px 64px;color:#F6FAFF;font-variant-numeric:tabular-nums}
+.sheet{max-width:1240px;margin:0 auto}
+h1{font-size:20px;font-weight:800;letter-spacing:-0.2px}
+.kicker{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:#8496AC;margin-bottom:4px}
+.prov{font-size:11px;color:#A9BACE;margin-top:8px;max-width:84em}
+.prov b{color:#F6FAFF;font-weight:600}
+.law{font-size:11px;color:#A9BACE;border-left:3px solid #FFC53D;background:#141A26;
+  padding:8px 12px;margin-top:10px;max-width:84em}
+.card{background:#141A26;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;
+  padding:16px 18px 18px;margin-top:20px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg, rgba(255,255,255,.05) 0%, transparent 42%)}
+.card>*{position:relative}
+.card>h2{font-size:17px;font-weight:800;letter-spacing:-0.2px}
+.sub{font-size:11px;color:#8496AC;margin:2px 0 12px}
+h3{font-size:13px;font-weight:700;margin:16px 0 6px}
+p{margin:6px 0}
+.small{font-size:11px;color:#A9BACE}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;background:#1E2735;
+  border:1px solid #1E2735;border-radius:3px 14px 3px 14px;padding:1px 5px;color:#A9BACE;white-space:nowrap}
+.callout{background:#060A12;border:1px solid #1E2735;border-left:3px solid #FFB03A;
+  border-radius:4px 22px 4px 22px;padding:10px 12px;margin-top:12px}
+.callout h4{font-size:11px;font-weight:700;margin-bottom:4px}
+.callout li{font-size:11px;color:#A9BACE;margin:4px 0 4px 16px}
+.callout li b{color:#F6FAFF}
+.fig{font-size:10px;color:#8496AC;margin-top:4px}
+.vo,.contract{margin-top:14px;border-top:1px solid #1E2735;padding-top:10px}
+.vo h4,.contract h4{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:#FFC53D;margin-bottom:6px;font-weight:700}
+.vo ul{list-style:none}
+.vo li{font-size:11px;color:#A9BACE;margin:3px 0;padding-left:12px;border-left:2px solid #1E2735}
+.contract ol{margin-left:18px}
+.contract li{font-size:11px;color:#A9BACE;margin:4px 0}
+.contract li b{color:#F6FAFF;font-weight:600}
+.duo{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;margin-top:8px}
+.pane{background:#060A12;border:1px solid #1E2735;border-radius:4px 22px 4px 22px;padding:14px;flex:1 1 480px;min-width:0}
+.pane.lt{background:#EDF1F6;color:#0B111C;border-color:#DCE3EC}
+.pane h4{font-size:11px;font-weight:700;margin-bottom:8px}
+.statelabel{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:#8496AC;margin:12px 0 4px}
+.pane.lt .statelabel{color:#566274}
+.frame{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:4px 22px 4px 22px;padding:12px}
+.pane.lt .frame{background:#FFFFFF;border-color:#DCE3EC}
+.cap{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#8496AC}
+.pane.lt .cap{color:#566274}
+.emptyslot{border:1px dashed rgba(255,255,255,.2);border-radius:3px 14px 3px 14px;padding:8px 10px;
+  font-size:10px;color:#8496AC;margin-top:6px}
+.pane.lt .emptyslot{border-color:#DCE3EC;color:#566274}
+.sentence{font-size:13px;font-weight:600;line-height:1.4}
+.attr{font-size:10px;color:#A9BACE;margin-top:4px}
+.pane.lt .attr{color:#414B5C}
+.comp{font-size:9.5px;color:#8496AC;margin-top:3px}
+.pane.lt .comp{color:#566274}
+.evbtn{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 12px;margin-top:8px;
+  border-radius:3px 14px 3px 14px;border:1px solid rgba(255,255,255,.13);font-size:11px;font-weight:700}
+.pane.lt .evbtn{border-color:#DCE3EC}
+/* Meter */
+.trackwrap{position:relative;height:8px;width:100%;margin-top:6px}
+.track{position:absolute;left:0;top:0;bottom:0;width:100%;background:rgba(255,255,255,.08);border-radius:4px}
+.pane.lt .track{background:#DCE3EC}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.capline{position:absolute;top:-3px;bottom:-3px;width:2px;background:#A9BACE}
+.pane.lt .capline{background:#414B5C}
+.chip{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:3px 14px 3px 14px;
+  font-size:10px;font-weight:700}
+table.ledger{width:100%;margin-top:8px;border-collapse:collapse}
+table.ledger td{font-size:11px;padding:4px 0;height:24px;border-bottom:1px solid rgba(255,255,255,.06)}
+.pane.lt table.ledger td{border-bottom-color:#EDF1F6}
+table.ledger td:last-child{text-align:right;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+/* OpposedBar */
+.obrow{display:grid;grid-template-columns:44px 40px 1fr 40px 44px;align-items:center;gap:6px;margin-top:4px}
+.obval{font-size:12px;font-weight:800;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.obtrack{position:relative;height:8px;border-radius:4px;overflow:hidden;display:flex}
+.obl{height:100%}
+.obr{height:100%}
+.oblabel{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#8496AC;text-align:center;margin:2px 0 8px}
+.pane.lt .oblabel{color:#566274}
+.tc{display:inline-flex;align-items:center;justify-content:center;height:20px;padding:0 8px;
+  border-radius:3px 14px 3px 14px;font-size:9.5px;font-weight:800;border-bottom:2px solid}
+</style>
+</head>
+<body class="dk">
+<div class="sheet">
+
+<header>
+  <div class="kicker">@dsCard group="readout" — sheet 7 of 10, floodlit canon amendment §6.5 registry 13–15</div>
+  <h1>Pro Football Coach — analytical readouts, readout-v4</h1>
+  <p class="prov">
+    <b>Supersedes readout-v3</b>, which rendered the retired violet system. Renders 04 §6.5 registry
+    13–15: <span class="mono">VerdictLine</span>, <span class="mono">Meter</span>,
+    <span class="mono">OpposedBar</span>. Verdict voice: Analyst Sample, the shared cast's analytics
+    staff, synthetic — pending generator output.
+  </p>
+  <p class="law">
+    This sheet is a rendering — 04 is the only canonical home. The verdict-state rule governs every
+    card: the shipping form (slot empty, gap ID in place) leads because G-02 does not exist; the
+    target form is labelled "once G-02 lands" and is never the unlabelled default.
+  </p>
+</header>
+
+<section class="card" id="card-1">
+  <h2>Card 1 — VerdictLine (registry 13): engine-backed judgement, sample and confidence</h2>
+  <p class="sub">One plain-language sentence, attributed to named staff, with sample size and
+    confidence visible, then the computation class that backs it. Two target instances are drawn —
+    high confidence and low — because registry 12's confidence vocabulary is three-valued and a
+    library that only ever draws a perfect verdict specifies a component production cannot honestly
+    build.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark — shipping form, today</h4>
+      <div class="frame">
+        <div class="cap">READOUT — RUN DEFENSE, WEEK 9 · EXAMPLE STATE</div>
+        <div class="emptyslot">verdict slot empty — no engine baseline exists (G-02)</div>
+        <p class="small" style="margin-top:8px">Rushing yards allowed, last 4 games: <b>88, 121, 94, 103</b></p>
+        <p class="fig">The readout ships without its verdict and says less. With no judgement to
+          audit there is no Evidence control either — the recorded numbers stand on the surface
+          instead.</p>
+      </div>
+      <div class="statelabel">Target form — once G-02 lands · sample 8, confidence high</div>
+      <div class="frame">
+        <div class="cap">READOUT — RUN DEFENSE, WEEK 9 · EXAMPLE STATE</div>
+        <div class="sentence">Run defense is holding up better than nearly every team in the league this week.</div>
+        <div class="attr">Analyst Sample, Analytics · sample 8 games · confidence high</div>
+        <div class="comp">league percentile vs week baseline — G-02 · 84th percentile</div>
+        <div class="evbtn">Evidence ›</div>
+      </div>
+      <div class="statelabel">Target form — once G-02 lands · sample 3, confidence low</div>
+      <div class="frame">
+        <div class="cap">READOUT — RUN DEFENSE, WEEK 9 · EXAMPLE STATE</div>
+        <div class="sentence">Run defense may be holding up, but three games is too few to call it.</div>
+        <div class="attr">Analyst Sample, Analytics · sample 3 games · confidence low</div>
+        <div class="comp">league percentile vs week baseline — G-02 · between the 55th and 78th percentile</div>
+        <div class="evbtn">Evidence ›</div>
+      </div>
+    </div>
+    <div class="pane lt">
+      <h4>Light — same three states</h4>
+      <div class="frame">
+        <div class="cap">READOUT — RUN DEFENSE, WEEK 9 · EXAMPLE STATE</div>
+        <div class="emptyslot">verdict slot empty — no engine baseline exists (G-02)</div>
+      </div>
+      <div class="statelabel">High confidence</div>
+      <div class="frame">
+        <div class="sentence">Run defense is holding up better than nearly every team in the league this week.</div>
+        <div class="attr">Analyst Sample, Analytics · sample 8 games · confidence high</div>
+        <div class="evbtn">Evidence ›</div>
+      </div>
+    </div>
+  </div>
+  <p class="fig" style="text-align:left">Low confidence is carried by the sentence, the printed
+    sample and a banded percentile — never by colour and never by a new glyph. The same tokens and
+    sizes as the high-confidence row: a verdict does not shrink or grey out when it is uncertain, it
+    says something different.</p>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per state, written out</h4>
+    <ul>
+      <li>Shipping: "Run defense readout, Example State: no staff verdict is available yet. Rushing yards allowed, last four games: 88, 121, 94, 103."</li>
+      <li>High confidence: "Analyst Sample, Analytics: run defense is holding up better than nearly every team in the league this week, eighty-fourth percentile against the week baseline, sample eight games, confidence high. Evidence, button."</li>
+      <li>Low confidence: "Analyst Sample, Analytics: run defense may be holding up, but three games is too few to call it. Between the fifty-fifth and seventy-eighth percentile, sample three games, confidence low. Evidence, button."</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> sentence content.primary, attribution content.secondary, computation line
+        content.quiet, Evidence control gold — all quoted from tokens-v4 Card A. All three states
+        reuse the same pairings; none is distinguished by colour.</li>
+      <li><b>Widths:</b> fluid at every supported width; both shipping and target forms exercised
+        together, nothing dropped at AX5.</li>
+      <li><b>Touch:</b> Evidence measures 44 pt tall minimum, present only in the target forms.</li>
+      <li><b>States:</b> shipping (slot empty, no Evidence), target at high confidence, target at low
+        confidence — all three in both appearances. Loading does not apply: until computed, a verdict
+        is absent, never shown loading.</li>
+      <li><b>Team colour:</b> not applicable — VerdictLine carries no team.* token.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> a weekly verdict swap crossfades in product; Reduce Motion replaces it with
+        a discrete text swap.</li>
+      <li><b>Verdict:</b> this card is the verdict line — one per readout, per §4.5's budget.</li>
+      <li><b>Density budget:</b> taps — 1 in target forms (Evidence), 0 in shipping; working memory
+        0; learned symbols 0 (the chevron is control furniture).</li>
+      <li><b>Tokens:</b> gold Evidence control, content roles — 04 §6.1 as amended 2026-08-14. Analyst
+        Sample, Example State are placeholders, pending generator output.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-2">
+  <h2>Card 2 — Meter (registry 14): capacity track with a defined over-capacity state</h2>
+  <p class="sub">A full-but-capped bar cannot show how far over you are, so the overage draws past
+    the 100% cap mark at its true fraction. The financial exception holds: this ledger carries state
+    and ratio, never a prose judgement — verdicts are stated only where the player must form one.</p>
+  <div class="duo">
+    <div class="pane dk">
+      <h4>Dark — within limit</h4>
+      <div class="frame">
+        <div class="cap">SCHOLARSHIPS — <b>83 of 85</b></div>
+        <div class="trackwrap"><div class="track"></div><div class="fill" style="width:97.6%;background:#7DF0B6"></div><div class="capline" style="left:100%"></div></div>
+        <p class="fig">Within limit · 97.6% · fill state.positive, cap mark content.secondary at 100%.</p>
+      </div>
+      <div class="frame" style="margin-top:12px">
+        <div class="cap">CAP LEDGER — <b>$259,997,200 of $255,400,000</b></div>
+        <p class="small" style="color:#FF8E9C;font-weight:700;margin-top:6px">OVER CAP · 101.8% · $4,597,200 over</p>
+        <div class="trackwrap"><div class="track"></div><div class="fill" style="width:102%;background:#FF8E9C"></div><div class="capline" style="left:100%"></div></div>
+        <table class="ledger">
+          <tr><td>Active contracts</td><td>$231,400,000</td></tr>
+          <tr><td>Dead money</td><td>$18,200,000</td></tr>
+          <tr><td>Likely incentives</td><td>$6,100,000</td></tr>
+          <tr><td>Reserve and practice</td><td>$4,297,200</td></tr>
+          <tr><td style="font-weight:700">Committed total</td><td style="font-weight:800">$259,997,200</td></tr>
+          <tr><td style="color:#FF8E9C"><span class="mono" style="border:none;background:none;padding:0;color:#FF8E9C">exclamationmark.triangle</span> Next season, projected</td><td style="color:#FF8E9C">$9M–$15M over</td></tr>
+          <tr><td>Two seasons out, projected</td><td>$8M under–$2M over</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="pane lt">
+      <h4>Light — same states</h4>
+      <div class="frame">
+        <div class="cap">SCHOLARSHIPS — <b>83 of 85</b></div>
+        <div class="trackwrap"><div class="track"></div><div class="fill" style="width:97.6%;background:#14653C"></div><div class="capline" style="left:100%"></div></div>
+      </div>
+      <div class="frame" style="margin-top:12px">
+        <div class="cap">CAP LEDGER — <b>$259,997,200 of $255,400,000</b></div>
+        <p class="small" style="color:#A3202F;font-weight:700;margin-top:6px">OVER CAP · 101.8%</p>
+        <div class="trackwrap"><div class="track"></div><div class="fill" style="width:102%;background:#A3202F"></div><div class="capline" style="left:100%"></div></div>
+      </div>
+    </div>
+  </div>
+  <p class="fig" style="text-align:left">Compliance state first, composition of the total second,
+    projection third, two seasons out — F4's ordering. Committed rows print exact because the
+    simulation owns them; the two projection rows are bands, because a multi-season cap projection
+    is an estimate by construction and a dollar-exact one would be the fabrication §4.5 names. The
+    two-seasons band crosses the cap, resolves to no compliance state, and therefore takes no state
+    colour.</p>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Cap ledger: over the cap, 101.8 percent of the 255,400,000 dollar cap committed, 4,597,200 dollars over; the roster is not legal until committed money comes back under the cap.</li>
+      <li>Scholarships: within limit, 83 of 85 used, 2 open.</li>
+      <li>Next season: projected between 9,000,000 and 15,000,000 dollars over the cap, alarm.</li>
+      <li>Two seasons out: projected between 8,000,000 dollars under and 2,000,000 dollars over; the band crosses the cap, so no compliance state is stated.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> state.positive/negative fills and their raised-surface chip forms quoted
+        from tokens-v4.</li>
+      <li><b>Widths:</b> tracks fluid at every supported width; the ledger's seven rows hold the 24 pt
+        track at the promise floor and up.</li>
+      <li><b>Touch:</b> the meter is a readout, not a control — no interactive element.</li>
+      <li><b>States:</b> within-limit and over-capacity, both drawn in both appearances; a band that
+        crosses the cap resolves to no compliance state and no glyph.</li>
+      <li><b>Team colour:</b> not applicable — no team.* token on a financial surface.</li>
+      <li><b>VoiceOver:</b> written out above, state + ratio + consequence in one sentence.</li>
+      <li><b>Motion:</b> the fill animates once to its value in product; Reduce Motion draws it at
+        rest, final value, no travel.</li>
+      <li><b>Verdict:</b> deliberately absent — the financial exception means the judgement slot is
+        filled by the compliance state and ratio, not prose.</li>
+      <li><b>Density budget:</b> learned symbols — 2, checkmark.seal and exclamationmark.triangle,
+        both existing Status-class members; no new member introduced.</li>
+      <li><b>Tokens:</b> 24 pt ledger tracks, state fills — 04 §6.1/§6.3 as amended 2026-08-14. Money
+        integer dollars throughout, per CLAUDE.md.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" id="card-3">
+  <h2>Card 3 — OpposedBar (registry 15): two-team shared-track comparison</h2>
+  <p class="sub">One track, a value at each end, fill split by share of the paired total — for
+    genuinely paired quantities only, never a lone value borrowing this shape as a progress bar.</p>
+  <div class="duo">
+    <div class="pane dk" style="flex:1 1 100%">
+      <h4>Dark — matchup evidence, Week 9</h4>
+      <div class="cap" style="margin-bottom:6px">MATCHUP EVIDENCE — WEEK 9 · EXAMPLE STATE at EXAMPLE COASTAL</div>
+      <div class="obrow">
+        <span class="tc" style="background:#14382A;color:#F2F5F3;border-color:#D9B23C">EXS</span>
+        <span class="obval" style="text-align:right">184</span>
+        <div class="obtrack"><div class="obl" style="width:66.2%;background:#14382A"></div><div class="obr" style="width:33.8%;background:#E9E0C9"></div></div>
+        <span class="obval">92</span>
+        <span class="tc" style="background:#E9E0C9;color:#18202B;border-color:#6E3038">ECL</span>
+      </div>
+      <div class="oblabel">RUSHING YARDS</div>
+      <div class="obrow">
+        <span class="tc" style="background:#14382A;color:#F2F5F3;border-color:#D9B23C">EXS</span>
+        <span class="obval" style="text-align:right">213</span>
+        <div class="obtrack"><div class="obl" style="width:44.4%;background:#14382A"></div><div class="obr" style="width:55.6%;background:#E9E0C9"></div></div>
+        <span class="obval">267</span>
+        <span class="tc" style="background:#E9E0C9;color:#18202B;border-color:#6E3038">ECL</span>
+      </div>
+      <div class="oblabel">PASSING YARDS</div>
+      <div class="obrow">
+        <span class="tc" style="background:#555B66;color:#FFFFFF;border-color:#D9DDE4">EUN</span>
+        <span class="obval" style="text-align:right">3</span>
+        <div class="obtrack"><div class="obl" style="width:75%;background:#555B66"></div><div class="obr" style="width:25%;background:#14382A"></div></div>
+        <span class="obval">1</span>
+        <span class="tc" style="background:#14382A;color:#F2F5F3;border-color:#D9B23C">EXS</span>
+      </div>
+      <div class="oblabel">TAKEAWAYS — WEEK 8, EXAMPLE UNION at EXAMPLE STATE</div>
+      <div class="obrow">
+        <span class="tc" style="background:#14382A;color:#F2F5F3;border-color:#D9B23C">EXS</span>
+        <span class="obval small" style="text-align:right">—</span>
+        <div class="obtrack"></div>
+        <span class="obval small">—</span>
+        <span class="tc" style="background:#E9E0C9;color:#18202B;border-color:#6E3038">ECL</span>
+      </div>
+      <div class="oblabel">RED-ZONE TRIPS — not yet recorded</div>
+    </div>
+  </div>
+  <p class="fig" style="text-align:left">Every trio primary fails the 3:1 non-text floor against its
+    tonally-similar surface, so canon mandates the boundary on every team fill — this card draws it
+    as a bottom-border in team.secondary on the chip. Not-yet-recorded rows draw an empty track and a
+    dash at each end rather than a zero-zero split, which would assert a fact ("both teams recorded
+    zero") the simulation does not yet hold.</p>
+
+  <div class="vo">
+    <h4>VoiceOver — one sentence per row, written out</h4>
+    <ul>
+      <li>Rushing yards: Example State 184, Example Coastal 92.</li>
+      <li>Passing yards: Example State 213, Example Coastal 267.</li>
+      <li>Takeaways, Week 8, Example Union at Example State: Example Union 3, Example State 1.</li>
+      <li>Red-zone trips: not yet recorded.</li>
+    </ul>
+  </div>
+
+  <div class="contract">
+    <h4>Contract — reference-library plan §4, point by point</h4>
+    <ol>
+      <li><b>Ratios:</b> team.onTeam on team.primary and team.secondary boundary, quoted from
+        tokens-v4 Card D; end values content.primary, labels content.quiet.</li>
+      <li><b>Widths:</b> the track is fluid, fits at every supported width.</li>
+      <li><b>Touch:</b> not interactive — a readout.</li>
+      <li><b>States:</b> a normal paired comparison and a not-yet-recorded row (empty track, dash at
+        each end) both shown.</li>
+      <li><b>Team colour:</b> structural here — comparison requires it, per §5. All three synthetic
+        pairs drawn, each with its mandatory boundary.</li>
+      <li><b>VoiceOver:</b> written out above.</li>
+      <li><b>Motion:</b> the split animates to its value on data change in product; Reduce Motion
+        draws it at rest.</li>
+      <li><b>Verdict:</b> none — a comparison, not a judgement.</li>
+      <li><b>Density budget:</b> one comparison region; zero learned symbols.</li>
+      <li><b>Tokens:</b> team trio, mandatory boundary — 04 §6.1 as amended 2026-08-14. Figures are
+        the shared world's fixed data, synthetic — pending generator output.</li>
+    </ol>
+  </div>
+</section>
+
+<footer style="margin-top:24px">
+  <p class="small">End of readout-v4. Three cards, registry 13–15. Supersedes readout-v3. 04 §6.1,
+    §6.3, §6.5 remain the only canonical home for every value and rule shown. Static, no motion, no
+    script.</p>
+</footer>
+
+</div>
+</body>
+</html>
