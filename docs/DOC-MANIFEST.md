@@ -214,21 +214,23 @@ ordering `05` defers to. The pack's internal `00`–`09` numbering is its own an
 | `docs/roadmap/08-UI-ADVERSARIAL-AUDIT.md` | UI adversarial audit (pack edition) |
 | `docs/roadmap/09-UI-BACKEND-SURFACE-CONTRACT.md` | UI/backend surface contract |
 
-## 4a. The definitive design references, approved 2026-08-12
+## 4a. The definitive design references, redrawn in Floodlit 2026-08-14
 
-Eight self-contained sheets at the repository root, owner-approved as **the** design reference
-library. Every `04` §8 screen family is built against them; the M8 production-UI work consumes them.
+Ten self-contained sheets at the repository root, **the** design reference library. Every `04` §8
+screen family is built against them; the M8 production-UI work consumes them.
 
 | Path | Renders |
 |---|---|
-| `tokens-v3.dc.html` | The `04` §6.1–§6.3 system: colour roles on their real surfaces with measured ratios, type ramp through AX5, spacing and radii, the synthetic team trio |
-| `chrome-v3.dc.html` | Registry 1–5: route button, action styles, desk surface, blank photo plate, world strip |
-| `table-v3.dc.html` | Registry 7–10, 17, 18: dense table, column sets, list controls, rating badge, status chips, role tokens |
-| `person-v3.dc.html` | Registry 6, 11, 12, 16: identity band, delta marks, confidence tags, form line |
-| `readout-v3.dc.html` | Registry 13–15: verdict line, meter, opposed bar |
-| `week-v3.dc.html` | Registry 19 and the chronology compositions |
-| `broadcast-v3.dc.html` | Registry 20–22 plus the key-moments row, BROADCAST register |
-| `failure-v3.dc.html` | Registry 23: the failure set inside its owning compositions |
+| `tokens-v4.dc.html` | The `04` §6.1–§6.3 system in both appearances: Floodlit colour roles on their real surfaces with measured ratios, type ramp through AX5, spacing and the `CutCorner` radii, the synthetic team trio |
+| `depth-v4.dc.html` | **New.** Registry 24–28: the five `World` backdrops, the three depth levels and the deep-panel contrast rule, the glass edge, grain, the blur budget, Reduce Transparency |
+| `gauge-v4.dc.html` | **New.** Registry 29–35: the proportion vocabulary (`ArcGauge`, `ValueRing`, `AttributeDial`, `ShareBar`) and the drawn marks (`StarRating`, `Pennant`, `TimeoutMarks`) |
+| `chrome-v4.dc.html` | Registry 1–5: route pill, `GoButton` action styles, desk surface as the opaque `GlassPanel` fallback, blank photo plate, world strip |
+| `table-v4.dc.html` | Registry 7–10, 17, 18: dense table, column sets, list controls, rating badge, status chips, role tokens |
+| `person-v4.dc.html` | Registry 6, 11, 12, 16: identity band, delta marks, confidence tags, form line |
+| `readout-v4.dc.html` | Registry 13–15: verdict line (shipping and target forms, per the verdict-state rule), meter, opposed bar |
+| `week-v4.dc.html` | Registry 19 and the chronology compositions |
+| `broadcast-v4.dc.html` | Registry 20–22 plus the key-moments row, the Broadcast-marks class |
+| `failure-v4.dc.html` | Registry 23: the failure set inside its owning compositions |
 
 Full-page renders and an index live in `docs/proofs/design-references/`.
 
@@ -239,6 +241,17 @@ What the sheets *do* settle is composition, states and the density model applied
 supersede every earlier rendered library, mockup set and design pass in this repository. Those
 earlier artefacts are historical evidence only; a document describing one is a record of what was
 done, never direction for what to build.
+
+**The `*-v3.dc.html` set this replaced (owner-approved 2026-08-12, superseded 2026-08-14):**
+
+| Path | Classification | Reason | Where its role lives now |
+|---|---|---|---|
+| `tokens-v3.dc.html`, `chrome-v3.dc.html`, `table-v3.dc.html`, `person-v3.dc.html`, `readout-v3.dc.html`, `week-v3.dc.html`, `broadcast-v3.dc.html`, `failure-v3.dc.html` (8 root sheets) | **DELETED** | Rendered the palette `04` §6.1 held before the owner adopted Floodlit as the visual language (2026-08-14): action violet where the system now reads gold, live green where it now reads red. Re-annotating in place would have produced sheets that pass the sheet-ratio lint while quoting figures for colours canon no longer holds — the exact failure the lint exists to catch — so the set was redrawn instead of amended. `docs/proofs/design-references/*-v3-sheet.png` (8 renders) went with them. | `*-v4.dc.html` (this section) |
+
+The v2→v3 replacement above and this v3→v4 replacement are the same kind of event for different
+reasons: v2 was rejected as the wrong design direction; v3 was correct when drawn and became stale
+when the palette it rendered was retired under it. Both are recoverable via `git show` and neither
+carries authority.
 
 ## 5. Required edits inside retained documents
 

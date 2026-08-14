@@ -800,6 +800,89 @@ rather than pins, and they moved because prestige now feeds recruiting rather th
 and geography. It is not built: it changes league topology, and schedule generation, standings and
 whole-root integrity all read that topology, so it is a milestone-sized slice rather than a rule.
 
+### 2026-08-14 — Floodlit adopted as the visual language; Phase 0 and 0b complete
+
+**Owner decision: Floodlit is the visual language for all 62 game surfaces**, arriving as ~1,900
+lines of never-compiled SwiftUI (lit-world backdrops, glass panels at depth, arc gauges, film
+grain). The Coach's World stays the product premise — registers, world navigation, composition
+rules — and Floodlit is how that premise is painted. This is the direct answer to the U-6 finding
+two entries above: **"production views for the other 57 families... is the largest remaining
+item."** It is now a design system to build them against, not an open question.
+
+Four decisions bound the work, made through `AskUserQuestion` before any file changed:
+
+1. **Derive a Floodlit light appearance.** Floodlit ships dark-only; D12 and `04` §7/§10 require
+   both appearances, so a full light "day facility" palette was derived and measured rather than
+   the dual-appearance requirement being waived.
+2. **`04` §4.5's density budget governs** where it conflicts with Floodlit's sparser prototype
+   composition, not the reverse.
+3. **The `04` §10 proof gate is honoured**, not bypassed: Coaching HQ, Recruiting Board and Match
+   Day still land together, owner-approved, before the other 59 families begin. Not yet reached —
+   this entry covers Phase 0 and 0b only.
+4. **Every region ships backed by real simulation.** No family may ship a region omitted behind an
+   unlabelled gap. Where a surface's backing engine work does not exist yet (verdicts, G-02; the
+   partial-advance completion record, G-15), the sheet draws both a **shipping form** (the slot
+   empty, its gap ID in place) and a **target form** (labelled "once G-NN lands"), and the shipping
+   form is what ships. This is `04` §6.6's verdict-state rule, generalised to any gap-carrying
+   region, not only verdicts.
+
+A fifth, mid-execution: **redraw all eight `*-v3.dc.html` reference sheets in Floodlit now**, as a
+sub-phase, rather than shipping them stale and fixing later. The v3 sheets rendered the retired
+violet palette (action violet, live green); Floodlit's roles read differently (action gold,
+live/negative red), so re-annotating in place would have produced sheets that pass the sheet-ratio
+lint while quoting figures for colours canon no longer holds.
+
+**Phase 0 — canon amended before code, per `CLAUDE.md`'s doc-first rule.** `04-UX-AND-DESIGN-
+SYSTEM.md` §6.1 rewritten to Floodlit's palette in both appearances (every ink and fill ratio
+measured, not estimated); §6.2/§6.3 for Floodlit's type ramp and `CutCorner` shape family; §5, §6.5
+(12 new primitives, registry 24–35), §6.6 (25 learned symbols, up from 23), §7 and §9 for the
+systems Floodlit's screens need. `02-GAME-DESIGN.md`, `03-MATCH-ENGINE.md` and `03b-ARCHITECTURE.md`
+gained the game-design and engine-contract sections the new surfaces require (spatial anchors,
+player-game ratings, verdict computation, inbound events, staff market, scheme change, depth charts
+and personnel packages) — specified before being built, not encoded only in a view. `DesignTokens.
+swift` moved in the same commits as `04` §6.1, because the token-sync assertion requires them
+together. Three measurement findings this session's derivation caught rather than assumed: Floodlit's
+quiet ink (`#65788F`) fails the body floor and was corrected to `#8496AC`; a standard glass panel
+cannot carry body text over the lit pitch (2.69 worst case), so the deep panel is specified at
+α ≥ 0.78, not the prototype's 0.70; and the state-role fills measure differently from their inks in
+dark appearance only — light appearance has no separate fill form.
+
+**Phase 0b — all ten reference sheets redrawn, verified the same way each time.** `tokens-v4`,
+`depth-v4`, `gauge-v4` (the last two new, no v3 equivalent — Floodlit's twelve primitives had no
+sheet), `chrome-v4`, `table-v4`, `person-v4`, `readout-v4`, `week-v4`, `broadcast-v4`, `failure-v4`.
+Per sheet: an emoji-range sweep, a Python replica of `DesignContractTests`' sheet-ratio lint run
+against the actual file, a headless Chromium render at 1600 pt, and a full visual inspection of
+every card in both appearances before commit. **Defects the loop actually caught**, not a clean
+pass claimed by assertion: a fabricated light-appearance state-fills table in `tokens-v4` (deleted;
+canon's fill/ink-split rule written instead of inventing numbers); wrong `AttributeDial` arc math in
+`gauge-v4` (off by up to 121 units on hand-estimated `stroke-dashoffset`; replaced with a precise
+circumference calculation); three emoji-range characters across three different sheets
+(`readout-v4`, `week-v4`, and — caught only during this consolidated pass, after the individual
+sheet had already been committed — a checkmark in `chrome-v4`, fixed the same day); a flex-shrink
+layout bug in `chrome-v4`. `failure-v4`'s `InterruptedState` card is the first sheet to apply the
+generalised shipping/target pattern to a non-verdict gap (G-15).
+
+`Tests/SimTests/Suites/DesignContractTests.swift`'s `designSheets()` now walks `-v4.dc.html` and
+asserts ten, not eight. The eight `*-v3.dc.html` files and their `docs/proofs/design-references/`
+renders are deleted (recoverable via `git show`, per the repo's no-archive convention); the ten v4
+renders replace them, regenerated with the same headless-Chromium-then-downscale recipe.
+`docs/DOC-MANIFEST.md` §4a and `CLAUDE.md`'s doc table point at the v4 set.
+
+**What this entry does not claim.** No Swift toolchain exists in this container — `swift` is absent
+and egress refuses `download.swift.org`. `DesignContractTests.swift`'s actual pass/fail has not been
+seen by a compiler this session; the Python replicas run here (token-sync check, sheet-ratio lint,
+emoji sweep, marker-match check) are exact reproductions of that suite's logic against the real
+files on disk, which is not the same claim as "tests pass." Everything in Phase 0 and 0b is
+**unverified — never compiled**, per `CLAUDE.md`'s standing rule, until `./scripts/verify.sh` runs
+on a machine with Swift 6.3.3 / Xcode 26.6.
+
+**What is still untouched.** Phase 1 (importing Floodlit's actual SwiftUI package, reworking
+`DeviceFrame`/`Stage` to be adaptive rather than hard-framed, tokenizing every literal size Floodlit
+ships, building out registry entries 5–23 which today exist only screen-locally) has not started.
+The three proof screens (`04` §10) have not been rebuilt. U-6's finding stands exactly as before this
+entry: 57 families still have no production view. What changed is that they now have a verified,
+ten-sheet design reference to build against instead of a stale eight-sheet one.
+
 ### What is not wired, audited from the code on 2026-08-12
 
 The scheduler marks unbuilt systems inactive by design, so it is the authority rather than any prose.
