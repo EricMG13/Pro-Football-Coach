@@ -100,6 +100,8 @@ func runCareerArcTests() {
                 )),
                 in: resigning
             )
+            expect(resolved.state.career.college == nil,
+                   "resignation left the coach controlling the former programme")
             expectEqual(resolved.state.careerArc.status, .seeking)
             expect(resolved.state.careerArc.currentJob == nil)
             if case .careerUpdated = resolved.result {

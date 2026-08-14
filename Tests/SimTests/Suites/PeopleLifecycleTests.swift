@@ -24,6 +24,31 @@ func runPeopleLifecycleTests() {
             expectEqual(restored.people, state.people)
         }
 
+        test("attribute history is causal, bounded, and legacy-defaulted") {
+            let playerID = UUID(uuidString: "00000000-0000-4000-8000-000000008010")!
+            var lifecycle = PlayerLifecycleState(playerID: playerID)
+            for week in 1...(PeopleRules.recentChangeHistoryLimit + 2) {
+                lifecycle.recordDevelopment(DevelopmentSummary(
+                    occurredAt: CalendarState(season: 0, week: week),
+                    components: [DevelopmentComponent(reason: .practice, value: 1)],
+                    attributeChanges: [AttributeDevelopment(attribute: .speed, delta: 1)]
+                ))
+            }
+            expectEqual(lifecycle.recentChanges.count, PeopleRules.recentChangeHistoryLimit)
+            expectEqual(lifecycle.recentChanges.first?.occurredAt.week, 3)
+            expectEqual(lifecycle.recentChanges.last?.cause, .practice)
+
+            var legacy = try JSONSerialization.jsonObject(
+                with: JSONEncoder.stable().encode(PlayerLifecycleState(playerID: playerID))
+            ) as! [String: Any]
+            legacy.removeValue(forKey: "recentChanges")
+            let restored = try JSONDecoder.stable().decode(
+                PlayerLifecycleState.self,
+                from: JSONSerialization.data(withJSONObject: legacy)
+            )
+            expect(restored.recentChanges.isEmpty, "legacy lifecycle did not default history")
+        }
+
         test("persisted fatigue outside its legal range is rejected") {
             let lifecycle = PlayerLifecycleState(
                 playerID: UUID(uuidString: "00000000-0000-4000-8000-000000008001")!

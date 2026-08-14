@@ -2,6 +2,27 @@ import Foundation
 import FootballSimCore
 
 func runCompetitionTests() {
+    suite("Tie-aware standings") {
+        test("records ties without inventing a winner and keeps legacy JSON readable") {
+            let team = UUID(uuidString: "00000000-0000-4000-8000-000000007001")!
+            var row = StandingRow(id: team)
+            row.record(pointsFor: 17, pointsAgainst: 17, conferenceGame: true)
+            expectEqual(row.wins, 0)
+            expectEqual(row.losses, 0)
+            expectEqual(row.ties, 1)
+            expectEqual(row.conferenceTies, 1)
+            expectEqual(row.games, 1)
+            expectEqual(row.winningPercentage, 0.5)
+
+            let legacy = """
+            {"id":"00000000-0000-4000-8000-000000007001","wins":2,"losses":1,"conferenceWins":1,"conferenceLosses":1,"pointsFor":42,"pointsAgainst":35}
+            """.data(using: .utf8)!
+            let restored = try JSONDecoder.stable().decode(StandingRow.self, from: legacy)
+            expectEqual(restored.ties, 0)
+            expectEqual(restored.games, 3)
+        }
+    }
+
     suite("Regular-season schedule") {
         test("bootstrap creates only the exact regular-season slate") {
             let state = GameState.bootstrap(seed: 70_001)

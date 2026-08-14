@@ -291,6 +291,11 @@ public enum IntentResolver {
                 }
             case .resign:
                 applied = nextState.careerArc.resign(at: request.calendar)
+                if applied {
+                    // Separation is atomic: a seeking coach must not retain authority over the
+                    // former programme while the carousel evaluates the next job.
+                    nextState.career.clearCollege()
+                }
             }
             guard applied else { throw IntentResolutionError.careerArcUnavailable }
             let integrity = WorldIntegrity.check(nextState)

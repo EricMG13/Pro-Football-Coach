@@ -337,6 +337,12 @@ public enum WorldScheduler {
                     in: nextState,
                     arc: &nextState.careerArc
                 )
+                if nextState.careerArc.status == .fired {
+                    // Firing revokes control in the same scheduler transaction. Leaving the
+                    // college control record behind lets a fired coach keep advancing the old
+                    // team through the next screen.
+                    nextState.career.clearCollege()
+                }
                 records.append(WorldStepRecord(step: step, status: .executed))
 
             case .relationshipsAndStakeholders:
@@ -421,6 +427,9 @@ public enum WorldScheduler {
                         in: nextState,
                         arc: &nextState.careerArc
                     )
+                    if nextState.careerArc.status == .fired {
+                        nextState.career.clearCollege()
+                    }
                     let completion = PostseasonSystem.completeSeason(
                         after: completed,
                         in: nextState

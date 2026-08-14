@@ -131,6 +131,39 @@ public struct AttributeDevelopment: Codable, Sendable, Equatable {
     }
 }
 
+/// One applied attribute delta with a dated cause for the Player Profile history.
+public struct AttributeChangeRecord: Codable, Sendable, Equatable {
+    public let occurredAt: CalendarState
+    public let attribute: Attribute
+    public let delta: Int
+    public let cause: DevelopmentReason
+
+    public init(occurredAt: CalendarState, attribute: Attribute, delta: Int, cause: DevelopmentReason) {
+        self.occurredAt = occurredAt
+        self.attribute = attribute
+        self.delta = delta
+        self.cause = cause
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let delta = try container.decode(Int.self, forKey: .delta)
+        guard PeopleRules.attributeDevelopmentRange.contains(delta), delta != 0 else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .delta,
+                in: container,
+                debugDescription: "Attribute change is outside its legal range."
+            )
+        }
+        self.init(
+            occurredAt: try container.decode(CalendarState.self, forKey: .occurredAt),
+            attribute: try container.decode(Attribute.self, forKey: .attribute),
+            delta: delta,
+            cause: try container.decode(DevelopmentReason.self, forKey: .cause)
+        )
+    }
+}
+
 public struct DevelopmentSummary: Codable, Sendable, Equatable {
     public let occurredAt: CalendarState
     public let components: [DevelopmentComponent]
@@ -182,19 +215,25 @@ public struct DevelopmentSummary: Codable, Sendable, Equatable {
 }
 
 public struct PlayerLifecycleState: Codable, Sendable, Equatable, Identifiable {
+    private enum CodingKeys: String, CodingKey {
+        case playerID, fatigue, injury, status, lastDevelopment, recentChanges
+    }
+
     public var id: UUID { playerID }
     public let playerID: UUID
     public private(set) var fatigue: Int
     public private(set) var injury: PlayerInjury?
     public private(set) var status: PlayerLifecycleStatus
     public private(set) var lastDevelopment: DevelopmentSummary?
+    public private(set) var recentChanges: [AttributeChangeRecord]
 
     public init(
         playerID: UUID,
         fatigue: Int = 0,
         injury: PlayerInjury? = nil,
         status: PlayerLifecycleStatus = .active,
-        lastDevelopment: DevelopmentSummary? = nil
+        lastDevelopment: DevelopmentSummary? = nil,
+        recentChanges: [AttributeChangeRecord] = []
     ) {
         self.playerID = playerID
         self.fatigue = min(max(fatigue, PeopleRules.fatigueRange.lowerBound),
@@ -202,6 +241,7 @@ public struct PlayerLifecycleState: Codable, Sendable, Equatable, Identifiable {
         self.injury = injury
         self.status = status
         self.lastDevelopment = lastDevelopment
+        self.recentChanges = Array(recentChanges.suffix(PeopleRules.recentChangeHistoryLimit))
     }
 
     public init(from decoder: any Decoder) throws {
@@ -214,6 +254,17 @@ public struct PlayerLifecycleState: Codable, Sendable, Equatable, Identifiable {
                 debugDescription: "Player fatigue is outside its legal range."
             )
         }
+        let decodedRecentChanges = try container.decodeIfPresent(
+            [AttributeChangeRecord].self,
+            forKey: .recentChanges
+        ) ?? []
+        guard decodedRecentChanges.count <= PeopleRules.recentChangeHistoryLimit else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .recentChanges,
+                in: container,
+                debugDescription: "Recent attribute history exceeds its bound."
+            )
+        }
         self.init(
             playerID: try container.decode(UUID.self, forKey: .playerID),
             fatigue: decodedFatigue,
@@ -222,7 +273,8 @@ public struct PlayerLifecycleState: Codable, Sendable, Equatable, Identifiable {
             lastDevelopment: try container.decodeIfPresent(
                 DevelopmentSummary.self,
                 forKey: .lastDevelopment
-            )
+            ),
+            recentChanges: decodedRecentChanges
         )
     }
 
@@ -253,6 +305,17 @@ public struct PlayerLifecycleState: Codable, Sendable, Equatable, Identifiable {
 
     public mutating func recordDevelopment(_ summary: DevelopmentSummary) {
         lastDevelopment = summary
+        guard let cause = summary.components.max(by: {
+            abs($0.value) < abs($1.value)
+        })?.reason else { return }
+        recentChanges = Array((recentChanges + summary.attributeChanges.map {
+            AttributeChangeRecord(
+                occurredAt: summary.occurredAt,
+                attribute: $0.attribute,
+                delta: $0.delta,
+                cause: cause
+            )
+        }).suffix(PeopleRules.recentChangeHistoryLimit))
     }
 
     public mutating func endCareer(as endStatus: PlayerLifecycleStatus) {
