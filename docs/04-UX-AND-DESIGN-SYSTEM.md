@@ -719,15 +719,19 @@ weights, exported per symbolset) are eligible members under the same displacemen
 §6.3's one-coherent-line-family requirement — a custom glyph that reads as a different family is a
 defect, not a style.
 
-**The definitive design references (owner-approved 2026-08-12).** Eight sheets at the repository
-root render this registry: `tokens-v3.dc.html`, `chrome-v3.dc.html`, `table-v3.dc.html`,
-`person-v3.dc.html`, `readout-v3.dc.html`, `week-v3.dc.html`, `broadcast-v3.dc.html`,
-`failure-v3.dc.html`, with full-page renders and an index in `docs/proofs/design-references/`.
-Every `04` §8 screen family is built against them. They supersede the deleted `*-v2.dc.html`
-library entirely; any earlier rendered library, mockup set or design pass is historical evidence
-and carries no authority. **The sheets remain a rendering — this document is the only canonical
-home, and a value appearing only in a sheet has not shipped.** Where a sheet and `04` disagree,
-`04` wins and the sheet is the defect.
+**The definitive design references (redrawn in Floodlit, owner-approved-process 2026-08-14).** Ten
+sheets at the repository root render this registry: `tokens-v4.dc.html`, `depth-v4.dc.html`,
+`gauge-v4.dc.html`, `chrome-v4.dc.html`, `table-v4.dc.html`, `person-v4.dc.html`,
+`readout-v4.dc.html`, `week-v4.dc.html`, `broadcast-v4.dc.html`, `failure-v4.dc.html`, with
+full-page renders and an index in `docs/proofs/design-references/`. Every `04` §8 screen family is
+built against them. They supersede the deleted `*-v3.dc.html` library entirely — the eight v3
+sheets rendered the retired violet system and could not be re-annotated in place, because the
+roles changed meaning (action violet→gold, live green→red); two entries are new
+(`depth-v4`, `gauge-v4`), covering the twelve Floodlit primitives §6.5 registry 24–35 added the
+same day. Any earlier rendered library, mockup set or design pass — v2, v3, Stitch output, the
+rejected Film Room gallery — is historical evidence and carries no authority. **The sheets remain a
+rendering — this document is the only canonical home, and a value appearing only in a sheet has not
+shipped.** Where a sheet and `04` disagree, `04` wins and the sheet is the defect.
 
 **The verdict-state rule, one rule for the whole library (2026-08-12).** Registry 13 `VerdictLine`
 has exactly one drawing convention, because three sheets shipped three different ones and each is a
