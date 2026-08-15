@@ -48,6 +48,7 @@ public final class CoachWorldStore {
     public private(set) var gamePlan: GamePlanReadModel?
     public private(set) var practicePlan: PracticePlanReadModel?
     public private(set) var depthChart: DepthChartReadModel?
+    public private(set) var teamHealth: TeamHealthReadModel?
     /// True while an intent is in flight. Screens disable their commit controls on it.
     public private(set) var isWorking = false
     /// The last receipt or refusal, shown verbatim. Never a guess about what happened.
@@ -94,6 +95,7 @@ public final class CoachWorldStore {
         gamePlan = CoachWorldReadModelProvider.gamePlan(from: snapshot)
         practicePlan = CoachWorldReadModelProvider.practicePlan(from: snapshot)
         depthChart = CoachWorldReadModelProvider.depthChart(from: snapshot)
+        teamHealth = CoachWorldReadModelProvider.teamHealth(from: snapshot)
     }
 
     /// Generates a world from `seed` and appoints the selected starting programme.
@@ -226,6 +228,10 @@ public final class CoachWorldStore {
     public func setPresentationRoute(_ route: String) {
         presentation.route = route
         presentationRoute = route
+    }
+
+    public func setPresentationReturnRoute(_ route: String?) {
+        presentation.returnRoute = route
     }
 
     public func selectTeam(_ organisationID: UUID) async {

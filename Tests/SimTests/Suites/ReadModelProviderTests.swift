@@ -206,6 +206,67 @@ func runReadModelProviderTests() {
             expect(!slot.isStarter)
         }
 
+        test("team health is a bounded lifecycle projection") {
+            let (state, _) = try startedCareer(seed: 4_023)
+            guard let model = CoachWorldReadModelProvider.teamHealth(from: state) else {
+                expect(false, "a started career produced no team health model")
+                return
+            }
+            expectEqual(model.provenance, .simulationSnapshot)
+            expect(model.players.count <= 128)
+            expect(model.players.allSatisfy {
+                (0...100).contains($0.condition) && (0...100).contains($0.fatigue)
+            })
+            expectEqual(model.players.count, CoachWorldReadModelProvider.roster(from: state)?.players.count)
+            expectEqual(
+                model.injuryCount,
+                model.players.compactMap { UUID(uuidString: $0.stableID) }.filter {
+                    state.people.playerLifecycle[$0]?.injury != nil
+                }.count
+            )
+            expectEqual(
+                model.suspensionCount,
+                model.players.compactMap { UUID(uuidString: $0.stableID) }.filter {
+                    state.people.playerLifecycle[$0]?.suspension != nil
+                }.count
+            )
+            expectEqual(model, CoachWorldReadModelProvider.teamHealth(from: state))
+            expectEqual(
+                CoachWorldReadModelProvider.teamHealth(from: GameState.bootstrap(seed: 4_023)),
+                nil
+            )
+
+            var injuredAndSuspended = state
+            let calendar = injuredAndSuspended.calendar
+            guard let playerID = injuredAndSuspended.career.college.flatMap({
+                injuredAndSuspended.programmes[$0.programmeID]?.rosterIDs.first
+            }) else {
+                expect(false, "the generated controlled roster has no player")
+                return
+            }
+            _ = injuredAndSuspended.people.updatePlayerLifecycle(playerID) {
+                $0.sustain(PlayerInjury(
+                    area: .knee,
+                    severity: .moderate,
+                    occurredAt: calendar,
+                    originalWeeks: 2,
+                    weeksRemaining: 2
+                ))
+                $0.suspend(PlayerSuspension(
+                    reason: .conduct,
+                    occurredAt: calendar,
+                    originalWeeks: 2,
+                    weeksRemaining: 2
+                ))
+            }
+            let combined = CoachWorldReadModelProvider.teamHealth(from: injuredAndSuspended)
+            let combinedRow = combined?.players.first { $0.stableID == playerID.uuidString }
+            expectEqual(combined?.injuryCount, model.injuryCount + 1)
+            expectEqual(combined?.suspensionCount, model.suspensionCount + 1)
+            expect(combinedRow?.statusDetail.contains("Injury 2 week(s) remaining") == true)
+            expect(combinedRow?.statusDetail.contains("Suspension 2 week(s) remaining") == true)
+        }
+
         test("a controlled checkpoint produces a live Match Day model") {
             let source = GameState.bootstrap(seed: 4_008)
             guard let game = source.competition.currentSchedule.games.first(where: {

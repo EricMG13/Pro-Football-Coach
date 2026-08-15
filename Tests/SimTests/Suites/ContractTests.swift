@@ -840,6 +840,28 @@ func runContractTests() {
                    "selection speaks in programme colour where it is legible")
             expect(profile.contains("let team: CoachWorldTeamReference"),
                    "the dossier must know whose uniform the player wears")
+
+            let health = uiFiles.first { $0.path.hasSuffix("/TeamHealthView.swift") }?.text ?? ""
+            let healthModel = uiFiles.first {
+                $0.path.hasSuffix("/TeamHealthReadModels.swift")
+            }?.text ?? ""
+            let appRoot = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
+            expect(health.contains("public struct TeamHealthView"),
+                   "Team Health must expose a production view")
+            expect(health.contains("let model: TeamHealthReadModel"),
+                   "Team Health must consume an immutable read model")
+            expect(health.contains("dynamicTypeSize.isAccessibilitySize")
+                       && health.contains("accessibilityLabel"),
+                   "Team Health must preserve accessibility-size and semantic evidence")
+            expect(healthModel.contains("public struct TeamHealthReadModel"),
+                   "Team Health read model is missing")
+            expect(appRoot.contains("case .teamHealth") && appRoot.contains("TeamHealthView("),
+                   "Team Health must be reachable from the shipped app root")
+            expect(hq.contains("Button(\"Team health\")") && roster.contains("screen != .teamHealth"),
+                   "Team Health must be reachable from HQ and the roster without a disabled route")
+            expect(hq.contains("route(\"Health\", screen: .teamHealth)"),
+                   "standard HQ must expose Team Health, not only its accessibility menu")
         }
 
         test("League Map is a read-model surface that invents no place and no reach") {

@@ -97,6 +97,7 @@ public struct CoachingHQView: View {
                         route("League", screen: .leagueMap)
                         route("Career", screen: .careerHub)
                         route("Search", screen: .worldSearch)
+                        route("Health", screen: .teamHealth)
                     }
                     .frame(maxWidth: .infinity)
                     continueButton
@@ -122,6 +123,7 @@ public struct CoachingHQView: View {
             Button("Game plan") { onNavigate(.gamePlan) }
             Button("Practice") { onNavigate(.practicePlan) }
             Button("Depth chart") { onNavigate(.depthChart) }
+            Button("Team health") { onNavigate(.teamHealth) }
             Button("Rankings") { onNavigate(.rankingsPlayoffPicture) }
             Button("Postseason") { onNavigate(.bracketPostseason) }
         }

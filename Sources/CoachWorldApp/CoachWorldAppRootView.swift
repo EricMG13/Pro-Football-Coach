@@ -18,6 +18,7 @@ public struct CoachWorldAppRootView: View {
     /// the store alone lets two loads, or two world generations, start side by side.
     @State private var hasAttemptedRestore = false
     @State private var screen: CoachWorldScreenID = .coachingHQ
+    @State private var teamHealthOrigin: CoachWorldScreenID = .coachingHQ
     @State private var recoveryRequired = false
     @State private var showingNewCareerSetup = false
     @State private var startingJobs: [StartingJobReadModel] = []
@@ -161,6 +162,15 @@ public struct CoachWorldAppRootView: View {
                         onClose: { navigate(.roster, in: store) }
                     )
                 }
+            case .teamHealth:
+                if let model = store.teamHealth {
+                    TeamHealthView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { navigate(teamHealthOrigin, in: store) },
+                        onContinue: { Task { await advance(store) } }
+                    )
+                }
             case .aftermath:
                 if let model = store.aftermath {
                     AftermathView(
@@ -275,6 +285,9 @@ public struct CoachWorldAppRootView: View {
     }
 
     private func navigate(_ destination: CoachWorldScreenID, in store: CoachWorldStore) {
+        if destination != .teamHealth {
+            store.setPresentationReturnRoute(nil)
+        }
         switch destination {
         case .coachingHQ:
             screen = .coachingHQ
@@ -302,6 +315,12 @@ public struct CoachWorldAppRootView: View {
             failure = nil
         case .depthChart where store.depthChart != nil:
             screen = .depthChart
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .teamHealth where store.teamHealth != nil:
+            teamHealthOrigin = screen == .roster ? .roster : .coachingHQ
+            store.setPresentationReturnRoute(String(teamHealthOrigin.rawValue))
+            screen = .teamHealth
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
         case .careerHub where store.careerHub != nil:
@@ -397,6 +416,9 @@ public struct CoachWorldAppRootView: View {
             if let destination = Self.screenID(for: document.presentation.route) {
                 screen = destination
             }
+            if let origin = document.presentation.returnRoute.flatMap(Self.screenID(for:)) {
+                teamHealthOrigin = origin
+            }
             failure = nil
             recoveryRequired = false
         } catch {
@@ -414,6 +436,9 @@ public struct CoachWorldAppRootView: View {
             store = try await CoachWorldStore.load(document: document)
             if let destination = Self.screenID(for: document.presentation.route) {
                 screen = destination
+            }
+            if let origin = document.presentation.returnRoute.flatMap(Self.screenID(for:)) {
+                teamHealthOrigin = origin
             }
             failure = nil
             recoveryRequired = false

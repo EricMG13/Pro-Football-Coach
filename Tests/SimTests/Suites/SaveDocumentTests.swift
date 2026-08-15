@@ -38,6 +38,7 @@ func runSaveDocumentTests() {
             expectEqual(document.gameState.version, GameState.schemaVersion)
             expectEqual(document.metadata.migratedFromRootVersion, GameState.legacySchemaVersion)
             expectEqual(document.gameState.calendar, state.calendar)
+            expectEqual(document.presentation.returnRoute, nil)
         }
 
         test("schema 11 missing later root fields receives explicit defaults") {
@@ -67,7 +68,7 @@ func runSaveDocumentTests() {
             let state = GameState.bootstrap(seed: 20_260_813)
             let expected = CoachWorldSaveDocument(
                 gameState: state,
-                presentation: CareerPresentationState(route: "roster"),
+                presentation: CareerPresentationState(route: "13", returnRoute: "16"),
                 metadata: CareerSaveMetadata(generation: 4, createdFromSeed: 20_260_813)
             )
             let decoded = try! CoachWorldSaveDocument.decode(

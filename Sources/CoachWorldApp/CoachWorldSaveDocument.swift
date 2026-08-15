@@ -6,6 +6,8 @@ import FootballSimCore
 /// evolve without pretending that a bare GameState is a complete app save.
 public struct CareerPresentationState: Codable, Sendable, Equatable {
     public var route: String
+    /// Optional origin for transient child surfaces; nil keeps legacy saves canonical.
+    public var returnRoute: String?
     public var selectedSubjectID: UUID?
     public var draftValues: [String: String]
     public var pendingTaskID: UUID?
@@ -13,12 +15,14 @@ public struct CareerPresentationState: Codable, Sendable, Equatable {
 
     public init(
         route: String = "8",
+        returnRoute: String? = nil,
         selectedSubjectID: UUID? = nil,
         draftValues: [String: String] = [:],
         pendingTaskID: UUID? = nil,
         interruptedTask: String? = nil
     ) {
         self.route = route
+        self.returnRoute = returnRoute
         self.selectedSubjectID = selectedSubjectID
         self.draftValues = draftValues
         self.pendingTaskID = pendingTaskID
