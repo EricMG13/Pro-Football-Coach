@@ -19,6 +19,7 @@ import ProFootballCoachUI
 public final class CoachWorldStore {
     public enum StartError: Error, Equatable {
         case noProgrammeAvailable
+        case programmeUnavailable(UUID)
     }
 
     /// The seed a new career uses until a world-setup screen offers a choice.
@@ -95,17 +96,21 @@ public final class CoachWorldStore {
         depthChart = CoachWorldReadModelProvider.depthChart(from: snapshot)
     }
 
-    /// Generates a world from `seed` and takes the job with the least prestige in it.
+    /// Generates a world from `seed` and appoints the selected starting programme.
     ///
-    /// The choice is deterministic and needs no Job Board: `02`'s career arc starts at the bottom
-    /// of the college game, and ties break on the identifier so the same seed always yields the
-    /// same first job. Screen 3 replaces this with the player's own choice.
+    /// The optional selection and identity are supplied by the entry flow. Defaults preserve the
+    /// proof harness and old callers while still making a direct API call deterministic.
     ///
     /// `nonisolated`, and the generation runs detached, because it is seconds of work on 15,766
     /// players and 2,158 staff. A `@MainActor` static would have run all of it on the main actor
     /// and frozen the title screen — including the progress indicator that exists to say it is
     /// working.
-    public nonisolated static func newCareer(seed: UInt64) async throws -> CoachWorldStore {
+    public nonisolated static func newCareer(
+        seed: UInt64,
+        firstName: String = "",
+        lastName: String = "",
+        programmeID: UUID? = nil
+    ) async throws -> CoachWorldStore {
         let started = try await Task.detached(priority: .userInitiated) {
             let world = GameState.bootstrap(seed: seed)
             let candidates = world.programmes.values.sorted {
@@ -114,7 +119,25 @@ public final class CoachWorldStore {
                     : $0.prestige.value < $1.prestige.value
             }
             guard let first = candidates.first else { throw StartError.noProgrammeAvailable }
-            return try CareerControlSystem.startCollegeCareer(at: first.id, in: world).state
+            let selected: Programme
+            if let programmeID {
+                guard let requested = candidates.first(where: { $0.id == programmeID }) else {
+                    throw StartError.programmeUnavailable(programmeID)
+                }
+                selected = requested
+            } else {
+                selected = first
+            }
+            var started = try CareerControlSystem.startCollegeCareer(at: selected.id, in: world).state
+            let cleanFirst = String(firstName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(24))
+            let cleanLast = String(lastName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(24))
+            if let coachID = started.career.coachID {
+                _ = started.staff.update(coachID) { coach in
+                    if !cleanFirst.isEmpty { coach.firstName = cleanFirst }
+                    if !cleanLast.isEmpty { coach.lastName = cleanLast }
+                }
+            }
+            return started
         }.value
         return try await make(
             from: CoachWorldSaveDocument(
@@ -123,6 +146,15 @@ public final class CoachWorldStore {
                 metadata: CareerSaveMetadata(createdFromSeed: seed)
             )
         )
+    }
+
+    public nonisolated static func startingJobs(seed: UInt64, limit: Int = 3) async -> [StartingJobReadModel] {
+        await Task.detached(priority: .userInitiated) {
+            CoachWorldReadModelProvider.startingJobs(
+                from: GameState.bootstrap(seed: seed),
+                limit: limit
+            )
+        }.value
     }
 
     /// Decoding is detached for the same reason, and it also runs the whole-root integrity check

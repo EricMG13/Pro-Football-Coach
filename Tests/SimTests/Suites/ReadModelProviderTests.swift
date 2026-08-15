@@ -26,6 +26,31 @@ private func startedCareer(seed: UInt64) throws -> (GameState, Programme) {
 
 func runReadModelProviderTests() {
     suite("Read model provider: identity") {
+        test("starting jobs are three deterministic generated programmes") {
+            let firstState = GameState.bootstrap(seed: 4_000)
+            let secondState = GameState.bootstrap(seed: 4_000)
+            let first = CoachWorldReadModelProvider.startingJobs(from: firstState)
+            let second = CoachWorldReadModelProvider.startingJobs(from: secondState)
+            expectEqual(first, second)
+            expectEqual(first.count, 3)
+            expectEqual(Set(first.map(\.stableID)).count, first.count)
+            expect(first.indices.dropFirst().allSatisfy { index in
+                first[index - 1].prestige <= first[index].prestige
+            })
+            expect(first.allSatisfy { job in
+                guard let programme = firstState.programmes[UUID(uuidString: job.stableID)!] else {
+                    return false
+                }
+                let target = min(95, max(40, programme.prestige.value + 10))
+                return programme.name == job.programme.name
+                    && job.archetype == Archetype.with(id: programme.archetypeID).name
+                    && job.expectation == "Target performance \(target)"
+                    && job.resources >= SharedRules.ratingRange.lowerBound
+                    && job.resources <= SharedRules.ratingRange.upperBound
+            })
+            expectEqual(CoachWorldReadModelProvider.startingJobs(from: firstState, limit: 0), [])
+        }
+
         test("no controlled career produces no coaching HQ") {
             expectEqual(
                 CoachWorldReadModelProvider.coachingHQ(from: GameState.bootstrap(seed: 4_001)),

@@ -12,12 +12,17 @@ public struct CoachWorldAppRootView: View {
     @State private var store: CoachWorldStore?
     @State private var failure: String?
     @State private var isStarting = false
+    @State private var isRestoring = false
     /// Set before the first `await`, not after it. `.task` can run more than once for one view,
     /// and `store == nil` stays true across every suspension point inside the load — so guarding on
     /// the store alone lets two loads, or two world generations, start side by side.
     @State private var hasAttemptedRestore = false
     @State private var screen: CoachWorldScreenID = .coachingHQ
     @State private var recoveryRequired = false
+    @State private var showingNewCareerSetup = false
+    @State private var startingJobs: [StartingJobReadModel] = []
+    @State private var startingJobsRequest: UInt64 = 0
+    @State private var setupError: String?
 
     @State private var coordinator: SaveCoordinator
 
@@ -29,6 +34,30 @@ public struct CoachWorldAppRootView: View {
         Group {
             if let store {
                 career(store)
+            } else if showingNewCareerSetup {
+                NewCareerSetupView(
+                    jobs: startingJobs,
+                    defaultSeed: CoachWorldStore.defaultSeed,
+                    isWorking: isStarting,
+                    errorMessage: setupError,
+                    onStart: { firstName, lastName, seed, programmeID in
+                        Task {
+                            await startNewCareer(
+                                firstName: firstName,
+                                lastName: lastName,
+                                seed: seed,
+                                programmeID: programmeID
+                            )
+                        }
+                    },
+                    onSeedChanged: { seed in
+                        Task { await refreshStartingJobs(seed: seed) }
+                    },
+                    onCancel: {
+                        showingNewCareerSetup = false
+                        setupError = nil
+                    }
+                )
             } else {
                 title
             }
@@ -316,6 +345,8 @@ public struct CoachWorldAppRootView: View {
             }
             if isStarting {
                 ProgressView("Building the world")
+            } else if isRestoring {
+                ProgressView("Loading career")
             } else if recoveryRequired {
                 Button("Retry restore") {
                     hasAttemptedRestore = false
@@ -323,9 +354,9 @@ public struct CoachWorldAppRootView: View {
                     Task { await restoreExistingCareer() }
                 }
                 Button("Use backup") { Task { await recoverFromBackup() } }
-                Button("Replace with a new career") { Task { await startNewCareer() } }
+                Button("Replace with a new career") { Task { await beginNewCareerSetup() } }
             } else {
-                Button("New career") { Task { await startNewCareer() } }
+                Button("New career") { Task { await beginNewCareerSetup() } }
                     .buttonStyle(.borderedProminent)
                     .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
             }
@@ -352,11 +383,13 @@ public struct CoachWorldAppRootView: View {
     private func restoreExistingCareer() async {
         guard !hasAttemptedRestore else { return }
         hasAttemptedRestore = true
+        isRestoring = true
+        defer { isRestoring = false }
         do {
             let outcome = try await coordinator.load()
             guard case let .loaded(document, _) = outcome else {
                 if ProcessInfo.processInfo.environment["PROOF_NEW_CAREER"] != nil {
-                    await startNewCareer()
+                    await beginNewCareerSetup()
                 }
                 return
             }
@@ -364,6 +397,8 @@ public struct CoachWorldAppRootView: View {
             if let destination = Self.screenID(for: document.presentation.route) {
                 screen = destination
             }
+            failure = nil
+            recoveryRequired = false
         } catch {
             failure = Self.saveErrorMessage(error)
             recoveryRequired = true
@@ -371,6 +406,9 @@ public struct CoachWorldAppRootView: View {
     }
 
     private func recoverFromBackup() async {
+        guard !isRestoring && !isStarting else { return }
+        isRestoring = true
+        defer { isRestoring = false }
         do {
             let document = try await coordinator.recover(using: .useBackup)
             store = try await CoachWorldStore.load(document: document)
@@ -407,17 +445,67 @@ public struct CoachWorldAppRootView: View {
         }
     }
 
-    private func startNewCareer() async {
+    private func beginNewCareerSetup() async {
+        startingJobsRequest &+= 1
+        let request = startingJobsRequest
+        isStarting = true
+        setupError = nil
+        let jobs = await CoachWorldStore.startingJobs(seed: CoachWorldStore.defaultSeed)
+        guard request == startingJobsRequest else { return }
+        startingJobs = jobs
+        guard !startingJobs.isEmpty else {
+            setupError = "No eligible starting jobs were generated."
+            isStarting = false
+            return
+        }
+        showingNewCareerSetup = true
+        isStarting = false
+    }
+
+    private func startNewCareer(
+        firstName: String,
+        lastName: String,
+        seed: UInt64,
+        programmeID: String
+    ) async {
+        guard !isStarting else { return }
         isStarting = true
         defer { isStarting = false }
         do {
-            let started = try await CoachWorldStore.newCareer(seed: CoachWorldStore.defaultSeed)
+            guard let selectedID = UUID(uuidString: programmeID) else {
+                setupError = "That starting job is no longer available."
+                return
+            }
+            let started = try await CoachWorldStore.newCareer(
+                seed: seed,
+                firstName: firstName,
+                lastName: lastName,
+                programmeID: selectedID
+            )
             try await persist(started)
             store = started
+            showingNewCareerSetup = false
+            setupError = nil
             failure = nil
         } catch {
-            failure = "The world could not be built: \(error)"
+            if let startError = error as? CoachWorldStore.StartError,
+               case .programmeUnavailable = startError {
+                setupError = "Refresh the jobs for this seed, then select one before starting."
+            } else {
+                setupError = "The world could not be built: \(error)"
+            }
         }
+    }
+
+    private func refreshStartingJobs(seed: UInt64) async {
+        startingJobsRequest &+= 1
+        let request = startingJobsRequest
+        isStarting = true
+        let jobs = await CoachWorldStore.startingJobs(seed: seed)
+        guard request == startingJobsRequest else { return }
+        startingJobs = jobs
+        setupError = startingJobs.isEmpty ? "No eligible starting jobs were generated." : nil
+        isStarting = false
     }
 
     private func advance(_ store: CoachWorldStore) async {
