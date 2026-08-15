@@ -23,9 +23,14 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
 /// reproduced in two independent processes before being written here.
 /// The application root then moved from schema 11 to schema 12; these values were independently
 /// reproduced after that migration and are intentionally pinned to the new root contract.
-private let pinnedRootFingerprint: UInt64 = 11_754_806_364_418_451_928
+/// Tactical state now also persists the bounded personnel and practice-consumption ledgers; the
+/// values below were reproduced in two independent release-process invocations.
+/// The advanced pin moved again when completed summaries gained an explicit abstracted/detailed
+/// source discriminator, so the new controlled detailed path cannot be mistaken for an abstract
+/// result after reload.
+private let pinnedRootFingerprint: UInt64 = 11_331_000_849_178_945_058
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 696_885_492_462_968_224
+private let pinnedAdvancedRootFingerprint: UInt64 = 8_478_281_008_398_319_438
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///

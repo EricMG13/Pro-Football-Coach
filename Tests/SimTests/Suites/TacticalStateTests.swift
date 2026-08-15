@@ -68,6 +68,91 @@ func runTacticalStateTests() {
             )
         }
 
+        test("the committed practice effects are consumed once and retained as a receipt") {
+            let calendar = CalendarState(season: 0, week: 8)
+            let organisationID = UUID(uuidString: "00000000-0000-0000-0000-000000000454")!
+            var tactical = TacticalState(calendar: calendar)
+            let plan = TacticalPracticePlan(
+                installMinutes: 15,
+                conditioningMinutes: 30,
+                recoveryMinutes: 15,
+                positionFocusMinutes: 0,
+                positionFocus: nil
+            )
+            expect(tactical.setPracticePlan(plan, for: organisationID, at: calendar))
+            expectEqual(tactical.consumePracticePlan(for: organisationID, at: calendar), plan.effects)
+            expectEqual(tactical.consumePracticePlan(for: organisationID, at: calendar), nil)
+            expectEqual(
+                try JSONDecoder.stable().decode(
+                    TacticalState.self,
+                    from: JSONEncoder.stable().encode(tactical)
+                ),
+                tactical
+            )
+        }
+
+        test("observer film aggregates distinct games and expires after its bounded window") {
+            let observerID = UUID(uuidString: "00000000-0000-0000-0000-000000000461")!
+            let opponentID = UUID(uuidString: "00000000-0000-0000-0000-000000000462")!
+            let firstGameID = UUID(uuidString: "00000000-0000-0000-0000-000000000463")!
+            let secondGameID = UUID(uuidString: "00000000-0000-0000-0000-000000000464")!
+            let weekOne = CalendarState(season: 0, week: 1)
+            var tactical = TacticalState(calendar: weekOne)
+            expect(tactical.recordObservation(OpponentObservation(
+                observerID: observerID,
+                opponentID: opponentID,
+                observedThrough: weekOne,
+                sourceGameIDs: [firstGameID],
+                confidence: 25,
+                sampleSize: 1,
+                passRate: 70,
+                turnoverRate: 20
+            )))
+
+            tactical.advance(to: CalendarState(season: 0, week: 2))
+            expect(tactical.recordObservation(OpponentObservation(
+                observerID: observerID,
+                opponentID: opponentID,
+                observedThrough: tactical.calendar,
+                sourceGameIDs: [secondGameID],
+                confidence: 25,
+                sampleSize: 1,
+                passRate: 30,
+                turnoverRate: 40
+            )))
+            guard let merged = tactical.observation(
+                for: observerID,
+                opponentID: opponentID,
+                at: tactical.calendar
+            ) else {
+                expect(false, "merged opponent film disappeared")
+                return
+            }
+            expectEqual(merged.sampleSize, 2)
+            expectEqual(merged.confidence, 50)
+            expectEqual(merged.passRate, 50)
+            expectEqual(merged.turnoverRate, 30)
+            expectEqual(merged.sourceGameIDs.count, 2)
+            expectEqual(
+                try JSONDecoder.stable().decode(
+                    TacticalState.self,
+                    from: JSONEncoder.stable().encode(tactical)
+                ),
+                tactical
+            )
+
+            tactical.advance(to: CalendarState(season: 0, week: 7))
+            expectEqual(
+                tactical.observation(
+                    for: observerID,
+                    opponentID: opponentID,
+                    at: tactical.calendar
+                ),
+                nil,
+                "film older than the bounded window must not become hidden truth"
+            )
+        }
+
         test("the weekly scheduler consumes plans and records a review") {
             var state = GameState.bootstrap(seed: 94_051)
             guard let game = state.competition.currentSchedule.games.first(where: {
@@ -157,6 +242,44 @@ func runTacticalStateTests() {
                 expect(true)
             } else {
                 expect(false, "tactical intent did not return a tactical result")
+            }
+        }
+
+        test("personnel overrides persist through the intent boundary and stay roster-scoped") {
+            let state = GameState.bootstrap(seed: 94_054)
+            guard let organisationID = state.programmes.ids.sorted(by: {
+                $0.uuidString < $1.uuidString
+            }).first, let programme = state.programmes[organisationID] else {
+                expect(false, "bootstrap did not produce a programme")
+                return
+            }
+            guard let quarterback = programme.rosterIDs.compactMap({ state.players[$0] })
+                .first(where: { $0.position == .quarterback }) else {
+                expect(false, "programme did not produce a quarterback")
+                return
+            }
+            let plan = PersonnelPlan(
+                organisationID: organisationID,
+                calendar: state.calendar,
+                overrides: [DepthChartOverride(
+                    position: .quarterback,
+                    playerIDs: [quarterback.id]
+                )]
+            )
+            let resolved = try IntentResolver.resolve(
+                .personnelPlan(PersonnelPlanRequest(plan: plan)),
+                in: state
+            )
+            expectEqual(
+                resolved.state.tactical.personnelPlan(
+                    for: organisationID, at: state.calendar
+                ),
+                plan
+            )
+            if case let .tacticalUpdated(result) = resolved.result {
+                expectEqual(result.kind, .personnelPlan)
+            } else {
+                expect(false, "personnel intent returned the wrong receipt")
             }
         }
     }

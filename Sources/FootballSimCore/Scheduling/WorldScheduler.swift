@@ -65,6 +65,9 @@ public struct WorldTransition: Codable, Sendable, Equatable {
 }
 
 public enum WorldSchedulerError: Error, Equatable {
+    /// A user-owned controlled fixture must be entered through `CareerSession` so its
+    /// resumable MatchSessionState is persisted instead of being silently abstracted.
+    case controlledMatchRequired(UUID)
     case integrityFailed([IntegrityIssue])
     case scheduledGameMissing(UUID)
     case scheduledGameResultMissing(UUID)
@@ -83,8 +86,208 @@ public enum WorldSchedulerError: Error, Equatable {
 public enum WorldScheduler {
     public static let version = 1
     public static let steps: [WorldStep] = WorldStep.allCases
+    private static let missingFixtureID = UUID(uuidString: "00000000-0000-4000-8000-000000000000")!
+
+    /// Installs a resumable controlled fixture before the weekly transaction can abstract it.
+    /// Calling this repeatedly is idempotent: an existing checkpoint is returned unchanged.
+    public static func prepareControlledMatch(in state: GameState) throws -> GameState {
+        guard state.matchSession == nil,
+              let controlledID = controlledOrganisationID(in: state),
+              let game = state.competition.currentSchedule.games.first(where: {
+                  $0.season == state.calendar.season
+                      && $0.week == state.calendar.week
+                      && $0.result == nil
+                      && ($0.homeID == controlledID || $0.awayID == controlledID)
+              }) else {
+            return state
+        }
+
+        var next = state
+        next.matchSession = makeMatchSession(for: game, controlledID: controlledID, in: &next)
+        let integrity = WorldIntegrity.check(next)
+        guard integrity.isValid else {
+            throw WorldSchedulerError.integrityFailed(integrity.issues)
+        }
+        return next
+    }
+
+    /// Commits one completed controlled fixture exactly once. The weekly scheduler remains the
+    /// owner of all later phases; its next invocation sees this result and processes only the
+    /// remaining due games before standings, records, and the week snapshot.
+    public static func finalizeControlledMatch(
+        _ completion: MatchCompletionReceipt,
+        in state: GameState
+    ) throws -> GameState {
+        guard let session = state.matchSession,
+              session.completed,
+              let fixtureID = session.fixtureID,
+              completion.evidence.fixtureID == fixtureID,
+              session.completion == completion,
+              let game = state.competition.currentSchedule.games.first(where: {
+                  $0.id == fixtureID
+              }), game.result == nil,
+              completion.record.tier == game.tier else {
+            throw WorldSchedulerError.scheduledGameMissing(
+                completion.evidence.fixtureID ?? missingFixtureID
+            )
+        }
+        let summary = DetailedGameSummaryBuilder.make(
+            record: completion.record,
+            homeParticipantIDs: session.home.offense.map(\.id) + session.home.defense.map(\.id),
+            awayParticipantIDs: session.away.offense.map(\.id) + session.away.defense.map(\.id),
+            evidence: completion.evidence
+        )
+        var next = state
+        do {
+            _ = try next.competition.currentSchedule.recordResults([
+                ScheduledGameResult(gameID: fixtureID, summary: summary)
+            ])
+        } catch let error as ScheduleResultRecordingError {
+            throw WorldSchedulerError.scheduleResultRecordingFailed(error)
+        }
+        next.matchSession = nil
+        TacticalPlanSystem.recordReviews(
+            for: game,
+            result: summary,
+            at: state.calendar,
+            in: &next.tactical
+        )
+        var emittedEvents: [DomainEvent] = []
+        try appendEvents(
+            payloads: [.gameCompleted(
+                gameID: game.id,
+                homeID: game.homeID,
+                awayID: game.awayID,
+                stage: game.stage,
+                homeScore: summary.homeScore,
+                awayScore: summary.awayScore
+            )],
+            occurredAt: state.calendar,
+            to: &next,
+            emittedEvents: &emittedEvents
+        )
+        next.competition = CompetitionReducer.rebuildStandings(from: next)
+        next.competition = CompetitionReducer.rebuildStatistics(from: next)
+        let integrity = WorldIntegrity.check(next)
+        guard integrity.isValid else {
+            throw WorldSchedulerError.integrityFailed(integrity.issues)
+        }
+        return next
+    }
+
+    private static func controlledOrganisationID(in state: GameState) -> UUID? {
+        if let college = state.career.college { return college.programmeID }
+        guard let job = state.careerArc.currentJob, job.tier == .professional else { return nil }
+        return job.organisationID
+    }
+
+    private static func fullyDelegatedCollegeCareer(in state: GameState) -> Bool {
+        guard let control = state.career.college else { return false }
+        return CollegeCareerResponsibility.allCases.allSatisfy { responsibility in
+            if case .delegated = control.responsibilityOwners[responsibility] {
+                return true
+            }
+            return false
+        }
+    }
+
+    private static func makeMatchSession(
+        for game: ScheduledGame,
+        controlledID: UUID,
+        in state: inout GameState
+    ) -> MatchSessionState {
+        let homeRoster = playableRoster(for: game.homeID, tier: game.tier, in: state)
+        let awayRoster = playableRoster(for: game.awayID, tier: game.tier, in: state)
+        let homeUnavailable = unavailableIDs(for: game.homeID, tier: game.tier, in: state)
+        let awayUnavailable = unavailableIDs(for: game.awayID, tier: game.tier, in: state)
+        let homePersonnel = DepthChart.personnel(
+            roster: homeRoster,
+            plan: state.tactical.personnelPlan(for: game.homeID, at: state.calendar),
+            unavailableIDs: homeUnavailable
+        )
+        let awayPersonnel = DepthChart.personnel(
+            roster: awayRoster,
+            plan: state.tactical.personnelPlan(for: game.awayID, at: state.calendar),
+            unavailableIDs: awayUnavailable
+        )
+        let homePlan = TacticalPlanSystem.plan(
+            for: game.homeID,
+            against: game.awayID,
+            at: state.calendar,
+            in: state,
+            tactical: &state.tactical
+        )
+        let awayPlan = TacticalPlanSystem.plan(
+            for: game.awayID,
+            against: game.homeID,
+            at: state.calendar,
+            in: state,
+            tactical: &state.tactical
+        )
+        return MatchReducer.start(
+            tier: game.tier,
+            stage: game.stage,
+            home: homePersonnel,
+            away: awayPersonnel,
+            seed: SeededRandom.derive(
+                from: state.league.seed,
+                scope: .game,
+                identifier: game.id
+            ),
+            controlledSide: game.homeID == controlledID ? .home : .away,
+            homePlan: homePlan,
+            awayPlan: awayPlan,
+            fixtureID: game.id
+        )
+    }
+
+    private static func playableRoster(
+        for organisationID: UUID,
+        tier: Tier,
+        in state: GameState
+    ) -> [Player] {
+        let ids: [UUID]
+        switch tier {
+        case .college: ids = state.programmes[organisationID]?.rosterIDs ?? []
+        case .pro: ids = state.proTeams[organisationID]?.rosterIDs ?? []
+        }
+        return ids.compactMap { state.players[$0] }
+    }
+
+    private static func unavailableIDs(
+        for organisationID: UUID,
+        tier: Tier,
+        in state: GameState
+    ) -> Set<UUID> {
+        let roster = playableRoster(for: organisationID, tier: tier, in: state)
+        return Set(roster.compactMap { player in
+            guard state.people.playerLifecycle[player.id]?.isAvailable == true else { return player.id }
+            if tier == .college,
+               !CollegeRedshirtSystem.allowsAutomaticAppearance(
+                   playerID: player.id,
+                   programmeID: organisationID,
+                   in: state
+               ) {
+                return player.id
+            }
+            return nil
+        })
+    }
 
     public static func advanceWeek(_ state: GameState) throws -> WorldTransition {
+        if let session = state.matchSession, let fixtureID = session.fixtureID {
+            throw WorldSchedulerError.controlledMatchRequired(fixtureID)
+        }
+        if let controlledID = controlledOrganisationID(in: state),
+           let game = state.competition.currentSchedule.games.first(where: {
+               $0.season == state.calendar.season
+                   && $0.week == state.calendar.week
+                   && $0.result == nil
+                   && ($0.homeID == controlledID || $0.awayID == controlledID)
+           }),
+           !fullyDelegatedCollegeCareer(in: state) {
+            throw WorldSchedulerError.controlledMatchRequired(game.id)
+        }
         var nextState = state
         let completed = state.calendar
         let next = completed.advancedWeek()
@@ -216,7 +419,7 @@ public enum WorldScheduler {
                 let transition = DevelopmentSystem.practice(
                     at: completed,
                     in: nextState,
-                    tactical: nextState.tactical
+                    tactical: &nextState.tactical
                 )
                 nextState.players = transition.players
                 nextState.people = transition.people
@@ -268,13 +471,15 @@ public enum WorldScheduler {
                         tactical: &nextState.tactical
                     )
                 }
+                let personnelPlans = nextState.tactical.personnelPlansByOrganisation
                 let resultRecords = dueGames.map { game in
                     ScheduledGameResult(
                         gameID: game.id,
                         summary: AbstractGameSimulator.play(
                             game,
                             in: nextState,
-                            tacticalPlans: tacticalPlans
+                            tacticalPlans: tacticalPlans,
+                            personnelPlans: personnelPlans
                         )
                     )
                 }

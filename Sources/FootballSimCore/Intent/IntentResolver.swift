@@ -5,6 +5,7 @@ public enum CoachIntent: Codable, Sendable, Equatable {
     case recruiting(RecruitingActionRequest)
     case tacticalPlan(TacticalPlanRequest)
     case practicePlan(TacticalPracticePlanRequest)
+    case personnelPlan(PersonnelPlanRequest)
     case career(CareerArcRequest)
     case proManagement(ProManagementRequest)
     case proMarket(ProMarketRequest)
@@ -12,8 +13,10 @@ public enum CoachIntent: Codable, Sendable, Equatable {
 
 public enum IntentResolutionError: Error, Equatable {
     case unresolvedMandatoryDecisions(count: Int)
+    case unresolvedWeeklyPreparation([TacticalPreparationRequirement])
     case recruitingUnavailableDuringPortal
     case tacticalPlanUnavailable
+    case personnelPlanUnavailable
     case tacticalCalendarMismatch
     case careerArcUnavailable
     case careerCalendarMismatch
@@ -51,6 +54,14 @@ public struct TacticalPracticePlanRequest: Codable, Sendable, Equatable {
     }
 }
 
+public struct PersonnelPlanRequest: Codable, Sendable, Equatable {
+    public let plan: PersonnelPlan
+
+    public init(plan: PersonnelPlan) {
+        self.plan = plan
+    }
+}
+
 public struct CareerArcRequest: Codable, Sendable, Equatable {
     public let calendar: CalendarState
     public let action: CareerArcAction
@@ -64,6 +75,7 @@ public struct CareerArcRequest: Codable, Sendable, Equatable {
 public enum TacticalUpdateKind: String, Codable, Sendable, Equatable {
     case gamePlan
     case practicePlan
+    case personnelPlan
 }
 
 public struct TacticalIntentResult: Codable, Sendable, Equatable {
@@ -164,6 +176,16 @@ public enum IntentResolver {
                 throw IntentResolutionError.unresolvedMandatoryDecisions(
                     count: state.pending.mandatoryDecisions.count
                 )
+            }
+            if let organisationID = controlledOrganisationID(in: state),
+               currentUnplayedGame(for: organisationID, in: state) != nil {
+                let missing = state.tactical.missingPreparation(
+                    for: organisationID,
+                    at: state.calendar
+                )
+                guard missing.isEmpty else {
+                    throw IntentResolutionError.unresolvedWeeklyPreparation(missing)
+                }
             }
             let transition = try WorldScheduler.advanceWeek(state)
             return ResolvedIntent(
@@ -271,17 +293,60 @@ public enum IntentResolver {
                 ))
             )
 
+        case let .personnelPlan(request):
+            guard request.plan.calendar == state.calendar else {
+                throw IntentResolutionError.tacticalCalendarMismatch
+            }
+            let organisationID = request.plan.organisationID
+            let rosterIDs: [UUID]
+            if let programme = state.programmes[organisationID] {
+                rosterIDs = programme.rosterIDs
+            } else if let team = state.proTeams[organisationID] {
+                rosterIDs = team.rosterIDs
+            } else {
+                throw IntentResolutionError.personnelPlanUnavailable
+            }
+            let roster = rosterIDs.compactMap { state.players[$0] }
+            let rosterByID = Dictionary(uniqueKeysWithValues: roster.map { ($0.id, $0) })
+            guard request.plan.overrides.allSatisfy({ override in
+                override.playerIDs.allSatisfy { id in
+                    guard let player = rosterByID[id] else { return false }
+                    return player.position == override.position
+                }
+            }) else {
+                throw IntentResolutionError.personnelPlanUnavailable
+            }
+            var nextState = state
+            guard nextState.tactical.setPersonnelPlan(request.plan) else {
+                throw IntentResolutionError.personnelPlanUnavailable
+            }
+            let integrity = WorldIntegrity.check(nextState)
+            guard integrity.isValid else {
+                throw IntentResolutionError.integrityFailed(issueCount: integrity.issues.count)
+            }
+            return ResolvedIntent(
+                state: nextState,
+                result: .tacticalUpdated(TacticalIntentResult(
+                    organisationID: organisationID,
+                    calendar: request.plan.calendar,
+                    kind: .personnelPlan
+                ))
+            )
+
         case let .career(request):
             guard request.calendar == state.calendar else {
                 throw IntentResolutionError.careerCalendarMismatch
             }
-            guard state.career.college != nil else {
+            guard state.careerArc.currentJob != nil else {
                 throw IntentResolutionError.careerArcUnavailable
             }
             var nextState = state
             let applied: Bool
             switch request.action {
             case let .acceptOpportunity(opportunityID):
+                guard state.career.college != nil else {
+                    throw IntentResolutionError.careerArcUnavailable
+                }
                 applied = nextState.careerArc.acceptOpportunity(
                     id: opportunityID,
                     at: request.calendar
@@ -582,4 +647,20 @@ public enum IntentResolver {
         }
     }
 
+    private static func controlledOrganisationID(in state: GameState) -> UUID? {
+        state.career.college?.programmeID
+            ?? (state.careerArc.currentJob?.tier == .professional
+                ? state.careerArc.currentJob?.organisationID
+                : nil)
+    }
+
+    private static func currentUnplayedGame(for organisationID: UUID, in state: GameState)
+        -> ScheduledGame? {
+        state.competition.currentSchedule.games.first {
+            $0.season == state.calendar.season
+                && $0.week == state.calendar.week
+                && $0.result == nil
+                && ($0.homeID == organisationID || $0.awayID == organisationID)
+        }
+    }
 }

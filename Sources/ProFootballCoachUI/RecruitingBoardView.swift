@@ -84,6 +84,8 @@ public struct RecruitingBoardView: View {
                 Label("Continue", systemImage: "forward.end.fill")
             }
                 .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
+                .disabled(!model.canContinue)
+                .accessibilityHint(model.continueReason ?? "")
         }
         .padding(.horizontal, CoachWorldTokens.Space.sm)
         .frame(height: RecruitingMetric.worldStripHeight)
@@ -164,6 +166,8 @@ public struct RecruitingBoardView: View {
             route("Career", screen: .careerHub)
             Button("Continue", action: onContinue)
                 .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
+                .disabled(!model.canContinue)
+                .accessibilityHint(model.continueReason ?? "")
         }
         .padding(CoachWorldTokens.Space.md)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -475,7 +479,7 @@ public struct RecruitingBoardView: View {
             ContentUnavailableView(
                 "No prospect selected",
                 systemImage: "person.crop.rectangle",
-                description: Text("Select a prospect to review the staff evaluation.")
+                description: Text("Select a prospect to review the system evaluation.")
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(palette.page.color)
@@ -516,7 +520,7 @@ public struct RecruitingBoardView: View {
 
     private func evaluation(_ prospect: RecruitingBoardReadModel.Prospect) -> some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            Text("STAFF EVALUATION")
+            Text("SYSTEM EVALUATION")
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                 .foregroundStyle(palette.collegeIdentity.color)
             Text(prospect.evaluation.verdict)
@@ -547,6 +551,27 @@ public struct RecruitingBoardView: View {
                 .font(CoachWorldTokens.TypeRole.body.weight(.black))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func actionTitle(_ choice: CoachWorldActionChoice) -> some View {
+        Text(choice.title)
+            .font(CoachWorldTokens.TypeRole.body.weight(.black))
+    }
+
+    private func actionConsequence(_ choice: CoachWorldActionChoice) -> some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
+            Text(choice.consequence)
+                .font(CoachWorldTokens.TypeRole.caption)
+                .foregroundStyle(palette.contentSecondary.color)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+            if let reason = choice.unavailableReason {
+                Text(reason)
+                    .font(CoachWorldTokens.TypeRole.caption)
+                    .foregroundStyle(palette.contentQuiet.color)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 
     private func relationship(_ prospect: RecruitingBoardReadModel.Prospect) -> some View {
@@ -591,18 +616,13 @@ public struct RecruitingBoardView: View {
                     } label: {
                         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                             HStack {
-                                Text(choice.title)
-                                    .font(CoachWorldTokens.TypeRole.body.weight(.black))
+                                actionTitle(choice)
                                 Spacer()
                                 Text(choice.cost)
                                     .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
                                     .foregroundStyle(palette.collegeIdentity.color)
                             }
-                            Text(choice.consequence)
-                                .font(CoachWorldTokens.TypeRole.caption)
-                                .foregroundStyle(palette.contentSecondary.color)
-                                .multilineTextAlignment(.leading)
-                                .fixedSize(horizontal: false, vertical: true)
+                            actionConsequence(choice)
                         }
                         .padding(.horizontal, CoachWorldTokens.Space.sm)
                         .frame(
@@ -628,6 +648,7 @@ public struct RecruitingBoardView: View {
                     .accessibilityLabel(
                         "\(choice.title). Cost: \(choice.cost). Consequence: "
                             + "\(choice.consequence)"
+                            + (choice.unavailableReason.map { ". Unavailable: \($0)" } ?? "")
                     )
                 }
             }

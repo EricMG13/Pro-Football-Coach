@@ -16,10 +16,13 @@ public enum AbstractGameSimulator {
     public static func play(
         _ game: ScheduledGame,
         in state: GameState,
-        tacticalPlans: [UUID: TacticalPlan]
+        tacticalPlans: [UUID: TacticalPlan],
+        personnelPlans: [UUID: PersonnelPlan] = [:]
     ) -> GameSummary {
-        let home = profile(for: game.homeID, tier: game.tier, in: state)
-        let away = profile(for: game.awayID, tier: game.tier, in: state)
+        let home = profile(for: game.homeID, tier: game.tier, in: state,
+                           personnelPlan: personnelPlans[game.homeID])
+        let away = profile(for: game.awayID, tier: game.tier, in: state,
+                           personnelPlan: personnelPlans[game.awayID])
         let homePlan = tacticalPlans[game.homeID] ?? .balanced
         let awayPlan = tacticalPlans[game.awayID] ?? .balanced
         var rng = SeededRandom(seed: SeededRandom.derive(
@@ -44,7 +47,11 @@ public enum AbstractGameSimulator {
             deviation: deviation + awayPlan.scoreDeviationAdjustment(),
             using: &rng
         )
-        if homeScore == awayScore {
+        // Professional regular-season ties are an allowed outcome. College and every
+        // postseason stage continue through bounded overtime so their summaries always
+        // identify a winner.
+        if homeScore == awayScore,
+           game.tier == .college || game.stage != .regularSeason {
             let overtimePoints = rng.chance(CompetitionRules.overtimeFieldGoalProbability)
                 ? CompetitionRules.overtimeFieldGoalPoints
                 : CompetitionRules.overtimeTouchdownPoints
@@ -83,7 +90,12 @@ public enum AbstractGameSimulator {
         )
     }
 
-    private static func profile(for id: UUID, tier: Tier, in state: GameState) -> TeamProfile {
+    private static func profile(
+        for id: UUID,
+        tier: Tier,
+        in state: GameState,
+        personnelPlan: PersonnelPlan?
+    ) -> TeamProfile {
         let rosterIDs: [UUID]
         let prestige: Rating
         let scheme: SchemeIdentity
@@ -105,8 +117,17 @@ public enum AbstractGameSimulator {
             prestige = team?.prestige ?? Rating(SharedRules.ratingRange.lowerBound)
             scheme = team?.scheme ?? SchemeIdentity(offense: .proStyle, defense: .fourThree)
         }
-        let roster = rosterIDs.compactMap { id in
+        let availableRoster = rosterIDs.compactMap { id in
             state.people.playerLifecycle[id]?.isAvailable == true ? state.players[id] : nil
+        }
+        let roster: [Player]
+        if let personnelPlan {
+            let resolved = personnelPlan.resolve(roster: availableRoster)
+            let resolvedIDs = Position.allCases.flatMap { resolved[$0] ?? [] }
+            let byID = Dictionary(uniqueKeysWithValues: availableRoster.map { ($0.id, $0) })
+            roster = resolvedIDs.compactMap { byID[$0] }
+        } else {
+            roster = availableRoster
         }
         return TeamProfile(
             roster: roster,

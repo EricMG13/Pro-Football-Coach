@@ -93,6 +93,53 @@ func runDepthChartTests() {
                         DepthChart.derive(roster: roster),
                         "the chart depends on the order the roster arrived in")
         }
+
+        test("personnel overrides persist and fall back when a selected player is unavailable") {
+            let state = GameState.bootstrap(seed: 87_005)
+            let programmeID = state.programmes.ids[0]
+            let roster = state.programmes[programmeID]!.rosterIDs.compactMap { state.players[$0] }
+            let quarterbacks = roster.filter { $0.position == .quarterback }
+            guard quarterbacks.count > 1 else {
+                expect(false, "the fixture has only one quarterback")
+                return
+            }
+            let plan = PersonnelPlan(
+                organisationID: programmeID,
+                calendar: state.calendar,
+                overrides: [DepthChartOverride(
+                    position: .quarterback,
+                    playerIDs: quarterbacks.map(\.id).reversed()
+                )]
+            )
+            let selected = plan.resolve(roster: roster)
+            expectEqual(selected[.quarterback]?.first, quarterbacks.last?.id)
+            let unavailable = Set([quarterbacks.last!.id])
+            let fallback = plan.resolve(roster: roster, unavailableIDs: unavailable)
+            expectEqual(fallback[.quarterback]?.first, quarterbacks.dropLast().last?.id)
+            expectEqual(
+                try JSONDecoder.stable().decode(
+                    PersonnelPlan.self,
+                    from: JSONEncoder.stable().encode(plan)
+                ),
+                plan
+            )
+            var corrupted = try JSONSerialization.jsonObject(
+                with: JSONEncoder.stable().encode(DepthChartOverride(
+                    position: .quarterback,
+                    playerIDs: [quarterbacks[0].id]
+                ))
+            ) as! [String: Any]
+            corrupted["playerIDs"] = [quarterbacks[0].id.uuidString, quarterbacks[0].id.uuidString]
+            do {
+                _ = try JSONDecoder().decode(
+                    DepthChartOverride.self,
+                    from: JSONSerialization.data(withJSONObject: corrupted)
+                )
+                expect(false, "duplicate personnel IDs decoded")
+            } catch {
+                expect(true)
+            }
+        }
     }
 }
 

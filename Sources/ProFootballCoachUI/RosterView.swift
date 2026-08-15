@@ -112,6 +112,8 @@ public struct RosterView: View {
                 Label("Continue", systemImage: "forward.end.fill")
             }
             .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
+            .disabled(!model.canContinue)
+            .accessibilityHint(model.continueReason ?? "")
         }
         .padding(.horizontal, CoachWorldTokens.Space.sm)
         .frame(height: RosterMetric.worldStripHeight)
@@ -161,10 +163,10 @@ public struct RosterView: View {
 
     private var personnelRoutes: some View {
         HStack(spacing: .zero) {
-            personnelRoute("Roster", isCurrent: true)
-            personnelRoute("Depth")
-            personnelRoute("Development")
-            personnelRoute("Staff")
+            personnelRoute("Roster", screen: .roster, isCurrent: true)
+            personnelRoute("Depth", screen: .depthChart)
+            personnelRoute("Development", screen: .developmentPlan)
+            personnelRoute("Staff", screen: .staffRoom)
         }
         .padding(.horizontal, CoachWorldTokens.Space.sm)
         .background(palette.page.color)
@@ -186,8 +188,12 @@ public struct RosterView: View {
         )
     }
 
-    private func personnelRoute(_ title: String, isCurrent: Bool = false) -> some View {
-        Button(action: { if isCurrent { onNavigate(.roster) } }) {
+    private func personnelRoute(
+        _ title: String,
+        screen: CoachWorldScreenID,
+        isCurrent: Bool = false
+    ) -> some View {
+        Button(action: { onNavigate(screen) }) {
             Text(title)
                 .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
                 .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
@@ -202,7 +208,7 @@ public struct RosterView: View {
                     .accessibilityHidden(true)
             }
         }
-        .disabled(!isCurrent)
+        .disabled(!isCurrent && screen != .depthChart)
         .accessibilityAddTraits(isCurrent ? .isSelected : [])
     }
 
@@ -322,7 +328,7 @@ public struct RosterView: View {
                        width: RosterMetric.positionWidth)
             sortButton("OVR", accessibilityName: "Overall", field: .overall,
                        width: RosterMetric.ratingWidth)
-            sortButton("DEV", accessibilityName: "Development", field: .development,
+            sortButton("DEV Δ", accessibilityName: "Development change", field: .development,
                        width: RosterMetric.ratingWidth)
             tableHeading("FIT", width: RosterMetric.fitWidth)
             sortButton("COND", accessibilityName: "Condition", field: .condition,
@@ -395,7 +401,7 @@ public struct RosterView: View {
                 Text(player.position)
                     .frame(width: RosterMetric.positionWidth)
                 ratingCell(player.overall)
-                ratingCell(player.development)
+                developmentDeltaCell(player.developmentDelta)
                 Text(player.schemeFit)
                     .frame(width: RosterMetric.fitWidth)
                 ratingCell(player.condition)
@@ -432,6 +438,14 @@ public struct RosterView: View {
         Text("\(rating)")
             .monospacedDigit()
             .foregroundStyle(ratingColor(rating))
+            .frame(width: RosterMetric.ratingWidth)
+    }
+
+    private func developmentDeltaCell(_ delta: Int?) -> some View {
+        let text = delta.map { $0 > 0 ? "+\($0)" : "\($0)" } ?? "—"
+        return Text(text)
+            .monospacedDigit()
+            .foregroundStyle(developmentDeltaColor(delta))
             .frame(width: RosterMetric.ratingWidth)
     }
 
@@ -550,7 +564,7 @@ public struct RosterView: View {
                         Text("\(player.academicYear) · \(player.rosterRole)")
                             .foregroundStyle(palette.contentSecondary.color)
                         accessibleRating("OVR", player.overall)
-                        accessibleRating("DEV", player.development)
+                        accessibleDevelopmentDelta(player.developmentDelta)
                         HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Space.xxs) {
                             Text("FIT")
                                 .foregroundStyle(palette.contentSecondary.color)
@@ -592,6 +606,16 @@ public struct RosterView: View {
         }
     }
 
+    private func accessibleDevelopmentDelta(_ delta: Int?) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Space.xxs) {
+            Text("DEV change")
+                .foregroundStyle(palette.contentSecondary.color)
+            Text(delta.map { $0 > 0 ? "+\($0)" : "\($0)" } ?? "No recorded change")
+                .monospacedDigit()
+                .foregroundStyle(developmentDeltaColor(delta))
+        }
+    }
+
     private var accessibleWorldRoutes: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
             Text("WORLD")
@@ -608,6 +632,8 @@ public struct RosterView: View {
             route("Career", screen: .careerHub)
             Button("Continue", action: onContinue)
                 .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
+                .disabled(!model.canContinue)
+                .accessibilityHint(model.continueReason ?? "")
         }
         .padding(CoachWorldTokens.Space.md)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -629,6 +655,13 @@ public struct RosterView: View {
         return palette.stateNegative.color
     }
 
+    private func developmentDeltaColor(_ delta: Int?) -> Color {
+        guard let delta else { return palette.contentSecondary.color }
+        if delta > 0 { return palette.statePositive.color }
+        if delta < 0 { return palette.stateNegative.color }
+        return palette.contentSecondary.color
+    }
+
     private func availabilityColor(_ availability: String) -> Color {
         availability == "Available"
             ? palette.statePositive.color
@@ -638,7 +671,7 @@ public struct RosterView: View {
     private func playerAccessibilityLabel(_ player: RosterReadModel.PlayerRow) -> String {
         "Number \(player.number), \(player.person.name), \(player.position), "
             + "\(player.academicYear), \(player.rosterRole), overall \(player.overall), "
-            + "development \(player.development), fit \(player.schemeFit), "
+            + "development change \(player.developmentDelta.map { $0 > 0 ? "+\($0)" : "\($0)" } ?? "none"), fit \(player.schemeFit), "
             + "condition \(player.condition), \(player.availability)"
     }
 

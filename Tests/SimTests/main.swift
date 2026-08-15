@@ -27,6 +27,10 @@ if CommandLine.arguments.contains("--catalog") {
     runPortalSchedulerTests()
 } else if CommandLine.arguments.contains("--career-control") {
     runCareerControlTests()
+} else if CommandLine.arguments.contains("--weekly-authority") {
+    runWeeklyAuthorityTests()
+} else if CommandLine.arguments.contains("--professional-career-session") {
+    runProfessionalCareerSessionTests()
 } else if CommandLine.arguments.contains("--career-arc") {
     runCareerArcTests()
 } else if CommandLine.arguments.contains("--pro-management") {
@@ -57,6 +61,11 @@ if CommandLine.arguments.contains("--catalog") {
     runTacticalManagementTests()
 } else if CommandLine.arguments.contains("--tactical-state") {
     runTacticalStateTests()
+} else if CommandLine.arguments.contains("--match-reducer") {
+    runMatchReducerTests()
+} else if CommandLine.arguments.contains("--engine") {
+    runEngineTests()
+    runGameLoopTests()
 } else if CommandLine.arguments.contains("--m3-soak") {
     runM3CollegeSoakTests()
 } else if CommandLine.arguments.contains("--portal-policy") {
@@ -165,6 +174,7 @@ if CommandLine.arguments.contains("--catalog") {
     runCareerPortalDecisionTests()
     runTacticalManagementTests()
     runTacticalStateTests()
+    runMatchReducerTests()
     runPortalContractTests()
     runEventLedgerBatchTests()
     runJerseyNumberTests()

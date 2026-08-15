@@ -1,3 +1,5 @@
+import FootballSimCore
+
 public enum CoachWorldDataProvenance: String, Sendable, Equatable {
     case simulationSnapshot
     case sample
@@ -101,19 +103,22 @@ public struct CoachWorldActionChoice: Sendable, Equatable {
     public let cost: String
     public let consequence: String
     public let isAvailable: Bool
+    public let unavailableReason: String?
 
     public init(
         intentID: CoachWorldIntentID,
         title: String,
         cost: String,
         consequence: String,
-        isAvailable: Bool = true
+        isAvailable: Bool = true,
+        unavailableReason: String? = nil
     ) {
         self.intentID = intentID
         self.title = title
         self.cost = cost
         self.consequence = consequence
         self.isAvailable = isAvailable
+        self.unavailableReason = isAvailable ? nil : unavailableReason
     }
 }
 
@@ -297,6 +302,604 @@ public struct CoachingHQReadModel: Sendable, Equatable {
     }
 }
 
+public struct GamePlanReadModel: Sendable, Equatable {
+    public struct Option: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let title: String
+        public let plan: TacticalPlan
+        public let consequence: String
+
+        public init(id: String, title: String, plan: TacticalPlan, consequence: String) {
+            self.id = id
+            self.title = title
+            self.plan = plan
+            self.consequence = consequence
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let team: CoachWorldTeamReference
+    public let opponent: CoachWorldTeamReference?
+    public let weekLabel: String
+    public let currentPlan: TacticalPlan?
+    public let options: [Option]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        team: CoachWorldTeamReference,
+        opponent: CoachWorldTeamReference?,
+        weekLabel: String,
+        currentPlan: TacticalPlan?,
+        options: [Option]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.team = team
+        self.opponent = opponent
+        self.weekLabel = weekLabel
+        self.currentPlan = currentPlan
+        self.options = options
+    }
+}
+
+public struct PracticePlanReadModel: Sendable, Equatable {
+    public struct Option: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let title: String
+        public let plan: TacticalPracticePlan
+        public let consequence: String
+
+        public init(
+            id: String,
+            title: String,
+            plan: TacticalPracticePlan,
+            consequence: String
+        ) {
+            self.id = id
+            self.title = title
+            self.plan = plan
+            self.consequence = consequence
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let team: CoachWorldTeamReference
+    public let weekLabel: String
+    public let currentPlan: TacticalPracticePlan?
+    public let options: [Option]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        team: CoachWorldTeamReference,
+        weekLabel: String,
+        currentPlan: TacticalPracticePlan?,
+        options: [Option]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.team = team
+        self.weekLabel = weekLabel
+        self.currentPlan = currentPlan
+        self.options = options
+    }
+}
+
+public struct DepthChartReadModel: Sendable, Equatable {
+    public struct Slot: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let playerID: String
+        public let playerName: String
+        public let availability: String
+        public let isStarter: Bool
+        public let isUnavailable: Bool
+        public let isOverride: Bool
+
+        public init(
+            id: String,
+            playerID: String,
+            playerName: String,
+            availability: String,
+            isStarter: Bool,
+            isUnavailable: Bool,
+            isOverride: Bool
+        ) {
+            self.id = id
+            self.playerID = playerID
+            self.playerName = playerName
+            self.availability = availability
+            self.isStarter = isStarter
+            self.isUnavailable = isUnavailable
+            self.isOverride = isOverride
+        }
+    }
+
+    public struct PositionGroup: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let title: String
+        public let slots: [Slot]
+
+        public init(id: String, title: String, slots: [Slot]) {
+            self.id = id
+            self.title = title
+            self.slots = slots
+        }
+    }
+
+    public struct Option: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let title: String
+        public let plan: PersonnelPlan
+        public let consequence: String
+
+        public init(id: String, title: String, plan: PersonnelPlan, consequence: String) {
+            self.id = id
+            self.title = title
+            self.plan = plan
+            self.consequence = consequence
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let team: CoachWorldTeamReference
+    public let weekLabel: String
+    public let currentPlan: PersonnelPlan?
+    public let positions: [PositionGroup]
+    public let options: [Option]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        team: CoachWorldTeamReference,
+        weekLabel: String,
+        currentPlan: PersonnelPlan?,
+        positions: [PositionGroup],
+        options: [Option]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.team = team
+        self.weekLabel = weekLabel
+        self.currentPlan = currentPlan
+        self.positions = positions
+        self.options = options
+    }
+}
+
+public struct CareerHubReadModel: Sendable, Equatable {
+    public struct JobRow: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let team: CoachWorldTeamReference
+        public let tier: String
+        public let started: String
+        public let ended: String?
+        public let reason: String?
+
+        public init(
+            id: String,
+            team: CoachWorldTeamReference,
+            tier: String,
+            started: String,
+            ended: String? = nil,
+            reason: String? = nil
+        ) {
+            self.id = id
+            self.team = team
+            self.tier = tier
+            self.started = started
+            self.ended = ended
+            self.reason = reason
+        }
+    }
+
+    public struct OpportunityRow: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let team: CoachWorldTeamReference
+        public let tier: String
+        public let offered: String
+        public let expires: String
+        public let prestige: Int
+        public let rationale: String
+
+        public init(
+            id: String,
+            team: CoachWorldTeamReference,
+            tier: String,
+            offered: String,
+            expires: String,
+            prestige: Int,
+            rationale: String
+        ) {
+            self.id = id
+            self.team = team
+            self.tier = tier
+            self.offered = offered
+            self.expires = expires
+            self.prestige = prestige
+            self.rationale = rationale
+        }
+    }
+
+    public struct SupportRow: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let stakeholder: String
+        public let value: Int
+
+        public init(id: String, stakeholder: String, value: Int) {
+            self.id = id
+            self.stakeholder = stakeholder
+            self.value = value
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let world: CoachWorldReference
+    public let coach: CoachWorldPersonReference
+    public let status: String
+    public let currentJob: JobRow?
+    public let history: [JobRow]
+    public let opportunities: [OpportunityRow]
+    public let support: [SupportRow]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        world: CoachWorldReference,
+        coach: CoachWorldPersonReference,
+        status: String,
+        currentJob: JobRow?,
+        history: [JobRow],
+        opportunities: [OpportunityRow],
+        support: [SupportRow]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.world = world
+        self.coach = coach
+        self.status = status
+        self.currentJob = currentJob
+        self.history = history
+        self.opportunities = opportunities
+        self.support = support
+    }
+}
+
+public struct StandingsReadModel: Sendable, Equatable {
+    public struct Row: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let team: CoachWorldTeamReference
+        public let wins: Int
+        public let losses: Int
+        public let ties: Int
+        public let conferenceRecord: String
+        public let pointsFor: Int
+        public let pointsAgainst: Int
+        public let isControlled: Bool
+
+        public init(
+            id: String,
+            team: CoachWorldTeamReference,
+            wins: Int,
+            losses: Int,
+            ties: Int,
+            conferenceRecord: String,
+            pointsFor: Int,
+            pointsAgainst: Int,
+            isControlled: Bool
+        ) {
+            self.id = id
+            self.team = team
+            self.wins = wins
+            self.losses = losses
+            self.ties = ties
+            self.conferenceRecord = conferenceRecord
+            self.pointsFor = pointsFor
+            self.pointsAgainst = pointsAgainst
+            self.isControlled = isControlled
+        }
+
+        public var record: String {
+            ties == 0 ? "\(wins)-\(losses)" : "\(wins)-\(losses)-\(ties)"
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let world: CoachWorldReference
+    public let seasonLabel: String
+    public let weekLabel: String
+    public let tier: String
+    public let rows: [Row]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        world: CoachWorldReference,
+        seasonLabel: String,
+        weekLabel: String,
+        tier: String,
+        rows: [Row]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.world = world
+        self.seasonLabel = seasonLabel
+        self.weekLabel = weekLabel
+        self.tier = tier
+        self.rows = rows
+    }
+}
+
+public struct ScheduleReadModel: Sendable, Equatable {
+    public struct GameRow: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let week: String
+        public let stage: String
+        public let home: CoachWorldTeamReference
+        public let away: CoachWorldTeamReference
+        public let score: String?
+        public let isControlled: Bool
+
+        public init(
+            id: String,
+            week: String,
+            stage: String,
+            home: CoachWorldTeamReference,
+            away: CoachWorldTeamReference,
+            score: String?,
+            isControlled: Bool
+        ) {
+            self.id = id
+            self.week = week
+            self.stage = stage
+            self.home = home
+            self.away = away
+            self.score = score
+            self.isControlled = isControlled
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let world: CoachWorldReference
+    public let seasonLabel: String
+    public let tier: String
+    public let games: [GameRow]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        world: CoachWorldReference,
+        seasonLabel: String,
+        tier: String,
+        games: [GameRow]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.world = world
+        self.seasonLabel = seasonLabel
+        self.tier = tier
+        self.games = games
+    }
+}
+
+/// Authoritative profile for any college programme or professional team.
+///
+/// This is deliberately a compact projection: identities, standings, schedule and rivalry
+/// references all retain the engine UUID so a profile opened from any surface describes the same
+/// organisation rather than a copied map card.
+public struct TeamProgrammeProfileReadModel: Sendable, Equatable {
+    public struct Fixture: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let week: String
+        public let opponent: CoachWorldTeamReference
+        public let isHome: Bool
+        public let score: String?
+        public let stage: String
+
+        public init(
+            id: String,
+            week: String,
+            opponent: CoachWorldTeamReference,
+            isHome: Bool,
+            score: String?,
+            stage: String
+        ) {
+            self.id = id
+            self.week = week
+            self.opponent = opponent
+            self.isHome = isHome
+            self.score = score
+            self.stage = stage
+        }
+    }
+
+    public struct Rival: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let team: CoachWorldTeamReference
+        public let origin: String
+        public let intensity: Int
+
+        public init(id: String, team: CoachWorldTeamReference, origin: String, intensity: Int) {
+            self.id = id
+            self.team = team
+            self.origin = origin
+            self.intensity = intensity
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let world: CoachWorldReference
+    public let team: CoachWorldTeamReference
+    public let cityName: String
+    public let regionName: String
+    public let seasonLabel: String
+    public let tier: String
+    public let conference: String
+    public let division: String?
+    public let venue: CoachWorldVenueReference
+    public let prestige: Int
+    public let record: String
+    public let rank: String?
+    public let rosterCount: Int
+    public let staffCount: Int
+    public let traditions: [String]
+    public let fixtures: [Fixture]
+    public let rivals: [Rival]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        world: CoachWorldReference,
+        team: CoachWorldTeamReference,
+        cityName: String,
+        regionName: String,
+        seasonLabel: String,
+        tier: String,
+        conference: String,
+        division: String?,
+        venue: CoachWorldVenueReference,
+        prestige: Int,
+        record: String,
+        rank: String?,
+        rosterCount: Int,
+        staffCount: Int,
+        traditions: [String],
+        fixtures: [Fixture],
+        rivals: [Rival]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.world = world
+        self.team = team
+        self.cityName = cityName
+        self.regionName = regionName
+        self.seasonLabel = seasonLabel
+        self.tier = tier
+        self.conference = conference
+        self.division = division
+        self.venue = venue
+        self.prestige = prestige
+        self.record = record
+        self.rank = rank
+        self.rosterCount = rosterCount
+        self.staffCount = staffCount
+        self.traditions = Array(traditions.prefix(8))
+        self.fixtures = Array(fixtures.prefix(12))
+        self.rivals = Array(rivals.prefix(8))
+    }
+}
+
+/// Bounded current-world organisation search. Results carry stable IDs so opening one routes to
+/// the same Team/Programme Profile used by map, standings and schedule.
+public struct WorldSearchReadModel: Sendable, Equatable {
+    public struct Result: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let team: CoachWorldTeamReference
+        public let tier: String
+        public let cityName: String
+        public let regionName: String
+
+        public init(
+            id: String,
+            team: CoachWorldTeamReference,
+            tier: String,
+            cityName: String,
+            regionName: String
+        ) {
+            self.id = id
+            self.team = team
+            self.tier = tier
+            self.cityName = cityName
+            self.regionName = regionName
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let world: CoachWorldReference
+    public let seasonLabel: String
+    public let results: [Result]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        world: CoachWorldReference,
+        seasonLabel: String,
+        results: [Result]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.world = world
+        self.seasonLabel = seasonLabel
+        self.results = Array(results.prefix(256))
+    }
+}
+
+public struct CompetitionOverviewReadModel: Sendable, Equatable {
+    public struct RankingRow: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let team: CoachWorldTeamReference
+        public let rank: Int
+        public let record: String
+        public let isControlled: Bool
+
+        public init(id: String, team: CoachWorldTeamReference, rank: Int, record: String,
+                    isControlled: Bool) {
+            self.id = id
+            self.team = team
+            self.rank = rank
+            self.record = record
+            self.isControlled = isControlled
+        }
+    }
+
+    public struct BracketGame: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let stage: String
+        public let home: CoachWorldTeamReference
+        public let away: CoachWorldTeamReference
+        public let score: String?
+        public let week: String
+
+        public init(id: String, stage: String, home: CoachWorldTeamReference,
+                    away: CoachWorldTeamReference, score: String?, week: String) {
+            self.id = id
+            self.stage = stage
+            self.home = home
+            self.away = away
+            self.score = score
+            self.week = week
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let world: CoachWorldReference
+    public let seasonLabel: String
+    public let tier: String
+    public let rankings: [RankingRow]
+    public let bracket: [BracketGame]
+
+    public init(snapshotID: String, provenance: CoachWorldDataProvenance,
+                world: CoachWorldReference, seasonLabel: String, tier: String,
+                rankings: [RankingRow], bracket: [BracketGame]) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.world = world
+        self.seasonLabel = seasonLabel
+        self.tier = tier
+        self.rankings = Array(rankings.prefix(166))
+        self.bracket = Array(bracket.prefix(64))
+    }
+}
+
 public struct RecruitingBoardReadModel: Sendable, Equatable {
     public struct Capacity: Sendable, Equatable {
         public let scholarshipSlotsRemaining: Int
@@ -411,6 +1014,8 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
     public let capacity: Capacity
     public let positionNeeds: [PositionNeed]
     public let prospects: [Prospect]
+    public let canContinue: Bool
+    public let continueReason: String?
 
     public init(
         snapshotID: String,
@@ -419,7 +1024,9 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
         team: CoachWorldTeamReference,
         capacity: Capacity,
         positionNeeds: [PositionNeed],
-        prospects: [Prospect]
+        prospects: [Prospect],
+        canContinue: Bool = true,
+        continueReason: String? = nil
     ) {
         self.snapshotID = snapshotID
         self.provenance = provenance
@@ -428,6 +1035,8 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
         self.capacity = capacity
         self.positionNeeds = positionNeeds
         self.prospects = prospects
+        self.canContinue = canContinue
+        self.continueReason = continueReason
     }
 }
 
@@ -743,6 +1352,77 @@ public struct MatchDayReadModel: Sendable, Equatable {
         self.causalCommentary = causalCommentary
         self.staffInterruption = staffInterruption
         self.controls = controls
+    }
+}
+
+/// Immutable post-game projection. It is populated only from a persisted detailed summary; a
+/// missing evidence record is an honest empty state rather than a reconstructed story.
+public struct AftermathReadModel: Sendable, Equatable {
+    public struct Grade: Sendable, Equatable, Identifiable {
+        public var id: String { stableID }
+        public let stableID: String
+        public let player: CoachWorldPersonReference
+        public let team: CoachWorldTeamReference
+        public let position: String
+        public let rating: Int
+        public let evidence: String
+
+        public init(
+            stableID: String,
+            player: CoachWorldPersonReference,
+            team: CoachWorldTeamReference,
+            position: String,
+            rating: Int,
+            evidence: String
+        ) {
+            self.stableID = stableID
+            self.player = player
+            self.team = team
+            self.position = position
+            self.rating = min(99, max(0, rating))
+            self.evidence = evidence
+        }
+    }
+
+    public let recordedOutcomeID: String
+    public let provenance: CoachWorldDataProvenance
+    public let world: CoachWorldReference
+    public let venue: CoachWorldVenueReference
+    public let home: MatchDayReadModel.TeamScore
+    public let away: MatchDayReadModel.TeamScore
+    public let resultLabel: String
+    public let headline: String
+    public let evidence: [String]
+    public let callIns: [String]
+    public let injuries: [String]
+    public let grades: [Grade]
+
+    public init(
+        recordedOutcomeID: String,
+        provenance: CoachWorldDataProvenance,
+        world: CoachWorldReference,
+        venue: CoachWorldVenueReference,
+        home: MatchDayReadModel.TeamScore,
+        away: MatchDayReadModel.TeamScore,
+        resultLabel: String,
+        headline: String,
+        evidence: [String],
+        callIns: [String],
+        injuries: [String],
+        grades: [Grade]
+    ) {
+        self.recordedOutcomeID = recordedOutcomeID
+        self.provenance = provenance
+        self.world = world
+        self.venue = venue
+        self.home = home
+        self.away = away
+        self.resultLabel = resultLabel
+        self.headline = headline
+        self.evidence = Array(evidence.prefix(16))
+        self.callIns = Array(callIns.prefix(16))
+        self.injuries = Array(injuries.prefix(16))
+        self.grades = Array(grades.prefix(32))
     }
 }
 

@@ -399,6 +399,17 @@ public struct PlayerLifecycleState: Codable, Sendable, Equatable, Identifiable {
         fatigue = min(PeopleRules.fatigueRange.upperBound, fatigue + max(0, amount))
     }
 
+    /// Applies the current week's authored practice without adding another persisted readiness
+    /// currency. Both conditioning and recovery reduce the same bounded fatigue measure that the
+    /// match-availability rules already consume.
+    public mutating func applyPracticeEffects(
+        conditioningBenefit: Int,
+        recoveryBenefit: Int
+    ) {
+        let reduction = max(0, conditioningBenefit) + max(0, recoveryBenefit)
+        fatigue = max(PeopleRules.fatigueRange.lowerBound, fatigue - reduction)
+    }
+
     public mutating func sustain(_ newInjury: PlayerInjury) {
         guard status == .active, injury == nil else { return }
         injury = newInjury

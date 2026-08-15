@@ -3,6 +3,87 @@ import FootballSimCore
 
 func runTacticalManagementTests() {
     suite("M4 tactical management") {
+        test("practice effects are bounded, monotonic, and stable across a save round trip") {
+            let lighter = TacticalPracticePlan(
+                installMinutes: 15,
+                conditioningMinutes: 15,
+                recoveryMinutes: 15,
+                positionFocusMinutes: 15,
+                positionFocus: .quarterbacks
+            )
+            let heavier = TacticalPracticePlan(
+                installMinutes: 30,
+                conditioningMinutes: 15,
+                recoveryMinutes: 0,
+                positionFocusMinutes: 15,
+                positionFocus: .quarterbacks
+            )
+            expect(heavier.effects.developmentValue >= lighter.effects.developmentValue)
+            expect(heavier.effects.conditioningBenefit >= lighter.effects.conditioningBenefit)
+            expect(heavier.effects.recoveryBenefit <= lighter.effects.recoveryBenefit)
+            expectEqual(
+                try JSONDecoder.stable().decode(
+                    TacticalPracticeEffects.self,
+                    from: JSONEncoder.stable().encode(lighter.effects)
+                ),
+                lighter.effects
+            )
+        }
+
+        test("opponent observations are scoped, bounded, and reject stale or future evidence") {
+            let observerID = UUID(uuidString: "00000000-0000-0000-0000-000000000411")!
+            let opponentID = UUID(uuidString: "00000000-0000-0000-0000-000000000412")!
+            let observedThrough = CalendarState(season: 0, week: 8)
+            let observation = OpponentObservation(
+                observerID: observerID,
+                snapshot: OpponentScoutingSnapshot(
+                    teamID: opponentID,
+                    observedThrough: observedThrough,
+                    passRate: 62,
+                    turnoverRate: 18
+                ),
+                sourceGameIDs: [
+                    UUID(uuidString: "00000000-0000-0000-0000-000000000413")!,
+                    UUID(uuidString: "00000000-0000-0000-0000-000000000414")!
+                ],
+                confidence: 60,
+                sampleSize: 2
+            )
+            expect(observation.isCurrent(at: CalendarState(season: 0, week: 12)))
+            expect(!observation.isCurrent(at: CalendarState(season: 0, week: 13)))
+            expect(!observation.isCurrent(at: CalendarState(season: 1, week: 1)))
+            expectEqual(
+                try JSONDecoder.stable().decode(
+                    OpponentObservation.self,
+                    from: JSONEncoder.stable().encode(observation)
+                ),
+                observation
+            )
+            let fallback = OpponentObservation.balanced(
+                observerID: observerID,
+                opponentID: opponentID,
+                observedThrough: observedThrough
+            )
+            expectEqual(fallback.confidence, 0)
+            expectEqual(fallback.sampleSize, 0)
+            expectEqual(fallback.passRate, 50)
+            let observedPlan = TacticalCoordinatorSystem.plan(
+                for: observation,
+                at: observedThrough,
+                coordinatorRating: Rating(80)
+            )
+            let stalePlan = TacticalCoordinatorSystem.plan(
+                for: observation,
+                at: CalendarState(season: 0, week: 13),
+                coordinatorRating: Rating(80)
+            )
+            expectEqual(observedPlan.runPassBias, .runHeavy)
+            expectEqual(
+                stalePlan,
+                TacticalCoordinatorSystem.plan(for: nil, coordinatorRating: Rating(80))
+            )
+        }
+
         test("opponent scouting is deterministic and uses observed season totals") {
             let teamID = UUID(uuidString: "00000000-0000-0000-0000-000000000401")!
             let statistics = TeamSeasonStatistics(

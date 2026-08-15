@@ -49,6 +49,31 @@ public struct SaveEnvelope: Sendable {
     /// an unbounded buffer before the JSON decoder can reject it. The production size gate is much
     /// lower; this is only the defensive parser ceiling.
     public static let maximumBodyBytes = 512 * 1024 * 1024
+    /// Compressed envelopes are the shipped format. Keep their stored input well below the
+    /// decompressed ceiling so a hostile file cannot force a half-gigabyte read before zlib gets a
+    /// chance to enforce `maximumBodyBytes`. The current season-20 compressed baseline is about
+    /// 26 MB; this leaves room for legitimate saves while the production 8 MB target is reduced by
+    /// history compaction rather than by silently rejecting valid careers.
+    public static let maximumStoredBodyBytes = 64 * 1024 * 1024
+
+    /// Returns the stored-body limit implied by a header. Callers use this after reading only the
+    /// fixed header, before materialising the rest of a file. Invalid headers deliberately fall
+    /// back to the decompressed limit so the normal envelope validator can report the precise
+    /// header error.
+    public static func storedBodyLimit(ofHeader header: Data) -> Int {
+        guard header.count >= headerLength,
+              (try? schemaVersion(ofHeader: header)) == currentSchemaVersion else {
+            return maximumBodyBytes
+        }
+        let bytes = Array(header.prefix(headerLength))
+        guard bytes[8] & ~compressedBodyFlag == 0,
+              bytes[9..<headerLength].allSatisfy({ $0 == 0 }) else {
+            return maximumBodyBytes
+        }
+        return bytes[8] & compressedBodyFlag == compressedBodyFlag
+            ? maximumStoredBodyBytes
+            : maximumBodyBytes
+    }
 
     public static func encode<T: Encodable>(_ payload: T) throws -> Data {
         var data = Data(magic)
@@ -56,7 +81,20 @@ public struct SaveEnvelope: Sendable {
         data.append(compressedBodyFlag)
         data.append(contentsOf: Array(repeating: UInt8(0), count: 7))   // reserved
         let body = try JSONEncoder.stable().encode(payload)
-        data.append(try (body as NSData).compressed(using: .zlib) as Data)
+        guard body.count <= maximumBodyBytes else {
+            throw SaveEnvelopeError.bodyTooLarge(
+                bytes: body.count,
+                maximum: maximumBodyBytes
+            )
+        }
+        let compressed = try (body as NSData).compressed(using: .zlib) as Data
+        guard compressed.count <= maximumStoredBodyBytes else {
+            throw SaveEnvelopeError.bodyTooLarge(
+                bytes: compressed.count,
+                maximum: maximumStoredBodyBytes
+            )
+        }
+        data.append(compressed)
         return data
     }
 
@@ -107,8 +145,9 @@ public struct SaveEnvelope: Sendable {
         // compatibility the flag was reserved to provide: the reader branches, the header layout
         // does not move, and no existing save is invalidated.
         let stored = data.dropFirst(headerLength)
-        guard stored.count <= maximumBodyBytes else {
-            throw SaveEnvelopeError.bodyTooLarge(bytes: stored.count, maximum: maximumBodyBytes)
+        let storedLimit = storedBodyLimit(ofHeader: Data(header))
+        guard stored.count <= storedLimit else {
+            throw SaveEnvelopeError.bodyTooLarge(bytes: stored.count, maximum: storedLimit)
         }
         let body = header[8] & compressedBodyFlag == 0
             ? Data(stored)

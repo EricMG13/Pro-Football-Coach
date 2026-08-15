@@ -78,6 +78,9 @@ public struct GameState: Codable, Sendable, Equatable {
     public var scouting: ScoutingState
     public var tactical: TacticalState
     public var proMarket: ProMarketState
+    /// A controlled fixture pauses here instead of being silently abstracted. It is nil between
+    /// matches and is intentionally additive so schema-11/current saves reopen without a reset.
+    public var matchSession: MatchSessionState?
 
     public init(
         version: Int = GameState.schemaVersion,
@@ -100,7 +103,8 @@ public struct GameState: Codable, Sendable, Equatable {
         college: CollegeState,
         scouting: ScoutingState = ScoutingState(),
         tactical: TacticalState? = nil,
-        proMarket: ProMarketState? = nil
+        proMarket: ProMarketState? = nil,
+        matchSession: MatchSessionState? = nil
     ) {
         precondition(
             version == GameState.schemaVersion,
@@ -127,6 +131,7 @@ public struct GameState: Codable, Sendable, Equatable {
         self.scouting = scouting
         self.tactical = tactical ?? TacticalState(calendar: calendar)
         self.proMarket = proMarket ?? ProMarketState(season: calendar.season)
+        self.matchSession = matchSession
     }
 
     public init(from decoder: any Decoder) throws {
@@ -171,6 +176,7 @@ public struct GameState: Codable, Sendable, Equatable {
             tactical = try container.decode(TacticalState.self, forKey: .tactical)
             proMarket = try container.decode(ProMarketState.self, forKey: .proMarket)
         }
+        matchSession = try container.decodeIfPresent(MatchSessionState.self, forKey: .matchSession)
 
         let integrity = WorldIntegrity.check(self)
         guard integrity.isValid else {

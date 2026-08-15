@@ -50,7 +50,9 @@ public struct CoachWorldAppRootView: View {
                         statusMessage: failure ?? store.statusMessage,
                         onContinue: { Task { await advance(store) } },
                         onNavigate: { navigate($0, in: store) },
-                        onInspectDevelopment: { _ in }
+                        onInspectDevelopment: { playerID in
+                            store.openDevelopmentEvidence(for: playerID)
+                        }
                     )
                 }
             case .recruitingBoard:
@@ -65,6 +67,161 @@ public struct CoachWorldAppRootView: View {
                         onNavigate: { navigate($0, in: store) }
                     )
                 }
+            case .leagueMap:
+                if let model = store.leagueMap {
+                    LeagueMapView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        // The same `advance` path every other screen uses, so a pending decision
+                        // refuses identically here. Roster and Recruiting Board once wired their
+                        // copy of this control to a navigation instead, which made one button do
+                        // two different things depending on where it was tapped.
+                        onContinue: { Task { await advance(store) } },
+                        onNavigate: { navigate($0, in: store) },
+                        onSelectTeam: { id in
+                            Task {
+                                await store.selectTeam(id)
+                                navigate(.teamProgrammeProfile, in: store)
+                            }
+                        }
+                    )
+                }
+            case .matchDay:
+                if let model = store.matchDay {
+                    MatchDayView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onControl: { intentID in
+                            Task { await matchControl(intentID, in: store) }
+                        },
+                        onInterruption: { intentID in
+                            Task { await matchControl(intentID, in: store) }
+                        }
+                    )
+                }
+            case .gamePlan:
+                if let model = store.gamePlan {
+                    GamePlanView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onSelect: { plan in
+                            Task { await setGamePlan(plan, in: store) }
+                        },
+                        onClose: { navigate(.coachingHQ, in: store) }
+                    )
+                }
+            case .practicePlan:
+                if let model = store.practicePlan {
+                    PracticePlanView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onSelect: { plan in
+                            Task { await setPracticePlan(plan, in: store) }
+                        },
+                        onClose: { navigate(.coachingHQ, in: store) }
+                    )
+                }
+            case .depthChart:
+                if let model = store.depthChart {
+                    DepthChartView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onSelect: { plan in
+                            Task { await setPersonnelPlan(plan, in: store) }
+                        },
+                        onClose: { navigate(.roster, in: store) }
+                    )
+                }
+            case .aftermath:
+                if let model = store.aftermath {
+                    AftermathView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onContinue: { Task { await returnToHQ(store) } }
+                    )
+                }
+            case .careerHub:
+                if let model = store.careerHub {
+                    CareerHubView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { navigate(.coachingHQ, in: store) }
+                    )
+                }
+            case .standings:
+                if let model = store.standings {
+                    StandingsView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { navigate(.leagueMap, in: store) },
+                        onContinue: { Task { await advance(store) } },
+                        onSelectTeam: { id in
+                            Task {
+                                await store.selectTeam(id)
+                                navigate(.teamProgrammeProfile, in: store)
+                            }
+                        }
+                    )
+                }
+            case .schedule:
+                if let model = store.schedule {
+                    ScheduleView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { navigate(.leagueMap, in: store) },
+                        onContinue: { Task { await advance(store) } },
+                        onSelectTeam: { id in
+                            Task {
+                                await store.selectTeam(id)
+                                navigate(.teamProgrammeProfile, in: store)
+                            }
+                        }
+                    )
+                }
+            case .teamProgrammeProfile:
+                if let model = store.teamProgrammeProfile {
+                    TeamProgrammeProfileView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { navigate(.leagueMap, in: store) },
+                        onSelectTeam: { id in
+                            Task {
+                                await store.selectTeam(id)
+                                navigate(.teamProgrammeProfile, in: store)
+                            }
+                        }
+                    )
+                }
+            case .worldSearch:
+                if let model = store.worldSearch {
+                    WorldSearchView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { navigate(.coachingHQ, in: store) },
+                        onSelectTeam: { id in
+                            Task {
+                                await store.selectTeam(id)
+                                navigate(.teamProgrammeProfile, in: store)
+                            }
+                        }
+                    )
+                }
+            case .rankingsPlayoffPicture, .bracketPostseason:
+                if let model = store.competitionOverview {
+                    CompetitionOverviewView(
+                        model: model,
+                        focus: screen,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { navigate(.leagueMap, in: store) },
+                        onContinue: { Task { await advance(store) } },
+                        onSelectTeam: { id in
+                            Task {
+                                await store.selectTeam(id)
+                                navigate(.teamProgrammeProfile, in: store)
+                            }
+                        }
+                    )
+                }
             default:
                 if let model = store.coachingHQ {
                     CoachingHQView(
@@ -75,7 +232,8 @@ public struct CoachWorldAppRootView: View {
                         statusMessage: failure ?? store.statusMessage,
                         onCommit: { intentID in Task { await commit(intentID, in: store) } },
                         onInspect: {},
-                        onDelegate: {},
+                        onDelegate: { Task { await delegate(store) } },
+                        onPrepare: { Task { await prepare(store) } },
                         onContinue: { Task { await advance(store) } },
                         onOpenCorrespondence: { _ in },
                         onNavigate: { navigate($0, in: store) }
@@ -99,6 +257,47 @@ public struct CoachWorldAppRootView: View {
             failure = nil
         case .recruitingBoard where store.recruitingBoard != nil:
             screen = .recruitingBoard
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .leagueMap where store.leagueMap != nil:
+            screen = .leagueMap
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .gamePlan where store.gamePlan != nil:
+            screen = .gamePlan
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .practicePlan where store.practicePlan != nil:
+            screen = .practicePlan
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .depthChart where store.depthChart != nil:
+            screen = .depthChart
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .careerHub where store.careerHub != nil:
+            screen = .careerHub
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .standings where store.standings != nil:
+            screen = .standings
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .schedule where store.schedule != nil:
+            screen = .schedule
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .teamProgrammeProfile where store.teamProgrammeProfile != nil:
+            screen = .teamProgrammeProfile
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .worldSearch where store.worldSearch != nil:
+            screen = .worldSearch
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .rankingsPlayoffPicture where store.competitionOverview != nil,
+             .bracketPostseason where store.competitionOverview != nil:
+            screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
         default:
@@ -162,8 +361,7 @@ public struct CoachWorldAppRootView: View {
                 return
             }
             store = try await CoachWorldStore.load(document: document)
-            if let restored = Int(document.presentation.route),
-               let destination = CoachWorldScreenID(rawValue: restored) {
+            if let destination = Self.screenID(for: document.presentation.route) {
                 screen = destination
             }
         } catch {
@@ -176,8 +374,7 @@ public struct CoachWorldAppRootView: View {
         do {
             let document = try await coordinator.recover(using: .useBackup)
             store = try await CoachWorldStore.load(document: document)
-            if let restored = Int(document.presentation.route),
-               let destination = CoachWorldScreenID(rawValue: restored) {
+            if let destination = Self.screenID(for: document.presentation.route) {
                 screen = destination
             }
             failure = nil
@@ -199,6 +396,17 @@ public struct CoachWorldAppRootView: View {
         return "That save could not be opened. Retry, use the backup, or explicitly replace it."
     }
 
+    private static func screenID(for route: String) -> CoachWorldScreenID? {
+        if let rawValue = Int(route), let screen = CoachWorldScreenID(rawValue: rawValue) {
+            return screen
+        }
+        let normalized = route.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return CoachWorldScreenID.allCases.first {
+            String(describing: $0).lowercased() == normalized
+                || $0.canonicalName.lowercased() == normalized
+        }
+    }
+
     private func startNewCareer() async {
         isStarting = true
         defer { isStarting = false }
@@ -214,6 +422,64 @@ public struct CoachWorldAppRootView: View {
 
     private func advance(_ store: CoachWorldStore) async {
         await store.advanceWeek()
+        if store.matchDay != nil {
+            screen = .matchDay
+            store.setPresentationRoute(String(CoachWorldScreenID.matchDay.rawValue))
+        } else if screen == .matchDay {
+            screen = .coachingHQ
+            store.setPresentationRoute(String(CoachWorldScreenID.coachingHQ.rawValue))
+        }
+        await persistOrReport(store)
+    }
+
+    private func prepare(_ store: CoachWorldStore) async {
+        await store.prepareWeek()
+        await persistOrReport(store)
+    }
+
+    private func delegate(_ store: CoachWorldStore) async {
+        await store.delegateCurrentDecision()
+        await persistOrReport(store)
+    }
+
+    private func setGamePlan(_ plan: TacticalPlan, in store: CoachWorldStore) async {
+        await store.setGamePlan(plan)
+        await persistOrReport(store)
+    }
+
+    private func setPracticePlan(_ plan: TacticalPracticePlan, in store: CoachWorldStore) async {
+        await store.setPracticePlan(plan)
+        await persistOrReport(store)
+    }
+
+    private func setPersonnelPlan(_ plan: PersonnelPlan, in store: CoachWorldStore) async {
+        await store.setPersonnelPlan(plan)
+        await persistOrReport(store)
+    }
+
+    private func matchControl(
+        _ intentID: CoachWorldIntentID,
+        in store: CoachWorldStore
+    ) async {
+        await store.matchControl(intentID)
+        if store.matchDay == nil {
+            if store.aftermath != nil {
+                screen = .aftermath
+                store.setPresentationRoute(String(CoachWorldScreenID.aftermath.rawValue))
+            } else {
+                screen = .coachingHQ
+                store.setPresentationRoute(String(CoachWorldScreenID.coachingHQ.rawValue))
+            }
+        } else {
+            screen = .matchDay
+            store.setPresentationRoute(String(CoachWorldScreenID.matchDay.rawValue))
+        }
+        await persistOrReport(store)
+    }
+
+    private func returnToHQ(_ store: CoachWorldStore) async {
+        screen = .coachingHQ
+        store.setPresentationRoute(String(CoachWorldScreenID.coachingHQ.rawValue))
         await persistOrReport(store)
     }
 
@@ -237,7 +503,7 @@ public struct CoachWorldAppRootView: View {
     /// intent rather than the current frame.
     private func persist(_ store: CoachWorldStore) async throws {
         let document = try await store.saveDocument()
-        await coordinator.requestSave(document, reason: .userAction)
+        try await coordinator.requestSave(document, reason: .userAction)
         try await coordinator.flush(reason: .explicit)
     }
 

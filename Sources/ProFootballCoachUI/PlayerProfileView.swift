@@ -30,22 +30,7 @@ public struct PlayerProfileView: View {
                 VStack(spacing: .zero) {
                     identityBand
                     routeBar
-                    GeometryReader { proxy in
-                        // Landscape leaves this band about 200 points tall, which is less
-                        // than three attribute rows plus the evidence rail need. Each
-                        // column scrolls so nothing is silently clipped off the bottom.
-                        HStack(alignment: .top, spacing: ProfileMetric.workspaceGap) {
-                            ScrollView {
-                                attributeBody
-                            }
-                            .frame(width: proxy.size.width * ProfileMetric.attributeFraction)
-                            ScrollView {
-                                evidenceRail
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .padding(.horizontal, CoachWorldTokens.Space.xs)
-                    }
+                    routeContent
                     actionArea
                 }
             }
@@ -159,7 +144,6 @@ public struct PlayerProfileView: View {
                         ? numberInk.color.opacity(0.16)
                         : Color.clear
                 )
-                .disabled(route != .overview)
                 .accessibilityAddTraits(
                     activeRoute.rawValue == route.rawValue ? .isSelected : []
                 )
@@ -168,6 +152,47 @@ public struct PlayerProfileView: View {
         .background(palette.page.color)
         .overlay(alignment: .bottom) { seam }
         .accessibilitySortPriority(350)
+    }
+
+    @ViewBuilder
+    private var routeContent: some View {
+        switch activeRoute {
+        case .overview:
+            GeometryReader { proxy in
+                // Landscape leaves this band about 200 points tall, which is less
+                // than three attribute rows plus the evidence rail need. Each
+                // column scrolls so nothing is silently clipped off the bottom.
+                HStack(alignment: .top, spacing: ProfileMetric.workspaceGap) {
+                    ScrollView { attributeBody }
+                        .frame(width: proxy.size.width * ProfileMetric.attributeFraction)
+                    ScrollView { evidenceRail }
+                        .frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, CoachWorldTokens.Space.xs)
+            }
+        case .attributes:
+            ScrollView { attributeBody.padding(.horizontal, CoachWorldTokens.Space.xs) }
+        case .development:
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
+                    recentForm
+                    evidenceFact("DEVELOPMENT EVIDENCE", model.developmentEvidence)
+                    evidenceFact("SCHEME FIT", model.schemeFit)
+                }
+                .padding(.horizontal, CoachWorldTokens.Space.sm)
+                .padding(.vertical, CoachWorldTokens.Space.xs)
+            }
+        case .history:
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
+                    evidenceFact("HISTORY", model.historyEvidence)
+                    recentForm
+                    evidenceFact("AVAILABILITY", model.availability)
+                }
+                .padding(.horizontal, CoachWorldTokens.Space.sm)
+                .padding(.vertical, CoachWorldTokens.Space.xs)
+            }
+        }
     }
 
     private var attributeBody: some View {
@@ -260,7 +285,7 @@ public struct PlayerProfileView: View {
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                 .foregroundStyle(palette.contentSecondary.color)
                 .accessibilityAddTraits(.isHeader)
-            Text(value)
+            Text(value.isEmpty ? "No recorded evidence." : value)
                 .font(CoachWorldTokens.TypeRole.body)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -274,18 +299,23 @@ public struct PlayerProfileView: View {
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                 .foregroundStyle(palette.contentSecondary.color)
                 .accessibilityAddTraits(.isHeader)
-            HStack(spacing: CoachWorldTokens.Space.xs) {
-                ForEach(model.recentForm) { entry in
-                    VStack(spacing: .zero) {
-                        Text(entry.opponent)
-                        Text("\(entry.rating)")
-                            .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                            .monospacedDigit()
-                            .foregroundStyle(ratingColor(entry.rating))
+            if model.recentForm.isEmpty {
+                Text("No recent form recorded.")
+                    .font(CoachWorldTokens.TypeRole.body)
+            } else {
+                HStack(spacing: CoachWorldTokens.Space.xs) {
+                    ForEach(model.recentForm) { entry in
+                        VStack(spacing: .zero) {
+                            Text(entry.opponent)
+                            Text("\(entry.rating)")
+                                .font(CoachWorldTokens.TypeRole.headline.weight(.black))
+                                .monospacedDigit()
+                                .foregroundStyle(ratingColor(entry.rating))
+                        }
                     }
                 }
+                .font(CoachWorldTokens.TypeRole.caption)
             }
-            .font(CoachWorldTokens.TypeRole.caption)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(recentFormAccessibilityLabel)
@@ -294,6 +324,7 @@ public struct PlayerProfileView: View {
     private var actionArea: some View {
         HStack(spacing: CoachWorldTokens.Space.sm) {
             Button("Review development") {
+                activeRoute = .development
                 onInspectDevelopment(model.stableID)
             }
             .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
@@ -311,15 +342,40 @@ public struct PlayerProfileView: View {
     private var accessibleLayout: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
             identityBand
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
-                ForEach(model.attributeGroups) { group in
-                    attributeGroup(group)
+            routeBar
+            switch activeRoute {
+            case .overview:
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
+                    ForEach(model.attributeGroups) { group in
+                        attributeGroup(group)
+                    }
                 }
-            }
-            .padding(.horizontal, CoachWorldTokens.Space.sm)
-            .accessibilitySortPriority(300)
-            evidenceRail
                 .padding(.horizontal, CoachWorldTokens.Space.sm)
+                .accessibilitySortPriority(300)
+                evidenceRail
+                    .padding(.horizontal, CoachWorldTokens.Space.sm)
+            case .attributes:
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
+                    ForEach(model.attributeGroups) { group in
+                        attributeGroup(group)
+                    }
+                }
+                .padding(.horizontal, CoachWorldTokens.Space.sm)
+            case .development:
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
+                    recentForm
+                    evidenceFact("DEVELOPMENT EVIDENCE", model.developmentEvidence)
+                    evidenceFact("SCHEME FIT", model.schemeFit)
+                }
+                .padding(.horizontal, CoachWorldTokens.Space.sm)
+            case .history:
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
+                    evidenceFact("HISTORY", model.historyEvidence)
+                    recentForm
+                    evidenceFact("AVAILABILITY", model.availability)
+                }
+                .padding(.horizontal, CoachWorldTokens.Space.sm)
+            }
             actionArea
         }
     }
@@ -331,6 +387,7 @@ public struct PlayerProfileView: View {
     }
 
     private var recentFormAccessibilityLabel: String {
+        guard !model.recentForm.isEmpty else { return "Recent form, no recent form recorded" }
         let entries = model.recentForm
             .map { "\($0.opponent), \($0.rating)" }
             .joined(separator: ", then ")

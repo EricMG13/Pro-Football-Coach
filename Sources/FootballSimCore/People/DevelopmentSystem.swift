@@ -26,17 +26,34 @@ public enum DevelopmentSystem {
         in state: GameState,
         tactical: TacticalState
     ) -> DevelopmentTransition {
+        var tactical = tactical
+        return practice(at: calendar, in: state, tactical: &tactical)
+    }
+
+    public static func practice(
+        at calendar: CalendarState,
+        in state: GameState,
+        tactical: inout TacticalState
+    ) -> DevelopmentTransition {
         guard PeopleRules.inSeasonDevelopmentWeeks.contains(calendar.week) else {
             return DevelopmentTransition(players: state.players, people: state.people, eventPayloads: [])
         }
         var players = state.players
         var people = state.people
         var payloads: [DomainEventPayload] = []
-        let context = developmentContext(state, tactical: tactical)
+        let context = developmentContext(state, tactical: &tactical)
 
         for id in state.players.ids {
             guard let player = players[id],
                   people.playerLifecycle[id]?.status == .active else { continue }
+            if let effects = context.practiceEffectsByPlayer[id] {
+                people.updatePlayerLifecycle(id) {
+                    $0.applyPracticeEffects(
+                        conditioningBenefit: effects.conditioningBenefit,
+                        recoveryBenefit: effects.recoveryBenefit
+                    )
+                }
+            }
             let components = componentsFor(
                 player,
                 coachRating: context.coachRatingByPlayer[id] ?? SharedRules.ratingRange.lowerBound,
@@ -92,18 +109,22 @@ public enum DevelopmentSystem {
     private struct Context {
         let coachRatingByPlayer: [UUID: Int]
         let practiceValueByPlayer: [UUID: Int]
+        let practiceEffectsByPlayer: [UUID: TacticalPracticeEffects]
     }
 
     private static func developmentContext(
         _ state: GameState,
-        tactical: TacticalState
+        tactical: inout TacticalState
     ) -> Context {
         var coachByOrganisationAndGroup: [String: Int] = [:]
         var practiceValueByPlayer: [UUID: Int] = [:]
-        let organisations = state.programmes.values.map { ($0.id, $0.rosterIDs, $0.staffIDs) }
+        var practiceEffectsByPlayer: [UUID: TacticalPracticeEffects] = [:]
+        let organisations = state.programmes.values
+            .map { ($0.id, $0.rosterIDs, $0.staffIDs) }
             + state.proTeams.values.map { ($0.id, $0.rosterIDs, $0.staffIDs) }
+        let orderedOrganisations = organisations.sorted { $0.0.uuidString < $1.0.uuidString }
         var ratingByPlayer: [UUID: Int] = [:]
-        for (organisationID, rosterIDs, staffIDs) in organisations {
+        for (organisationID, rosterIDs, staffIDs) in orderedOrganisations {
             for staffID in staffIDs {
                 guard let member = state.staff[staffID],
                       member.role == .positionCoach,
@@ -111,19 +132,21 @@ public enum DevelopmentSystem {
                 coachByOrganisationAndGroup["\(organisationID.uuidString)|\(group.rawValue)"] =
                     member.rating(.development).value
             }
-            let practicePlan = tactical.practicePlan(for: organisationID, at: state.calendar)
-                ?? .balanced
+            let effects = tactical.consumePracticePlan(for: organisationID, at: state.calendar)
+                ?? TacticalPracticePlan.balanced.effects
             for playerID in rosterIDs {
                 guard let player = state.players[playerID] else { continue }
                 ratingByPlayer[playerID] = coachByOrganisationAndGroup[
                     "\(organisationID.uuidString)|\(player.position.group.rawValue)"
                 ]
-                practiceValueByPlayer[playerID] = practicePlan.developmentValue(for: player)
+                practiceValueByPlayer[playerID] = effects.developmentValue(for: player)
+                practiceEffectsByPlayer[playerID] = effects
             }
         }
         return Context(
             coachRatingByPlayer: ratingByPlayer,
-            practiceValueByPlayer: practiceValueByPlayer
+            practiceValueByPlayer: practiceValueByPlayer,
+            practiceEffectsByPlayer: practiceEffectsByPlayer
         )
     }
 

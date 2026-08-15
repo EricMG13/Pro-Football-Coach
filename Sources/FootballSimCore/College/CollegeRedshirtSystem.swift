@@ -146,7 +146,7 @@ public enum CollegeRedshirtSystem {
             && eligibility.yearsRemaining > eligibility.seasonsRemaining
     }
 
-    static func allowsAutomaticAppearance(
+    public static func allowsAutomaticAppearance(
         playerID: UUID,
         programmeID: UUID,
         in state: GameState

@@ -6,6 +6,7 @@ public struct CoachingHQView: View {
     public let onCommit: (CoachWorldIntentID) -> Void
     public let onInspect: () -> Void
     public let onDelegate: () -> Void
+    public let onPrepare: () -> Void
     public let onContinue: () -> Void
     public let onOpenCorrespondence: (String) -> Void
     public let onNavigate: (CoachWorldScreenID) -> Void
@@ -22,6 +23,7 @@ public struct CoachingHQView: View {
         onCommit: @escaping (CoachWorldIntentID) -> Void,
         onInspect: @escaping () -> Void,
         onDelegate: @escaping () -> Void,
+        onPrepare: @escaping () -> Void,
         onContinue: @escaping () -> Void,
         onOpenCorrespondence: @escaping (String) -> Void,
         onNavigate: @escaping (CoachWorldScreenID) -> Void
@@ -31,6 +33,7 @@ public struct CoachingHQView: View {
         self.onCommit = onCommit
         self.onInspect = onInspect
         self.onDelegate = onDelegate
+        self.onPrepare = onPrepare
         self.onContinue = onContinue
         self.onOpenCorrespondence = onOpenCorrespondence
         self.onNavigate = onNavigate
@@ -93,6 +96,7 @@ public struct CoachingHQView: View {
                         route("Recruit", screen: .recruitingBoard)
                         route("League", screen: .leagueMap)
                         route("Career", screen: .careerHub)
+                        route("Search", screen: .worldSearch)
                     }
                     .frame(maxWidth: .infinity)
                     continueButton
@@ -114,6 +118,12 @@ public struct CoachingHQView: View {
             Button("Recruit") { onNavigate(.recruitingBoard) }
             Button("League") { onNavigate(.leagueMap) }
             Button("Career") { onNavigate(.careerHub) }
+            Button("Search") { onNavigate(.worldSearch) }
+            Button("Game plan") { onNavigate(.gamePlan) }
+            Button("Practice") { onNavigate(.practicePlan) }
+            Button("Depth chart") { onNavigate(.depthChart) }
+            Button("Rankings") { onNavigate(.rankingsPlayoffPicture) }
+            Button("Postseason") { onNavigate(.bracketPostseason) }
         }
         .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
                minHeight: CoachWorldTokens.Shape.minimumTarget)
@@ -501,9 +511,25 @@ public struct CoachingHQView: View {
     }
 
     private var noDecision: some View {
-        ContentUnavailableView("No mandatory work", systemImage: "checkmark.circle",
-                               description: Text(statusMessage ?? model.week.nextDeadline))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        VStack(spacing: CoachWorldTokens.Space.sm) {
+            ContentUnavailableView(
+                preparationNeeded ? "Weekly preparation required" : "No mandatory work",
+                systemImage: preparationNeeded ? "clipboard" : "checkmark.circle",
+                description: Text(
+                    statusMessage ?? (preparationNeeded
+                        ? "Set a game plan and practice plan before the controlled fixture."
+                        : model.week.nextDeadline)
+                )
+            )
+            if preparationNeeded {
+                Button("Delegate balanced preparation", action: onPrepare)
+                    .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
+                    .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
+                           minHeight: CoachWorldTokens.Shape.minimumTarget)
+                    .accessibilityHint("Commits the balanced game and practice plans for this week.")
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var evidenceSheet: some View {
@@ -527,6 +553,12 @@ public struct CoachingHQView: View {
 
     private var mandatoryCount: Int {
         model.obligations.filter(\.isMandatory).count
+    }
+
+    private var preparationNeeded: Bool {
+        model.weekPlan.contains { plan in
+            plan.isCurrent && (plan.dayLabel == "Game plan" || plan.dayLabel == "Practice")
+        }
     }
 
     private func selectionReceipt(in decision: CoachingHQReadModel.Decision) -> String {
