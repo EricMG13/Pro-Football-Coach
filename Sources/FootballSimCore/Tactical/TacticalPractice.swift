@@ -69,15 +69,17 @@ public struct TacticalPracticePlan: Codable, Sendable, Equatable {
         positionFocus: nil
     )
 
+    /// Rules-owned consequences of one committed weekly plan. Keeping this derived from the
+    /// persisted minutes makes every consumer use the same 60-minute budget without adding a
+    /// second practice currency or another mutable source of truth.
+    public var effects: TacticalPracticeEffects {
+        TacticalPracticeEffects(plan: self)
+    }
+
     /// The development contribution replaces the old fixed practice point while preserving the
     /// balanced plan's historical value of one. A position focus is intentionally a trade-off.
     public func developmentValue(for player: Player) -> Int {
-        let install = installMinutes / 30
-        let focus = positionFocusMinutes / 15
-        let focusedValue = positionFocus == nil || positionFocus == player.position.group
-            ? focus
-            : 0
-        return min(2, install + focusedValue)
+        effects.developmentValue(for: player)
     }
 
     private static func isValid(
@@ -94,6 +96,75 @@ public struct TacticalPracticePlan: Codable, Sendable, Equatable {
     }
 }
 
+/// Bounded, deterministic practice output shared by development, readiness, and match preparation.
+/// Conditioning and recovery are intentionally expressed as small integer steps so previews and
+/// saved receipts remain byte-stable.
+public struct TacticalPracticeEffects: Codable, Sendable, Equatable {
+    private enum CodingKeys: String, CodingKey {
+        case developmentValue, conditioningBenefit, recoveryBenefit, positionFocus
+    }
+
+    public let developmentValue: Int
+    public let conditioningBenefit: Int
+    public let recoveryBenefit: Int
+    public let positionFocus: PositionGroup?
+
+    public init(plan: TacticalPracticePlan) {
+        self.developmentValue = min(
+            2,
+            plan.installMinutes / 30
+                + (plan.positionFocusMinutes / 15)
+        )
+        self.conditioningBenefit = plan.conditioningMinutes / 15
+        self.recoveryBenefit = plan.recoveryMinutes / 15
+        self.positionFocus = plan.positionFocus
+    }
+
+    public init(
+        developmentValue: Int,
+        conditioningBenefit: Int,
+        recoveryBenefit: Int,
+        positionFocus: PositionGroup?
+    ) {
+        precondition((0...2).contains(developmentValue))
+        precondition((0...4).contains(conditioningBenefit))
+        precondition((0...4).contains(recoveryBenefit))
+        self.developmentValue = developmentValue
+        self.conditioningBenefit = conditioningBenefit
+        self.recoveryBenefit = recoveryBenefit
+        self.positionFocus = positionFocus
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let development = try container.decode(Int.self, forKey: .developmentValue)
+        let conditioning = try container.decode(Int.self, forKey: .conditioningBenefit)
+        let recovery = try container.decode(Int.self, forKey: .recoveryBenefit)
+        guard (0...2).contains(development),
+              (0...4).contains(conditioning),
+              (0...4).contains(recovery) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .developmentValue,
+                in: container,
+                debugDescription: "Practice effects exceed their bounded ranges."
+            )
+        }
+        self.init(
+            developmentValue: development,
+            conditioningBenefit: conditioning,
+            recoveryBenefit: recovery,
+            positionFocus: try container.decodeIfPresent(PositionGroup.self, forKey: .positionFocus)
+        )
+    }
+
+    public func developmentValue(for player: Player) -> Int {
+        guard positionFocus == nil || positionFocus == player.position.group else {
+            return developmentValue - (developmentValue > 0 ? 1 : 0)
+        }
+        return developmentValue
+    }
+}
+
 public struct TacticalPracticePlanRecord: Codable, Sendable, Equatable {
     public let calendar: CalendarState
     public let plan: TacticalPracticePlan
@@ -103,4 +174,3 @@ public struct TacticalPracticePlanRecord: Codable, Sendable, Equatable {
         self.plan = plan
     }
 }
-

@@ -297,8 +297,8 @@ public enum RecruitingAction: Codable, Sendable, Equatable {
     case withdraw
 }
 
-enum RecruitingCommitmentChallengePolicy {
-    static func permitsInvestment(_ action: RecruitingAction) -> Bool {
+public enum RecruitingCommitmentChallengePolicy {
+    public static func permitsInvestment(_ action: RecruitingAction) -> Bool {
         switch action {
         case .evaluate, .contact, .scheduleVisit, .offerScholarship,
              .setNILAllocation:
@@ -311,7 +311,7 @@ enum RecruitingCommitmentChallengePolicy {
     /// A commitment is stable, but its recorded runner-up gets the remainder of the commitment
     /// week to improve one shared, legal pursuit. The following week's market resolves that work
     /// before AI cleanup; after a flip, the displaced winner receives the same bounded opportunity.
-    static func isAuthorized(
+    public static func isAuthorized(
         programmeID: UUID,
         prospectID: UUID,
         in state: GameState

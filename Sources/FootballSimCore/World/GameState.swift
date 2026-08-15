@@ -50,7 +50,10 @@ public struct PendingQueues: Codable, Sendable, Equatable {
 
 /// The single authoritative root for a career save.
 public struct GameState: Codable, Sendable, Equatable {
-    public static let schemaVersion = 11
+    /// Root schema used by the application save document. Schema 11 remains readable through the
+    /// decoder below and is normalised to this value before any state reaches the world.
+    public static let schemaVersion = 12
+    public static let legacySchemaVersion = 11
 
     public let version: Int
     public var league: League
@@ -75,6 +78,9 @@ public struct GameState: Codable, Sendable, Equatable {
     public var scouting: ScoutingState
     public var tactical: TacticalState
     public var proMarket: ProMarketState
+    /// A controlled fixture pauses here instead of being silently abstracted. It is nil between
+    /// matches and is intentionally additive so schema-11/current saves reopen without a reset.
+    public var matchSession: MatchSessionState?
 
     public init(
         version: Int = GameState.schemaVersion,
@@ -97,7 +103,8 @@ public struct GameState: Codable, Sendable, Equatable {
         college: CollegeState,
         scouting: ScoutingState = ScoutingState(),
         tactical: TacticalState? = nil,
-        proMarket: ProMarketState? = nil
+        proMarket: ProMarketState? = nil,
+        matchSession: MatchSessionState? = nil
     ) {
         precondition(
             version == GameState.schemaVersion,
@@ -124,19 +131,24 @@ public struct GameState: Codable, Sendable, Equatable {
         self.scouting = scouting
         self.tactical = tactical ?? TacticalState(calendar: calendar)
         self.proMarket = proMarket ?? ProMarketState(season: calendar.season)
+        self.matchSession = matchSession
     }
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedVersion = try container.decode(Int.self, forKey: .version)
-        guard decodedVersion == GameState.schemaVersion else {
+        guard decodedVersion == GameState.schemaVersion
+                || decodedVersion == GameState.legacySchemaVersion else {
             throw DecodingError.dataCorruptedError(
                 forKey: .version,
                 in: container,
                 debugDescription: "The game-state schema version is unsupported."
             )
         }
-        version = decodedVersion
+        // Schema 11 and 12 have the same field set in the base game. The application document
+        // migration owns any future field defaults; normalising here prevents a legacy root from
+        // escaping with a stale version marker after it has passed integrity validation.
+        version = GameState.schemaVersion
         league = try container.decode(League.self, forKey: .league)
         map = try container.decode(GameMap.self, forKey: .map)
         programmes = try container.decode(EntityStore<Programme>.self, forKey: .programmes)
@@ -155,8 +167,16 @@ public struct GameState: Codable, Sendable, Equatable {
         prospects = try container.decode(EntityStore<Prospect>.self, forKey: .prospects)
         college = try container.decode(CollegeState.self, forKey: .college)
         scouting = try container.decode(ScoutingState.self, forKey: .scouting)
-        tactical = try container.decode(TacticalState.self, forKey: .tactical)
-        proMarket = try container.decode(ProMarketState.self, forKey: .proMarket)
+        if decodedVersion == GameState.legacySchemaVersion {
+            tactical = try container.decodeIfPresent(TacticalState.self, forKey: .tactical)
+                ?? TacticalState(calendar: calendar)
+            proMarket = try container.decodeIfPresent(ProMarketState.self, forKey: .proMarket)
+                ?? ProMarketState(season: calendar.season)
+        } else {
+            tactical = try container.decode(TacticalState.self, forKey: .tactical)
+            proMarket = try container.decode(ProMarketState.self, forKey: .proMarket)
+        }
+        matchSession = try container.decodeIfPresent(MatchSessionState.self, forKey: .matchSession)
 
         let integrity = WorldIntegrity.check(self)
         guard integrity.isValid else {

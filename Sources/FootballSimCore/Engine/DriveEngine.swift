@@ -148,8 +148,206 @@ public struct BaselinePlayCaller: PlayCaller, Sendable {
     }
 }
 
+/// Mutable, persisted progress for one drive. Keeping this separate from the caller makes a
+/// detailed game resumable at a snap without introducing a second resolver.
+public struct DriveProgress: Codable, Sendable, Equatable {
+    public let start: Situation
+    public let driveSeed: UInt64
+    public var situation: Situation
+    public var plays: [PlayRecord]
+    public var ending: DriveEnding?
+    public var points: Int
+    public var afterTurnover: Bool
+    public var clockRunning: Bool
+    public var clockStoppedByFirstDown: Bool
+
+    public init(
+        start: Situation,
+        driveSeed: UInt64,
+        isAfterTurnover: Bool,
+        clockRunning: Bool
+    ) {
+        self.start = start
+        self.driveSeed = driveSeed
+        self.situation = start
+        self.plays = []
+        self.ending = nil
+        self.points = 0
+        self.afterTurnover = isAfterTurnover
+        self.clockRunning = clockRunning
+        self.clockStoppedByFirstDown = false
+    }
+}
+
 /// The drive loop.
 public enum DriveEngine {
+    public static func begin(
+        from start: Situation,
+        driveSeed: UInt64,
+        isAfterTurnover: Bool,
+        clockRunning: Bool
+    ) -> DriveProgress {
+        DriveProgress(start: start, driveSeed: driveSeed,
+                      isAfterTurnover: isAfterTurnover, clockRunning: clockRunning)
+    }
+
+    /// Resolves exactly one snap and updates the persisted drive progress.
+    ///
+    /// The optional trigger is used by a controlled match to retain the call-in that preceded
+    /// this snap. Headless games omit it and retain the original record byte-for-byte.
+    @discardableResult
+    public static func step(
+        _ progress: inout DriveProgress,
+        offense: SnapPersonnel,
+        defense: SnapPersonnel,
+        caller: some PlayCaller,
+        rules: any ClockRules.Type,
+        homeFieldAdvantage: Double,
+        callInTrigger: CallInTrigger? = nil
+    ) -> PlayRecord? {
+        guard progress.ending == nil,
+              progress.plays.count < MatchupRules.maximumPlaysPerDrive else {
+            if progress.ending == nil { progress.ending = .endOfHalf }
+            return nil
+        }
+
+        let situation = progress.situation
+        var rng = SeededRandom(seed: SeededRandom.derive(
+            from: progress.driveSeed, scope: .snap, ordinal: progress.plays.count
+        ))
+        let offensiveCall = caller.offensiveCall(for: situation, rules: rules)
+        let defensiveCall = caller.defensiveCall(for: situation, rules: rules)
+        var triggers = situation.situationalCallInTriggers(
+            rules: rules, isSnapAfterTurnover: progress.afterTurnover
+        )
+        if let callInTrigger, !triggers.contains(callInTrigger) {
+            triggers.insert(callInTrigger, at: 0)
+        }
+        progress.afterTurnover = false
+
+        let outcome = SnapResolver.resolve(
+            offensiveCall: offensiveCall,
+            defensiveCall: defensiveCall,
+            personnel: SnapPersonnel(offense: offense.offense, defense: defense.defense),
+            situation: situation,
+            rules: rules,
+            homeFieldAdvantage: situation.possession == .home
+                ? homeFieldAdvantage : -homeFieldAdvantage,
+            rng: &rng
+        )
+        let play = PlayRecord(
+            situation: situation,
+            offensiveCall: offensiveCall,
+            defensiveCall: defensiveCall,
+            outcome: outcome,
+            callInTriggers: triggers
+        )
+        progress.plays.append(play)
+
+        let preSnap: Int
+        if progress.clockRunning {
+            preSnap = offensiveCall.tempo.snapSeconds(rules: rules)
+        } else if progress.clockStoppedByFirstDown {
+            preSnap = rules.readyForPlaySeconds
+        } else {
+            preSnap = 0
+        }
+        progress.situation.secondsRemainingInQuarter -= preSnap + outcome.secondsElapsed
+        let madeFirstDown = outcome.yards >= situation.distance && !outcome.result.isTurnover
+        let firstDownStop = rules.clockStopsOnFirstDown && madeFirstDown
+            && progress.situation.secondsRemainingInHalf(rules: rules)
+                > rules.firstDownStopEndsAtSecondsRemaining
+        progress.clockRunning = !outcome.result.stopsClock && !firstDownStop
+        progress.clockStoppedByFirstDown = firstDownStop
+
+        switch outcome.result {
+        case .touchdown:
+            progress.ending = .touchdown
+            progress.points = MatchupRules.touchdownPoints + MatchupRules.extraPointPoints
+        case .fieldGoalGood:
+            progress.ending = .fieldGoal
+            progress.points = MatchupRules.fieldGoalPoints
+        case .fieldGoalMissed:
+            progress.ending = .missedFieldGoal
+        case .punt:
+            progress.ending = .punt
+        case .safety:
+            progress.ending = .safety
+            progress.points = -MatchupRules.safetyPoints
+        case .interception, .fumbleLost:
+            progress.ending = .turnover
+        case .gain, .sack, .incompletion, .kneel:
+            progress.situation.yardLine = Swift.min(
+                Swift.max(situation.yardLine + outcome.yards, 1), 99
+            )
+            if outcome.yards >= situation.distance {
+                progress.situation.down = 1
+                progress.situation.distance = Swift.min(
+                    MatchupRules.yardsForFirstDown, 100 - progress.situation.yardLine
+                )
+            } else {
+                progress.situation.distance -= outcome.yards
+                progress.situation.down += 1
+                if progress.situation.down > 4 { progress.ending = .downs }
+            }
+            if progress.situation.secondsRemainingInQuarter <= 0 {
+                progress.ending = situation.quarter % 2 == 0 ? .endOfHalf : .endOfQuarter
+            }
+        }
+        if progress.ending == nil,
+           progress.plays.count >= MatchupRules.maximumPlaysPerDrive {
+            progress.ending = .endOfHalf
+        }
+        return play
+    }
+
+    /// Applies possession, scoring, and kickoff rules once a drive has ended.
+    public static func finish(_ progress: DriveProgress) -> (drive: DriveRecord, next: Situation) {
+        let finalEnding = progress.ending ?? .endOfHalf
+        let situation = progress.situation
+        var next = situation
+        if finalEnding.changesPossession {
+            next.possession = situation.possession.opponent
+            next.yardLine = Swift.min(Swift.max(100 - situation.yardLine, 1), 99)
+            switch finalEnding {
+            case .touchdown, .fieldGoal, .safety:
+                next.yardLine = MatchupRules.kickoffTouchbackYardLine
+            case .punt:
+                let landed = situation.yardLine + (progress.plays.last?.outcome.yards ?? 0)
+                next.yardLine = landed >= 100
+                    ? MatchupRules.puntTouchbackYardLine
+                    : Swift.min(Swift.max(100 - landed, 1), 99)
+            default:
+                break
+            }
+            next.down = 1
+            next.distance = Swift.min(MatchupRules.yardsForFirstDown, 100 - next.yardLine)
+        }
+        if progress.points > 0 {
+            if situation.possession == .home {
+                next.homeScore += progress.points
+            } else {
+                next.awayScore += progress.points
+            }
+        } else if progress.points < 0 {
+            if situation.possession == .home {
+                next.awayScore -= progress.points
+            } else {
+                next.homeScore -= progress.points
+            }
+        }
+        return (
+            DriveRecord(
+                offense: progress.start.possession,
+                plays: progress.plays,
+                ending: finalEnding,
+                pointsScored: Swift.abs(progress.points),
+                startYardLine: progress.start.yardLine
+            ),
+            next
+        )
+    }
+
     /// Runs one drive to its end.
     ///
     /// Bounded by `MatchupRules.maximumPlaysPerDrive`. An unbounded loop here is a hang rather than
@@ -171,140 +369,12 @@ public enum DriveEngine {
         isAfterTurnover: Bool,
         clockRunning: Bool
     ) -> (drive: DriveRecord, next: Situation) {
-        var situation = start
-        var plays: [PlayRecord] = []
-        var clockRunning = clockRunning
-        var clockStoppedByFirstDown = false
-        // Optional, not defaulted to `.endOfHalf`. It was, and since the loop's continue-guard
-        // tested `ending == .endOfHalf`, the sentinel and a real terminal state were the same
-        // value: every drive ended after exactly one play, and fieldGoal, punt, missedFieldGoal
-        // and downs were endings the loop could never produce. The reachability test found it.
-        var ending: DriveEnding?
-        var points = 0
-        var afterTurnover = isAfterTurnover
-
-        for playIndex in 0..<MatchupRules.maximumPlaysPerDrive {
-            // 03 section 3 clause 6: league -> season -> week -> game -> drive -> snap. The
-            // hierarchy used to stop at week; .game, .drive and .snap were declared scopes that
-            // only the seed-derivation tests ever passed.
-            var rng = SeededRandom(seed: SeededRandom.derive(from: driveSeed, scope: .snap,
-                                                             ordinal: playIndex))
-            let offensiveCall = caller.offensiveCall(for: situation, rules: rules)
-            let defensiveCall = caller.defensiveCall(for: situation, rules: rules)
-            let triggers = situation.situationalCallInTriggers(rules: rules,
-                                                               isSnapAfterTurnover: afterTurnover)
-            afterTurnover = false
-
-            let outcome = SnapResolver.resolve(
-                offensiveCall: offensiveCall, defensiveCall: defensiveCall,
-                personnel: SnapPersonnel(offense: offense.offense, defense: defense.defense),
-                situation: situation, rules: rules,
-                homeFieldAdvantage: situation.possession == .home ? homeFieldAdvantage
-                                                                  : -homeFieldAdvantage,
-                rng: &rng
-            )
-            plays.append(PlayRecord(situation: situation, offensiveCall: offensiveCall,
-                                    defensiveCall: defensiveCall, outcome: outcome,
-                                    callInTriggers: triggers))
-
-            // The drive loop is the clock authority. The pre-snap clock only runs if it was
-            // running: after an incompletion, a score, or a first down under the college rule, the
-            // offence gets to the line for free. `stopsClock` and `clockStopsOnFirstDown` were both
-            // declared and read by nobody — the second is the one tier difference 03 section 2
-            // names, and it was inert.
-            // A stopped clock does not mean a free snap. The college first-down stop restarts on
-            // the ready-for-play, so it costs a reduced charge rather than nothing — skipping the
-            // whole pre-snap put college at 142 offensive plays per team-game against a band of 67
-            // to 75, which is the clock model wrong in shape rather than a constant mistuned.
-            let preSnap: Int
-            if clockRunning {
-                preSnap = offensiveCall.tempo.snapSeconds(rules: rules)
-            } else if clockStoppedByFirstDown {
-                preSnap = rules.readyForPlaySeconds
-            } else {
-                preSnap = 0
-            }
-            situation.secondsRemainingInQuarter -= preSnap + outcome.secondsElapsed
-            let madeFirstDown = outcome.yards >= situation.distance && !outcome.result.isTurnover
-            let firstDownStop = rules.clockStopsOnFirstDown && madeFirstDown
-                && situation.secondsRemainingInHalf(rules: rules)
-                    > rules.firstDownStopEndsAtSecondsRemaining
-            clockRunning = !outcome.result.stopsClock && !firstDownStop
-            clockStoppedByFirstDown = firstDownStop
-
-            switch outcome.result {
-            case .touchdown:
-                ending = .touchdown
-                points = MatchupRules.touchdownPoints + MatchupRules.extraPointPoints
-            case .fieldGoalGood:
-                ending = .fieldGoal
-                points = MatchupRules.fieldGoalPoints
-            case .fieldGoalMissed:
-                ending = .missedFieldGoal
-            case .punt:
-                ending = .punt
-            case .safety:
-                ending = .safety
-                points = -MatchupRules.safetyPoints
-            case .interception, .fumbleLost:
-                ending = .turnover
-            case .gain, .sack, .incompletion, .kneel:
-                // Advance the chains and try again.
-                situation.yardLine = Swift.min(Swift.max(situation.yardLine + outcome.yards, 1), 99)
-                if outcome.yards >= situation.distance {
-                    situation.down = 1
-                    situation.distance = Swift.min(MatchupRules.yardsForFirstDown,
-                                                   100 - situation.yardLine)
-                } else {
-                    situation.distance -= outcome.yards
-                    situation.down += 1
-                    if situation.down > 4 { ending = .downs }
-                }
-                if situation.secondsRemainingInQuarter <= 0 {
-                    // An odd quarter running out changes ends; an even one ends a half.
-                    ending = situation.quarter % 2 == 0 ? .endOfHalf : .endOfQuarter
-                }
-                if ending != nil { break }
-                continue
-            }
-            break
+        var progress = begin(from: start, driveSeed: driveSeed,
+                             isAfterTurnover: isAfterTurnover, clockRunning: clockRunning)
+        while progress.ending == nil {
+            _ = step(&progress, offense: offense, defense: defense, caller: caller,
+                     rules: rules, homeFieldAdvantage: homeFieldAdvantage)
         }
-
-        // Running out of plays without an ending is the bound firing, which is a half that ran
-        // out rather than a drive that resolved.
-        // Running out of plays without an ending is the bound firing.
-        let finalEnding = ending ?? .endOfHalf
-
-        var next = situation
-        if finalEnding.changesPossession {
-            next.possession = situation.possession.opponent
-            // The new offence starts from the other end of the field.
-            next.yardLine = Swift.min(Swift.max(100 - situation.yardLine, 1), 99)
-            switch finalEnding {
-            case .touchdown, .fieldGoal, .safety:
-                next.yardLine = MatchupRules.kickoffTouchbackYardLine
-            case .punt:
-                let landed = situation.yardLine + (plays.last?.outcome.yards ?? 0)
-                // A punt that reaches the goal line is a touchback, not a receiving team pinned on
-                // its own 1. Two percent of measured punts were being clamped to the 1.
-                next.yardLine = landed >= 100
-                    ? MatchupRules.puntTouchbackYardLine
-                    : Swift.min(Swift.max(100 - landed, 1), 99)
-            default:
-                break
-            }
-            next.down = 1
-            next.distance = Swift.min(MatchupRules.yardsForFirstDown, 100 - next.yardLine)
-        }
-        if points > 0 {
-            if situation.possession == .home { next.homeScore += points } else { next.awayScore += points }
-        } else if points < 0 {
-            // A safety scores for the defence.
-            if situation.possession == .home { next.awayScore -= points } else { next.homeScore -= points }
-        }
-
-        return (DriveRecord(offense: start.possession, plays: plays, ending: finalEnding,
-                            pointsScored: Swift.abs(points), startYardLine: start.yardLine),
-                next)
+        return finish(progress)
     }
 }

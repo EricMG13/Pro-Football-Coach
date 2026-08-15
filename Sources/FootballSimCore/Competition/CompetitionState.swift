@@ -8,8 +8,18 @@ public enum CompetitionStage: String, Codable, Sendable, CaseIterable, Hashable 
     case championship
 }
 
+public enum GameSummarySource: String, Codable, Sendable, Equatable {
+    case abstracted
+    case detailed
+}
+
 /// The bounded team-level output of an abstract or detailed game.
 public struct GameSummary: Codable, Sendable, Equatable {
+    private enum CodingKeys: String, CodingKey {
+        case homeScore, awayScore, homeStatistics, awayStatistics
+        case homeParticipantIDs, awayParticipantIDs, playerStatistics, source, evidence
+    }
+
     public let homeScore: Int
     public let awayScore: Int
     public let homeStatistics: TeamGameStatistics
@@ -17,6 +27,10 @@ public struct GameSummary: Codable, Sendable, Equatable {
     public let homeParticipantIDs: [UUID]
     public let awayParticipantIDs: [UUID]
     public let playerStatistics: [PlayerGameStatistics]
+    public let source: GameSummarySource
+    /// Compact controlled-game evidence survives finalization for Aftermath/Game Detail.
+    /// Abstracted games leave it nil because their bounded aggregate is the authoritative detail.
+    public let evidence: GameEvidence?
 
     public init(
         homeScore: Int,
@@ -25,7 +39,9 @@ public struct GameSummary: Codable, Sendable, Equatable {
         awayStatistics: TeamGameStatistics,
         homeParticipantIDs: [UUID] = [],
         awayParticipantIDs: [UUID] = [],
-        playerStatistics: [PlayerGameStatistics]
+        playerStatistics: [PlayerGameStatistics],
+        source: GameSummarySource = .abstracted,
+        evidence: GameEvidence? = nil
     ) {
         self.homeScore = max(0, homeScore)
         self.awayScore = max(0, awayScore)
@@ -38,6 +54,8 @@ public struct GameSummary: Codable, Sendable, Equatable {
             awayParticipantIDs.filter { !homeSet.contains($0) }
         )
         self.playerStatistics = playerStatistics.sorted { $0.playerID.uuidString < $1.playerID.uuidString }
+        self.source = source
+        self.evidence = evidence
     }
 
     public init(from decoder: any Decoder) throws {
@@ -52,6 +70,8 @@ public struct GameSummary: Codable, Sendable, Equatable {
             [UUID].self,
             forKey: .awayParticipantIDs
         )
+        let decodedSource = try container.decodeIfPresent(GameSummarySource.self, forKey: .source)
+            ?? .abstracted
         let decodedPlayerStatistics = try container.decode(
             [PlayerGameStatistics].self,
             forKey: .playerStatistics
@@ -59,8 +79,12 @@ public struct GameSummary: Codable, Sendable, Equatable {
         let homeSet = Set(decodedHomeParticipants)
         let awaySet = Set(decodedAwayParticipants)
         let productionIDs = decodedPlayerStatistics.map(\.playerID)
-        guard (0...CompetitionRules.maximumFinalTeamScore).contains(decodedHomeScore),
-              (0...CompetitionRules.maximumFinalTeamScore).contains(decodedAwayScore),
+        let maximumScore = decodedSource == .detailed
+            ? MatchupRules.maximumDrivesPerGame
+                * (MatchupRules.touchdownPoints + MatchupRules.extraPointPoints)
+            : CompetitionRules.maximumFinalTeamScore
+        guard (0...maximumScore).contains(decodedHomeScore),
+              (0...maximumScore).contains(decodedAwayScore),
               decodedHomeParticipants.count <= CompetitionRules.maximumParticipantsPerTeam,
               decodedAwayParticipants.count <= CompetitionRules.maximumParticipantsPerTeam,
               homeSet.count == decodedHomeParticipants.count,
@@ -87,7 +111,9 @@ public struct GameSummary: Codable, Sendable, Equatable {
             ),
             homeParticipantIDs: decodedHomeParticipants,
             awayParticipantIDs: decodedAwayParticipants,
-            playerStatistics: decodedPlayerStatistics
+            playerStatistics: decodedPlayerStatistics,
+            source: decodedSource,
+            evidence: try container.decodeIfPresent(GameEvidence.self, forKey: .evidence)
         )
     }
 

@@ -275,6 +275,7 @@ public enum PostseasonSystem {
     ) -> [UUID] {
         competition.currentSchedule.games.compactMap { game in
             guard game.tier == tier, game.stage == stage, let result = game.result else { return nil }
+            guard result.homeScore != result.awayScore else { return nil }
             return result.homeScore > result.awayScore ? game.homeID : game.awayID
         }
     }

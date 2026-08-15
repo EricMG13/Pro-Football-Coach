@@ -95,7 +95,7 @@ public struct MatchDayView: View {
             }
             .font(CoachWorldTokens.TypeRole.headline.weight(.black))
             Text("\(ordinal(model.situation.down)) & \(model.situation.yardsToGo)"
-                + " · \(possessionTeam.abbreviation) BALL · RECORDED MOMENT")
+                + " · \(possessionTeam.abbreviation) BALL · LIVE CHECKPOINT")
                 .font(CoachWorldTokens.TypeRole.body.weight(.black))
         }
         .lineLimit(1)
@@ -112,7 +112,7 @@ public struct MatchDayView: View {
             "\(model.away.team.name) \(model.away.score), "
                 + "\(model.home.team.name) \(model.home.score), "
                 + "\(quarterLabel), \(clockLabel), \(ordinal(model.situation.down)) and "
-                + "\(model.situation.yardsToGo), \(possessionTeam.name) ball, recorded moment"
+                + "\(model.situation.yardsToGo), \(possessionTeam.name) ball, live checkpoint"
         )
         .accessibilitySortPriority(100)
     }
@@ -132,7 +132,7 @@ public struct MatchDayView: View {
             .padding(.horizontal, CoachWorldTokens.Space.sm)
             .frame(maxWidth: .infinity, minHeight: MatchMetric.scorebugHeight,
                    alignment: .leading)
-            Text("RECORDED MOMENT")
+            Text("LIVE CHECKPOINT")
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                 .foregroundStyle(palette.stateLive.color)
                 .padding(.horizontal, CoachWorldTokens.Space.sm)
@@ -144,7 +144,7 @@ public struct MatchDayView: View {
             "\(model.away.team.name) \(model.away.score), "
                 + "\(model.home.team.name) \(model.home.score), "
                 + "\(quarterLabel), \(clockLabel), \(ordinal(model.situation.down)) and "
-                + "\(model.situation.yardsToGo), \(possessionTeam.name) ball, recorded moment"
+                + "\(model.situation.yardsToGo), \(possessionTeam.name) ball, live checkpoint"
         )
         .accessibilitySortPriority(100)
     }

@@ -186,4 +186,7 @@ public enum MatchupRules {
     /// have no room for one. Both are far above any real drive or game.
     public static let maximumPlaysPerDrive = 40
     public static let maximumDrivesPerGame = 60
+    /// A controlled game may pause repeatedly in a red zone; cap retained decisions so a long
+    /// replay cannot make the save grow with unbounded UI history.
+    public static let maximumCallInsPerGame = 256
 }

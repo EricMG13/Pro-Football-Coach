@@ -548,9 +548,40 @@ public enum WorldIntegrity {
                 issues.append(.invalidTacticalState)
             }
         }
+        for (organisationID, plan) in state.tactical.personnelPlansByOrganisation {
+            guard organisationIDs.contains(organisationID),
+                  plan.organisationID == organisationID,
+                  plan.calendar == state.calendar else {
+                issues.append(.invalidTacticalState)
+                continue
+            }
+            let rosterIDs: Set<UUID>
+            if let programme = state.programmes[organisationID] {
+                rosterIDs = Set(programme.rosterIDs)
+            } else if let team = state.proTeams[organisationID] {
+                rosterIDs = Set(team.rosterIDs)
+            } else {
+                issues.append(.invalidTacticalState)
+                continue
+            }
+            if plan.overrides.contains(where: { override in
+                override.playerIDs.contains { !rosterIDs.contains($0) }
+            }) {
+                issues.append(.invalidTacticalState)
+            }
+        }
         for (opponentID, snapshot) in state.tactical.opponentScouting {
             if !organisationIDs.contains(opponentID)
                 || !isCalendar(onOrBefore: snapshot.observedThrough, state.calendar) {
+                issues.append(.invalidTacticalState)
+            }
+        }
+        for (key, observation) in state.tactical.opponentObservations {
+            if key != "\(observation.observerID.uuidString)|\(observation.opponentID.uuidString)"
+                || !organisationIDs.contains(observation.observerID)
+                || !organisationIDs.contains(observation.opponentID)
+                || observation.observerID == observation.opponentID
+                || !isCalendar(onOrBefore: observation.observedThrough, state.calendar) {
                 issues.append(.invalidTacticalState)
             }
         }
@@ -640,21 +671,25 @@ public enum WorldIntegrity {
                 ))
             }
             let resultIsValid = game.result.map {
-                $0.homeScore != $0.awayScore
+                let decided = $0.homeScore != $0.awayScore
+                    || (game.tier == .pro && game.stage == .regularSeason)
+                let boundedAbstractStats = $0.source == .detailed
+                    || (CompetitionRules.offensiveYardRange.contains(
+                            $0.homeStatistics.offensiveYards
+                        )
+                        && CompetitionRules.offensiveYardRange.contains(
+                            $0.awayStatistics.offensiveYards
+                        )
+                        && CompetitionRules.turnoverRange.contains($0.homeStatistics.turnovers)
+                        && CompetitionRules.turnoverRange.contains($0.awayStatistics.turnovers))
+                return decided
                     && $0.homeStatistics.points == $0.homeScore
                     && $0.awayStatistics.points == $0.awayScore
                     && $0.homeStatistics.passingYards + $0.homeStatistics.rushingYards
                         == $0.homeStatistics.offensiveYards
                     && $0.awayStatistics.passingYards + $0.awayStatistics.rushingYards
                         == $0.awayStatistics.offensiveYards
-                    && CompetitionRules.offensiveYardRange.contains(
-                        $0.homeStatistics.offensiveYards
-                    )
-                    && CompetitionRules.offensiveYardRange.contains(
-                        $0.awayStatistics.offensiveYards
-                    )
-                    && CompetitionRules.turnoverRange.contains($0.homeStatistics.turnovers)
-                    && CompetitionRules.turnoverRange.contains($0.awayStatistics.turnovers)
+                    && boundedAbstractStats
                     && validResultParticipants($0, game: game, state: state)
             } ?? true
             if game.homeID == game.awayID
@@ -1949,7 +1984,13 @@ public enum WorldIntegrity {
                 issues.append(.invalidMandatoryDecision(decisionID: decision.id))
             }
             for resolution in state.career.mandatoryDecisionResolutions {
-                issues.append(.invalidMandatoryDecision(decisionID: resolution.decisionID))
+                if state.programmes[resolution.programmeID] == nil
+                    || !MandatoryDecision.actionIsValid(
+                        resolution.action,
+                        for: resolution.subject
+                    ) {
+                    issues.append(.invalidMandatoryDecision(decisionID: resolution.decisionID))
+                }
             }
             return
         }
@@ -2147,6 +2188,7 @@ public enum WorldIntegrity {
 
     private static func winnerID(_ game: ScheduledGame) -> UUID? {
         guard let result = game.result else { return nil }
+        guard result.homeScore != result.awayScore else { return nil }
         return result.homeScore > result.awayScore ? game.homeID : game.awayID
     }
 

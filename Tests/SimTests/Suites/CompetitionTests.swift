@@ -2,6 +2,72 @@ import Foundation
 import FootballSimCore
 
 func runCompetitionTests() {
+    suite("Player form rating") {
+        test("uses position-specific box-score production and bounded output") {
+            let id = UUID(uuidString: "00000000-0000-4000-8000-000000007000")!
+            expectEqual(
+                PlayerFormRating.rating(
+                    for: PlayerGameStatistics(playerID: id, passingYards: 200, touchdowns: 2),
+                    position: .quarterback
+                ),
+                81
+            )
+            expectEqual(
+                PlayerFormRating.rating(
+                    for: PlayerGameStatistics(playerID: id, receivingYards: 80),
+                    position: .wideReceiver
+                ),
+                63
+            )
+            expectEqual(
+                PlayerFormRating.rating(
+                    for: PlayerGameStatistics(playerID: id, touchdowns: 20),
+                    position: .cornerback
+                ),
+                SharedRules.ratingRange.upperBound
+            )
+            expectEqual(
+                PlayerFormRating.rating(
+                    for: PlayerGameStatistics(playerID: id),
+                    position: .runningBack
+                ),
+                55
+            )
+            expectEqual(
+                PlayerFormRating.rating(
+                    for: PlayerGameStatistics(
+                        playerID: id,
+                        passingYards: Int.max,
+                        touchdowns: Int.max
+                    ),
+                    position: .quarterback
+                ),
+                SharedRules.ratingRange.upperBound
+            )
+        }
+    }
+
+    suite("Tie-aware standings") {
+        test("records ties without inventing a winner and keeps legacy JSON readable") {
+            let team = UUID(uuidString: "00000000-0000-4000-8000-000000007001")!
+            var row = StandingRow(id: team)
+            row.record(pointsFor: 17, pointsAgainst: 17, conferenceGame: true)
+            expectEqual(row.wins, 0)
+            expectEqual(row.losses, 0)
+            expectEqual(row.ties, 1)
+            expectEqual(row.conferenceTies, 1)
+            expectEqual(row.games, 1)
+            expectEqual(row.winningPercentage, 0.5)
+
+            let legacy = """
+            {"id":"00000000-0000-4000-8000-000000007001","wins":2,"losses":1,"conferenceWins":1,"conferenceLosses":1,"pointsFor":42,"pointsAgainst":35}
+            """.data(using: .utf8)!
+            let restored = try JSONDecoder.stable().decode(StandingRow.self, from: legacy)
+            expectEqual(restored.ties, 0)
+            expectEqual(restored.games, 3)
+        }
+    }
+
     suite("Regular-season schedule") {
         test("bootstrap creates only the exact regular-season slate") {
             let state = GameState.bootstrap(seed: 70_001)
@@ -117,7 +183,7 @@ func runCompetitionTests() {
 
 
     suite("Abstract competition results") {
-        test("the same scheduled game produces the same bounded non-tied summary") {
+        test("the same scheduled game produces the same bounded summary") {
             let state = GameState.bootstrap(seed: 71_001)
             let game = state.competition.currentSchedule.games[0]
             let first = AbstractGameSimulator.play(game, in: state)
@@ -125,7 +191,10 @@ func runCompetitionTests() {
 
             expectEqual(first, second)
             expect(first.homeScore >= 0 && first.awayScore >= 0)
-            expect(first.homeScore != first.awayScore, "competition overtime left a tie")
+            if game.tier == .college || game.stage != .regularSeason {
+                expect(first.homeScore != first.awayScore,
+                       "a college or postseason game ended tied")
+            }
             expectEqual(first.homeStatistics.points, first.homeScore)
             expectEqual(first.awayStatistics.points, first.awayScore)
             expectEqual(
@@ -136,6 +205,57 @@ func runCompetitionTests() {
                 first.awayStatistics.passingYards + first.awayStatistics.rushingYards,
                 first.awayStatistics.offensiveYards
             )
+        }
+
+        test("professional regular season permits ties but college and postseason do not") {
+            let state = GameState.bootstrap(seed: 71_002)
+            let home = state.proTeams.ids[0]
+            let away = state.proTeams.ids[1]
+            var observedProfessionalTie = false
+
+            for ordinal in 0..<1_024 {
+                let game = ScheduledGame(
+                    id: UUID(uuidString: String(
+                        format: "00000000-0000-4000-8004-%012d", ordinal
+                    ))!,
+                    season: state.calendar.season,
+                    tier: .pro,
+                    week: 1,
+                    stage: .regularSeason,
+                    homeID: home,
+                    awayID: away
+                )
+                let result = AbstractGameSimulator.play(game, in: state)
+                if result.homeScore == result.awayScore {
+                    observedProfessionalTie = true
+                    break
+                }
+            }
+            expect(observedProfessionalTie,
+                   "the professional regular-season model never permits a bounded tie")
+
+            for (tier, stage) in [
+                (Tier.college, CompetitionStage.regularSeason),
+                (Tier.pro, CompetitionStage.championship),
+            ] {
+                let teams = tier == .college ? state.programmes.ids : state.proTeams.ids
+                for ordinal in 0..<128 {
+                    let game = ScheduledGame(
+                        id: UUID(uuidString: String(
+                            format: "00000000-0000-4000-8005-%012d", ordinal
+                        ))!,
+                        season: state.calendar.season,
+                        tier: tier,
+                        week: 1,
+                        stage: stage,
+                        homeID: teams[0],
+                        awayID: teams[1]
+                    )
+                    let result = AbstractGameSimulator.play(game, in: state)
+                    expect(result.homeScore != result.awayScore,
+                           "(tier.rawValue) (stage.rawValue) returned a tie")
+                }
+            }
         }
 
         test("the abstract result records every available contributor canonically") {

@@ -135,12 +135,17 @@ public struct NewsFeedReadModel: Sendable, Equatable {
         case let .proCapComplianceRelease(playerID, teamID, _):
             return "\(who(teamID)) release \(who(playerID)) to clear cap space"
 
+        case let .playerSuspended(playerID, organisationID, reason, weeks):
+            return "\(who(organisationID)) suspend \(who(playerID)) for \(weeks) "
+                + "\(weeks == 1 ? "week" : "weeks") over \(NewsFeedReadModel.wording(reason))"
+
         // Weekly bookkeeping, scored zero by `historicalWeight` and reported by nobody.
         case .integrityChecked,
              .weekAdvanced,
              .gameCompleted,
              .playerInjured,
              .playerRecovered,
+             .playerReinstated,
              .playerDeveloped,
              .prospectEvaluated,
              .recruitingInteraction,
@@ -153,6 +158,18 @@ public struct NewsFeedReadModel: Sendable, Equatable {
              .proWaiverExpired,
              .proWaiversResolved:
             return nil
+        }
+    }
+
+    /// Plain words for a discipline reason. Short and unsensational: this is a football team's own
+    /// discipline, and a headline that read like a police blotter would be writing a story the
+    /// simulation never told.
+    static func wording(_ reason: DisciplineIncidentKind) -> String {
+        switch reason {
+        case .timekeeping: return "missed team commitments"
+        case .conduct: return "conduct"
+        case .teamRules: return "a team rules breach"
+        case .offField: return "an off-field matter"
         }
     }
 
