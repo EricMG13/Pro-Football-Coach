@@ -248,6 +248,26 @@ public final class CoachWorldStore {
         statusMessage = "Development evidence opened for \(row.person.name)"
     }
 
+    /// Opens only observer-scoped film already retained by the tactical authority. A missing or
+    /// stale observation is reported as unavailable rather than replaced with current hidden team
+    /// statistics.
+    public func inspectOpponentFilm() async {
+        let snapshot = await session.snapshot()
+        guard let hq = CoachWorldReadModelProvider.coachingHQ(from: snapshot),
+              let opponent = hq.opponent,
+              let observerID = UUID(uuidString: hq.team.stableID),
+              let opponentID = UUID(uuidString: opponent.stableID),
+              let observation = snapshot.tactical.observation(
+                  for: observerID,
+                  opponentID: opponentID,
+                  at: snapshot.calendar
+              ) else {
+            statusMessage = "No current opponent film evidence is recorded."
+            return
+        }
+        statusMessage = "Opponent film: \(observation.sampleSize) source games, \(observation.confidence)% confidence, \(observation.passRate)% pass rate, \(observation.turnoverRate)% turnover rate."
+    }
+
     public func advanceWeek() async {
         await run { try await self.session.resolve(.advanceWeek) }
     }

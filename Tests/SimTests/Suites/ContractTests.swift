@@ -556,6 +556,19 @@ func runContractTests() {
                    "a release build must launch into the simulated world, not into a fixture")
         }
 
+        test("HQ film inspection reaches the application service") {
+            let root = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
+            let store = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldStore.swift") }?.text ?? ""
+            expect(root.contains("onInspect: { Task { await store.inspectOpponentFilm() } }"),
+                   "HQ film inspection must reach the store seam")
+            expect(!root.contains("onInspect: {}"),
+                   "HQ film inspection must not be a dead callback")
+            expect(store.contains("No current opponent film evidence is recorded."),
+                   "missing film evidence needs an explicit unavailable state")
+        }
+
         test("the authoritative-root UI scan catches code but ignores prose") {
             expect(caught("let state: GameState\n", by: referencesAuthoritativeRoot),
                    "a planted GameState property was not caught")

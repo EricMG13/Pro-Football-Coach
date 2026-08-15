@@ -260,7 +260,7 @@ public struct CoachWorldAppRootView: View {
                         // not see again this session.
                         statusMessage: failure ?? store.statusMessage,
                         onCommit: { intentID in Task { await commit(intentID, in: store) } },
-                        onInspect: {},
+                        onInspect: { Task { await store.inspectOpponentFilm() } },
                         onDelegate: { Task { await delegate(store) } },
                         onPrepare: { Task { await prepare(store) } },
                         onContinue: { Task { await advance(store) } },
