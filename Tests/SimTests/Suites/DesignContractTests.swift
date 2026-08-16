@@ -1,5 +1,5 @@
 import Foundation
-import ProFootballCoachUI
+@testable import ProFootballCoachUI
 
 // The M8 production-UI entry gate, as tests (05, phase P11a).
 //
@@ -282,6 +282,57 @@ func runDesignContractTests() {
             let canonRatios = Set(matches(of: "\\b(\\d{1,2}\\.\\d{2})\\b", in: canon))
             expect(!canonRatios.contains("7.77"),
                    "the planted ratio must not coincidentally exist in canon")
+        }
+    }
+
+    suite("Floodlit dark-only (06.1a)") {
+        // 04 section 6.1a (2026-08-16): Floodlit is dark-only, with no production light palette and
+        // no user-facing appearance switch. `Palette.light` and every `colorScheme` branch that
+        // chose between `.dark`/`.light` are the code shape the amendment retires; this is the test
+        // half of G-07 for that amendment, enumerated by directory per CLAUDE.md's coverage rule.
+        test("no UI file resolves a palette by system colour scheme") {
+            for file in swiftFiles(under: "Sources/ProFootballCoachUI") {
+                expect(!file.text.contains("CoachWorldTokens.light"),
+                       "\(file.path) still references CoachWorldTokens.light; 04 section 6.1a "
+                           + "retired the light palette")
+                expect(!file.text.contains("Environment(\\.colorScheme)"),
+                       "\(file.path) still reads colorScheme; Floodlit has no appearance switch")
+            }
+        }
+
+        test("the scan would notice a reintroduced light branch") {
+            let planted = "colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light"
+            expect(planted.contains("CoachWorldTokens.light"),
+                   "the predicate the real assertion uses must catch a planted light reference")
+        }
+
+        test("DesignTokens.swift declares no light palette") {
+            let tokenFiles = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .filter { $0.path.hasSuffix("DesignTokens.swift") }
+            expect(!tokenFiles.isEmpty, "DesignTokens.swift not found")
+            for file in tokenFiles {
+                expect(!file.text.contains("public static let light"),
+                       "\(file.path) still declares a light Palette instance")
+            }
+        }
+    }
+
+    suite("Floodlit geometry (06.1a)") {
+        // The asymmetric four-radius shape 04 section 6.1a names, with its three presets. A shape
+        // built from a single `cut` value cannot express 4/22/4/22, so the type itself is the
+        // contract: this only compiles if the presets exist with the stated radii.
+        test("the three named CutCorner presets match 04 section 6.1a's radii") {
+            let panel = CoachWorldCutCorner.panel
+            expectEqual(panel.topLeading, 4); expectEqual(panel.topTrailing, 22)
+            expectEqual(panel.bottomTrailing, 4); expectEqual(panel.bottomLeading, 22)
+
+            let row = CoachWorldCutCorner.row
+            expectEqual(row.topLeading, 3); expectEqual(row.topTrailing, 14)
+            expectEqual(row.bottomTrailing, 3); expectEqual(row.bottomLeading, 14)
+
+            let action = CoachWorldCutCorner.action
+            expectEqual(action.topLeading, 22); expectEqual(action.topTrailing, 22)
+            expectEqual(action.bottomTrailing, 22); expectEqual(action.bottomLeading, 5)
         }
     }
 }

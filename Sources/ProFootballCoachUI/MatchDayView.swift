@@ -6,7 +6,6 @@ public struct MatchDayView: View {
     public let onControl: (CoachWorldIntentID) -> Void
     public let onInterruption: (CoachWorldIntentID) -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showsEvidence = false
 
@@ -23,7 +22,7 @@ public struct MatchDayView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     public var body: some View {

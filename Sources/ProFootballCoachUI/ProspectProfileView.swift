@@ -9,7 +9,6 @@ public struct ProspectProfileView: View {
     public let onAction: (String, CoachWorldIntentID) -> Void
     public let onClose: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(
@@ -27,7 +26,7 @@ public struct ProspectProfileView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     private var prospect: RecruitingBoardReadModel.Prospect? {

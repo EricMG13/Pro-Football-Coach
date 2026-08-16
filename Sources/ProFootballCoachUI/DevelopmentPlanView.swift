@@ -7,7 +7,6 @@ public struct DevelopmentPlanView: View {
     public let statusMessage: String?
     public let onClose: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(model: RosterReadModel, statusMessage: String? = nil, onClose: @escaping () -> Void) {
@@ -17,7 +16,7 @@ public struct DevelopmentPlanView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     public var body: some View {

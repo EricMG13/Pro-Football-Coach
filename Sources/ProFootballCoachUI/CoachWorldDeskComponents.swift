@@ -1,17 +1,66 @@
 import SwiftUI
 
+/// The asymmetric four-corner shape `04` section 6.1a names: independent radii per corner, so a
+/// panel reads as a deliberate cut shape rather than a default rounded card. `RoundedRectangle`
+/// cannot express this — each corner needs its own radius, drawn by hand.
 struct CoachWorldCutCorner: Shape {
-    var cut: CGFloat = CoachWorldTokens.Shape.cutCorner
+    var topLeading: CGFloat
+    var topTrailing: CGFloat
+    var bottomTrailing: CGFloat
+    var bottomLeading: CGFloat
+
+    init(
+        topLeading: CGFloat = 4,
+        topTrailing: CGFloat = 22,
+        bottomTrailing: CGFloat = 4,
+        bottomLeading: CGFloat = 22
+    ) {
+        self.topLeading = topLeading
+        self.topTrailing = topTrailing
+        self.bottomTrailing = bottomTrailing
+        self.bottomLeading = bottomLeading
+    }
+
+    /// The house panel shape — glass panels, cards.
+    static let panel = CoachWorldCutCorner()
+    /// Rows and chips — a tighter variant of `.panel`.
+    static let row = CoachWorldCutCorner(
+        topLeading: 3, topTrailing: 14, bottomTrailing: 3, bottomLeading: 14
+    )
+    /// Committing controls: soft on three corners, cut on the last.
+    static let action = CoachWorldCutCorner(
+        topLeading: 22, topTrailing: 22, bottomTrailing: 22, bottomLeading: 5
+    )
 
     func path(in rect: CGRect) -> Path {
-        let cut = min(cut, rect.width / 3, rect.height / 3)
+        let maxRadius = min(rect.width, rect.height) / 2
+        let tl = min(topLeading, maxRadius)
+        let tr = min(topTrailing, maxRadius)
+        let br = min(bottomTrailing, maxRadius)
+        let bl = min(bottomLeading, maxRadius)
+
         var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX - cut, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + cut))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX + cut, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY - cut))
+        path.move(to: CGPoint(x: rect.minX + tl, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - tr, y: rect.minY))
+        path.addArc(
+            center: CGPoint(x: rect.maxX - tr, y: rect.minY + tr), radius: tr,
+            startAngle: .degrees(-90), endAngle: .degrees(0), clockwise: false
+        )
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - br))
+        path.addArc(
+            center: CGPoint(x: rect.maxX - br, y: rect.maxY - br), radius: br,
+            startAngle: .degrees(0), endAngle: .degrees(90), clockwise: false
+        )
+        path.addLine(to: CGPoint(x: rect.minX + bl, y: rect.maxY))
+        path.addArc(
+            center: CGPoint(x: rect.minX + bl, y: rect.maxY - bl), radius: bl,
+            startAngle: .degrees(90), endAngle: .degrees(180), clockwise: false
+        )
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + tl))
+        path.addArc(
+            center: CGPoint(x: rect.minX + tl, y: rect.minY + tl), radius: tl,
+            startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false
+        )
         path.closeSubpath()
         return path
     }
@@ -149,7 +198,7 @@ struct CoachWorldActionButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         let appearance = self.appearance
-        let controlShape = CoachWorldCutCorner(cut: CoachWorldTokens.Shape.controlRadius)
+        let controlShape = CoachWorldCutCorner.action
 
         configuration.label
             .font(CoachWorldTokens.TypeRole.body.weight(.bold))
@@ -220,7 +269,7 @@ struct CoachWorldRouteButton: View {
         .padding(.horizontal, CoachWorldTokens.Space.xxs)
         .background {
             if isCurrent {
-                CoachWorldCutCorner(cut: CoachWorldTokens.Shape.controlRadius)
+                CoachWorldCutCorner.row
                     .fill(selectionColour.color.opacity(0.15))
             }
         }
@@ -263,7 +312,7 @@ private struct CoachWorldFloodlitPanelModifier: ViewModifier {
     let depth: CoachWorldFloodlitPanelDepth
 
     func body(content: Content) -> some View {
-        let shape = CoachWorldCutCorner()
+        let shape = CoachWorldCutCorner.panel
         content
             .background {
                 if reduceTransparency {

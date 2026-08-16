@@ -7,7 +7,6 @@ public struct RosterView: View {
     public let onNavigate: (CoachWorldScreenID) -> Void
     public let onInspectDevelopment: (String) -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var workspaceGap = CoachWorldTokens.Space.xs
     @State private var selectedPlayerID: String
@@ -30,7 +29,7 @@ public struct RosterView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     private var visiblePlayers: [RosterReadModel.PlayerRow] {

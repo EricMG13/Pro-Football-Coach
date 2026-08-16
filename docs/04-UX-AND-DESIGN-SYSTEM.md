@@ -346,7 +346,80 @@ Measured constraints, binding on every consumer:
 
 No gradients, glow, glass, fake paper, leather, cork or decorative shadow. Surfaces are matte and
 opaque. Hairlines separate continuous regions; containers exist only for interaction, grouping or
-clipping.
+clipping. **Superseded for the Floodlit register by §6.1a below** — the prohibition stood while the
+production proxy was the FM captures; it does not survive the Floodlit cutover.
+
+### 6.1a Floodlit palette and material (2026-08-16 amendment, dark-only)
+
+Approved 2026-08-15 (`docs/superpowers/specs/2026-08-15-floodlit-all-surfaces-design.md`). This
+section replaces §6.1's dark production values and retires the light column entirely: **Floodlit is
+dark-only.** There is no production light palette, no derived light register, no user-facing
+appearance switch, and the app keeps its appearance when the system appearance changes. §7's
+"light/dark appearances... binding" requirement is retired by this amendment; only dark is binding.
+
+Role names are unchanged from §6.1 — every view keeps reading `palette.actionPrimary`,
+`palette.stateWarning` and so on — only the hex each role resolves to changes, plus `Palette.light`
+is deleted. Ratios below are the same WCAG 2.2 relative-luminance method as §6.1, against the actual
+`page`/`work`/`raised` grounds.
+
+| Role | Hex | on page / work / raised |
+|---|---|---|
+| `world.page` | `#060A12` | — |
+| `world.work` | `#100E16` | — |
+| `world.raised` | `#12203A` | — |
+| `content.primary` | `#F6FAFF` | 18.90 / 18.27 / 15.49 |
+| `content.secondary` | `#A9BACE` | 10.00 / 9.67 / 8.20 |
+| `content.quiet` | `#7A8A9E` | 5.62 / 5.43 / 4.61 |
+| `action.primary` | `#FFC53D` | 12.55 / 12.14 / 10.29 |
+| `action.secondary` | `#A9BACE` | 10.00 / 9.67 / 8.20 |
+| `action.destructive` | `#FF3B54` | 5.67 / 5.48 / 4.64 |
+| `state.live` | `#37E08A` | 11.50 / 11.12 / 9.43 |
+| `state.positive` | `#4FD08C` | 10.13 / 9.79 / 8.30 |
+| `state.warning` | `#FFB03A` | 10.87 / 10.51 / 8.91 |
+| `state.negative` | `#FF3B54` | 5.67 / 5.48 / 4.64 |
+| `state.info` | `#6FA8DC` | 7.84 / 7.58 / 6.43 |
+| `college.identity` | `#B07BD6` | 6.27 / 6.07 / 5.14 |
+| `pro.identity` | `#6FA8DC` | 7.84 / 7.58 / 6.43 |
+| `field.turf` | `#072616` | — |
+| `field.line` (on turf) | `#F6FAFF` | 15.44 |
+| `field.annotation` (on turf) | `#FFCE6A` | 11.01 |
+| `field.live` (on turf) | `#4FD08C` | 8.27 |
+
+Measured constraints, binding on every consumer:
+
+- **`content.quiet` clears 4.5:1 on all three grounds** (4.61 on `raised`, its lowest), so unlike
+  §6.1's v3 values it needs no working-prose exemption; §6.1's general rule that quiet stays out of
+  working prose is a density choice here, not a contrast requirement.
+- **Filled-control ink reuses `world.page` as the dark ink**, the pattern the shipped
+  `CoachWorldActionButtonStyle` already implements (`page.color` as foreground on a filled action).
+  Measured on every fill: `action.primary` 12.55, `state.live` 11.50, `state.positive` 10.13,
+  `state.warning` 10.87, `state.info` 7.84, `state.negative`/`action.destructive` 5.67. All clear
+  4.5:1; no new ink token is introduced.
+- **The team-colour fill rule is unchanged and still binding**: `dark-primary` team fill against the
+  new `world.raised` measures 1.26, `content.secondary` as the mandatory hairline on it measures
+  6.51. A team fill still always carries the boundary.
+
+**Material.** Glass, grain, blur and a directional sheen are permitted for the Floodlit register,
+implemented exactly as `CoachWorldFloodlitStage`, `CoachWorldFloodlitPanelModifier` and
+`CoachWorldGrainOverlay` already ship: `.ultraThinMaterial` plus an opacity-scaled fill from §6.1's
+existing `Depth.glassPanelOpacity` (0.56) and `Depth.deepPanelOpacity` (0.82) — `.82` remains the
+lowest value that preserves 4.5:1 body text when a panel crosses a mown stripe and a floodlight beam.
+**Reduce Transparency removes glass, grain and blur and falls back to opaque `world.work` /
+`world.raised` fills at the same depth order** — already implemented, and mandatory: no consumer may
+render glass without the Reduce Transparency branch.
+
+**Geometry.** §6.3's flat radius table is superseded for panels, rows and committing controls by an
+asymmetric four-corner shape (`CutCorner`, independent `topLeading`/`topTrailing`/`bottomTrailing`/
+`bottomLeading` radii — `RoundedRectangle` cannot express this). Three named presets:
+
+| Preset | Radii (pt) | Use |
+|---|---|---|
+| `.panel` | 4 / 22 / 4 / 22 | House panel shape — glass panels, cards |
+| `.row` | 3 / 14 / 3 / 14 | Rows and chips — tighter variant of `.panel` |
+| `.action` | 22 / 22 / 22 / 5 | Committing controls — soft on three corners, cut on the last |
+
+College identity furniture may take one restrained 9° cut per §5; Pro stays orthogonal. BROADCAST
+radius stays 0 — square geometry is unchanged by this amendment.
 
 ### 6.2 Typography
 
@@ -581,8 +654,9 @@ newer; all five window sizes Apple-verified: 852 × 393, 874 × 402, 932 × 430,
 844 × 390 `e`/base class below the promise). The **install floor stays 844 × 390**: below-promise
 devices can always install, so every surface renders un-clipped and reachable there forever; the
 promise floor is where the full budget must hold (two-tier `SmallestDeviceLayoutTest`, D15). Both
-sensor orientations, light/dark appearances, compact/regular landscape width classes and AX5 are
-binding.
+sensor orientations, compact/regular landscape width classes and AX5 are binding. **Light/dark
+appearances is retired by §6.1a (2026-08-16): Floodlit is dark-only, with no user-facing appearance
+switch and no derived light register.**
 
 Landscape safe-area insets are per-model and secondary-sourced (sensor edge / home edge): 59/21 for
 the 15 generation and base 16; 62/21 for the 16 Pro class; 62 sides with 20 top and bottom for the

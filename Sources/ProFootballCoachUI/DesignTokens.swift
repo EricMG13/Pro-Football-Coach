@@ -87,29 +87,20 @@ public enum CoachWorldTokens {
         public let fieldLive: ColorValue
     }
 
+    /// The single Floodlit palette (`04` section 6.1a, 2026-08-16). Dark-only: there is no
+    /// production light palette and no user-facing appearance switch. Role names are unchanged from
+    /// the retired v3 palette; only the hex each role resolves to changed, so every call site that
+    /// read `.dark` keeps compiling and keeps its meaning.
     public static let dark = Palette(
-        page: .init(hex: 0x080A14), work: .init(hex: 0x111426), raised: .init(hex: 0x191D32),
-        contentPrimary: .init(hex: 0xF4F5FA), contentSecondary: .init(hex: 0xB8BDCC),
-        contentQuiet: .init(hex: 0x858CA2), actionPrimary: .init(hex: 0x9964E8),
-        actionSecondary: .init(hex: 0xB8BDCC),
-        actionDestructive: .init(hex: 0xF07886), stateLive: .init(hex: 0x72D7A0),
-        statePositive: .init(hex: 0x6FD39A), stateWarning: .init(hex: 0xF0C56C),
-        stateNegative: .init(hex: 0xF07886), stateInfo: .init(hex: 0x72ADEC),
-        collegeIdentity: .init(hex: 0xA861D6), proIdentity: .init(hex: 0x5B9DE0),
-        fieldTurf: .init(hex: 0x163E2A), fieldLine: .init(hex: 0xF5F7FA),
-        fieldAnnotation: .init(hex: 0xE7C45D), fieldLive: .init(hex: 0xC6F24E)
-    )
-
-    public static let light = Palette(
-        page: .init(hex: 0xF1F2F7), work: .init(hex: 0xFBFBFD), raised: .init(hex: 0xE6E8F0),
-        contentPrimary: .init(hex: 0x111426), contentSecondary: .init(hex: 0x4D5366),
-        contentQuiet: .init(hex: 0x596074), actionPrimary: .init(hex: 0x6840B0),
-        actionSecondary: .init(hex: 0x4D5366),
-        actionDestructive: .init(hex: 0xA42D32), stateLive: .init(hex: 0x4A6F00),
-        statePositive: .init(hex: 0x1F7048), stateWarning: .init(hex: 0x765300),
-        stateNegative: .init(hex: 0xA42D32), stateInfo: .init(hex: 0x205F96),
-        collegeIdentity: .init(hex: 0x6840B0), proIdentity: .init(hex: 0x2D628B),
-        fieldTurf: .init(hex: 0xDCE8DF), fieldLine: .init(hex: 0x0E1218),
-        fieldAnnotation: .init(hex: 0x7A5200), fieldLive: .init(hex: 0x4A6F00)
+        page: .init(hex: 0x060A12), work: .init(hex: 0x100E16), raised: .init(hex: 0x12203A),
+        contentPrimary: .init(hex: 0xF6FAFF), contentSecondary: .init(hex: 0xA9BACE),
+        contentQuiet: .init(hex: 0x7A8A9E), actionPrimary: .init(hex: 0xFFC53D),
+        actionSecondary: .init(hex: 0xA9BACE),
+        actionDestructive: .init(hex: 0xFF3B54), stateLive: .init(hex: 0x37E08A),
+        statePositive: .init(hex: 0x4FD08C), stateWarning: .init(hex: 0xFFB03A),
+        stateNegative: .init(hex: 0xFF3B54), stateInfo: .init(hex: 0x6FA8DC),
+        collegeIdentity: .init(hex: 0xB07BD6), proIdentity: .init(hex: 0x6FA8DC),
+        fieldTurf: .init(hex: 0x072616), fieldLine: .init(hex: 0xF6FAFF),
+        fieldAnnotation: .init(hex: 0xFFCE6A), fieldLive: .init(hex: 0x4FD08C)
     )
 }

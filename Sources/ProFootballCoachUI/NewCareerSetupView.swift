@@ -9,7 +9,6 @@ public struct NewCareerSetupView: View {
     public let onSeedChanged: (UInt64) -> Void
     public let onCancel: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var firstName = "Alex"
     @State private var lastName = "Coach"
@@ -51,7 +50,7 @@ public struct NewCareerSetupView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     private var standardLayout: some View {

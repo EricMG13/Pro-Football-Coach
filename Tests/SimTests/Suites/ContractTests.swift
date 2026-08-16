@@ -1700,9 +1700,11 @@ func runContractTests() {
         }
 #endif
 
-        test("the production palettes preserve readable role contrast") {
+        test("the production palette preserves readable role contrast") {
+            // 04 section 6.1a (2026-08-16): Floodlit is dark-only, so `dark` is the sole production
+            // palette. There is no `.light` to iterate any more.
             for (name, palette) in [
-                ("dark", CoachWorldTokens.dark), ("light", CoachWorldTokens.light),
+                ("dark", CoachWorldTokens.dark),
             ] {
                 for surface in [palette.page, palette.work, palette.raised] {
                     expect(contrastRatio(palette.contentPrimary, surface) >= 4.5,

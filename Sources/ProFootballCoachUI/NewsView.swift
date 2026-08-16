@@ -5,7 +5,6 @@ public struct NewsView: View {
     public let statusMessage: String?
     public let onClose: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(model: NewsReadModel, statusMessage: String? = nil, onClose: @escaping () -> Void) {
@@ -15,7 +14,7 @@ public struct NewsView: View {
     }
 
     public var body: some View {
-        let palette = colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        let palette = CoachWorldTokens.dark
         ScrollView {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                 header(palette: palette)

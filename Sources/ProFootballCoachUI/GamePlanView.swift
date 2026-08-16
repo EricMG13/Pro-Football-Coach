@@ -8,7 +8,6 @@ public struct GamePlanView: View {
     public let onSelect: (TacticalPlan) -> Void
     public let onClose: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var selectedID: String
 
@@ -30,7 +29,7 @@ public struct GamePlanView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     public var body: some View {

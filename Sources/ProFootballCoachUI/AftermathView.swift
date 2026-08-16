@@ -5,7 +5,6 @@ public struct AftermathView: View {
     public let statusMessage: String?
     public let onContinue: () -> Void
     public let onOpenBoxScore: (() -> Void)?
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(
@@ -21,7 +20,7 @@ public struct AftermathView: View {
     }
 
     public var body: some View {
-        let palette = colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        let palette = CoachWorldTokens.dark
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 content(palette: palette).accessibilitySortPriority(100)

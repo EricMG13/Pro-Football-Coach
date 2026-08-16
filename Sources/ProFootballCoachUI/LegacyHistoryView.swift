@@ -7,7 +7,6 @@ public struct LegacyHistoryView: View {
     public let onClose: () -> Void
     public let onNavigate: (CoachWorldScreenID) -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
 
     public init(model: LegacyHistoryReadModel, focus: CoachWorldScreenID,
                 statusMessage: String? = nil, onClose: @escaping () -> Void,
@@ -20,7 +19,7 @@ public struct LegacyHistoryView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     public var body: some View {

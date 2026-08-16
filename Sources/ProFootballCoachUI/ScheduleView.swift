@@ -7,7 +7,6 @@ public struct ScheduleView: View {
     public let onContinue: () -> Void
     public let onSelectTeam: (UUID) -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(
@@ -25,7 +24,7 @@ public struct ScheduleView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     public var body: some View {

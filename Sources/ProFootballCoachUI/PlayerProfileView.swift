@@ -6,7 +6,6 @@ public struct PlayerProfileView: View {
     public let onClose: () -> Void
     public let onInspectDevelopment: (String) -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var activeRoute = ProfileRoute.overview
 
@@ -40,7 +39,7 @@ public struct PlayerProfileView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     private var identityBand: some View {

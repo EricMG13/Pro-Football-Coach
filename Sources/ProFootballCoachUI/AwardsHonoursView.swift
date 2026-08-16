@@ -5,7 +5,6 @@ public struct AwardsHonoursView: View {
     public let statusMessage: String?
     public let onClose: () -> Void
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.colorScheme) private var colorScheme
 
     public init(model: AwardsHonoursReadModel, statusMessage: String? = nil,
                 onClose: @escaping () -> Void) {
@@ -53,6 +52,6 @@ public struct AwardsHonoursView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 }

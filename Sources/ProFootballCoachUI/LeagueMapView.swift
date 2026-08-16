@@ -21,7 +21,6 @@ public struct LeagueMapView: View {
     public let onNavigate: (CoachWorldScreenID) -> Void
     public let onSelectTeam: (UUID) -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var selectedPlaceID: String
     @State private var tier: String
@@ -47,7 +46,7 @@ public struct LeagueMapView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     public var body: some View {

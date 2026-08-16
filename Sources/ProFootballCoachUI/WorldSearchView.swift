@@ -7,7 +7,6 @@ public struct WorldSearchView: View {
     public let onClose: () -> Void
     public let onSelectTeam: (UUID) -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var query = ""
 
@@ -24,7 +23,7 @@ public struct WorldSearchView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     private var visibleResults: [WorldSearchReadModel.Result] {

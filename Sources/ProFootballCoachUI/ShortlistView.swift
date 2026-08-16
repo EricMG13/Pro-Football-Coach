@@ -7,7 +7,6 @@ public struct ShortlistView: View {
     public let onOpenProspect: (String) -> Void
     public let onClose: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var query = ""
 
@@ -24,7 +23,7 @@ public struct ShortlistView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     private var filteredProspects: [RecruitingBoardReadModel.Prospect] {

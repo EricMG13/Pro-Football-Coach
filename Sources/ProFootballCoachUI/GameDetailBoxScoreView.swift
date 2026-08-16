@@ -4,7 +4,6 @@ import SwiftUI
 public struct GameDetailBoxScoreView: View {
     public let model: AftermathReadModel
     public let onClose: () -> Void
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(model: AftermathReadModel, onClose: @escaping () -> Void) {
@@ -13,7 +12,7 @@ public struct GameDetailBoxScoreView: View {
     }
 
     public var body: some View {
-        let palette = colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        let palette = CoachWorldTokens.dark
         if dynamicTypeSize.isAccessibilitySize {
             content(palette: palette).accessibilitySortPriority(100)
         } else {

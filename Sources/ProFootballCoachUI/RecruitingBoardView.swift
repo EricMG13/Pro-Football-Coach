@@ -9,7 +9,6 @@ public struct RecruitingBoardView: View {
     public let onOpenProspect: (String) -> Void
     public let onOpenShortlist: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var deskGap = CoachWorldTokens.Space.xs
     @State private var selectedProspectID: String
@@ -38,7 +37,7 @@ public struct RecruitingBoardView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     private var selectedProspect: RecruitingBoardReadModel.Prospect? {
