@@ -493,6 +493,32 @@ func runMatchReducerTests() {
                 CoachWorldReadModelProvider.aftermath(from: foreignState)?.grades,
                 []
             )
+            let mismatchedEvidence = GameEvidence(
+                fixtureID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+                record: finalizedGame!.result!.evidence!.record,
+                homeParticipantIDs: finalizedGame!.result!.evidence!.homeParticipantIDs,
+                awayParticipantIDs: finalizedGame!.result!.evidence!.awayParticipantIDs,
+                callInReceipts: finalizedGame!.result!.evidence!.callInReceipts
+            )
+            let mismatchedSummary = GameSummary(
+                homeScore: finalizedGame!.result!.homeScore,
+                awayScore: finalizedGame!.result!.awayScore,
+                homeStatistics: finalizedGame!.result!.homeStatistics,
+                awayStatistics: finalizedGame!.result!.awayStatistics,
+                homeParticipantIDs: finalizedGame!.result!.homeParticipantIDs,
+                awayParticipantIDs: finalizedGame!.result!.awayParticipantIDs,
+                playerStatistics: finalizedGame!.result!.playerStatistics,
+                source: .detailed,
+                evidence: mismatchedEvidence
+            )
+            var mismatchedState = finalized
+            var mismatchedGame = finalizedGame!
+            mismatchedGame.result = mismatchedSummary
+            expect(mismatchedState.competition.currentSchedule.replace(mismatchedGame))
+            expectEqual(
+                CoachWorldReadModelProvider.aftermath(from: mismatchedState),
+                nil
+            )
             expectEqual(
                 finalized.history.recent.filter {
                     if case let .gameCompleted(gameID, _, _, _, _, _) = $0.payload,

@@ -9,6 +9,8 @@ public extension CoachWorldReadModelProvider {
             .filter {
                 $0.result?.source == .detailed
                     && $0.result?.evidence != nil
+                    && ($0.result?.evidence?.fixtureID == nil
+                        || $0.result?.evidence?.fixtureID == $0.id)
                     && ($0.homeID == controlledID || $0.awayID == controlledID)
             }
             .sorted {
