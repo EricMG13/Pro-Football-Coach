@@ -59,6 +59,19 @@ func runTacticalManagementTests() {
                 ),
                 observation
             )
+            var hostile = try! JSONSerialization.jsonObject(
+                with: JSONEncoder.stable().encode(observation)
+            ) as! [String: Any]
+            hostile["confidence"] = 101
+            do {
+                _ = try JSONDecoder.stable().decode(
+                    OpponentObservation.self,
+                    from: JSONSerialization.data(withJSONObject: hostile)
+                )
+                expect(false, "hostile observation confidence decoded")
+            } catch {
+                expect(true)
+            }
             let fallback = OpponentObservation.balanced(
                 observerID: observerID,
                 opponentID: opponentID,
