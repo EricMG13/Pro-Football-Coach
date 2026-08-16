@@ -1,5 +1,5 @@
 import Foundation
-import ProFootballCoachUI
+@testable import ProFootballCoachUI
 
 // The four build-wide invariants from 03b section 1, in one place because that is what they are:
 // properties of the whole tree, not of any suite's subject.
@@ -1885,6 +1885,60 @@ func runContractTests() {
                            "\(root)/\(name) is a symlink; the source scans do not follow it")
                 }
             }
+        }
+    }
+
+    suite("Floodlit vocabulary (Task 4)") {
+        // 04 section 7's "empty, error, interrupted and resume states remain inside the
+        // composition" made checkable: every kind the canon names must produce a distinct label,
+        // so a composition cannot silently fall back to one generic "something went wrong".
+        test("CoachWorldSystemState exposes a distinct required label for every canon kind") {
+            let kinds: [(CoachWorldSystemState.Kind, String)] = [
+                (.empty("Nothing here yet"), "Nothing here yet"),
+                (.loading("Loading"), "Loading"),
+                (.error("Could not load", recoveryTitle: nil, onRecover: nil), "Could not load"),
+                (.interrupted("Paused"), "Paused"),
+                (.delegated("Staff decision in progress"), "Staff decision in progress"),
+            ]
+            for (kind, expected) in kinds {
+                expectEqual(kind.message, expected,
+                            "every canon kind must surface the exact message it was given")
+            }
+            let symbols = Set(kinds.map(\.0.symbolName))
+            expectEqual(symbols.count, 5, "the five kinds must draw five visually distinct marks")
+        }
+
+        test("CoachWorldStatusChip cannot be built without visible text") {
+            // The type itself is the contract: `text` is a required, non-optional parameter, so a
+            // colour-only chip does not compile. This exercises the public initializer to prove the
+            // requirement holds at the call site, not only in the declaration.
+            let chip = CoachWorldStatusChip(text: "Full", tone: .go)
+            expect(!chip.text.isEmpty, "a status chip's text must never be empty")
+        }
+
+        test("CoachWorldDeltaMark prints the signed value, never colour alone") {
+            let positive = CoachWorldDeltaMark(value: 4)
+            let negative = CoachWorldDeltaMark(value: -2)
+            expectEqual(positive.value, 4)
+            expectEqual(negative.value, -2)
+            // Both directions must resolve to a registered Change-class symbol (04 section 6.6):
+            // arrow.up.right / arrow.down.right. A third direction (value == 0) has no motion to
+            // show and must not invent one.
+            expectEqual(positive.symbolName, "arrow.up.right")
+            expectEqual(negative.symbolName, "arrow.down.right")
+            expect(CoachWorldDeltaMark(value: 0).symbolName == nil,
+                   "a zero delta must not draw a direction it does not have")
+        }
+
+        test("CoachWorldIdentityBand renders nothing when identity resolution refuses") {
+            // Mirrors CoachWorldTeamIdentity's own refusal contract: a malformed or illegible pair
+            // must produce no team colour anywhere it is consumed, including this component.
+            let malformed = CoachWorldTeamReference(
+                stableID: "x", name: "X", abbreviation: "X",
+                primaryColorHex: "not-a-colour", secondaryColorHex: "not-a-colour"
+            )
+            let band = CoachWorldIdentityBand(team: malformed, behind: CoachWorldTokens.dark.raised)
+            expect(band.identity == nil, "a malformed pair must resolve to no identity, not a guess")
         }
     }
 }

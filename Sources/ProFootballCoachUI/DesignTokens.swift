@@ -18,6 +18,17 @@ public enum CoachWorldTokens {
         public static let cutCorner: CGFloat = 12
         public static let minimumTarget: CGFloat = 44
         public static let broadcastRadius: CGFloat = 0
+
+        /// `CoachWorldRatingRing`'s stroke width as a proportion of its diameter, so the same ring
+        /// reads correctly from a 26 pt table cell through a 118 pt hero gauge.
+        public static let ringStrokeRatio: CGFloat = 0.12
+        /// The floor beneath `ringStrokeRatio` so a small ring's stroke never thins to nothing.
+        public static let ringStrokeMinimum: CGFloat = 2
+        /// `CoachWorldRatingRing`'s centred figure size as a proportion of its diameter.
+        public static let ringTextRatio: CGFloat = 0.42
+        /// `CoachWorldSystemState`'s orienting mark — one step above the 20 pt Display floor
+        /// (04 section 6.2) because it stands alone above a whole composition, not beside text.
+        public static let systemStateMarkSize: CGFloat = 28
     }
 
     public enum Depth {

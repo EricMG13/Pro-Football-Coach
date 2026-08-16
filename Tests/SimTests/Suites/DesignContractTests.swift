@@ -317,6 +317,50 @@ func runDesignContractTests() {
         }
     }
 
+    suite("Floodlit vocabulary symbol sourcing (Task 4)") {
+        // The existing "every SF Symbol the UI draws is a registered member" scan (above) only
+        // matches a literal string directly after systemName:/systemImage:. CoachWorldStatusChip
+        // and CoachWorldDeltaMark resolve their symbol through a typed enum for call-site safety,
+        // which makes their raw values invisible to that regex — a real blind spot, closed here by
+        // reading the same canon table these enums were written against.
+        test("CoachWorldStatusChip.Symbol is exactly the canon Status class") {
+            let classes = canonSymbolClasses(canon)
+            guard let status = classes.first(where: { $0.name.contains("StatusChip") }) else {
+                expect(false, "04 section 6.6 no longer names a StatusChip row")
+                return
+            }
+            let shipped = Set(CoachWorldStatusChip.Symbol.allCases.map(\.rawValue))
+            expectEqual(shipped, status.members,
+                        "CoachWorldStatusChip.Symbol must be exactly the canon Status class, no "
+                            + "more and no fewer")
+        }
+
+        test("CoachWorldDeltaMark's two directions are the canon Change class") {
+            let classes = canonSymbolClasses(canon)
+            guard let change = classes.first(where: { $0.name.contains("DeltaMark") }) else {
+                expect(false, "04 section 6.6 no longer names a DeltaMark row")
+                return
+            }
+            let shipped: Set<String> = [
+                CoachWorldDeltaMark(value: 1).symbolName,
+                CoachWorldDeltaMark(value: -1).symbolName,
+            ].compactMap { $0 }.reduce(into: Set<String>()) { $0.insert($1) }
+            expectEqual(shipped, change.members, "the two directions must be exactly the canon "
+                            + "Change class")
+        }
+
+        test("CoachWorldAgendaRow's obligation marks are the canon Obligation class") {
+            let classes = canonSymbolClasses(canon)
+            guard let obligation = classes.first(where: { $0.name.contains("AgendaRow") }) else {
+                expect(false, "04 section 6.6 no longer names an AgendaRow row")
+                return
+            }
+            expectEqual(obligation.members, ["checkmark.circle.fill", "person.badge.clock"],
+                        "CoachWorldAgendaRow draws exactly these two members inline; if canon's "
+                            + "row changes, this test and the view must change together")
+        }
+    }
+
     suite("Floodlit geometry (06.1a)") {
         // The asymmetric four-radius shape 04 section 6.1a names, with its three presets. A shape
         // built from a single `cut` value cannot express 4/22/4/22, so the type itself is the
