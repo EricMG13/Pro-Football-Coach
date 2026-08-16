@@ -165,11 +165,12 @@ public enum SaveCoordinatorError: Error, Equatable, Sendable {
     case primaryAndBackupUnreadable
     case recoveryActionRequired
     case generationOverflow
+    case writeVerificationFailed
 }
 
 /// Serialises save requests, keeps only the newest pending snapshot, and verifies a candidate by
-/// reopening it before the primary is considered current. The actor is intentionally independent
-/// of SwiftUI so all durable I/O stays off the main actor.
+/// byte-identical readback before the primary is considered current. The actor is intentionally
+/// independent of SwiftUI so all durable I/O stays off the main actor.
 public actor SaveCoordinator {
     private let storage: CoachWorldSaveStore
     private var pending: CoachWorldSaveDocument?
@@ -325,7 +326,9 @@ public actor SaveCoordinator {
                     try storage.writeBackup(current)
                 }
                 try storage.write(candidate)
-                _ = try CoachWorldSaveDocument.decode(envelopeData: storage.read())
+                guard try storage.read() == candidate else {
+                    throw SaveCoordinatorError.writeVerificationFailed
+                }
                 let metadata = try JSONEncoder.stable().encode(document.metadata)
                 try storage.writeMetadata(metadata)
                 return document.metadata.generation
