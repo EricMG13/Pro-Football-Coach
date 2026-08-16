@@ -145,6 +145,17 @@ func runSaveDocumentTests() {
     }
 
     suite("Save coordinator") {
+        test("SaveOffMainActorTest keeps durable work behind the coordinator boundary") {
+            let source = try! String(
+                contentsOf: URL(fileURLWithPath: "Sources/CoachWorldApp/CoachWorldSaveStore.swift"),
+                encoding: .utf8
+            )
+            expect(source.contains("public actor SaveCoordinator"),
+                   "save coordination is no longer actor-isolated")
+            expect(source.contains("Task.detached(priority: .utility)"),
+                   "encode and durable write work is not detached")
+        }
+
         testAsync("coalesces and recovers from a corrupt primary") {
             let directory = FileManager.default.temporaryDirectory
                 .appendingPathComponent("pfc-save-\(UUID().uuidString)", isDirectory: true)
@@ -208,6 +219,58 @@ func runSaveDocumentTests() {
                 try CoachWorldSaveDocument.decode(envelopeData: storage.read()).metadata.generation,
                 UInt64(10)
             )
+        }
+
+        testAsync("SaveCoalescingTest commits the newest distinct pending snapshot") {
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("pfc-save-\(UUID().uuidString)", isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let storage = CoachWorldSaveStore(directory: directory)
+            let coordinator = SaveCoordinator(storage: storage)
+            let seeds: [UInt64] = [20_260_820, 20_260_821, 20_260_822]
+            for seed in seeds {
+                try await coordinator.requestSave(
+                    CoachWorldSaveDocument(
+                        gameState: GameState.bootstrap(seed: seed),
+                        metadata: CareerSaveMetadata(createdFromSeed: seed)
+                    ),
+                    reason: .userAction
+                )
+            }
+            try await coordinator.flush(reason: .explicit)
+            let saved = try CoachWorldSaveDocument.decode(envelopeData: storage.read())
+            expectEqual(saved.metadata.createdFromSeed, seeds.last)
+            expectEqual(saved.metadata.generation, UInt64(seeds.count))
+            expect(!FileManager.default.fileExists(atPath: storage.backupURL.path),
+                   "distinct pending requests produced more than one primary write")
+        }
+
+        testAsync("SaveOpenIsReadOnlyTest leaves a valid primary byte-identical") {
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("pfc-save-\(UUID().uuidString)", isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let storage = CoachWorldSaveStore(directory: directory)
+            let document = CoachWorldSaveDocument(
+                gameState: GameState.bootstrap(seed: 20_260_823),
+                metadata: CareerSaveMetadata(generation: 7, createdFromSeed: 20_260_823)
+            )
+            try storage.write(try SaveEnvelope.encode(document))
+            let before = try Data(contentsOf: storage.url)
+            let beforeDate = try FileManager.default.attributesOfItem(atPath: storage.url.path)[.modificationDate]
+                as? Date
+
+            guard case let .loaded(loaded, source) = try await SaveCoordinator(storage: storage).load() else {
+                expect(false, "a valid primary did not load")
+                return
+            }
+            expectEqual(source, .primary)
+            expectEqual(loaded, document)
+            expectEqual(try Data(contentsOf: storage.url), before)
+            let afterDate = try FileManager.default.attributesOfItem(atPath: storage.url.path)[.modificationDate]
+                as? Date
+            expectEqual(afterDate, beforeDate)
+            expect(!FileManager.default.fileExists(atPath: storage.backupURL.path),
+                   "opening a valid primary created a backup")
         }
 
         testAsync("generation exhaustion is reported instead of dropping a save") {
