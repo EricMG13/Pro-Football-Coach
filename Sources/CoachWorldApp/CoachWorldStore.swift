@@ -49,11 +49,25 @@ public final class CoachWorldStore {
     public private(set) var practicePlan: PracticePlanReadModel?
     public private(set) var depthChart: DepthChartReadModel?
     public private(set) var teamHealth: TeamHealthReadModel?
+    public private(set) var collegeOffseason: CollegeOffseasonReadModel?
+    public private(set) var proOffseason: ProOffseasonReadModel?
+    public private(set) var proManagement: ProManagementReadModel?
+    public private(set) var staffRoom: StaffRoomReadModel?
+    public private(set) var inbox: InboxReadModel?
+    public private(set) var opponentFilm: OpponentFilmReadModel?
+    public private(set) var news: NewsReadModel?
+    public private(set) var legacyHistory: LegacyHistoryReadModel?
+    public private(set) var statisticsLeaders: StatisticsLeadersReadModel?
+    public private(set) var awardsHonours: AwardsHonoursReadModel?
+    public private(set) var realignment: RealignmentReadModel?
     /// True while an intent is in flight. Screens disable their commit controls on it.
     public private(set) var isWorking = false
     /// The last receipt or refusal, shown verbatim. Never a guess about what happened.
     public private(set) var statusMessage: String?
     public private(set) var presentationRoute: String
+    /// The stable subject carried by a focused route. It is intentionally presentation-only; the
+    /// authoritative recruiting and team providers still resolve the ID against the snapshot.
+    public var presentationSubjectID: UUID? { presentation.selectedSubjectID }
 
     private let session: CareerSession
     private var presentation: CareerPresentationState
@@ -96,6 +110,20 @@ public final class CoachWorldStore {
         practicePlan = CoachWorldReadModelProvider.practicePlan(from: snapshot)
         depthChart = CoachWorldReadModelProvider.depthChart(from: snapshot)
         teamHealth = CoachWorldReadModelProvider.teamHealth(from: snapshot)
+        collegeOffseason = CoachWorldReadModelProvider.collegeOffseason(from: snapshot)
+        proOffseason = CoachWorldReadModelProvider.proOffseason(from: snapshot)
+        proManagement = CoachWorldReadModelProvider.proManagement(from: snapshot)
+        staffRoom = CoachWorldReadModelProvider.staffRoom(from: snapshot)
+        inbox = CoachWorldReadModelProvider.inbox(
+            from: snapshot,
+            readInboxItemIDs: Set(presentation.readInboxItemIDs)
+        )
+        opponentFilm = CoachWorldReadModelProvider.opponentFilm(from: snapshot)
+        news = CoachWorldReadModelProvider.news(from: snapshot)
+        legacyHistory = CoachWorldReadModelProvider.legacyHistory(from: snapshot)
+        statisticsLeaders = CoachWorldReadModelProvider.statisticsLeaders(from: snapshot)
+        awardsHonours = CoachWorldReadModelProvider.awardsHonours(from: snapshot)
+        realignment = CoachWorldReadModelProvider.realignment(from: snapshot)
     }
 
     /// Generates a world from `seed` and appoints the selected starting programme.
@@ -234,6 +262,22 @@ public final class CoachWorldStore {
         presentation.returnRoute = route
     }
 
+    /// A read receipt changes only presentation state. It is bounded and immediately reflected in
+    /// the current model, while the next save carries it through the application document.
+    public func markInboxItemRead(_ stableID: String) {
+        guard let current = inbox,
+              current.items.contains(where: { $0.stableID == stableID }) else { return }
+        guard !presentation.readInboxItemIDs.contains(stableID) else { return }
+        presentation.readInboxItemIDs.append(stableID)
+        if presentation.readInboxItemIDs.count > CareerPresentationState.maximumReadInboxItems {
+            presentation.readInboxItemIDs.removeFirst(
+                presentation.readInboxItemIDs.count
+                    - CareerPresentationState.maximumReadInboxItems
+            )
+        }
+        inbox = current.markingRead(stableID)
+    }
+
     public func selectTeam(_ organisationID: UUID) async {
         presentation.selectedSubjectID = organisationID
         let snapshot = await session.snapshot()
@@ -241,6 +285,10 @@ public final class CoachWorldStore {
             organisationID,
             from: snapshot
         )
+    }
+
+    public func selectProspect(_ prospectID: UUID) {
+        presentation.selectedSubjectID = prospectID
     }
 
     /// Records the profile route handoff without inventing a development mutation. The profile
@@ -296,6 +344,30 @@ public final class CoachWorldStore {
 
     public func setPersonnelPlan(_ plan: PersonnelPlan) async {
         await run { try await self.session.resolve(.personnelPlan(plan)) }
+    }
+
+    public func acceptCareerOpportunity(_ stableID: String) async {
+        guard let opportunityID = UUID(uuidString: stableID) else {
+            statusMessage = "That opportunity is no longer available"
+            return
+        }
+        await run {
+            try await self.session.resolve(
+                .career(.acceptOpportunity(opportunityID: opportunityID))
+            )
+        }
+    }
+
+    public func resignCareer() async {
+        await run { try await self.session.resolve(.career(.resign)) }
+    }
+
+    public func actOnProMarket(_ action: ProMarketAction) async {
+        await run { try await self.session.resolve(.proMarket(action)) }
+    }
+
+    public func actOnProManagement(_ action: ProManagementAction) async {
+        await run { try await self.session.resolve(.proManagement(action)) }
     }
 
     /// Delegates the currently due responsibility to one employed staff member. The selection is

@@ -50,9 +50,11 @@ public struct PendingQueues: Codable, Sendable, Equatable {
 
 /// The single authoritative root for a career save.
 public struct GameState: Codable, Sendable, Equatable {
-    /// Root schema used by the application save document. Schema 11 remains readable through the
-    /// decoder below and is normalised to this value before any state reaches the world.
-    public static let schemaVersion = 12
+    /// Root schema used by the application save document. Schemas 11 and 12 remain readable
+    /// through the decoder below and are normalised to this value before any state reaches the
+    /// world. Schema 13 adds the durable professional contract-negotiation ledger.
+    public static let schemaVersion = 13
+    public static let previousSchemaVersion = 12
     public static let legacySchemaVersion = 11
 
     public let version: Int
@@ -138,6 +140,7 @@ public struct GameState: Codable, Sendable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedVersion = try container.decode(Int.self, forKey: .version)
         guard decodedVersion == GameState.schemaVersion
+                || decodedVersion == GameState.previousSchemaVersion
                 || decodedVersion == GameState.legacySchemaVersion else {
             throw DecodingError.dataCorruptedError(
                 forKey: .version,
@@ -145,9 +148,10 @@ public struct GameState: Codable, Sendable, Equatable {
                 debugDescription: "The game-state schema version is unsupported."
             )
         }
-        // Schema 11 and 12 have the same field set in the base game. The application document
-        // migration owns any future field defaults; normalising here prevents a legacy root from
-        // escaping with a stale version marker after it has passed integrity validation.
+        // Schemas 11 and 12 have the same base field set. The application document migration owns
+        // future field defaults; ProMarketState itself defaults the negotiation ledger for schema
+        // 12 saves. Normalising here prevents a legacy root from escaping with a stale version
+        // marker after it has passed integrity validation.
         version = GameState.schemaVersion
         league = try container.decode(League.self, forKey: .league)
         map = try container.decode(GameMap.self, forKey: .map)

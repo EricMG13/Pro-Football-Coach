@@ -87,6 +87,94 @@ func runProManagementTests() {
             expectEqual(Set(ProManagementSystem.draftOrder(in: state)), Set(state.proTeams.ids))
         }
 
+        test("contract negotiation persists offer, counter, and settlement") {
+            var state = GameState.bootstrap(seed: 60_008)
+            let teamID = state.proTeams.ids[0]
+            let playerID = state.proTeams[teamID]!.rosterIDs[0]
+            state.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: teamID,
+                    tier: .professional,
+                    startedAt: state.calendar
+                ),
+                status: .employed
+            )
+            let current = state.players[playerID]!.contract!
+            let opening = try ProManagementSystem.beginNegotiation(
+                playerID: playerID,
+                teamID: teamID,
+                offer: current,
+                deadline: state.calendar.advancedWeek().advancedWeek(),
+                in: state
+            )
+            expectEqual(opening.state.proMarket.contractNegotiations.count, 1)
+            let negotiationID = opening.negotiation.id
+            let counter = try ProManagementSystem.counterNegotiation(
+                negotiationID: negotiationID,
+                offer: current,
+                in: opening.state
+            )
+            expectEqual(counter.negotiation.offerHistory.count, 2)
+            let accepted = try ProManagementSystem.settleNegotiation(
+                negotiationID: negotiationID,
+                as: .accepted,
+                in: counter.state
+            )
+            expectEqual(accepted.negotiation.status, .accepted)
+            expectEqual(
+                accepted.state.players[playerID]?.contract,
+                current.withSignedSeason(state.calendar.season)
+            )
+            let restored = try SaveEnvelope.decode(
+                GameState.self,
+                from: SaveEnvelope.encode(accepted.state)
+            )
+            expectEqual(restored, accepted.state)
+        }
+
+        test("closed negotiation history survives a later player release") {
+            var state = GameState.bootstrap(seed: 60_009)
+            let teamID = state.proTeams.ids[0]
+            let team = state.proTeams[teamID]!
+            let positionCounts = Dictionary(
+                grouping: team.rosterIDs.compactMap { state.players[$0]?.position },
+                by: { $0 }
+            ).mapValues(\.count)
+            let playerID = team.rosterIDs.first(where: { playerID in
+                guard let position = state.players[playerID]?.position else { return false }
+                return positionCounts[position, default: 0]
+                    > (SharedRules.minimumPlayableRosterByPosition[position] ?? 0)
+            })!
+            state.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: teamID,
+                    tier: .professional,
+                    startedAt: state.calendar
+                ),
+                status: .employed
+            )
+            let current = state.players[playerID]!.contract!
+            let opening = try ProManagementSystem.beginNegotiation(
+                playerID: playerID,
+                teamID: teamID,
+                offer: current,
+                deadline: state.calendar.advancedWeek(),
+                in: state
+            )
+            let rejected = try ProManagementSystem.settleNegotiation(
+                negotiationID: opening.negotiation.id,
+                as: .rejected,
+                in: opening.state
+            )
+            let released = try ProManagementSystem.release(
+                playerID: playerID,
+                from: teamID,
+                in: rejected.state
+            )
+            expect(WorldIntegrity.check(released.state).isValid)
+            expectEqual(released.state.proMarket.contractNegotiations.first?.status, .rejected)
+        }
+
         test("a promoted professional coach owns the transaction intent") {
             var state = GameState.bootstrap(seed: 60_005)
             let teamID = state.proTeams.ids[0]

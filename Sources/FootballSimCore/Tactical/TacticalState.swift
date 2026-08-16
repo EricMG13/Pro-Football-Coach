@@ -372,14 +372,24 @@ public struct TacticalState: Codable, Sendable, Equatable {
 
     @discardableResult
     public mutating func recordReview(_ review: TacticalGamePlanReview) -> Bool {
-        let duplicate = reviews.contains {
-            $0.calendar == review.calendar
-                && $0.organisationID == review.organisationID
-                && $0.opponentID == review.opponentID
+        guard reviews.count < Self.maximumReviews else { return false }
+        var lowerBound = 0
+        var upperBound = reviews.count
+        while lowerBound < upperBound {
+            let midpoint = (lowerBound + upperBound) / 2
+            if Self.reviewComesBefore(reviews[midpoint], review) {
+                lowerBound = midpoint + 1
+            } else {
+                upperBound = midpoint
+            }
         }
-        guard !duplicate, reviews.count < Self.maximumReviews else { return false }
-        reviews.append(review)
-        reviews = Self.sortedReviews(reviews)
+        if lowerBound < reviews.count {
+            let existing = reviews[lowerBound]
+            guard existing.calendar != review.calendar
+                    || existing.organisationID != review.organisationID
+                    || existing.opponentID != review.opponentID else { return false }
+        }
+        reviews.insert(review, at: lowerBound)
         return true
     }
 
@@ -441,18 +451,23 @@ public struct TacticalState: Codable, Sendable, Equatable {
     private static func sortedReviews(
         _ reviews: [TacticalGamePlanReview]
     ) -> [TacticalGamePlanReview] {
-        reviews.sorted {
-            if $0.calendar.season != $1.calendar.season {
-                return $0.calendar.season < $1.calendar.season
-            }
-            if $0.calendar.week != $1.calendar.week {
-                return $0.calendar.week < $1.calendar.week
-            }
-            if $0.organisationID != $1.organisationID {
-                return $0.organisationID.uuidString < $1.organisationID.uuidString
-            }
-            return $0.opponentID.uuidString < $1.opponentID.uuidString
+        reviews.sorted(by: reviewComesBefore)
+    }
+
+    private static func reviewComesBefore(
+        _ lhs: TacticalGamePlanReview,
+        _ rhs: TacticalGamePlanReview
+    ) -> Bool {
+        if lhs.calendar.season != rhs.calendar.season {
+            return lhs.calendar.season < rhs.calendar.season
         }
+        if lhs.calendar.week != rhs.calendar.week {
+            return lhs.calendar.week < rhs.calendar.week
+        }
+        if lhs.organisationID != rhs.organisationID {
+            return lhs.organisationID.uuidString < rhs.organisationID.uuidString
+        }
+        return lhs.opponentID.uuidString < rhs.opponentID.uuidString
     }
 
     private static func isLater(_ lhs: CalendarState, than rhs: CalendarState) -> Bool {

@@ -478,6 +478,7 @@ public struct CareerHubReadModel: Sendable, Equatable {
         public let started: String
         public let ended: String?
         public let reason: String?
+        public let canResign: Bool
 
         public init(
             id: String,
@@ -485,7 +486,8 @@ public struct CareerHubReadModel: Sendable, Equatable {
             tier: String,
             started: String,
             ended: String? = nil,
-            reason: String? = nil
+            reason: String? = nil,
+            canResign: Bool = false
         ) {
             self.id = id
             self.team = team
@@ -493,6 +495,7 @@ public struct CareerHubReadModel: Sendable, Equatable {
             self.started = started
             self.ended = ended
             self.reason = reason
+            self.canResign = canResign
         }
     }
 
@@ -504,6 +507,8 @@ public struct CareerHubReadModel: Sendable, Equatable {
         public let expires: String
         public let prestige: Int
         public let rationale: String
+        public let canAccept: Bool
+        public let unavailableReason: String?
 
         public init(
             id: String,
@@ -512,7 +517,9 @@ public struct CareerHubReadModel: Sendable, Equatable {
             offered: String,
             expires: String,
             prestige: Int,
-            rationale: String
+            rationale: String,
+            canAccept: Bool = true,
+            unavailableReason: String? = nil
         ) {
             self.id = id
             self.team = team
@@ -521,6 +528,8 @@ public struct CareerHubReadModel: Sendable, Equatable {
             self.expires = expires
             self.prestige = prestige
             self.rationale = rationale
+            self.canAccept = canAccept
+            self.unavailableReason = unavailableReason
         }
     }
 
@@ -901,6 +910,8 @@ public struct CompetitionOverviewReadModel: Sendable, Equatable {
 }
 
 public struct RecruitingBoardReadModel: Sendable, Equatable {
+    public static let maximumDiscoveryProspects = 24
+
     public struct Capacity: Sendable, Equatable {
         public let scholarshipSlotsRemaining: Int
         /// `ProgrammeRecruitingState.contactPointsRemaining` — a real, weekly-reset engine
@@ -1014,6 +1025,9 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
     public let capacity: Capacity
     public let positionNeeds: [PositionNeed]
     public let prospects: [Prospect]
+    /// Prospects known to the simulation but not yet on this programme's board. They carry only
+    /// the same bounded system evaluation and an authoritative add-to-board action.
+    public let discovery: [Prospect]
     public let canContinue: Bool
     public let continueReason: String?
 
@@ -1025,6 +1039,7 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
         capacity: Capacity,
         positionNeeds: [PositionNeed],
         prospects: [Prospect],
+        discovery: [Prospect] = [],
         canContinue: Bool = true,
         continueReason: String? = nil
     ) {
@@ -1035,6 +1050,7 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
         self.capacity = capacity
         self.positionNeeds = positionNeeds
         self.prospects = prospects
+        self.discovery = Array(discovery.prefix(Self.maximumDiscoveryProspects))
         self.canContinue = canContinue
         self.continueReason = continueReason
     }

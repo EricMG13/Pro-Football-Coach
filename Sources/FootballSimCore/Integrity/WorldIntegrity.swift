@@ -421,6 +421,7 @@ public enum WorldIntegrity {
         }
 
         let allEntityIDs = organisationIDSet
+            .union(state.league.conferences.map(\.id))
             .union(state.players.ids)
             .union(state.people.departedPlayers.keys)
             .union(state.prospects.ids)
@@ -1339,11 +1340,19 @@ public enum WorldIntegrity {
         }) {
             latestCurrentRecordByPlayer[record.playerID] = record
         }
+        var ownerCountByPlayerID: [UUID: Int] = [:]
+        var ownerByPlayerID: [UUID: UUID] = [:]
+        for programme in state.programmes.values {
+            for playerID in Set(programme.rosterIDs) {
+                ownerCountByPlayerID[playerID, default: 0] += 1
+                ownerByPlayerID[playerID] = programme.id
+            }
+        }
         for record in latestCurrentRecordByPlayer.values.sorted(by: {
             uuidLessThan($0.playerID, $1.playerID)
         }) {
-            let owners = state.programmes.values.filter { $0.rosterIDs.contains(record.playerID) }
-            if owners.count != 1 || owners.first?.id != record.finalProgrammeID {
+            if ownerCountByPlayerID[record.playerID] != 1
+                || ownerByPlayerID[record.playerID] != record.finalProgrammeID {
                 issues.append(.invalidPortalOwner(
                     playerID: record.playerID,
                     expectedProgrammeID: record.finalProgrammeID
@@ -1945,6 +1954,37 @@ public enum WorldIntegrity {
                     && waiver.claimDeadline == waiver.openedAt.advancedWeek()
                     && openedSeasonIsPlausible
             }
+        let openNegotiationKeys = market.contractNegotiations
+            .filter(\.status.isOpen)
+            .map { "\($0.teamID.uuidString)|\($0.playerID.uuidString)" }
+        let negotiationsAreValid = market.contractNegotiations.count
+            <= ProMarketState.maximumContractNegotiations
+            && Set(market.contractNegotiations.map(\.id)).count
+                == market.contractNegotiations.count
+            && Set(openNegotiationKeys).count == openNegotiationKeys.count
+            && market.contractNegotiations.allSatisfy { negotiation in
+                guard state.proTeams[negotiation.teamID] != nil,
+                      state.players[negotiation.playerID] != nil,
+                      !negotiation.offerHistory.isEmpty,
+                      negotiation.offerHistory.count <= ProContractNegotiation.maximumOfferHistory,
+                      negotiation.deadline.isOnOrAfter(negotiation.openedAt) else {
+                    return false
+                }
+                if negotiation.status.isOpen {
+                    guard let team = state.proTeams[negotiation.teamID],
+                          let player = state.players[negotiation.playerID],
+                          (team.rosterIDs + team.practiceSquadIDs).contains(negotiation.playerID),
+                          player.contract != nil else {
+                        return false
+                    }
+                }
+                return negotiation.offerHistory.allSatisfy { contract in
+                    ProRules.contractYearsRange.contains(contract.years)
+                        && contract.baseSalaryByYear.count == contract.years
+                        && contract.baseSalaryByYear.allSatisfy { $0 >= 0 }
+                        && contract.signingBonus >= 0
+                }
+            }
         let phaseShapeIsValid: Bool
         switch market.phase {
         case .closed:
@@ -1969,6 +2009,7 @@ public enum WorldIntegrity {
               freeAgentsAreValid,
               observationsAreValid,
               waiversAreValid,
+              negotiationsAreValid,
               phaseShapeIsValid else {
             issues.append(.invalidProfessionalMarket)
             return

@@ -54,6 +54,11 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
         participantIDs: [UUID]
     )
     case seasonCompleted(season: Int, collegeChampionID: UUID, proChampionID: UUID)
+    case realignment(
+        season: Int,
+        reason: ConferenceRealignmentReason,
+        swaps: [ConferenceRealignmentSwap]
+    )
     case playerInjured(
         playerID: UUID,
         area: InjuryArea,
@@ -190,6 +195,7 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
     public var historicalWeight: Int {
         switch self {
         case .seasonCompleted: return 100
+        case .realignment: return 75
         case .worldCreated: return 90
         case .postseasonScheduled: return 80
         case .portalWindowCompleted, .proMarketOpened, .proDraftStarted, .proMarketClosed: return 60
@@ -236,6 +242,17 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
             return participantIDs
         case let .seasonCompleted(_, collegeChampionID, proChampionID):
             return [collegeChampionID, proChampionID]
+        case let .realignment(_, _, swaps):
+            return swaps.flatMap { swap in
+                [
+                    swap.firstProgrammeID,
+                    swap.secondProgrammeID,
+                    swap.firstFromConferenceID,
+                    swap.firstToConferenceID,
+                    swap.secondFromConferenceID,
+                    swap.secondToConferenceID
+                ]
+            }
         case let .playerInjured(playerID, _, _, _), let .playerRecovered(playerID),
              let .playerReinstated(playerID):
             return [playerID]

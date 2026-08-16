@@ -11,6 +11,7 @@ public struct CompetitionOverviewView: View {
     public let onSelectTeam: (UUID) -> Void
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(
         model: CompetitionOverviewReadModel,
@@ -33,6 +34,14 @@ public struct CompetitionOverviewView: View {
     }
 
     public var body: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            surface.accessibilitySortPriority(100)
+        } else {
+            surface.accessibilitySortPriority(100)
+        }
+    }
+
+    private var surface: some View {
         VStack(spacing: .zero) {
             topBar
             if let statusMessage {

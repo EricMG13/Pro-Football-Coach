@@ -21,6 +21,7 @@ private struct DebugCoachingHQRoot: View {
     @State private var currentScreen: CoachWorldScreenID
     @State private var coachingHQ = CoachWorldSampleData.coachingHQ
     @State private var recruitingBoard = CoachWorldSampleData.recruitingBoard
+    @State private var recruitingProspectID: String?
     private let matchDay = CoachWorldSampleData.matchDay
     private let roster = CoachWorldSampleData.roster
     private let leagueMap = CoachWorldLeagueMapSampleData.leagueMap
@@ -71,7 +72,30 @@ private struct DebugCoachingHQRoot: View {
                     statusMessage: statusMessage,
                     onAction: assignRecruitingWork,
                     onContinue: { statusMessage = "No later recruiting event is available yet" },
-                    onNavigate: navigate
+                    onNavigate: navigate,
+                    onOpenProspect: { prospectID in
+                        recruitingProspectID = prospectID
+                        currentScreen = .prospectProfile
+                    },
+                    onOpenShortlist: { currentScreen = .shortlist }
+                )
+            } else if currentScreen == .prospectProfile {
+                ProspectProfileView(
+                    model: recruitingBoard,
+                    prospectID: recruitingProspectID,
+                    statusMessage: statusMessage,
+                    onAction: assignRecruitingWork,
+                    onClose: { currentScreen = .recruitingBoard }
+                )
+            } else if currentScreen == .shortlist {
+                ShortlistView(
+                    model: recruitingBoard,
+                    statusMessage: statusMessage,
+                    onOpenProspect: { prospectID in
+                        recruitingProspectID = prospectID
+                        currentScreen = .prospectProfile
+                    },
+                    onClose: { currentScreen = .recruitingBoard }
                 )
             } else if currentScreen == .leagueMap {
                 LeagueMapView(
@@ -128,7 +152,7 @@ private struct DebugCoachingHQRoot: View {
         prospectID: String,
         intentID: CoachWorldIntentID
     ) {
-        guard let prospect = recruitingBoard.prospects.first(where: {
+        guard let prospect = (recruitingBoard.prospects + recruitingBoard.discovery).first(where: {
             $0.stableID == prospectID
         }), let choice = prospect.choices.first(where: {
             $0.intentID == intentID && $0.isAvailable
@@ -169,7 +193,7 @@ private struct DebugCoachingHQRoot: View {
 
     private func navigate(_ screen: CoachWorldScreenID) {
         guard screen == .coachingHQ || screen == .recruitingBoard || screen == .roster
-            || screen == .leagueMap else {
+            || screen == .prospectProfile || screen == .shortlist || screen == .leagueMap else {
             statusMessage = "\(screen.canonicalName) is not available yet"
             return
         }

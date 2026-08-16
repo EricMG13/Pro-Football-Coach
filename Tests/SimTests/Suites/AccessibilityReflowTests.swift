@@ -91,11 +91,16 @@ func runAccessibilityReflowTests() {
             }
         }
 
-        test("the convention would notice a family that has not landed") {
-            // A family with no view must resolve to no file, or "pending" means nothing.
+        test("the convention keeps the draft room family landed") {
             let (_, pending) = landedFamilies()
-            expect(pending.contains(.draftRoom),
-                   "Draft Room has no production view and must be reported as pending")
+            expect(!pending.contains(.draftRoom),
+                   "Draft Room has a production wrapper and must not remain pending")
+            expect(!pending.contains(.prospectProfile),
+                   "Prospect Profile has a production dossier and must not remain pending")
+            expect(!pending.contains(.shortlist),
+                   "Shortlist has a production bounded list and must not remain pending")
+            expect(!pending.contains(.contractNegotiation),
+                   "Contract Negotiation has a production wrapper and must not remain pending")
             expectEqual(viewFileName(for: .draftRoom), "DraftRoomView.swift")
             expectEqual(viewFileName(for: .rankingsPlayoffPicture),
                         "RankingsPlayoffPictureView.swift")

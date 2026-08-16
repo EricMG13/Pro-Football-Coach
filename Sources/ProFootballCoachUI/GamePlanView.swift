@@ -3,6 +3,7 @@ import FootballSimCore
 
 public struct GamePlanView: View {
     public let model: GamePlanReadModel
+    public let title: String
     public let statusMessage: String?
     public let onSelect: (TacticalPlan) -> Void
     public let onClose: () -> Void
@@ -13,11 +14,13 @@ public struct GamePlanView: View {
 
     public init(
         model: GamePlanReadModel,
+        title: String = "GAME PLAN",
         statusMessage: String? = nil,
         onSelect: @escaping (TacticalPlan) -> Void,
         onClose: @escaping () -> Void
     ) {
         self.model = model
+        self.title = title
         self.statusMessage = statusMessage
         self.onSelect = onSelect
         self.onClose = onClose
@@ -35,7 +38,7 @@ public struct GamePlanView: View {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                 HStack {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                        Text("GAME PLAN")
+                        Text(title)
                             .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                             .foregroundStyle(palette.collegeIdentity.color)
                         Text(model.team.name)

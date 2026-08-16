@@ -319,7 +319,7 @@ func runPortalContractTests() {
         test("bootstrap exposes an empty schema-six portal for the current season") {
             let state = GameState.bootstrap(seed: 94_001)
 
-            expectEqual(GameState.schemaVersion, 12)
+            expectEqual(GameState.schemaVersion, 13)
             expectEqual(state.college.portal.targetSeason, state.college.recruitingSeason)
             expectEqual(state.college.portal.phase, .closed)
             expect(state.college.portal.entries.isEmpty)

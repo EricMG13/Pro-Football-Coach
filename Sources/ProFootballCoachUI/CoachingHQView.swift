@@ -10,12 +10,18 @@ public struct CoachingHQView: View {
     public let onContinue: () -> Void
     public let onOpenCorrespondence: (String) -> Void
     public let onNavigate: (CoachWorldScreenID) -> Void
+    public let showsProOffseason: Bool
+    public let showsDraftRoom: Bool
+    public let showsCareer: Bool
+    public let showsSigningDay: Bool
+    public let showsCollegeOffseason: Bool
+    public let showsProManagement: Bool
+    public let showsContractNegotiation: Bool
+    public let showsRecruitingBoard: Bool
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var deskGap = CoachWorldTokens.Space.xs
     @State private var selectedChoiceID: CoachWorldIntentID?
-    @State private var showsEvidence = false
 
     public init(
         model: CoachingHQReadModel,
@@ -26,7 +32,15 @@ public struct CoachingHQView: View {
         onPrepare: @escaping () -> Void,
         onContinue: @escaping () -> Void,
         onOpenCorrespondence: @escaping (String) -> Void,
-        onNavigate: @escaping (CoachWorldScreenID) -> Void
+        onNavigate: @escaping (CoachWorldScreenID) -> Void,
+        showsProOffseason: Bool = false,
+        showsDraftRoom: Bool = false,
+        showsCareer: Bool = false,
+        showsSigningDay: Bool = false,
+        showsCollegeOffseason: Bool = false,
+        showsProManagement: Bool = false,
+        showsContractNegotiation: Bool = false,
+        showsRecruitingBoard: Bool = false
     ) {
         self.model = model
         self.statusMessage = statusMessage
@@ -37,26 +51,31 @@ public struct CoachingHQView: View {
         self.onContinue = onContinue
         self.onOpenCorrespondence = onOpenCorrespondence
         self.onNavigate = onNavigate
+        self.showsProOffseason = showsProOffseason
+        self.showsDraftRoom = showsDraftRoom
+        self.showsCareer = showsCareer
+        self.showsSigningDay = showsSigningDay
+        self.showsCollegeOffseason = showsCollegeOffseason
+        self.showsProManagement = showsProManagement
+        self.showsContractNegotiation = showsContractNegotiation
+        self.showsRecruitingBoard = showsRecruitingBoard
         _selectedChoiceID = State(initialValue: nil)
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     public var body: some View {
-        VStack(spacing: .zero) {
-            if dynamicTypeSize.isAccessibilitySize {
-                accessibleLayout
-            } else {
-                worldStrip
-                standardLayout
+        CoachWorldFloodlitStage(palette: palette) {
+            VStack(spacing: .zero) {
+                if dynamicTypeSize.isAccessibilitySize {
+                    accessibleLayout
+                } else {
+                    worldStrip
+                    standardLayout
+                }
             }
-        }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
-        .sheet(isPresented: $showsEvidence) {
-            evidenceSheet
         }
     }
 
@@ -79,25 +98,30 @@ public struct CoachingHQView: View {
             } else {
                 HStack(spacing: CoachWorldTokens.Space.sm) {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
+                        Text("COACH'S WORLD")
+                            .font(CoachWorldTokens.TypeRole.microLabel)
+                            .tracking(CoachWorldTokens.TypeRole.microLabelTracking)
+                            .foregroundStyle(palette.actionPrimary.color)
                         Text(model.team.name.uppercased())
-                            .font(CoachWorldTokens.TypeRole.headline.weight(.black))
+                            .font(CoachWorldTokens.TypeRole.title.weight(.black))
                             .lineLimit(1)
-                        Text(worldContextLine)
-                            .font(CoachWorldTokens.TypeRole.caption)
-                            .foregroundStyle(palette.contentSecondary.color)
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("\(model.team.name), \(worldContextLine)")
 
-                    Divider().overlay(palette.contentQuiet.color)
-                    HStack(spacing: .zero) {
+                    Rectangle()
+                        .fill(palette.contentQuiet.color.opacity(0.45))
+                        .frame(width: CoachWorldTokens.Shape.hairline, height: 28)
+                        .accessibilityHidden(true)
+                    HStack(spacing: CoachWorldTokens.Space.xxs) {
                         route("Office", screen: .coachingHQ, current: true)
+                        route("Inbox", screen: .inbox)
+                        route("Film", screen: .opponentReportFilmRoom)
                         route("Team", screen: .roster)
                         route("Recruit", screen: .recruitingBoard)
                         route("League", screen: .leagueMap)
-                        route("Career", screen: .careerHub)
-                        route("Search", screen: .worldSearch)
                         route("Health", screen: .teamHealth)
+                        worldMenu
                     }
                     .frame(maxWidth: .infinity)
                     continueButton
@@ -107,23 +131,76 @@ public struct CoachingHQView: View {
         .padding(.horizontal, CoachWorldTokens.Space.md)
         .padding(.vertical, dynamicTypeSize.isAccessibilitySize ? CoachWorldTokens.Space.xs : .zero)
         .frame(height: dynamicTypeSize.isAccessibilitySize ? nil : HQMetric.worldStripHeight)
-        .background(palette.raised.color)
-        .overlay(alignment: .bottom) { seam }
+        .background(palette.page.color.opacity(CoachWorldTokens.Depth.deepPanelOpacity))
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(palette.actionPrimary.color.opacity(0.72))
+                .frame(height: 2)
+        }
         .accessibilitySortPriority(50)
     }
 
     private var worldMenu: some View {
         Menu("World") {
             Button("Office") { onNavigate(.coachingHQ) }
+            Button("Inbox") { onNavigate(.inbox) }
+            Button("Film") { onNavigate(.opponentReportFilmRoom) }
             Button("Team") { onNavigate(.roster) }
             Button("Recruit") { onNavigate(.recruitingBoard) }
             Button("League") { onNavigate(.leagueMap) }
             Button("Career") { onNavigate(.careerHub) }
+            if showsCareer {
+                Button("Job board") { onNavigate(.jobBoard) }
+                Button("Offers") { onNavigate(.offer) }
+                Button("Appointment") { onNavigate(.appointment) }
+            }
+            Button("News") { onNavigate(.news) }
+            Button("Record book") { onNavigate(.recordBook) }
+            Button("Rivalries") { onNavigate(.rivalries) }
+            Button("Career line") { onNavigate(.careerLine) }
+            Button("Coaching tree") { onNavigate(.coachingTree) }
+            Button("Statistics & leaders") { onNavigate(.statisticsLeaders) }
+            Button("Awards & honours") { onNavigate(.awardsHonours) }
+            Button("Realignment event") { onNavigate(.realignmentEvent) }
             Button("Search") { onNavigate(.worldSearch) }
             Button("Game plan") { onNavigate(.gamePlan) }
             Button("Practice") { onNavigate(.practicePlan) }
             Button("Depth chart") { onNavigate(.depthChart) }
+            Button("Scheme book") { onNavigate(.schemeBook) }
+            Button("Personnel packages") { onNavigate(.personnelPackages) }
             Button("Team health") { onNavigate(.teamHealth) }
+            Button("Staff room") { onNavigate(.staffRoom) }
+            Button("Staff market & profile") { onNavigate(.staffMarketProfile) }
+            if showsProOffseason {
+                Button("Pro offseason") { onNavigate(.proOffseason) }
+                Button("Draft board") { onNavigate(.draftBoard) }
+                if showsDraftRoom {
+                    Button("Draft room") { onNavigate(.draftRoom) }
+                }
+                Button("Free agency") { onNavigate(.freeAgency) }
+                Button("Pro scouting board") { onNavigate(.proScoutingBoard) }
+            }
+            if showsCollegeOffseason {
+                Button("College offseason") { onNavigate(.collegeOffseason) }
+                if showsSigningDay {
+                    Button("Signing day") { onNavigate(.signingDay) }
+                }
+                Button("Portal hub") { onNavigate(.portalHub) }
+                Button("Retention decisions") { onNavigate(.retentionDecisions) }
+                Button("Portal market") { onNavigate(.portalMarket) }
+                Button("NIL allocation") { onNavigate(.nilAllocation) }
+            }
+            if showsRecruitingBoard {
+                Button("Class overview") { onNavigate(.classOverview) }
+                Button("Contact & visit planner") { onNavigate(.contactVisitPlanner) }
+            }
+            if showsProManagement {
+                Button("Cap & contracts") { onNavigate(.capContracts) }
+                if showsContractNegotiation {
+                    Button("Contract negotiation") { onNavigate(.contractNegotiation) }
+                }
+                Button("Roster cuts & transactions") { onNavigate(.rosterCutsTransactions) }
+            }
             Button("Rankings") { onNavigate(.rankingsPlayoffPicture) }
             Button("Postseason") { onNavigate(.bracketPostseason) }
         }
@@ -154,11 +231,11 @@ public struct CoachingHQView: View {
 
     private var standardLayout: some View {
         HStack(spacing: deskGap) {
-            identityRail.frame(width: 190)
+            identityRail.frame(width: 202)
             decisionFloor.frame(maxWidth: .infinity)
-            deskWire.frame(width: 220)
+            deskWire.frame(width: 232)
         }
-        .padding(.horizontal, CoachWorldTokens.Space.xs)
+        .padding(CoachWorldTokens.Space.sm)
     }
 
     private var accessibleLayout: some View {
@@ -183,23 +260,37 @@ public struct CoachingHQView: View {
 
     private var identityRail: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
-            Text("COACH'S OFFICE · WEEK")
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.collegeIdentity.color)
-            Text("Build Saturday")
-                .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                .lineLimit(2)
-            Text(model.week.weekLabel.uppercased())
-                .font(CoachWorldTokens.TypeRole.title.weight(.black))
+            Text("\(model.week.seasonLabel) · \(model.week.weekLabel)".uppercased())
+                .font(CoachWorldTokens.TypeRole.microLabel)
+                .tracking(CoachWorldTokens.TypeRole.microLabelTracking)
+                .foregroundStyle(palette.actionPrimary.color)
+            Text(model.week.currentDay.uppercased())
+                .font(CoachWorldTokens.TypeRole.display.weight(.black))
                 .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
             if let obligation = model.obligations.first {
                 Text(obligation.consequence)
                     .font(CoachWorldTokens.TypeRole.callout)
                     .foregroundStyle(palette.contentSecondary.color)
-                    .lineLimit(3)
+                    .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
             seam
+            if let opponent = model.opponent {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
+                    Text("NEXT FIXTURE")
+                        .font(CoachWorldTokens.TypeRole.microLabel)
+                        .tracking(CoachWorldTokens.TypeRole.microLabelTracking)
+                        .foregroundStyle(palette.contentQuiet.color)
+                    Text(opponent.name.uppercased())
+                        .font(CoachWorldTokens.TypeRole.headline.weight(.black))
+                    Text(model.venue?.name ?? "Venue not set")
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.contentSecondary.color)
+                }
+                .accessibilityElement(children: .combine)
+            }
             if let recommendation = model.staffRecommendation {
                 HStack(alignment: .top, spacing: CoachWorldTokens.Space.xs) {
                     CoachWorldBlankPhotoPlate(
@@ -223,9 +314,9 @@ public struct CoachingHQView: View {
         }
         .padding(CoachWorldTokens.Space.sm)
         .frame(maxWidth: .infinity, minHeight: 170, alignment: .topLeading)
-        .coachWorldDeskSurface(
-            fill: palette.collegeIdentity.color.opacity(0.10),
-            border: palette.contentQuiet.color.opacity(0.45)
+        .coachWorldFloodlitPanel(
+            fill: palette.raised.color,
+            border: palette.actionPrimary.color.opacity(0.42)
         )
         .accessibilitySortPriority(40)
     }
@@ -239,9 +330,10 @@ public struct CoachingHQView: View {
                 noDecision
             }
         }
-        .coachWorldDeskSurface(
+        .coachWorldFloodlitPanel(
             fill: palette.work.color,
-            border: palette.contentQuiet.color.opacity(0.45)
+            border: palette.contentQuiet.color.opacity(0.55),
+            depth: .deep
         )
         .accessibilitySortPriority(100)
     }
@@ -268,9 +360,10 @@ public struct CoachingHQView: View {
                             .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
                             .frame(maxWidth: .infinity,
                                    minHeight: CoachWorldTokens.Shape.minimumTarget)
-                            .background(day.isCurrent ? palette.collegeIdentity.color : Color.clear)
+                            .background(day.isCurrent ? palette.actionPrimary.color : Color.clear)
                             .foregroundStyle(
-                                day.isCurrent ? palette.page.color : palette.contentPrimary.color
+                                day.isCurrent ? Color(red: 0.08, green: 0.06, blue: 0.01)
+                                    : palette.contentPrimary.color
                             )
                             .accessibilityLabel("\(day.dayLabel), \(day.assignment)")
                             .accessibilityAddTraits(day.isCurrent ? .isSelected : [])
@@ -385,11 +478,8 @@ public struct CoachingHQView: View {
     }
 
     private var filmButton: some View {
-        Button {
-            onInspect()
-            showsEvidence = true
-        } label: {
-            Image(systemName: "film")
+        Button(action: onInspect) {
+            Label("Open film room", systemImage: "film")
                 .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
                        minHeight: CoachWorldTokens.Shape.minimumTarget)
         }
@@ -505,9 +595,9 @@ public struct CoachingHQView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, minHeight: 170, alignment: .top)
-        .coachWorldDeskSurface(
-            fill: palette.raised.color.opacity(0.45),
-            border: palette.contentQuiet.color.opacity(0.45)
+        .coachWorldFloodlitPanel(
+            fill: palette.raised.color,
+            border: palette.contentQuiet.color.opacity(0.55)
         )
         .accessibilitySortPriority(30)
     }
@@ -532,25 +622,6 @@ public struct CoachingHQView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var evidenceSheet: some View {
-        NavigationStack {
-            List {
-                if let recommendation = model.staffRecommendation {
-                    Section("Staff verdict") {
-                        Text(recommendation.verdict).font(.headline)
-                        Text(recommendation.reason)
-                        Text("Confidence: \(recommendation.confidence)")
-                    }
-                }
-                Section("Evidence") {
-                    ForEach(model.decision?.evidence ?? [], id: \.self, content: Text.init)
-                }
-            }
-            .navigationTitle("Opponent film")
-            .toolbar { Button("Done") { showsEvidence = false } }
-        }
     }
 
     private var mandatoryCount: Int {

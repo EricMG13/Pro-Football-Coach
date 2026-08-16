@@ -5,9 +5,24 @@ import FootballSimCore
 /// this document is the first versioned shape inside it, which lets presentation and recovery state
 /// evolve without pretending that a bare GameState is a complete app save.
 public struct CareerPresentationState: Codable, Sendable, Equatable {
+    public static let maximumReadInboxItems = 128
+
+    private enum CodingKeys: String, CodingKey {
+        case route
+        case returnRoute
+        case readInboxItemIDs
+        case selectedSubjectID
+        case draftValues
+        case pendingTaskID
+        case interruptedTask
+    }
+
     public var route: String
     /// Optional origin for transient child surfaces; nil keeps legacy saves canonical.
     public var returnRoute: String?
+    /// Stable IDs acknowledged by the coach. Presentation-only state is bounded so a long career
+    /// cannot grow a save indefinitely; the authoritative item remains in the world ledger.
+    public var readInboxItemIDs: [String]
     public var selectedSubjectID: UUID?
     public var draftValues: [String: String]
     public var pendingTaskID: UUID?
@@ -16,6 +31,7 @@ public struct CareerPresentationState: Codable, Sendable, Equatable {
     public init(
         route: String = "8",
         returnRoute: String? = nil,
+        readInboxItemIDs: [String] = [],
         selectedSubjectID: UUID? = nil,
         draftValues: [String: String] = [:],
         pendingTaskID: UUID? = nil,
@@ -23,10 +39,33 @@ public struct CareerPresentationState: Codable, Sendable, Equatable {
     ) {
         self.route = route
         self.returnRoute = returnRoute
+        self.readInboxItemIDs = Array(readInboxItemIDs.suffix(Self.maximumReadInboxItems))
         self.selectedSubjectID = selectedSubjectID
         self.draftValues = draftValues
         self.pendingTaskID = pendingTaskID
         self.interruptedTask = interruptedTask
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        route = try container.decode(String.self, forKey: .route)
+        returnRoute = try container.decodeIfPresent(String.self, forKey: .returnRoute)
+        let decodedReadIDs = try container.decodeIfPresent(
+            [String].self,
+            forKey: .readInboxItemIDs
+        ) ?? []
+        guard decodedReadIDs.count <= Self.maximumReadInboxItems else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .readInboxItemIDs,
+                in: container,
+                debugDescription: "Inbox read receipts exceed the bounded presentation limit."
+            )
+        }
+        readInboxItemIDs = decodedReadIDs
+        selectedSubjectID = try container.decodeIfPresent(UUID.self, forKey: .selectedSubjectID)
+        draftValues = try container.decodeIfPresent([String: String].self, forKey: .draftValues) ?? [:]
+        pendingTaskID = try container.decodeIfPresent(UUID.self, forKey: .pendingTaskID)
+        interruptedTask = try container.decodeIfPresent(String.self, forKey: .interruptedTask)
     }
 }
 

@@ -6,6 +6,8 @@ public struct RecruitingBoardView: View {
     public let onAction: (String, CoachWorldIntentID) -> Void
     public let onContinue: () -> Void
     public let onNavigate: (CoachWorldScreenID) -> Void
+    public let onOpenProspect: (String) -> Void
+    public let onOpenShortlist: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -17,14 +19,22 @@ public struct RecruitingBoardView: View {
         statusMessage: String? = nil,
         onAction: @escaping (String, CoachWorldIntentID) -> Void,
         onContinue: @escaping () -> Void,
-        onNavigate: @escaping (CoachWorldScreenID) -> Void
+        onNavigate: @escaping (CoachWorldScreenID) -> Void,
+        onOpenProspect: @escaping (String) -> Void = { _ in },
+        onOpenShortlist: @escaping () -> Void = {}
     ) {
         self.model = model
         self.statusMessage = statusMessage
         self.onAction = onAction
         self.onContinue = onContinue
         self.onNavigate = onNavigate
-        _selectedProspectID = State(initialValue: model.prospects.first?.stableID ?? "")
+        self.onOpenProspect = onOpenProspect
+        self.onOpenShortlist = onOpenShortlist
+        _selectedProspectID = State(
+            initialValue: model.prospects.first?.stableID
+                ?? model.discovery.first?.stableID
+                ?? ""
+        )
     }
 
     private var palette: CoachWorldTokens.Palette {
@@ -33,7 +43,13 @@ public struct RecruitingBoardView: View {
 
     private var selectedProspect: RecruitingBoardReadModel.Prospect? {
         model.prospects.first(where: { $0.stableID == selectedProspectID })
+            ?? model.discovery.first(where: { $0.stableID == selectedProspectID })
             ?? model.prospects.first
+            ?? model.discovery.first
+    }
+
+    private var hasProspects: Bool {
+        !model.prospects.isEmpty || !model.discovery.isEmpty
     }
 
     public var body: some View {
@@ -109,7 +125,10 @@ public struct RecruitingBoardView: View {
 
     private var standardLayout: some View {
         HStack(spacing: deskGap) {
-            boardSurface.frame(maxWidth: .infinity)
+            ScrollView(.vertical) {
+                boardSurface
+            }
+            .frame(maxWidth: .infinity)
             dossier
                 .frame(width: RecruitingMetric.dossierWidth)
         }
@@ -120,7 +139,7 @@ public struct RecruitingBoardView: View {
         ScrollView {
             VStack(spacing: .zero) {
                 boardHeader
-                if model.prospects.isEmpty {
+                if !hasProspects {
                     ContentUnavailableView(
                         "No prospects on the board",
                         systemImage: "list.number",
@@ -128,11 +147,13 @@ public struct RecruitingBoardView: View {
                     )
                 } else {
                     accessibleProspectRows
+                    accessibleDiscoveryRows
                     capacityStrip
                     if let prospect = selectedProspect {
                         personHeader(prospect)
                         evaluation(prospect)
                         relationship(prospect)
+                        surfaceLinks(prospect)
                         actionDesk(prospect)
                     }
                 }
@@ -180,7 +201,7 @@ public struct RecruitingBoardView: View {
         VStack(spacing: .zero) {
             boardHeader
             capacityStrip
-            if model.prospects.isEmpty {
+            if !hasProspects {
                 ContentUnavailableView(
                     "No prospects on the board",
                     systemImage: "list.number",
@@ -189,6 +210,7 @@ public struct RecruitingBoardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 comparisonTable
+                discoveryTable
             }
         }
         .background(palette.work.color)
@@ -253,7 +275,7 @@ public struct RecruitingBoardView: View {
                         value: "\(model.capacity.scholarshipSlotsRemaining)"
                     )
                     compactCapacity(
-                        "Weekly hours",
+                        "Contact points",
                         value: "\(model.capacity.weeklyHoursRemaining)"
                     )
                     compactCapacity(
@@ -269,8 +291,8 @@ public struct RecruitingBoardView: View {
                         suffix: "open"
                     )
                     capacityValue(
-                        "HOURS",
-                        value: "\(model.capacity.weeklyHoursRemaining)h",
+                        "CONTACT",
+                        value: "\(model.capacity.weeklyHoursRemaining)",
                         suffix: "left"
                     )
                     capacityValue(
@@ -343,6 +365,26 @@ public struct RecruitingBoardView: View {
         }
     }
 
+    private var discoveryTable: some View {
+        Group {
+            if !model.discovery.isEmpty {
+                VStack(spacing: .zero) {
+                    Text("DISCOVERY · AVAILABLE PROSPECTS")
+                        .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
+                        .foregroundStyle(palette.collegeIdentity.color)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, CoachWorldTokens.Space.sm)
+                        .frame(minHeight: RecruitingMetric.tableHeaderHeight)
+                        .background(palette.page.color)
+                        .overlay(alignment: .bottom) { seam }
+                    ForEach(model.discovery, id: \.stableID) { prospect in
+                        comparisonRow(prospect)
+                    }
+                }
+            }
+        }
+    }
+
     private func tableHeader(
         _ title: String,
         width: CGFloat? = nil,
@@ -361,7 +403,7 @@ public struct RecruitingBoardView: View {
             selectedProspectID = prospect.stableID
         } label: {
             HStack(spacing: CoachWorldTokens.Space.xs) {
-                Text("\(prospect.boardRank)")
+                Text(prospect.boardRank == 0 ? "D" : "\(prospect.boardRank)")
                     .font(CoachWorldTokens.TypeRole.headline.weight(.black))
                     .monospacedDigit()
                     .frame(width: RecruitingMetric.rankWidth, alignment: .trailing)
@@ -455,6 +497,58 @@ public struct RecruitingBoardView: View {
         }
     }
 
+    private var accessibleDiscoveryRows: some View {
+        Group {
+            if !model.discovery.isEmpty {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
+                    Text("DISCOVERY · AVAILABLE PROSPECTS")
+                        .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
+                        .foregroundStyle(palette.collegeIdentity.color)
+                    ForEach(model.discovery, id: \.stableID) { prospect in
+                        Button {
+                            selectedProspectID = prospect.stableID
+                        } label: {
+                            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text("Discovery · \(prospect.person.name)")
+                                        .font(CoachWorldTokens.TypeRole.headline.weight(.black))
+                                    Spacer()
+                                    Text(prospect.position)
+                                        .font(CoachWorldTokens.TypeRole.headline.weight(.heavy))
+                                }
+                                Text("\(prospect.hometown) · \(prospect.evaluation.schemeFit) fit")
+                                    .foregroundStyle(palette.contentSecondary.color)
+                                Text(prospect.status)
+                                    .foregroundStyle(palette.contentSecondary.color)
+                            }
+                            .padding(CoachWorldTokens.Space.md)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                prospect.stableID == selectedProspect?.stableID
+                                    ? palette.collegeIdentity.color.opacity(0.14)
+                                    : Color.clear
+                            )
+                            .overlay(alignment: .leading) {
+                                if prospect.stableID == selectedProspect?.stableID {
+                                    Rectangle().fill(palette.collegeIdentity.color)
+                                        .frame(width: RecruitingMetric.selectedRuleWidth)
+                                }
+                            }
+                            .overlay(alignment: .bottom) { seam }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(prospectAccessibilityLabel(prospect))
+                        .accessibilityAddTraits(
+                            prospect.stableID == selectedProspect?.stableID ? .isSelected : []
+                        )
+                    }
+                }
+                .padding(.horizontal, CoachWorldTokens.Space.md)
+                .padding(.vertical, CoachWorldTokens.Space.sm)
+            }
+        }
+    }
+
     @ViewBuilder
     private var dossier: some View {
         if let prospect = selectedProspect {
@@ -464,6 +558,7 @@ public struct RecruitingBoardView: View {
                         personHeader(prospect)
                         evaluation(prospect)
                         relationship(prospect)
+                        surfaceLinks(prospect)
                     }
                 }
                 actionDesk(prospect)
@@ -495,7 +590,9 @@ public struct RecruitingBoardView: View {
                 height: RecruitingMetric.photoHeight
             )
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                Text("BOARD #\(prospect.boardRank) · \(prospect.position)")
+                Text(prospect.boardRank == 0
+                    ? "DISCOVERY · \(prospect.position)"
+                    : "BOARD #\(prospect.boardRank) · \(prospect.position)")
                     .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                     .foregroundStyle(palette.collegeIdentity.color)
                 Text(prospect.person.name)
@@ -513,7 +610,8 @@ public struct RecruitingBoardView: View {
         .overlay(alignment: .bottom) { seam }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "Board rank \(prospect.boardRank), \(prospect.person.name), "
+            (prospect.boardRank == 0 ? "Discovery prospect" : "Board rank \(prospect.boardRank)")
+                + ", \(prospect.person.name), "
                 + "\(prospect.position), \(prospect.hometown), \(prospect.status)"
         )
     }
@@ -600,6 +698,37 @@ public struct RecruitingBoardView: View {
         .overlay(alignment: .bottom) { seam }
     }
 
+    private func surfaceLinks(_ prospect: RecruitingBoardReadModel.Prospect) -> some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
+            Text("PROSPECT SURFACES")
+                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
+                .foregroundStyle(palette.collegeIdentity.color)
+            Group {
+                if dynamicTypeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
+                        prospectLinks(prospect)
+                    }
+                } else {
+                    HStack(spacing: CoachWorldTokens.Space.xs) {
+                        prospectLinks(prospect)
+                    }
+                }
+            }
+            .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+        }
+        .padding(.horizontal, CoachWorldTokens.Space.sm)
+        .padding(.vertical, CoachWorldTokens.Space.xs)
+        .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder
+    private func prospectLinks(_ prospect: RecruitingBoardReadModel.Prospect) -> some View {
+        Button("Open profile") { onOpenProspect(prospect.stableID) }
+            .buttonStyle(CoachWorldActionButtonStyle(role: .secondary, palette: palette))
+        Button("Shortlist") { onOpenShortlist() }
+            .buttonStyle(CoachWorldActionButtonStyle(role: .secondary, palette: palette))
+    }
+
     private func actionDesk(_ prospect: RecruitingBoardReadModel.Prospect) -> some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
             Text("ASSIGN RECRUITING WORK")
@@ -658,7 +787,7 @@ public struct RecruitingBoardView: View {
 
     private var worldContextLine: String {
         "\(model.capacity.scholarshipSlotsRemaining) scholarships · "
-            + "\(model.capacity.weeklyHoursRemaining)h · "
+            + "\(model.capacity.weeklyHoursRemaining) contact points · "
             + "\(model.capacity.officialVisitsRemaining) visits"
     }
 
@@ -671,8 +800,9 @@ public struct RecruitingBoardView: View {
     private func prospectAccessibilityLabel(
         _ prospect: RecruitingBoardReadModel.Prospect
     ) -> String {
-        "Board rank \(prospect.boardRank), \(prospect.person.name), "
-            + "\(prospect.position), \(prospect.hometown), \(prospect.interest) interest, "
+            (prospect.boardRank == 0 ? "Discovery prospect" : "Board rank \(prospect.boardRank)")
+                + ", \(prospect.person.name), "
+                + "\(prospect.position), \(prospect.hometown), \(prospect.interest) interest, "
             + "\(prospect.status), \(prospect.evaluation.schemeFit) scheme fit"
     }
 

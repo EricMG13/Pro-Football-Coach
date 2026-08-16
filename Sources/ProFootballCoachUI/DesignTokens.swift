@@ -15,8 +15,14 @@ public enum CoachWorldTokens {
         public static let controlRadius: CGFloat = 8
         public static let rowRadius: CGFloat = 8
         public static let surfaceRadius: CGFloat = 10
+        public static let cutCorner: CGFloat = 12
         public static let minimumTarget: CGFloat = 44
         public static let broadcastRadius: CGFloat = 0
+    }
+
+    public enum Depth {
+        public static let glassPanelOpacity = 0.56
+        public static let deepPanelOpacity = 0.82
     }
 
     public enum TypeRole {
@@ -32,6 +38,11 @@ public enum CoachWorldTokens {
         public static let body = Font.system(.footnote, design: .default)
         public static let callout = Font.system(.footnote, design: .default)
         public static let caption = Font.system(.caption, design: .default)
+        public static let microLabelSize: CGFloat = 10
+        public static let microLabelTracking: CGFloat = 0.8
+        public static let microLabel = Font.system(
+            size: microLabelSize, weight: .bold, design: .default
+        ).width(.condensed)
 
         public static let authoredFloor: CGFloat = 12
         public static let workingProse: CGFloat = 13

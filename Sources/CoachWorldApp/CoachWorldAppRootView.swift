@@ -19,6 +19,8 @@ public struct CoachWorldAppRootView: View {
     @State private var hasAttemptedRestore = false
     @State private var screen: CoachWorldScreenID = .coachingHQ
     @State private var teamHealthOrigin: CoachWorldScreenID = .coachingHQ
+    @State private var inboxOrigin: CoachWorldScreenID = .coachingHQ
+    @State private var recruitingProspectID: String?
     @State private var recoveryRequired = false
     @State private var showingNewCareerSetup = false
     @State private var startingJobs: [StartingJobReadModel] = []
@@ -36,7 +38,7 @@ public struct CoachWorldAppRootView: View {
             if let store {
                 career(store)
             } else if showingNewCareerSetup {
-                NewCareerSetupView(
+                NewCareerCoachIdentityView(
                     jobs: startingJobs,
                     defaultSeed: CoachWorldStore.defaultSeed,
                     isWorking: isStarting,
@@ -59,6 +61,8 @@ public struct CoachWorldAppRootView: View {
                         setupError = nil
                     }
                 )
+            } else if screen == .settingsAccessibility {
+                SettingsAccessibilityView(onClose: { screen = .titleContinue })
             } else {
                 title
             }
@@ -85,6 +89,66 @@ public struct CoachWorldAppRootView: View {
                         }
                     )
                 }
+            case .developmentPlan:
+                if let model = store.roster {
+                    DevelopmentPlanView(model: model, statusMessage: failure ?? store.statusMessage,
+                                        onClose: { navigate(.roster, in: store) })
+                }
+            case .inbox:
+                if let model = store.inbox {
+                    InboxView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { navigate(inboxOrigin, in: store) },
+                        onOpen: { navigate($0, in: store) },
+                        onRead: {
+                            store.markInboxItemRead($0)
+                            Task { await persistOrReport(store) }
+                        },
+                        onContinue: { Task { await advance(store) } }
+                    )
+                }
+            case .opponentReportFilmRoom:
+                if let model = store.opponentFilm {
+                    OpponentReportFilmRoomView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { closeCareer(in: store) },
+                        onContinue: { Task { await advance(store) } }
+                    )
+                }
+            case .news:
+                if let model = store.news {
+                    NewsView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { closeCareer(in: store) }
+                    )
+                }
+            case .recordBook:
+                if let model = store.legacyHistory {
+                    RecordBookView(model: model, statusMessage: failure ?? store.statusMessage,
+                                   onClose: { closeCareer(in: store) },
+                                   onNavigate: { navigate($0, in: store) })
+                }
+            case .rivalries:
+                if let model = store.legacyHistory {
+                    RivalriesView(model: model, statusMessage: failure ?? store.statusMessage,
+                                  onClose: { closeCareer(in: store) },
+                                  onNavigate: { navigate($0, in: store) })
+                }
+            case .careerLine:
+                if let model = store.legacyHistory {
+                    CareerLineView(model: model, statusMessage: failure ?? store.statusMessage,
+                                   onClose: { closeCareer(in: store) },
+                                   onNavigate: { navigate($0, in: store) })
+                }
+            case .coachingTree:
+                if let model = store.legacyHistory {
+                    CoachingTreeView(model: model, statusMessage: failure ?? store.statusMessage,
+                                     onClose: { closeCareer(in: store) },
+                                     onNavigate: { navigate($0, in: store) })
+                }
             case .recruitingBoard:
                 if let model = store.recruitingBoard {
                     RecruitingBoardView(
@@ -94,8 +158,76 @@ public struct CoachWorldAppRootView: View {
                             Task { await actOnProspect(prospectID, intentID, in: store) }
                         },
                         onContinue: { Task { await advance(store) } },
-                        onNavigate: { navigate($0, in: store) }
+                        onNavigate: { navigate($0, in: store) },
+                        onOpenProspect: { prospectID in
+                            recruitingProspectID = prospectID
+                            if let id = UUID(uuidString: prospectID) {
+                                store.selectProspect(id)
+                            }
+                            navigate(.prospectProfile, in: store)
+                        },
+                        onOpenShortlist: {
+                            navigate(.shortlist, in: store)
+                        }
                     )
+                }
+            case .prospectProfile:
+                if let model = store.recruitingBoard {
+                    ProspectProfileView(
+                        model: model,
+                        prospectID: recruitingProspectID,
+                        statusMessage: failure ?? store.statusMessage,
+                        onAction: { prospectID, intentID in
+                            Task { await actOnProspect(prospectID, intentID, in: store) }
+                        },
+                        onClose: { navigate(.recruitingBoard, in: store) }
+                    )
+                }
+            case .shortlist:
+                if let model = store.recruitingBoard {
+                    ShortlistView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onOpenProspect: { prospectID in
+                            recruitingProspectID = prospectID
+                            if let id = UUID(uuidString: prospectID) {
+                                store.selectProspect(id)
+                            }
+                            navigate(.prospectProfile, in: store)
+                        },
+                        onClose: { navigate(.recruitingBoard, in: store) }
+                    )
+                }
+            case .classOverview:
+                if let model = store.recruitingBoard {
+                    ClassOverviewView(model: model, statusMessage: failure ?? store.statusMessage,
+                                      onClose: { closeCareer(in: store) })
+                }
+            case .contactVisitPlanner:
+                if let model = store.recruitingBoard {
+                    ContactVisitPlannerView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onAction: { prospectID, intentID in
+                            Task { await actOnProspect(prospectID, intentID, in: store) }
+                        },
+                        onClose: { closeCareer(in: store) }
+                    )
+                }
+            case .statisticsLeaders:
+                if let model = store.statisticsLeaders {
+                    StatisticsLeadersView(model: model, statusMessage: failure ?? store.statusMessage,
+                                          onClose: { closeCareer(in: store) })
+                }
+            case .awardsHonours:
+                if let model = store.awardsHonours {
+                    AwardsHonoursView(model: model, statusMessage: failure ?? store.statusMessage,
+                                      onClose: { closeCareer(in: store) })
+                }
+            case .realignmentEvent:
+                if let model = store.realignment {
+                    RealignmentEventView(model: model, statusMessage: failure ?? store.statusMessage,
+                                         onClose: { closeCareer(in: store) })
                 }
             case .leagueMap:
                 if let model = store.leagueMap {
@@ -171,12 +303,179 @@ public struct CoachWorldAppRootView: View {
                         onContinue: { Task { await advance(store) } }
                     )
                 }
+            case .proOffseason:
+                if let model = store.proOffseason {
+                    ProOffseasonView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onAction: { action in
+                            Task { await store.actOnProMarket(action) }
+                        },
+                        onClose: { closeCareer(in: store) }
+                    )
+                }
+            case .draftBoard:
+                if let model = store.proOffseason {
+                    DraftBoardView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onAction: { action in Task { await store.actOnProMarket(action) } },
+                        onClose: { closeCareer(in: store) }
+                    )
+                }
+            case .draftRoom:
+                if let model = store.proOffseason {
+                    DraftRoomView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onAction: { action in
+                            Task { await store.actOnProMarket(action) }
+                        },
+                        onClose: { closeCareer(in: store) }
+                    )
+                }
+            case .freeAgency:
+                if let model = store.proOffseason {
+                    FreeAgencyView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onAction: { action in Task { await store.actOnProMarket(action) } },
+                        onClose: { closeCareer(in: store) }
+                    )
+                }
+            case .proScoutingBoard:
+                if let model = store.proOffseason {
+                    ProScoutingBoardView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onAction: { action in Task { await store.actOnProMarket(action) } },
+                        onClose: { closeCareer(in: store) }
+                    )
+                }
+            case .collegeOffseason:
+                if let model = store.collegeOffseason {
+                    CollegeOffseasonView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onCommit: { intentID in Task { await commit(intentID, in: store) } },
+                        onContinue: { Task { await advance(store) } },
+                        onClose: { closeCareer(in: store) }
+                    )
+                }
+            case .portalHub:
+                if let model = store.collegeOffseason {
+                    PortalHubView(model: model, statusMessage: failure ?? store.statusMessage,
+                                  onCommit: { id in Task { await commit(id, in: store) } },
+                                  onContinue: { Task { await advance(store) } },
+                                  onClose: { closeCareer(in: store) })
+                }
+            case .retentionDecisions:
+                if let model = store.collegeOffseason {
+                    RetentionDecisionsView(model: model, statusMessage: failure ?? store.statusMessage,
+                                            onCommit: { id in Task { await commit(id, in: store) } },
+                                            onContinue: { Task { await advance(store) } },
+                                            onClose: { closeCareer(in: store) })
+                }
+            case .portalMarket:
+                if let model = store.collegeOffseason {
+                    PortalMarketView(model: model, statusMessage: failure ?? store.statusMessage,
+                                     onCommit: { id in Task { await commit(id, in: store) } },
+                                     onContinue: { Task { await advance(store) } },
+                                     onClose: { closeCareer(in: store) })
+                }
+            case .nilAllocation:
+                if let model = store.collegeOffseason {
+                    NilAllocationView(model: model, statusMessage: failure ?? store.statusMessage,
+                                      onCommit: { id in Task { await commit(id, in: store) } },
+                                      onContinue: { Task { await advance(store) } },
+                                      onClose: { closeCareer(in: store) })
+                }
+            case .signingDay:
+                if let model = store.collegeOffseason {
+                    SigningDayView(model: model, statusMessage: failure ?? store.statusMessage,
+                                   onCommit: { id in Task { await commit(id, in: store) } },
+                                   onContinue: { Task { await advance(store) } },
+                                   onClose: { closeCareer(in: store) })
+                }
+            case .capContracts:
+                if let model = store.proManagement {
+                    CapContractsView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onAction: { action in
+                            Task { await store.actOnProManagement(action) }
+                        },
+                        onClose: { closeCareer(in: store) }
+                    )
+                }
+            case .contractNegotiation:
+                if let model = store.proManagement {
+                    ContractNegotiationView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onAction: { action in
+                            Task { await store.actOnProManagement(action) }
+                        },
+                        onClose: { closeCareer(in: store) }
+                    )
+                }
+            case .rosterCutsTransactions:
+                if let model = store.proManagement {
+                    RosterCutsTransactionsView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onAction: { action in Task { await store.actOnProManagement(action) } },
+                        onClose: { closeCareer(in: store) }
+                    )
+                }
+            case .staffRoom:
+                if let model = store.staffRoom {
+                    StaffRoomView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { closeCareer(in: store) }
+                    )
+                }
+            case .staffMarketProfile:
+                if let model = store.staffRoom {
+                    StaffMarketProfileView(model: model, statusMessage: failure ?? store.statusMessage,
+                                           onClose: { closeCareer(in: store) })
+                }
+            case .schemeBook:
+                if let model = store.gamePlan {
+                    SchemeBookView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onSelect: { plan in Task { await setGamePlan(plan, in: store) } },
+                        onClose: { closeCareer(in: store) }
+                    )
+                }
+            case .personnelPackages:
+                if let model = store.depthChart {
+                    PersonnelPackagesView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onSelect: { plan in Task { await setPersonnelPlan(plan, in: store) } },
+                        onClose: { closeCareer(in: store) }
+                    )
+                }
             case .aftermath:
                 if let model = store.aftermath {
                     AftermathView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
-                        onContinue: { Task { await returnToHQ(store) } }
+                        onContinue: { Task { await returnToHQ(store) } },
+                        onOpenBoxScore: {
+                            navigate(.gameDetailBoxScore, in: store)
+                            Task { await persistOrReport(store) }
+                        }
+                    )
+                }
+            case .gameDetailBoxScore:
+                if let model = store.aftermath {
+                    GameDetailBoxScoreView(
+                        model: model,
+                        onClose: { navigate(.aftermath, in: store) }
                     )
                 }
             case .careerHub:
@@ -184,7 +483,97 @@ public struct CoachWorldAppRootView: View {
                     CareerHubView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
-                        onClose: { navigate(.coachingHQ, in: store) }
+                        onClose: { closeCareer(in: store) },
+                        focus: screen,
+                        onNavigate: { navigate($0, in: store) },
+                        onAcceptOpportunity: { id in
+                            Task { await acceptCareerOpportunity(id, in: store) }
+                        },
+                        onResign: { Task { await resignCareer(in: store) } },
+                        onContinue: { Task { await advance(store) } }
+                    )
+                }
+            case .jobBoard:
+                if let model = store.careerHub {
+                    JobBoardView(model: model, statusMessage: failure ?? store.statusMessage,
+                                 onClose: { closeCareer(in: store) },
+                                 onNavigate: { navigate($0, in: store) },
+                                 onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
+                                 onResign: { Task { await resignCareer(in: store) } },
+                                 onContinue: { Task { await advance(store) } })
+                }
+            case .offer:
+                if let model = store.careerHub {
+                    OfferView(model: model, statusMessage: failure ?? store.statusMessage,
+                              onClose: { closeCareer(in: store) },
+                              onNavigate: { navigate($0, in: store) },
+                              onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
+                              onResign: { Task { await resignCareer(in: store) } },
+                              onContinue: { Task { await advance(store) } })
+                }
+            case .appointment:
+                if let model = store.careerHub {
+                    AppointmentView(model: model, statusMessage: failure ?? store.statusMessage,
+                                    onClose: { closeCareer(in: store) },
+                                    onNavigate: { navigate($0, in: store) },
+                                    onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
+                                    onResign: { Task { await resignCareer(in: store) } },
+                                    onContinue: { Task { await advance(store) } })
+                }
+            case .jobSecurity:
+                if let model = store.careerHub {
+                    JobSecurityView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { closeCareer(in: store) },
+                        onNavigate: { navigate($0, in: store) },
+                        onAcceptOpportunity: { id in
+                            Task { await acceptCareerOpportunity(id, in: store) }
+                        },
+                        onResign: { Task { await resignCareer(in: store) } },
+                        onContinue: { Task { await advance(store) } }
+                    )
+                }
+            case .stakeholders:
+                if let model = store.careerHub {
+                    StakeholdersView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { closeCareer(in: store) },
+                        onNavigate: { navigate($0, in: store) },
+                        onAcceptOpportunity: { id in
+                            Task { await acceptCareerOpportunity(id, in: store) }
+                        },
+                        onResign: { Task { await resignCareer(in: store) } },
+                        onContinue: { Task { await advance(store) } }
+                    )
+                }
+            case .promotionDecision:
+                if let model = store.careerHub {
+                    PromotionDecisionView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { closeCareer(in: store) },
+                        onNavigate: { navigate($0, in: store) },
+                        onAcceptOpportunity: { id in
+                            Task { await acceptCareerOpportunity(id, in: store) }
+                        },
+                        onResign: { Task { await resignCareer(in: store) } },
+                        onContinue: { Task { await advance(store) } }
+                    )
+                }
+            case .coachingCarousel:
+                if let model = store.careerHub {
+                    CoachingCarouselView(
+                        model: model,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { closeCareer(in: store) },
+                        onNavigate: { navigate($0, in: store) },
+                        onAcceptOpportunity: { id in
+                            Task { await acceptCareerOpportunity(id, in: store) }
+                        },
+                        onResign: { Task { await resignCareer(in: store) } },
+                        onContinue: { Task { await advance(store) } }
                     )
                 }
             case .standings:
@@ -245,11 +634,25 @@ public struct CoachWorldAppRootView: View {
                         }
                     )
                 }
-            case .rankingsPlayoffPicture, .bracketPostseason:
+            case .rankingsPlayoffPicture:
                 if let model = store.competitionOverview {
-                    CompetitionOverviewView(
+                    RankingsPlayoffPictureView(
                         model: model,
-                        focus: screen,
+                        statusMessage: failure ?? store.statusMessage,
+                        onClose: { navigate(.leagueMap, in: store) },
+                        onContinue: { Task { await advance(store) } },
+                        onSelectTeam: { id in
+                            Task {
+                                await store.selectTeam(id)
+                                navigate(.teamProgrammeProfile, in: store)
+                            }
+                        }
+                    )
+                }
+            case .bracketPostseason:
+                if let model = store.competitionOverview {
+                    BracketPostseasonView(
+                        model: model,
                         statusMessage: failure ?? store.statusMessage,
                         onClose: { navigate(.leagueMap, in: store) },
                         onContinue: { Task { await advance(store) } },
@@ -270,12 +673,25 @@ public struct CoachWorldAppRootView: View {
                         // not see again this session.
                         statusMessage: failure ?? store.statusMessage,
                         onCommit: { intentID in Task { await commit(intentID, in: store) } },
-                        onInspect: { Task { await store.inspectOpponentFilm() } },
+                        onInspect: {
+                            Task {
+                                await store.inspectOpponentFilm()
+                                navigate(.opponentReportFilmRoom, in: store)
+                            }
+                        },
                         onDelegate: { Task { await delegate(store) } },
                         onPrepare: { Task { await prepare(store) } },
                         onContinue: { Task { await advance(store) } },
                         onOpenCorrespondence: { _ in },
-                        onNavigate: { navigate($0, in: store) }
+                        onNavigate: { navigate($0, in: store) },
+                        showsProOffseason: store.proOffseason != nil,
+                        showsDraftRoom: store.proOffseason?.phase == .draft,
+                        showsCareer: store.careerHub != nil,
+                        showsSigningDay: store.collegeOffseason?.cyclePhase == .signing,
+                        showsCollegeOffseason: store.collegeOffseason != nil,
+                        showsProManagement: store.proManagement != nil,
+                        showsContractNegotiation: store.proManagement != nil,
+                        showsRecruitingBoard: store.recruitingBoard != nil
                     )
                 }
             }
@@ -285,7 +701,7 @@ public struct CoachWorldAppRootView: View {
     }
 
     private func navigate(_ destination: CoachWorldScreenID, in store: CoachWorldStore) {
-        if destination != .teamHealth {
+        if destination != .teamHealth && destination != .inbox {
             store.setPresentationReturnRoute(nil)
         }
         switch destination {
@@ -297,8 +713,62 @@ public struct CoachWorldAppRootView: View {
             screen = .roster
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
+        case .inbox where store.inbox != nil:
+            inboxOrigin = screen == .roster ? .roster : .coachingHQ
+            store.setPresentationReturnRoute(String(inboxOrigin.rawValue))
+            screen = .inbox
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .opponentReportFilmRoom where store.opponentFilm != nil:
+            screen = .opponentReportFilmRoom
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .news where store.news != nil:
+            screen = .news
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .recordBook where store.legacyHistory != nil,
+             .rivalries where store.legacyHistory != nil,
+             .careerLine where store.legacyHistory != nil,
+             .coachingTree where store.legacyHistory != nil:
+            screen = destination
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .statisticsLeaders where store.statisticsLeaders != nil:
+            screen = .statisticsLeaders
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .awardsHonours where store.awardsHonours != nil:
+            screen = .awardsHonours
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .realignmentEvent where store.realignment != nil:
+            screen = .realignmentEvent
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .gameDetailBoxScore where store.aftermath != nil:
+            screen = .gameDetailBoxScore
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .aftermath where store.aftermath != nil:
+            screen = .aftermath
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
         case .recruitingBoard where store.recruitingBoard != nil:
             screen = .recruitingBoard
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .prospectProfile where store.recruitingBoard != nil:
+            screen = .prospectProfile
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .shortlist where store.recruitingBoard != nil:
+            screen = .shortlist
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .classOverview where store.recruitingBoard != nil,
+             .contactVisitPlanner where store.recruitingBoard != nil:
+            screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
         case .leagueMap where store.leagueMap != nil:
@@ -317,14 +787,76 @@ public struct CoachWorldAppRootView: View {
             screen = .depthChart
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
+        case .developmentPlan where store.roster != nil:
+            screen = .developmentPlan
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
         case .teamHealth where store.teamHealth != nil:
             teamHealthOrigin = screen == .roster ? .roster : .coachingHQ
             store.setPresentationReturnRoute(String(teamHealthOrigin.rawValue))
             screen = .teamHealth
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
+        case .proOffseason where store.proOffseason != nil:
+            screen = .proOffseason
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .draftBoard where store.proOffseason != nil,
+             .freeAgency where store.proOffseason != nil,
+             .proScoutingBoard where store.proOffseason != nil:
+            screen = destination
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .draftRoom where store.proOffseason?.phase == .draft:
+            screen = .draftRoom
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .staffRoom where store.staffRoom != nil,
+             .staffMarketProfile where store.staffRoom != nil:
+            screen = destination
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .schemeBook where store.gamePlan != nil,
+             .personnelPackages where store.depthChart != nil:
+            screen = destination
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .collegeOffseason where store.collegeOffseason != nil:
+            screen = .collegeOffseason
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .portalHub where store.collegeOffseason != nil,
+             .retentionDecisions where store.collegeOffseason != nil,
+             .portalMarket where store.collegeOffseason != nil,
+             .nilAllocation where store.collegeOffseason != nil:
+            screen = destination
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .signingDay where store.collegeOffseason?.cyclePhase == .signing:
+            screen = .signingDay
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .capContracts where store.proManagement != nil,
+             .contractNegotiation where store.proManagement != nil,
+             .rosterCutsTransactions where store.proManagement != nil:
+            screen = destination
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
         case .careerHub where store.careerHub != nil:
             screen = .careerHub
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .jobBoard where store.careerHub != nil,
+             .offer where store.careerHub != nil,
+             .appointment where store.careerHub != nil:
+            screen = destination
+            store.setPresentationRoute(String(destination.rawValue))
+            failure = nil
+        case .jobSecurity where store.careerHub != nil,
+             .stakeholders where store.careerHub != nil,
+             .promotionDecision where store.careerHub != nil,
+             .coachingCarousel where store.careerHub != nil:
+            screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
         case .standings where store.standings != nil:
@@ -353,34 +885,25 @@ public struct CoachWorldAppRootView: View {
         }
     }
 
+    private func closeCareer(in store: CoachWorldStore) {
+        navigate(store.coachingHQ == nil ? .careerHub : .coachingHQ, in: store)
+    }
+
     private var title: some View {
-        VStack(spacing: CoachWorldTokens.Space.md) {
-            Text("Pro Football Coach")
-                .font(CoachWorldTokens.TypeRole.display.weight(.black))
-            if let failure {
-                Text(failure)
-                    .font(CoachWorldTokens.TypeRole.body)
-                    .multilineTextAlignment(.center)
-            }
-            if isStarting {
-                ProgressView("Building the world")
-            } else if isRestoring {
-                ProgressView("Loading career")
-            } else if recoveryRequired {
-                Button("Retry restore") {
-                    hasAttemptedRestore = false
-                    recoveryRequired = false
-                    Task { await restoreExistingCareer() }
-                }
-                Button("Use backup") { Task { await recoverFromBackup() } }
-                Button("Replace with a new career") { Task { await beginNewCareerSetup() } }
-            } else {
-                Button("New career") { Task { await beginNewCareerSetup() } }
-                    .buttonStyle(.borderedProminent)
-                    .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-            }
-        }
-        .padding(CoachWorldTokens.Space.xl)
+        TitleContinueView(
+            failure: failure,
+            isStarting: isStarting,
+            isRestoring: isRestoring,
+            recoveryRequired: recoveryRequired,
+            onRetry: {
+                hasAttemptedRestore = false
+                recoveryRequired = false
+                Task { await restoreExistingCareer() }
+            },
+            onUseBackup: { Task { await recoverFromBackup() } },
+            onNewCareer: { Task { await beginNewCareerSetup() } },
+            onSettings: { screen = .settingsAccessibility }
+        )
     }
 
     private var working: some View {
@@ -416,8 +939,13 @@ public struct CoachWorldAppRootView: View {
             if let destination = Self.screenID(for: document.presentation.route) {
                 screen = destination
             }
+            recruitingProspectID = store?.presentationSubjectID?.uuidString
             if let origin = document.presentation.returnRoute.flatMap(Self.screenID(for:)) {
-                teamHealthOrigin = origin
+                if screen == .teamHealth {
+                    teamHealthOrigin = origin
+                } else if screen == .inbox {
+                    inboxOrigin = origin
+                }
             }
             failure = nil
             recoveryRequired = false
@@ -437,8 +965,13 @@ public struct CoachWorldAppRootView: View {
             if let destination = Self.screenID(for: document.presentation.route) {
                 screen = destination
             }
+            recruitingProspectID = store?.presentationSubjectID?.uuidString
             if let origin = document.presentation.returnRoute.flatMap(Self.screenID(for:)) {
-                teamHealthOrigin = origin
+                if screen == .teamHealth {
+                    teamHealthOrigin = origin
+                } else if screen == .inbox {
+                    inboxOrigin = origin
+                }
             }
             failure = nil
             recoveryRequired = false
@@ -535,7 +1068,10 @@ public struct CoachWorldAppRootView: View {
 
     private func advance(_ store: CoachWorldStore) async {
         await store.advanceWeek()
-        if store.matchDay != nil {
+        if store.careerHub != nil, store.coachingHQ == nil {
+            screen = .careerHub
+            store.setPresentationRoute(String(CoachWorldScreenID.careerHub.rawValue))
+        } else if store.matchDay != nil {
             screen = .matchDay
             store.setPresentationRoute(String(CoachWorldScreenID.matchDay.rawValue))
         } else if screen == .matchDay {
@@ -567,6 +1103,16 @@ public struct CoachWorldAppRootView: View {
 
     private func setPersonnelPlan(_ plan: PersonnelPlan, in store: CoachWorldStore) async {
         await store.setPersonnelPlan(plan)
+        await persistOrReport(store)
+    }
+
+    private func acceptCareerOpportunity(_ stableID: String, in store: CoachWorldStore) async {
+        await store.acceptCareerOpportunity(stableID)
+        await persistOrReport(store)
+    }
+
+    private func resignCareer(in store: CoachWorldStore) async {
+        await store.resignCareer()
         await persistOrReport(store)
     }
 

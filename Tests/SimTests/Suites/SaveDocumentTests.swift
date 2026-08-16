@@ -30,7 +30,7 @@ private func legacyEnvelope(
 
 func runSaveDocumentTests() {
     suite("Save document migration") {
-        test("schema 11 bare root wraps and normalises to 12") {
+        test("schema 11 bare root wraps and normalises to the current root") {
             let state = GameState.bootstrap(seed: 20_260_812)
             let legacy = try! legacyEnvelope(for: state)
             let document = try! CoachWorldSaveDocument.decode(envelopeData: legacy)
@@ -39,6 +39,7 @@ func runSaveDocumentTests() {
             expectEqual(document.metadata.migratedFromRootVersion, GameState.legacySchemaVersion)
             expectEqual(document.gameState.calendar, state.calendar)
             expectEqual(document.presentation.returnRoute, nil)
+            expectEqual(document.presentation.readInboxItemIDs, [])
         }
 
         test("schema 11 missing later root fields receives explicit defaults") {
@@ -64,17 +65,61 @@ func runSaveDocumentTests() {
             )
         }
 
+        test("schema 12 without the negotiation ledger receives an empty ledger") {
+            let state = GameState.bootstrap(seed: 20_260_817)
+            var object = try! JSONSerialization.jsonObject(
+                with: JSONEncoder.stable().encode(state)
+            ) as! [String: Any]
+            object["version"] = GameState.previousSchemaVersion
+            var market = object["proMarket"] as! [String: Any]
+            market.removeValue(forKey: "contractNegotiations")
+            object["proMarket"] = market
+            let decoded = try! JSONDecoder().decode(
+                GameState.self,
+                from: JSONSerialization.data(withJSONObject: object)
+            )
+            expectEqual(decoded.version, GameState.schemaVersion)
+            expectEqual(decoded.proMarket.contractNegotiations, [])
+        }
+
         test("current document round trips") {
             let state = GameState.bootstrap(seed: 20_260_813)
+            let selectedSubjectID = state.prospects.ids[0]
             let expected = CoachWorldSaveDocument(
                 gameState: state,
-                presentation: CareerPresentationState(route: "13", returnRoute: "16"),
+                presentation: CareerPresentationState(
+                    route: "13",
+                    returnRoute: "16",
+                    readInboxItemIDs: ["story:example"],
+                    selectedSubjectID: selectedSubjectID
+                ),
                 metadata: CareerSaveMetadata(generation: 4, createdFromSeed: 20_260_813)
             )
             let decoded = try! CoachWorldSaveDocument.decode(
                 envelopeData: SaveEnvelope.encode(expected)
             )
             expectEqual(decoded, expected)
+            expectEqual(decoded.presentation.selectedSubjectID, selectedSubjectID)
+        }
+
+        test("current document without inbox receipts remains readable") {
+            let state = GameState.bootstrap(seed: 20_260_819)
+            let document = CoachWorldSaveDocument(gameState: state)
+            var object = try! JSONSerialization.jsonObject(
+                with: JSONEncoder.stable().encode(document)
+            ) as! [String: Any]
+            var presentation = object["presentation"] as! [String: Any]
+            presentation.removeValue(forKey: "readInboxItemIDs")
+            object["presentation"] = presentation
+            let body = try! JSONSerialization.data(withJSONObject: object)
+            var envelope = Data(Array("PFC1".utf8))
+            var version = SaveEnvelope.currentSchemaVersion.littleEndian
+            withUnsafeBytes(of: &version) { envelope.append(contentsOf: $0) }
+            envelope.append(1)
+            envelope.append(contentsOf: Array(repeating: UInt8(0), count: 7))
+            envelope.append(try! (body as NSData).compressed(using: .zlib) as Data)
+            let decoded = try! CoachWorldSaveDocument.decode(envelopeData: envelope)
+            expectEqual(decoded.presentation.readInboxItemIDs, [])
         }
 
         test("future document markers are refused before body decoding") {

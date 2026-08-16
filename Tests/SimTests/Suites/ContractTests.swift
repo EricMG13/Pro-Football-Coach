@@ -561,12 +561,151 @@ func runContractTests() {
                 .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
             let store = swiftFiles(under: "Sources/CoachWorldApp")
                 .first { $0.path.hasSuffix("/CoachWorldStore.swift") }?.text ?? ""
-            expect(root.contains("onInspect: { Task { await store.inspectOpponentFilm() } }"),
-                   "HQ film inspection must reach the store seam")
+            expect(root.contains("inspectOpponentFilm()")
+                       && root.contains("navigate(.opponentReportFilmRoom"),
+                   "HQ film inspection must reach the store seam and film route")
             expect(!root.contains("onInspect: {}"),
                    "HQ film inspection must not be a dead callback")
             expect(store.contains("No current opponent film evidence is recorded."),
                    "missing film evidence needs an explicit unavailable state")
+            let filmFiles = swiftFiles(under: "Sources/ProFootballCoachUI")
+            let film = filmFiles.first { $0.path.hasSuffix("/OpponentFilmView.swift") }?.text ?? ""
+            let filmModel = filmFiles.first {
+                $0.path.hasSuffix("/OpponentFilmReadModels.swift")
+            }?.text ?? ""
+            let filmProvider = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldOpponentFilmProvider.swift") }?.text ?? ""
+            expect(film.contains("public struct OpponentFilmView")
+                       && film.contains("OPPONENT REPORT"),
+                   "film must render an evidence-backed production surface")
+            expect(filmModel.contains("public struct OpponentFilmReadModel")
+                       && filmModel.contains("Observer-scoped"),
+                   "film must consume a bounded immutable read model")
+            expect(filmProvider.contains("static func opponentFilm(from state: GameState)")
+                       && filmProvider.contains("tactical.observation"),
+                   "film must use observer-scoped tactical evidence")
+            expect(root.contains("case .opponentReportFilmRoom")
+                       && root.contains("OpponentReportFilmRoomView("),
+                   "film route must be reachable from the shipped root")
+        }
+
+        test("news reaches the shipped root from typed history") {
+            let root = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
+            let store = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldStore.swift") }?.text ?? ""
+            let provider = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldNewsProvider.swift") }?.text ?? ""
+            let view = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .first { $0.path.hasSuffix("/NewsView.swift") }?.text ?? ""
+            expect(root.contains("case .news") && root.contains("NewsView("),
+                   "news must be reachable from the shipped root")
+            expect(store.contains("public private(set) var news")
+                       && store.contains("CoachWorldReadModelProvider.news"),
+                   "news must be rebuilt from the application store seam")
+            expect(provider.contains("NewsFeedReadModel.build(from: state)"),
+                   "news must derive from typed history")
+            expect(view.contains("public struct NewsView")
+                       && view.contains("No news recorded"),
+                   "news must render a truthful bounded empty state")
+        }
+
+        test("durable history families share one production route and projection") {
+            let root = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
+            let store = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldStore.swift") }?.text ?? ""
+            let provider = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldHistoryProvider.swift") }?.text ?? ""
+            let view = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .first { $0.path.hasSuffix("/LegacyHistoryView.swift") }?.text ?? ""
+            let model = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .first { $0.path.hasSuffix("/LegacyHistoryReadModels.swift") }?.text ?? ""
+            expect(root.contains("case .recordBook:")
+                       && root.contains("RecordBookView(")
+                       && root.contains("RivalriesView(")
+                       && root.contains("CareerLineView(")
+                       && root.contains("CoachingTreeView("),
+                   "all durable history families must reach one authoritative projection")
+            expect(store.contains("legacyHistory = CoachWorldReadModelProvider.legacyHistory"),
+                   "history must rebuild from the application store seam")
+            expect(provider.contains("WorldHistoryReadModel.build(from: state)")
+                       && provider.contains("CoachingTreeReadModel.build(from: state)"),
+                   "history must use authoritative archive and coaching-tree projections")
+            expect(model.contains("public struct LegacyHistoryReadModel")
+                       && model.contains("prefix(256)"),
+                   "history read models must be immutable and bounded")
+            expect(view.contains("public struct LegacyHistoryView")
+                       && view.contains("Button(\"Record book\")"),
+                   "history must expose a native, origin-preserving view selector")
+        }
+
+        test("competition leaders and honours use production routes") {
+            let root = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
+            let store = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldStore.swift") }?.text ?? ""
+            let provider = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldStatisticsProvider.swift") }?.text ?? ""
+            let stats = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .first { $0.path.hasSuffix("/StatisticsLeadersView.swift") }?.text ?? ""
+            let awards = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .first { $0.path.hasSuffix("/AwardsHonoursView.swift") }?.text ?? ""
+            expect(root.contains("case .statisticsLeaders:") && root.contains("StatisticsLeadersView(")
+                       && root.contains("case .awardsHonours:") && root.contains("AwardsHonoursView("),
+                   "statistics and awards must reach the shipped root")
+            expect(root.contains("RankingsPlayoffPictureView(")
+                       && root.contains("BracketPostseasonView("),
+                   "rankings and postseason must use named production family entries")
+            expect(store.contains("statisticsLeaders = CoachWorldReadModelProvider.statisticsLeaders")
+                       && store.contains("awardsHonours = CoachWorldReadModelProvider.awardsHonours"),
+                   "competition history must rebuild from the store seam")
+            expect(provider.contains("state.competition.playerStatistics")
+                       && provider.contains("state.competition.archives"),
+                   "leaders and honours must derive from authoritative competition state")
+            expect(stats.contains("dynamicTypeSize.isAccessibilitySize")
+                       && stats.contains("accessibilitySortPriority"),
+                   "statistics must declare accessibility composition and order")
+            expect(awards.contains("dynamicTypeSize.isAccessibilitySize")
+                       && awards.contains("accessibilitySortPriority"),
+                   "awards must declare accessibility composition and order")
+        }
+
+        test("realignment is backed by a typed event and shipped route") {
+            let root = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
+            let provider = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldRealignmentProvider.swift") }?.text ?? ""
+            let view = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .first { $0.path.hasSuffix("/RealignmentEventView.swift") }?.text ?? ""
+            let engine = swiftFiles(under: "Sources/FootballSimCore/History")
+                .first { $0.path.hasSuffix("/DomainEvent.swift") }?.text ?? ""
+            expect(root.contains("case .realignmentEvent:") && root.contains("RealignmentEventView("),
+                   "realignment must reach the shipped root")
+            expect(provider.contains("case let .realignment")
+                       && provider.contains("ConferenceRealignmentSwap"),
+                   "realignment must read typed before/after swaps")
+            expect(engine.contains("case realignment(")
+                       && engine.contains("ConferenceRealignmentReason"),
+                   "realignment cause must be persisted as a typed domain event")
+            expect(view.contains("dynamicTypeSize.isAccessibilitySize")
+                       && view.contains("No realignment event recorded."),
+                   "realignment must expose accessible and truthful empty states")
+        }
+
+        test("game detail reuses immutable aftermath evidence") {
+            let root = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
+            let view = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .first { $0.path.hasSuffix("/GameDetailBoxScoreView.swift") }?.text ?? ""
+            expect(root.contains("case .gameDetailBoxScore:")
+                       && root.contains("GameDetailBoxScoreView(")
+                       && root.contains("navigate(.gameDetailBoxScore"),
+                   "box score must be reachable from the immutable aftermath route")
+            expect(view.contains("AftermathReadModel")
+                       && view.contains("dynamicTypeSize.isAccessibilitySize")
+                       && view.contains("accessibilitySortPriority"),
+                   "box score must render the bounded aftermath model with AX5 ordering")
         }
 
         test("the authoritative-root UI scan catches code but ignores prose") {
@@ -729,6 +868,8 @@ func runContractTests() {
         test("Coaching HQ exposes an injected read-model surface and a truthful app root") {
             let uiFiles = swiftFiles(under: "Sources/ProFootballCoachUI")
             let hq = uiFiles.first { $0.path.hasSuffix("/CoachingHQView.swift") }?.text ?? ""
+            let appRoot = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
             let recruiting = uiFiles.first {
                 $0.path.hasSuffix("/RecruitingBoardView.swift")
             }?.text ?? ""
@@ -765,6 +906,27 @@ func runContractTests() {
                    "Recruiting Board must declare deterministic VoiceOver order")
             expect(recruiting.contains("choice.cost") && recruiting.contains("choice.consequence"),
                    "recruiting actions must expose both cost and consequence")
+            let prospectProfile = uiFiles.first {
+                $0.path.hasSuffix("/ProspectProfileView.swift")
+            }?.text ?? ""
+            let shortlist = uiFiles.first {
+                $0.path.hasSuffix("/ShortlistView.swift")
+            }?.text ?? ""
+            expect(prospectProfile.contains("public struct ProspectProfileView")
+                       && prospectProfile.contains("RecruitingBoardReadModel")
+                       && prospectProfile.contains("onAction")
+                       && prospectProfile.contains("dynamicTypeSize.isAccessibilitySize"),
+                   "Prospect Profile must reuse the authoritative recruiting dossier and actions")
+            expect(shortlist.contains("public struct ShortlistView")
+                       && shortlist.contains("RecruitingBoardReadModel")
+                       && shortlist.contains("onOpenProspect")
+                       && shortlist.contains("dynamicTypeSize.isAccessibilitySize"),
+                   "Shortlist must reuse the bounded recruiting board projection")
+            expect(appRoot.contains("case .prospectProfile")
+                       && appRoot.contains("ProspectProfileView(")
+                       && appRoot.contains("case .shortlist")
+                       && appRoot.contains("ShortlistView("),
+                   "Prospect Profile and Shortlist must be reachable from the shipped app root")
 
             expect(roster.contains("public struct RosterView"),
                    "RosterView.swift must expose the production roster screen")
@@ -845,8 +1007,6 @@ func runContractTests() {
             let healthModel = uiFiles.first {
                 $0.path.hasSuffix("/TeamHealthReadModels.swift")
             }?.text ?? ""
-            let appRoot = swiftFiles(under: "Sources/CoachWorldApp")
-                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
             expect(health.contains("public struct TeamHealthView"),
                    "Team Health must expose a production view")
             expect(health.contains("let model: TeamHealthReadModel"),
@@ -862,6 +1022,258 @@ func runContractTests() {
                    "Team Health must be reachable from HQ and the roster without a disabled route")
             expect(hq.contains("route(\"Health\", screen: .teamHealth)"),
                    "standard HQ must expose Team Health, not only its accessibility menu")
+
+            let proOffseason = uiFiles.first {
+                $0.path.hasSuffix("/ProOffseasonView.swift")
+            }?.text ?? ""
+            let proOffseasonModel = uiFiles.first {
+                $0.path.hasSuffix("/ProOffseasonReadModels.swift")
+            }?.text ?? ""
+            let appStore = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldStore.swift") }?.text ?? ""
+            expect(proOffseason.contains("public struct ProOffseasonView")
+                       && proOffseason.contains("dynamicTypeSize.isAccessibilitySize"),
+                   "Pro Offseason must expose a production accessibility-aware view")
+            expect(proOffseasonModel.contains("public struct ProOffseasonReadModel")
+                       && proOffseasonModel.contains("ProMarketAction"),
+                   "Pro Offseason must project existing market actions")
+            expect(appRoot.contains("case .proOffseason")
+                       && appRoot.contains("ProOffseasonView("),
+                   "Pro Offseason must be reachable from the shipped app root")
+            expect(hq.contains("proOffseason") && appStore.contains("actOnProMarket"),
+                   "professional offseason must be reachable only through the market seam")
+            for family in [
+                ("DraftBoardView.swift", "DraftBoardView", "draftBoard"),
+                ("DraftRoomView.swift", "DraftRoomView", "draftRoom"),
+                ("FreeAgencyView.swift", "FreeAgencyView", "freeAgency"),
+                ("ProScoutingBoardView.swift", "ProScoutingBoardView", "proScoutingBoard")
+            ] {
+                let view = uiFiles.first { $0.path.hasSuffix("/\(family.0)") }?.text ?? ""
+                expect(view.contains("public struct \(family.1)")
+                           && view.contains("ProOffseasonView(")
+                           && view.contains("dynamicTypeSize.isAccessibilitySize"),
+                       "\(family.1) must reuse the authoritative pro market surface")
+                expect(appRoot.contains("case .\(family.2)")
+                           && appRoot.contains("\(family.1)("),
+                       "\(family.1) must be reachable from the shipped app root")
+                expect(hq.contains("\(family.2)"),
+                       "\(family.1) must be reachable from the HQ route surface")
+            }
+            for family in [
+                ("JobBoardView.swift", "JobBoardView", "jobBoard"),
+                ("OfferView.swift", "OfferView", "offer"),
+                ("AppointmentView.swift", "AppointmentView", "appointment")
+            ] {
+                let view = uiFiles.first { $0.path.hasSuffix("/\(family.0)") }?.text ?? ""
+                expect(view.contains("public struct \(family.1)")
+                           && view.contains("CareerHubView(")
+                           && view.contains("dynamicTypeSize.isAccessibilitySize"),
+                       "\(family.1) must reuse the authoritative career ledger")
+                expect(appRoot.contains("case .\(family.2)")
+                           && appRoot.contains("\(family.1)("),
+                       "\(family.1) must be reachable from the shipped app root")
+                expect(hq.contains("\(family.2)") && hq.contains("showsCareer"),
+                       "\(family.1) must be reachable only for a controlled career")
+            }
+            for family in [
+                ("ClassOverviewView.swift", "ClassOverviewView", "classOverview"),
+                ("ContactVisitPlannerView.swift", "ContactVisitPlannerView", "contactVisitPlanner")
+            ] {
+                let view = uiFiles.first { $0.path.hasSuffix("/\(family.0)") }?.text ?? ""
+                expect(view.contains("public struct \(family.1)")
+                           && view.contains("RecruitingBoardReadModel")
+                           && view.contains("dynamicTypeSize.isAccessibilitySize"),
+                       "\(family.1) must consume the authoritative recruiting read model")
+                expect(appRoot.contains("case .\(family.2)")
+                           && appRoot.contains("\(family.1)("),
+                       "\(family.1) must be reachable from the shipped app root")
+                expect(hq.contains("\(family.2)") && hq.contains("showsRecruitingBoard"),
+                       "\(family.1) must be reachable only for a controlled recruiting career")
+            }
+
+            let proManagement = uiFiles.first {
+                $0.path.hasSuffix("/ProManagementView.swift")
+            }?.text ?? ""
+            let proManagementModel = uiFiles.first {
+                $0.path.hasSuffix("/ProManagementReadModels.swift")
+            }?.text ?? ""
+            let proManagementProvider = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldProManagementProvider.swift") }?.text ?? ""
+            expect(proManagement.contains("public struct ProManagementView")
+                       && proManagement.contains("dynamicTypeSize.isAccessibilitySize"),
+                   "Cap and roster management must expose an accessibility-aware production view")
+            expect(proManagementModel.contains("public struct ProManagementReadModel")
+                       && proManagementModel.contains("ProManagementAction"),
+                   "Cap and roster management must project existing transaction actions")
+            expect(proManagementProvider.contains("static func proManagement(")
+                       && proManagementProvider.contains("ProManagementSystem.capSnapshot"),
+                   "Cap and roster management must derive from the authoritative pro engine")
+            expect(appRoot.contains("case .capContracts")
+                       && appRoot.contains("rosterCutsTransactions")
+                       && appRoot.contains("CapContractsView(")
+                       && appRoot.contains("RosterCutsTransactionsView("),
+                   "Cap and roster management must be reachable from the shipped app root")
+            expect(hq.contains("showsProManagement")
+                       && hq.contains("capContracts")
+                       && hq.contains("rosterCutsTransactions"),
+                   "Cap and roster management must be reachable from the HQ route surface")
+
+            let staffRoom = uiFiles.first {
+                $0.path.hasSuffix("/StaffRoomView.swift")
+            }?.text ?? ""
+            let staffRoomModel = uiFiles.first {
+                $0.path.hasSuffix("/StaffRoomReadModels.swift")
+            }?.text ?? ""
+            let staffRoomProvider = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldStaffRoomProvider.swift") }?.text ?? ""
+            expect(staffRoom.contains("public struct StaffRoomView")
+                       && staffRoom.contains("dynamicTypeSize.isAccessibilitySize"),
+                   "Staff Room must expose an accessibility-aware production view")
+            expect(staffRoomModel.contains("public struct StaffRoomReadModel")
+                       && staffRoomModel.contains("StaffRow"),
+                   "Staff Room must project a bounded staff ledger")
+            expect(staffRoomProvider.contains("static func staffRoom(")
+                       && staffRoomProvider.contains("state.staff"),
+                   "Staff Room must derive from authoritative staff records")
+            expect(appRoot.contains("case .staffRoom")
+                       && appRoot.contains("staffMarketProfile")
+                       && appRoot.contains("StaffRoomView("),
+                   "Staff Room and Staff Market & Profile must be reachable from the shipped app root")
+            expect(hq.contains("staffRoom") && hq.contains("Staff market & profile"),
+                   "Staff Room routes must be reachable from HQ")
+            for family in [
+                ("StaffMarketProfileView.swift", "StaffMarketProfileView", "staffMarketProfile"),
+                ("CapContractsView.swift", "CapContractsView", "capContracts"),
+                ("ContractNegotiationView.swift", "ContractNegotiationView", "contractNegotiation"),
+                ("RosterCutsTransactionsView.swift", "RosterCutsTransactionsView", "rosterCutsTransactions")
+            ] {
+                let view = uiFiles.first { $0.path.hasSuffix("/\(family.0)") }?.text ?? ""
+                expect(view.contains("public struct \(family.1)")
+                           && view.contains("dynamicTypeSize.isAccessibilitySize"),
+                       "\(family.1) must be a production accessibility-aware family view")
+                expect(appRoot.contains("case .\(family.2)")
+                           && appRoot.contains("\(family.1)("),
+                       "\(family.1) must be routed by the shipped app root")
+            }
+
+            let negotiationCore = swiftFiles(under: "Sources/FootballSimCore")
+                .first { $0.path.hasSuffix("/ProContractNegotiation.swift") }?.text ?? ""
+            expect(negotiationCore.contains("public struct ProContractNegotiation")
+                       && negotiationCore.contains("maximumOfferHistory"),
+                   "Contract Negotiation must use a bounded persisted negotiation ledger")
+            expect(appRoot.contains("ContractNegotiationView(")
+                       && appRoot.contains("case .contractNegotiation"),
+                   "Contract Negotiation must be reachable from the shipped app root")
+            expect(hq.contains("showsContractNegotiation")
+                       && hq.contains("contractNegotiation"),
+                   "Contract Negotiation must be reachable from professional HQ")
+
+            let schemeBook = uiFiles.first {
+                $0.path.hasSuffix("/SchemeBookView.swift")
+            }?.text ?? ""
+            let packages = uiFiles.first {
+                $0.path.hasSuffix("/PersonnelPackagesView.swift")
+            }?.text ?? ""
+            expect(schemeBook.contains("public struct SchemeBookView")
+                       && schemeBook.contains("GamePlanView(")
+                       && schemeBook.contains("dynamicTypeSize.isAccessibilitySize"),
+                   "Scheme Book must reuse the authoritative game-plan surface")
+            expect(packages.contains("public struct PersonnelPackagesView")
+                       && packages.contains("DepthChartView(")
+                       && packages.contains("dynamicTypeSize.isAccessibilitySize"),
+                   "Personnel Packages must reuse the authoritative personnel surface")
+            expect(appRoot.contains("case .schemeBook")
+                       && appRoot.contains("case .personnelPackages")
+                       && appRoot.contains("SchemeBookView(")
+                       && appRoot.contains("PersonnelPackagesView("),
+                   "Scheme Book and Personnel Packages must be reachable from the shipped app root")
+            expect(hq.contains("schemeBook") && hq.contains("personnelPackages"),
+                   "Scheme Book and Personnel Packages must be reachable from HQ")
+
+            let collegeOffseason = uiFiles.first {
+                $0.path.hasSuffix("/CollegeOffseasonView.swift")
+            }?.text ?? ""
+            let collegeOffseasonModel = uiFiles.first {
+                $0.path.hasSuffix("/CollegeOffseasonReadModels.swift")
+            }?.text ?? ""
+            let collegeOffseasonProvider = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldCollegeOffseasonProvider.swift") }?.text ?? ""
+            expect(collegeOffseason.contains("public struct CollegeOffseasonView")
+                       && collegeOffseason.contains("dynamicTypeSize.isAccessibilitySize"),
+                   "College Offseason must expose a production accessibility-aware view")
+            expect(collegeOffseasonModel.contains("public struct CollegeOffseasonReadModel")
+                       && collegeOffseasonModel.contains("CoachingHQReadModel.Decision"),
+                   "College Offseason must project existing mandatory decisions")
+            expect(collegeOffseasonProvider.contains("static func collegeOffseason(")
+                       && collegeOffseasonProvider.contains("from state: GameState"),
+                   "College Offseason must be derived from authoritative college state")
+            expect(appRoot.contains("case .collegeOffseason")
+                       && appRoot.contains("CollegeOffseasonView("),
+                   "College Offseason must be reachable from the shipped app root")
+            expect(hq.contains("showsCollegeOffseason")
+                       && hq.contains("collegeOffseason"),
+                   "College Offseason must be reachable from the HQ route surface")
+            for family in [
+                ("PortalHubView.swift", "PortalHubView", "portalHub"),
+                ("RetentionDecisionsView.swift", "RetentionDecisionsView", "retentionDecisions"),
+                ("PortalMarketView.swift", "PortalMarketView", "portalMarket"),
+                ("NilAllocationView.swift", "NilAllocationView", "nilAllocation"),
+                ("SigningDayView.swift", "SigningDayView", "signingDay")
+            ] {
+                let view = uiFiles.first { $0.path.hasSuffix("/\(family.0)") }?.text ?? ""
+                expect(view.contains("public struct \(family.1)")
+                           && view.contains("CollegeOffseasonView(")
+                           && view.contains("dynamicTypeSize.isAccessibilitySize"),
+                       "\(family.1) must reuse the authoritative college offseason surface")
+                expect(appRoot.contains("case .\(family.2)")
+                           && appRoot.contains("\(family.1)("),
+                       "\(family.1) must be reachable from the shipped app root")
+                expect(hq.contains("\(family.2)"),
+                       "\(family.1) must be reachable from HQ")
+            }
+            let development = uiFiles.first {
+                $0.path.hasSuffix("/DevelopmentPlanView.swift")
+            }?.text ?? ""
+            expect(development.contains("public struct DevelopmentPlanView")
+                       && development.contains("RosterReadModel")
+                       && development.contains("dynamicTypeSize.isAccessibilitySize"),
+                   "Development Plan must project recorded roster evidence")
+            expect(appRoot.contains("case .developmentPlan")
+                       && appRoot.contains("DevelopmentPlanView("),
+                   "Development Plan must be reachable from the shipped app root")
+            let settings = uiFiles.first {
+                $0.path.hasSuffix("/SettingsAccessibilityView.swift")
+            }?.text ?? ""
+            expect(settings.contains("public struct SettingsAccessibilityView")
+                       && settings.contains("dynamicTypeSize.isAccessibilitySize"),
+                   "Settings & Accessibility must expose its explicit beta product contract")
+            expect(appRoot.contains("screen == .settingsAccessibility")
+                       && appRoot.contains("SettingsAccessibilityView("),
+                   "Settings & Accessibility must be reachable from the title surface")
+
+            let inbox = uiFiles.first { $0.path.hasSuffix("/InboxView.swift") }?.text ?? ""
+            let inboxModel = uiFiles.first { $0.path.hasSuffix("/InboxReadModels.swift") }?.text ?? ""
+            let inboxProvider = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldInboxProvider.swift") }?.text ?? ""
+            expect(inbox.contains("public struct InboxView")
+                       && inbox.contains("dynamicTypeSize.isAccessibilitySize")
+                       && inbox.contains("minimumTarget"),
+                   "Inbox must be a production, accessibility-sized surface")
+            expect(inboxModel.contains("public struct InboxReadModel"),
+                   "Inbox must consume a bounded immutable read model")
+            expect(inboxProvider.contains("static func inbox(")
+                       && inboxProvider.contains("from state: GameState")
+                       && inboxProvider.contains("NewsFeedReadModel.build"),
+                   "Inbox must be derived from authoritative decisions and typed history")
+            expect(appRoot.contains("case .inbox") && appRoot.contains("InboxView("),
+                   "Inbox must be reachable from the shipped app root")
+            expect(appRoot.contains("inboxOrigin")
+                       && appRoot.contains("markInboxItemRead")
+                       && appRoot.contains("persistOrReport(store)"),
+                   "Inbox read receipts and origin must survive the app boundary")
+            expect(hq.contains("route(\"Inbox\", screen: .inbox)")
+                       && roster.contains("route(\"Inbox\", screen: .inbox)"),
+                   "Inbox must have two production navigation origins")
         }
 
         test("League Map is a read-model surface that invents no place and no reach") {

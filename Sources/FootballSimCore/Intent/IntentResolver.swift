@@ -337,16 +337,38 @@ public enum IntentResolver {
             guard request.calendar == state.calendar else {
                 throw IntentResolutionError.careerCalendarMismatch
             }
-            guard state.careerArc.currentJob != nil else {
+            let canAcceptWhileSeeking: Bool
+            let canAcceptWhileEmployed: Bool
+            let canResign: Bool
+            switch request.action {
+            case .acceptOpportunity:
+                canAcceptWhileSeeking = state.careerArc.currentJob == nil
+                    && state.careerArc.status == .seeking
+                    && state.career.coachID != nil
+                canAcceptWhileEmployed = state.career.college != nil
+                    && state.careerArc.currentJob?.tier == .college
+                    && state.careerArc.status == .employed
+                canResign = false
+            case .resign:
+                canAcceptWhileSeeking = false
+                canAcceptWhileEmployed = false
+                canResign = state.careerArc.currentJob != nil
+            }
+            if case .resign = request.action,
+               !state.pending.mandatoryDecisions.isEmpty {
+                throw IntentResolutionError.careerArcUnavailable
+            }
+            if case .acceptOpportunity = request.action,
+               !state.pending.mandatoryDecisions.isEmpty {
+                throw IntentResolutionError.careerArcUnavailable
+            }
+            guard canAcceptWhileEmployed || canAcceptWhileSeeking || canResign else {
                 throw IntentResolutionError.careerArcUnavailable
             }
             var nextState = state
             let applied: Bool
             switch request.action {
             case let .acceptOpportunity(opportunityID):
-                guard state.career.college != nil else {
-                    throw IntentResolutionError.careerArcUnavailable
-                }
                 applied = nextState.careerArc.acceptOpportunity(
                     id: opportunityID,
                     at: request.calendar
@@ -410,6 +432,63 @@ public enum IntentResolver {
                         from: teamID,
                         in: state
                     )
+                    nextState = receipt.state
+                    cap = receipt.capAfter
+                case let .beginNegotiation(playerID, teamID, offer, deadline):
+                    guard teamID == job.organisationID else {
+                        throw ProManagementError.missingTeam
+                    }
+                    let receipt = try ProManagementSystem.beginNegotiation(
+                        playerID: playerID,
+                        teamID: teamID,
+                        offer: offer,
+                        deadline: deadline,
+                        in: state
+                    )
+                    nextState = receipt.state
+                    cap = receipt.capAfter
+                case let .counterNegotiation(negotiationID, offer):
+                    let receipt = try ProManagementSystem.counterNegotiation(
+                        negotiationID: negotiationID,
+                        offer: offer,
+                        in: state
+                    )
+                    guard receipt.negotiation.teamID == job.organisationID else {
+                        throw ProManagementError.missingTeam
+                    }
+                    nextState = receipt.state
+                    cap = receipt.capAfter
+                case let .acceptNegotiation(negotiationID):
+                    let receipt = try ProManagementSystem.settleNegotiation(
+                        negotiationID: negotiationID,
+                        as: .accepted,
+                        in: state
+                    )
+                    guard receipt.negotiation.teamID == job.organisationID else {
+                        throw ProManagementError.missingTeam
+                    }
+                    nextState = receipt.state
+                    cap = receipt.capAfter
+                case let .rejectNegotiation(negotiationID):
+                    let receipt = try ProManagementSystem.settleNegotiation(
+                        negotiationID: negotiationID,
+                        as: .rejected,
+                        in: state
+                    )
+                    guard receipt.negotiation.teamID == job.organisationID else {
+                        throw ProManagementError.missingTeam
+                    }
+                    nextState = receipt.state
+                    cap = receipt.capAfter
+                case let .withdrawNegotiation(negotiationID):
+                    let receipt = try ProManagementSystem.settleNegotiation(
+                        negotiationID: negotiationID,
+                        as: .withdrawn,
+                        in: state
+                    )
+                    guard receipt.negotiation.teamID == job.organisationID else {
+                        throw ProManagementError.missingTeam
+                    }
                     nextState = receipt.state
                     cap = receipt.capAfter
                 }

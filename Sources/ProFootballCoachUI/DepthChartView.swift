@@ -3,6 +3,7 @@ import FootballSimCore
 
 public struct DepthChartView: View {
     public let model: DepthChartReadModel
+    public let title: String
     public let statusMessage: String?
     public let onSelect: (PersonnelPlan) -> Void
     public let onClose: () -> Void
@@ -13,11 +14,13 @@ public struct DepthChartView: View {
 
     public init(
         model: DepthChartReadModel,
+        title: String = "DEPTH CHART",
         statusMessage: String? = nil,
         onSelect: @escaping (PersonnelPlan) -> Void,
         onClose: @escaping () -> Void
     ) {
         self.model = model
+        self.title = title
         self.statusMessage = statusMessage
         self.onSelect = onSelect
         self.onClose = onClose
@@ -35,7 +38,7 @@ public struct DepthChartView: View {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                 HStack {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                        Text("DEPTH CHART")
+                        Text(title)
                             .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                             .foregroundStyle(palette.collegeIdentity.color)
                         Text(model.team.name)
