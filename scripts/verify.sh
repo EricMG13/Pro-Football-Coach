@@ -131,14 +131,21 @@ case "$lane" in
             echo "xcodebuild not found on PATH." >&2
             exit 127
         }
-        project="$lane_root/ProFootballCoach.xcodeproj"
-        run_command xcodegen xcodegen generate --spec App/project.yml --project "$project"
+        package_root="$verify_root/pro-football-coach"
+        project_root="$package_root/App"
+        mkdir -p "$project_root"
+        cp Package.swift "$package_root/Package.swift"
+        cp -R Sources "$package_root/Sources"
+        project="$project_root/ProFootballCoach.xcodeproj"
+        run_command xcodegen xcodegen generate --spec App/project.yml --project "$project_root"
         run_command xcodebuild xcodebuild \
             -project "$project" \
             -scheme ProFootballCoach \
             -configuration Debug \
             -destination 'generic/platform=iOS' \
             -derivedDataPath "$lane_root/derived-data" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
             build
         ;;
     full)
