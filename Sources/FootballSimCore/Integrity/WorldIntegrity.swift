@@ -1672,8 +1672,8 @@ public enum WorldIntegrity {
             }
         }
         // ScoutingState canonicalizes and validates each observer's slice at every mutation and
-        // decode. Sorting only observer keys preserves the same deterministic order without an
-        // O(n log n) global resort on every integrity check.
+        // decode. Partitioning by observer and sorting each bounded slice preserves the prior
+        // deterministic order without an O(n log n) global resort on every integrity check.
         let storedSnapshots = state.scouting.portalKnowledgeByObserver.keys
             .sorted(by: uuidLessThan)
             .flatMap { observerID in
