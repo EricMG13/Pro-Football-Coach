@@ -21,6 +21,7 @@ public enum MatchPauseBoundary: String, Codable, Sendable, Equatable {
 /// record while this projection keeps the player-facing causal anchors and call receipts stable.
 public struct GameEvidence: Codable, Sendable, Equatable {
     public static let maximumDecisiveMatchups = 32
+    public static let maximumInjuryEvidence = 32
 
     public let fixtureID: UUID?
     public let record: GameRecord
@@ -28,13 +29,15 @@ public struct GameEvidence: Codable, Sendable, Equatable {
     public let awayParticipantIDs: [UUID]
     public let callInReceipts: [MatchCallInReceipt]
     public let decisiveMatchups: [MatchupRecord]
+    public let injuries: [GameInjuryEvidence]
 
     public init(
         fixtureID: UUID? = nil,
         record: GameRecord,
         homeParticipantIDs: [UUID],
         awayParticipantIDs: [UUID],
-        callInReceipts: [MatchCallInReceipt]
+        callInReceipts: [MatchCallInReceipt],
+        injuries: [GameInjuryEvidence] = []
     ) {
         self.fixtureID = fixtureID
         self.record = record
@@ -43,6 +46,13 @@ public struct GameEvidence: Codable, Sendable, Equatable {
         self.callInReceipts = callInReceipts
         self.decisiveMatchups = Array(record.plays.compactMap { $0.outcome.decidingMatchup }
             .prefix(Self.maximumDecisiveMatchups))
+        self.injuries = Array(injuries.sorted {
+            if $0.playerID != $1.playerID { return $0.playerID.uuidString < $1.playerID.uuidString }
+            if $0.occurredAt.season != $1.occurredAt.season {
+                return $0.occurredAt.season < $1.occurredAt.season
+            }
+            return $0.occurredAt.week < $1.occurredAt.week
+        }.prefix(Self.maximumInjuryEvidence))
     }
 
     public init(from decoder: any Decoder) throws {
@@ -51,10 +61,21 @@ public struct GameEvidence: Codable, Sendable, Equatable {
         let away = try container.decode([UUID].self, forKey: .awayParticipantIDs)
         let callIns = try container.decode([MatchCallInReceipt].self, forKey: .callInReceipts)
         let matchups = try container.decode([MatchupRecord].self, forKey: .decisiveMatchups)
+        let injuries = try container.decodeIfPresent([GameInjuryEvidence].self, forKey: .injuries) ?? []
+        let homeIDs = Set(home)
+        let awayIDs = Set(away)
         guard home.count <= CompetitionRules.maximumParticipantsPerTeam,
               away.count <= CompetitionRules.maximumParticipantsPerTeam,
               callIns.count <= MatchupRules.maximumCallInsPerGame,
-              matchups.count <= Self.maximumDecisiveMatchups else {
+              matchups.count <= Self.maximumDecisiveMatchups,
+              injuries.count <= Self.maximumInjuryEvidence,
+              Set(injuries.map(\.playerID)).count == injuries.count,
+              injuries.allSatisfy({ injury in
+                  let isHome = homeIDs.contains(injury.playerID)
+                  let isAway = awayIDs.contains(injury.playerID)
+                  return isHome != isAway
+                      && (injury.side == .home ? isHome : isAway)
+              }) else {
             throw DecodingError.dataCorruptedError(
                 forKey: .decisiveMatchups,
                 in: container,
@@ -66,7 +87,8 @@ public struct GameEvidence: Codable, Sendable, Equatable {
             record: try container.decode(GameRecord.self, forKey: .record),
             homeParticipantIDs: home,
             awayParticipantIDs: away,
-            callInReceipts: callIns
+            callInReceipts: callIns,
+            injuries: injuries
         )
         guard decisiveMatchups == matchups else {
             throw DecodingError.dataCorruptedError(
@@ -75,6 +97,54 @@ public struct GameEvidence: Codable, Sendable, Equatable {
                 debugDescription: "Game evidence anchors disagree with the immutable record."
             )
         }
+    }
+}
+
+/// A bounded, rules-owned record of a player's match absence. The detailed reducer currently
+/// emits no in-play injury events, so ordinary completions carry an honest empty list; the field
+/// exists here rather than in the UI so a future injury producer can remain receipt-backed.
+public struct GameInjuryEvidence: Codable, Sendable, Equatable {
+    public let playerID: UUID
+    public let side: Side
+    public let area: InjuryArea
+    public let severity: InjurySeverity
+    public let weeks: Int
+    public let occurredAt: CalendarState
+
+    public init(
+        playerID: UUID,
+        side: Side,
+        area: InjuryArea,
+        severity: InjurySeverity,
+        weeks: Int,
+        occurredAt: CalendarState
+    ) {
+        self.playerID = playerID
+        self.side = side
+        self.area = area
+        self.severity = severity
+        self.weeks = min(max(1, weeks), PeopleRules.maximumInjuryWeeks)
+        self.occurredAt = occurredAt
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let weeks = try container.decode(Int.self, forKey: .weeks)
+        guard (1...PeopleRules.maximumInjuryWeeks).contains(weeks) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .weeks,
+                in: container,
+                debugDescription: "Match injury evidence exceeds its legal duration."
+            )
+        }
+        self.init(
+            playerID: try container.decode(UUID.self, forKey: .playerID),
+            side: try container.decode(Side.self, forKey: .side),
+            area: try container.decode(InjuryArea.self, forKey: .area),
+            severity: try container.decode(InjurySeverity.self, forKey: .severity),
+            weeks: weeks,
+            occurredAt: try container.decode(CalendarState.self, forKey: .occurredAt)
+        )
     }
 }
 

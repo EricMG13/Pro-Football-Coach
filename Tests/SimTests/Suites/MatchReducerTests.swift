@@ -5,6 +5,64 @@ import CoachWorldApp
 
 func runMatchReducerTests() {
     suite("Resumable match reducer") {
+        test("game evidence preserves bounded injury receipts") {
+            let playerID = UUID(uuidString: "00000000-0000-4000-8000-000000008101")!
+            let injury = GameInjuryEvidence(
+                playerID: playerID,
+                side: .home,
+                area: .ankle,
+                severity: .moderate,
+                weeks: 3,
+                occurredAt: CalendarState(season: 0, week: 8)
+            )
+            let evidence = GameEvidence(
+                fixtureID: UUID(uuidString: "00000000-0000-4000-8000-000000008102")!,
+                record: GameRecord(homeScore: 0, awayScore: 0, drives: [], tier: .college),
+                homeParticipantIDs: [playerID],
+                awayParticipantIDs: [],
+                callInReceipts: [],
+                injuries: [injury]
+            )
+            let restored = try! JSONDecoder.stable().decode(
+                GameEvidence.self,
+                from: JSONEncoder.stable().encode(evidence)
+            )
+            expectEqual(restored.injuries, [injury])
+            expectEqual(restored.injuries.first?.playerID, playerID)
+            var legacyObject = try! JSONSerialization.jsonObject(
+                with: JSONEncoder.stable().encode(evidence)
+            ) as! [String: Any]
+            legacyObject.removeValue(forKey: "injuries")
+            let legacyData = try! JSONSerialization.data(withJSONObject: legacyObject)
+            let legacy = try! JSONDecoder.stable().decode(GameEvidence.self, from: legacyData)
+            expectEqual(legacy.injuries, [])
+
+            let foreign = GameInjuryEvidence(
+                playerID: UUID(uuidString: "00000000-0000-4000-8000-000000008103")!,
+                side: .away,
+                area: .knee,
+                severity: .minor,
+                weeks: 1,
+                occurredAt: CalendarState(season: 0, week: 8)
+            )
+            let forged = GameEvidence(
+                record: evidence.record,
+                homeParticipantIDs: [playerID],
+                awayParticipantIDs: [],
+                callInReceipts: [],
+                injuries: [foreign]
+            )
+            do {
+                _ = try JSONDecoder.stable().decode(
+                    GameEvidence.self,
+                    from: JSONEncoder.stable().encode(forged)
+                )
+                expect(false, "a foreign injury must not cross the evidence trust boundary")
+            } catch {
+                expect(true)
+            }
+        }
+
         test("headless reducer and public game driver are deterministic") {
             let personnel = testPersonnel(offenseSkill: 72, defenseSkill: 72)
             let direct = GameEngine.play(tier: .pro, home: personnel, away: personnel, seed: 8_101)
@@ -491,6 +549,80 @@ func runMatchReducerTests() {
             expect(foreignState.competition.currentSchedule.replace(foreignGame))
             expectEqual(
                 CoachWorldReadModelProvider.aftermath(from: foreignState)?.grades,
+                []
+            )
+            let foreignInjury = GameInjuryEvidence(
+                playerID: foreignPlayerID,
+                side: .home,
+                area: .knee,
+                severity: .minor,
+                weeks: 1,
+                occurredAt: finalized.calendar
+            )
+            let forgedEvidence = GameEvidence(
+                fixtureID: fixtureID,
+                record: finalizedGame!.result!.evidence!.record,
+                homeParticipantIDs: finalizedGame!.result!.evidence!.homeParticipantIDs,
+                awayParticipantIDs: finalizedGame!.result!.evidence!.awayParticipantIDs,
+                callInReceipts: finalizedGame!.result!.evidence!.callInReceipts,
+                injuries: [foreignInjury]
+            )
+            let injurySummary = GameSummary(
+                homeScore: finalizedGame!.result!.homeScore,
+                awayScore: finalizedGame!.result!.awayScore,
+                homeStatistics: finalizedGame!.result!.homeStatistics,
+                awayStatistics: finalizedGame!.result!.awayStatistics,
+                homeParticipantIDs: finalizedGame!.result!.homeParticipantIDs,
+                awayParticipantIDs: finalizedGame!.result!.awayParticipantIDs,
+                playerStatistics: finalizedGame!.result!.playerStatistics,
+                source: .detailed,
+                evidence: forgedEvidence
+            )
+            var injuryState = finalized
+            var injuryGame = finalizedGame!
+            injuryGame.result = injurySummary
+            expect(injuryState.competition.currentSchedule.replace(injuryGame))
+            expectEqual(
+                CoachWorldReadModelProvider.aftermath(from: injuryState)?.injuries,
+                []
+            )
+            guard let evidenceOnlyPlayerID = finalizedGame!.result!.homeParticipantIDs.first else {
+                expect(false, "controlled evidence did not retain a home participant")
+                return
+            }
+            let evidenceOnlyInjury = GameInjuryEvidence(
+                playerID: evidenceOnlyPlayerID,
+                side: .home,
+                area: .shoulder,
+                severity: .minor,
+                weeks: 1,
+                occurredAt: finalized.calendar
+            )
+            let mismatchedParticipantsEvidence = GameEvidence(
+                fixtureID: fixtureID,
+                record: finalizedGame!.result!.evidence!.record,
+                homeParticipantIDs: Array(finalizedGame!.result!.evidence!.homeParticipantIDs.dropFirst()),
+                awayParticipantIDs: finalizedGame!.result!.evidence!.awayParticipantIDs,
+                callInReceipts: finalizedGame!.result!.evidence!.callInReceipts,
+                injuries: [evidenceOnlyInjury]
+            )
+            let mismatchedParticipantsSummary = GameSummary(
+                homeScore: finalizedGame!.result!.homeScore,
+                awayScore: finalizedGame!.result!.awayScore,
+                homeStatistics: finalizedGame!.result!.homeStatistics,
+                awayStatistics: finalizedGame!.result!.awayStatistics,
+                homeParticipantIDs: finalizedGame!.result!.homeParticipantIDs,
+                awayParticipantIDs: finalizedGame!.result!.awayParticipantIDs,
+                playerStatistics: finalizedGame!.result!.playerStatistics,
+                source: .detailed,
+                evidence: mismatchedParticipantsEvidence
+            )
+            var mismatchedParticipantsState = finalized
+            var mismatchedParticipantsGame = finalizedGame!
+            mismatchedParticipantsGame.result = mismatchedParticipantsSummary
+            expect(mismatchedParticipantsState.competition.currentSchedule.replace(mismatchedParticipantsGame))
+            expectEqual(
+                CoachWorldReadModelProvider.aftermath(from: mismatchedParticipantsState)?.injuries,
                 []
             )
             let mismatchedEvidence = GameEvidence(

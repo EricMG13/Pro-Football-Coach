@@ -61,6 +61,22 @@ public extension CoachWorldReadModelProvider {
         let callIns = evidence.callInReceipts.map {
             "\($0.side == .home ? home.team.abbreviation : away.team.abbreviation): \($0.action.rawValue) at \($0.trigger.label.lowercased())"
         }
+        let homeParticipantIDs = Set(summary.homeParticipantIDs)
+        let awayParticipantIDs = Set(summary.awayParticipantIDs)
+        let evidenceHomeParticipantIDs = Set(evidence.homeParticipantIDs)
+        let evidenceAwayParticipantIDs = Set(evidence.awayParticipantIDs)
+        let injuryEvidence: [String] = evidence.injuries.compactMap { injury in
+            let isHomeParticipant = homeParticipantIDs.contains(injury.playerID)
+            let isAwayParticipant = awayParticipantIDs.contains(injury.playerID)
+            let isEvidenceHomeParticipant = evidenceHomeParticipantIDs.contains(injury.playerID)
+            let isEvidenceAwayParticipant = evidenceAwayParticipantIDs.contains(injury.playerID)
+            guard isHomeParticipant != isAwayParticipant,
+                  isEvidenceHomeParticipant != isEvidenceAwayParticipant,
+                  isHomeParticipant == isEvidenceHomeParticipant,
+                  (injury.side == .home ? isHomeParticipant : isAwayParticipant),
+                  let player = state.players[injury.playerID] else { return nil }
+            return "\(player.fullName): \(injury.area.rawValue) \(injury.severity.rawValue) injury, \(injury.weeks) week(s)."
+        }
         return AftermathReadModel(
             recordedOutcomeID: game.id.uuidString,
             provenance: .simulationSnapshot,
@@ -76,7 +92,7 @@ public extension CoachWorldReadModelProvider {
                 "Source: controlled detailed reducer"
             ],
             callIns: callIns,
-            injuries: [],
+            injuries: injuryEvidence,
             grades: grades.sorted { $0.rating > $1.rating }
         )
     }

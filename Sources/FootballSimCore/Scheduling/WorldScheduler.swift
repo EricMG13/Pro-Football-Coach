@@ -181,6 +181,78 @@ public enum WorldScheduler {
         return job.organisationID
     }
 
+    private static func attachInjuryEvidence(
+        from payloads: [DomainEventPayload],
+        at calendar: CalendarState,
+        to state: inout GameState
+    ) {
+        guard calendar.week > 1 else { return }
+        let workloadCalendar = CalendarState(season: calendar.season, week: calendar.week - 1)
+        let injuries = payloads.compactMap { payload -> (UUID, InjuryArea, InjurySeverity, Int)? in
+            guard case let .playerInjured(playerID, area, severity, weeks) = payload else {
+                return nil
+            }
+            return (playerID, area, severity, weeks)
+        }
+        guard !injuries.isEmpty else { return }
+
+        var byGame: [UUID: [GameInjuryEvidence]] = [:]
+        for (playerID, area, severity, weeks) in injuries {
+            guard let game = state.competition.currentSchedule.games
+                .filter({ game in
+                    game.season == workloadCalendar.season
+                        && game.week == workloadCalendar.week
+                        && game.result?.source == .detailed
+                        && game.result?.evidence != nil
+                        && ((game.result?.homeParticipantIDs.contains(playerID) ?? false)
+                            || (game.result?.awayParticipantIDs.contains(playerID) ?? false))
+                })
+                .sorted(by: { $0.id.uuidString < $1.id.uuidString })
+                .first,
+                  let result = game.result,
+                  let evidence = result.evidence else { continue }
+
+            let side: Side = result.homeParticipantIDs.contains(playerID) ? .home : .away
+            guard !evidence.injuries.contains(where: { $0.playerID == playerID }) else {
+                continue
+            }
+            byGame[game.id, default: []].append(GameInjuryEvidence(
+                playerID: playerID,
+                side: side,
+                area: area,
+                severity: severity,
+                weeks: weeks,
+                occurredAt: workloadCalendar
+            ))
+        }
+
+        for gameID in byGame.keys.sorted(by: { $0.uuidString < $1.uuidString }) {
+            guard var game = state.competition.currentSchedule.games.first(where: { $0.id == gameID }),
+                  let result = game.result,
+                  let evidence = result.evidence else { continue }
+            let updatedEvidence = GameEvidence(
+                fixtureID: evidence.fixtureID ?? gameID,
+                record: evidence.record,
+                homeParticipantIDs: evidence.homeParticipantIDs,
+                awayParticipantIDs: evidence.awayParticipantIDs,
+                callInReceipts: evidence.callInReceipts,
+                injuries: evidence.injuries + (byGame[gameID] ?? [])
+            )
+            game.result = GameSummary(
+                homeScore: result.homeScore,
+                awayScore: result.awayScore,
+                homeStatistics: result.homeStatistics,
+                awayStatistics: result.awayStatistics,
+                homeParticipantIDs: result.homeParticipantIDs,
+                awayParticipantIDs: result.awayParticipantIDs,
+                playerStatistics: result.playerStatistics,
+                source: result.source,
+                evidence: updatedEvidence
+            )
+            _ = state.competition.currentSchedule.replace(game)
+        }
+    }
+
     private static func fullyDelegatedCollegeCareer(in state: GameState) -> Bool {
         guard let control = state.career.college else { return false }
         return CollegeCareerResponsibility.allCases.allSatisfy { responsibility in
@@ -407,6 +479,11 @@ public enum WorldScheduler {
             case .injuriesAndRecovery:
                 let transition = PeopleLifecycleSystem.processHealth(at: completed, in: nextState)
                 nextState.people = transition.people
+                attachInjuryEvidence(
+                    from: transition.eventPayloads,
+                    at: completed,
+                    to: &nextState
+                )
                 try appendEvents(
                     payloads: transition.eventPayloads,
                     occurredAt: completed,

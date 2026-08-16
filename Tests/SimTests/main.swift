@@ -86,6 +86,8 @@ if CommandLine.arguments.contains("--catalog") {
     runCollegeCommitmentTests()
 } else if CommandLine.arguments.contains("--college-state") {
     runCollegeStateTests()
+} else if CommandLine.arguments.contains("--injury-evidence") {
+    runInjuryEvidenceTests()
 } else if CommandLine.arguments.contains("--people-lifecycle") {
     runPeopleLifecycleTests()
 } else if CommandLine.arguments.contains("--core-contracts") {

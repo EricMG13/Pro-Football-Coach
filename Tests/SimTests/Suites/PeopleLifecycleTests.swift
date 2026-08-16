@@ -1,6 +1,74 @@
 import Foundation
 import FootballSimCore
 
+private func assertWeeklyInjuryEvidence() {
+    var selected: GameState?
+    for seed in 82_100...82_611 {
+        var candidate = GameState.bootstrap(seed: UInt64(seed))
+        candidate.calendar = CalendarState(season: 0, week: 2)
+        candidate.league.week = 2
+        guard var game = candidate.competition.currentSchedule.games.first(where: {
+            $0.tier == .college && $0.week == 1 && $0.result == nil
+        }),
+              let programme = candidate.programmes[game.homeID],
+              let awayProgramme = candidate.programmes[game.awayID],
+              let playerID = programme.rosterIDs.first else { continue }
+        let evidence = GameEvidence(
+            fixtureID: game.id,
+            record: GameRecord(homeScore: 7, awayScore: 0, drives: [], tier: .college),
+            homeParticipantIDs: programme.rosterIDs,
+            awayParticipantIDs: awayProgramme.rosterIDs,
+            callInReceipts: []
+        )
+        game.result = DetailedGameSummaryBuilder.make(
+            record: evidence.record,
+            homeParticipantIDs: programme.rosterIDs,
+            awayParticipantIDs: awayProgramme.rosterIDs,
+            evidence: evidence
+        )
+        expect(candidate.competition.currentSchedule.replace(game))
+        candidate.competition = CompetitionReducer.rebuildStandings(from: candidate)
+        candidate.competition = CompetitionReducer.rebuildStatistics(from: candidate)
+        _ = candidate.people.updatePlayerLifecycle(playerID) {
+            $0.applyWorkload(PeopleRules.fatigueRange.upperBound)
+        }
+        let health = PeopleLifecycleSystem.processHealth(at: candidate.calendar, in: candidate)
+        if health.eventPayloads.contains(where: {
+            if case let .playerInjured(id, _, _, _) = $0 { return id == playerID }
+            return false
+        }) {
+            selected = candidate
+            break
+        }
+    }
+    guard let selected else {
+        expect(false, "the bounded deterministic injury search found no receipt case")
+        return
+    }
+    let integrity = WorldIntegrity.check(selected)
+    expect(integrity.isValid, integrity.issues.map(\.description).joined(separator: ", "))
+    let transition: WorldTransition
+    do {
+        transition = try WorldScheduler.advanceWeek(selected)
+    } catch {
+        expect(false, "weekly injury evidence advance failed: \(error)")
+        return
+    }
+    let detailed = transition.state.competition.currentSchedule.games.first(where: {
+        $0.week == 1 && $0.result?.source == .detailed
+    })
+    expect(detailed?.result?.evidence?.injuries.isEmpty == false)
+    expectEqual(detailed?.result?.evidence?.injuries.first?.occurredAt, CalendarState(season: 0, week: 1))
+}
+
+func runInjuryEvidenceTests() {
+    suite("Injury evidence") {
+        test("weekly injuries become receipt-backed detailed-game evidence") {
+            assertWeeklyInjuryEvidence()
+        }
+    }
+}
+
 func runPeopleLifecycleTests() {
     suite("People lifecycle state") {
         test("bootstrap covers every player with neutral bounded lifecycle state") {
@@ -245,6 +313,10 @@ func runPeopleLifecycleTests() {
             expect(first.state.people.playerLifecycle.values.allSatisfy {
                 PeopleRules.fatigueRange.contains($0.fatigue)
             })
+        }
+
+        test("weekly injuries become receipt-backed detailed-game evidence") {
+            assertWeeklyInjuryEvidence()
         }
 
         test("an injury recovers to availability on its final week") {
