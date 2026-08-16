@@ -433,6 +433,66 @@ func runMatchReducerTests() {
             }
             expectEqual(aftermath.provenance, .simulationSnapshot)
             expectEqual(aftermath.recordedOutcomeID, fixtureID.uuidString)
+
+            // Persisted lines are a trust boundary: a hostile counter must stay within the
+            // rules-owned, bounded rating projection rather than overflowing in the UI provider.
+            guard let sourceLine = finalizedGame?.result?.playerStatistics.first,
+                  let sourcePlayer = finalized.players[sourceLine.playerID] else {
+                expect(false, "controlled evidence did not retain a player line")
+                return
+            }
+            let hostileSummary = GameSummary(
+                homeScore: finalizedGame!.result!.homeScore,
+                awayScore: finalizedGame!.result!.awayScore,
+                homeStatistics: finalizedGame!.result!.homeStatistics,
+                awayStatistics: finalizedGame!.result!.awayStatistics,
+                homeParticipantIDs: finalizedGame!.result!.homeParticipantIDs,
+                awayParticipantIDs: finalizedGame!.result!.awayParticipantIDs,
+                playerStatistics: [PlayerGameStatistics(
+                    playerID: sourcePlayer.id,
+                    passingYards: Int.max,
+                    touchdowns: Int.max
+                )],
+                source: .detailed,
+                evidence: finalizedGame!.result!.evidence
+            )
+            var hostileState = finalized
+            var hostileGame = finalizedGame!
+            hostileGame.result = hostileSummary
+            expect(hostileState.competition.currentSchedule.replace(hostileGame))
+            expectEqual(
+                CoachWorldReadModelProvider.aftermath(from: hostileState)?.grades.first?.rating,
+                SharedRules.ratingRange.upperBound
+            )
+            let participantIDs = Set(
+                finalizedGame!.result!.homeParticipantIDs
+                    + finalizedGame!.result!.awayParticipantIDs
+            )
+            guard let foreignPlayerID = finalized.players.ids.first(where: {
+                !participantIDs.contains($0)
+            }) else {
+                expect(false, "controlled world did not retain a non-participant player")
+                return
+            }
+            let foreignSummary = GameSummary(
+                homeScore: finalizedGame!.result!.homeScore,
+                awayScore: finalizedGame!.result!.awayScore,
+                homeStatistics: finalizedGame!.result!.homeStatistics,
+                awayStatistics: finalizedGame!.result!.awayStatistics,
+                homeParticipantIDs: finalizedGame!.result!.homeParticipantIDs,
+                awayParticipantIDs: finalizedGame!.result!.awayParticipantIDs,
+                playerStatistics: [PlayerGameStatistics(playerID: foreignPlayerID)],
+                source: .detailed,
+                evidence: finalizedGame!.result!.evidence
+            )
+            var foreignState = finalized
+            var foreignGame = finalizedGame!
+            foreignGame.result = foreignSummary
+            expect(foreignState.competition.currentSchedule.replace(foreignGame))
+            expectEqual(
+                CoachWorldReadModelProvider.aftermath(from: foreignState)?.grades,
+                []
+            )
             expectEqual(
                 finalized.history.recent.filter {
                     if case let .gameCompleted(gameID, _, _, _, _, _) = $0.payload,

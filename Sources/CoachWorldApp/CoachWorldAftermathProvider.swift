@@ -39,9 +39,10 @@ public extension CoachWorldReadModelProvider {
         }
         let grades = summary.playerStatistics.compactMap { line -> AftermathReadModel.Grade? in
             guard let player = state.players[line.playerID] else { return nil }
-            let teamID = summary.homeParticipantIDs.contains(player.id) ? game.homeID : game.awayID
-            let production = line.passingYards / 20 + line.rushingYards / 10
-                + line.receivingYards / 10 + line.touchdowns * 8
+            let isHomeParticipant = summary.homeParticipantIDs.contains(player.id)
+            let isAwayParticipant = summary.awayParticipantIDs.contains(player.id)
+            guard isHomeParticipant != isAwayParticipant else { return nil }
+            let teamID = isHomeParticipant ? game.homeID : game.awayID
             return AftermathReadModel.Grade(
                 stableID: "\(game.id.uuidString)-\(player.id.uuidString)",
                 player: .init(
@@ -51,7 +52,7 @@ public extension CoachWorldReadModelProvider {
                 ),
                 team: teamReference(teamID, in: state),
                 position: positionLabel(player.position),
-                rating: min(99, max(40, 55 + production)),
+                rating: PlayerFormRating.rating(for: line, position: player.position),
                 evidence: "Passing \(line.passingYards), rushing \(line.rushingYards), receiving \(line.receivingYards), TD \(line.touchdowns)."
             )
         }
