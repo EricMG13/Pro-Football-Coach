@@ -14,6 +14,16 @@ public enum ProManagementAction: Codable, Sendable, Equatable {
         contract: Contract
     )
     case release(playerID: UUID, teamID: UUID)
+    case beginNegotiation(
+        playerID: UUID,
+        teamID: UUID,
+        offer: Contract,
+        deadline: CalendarState
+    )
+    case counterNegotiation(negotiationID: UUID, offer: Contract)
+    case acceptNegotiation(negotiationID: UUID)
+    case rejectNegotiation(negotiationID: UUID)
+    case withdrawNegotiation(negotiationID: UUID)
 }
 
 public struct ProManagementRequest: Codable, Sendable, Equatable {
@@ -50,6 +60,10 @@ public enum ProManagementError: Error, Sendable, Equatable {
     case activeRosterFull
     case playerNotOnRoster
     case capExceeded
+    case negotiationNotFound
+    case negotiationAlreadyOpen
+    case negotiationClosed
+    case negotiationDeadlinePassed
     case invalidRoot
 }
 
@@ -67,6 +81,13 @@ public struct ProReleaseReceipt: Sendable, Equatable {
     public let playerID: UUID
     public let teamID: UUID
     public let deadMoneyAdded: Int
+    public let capAfter: ProCapSnapshot
+}
+
+public struct ProNegotiationReceipt: Sendable, Equatable {
+    public let state: GameState
+    public let negotiation: ProContractNegotiation
+    public let capBefore: ProCapSnapshot
     public let capAfter: ProCapSnapshot
 }
 
@@ -182,6 +203,139 @@ public enum ProManagementSystem {
         )
     }
 
+    public static func beginNegotiation(
+        playerID: UUID,
+        teamID: UUID,
+        offer: Contract,
+        deadline: CalendarState,
+        in state: GameState
+    ) throws -> ProNegotiationReceipt {
+        guard isValid(offer) else { throw ProManagementError.invalidContract }
+        guard state.proMarket.phase != .draft else {
+            throw ProManagementError.negotiationClosed
+        }
+        guard let team = state.proTeams[teamID],
+              let player = state.players[playerID],
+              (team.rosterIDs + team.practiceSquadIDs).contains(playerID),
+              player.contract != nil else { throw ProManagementError.playerNotOnRoster }
+        guard deadline.isOnOrAfter(state.calendar) else {
+            throw ProManagementError.negotiationDeadlinePassed
+        }
+        guard !state.proMarket.contractNegotiations.contains(where: {
+            $0.teamID == teamID && $0.playerID == playerID && $0.status.isOpen
+        }) else { throw ProManagementError.negotiationAlreadyOpen }
+        let before = try capSnapshot(teamID: teamID, in: state)
+        let after = try replacingContractCap(
+            playerID: playerID,
+            teamID: teamID,
+            with: offer,
+            in: state
+        )
+        guard after.isWithinCap else { throw ProManagementError.capExceeded }
+        var negotiationRNG = SeededRandom(seed: SeededRandom.derive(
+            from: SeededRandom.seed(from: teamID, playerID),
+            scope: .contract,
+            ordinal: state.proMarket.contractNegotiations.count
+        ))
+        let negotiation = ProContractNegotiation(
+            id: negotiationRNG.uuid(),
+            playerID: playerID,
+            teamID: teamID,
+            openedAt: state.calendar,
+            deadline: deadline,
+            offerHistory: [offer]
+        )
+        var next = state
+        guard next.proMarket.addContractNegotiation(negotiation) else {
+            throw ProManagementError.negotiationClosed
+        }
+        guard WorldIntegrity.check(next).isValid else { throw ProManagementError.invalidRoot }
+        return ProNegotiationReceipt(
+            state: next,
+            negotiation: negotiation,
+            capBefore: before,
+            capAfter: after
+        )
+    }
+
+    public static func counterNegotiation(
+        negotiationID: UUID,
+        offer: Contract,
+        in state: GameState
+    ) throws -> ProNegotiationReceipt {
+        guard isValid(offer) else { throw ProManagementError.invalidContract }
+        var next = state
+        next.proMarket.expireContractNegotiations(at: state.calendar)
+        guard var negotiation = next.proMarket.contractNegotiations.first(where: {
+            $0.id == negotiationID
+        }) else { throw ProManagementError.negotiationNotFound }
+        guard negotiation.status.isOpen else { throw ProManagementError.negotiationClosed }
+        guard !negotiation.isPastDeadline(at: state.calendar) else {
+            throw ProManagementError.negotiationDeadlinePassed
+        }
+        let before = try capSnapshot(teamID: negotiation.teamID, in: next)
+        let after = try replacingContractCap(
+            playerID: negotiation.playerID,
+            teamID: negotiation.teamID,
+            with: offer,
+            in: next
+        )
+        guard after.isWithinCap else { throw ProManagementError.capExceeded }
+        guard negotiation.counter(with: offer), next.proMarket.updateContractNegotiation(negotiation) else {
+            throw ProManagementError.negotiationClosed
+        }
+        guard WorldIntegrity.check(next).isValid else { throw ProManagementError.invalidRoot }
+        return ProNegotiationReceipt(
+            state: next,
+            negotiation: negotiation,
+            capBefore: before,
+            capAfter: after
+        )
+    }
+
+    public static func settleNegotiation(
+        negotiationID: UUID,
+        as status: ProContractNegotiationStatus,
+        in state: GameState
+    ) throws -> ProNegotiationReceipt {
+        guard status == .accepted || status == .rejected
+                || status == .withdrawn else { throw ProManagementError.negotiationClosed }
+        var next = state
+        next.proMarket.expireContractNegotiations(at: state.calendar)
+        guard var negotiation = next.proMarket.contractNegotiations.first(where: {
+            $0.id == negotiationID
+        }) else { throw ProManagementError.negotiationNotFound }
+        guard negotiation.status.isOpen else { throw ProManagementError.negotiationClosed }
+        guard !negotiation.isPastDeadline(at: state.calendar) else {
+            throw ProManagementError.negotiationDeadlinePassed
+        }
+        let before = try capSnapshot(teamID: negotiation.teamID, in: next)
+        var after = before
+        if status == .accepted {
+            after = try replacingContractCap(
+                playerID: negotiation.playerID,
+                teamID: negotiation.teamID,
+                with: negotiation.currentOffer,
+                in: next
+            )
+            guard after.isWithinCap else { throw ProManagementError.capExceeded }
+            next.players.update(negotiation.playerID) {
+                $0.contract = negotiation.currentOffer.withSignedSeason(state.calendar.season)
+            }
+            after = try capSnapshot(teamID: negotiation.teamID, in: next)
+        }
+        guard negotiation.settle(as: status), next.proMarket.updateContractNegotiation(negotiation) else {
+            throw ProManagementError.negotiationClosed
+        }
+        guard WorldIntegrity.check(next).isValid else { throw ProManagementError.invalidRoot }
+        return ProNegotiationReceipt(
+            state: next,
+            negotiation: negotiation,
+            capBefore: before,
+            capAfter: after
+        )
+    }
+
     public struct ProCapComplianceRelease: Sendable, Equatable {
         public let playerID: UUID
         public let teamID: UUID
@@ -286,5 +440,21 @@ public enum ProManagementSystem {
             contract.baseSalaryByYear[year]
                 <= Int.max - contract.bonusProration(inYear: year)
         }
+    }
+
+    private static func replacingContractCap(
+        playerID: UUID,
+        teamID: UUID,
+        with contract: Contract,
+        in state: GameState
+    ) throws -> ProCapSnapshot {
+        guard let team = state.proTeams[teamID],
+              team.rosterIDs.contains(playerID) || team.practiceSquadIDs.contains(playerID),
+              state.players[playerID]?.contract != nil else {
+            throw ProManagementError.playerNotOnRoster
+        }
+        var next = state
+        next.players.update(playerID) { $0.contract = contract.withSignedSeason(state.calendar.season) }
+        return try capSnapshot(teamID: teamID, in: next)
     }
 }

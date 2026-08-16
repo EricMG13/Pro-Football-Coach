@@ -82,6 +82,22 @@ func runRealignmentTests() {
                 second.programmes.values.map { $0.conferenceID?.uuidString ?? "" }
             )
         }
+
+        test("typed transition matches the state-only API") {
+            let before = GameState.bootstrap(seed: 95_107)
+            let transition = ConferenceRealignmentSystem.processTransition(in: before)
+            expectEqual(transition.state, ConferenceRealignmentSystem.process(in: before))
+            expect(transition.swaps.count <= CollegeRules.realignmentSwapsPerSeason,
+                   "typed transition exceeded the realignment bound")
+            for swap in transition.swaps {
+                expect(swap.firstProgrammeID != swap.secondProgrammeID,
+                       "realignment swapped a programme with itself")
+                expect(swap.firstFromConferenceID != swap.firstToConferenceID,
+                       "first programme did not change conferences")
+                expect(swap.secondFromConferenceID != swap.secondToConferenceID,
+                       "second programme did not change conferences")
+            }
+        }
     }
 }
 

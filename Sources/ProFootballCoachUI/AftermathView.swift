@@ -4,17 +4,20 @@ public struct AftermathView: View {
     public let model: AftermathReadModel
     public let statusMessage: String?
     public let onContinue: () -> Void
+    public let onOpenBoxScore: (() -> Void)?
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(
         model: AftermathReadModel,
         statusMessage: String? = nil,
-        onContinue: @escaping () -> Void
+        onContinue: @escaping () -> Void,
+        onOpenBoxScore: (() -> Void)? = nil
     ) {
         self.model = model
         self.statusMessage = statusMessage
         self.onContinue = onContinue
+        self.onOpenBoxScore = onOpenBoxScore
     }
 
     public var body: some View {
@@ -69,6 +72,11 @@ public struct AftermathView: View {
                 }
                 if let statusMessage {
                     Text(statusMessage).font(CoachWorldTokens.TypeRole.body)
+                }
+                if let onOpenBoxScore {
+                    Button("Open box score", action: onOpenBoxScore)
+                        .buttonStyle(.bordered)
+                        .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
                 }
                 Button("Continue to HQ", action: onContinue)
                     .buttonStyle(.borderedProminent)

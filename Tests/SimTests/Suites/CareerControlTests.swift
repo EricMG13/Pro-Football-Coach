@@ -230,8 +230,12 @@ func runCareerControlTests() {
             ))
             let projection = receipt.projection
 
-            expectEqual(projection.programme.id, programmeID)
-            expectEqual(projection.programme.name, controlled.programmes[programmeID]!.name)
+            guard let projectedProgramme = projection.programme else {
+                expect(false, "a controlled college session lost its programme projection")
+                return
+            }
+            expectEqual(projectedProgramme.id, programmeID)
+            expectEqual(projectedProgramme.name, controlled.programmes[programmeID]!.name)
             expectEqual(projection.recruitingBoard.count, 1)
             expectEqual(projection.recruitingBoard[0].prospectID, prospectID)
             expectEqual(projection.recruitingBoard[0].estimatedOverall, nil)
@@ -338,8 +342,12 @@ func runCareerControlTests() {
             } else {
                 expect(false, "delegation did not return its typed receipt")
             }
+            guard let projectedProgramme = receipt.projection.programme else {
+                expect(false, "delegation lost its programme projection")
+                return
+            }
             expectEqual(
-                receipt.projection.programme.responsibilityOwners[.recruiting],
+                projectedProgramme.responsibilityOwners[.recruiting],
                 .delegated(staffID: staffID)
             )
 
@@ -872,7 +880,7 @@ func runProfessionalCareerSessionTests() {
             expectEqual(promoted.career.coachID, controlled.career.college?.coachID)
             let projection = await session.projection()
             expectEqual(projection.tier, .professional)
-            expectEqual(projection.programme.id, team.id)
+            expectEqual(projection.programme?.id, team.id)
             expect(projection.recruitingBoard.isEmpty)
             expect(projection.mandatoryDecisions.isEmpty)
 

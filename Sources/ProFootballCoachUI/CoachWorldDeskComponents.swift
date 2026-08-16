@@ -1,5 +1,140 @@
 import SwiftUI
 
+struct CoachWorldCutCorner: Shape {
+    var cut: CGFloat = CoachWorldTokens.Shape.cutCorner
+
+    func path(in rect: CGRect) -> Path {
+        let cut = min(cut, rect.width / 3, rect.height / 3)
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - cut, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + cut))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX + cut, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY - cut))
+        path.closeSubpath()
+        return path
+    }
+}
+
+enum CoachWorldFloodlitPanelDepth {
+    case glass
+    case deep
+
+    var opacity: Double {
+        switch self {
+        case .glass: CoachWorldTokens.Depth.glassPanelOpacity
+        case .deep: CoachWorldTokens.Depth.deepPanelOpacity
+        }
+    }
+}
+
+struct CoachWorldFloodlitStage<Content: View>: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    let palette: CoachWorldTokens.Palette
+    @ViewBuilder let content: () -> Content
+
+    init(
+        palette: CoachWorldTokens.Palette = CoachWorldTokens.dark,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.palette = palette
+        self.content = content
+    }
+
+    var body: some View {
+        ZStack {
+            palette.page.color
+            CoachWorldFloodlitBackdrop(palette: palette)
+            content()
+            if !reduceTransparency {
+                CoachWorldGrainOverlay()
+            }
+        }
+        .foregroundStyle(palette.contentPrimary.color)
+        .preferredColorScheme(.dark)
+        .accessibilityIdentifier("floodlit-stage")
+    }
+}
+
+private struct CoachWorldFloodlitBackdrop: View {
+    let palette: CoachWorldTokens.Palette
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                LinearGradient(
+                    colors: [palette.page.color, palette.work.color, palette.page.color],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+
+                RadialGradient(
+                    colors: [Color(red: 1, green: 0.95, blue: 0.78).opacity(0.22), .clear],
+                    center: UnitPoint(x: 0.78, y: 0.02),
+                    startRadius: 0,
+                    endRadius: geometry.size.width * 0.52
+                )
+
+                Canvas { context, size in
+                    var pitch = Path()
+                    pitch.move(to: CGPoint(x: size.width * 0.18, y: size.height * 0.42))
+                    pitch.addLine(to: CGPoint(x: size.width * 0.86, y: size.height * 0.42))
+                    pitch.addLine(to: CGPoint(x: size.width * 1.08, y: size.height * 1.02))
+                    pitch.addLine(to: CGPoint(x: size.width * -0.08, y: size.height * 1.02))
+                    pitch.closeSubpath()
+                    context.fill(
+                        pitch,
+                        with: .linearGradient(
+                            Gradient(colors: [
+                                palette.fieldTurf.color.opacity(0.12),
+                                palette.fieldTurf.color.opacity(0.34),
+                            ]),
+                            startPoint: CGPoint(x: size.width / 2, y: size.height * 0.42),
+                            endPoint: CGPoint(x: size.width / 2, y: size.height)
+                        )
+                    )
+
+                    for index in 0..<7 {
+                        let progress = CGFloat(index) / 6
+                        let y = size.height * (0.47 + progress * 0.48)
+                        let inset = size.width * (0.16 - progress * 0.19)
+                        var line = Path()
+                        line.move(to: CGPoint(x: inset, y: y))
+                        line.addLine(to: CGPoint(x: size.width - inset, y: y))
+                        context.stroke(
+                            line,
+                            with: .color(palette.fieldLine.color.opacity(0.07)),
+                            lineWidth: CoachWorldTokens.Shape.hairline
+                        )
+                    }
+                }
+            }
+            .accessibilityHidden(true)
+        }
+        .ignoresSafeArea()
+    }
+}
+
+private struct CoachWorldGrainOverlay: View {
+    var body: some View {
+        Canvas { context, size in
+            for index in 0..<140 {
+                let x = CGFloat((index * 73) % 997) / 997 * size.width
+                let y = CGFloat((index * 151) % 991) / 991 * size.height
+                let alpha = index.isMultiple(of: 3) ? 0.035 : 0.018
+                context.fill(
+                    Path(CGRect(x: x, y: y, width: 1, height: 1)),
+                    with: .color(.white.opacity(alpha))
+                )
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
 enum CoachWorldActionRole {
     case primary
     case secondary
@@ -14,9 +149,7 @@ struct CoachWorldActionButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         let appearance = self.appearance
-        let controlShape = RoundedRectangle(
-            cornerRadius: CoachWorldTokens.Shape.controlRadius
-        )
+        let controlShape = CoachWorldCutCorner(cut: CoachWorldTokens.Shape.controlRadius)
 
         configuration.label
             .font(CoachWorldTokens.TypeRole.body.weight(.bold))
@@ -79,12 +212,18 @@ struct CoachWorldRouteButton: View {
                 .minimumScaleFactor(0.9)
         }
         .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
+        .tracking(CoachWorldTokens.TypeRole.microLabelTracking)
         .frame(
             maxWidth: .infinity,
             minHeight: CoachWorldTokens.Shape.minimumTarget
         )
         .padding(.horizontal, CoachWorldTokens.Space.xxs)
-        .background(isCurrent ? selectionColour.color.opacity(0.16) : Color.clear)
+        .background {
+            if isCurrent {
+                CoachWorldCutCorner(cut: CoachWorldTokens.Shape.controlRadius)
+                    .fill(selectionColour.color.opacity(0.15))
+            }
+        }
         .overlay(alignment: .bottom) {
             if isCurrent {
                 Rectangle()
@@ -116,8 +255,50 @@ private struct CoachWorldDeskSurfaceModifier: ViewModifier {
     }
 }
 
+private struct CoachWorldFloodlitPanelModifier: ViewModifier {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    let fill: Color
+    let border: Color
+    let depth: CoachWorldFloodlitPanelDepth
+
+    func body(content: Content) -> some View {
+        let shape = CoachWorldCutCorner()
+        content
+            .background {
+                if reduceTransparency {
+                    shape.fill(fill)
+                } else {
+                    shape
+                        .fill(.ultraThinMaterial)
+                        .overlay(shape.fill(fill.opacity(depth.opacity)))
+                        .overlay {
+                            LinearGradient(
+                                colors: [.white.opacity(0.10), .clear],
+                                startPoint: .topLeading,
+                                endPoint: .center
+                            )
+                            .clipShape(shape)
+                        }
+                }
+            }
+            .overlay {
+                shape.stroke(border, lineWidth: CoachWorldTokens.Shape.hairline)
+            }
+            .clipShape(shape)
+    }
+}
+
 extension View {
     func coachWorldDeskSurface(fill: Color, border: Color) -> some View {
         modifier(CoachWorldDeskSurfaceModifier(fill: fill, border: border))
+    }
+
+    func coachWorldFloodlitPanel(
+        fill: Color,
+        border: Color,
+        depth: CoachWorldFloodlitPanelDepth = .glass
+    ) -> some View {
+        modifier(CoachWorldFloodlitPanelModifier(fill: fill, border: border, depth: depth))
     }
 }

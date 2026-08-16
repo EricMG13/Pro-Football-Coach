@@ -9,7 +9,22 @@ public extension CoachWorldReadModelProvider {
 
         let currentJob: CareerHubReadModel.JobRow?
         if let control = state.career.college,
-           let programme = state.programmes[control.programmeID] {
+           let programme = state.programmes[control.programmeID],
+           let job = state.careerArc.currentJob,
+           job.tier == .college,
+           job.organisationID == control.programmeID {
+            currentJob = CareerHubReadModel.JobRow(
+                id: "current-\(programme.id.uuidString)",
+                team: teamReference(programme.id, in: state),
+                tier: "College",
+                started: weekLabel(control.startedAt),
+                canResign: state.careerArc.currentJob != nil
+                    && state.pending.mandatoryDecisions.isEmpty
+            )
+        } else if let control = state.career.college,
+                  let programme = state.programmes[control.programmeID],
+                  state.careerArc.currentJob == nil,
+                  state.careerArc.status == .seeking {
             currentJob = CareerHubReadModel.JobRow(
                 id: "current-\(programme.id.uuidString)",
                 team: teamReference(programme.id, in: state),
@@ -21,7 +36,8 @@ public extension CoachWorldReadModelProvider {
                 id: "current-\(job.organisationID.uuidString)",
                 team: teamReference(job.organisationID, in: state),
                 tier: label(job.tier),
-                started: weekLabel(job.startedAt)
+                started: weekLabel(job.startedAt),
+                canResign: true
             )
         } else {
             currentJob = nil
@@ -54,14 +70,46 @@ public extension CoachWorldReadModelProvider {
                 return $0.id.uuidString < $1.id.uuidString
             }
             .map { opportunity in
-                CareerHubReadModel.OpportunityRow(
+                let isExpired = occurs(opportunity.expiresAt, before: state.calendar)
+                let canAcceptWhileSeeking = state.careerArc.currentJob == nil
+                    && state.careerArc.status == .seeking
+                    && state.career.coachID != nil
+                    && state.pending.mandatoryDecisions.isEmpty
+                let canAcceptWhileEmployed = state.career.college != nil
+                    && state.careerArc.currentJob?.tier == .college
+                    && state.careerArc.currentJob?.organisationID == state.career.college?.programmeID
+                    && state.careerArc.status == .employed
+                    && state.pending.mandatoryDecisions.isEmpty
+                let canAccept = opportunity.tier == .professional
+                    && !occurs(state.calendar, before: opportunity.offeredAt)
+                    && !isExpired
+                    && (canAcceptWhileEmployed || canAcceptWhileSeeking)
+                let unavailableReason: String?
+                if canAccept {
+                    unavailableReason = nil
+                } else if opportunity.tier != .professional {
+                    unavailableReason = "Only professional offers are actionable here."
+                } else if isExpired {
+                    unavailableReason = "This offer has expired."
+                } else if state.careerArc.currentJob?.tier == .professional {
+                    unavailableReason = "A professional appointment is already active."
+                } else if occurs(state.calendar, before: opportunity.offeredAt) {
+                    unavailableReason = "This offer is not active yet."
+                } else if state.careerArc.status != .seeking {
+                    unavailableReason = "The coach is not currently eligible to accept this offer."
+                } else {
+                    unavailableReason = nil
+                }
+                return CareerHubReadModel.OpportunityRow(
                     id: opportunity.id.uuidString,
                     team: teamReference(opportunity.organisationID, in: state),
                     tier: label(opportunity.tier),
                     offered: weekLabel(opportunity.offeredAt),
                     expires: weekLabel(opportunity.expiresAt),
                     prestige: opportunity.prestige.value,
-                    rationale: label(opportunity.rationale)
+                    rationale: label(opportunity.rationale),
+                    canAccept: canAccept,
+                    unavailableReason: unavailableReason
                 )
             }
 
@@ -127,5 +175,9 @@ public extension CoachWorldReadModelProvider {
         case .fanbase: return "Fanbase"
         case .lockerRoom: return "Locker room"
         }
+    }
+
+    private static func occurs(_ lhs: CalendarState, before rhs: CalendarState) -> Bool {
+        lhs.season < rhs.season || (lhs.season == rhs.season && lhs.week < rhs.week)
     }
 }

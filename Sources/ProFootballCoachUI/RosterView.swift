@@ -101,6 +101,8 @@ public struct RosterView: View {
 
             HStack(spacing: .zero) {
                 route("Office", screen: .coachingHQ)
+                route("Inbox", screen: .inbox)
+                route("Film", screen: .opponentReportFilmRoom)
                 route("Team", screen: .roster, current: true)
                 route("Recruit", screen: .recruitingBoard)
                 route("League", screen: .leagueMap)
@@ -209,7 +211,7 @@ public struct RosterView: View {
                     .accessibilityHidden(true)
             }
         }
-        .disabled(!isCurrent && screen != .depthChart && screen != .teamHealth)
+        .disabled(!isCurrent && screen != .depthChart && screen != .teamHealth && screen != .inbox)
         .accessibilityAddTraits(isCurrent ? .isSelected : [])
     }
 
@@ -627,6 +629,8 @@ public struct RosterView: View {
             Text(statusMessage ?? worldContextLine)
                 .foregroundStyle(palette.contentSecondary.color)
             route("Office", screen: .coachingHQ)
+            route("Inbox", screen: .inbox)
+            route("Film", screen: .opponentReportFilmRoom)
             route("Team", screen: .roster, current: true)
             route("Health", screen: .teamHealth)
             route("Recruit", screen: .recruitingBoard)

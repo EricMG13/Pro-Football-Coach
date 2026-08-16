@@ -1,12 +1,16 @@
 import SwiftUI
 
-/// A live career ledger. It is intentionally read-only until the employment transaction surface
-/// exists; every displayed row is still useful because it gives the coach a durable explanation of
-/// current status, support, history, and outstanding opportunities.
+/// A live career ledger backed by the employment transaction boundary. Every displayed row gives
+/// the coach a durable explanation of current status, support, history, and offers.
 public struct CareerHubView: View {
     public let model: CareerHubReadModel
     public let statusMessage: String?
     public let onClose: () -> Void
+    public let focus: CoachWorldScreenID
+    public let onNavigate: (CoachWorldScreenID) -> Void
+    public let onAcceptOpportunity: (String) -> Void
+    public let onResign: () -> Void
+    public let onContinue: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -14,11 +18,21 @@ public struct CareerHubView: View {
     public init(
         model: CareerHubReadModel,
         statusMessage: String? = nil,
-        onClose: @escaping () -> Void
+        onClose: @escaping () -> Void,
+        focus: CoachWorldScreenID = .careerHub,
+        onNavigate: @escaping (CoachWorldScreenID) -> Void = { _ in },
+        onAcceptOpportunity: @escaping (String) -> Void = { _ in },
+        onResign: @escaping () -> Void = {},
+        onContinue: @escaping () -> Void = {}
     ) {
         self.model = model
         self.statusMessage = statusMessage
         self.onClose = onClose
+        self.focus = focus
+        self.onNavigate = onNavigate
+        self.onAcceptOpportunity = onAcceptOpportunity
+        self.onResign = onResign
+        self.onContinue = onContinue
     }
 
     private var palette: CoachWorldTokens.Palette {
@@ -29,9 +43,37 @@ public struct CareerHubView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                 header
+                careerViews
                 if let currentJob = model.currentJob {
                     section("CURRENT APPOINTMENT") {
                         jobRow(currentJob)
+                        if currentJob.canResign {
+                            Button("Resign from appointment", action: onResign)
+                                .buttonStyle(CoachWorldActionButtonStyle(
+                                    role: .secondary,
+                                    palette: palette
+                                ))
+                                .frame(maxWidth: .infinity,
+                                       minHeight: CoachWorldTokens.Shape.minimumTarget)
+                                .accessibilityHint(
+                                    "Ends the current appointment and returns the coach to the job search."
+                                )
+                        }
+                    }
+                }
+                if model.currentJob == nil {
+                    section("JOB SEARCH") {
+                        Text("No current appointment. The coach remains in the career ledger while seeking the next eligible offer.")
+                            .font(CoachWorldTokens.TypeRole.body)
+                            .foregroundStyle(palette.contentSecondary.color)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button("Continue while seeking", action: onContinue)
+                            .buttonStyle(CoachWorldActionButtonStyle(
+                                role: .primary,
+                                palette: palette
+                            ))
+                            .frame(maxWidth: .infinity,
+                                   minHeight: CoachWorldTokens.Shape.minimumTarget)
                     }
                 }
                 section("STAKEHOLDER SUPPORT") {
@@ -72,9 +114,26 @@ public struct CareerHubView: View {
                                     .font(.caption)
                                 Text(opportunity.rationale)
                                     .font(.callout)
+                                if opportunity.tier == "Professional" {
+                                    Button("Accept professional offer") {
+                                        onAcceptOpportunity(opportunity.id)
+                                    }
+                                    .buttonStyle(CoachWorldActionButtonStyle(
+                                        role: .primary,
+                                        palette: palette
+                                    ))
+                                    .frame(maxWidth: .infinity,
+                                           minHeight: CoachWorldTokens.Shape.minimumTarget)
+                                    .disabled(!opportunity.canAccept)
+                                    if let reason = opportunity.unavailableReason, !opportunity.canAccept {
+                                        Text(reason)
+                                            .font(CoachWorldTokens.TypeRole.caption)
+                                            .foregroundStyle(palette.contentSecondary.color)
+                                    }
+                                }
                             }
                             .padding(.vertical, CoachWorldTokens.Space.xs)
-                            .accessibilityElement(children: .combine)
+                            .accessibilityElement(children: .contain)
                         }
                     }
                 }
@@ -95,9 +154,18 @@ public struct CareerHubView: View {
                 .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
                        minHeight: CoachWorldTokens.Shape.minimumTarget)
             Spacer()
-            Text("Career Hub")
+            Text(focus == .careerHub ? "Career Hub" : focus.canonicalName)
                 .font(CoachWorldTokens.TypeRole.headline.weight(.black))
             Spacer()
+            Menu("Views") {
+                Button("Career Hub") { onNavigate(.careerHub) }
+                Button("Job Security") { onNavigate(.jobSecurity) }
+                Button("Stakeholders") { onNavigate(.stakeholders) }
+                Button("Promotion Decision") { onNavigate(.promotionDecision) }
+                Button("Coaching Carousel") { onNavigate(.coachingCarousel) }
+            }
+            .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
+                   minHeight: CoachWorldTokens.Shape.minimumTarget)
             Text(model.status.uppercased())
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                 .foregroundStyle(palette.contentSecondary.color)
@@ -122,6 +190,37 @@ public struct CareerHubView: View {
             }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    private var careerViews: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
+            Text(focusDescription)
+                .font(CoachWorldTokens.TypeRole.body)
+                .foregroundStyle(palette.contentSecondary.color)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var focusDescription: String {
+        switch focus {
+        case .jobSecurity:
+            return "Job security is evidenced by your current appointment, stakeholder support, and recorded career history."
+        case .stakeholders:
+            return "Stakeholder values are the current support ledger; no unrecorded interpretation is shown."
+        case .promotionDecision:
+            return "Promotion opportunities are shown with their recorded expiry, prestige, and rationale."
+        case .coachingCarousel:
+            return "The coaching carousel is the durable offer and appointment history for this coach."
+        case .jobBoard:
+            return "The job board lists the durable career opportunities currently recorded for this coach."
+        case .offer:
+            return "Offers are shown with their recorded expiry, prestige, and rationale before acceptance."
+        case .appointment:
+            return "The appointment ledger shows the current job and the recorded history behind it."
+        default:
+            return "Your employment, support, history, and opportunities share one durable career ledger."
+        }
     }
 
     private func section<Content: View>(

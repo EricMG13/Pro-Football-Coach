@@ -47,7 +47,9 @@ public enum ScheduleGenerator {
         }
     }
 
-    private static let pairingAttemptsPerWeek = 2_048
+    // ponytail: cap randomized search; the deterministic round-robin fallback preserves legality
+    // when conference preferences cannot be satisfied quickly.
+    private static let pairingAttemptsPerWeek = 8
 
     private static func tierSchedule(
         seed: UInt64,

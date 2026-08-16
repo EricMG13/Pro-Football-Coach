@@ -737,7 +737,20 @@ public enum WorldScheduler {
                     // Realignment after evolution, and both before the college cycle rebuilds the
                     // next season's schedule: the schedule is generated from conference membership,
                     // so a swap has to land before it is read, not after.
-                    nextState = ConferenceRealignmentSystem.process(in: nextState)
+                    let realignment = ConferenceRealignmentSystem.processTransition(in: nextState)
+                    nextState = realignment.state
+                    if !realignment.swaps.isEmpty {
+                        try appendEvents(
+                            payloads: [.realignment(
+                                season: completed.season,
+                                reason: realignment.reason,
+                                swaps: realignment.swaps
+                            )],
+                            occurredAt: completed,
+                            to: &nextState,
+                            emittedEvents: &events
+                        )
+                    }
                     nextState.college.reconcileScholarships(with: nextState.programmes)
                     let cycle: CollegeCycleTransition
                     do {

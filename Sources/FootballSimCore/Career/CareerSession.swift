@@ -63,8 +63,10 @@ public struct CollegeProgrammeProjection: Sendable, Equatable, Identifiable {
 
 public struct CareerProjection: Sendable, Equatable {
     public let calendar: CalendarState
-    public let tier: CareerJobTier
-    public let programme: CollegeProgrammeProjection
+    /// `nil` when the coach is jobless but remains a durable career identity.
+    public let tier: CareerJobTier?
+    /// The currently controlled organisation, or `nil` while seeking work.
+    public let programme: CollegeProgrammeProjection?
     public let recruitingBoard: [CareerRecruitingProspectProjection]
     public let mandatoryDecisions: [MandatoryDecision]
 }
@@ -93,7 +95,8 @@ public actor CareerSession {
     private var state: GameState
 
     public init(state: GameState) throws {
-        guard state.career.college != nil
+        guard state.career.coachID != nil
+                || state.career.college != nil
                 || state.careerArc.currentJob?.tier == .professional else {
             throw CareerSessionError.missingControlledCareer
         }
@@ -140,7 +143,9 @@ public actor CareerSession {
     public func resolve(_ intent: CareerSessionIntent) throws -> CareerSessionReceipt {
         try Task.checkCancellation()
         let control = state.career.college
-        guard control != nil || state.careerArc.currentJob?.tier == .professional else {
+        guard state.career.coachID != nil
+                || control != nil
+                || state.careerArc.currentJob?.tier == .professional else {
             throw CareerSessionError.missingControlledCareer
         }
         var resolutionState = state
@@ -358,9 +363,6 @@ public actor CareerSession {
                 )
             )
         case let .career(action):
-            if case .acceptOpportunity = action, control == nil {
-                throw CareerSessionError.invalidState
-            }
             coachIntent = .career(CareerArcRequest(
                 calendar: state.calendar,
                 action: action
@@ -516,8 +518,8 @@ public actor CareerSession {
 
     private static func makeProjection(from state: GameState) -> CareerProjection {
         let control = state.career.college
-        let tier: CareerJobTier
-        let programme: CollegeProgrammeProjection
+        let tier: CareerJobTier?
+        let programme: CollegeProgrammeProjection?
         let recruiting: ProgrammeRecruitingState?
         if let control,
            let collegeProgramme = state.programmes[control.programmeID],
@@ -550,7 +552,9 @@ public actor CareerSession {
             )
             recruiting = nil
         } else {
-            preconditionFailure("A career session lost its controlled organisation.")
+            tier = nil
+            programme = nil
+            recruiting = nil
         }
         let board = recruiting?.boardIDs.compactMap { prospectID
             -> CareerRecruitingProspectProjection? in

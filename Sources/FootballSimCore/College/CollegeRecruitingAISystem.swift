@@ -85,10 +85,16 @@ public enum RecruitingDecisionPolicy {
         programmeID: UUID,
         in state: GameState
     ) -> RecruitingPolicyDecision? {
+        guard let capacity = CollegeCommitmentCapacitySystem.capacity(
+            programmeID: programmeID,
+            in: state,
+            college: state.college
+        ) else { return nil }
         let pursuitCounts = globalPursuitCounts(in: state)
         return targetDecision(
             programmeID: programmeID,
             in: state,
+            capacity: capacity,
             cache: RecruitingFitCache(state: state),
             prospectsByPosition: Dictionary(grouping: state.prospects.values, by: \.position),
             pursuitCounts: pursuitCounts,
@@ -99,31 +105,32 @@ public enum RecruitingDecisionPolicy {
     static func targetDecision(
         programmeID: UUID,
         in state: GameState,
+        capacity: ProgrammeCommitmentCapacity,
         cache: RecruitingFitCache,
         prospectsByPosition: [Position: [Prospect]],
         pursuitCounts: [UUID: Int],
         pursuitSaturation: Int
     ) -> RecruitingPolicyDecision? {
-        let rankedPositions = priorityPositions(programmeID: programmeID, in: state)
         guard state.college.phase == .active,
               let recruiting = state.college.programmes[programmeID],
-              let capacity = CollegeCommitmentCapacitySystem.capacity(
-                programmeID: programmeID,
-                in: state,
-                college: state.college
-              ),
               capacity.openReservations > 0,
               recruiting.boardIDs.count < min(
                 CollegeRules.recruitingBoardLimit,
                 state.calendar.week * CollegeRules.aiWeeklyBoardGrowth,
                 capacity.maximumReservations + CollegeRules.aiBoardDepthBeyondClassTarget
-              ),
-              !rankedPositions.isEmpty else {
+              ) else {
             return nil
         }
+        let rankedPositions = priorityPositions(
+            programmeID: programmeID,
+            in: state,
+            capacity: capacity
+        )
+        guard !rankedPositions.isEmpty else { return nil }
+        let boardIDs = Set(recruiting.boardIDs)
         let candidatesForPosition: (Position) -> [Prospect] = { position in
             (prospectsByPosition[position] ?? []).filter { prospect in
-                !recruiting.boardIDs.contains(prospect.id)
+                !boardIDs.contains(prospect.id)
                     && state.college.prospectRecruitment[prospect.id]?.phase == .available
                     && capacity.canReserve(position: prospect.position)
             }
@@ -431,13 +438,12 @@ public enum RecruitingDecisionPolicy {
         )
     }
 
-    private static func priorityPositions(programmeID: UUID, in state: GameState) -> [Position] {
-        guard let recruiting = state.college.programmes[programmeID],
-              let capacity = CollegeCommitmentCapacitySystem.capacity(
-                programmeID: programmeID,
-                in: state,
-                college: state.college
-              ) else { return [] }
+    private static func priorityPositions(
+        programmeID: UUID,
+        in state: GameState,
+        capacity: ProgrammeCommitmentCapacity
+    ) -> [Position] {
+        guard let recruiting = state.college.programmes[programmeID] else { return [] }
         let rosterCounts = capacity.projectedRosterCounts
         let boardCounts = Dictionary(grouping: recruiting.boardIDs.compactMap {
             state.prospects[$0]?.position
@@ -805,11 +811,11 @@ public enum CollegeRecruitingAISystem {
 
         for programmeID in state.programmes.ids where eligibleProgrammeIDs.contains(programmeID) {
             let pursuedProspectIDs = working.college.programmes[programmeID]?.boardIDs ?? []
-            let capacity = CollegeCommitmentCapacitySystem.capacity(
+            guard let capacity = CollegeCommitmentCapacitySystem.capacity(
                 programmeID: programmeID,
                 in: working,
                 college: working.college
-            )
+            ) else { continue }
             for prospectID in pursuedProspectIDs {
                 guard let recruitment = working.college.prospectRecruitment[prospectID]
                 else { continue }
@@ -822,7 +828,7 @@ public enum CollegeRecruitingAISystem {
                     )
                 let cullAvailablePursuit = recruitment.phase == .available
                     && working.prospects[prospectID].map {
-                        capacity?.canReserve(position: $0.position) != true
+                        capacity.canReserve(position: $0.position) != true
                     } == true
                 guard lostCommitment || cullAvailablePursuit,
                       let withdrawal = RecruitingDecisionPolicy.withdrawalDecision(
@@ -850,6 +856,7 @@ public enum CollegeRecruitingAISystem {
             while let target = RecruitingDecisionPolicy.targetDecision(
                 programmeID: programmeID,
                 in: working,
+                capacity: capacity,
                 cache: cache,
                 prospectsByPosition: prospectsByPosition,
                 pursuitCounts: pursuitCounts,

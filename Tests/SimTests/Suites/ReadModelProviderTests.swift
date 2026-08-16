@@ -24,6 +24,24 @@ private func startedCareer(seed: UInt64) throws -> (GameState, Programme) {
     return (started.state, programme)
 }
 
+private func professionalCareer(seed: UInt64) throws -> (GameState, ProTeam) {
+    var state = GameState.bootstrap(seed: seed)
+    guard let team = state.proTeams.values.sorted(by: { $0.id.uuidString < $1.id.uuidString }).first,
+          let coachID = team.staffIDs.first else {
+        throw CareerControlError.missingHeadCoach
+    }
+    state.career = CareerControlState(coachID: coachID)
+    state.careerArc = CareerArcState(
+        currentJob: CareerJob(
+            organisationID: team.id,
+            tier: .professional,
+            startedAt: state.calendar
+        ),
+        status: .employed
+    )
+    return (state, team)
+}
+
 func runReadModelProviderTests() {
     suite("Read model provider: identity") {
         test("starting jobs are three deterministic generated programmes") {
@@ -54,6 +72,81 @@ func runReadModelProviderTests() {
         test("no controlled career produces no coaching HQ") {
             expectEqual(
                 CoachWorldReadModelProvider.coachingHQ(from: GameState.bootstrap(seed: 4_001)),
+                nil
+            )
+        }
+
+        test("news is a bounded typed-history projection") {
+            let state = try startedCareer(seed: 4_001).0
+            guard let model = CoachWorldReadModelProvider.news(from: state) else {
+                expect(false, "a started career produced no news model")
+                return
+            }
+            expectEqual(model.provenance, .simulationSnapshot)
+            expect(model.items.count <= NewsReadModel.maximumItems)
+            expectEqual(model, CoachWorldReadModelProvider.news(from: state))
+            expectEqual(
+                CoachWorldReadModelProvider.news(from: GameState.bootstrap(seed: 4_001)),
+                nil
+            )
+        }
+
+        test("durable history routes share one bounded simulation projection") {
+            let state = try startedCareer(seed: 4_026).0
+            guard let model = CoachWorldReadModelProvider.legacyHistory(from: state) else {
+                expect(false, "a started career produced no history model")
+                return
+            }
+            expectEqual(model.provenance, .simulationSnapshot)
+            expectEqual(model, CoachWorldReadModelProvider.legacyHistory(from: state))
+            expect(model.records.count <= 8)
+            expect(model.rivalries.count <= 8)
+            expect(model.careerLine.count <= 64)
+            expect(model.coachingTree.count <= 256)
+            expectEqual(model.team.stableID, state.career.college?.programmeID.uuidString)
+            expectEqual(
+                CoachWorldReadModelProvider.legacyHistory(from: GameState.bootstrap(seed: 4_026)),
+                nil
+            )
+        }
+
+        test("statistics and honours stay bounded and truthful when archives are empty") {
+            let state = try startedCareer(seed: 4_027).0
+            guard let stats = CoachWorldReadModelProvider.statisticsLeaders(from: state),
+                  let honours = CoachWorldReadModelProvider.awardsHonours(from: state) else {
+                expect(false, "a started career produced no competition history models")
+                return
+            }
+            expectEqual(stats.provenance, .simulationSnapshot)
+            expectEqual(honours.provenance, .simulationSnapshot)
+            expect(stats.rows.count <= 32)
+            expect(honours.awards.count <= 64)
+            expectEqual(stats, CoachWorldReadModelProvider.statisticsLeaders(from: state))
+            expectEqual(honours, CoachWorldReadModelProvider.awardsHonours(from: state))
+            expectEqual(
+                CoachWorldReadModelProvider.statisticsLeaders(from: GameState.bootstrap(seed: 4_027)),
+                nil
+            )
+            expectEqual(
+                CoachWorldReadModelProvider.awardsHonours(from: GameState.bootstrap(seed: 4_027)),
+                nil
+            )
+        }
+
+        test("realignment is a typed event surface, not a current-table guess") {
+            let state = try startedCareer(seed: 4_028).0
+            guard let model = CoachWorldReadModelProvider.realignment(from: state) else {
+                expect(false, "a started career produced no realignment model")
+                return
+            }
+            expectEqual(model.provenance, .simulationSnapshot)
+            expectEqual(model, CoachWorldReadModelProvider.realignment(from: state))
+            if let event = model.event {
+                expect(event.swaps.count <= 2)
+                expect(!event.reason.isEmpty)
+            }
+            expectEqual(
+                CoachWorldReadModelProvider.realignment(from: GameState.bootstrap(seed: 4_028)),
                 nil
             )
         }
@@ -267,6 +360,227 @@ func runReadModelProviderTests() {
             expect(combinedRow?.statusDetail.contains("Suspension 2 week(s) remaining") == true)
         }
 
+        test("professional offseason projects the controlled market and observer evidence") {
+            let (closed, team) = try professionalCareer(seed: 4_060)
+            guard let closedModel = CoachWorldReadModelProvider.proOffseason(from: closed) else {
+                expect(false, "a professional appointment produced no offseason model")
+                return
+            }
+            expectEqual(closedModel.provenance, .simulationSnapshot)
+            expectEqual(closedModel.phase, .closed)
+            expectEqual(closedModel.team.stableID, team.id.uuidString)
+            expectEqual(closedModel.prospects, [])
+            expect(closedModel.actions.contains { $0.id == "pro:open-offseason" && $0.isAvailable })
+            expectEqual(
+                CoachWorldReadModelProvider.proOffseason(from: GameState.bootstrap(seed: 4_060)),
+                nil
+            )
+
+            let opened = try IntentResolver.resolve(
+                .proMarket(ProMarketRequest(calendar: closed.calendar, action: .openOffseason)),
+                in: closed
+            ).state
+            guard let openedModel = CoachWorldReadModelProvider.proOffseason(from: opened) else {
+                expect(false, "an opened professional market disappeared from the model")
+                return
+            }
+            expectEqual(openedModel.phase, .freeAgency)
+            expectEqual(openedModel.prospects.count, min(ProRules.draftPickCount, ProOffseasonReadModel.maximumRows))
+            expectEqual(openedModel.freeAgents.count, opened.proMarket.freeAgentIDs.count)
+            expect(openedModel.prospects.allSatisfy {
+                $0.estimatedOverall == nil && $0.confidence == nil
+            })
+            expect(openedModel.actions.contains { $0.id == "pro:begin-draft" && $0.isAvailable })
+            guard let prospect = opened.proMarket.draftClass.first,
+                  let scout = openedModel.prospects.first(where: { $0.id == prospect.id })?.action else {
+                expect(false, "the opened draft class had no scout action")
+                return
+            }
+            if case let .scout(teamID, prospectID) = scout.action {
+                expectEqual(teamID, team.id)
+                expectEqual(prospectID, prospect.id)
+            } else {
+                expect(false, "the draft board projected the wrong scout action")
+            }
+
+            let observed = try IntentResolver.resolve(
+                .proMarket(ProMarketRequest(calendar: opened.calendar, action: scout.action)),
+                in: opened
+            ).state
+            let observedRow = CoachWorldReadModelProvider.proOffseason(from: observed)?.prospects
+                .first(where: { $0.id == prospect.id })
+            expect(observedRow?.estimatedOverall != nil)
+            expect(observedRow?.confidence != nil)
+            expect(WorldIntegrity.check(observed).isValid)
+
+            var fired = closed
+            fired.careerArc = CareerArcState(status: .fired)
+            expectEqual(CoachWorldReadModelProvider.proOffseason(from: fired), nil)
+        }
+
+        test("professional management projects bounded cap and roster actions") {
+            let (state, team) = try professionalCareer(seed: 4_062)
+            guard let model = CoachWorldReadModelProvider.proManagement(from: state),
+                  let cap = try? ProManagementSystem.capSnapshot(teamID: team.id, in: state) else {
+                expect(false, "a professional appointment produced no management model")
+                return
+            }
+            expectEqual(model.provenance, .simulationSnapshot)
+            expectEqual(model.team.stableID, team.id.uuidString)
+            expectEqual(model.cap.remainingCap, cap.remainingCap)
+            expect(model.activeRoster.count <= ProManagementReadModel.maximumRows)
+            expect(model.practiceSquad.count <= ProManagementReadModel.maximumRows)
+            expect(model.activeRoster.allSatisfy { $0.action?.action == .release(playerID: $0.id, teamID: team.id) })
+            expectEqual(model, CoachWorldReadModelProvider.proManagement(from: state))
+            expectEqual(
+                CoachWorldReadModelProvider.proManagement(from: GameState.bootstrap(seed: 4_062)),
+                nil
+            )
+        }
+
+        test("staff room projects the controlled organisation's bounded staff ledger") {
+            let (state, programme) = try startedCareer(seed: 4_063)
+            guard let model = CoachWorldReadModelProvider.staffRoom(from: state) else {
+                expect(false, "a started career produced no staff room")
+                return
+            }
+            expectEqual(model.team.stableID, programme.id.uuidString)
+            expect(model.rows.count <= StaffRoomReadModel.maximumRows)
+            expect(model.rows.allSatisfy {
+                $0.reputation >= SharedRules.ratingRange.lowerBound
+                    && $0.reputation <= SharedRules.ratingRange.upperBound
+                    && $0.development >= SharedRules.ratingRange.lowerBound
+                    && $0.development <= SharedRules.ratingRange.upperBound
+            })
+            expectEqual(model, CoachWorldReadModelProvider.staffRoom(from: state))
+            expectEqual(
+                CoachWorldReadModelProvider.staffRoom(from: GameState.bootstrap(seed: 4_063)),
+                nil
+            )
+        }
+
+        test("college offseason projects portal boundaries and bounded cycle facts") {
+            let (started, programme) = try startedCareer(seed: 4_061)
+            let openPortal = CollegePortalState(
+                targetSeason: started.college.recruitingSeason,
+                phase: .postseasonOpen
+            )
+            var state = started
+            state.college = CollegeState(
+                recruitingSeason: started.college.recruitingSeason,
+                portal: openPortal,
+                phase: started.college.phase,
+                programmes: started.college.programmes,
+                prospectRecruitment: started.college.prospectRecruitment,
+                archivedProspects: started.college.archivedProspects,
+                redshirtPlans: started.college.redshirtPlans
+            )
+            guard let model = CoachWorldReadModelProvider.collegeOffseason(from: state) else {
+                expect(false, "an open college portal produced no offseason model")
+                return
+            }
+            expectEqual(model.provenance, .simulationSnapshot)
+            expectEqual(model.programme.stableID, programme.id.uuidString)
+            expectEqual(model.portalPhase, .postseasonOpen)
+            expectEqual(model.boardCount, state.college.programmes[programme.id]?.boardIDs.count)
+            expectEqual(model.nilCommitted, 0)
+            expect(model.decisions.count <= CollegeOffseasonReadModel.maximumDecisions)
+            expectEqual(model, CoachWorldReadModelProvider.collegeOffseason(from: state))
+            expectEqual(
+                CoachWorldReadModelProvider.collegeOffseason(from: GameState.bootstrap(seed: 4_061)),
+                nil
+            )
+        }
+
+        test("inbox is a bounded authoritative decision and story projection") {
+            let (state, _) = try startedCareer(seed: 4_024)
+            guard let model = CoachWorldReadModelProvider.inbox(from: state) else {
+                expect(false, "a started career produced no inbox model")
+                return
+            }
+            expectEqual(model.provenance, .simulationSnapshot)
+            expect(model.items.count <= InboxReadModel.maximumItems)
+            expect(model.items.allSatisfy { !$0.stableID.isEmpty && !$0.title.isEmpty })
+            expect(model.items.filter { $0.kind == .decision }.allSatisfy {
+                $0.destination == .coachingHQ && $0.deadline != nil
+            })
+            expect(model.items.filter { $0.kind == .task }.allSatisfy {
+                $0.destination == .gamePlan || $0.destination == .practicePlan
+            })
+            expectEqual(model, CoachWorldReadModelProvider.inbox(from: state))
+            if let first = model.items.first {
+                let read = CoachWorldReadModelProvider.inbox(
+                    from: state,
+                    readInboxItemIDs: [first.stableID]
+                )
+                expectEqual(read?.items.first(where: { $0.stableID == first.stableID })?.isUnread, false)
+            }
+            expectEqual(
+                CoachWorldReadModelProvider.inbox(from: GameState.bootstrap(seed: 4_024)),
+                nil
+            )
+        }
+
+        test("opponent film never substitutes hidden totals for missing observation") {
+            let (state, _) = try startedCareer(seed: 4_025)
+            guard let model = CoachWorldReadModelProvider.opponentFilm(from: state) else {
+                expect(false, "a started career produced no film model")
+                return
+            }
+            expectEqual(model.provenance, .simulationSnapshot)
+            expect((0...100).contains(model.confidence))
+            expect((0...100).contains(model.passRate))
+            expect((0...100).contains(model.turnoverRate))
+            if !model.isCurrent {
+                expect(model.unavailableReason != nil)
+                expectEqual(model.sourceGameCount, 0)
+            }
+            expectEqual(model, CoachWorldReadModelProvider.opponentFilm(from: state))
+            expectEqual(
+                CoachWorldReadModelProvider.opponentFilm(from: GameState.bootstrap(seed: 4_025)),
+                nil
+            )
+
+            let source = GameState.bootstrap(seed: 4_008)
+            guard let fixture = source.competition.currentSchedule.games.first(where: {
+                $0.result == nil && source.programmes[$0.homeID] != nil
+            }) else {
+                expect(false, "the generated fixture had no current opponent")
+                return
+            }
+            var observed = try CareerControlSystem.startCollegeCareer(
+                at: fixture.homeID,
+                in: source
+            ).state
+            guard let observedHQ = CoachWorldReadModelProvider.coachingHQ(from: observed),
+                  let observerID = UUID(uuidString: observedHQ.team.stableID),
+                  let game = observed.competition.currentSchedule.games.first(where: {
+                      $0.season == observed.calendar.season
+                          && $0.week == observed.calendar.week
+                          && $0.result == nil
+                          && ($0.homeID == observerID || $0.awayID == observerID)
+                  }) else {
+                expect(false, "the controlled fixture had no current opponent")
+                return
+            }
+            let opponentID = game.homeID == observerID ? game.awayID : game.homeID
+            expect(observed.tactical.recordObservation(OpponentObservation(
+                observerID: observerID,
+                opponentID: opponentID,
+                observedThrough: observed.tactical.calendar,
+                sourceGameIDs: [game.id],
+                confidence: 50,
+                sampleSize: 1,
+                passRate: 62,
+                turnoverRate: 8
+            )))
+            let current = CoachWorldReadModelProvider.opponentFilm(from: observed)
+            expectEqual(current?.isCurrent, true)
+            expectEqual(current?.sourceGameCount, 1)
+            expectEqual(current?.passRate, 62)
+            expectEqual(current?.turnoverRate, 8)
+        }
+
         test("a controlled checkpoint produces a live Match Day model") {
             let source = GameState.bootstrap(seed: 4_008)
             guard let game = source.competition.currentSchedule.games.first(where: {
@@ -367,6 +681,72 @@ func runReadModelProviderTests() {
             expectEqual(model.currentJob?.tier, "College")
             expectEqual(model.support.count, CareerStakeholder.allCases.count)
             expect(model.support.allSatisfy { (0...100).contains($0.value) })
+        }
+
+        test("career hub disables expired professional offers") {
+            var state = try startedCareer(seed: 4_011).0
+            let programmeID = state.career.college!.programmeID
+            let team = state.proTeams.values[0]
+            let offerID = UUID(uuidString: "00000000-0000-4000-8000-000000000711")!
+            state.calendar = CalendarState(season: 0, week: 2)
+            state.league.week = 2
+            state.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: programmeID,
+                    tier: .college,
+                    startedAt: CalendarState(season: 0, week: 1)
+                ),
+                opportunities: [CareerOpportunity(
+                    id: offerID,
+                    organisationID: team.id,
+                    tier: .professional,
+                    offeredAt: CalendarState(season: 0, week: 1),
+                    expiresAt: CalendarState(season: 0, week: 1),
+                    prestige: team.prestige,
+                    rationale: .staffRecommendation
+                )],
+                status: .employed
+            )
+            guard let offer = CoachWorldReadModelProvider.careerHub(from: state)?.opportunities.first else {
+                expect(false, "the career hub dropped the expired offer instead of explaining it")
+                return
+            }
+            expect(!offer.canAccept)
+            expectEqual(offer.unavailableReason, "This offer has expired.")
+        }
+
+        test("career hub does not enable an offer for a stale college control") {
+            var state = try startedCareer(seed: 4_012).0
+            let programmeID = state.career.college!.programmeID
+            let team = state.proTeams.values[0]
+            state.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: team.id,
+                    tier: .professional,
+                    startedAt: state.calendar
+                ),
+                opportunities: [CareerOpportunity(
+                    id: UUID(uuidString: "00000000-0000-4000-8000-000000000712")!,
+                    organisationID: team.id,
+                    tier: .professional,
+                    offeredAt: state.calendar,
+                    expiresAt: state.calendar.advancedWeek(),
+                    prestige: team.prestige,
+                    rationale: .staffRecommendation
+                )],
+                status: .employed
+            )
+            guard let offer = CoachWorldReadModelProvider.careerHub(from: state)?.opportunities.first else {
+                expect(false, "the stale-control offer disappeared instead of explaining its refusal")
+                return
+            }
+            expect(!offer.canAccept)
+            expectEqual(offer.unavailableReason, "A professional appointment is already active.")
+            expectEqual(
+                CoachWorldReadModelProvider.careerHub(from: state)?.currentJob?.team.stableID,
+                team.id.uuidString
+            )
+            expectEqual(programmeID, state.career.college?.programmeID)
         }
 
         test("standings are sourced from the authoritative competition table") {
@@ -937,6 +1317,41 @@ func runReadModelProviderTests() {
                 model.capacity.scholarshipSlotsRemaining,
                 CollegeRules.scholarshipLimit - programme.scholarshipCount
             )
+        }
+
+        test("discovery exposes an untracked prospect and add-to-board consumes it") {
+            let (state, programme) = try startedCareer(seed: 4_068)
+            guard let before = CoachWorldReadModelProvider.recruitingBoard(from: state),
+                  let prospect = before.discovery.first,
+                  let prospectID = UUID(uuidString: prospect.stableID) else {
+                expect(false, "a started career produced no discoverable prospect")
+                return
+            }
+            let add = prospect.choices.first { $0.intentID.rawValue == "addToBoard" }
+            expect(add?.isAvailable == true, "a current discovery prospect was not addable")
+            expectEqual(
+                CoachWorldReadModelProvider.recruitingAction(
+                    for: CoachWorldIntentID(rawValue: "addToBoard")
+                ),
+                .addToBoard
+            )
+
+            let resolved = try IntentResolver.resolve(
+                .recruiting(RecruitingActionRequest(
+                    programmeID: programme.id,
+                    prospectID: prospectID,
+                    action: .addToBoard
+                )),
+                in: state
+            ).state
+            guard let after = CoachWorldReadModelProvider.recruitingBoard(from: resolved) else {
+                expect(false, "the recruiting board disappeared after add-to-board")
+                return
+            }
+            expect(after.prospects.contains { $0.stableID == prospect.stableID },
+                   "added discovery prospect was not placed on the board")
+            expect(!after.discovery.contains { $0.stableID == prospect.stableID },
+                   "added discovery prospect remained discoverable")
         }
 
         test("weekly capacity reads the engine's own contact-points pool") {

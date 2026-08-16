@@ -87,6 +87,8 @@ public struct NewsFeedReadModel: Sendable, Equatable {
         case let .seasonCompleted(season, collegeChampionID, proChampionID):
             return "Season \(season) ends: \(who(collegeChampionID)) take the college title, "
                 + "\(who(proChampionID)) the professional one"
+        case let .realignment(_, reason, swaps):
+            return "Conference realignment: \(swaps.count) swap(s) for \(reason.rawValue)"
         case let .worldCreated(programmes, proTeams):
             return "A new football world opens with \(programmes) programmes and \(proTeams) "
                 + "professional teams"
@@ -181,6 +183,9 @@ public struct NewsFeedReadModel: Sendable, Equatable {
         for staff in state.staff.values { result[staff.id] = staff.fullName }
         for prospect in state.prospects.values {
             result[prospect.id] = "\(prospect.firstName) \(prospect.lastName)"
+        }
+        for archived in state.college.archivedProspects.values {
+            result[archived.id] = "\(archived.firstName) \(archived.lastName)"
         }
         for departed in state.people.departedPlayers.values {
             result[departed.id] = departed.fullName
