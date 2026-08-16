@@ -102,7 +102,8 @@ case "$lane" in
         run_sim competition --competition-only
         ;;
     calibration)
-        run_sim calibration --m3-recruiting-calibration
+        run_sim calibration --calibration
+        run_sim m3-recruiting-calibration --m3-recruiting-calibration
         ;;
     soaks)
         run_sim college-soak --m1-soak
