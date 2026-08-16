@@ -185,7 +185,36 @@ func runSaveDocumentTests() {
                 at: storage.quarantineDirectory,
                 includingPropertiesForKeys: nil
             )
+            expectEqual(quarantined.count, 1)
             expectEqual(try Data(contentsOf: quarantined[0]), Data([0x00]))
+        }
+
+        testAsync("quarantines a corrupt backup while retaining a valid primary") {
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("pfc-save-\(UUID().uuidString)", isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let storage = CoachWorldSaveStore(directory: directory)
+            let document = CoachWorldSaveDocument(
+                gameState: GameState.bootstrap(seed: 20_260_815),
+                metadata: CareerSaveMetadata(generation: 4)
+            )
+            let corrupt = Data([0x01, 0x02])
+            try storage.write(try SaveEnvelope.encode(document))
+            try storage.writeBackup(corrupt)
+
+            let outcome = try await SaveCoordinator(storage: storage).load()
+            guard case let .loaded(loaded, source) = outcome else {
+                expect(false, "expected the valid primary to remain usable")
+                return
+            }
+            expectEqual(source, .primary)
+            expectEqual(loaded, document)
+            let quarantined = try FileManager.default.contentsOfDirectory(
+                at: storage.quarantineDirectory,
+                includingPropertiesForKeys: nil
+            )
+            expectEqual(quarantined.count, 1)
+            expectEqual(try Data(contentsOf: quarantined[0]), corrupt)
         }
 
         testAsync("newer backup is promoted and latest request replaces stale pending state") {

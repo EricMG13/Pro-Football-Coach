@@ -61,13 +61,21 @@ public struct CoachWorldSaveStore: Sendable {
     /// Copies a corrupt save without first materialising it in memory. The original remains in
     /// place until the player explicitly chooses recovery or replacement.
     public func quarantinePrimary(name: String) throws -> URL {
+        try quarantine(source: url, name: name)
+    }
+
+    public func quarantineBackup(name: String) throws -> URL {
+        try quarantine(source: backupURL, name: name)
+    }
+
+    private func quarantine(source: URL, name: String) throws -> URL {
         try FileManager.default.createDirectory(
             at: quarantineDirectory,
             withIntermediateDirectories: true
         )
         let safeName = quarantineName(name)
         let destination = quarantineDirectory.appendingPathComponent(safeName)
-        try FileManager.default.copyItem(at: url, to: destination)
+        try FileManager.default.copyItem(at: source, to: destination)
         return destination
     }
 
@@ -240,9 +248,10 @@ public actor SaveCoordinator {
         let storedLimit = header.map(SaveEnvelope.storedBodyLimit(ofHeader:))
             ?? SaveEnvelope.maximumBodyBytes
         if let size, size > storedLimit + SaveEnvelope.headerLength {
-            if source == .primary {
-                _ = try? storage.quarantinePrimary(name: "primary-\(UUID().uuidString).pfcsave")
-            }
+            let prefix = source == .primary ? "primary" : "backup"
+            _ = try? (source == .primary
+                ? storage.quarantinePrimary(name: "\(prefix)-\(UUID().uuidString).pfcsave")
+                : storage.quarantineBackup(name: "\(prefix)-\(UUID().uuidString).pfcsave"))
             throw SaveEnvelopeError.bodyTooLarge(
                 bytes: size - SaveEnvelope.headerLength,
                 maximum: storedLimit
@@ -256,9 +265,10 @@ public actor SaveCoordinator {
             )
         } catch {
             if Self.isFuture(error) { throw error }
-            if source == .primary {
-                _ = try? storage.quarantinePrimary(name: "primary-\(UUID().uuidString).pfcsave")
-            }
+            let prefix = source == .primary ? "primary" : "backup"
+            _ = try? (source == .primary
+                ? storage.quarantinePrimary(name: "\(prefix)-\(UUID().uuidString).pfcsave")
+                : storage.quarantineBackup(name: "\(prefix)-\(UUID().uuidString).pfcsave"))
             throw error
         }
     }
