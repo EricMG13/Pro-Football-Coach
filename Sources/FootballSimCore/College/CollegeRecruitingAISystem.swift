@@ -91,6 +91,7 @@ public enum RecruitingDecisionPolicy {
             college: state.college
         ) else { return nil }
         let pursuitCounts = globalPursuitCounts(in: state)
+        var targetExplanationCache: [UUID: RecruitingDecisionExplanation] = [:]
         return targetDecision(
             programmeID: programmeID,
             in: state,
@@ -98,7 +99,8 @@ public enum RecruitingDecisionPolicy {
             cache: RecruitingFitCache(state: state),
             prospectsByPosition: Dictionary(grouping: state.prospects.values, by: \.position),
             pursuitCounts: pursuitCounts,
-            pursuitSaturation: pursuitSaturation(in: state)
+            pursuitSaturation: pursuitSaturation(in: state),
+            targetExplanationCache: &targetExplanationCache
         )
     }
 
@@ -109,7 +111,8 @@ public enum RecruitingDecisionPolicy {
         cache: RecruitingFitCache,
         prospectsByPosition: [Position: [Prospect]],
         pursuitCounts: [UUID: Int],
-        pursuitSaturation: Int
+        pursuitSaturation: Int,
+        targetExplanationCache: inout [UUID: RecruitingDecisionExplanation]
     ) -> RecruitingPolicyDecision? {
         guard state.college.phase == .active,
               let recruiting = state.college.programmes[programmeID],
@@ -128,46 +131,61 @@ public enum RecruitingDecisionPolicy {
         )
         guard !rankedPositions.isEmpty else { return nil }
         let boardIDs = Set(recruiting.boardIDs)
+        let reservablePositions = Set(Position.allCases.filter { capacity.canReserve(position: $0) })
         let candidatesForPosition: (Position) -> [Prospect] = { position in
             (prospectsByPosition[position] ?? []).filter { prospect in
                 !boardIDs.contains(prospect.id)
                     && state.college.prospectRecruitment[prospect.id]?.phase == .available
-                    && capacity.canReserve(position: prospect.position)
+                    && reservablePositions.contains(prospect.position)
             }
         }
-        let diversifiedCandidates = rankedPositions.lazy.compactMap { position in
-            let candidates = candidatesForPosition(position)
-            let unsaturated = candidates.filter {
+        let candidates: [Prospect]
+        if let diversified = rankedPositions.lazy.compactMap({ position in
+            let unsaturated = candidatesForPosition(position).filter {
                 (pursuitCounts[$0.id] ?? 0) < pursuitSaturation
             }
             return unsaturated.isEmpty ? nil : unsaturated
-        }.first
-        let fallbackCandidates = rankedPositions.lazy.compactMap { position in
+        }).first {
+            candidates = diversified
+        } else if let fallback = rankedPositions.lazy.compactMap({ position in
             let candidates = candidatesForPosition(position)
             return candidates.isEmpty ? nil : candidates
-        }.first
-        guard let candidates = diversifiedCandidates ?? fallbackCandidates else {
+        }).first {
+            candidates = fallback
+        } else {
             return nil
         }
-        let scoredCandidates = candidates.compactMap {
-            prospect -> (Prospect, RecruitingDecisionExplanation, UInt64)? in
-            guard let explanation = targetExplanation(
-                prospect: prospect,
-                programmeID: programmeID,
-                in: state,
-                cache: cache
-            ) else { return nil }
-            return (prospect, explanation, tieBreaker(
+        var selected: (Prospect, RecruitingDecisionExplanation, UInt64)?
+        for prospect in candidates {
+            let explanation: RecruitingDecisionExplanation
+            if let cached = targetExplanationCache[prospect.id] {
+                explanation = cached
+            } else {
+                guard let evaluated = targetExplanation(
+                    prospect: prospect,
+                    programmeID: programmeID,
+                    in: state,
+                    cache: cache
+                ) else { continue }
+                targetExplanationCache[prospect.id] = evaluated
+                explanation = evaluated
+            }
+            let candidate = (prospect, explanation, tieBreaker(
                 programmeID: programmeID,
                 prospectID: prospect.id,
                 in: state
             ))
+            if let current = selected,
+               current.1.total > candidate.1.total
+                || (current.1.total == candidate.1.total
+                    && (current.2 > candidate.2
+                        || (current.2 == candidate.2
+                            && current.0.id.uuidString < candidate.0.id.uuidString))) {
+                continue
+            }
+            selected = candidate
         }
-        guard let selected = scoredCandidates.max(by: { lhs, rhs in
-            if lhs.1.total != rhs.1.total { return lhs.1.total < rhs.1.total }
-            if lhs.2 != rhs.2 { return lhs.2 < rhs.2 }
-            return lhs.0.id.uuidString < rhs.0.id.uuidString
-        }) else { return nil }
+        guard let selected else { return nil }
         return RecruitingPolicyDecision(
             request: RecruitingActionRequest(
                 programmeID: programmeID,
@@ -654,7 +672,8 @@ public enum CollegeRecruitingMarketSystem {
                     prospectID: prospectID,
                     context: context,
                     in: workingState,
-                    college: &college
+                    college: &college,
+                    fitCache: cache
                 )
             case .committed:
                 guard recruitment.commitmentHistory.count
@@ -707,7 +726,8 @@ public enum CollegeRecruitingMarketSystem {
                     prospectID: prospectID,
                     context: context,
                     in: workingState,
-                    college: &college
+                    college: &college,
+                    fitCache: cache
                 )
             case .signed, .released:
                 continue
@@ -853,6 +873,7 @@ public enum CollegeRecruitingAISystem {
                 }
             }
 
+            var targetExplanationCache: [UUID: RecruitingDecisionExplanation] = [:]
             while let target = RecruitingDecisionPolicy.targetDecision(
                 programmeID: programmeID,
                 in: working,
@@ -860,7 +881,8 @@ public enum CollegeRecruitingAISystem {
                 cache: cache,
                 prospectsByPosition: prospectsByPosition,
                 pursuitCounts: pursuitCounts,
-                pursuitSaturation: pursuitSaturation
+                pursuitSaturation: pursuitSaturation,
+                targetExplanationCache: &targetExplanationCache
             ) {
                 try apply(
                     target,

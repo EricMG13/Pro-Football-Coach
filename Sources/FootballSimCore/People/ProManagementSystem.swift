@@ -413,7 +413,7 @@ public enum ProManagementSystem {
                 ))
             }
         }
-        let inherited = WorldIntegrity.check(state).issues
+        let inherited = Set(WorldIntegrity.check(state).issues)
         let introduced = WorldIntegrity.check(next).issues.filter { !inherited.contains($0) }
         guard introduced.isEmpty else { throw ProManagementError.invalidRoot }
         return ProCapComplianceReceipt(state: next, releases: releases)

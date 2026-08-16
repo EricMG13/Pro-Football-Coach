@@ -505,7 +505,7 @@ public enum ProMarketSystem {
         //
         // The difference is taken by construction rather than by naming the checks expiry is
         // allowed to break, so a check added later is covered the day it is added.
-        let inherited = WorldIntegrity.check(state).issues
+        let inherited = Set(WorldIntegrity.check(state).issues)
         let introduced = WorldIntegrity.check(next).issues.filter { issue in
             !inherited.contains(issue)
         }

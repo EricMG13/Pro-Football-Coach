@@ -32,7 +32,7 @@ public enum IntegrityCheck: String, Codable, Sendable, CaseIterable, Hashable {
     case tacticalState
 }
 
-public enum IntegrityIssue: Sendable, Equatable, CustomStringConvertible {
+public enum IntegrityIssue: Sendable, Equatable, Hashable, CustomStringConvertible {
     case missingConferenceMember(conferenceID: UUID, memberID: UUID)
     case conferenceMembershipMismatch(organisationID: UUID)
     case missingDivisionMember(divisionID: UUID, memberID: UUID)
