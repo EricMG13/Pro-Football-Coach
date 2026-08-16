@@ -115,7 +115,9 @@ public enum ProRosterAISystem {
             for candidate in candidates {
                 let contract = ProMarketSystem.rookieContract(for: candidate)
                 do {
-                    next = try ProMarketSystem.signFreeAgent(
+                    // The scheduler validates the complete root at its integrity boundary after
+                    // this batch; avoid repeating that full check for every AI signing.
+                    next = try ProMarketSystem.signFreeAgentForScheduler(
                         playerID: candidate.id,
                         teamID: teamID,
                         contract: contract,

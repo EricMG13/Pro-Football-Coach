@@ -411,11 +411,11 @@ public enum WorldIntegrity {
                 issues.append(.illegalProRoster(teamID: team.id))
             }
         }
-        for id in playerOwners.keys.sorted(by: { $0.uuidString < $1.uuidString }) {
+        for id in playerOwners.keys.sorted(by: uuidLessThan) {
             guard let owners = playerOwners[id], owners > 1 else { continue }
             issues.append(.duplicatePlayerOwnership(id: id, owners: owners))
         }
-        for id in staffEmployers.keys.sorted(by: { $0.uuidString < $1.uuidString }) {
+        for id in staffEmployers.keys.sorted(by: uuidLessThan) {
             guard let employers = staffEmployers[id], employers > 1 else { continue }
             issues.append(.duplicateStaffEmployment(id: id, employers: employers))
         }
@@ -1671,19 +1671,23 @@ public enum WorldIntegrity {
                 durableOfferKnowledge[key, default: []].append(offer.knowledge)
             }
         }
-        let storedSnapshots = state.scouting.portalKnowledgeByObserver.keys.sorted(
-            by: uuidLessThan
-        ).flatMap { observerID in
-            state.scouting.portalKnowledgeByObserver[observerID] ?? []
-        }.sorted { lhs, rhs in
-            if lhs.observerProgrammeID != rhs.observerProgrammeID {
-                return uuidLessThan(lhs.observerProgrammeID, rhs.observerProgrammeID)
+        // ScoutingState canonicalizes and validates each observer's slice at every mutation and
+        // decode. Sorting only observer keys preserves the same deterministic order without an
+        // O(n log n) global resort on every integrity check.
+        let storedSnapshots = state.scouting.portalKnowledgeByObserver.keys
+            .sorted(by: uuidLessThan)
+            .flatMap { observerID in
+                (state.scouting.portalKnowledgeByObserver[observerID] ?? []).sorted { lhs, rhs in
+                    if lhs.targetSeason != rhs.targetSeason {
+                        return lhs.targetSeason < rhs.targetSeason
+                    }
+                    if lhs.window != rhs.window { return lhs.window.order < rhs.window.order }
+                    if lhs.playerID != rhs.playerID {
+                        return uuidLessThan(lhs.playerID, rhs.playerID)
+                    }
+                    return uuidLessThan(lhs.sourceProgrammeID, rhs.sourceProgrammeID)
+                }
             }
-            if lhs.targetSeason != rhs.targetSeason { return lhs.targetSeason < rhs.targetSeason }
-            if lhs.window != rhs.window { return lhs.window.order < rhs.window.order }
-            if lhs.playerID != rhs.playerID { return uuidLessThan(lhs.playerID, rhs.playerID) }
-            return uuidLessThan(lhs.sourceProgrammeID, rhs.sourceProgrammeID)
-        }
         for snapshot in storedSnapshots {
             let occursInFuture = occurs(state.calendar, before: snapshot.lastUpdated)
             let hasEntrantRecord = recordIdentities.contains(PortalRecordSourceKey(
@@ -1764,7 +1768,18 @@ public enum WorldIntegrity {
     }
 
     private static func uuidLessThan(_ lhs: UUID, _ rhs: UUID) -> Bool {
-        lhs.uuidString < rhs.uuidString
+        // Canonical UUID text preserves byte order; compare the bytes directly to avoid
+        // allocating strings in the integrity and scheduler hot paths.
+        withUnsafeBytes(of: lhs.uuid) { lhsBytes in
+            withUnsafeBytes(of: rhs.uuid) { rhsBytes in
+                for index in 0..<16 {
+                    if lhsBytes[index] != rhsBytes[index] {
+                        return lhsBytes[index] < rhsBytes[index]
+                    }
+                }
+                return false
+            }
+        }
     }
 
     private static func occurs(_ lhs: CalendarState, before rhs: CalendarState) -> Bool {

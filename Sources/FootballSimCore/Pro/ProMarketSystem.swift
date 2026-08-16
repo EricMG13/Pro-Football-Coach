@@ -150,6 +150,37 @@ public enum ProMarketSystem {
         contract: Contract,
         in state: GameState
     ) throws -> GameState {
+        try signFreeAgent(
+            playerID: playerID,
+            teamID: teamID,
+            contract: contract,
+            in: state,
+            validateIntegrity: true
+        )
+    }
+
+    static func signFreeAgentForScheduler(
+        playerID: UUID,
+        teamID: UUID,
+        contract: Contract,
+        in state: GameState
+    ) throws -> GameState {
+        try signFreeAgent(
+            playerID: playerID,
+            teamID: teamID,
+            contract: contract,
+            in: state,
+            validateIntegrity: false
+        )
+    }
+
+    private static func signFreeAgent(
+        playerID: UUID,
+        teamID: UUID,
+        contract: Contract,
+        in state: GameState,
+        validateIntegrity: Bool
+    ) throws -> GameState {
         guard state.proMarket.phase == .freeAgency else { throw ProMarketError.invalidPhase }
         guard state.proMarket.freeAgentIDs.contains(playerID) else {
             throw ProMarketError.unavailableFreeAgent
@@ -161,7 +192,17 @@ public enum ProMarketSystem {
         guard next.proMarket.removeFreeAgent(playerID) else {
             throw ProMarketError.unavailableFreeAgent
         }
-        let receipt = try ProManagementSystem.acquire(
+        let receipt = try (validateIntegrity
+            ? ProManagementSystem.acquire(
+                playerID: playerID,
+                for: teamID,
+                kind: .freeAgency,
+                contract: contract.signedSeason == nil
+                    ? contract.withSignedSeason(state.proMarket.season)
+                    : contract,
+                in: next
+            )
+            : ProManagementSystem.acquireForScheduler(
             playerID: playerID,
             for: teamID,
             kind: .freeAgency,
@@ -169,9 +210,8 @@ public enum ProMarketSystem {
                 ? contract.withSignedSeason(state.proMarket.season)
                 : contract,
             in: next
-        )
+        ))
         next = receipt.state
-        guard WorldIntegrity.check(next).isValid else { throw ProMarketError.invalidRoot }
         return next
     }
 

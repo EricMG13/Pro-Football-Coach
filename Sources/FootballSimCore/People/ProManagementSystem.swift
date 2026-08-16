@@ -138,6 +138,41 @@ public enum ProManagementSystem {
         contract: Contract,
         in state: GameState
     ) throws -> ProAcquisitionReceipt {
+        try acquire(
+            playerID: playerID,
+            for: teamID,
+            kind: kind,
+            contract: contract,
+            in: state,
+            validateIntegrity: true
+        )
+    }
+
+    static func acquireForScheduler(
+        playerID: UUID,
+        for teamID: UUID,
+        kind: ProAcquisitionKind,
+        contract: Contract,
+        in state: GameState
+    ) throws -> ProAcquisitionReceipt {
+        try acquire(
+            playerID: playerID,
+            for: teamID,
+            kind: kind,
+            contract: contract,
+            in: state,
+            validateIntegrity: false
+        )
+    }
+
+    private static func acquire(
+        playerID: UUID,
+        for teamID: UUID,
+        kind: ProAcquisitionKind,
+        contract: Contract,
+        in state: GameState,
+        validateIntegrity: Bool
+    ) throws -> ProAcquisitionReceipt {
         guard Self.isValid(contract) else { throw ProManagementError.invalidContract }
         guard let player = state.players[playerID] else { throw ProManagementError.missingPlayer }
         guard let team = state.proTeams[teamID] else { throw ProManagementError.missingTeam }
@@ -157,7 +192,9 @@ public enum ProManagementSystem {
         var next = state
         next.players.update(playerID) { $0.contract = contract }
         next.proTeams.update(teamID) { $0.rosterIDs.append(playerID) }
-        guard WorldIntegrity.check(next).isValid else { throw ProManagementError.invalidRoot }
+        if validateIntegrity {
+            guard WorldIntegrity.check(next).isValid else { throw ProManagementError.invalidRoot }
+        }
         let after = try capSnapshot(teamID: teamID, in: next)
         return ProAcquisitionReceipt(
             state: next,
