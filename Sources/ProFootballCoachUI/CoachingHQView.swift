@@ -620,6 +620,9 @@ public struct CoachingHQView: View {
                            minHeight: CoachWorldTokens.Shape.minimumTarget)
                     .accessibilityHint("Commits the balanced game and practice plans for this week.")
             }
+            if model.opponent != nil {
+                filmButton.frame(maxWidth: .infinity)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

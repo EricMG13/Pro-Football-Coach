@@ -541,6 +541,32 @@ func runReadModelProviderTests() {
                 nil
             )
 
+            var completed = state
+            guard let observerID = state.career.college?.programmeID,
+                  let scheduled = state.competition.currentSchedule.games.first(where: {
+                      $0.homeID == observerID || $0.awayID == observerID
+                  }) else {
+                expect(false, "the started career had no scheduled fixture to complete")
+                return
+            }
+            var resolved = scheduled
+            resolved.result = GameSummary(
+                homeScore: 21,
+                awayScore: 17,
+                homeStatistics: TeamGameStatistics(
+                    points: 21, offensiveYards: 300, passingYards: 200,
+                    rushingYards: 100, turnovers: 0
+                ),
+                awayStatistics: TeamGameStatistics(
+                    points: 17, offensiveYards: 280, passingYards: 180,
+                    rushingYards: 100, turnovers: 1
+                ),
+                playerStatistics: []
+            )
+            expect(completed.competition.currentSchedule.replace(resolved))
+            expectEqual(CoachWorldReadModelProvider.coachingHQ(from: completed)?.opponent, nil)
+            expectEqual(CoachWorldReadModelProvider.opponentFilm(from: completed)?.opponent, nil)
+
             let source = GameState.bootstrap(seed: 4_008)
             guard let fixture = source.competition.currentSchedule.games.first(where: {
                 $0.result == nil && source.programmes[$0.homeID] != nil

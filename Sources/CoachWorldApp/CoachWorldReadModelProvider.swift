@@ -458,6 +458,7 @@ public enum CoachWorldReadModelProvider {
             $0.season == state.calendar.season
                 && $0.week == state.calendar.week
                 && ($0.homeID == organisationID || $0.awayID == organisationID)
+                && $0.result == nil
         }
     }
 
