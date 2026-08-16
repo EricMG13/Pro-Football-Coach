@@ -76,6 +76,224 @@ func runReadModelProviderTests() {
             )
         }
 
+        testAsync("the floodlit causal loop survives personnel, match resume, and aftermath") {
+            var state = GameState.bootstrap(seed: 4_200)
+            let programmeID = state.programmes.ids[0]
+            state = try CareerControlSystem.startCollegeCareer(
+                at: programmeID,
+                in: state
+            ).state
+            state.calendar = CalendarState(season: 0, week: 8)
+            state.league.week = 8
+            state.tactical.prepare(for: state.calendar)
+            state.pending = PendingQueues()
+
+            guard let programme = state.programmes[programmeID] else {
+                expect(false, "the controlled programme disappeared")
+                return
+            }
+            let delegatedProspectID = state.prospects.ids[0]
+            let delegatedDecisionID = UUID(uuidString: "00000000-0000-4000-8000-000000004201")!
+            let delegatedOptionID = UUID(uuidString: "00000000-0000-4000-8000-000000004202")!
+            let delegatedFallbackOptionID = UUID(uuidString: "00000000-0000-4000-8000-000000004203")!
+            var delegationState = state
+            expect(delegationState.pending.enqueue(MandatoryDecision(
+                id: delegatedDecisionID,
+                programmeID: programmeID,
+                subject: .recruiting(prospectID: delegatedProspectID),
+                createdAt: state.calendar,
+                deadline: state.calendar,
+                owner: .user,
+                options: [
+                    MandatoryDecisionOption(
+                        id: delegatedOptionID,
+                        action: .recruiting(.addToBoard)
+                    ),
+                    MandatoryDecisionOption(
+                        id: delegatedFallbackOptionID,
+                        action: .recruiting(.withdraw)
+                    ),
+                ],
+                recommendedOptionID: delegatedOptionID,
+                reasons: [MandatoryDecisionReason(code: .rosterNeed, value: 1)]
+            )))
+            let delegatedStaffID = programme.staffIDs.compactMap { state.staff[$0] }
+                .first { $0.id != state.career.college?.coachID }!.id
+            let delegationSession = try CareerSession(state: delegationState)
+            let delegationReceipt = try await delegationSession.resolve(.delegateDecision(
+                decisionID: delegatedDecisionID,
+                staffID: delegatedStaffID
+            ))
+            if case let .decisionDelegated(resolvedID, resolvedStaffID, optionID) = delegationReceipt.result {
+                expectEqual(resolvedID, delegatedDecisionID)
+                expectEqual(resolvedStaffID, delegatedStaffID)
+                expectEqual(optionID, delegatedOptionID)
+            } else {
+                expect(false, "delegation did not return the shared typed receipt")
+            }
+            expect(!state.staff[delegatedStaffID]!.fullName.isEmpty)
+
+            let quarterbacks = programme.rosterIDs.compactMap { state.players[$0] }
+                .filter { $0.position == .quarterback }
+                .sorted { $0.id.uuidString < $1.id.uuidString }
+            guard let forcedOut = quarterbacks.first,
+                  let fallback = quarterbacks.dropFirst().first else {
+                expect(false, "the generated roster had no quarterback fallback")
+                return
+            }
+            _ = state.people.updatePlayerLifecycle(forcedOut.id) {
+                $0.suspend(PlayerSuspension(
+                    reason: .conduct,
+                    occurredAt: state.calendar,
+                    originalWeeks: 2,
+                    weeksRemaining: 2
+                ))
+            }
+            let personnel = PersonnelPlan(
+                organisationID: programmeID,
+                calendar: state.calendar,
+                overrides: [DepthChartOverride(
+                    position: .quarterback,
+                    playerIDs: [forcedOut.id, fallback.id]
+                )]
+            )
+            let practice = TacticalPracticePlan(
+                installMinutes: 30,
+                conditioningMinutes: 15,
+                recoveryMinutes: 0,
+                positionFocusMinutes: 15,
+                positionFocus: .quarterbacks
+            )
+            expect(state.tactical.setPlan(
+                TacticalPlan(
+                    runPassBias: .passHeavy,
+                    tempo: .hurry,
+                    pressure: .attack
+                ),
+                for: programmeID,
+                at: state.calendar
+            ))
+            expect(state.tactical.setPracticePlan(
+                practice,
+                for: programmeID,
+                at: state.calendar
+            ))
+            expect(state.tactical.setPersonnelPlan(personnel))
+            expect(WorldIntegrity.check(state).isValid)
+
+            let prepared = try WorldScheduler.prepareControlledMatch(in: state)
+            guard let installed = prepared.matchSession,
+                  let fixtureID = installed.fixtureID,
+                  let controlledSide = installed.controlledSide else {
+                expect(false, "the prepared week did not install a controlled checkpoint")
+                return
+            }
+            let controlledPersonnel = controlledSide == .home ? installed.home : installed.away
+            expect(!controlledPersonnel.offense.contains { $0.id == forcedOut.id })
+            expect(!controlledPersonnel.defense.contains { $0.id == forcedOut.id })
+            expect(controlledPersonnel.offense.contains { $0.id == fallback.id })
+
+            let savedCheckpoint = try SaveEnvelope.encode(prepared)
+            let resumedRoot = try SaveEnvelope.decode(GameState.self, from: savedCheckpoint)
+            var beforeCallIn = try SaveEnvelope.decode(GameState.self, from: savedCheckpoint)
+            guard var checkpoint = resumedRoot.matchSession else {
+                expect(false, "the saved checkpoint did not decode")
+                return
+            }
+            var firstProposal: TacticalCallInProposal?
+            while !checkpoint.completed {
+                let step = try MatchReducer.reduce(.advance, state: &checkpoint)
+                if let proposal = step.proposal {
+                    firstProposal = proposal
+                    break
+                }
+            }
+            guard let proposal = firstProposal else {
+                expect(false, "the controlled reducer never paused for a call-in")
+                return
+            }
+            expectEqual(proposal.situation.possession, controlledSide)
+            let callInAction = proposal.options[0].action
+            let checkpointData = try JSONEncoder.stable().encode(checkpoint)
+            var direct = try JSONDecoder.stable().decode(MatchSessionState.self, from: checkpointData)
+            var resumed = try JSONDecoder.stable().decode(MatchSessionState.self, from: checkpointData)
+            let directStep = try MatchReducer.reduce(
+                .chooseCallIn(callInAction),
+                state: &direct
+            )
+            let resumedStep = try MatchReducer.reduce(
+                .chooseCallIn(callInAction),
+                state: &resumed
+            )
+            expectEqual(directStep.callIn?.side, controlledSide)
+            expectEqual(directStep.callIn, resumedStep.callIn)
+            expectEqual(direct.drives, resumed.drives)
+
+            func finish(_ match: inout MatchSessionState) throws {
+                while !match.completed {
+                    if let pending = match.pendingCallIn {
+                        _ = try MatchReducer.reduce(
+                            .chooseCallIn(pending.options[0].action),
+                            state: &match
+                        )
+                    } else {
+                        _ = try MatchReducer.reduce(.advance, state: &match)
+                    }
+                }
+            }
+            try finish(&direct)
+            try finish(&resumed)
+            expectEqual(direct.completion?.fingerprint, resumed.completion?.fingerprint)
+            expectEqual(direct.completion?.evidence, resumed.completion?.evidence)
+
+            beforeCallIn.matchSession = resumed
+            let finalized = try WorldScheduler.finalizeControlledMatch(
+                resumed.completion!,
+                in: beforeCallIn
+            )
+            guard let game = finalized.competition.currentSchedule.games.first(where: {
+                $0.id == fixtureID
+            }), let result = game.result else {
+                expect(false, "finalization did not record the scheduled result")
+                return
+            }
+            expect(finalized.matchSession == nil)
+            expect(!result.playerStatistics.isEmpty)
+            guard let aftermath = CoachWorldReadModelProvider.aftermath(from: finalized) else {
+                expect(false, "finalization did not expose immutable aftermath evidence")
+                return
+            }
+            expectEqual(aftermath.provenance, .simulationSnapshot)
+            expectEqual(aftermath.recordedOutcomeID, fixtureID.uuidString)
+            expect(!aftermath.grades.isEmpty)
+            expect(!aftermath.callIns.isEmpty)
+
+            let next = try WorldScheduler.advanceWeek(finalized).state
+            guard let practiceReceipt = next.tactical.practiceReceiptsByOrganisation[programmeID] else {
+                expect(false, "the committed practice plan was not consumed")
+                return
+            }
+            expectEqual(practiceReceipt.calendar, state.calendar)
+            expectEqual(practiceReceipt.effects, practice.effects)
+            expect(next.tactical.reviews.contains {
+                $0.organisationID == programmeID && $0.calendar == state.calendar
+            })
+            let controlledParticipantIDs = controlledSide == .home
+                ? result.homeParticipantIDs
+                : result.awayParticipantIDs
+            guard let playerID = controlledParticipantIDs.first(where: { candidate in
+                      result.playerStatistics.contains { $0.playerID == candidate }
+                  }),
+                  let profile = CoachWorldReadModelProvider.playerProfile(playerID, in: next) else {
+                expect(false, "the next-week player profile had no controlled box-score participant")
+                return
+            }
+            expect((1...5).contains(profile.recentForm.count))
+            expect(profile.historyEvidence.contains("completed game"))
+            expect(!profile.developmentEvidence.isEmpty)
+            expect(profile.developmentEvidence.count <= 512)
+        }
+
         test("news is a bounded typed-history projection") {
             let state = try startedCareer(seed: 4_001).0
             guard let model = CoachWorldReadModelProvider.news(from: state) else {
