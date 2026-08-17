@@ -399,6 +399,86 @@ func runSnapAnchorTests() {
                         "playback must carry a snap-grained identity of its own")
         }
 
+        test("whoever has the ball is where the ball is") {
+            // The desync this closes: actors interpolated start-to-end across the whole playback
+            // while the ball moved in timed legs, so a receiver glided straight to the end spot
+            // while the ball went via the catch point. They were never in the same place at the
+            // same moment. Driven over every result kind so no branch escapes.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let offense = Array(personnel.offense.prefix(11))
+            let defense = Array(personnel.defense.prefix(11))
+            for result in SnapResult.allCases {
+                for playType in [OffensivePlayType.pass, .run] {
+                    let play = PlayRecord(
+                        situation: Situation(down: 1, distance: 10, yardLine: 35),
+                        offensiveCall: OffensiveCall(playType: playType),
+                        defensiveCall: DefensiveCall(coverage: .man),
+                        outcome: SnapOutcome(
+                            result: result, yards: result == .sack ? -8 : 12, secondsElapsed: 6,
+                            matchups: [],
+                            ballCarrierID: result == .sack ? offense[0].id : offense[2].id,
+                            passerID: offense[0].id,
+                            targetID: playType == .pass ? offense[2].id : nil
+                        ),
+                        callInTriggers: []
+                    )
+                    let set = SnapAnchors.choreograph(
+                        play: play, offense: offense, defense: defense
+                    )
+                    // Every leg on which a player is physically carrying the ball must have that
+                    // player at both of its ends, at the moments the ball is there.
+                    for leg in set.ball where leg.kind == .carry {
+                        guard let holderID = play.outcome.ballCarrierID,
+                              let holder = set.actors.first(where: { $0.playerID == holderID })
+                        else { continue }
+                        let atStart = SnapAnchors.position(of: holder, at: leg.startFraction)
+                        let atEnd = SnapAnchors.position(of: holder, at: leg.endFraction)
+                        expectClose(atStart.yard, leg.from.yard, 0.001,
+                                    "\(result)/\(playType): carrier not at the ball when the "
+                                        + "carry begins")
+                        expectClose(atStart.lateral, leg.from.lateral, 0.001,
+                                    "\(result)/\(playType): carrier off the ball laterally")
+                        expectClose(atEnd.yard, leg.to.yard, 0.001,
+                                    "\(result)/\(playType): carrier not at the ball when the "
+                                        + "carry ends")
+                    }
+                }
+            }
+        }
+
+        test("a sacked passer is dragged down with the ball, not left standing") {
+            // role() checks passerID before ballCarrierID, so a sacked quarterback was classed
+            // .passer and told to hold his drop point while the ball travelled back to the sack
+            // spot without him. SnapResolver sets ballCarrierID to the passer on a sack, so the
+            // record always said he was carrying it.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let offense = Array(personnel.offense.prefix(11))
+            let passer = offense[0]
+            let play = PlayRecord(
+                situation: Situation(down: 3, distance: 9, yardLine: 45),
+                offensiveCall: OffensiveCall(playType: .pass),
+                defensiveCall: DefensiveCall(coverage: .man),
+                outcome: SnapOutcome(
+                    result: .sack, yards: -8, secondsElapsed: 6, matchups: [],
+                    ballCarrierID: passer.id, passerID: passer.id
+                ),
+                callInTriggers: []
+            )
+            let set = SnapAnchors.choreograph(
+                play: play, offense: offense, defense: Array(personnel.defense.prefix(11))
+            )
+            let quarterback = set.actors.first { $0.playerID == passer.id }
+            expect(quarterback != nil, "the passer is not on the field")
+            expectClose(quarterback?.end.yard ?? -1, set.endSpot, 0.001,
+                        "the sacked passer did not end at the sack spot")
+            expect(set.endSpot < set.lineOfScrimmage, "the fixture is not actually a sack")
+            // He holds his drop point while the ball is still being snapped, rather than drifting
+            // backwards from the instant the play begins.
+            let atSnap = SnapAnchors.position(of: quarterback!, at: AnchorRules.snapFraction)
+            expectClose(atSnap.yard, quarterback!.start.yard, 0.001,
+                        "the passer began retreating before he had the ball")
+        }
+
         test("one conversion turns an offense-relative yard into a drawn-field position") {
             // 03 section 9.2 says there is exactly one of these. Before this existed the provider
             // assigned Situation.yardLine straight into the read model's absolute space, so the

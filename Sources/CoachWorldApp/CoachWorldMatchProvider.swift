@@ -154,6 +154,11 @@ public extension CoachWorldReadModelProvider {
                     startY: actor.start.lateral,
                     endX: x(actor.end.yard),
                     endY: actor.end.lateral,
+                    waypoints: actor.path.map {
+                        MatchDayReadModel.Playback.ActorTrack.Waypoint(
+                            x: x($0.point.yard), y: $0.point.lateral, fraction: $0.fraction
+                        )
+                    },
                     role: actor.role.rawValue
                 )
             },

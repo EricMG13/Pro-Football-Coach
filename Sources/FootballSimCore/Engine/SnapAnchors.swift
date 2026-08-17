@@ -19,6 +19,22 @@ public struct FieldPoint: Codable, Sendable, Equatable {
     }
 }
 
+/// Somewhere an actor is, and when it is there.
+///
+/// The fraction is the point of the whole thing. A waypoint without one cannot say "be at the catch
+/// exactly when the ball arrives", and without that the ball and the man carrying it travel
+/// independently — which is precisely how they came apart.
+public struct ActorWaypoint: Codable, Sendable, Equatable {
+    public let point: FieldPoint
+    /// 0 to 1 of the playback.
+    public let fraction: Double
+
+    public init(point: FieldPoint, fraction: Double) {
+        self.point = point
+        self.fraction = Swift.min(1, Swift.max(0, fraction))
+    }
+}
+
 /// One player's movement across one snap.
 public struct ActorAnchor: Codable, Sendable, Equatable {
     public let playerID: UUID
@@ -27,8 +43,8 @@ public struct ActorAnchor: Codable, Sendable, Equatable {
     public let start: FieldPoint
     public let end: FieldPoint
     /// Sparse by design, and empty for most actors on most snaps. A point appears here only when the
-    /// record justifies it; see `03` §9.1.
-    public let path: [FieldPoint]
+    /// record justifies it; see `03` §9.1. Ordered by fraction.
+    public let path: [ActorWaypoint]
 
     public init(
         playerID: UUID,
@@ -36,7 +52,7 @@ public struct ActorAnchor: Codable, Sendable, Equatable {
         role: SnapRole,
         start: FieldPoint,
         end: FieldPoint,
-        path: [FieldPoint] = []
+        path: [ActorWaypoint] = []
     ) {
         self.playerID = playerID
         self.side = side
@@ -50,7 +66,17 @@ public struct ActorAnchor: Codable, Sendable, Equatable {
 /// One leg of the ball's journey, with when it happens as a fraction of the playback.
 public struct BallSegment: Codable, Sendable, Equatable {
     public enum Kind: String, Codable, Sendable, CaseIterable {
-        case snap, carry, air, loose
+        /// The ball travelling between two players — centre to passer, or passer to back. Nobody is
+        /// running with it, which is why it is not a `carry`: on a handoff the ball starts at the
+        /// quarterback and the back is still in his stance, so demanding the carrier be on both ends
+        /// of it would be demanding a thing that does not happen.
+        case snap, handoff
+        /// A player running with the ball. The carrier is on this leg at both ends, always.
+        case carry
+        /// In flight — a throw, or a kick.
+        case air
+        /// Live but uncontrolled: the flight after an interception.
+        case loose
     }
 
     public let kind: Kind
@@ -141,6 +167,8 @@ public enum AnchorRules {
 
     /// The ball leaves the centre over this share of the playback.
     public static let snapFraction = 0.12
+    /// A handoff completes by this point, and the back has the ball from here.
+    public static let handoffFraction = 0.22
     /// A pass is in the air until this point of the playback.
     public static let releaseFraction = 0.55
 
@@ -256,6 +284,34 @@ public enum SnapAnchors {
         }
     }
 
+    /// Where an actor is at a given point of the playback.
+    ///
+    /// The single interpolation, so the view and the tests cannot disagree about where a dot is.
+    /// Walks `start`, then each waypoint in order, then `end`, and interpolates within whichever
+    /// pair brackets the fraction — which is what makes a waypoint mean "be here at this moment"
+    /// rather than merely "pass through here at some point".
+    public static func position(of actor: ActorAnchor, at fraction: Double) -> FieldPoint {
+        let t = Swift.min(1, Swift.max(0, fraction))
+        var legs: [(point: FieldPoint, fraction: Double)] = [(actor.start, 0)]
+        legs.append(contentsOf: actor.path.map { ($0.point, $0.fraction) })
+        legs.append((actor.end, 1))
+
+        for index in 1..<legs.count {
+            let previous = legs[index - 1]
+            let next = legs[index]
+            guard t <= next.fraction else { continue }
+            let span = next.fraction - previous.fraction
+            guard span > 0 else { return next.point }
+            let local = (t - previous.fraction) / span
+            return FieldPoint(
+                yard: previous.point.yard + (next.point.yard - previous.point.yard) * local,
+                lateral: previous.point.lateral
+                    + (next.point.lateral - previous.point.lateral) * local
+            )
+        }
+        return actor.end
+    }
+
     /// What this player was doing, read off the outcome's recorded identities first and their
     /// position second.
     ///
@@ -354,33 +410,77 @@ public enum SnapAnchors {
         let firstDown = Swift.min(100, los + Double(play.situation.distance))
         let offenseSide = play.situation.possession
 
-        func anchors(_ players: [Player], side: Side, isOffense: Bool) -> [ActorAnchor] {
+        // Starts first, for everyone, because the catch spot depends on where the target lined up
+        // and the carrier's movement depends on the catch spot. Deriving it once here is what stops
+        // the ball and the man carrying it computing it separately and drifting apart.
+        struct Placement {
+            let player: Player
+            let side: Side
+            let isOffense: Bool
+            let start: FieldPoint
+            let role: SnapRole
+        }
+
+        func placements(_ players: [Player], side: Side, isOffense: Bool) -> [Placement] {
             var seen: [Position: Int] = [:]
             return players.map { player in
                 let index = seen[player.position, default: 0]
                 seen[player.position] = index + 1
-                let start = alignment(
-                    for: player.position, index: index, isOffense: isOffense, lineOfScrimmage: los
-                )
-                let assigned = role(
-                    for: player.id, position: player.position, outcome: outcome,
-                    isOffense: isOffense
-                )
-                return ActorAnchor(
-                    playerID: player.id,
+                return Placement(
+                    player: player,
                     side: side,
-                    role: assigned,
-                    start: start,
-                    end: destination(
-                        role: assigned, start: start, call: play.offensiveCall,
-                        lineOfScrimmage: los, endSpot: endSpot
+                    isOffense: isOffense,
+                    start: alignment(
+                        for: player.position, index: index, isOffense: isOffense,
+                        lineOfScrimmage: los
+                    ),
+                    role: role(
+                        for: player.id, position: player.position, outcome: outcome,
+                        isOffense: isOffense
                     )
                 )
             }
         }
 
-        let actors = anchors(offense, side: offenseSide, isOffense: true)
-            + anchors(defense, side: offenseSide.opponent, isOffense: false)
+        let placed = placements(offense, side: offenseSide, isOffense: true)
+            + placements(defense, side: offenseSide.opponent, isOffense: false)
+
+        // Where a completed pass is caught. Nil on anything that is not a pass to a named target,
+        // and the single source both the receiver's path and the ball's legs read.
+        let catchSpot: FieldPoint? = {
+            guard play.offensiveCall.playType == .pass,
+                  let targetID = outcome.targetID,
+                  // The target must actually have finished with the ball. A sack can name a target
+                  // for a throw that never left, and an interception names one who did not catch
+                  // it; neither is a completion, and drawing one would be inventing a catch.
+                  outcome.ballCarrierID == targetID,
+                  let target = placed.first(where: { $0.player.id == targetID })
+            else { return nil }
+            return FieldPoint(
+                yard: los + Double(play.offensiveCall.passDepth.airYards),
+                lateral: target.start.lateral
+            )
+        }()
+
+        let actors = placed.map { placement in
+            let movement = movement(
+                role: placement.role,
+                start: placement.start,
+                call: play.offensiveCall,
+                outcome: outcome,
+                lineOfScrimmage: los,
+                endSpot: endSpot,
+                catchSpot: catchSpot
+            )
+            return ActorAnchor(
+                playerID: placement.player.id,
+                side: placement.side,
+                role: placement.role,
+                start: placement.start,
+                end: movement.end,
+                path: movement.path
+            )
+        }
 
         let deciding = outcome.decidingMatchup.map {
             DecidingMark(
@@ -421,7 +521,7 @@ public enum SnapAnchors {
             actors: actors,
             ball: ballPath(
                 outcome: outcome, call: play.offensiveCall, actors: actors,
-                lineOfScrimmage: los, endSpot: endSpot
+                lineOfScrimmage: los, endSpot: endSpot, catchSpot: catchSpot
             ),
             deciding: deciding,
             foregroundIDs: foreground,
@@ -430,33 +530,71 @@ public enum SnapAnchors {
         )
     }
 
-    /// Where an actor finishes. Nothing moves without a field in the record naming why.
-    private static func destination(
+    /// Where an actor goes, and when. Nothing moves without a field in the record naming why.
+    private static func movement(
         role: SnapRole,
         start: FieldPoint,
         call: OffensiveCall,
+        outcome: SnapOutcome,
         lineOfScrimmage: Double,
-        endSpot: Double
-    ) -> FieldPoint {
+        endSpot: Double,
+        catchSpot: FieldPoint?
+    ) -> (end: FieldPoint, path: [ActorWaypoint]) {
         switch role {
         case .carrier:
-            return FieldPoint(yard: endSpot, lateral: start.lateral)
+            // A receiver who caught it runs *from the catch*, not from his stance. Holding the line
+            // until the ball arrives, then breaking for the end spot, is what keeps him under it —
+            // and the catch spot is the same value the ball's legs use, so they cannot disagree.
+            if let catchSpot, outcome.targetID == outcome.ballCarrierID {
+                return (
+                    FieldPoint(yard: endSpot, lateral: catchSpot.lateral),
+                    [ActorWaypoint(point: catchSpot, fraction: AnchorRules.releaseFraction)]
+                )
+            }
+            // A runner holds his stance until the handoff reaches him, then breaks for the end spot.
+            return (
+                FieldPoint(yard: endSpot, lateral: start.lateral),
+                [ActorWaypoint(point: start, fraction: AnchorRules.handoffFraction)]
+            )
+
+        case .passer:
+            // A quarterback who is also the ball carrier goes where the ball goes. `role` tests
+            // `passerID` before `ballCarrierID`, so this branch owns every case where they are the
+            // same man — sacked, tackled for a safety, or keeping it himself — and without it he
+            // stood at his drop point while the ball travelled off without him. Asking the record
+            // who has the ball is truer than listing the results in which he might.
+            guard outcome.ballCarrierID == outcome.passerID, outcome.ballCarrierID != nil else {
+                return (start, [])
+            }
+            return (
+                FieldPoint(yard: endSpot, lateral: start.lateral),
+                [ActorWaypoint(point: start, fraction: AnchorRules.snapFraction)]
+            )
+
         case .routeRunner:
             // Only on a pass. `passDepth` carries a default on every call, so reading it on a run
             // would send every receiver twelve yards downfield off a handoff — movement invented
             // from a field that meant nothing, which is exactly what `04` §9 prohibits.
-            guard call.playType == .pass else { return start }
+            guard call.playType == .pass else { return (start, []) }
             // Recorded depth, not an invented route shape: the call's air yards are the only
             // downfield distance the record actually holds.
-            return FieldPoint(
-                yard: lineOfScrimmage + Double(call.passDepth.airYards), lateral: start.lateral
+            return (
+                FieldPoint(
+                    yard: lineOfScrimmage + Double(call.passDepth.airYards), lateral: start.lateral
+                ),
+                []
             )
+
         case .rusher:
-            return FieldPoint(
-                yard: lineOfScrimmage - AnchorRules.rusherClosingYards, lateral: start.lateral
+            return (
+                FieldPoint(
+                    yard: lineOfScrimmage - AnchorRules.rusherClosingYards, lateral: start.lateral
+                ),
+                []
             )
-        case .passer, .blocker, .decoy, .coverage, .runFit, .kicker, .blockLeverage:
-            return start
+
+        case .blocker, .decoy, .coverage, .runFit, .kicker, .blockLeverage:
+            return (start, [])
         }
     }
 
@@ -466,7 +604,8 @@ public enum SnapAnchors {
         call: OffensiveCall,
         actors: [ActorAnchor],
         lineOfScrimmage: Double,
-        endSpot: Double
+        endSpot: Double,
+        catchSpot: FieldPoint?
     ) -> [BallSegment] {
         let centre = FieldPoint(yard: lineOfScrimmage, lateral: AnchorRules.centerLateral)
         func point(_ id: UUID?) -> FieldPoint? {
@@ -502,33 +641,48 @@ public enum SnapAnchors {
             }
             return path
 
-        case .sack, .kneel:
-            return [snap, BallSegment(
-                kind: .carry, from: passerSpot,
-                to: FieldPoint(yard: endSpot, lateral: passerSpot.lateral),
-                startFraction: AnchorRules.snapFraction, endFraction: 1
-            )]
-
-        case .gain, .touchdown, .fumbleLost, .fieldGoalGood, .fieldGoalMissed, .punt, .safety:
-            if call.playType == .pass, let targetSpot = point(outcome.targetID) {
-                let catchSpot = FieldPoint(
-                    yard: lineOfScrimmage + Double(call.passDepth.airYards),
-                    lateral: targetSpot.lateral
-                )
+        case .sack, .kneel, .gain, .touchdown, .fumbleLost, .fieldGoalGood, .fieldGoalMissed,
+             .punt, .safety:
+            // The caller's catch spot, not a second computation of it. Two derivations of the same
+            // point are two things that can drift, and drift is what put the receiver and the ball
+            // in different places.
+            if let catchSpot {
                 return [snap, BallSegment(
                     kind: .air, from: passerSpot, to: catchSpot,
                     startFraction: AnchorRules.snapFraction,
                     endFraction: AnchorRules.releaseFraction
                 ), BallSegment(
                     kind: .carry, from: catchSpot,
-                    to: FieldPoint(yard: endSpot, lateral: targetSpot.lateral),
+                    to: FieldPoint(yard: endSpot, lateral: catchSpot.lateral),
                     startFraction: AnchorRules.releaseFraction, endFraction: 1
                 )]
             }
-            let endLateral = point(outcome.ballCarrierID)?.lateral ?? AnchorRules.centerLateral
+            // A kick flies; nobody runs it. Calling that a carry would oblige a carrier to be under
+            // it at both ends, which is not what a field goal or a punt is.
+            if call.playType == .fieldGoal || call.playType == .punt {
+                return [snap, BallSegment(
+                    kind: .air, from: passerSpot,
+                    to: FieldPoint(yard: endSpot, lateral: AnchorRules.centerLateral),
+                    startFraction: AnchorRules.snapFraction, endFraction: 1
+                )]
+            }
+            // A handoff: the ball goes to the back, and only then is it carried. Modelling the
+            // transfer is what lets the carry leg mean "a player is running with this".
+            if let carrierSpot = point(outcome.ballCarrierID), outcome.ballCarrierID != outcome.passerID {
+                return [snap, BallSegment(
+                    kind: .handoff, from: passerSpot, to: carrierSpot,
+                    startFraction: AnchorRules.snapFraction,
+                    endFraction: AnchorRules.handoffFraction
+                ), BallSegment(
+                    kind: .carry, from: carrierSpot,
+                    to: FieldPoint(yard: endSpot, lateral: carrierSpot.lateral),
+                    startFraction: AnchorRules.handoffFraction, endFraction: 1
+                )]
+            }
+            // The passer kept it himself.
             return [snap, BallSegment(
                 kind: .carry, from: passerSpot,
-                to: FieldPoint(yard: endSpot, lateral: endLateral),
+                to: FieldPoint(yard: endSpot, lateral: passerSpot.lateral),
                 startFraction: AnchorRules.snapFraction, endFraction: 1
             )]
         }

@@ -1158,6 +1158,20 @@ public struct MatchDayReadModel: Sendable, Equatable {
     /// right thing to draw then is the static field the view already draws.
     public struct Playback: Sendable, Equatable {
         public struct ActorTrack: Sendable, Equatable {
+            /// Somewhere the actor is, and when. Without the fraction a dot cannot be made to arrive
+            /// somewhere at the moment the ball does, which is the whole reason these exist.
+            public struct Waypoint: Sendable, Equatable {
+                public let x: Double
+                public let y: Double
+                public let fraction: Double
+
+                public init(x: Double, y: Double, fraction: Double) {
+                    self.x = x
+                    self.y = y
+                    self.fraction = fraction
+                }
+            }
+
             public let stableID: String
             public let side: MatchSide
             /// Carried so an animated dot stays as identifiable as the static one beside it. A dot
@@ -1168,6 +1182,8 @@ public struct MatchDayReadModel: Sendable, Equatable {
             public let startY: Double
             public let endX: Double
             public let endY: Double
+            /// Ordered by fraction. Empty for the many actors the record says nothing more about.
+            public let waypoints: [Waypoint]
             public let role: String
 
             public init(
@@ -1178,6 +1194,7 @@ public struct MatchDayReadModel: Sendable, Equatable {
                 startY: Double,
                 endX: Double,
                 endY: Double,
+                waypoints: [Waypoint] = [],
                 role: String
             ) {
                 self.stableID = stableID
@@ -1187,6 +1204,7 @@ public struct MatchDayReadModel: Sendable, Equatable {
                 self.startY = startY
                 self.endX = endX
                 self.endY = endY
+                self.waypoints = waypoints
                 self.role = role
             }
         }

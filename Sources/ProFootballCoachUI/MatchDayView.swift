@@ -287,8 +287,9 @@ public struct MatchDayView: View {
         isForeground: Bool,
         size: CGSize
     ) -> some View {
-        let x = track.startX + (track.endX - track.startX) * fraction
-        let y = track.startY + (track.endY - track.startY) * fraction
+        let spot = Self.position(of: track, at: fraction)
+        let x = spot.x
+        let y = spot.y
         return actorDisc(
             number: track.uniformNumber,
             isHome: track.side == .home,
@@ -296,6 +297,37 @@ public struct MatchDayView: View {
         )
         .position(x: size.width * CGFloat(x / 120), y: size.height * CGFloat(y))
         .accessibilityHidden(true)
+    }
+
+    /// Where a dot is at a point of the playback.
+    ///
+    /// Walks start, then each waypoint in order, then end, and interpolates within whichever pair
+    /// brackets the fraction — the same rule `SnapAnchors.position(of:at:)` applies engine-side, so
+    /// a man and the ball he is carrying cannot end up drawn in different places. A straight
+    /// start-to-end interpolation is what let a receiver glide to the end spot while the ball went
+    /// via the catch.
+    static func position(
+        of track: MatchDayReadModel.Playback.ActorTrack,
+        at fraction: Double
+    ) -> (x: Double, y: Double) {
+        let t = Swift.min(1, Swift.max(0, fraction))
+        var legs: [(x: Double, y: Double, fraction: Double)] = [(track.startX, track.startY, 0)]
+        legs.append(contentsOf: track.waypoints.map { ($0.x, $0.y, $0.fraction) })
+        legs.append((track.endX, track.endY, 1))
+
+        for index in 1..<legs.count {
+            let previous = legs[index - 1]
+            let next = legs[index]
+            guard t <= next.fraction else { continue }
+            let span = next.fraction - previous.fraction
+            guard span > 0 else { return (next.x, next.y) }
+            let local = (t - previous.fraction) / span
+            return (
+                previous.x + (next.x - previous.x) * local,
+                previous.y + (next.y - previous.y) * local
+            )
+        }
+        return (track.endX, track.endY)
     }
 
     /// One actor's mark, in the two sizes `04` §9 asks for.
