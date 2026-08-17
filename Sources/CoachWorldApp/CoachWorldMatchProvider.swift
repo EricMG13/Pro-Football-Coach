@@ -179,8 +179,12 @@ public extension CoachWorldReadModelProvider {
                     intentID: .init(rawValue: prefix + "advance")
                 )
             case .speed:
-                return .init(id: id, value: "1×", isEnabled: false, isSelected: false,
-                             intentID: .init(rawValue: prefix + id.rawValue))
+                // Live as of the G-06 slice. Playback rate is presentation, so the view owns the
+                // displayed value and the intent only records that a cycle happened.
+                return .init(
+                    id: id, value: "Speed", isEnabled: !session.completed, isSelected: false,
+                    intentID: .init(rawValue: prefix + id.rawValue)
+                )
             case .pause:
                 return .init(
                     id: id,
