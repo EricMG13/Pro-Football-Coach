@@ -139,7 +139,7 @@ public struct DepthChartView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("(option.title). (option.consequence)")
+                    .accessibilityLabel("\(option.title). \(option.consequence)")
                     .accessibilityAddTraits(selectedID == option.id ? .isSelected : [])
                 }
             }
