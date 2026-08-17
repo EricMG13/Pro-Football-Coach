@@ -234,3 +234,69 @@ Stated plainly rather than papered over:
    cover game outcomes only. If the abstracted recruiting AI produces different class quality than a
    detailed one would, the league drifts over 20 seasons. The soak's churn assertion is a partial
    proxy; a proper band is unspecified work.
+
+---
+
+## 9. The anchor contract (G-06)
+
+`04` §9 requires a match view that animates what the engine recorded and cannot invent movement.
+This section is the engine half of that requirement: what an anchor set contains, what makes it
+legal, and what it may never contradict.
+
+### 9.1 What an anchor set is
+
+A **sparse** spatial description of one already-resolved snap, derived from its `PlayRecord`. It
+holds twenty-two actor anchors, a ball polyline, the deciding matchup, a foreground list, a playback
+duration and an accessible sentence. It holds no probabilities, no resolution and no route that the
+record does not justify.
+
+Sparse is the operative word. Most actors on most snaps have a start and an end and nothing between
+them, because the record says nothing more about them. A dense anchor set would have to be invented,
+and `04` §9 forbids that.
+
+### 9.2 Coordinate space
+
+Anchors are **offense-relative**. `yard` runs 0 to 100 from the offence's own goal line, matching
+`Situation.yardLine`. `lateral` runs 0 to 1 across the field.
+
+The engine never learns which way the offence is facing. Direction is presentation, it is recorded
+on the read model as `MatchFieldDirection`, and the provider applies it when converting to the drawn
+field's absolute 0-to-120 space — which carries ten yards of end zone at each end. This is what gives
+`04` §9's "the view never guesses from home/away colour" exactly one place to live.
+
+### 9.3 Legality
+
+An anchor set is legal when all of the following hold. Each is a test.
+
+1. **Pure.** A function of the `PlayRecord` and the two player lists, with no random source, no clock
+   and no engine reference. The same input yields a byte-identical encoding, in any process.
+2. **Consistent with the box score.** `endSpot - lineOfScrimmage` equals `outcome.yards`. The carrier
+   named in the ball polyline is `outcome.ballCarrierID`. An incompletion has no carry segment. A
+   sack ends behind the line.
+3. **Complete.** Given eleven players a side, exactly twenty-two actor anchors, and at most three
+   foregrounded, per `04` §9.
+4. **On the field.** Every point lies within the coordinate space of §9.2.
+5. **Total.** Every `SnapResult` yields a legal set. There is no input a resolved snap can present
+   that has no anchor set, so construction cannot fail.
+
+Clause 5 is why the foreground cap is met by construction rather than by validation, and why
+`FieldPoint` clamps in its initialiser. A contract that can reject a resolved snap is a contract that
+can leave the view with nothing to draw for something that demonstrably happened.
+
+### 9.4 Alignment
+
+Per-snap alignment is not recorded, and recording it would be a calibration problem of its own. The
+starts come from a fixed template keyed on `Position`, and the ends from the identities the outcome
+already records — `passerID`, `targetID`, `ballCarrierID`, and the deciding matchup's two players.
+
+`04` §9 permits this in terms: route-tree and formation notation are drawn conventions of the sport
+and not protected expression. It continues to refuse any specific playbook's diagrams, and nothing
+here reproduces one.
+
+The template is engine-side rather than view-side because it is part of what makes an anchor set
+deterministic and testable. A template living in the view would be geometry no test could see.
+
+### 9.5 Bound
+
+Nothing is persisted. An anchor set is derived on demand from a `PlayRecord` that the save already
+holds under D7's current-game play-by-play bound, so G-06 adds no save growth at all.

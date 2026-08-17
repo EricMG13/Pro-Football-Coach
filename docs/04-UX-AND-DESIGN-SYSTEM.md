@@ -824,9 +824,11 @@ Match is the strongest game-authenticity gate.
   formation dots per §6.5 #18's role tokens, the line-of-scrimmage and first-down rules, and the
   §6.6 broadcast marks. Route-tree and formation notation are drawn conventions of the sport, not
   protected expression; a specific playbook's diagrams are someone's expression and are never
-  reproduced. Every fixed diagram mark carries §6.2's accessible-sentence equivalent. Until G-06
-  supplies recorded routes, sheets and views draw play art in target form only, labelled "once
-  G-06 lands".
+  reproduced. Every fixed diagram mark carries §6.2's accessible-sentence equivalent.
+  **G-06's anchor contract is `03` §9, added 2026-08-17.** Match Day draws play art from a recorded
+  anchor set: alignment starts come from the §9.4 position template, and movement ends come from the
+  identities the outcome records. Sheets that have not yet adopted the anchor set still draw play art
+  in target form only.
 - Offense direction is recorded data. It owns defended end-zone labels and whether the first-down
   line lies left or right of the line of scrimmage; the view never guesses from home/away colour.
 - All 22 actors are represented; no more than three are visually foregrounded at once.
