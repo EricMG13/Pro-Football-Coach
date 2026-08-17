@@ -327,4 +327,202 @@ public enum SnapAnchors {
         guard let winner = roster.first(where: { $0.id == winnerID }) else { return head + "." }
         return "\(head). \(winner.lastName) won \(duel)."
     }
+
+    /// Turns one recorded snap into its anchor set.
+    ///
+    /// Total by construction: every branch below terminates in a set, so there is no resolved snap
+    /// that has no choreography. `03` §9.3 clause 5.
+    ///
+    /// The caller supplies the eleven on the field for each side. `MatchSessionState` holds more
+    /// than eleven per side, so the caller takes the prefix, exactly as the provider already does.
+    public static func choreograph(
+        play: PlayRecord,
+        offense: [Player],
+        defense: [Player]
+    ) -> SnapAnchorSet {
+        let outcome = play.outcome
+        let los = Double(play.situation.yardLine)
+        // Deliberately not clamped. `03` §9.3 clause 2 is unconditional — the end spot minus the
+        // line of scrimmage must equal the recorded yardage — and a clamp would silently break it
+        // exactly when a play reached a goal line. Clause 4 is about `FieldPoint`s, and those clamp
+        // themselves, so the drawing stays on the field either way.
+        let endSpot = los + Double(outcome.yards)
+        let firstDown = Swift.min(100, los + Double(play.situation.distance))
+        let offenseSide = play.situation.possession
+
+        func anchors(_ players: [Player], side: Side, isOffense: Bool) -> [ActorAnchor] {
+            var seen: [Position: Int] = [:]
+            return players.map { player in
+                let index = seen[player.position, default: 0]
+                seen[player.position] = index + 1
+                let start = alignment(
+                    for: player.position, index: index, side: side, lineOfScrimmage: los
+                )
+                let assigned = role(
+                    for: player.id, position: player.position, outcome: outcome,
+                    isOffense: isOffense
+                )
+                return ActorAnchor(
+                    playerID: player.id,
+                    side: side,
+                    role: assigned,
+                    start: start,
+                    end: destination(
+                        role: assigned, start: start, call: play.offensiveCall,
+                        lineOfScrimmage: los, endSpot: endSpot
+                    )
+                )
+            }
+        }
+
+        let actors = anchors(offense, side: offenseSide, isOffense: true)
+            + anchors(defense, side: offenseSide.opponent, isOffense: false)
+
+        let deciding = outcome.decidingMatchup.map {
+            DecidingMark(
+                kind: $0.kind, attackerID: $0.attackerID, defenderID: $0.defenderID,
+                attackerWon: $0.attackerWon
+            )
+        }
+
+        // Only actors actually on the field may be foregrounded. A deciding matchup can name a
+        // player outside the eleven the caller passed — the resolver sees the whole personnel group
+        // — and `MatchDayReadModel` throws `unknownForegroundActor` on an identifier it cannot find.
+        // Filtering here rather than letting the boundary reject it is what keeps this total.
+        let onField = Set(actors.map(\.playerID))
+        var foreground: [UUID] = []
+        func foregroundIfPresent(_ id: UUID?) {
+            guard let id, onField.contains(id), !foreground.contains(id) else { return }
+            foreground.append(id)
+        }
+        foregroundIfPresent(deciding?.attackerID)
+        foregroundIfPresent(deciding?.defenderID)
+        foregroundIfPresent(outcome.ballCarrierID)
+        // prefix rather than validation: `04` §9's cap is met by construction, which is the other
+        // half of what keeps this function total.
+        foreground = Array(foreground.prefix(AnchorRules.maximumForegrounded))
+
+        let duration = Swift.min(
+            AnchorRules.maximumPlaybackSeconds,
+            Swift.max(
+                AnchorRules.minimumPlaybackSeconds,
+                Double(outcome.secondsElapsed) * AnchorRules.clockToPlaybackRatio
+            )
+        )
+
+        return SnapAnchorSet(
+            lineOfScrimmage: los,
+            firstDownLine: firstDown,
+            endSpot: endSpot,
+            actors: actors,
+            ball: ballPath(
+                outcome: outcome, call: play.offensiveCall, actors: actors,
+                lineOfScrimmage: los, endSpot: endSpot
+            ),
+            deciding: deciding,
+            foregroundIDs: foreground,
+            durationSeconds: duration,
+            sentence: sentence(for: outcome, offense: offense, defense: defense)
+        )
+    }
+
+    /// Where an actor finishes. Nothing moves without a field in the record naming why.
+    private static func destination(
+        role: SnapRole,
+        start: FieldPoint,
+        call: OffensiveCall,
+        lineOfScrimmage: Double,
+        endSpot: Double
+    ) -> FieldPoint {
+        switch role {
+        case .carrier:
+            return FieldPoint(yard: endSpot, lateral: start.lateral)
+        case .routeRunner:
+            // Recorded depth, not an invented route shape: the call's air yards are the only
+            // downfield distance the record actually holds.
+            return FieldPoint(
+                yard: lineOfScrimmage + Double(call.passDepth.airYards), lateral: start.lateral
+            )
+        case .rusher:
+            return FieldPoint(
+                yard: lineOfScrimmage - AnchorRules.rusherClosingYards, lateral: start.lateral
+            )
+        case .passer, .blocker, .decoy, .coverage, .runFit, .kicker, .blockLeverage:
+            return start
+        }
+    }
+
+    /// The ball's journey, as legs with when each happens.
+    private static func ballPath(
+        outcome: SnapOutcome,
+        call: OffensiveCall,
+        actors: [ActorAnchor],
+        lineOfScrimmage: Double,
+        endSpot: Double
+    ) -> [BallSegment] {
+        let centre = FieldPoint(yard: lineOfScrimmage, lateral: AnchorRules.centerLateral)
+        func point(_ id: UUID?) -> FieldPoint? {
+            guard let id else { return nil }
+            return actors.first(where: { $0.playerID == id })?.start
+        }
+        let passerSpot = point(outcome.passerID)
+            ?? FieldPoint(
+                yard: lineOfScrimmage - AnchorRules.passerDepth,
+                lateral: AnchorRules.centerLateral
+            )
+        let snap = BallSegment(
+            kind: .snap, from: centre, to: passerSpot,
+            startFraction: 0, endFraction: AnchorRules.snapFraction
+        )
+
+        switch outcome.result {
+        case .incompletion, .interception:
+            let targetLateral = point(outcome.targetID)?.lateral ?? AnchorRules.centerLateral
+            let landing = FieldPoint(
+                yard: lineOfScrimmage + Double(call.passDepth.airYards), lateral: targetLateral
+            )
+            var path = [snap, BallSegment(
+                kind: .air, from: passerSpot, to: landing,
+                startFraction: AnchorRules.snapFraction, endFraction: AnchorRules.releaseFraction
+            )]
+            if outcome.result == .interception {
+                path.append(BallSegment(
+                    kind: .loose, from: landing,
+                    to: FieldPoint(yard: endSpot, lateral: targetLateral),
+                    startFraction: AnchorRules.releaseFraction, endFraction: 1
+                ))
+            }
+            return path
+
+        case .sack, .kneel:
+            return [snap, BallSegment(
+                kind: .carry, from: passerSpot,
+                to: FieldPoint(yard: endSpot, lateral: passerSpot.lateral),
+                startFraction: AnchorRules.snapFraction, endFraction: 1
+            )]
+
+        case .gain, .touchdown, .fumbleLost, .fieldGoalGood, .fieldGoalMissed, .punt, .safety:
+            if call.playType == .pass, let targetSpot = point(outcome.targetID) {
+                let catchSpot = FieldPoint(
+                    yard: lineOfScrimmage + Double(call.passDepth.airYards),
+                    lateral: targetSpot.lateral
+                )
+                return [snap, BallSegment(
+                    kind: .air, from: passerSpot, to: catchSpot,
+                    startFraction: AnchorRules.snapFraction,
+                    endFraction: AnchorRules.releaseFraction
+                ), BallSegment(
+                    kind: .carry, from: catchSpot,
+                    to: FieldPoint(yard: endSpot, lateral: targetSpot.lateral),
+                    startFraction: AnchorRules.releaseFraction, endFraction: 1
+                )]
+            }
+            let endLateral = point(outcome.ballCarrierID)?.lateral ?? AnchorRules.centerLateral
+            return [snap, BallSegment(
+                kind: .carry, from: passerSpot,
+                to: FieldPoint(yard: endSpot, lateral: endLateral),
+                startFraction: AnchorRules.snapFraction, endFraction: 1
+            )]
+        }
+    }
 }
