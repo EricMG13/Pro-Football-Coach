@@ -7,7 +7,13 @@ public struct MatchDayView: View {
     public let onInterruption: (CoachWorldIntentID) -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showsEvidence = false
+    @State private var playbackStart: Date?
+    /// Stops the timeline once the snap has finished. Without it `TimelineView(.animation)` keeps
+    /// redrawing for as long as Match Day is on screen, which is most of a game.
+    @State private var playbackComplete = false
+    @State private var speedIndex = 0
 
     public init(
         model: MatchDayReadModel,
@@ -23,6 +29,20 @@ public struct MatchDayView: View {
 
     private var palette: CoachWorldTokens.Palette {
         CoachWorldTokens.dark
+    }
+
+    private var speedMultiplier: Double {
+        MatchMetric.speedMultipliers[speedIndex % MatchMetric.speedMultipliers.count]
+    }
+
+    /// How far through the recorded snap we are, 0 to 1.
+    ///
+    /// Reaching 1 leaves every dot at its end position, which is the pre-snap state for the next
+    /// play — so the animation settles rather than snapping back.
+    private func progress(at date: Date, duration: Double) -> Double {
+        guard let playbackStart, duration > 0 else { return 1 }
+        let elapsed = date.timeIntervalSince(playbackStart) * speedMultiplier
+        return Swift.min(1, Swift.max(0, elapsed / duration))
     }
 
     public var body: some View {
@@ -182,8 +202,30 @@ public struct MatchDayView: View {
                     color: palette.fieldLive.color,
                     label: "First-down line"
                 )
-                ForEach(model.actors, id: \.stableID) { actor in
-                    actorMark(actor, size: size)
+                if let playback = model.playback, !reduceMotion {
+                    TimelineView(
+                        .animation(minimumInterval: MatchMetric.playbackTick,
+                                   paused: playbackComplete)
+                    ) { timeline in
+                        let t = progress(at: timeline.date, duration: playback.durationSeconds)
+                        ZStack(alignment: .topLeading) {
+                            ForEach(playback.actors, id: \.stableID) { track in
+                                animatedMark(track, at: t, size: size)
+                            }
+                            ballMark(playback, at: t, size: size)
+                        }
+                        // Pinned to the reader's size. `.position` resolves against its container's
+                        // bounds, and this ZStack sits a level deeper than `actorMark` does, so
+                        // leaving it to size itself would put every dot in the wrong place.
+                        .frame(width: size.width, height: size.height)
+                    }
+                } else {
+                    // Reduce Motion, and the state before the first snap of a game. `04` §7 asks for
+                    // discrete state changes rather than fast travel, so this is a separate path and
+                    // not an animation with its duration set to zero.
+                    ForEach(model.actors, id: \.stableID) { actor in
+                        actorMark(actor, size: size)
+                    }
                 }
             }
         }
@@ -191,6 +233,54 @@ public struct MatchDayView: View {
         .background(palette.fieldTurf.color)
         .environment(\.layoutDirection, .leftToRight)
         .accessibilitySortPriority(80)
+        .task(id: model.recordedOutcomeID) {
+            guard let playback = model.playback, !reduceMotion else {
+                playbackComplete = true
+                return
+            }
+            playbackStart = Date()
+            playbackComplete = false
+            try? await Task.sleep(for: .seconds(playback.durationSeconds / speedMultiplier))
+            playbackComplete = true
+        }
+    }
+
+    /// One dot, between where it started and where the record says it finished.
+    private func animatedMark(
+        _ track: MatchDayReadModel.Playback.ActorTrack,
+        at fraction: Double,
+        size: CGSize
+    ) -> some View {
+        let x = track.startX + (track.endX - track.startX) * fraction
+        let y = track.startY + (track.endY - track.startY) * fraction
+        let isForeground = model.foregroundActorIDs.contains(track.stableID)
+        return Circle()
+            .fill(isForeground ? palette.fieldLive.color : palette.fieldLine.color)
+            .frame(width: MatchMetric.actorSize, height: MatchMetric.actorSize)
+            .position(x: size.width * CGFloat(x / 120), y: size.height * CGFloat(y))
+            .accessibilityHidden(true)
+    }
+
+    /// The ball, on whichever leg of its journey is current.
+    private func ballMark(
+        _ playback: MatchDayReadModel.Playback,
+        at fraction: Double,
+        size: CGSize
+    ) -> some View {
+        let leg = playback.ball.last { $0.startFraction <= fraction } ?? playback.ball.first
+        return Group {
+            if let leg {
+                let span = Swift.max(MatchMetric.minimumLegSpan, leg.endFraction - leg.startFraction)
+                let local = Swift.min(1, Swift.max(0, (fraction - leg.startFraction) / span))
+                let x = leg.fromX + (leg.toX - leg.fromX) * local
+                let y = leg.fromY + (leg.toY - leg.fromY) * local
+                Circle()
+                    .fill(palette.fieldAnnotation.color)
+                    .frame(width: MatchMetric.ballMarkSize, height: MatchMetric.ballMarkSize)
+                    .position(x: size.width * CGFloat(x / 120), y: size.height * CGFloat(y))
+            }
+        }
+        .accessibilityHidden(true)
     }
 
     private var fieldSurface: some View {
@@ -309,6 +399,14 @@ public struct MatchDayView: View {
             Text(model.causalCommentary)
                 .font(CoachWorldTokens.TypeRole.body.weight(.bold))
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+            // The snap's accessible sentence. Under Reduce Motion this carries the narration the
+            // animation would otherwise have carried, per `04` §9's per-snap equivalent.
+            if let sentence = model.playback?.sentence {
+                Text(sentence)
+                    .font(CoachWorldTokens.TypeRole.caption)
+                    .foregroundStyle(palette.contentSecondary.color)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+            }
             Spacer(minLength: .zero)
             if !dynamicTypeSize.isAccessibilitySize, let statusMessage {
                 Text(statusMessage)
@@ -339,11 +437,17 @@ public struct MatchDayView: View {
 
     private func controlButton(_ control: MatchDayReadModel.ControlState) -> some View {
         let presentation = controlPresentation(control.id)
-        let accessibilityLabel = control.value.map {
+        // Playback rate is presentation, so the view owns the displayed value for this one control
+        // and the intent only records that a cycle happened.
+        let displayedValue = control.id == .speed ? "\(Int(speedMultiplier))x" : control.value
+        let accessibilityLabel = displayedValue.map {
             "\(presentation.title), \($0)"
         } ?? presentation.title
 
         return Button {
+            if control.id == .speed {
+                speedIndex = (speedIndex + 1) % MatchMetric.speedMultipliers.count
+            }
             onControl(control.intentID)
         } label: {
             VStack(spacing: .zero) {
@@ -352,7 +456,7 @@ public struct MatchDayView: View {
                     .accessibilityHidden(true)
                 Text(presentation.title)
                     .font(.caption.weight(.bold))
-                if let value = control.value { Text(value).font(.caption) }
+                if let value = displayedValue { Text(value).font(.caption) }
             }
             .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
         }
@@ -547,4 +651,12 @@ private enum MatchMetric {
     static let accessibleScoreScale: CGFloat = 0.5
     static let hashHalfHeight: CGFloat = 3
     static let hashYFractions: [CGFloat] = [0.36, 0.64]
+    static let speedMultipliers: [Double] = [1, 2, 4]
+    static let ballMarkSize: CGFloat = 8
+    /// 60 Hz. D4's frame ceiling is 16.7 ms, and asking the timeline for more than that is asking
+    /// for frames the budget does not have.
+    static let playbackTick: Double = 1.0 / 60.0
+    /// Guards the division that maps playback progress onto one ball leg. A zero-length leg is
+    /// legal in the contract, and dividing by it would produce a position of nan.
+    static let minimumLegSpan: Double = 0.0001
 }
