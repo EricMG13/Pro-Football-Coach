@@ -72,7 +72,7 @@ func runCollegeStateTests() {
     suite("College management state") {
         test("eligibility construction rejects counters outside their supported bounds") {
             let process = Process()
-            process.executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
+            process.executableURL = currentExecutableURL()
             process.arguments = ["--college-state"]
             var environment = ProcessInfo.processInfo.environment
             environment["INVALID_ELIGIBILITY_CONSTRUCTION_PROBE"] = "1"

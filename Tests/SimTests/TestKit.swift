@@ -4,6 +4,21 @@ import Foundation
 // Command Line Tools (both live inside Xcode). ~50 lines, real exit codes, zero deps.
 // Swap for swift-testing if the project ever builds on a machine with full Xcode.
 
+/// Resolves the path of the running test binary, for tests that re-exec themselves
+/// (via `Process`) to assert a crash/fail-fast exit code.
+///
+/// `CommandLine.arguments[0]` is whatever argv the parent used to launch this process, not
+/// necessarily an absolute, launchable path. `swift run --scratch-path <dir> -c release SimTests`
+/// passes a path relative to the invoking cwd, so re-launching that string from a child `Process`
+/// fails with "the file doesn't exist" whenever the scratch path isn't SwiftPM's default.
+/// `Bundle.main.executablePath` reads the path dyld actually loaded, sidestepping argv entirely.
+func currentExecutableURL() -> URL {
+    guard let path = Bundle.main.executablePath else {
+        fatalError("could not resolve the running executable's own path")
+    }
+    return URL(fileURLWithPath: path)
+}
+
 enum TestKit {
     nonisolated(unsafe) private static var failures: [String] = []
     nonisolated(unsafe) private static var checks = 0

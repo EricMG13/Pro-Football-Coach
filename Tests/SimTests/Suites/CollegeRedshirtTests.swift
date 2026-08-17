@@ -442,7 +442,7 @@ func runCollegeRedshirtTests() {
                 "--redshirt-invalid-pro-career-games-probe",
             ] {
                 let process = Process()
-                process.executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
+                process.executableURL = currentExecutableURL()
                 process.arguments = [argument]
                 process.standardOutput = Pipe()
                 process.standardError = Pipe()
