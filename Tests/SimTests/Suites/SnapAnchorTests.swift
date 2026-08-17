@@ -252,7 +252,8 @@ func runSnapAnchorTests() {
 
         test("a playback track carries absolute field positions") {
             let track = MatchDayReadModel.Playback.ActorTrack(
-                stableID: "a", startX: 40, startY: 0.3, endX: 52, endY: 0.3, role: "carrier"
+                stableID: "a", side: .home, uniformNumber: "12",
+                startX: 40, startY: 0.3, endX: 52, endY: 0.3, role: "carrier"
             )
             expectEqual(track.startX, 40)
             expectEqual(track.endX, 52)

@@ -1159,6 +1159,11 @@ public struct MatchDayReadModel: Sendable, Equatable {
     public struct Playback: Sendable, Equatable {
         public struct ActorTrack: Sendable, Equatable {
             public let stableID: String
+            public let side: MatchSide
+            /// Carried so an animated dot stays as identifiable as the static one beside it. A dot
+            /// that loses its number and its colour the moment it starts moving tells the coach
+            /// less at exactly the moment they are looking hardest.
+            public let uniformNumber: String
             public let startX: Double
             public let startY: Double
             public let endX: Double
@@ -1167,6 +1172,8 @@ public struct MatchDayReadModel: Sendable, Equatable {
 
             public init(
                 stableID: String,
+                side: MatchSide,
+                uniformNumber: String,
                 startX: Double,
                 startY: Double,
                 endX: Double,
@@ -1174,6 +1181,8 @@ public struct MatchDayReadModel: Sendable, Equatable {
                 role: String
             ) {
                 self.stableID = stableID
+                self.side = side
+                self.uniformNumber = uniformNumber
                 self.startX = startX
                 self.startY = startY
                 self.endX = endX

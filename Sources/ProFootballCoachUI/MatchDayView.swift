@@ -271,9 +271,25 @@ public struct MatchDayView: View {
     ) -> some View {
         let x = track.startX + (track.endX - track.startX) * fraction
         let y = track.startY + (track.endY - track.startY) * fraction
-        return Circle()
-            .fill(isForeground ? palette.fieldLive.color : palette.fieldLine.color)
+        // Deliberately the same furniture as `actorMark`: number, team fill, foreground stroke. A
+        // dot that shed its identity the moment it started moving would tell the coach least at the
+        // moment they are looking hardest.
+        return Text(track.uniformNumber)
+            .font(.system(size: CoachWorldTokens.TypeRole.authoredFloor, weight: .black))
+            .foregroundStyle(
+                track.side == .home ? palette.page.color : palette.contentPrimary.color
+            )
             .frame(width: MatchMetric.actorSize, height: MatchMetric.actorSize)
+            .background(track.side == .home ? palette.collegeIdentity.color : palette.raised.color)
+            .overlay {
+                Circle().stroke(
+                    isForeground ? palette.fieldLive.color : palette.fieldLine.color,
+                    lineWidth: isForeground
+                        ? MatchMetric.foregroundStroke
+                        : CoachWorldTokens.Shape.hairline
+                )
+            }
+            .clipShape(Circle())
             .position(x: size.width * CGFloat(x / 120), y: size.height * CGFloat(y))
             .accessibilityHidden(true)
     }

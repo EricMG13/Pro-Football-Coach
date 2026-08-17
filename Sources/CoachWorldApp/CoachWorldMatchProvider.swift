@@ -65,6 +65,7 @@ public extension CoachWorldReadModelProvider {
                 // The revision, not the drive index: it increments on every snap, which is the
                 // grain the playback clock has to restart on.
                 stableID: "\(fixtureID.uuidString)-\(session.revision)",
+                numbers: homeNumbers.merging(awayNumbers) { first, _ in first },
                 offenseDirection: .leftToRight
             )
         }
@@ -109,6 +110,7 @@ public extension CoachWorldReadModelProvider {
     static func playback(
         from set: SnapAnchorSet,
         stableID: String,
+        numbers: [UUID: Int] = [:],
         offenseDirection: MatchFieldDirection
     ) -> MatchDayReadModel.Playback {
         // Ten yards of end zone sit at each end of the 120-yard drawn field, so an offense-relative
@@ -124,6 +126,8 @@ public extension CoachWorldReadModelProvider {
             actors: set.actors.map { actor in
                 MatchDayReadModel.Playback.ActorTrack(
                     stableID: actor.playerID.uuidString,
+                    side: actor.side == .home ? .home : .away,
+                    uniformNumber: numbers[actor.playerID].map(String.init) ?? "",
                     startX: x(actor.start.yard),
                     startY: actor.start.lateral,
                     endX: x(actor.end.yard),
