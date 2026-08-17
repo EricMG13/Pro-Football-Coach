@@ -29,31 +29,31 @@ public struct ProOffseasonView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
-                if let statusMessage {
-                    Text(statusMessage)
-                        .font(CoachWorldTokens.TypeRole.callout)
-                        .foregroundStyle(palette.stateWarning.color)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                summary
-                if !model.actions.isEmpty {
-                    section("MARKET ACTIONS") {
-                        ForEach(model.actions) { row in
-                            actionButton(row)
+        CoachWorldFloodlitStage(palette: palette) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
+                    if let statusMessage {
+                        Text(statusMessage)
+                            .font(CoachWorldTokens.TypeRole.callout)
+                            .foregroundStyle(palette.stateWarning.color)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    summary
+                    if !model.actions.isEmpty {
+                        section("MARKET ACTIONS") {
+                            ForEach(model.actions) { row in
+                                actionButton(row)
+                            }
                         }
                     }
+                    prospectsSection
+                    freeAgentsSection
+                    waiversSection
                 }
-                prospectsSection
-                freeAgentsSection
-                waiversSection
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .accessibilitySortPriority(100)
     }
 
@@ -140,7 +140,11 @@ public struct ProOffseasonView: View {
                     }
                     .padding(CoachWorldTokens.Space.sm)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(palette.raised.color.opacity(0.7))
+                    .coachWorldFloodlitPanel(
+                        fill: palette.raised.color,
+                        border: palette.contentQuiet.color
+                            .opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+                    )
                     .accessibilityElement(children: .contain)
                     .accessibilityLabel(
                         "\(prospect.name), \(prospect.position), "
@@ -209,7 +213,10 @@ public struct ProOffseasonView: View {
         }
         .padding(CoachWorldTokens.Space.sm)
         .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-        .background(palette.raised.color.opacity(0.7))
+        .coachWorldFloodlitPanel(
+            fill: palette.raised.color,
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+        )
     }
 
     private func actionButton(_ action: ProOffseasonReadModel.ActionRow) -> some View {
@@ -254,10 +261,7 @@ public struct ProOffseasonView: View {
     }
 
     private func emptyText(_ text: String) -> some View {
-        Text(text)
-            .font(CoachWorldTokens.TypeRole.body)
-            .foregroundStyle(palette.contentSecondary.color)
-            .fixedSize(horizontal: false, vertical: true)
+        CoachWorldSystemState(.empty(text), palette: palette)
     }
 
     private var phaseLabel: String {
