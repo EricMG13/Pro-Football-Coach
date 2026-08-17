@@ -2017,4 +2017,73 @@ func runContractTests() {
                    "an unknown error must not print its own type name to the player")
         }
     }
+
+    // Task 12: make dark appearance and honest unavailable-state handling authoritative at both
+    // app roots. `career(_:)` used to repeat `if let model = store.X { View(...) }` with no `else`
+    // once per registered screen — a nil model rendered nothing at all, not even navigation chrome.
+    suite("Floodlit root: dark commitment and no silent-blank routes") {
+        test("the shipped root commits to dark at its own body and owns the surface() helper") {
+            let root = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
+            expect(!root.isEmpty, "CoachWorldAppRootView.swift must exist")
+            expect(root.contains(".preferredColorScheme(.dark)"),
+                   "the shipped root must commit to dark underneath the per-family Floodlit wraps, " +
+                       "as a guardrail for branches (like an unavailable surface) that carry no " +
+                       "Floodlit stage of their own")
+            expect(root.contains("private func surface<Model"),
+                   "the shared surface(_:screen:content:) helper must exist")
+        }
+
+        test("career() routes every optional read model through surface(), not silent blanks") {
+            let root = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
+            guard let start = root.range(
+                of: "private func career(_ store: CoachWorldStore) -> some View {"
+            ), let end = root.range(
+                of: "\n    private func navigate(",
+                range: start.upperBound..<root.endIndex
+            ) else {
+                expect(false, "could not locate career(_:) to scan it")
+                return
+            }
+            let careerBody = String(root[start.upperBound..<end.lowerBound])
+            expect(!careerBody.contains("if let model = store."),
+                   "career() must route every optional read model through " +
+                       "surface(_:screen:content:) — a reintroduced \"if let model = store.X {\" " +
+                       "with no else silently renders nothing for that screen")
+            expect(careerBody.contains("surface(store."),
+                   "career() must actually use the surface(_:screen:content:) helper somewhere")
+            expect(careerBody.contains("default:"),
+                   "career() must keep an exhaustive default fallback for any screen with no " +
+                       "explicit case")
+            // Enumerated from CoachWorldScreenID.allCases rather than hand-copied, per
+            // AccessibilityReflowTests.swift's established discipline. A handful of registry
+            // entries (the title screen, new-career setup, settings, a sheet-presented profile)
+            // are legitimately reached outside this switch, so the bar is a large majority, not
+            // every last case — this exists to fail loudly if a future edit strips most of
+            // career()'s branches, not to pin an exact count.
+            let explicitlyRouted = CoachWorldScreenID.allCases.filter {
+                careerBody.contains("case .\(String(describing: $0)):")
+            }
+            expect(explicitlyRouted.count >= 50,
+                   "career() explicitly branches on only \(explicitlyRouted.count) of " +
+                       "\(CoachWorldScreenID.allCases.count) registered screens — either a real " +
+                       "regression, or this scan stopped reading real source")
+        }
+
+        test("RootView commits to dark on both its DEBUG and non-DEBUG branches") {
+            let root = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .first { $0.path.hasSuffix("/RootView.swift") }?.text ?? ""
+            expect(!root.isEmpty, "RootView.swift must exist")
+            expect(root.contains("CoachWorldFloodlitStage"),
+                   "the non-DEBUG no-career-loaded state must carry dark through " +
+                       "CoachWorldFloodlitStage, matching the shipped root's guardrail")
+            expect(!root.contains("ContentUnavailableView"),
+                   "the no-career-loaded state must use the Floodlit system-state vocabulary, " +
+                       "not the generic SwiftUI placeholder")
+            expect(root.contains(".preferredColorScheme(.dark)"),
+                   "the DEBUG sample-data harness has no per-family Floodlit wrap of its own, so " +
+                       "it needs its own explicit dark commitment")
+        }
+    }
 }

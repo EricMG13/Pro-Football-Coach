@@ -7,11 +7,12 @@ public struct RootView: View {
 #if DEBUG
         DebugCoachingHQRoot()
 #else
-        ContentUnavailableView(
-            "No career loaded",
-            systemImage: "football",
-            description: Text("Start or load a career to enter the coach's world.")
-        )
+        CoachWorldFloodlitStage(palette: CoachWorldTokens.dark) {
+            CoachWorldSystemState(
+                .empty("No career loaded. Start or load a career to enter the coach's world."),
+                palette: CoachWorldTokens.dark
+            )
+        }
 #endif
     }
 }
@@ -118,6 +119,8 @@ private struct DebugCoachingHQRoot: View {
                 )
             }
         }
+        .background(CoachWorldTokens.dark.page.color)
+        .preferredColorScheme(.dark)
     }
 
     private func commit(_ intentID: CoachWorldIntentID) {
