@@ -442,7 +442,49 @@ test asserts that rather than the arithmetic.
 
 The remaining personnel blanks are named in the provider beside the field: no hometown (the root
 records a *prospect's* origin city, not a rostered player's), no staff summary (G-02), and no recent
-form (G-04). Match Day still needs G-06 and G-11.
+form (G-04). Match Day still needs G-11.
+
+**G-06 landed 2026-08-17; Match Day still needs G-11.** `03` §9 holds the anchor contract and
+`Sources/FootballSimCore/Engine/SnapAnchors.swift` implements it: a pure, total, rng-free function
+from a recorded `PlayRecord` to a sparse anchor set. Its five legality clauses are tests in
+`--snap-anchors`, driven from `SnapResult.allCases` and `Position.allCases` rather than from samples.
+The Match Day field now animates the last completed snap under a `TimelineView`, and the Speed
+control — previously rendered `isEnabled: false` with a hardcoded `1×` — cycles 1x, 2x and 4x.
+
+Nothing new is persisted. Anchors are derived on demand from a `PlayRecord` the save already holds
+under D7's current-game bound, so the gap register's "G-06 zero" save cost is met by construction.
+
+**Confirmed running on a simulator 2026-08-17** (iPhone 17 Pro Max, `xcodebuild` green, real career, Stannard South vs Central Ironvale Basin). The formation draws from the template, the deciding pair is foregrounded, the ball traces its legs, and the lower third named the duel on each snap — "Wickford won the run lane", then "Dunnhaven won the throw" on an interception. **This is a demonstration, not the `04` §9 owner walkthrough**, which asks presentation questions no agent may answer on the owner's behalf.
+
+**Three defects are visible on device and are not fixed.** They were found by looking, after the suite was green and after the confidence review, which is worth noting on its own.
+
+1. **The line-of-scrimmage and first-down markers disagree with the animation.** The markers derive from the *current pre-snap* situation while the animation replays the *last completed* snap, so after a turnover the markers sat at one end of the field and the play drew at the other. Compounding it, `CoachWorldMatchProvider.matchDay`'s `line` assigns `Situation.yardLine` — offense-relative 0-to-100 — straight into the read model's absolute 0-to-120 space without applying `offenseDirection`. That conversion predates G-06 and is wrong independently of it; `03` §9.2 now states the rule it violates.
+2. **The pre-snap field draws twenty-two dots in one vertical column**, because `playback` is nil before the first snap and the pre-existing static path stacks all eleven a side at one x with y by array index. The first thing a player sees is a column that snaps into a real formation after the first play.
+3. **Dots are 20 pt and overlap heavily** across the interior line at this field scale.
+
+**Two things are not verified, and must not be reported as if they were.** D4's 16.7 ms figure is a
+*frame* ceiling; the headless suite runs on macOS and measures no rendered frame, so the frame budget
+for this animation is **unmeasured**. And `04` §9's orientation question — does the field read as a
+football field on a phone, is the line of scrimmage legible as a line — is the presentation question
+P13 says no test can answer. The script is `docs/plans/2026-08-17-match-day-walkthrough.md`, and the
+walkthrough is an owner action that **has not happened**.
+
+**Three defects were found by review after the suite was green, and all three are worth recording
+because none of them was visible to a test.** The playback clock was keyed on `recordedOutcomeID`,
+which is built from `nextDriveIndex` and is therefore constant across every snap of a drive — so
+`.task` never re-fired within a drive and every snap after a drive's first rendered frozen at its end
+positions. Route runners moved downfield on running plays, because `OffensiveCall` carries a
+defaulted `passDepth` on every call and reading it without checking `playType` invented movement from
+a field that meant nothing. And the deciding matchup was computed and then dropped on the way into
+presentation space, so D2's whole point — the sack drawn as the protection duel that lost — did not
+render. Each now has a test that fails if it returns. The lesson is the one `04b` keeps making: a
+green suite bounds what was checked, not what is true.
+
+Two further limits are by design rather than debt, and are stated so a reader does not mistake them
+for defects. Alignment is a `03` §9.4 template because per-snap alignment is not recorded, and
+movement is sparse — blockers hold, rushers converge, the carrier runs to the end spot, route runners
+reach the recorded air-yard depth, and nothing else moves, because `04` §9 prohibits inventing the
+rest. Continuous drive playback and key-moment scrubbing remain unbuilt.
 
 **Recruiting Board is truthful too, added 2026-08-13.** `Capacity.weeklyHoursRemaining` is
 `ProgrammeRecruitingState.contactPointsRemaining` — a real, weekly-reset resource
