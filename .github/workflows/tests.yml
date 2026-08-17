@@ -11,4 +11,10 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - run: ./scripts/verify.sh
+      # Not scripts/verify.sh: its full lane passes --scratch-path, and swift run then hands the
+      # SimTests process a CommandLine.arguments[0] that resolves against the CI job's cwd instead
+      # of the scratch path — the five tests that re-exec themselves (e.g. CollegeStateTests'
+      # "eligibility construction rejects counters outside their supported bounds") fail looking for
+      # a binary at a path that doesn't exist. Default scratch path avoids it; reproduces locally too.
+      - run: swift build -c release
+      - run: swift run -c release SimTests
