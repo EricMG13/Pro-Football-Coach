@@ -1148,6 +1148,89 @@ public struct MatchDayReadModel: Sendable, Equatable {
         }
     }
 
+    /// One recorded snap, ready to animate.
+    ///
+    /// Presentation space: stable identifier strings rather than `UUID`s, and absolute 0-to-120 x
+    /// values rather than the engine's offense-relative 0-to-100. The provider does that
+    /// conversion, because direction is presentation and `03` §9.2 keeps it out of the engine.
+    ///
+    /// Optional on the model because it is genuinely absent before the first snap of a game, and the
+    /// right thing to draw then is the static field the view already draws.
+    public struct Playback: Sendable, Equatable {
+        public struct ActorTrack: Sendable, Equatable {
+            public let stableID: String
+            public let startX: Double
+            public let startY: Double
+            public let endX: Double
+            public let endY: Double
+            public let role: String
+
+            public init(
+                stableID: String,
+                startX: Double,
+                startY: Double,
+                endX: Double,
+                endY: Double,
+                role: String
+            ) {
+                self.stableID = stableID
+                self.startX = startX
+                self.startY = startY
+                self.endX = endX
+                self.endY = endY
+                self.role = role
+            }
+        }
+
+        public struct BallLeg: Sendable, Equatable {
+            public let kind: String
+            public let fromX: Double
+            public let fromY: Double
+            public let toX: Double
+            public let toY: Double
+            public let startFraction: Double
+            public let endFraction: Double
+
+            public init(
+                kind: String,
+                fromX: Double,
+                fromY: Double,
+                toX: Double,
+                toY: Double,
+                startFraction: Double,
+                endFraction: Double
+            ) {
+                self.kind = kind
+                self.fromX = fromX
+                self.fromY = fromY
+                self.toX = toX
+                self.toY = toY
+                self.startFraction = startFraction
+                self.endFraction = endFraction
+            }
+        }
+
+        public let durationSeconds: Double
+        public let actors: [ActorTrack]
+        public let ball: [BallLeg]
+        public let endSpotX: Double
+        public let sentence: String
+
+        public init(
+            durationSeconds: Double,
+            actors: [ActorTrack],
+            ball: [BallLeg],
+            endSpotX: Double,
+            sentence: String
+        ) {
+            self.durationSeconds = durationSeconds
+            self.actors = actors
+            self.ball = ball
+            self.endSpotX = endSpotX
+            self.sentence = sentence
+        }
+    }
+
     public struct StaffInterruption: Sendable, Equatable {
         public enum Path: String, CaseIterable, Hashable, Sendable {
             case accept
@@ -1267,6 +1350,8 @@ public struct MatchDayReadModel: Sendable, Equatable {
     public let lineOfScrimmage: Double
     public let firstDownLine: Double
     public let foregroundActorIDs: [String]
+    /// The last completed snap, if one has been played. Nil before the first snap.
+    public let playback: Playback?
     public let causalCommentary: String
     public let staffInterruption: StaffInterruption?
     public let controls: [ControlState]
@@ -1284,6 +1369,7 @@ public struct MatchDayReadModel: Sendable, Equatable {
         lineOfScrimmage: Double,
         firstDownLine: Double,
         foregroundActorIDs: [String],
+        playback: Playback? = nil,
         causalCommentary: String,
         staffInterruption: StaffInterruption?,
         controls: [ControlState]
@@ -1365,6 +1451,7 @@ public struct MatchDayReadModel: Sendable, Equatable {
         self.lineOfScrimmage = lineOfScrimmage
         self.firstDownLine = firstDownLine
         self.foregroundActorIDs = foregroundActorIDs
+        self.playback = playback
         self.causalCommentary = causalCommentary
         self.staffInterruption = staffInterruption
         self.controls = controls
