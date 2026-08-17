@@ -62,6 +62,9 @@ public extension CoachWorldReadModelProvider {
                     offense: Array(playOffense.prefix(11)),
                     defense: Array(playDefense.prefix(11))
                 ),
+                // The revision, not the drive index: it increments on every snap, which is the
+                // grain the playback clock has to restart on.
+                stableID: "\(fixtureID.uuidString)-\(session.revision)",
                 offenseDirection: .leftToRight
             )
         }
@@ -105,6 +108,7 @@ public extension CoachWorldReadModelProvider {
     /// never guess direction from colour.
     static func playback(
         from set: SnapAnchorSet,
+        stableID: String,
         offenseDirection: MatchFieldDirection
     ) -> MatchDayReadModel.Playback {
         // Ten yards of end zone sit at each end of the 120-yard drawn field, so an offense-relative
@@ -115,6 +119,7 @@ public extension CoachWorldReadModelProvider {
         }
 
         return MatchDayReadModel.Playback(
+            stableID: stableID,
             durationSeconds: set.durationSeconds,
             actors: set.actors.map { actor in
                 MatchDayReadModel.Playback.ActorTrack(
@@ -137,6 +142,7 @@ public extension CoachWorldReadModelProvider {
                     endFraction: segment.endFraction
                 )
             },
+            foregroundIDs: set.foregroundIDs.map(\.uuidString),
             endSpotX: x(set.endSpot),
             sentence: set.sentence
         )

@@ -1210,22 +1210,35 @@ public struct MatchDayReadModel: Sendable, Equatable {
             }
         }
 
+        /// Identifies the snap, and changes on every one.
+        ///
+        /// `recordedOutcomeID` cannot serve here: it is built from the drive index and so is
+        /// constant across every snap of a drive. Keying the playback clock on it left snaps two
+        /// onward frozen at their end positions.
+        public let stableID: String
         public let durationSeconds: Double
         public let actors: [ActorTrack]
         public let ball: [BallLeg]
+        /// The deciding matchup's two players, plus the carrier. At most three, per `04` §9.
+        /// Distinct from the model's `foregroundActorIDs`, which describes the pre-snap state.
+        public let foregroundIDs: [String]
         public let endSpotX: Double
         public let sentence: String
 
         public init(
+            stableID: String,
             durationSeconds: Double,
             actors: [ActorTrack],
             ball: [BallLeg],
+            foregroundIDs: [String],
             endSpotX: Double,
             sentence: String
         ) {
+            self.stableID = stableID
             self.durationSeconds = durationSeconds
             self.actors = actors
             self.ball = ball
+            self.foregroundIDs = foregroundIDs
             self.endSpotX = endSpotX
             self.sentence = sentence
         }

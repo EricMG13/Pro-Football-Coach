@@ -210,7 +210,12 @@ public struct MatchDayView: View {
                         let t = progress(at: timeline.date, duration: playback.durationSeconds)
                         ZStack(alignment: .topLeading) {
                             ForEach(playback.actors, id: \.stableID) { track in
-                                animatedMark(track, at: t, size: size)
+                                animatedMark(
+                                    track,
+                                    at: t,
+                                    isForeground: playback.foregroundIDs.contains(track.stableID),
+                                    size: size
+                                )
                             }
                             ballMark(playback, at: t, size: size)
                         }
@@ -233,7 +238,13 @@ public struct MatchDayView: View {
         .background(palette.fieldTurf.color)
         .environment(\.layoutDirection, .leftToRight)
         .accessibilitySortPriority(80)
-        .task(id: model.recordedOutcomeID) {
+        // Keyed on the playback's own identity, which changes every snap. `recordedOutcomeID` is
+        // built from the drive index and is constant across a drive, so keying on it froze every
+        // snap after the first at its end positions.
+        // Speed is part of the key so that changing it re-runs this: progress is measured against
+        // wall time, so a multiplier that changed mid-play would jump the dots and leave the
+        // completion sleep waiting on the old duration.
+        .task(id: "\(model.playback?.stableID ?? model.recordedOutcomeID)|\(speedIndex)") {
             guard let playback = model.playback, !reduceMotion else {
                 playbackComplete = true
                 return
@@ -246,14 +257,20 @@ public struct MatchDayView: View {
     }
 
     /// One dot, between where it started and where the record says it finished.
+    ///
+    /// The foreground flag comes from the playback rather than from `model.foregroundActorIDs`.
+    /// Those two lists mean different things: the model's describes the pre-snap state, while the
+    /// playback's names the deciding matchup's two players and the carrier. Reading the model's here
+    /// would highlight the wrong players and lose D2's whole point — the sack drawn as the
+    /// protection duel that lost.
     private func animatedMark(
         _ track: MatchDayReadModel.Playback.ActorTrack,
         at fraction: Double,
+        isForeground: Bool,
         size: CGSize
     ) -> some View {
         let x = track.startX + (track.endX - track.startX) * fraction
         let y = track.startY + (track.endY - track.startY) * fraction
-        let isForeground = model.foregroundActorIDs.contains(track.stableID)
         return Circle()
             .fill(isForeground ? palette.fieldLive.color : palette.fieldLine.color)
             .frame(width: MatchMetric.actorSize, height: MatchMetric.actorSize)

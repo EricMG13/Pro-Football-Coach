@@ -164,6 +164,10 @@ func runSnapAnchorTests() {
                     defense: Array(personnel.defense.prefix(11))
                 )
                 expectEqual(set.actors.count, 22, "\(result) did not represent all 22 actors")
+                // The view drives ForEach off these identifiers. A duplicate would silently drop a
+                // dot rather than fail, so it is asserted here where it can be seen.
+                expectEqual(Set(set.actors.map(\.playerID)).count, 22,
+                            "\(result) produced two actors with the same identifier")
                 expect(set.foregroundIDs.count <= AnchorRules.maximumForegrounded,
                        "\(result) foregrounded more than three actors")
                 expectEqual(Set(set.foregroundIDs).count, set.foregroundIDs.count,
@@ -254,12 +258,14 @@ func runSnapAnchorTests() {
             expectEqual(track.endX, 52)
 
             let playback = MatchDayReadModel.Playback(
+                stableID: "fixture-7",
                 durationSeconds: 3,
                 actors: [track],
                 ball: [MatchDayReadModel.Playback.BallLeg(
                     kind: "carry", fromX: 40, fromY: 0.5, toX: 52, toY: 0.3,
                     startFraction: 0.1, endFraction: 1
                 )],
+                foregroundIDs: ["a"],
                 endSpotX: 52,
                 sentence: "Gain of 12 yards."
             )
@@ -290,10 +296,10 @@ func runSnapAnchorTests() {
             expectEqual(set.endSpot, 30, "the engine's end spot is offense-relative")
 
             let rightward = CoachWorldReadModelProvider.playback(
-                from: set, offenseDirection: .leftToRight
+                from: set, stableID: "snap-1", offenseDirection: .leftToRight
             )
             let leftward = CoachWorldReadModelProvider.playback(
-                from: set, offenseDirection: .rightToLeft
+                from: set, stableID: "snap-1", offenseDirection: .rightToLeft
             )
 
             // Ten yards of end zone sit at each end of the 120-yard drawn field.
@@ -305,6 +311,72 @@ func runSnapAnchorTests() {
                 expectIn(actor.startX, 0...120, "an actor left the drawn field")
                 expectIn(actor.endX, 0...120, "an actor left the drawn field")
             }
+        }
+
+        test("a run play moves nobody downfield on a route") {
+            // OffensiveCall carries a passDepth on every call, defaulted to .mid. Reading it on a
+            // run sent every receiver twelve yards downfield off a handoff -- movement invented
+            // from a field that meant nothing, which 04 section 9 prohibits.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let offense = Array(personnel.offense.prefix(11))
+            let play = PlayRecord(
+                situation: Situation(down: 1, distance: 10, yardLine: 30),
+                offensiveCall: OffensiveCall(playType: .run, runGap: .insideLeft),
+                defensiveCall: DefensiveCall(coverage: .man),
+                outcome: SnapOutcome(
+                    result: .gain, yards: 5, secondsElapsed: 6, matchups: [],
+                    ballCarrierID: offense[1].id
+                ),
+                callInTriggers: []
+            )
+            let set = SnapAnchors.choreograph(
+                play: play, offense: offense, defense: Array(personnel.defense.prefix(11))
+            )
+            for actor in set.actors where actor.role == .routeRunner {
+                expectEqual(actor.end.yard, actor.start.yard,
+                            "a receiver ran a route on a running play")
+            }
+            // The carrier still runs, or the whole thing is inert.
+            let carrier = set.actors.first { $0.role == .carrier }
+            expectEqual(carrier?.end.yard, 35, "the carrier did not reach the end spot")
+        }
+
+        test("the foreground names the deciding pair, not the pre-snap pair") {
+            // The deciding matchup is the point of D2 -- a sack drawn as the protection duel that
+            // lost. Dropping it on the way into presentation space loses that entirely.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let offense = Array(personnel.offense.prefix(11))
+            let defense = Array(personnel.defense.prefix(11))
+            let blocker = offense[6]
+            let rusher = defense[0]
+            let play = PlayRecord(
+                situation: Situation(down: 3, distance: 8, yardLine: 45),
+                offensiveCall: OffensiveCall(playType: .pass),
+                defensiveCall: DefensiveCall(coverage: .man),
+                outcome: SnapOutcome(
+                    result: .sack, yards: -7, secondsElapsed: 6,
+                    matchups: [MatchupRecord(
+                        kind: .passProtection, attackerID: blocker.id,
+                        defenderID: rusher.id, leverage: -0.8
+                    )],
+                    passerID: offense[0].id
+                ),
+                callInTriggers: []
+            )
+            let set = SnapAnchors.choreograph(play: play, offense: offense, defense: defense)
+            expectEqual(set.deciding?.kind, .passProtection)
+            expect(set.foregroundIDs.contains(blocker.id), "the losing blocker is not foregrounded")
+            expect(set.foregroundIDs.contains(rusher.id), "the winning rusher is not foregrounded")
+
+            let projected = CoachWorldReadModelProvider.playback(
+                from: set, stableID: "snap-9", offenseDirection: .leftToRight
+            )
+            expectEqual(projected.foregroundIDs.count, set.foregroundIDs.count,
+                        "the deciding pair was dropped on the way into presentation space")
+            expect(projected.foregroundIDs.contains(blocker.id.uuidString),
+                   "the losing blocker did not survive projection")
+            expectEqual(projected.stableID, "snap-9",
+                        "playback must carry a snap-grained identity of its own")
         }
     }
 }

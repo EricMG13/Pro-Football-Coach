@@ -438,6 +438,10 @@ public enum SnapAnchors {
         case .carrier:
             return FieldPoint(yard: endSpot, lateral: start.lateral)
         case .routeRunner:
+            // Only on a pass. `passDepth` carries a default on every call, so reading it on a run
+            // would send every receiver twelve yards downfield off a handoff — movement invented
+            // from a field that meant nothing, which is exactly what `04` §9 prohibits.
+            guard call.playType == .pass else { return start }
             // Recorded depth, not an invented route shape: the call's air yards are the only
             // downfield distance the record actually holds.
             return FieldPoint(
