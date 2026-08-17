@@ -34,9 +34,10 @@ unanswered.
 1. ~~The markers describe the next snap while the animation replays the last one.~~ **Fixed.** The
    field's lines now come from the same `PlayRecord` as its dots. The older conversion bug beneath it
    — offense-relative yards written straight into drawn-field space — is fixed too.
-2. The pre-snap field draws twenty-two dots in one vertical column, then snaps into a real formation
-   after the first play. **Still open.**
-3. Dots are 20 pt and overlap heavily across the interior line. **Still open.**
+2. ~~The pre-snap field draws twenty-two dots in one vertical column.~~ **Fixed.** The pre-snap field
+   uses the same §9.4 template as the animation, so both agree by construction.
+3. Dots are 20 pt and overlap heavily across the interior line. **Still open** — the formation fix
+   spreads them laterally and helps, but the interior line still stacks.
 
 ## Known limits of what you are looking at
 
@@ -44,7 +45,7 @@ State these before judging, so the read is about the right things:
 
 - **Alignment is a template, not recorded data.** Per-snap alignment is not in the record; `03` §9.4
   explains why and what the starts are derived from instead. Formations will look generically
-  correct rather than specific to the call.
+  correct rather than specific to the call — the same shape every snap, whatever was called.
 - **Movement is sparse.** Blockers hold, rushers converge, the carrier runs to the end spot, route
   runners go to the recorded air-yard depth. Nothing else moves, because nothing else is recorded.
   `04` §9 prohibits inventing the rest.
