@@ -174,3 +174,81 @@ public enum AnchorRules {
     public static let specialistDepth = 8.0
     public static let maximumForegrounded = 3
 }
+
+/// Turns a recorded snap into a sparse spatial description of it.
+///
+/// Pure, total and rng-free, per `03` §9.3. It imports `Foundation` and nothing else, so it cannot
+/// reach a resolver even by accident.
+public enum SnapAnchors {
+    /// Where a player of this position lines up.
+    ///
+    /// `03` §9.4: per-snap alignment is not recorded, so the start comes from this template and only
+    /// the *end* comes from what the outcome recorded. Keyed on position because that is how
+    /// alignment actually works, and indexed so two receivers do not stack.
+    public static func alignment(
+        for position: Position,
+        index: Int,
+        side: Side,
+        lineOfScrimmage: Double
+    ) -> FieldPoint {
+        let slot = Swift.max(0, index)
+        func pick(_ options: [Double]) -> Double {
+            options.isEmpty ? AnchorRules.centerLateral : options[slot % options.count]
+        }
+
+        switch position {
+        case .leftTackle:
+            return FieldPoint(yard: lineOfScrimmage, lateral: AnchorRules.lineLaterals[0])
+        case .guardPosition:
+            return FieldPoint(
+                yard: lineOfScrimmage,
+                lateral: slot % 2 == 0 ? AnchorRules.lineLaterals[1] : AnchorRules.lineLaterals[3]
+            )
+        case .center:
+            return FieldPoint(yard: lineOfScrimmage, lateral: AnchorRules.centerLateral)
+        case .rightTackle:
+            return FieldPoint(yard: lineOfScrimmage, lateral: AnchorRules.lineLaterals[4])
+        case .quarterback:
+            return FieldPoint(
+                yard: lineOfScrimmage - AnchorRules.passerDepth,
+                lateral: AnchorRules.centerLateral
+            )
+        case .runningBack:
+            return FieldPoint(
+                yard: lineOfScrimmage - AnchorRules.backDepth, lateral: AnchorRules.backLateral
+            )
+        case .tightEnd:
+            return FieldPoint(yard: lineOfScrimmage, lateral: AnchorRules.tightEndLateral)
+        case .wideReceiver:
+            return FieldPoint(yard: lineOfScrimmage, lateral: pick(AnchorRules.receiverLaterals))
+        case .edgeRusher:
+            return FieldPoint(
+                yard: lineOfScrimmage + AnchorRules.frontDepth,
+                lateral: pick(AnchorRules.edgeLaterals)
+            )
+        case .defensiveTackle:
+            return FieldPoint(
+                yard: lineOfScrimmage + AnchorRules.frontDepth,
+                lateral: pick(AnchorRules.interiorLaterals)
+            )
+        case .linebacker:
+            return FieldPoint(
+                yard: lineOfScrimmage + AnchorRules.linebackerDepth,
+                lateral: pick(AnchorRules.linebackerLaterals)
+            )
+        case .cornerback:
+            return FieldPoint(
+                yard: lineOfScrimmage + AnchorRules.cornerDepth,
+                lateral: pick(AnchorRules.cornerLaterals)
+            )
+        case .safety:
+            return FieldPoint(
+                yard: lineOfScrimmage + AnchorRules.safetyDepth,
+                lateral: pick(AnchorRules.safetyLaterals)
+            )
+        case .kicker, .punter:
+            let depth = side == .home ? -AnchorRules.specialistDepth : AnchorRules.specialistDepth
+            return FieldPoint(yard: lineOfScrimmage + depth, lateral: AnchorRules.centerLateral)
+        }
+    }
+}

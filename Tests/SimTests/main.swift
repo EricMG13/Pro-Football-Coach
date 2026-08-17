@@ -136,6 +136,8 @@ if CommandLine.arguments.contains("--catalog") {
     runM2SoakTests(seasons: 20)
 } else if CommandLine.arguments.contains("--m1-soak") {
     runM1SoakTests(seasons: 20)
+} else if CommandLine.arguments.contains("--snap-anchors") {
+    runSnapAnchorTests()
 } else {
     runSeededRandomTests()
     runSeedDerivationTests()
