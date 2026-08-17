@@ -148,6 +148,7 @@ if CommandLine.arguments.contains("--catalog") {
     runIdentityDistributionTests()
     runEngineTests()
     runSnapResolverTests()
+    runSnapAnchorTests()
     runGameLoopTests()
     runCalibrationTests()
     runArchitectureTests()
