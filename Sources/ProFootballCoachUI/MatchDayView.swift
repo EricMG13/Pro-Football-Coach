@@ -289,27 +289,55 @@ public struct MatchDayView: View {
     ) -> some View {
         let x = track.startX + (track.endX - track.startX) * fraction
         let y = track.startY + (track.endY - track.startY) * fraction
-        // Deliberately the same furniture as `actorMark`: number, team fill, foreground stroke. A
-        // dot that shed its identity the moment it started moving would tell the coach least at the
-        // moment they are looking hardest.
-        return Text(track.uniformNumber)
-            .font(.system(size: CoachWorldTokens.TypeRole.authoredFloor, weight: .black))
-            .foregroundStyle(
-                track.side == .home ? palette.page.color : palette.contentPrimary.color
-            )
-            .frame(width: MatchMetric.actorSize, height: MatchMetric.actorSize)
-            .background(track.side == .home ? palette.collegeIdentity.color : palette.raised.color)
-            .overlay {
-                Circle().stroke(
-                    isForeground ? palette.fieldLive.color : palette.fieldLine.color,
-                    lineWidth: isForeground
-                        ? MatchMetric.foregroundStroke
-                        : CoachWorldTokens.Shape.hairline
-                )
+        return actorDisc(
+            number: track.uniformNumber,
+            isHome: track.side == .home,
+            isForeground: isForeground
+        )
+        .position(x: size.width * CGFloat(x / 120), y: size.height * CGFloat(y))
+        .accessibilityHidden(true)
+    }
+
+    /// One actor's mark, in the two sizes `04` §9 asks for.
+    ///
+    /// §9 caps the foreground at three, and §6.5 #18 makes the diagram's marks role tokens rather
+    /// than jersey numbers. Numbering all twenty-two contradicted both, and could not be fixed by
+    /// shrinking: `authoredFloor` is a 12 pt contract, so a disc with text in it cannot go below
+    /// about 20 pt, while the template puts adjacent linemen roughly 3 yards — some 16 pt — apart.
+    /// Text on every actor and no overlap are not simultaneously satisfiable at this field scale.
+    ///
+    /// So the three that matter carry their number, and the other nineteen are plain marks small
+    /// enough to sit beside one another. Nothing is lost: at 20 pt the background numbers overlapped
+    /// into illegibility anyway, so they were costing clarity rather than adding it.
+    private func actorDisc(number: String, isHome: Bool, isForeground: Bool) -> some View {
+        let fill = isHome ? palette.collegeIdentity.color : palette.raised.color
+        return Group {
+            if isForeground {
+                Text(number)
+                    .font(.system(size: CoachWorldTokens.TypeRole.authoredFloor, weight: .black))
+                    .foregroundStyle(isHome ? palette.page.color : palette.contentPrimary.color)
+                    .frame(width: MatchMetric.actorSize, height: MatchMetric.actorSize)
+                    .background(fill)
+                    .overlay {
+                        Circle().stroke(
+                            palette.fieldLive.color, lineWidth: MatchMetric.foregroundStroke
+                        )
+                    }
+                    .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(fill)
+                    .frame(
+                        width: MatchMetric.backgroundActorSize,
+                        height: MatchMetric.backgroundActorSize
+                    )
+                    .overlay {
+                        Circle().stroke(
+                            palette.fieldLine.color, lineWidth: CoachWorldTokens.Shape.hairline
+                        )
+                    }
             }
-            .clipShape(Circle())
-            .position(x: size.width * CGFloat(x / 120), y: size.height * CGFloat(y))
-            .accessibilityHidden(true)
+        }
     }
 
     /// The ball, on whichever leg of its journey is current.
@@ -416,30 +444,27 @@ public struct MatchDayView: View {
     private func actorMark(_ actor: MatchDayReadModel.Actor, size: CGSize) -> some View {
         let foreground = model.foregroundActorIDs.contains(actor.stableID)
         let offense = actor.side == model.situation.possession
-        return Text(actor.uniformNumber)
-            .font(.system(size: CoachWorldTokens.TypeRole.authoredFloor, weight: .black))
-            .foregroundStyle(
-                actor.side == .home ? palette.page.color : palette.contentPrimary.color
-            )
-            .frame(width: MatchMetric.actorSize, height: MatchMetric.actorSize)
-            .background(actor.side == .home ? palette.collegeIdentity.color : palette.raised.color)
-            .overlay {
-                Circle().stroke(
-                    foreground ? palette.fieldLive.color : palette.fieldLine.color,
-                    lineWidth: foreground
-                        ? MatchMetric.foregroundStroke
-                        : CoachWorldTokens.Shape.hairline
-                )
-            }
-            .clipShape(Circle())
-            .position(
-                x: size.width * CGFloat(actor.xYardsFromLeftGoalLine / 120),
-                y: size.height * CGFloat(actor.yFraction)
-            )
-            .accessibilityLabel(
-                "\(offense ? "Offense" : "Defense"), \(actor.position) "
-                    + "number \(actor.uniformNumber), at yard \(Int(actor.xYardsFromLeftGoalLine))"
-            )
+        // The same two marks the animated path uses, so the pre-snap field and the animated one
+        // cannot drift apart in how they read. The accessible sentence is unchanged either way:
+        // shrinking a background dot must not shrink what VoiceOver says about it.
+        return actorDisc(
+            number: actor.uniformNumber,
+            isHome: actor.side == .home,
+            isForeground: foreground
+        )
+        .position(
+            x: size.width * CGFloat(actor.xYardsFromLeftGoalLine / 120),
+            y: size.height * CGFloat(actor.yFraction)
+        )
+        // Explicit, because a background mark is a `Circle` and a shape is not an accessibility
+        // element on its own. Without this the label would attach for the three foregrounded actors,
+        // whose mark is built from a `Text`, and silently detach for the other nineteen — the mark
+        // getting smaller must never make the actor quieter.
+        .accessibilityElement()
+        .accessibilityLabel(
+            "\(offense ? "Offense" : "Defense"), \(actor.position) "
+                + "number \(actor.uniformNumber), at yard \(Int(actor.xYardsFromLeftGoalLine))"
+        )
     }
 
     private var lowerThird: some View {
@@ -702,6 +727,10 @@ private enum MatchMetric {
     static let accessibleScoreScale: CGFloat = 0.5
     static let hashHalfHeight: CGFloat = 3
     static let hashYFractions: [CGFloat] = [0.36, 0.64]
+    /// A background actor carries no text, so no type floor applies to it and it can be small
+    /// enough not to collide. At this field scale a yard is roughly 5 pt, and the template puts
+    /// adjacent linemen about 3 yards apart, so anything much above this overlaps its neighbour.
+    static let backgroundActorSize: CGFloat = 11
     static let speedMultipliers: [Double] = [1, 2, 4]
     static let ballMarkSize: CGFloat = 8
     /// 60 Hz. D4's frame ceiling is 16.7 ms, and asking the timeline for more than that is asking
