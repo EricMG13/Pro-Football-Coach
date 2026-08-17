@@ -31,47 +31,48 @@ public struct InboxView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
-                if let statusMessage {
-                    Text(statusMessage)
-                        .font(CoachWorldTokens.TypeRole.callout)
-                        .foregroundStyle(palette.stateWarning.color)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if model.items.isEmpty {
-                    ContentUnavailableView(
-                        "Inbox is clear",
-                        systemImage: "list.number",
-                        description: Text("No decisions or current-week stories are recorded.")
-                    )
-                    .frame(maxWidth: .infinity, minHeight: 180)
-                } else {
-                    VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-                        Text("RECENT INBOX")
-                            .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                            .foregroundStyle(palette.contentSecondary.color)
-                        ForEach(model.items) { item in
-                            itemRow(item)
+        CoachWorldFloodlitStage(palette: palette) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
+                    if let statusMessage {
+                        Text(statusMessage)
+                            .font(CoachWorldTokens.TypeRole.callout)
+                            .foregroundStyle(palette.stateWarning.color)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if model.items.isEmpty {
+                        CoachWorldSystemState(
+                            .empty(
+                                "Inbox is clear. No decisions or current-week stories "
+                                    + "are recorded."
+                            ),
+                            palette: palette
+                        )
+                    } else {
+                        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
+                            Text("RECENT INBOX")
+                                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
+                                .foregroundStyle(palette.contentSecondary.color)
+                            ForEach(model.items) { item in
+                                itemRow(item)
+                            }
                         }
                     }
+                    Button(action: onContinue) {
+                        Label("Continue", systemImage: "forward.end.fill")
+                            .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
+                    }
+                    .buttonStyle(CoachWorldActionButtonStyle(
+                        role: model.canContinue ? .primary : .secondary,
+                        palette: palette
+                    ))
+                    .disabled(!model.canContinue)
+                    .accessibilityHint(model.continueReason ?? "")
                 }
-                Button(action: onContinue) {
-                    Label("Continue", systemImage: "forward.end.fill")
-                        .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
-                }
-                .buttonStyle(CoachWorldActionButtonStyle(
-                    role: model.canContinue ? .primary : .secondary,
-                    palette: palette
-                ))
-                .disabled(!model.canContinue)
-                .accessibilityHint(model.continueReason ?? "")
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .accessibilitySortPriority(100)
     }
 

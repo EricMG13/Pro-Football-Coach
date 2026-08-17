@@ -66,6 +66,14 @@ struct CoachWorldCutCorner: Shape {
     }
 }
 
+/// DESK gets the full committed backdrop (gradient, glow, grain). BROADCAST is flat `page.color`
+/// only — the render-recorded-match contract forbids desk chrome, gradients, and glow on a live
+/// match surface, so Match Day and Aftermath opt out rather than inheriting it.
+enum CoachWorldRegister {
+    case desk
+    case broadcast
+}
+
 enum CoachWorldFloodlitPanelDepth {
     case glass
     case deep
@@ -82,22 +90,27 @@ struct CoachWorldFloodlitStage<Content: View>: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     let palette: CoachWorldTokens.Palette
+    let register: CoachWorldRegister
     @ViewBuilder let content: () -> Content
 
     init(
         palette: CoachWorldTokens.Palette = CoachWorldTokens.dark,
+        register: CoachWorldRegister = .desk,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.palette = palette
+        self.register = register
         self.content = content
     }
 
     var body: some View {
         ZStack {
             palette.page.color
-            CoachWorldFloodlitBackdrop(palette: palette)
+            if register == .desk {
+                CoachWorldFloodlitBackdrop(palette: palette)
+            }
             content()
-            if !reduceTransparency {
+            if register == .desk, !reduceTransparency {
                 CoachWorldGrainOverlay()
             }
         }

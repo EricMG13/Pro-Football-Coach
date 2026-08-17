@@ -25,51 +25,53 @@ public struct TeamHealthView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
+        CoachWorldFloodlitStage(palette: palette) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
 
-                if let statusMessage {
-                    Text(statusMessage)
-                        .font(CoachWorldTokens.TypeRole.callout)
-                        .foregroundStyle(palette.stateWarning.color)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                    if let statusMessage {
+                        Text(statusMessage)
+                            .font(CoachWorldTokens.TypeRole.callout)
+                            .foregroundStyle(palette.stateWarning.color)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
 
-                summary
+                    summary
 
-                if model.players.isEmpty {
-                    ContentUnavailableView(
-                        "No health records",
-                        systemImage: "list.number",
-                        description: Text("No controlled roster is available for this week.")
-                    )
-                } else {
-                    VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-                        Text("READINESS BY PLAYER")
-                            .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                            .foregroundStyle(palette.contentSecondary.color)
-                        ForEach(model.players) { player in
-                            playerRow(player)
+                    if model.players.isEmpty {
+                        CoachWorldSystemState(
+                            .empty(
+                                "No health records. No controlled roster is available "
+                                    + "for this week."
+                            ),
+                            palette: palette
+                        )
+                    } else {
+                        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
+                            Text("READINESS BY PLAYER")
+                                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
+                                .foregroundStyle(palette.contentSecondary.color)
+                            ForEach(model.players) { player in
+                                playerRow(player)
+                            }
                         }
                     }
-                }
 
-                Button(action: onContinue) {
-                    Label("Continue", systemImage: "forward.end.fill")
-                        .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
+                    Button(action: onContinue) {
+                        Label("Continue", systemImage: "forward.end.fill")
+                            .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
+                    }
+                    .buttonStyle(CoachWorldActionButtonStyle(
+                        role: model.canContinue ? .primary : .secondary,
+                        palette: palette
+                    ))
+                    .disabled(!model.canContinue)
+                    .accessibilityHint(model.continueReason ?? "")
                 }
-                .buttonStyle(CoachWorldActionButtonStyle(
-                    role: model.canContinue ? .primary : .secondary,
-                    palette: palette
-                ))
-                .disabled(!model.canContinue)
-                .accessibilityHint(model.continueReason ?? "")
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .frame(maxWidth: .infinity,
                alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
         .accessibilitySortPriority(100)

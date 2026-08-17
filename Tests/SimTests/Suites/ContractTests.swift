@@ -1940,5 +1940,18 @@ func runContractTests() {
             let band = CoachWorldIdentityBand(team: malformed, behind: CoachWorldTokens.dark.raised)
             expect(band.identity == nil, "a malformed pair must resolve to no identity, not a guess")
         }
+
+        test("the broadcast register renders no desk backdrop or grain") {
+            let sourcePath = "Sources/ProFootballCoachUI/CoachWorldDeskComponents.swift"
+            guard let text = try? String(contentsOfFile: sourcePath, encoding: .utf8) else {
+                expect(false, "could not read \(sourcePath)")
+                return
+            }
+            expect(text.contains("enum CoachWorldRegister"),
+                   "CoachWorldFloodlitStage has no register type to select broadcast's flat backdrop")
+            expect(text.contains("register == .desk"),
+                   "the backdrop/grain are not conditioned on the register, so broadcast would "
+                       + "inherit desk chrome")
+        }
     }
 }

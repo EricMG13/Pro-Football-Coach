@@ -33,6 +33,15 @@ public struct GamePlanView: View {
     }
 
     public var body: some View {
+        CoachWorldFloodlitStage(palette: palette) {
+            scrollContent
+        }
+        .frame(maxWidth: .infinity,
+               alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
+        .accessibilitySortPriority(100)
+    }
+
+    private var scrollContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                 HStack {
@@ -114,10 +123,5 @@ public struct GamePlanView: View {
             }
             .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
-        .frame(maxWidth: .infinity,
-               alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
-        .accessibilitySortPriority(100)
     }
 }

@@ -21,7 +21,7 @@ public struct AftermathView: View {
 
     public var body: some View {
         let palette = CoachWorldTokens.dark
-        Group {
+        CoachWorldFloodlitStage(palette: palette, register: .broadcast) {
             if dynamicTypeSize.isAccessibilitySize {
                 content(palette: palette).accessibilitySortPriority(100)
             } else {
@@ -42,7 +42,7 @@ public struct AftermathView: View {
                     .monospacedDigit()
                 Text(model.resultLabel)
                     .font(CoachWorldTokens.TypeRole.headline.weight(.bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(palette.contentSecondary.color)
                 section("Evidence", model.evidence)
                 section("Call-ins", model.callIns.isEmpty ? ["No controlled call-ins recorded."] : model.callIns)
                 section("Injuries", model.injuries.isEmpty ? ["No injury evidence recorded."] : model.injuries)
@@ -55,7 +55,7 @@ public struct AftermathView: View {
                                 Text(grade.player.name).font(.headline.weight(.bold))
                                 Text("\(grade.position) · \(grade.evidence)")
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(palette.contentSecondary.color)
                             }
                             Spacer()
                             Text("\(grade.rating)")
@@ -63,9 +63,9 @@ public struct AftermathView: View {
                                 .monospacedDigit()
                         }
                         .padding(CoachWorldTokens.Space.sm)
-                        .background(
-                            .thinMaterial,
-                            in: RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.surfaceRadius)
+                        .coachWorldFloodlitPanel(
+                            fill: palette.raised.color,
+                            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
                         )
                     }
                 }
@@ -74,17 +74,15 @@ public struct AftermathView: View {
                 }
                 if let onOpenBoxScore {
                     Button("Open box score", action: onOpenBoxScore)
-                        .buttonStyle(.bordered)
+                        .buttonStyle(CoachWorldActionButtonStyle(role: .secondary, palette: palette))
                         .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
                 }
                 Button("Continue to HQ", action: onContinue)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
                     .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
             }
             .padding(CoachWorldTokens.Space.lg)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
     }
 
     private func section(_ title: String, _ rows: [String]) -> some View {

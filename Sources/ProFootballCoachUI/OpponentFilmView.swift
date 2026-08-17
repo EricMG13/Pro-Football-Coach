@@ -25,39 +25,37 @@ public struct OpponentFilmView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
-                if let statusMessage {
-                    Text(statusMessage)
-                        .font(CoachWorldTokens.TypeRole.callout)
-                        .foregroundStyle(palette.stateWarning.color)
-                        .fixedSize(horizontal: false, vertical: true)
+        CoachWorldFloodlitStage(palette: palette) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
+                    if let statusMessage {
+                        Text(statusMessage)
+                            .font(CoachWorldTokens.TypeRole.callout)
+                            .foregroundStyle(palette.stateWarning.color)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let reason = model.unavailableReason {
+                        CoachWorldSystemState(
+                            .empty("Opponent film unavailable. " + reason),
+                            palette: palette
+                        )
+                    } else {
+                        evidence
+                    }
+                    Button(action: onContinue) {
+                        Label("Continue", systemImage: "forward.end.fill")
+                            .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
+                    }
+                    .buttonStyle(CoachWorldActionButtonStyle(
+                        role: model.isCurrent ? .primary : .secondary,
+                        palette: palette
+                    ))
+                    .disabled(!model.isCurrent)
                 }
-                if let reason = model.unavailableReason {
-                    ContentUnavailableView(
-                        "Opponent film unavailable",
-                        systemImage: "list.number",
-                        description: Text(reason)
-                    )
-                    .frame(maxWidth: .infinity, minHeight: 180)
-                } else {
-                    evidence
-                }
-                Button(action: onContinue) {
-                    Label("Continue", systemImage: "forward.end.fill")
-                        .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
-                }
-                .buttonStyle(CoachWorldActionButtonStyle(
-                    role: model.isCurrent ? .primary : .secondary,
-                    palette: palette
-                ))
-                .disabled(!model.isCurrent)
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .accessibilitySortPriority(100)
     }
 
@@ -134,6 +132,6 @@ public struct OpponentFilmView: View {
                 .stroke(palette.contentQuiet.color.opacity(0.6), lineWidth: CoachWorldTokens.Shape.hairline)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("(label.capitalized), (value)")
+        .accessibilityLabel("\(label.capitalized), \(value)")
     }
 }

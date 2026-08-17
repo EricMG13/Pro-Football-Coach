@@ -26,15 +26,15 @@ public struct MatchDayView: View {
     }
 
     public var body: some View {
-        Group {
-            if dynamicTypeSize.isAccessibilitySize {
-                accessibleLayout
-            } else {
-                standardLayout
+        CoachWorldFloodlitStage(palette: palette, register: .broadcast) {
+            Group {
+                if dynamicTypeSize.isAccessibilitySize {
+                    accessibleLayout
+                } else {
+                    standardLayout
+                }
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .sheet(isPresented: $showsEvidence) { evidenceSheet }
     }
 
