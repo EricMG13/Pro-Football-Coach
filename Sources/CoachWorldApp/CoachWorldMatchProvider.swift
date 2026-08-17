@@ -31,16 +31,14 @@ public extension CoachWorldReadModelProvider {
             homePlayers,
             side: .home,
             numbers: homeNumbers,
-            line: line,
-            xOffset: -2,
+            offenseYard: offenseYard,
             isOffense: possession == .home
         )
         let awayActors = actors(
             awayPlayers,
             side: .away,
             numbers: awayNumbers,
-            line: line,
-            xOffset: 2,
+            offenseYard: offenseYard,
             isOffense: possession == .away
         )
         let controls = controls(for: session, fixtureID: fixtureID)
@@ -178,23 +176,37 @@ public extension CoachWorldReadModelProvider {
         )
     }
 
+    /// The pre-snap formation, from the same `03` §9.4 template the animation uses.
+    ///
+    /// It used to give every player on a side a single x — the line plus a two-yard offset — and
+    /// spread them by array index, which drew two vertical columns of eleven rather than a
+    /// formation. The first thing anyone saw on Match Day was a column that snapped into real
+    /// football only after the first play. Sharing the template means the pre-snap field and the
+    /// animated one agree by construction rather than by two authors remembering to match.
     private static func actors(
         _ players: [Player],
         side: MatchSide,
         numbers: [UUID: Int],
-        line: Double,
-        xOffset: Double,
+        offenseYard: Double,
         isOffense: Bool
     ) -> [MatchDayReadModel.Actor] {
-        players.enumerated().map { index, player in
-            let x = min(120, max(0, line + (isOffense ? xOffset : -xOffset)))
+        var seen: [Position: Int] = [:]
+        return players.map { player in
+            let index = seen[player.position, default: 0]
+            seen[player.position] = index + 1
+            let spot = SnapAnchors.alignment(
+                for: player.position,
+                index: index,
+                isOffense: isOffense,
+                lineOfScrimmage: offenseYard
+            )
             return MatchDayReadModel.Actor(
                 stableID: player.id.uuidString,
                 side: side,
                 uniformNumber: String(numbers[player.id] ?? 0),
                 position: positionLabel(player.position),
-                xYardsFromLeftGoalLine: x,
-                yFraction: Double(index % 11) / 10
+                xYardsFromLeftGoalLine: fieldX(yard: spot.yard, direction: .leftToRight),
+                yFraction: spot.lateral
             )
         }
     }

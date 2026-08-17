@@ -27,10 +27,10 @@ func runSnapAnchorTests() {
             // Enumerated from Position.allCases by construction, so a position added tomorrow fails
             // this the day it is added rather than the day someone remembers it.
             for position in Position.allCases {
-                for side in Side.allCases {
+                for isOffense in [true, false] {
                     for index in 0..<4 {
                         let point = SnapAnchors.alignment(
-                            for: position, index: index, side: side, lineOfScrimmage: 40
+                            for: position, index: index, isOffense: isOffense, lineOfScrimmage: 40
                         )
                         expectIn(point.yard, 0...100, "\(position) aligned off the field")
                         expectIn(point.lateral, 0...1, "\(position) aligned outside the sidelines")
@@ -39,26 +39,43 @@ func runSnapAnchorTests() {
             }
         }
 
+        test("an attacking specialist stands behind the line, whichever team is attacking") {
+            // This keyed on home/away, which is the wrong axis. With the away team attacking, its
+            // kicker lined up eight yards downfield -- in the defence's territory -- because the
+            // template read the side rather than who had the ball.
+            let los = 40.0
+            for position in [Position.kicker, .punter] {
+                let attacking = SnapAnchors.alignment(
+                    for: position, index: 0, isOffense: true, lineOfScrimmage: los
+                )
+                let defending = SnapAnchors.alignment(
+                    for: position, index: 0, isOffense: false, lineOfScrimmage: los
+                )
+                expect(attacking.yard < los, "an attacking \(position) must set up behind the line")
+                expect(defending.yard > los, "a defending \(position) must set up beyond the line")
+            }
+        }
+
         test("the offensive line stands on the line and the defence stands beyond it") {
             let los = 40.0
             let centre = SnapAnchors.alignment(
-                for: .center, index: 0, side: .home, lineOfScrimmage: los
+                for: .center, index: 0, isOffense: true, lineOfScrimmage: los
             )
             expectEqual(centre.yard, los, "the centre is on the line of scrimmage")
             expectEqual(centre.lateral, AnchorRules.centerLateral)
 
             let passer = SnapAnchors.alignment(
-                for: .quarterback, index: 0, side: .home, lineOfScrimmage: los
+                for: .quarterback, index: 0, isOffense: true, lineOfScrimmage: los
             )
             expect(passer.yard < los, "the passer sets up behind the line")
 
             let edge = SnapAnchors.alignment(
-                for: .edgeRusher, index: 0, side: .away, lineOfScrimmage: los
+                for: .edgeRusher, index: 0, isOffense: false, lineOfScrimmage: los
             )
             expect(edge.yard > los, "the defensive front lines up beyond the line of scrimmage")
 
             let safety = SnapAnchors.alignment(
-                for: .safety, index: 0, side: .away, lineOfScrimmage: los
+                for: .safety, index: 0, isOffense: false, lineOfScrimmage: los
             )
             expect(safety.yard > edge.yard, "safeties play behind the front")
         }
@@ -66,10 +83,10 @@ func runSnapAnchorTests() {
         test("two players at the same position take different alignments") {
             let los = 40.0
             let first = SnapAnchors.alignment(
-                for: .wideReceiver, index: 0, side: .home, lineOfScrimmage: los
+                for: .wideReceiver, index: 0, isOffense: true, lineOfScrimmage: los
             )
             let second = SnapAnchors.alignment(
-                for: .wideReceiver, index: 1, side: .home, lineOfScrimmage: los
+                for: .wideReceiver, index: 1, isOffense: true, lineOfScrimmage: los
             )
             expect(first.lateral != second.lateral, "receivers stacked on one another")
         }

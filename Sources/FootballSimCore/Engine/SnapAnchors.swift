@@ -185,10 +185,14 @@ public enum SnapAnchors {
     /// `03` §9.4: per-snap alignment is not recorded, so the start comes from this template and only
     /// the *end* comes from what the outcome recorded. Keyed on position because that is how
     /// alignment actually works, and indexed so two receivers do not stack.
+    /// - Parameter isOffense: whether this player's team has the ball. Only the specialists read it,
+    ///   and they read it because a kicker sets up behind his own line. It was `Side` first, which
+    ///   is the wrong axis: with the away team attacking, its kicker lined up eight yards downfield
+    ///   in the defence's territory.
     public static func alignment(
         for position: Position,
         index: Int,
-        side: Side,
+        isOffense: Bool,
         lineOfScrimmage: Double
     ) -> FieldPoint {
         let slot = Swift.max(0, index)
@@ -247,7 +251,7 @@ public enum SnapAnchors {
                 lateral: pick(AnchorRules.safetyLaterals)
             )
         case .kicker, .punter:
-            let depth = side == .home ? -AnchorRules.specialistDepth : AnchorRules.specialistDepth
+            let depth = isOffense ? -AnchorRules.specialistDepth : AnchorRules.specialistDepth
             return FieldPoint(yard: lineOfScrimmage + depth, lateral: AnchorRules.centerLateral)
         }
     }
@@ -356,7 +360,7 @@ public enum SnapAnchors {
                 let index = seen[player.position, default: 0]
                 seen[player.position] = index + 1
                 let start = alignment(
-                    for: player.position, index: index, side: side, lineOfScrimmage: los
+                    for: player.position, index: index, isOffense: isOffense, lineOfScrimmage: los
                 )
                 let assigned = role(
                     for: player.id, position: player.position, outcome: outcome,
