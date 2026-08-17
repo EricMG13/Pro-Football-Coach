@@ -31,12 +31,12 @@ A demonstration run on an iPhone 17 Pro Max simulator surfaced three defects. Th
 `docs/STATUS.md` and are not fixed. Knowing them lets the read concentrate on what is genuinely
 unanswered.
 
-1. The line-of-scrimmage and first-down markers describe the *next* snap while the animation replays
-   the *last* one, so after a turnover they can sit at opposite ends of the field. The provider's
-   `line` conversion also drops `offenseDirection`, which is wrong independently of G-06.
+1. ~~The markers describe the next snap while the animation replays the last one.~~ **Fixed.** The
+   field's lines now come from the same `PlayRecord` as its dots. The older conversion bug beneath it
+   — offense-relative yards written straight into drawn-field space — is fixed too.
 2. The pre-snap field draws twenty-two dots in one vertical column, then snaps into a real formation
-   after the first play.
-3. Dots are 20 pt and overlap heavily across the interior line.
+   after the first play. **Still open.**
+3. Dots are 20 pt and overlap heavily across the interior line. **Still open.**
 
 ## Known limits of what you are looking at
 
