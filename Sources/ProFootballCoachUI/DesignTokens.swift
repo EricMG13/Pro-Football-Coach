@@ -23,6 +23,7 @@ public enum CoachWorldTokens {
     public enum Depth {
         public static let glassPanelOpacity = 0.56
         public static let deepPanelOpacity = 0.82
+        public static let panelBorderOpacity = 0.38
     }
 
     public enum TypeRole {

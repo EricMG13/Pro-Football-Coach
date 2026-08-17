@@ -114,7 +114,7 @@ public struct NewCareerSetupView: View {
         .padding(CoachWorldTokens.Space.md)
         .coachWorldDeskSurface(
             fill: palette.work.color,
-            border: palette.contentQuiet.color.opacity(0.38)
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
         )
         .accessibilityElement(children: .contain)
         .accessibilitySortPriority(300)
@@ -140,7 +140,7 @@ public struct NewCareerSetupView: View {
         .padding(CoachWorldTokens.Space.md)
         .coachWorldDeskSurface(
             fill: palette.raised.color,
-            border: palette.contentQuiet.color.opacity(0.38)
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
         )
         .accessibilitySortPriority(200)
     }

@@ -236,7 +236,7 @@ public struct PlayerProfileView: View {
         .frame(maxWidth: .infinity)
         .coachWorldDeskSurface(
             fill: palette.work.color,
-            border: palette.contentQuiet.color.opacity(0.38)
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
         )
     }
 
@@ -402,7 +402,7 @@ public struct PlayerProfileView: View {
 
     private var seam: some View {
         Rectangle()
-            .fill(palette.contentQuiet.color.opacity(0.38))
+            .fill(palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity))
             .frame(height: CoachWorldTokens.Shape.hairline)
             .accessibilityHidden(true)
     }
