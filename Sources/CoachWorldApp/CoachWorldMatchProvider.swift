@@ -47,6 +47,25 @@ public extension CoachWorldReadModelProvider {
             ?? "The next recorded snap belongs to \(possession == .home ? teamReference(game.homeID, in: state).name : teamReference(game.awayID, in: state).name)."
         let clock = min(900, max(0, session.situation.secondsRemainingInQuarter))
 
+        // The last snap that actually resolved. Animation trails resolution, always: `03b` §2 and
+        // `03` §9. Before the first snap of a game there is nothing to animate and the view draws
+        // the static field instead.
+        let lastPlay = session.currentDrive?.plays.last ?? session.drives.last?.plays.last
+        let snapPlayback = lastPlay.map { play -> MatchDayReadModel.Playback in
+            let playOffense = play.situation.possession == .home
+                ? session.home.offense : session.away.offense
+            let playDefense = play.situation.possession == .home
+                ? session.away.defense : session.home.defense
+            return playback(
+                from: SnapAnchors.choreograph(
+                    play: play,
+                    offense: Array(playOffense.prefix(11)),
+                    defense: Array(playDefense.prefix(11))
+                ),
+                offenseDirection: .leftToRight
+            )
+        }
+
         return try? MatchDayReadModel(
             recordedOutcomeID: "\(fixtureID.uuidString)-\(session.nextDriveIndex)",
             provenance: .simulationSnapshot,
@@ -72,9 +91,54 @@ public extension CoachWorldReadModelProvider {
             lineOfScrimmage: line,
             firstDownLine: firstDown > line ? firstDown : min(120, line + 1),
             foregroundActorIDs: Array(foreground),
+            playback: snapPlayback,
             causalCommentary: commentary,
             staffInterruption: interruption,
             controls: controls
+        )
+    }
+
+    /// Converts an engine anchor set into presentation space.
+    ///
+    /// The one place the offense-relative-to-absolute conversion happens, and the one place
+    /// direction is read. `03` §9.2 keeps both out of the engine, and `04` §9 requires that the view
+    /// never guess direction from colour.
+    static func playback(
+        from set: SnapAnchorSet,
+        offenseDirection: MatchFieldDirection
+    ) -> MatchDayReadModel.Playback {
+        // Ten yards of end zone sit at each end of the 120-yard drawn field, so an offense-relative
+        // 0 is an absolute 10 when the offence attacks rightward, and an absolute 110 when it
+        // attacks leftward.
+        func x(_ yard: Double) -> Double {
+            offenseDirection == .leftToRight ? yard + 10 : 110 - yard
+        }
+
+        return MatchDayReadModel.Playback(
+            durationSeconds: set.durationSeconds,
+            actors: set.actors.map { actor in
+                MatchDayReadModel.Playback.ActorTrack(
+                    stableID: actor.playerID.uuidString,
+                    startX: x(actor.start.yard),
+                    startY: actor.start.lateral,
+                    endX: x(actor.end.yard),
+                    endY: actor.end.lateral,
+                    role: actor.role.rawValue
+                )
+            },
+            ball: set.ball.map { segment in
+                MatchDayReadModel.Playback.BallLeg(
+                    kind: segment.kind.rawValue,
+                    fromX: x(segment.from.yard),
+                    fromY: segment.from.lateral,
+                    toX: x(segment.to.yard),
+                    toY: segment.to.lateral,
+                    startFraction: segment.startFraction,
+                    endFraction: segment.endFraction
+                )
+            },
+            endSpotX: x(set.endSpot),
+            sentence: set.sentence
         )
     }
 

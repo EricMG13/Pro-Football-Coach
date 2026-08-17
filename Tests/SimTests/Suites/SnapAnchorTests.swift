@@ -113,5 +113,198 @@ func runSnapAnchorTests() {
                 expect(line.hasSuffix("."), "\(result)'s sentence is not a sentence: \(line)")
             }
         }
+
+        test("an anchor set never contradicts the box score") {
+            // 03 section 9.3 clause 2. Driven from allCases so no result kind escapes the check.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            for result in SnapResult.allCases {
+                let yards = result == .sack ? -7 : 9
+                let play = PlayRecord(
+                    situation: Situation(down: 2, distance: 10, yardLine: 40),
+                    offensiveCall: OffensiveCall(playType: result == .sack ? .pass : .run),
+                    defensiveCall: DefensiveCall(coverage: .man),
+                    outcome: SnapOutcome(
+                        result: result, yards: yards, secondsElapsed: 6, matchups: []
+                    ),
+                    callInTriggers: []
+                )
+                let set = SnapAnchors.choreograph(
+                    play: play,
+                    offense: Array(personnel.offense.prefix(11)),
+                    defense: Array(personnel.defense.prefix(11))
+                )
+                expectEqual(set.endSpot - set.lineOfScrimmage, Double(yards),
+                            "\(result) drew an end spot the box score does not agree with")
+                if result == .sack {
+                    expect(set.endSpot < set.lineOfScrimmage, "a sack must end behind the line")
+                }
+                if result == .incompletion {
+                    expect(!set.ball.contains { $0.kind == .carry },
+                           "an incompletion must have no carry segment")
+                }
+            }
+        }
+
+        test("an anchor set is complete and bounded") {
+            // 03 section 9.3 clauses 3 and 4.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            for result in SnapResult.allCases {
+                let play = PlayRecord(
+                    situation: Situation(down: 1, distance: 10, yardLine: 25),
+                    offensiveCall: OffensiveCall(playType: .pass),
+                    defensiveCall: DefensiveCall(coverage: .zoneUnder),
+                    outcome: SnapOutcome(
+                        result: result, yards: 4, secondsElapsed: 5, matchups: []
+                    ),
+                    callInTriggers: []
+                )
+                let set = SnapAnchors.choreograph(
+                    play: play,
+                    offense: Array(personnel.offense.prefix(11)),
+                    defense: Array(personnel.defense.prefix(11))
+                )
+                expectEqual(set.actors.count, 22, "\(result) did not represent all 22 actors")
+                expect(set.foregroundIDs.count <= AnchorRules.maximumForegrounded,
+                       "\(result) foregrounded more than three actors")
+                expectEqual(Set(set.foregroundIDs).count, set.foregroundIDs.count,
+                            "\(result) foregrounded the same actor twice")
+                let onField = Set(set.actors.map(\.playerID))
+                for id in set.foregroundIDs {
+                    expect(onField.contains(id),
+                           "\(result) foregrounded an actor who is not on the field")
+                }
+                for actor in set.actors {
+                    expectIn(actor.start.yard, 0...100, "\(result) started an actor off the field")
+                    expectIn(actor.end.yard, 0...100, "\(result) ended an actor off the field")
+                    expectIn(actor.start.lateral, 0...1, "\(result) started an actor off the field")
+                    expectIn(actor.end.lateral, 0...1, "\(result) ended an actor off the field")
+                }
+                for segment in set.ball {
+                    expectIn(segment.startFraction, 0...1,
+                             "\(result) has a ball segment outside playback")
+                    expectIn(segment.endFraction, 0...1,
+                             "\(result) has a ball segment outside playback")
+                }
+                expectIn(set.durationSeconds,
+                         AnchorRules.minimumPlaybackSeconds...AnchorRules.maximumPlaybackSeconds,
+                         "\(result) produced an unwatchable duration")
+            }
+        }
+
+        test("the same record encodes byte-identically twice") {
+            // 03 section 9.3 clause 1. The determinism the gap register asks for by name.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let play = PlayRecord(
+                situation: Situation(down: 3, distance: 7, yardLine: 62),
+                offensiveCall: OffensiveCall(playType: .pass, passDepth: .deep),
+                defensiveCall: DefensiveCall(coverage: .zoneDeep),
+                outcome: SnapOutcome(
+                    result: .gain, yards: 21, secondsElapsed: 7, matchups: [],
+                    ballCarrierID: personnel.offense[2].id,
+                    passerID: personnel.offense[0].id,
+                    targetID: personnel.offense[2].id
+                ),
+                callInTriggers: []
+            )
+            func encodeOnce() -> Data {
+                let set = SnapAnchors.choreograph(
+                    play: play,
+                    offense: Array(personnel.offense.prefix(11)),
+                    defense: Array(personnel.defense.prefix(11))
+                )
+                return try! JSONEncoder.stable().encode(set)
+            }
+            expectEqual(encodeOnce(), encodeOnce(),
+                        "choreography is not byte-identical across renders")
+        }
+
+        test("choreographing a snap cannot change what the snap was") {
+            // 03 section 9.3, and P13's named render-cannot-change-outcome gate.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let rules = Tier.pro.clockRules
+            func resolveOnce() -> SnapOutcome {
+                var rng = SeededRandom(seed: 4242)
+                return SnapResolver.resolve(
+                    offensiveCall: OffensiveCall(playType: .pass),
+                    defensiveCall: DefensiveCall(coverage: .man),
+                    personnel: personnel, situation: Situation(), rules: rules, rng: &rng
+                )
+            }
+            let before = resolveOnce()
+            let play = PlayRecord(
+                situation: Situation(),
+                offensiveCall: OffensiveCall(playType: .pass),
+                defensiveCall: DefensiveCall(coverage: .man),
+                outcome: before,
+                callInTriggers: []
+            )
+            _ = SnapAnchors.choreograph(
+                play: play,
+                offense: Array(personnel.offense.prefix(11)),
+                defense: Array(personnel.defense.prefix(11))
+            )
+            expectEqual(resolveOnce(), before, "choreography perturbed the simulation")
+        }
+
+        test("a playback track carries absolute field positions") {
+            let track = MatchDayReadModel.Playback.ActorTrack(
+                stableID: "a", startX: 40, startY: 0.3, endX: 52, endY: 0.3, role: "carrier"
+            )
+            expectEqual(track.startX, 40)
+            expectEqual(track.endX, 52)
+
+            let playback = MatchDayReadModel.Playback(
+                durationSeconds: 3,
+                actors: [track],
+                ball: [MatchDayReadModel.Playback.BallLeg(
+                    kind: "carry", fromX: 40, fromY: 0.5, toX: 52, toY: 0.3,
+                    startFraction: 0.1, endFraction: 1
+                )],
+                endSpotX: 52,
+                sentence: "Gain of 12 yards."
+            )
+            expectEqual(playback.actors.count, 1)
+            expectEqual(playback.sentence, "Gain of 12 yards.")
+        }
+
+        test("direction decides which way the play runs on the drawn field") {
+            // The fixture deliberately sits away from midfield: at yardLine 20 with a 10-yard gain,
+            // offense-relative endSpot is 30, which maps to absolute 40 rightward and 80 leftward.
+            // A midfield fixture would map to the same number both ways and prove nothing.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let play = PlayRecord(
+                situation: Situation(down: 1, distance: 10, yardLine: 20),
+                offensiveCall: OffensiveCall(playType: .run),
+                defensiveCall: DefensiveCall(coverage: .man),
+                outcome: SnapOutcome(
+                    result: .gain, yards: 10, secondsElapsed: 6, matchups: [],
+                    ballCarrierID: personnel.offense[1].id
+                ),
+                callInTriggers: []
+            )
+            let set = SnapAnchors.choreograph(
+                play: play,
+                offense: Array(personnel.offense.prefix(11)),
+                defense: Array(personnel.defense.prefix(11))
+            )
+            expectEqual(set.endSpot, 30, "the engine's end spot is offense-relative")
+
+            let rightward = CoachWorldReadModelProvider.playback(
+                from: set, offenseDirection: .leftToRight
+            )
+            let leftward = CoachWorldReadModelProvider.playback(
+                from: set, offenseDirection: .rightToLeft
+            )
+
+            // Ten yards of end zone sit at each end of the 120-yard drawn field.
+            expectEqual(rightward.endSpotX, 40, "a leftToRight drive must run up the drawn field")
+            expectEqual(leftward.endSpotX, 80, "a rightToLeft drive must run down the drawn field")
+            expectEqual(rightward.actors.count, 22)
+            expectEqual(leftward.actors.count, 22)
+            for actor in rightward.actors + leftward.actors {
+                expectIn(actor.startX, 0...120, "an actor left the drawn field")
+                expectIn(actor.endX, 0...120, "an actor left the drawn field")
+            }
+        }
     }
 }
