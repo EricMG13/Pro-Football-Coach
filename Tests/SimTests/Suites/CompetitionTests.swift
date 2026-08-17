@@ -253,7 +253,7 @@ func runCompetitionTests() {
                     )
                     let result = AbstractGameSimulator.play(game, in: state)
                     expect(result.homeScore != result.awayScore,
-                           "(tier.rawValue) (stage.rawValue) returned a tie")
+                           "\(tier.rawValue) \(stage.rawValue) returned a tie")
                 }
             }
         }
