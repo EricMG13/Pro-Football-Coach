@@ -614,14 +614,14 @@ public struct LeagueMapView: View {
 
     private var seam: some View {
         Rectangle()
-            .fill(palette.contentQuiet.color.opacity(0.38))
+            .fill(palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity))
             .frame(height: CoachWorldTokens.Shape.hairline)
             .accessibilityHidden(true)
     }
 
     private var verticalSeam: some View {
         Rectangle()
-            .fill(palette.contentQuiet.color.opacity(0.38))
+            .fill(palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity))
             .frame(width: CoachWorldTokens.Shape.hairline)
             .accessibilityHidden(true)
     }
