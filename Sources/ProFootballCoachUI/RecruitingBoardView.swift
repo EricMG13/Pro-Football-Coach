@@ -52,7 +52,7 @@ public struct RecruitingBoardView: View {
     }
 
     public var body: some View {
-        Group {
+        CoachWorldFloodlitStage(palette: palette) {
             if dynamicTypeSize.isAccessibilitySize {
                 accessibleLayout
             } else {
@@ -62,8 +62,6 @@ public struct RecruitingBoardView: View {
                 }
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
     }
 
     private var worldStrip: some View {
@@ -139,10 +137,12 @@ public struct RecruitingBoardView: View {
             VStack(spacing: .zero) {
                 boardHeader
                 if !hasProspects {
-                    ContentUnavailableView(
-                        "No prospects on the board",
-                        systemImage: "list.number",
-                        description: Text("Add evaluated prospects before assigning recruiting time.")
+                    CoachWorldSystemState(
+                        .empty(
+                            "No prospects on the board. Add evaluated prospects before "
+                                + "assigning recruiting time."
+                        ),
+                        palette: palette
                     )
                 } else {
                     accessibleProspectRows
@@ -158,14 +158,6 @@ public struct RecruitingBoardView: View {
                 }
                 accessibleWorldContext
             }
-        }
-        .background {
-            RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.surfaceRadius)
-                .fill(palette.work.color)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.surfaceRadius)
-                .stroke(palette.contentQuiet.color.opacity(0.38), lineWidth: CoachWorldTokens.Shape.hairline)
         }
         .accessibilitySortPriority(100)
     }
@@ -201,18 +193,23 @@ public struct RecruitingBoardView: View {
             boardHeader
             capacityStrip
             if !hasProspects {
-                ContentUnavailableView(
-                    "No prospects on the board",
-                    systemImage: "list.number",
-                    description: Text("Add evaluated prospects before assigning recruiting time.")
+                CoachWorldSystemState(
+                    .empty(
+                        "No prospects on the board. Add evaluated prospects before "
+                            + "assigning recruiting time."
+                    ),
+                    palette: palette
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 comparisonTable
                 discoveryTable
             }
         }
-        .background(palette.work.color)
+        .coachWorldFloodlitPanel(
+            fill: palette.work.color,
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity),
+            depth: .deep
+        )
         .accessibilitySortPriority(100)
     }
 
@@ -564,19 +561,18 @@ public struct RecruitingBoardView: View {
                     .background(palette.page.color)
                     .overlay(alignment: .top) { seam }
             }
-            .coachWorldDeskSurface(
+            .coachWorldFloodlitPanel(
                 fill: palette.page.color,
-                border: palette.contentQuiet.color.opacity(0.38)
+                border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
             )
             .accessibilitySortPriority(80)
         } else {
-            ContentUnavailableView(
-                "No prospect selected",
-                systemImage: "person.crop.rectangle",
-                description: Text("Select a prospect to review the system evaluation.")
+            CoachWorldSystemState(
+                .empty(
+                    "No prospect selected. Select a prospect to review the system evaluation."
+                ),
+                palette: palette
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(palette.page.color)
         }
     }
 

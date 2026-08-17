@@ -22,25 +22,27 @@ public struct ContactVisitPlannerView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
-                if let statusMessage { Text(statusMessage).foregroundStyle(palette.stateWarning.color) }
-                Text("Choose an existing recruiting action. Costs and refusal reasons come from the current board.")
-                    .foregroundStyle(palette.contentSecondary.color)
-                    .fixedSize(horizontal: false, vertical: true)
-                ForEach(model.prospects, id: \.stableID) { prospect in
-                    prospectRow(prospect)
-                }
-                if model.prospects.isEmpty {
-                    Text("No board prospects have a contact or visit plan.")
+        CoachWorldFloodlitStage(palette: palette) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
+                    if let statusMessage { Text(statusMessage).foregroundStyle(palette.stateWarning.color) }
+                    Text("Choose an existing recruiting action. Costs and refusal reasons come from the current board.")
                         .foregroundStyle(palette.contentSecondary.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                    ForEach(model.prospects, id: \.stableID) { prospect in
+                        prospectRow(prospect)
+                    }
+                    if model.prospects.isEmpty {
+                        CoachWorldSystemState(
+                            .empty("No board prospects have a contact or visit plan."),
+                            palette: palette
+                        )
+                    }
                 }
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .accessibilitySortPriority(100)
     }
 

@@ -19,22 +19,22 @@ public struct ClassOverviewView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
-                if let statusMessage { Text(statusMessage).foregroundStyle(palette.stateWarning.color) }
-                summary
-                needs
-                Text("BOARD PROSPECTS · \(model.prospects.count)")
-                    .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                Text("DISCOVERABLE PROSPECTS · \(model.discovery.count)")
-                    .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                    .foregroundStyle(palette.contentSecondary.color)
+        CoachWorldFloodlitStage(palette: palette) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
+                    if let statusMessage { Text(statusMessage).foregroundStyle(palette.stateWarning.color) }
+                    summary
+                    needs
+                    Text("BOARD PROSPECTS · \(model.prospects.count)")
+                        .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
+                    Text("DISCOVERABLE PROSPECTS · \(model.discovery.count)")
+                        .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
+                        .foregroundStyle(palette.contentSecondary.color)
+                }
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .accessibilitySortPriority(100)
     }
 

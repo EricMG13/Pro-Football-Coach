@@ -37,6 +37,13 @@ public struct ShortlistView: View {
     }
 
     public var body: some View {
+        CoachWorldFloodlitStage(palette: palette) {
+            scrollContent
+        }
+        .accessibilitySortPriority(100)
+    }
+
+    private var scrollContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                 header
@@ -53,10 +60,12 @@ public struct ShortlistView: View {
                     .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                     .foregroundStyle(palette.collegeIdentity.color)
                 if filteredProspects.isEmpty {
-                    ContentUnavailableView(
-                        "No monitored prospects",
-                        systemImage: "list.number",
-                        description: Text("Add evaluated prospects to the board before monitoring contact windows.")
+                    CoachWorldSystemState(
+                        .empty(
+                            "No monitored prospects. Add evaluated prospects to the board "
+                                + "before monitoring contact windows."
+                        ),
+                        palette: palette
                     )
                 } else {
                     ForEach(filteredProspects, id: \.stableID) { prospect in
@@ -90,9 +99,6 @@ public struct ShortlistView: View {
             }
             .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
-        .accessibilitySortPriority(100)
     }
 
     private var header: some View {

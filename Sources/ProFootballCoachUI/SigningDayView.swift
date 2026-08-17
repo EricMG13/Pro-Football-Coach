@@ -24,6 +24,10 @@ public struct SigningDayView: View {
         self.onClose = onClose
     }
 
+    private var palette: CoachWorldTokens.Palette {
+        CoachWorldTokens.dark
+    }
+
     public var body: some View {
         Group {
             if model.cyclePhase == .signing {
@@ -36,11 +40,17 @@ public struct SigningDayView: View {
                     onClose: onClose
                 )
             } else {
-                ContentUnavailableView(
-                    "Signing day is closed",
-                    systemImage: "calendar.badge.exclamationmark",
-                    description: Text("The signing period is not active in this phase.")
-                )
+                // The closed branch draws its own world: it does not delegate, so it needs the
+                // stage the delegated branch inherits from CollegeOffseasonView.
+                CoachWorldFloodlitStage(palette: palette) {
+                    CoachWorldSystemState(
+                        .empty(
+                            "Signing day is closed. The signing period is not active "
+                                + "in this phase."
+                        ),
+                        palette: palette
+                    )
+                }
             }
         }
         .accessibilitySortPriority(dynamicTypeSize.isAccessibilitySize ? 100 : 90)

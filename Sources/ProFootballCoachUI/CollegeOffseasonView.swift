@@ -32,28 +32,28 @@ public struct CollegeOffseasonView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
-                if let statusMessage {
-                    Text(statusMessage)
-                        .font(CoachWorldTokens.TypeRole.callout)
-                        .foregroundStyle(palette.stateWarning.color)
-                        .fixedSize(horizontal: false, vertical: true)
+        CoachWorldFloodlitStage(palette: palette) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
+                    if let statusMessage {
+                        Text(statusMessage)
+                            .font(CoachWorldTokens.TypeRole.callout)
+                            .foregroundStyle(palette.stateWarning.color)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    summary
+                    if model.decisions.isEmpty && model.delegatedDecisionCount == 0 {
+                        emptyState
+                    } else if model.decisions.isEmpty {
+                        delegatedState
+                    } else {
+                        decisions
+                    }
                 }
-                summary
-                if model.decisions.isEmpty && model.delegatedDecisionCount == 0 {
-                    emptyState
-                } else if model.decisions.isEmpty {
-                    delegatedState
-                } else {
-                    decisions
-                }
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .accessibilitySortPriority(100)
     }
 
@@ -154,31 +154,26 @@ public struct CollegeOffseasonView: View {
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            Text("No college-cycle decision is waiting.")
-                .font(CoachWorldTokens.TypeRole.headline.weight(.bold))
-            Text("The portal and recruiting ledgers are current for this boundary.")
-                .font(CoachWorldTokens.TypeRole.body)
-                .foregroundStyle(palette.contentSecondary.color)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(CoachWorldTokens.Space.sm)
-        .background(palette.raised.color)
+        CoachWorldSystemState(
+            .empty(
+                "No college-cycle decision is waiting. The portal and recruiting ledgers "
+                    + "are current for this boundary."
+            ),
+            palette: palette
+        )
     }
 
+    /// The first production consumer of `04` section 7's delegated state: this screen already
+    /// described exactly that condition in its own words, so it adopts the shared component the
+    /// canon names rather than keeping a second hand-rolled spelling of it.
     private var delegatedState: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            Text("Staff decision in progress.")
-                .font(CoachWorldTokens.TypeRole.headline.weight(.bold))
-            Text("\(model.delegatedDecisionCount) delegated decision(s) remain with the assigned staff owner.")
-                .font(CoachWorldTokens.TypeRole.body)
-                .foregroundStyle(palette.contentSecondary.color)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(CoachWorldTokens.Space.sm)
-        .background(palette.raised.color)
+        CoachWorldSystemState(
+            .delegated(
+                "Staff decision in progress. \(model.delegatedDecisionCount) delegated "
+                    + "decision(s) remain with the assigned staff owner."
+            ),
+            palette: palette
+        )
     }
 
     private func section<Content: View>(
