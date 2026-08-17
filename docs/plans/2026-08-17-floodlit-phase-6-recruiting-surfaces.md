@@ -234,11 +234,14 @@ Two judgement calls, both recorded here because a reviewer would otherwise read 
 ### Two string-interpolation bugs fixed
 
 A sweep for the defect class Phase 4's review first surfaced in `OpponentFilmView` (literal parens
-where `\(...)` was intended) found two more, both now fixed:
+where `\(...)` was intended) found two more. **Only the second is in this phase's commit** — the
+`DepthChartView` fix landed in the Phase 5 commit (`8c89db4`), because that file is a Phase 5 file;
+it is described here only because the sweep that found both ran during this phase:
 
 - `DepthChartView.swift`'s personnel-option accessibility label — VoiceOver announced the literal
-  text `(option.title). (option.consequence)`. Left untouched through Phase 5 because a separate
-  session owned it; that session ended without landing the fix, so it was fixed here.
+  text `(option.title). (option.consequence)`. Left untouched through Phase 5's conversion because a
+  separate session owned it; that session ended without landing the fix, so it went in with the
+  Phase 5 commit.
 - **`ProspectProfileView.swift:92` was the worse one and nobody had flagged it**: the same bug in
   *visible on-screen copy*, rendering `Stable-ID dossier · (model.prospects.count +
   model.discovery.count) visible prospects` literally to the player. Found by widening the search from

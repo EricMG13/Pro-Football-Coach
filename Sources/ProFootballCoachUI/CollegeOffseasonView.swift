@@ -147,7 +147,11 @@ public struct CollegeOffseasonView: View {
                 }
                 .padding(CoachWorldTokens.Space.sm)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(palette.raised.color.opacity(0.7))
+                .coachWorldFloodlitPanel(
+                    fill: palette.raised.color,
+                    border: palette.contentQuiet.color
+                        .opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+                )
                 .accessibilityElement(children: .contain)
             }
         }

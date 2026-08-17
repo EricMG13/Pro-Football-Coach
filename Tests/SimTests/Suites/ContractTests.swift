@@ -1,4 +1,6 @@
 import Foundation
+import CoachWorldApp
+import FootballSimCore
 @testable import ProFootballCoachUI
 
 // The four build-wide invariants from 03b section 1, in one place because that is what they are:
@@ -968,10 +970,12 @@ func runContractTests() {
             expect(profile.contains("No recent form recorded."),
                    "player profile must expose a truthful empty form state")
 
+            // The shared surface element is `coachWorldFloodlitPanel`; `coachWorldDeskSurface` was
+            // its pre-Floodlit predecessor and was deleted once the last caller converted.
             expect(deskComponents.contains("struct CoachWorldActionButtonStyle")
                        && deskComponents.contains("struct CoachWorldRouteButton")
-                       && deskComponents.contains("coachWorldDeskSurface"),
-                   "management screens must share the proven action, route and desk-surface elements")
+                       && deskComponents.contains("func coachWorldFloodlitPanel"),
+                   "management screens must share the proven action, route and panel elements")
             expect(hq.contains("CoachWorldActionButtonStyle")
                        && hq.contains("CoachWorldRouteButton")
                        && recruiting.contains("CoachWorldActionButtonStyle")
@@ -1952,6 +1956,65 @@ func runContractTests() {
             expect(text.contains("register == .desk"),
                    "the backdrop/grain are not conditioned on the register, so broadcast would "
                        + "inherit desk chrome")
+        }
+    }
+
+    suite("Refusal copy is player-facing") {
+        // Found by running the app, not by a test: tapping Continue with no plans set printed
+        // `missingWeeklyPreparation([FootballSimCore.TacticalPreparationRequirement.gamePlan,
+        // ...])` into the status line, because the store hand-wrote one sentence and interpolated
+        // the raw error for every other refusal. CLAUDE.md: player-facing copy is short and plain.
+        test("no refusal leaks Swift type or case internals into player copy") {
+            let refusals: [CareerSessionError] = [
+                .missingControlledCareer,
+                .missingWeeklyPreparation([.gamePlan, .practicePlan]),
+                .missingWeeklyPreparation([.gamePlan]),
+                .responsibilityDelegated,
+                .missingMandatoryDecision,
+                .missingDecisionOption,
+                .decisionActionFailed,
+                .responsibilityUpdateFailed,
+                .invalidState,
+                .matchInProgress,
+                .matchNotStarted,
+                .staleMatchCheckpoint,
+                .matchActionFailed(.completed),
+                .matchActionFailed(.unavailableTakeover),
+            ]
+            // The tells of an interpolated error value rather than authored prose.
+            let leaks = ["FootballSimCore.", "ProFootballCoachUI.", "CoachWorldApp.",
+                         "(", ")", "[", "]", "Error", "Optional"]
+            for refusal in refusals {
+                let message = CoachWorldStore.refusalMessage(for: refusal)
+                expect(!message.isEmpty, "every refusal must say something")
+                for leak in leaks {
+                    expect(!message.contains(leak),
+                           "refusal copy \"\(message)\" contains \"\(leak)\", so a raw error "
+                               + "value reached the player instead of an authored sentence")
+                }
+                expect(message.first?.isUppercase == true,
+                       "refusal copy \"\(message)\" must read as a sentence")
+            }
+        }
+
+        test("the blocked advance names the work the player must do") {
+            let both = CoachWorldStore.refusalMessage(
+                for: CareerSessionError.missingWeeklyPreparation([.gamePlan, .practicePlan])
+            )
+            expect(both.contains("game plan") && both.contains("practice plan"),
+                   "a blocked advance must name both outstanding plans, not just refuse")
+            let one = CoachWorldStore.refusalMessage(
+                for: CareerSessionError.missingWeeklyPreparation([.practicePlan])
+            )
+            expect(one.contains("practice plan") && !one.contains("game plan"),
+                   "a blocked advance must name only the work actually outstanding")
+        }
+
+        test("an error the session does not define still refuses in plain words") {
+            struct Unexpected: Error {}
+            let message = CoachWorldStore.refusalMessage(for: Unexpected())
+            expect(!message.contains("Unexpected"),
+                   "an unknown error must not print its own type name to the player")
         }
     }
 }

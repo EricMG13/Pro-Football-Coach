@@ -206,7 +206,10 @@ public struct ProspectProfileView: View {
         }
         .padding(CoachWorldTokens.Space.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(palette.raised.color.opacity(0.72))
+        .coachWorldFloodlitPanel(
+            fill: palette.raised.color,
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+        )
         .accessibilityElement(children: .contain)
     }
 

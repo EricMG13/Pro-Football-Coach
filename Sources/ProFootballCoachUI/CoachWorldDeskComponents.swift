@@ -311,24 +311,6 @@ struct CoachWorldRouteButton: View {
     }
 }
 
-private struct CoachWorldDeskSurfaceModifier: ViewModifier {
-    let fill: Color
-    let border: Color
-
-    func body(content: Content) -> some View {
-        content
-            .background {
-                RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.surfaceRadius)
-                    .fill(fill)
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.surfaceRadius)
-                    .stroke(border, lineWidth: CoachWorldTokens.Shape.hairline)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.surfaceRadius))
-    }
-}
-
 private struct CoachWorldFloodlitPanelModifier: ViewModifier {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
@@ -364,10 +346,6 @@ private struct CoachWorldFloodlitPanelModifier: ViewModifier {
 }
 
 extension View {
-    func coachWorldDeskSurface(fill: Color, border: Color) -> some View {
-        modifier(CoachWorldDeskSurfaceModifier(fill: fill, border: border))
-    }
-
     func coachWorldFloodlitPanel(
         fill: Color,
         border: Color,

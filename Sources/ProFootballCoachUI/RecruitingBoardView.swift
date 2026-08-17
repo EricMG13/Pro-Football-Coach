@@ -122,10 +122,8 @@ public struct RecruitingBoardView: View {
 
     private var standardLayout: some View {
         HStack(spacing: deskGap) {
-            ScrollView(.vertical) {
-                boardSurface
-            }
-            .frame(maxWidth: .infinity)
+            boardSurface
+                .frame(maxWidth: .infinity)
             dossier
                 .frame(width: RecruitingMetric.dossierWidth)
         }
@@ -201,10 +199,19 @@ public struct RecruitingBoardView: View {
                     palette: palette
                 )
             } else {
-                comparisonTable
-                discoveryTable
+                // The rows scroll inside the panel, so the panel frames the pane at its full
+                // height. Scrolling the panel itself would push its cut corners and lower border
+                // off-screen on a full board, and spread the specular gradient over the whole
+                // content height instead of the pane.
+                ScrollView(.vertical) {
+                    VStack(spacing: .zero) {
+                        comparisonTable
+                        discoveryTable
+                    }
+                }
             }
         }
+        .frame(maxHeight: .infinity, alignment: .top)
         .coachWorldFloodlitPanel(
             fill: palette.work.color,
             border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity),
@@ -567,12 +574,20 @@ public struct RecruitingBoardView: View {
             )
             .accessibilitySortPriority(80)
         } else {
+            // The empty dossier is still a bounded pane beside the board, so it keeps the panel
+            // the filled dossier has. Only a full-screen ground would be dropped here.
             CoachWorldSystemState(
                 .empty(
                     "No prospect selected. Select a prospect to review the system evaluation."
                 ),
                 palette: palette
             )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .coachWorldFloodlitPanel(
+                fill: palette.page.color,
+                border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+            )
+            .accessibilitySortPriority(80)
         }
     }
 

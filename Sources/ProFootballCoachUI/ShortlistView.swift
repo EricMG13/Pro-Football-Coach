@@ -87,7 +87,11 @@ public struct ShortlistView: View {
                             }
                             .padding(CoachWorldTokens.Space.sm)
                             .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-                            .background(palette.raised.color.opacity(0.72))
+                            .coachWorldFloodlitPanel(
+                                fill: palette.raised.color,
+                                border: palette.contentQuiet.color
+                                    .opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+                            )
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(

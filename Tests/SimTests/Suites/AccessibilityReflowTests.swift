@@ -46,8 +46,14 @@ private func floodlitConvertedTypes() -> Set<String> {
         for file in sources {
             let name = typeName(of: file.path)
             guard !converted.contains(name) else { continue }
-            // A wrapper delegates by naming the converted type's initialiser.
-            if converted.contains(where: { file.text.contains($0 + "(") }) {
+            // A wrapper delegates by naming the converted type's initialiser. Naming it is not
+            // sufficient: `SigningDayView` delegates on one branch and draws its own state on the
+            // other, so the mention alone would have called it converted while that branch still
+            // rendered on bare ground. A file that draws an unconverted composition of its own is
+            // not a wrapper, whatever else it delegates to.
+            let drawsItsOwnUnconvertedState = file.text.contains("ContentUnavailableView(")
+            if !drawsItsOwnUnconvertedState,
+               converted.contains(where: { file.text.contains($0 + "(") }) {
                 converted.insert(name)
                 changed = true
             }
@@ -186,16 +192,35 @@ func runAccessibilityReflowTests() {
             }
         }
 
-        test("the entry surfaces this phase converts are converted") {
-            // Task 5's registry range. Named individually because this is the phase's own
-            // completion gate — the enumeration above stays general, this asserts the specific
-            // claim the commit makes.
+        test("every surface each landed cutover phase claims is converted") {
+            // Each phase's own completion gate. The enumeration above stays general and reports a
+            // count; this pins the specific claim each commit made, so a later phase cannot quietly
+            // un-convert an earlier one. A phase adds its range here when it lands — a phase that
+            // forgets asserts nothing, which is how Phases 4 to 6 originally slipped through.
             let converted = Set(landedFamilies().landed.filter(isFloodlitConverted).map(\.screen))
-            for screen in [CoachWorldScreenID.titleContinue, .newCareerCoachIdentity,
-                           .settingsAccessibility, .worldSearch, .careerHub] {
-                expect(converted.contains(screen),
-                       "\(screen.canonicalName) is an entry surface this phase converts, but its "
-                           + "view does not use CoachWorldFloodlitStage")
+            let claimed: [(phase: String, screens: [CoachWorldScreenID])] = [
+                ("3 (entry, registry 1-7)",
+                 [.titleContinue, .newCareerCoachIdentity, .jobBoard, .offer, .appointment,
+                  .settingsAccessibility, .worldSearch]),
+                ("4 (command, registry 8-15)",
+                 [.coachingHQ, .inbox, .opponentReportFilmRoom, .gamePlan, .practicePlan,
+                  .teamHealth, .matchDay, .aftermath]),
+                ("5 (personnel, registry 16-23)",
+                 [.roster, .depthChart, .playerProfile, .developmentPlan, .staffRoom,
+                  .staffMarketProfile, .schemeBook, .personnelPackages]),
+                ("6 (college, registry 24-33, 61)",
+                 [.recruitingBoard, .prospectProfile, .shortlist, .contactVisitPlanner,
+                  .classOverview, .signingDay, .portalHub, .retentionDecisions, .portalMarket,
+                  .collegeOffseason, .nilAllocation]),
+                ("career hub family landed with phase 3",
+                 [.careerHub, .jobSecurity, .stakeholders, .promotionDecision, .coachingCarousel]),
+            ]
+            for (phase, screens) in claimed {
+                for screen in screens {
+                    expect(converted.contains(screen),
+                           "\(screen.canonicalName) is claimed converted by phase \(phase), but its "
+                               + "view does not resolve to CoachWorldFloodlitStage")
+                }
             }
         }
 
