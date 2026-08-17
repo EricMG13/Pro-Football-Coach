@@ -42,7 +42,7 @@ public struct RosterView: View {
     }
 
     public var body: some View {
-        Group {
+        CoachWorldFloodlitStage(palette: palette) {
             if dynamicTypeSize.isAccessibilitySize {
                 accessibleLayout
             } else {
@@ -53,8 +53,6 @@ public struct RosterView: View {
                 }
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .onChange(of: model.players.map(\.stableID), initial: true) { _, stableIDs in
             if !stableIDs.contains(selectedPlayerID) {
                 selectedPlayerID = stableIDs.first ?? ""
@@ -289,20 +287,21 @@ public struct RosterView: View {
         VStack(spacing: .zero) {
             summaryRibbon
             if model.players.isEmpty {
-                ContentUnavailableView(
-                    "No players on the roster",
-                    systemImage: "person.3",
-                    description: Text("Players appear here when a career roster is available.")
+                CoachWorldSystemState(
+                    .empty(
+                        "No players on the roster. Players appear here when a career "
+                            + "roster is available."
+                    ),
+                    palette: palette
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 comparisonTable
             }
         }
-        .background(palette.work.color)
-        .coachWorldDeskSurface(
+        .coachWorldFloodlitPanel(
             fill: palette.work.color,
-            border: palette.contentQuiet.color.opacity(0.38)
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity),
+            depth: .deep
         )
         .accessibilitySortPriority(100)
     }
@@ -457,18 +456,16 @@ public struct RosterView: View {
             ScrollView {
                 inspectorContent(selected)
             }
-            .coachWorldDeskSurface(
+            .coachWorldFloodlitPanel(
                 fill: palette.page.color,
-                border: palette.contentQuiet.color.opacity(0.38)
+                border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
             )
             .accessibilitySortPriority(80)
         } else {
-            ContentUnavailableView(
-                "No player selected",
-                systemImage: "person.crop.rectangle",
-                description: Text("Select a player to review the dossier.")
+            CoachWorldSystemState(
+                .empty("No player selected. Select a player to review the dossier."),
+                palette: palette
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
@@ -532,10 +529,12 @@ public struct RosterView: View {
             VStack(spacing: .zero) {
                 summaryRibbon
                 if model.players.isEmpty {
-                    ContentUnavailableView(
-                        "No players on the roster",
-                        systemImage: "person.3",
-                        description: Text("Players appear here when a career roster is available.")
+                    CoachWorldSystemState(
+                        .empty(
+                            "No players on the roster. Players appear here when a career "
+                                + "roster is available."
+                        ),
+                        palette: palette
                     )
                 } else {
                     accessibleRosterRows
@@ -546,7 +545,6 @@ public struct RosterView: View {
                 accessibleWorldRoutes
             }
         }
-        .background(palette.work.color)
         .accessibilitySortPriority(100)
     }
 

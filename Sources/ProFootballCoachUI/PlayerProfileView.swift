@@ -22,7 +22,7 @@ public struct PlayerProfileView: View {
     }
 
     public var body: some View {
-        Group {
+        CoachWorldFloodlitStage(palette: palette) {
             if dynamicTypeSize.isAccessibilitySize {
                 ScrollView { accessibleLayout }
             } else {
@@ -34,8 +34,6 @@ public struct PlayerProfileView: View {
                 }
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
     }
 
     private var palette: CoachWorldTokens.Palette {
@@ -233,9 +231,9 @@ public struct PlayerProfileView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .coachWorldDeskSurface(
+        .coachWorldFloodlitPanel(
             fill: palette.work.color,
-            border: palette.contentQuiet.color.opacity(0.38)
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
         )
     }
 

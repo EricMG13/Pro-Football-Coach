@@ -20,6 +20,14 @@ public struct DevelopmentPlanView: View {
     }
 
     public var body: some View {
+        CoachWorldFloodlitStage(palette: palette) {
+            scrollContent
+        }
+        .accessibilitySortPriority(dynamicTypeSize.isAccessibilitySize ? 100 : 90)
+        .safeAreaInset(edge: .top) { topBar }
+    }
+
+    private var scrollContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                 header
@@ -33,10 +41,12 @@ public struct DevelopmentPlanView: View {
                     .foregroundStyle(palette.contentSecondary.color)
                     .fixedSize(horizontal: false, vertical: true)
                 if model.players.isEmpty {
-                    ContentUnavailableView(
-                        "No development evidence",
-                        systemImage: "calendar.badge.exclamationmark",
-                        description: Text("No roster records are available for this checkpoint.")
+                    CoachWorldSystemState(
+                        .empty(
+                            "No development evidence. No roster records are available "
+                                + "for this checkpoint."
+                        ),
+                        palette: palette
                     )
                 } else {
                     ForEach(model.players) { player in
@@ -67,10 +77,6 @@ public struct DevelopmentPlanView: View {
             }
             .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
-        .accessibilitySortPriority(dynamicTypeSize.isAccessibilitySize ? 100 : 90)
-        .safeAreaInset(edge: .top) { topBar }
     }
 
     private var header: some View {

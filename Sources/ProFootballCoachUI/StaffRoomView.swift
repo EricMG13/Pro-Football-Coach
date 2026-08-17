@@ -25,27 +25,29 @@ public struct StaffRoomView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
-                if let statusMessage {
-                    Text(statusMessage)
-                        .foregroundStyle(palette.stateWarning.color)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if model.rows.isEmpty {
-                    Text("No employed staff are recorded for this organisation.")
-                        .foregroundStyle(palette.contentSecondary.color)
-                } else {
-                    ForEach(model.rows) { row in
-                        staffRow(row)
+        CoachWorldFloodlitStage(palette: palette) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
+                    if let statusMessage {
+                        Text(statusMessage)
+                            .foregroundStyle(palette.stateWarning.color)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if model.rows.isEmpty {
+                        CoachWorldSystemState(
+                            .empty("No employed staff are recorded for this organisation."),
+                            palette: palette
+                        )
+                    } else {
+                        ForEach(model.rows) { row in
+                            staffRow(row)
+                        }
                     }
                 }
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .accessibilitySortPriority(100)
     }
 

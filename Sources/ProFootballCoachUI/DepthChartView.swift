@@ -33,6 +33,15 @@ public struct DepthChartView: View {
     }
 
     public var body: some View {
+        CoachWorldFloodlitStage(palette: palette) {
+            scrollContent
+        }
+        .frame(maxWidth: .infinity,
+               alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
+        .accessibilitySortPriority(100)
+    }
+
+    private var scrollContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                 HStack {
@@ -138,16 +147,11 @@ public struct DepthChartView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("(option.title). (option.consequence)")
+                    .accessibilityLabel("\(option.title). \(option.consequence)")
                     .accessibilityAddTraits(selectedID == option.id ? .isSelected : [])
                 }
             }
             .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
-        .frame(maxWidth: .infinity,
-               alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
-        .accessibilitySortPriority(100)
     }
 }
