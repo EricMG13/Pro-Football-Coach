@@ -36,7 +36,7 @@ public extension CoachWorldReadModelProvider {
             }
         let careerLine = state.people.staffCareers[coachID]?.assignments.map { assignment in
             LegacyHistoryReadModel.CareerEntry(
-                id: "(coachID.uuidString)-(assignment.season)-(assignment.organisationID.uuidString)-(assignment.role.rawValue)",
+                id: "\(coachID.uuidString)-\(assignment.season)-\(assignment.organisationID.uuidString)-\(assignment.role.rawValue)",
                 season: assignment.season,
                 organisation: teamReference(assignment.organisationID, in: state),
                 role: assignment.role.rawValue
@@ -67,12 +67,12 @@ public extension CoachWorldReadModelProvider {
         in state: GameState
     ) -> LegacyHistoryReadModel.Record {
         LegacyHistoryReadModel.Record(
-            id: "(title)-(entry.gameID.uuidString)",
+            id: "\(title)-\(entry.gameID.uuidString)",
             title: title,
             value: entry.value,
             team: teamReference(entry.teamID, in: state),
             opponent: teamReference(entry.opponentID, in: state),
-            gameLabel: "Season (entry.season + 1) · Week (entry.week) · (entry.stage.rawValue)"
+            gameLabel: "Season \(entry.season + 1) · Week \(entry.week) · \(entry.stage.rawValue)"
         )
     }
 }
