@@ -251,4 +251,80 @@ public enum SnapAnchors {
             return FieldPoint(yard: lineOfScrimmage + depth, lateral: AnchorRules.centerLateral)
         }
     }
+
+    /// What this player was doing, read off the outcome's recorded identities first and their
+    /// position second.
+    ///
+    /// Deliberately does not call `Assignment.assign`. The three identities the outcome already
+    /// records — passer, target, carrier — answer the question for everyone who mattered, and
+    /// position answers it for everyone else. Reading the record is truthful; re-deriving the
+    /// assignment would be a second opinion the view has no business forming.
+    public static func role(
+        for playerID: UUID,
+        position: Position,
+        outcome: SnapOutcome,
+        isOffense: Bool
+    ) -> SnapRole {
+        if position == .kicker || position == .punter { return .kicker }
+        if playerID == outcome.passerID { return .passer }
+        if playerID == outcome.ballCarrierID { return .carrier }
+        if playerID == outcome.targetID { return .routeRunner }
+        if isOffense {
+            switch position {
+            case .leftTackle, .guardPosition, .center, .rightTackle: return .blocker
+            case .wideReceiver, .tightEnd: return .routeRunner
+            default: return .decoy
+            }
+        }
+        switch position {
+        case .edgeRusher, .defensiveTackle: return .rusher
+        case .linebacker: return .runFit
+        default: return .coverage
+        }
+    }
+
+    /// The sentence a VoiceOver user hears instead of watching the snap.
+    ///
+    /// `04` §9 requires an equivalent for every snap, and P13 requires it per snap rather than per
+    /// drive.
+    public static func sentence(
+        for outcome: SnapOutcome,
+        offense: [Player],
+        defense: [Player]
+    ) -> String {
+        let distance = Swift.abs(outcome.yards)
+        let yardWord = distance == 1 ? "yard" : "yards"
+        let head: String
+        switch outcome.result {
+        case .gain:
+            head = outcome.yards < 0
+                ? "Stopped for a loss of \(distance) \(yardWord)"
+                : "Gain of \(distance) \(yardWord)"
+        case .incompletion: head = "Incomplete"
+        case .sack: head = "Sacked for \(distance) \(yardWord)"
+        case .interception: head = "Intercepted"
+        case .fumbleLost: head = "Fumble lost"
+        case .touchdown: head = "Touchdown, \(distance) \(yardWord)"
+        case .fieldGoalGood: head = "Field goal is good"
+        case .fieldGoalMissed: head = "Field goal is missed"
+        case .punt: head = "Punt"
+        case .safety: head = "Safety"
+        case .kneel: head = "Kneel down"
+        }
+
+        guard let deciding = outcome.decidingMatchup else { return head + "." }
+        let roster = offense + defense
+        let duel: String
+        switch deciding.kind {
+        case .passProtection: duel = "the protection duel"
+        case .routeVersusCoverage: duel = "the route"
+        case .throwing: duel = "the throw"
+        case .runLane: duel = "the run lane"
+        case .carrierVersusPursuit: duel = "the pursuit"
+        case .kick: duel = "the kick"
+        }
+        let winnerID = deciding.attackerWon ? deciding.attackerID : deciding.defenderID
+        guard let winner = roster.first(where: { $0.id == winnerID }) else { return head + "." }
+        return "\(head). \(winner.lastName) won \(duel)."
+    }
 }

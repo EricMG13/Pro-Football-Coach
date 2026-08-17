@@ -73,5 +73,45 @@ func runSnapAnchorTests() {
             )
             expect(first.lateral != second.lateral, "receivers stacked on one another")
         }
+
+        test("roles come from what the outcome recorded, not from a guess") {
+            let passer = UUID(uuidString: "00000000-0000-4000-8000-0000000000A1")!
+            let target = UUID(uuidString: "00000000-0000-4000-8000-0000000000A2")!
+            let carrier = UUID(uuidString: "00000000-0000-4000-8000-0000000000A3")!
+            let outcome = SnapOutcome(
+                result: .gain, yards: 8, secondsElapsed: 6, matchups: [],
+                ballCarrierID: carrier, passerID: passer, targetID: target
+            )
+            expectEqual(SnapAnchors.role(for: passer, position: .quarterback, outcome: outcome,
+                                         isOffense: true), .passer)
+            expectEqual(SnapAnchors.role(for: target, position: .wideReceiver, outcome: outcome,
+                                         isOffense: true), .routeRunner)
+            expectEqual(SnapAnchors.role(for: carrier, position: .runningBack, outcome: outcome,
+                                         isOffense: true), .carrier)
+            let other = UUID(uuidString: "00000000-0000-4000-8000-0000000000A4")!
+            expectEqual(SnapAnchors.role(for: other, position: .leftTackle, outcome: outcome,
+                                         isOffense: true), .blocker)
+            expectEqual(SnapAnchors.role(for: other, position: .edgeRusher, outcome: outcome,
+                                         isOffense: false), .rusher)
+            expectEqual(SnapAnchors.role(for: other, position: .cornerback, outcome: outcome,
+                                         isOffense: false), .coverage)
+            expectEqual(SnapAnchors.role(for: other, position: .linebacker, outcome: outcome,
+                                         isOffense: false), .runFit)
+        }
+
+        test("every result kind produces a non-empty accessible sentence") {
+            // Driven from allCases: a new SnapResult that nobody wrote a sentence for fails here.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            for result in SnapResult.allCases {
+                let outcome = SnapOutcome(
+                    result: result, yards: result == .sack ? -7 : 5, secondsElapsed: 6, matchups: []
+                )
+                let line = SnapAnchors.sentence(
+                    for: outcome, offense: personnel.offense, defense: personnel.defense
+                )
+                expect(!line.isEmpty, "\(result) produced no accessible sentence")
+                expect(line.hasSuffix("."), "\(result)'s sentence is not a sentence: \(line)")
+            }
+        }
     }
 }

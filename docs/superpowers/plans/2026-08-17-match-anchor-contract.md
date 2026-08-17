@@ -942,7 +942,11 @@ Append inside `public enum SnapAnchors { ... }`:
     ) -> SnapAnchorSet {
         let outcome = play.outcome
         let los = Double(play.situation.yardLine)
-        let endSpot = Swift.min(100, Swift.max(0, los + Double(outcome.yards)))
+        // Deliberately NOT clamped. Clause 2 of 03 section 9.3 is unconditional -- endSpot minus
+        // the line of scrimmage must equal the recorded yardage -- and a clamp would silently
+        // break it exactly when the play reached a goal line. Clause 4 is about FieldPoints, and
+        // FieldPoint clamps itself, so the drawing stays on the field either way.
+        let endSpot = los + Double(outcome.yards)
         let firstDown = Swift.min(100, los + Double(play.situation.distance))
         let offenseSide = play.situation.possession
         let defenseSide = offenseSide.opponent
@@ -981,14 +985,20 @@ Append inside `public enum SnapAnchors { ... }`:
             )
         }
 
+        // Only actors actually on the field may be foregrounded. A deciding matchup can name a
+        // player outside the eleven the caller passed -- the resolver sees the whole personnel
+        // group -- and MatchDayReadModel throws unknownForegroundActor on any identifier it cannot
+        // find among the actors. Filtering here rather than letting the boundary reject it is what
+        // keeps the contract total.
+        let onField = Set(actors.map(\.playerID))
         var foreground: [UUID] = []
-        if let deciding {
-            foreground.append(deciding.attackerID)
-            foreground.append(deciding.defenderID)
+        func foregroundIfPresent(_ id: UUID?) {
+            guard let id, onField.contains(id), !foreground.contains(id) else { return }
+            foreground.append(id)
         }
-        if let carrier = outcome.ballCarrierID, !foreground.contains(carrier) {
-            foreground.append(carrier)
-        }
+        foregroundIfPresent(deciding?.attackerID)
+        foregroundIfPresent(deciding?.defenderID)
+        foregroundIfPresent(outcome.ballCarrierID)
         // prefix rather than validation: 04 section 9's cap is met by construction, which is what
         // keeps this function total.
         foreground = Array(foreground.prefix(AnchorRules.maximumForegrounded))
