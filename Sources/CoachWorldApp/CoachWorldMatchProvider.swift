@@ -19,8 +19,14 @@ public extension CoachWorldReadModelProvider {
         let possession = session.situation.possession
         let homePlayers = Array((possession == .home ? session.home.offense : session.home.defense).prefix(11))
         let awayPlayers = Array((possession == .away ? session.away.offense : session.away.defense).prefix(11))
-        let line = Double(min(100, max(0, session.situation.yardLine)))
-        let firstDown = min(120, line + Double(max(1, session.situation.distance)))
+        // Offense-relative yards, converted once into drawn-field space. The previous version
+        // assigned `yardLine` straight across, which put every marker ten yards adrift.
+        let offenseYard = Double(min(100, max(0, session.situation.yardLine)))
+        let line = fieldX(yard: offenseYard, direction: .leftToRight)
+        let firstDown = fieldX(
+            yard: firstDownYard(from: offenseYard, distance: session.situation.distance),
+            direction: .leftToRight
+        )
         let homeActors = actors(
             homePlayers,
             side: .home,
@@ -107,18 +113,36 @@ public extension CoachWorldReadModelProvider {
     /// The one place the offense-relative-to-absolute conversion happens, and the one place
     /// direction is read. `03` §9.2 keeps both out of the engine, and `04` §9 requires that the view
     /// never guess direction from colour.
+    /// Turns an offense-relative yard into a position on the drawn field.
+    ///
+    /// **The only conversion between the two spaces, per `03` §9.2.** Ten yards of end zone sit at
+    /// each end of the 120-yard drawn field, so an offense-relative 0 is an absolute 10 when the
+    /// offence attacks rightward and an absolute 110 when it attacks leftward.
+    ///
+    /// Before this existed the provider assigned `Situation.yardLine` straight into the read model's
+    /// absolute space, so the offence's own 25 drew on the drawn field's 15 — ten yards of end zone
+    /// unaccounted for, on every marker, in every game.
+    static func fieldX(yard: Double, direction: MatchFieldDirection) -> Double {
+        direction == .leftToRight ? yard + 10 : 110 - yard
+    }
+
+    /// Where the first-down line sits, in offense-relative yards.
+    ///
+    /// Bounded at 110 — the back of the end zone — and never at 100. Goal-to-go puts the marker on
+    /// the goal line itself, and `MatchDayReadModel` requires the first-down line *strictly* beyond
+    /// the line of scrimmage. Clamping to 100 makes them equal there, which fails validation and
+    /// blanks Match Day on exactly the snaps that matter most.
+    static func firstDownYard(from yardLine: Double, distance: Int) -> Double {
+        min(110, yardLine + Double(max(1, distance)))
+    }
+
     static func playback(
         from set: SnapAnchorSet,
         stableID: String,
         numbers: [UUID: Int] = [:],
         offenseDirection: MatchFieldDirection
     ) -> MatchDayReadModel.Playback {
-        // Ten yards of end zone sit at each end of the 120-yard drawn field, so an offense-relative
-        // 0 is an absolute 10 when the offence attacks rightward, and an absolute 110 when it
-        // attacks leftward.
-        func x(_ yard: Double) -> Double {
-            offenseDirection == .leftToRight ? yard + 10 : 110 - yard
-        }
+        func x(_ yard: Double) -> Double { fieldX(yard: yard, direction: offenseDirection) }
 
         return MatchDayReadModel.Playback(
             stableID: stableID,
@@ -147,6 +171,8 @@ public extension CoachWorldReadModelProvider {
                 )
             },
             foregroundIDs: set.foregroundIDs.map(\.uuidString),
+            lineOfScrimmageX: x(set.lineOfScrimmage),
+            firstDownLineX: x(set.firstDownLine),
             endSpotX: x(set.endSpot),
             sentence: set.sentence
         )

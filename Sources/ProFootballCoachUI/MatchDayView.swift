@@ -35,6 +35,24 @@ public struct MatchDayView: View {
         MatchMetric.speedMultipliers[speedIndex % MatchMetric.speedMultipliers.count]
     }
 
+    /// Whether the animated snap, rather than the upcoming one, is what the field is drawing.
+    private var isAnimatingSnap: Bool {
+        model.playback != nil && !reduceMotion
+    }
+
+    /// The lines to draw, from whichever snap the dots belong to.
+    ///
+    /// The model's pair describes the *upcoming* snap. That is right when nothing has been played
+    /// and right under Reduce Motion, where the static pre-snap dots are what is on screen. It is
+    /// wrong over a replay of the last snap: after a turnover the markers and the play sat at
+    /// opposite ends of the field. Everything on the field comes from one snap.
+    private var drawnLines: (lineOfScrimmage: Double, firstDown: Double) {
+        guard isAnimatingSnap, let playback = model.playback else {
+            return (model.lineOfScrimmage, model.firstDownLine)
+        }
+        return (playback.lineOfScrimmageX, playback.firstDownLineX)
+    }
+
     /// How far through the recorded snap we are, 0 to 1.
     ///
     /// Reaching 1 leaves every dot at its end position, which is the pre-snap state for the next
@@ -191,13 +209,13 @@ public struct MatchDayView: View {
                 endZone(at: .leading, size: size, label: leftEndZoneTeam.abbreviation)
                 endZone(at: .trailing, size: size, label: rightEndZoneTeam.abbreviation)
                 fieldMarker(
-                    x: size.width * CGFloat(model.lineOfScrimmage / 120),
+                    x: size.width * CGFloat(drawnLines.lineOfScrimmage / 120),
                     height: size.height,
                     color: palette.fieldAnnotation.color,
                     label: "Line of scrimmage"
                 )
                 fieldMarker(
-                    x: size.width * CGFloat(model.firstDownLine / 120),
+                    x: size.width * CGFloat(drawnLines.firstDown / 120),
                     height: size.height,
                     color: palette.fieldLive.color,
                     label: "First-down line"

@@ -1231,6 +1231,14 @@ public struct MatchDayReadModel: Sendable, Equatable {
         /// The deciding matchup's two players, plus the carrier. At most three, per `04` §9.
         /// Distinct from the model's `foregroundActorIDs`, which describes the pre-snap state.
         public let foregroundIDs: [String]
+        /// This snap's own markers, in drawn-field space.
+        ///
+        /// The model's `lineOfScrimmage` and `firstDownLine` describe the *upcoming* snap, which is
+        /// the right thing to draw when nothing has been played yet and the wrong thing to draw over
+        /// a replay of the last one — after a turnover the two sit at opposite ends of the field.
+        /// Everything drawn on the field during playback comes from one `PlayRecord`.
+        public let lineOfScrimmageX: Double
+        public let firstDownLineX: Double
         public let endSpotX: Double
         public let sentence: String
 
@@ -1240,6 +1248,8 @@ public struct MatchDayReadModel: Sendable, Equatable {
             actors: [ActorTrack],
             ball: [BallLeg],
             foregroundIDs: [String],
+            lineOfScrimmageX: Double,
+            firstDownLineX: Double,
             endSpotX: Double,
             sentence: String
         ) {
@@ -1248,6 +1258,8 @@ public struct MatchDayReadModel: Sendable, Equatable {
             self.actors = actors
             self.ball = ball
             self.foregroundIDs = foregroundIDs
+            self.lineOfScrimmageX = lineOfScrimmageX
+            self.firstDownLineX = firstDownLineX
             self.endSpotX = endSpotX
             self.sentence = sentence
         }

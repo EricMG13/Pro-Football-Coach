@@ -267,6 +267,8 @@ func runSnapAnchorTests() {
                     startFraction: 0.1, endFraction: 1
                 )],
                 foregroundIDs: ["a"],
+                lineOfScrimmageX: 40,
+                firstDownLineX: 50,
                 endSpotX: 52,
                 sentence: "Gain of 12 yards."
             )
@@ -378,6 +380,86 @@ func runSnapAnchorTests() {
                    "the losing blocker did not survive projection")
             expectEqual(projected.stableID, "snap-9",
                         "playback must carry a snap-grained identity of its own")
+        }
+
+        test("one conversion turns an offense-relative yard into a drawn-field position") {
+            // 03 section 9.2 says there is exactly one of these. Before this existed the provider
+            // assigned Situation.yardLine straight into the read model's absolute space, so the
+            // offence's own 25 drew on the drawn field's 15 -- ten yards of end zone unaccounted
+            // for, on every marker, in every game.
+            expectEqual(CoachWorldReadModelProvider.fieldX(yard: 0, direction: .leftToRight), 10,
+                        "an own goal line sits a full end zone in from the drawn edge")
+            expectEqual(CoachWorldReadModelProvider.fieldX(yard: 100, direction: .leftToRight), 110)
+            expectEqual(CoachWorldReadModelProvider.fieldX(yard: 0, direction: .rightToLeft), 110)
+            expectEqual(CoachWorldReadModelProvider.fieldX(yard: 100, direction: .rightToLeft), 10)
+            expectEqual(CoachWorldReadModelProvider.fieldX(yard: 25, direction: .leftToRight), 35)
+        }
+
+        test("the first-down line always sits strictly beyond the line of scrimmage") {
+            // MatchDayReadModel requires it, and it throws the whole model away when it does not
+            // hold -- so getting this wrong blanks Match Day rather than drawing a wrong line.
+            // Goal-to-go is the case that breaks a naive clamp to 100.
+            for yardLine in stride(from: 0.0, through: 100.0, by: 5.0) {
+                for distance in [1, 5, 10, 25, 99] {
+                    let first = CoachWorldReadModelProvider.firstDownYard(
+                        from: yardLine, distance: distance
+                    )
+                    expect(first > yardLine,
+                           "at yard \(yardLine) and \(distance) to go the marker did not advance")
+                    for direction in [MatchFieldDirection.leftToRight, .rightToLeft] {
+                        let line = CoachWorldReadModelProvider.fieldX(
+                            yard: yardLine, direction: direction
+                        )
+                        let marker = CoachWorldReadModelProvider.fieldX(
+                            yard: first, direction: direction
+                        )
+                        expectIn(marker, 0...120, "the first-down marker left the drawn field")
+                        expect(direction == .leftToRight ? marker > line : marker < line,
+                               "the first-down marker fell the wrong side of the line")
+                    }
+                }
+            }
+        }
+
+        test("the field's markers describe the same snap the field is drawing") {
+            // The defect this closes was visible on a simulator and invisible to every test: the
+            // line-of-scrimmage and first-down markers came from the upcoming situation while the
+            // dots replayed the last completed snap, so after a turnover they sat at opposite ends
+            // of the field. Everything drawn on the field now comes from one PlayRecord.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let play = PlayRecord(
+                situation: Situation(down: 2, distance: 6, yardLine: 40),
+                offensiveCall: OffensiveCall(playType: .run),
+                defensiveCall: DefensiveCall(coverage: .man),
+                outcome: SnapOutcome(
+                    result: .gain, yards: 8, secondsElapsed: 6, matchups: [],
+                    ballCarrierID: personnel.offense[1].id
+                ),
+                callInTriggers: []
+            )
+            let set = SnapAnchors.choreograph(
+                play: play,
+                offense: Array(personnel.offense.prefix(11)),
+                defense: Array(personnel.defense.prefix(11))
+            )
+            for direction in [MatchFieldDirection.leftToRight, .rightToLeft] {
+                let projected = CoachWorldReadModelProvider.playback(
+                    from: set, stableID: "snap-1", offenseDirection: direction
+                )
+                expectEqual(projected.lineOfScrimmageX,
+                            CoachWorldReadModelProvider.fieldX(yard: 40, direction: direction),
+                            "the drawn line of scrimmage is not the animated snap's")
+                expectEqual(projected.firstDownLineX,
+                            CoachWorldReadModelProvider.fieldX(yard: 46, direction: direction),
+                            "the drawn first-down line is not the animated snap's")
+                // The gain travels from the line to the end spot, in whichever direction the
+                // offence is attacking.
+                let travelled = projected.endSpotX - projected.lineOfScrimmageX
+                expectEqual(Swift.abs(travelled), 8,
+                            "the drawn end spot disagrees with the drawn line of scrimmage")
+                expect(direction == .leftToRight ? travelled > 0 : travelled < 0,
+                       "the gain ran the wrong way down the drawn field")
+            }
         }
     }
 }
