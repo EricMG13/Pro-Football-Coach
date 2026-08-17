@@ -36,8 +36,9 @@ unanswered.
    — offense-relative yards written straight into drawn-field space — is fixed too.
 2. ~~The pre-snap field draws twenty-two dots in one vertical column.~~ **Fixed.** The pre-snap field
    uses the same §9.4 template as the animation, so both agree by construction.
-3. Dots are 20 pt and overlap heavily across the interior line. **Still open** — the formation fix
-   spreads them laterally and helps, but the interior line still stacks.
+3. ~~Dots are 20 pt and overlap heavily across the interior line.~~ **Fixed.** The three foregrounded
+   actors carry a numbered disc; the rest are small plain marks. Worth a specific look during the
+   read: whether losing the background numbers costs you anything you actually wanted.
 
 ## Known limits of what you are looking at
 
