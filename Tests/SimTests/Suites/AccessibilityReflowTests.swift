@@ -24,6 +24,44 @@ private struct FamilyView {
     let text: String
 }
 
+/// The view types that draw the Floodlit world, directly or by wholly delegating to one that does.
+///
+/// Roughly a quarter of the registry is a thin wrapper — `NewCareerCoachIdentityView` passes
+/// straight to `NewCareerSetupView`, `JobBoardView`/`OfferView`/`AppointmentView` all pass a
+/// `focus:` to `CareerHubView`. A wrapper has no ground of its own to paint, so it is converted
+/// exactly when the view it delegates to is. Resolved to a fixpoint rather than one hop, because
+/// wrappers chain.
+private func floodlitConvertedTypes() -> Set<String> {
+    let sources = swiftFilesImportingUIFramework()
+    func typeName(of path: String) -> String {
+        String(path.split(separator: "/").last ?? "").replacingOccurrences(of: ".swift", with: "")
+    }
+
+    var converted = Set(
+        sources.filter { $0.text.contains("CoachWorldFloodlitStage") }.map { typeName(of: $0.path) }
+    )
+    var changed = true
+    while changed {
+        changed = false
+        for file in sources {
+            let name = typeName(of: file.path)
+            guard !converted.contains(name) else { continue }
+            // A wrapper delegates by naming the converted type's initialiser.
+            if converted.contains(where: { file.text.contains($0 + "(") }) {
+                converted.insert(name)
+                changed = true
+            }
+        }
+    }
+    return converted
+}
+
+private func isFloodlitConverted(_ family: FamilyView) -> Bool {
+    let name = String(family.path.split(separator: "/").last ?? "")
+        .replacingOccurrences(of: ".swift", with: "")
+    return floodlitConvertedTypes().contains(name)
+}
+
 private func landedFamilies() -> (landed: [FamilyView], pending: [CoachWorldScreenID]) {
     let sources = swiftFilesImportingUIFramework()
     var landed: [FamilyView] = []
@@ -115,6 +153,60 @@ func runAccessibilityReflowTests() {
                    "a view with no accessibility branch was reported as having one")
             expect(!bare.contains("accessibilitySortPriority"),
                    "a view with no VoiceOver order was reported as having one")
+        }
+    }
+
+    suite("Floodlit surface conversion") {
+        // The cutover converts 62 families over several phases, so this enumerates by construction
+        // and reports the split rather than asserting a count every later phase would have to edit
+        // — the same shape as the AX5 contract above, for the same reason.
+        //
+        // What it *does* assert is the invariant that makes a conversion real. `CoachWorldFloodlitStage`
+        // already paints the committed dark world: the page ground, the backdrop, and the fixed-seed
+        // grain. A root that wraps itself in the stage and *also* keeps its own
+        // `.background(palette.page.color.ignoresSafeArea())` paints flat ground straight over the
+        // backdrop it just asked for — the screen compiles, looks nearly right, and silently has no
+        // Floodlit world at all. That is the defect worth a test.
+        test("every family is either converted to the Floodlit stage or pending, and the split is total") {
+            let (landed, _) = landedFamilies()
+            let converted = landed.filter(isFloodlitConverted)
+            let pending = landed.filter { !isFloodlitConverted($0) }
+            expectEqual(converted.count + pending.count, landed.count,
+                        "the conversion partition lost a family, so some family is checked by nothing")
+            print("Floodlit conversion: \(converted.count) converted, \(pending.count) pending")
+        }
+
+        test("no converted root paints its own ground under the stage backdrop") {
+            let converted = landedFamilies().landed.filter(isFloodlitConverted)
+            for family in converted {
+                expect(!family.text.contains("palette.page.color.ignoresSafeArea()"),
+                       "\(family.path) (\(family.screen.canonicalName)) wraps itself in "
+                           + "CoachWorldFloodlitStage and then paints palette.page over the "
+                           + "backdrop the stage draws, so the Floodlit world never renders")
+            }
+        }
+
+        test("the entry surfaces this phase converts are converted") {
+            // Task 5's registry range. Named individually because this is the phase's own
+            // completion gate — the enumeration above stays general, this asserts the specific
+            // claim the commit makes.
+            let converted = Set(landedFamilies().landed.filter(isFloodlitConverted).map(\.screen))
+            for screen in [CoachWorldScreenID.titleContinue, .newCareerCoachIdentity,
+                           .settingsAccessibility, .worldSearch, .careerHub] {
+                expect(converted.contains(screen),
+                       "\(screen.canonicalName) is an entry surface this phase converts, but its "
+                           + "view does not use CoachWorldFloodlitStage")
+            }
+        }
+
+        test("the ground-paint scan would notice a double-painted root") {
+            let planted = """
+            CoachWorldFloodlitStage { content }
+                .background(palette.page.color.ignoresSafeArea())
+            """
+            expect(planted.contains("CoachWorldFloodlitStage")
+                       && planted.contains("palette.page.color.ignoresSafeArea()"),
+                   "the predicate the real assertion uses must catch a planted double paint")
         }
     }
 }

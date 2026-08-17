@@ -34,6 +34,8 @@ public enum CoachWorldTokens {
     public enum Depth {
         public static let glassPanelOpacity = 0.56
         public static let deepPanelOpacity = 0.82
+        /// The `content.quiet` panel-border opacity: legible as a seam without reading as a rule.
+        public static let panelBorderOpacity = 0.38
     }
 
     public enum TypeRole {

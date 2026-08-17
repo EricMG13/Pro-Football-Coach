@@ -39,112 +39,116 @@ public struct CareerHubView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
-                careerViews
-                if let currentJob = model.currentJob {
-                    section("CURRENT APPOINTMENT") {
-                        jobRow(currentJob)
-                        if currentJob.canResign {
-                            Button("Resign from appointment", action: onResign)
-                                .buttonStyle(CoachWorldActionButtonStyle(
-                                    role: .secondary,
-                                    palette: palette
-                                ))
-                                .frame(maxWidth: .infinity,
-                                       minHeight: CoachWorldTokens.Shape.minimumTarget)
-                                .accessibilityHint(
-                                    "Ends the current appointment and returns the coach to the job search."
-                                )
-                        }
-                    }
-                }
-                if model.currentJob == nil {
-                    section("JOB SEARCH") {
-                        Text("No current appointment. The coach remains in the career ledger while seeking the next eligible offer.")
-                            .font(CoachWorldTokens.TypeRole.body)
-                            .foregroundStyle(palette.contentSecondary.color)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Button("Continue while seeking", action: onContinue)
-                            .buttonStyle(CoachWorldActionButtonStyle(
-                                role: .primary,
-                                palette: palette
-                            ))
-                            .frame(maxWidth: .infinity,
-                                   minHeight: CoachWorldTokens.Shape.minimumTarget)
-                    }
-                }
-                section("STAKEHOLDER SUPPORT") {
-                    ForEach(model.support) { row in
-                        HStack {
-                            Text(row.stakeholder)
-                            Spacer()
-                            Text("\(row.value)/100")
-                                .monospacedDigit()
-                                .fontWeight(.bold)
-                        }
-                        .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("\(row.stakeholder), \(row.value) out of 100")
-                    }
-                }
-                section("JOB HISTORY") {
-                    if model.history.isEmpty {
-                        Text("No completed appointments recorded.")
-                            .foregroundStyle(palette.contentSecondary.color)
-                    } else {
-                        ForEach(model.history) { row in jobRow(row) }
-                    }
-                }
-                section("OPPORTUNITIES") {
-                    if model.opportunities.isEmpty {
-                        Text("No active offers.")
-                            .foregroundStyle(palette.contentSecondary.color)
-                    } else {
-                        ForEach(model.opportunities) { opportunity in
-                            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                                Text(opportunity.team.name)
-                                    .font(.headline)
-                                Text("\(opportunity.tier) · Prestige \(opportunity.prestige)")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(palette.contentSecondary.color)
-                                Text("Offered \(opportunity.offered) · Expires \(opportunity.expires)")
-                                    .font(.caption)
-                                Text(opportunity.rationale)
-                                    .font(.callout)
-                                if opportunity.tier == "Professional" {
-                                    Button("Accept professional offer") {
-                                        onAcceptOpportunity(opportunity.id)
-                                    }
+        CoachWorldFloodlitStage(palette: palette) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
+                    careerViews
+                    if let currentJob = model.currentJob {
+                        section("CURRENT APPOINTMENT") {
+                            jobRow(currentJob)
+                            if currentJob.canResign {
+                                Button("Resign from appointment", action: onResign)
                                     .buttonStyle(CoachWorldActionButtonStyle(
-                                        role: .primary,
+                                        role: .secondary,
                                         palette: palette
                                     ))
                                     .frame(maxWidth: .infinity,
                                            minHeight: CoachWorldTokens.Shape.minimumTarget)
-                                    .disabled(!opportunity.canAccept)
-                                    if let reason = opportunity.unavailableReason, !opportunity.canAccept {
-                                        Text(reason)
-                                            .font(CoachWorldTokens.TypeRole.caption)
-                                            .foregroundStyle(palette.contentSecondary.color)
+                                    .accessibilityHint(
+                                        "Ends the current appointment and returns the coach to the job search."
+                                    )
+                            }
+                        }
+                    }
+                    if model.currentJob == nil {
+                        section("JOB SEARCH") {
+                            Text("No current appointment. The coach remains in the career ledger while seeking the next eligible offer.")
+                                .font(CoachWorldTokens.TypeRole.body)
+                                .foregroundStyle(palette.contentSecondary.color)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Button("Continue while seeking", action: onContinue)
+                                .buttonStyle(CoachWorldActionButtonStyle(
+                                    role: .primary,
+                                    palette: palette
+                                ))
+                                .frame(maxWidth: .infinity,
+                                       minHeight: CoachWorldTokens.Shape.minimumTarget)
+                        }
+                    }
+                    section("STAKEHOLDER SUPPORT") {
+                        ForEach(model.support) { row in
+                            HStack {
+                                Text(row.stakeholder)
+                                Spacer()
+                                Text("\(row.value)/100")
+                                    .monospacedDigit()
+                                    .fontWeight(.bold)
+                            }
+                            .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(row.stakeholder), \(row.value) out of 100")
+                        }
+                    }
+                    section("JOB HISTORY") {
+                        if model.history.isEmpty {
+                            CoachWorldSystemState(
+                                .empty("No completed appointment is on record yet."),
+                                palette: palette
+                            )
+                        } else {
+                            ForEach(model.history) { row in jobRow(row) }
+                        }
+                    }
+                    section("OPPORTUNITIES") {
+                        if model.opportunities.isEmpty {
+                            CoachWorldSystemState(
+                                .empty("No offer is currently on the table."),
+                                palette: palette
+                            )
+                        } else {
+                            ForEach(model.opportunities) { opportunity in
+                                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
+                                    Text(opportunity.team.name)
+                                        .font(.headline)
+                                    Text("\(opportunity.tier) · Prestige \(opportunity.prestige)")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(palette.contentSecondary.color)
+                                    Text("Offered \(opportunity.offered) · Expires \(opportunity.expires)")
+                                        .font(.caption)
+                                    Text(opportunity.rationale)
+                                        .font(.callout)
+                                    if opportunity.tier == "Professional" {
+                                        Button("Accept professional offer") {
+                                            onAcceptOpportunity(opportunity.id)
+                                        }
+                                        .buttonStyle(CoachWorldActionButtonStyle(
+                                            role: .primary,
+                                            palette: palette
+                                        ))
+                                        .frame(maxWidth: .infinity,
+                                               minHeight: CoachWorldTokens.Shape.minimumTarget)
+                                        .disabled(!opportunity.canAccept)
+                                        if let reason = opportunity.unavailableReason, !opportunity.canAccept {
+                                            Text(reason)
+                                                .font(CoachWorldTokens.TypeRole.caption)
+                                                .foregroundStyle(palette.contentSecondary.color)
+                                        }
                                     }
                                 }
+                                .padding(.vertical, CoachWorldTokens.Space.xs)
+                                .accessibilityElement(children: .contain)
                             }
-                            .padding(.vertical, CoachWorldTokens.Space.xs)
-                            .accessibilityElement(children: .contain)
                         }
                     }
                 }
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
+            .frame(maxWidth: .infinity,
+                   alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
+            .safeAreaInset(edge: .top) { topBar }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
-        .frame(maxWidth: .infinity,
-               alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
         .accessibilitySortPriority(100)
-        .safeAreaInset(edge: .top) { topBar }
     }
 
     private var topBar: some View {
@@ -172,7 +176,11 @@ public struct CareerHubView: View {
                        minHeight: CoachWorldTokens.Shape.minimumTarget)
         }
         .padding(.horizontal, CoachWorldTokens.Space.sm)
-        .background(palette.raised.color)
+        .coachWorldFloodlitPanel(
+            fill: palette.raised.color,
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity),
+            depth: .deep
+        )
     }
 
     private var header: some View {
@@ -233,9 +241,9 @@ public struct CareerHubView: View {
             content()
         }
         .padding(CoachWorldTokens.Space.sm)
-        .background(
-            palette.raised.color,
-            in: RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.surfaceRadius)
+        .coachWorldFloodlitPanel(
+            fill: palette.raised.color,
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
         )
     }
 

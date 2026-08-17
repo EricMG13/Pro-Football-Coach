@@ -188,6 +188,10 @@ enum CoachWorldActionRole {
     case primary
     case secondary
     case live
+    /// An irreversible action that destroys retained state. Drawn as an outline rather than a fill
+    /// so it never competes with the committing action beside it, in the destructive role's own
+    /// colour so it cannot be mistaken for a secondary.
+    case destructive
 }
 
 struct CoachWorldActionButtonStyle: ButtonStyle {
@@ -239,6 +243,14 @@ struct CoachWorldActionButtonStyle: ButtonStyle {
         case .live:
             let accent = palette.stateLive.color
             return (accent, palette.page.color, accent)
+        case .destructive:
+            // Outlined, not filled: a destructive action must be reachable and unmistakable
+            // without out-shouting the committing action it sits beside.
+            return (
+                Color.clear,
+                palette.actionDestructive.color,
+                palette.actionDestructive.color
+            )
         }
     }
 }

@@ -38,37 +38,38 @@ public struct WorldSearchView: View {
     }
 
     public var body: some View {
-        VStack(spacing: .zero) {
-            topBar
-            if let statusMessage {
-                Text(statusMessage)
-                    .font(CoachWorldTokens.TypeRole.callout)
-                    .foregroundStyle(palette.stateWarning.color)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, CoachWorldTokens.Space.md)
-            }
-            TextField("Search teams, cities or regions", text: $query)
-                .textFieldStyle(.roundedBorder)
-                .padding(.horizontal, CoachWorldTokens.Space.md)
-                .padding(.vertical, CoachWorldTokens.Space.sm)
-                .accessibilityLabel("Search current teams, cities or regions")
-            if visibleResults.isEmpty {
-                ContentUnavailableView(
-                    "No organisations found",
-                    systemImage: "magnifyingglass",
-                    description: Text("Try a team, city, region or tier.")
-                )
-            } else {
-                List {
-                    ForEach(visibleResults, content: resultRow)
+        CoachWorldFloodlitStage(palette: palette) {
+            VStack(spacing: .zero) {
+                topBar
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.callout)
+                        .foregroundStyle(palette.stateWarning.color)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, CoachWorldTokens.Space.md)
                 }
-                .listStyle(.plain)
+                TextField("Search teams, cities or regions", text: $query)
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal, CoachWorldTokens.Space.md)
+                    .padding(.vertical, CoachWorldTokens.Space.sm)
+                    .accessibilityLabel("Search current teams, cities or regions")
+                if visibleResults.isEmpty {
+                    CoachWorldSystemState(
+                        .empty("No organisation matches that search. Try a team, city, region or tier."),
+                        palette: palette
+                    )
+                } else {
+                    List {
+                        ForEach(visibleResults, content: resultRow)
+                            .listRowBackground(Color.clear)
+                    }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                }
             }
+            .frame(maxWidth: .infinity,
+                   alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
-        .frame(maxWidth: .infinity,
-               alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
         .accessibilitySortPriority(100)
     }
 
@@ -113,6 +114,10 @@ public struct WorldSearchView: View {
                 .foregroundStyle(palette.contentSecondary.color)
         }
         .padding(.horizontal, CoachWorldTokens.Space.sm)
-        .background(palette.raised.color)
+        .coachWorldFloodlitPanel(
+            fill: palette.raised.color,
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity),
+            depth: .deep
+        )
     }
 }

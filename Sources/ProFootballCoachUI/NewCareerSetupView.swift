@@ -10,8 +10,11 @@ public struct NewCareerSetupView: View {
     public let onCancel: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @State private var firstName = "Alex"
-    @State private var lastName = "Coach"
+    // Empty, not prefilled. A default name is content the player did not choose, and `canSubmit`
+    // already requires both fields, so an empty start is a stated requirement rather than a
+    // silent one — a prefill let a fast tap-through ship a career under a name the app picked.
+    @State private var firstName = ""
+    @State private var lastName = ""
     @State private var seedText: String
     @State private var jobsSeed: UInt64
     @State private var selectedJobID: String
@@ -38,15 +41,13 @@ public struct NewCareerSetupView: View {
     }
 
     public var body: some View {
-        Group {
+        CoachWorldFloodlitStage(palette: palette) {
             if dynamicTypeSize.isAccessibilitySize {
                 ScrollView { accessibleLayout }
             } else {
                 standardLayout
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
     }
 
     private var palette: CoachWorldTokens.Palette {
@@ -111,9 +112,10 @@ public struct NewCareerSetupView: View {
             }
         }
         .padding(CoachWorldTokens.Space.md)
-        .coachWorldDeskSurface(
+        .coachWorldFloodlitPanel(
             fill: palette.work.color,
-            border: palette.contentQuiet.color.opacity(0.38)
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity),
+            depth: .deep
         )
         .accessibilityElement(children: .contain)
         .accessibilitySortPriority(300)
@@ -128,8 +130,10 @@ public struct NewCareerSetupView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             if jobs.isEmpty {
-                Text("No eligible starting jobs were generated.")
-                    .font(CoachWorldTokens.TypeRole.body)
+                CoachWorldSystemState(
+                    .empty("No eligible starting job was generated for this seed."),
+                    palette: palette
+                )
             } else {
                 ForEach(jobs) { job in
                     jobRow(job)
@@ -137,9 +141,9 @@ public struct NewCareerSetupView: View {
             }
         }
         .padding(CoachWorldTokens.Space.md)
-        .coachWorldDeskSurface(
+        .coachWorldFloodlitPanel(
             fill: palette.raised.color,
-            border: palette.contentQuiet.color.opacity(0.38)
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
         )
         .accessibilitySortPriority(200)
     }
@@ -165,12 +169,12 @@ public struct NewCareerSetupView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(CoachWorldTokens.Space.sm)
-            .background(
-                selectedJobID == job.stableID
-                    ? palette.collegeIdentity.color.opacity(0.16)
-                    : Color.clear,
-                in: RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.rowRadius)
-            )
+            .background {
+                if selectedJobID == job.stableID {
+                    CoachWorldCutCorner.row
+                        .fill(palette.collegeIdentity.color.opacity(0.16))
+                }
+            }
         }
         .buttonStyle(.plain)
         .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
