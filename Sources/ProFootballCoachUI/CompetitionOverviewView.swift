@@ -41,29 +41,29 @@ public struct CompetitionOverviewView: View {
     }
 
     private var surface: some View {
-        VStack(spacing: .zero) {
-            topBar
-            if let statusMessage {
-                Text(statusMessage)
-                    .font(CoachWorldTokens.TypeRole.callout)
-                    .foregroundStyle(palette.stateWarning.color)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, CoachWorldTokens.Space.md)
-            }
-            ScrollView {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                    if focus == .rankingsPlayoffPicture || model.bracket.isEmpty {
-                        rankings
-                    }
-                    if focus == .bracketPostseason || !model.bracket.isEmpty {
-                        bracket
-                    }
+        CoachWorldFloodlitStage(palette: palette) {
+            VStack(spacing: .zero) {
+                topBar
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.callout)
+                        .foregroundStyle(palette.stateWarning.color)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, CoachWorldTokens.Space.md)
                 }
-                .padding(CoachWorldTokens.Space.md)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                        if focus == .rankingsPlayoffPicture || model.bracket.isEmpty {
+                            rankings
+                        }
+                        if focus == .bracketPostseason || !model.bracket.isEmpty {
+                            bracket
+                        }
+                    }
+                    .padding(CoachWorldTokens.Space.md)
+                }
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
     }
 
     private var topBar: some View {
@@ -101,8 +101,10 @@ public struct CompetitionOverviewView: View {
             Text("Postseason path")
                 .font(CoachWorldTokens.TypeRole.headline.weight(.black))
             if model.bracket.isEmpty {
-                Text("No postseason games are scheduled yet.")
-                    .foregroundStyle(palette.contentSecondary.color)
+                CoachWorldSystemState(
+                    .empty("No postseason games are scheduled yet."),
+                    palette: palette
+                )
             } else {
                 ForEach(model.bracket, content: bracketRow)
             }

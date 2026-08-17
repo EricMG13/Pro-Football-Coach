@@ -26,28 +26,28 @@ public struct TeamProgrammeProfileView: View {
     }
 
     public var body: some View {
-        VStack(spacing: .zero) {
-            topBar
-            if let statusMessage {
-                Text(statusMessage)
-                    .font(CoachWorldTokens.TypeRole.callout)
-                    .foregroundStyle(palette.stateWarning.color)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, CoachWorldTokens.Space.md)
-            }
-            ScrollView {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                    identity
-                    facts
-                    fixtures
-                    rivals
-                    traditions
+        CoachWorldFloodlitStage(palette: palette) {
+            VStack(spacing: .zero) {
+                topBar
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.callout)
+                        .foregroundStyle(palette.stateWarning.color)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, CoachWorldTokens.Space.md)
                 }
-                .padding(CoachWorldTokens.Space.md)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                        identity
+                        facts
+                        fixtures
+                        rivals
+                        traditions
+                    }
+                    .padding(CoachWorldTokens.Space.md)
+                }
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .frame(maxWidth: .infinity,
                alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
         .accessibilitySortPriority(100)
@@ -108,8 +108,7 @@ public struct TeamProgrammeProfileView: View {
             Text("Schedule")
                 .font(CoachWorldTokens.TypeRole.headline.weight(.black))
             if model.fixtures.isEmpty {
-                Text("No fixtures recorded")
-                    .foregroundStyle(palette.contentSecondary.color)
+                CoachWorldSystemState(.empty("No fixtures recorded"), palette: palette)
             } else {
                 ForEach(model.fixtures, content: fixtureRow)
             }
@@ -145,8 +144,7 @@ public struct TeamProgrammeProfileView: View {
             Text("Rivalries")
                 .font(CoachWorldTokens.TypeRole.headline.weight(.black))
             if model.rivals.isEmpty {
-                Text("No rivalry recorded")
-                    .foregroundStyle(palette.contentSecondary.color)
+                CoachWorldSystemState(.empty("No rivalry recorded"), palette: palette)
             } else {
                 ForEach(model.rivals) { rival in
                     Button {
@@ -181,8 +179,7 @@ public struct TeamProgrammeProfileView: View {
             Text("Traditions")
                 .font(CoachWorldTokens.TypeRole.headline.weight(.black))
             if model.traditions.isEmpty {
-                Text("No traditions recorded")
-                    .foregroundStyle(palette.contentSecondary.color)
+                CoachWorldSystemState(.empty("No traditions recorded"), palette: palette)
             } else {
                 ForEach(model.traditions, id: \.self) { tradition in
                     Text(tradition)

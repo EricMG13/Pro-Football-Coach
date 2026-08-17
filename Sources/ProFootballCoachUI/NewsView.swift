@@ -15,45 +15,49 @@ public struct NewsView: View {
 
     public var body: some View {
         let palette = CoachWorldTokens.dark
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header(palette: palette)
-                if let statusMessage {
-                    Text(statusMessage)
-                        .font(CoachWorldTokens.TypeRole.callout)
-                        .foregroundStyle(palette.stateWarning.color)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if model.items.isEmpty {
-                    ContentUnavailableView(
-                        "No news recorded",
-                        systemImage: "list.number",
-                        description: Text("Typed world events will appear here when they become newsworthy.")
-                    )
-                    .frame(maxWidth: .infinity, minHeight: 180)
-                } else {
-                    ForEach(model.items) { item in
-                        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-                            Text(item.headline)
-                                .font(CoachWorldTokens.TypeRole.headline.weight(.bold))
-                                .fixedSize(horizontal: false, vertical: true)
-                            Text(item.occurred)
-                                .font(CoachWorldTokens.TypeRole.caption)
-                                .foregroundStyle(palette.contentSecondary.color)
+        CoachWorldFloodlitStage(palette: palette) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header(palette: palette)
+                    if let statusMessage {
+                        Text(statusMessage)
+                            .font(CoachWorldTokens.TypeRole.callout)
+                            .foregroundStyle(palette.stateWarning.color)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if model.items.isEmpty {
+                        CoachWorldSystemState(
+                            .empty(
+                                "No news recorded. Typed world events will appear here "
+                                    + "when they become newsworthy."
+                            ),
+                            palette: palette
+                        )
+                    } else {
+                        ForEach(model.items) { item in
+                            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
+                                Text(item.headline)
+                                    .font(CoachWorldTokens.TypeRole.headline.weight(.bold))
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text(item.occurred)
+                                    .font(CoachWorldTokens.TypeRole.caption)
+                                    .foregroundStyle(palette.contentSecondary.color)
+                            }
+                            .padding(CoachWorldTokens.Space.sm)
+                            .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
+                            .coachWorldFloodlitPanel(
+                                fill: palette.raised.color,
+                                border: palette.contentQuiet.color
+                                    .opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+                            )
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(item.headline), \(item.occurred)")
                         }
-                        .padding(CoachWorldTokens.Space.sm)
-                        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-                        .background(palette.raised.color.opacity(0.72))
-                        .clipShape(RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.rowRadius))
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("\(item.headline), \(item.occurred)")
                     }
                 }
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .accessibilitySortPriority(100)
     }
 

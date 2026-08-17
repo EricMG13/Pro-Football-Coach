@@ -50,7 +50,7 @@ public struct LeagueMapView: View {
     }
 
     public var body: some View {
-        Group {
+        CoachWorldFloodlitStage(palette: palette) {
             if dynamicTypeSize.isAccessibilitySize {
                 accessibleLayout
             } else {
@@ -60,8 +60,6 @@ public struct LeagueMapView: View {
                 }
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .onChange(of: tier) {
             // A selection that has just been filtered off the map would leave the rail describing
             // a place the player cannot see or reach.
@@ -229,12 +227,10 @@ public struct LeagueMapView: View {
         VStack(spacing: CoachWorldTokens.Space.xs) {
             tierControl
             if visiblePlaces.isEmpty {
-                ContentUnavailableView(
-                    "No places to show",
-                    systemImage: "list.number",
-                    description: Text("Programmes appear here when a world is loaded.")
+                CoachWorldSystemState(
+                    .empty("No places to show. Programmes appear here when a world is loaded."),
+                    palette: palette
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 GeometryReader { frame in
                     let layout = LeagueMapLayout(
@@ -461,10 +457,9 @@ public struct LeagueMapView: View {
                 .padding(CoachWorldTokens.Space.sm)
             }
         } else {
-            ContentUnavailableView(
-                "No place selected",
-                systemImage: "list.number",
-                description: Text("Choose a programme on the map to read its place.")
+            CoachWorldSystemState(
+                .empty("No place selected. Choose a programme on the map to read its place."),
+                palette: palette
             )
         }
     }

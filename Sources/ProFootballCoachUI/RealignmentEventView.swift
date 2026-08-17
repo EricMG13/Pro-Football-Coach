@@ -16,36 +16,35 @@ public struct RealignmentEventView: View {
     }
 
     public var body: some View {
-        VStack(spacing: .zero) {
-            HStack(spacing: CoachWorldTokens.Space.sm) {
-                Button("League", action: onClose)
-                    .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
-                           minHeight: CoachWorldTokens.Shape.minimumTarget)
-                VStack(alignment: .leading, spacing: .zero) {
-                    Text("Realignment event").font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                    Text(model.currentSeasonLabel).font(CoachWorldTokens.TypeRole.caption)
-                }
-                Spacer()
-            }
-            .padding(.horizontal, CoachWorldTokens.Space.sm)
-            .background(palette.raised.color)
-            if let statusMessage { Text(statusMessage).frame(maxWidth: .infinity, alignment: .leading) }
-            ScrollView {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                    if let event = model.event {
-                        Text(event.seasonLabel + " · " + event.reason)
-                            .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                        ForEach(event.swaps, content: swapCard)
-                    } else {
-                        Text("No realignment event recorded.")
-                            .foregroundStyle(palette.contentSecondary.color)
+        CoachWorldFloodlitStage(palette: palette) {
+            VStack(spacing: .zero) {
+                HStack(spacing: CoachWorldTokens.Space.sm) {
+                    Button("League", action: onClose)
+                        .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
+                               minHeight: CoachWorldTokens.Shape.minimumTarget)
+                    VStack(alignment: .leading, spacing: .zero) {
+                        Text("Realignment event").font(CoachWorldTokens.TypeRole.headline.weight(.black))
+                        Text(model.currentSeasonLabel).font(CoachWorldTokens.TypeRole.caption)
                     }
+                    Spacer()
                 }
-                .padding(CoachWorldTokens.Space.md)
+                .padding(.horizontal, CoachWorldTokens.Space.sm)
+                .background(palette.raised.color)
+                if let statusMessage { Text(statusMessage).frame(maxWidth: .infinity, alignment: .leading) }
+                if let event = model.event {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                            Text(event.seasonLabel + " · " + event.reason)
+                                .font(CoachWorldTokens.TypeRole.headline.weight(.black))
+                            ForEach(event.swaps, content: swapCard)
+                        }
+                        .padding(CoachWorldTokens.Space.md)
+                    }
+                } else {
+                    CoachWorldSystemState(.empty("No realignment event recorded."), palette: palette)
+                }
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .frame(maxWidth: .infinity, alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
         .accessibilitySortPriority(100)
     }

@@ -21,6 +21,12 @@ public struct GameDetailBoxScoreView: View {
     }
 
     private func content(palette: CoachWorldTokens.Palette) -> some View {
+        CoachWorldFloodlitStage(palette: palette, register: .broadcast) {
+            scrollContent(palette: palette)
+        }
+    }
+
+    private func scrollContent(palette: CoachWorldTokens.Palette) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                 Button("Back to aftermath", action: onClose)
@@ -36,11 +42,11 @@ public struct GameDetailBoxScoreView: View {
                 Text(model.resultLabel)
                     .font(CoachWorldTokens.TypeRole.headline.weight(.bold))
                 evidenceSection("Game evidence", rows: model.evidence,
-                                empty: "No detailed game evidence recorded.")
+                                empty: "No detailed game evidence recorded.", palette: palette)
                 evidenceSection("Controlled call-ins", rows: model.callIns,
-                                empty: "No controlled call-ins recorded.")
+                                empty: "No controlled call-ins recorded.", palette: palette)
                 evidenceSection("Injuries", rows: model.injuries,
-                                empty: "No injury evidence recorded.")
+                                empty: "No injury evidence recorded.", palette: palette)
                 if !model.grades.isEmpty {
                     Text("PLAYER GRADES")
                         .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
@@ -58,8 +64,11 @@ public struct GameDetailBoxScoreView: View {
                                 .monospacedDigit()
                         }
                         .padding(CoachWorldTokens.Space.sm)
-                        .background(.thinMaterial,
-                                    in: RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.surfaceRadius))
+                        .coachWorldFloodlitPanel(
+                            fill: palette.raised.color,
+                            border: palette.contentQuiet.color
+                                .opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+                        )
                         .accessibilityElement(children: .combine)
                         .accessibilityLabel("\(grade.player.name), \(grade.position), grade \(grade.rating), \(grade.evidence)")
                     }
@@ -67,16 +76,19 @@ public struct GameDetailBoxScoreView: View {
             }
             .padding(CoachWorldTokens.Space.lg)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
     }
 
-    private func evidenceSection(_ title: String, rows: [String], empty: String) -> some View {
+    private func evidenceSection(
+        _ title: String,
+        rows: [String],
+        empty: String,
+        palette: CoachWorldTokens.Palette
+    ) -> some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
             Text(title.uppercased())
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
             if rows.isEmpty {
-                Text(empty).foregroundStyle(.secondary)
+                Text(empty).foregroundStyle(palette.contentSecondary.color)
             } else {
                 ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                     Text(row).font(CoachWorldTokens.TypeRole.body)

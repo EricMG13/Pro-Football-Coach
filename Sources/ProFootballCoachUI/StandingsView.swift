@@ -28,27 +28,27 @@ public struct StandingsView: View {
     }
 
     public var body: some View {
-        VStack(spacing: .zero) {
-            topBar
-            if let statusMessage {
-                Text(statusMessage)
-                    .font(CoachWorldTokens.TypeRole.callout)
-                    .foregroundStyle(palette.stateWarning.color)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, CoachWorldTokens.Space.md)
-            }
-            ScrollView {
-                LazyVStack(spacing: .zero) {
-                    headerRow
-                    ForEach(Array(model.rows.enumerated()), id: \.element.id) { index, row in
-                        standingsRow(index: index, row: row)
-                    }
+        CoachWorldFloodlitStage(palette: palette) {
+            VStack(spacing: .zero) {
+                topBar
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.callout)
+                        .foregroundStyle(palette.stateWarning.color)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, CoachWorldTokens.Space.md)
                 }
-                .padding(CoachWorldTokens.Space.md)
+                ScrollView {
+                    LazyVStack(spacing: .zero) {
+                        headerRow
+                        ForEach(Array(model.rows.enumerated()), id: \.element.id) { index, row in
+                            standingsRow(index: index, row: row)
+                        }
+                    }
+                    .padding(CoachWorldTokens.Space.md)
+                }
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .frame(maxWidth: .infinity,
                alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
         .accessibilitySortPriority(100)
@@ -129,7 +129,7 @@ public struct StandingsView: View {
         )
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(palette.contentQuiet.color.opacity(0.35))
+                .fill(palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity))
                 .frame(height: CoachWorldTokens.Shape.hairline)
         }
         .accessibilityElement(children: .combine)

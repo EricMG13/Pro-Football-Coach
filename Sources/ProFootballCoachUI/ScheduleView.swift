@@ -28,32 +28,34 @@ public struct ScheduleView: View {
     }
 
     public var body: some View {
-        VStack(spacing: .zero) {
-            topBar
-            if let statusMessage {
-                Text(statusMessage)
-                    .font(CoachWorldTokens.TypeRole.callout)
-                    .foregroundStyle(palette.stateWarning.color)
-                    .padding(.horizontal, CoachWorldTokens.Space.md)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            if model.games.isEmpty {
-                ContentUnavailableView(
-                    "No \(model.tier.lowercased()) games",
-                        systemImage: "calendar.badge.exclamationmark",
-                    description: Text("The schedule is empty for this season.")
-                )
-            } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-                        ForEach(model.games) { game in gameRow(game) }
+        CoachWorldFloodlitStage(palette: palette) {
+            VStack(spacing: .zero) {
+                topBar
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.callout)
+                        .foregroundStyle(palette.stateWarning.color)
+                        .padding(.horizontal, CoachWorldTokens.Space.md)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                if model.games.isEmpty {
+                    CoachWorldSystemState(
+                        .empty(
+                            "No \(model.tier.lowercased()) games. The schedule is empty "
+                                + "for this season."
+                        ),
+                        palette: palette
+                    )
+                } else {
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
+                            ForEach(model.games) { game in gameRow(game) }
+                        }
+                        .padding(CoachWorldTokens.Space.md)
                     }
-                    .padding(CoachWorldTokens.Space.md)
                 }
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .frame(maxWidth: .infinity,
                alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
         .accessibilitySortPriority(100)
