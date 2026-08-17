@@ -135,6 +135,6 @@ public struct OpponentFilmView: View {
                 .stroke(palette.contentQuiet.color.opacity(0.6), lineWidth: CoachWorldTokens.Shape.hairline)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("(label.capitalized), (value)")
+        .accessibilityLabel("\(label.capitalized), \(value)")
     }
 }
