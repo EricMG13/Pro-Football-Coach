@@ -709,3 +709,11 @@ crash. The same wrong call was made earlier in the session about Match Day regre
 screen, and the root cause is the same shape both times: treating an incomplete observation of a
 long-running job as evidence of failure. The reliable signal is the harness's own totals line, and
 that is what the wait loops now block on.
+
+### Final-tree confirmation
+
+Re-run after the last code commit (`b35fa2a`, the AX5 nesting fix), so the result covers the tree as
+it stands rather than the six-family tree: **897 tests, 769,755 checks, 5 failures**, the same five
+self-re-exec scratch-path artifacts, with `AX5 contract: 62 landed, 0 pending` and
+`Floodlit conversion: 62 converted, 0 pending`. The Xcode app target also builds on the final tree,
+and all three shipping SwiftPM targets compile in release.
