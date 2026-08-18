@@ -29,7 +29,11 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > - **Milestone 3** — all six surface families rendered inside that chrome, one commit per family
 >   (`627e0ca`, `47f0586`, `a980969`, `6e15327`, `eb0da69`, `6808372`), plus `b35fa2a`.
 >
-> **What is verified, precisely.** `swift build` is green in debug and release. `--core-contracts`
+> **What is verified, precisely.** `swift build` is green in debug. In release, all three shipping
+> targets — `FootballSimCore`, `ProFootballCoachUI`, `CoachWorldApp` — compile
+> (`swift build -c release --target …`); the *package-wide* release build still fails, but only on
+> the `SimTests` target's `@testable import`, which is the pre-existing `ModuleNotTestable` defect
+> and not this work. `--core-contracts`
 > (202 tests / 2,228 checks) and `--design-contracts` (29 / 613) are green on the final tree, and
 > those are the suites that scan the view layer — the design-token-literal scan, the symbol
 > register, the AX5 contract and the Floodlit conversion partition, which reports **62 converted /
