@@ -517,6 +517,40 @@ struct FloodlitCostLine: View {
     }
 }
 
+/// The strip a surface pins above the home indicator: the note and the committing action.
+///
+/// It must be opaque. A `safeAreaInset` draws *over* the scrolling content beneath it, so a
+/// transparent strip lets rows run through the sentence -- which is what six surfaces did before
+/// this existed. One treatment, applied by every surface that pins a footer.
+struct FloodlitFooterStrip: ViewModifier {
+    var palette: CoachWorldTokens.Palette = CoachWorldTokens.dark
+
+    func body(content: Content) -> some View {
+        content
+            .padding(.vertical, CoachWorldTokens.Pad.alert.v)
+            .padding(.horizontal, CoachWorldTokens.Pad.alert.h)
+            .frame(maxWidth: .infinity)
+            .background(
+                CoachWorldCutCorner.row.fill(CoachWorldTokens.Floodlit.glassFlatDeep.color)
+            )
+            .overlay {
+                CoachWorldCutCorner.row.stroke(
+                    Color.white.opacity(CoachWorldTokens.Glass.line),
+                    lineWidth: CoachWorldTokens.Shape.hairline
+                )
+            }
+            .padding(.top, CoachWorldTokens.Gap.xs)
+    }
+}
+
+extension View {
+    func floodlitFooterStrip(
+        palette: CoachWorldTokens.Palette = CoachWorldTokens.dark
+    ) -> some View {
+        modifier(FloodlitFooterStrip(palette: palette))
+    }
+}
+
 // MARK: - Literals
 
 private enum Pattern {

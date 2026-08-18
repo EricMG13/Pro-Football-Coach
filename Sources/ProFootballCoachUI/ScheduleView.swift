@@ -185,7 +185,7 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             FloodlitCommittingAction("Continue", action: onContinue)
         }
-        .padding(.top, CoachWorldTokens.Gap.xs)
+        .floodlitFooterStrip(palette: palette)
     }
 }
 

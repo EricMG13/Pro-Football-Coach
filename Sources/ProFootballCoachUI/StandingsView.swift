@@ -94,7 +94,7 @@ public struct StandingsView: View, CoachWorldChromedSurface {
                 .frame(width: StandingsMetric.recordColumn, alignment: .leading)
             FloodlitLabel3("Conf", palette: palette)
                 .frame(width: StandingsMetric.conferenceColumn, alignment: .leading)
-            FloodlitLabel3("For and against", palette: palette)
+            FloodlitLabel3("Points", palette: palette)
                 .frame(width: StandingsMetric.pointsColumn, alignment: .trailing)
         }
         .padding(.horizontal, CoachWorldTokens.Pad.row.h)
@@ -225,7 +225,7 @@ public struct StandingsView: View, CoachWorldChromedSurface {
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             FloodlitCommittingAction("Continue", action: onContinue)
         }
-        .padding(.top, CoachWorldTokens.Gap.xs)
+        .floodlitFooterStrip(palette: palette)
     }
 
     /// What the table is and is not. It is the recorded season to date, not a projection of where

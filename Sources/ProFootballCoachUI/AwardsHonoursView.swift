@@ -109,7 +109,7 @@ public struct AwardsHonoursView: View, CoachWorldChromedSurface {
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             FloodlitCommittingAction("Back to the league", action: onClose)
         }
-        .padding(.top, CoachWorldTokens.Gap.xs)
+        .floodlitFooterStrip(palette: palette)
     }
 }
 

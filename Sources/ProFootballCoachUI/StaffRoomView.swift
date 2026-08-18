@@ -214,7 +214,7 @@ public struct StaffRoomView: View, CoachWorldChromedSurface {
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             FloodlitCommittingAction("Done", action: onClose)
         }
-        .padding(.top, CoachWorldTokens.Gap.xs)
+        .floodlitFooterStrip(palette: palette)
     }
 }
 
