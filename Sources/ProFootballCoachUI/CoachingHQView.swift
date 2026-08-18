@@ -752,7 +752,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
             selectedChoiceID = choice.intentID
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Space.sm) {
-                Image(systemName: selected ? "record.circle.fill" : "circle")
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                     HStack {

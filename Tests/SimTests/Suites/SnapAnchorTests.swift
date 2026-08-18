@@ -631,5 +631,44 @@ func runSnapAnchorTests() {
                        "the gain ran the wrong way down the drawn field")
             }
         }
+
+        test("a thrown ball actually leaves the turf") {
+            // BallToken draws lift, apex scale, tilt and shadow separation entirely from
+            // apexHeight, and the provider never passed one -- every leg of every kind, air
+            // included, was grounded. A completion's air leg is the one that should not be.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let offense = Array(personnel.offense.prefix(11))
+            let target = offense[2]
+            let play = PlayRecord(
+                situation: Situation(down: 2, distance: 8, yardLine: 35),
+                offensiveCall: OffensiveCall(playType: .pass, passDepth: .mid),
+                defensiveCall: DefensiveCall(coverage: .man),
+                outcome: SnapOutcome(
+                    result: .gain, yards: 14, secondsElapsed: 6, matchups: [],
+                    ballCarrierID: target.id, passerID: offense[0].id, targetID: target.id
+                ),
+                callInTriggers: []
+            )
+            let set = SnapAnchors.choreograph(
+                play: play, offense: offense, defense: Array(personnel.defense.prefix(11))
+            )
+            let projected = CoachWorldReadModelProvider.playback(
+                from: set, stableID: "snap-air", offenseDirection: .leftToRight
+            )
+            let airLegs = projected.ball.filter { $0.kind == "air" }
+            expect(!airLegs.isEmpty, "a completed pass produced no air leg to check")
+            for leg in airLegs {
+                expect(leg.apexHeight > 0, "an air leg stayed grounded — the ball never left the turf")
+                expectClose(leg.height(at: 0.5), leg.apexHeight, 0.001,
+                            "the arc's stated peak is not where height(at:) actually peaks")
+                expectClose(leg.height(at: 0), 0, 0.001, "the arc did not start on the ground")
+                expectClose(leg.height(at: 1), 0, 0.001, "the arc did not land")
+            }
+            let groundedKinds: Set<String> = ["snap", "handoff", "carry", "loose"]
+            for leg in projected.ball where groundedKinds.contains(leg.kind) {
+                expectEqual(leg.apexHeight, 0,
+                            "\(leg.kind) is a grounded kind and must not have lift")
+            }
+        }
     }
 }

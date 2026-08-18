@@ -317,7 +317,7 @@ public struct MatchDayView: View {
                                 .tracking(0.1, at: CoachWorldTokens.DisplaySize.flag)
                         )
                 } else {
-                    Image(systemName: presentation.symbol)
+                    Image(systemName: presentation.symbol.rawValue)
                         .font(.system(size: MatchMetric.furnitureIconSize, weight: .bold))
                 }
             }
@@ -788,7 +788,7 @@ public struct MatchDayView: View {
             onControl(control.intentID)
         } label: {
             VStack(spacing: .zero) {
-                Image(systemName: presentation.symbol)
+                Image(systemName: presentation.symbol.rawValue)
                     .font(.caption.weight(.bold))
                     .accessibilityHidden(true)
                 Text(presentation.title).font(.caption.weight(.bold))
@@ -914,18 +914,32 @@ public struct MatchDayView: View {
 
     private func controlPresentation(
         _ id: MatchDayControlID
-    ) -> (title: String, symbol: String) {
+    ) -> (title: String, symbol: MatchDayControlSymbol) {
         switch id {
-        case .speed: ("Speed", "speedometer")
-        case .pause: ("Pause", "pause.fill")
+        case .speed: ("Speed", .speed)
+        case .pause: ("Pause", .pause)
         // forward.end.fill, not sparkles.tv: already a Control-furniture member (04 section 6.6),
         // and growing the vocabulary for a symbol that also read wrong for "advance to the next key
         // moment" was two defects, not one.
-        case .keyMoments: ("Key Moments", "forward.end.fill")
-        case .takeOver: ("Take Over", "hand.raised.fill")
-        case .tactics: ("Tactics", "rectangle.3.group")
+        case .keyMoments: ("Key Moments", .keyMoments)
+        case .takeOver: ("Take Over", .takeOver)
+        case .tactics: ("Tactics", .tactics)
         }
     }
+}
+
+/// `controlPresentation`'s symbol half, typed for the same reason `CoachWorldStatusChip.Symbol` is:
+/// a `String` return is invisible to the "every SF Symbol the UI draws is a registered member" scan
+/// (`DesignContractTests.swift`), which matches only a literal directly after `systemName:`/
+/// `systemImage:`. `sparkles.tv` shipped through exactly this hole. These five are 04 section 6.6's
+/// Control furniture row, a shared pool other components also draw from — so the contract test
+/// asserts membership, not exclusive ownership the way `CoachWorldStatusChip.Symbol` owns Status.
+enum MatchDayControlSymbol: String, CaseIterable {
+    case speed = "speedometer"
+    case pause = "pause.fill"
+    case keyMoments = "forward.end.fill"
+    case takeOver = "hand.raised.fill"
+    case tactics = "rectangle.3.group"
 }
 
 private struct MatchControlButtonStyle: ButtonStyle {
