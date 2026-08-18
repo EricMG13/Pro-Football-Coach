@@ -455,6 +455,32 @@ public final class CoachWorldStore {
             }
             return
         }
+        // A bare tap (four parts, no trailing dial values) is Tactics opening the picker, which the
+        // screen router handles before this method is ever reached — it never emits nothing but
+        // "tactics", so reaching here means either a stale intent or a submitted plan. The three
+        // trailing raw values are the plan `GamePlanView`'s row carried; see
+        // `CoachWorldAppRootView.matchControl(_:in:)`.
+        if parts[3] == "tactics" {
+            guard parts.count >= 7,
+                  let runPassBiasRaw = Int(parts[4]),
+                  let runPassBias = TacticalRunPassBias(rawValue: runPassBiasRaw),
+                  let tempoRaw = Int(parts[5]),
+                  let tempo = TacticalTempo(rawValue: tempoRaw),
+                  let pressureRaw = Int(parts[6]),
+                  let pressure = TacticalPressure(rawValue: pressureRaw) else {
+                statusMessage = "That tactical plan is no longer available"
+                return
+            }
+            let plan = TacticalPlan(runPassBias: runPassBias, tempo: tempo, pressure: pressure)
+            await run {
+                try await self.session.resolveMatch(
+                    fixtureID: fixtureID,
+                    revision: revision,
+                    action: .setTacticalPlan(plan)
+                )
+            }
+            return
+        }
         guard parts.count >= 5, parts[3] == "callin" else {
             statusMessage = "That match action is unavailable at this checkpoint"
             return
@@ -516,10 +542,57 @@ public final class CoachWorldStore {
             if mutationGeneration < UInt64.max { mutationGeneration += 1 }
             statusMessage = nil
         } catch {
-            statusMessage = (error as? CareerSessionError) == .staleMatchCheckpoint
-                ? "That match checkpoint is no longer current"
-                : "\(error)"
+            statusMessage = Self.refusalMessage(for: error)
         }
         rebuildScreens(from: await session.snapshot())
+    }
+
+    /// A refusal the player can act on, for every way the session can refuse.
+    ///
+    /// This used to hand-write one sentence and interpolate the raw error for the rest, so a
+    /// blocked advance told the player
+    /// `missingWeeklyPreparation([FootballSimCore.TacticalPreparationRequirement.gamePlan, ...])`.
+    /// The switch is exhaustive on purpose: a new refusal cannot compile until someone writes the
+    /// sentence that explains it.
+    public nonisolated static func refusalMessage(for error: Error) -> String {
+        guard let refusal = error as? CareerSessionError else {
+            return "That action could not be completed. Nothing was changed."
+        }
+        switch refusal {
+        case .missingControlledCareer:
+            return "No career is under your control."
+        case let .missingWeeklyPreparation(requirements):
+            let work = requirements.map(Self.preparationName).joined(separator: " and ")
+            return "Set the \(work) before the week can advance."
+        case .responsibilityDelegated:
+            return "A staff member owns this decision. Take it back to decide it yourself."
+        case .missingMandatoryDecision:
+            return "That decision is no longer waiting."
+        case .missingDecisionOption:
+            return "That option is no longer available on this decision."
+        case .decisionActionFailed:
+            return "The decision could not be committed. Nothing was changed."
+        case .responsibilityUpdateFailed:
+            return "That responsibility could not be reassigned. Nothing was changed."
+        case .invalidState:
+            return "That action does not apply right now."
+        case .matchInProgress:
+            return "A match is already under way."
+        case .matchNotStarted:
+            return "No match is under way."
+        case .staleMatchCheckpoint:
+            return "That match checkpoint is no longer current."
+        case .matchActionFailed:
+            return "The match could not accept that action. The recorded moment is unchanged."
+        }
+    }
+
+    private nonisolated static func preparationName(
+        _ requirement: TacticalPreparationRequirement
+    ) -> String {
+        switch requirement {
+        case .gamePlan: return "game plan"
+        case .practicePlan: return "practice plan"
+        }
     }
 }

@@ -79,6 +79,16 @@ public struct SnapOutcome: Codable, Sendable, Equatable {
     public let secondsElapsed: Int
     /// The matchups that produced it, in resolution order.
     public let matchups: [MatchupRecord]
+    /// Broken-tackle attempts beyond the first, in attempt order, empty unless the carrier faced a
+    /// break-tackle chain of more than one.
+    ///
+    /// Deliberately **not** folded into `matchups`. `GameRecord.playByPlayFingerprint` mixes every
+    /// matchup's kind and identity into the cross-process determinism hash (`03` section 3), so a
+    /// longer chain recorded there would move that pin even though recording it draws nothing extra
+    /// from the RNG — the leverage values already exist, `yardsAfterContact` already computed them,
+    /// only the first was kept. `matchups` still carries exactly that first attempt, as it always
+    /// has, so the pinned fingerprints are unaffected by whether this array is empty or not.
+    public let brokenTackleAttempts: [MatchupRecord]
     /// Who touched the ball, for the box score. Empty on a kneel.
     public let ballCarrierID: UUID?
     public let passerID: UUID?
@@ -89,6 +99,7 @@ public struct SnapOutcome: Codable, Sendable, Equatable {
         yards: Int,
         secondsElapsed: Int,
         matchups: [MatchupRecord],
+        brokenTackleAttempts: [MatchupRecord] = [],
         ballCarrierID: UUID? = nil,
         passerID: UUID? = nil,
         targetID: UUID? = nil
@@ -97,6 +108,7 @@ public struct SnapOutcome: Codable, Sendable, Equatable {
         self.yards = yards
         self.secondsElapsed = secondsElapsed
         self.matchups = matchups
+        self.brokenTackleAttempts = brokenTackleAttempts
         self.ballCarrierID = ballCarrierID
         self.passerID = passerID
         self.targetID = targetID

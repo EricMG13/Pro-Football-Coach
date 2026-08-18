@@ -19,6 +19,61 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-18 — Floodlit design handoff, all three milestones implemented.** The owner-supplied
+> handoff `design_handoff_floodlit_surfaces_and_match_day/` is built end to end:
+>
+> - **Milestone 1** — the token layer and Match Day. `04` gained section 6.1b for the broadcast
+>   register. Commit `12f9063`.
+> - **Milestone 2** — the shared management chrome and the eight composition patterns. `04` gained
+>   section 6.1c. Commit `73c112d`.
+> - **Milestone 3** — all six surface families rendered inside that chrome, one commit per family
+>   (`627e0ca`, `47f0586`, `a980969`, `6e15327`, `eb0da69`, `6808372`), plus `b35fa2a`.
+>
+> **What is verified, precisely.** `swift build` is green in debug. In release, all three shipping
+> targets — `FootballSimCore`, `ProFootballCoachUI`, `CoachWorldApp` — compile
+> (`swift build -c release --target …`); the *package-wide* release build still fails, but only on
+> the `SimTests` target's `@testable import`, which is the pre-existing `ModuleNotTestable` defect
+> and not this work. `--core-contracts`
+> (202 tests / 2,228 checks) and `--design-contracts` (29 / 613) are green on the final tree, and
+> those are the suites that scan the view layer — the design-token-literal scan, the symbol
+> register, the AX5 contract and the Floodlit conversion partition, which reports **62 converted /
+> 0 pending**. A sweep confirms every type conforming to `CoachWorldChromedSurface` actually
+> consumes its chrome, because that failure mode is silent rather than a compile error.
+>
+> **What is not verified.** Four of six families were confirmed on a simulator — weekly command
+> (Coaching HQ), personnel (Roster), recruiting (Recruiting Board) and league (League Map) — plus
+> the chrome-and-patterns proof surface. **Pro management and career were not**: neither is
+> reachable from the debug proof harness and neither has sample read models, so confirming them
+> visually would mean authoring two large fixtures for a screenshot. That was judged
+> disproportionate *after* the structural check those screenshots exist to catch — a surface
+> drawing its own identity strip under the shared header — was made exhaustive across the whole
+> module rather than per family. Those two families rest on compilation, the contract suites, the
+> chrome-attachment sweep and that structural check. Release-mode `SimTests` remains blocked
+> by a pre-existing `ModuleNotTestable` defect that reproduces on a clean worktree, so it is
+> unverified here for that reason and not because of this work. No surface has been through the
+> `04b` audit rubric at 31/40, and no owner simulator walkthrough has happened.
+>
+> The full per-milestone record, including every divergence from the handoff and why, is
+> `docs/PORT-LOG.md`.
+>
+> **2026-08-18, later — adversarial review against the reference.** The three milestones delivered
+> the chrome, the tokens, the eight patterns and Match Day. They did **not** port the interiors of
+> the management surfaces, and against the standing instruction that the front end must look
+> exactly like the reference, that is the outstanding work.
+> `docs/reviews/2026-08-18-floodlit-adversarial-review.md` records 23 findings from four surfaces
+> sampled of 62.
+>
+> Closed since: the three chrome defects (surface-specific header chip, short-form sibling links,
+> `ALL 62` rail entry) and the compositions of **week hub**, **personnel** and **recruiting**.
+>
+> Three findings will not close without a decision or engine work, and are named rather than
+> quietly carried: **F-09** (rating uncertainty — no scouting-confidence model exists, and deriving
+> one would print invented figures as fact); **F-19** (the reference's League is a standings table,
+> ours is a geographic map — the handoff's own text and its rendering disagree, and replacing it
+> discards a working surface); and **F-01** for the remaining ~59 surfaces, which are still
+> chrome-only.
+
+
 > **2026-08-10 master-plan rebaseline:** the attached Master Build Documentation is now the primary
 > product and technical authority. Its Milestone 0 architecture hardening is implemented. The
 > previous P0–P4 work below remains an accurate account of the preserved deterministic foundation,
@@ -442,7 +497,61 @@ test asserts that rather than the arithmetic.
 
 The remaining personnel blanks are named in the provider beside the field: no hometown (the root
 records a *prospect's* origin city, not a rostered player's), no staff summary (G-02), and no recent
-form (G-04). Match Day still needs G-06 and G-11.
+form (G-04). Match Day still needs G-11.
+
+**G-06 landed 2026-08-17; Match Day still needs G-11.** `03` §9 holds the anchor contract and
+`Sources/FootballSimCore/Engine/SnapAnchors.swift` implements it: a pure, total, rng-free function
+from a recorded `PlayRecord` to a sparse anchor set. Its five legality clauses are tests in
+`--snap-anchors`, driven from `SnapResult.allCases` and `Position.allCases` rather than from samples.
+The Match Day field now animates the last completed snap under a `TimelineView`, and the Speed
+control — previously rendered `isEnabled: false` with a hardcoded `1×` — cycles 1x, 2x and 4x.
+
+Nothing new is persisted. Anchors are derived on demand from a `PlayRecord` the save already holds
+under D7's current-game bound, so the gap register's "G-06 zero" save cost is met by construction.
+
+**Confirmed running on a simulator 2026-08-17** (iPhone 17 Pro Max, `xcodebuild` green, real career, Stannard South vs Central Ironvale Basin). The formation draws from the template, the deciding pair is foregrounded, the ball traces its legs, and the lower third named the duel on each snap — "Wickford won the run lane", then "Dunnhaven won the throw" on an interception. **This is a demonstration, not the `04` §9 owner walkthrough**, which asks presentation questions no agent may answer on the owner's behalf.
+
+**Three defects were visible on device that no test had caught.** They were found by looking, after the suite was green and after the confidence review, which is worth noting on its own. The first is fixed; two remain.
+
+1. **The markers disagreed with the animation — fixed 2026-08-17.** They derived from the *current pre-snap* situation while the animation replayed the *last completed* snap, so after a turnover they sat at one end of the field and the play drew at the other. `Playback` now carries its own `lineOfScrimmageX` and `firstDownLineX` and the view prefers them whenever it animates, so everything on the field comes from one `PlayRecord`; the model's pair still drives the pre-snap and Reduce Motion paths, where the upcoming snap is the right thing to describe. Underneath it sat an older defect: `matchDay` assigned `Situation.yardLine` — offense-relative 0-to-100 — straight into the absolute 0-to-120 space with no direction and no end-zone offset, so the offence's own 25 drew on the field's 15, on every marker, in every game. There is now exactly one conversion, `fieldX`, as `03` §9.2 requires. **Fixing it surfaced a third defect in the fix**: clamping the first-down yard to 100 makes it equal the line at goal-to-go, which fails the read model's strict-ordering guard and throws the whole model away, blanking Match Day on exactly the snaps that matter most. Bounded at 110 now, with a test sweeping every yard line and distance.
+2. **The pre-snap field drew twenty-two dots in one vertical column — fixed 2026-08-17.** The static path gave every player on a side one x, the line plus a two-yard offset, and spread them by array index, so Match Day opened on two columns of eleven and became football only after the first play. It now uses the same `03` §9.4 template the animation uses, so the pre-snap and animated fields agree by construction rather than by two authors remembering to match — which is the failure the column was. Confirmed on device under Reduce Motion, which draws that same path. **Reading the template again found a defect in it:** the specialist depth keyed on home versus away, which is the wrong axis, so with the away team attacking its kicker lined up eight yards downfield in the defence's territory. The parameter is `isOffense` now, which is what it always meant.
+3. **Twenty-two 20 pt numbered discs overlapped into an unreadable clump — fixed 2026-08-17,** and not by shrinking them. `authoredFloor` is a 12 pt contract, so a disc carrying text cannot go much below 20 pt, while the §9.4 template puts adjacent linemen about 3 yards — some 16 pt — apart: text on every actor and no overlap are not simultaneously satisfiable at this field scale. Canon had already answered it. `04` §9 caps the foreground at three and §6.5 #18 makes the diagram's marks role tokens rather than jersey numbers, so numbering all twenty-two was wrong before it was crowded. The three that matter carry a number; the rest are plain 11 pt marks. **§9's foreground cap is now visibly true rather than only nominally so** — before this, all twenty-two read as equally prominent. The static mark declares itself an accessibility element explicitly, because a background mark is a `Circle` and a shape is not an element on its own: the label would have attached for the three built from `Text` and silently detached for the other nineteen.
+
+**Two things are not verified, and must not be reported as if they were.** D4's 16.7 ms figure is a
+*frame* ceiling; the headless suite runs on macOS and measures no rendered frame, so the frame budget
+for this animation is **unmeasured**. And `04` §9's orientation question — does the field read as a
+football field on a phone, is the line of scrimmage legible as a line — is the presentation question
+P13 says no test can answer. The script is `docs/plans/2026-08-17-match-day-walkthrough.md`, and the
+walkthrough is an owner action that **has not happened**.
+
+**Three defects were found by review after the suite was green, and all three are worth recording
+because none of them was visible to a test.** The playback clock was keyed on `recordedOutcomeID`,
+which is built from `nextDriveIndex` and is therefore constant across every snap of a drive — so
+`.task` never re-fired within a drive and every snap after a drive's first rendered frozen at its end
+positions. Route runners moved downfield on running plays, because `OffensiveCall` carries a
+defaulted `passDepth` on every call and reading it without checking `playType` invented movement from
+a field that meant nothing. And the deciding matchup was computed and then dropped on the way into
+presentation space, so D2's whole point — the sack drawn as the protection duel that lost — did not
+render. Each now has a test that fails if it returns. The lesson is the one `04b` keeps making: a
+green suite bounds what was checked, not what is true.
+
+One further limit is by design rather than debt, and is stated so a reader does not mistake it for a
+defect. Alignment is a `03` §9.4 template because per-snap alignment is not recorded, and movement is
+sparse — a blocker who lost his duel is driven back, one who won holds; rushers converge; a defender
+who broke free of a tackle draws a near miss and whoever finally stopped him converges on the ball;
+the carrier runs to the end spot; route runners reach the recorded air-yard depth; nothing else moves,
+because `04` §9 prohibits inventing the rest.
+
+**Continuous drive playback landed 2026-08-18; key-moment scrubbing did not.** Once a snap's
+animation finishes, `MatchDayView` holds briefly on the result then submits the same intent Key
+Moments' own tap already sends, chaining through a drive without a manual tap per snap — `02` §3.1's
+"the field animates, the drive summarises, the player watches," rather than the coach tapping through
+every play. Reviewing an *earlier* snap — scrubbing back to one already played — remains unbuilt: the
+engine already retains the current drive's past plays (`MatchSessionState.currentDrive.plays`,
+`drives[].plays`), so the gap is a read-model projection and a browsing surface, not retained data,
+but no canon anywhere specifies what that surface should look like, and building the projection with
+nothing in the UI reading it would be exactly the kind of half-finished, dead-on-arrival plumbing this
+document exists to flag rather than ship quietly.
 
 **Recruiting Board is truthful too, added 2026-08-13.** `Capacity.weeklyHoursRemaining` is
 `ProgrammeRecruitingState.contactPointsRemaining` — a real, weekly-reset resource

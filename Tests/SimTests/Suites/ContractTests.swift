@@ -1,5 +1,7 @@
 import Foundation
-import ProFootballCoachUI
+import CoachWorldApp
+import FootballSimCore
+@testable import ProFootballCoachUI
 
 // The four build-wide invariants from 03b section 1, in one place because that is what they are:
 // properties of the whole tree, not of any suite's subject.
@@ -51,7 +53,7 @@ func swiftFiles(under relativePath: String) -> [(path: String, text: String)] {
 /// blanking its content, which is the safe direction. A raw string containing a backslash could
 /// mis-track the closing quote and blank the rest of the line — a false negative on a line no
 /// pattern here occupies. Revisit if the tree ever gains raw strings.
-private func codeLines(of text: String) -> [String] {
+func codeLines(of text: String) -> [String] {
     var lines: [String] = []
     var inBlockComment = false
     for rawLine in text.split(separator: "\n", omittingEmptySubsequences: false) {
@@ -98,7 +100,7 @@ private func codeLines(of text: String) -> [String] {
 }
 
 /// Every line whose *code* matches `predicate`, as "path:line".
-private func offendingLines(
+func offendingLines(
     in files: [(path: String, text: String)],
     where predicate: (String) -> Bool
 ) -> [String] {
@@ -148,10 +150,18 @@ private func importsUIFramework(_ line: String) -> Bool {
 /// The class "code that draws" defined by what makes code draw, so a target added tomorrow is
 /// covered the day it is added rather than the day someone remembers it (`CLAUDE.md`: a test's
 /// coverage boundary must not become the quality boundary).
-func swiftFilesImportingUIFramework() -> [(path: String, text: String)] {
+/// Cached: `AccessibilityReflowTests`, `ReduceMotionContractTests` and the design-contract scans each
+/// call this, and `floodlitConvertedTypes()` calls it again inside its own fixpoint loop — uncached,
+/// one full `--design-contracts` run re-read the same ~80 files roughly a dozen times. A single
+/// process runs the whole suite once, so a static cache cannot see a stale tree mid-run.
+private let uiFrameworkFilesCache: [(path: String, text: String)] = {
     swiftFiles(under: "Sources").filter { file in
         file.text.split(separator: "\n").contains { importsUIFramework(String($0)) }
     }
+}()
+
+func swiftFilesImportingUIFramework() -> [(path: String, text: String)] {
+    uiFrameworkFilesCache
 }
 
 private func referencesAuthoritativeRoot(_ line: String) -> Bool {
@@ -180,6 +190,17 @@ private func mintsAmbientIdentity(_ line: String) -> Bool {
         ".random(", "SystemRandomNumberGenerator", "arc4random", ".shuffled()",
     ]
     return markers.contains { line.contains($0) }
+}
+
+/// True for any reference to the engine's RNG type or its conventional parameter name.
+///
+/// Phase 5's E1: `SnapAnchors.swift` derives what to draw from an already-resolved `SnapOutcome`
+/// and must never itself draw a random value, or `03` section 9.3's purity clause is unenforced
+/// prose. `SeededRandom` catches the type; `\brng\b` catches the parameter and argument-label
+/// spelling every engine call site uses for it, on a word boundary so it does not also match a name
+/// that merely contains the letters, e.g. a hypothetical "wrong" or "strength".
+private func usesRandomNumberGenerator(_ line: String) -> Bool {
+    line.contains("SeededRandom") || line.range(of: "\\brng\\b", options: .regularExpression) != nil
 }
 
 /// True if `text` contains a numeric literal that stands alone as a token.
@@ -246,9 +267,20 @@ private func argumentSpan(of line: String, from start: String.Index, balanced: B
 /// plus the label spellings of the same properties. Literal colours are 03b's fourth token class and
 /// are NOT covered here; P11 owns extending this set as the component registry makes the class
 /// enumerable by construction. Recorded in docs/STATUS.md rather than left implicit.
+///
+/// **Timing and easing markers, added with `04` section 6.7.** `duration:`/`response:`/
+/// `dampingFraction:`/`minimumInterval:` and `.delay(`/`.speed(`/`.repeatCount(` are motion's own
+/// design-token position, and were invisible before this: `MatchDayScoreBug.swift:468` shipped
+/// `withAnimation(.easeInOut(duration: 1.5)…)` — a literal duration — because nothing was looking at
+/// this class of argument. Deliberately **not** added: bare `count:` and bare `speed:`, which collide
+/// with `Array(repeating:count:)`, `prefix(count:)` and `ForEach(0..<count)`; `.repeatCount(` and
+/// `.speed(` (the call forms) are unambiguous and carry the same intent.
 private func containsDesignTokenLiteral(_ line: String) -> Bool {
-    let callMarkers = [".padding(", ".cornerRadius("]
-    let labelMarkers = ["spacing:", "cornerRadius:", "size:", "radius:", "lineWidth:"]
+    let callMarkers = [".padding(", ".cornerRadius(", ".delay(", ".speed(", ".repeatCount("]
+    let labelMarkers = [
+        "spacing:", "cornerRadius:", "size:", "radius:", "lineWidth:",
+        "duration:", "response:", "dampingFraction:", "minimumInterval:"
+    ]
     for (markers, balanced) in [(callMarkers, true), (labelMarkers, false)] {
         for marker in markers {
             var searchStart = line.startIndex
@@ -273,7 +305,7 @@ private func savedShapeFiles() -> [(path: String, text: String)] {
 
 /// Runs a predicate against a synthetic in-memory file, so a self-test never has to write to the
 /// tree it is scanning.
-private func caught(_ source: String, by predicate: (String) -> Bool) -> Bool {
+func caught(_ source: String, by predicate: (String) -> Bool) -> Bool {
     !offendingLines(in: [(path: "planted.swift", text: source)], where: predicate).isEmpty
 }
 
@@ -501,6 +533,32 @@ func runContractTests() {
                    "the scan matched a module whose name merely starts with SwiftUI")
         }
 
+        test("SnapAnchors.swift never draws a random value") {
+            // Phase 5, E1: blocking and pursuit anchors read outcome.matchups and
+            // outcome.brokenTackleAttempts, values SnapResolver already computed. Deriving them a
+            // second time from the RNG rather than reading the record would be a second opinion the
+            // view has no business forming, and this is what makes that unrepresentable rather than
+            // merely catchable.
+            let anchors = swiftFiles(under: "Sources/FootballSimCore")
+                .filter { $0.path.hasSuffix("SnapAnchors.swift") }
+            expect(!anchors.isEmpty, "SnapAnchors.swift not found under Sources/FootballSimCore")
+            let offenders = offendingLines(in: anchors, where: usesRandomNumberGenerator)
+            expect(offenders.isEmpty,
+                   "SnapAnchors.swift must stay rng-free (03 section 9.3): "
+                       + offenders.joined(separator: ", "))
+        }
+
+        test("the rng scan catches SeededRandom, the rng token, and not a look-alike name") {
+            expect(caught("var rng: SeededRandom\n", by: usesRandomNumberGenerator),
+                   "a planted SeededRandom declaration was not caught")
+            expect(caught("Leverage.score(rng: &rng)\n", by: usesRandomNumberGenerator),
+                   "a planted rng argument label was not caught")
+            expect(!caught("// uses rng internally\n", by: usesRandomNumberGenerator),
+                   "a commented-out reference was reported as an offender")
+            expect(!caught("let strength = wrong.value\n", by: usesRandomNumberGenerator),
+                   "the scan matched \"rng\" inside an unrelated identifier")
+        }
+
         test("no file that imports a UI framework owns or reads the authoritative root") {
             // Enumerated by construction rather than by directory. This scan read
             // `Sources/ProFootballCoachUI` until 2026-08-13, which made the directory the rule
@@ -575,8 +633,14 @@ func runContractTests() {
             }?.text ?? ""
             let filmProvider = swiftFiles(under: "Sources/CoachWorldApp")
                 .first { $0.path.hasSuffix("/CoachWorldOpponentFilmProvider.swift") }?.text ?? ""
+            // Was `film.contains("OPPONENT REPORT")`. That literal was a proxy for the surface
+            // being the real one, and the Floodlit conversion moved the screen title into the
+            // shared chrome header, where every converted surface's title now lives. The figures
+            // are the better proxy: they assert the evidence is drawn, not that a heading exists.
             expect(film.contains("public struct OpponentFilmView")
-                       && film.contains("OPPONENT REPORT"),
+                       && film.contains("model.sourceGameCount")
+                       && film.contains("model.confidence")
+                       && film.contains("model.sourceFixtureCount"),
                    "film must render an evidence-backed production surface")
             expect(filmModel.contains("public struct OpponentFilmReadModel")
                        && filmModel.contains("Observer-scoped"),
@@ -799,7 +863,12 @@ func runContractTests() {
             // wish.
             // Enumerated by the UI import, not by directory: the rule is about code that draws,
             // and the composition layer added a second target that does.
+            //
+            // CoachWorldMotion.swift is exempt: it is where `04` section 6.7's durations are
+            // *defined*, and a definition site necessarily holds the literal a consumer must not.
+            // Nothing else may claim this exemption — see `04` section 6.7's own line about it.
             let views = swiftFilesImportingUIFramework()
+                .filter { !$0.path.hasSuffix("/CoachWorldMotion.swift") }
             expect(!views.isEmpty, "found no view sources to scan — the scan would pass vacuously")
             let offenders = offendingLines(in: views, where: containsDesignTokenLiteral)
             expect(
@@ -841,6 +910,34 @@ func runContractTests() {
                    "a token-valued spacing was reported as an offender")
             expect(!caught("Text(\"hi\").padding(Token.gutter2)\n", by: containsDesignTokenLiteral),
                    "a digit inside a token's name was mistaken for a literal")
+
+            // The timing and easing markers `04` section 6.7 added.
+            expect(caught("withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true))",
+                          by: containsDesignTokenLiteral),
+                   "the exact literal MatchDayScoreBug.swift:468 shipped was not caught")
+            expect(caught(".spring(response: 0.4, dampingFraction: 0.8)\n",
+                          by: containsDesignTokenLiteral),
+                   "a planted literal spring response was not caught")
+            expect(caught("TimelineView(.animation(minimumInterval: 0.016)) { _ in }\n",
+                          by: containsDesignTokenLiteral),
+                   "a planted literal minimumInterval was not caught")
+            expect(caught("Animation.easeIn.delay(0.3)\n", by: containsDesignTokenLiteral),
+                   "a planted .delay(0.3) was not caught")
+            expect(caught("Animation.linear.speed(2)\n", by: containsDesignTokenLiteral),
+                   "a planted .speed(2) was not caught")
+            expect(caught("Animation.linear.repeatCount(3)\n", by: containsDesignTokenLiteral),
+                   "a planted .repeatCount(3) was not caught")
+            expect(
+                !caught(".coachWorldAnimation(CoachWorldTokens.Motion.value, value: x)\n",
+                        by: containsDesignTokenLiteral),
+                "a token-valued duration through the choke point was reported as an offender"
+            )
+            expect(
+                !caught("TimelineView(.animation(minimumInterval: MatchMetric.playbackTick)) { _ in }\n",
+                        by: containsDesignTokenLiteral),
+                "a token-valued minimumInterval — live at MatchDayView.swift:440 — was reported as "
+                    + "an offender"
+            )
         }
 
         test("the production UI tokens preserve the canonical scales") {
@@ -956,10 +1053,20 @@ func runContractTests() {
             expect(profile.contains("let model: PlayerProfileReadModel"))
             expect(profile.contains("Button("))
             expect(!profile.contains("onTapGesture"))
-            expect(profile.contains("monospacedDigit"))
+            // Was `profile.contains("monospacedDigit")`. Figures now go through
+            // `CoachWorldTokens.figure(_:weight:)`, which applies the tabular face itself, so the
+            // modifier no longer appears at the call site. Either spelling satisfies the rule the
+            // check is for: a figure on this surface does not reflow as it changes.
+            expect(profile.contains("monospacedDigit") || profile.contains("CoachWorldTokens.figure("),
+                   "player profile figures must be set in the tabular face")
             expect(profile.contains("accessibilitySortPriority"))
             expect(profile.contains("dynamicTypeSize.isAccessibilitySize"))
-            expect(profile.contains("CoachWorldBlankPhotoPlate"))
+            // The photo plate left this surface with the Floodlit rebuild. The handoff's player
+            // profile leads with the attribute dial and the jersey mark and draws no portrait at
+            // all, so there is no plate to stand in for one. `CoachWorldBlankPhotoPlate` is still
+            // the only likeness slot in the product and is still asserted where it is drawn.
+            expect(profile.contains("FloodlitAttributeDial"),
+                   "player profile must lead with the attribute dial")
             expect(profile.contains("model.attributeGroups"))
             expect(profile.contains("private var routeBar"),
                    "player profile must expose its route selector in production source")
@@ -968,10 +1075,12 @@ func runContractTests() {
             expect(profile.contains("No recent form recorded."),
                    "player profile must expose a truthful empty form state")
 
+            // The shared surface element is `coachWorldFloodlitPanel`; `coachWorldDeskSurface` was
+            // its pre-Floodlit predecessor and was deleted once the last caller converted.
             expect(deskComponents.contains("struct CoachWorldActionButtonStyle")
                        && deskComponents.contains("struct CoachWorldRouteButton")
-                       && deskComponents.contains("coachWorldDeskSurface"),
-                   "management screens must share the proven action, route and desk-surface elements")
+                       && deskComponents.contains("func coachWorldFloodlitPanel"),
+                   "management screens must share the proven action, route and panel elements")
             expect(hq.contains("CoachWorldActionButtonStyle")
                        && hq.contains("CoachWorldRouteButton")
                        && recruiting.contains("CoachWorldActionButtonStyle")
@@ -1700,9 +1809,11 @@ func runContractTests() {
         }
 #endif
 
-        test("the production palettes preserve readable role contrast") {
+        test("the production palette preserves readable role contrast") {
+            // 04 section 6.1a (2026-08-16): Floodlit is dark-only, so `dark` is the sole production
+            // palette. There is no `.light` to iterate any more.
             for (name, palette) in [
-                ("dark", CoachWorldTokens.dark), ("light", CoachWorldTokens.light),
+                ("dark", CoachWorldTokens.dark),
             ] {
                 for surface in [palette.page, palette.work, palette.raised] {
                     expect(contrastRatio(palette.contentPrimary, surface) >= 4.5,
@@ -1883,6 +1994,201 @@ func runContractTests() {
                            "\(root)/\(name) is a symlink; the source scans do not follow it")
                 }
             }
+        }
+    }
+
+    suite("Floodlit vocabulary (Task 4)") {
+        // 04 section 7's "empty, error, interrupted and resume states remain inside the
+        // composition" made checkable: every kind the canon names must produce a distinct label,
+        // so a composition cannot silently fall back to one generic "something went wrong".
+        test("CoachWorldSystemState exposes a distinct required label for every canon kind") {
+            let kinds: [(CoachWorldSystemState.Kind, String)] = [
+                (.empty("Nothing here yet"), "Nothing here yet"),
+                (.loading("Loading"), "Loading"),
+                (.error("Could not load", recoveryTitle: nil, onRecover: nil), "Could not load"),
+                (.interrupted("Paused"), "Paused"),
+                (.delegated("Staff decision in progress"), "Staff decision in progress"),
+            ]
+            for (kind, expected) in kinds {
+                expectEqual(kind.message, expected,
+                            "every canon kind must surface the exact message it was given")
+            }
+            let symbols = Set(kinds.map(\.0.symbolName))
+            expectEqual(symbols.count, 5, "the five kinds must draw five visually distinct marks")
+        }
+
+        test("CoachWorldStatusChip cannot be built without visible text") {
+            // The type itself is the contract: `text` is a required, non-optional parameter, so a
+            // colour-only chip does not compile. This exercises the public initializer to prove the
+            // requirement holds at the call site, not only in the declaration.
+            let chip = CoachWorldStatusChip(text: "Full", tone: .go)
+            expect(!chip.text.isEmpty, "a status chip's text must never be empty")
+        }
+
+        test("CoachWorldDeltaMark prints the signed value, never colour alone") {
+            let positive = CoachWorldDeltaMark(value: 4)
+            let negative = CoachWorldDeltaMark(value: -2)
+            expectEqual(positive.value, 4)
+            expectEqual(negative.value, -2)
+            // Both directions must resolve to a registered Change-class symbol (04 section 6.6):
+            // arrow.up.right / arrow.down.right. A third direction (value == 0) has no motion to
+            // show and must not invent one.
+            expectEqual(positive.symbolName, "arrow.up.right")
+            expectEqual(negative.symbolName, "arrow.down.right")
+            expect(CoachWorldDeltaMark(value: 0).symbolName == nil,
+                   "a zero delta must not draw a direction it does not have")
+        }
+
+        test("CoachWorldIdentityBand renders nothing when identity resolution refuses") {
+            // Mirrors CoachWorldTeamIdentity's own refusal contract: a malformed or illegible pair
+            // must produce no team colour anywhere it is consumed, including this component.
+            let malformed = CoachWorldTeamReference(
+                stableID: "x", name: "X", abbreviation: "X",
+                primaryColorHex: "not-a-colour", secondaryColorHex: "not-a-colour"
+            )
+            let band = CoachWorldIdentityBand(team: malformed, behind: CoachWorldTokens.dark.raised)
+            expect(band.identity == nil, "a malformed pair must resolve to no identity, not a guess")
+        }
+
+        test("the broadcast register renders no desk backdrop or grain") {
+            let sourcePath = "Sources/ProFootballCoachUI/CoachWorldDeskComponents.swift"
+            guard let text = try? String(contentsOfFile: sourcePath, encoding: .utf8) else {
+                expect(false, "could not read \(sourcePath)")
+                return
+            }
+            expect(text.contains("enum CoachWorldRegister"),
+                   "CoachWorldFloodlitStage has no register type to select broadcast's flat backdrop")
+            expect(text.contains("register == .desk"),
+                   "the backdrop/grain are not conditioned on the register, so broadcast would "
+                       + "inherit desk chrome")
+        }
+    }
+
+    suite("Refusal copy is player-facing") {
+        // Found by running the app, not by a test: tapping Continue with no plans set printed
+        // `missingWeeklyPreparation([FootballSimCore.TacticalPreparationRequirement.gamePlan,
+        // ...])` into the status line, because the store hand-wrote one sentence and interpolated
+        // the raw error for every other refusal. CLAUDE.md: player-facing copy is short and plain.
+        test("no refusal leaks Swift type or case internals into player copy") {
+            let refusals: [CareerSessionError] = [
+                .missingControlledCareer,
+                .missingWeeklyPreparation([.gamePlan, .practicePlan]),
+                .missingWeeklyPreparation([.gamePlan]),
+                .responsibilityDelegated,
+                .missingMandatoryDecision,
+                .missingDecisionOption,
+                .decisionActionFailed,
+                .responsibilityUpdateFailed,
+                .invalidState,
+                .matchInProgress,
+                .matchNotStarted,
+                .staleMatchCheckpoint,
+                .matchActionFailed(.completed),
+                .matchActionFailed(.unavailableTakeover),
+            ]
+            // The tells of an interpolated error value rather than authored prose.
+            let leaks = ["FootballSimCore.", "ProFootballCoachUI.", "CoachWorldApp.",
+                         "(", ")", "[", "]", "Error", "Optional"]
+            for refusal in refusals {
+                let message = CoachWorldStore.refusalMessage(for: refusal)
+                expect(!message.isEmpty, "every refusal must say something")
+                for leak in leaks {
+                    expect(!message.contains(leak),
+                           "refusal copy \"\(message)\" contains \"\(leak)\", so a raw error "
+                               + "value reached the player instead of an authored sentence")
+                }
+                expect(message.first?.isUppercase == true,
+                       "refusal copy \"\(message)\" must read as a sentence")
+            }
+        }
+
+        test("the blocked advance names the work the player must do") {
+            let both = CoachWorldStore.refusalMessage(
+                for: CareerSessionError.missingWeeklyPreparation([.gamePlan, .practicePlan])
+            )
+            expect(both.contains("game plan") && both.contains("practice plan"),
+                   "a blocked advance must name both outstanding plans, not just refuse")
+            let one = CoachWorldStore.refusalMessage(
+                for: CareerSessionError.missingWeeklyPreparation([.practicePlan])
+            )
+            expect(one.contains("practice plan") && !one.contains("game plan"),
+                   "a blocked advance must name only the work actually outstanding")
+        }
+
+        test("an error the session does not define still refuses in plain words") {
+            struct Unexpected: Error {}
+            let message = CoachWorldStore.refusalMessage(for: Unexpected())
+            expect(!message.contains("Unexpected"),
+                   "an unknown error must not print its own type name to the player")
+        }
+    }
+
+    // Task 12: make dark appearance and honest unavailable-state handling authoritative at both
+    // app roots. `career(_:)` used to repeat `if let model = store.X { View(...) }` with no `else`
+    // once per registered screen — a nil model rendered nothing at all, not even navigation chrome.
+    suite("Floodlit root: dark commitment and no silent-blank routes") {
+        test("the shipped root commits to dark at its own body and owns the surface() helper") {
+            let root = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
+            expect(!root.isEmpty, "CoachWorldAppRootView.swift must exist")
+            expect(root.contains(".preferredColorScheme(.dark)"),
+                   "the shipped root must commit to dark underneath the per-family Floodlit wraps, " +
+                       "as a guardrail for branches (like an unavailable surface) that carry no " +
+                       "Floodlit stage of their own")
+            expect(root.contains("private func surface<Model"),
+                   "the shared surface(_:screen:content:) helper must exist")
+        }
+
+        test("career() routes every optional read model through surface(), not silent blanks") {
+            let root = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
+            guard let start = root.range(
+                of: "private func career(_ store: CoachWorldStore) -> some View {"
+            ), let end = root.range(
+                of: "\n    private func navigate(",
+                range: start.upperBound..<root.endIndex
+            ) else {
+                expect(false, "could not locate career(_:) to scan it")
+                return
+            }
+            let careerBody = String(root[start.upperBound..<end.lowerBound])
+            expect(!careerBody.contains("if let model = store."),
+                   "career() must route every optional read model through " +
+                       "surface(_:screen:content:) — a reintroduced \"if let model = store.X {\" " +
+                       "with no else silently renders nothing for that screen")
+            expect(careerBody.contains("surface(store."),
+                   "career() must actually use the surface(_:screen:content:) helper somewhere")
+            expect(careerBody.contains("default:"),
+                   "career() must keep an exhaustive default fallback for any screen with no " +
+                       "explicit case")
+            // Enumerated from CoachWorldScreenID.allCases rather than hand-copied, per
+            // AccessibilityReflowTests.swift's established discipline. A handful of registry
+            // entries (the title screen, new-career setup, settings, a sheet-presented profile)
+            // are legitimately reached outside this switch, so the bar is a large majority, not
+            // every last case — this exists to fail loudly if a future edit strips most of
+            // career()'s branches, not to pin an exact count.
+            let explicitlyRouted = CoachWorldScreenID.allCases.filter {
+                careerBody.contains("case .\(String(describing: $0)):")
+            }
+            expect(explicitlyRouted.count >= 50,
+                   "career() explicitly branches on only \(explicitlyRouted.count) of " +
+                       "\(CoachWorldScreenID.allCases.count) registered screens — either a real " +
+                       "regression, or this scan stopped reading real source")
+        }
+
+        test("RootView commits to dark on both its DEBUG and non-DEBUG branches") {
+            let root = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .first { $0.path.hasSuffix("/RootView.swift") }?.text ?? ""
+            expect(!root.isEmpty, "RootView.swift must exist")
+            expect(root.contains("CoachWorldFloodlitStage"),
+                   "the non-DEBUG no-career-loaded state must carry dark through " +
+                       "CoachWorldFloodlitStage, matching the shipped root's guardrail")
+            expect(!root.contains("ContentUnavailableView"),
+                   "the no-career-loaded state must use the Floodlit system-state vocabulary, " +
+                       "not the generic SwiftUI placeholder")
+            expect(root.contains(".preferredColorScheme(.dark)"),
+                   "the DEBUG sample-data harness has no per-family Floodlit wrap of its own, so " +
+                       "it needs its own explicit dark commitment")
         }
     }
 }

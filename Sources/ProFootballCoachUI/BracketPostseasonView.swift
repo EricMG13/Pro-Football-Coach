@@ -1,7 +1,13 @@
 import SwiftUI
 
 /// Registry entry for the postseason bracket, backed by the shared competition snapshot.
-public struct BracketPostseasonView: View {
+public struct BracketPostseasonView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: CompetitionOverviewReadModel
     public let statusMessage: String?
     public let onClose: () -> Void
@@ -31,5 +37,6 @@ public struct BracketPostseasonView: View {
         CompetitionOverviewView(model: model, focus: .bracketPostseason,
                                 statusMessage: statusMessage, onClose: onClose,
                                 onContinue: onContinue, onSelectTeam: onSelectTeam)
+            .floodlitChrome(chrome, onNavigate: onNavigateChrome)
     }
 }

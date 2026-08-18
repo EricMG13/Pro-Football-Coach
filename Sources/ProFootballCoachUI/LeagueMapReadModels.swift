@@ -63,6 +63,38 @@ public struct LeagueMapReadModel: Sendable, Equatable {
         }
     }
 
+    /// One conference standing, for the table the map surface carries beside it.
+    ///
+    /// Separate from `Place` on purpose: a place is where a programme *is*, a standing is how it is
+    /// *doing*, and only some places are in the conference being tabled.
+    public struct ConferenceStanding: Sendable, Equatable, Identifiable {
+        public var id: String { stableID }
+        public let stableID: String
+        public let team: CoachWorldTeamReference
+        /// `3-1`, already formatted with the en dash the copy rules ask for.
+        public let conferenceRecord: String
+        public let overallRecord: String
+        /// Points for minus points against. Signed, and the sign is the point of it.
+        public let pointDifferential: Int
+        public let isControlled: Bool
+
+        public init(
+            stableID: String,
+            team: CoachWorldTeamReference,
+            conferenceRecord: String,
+            overallRecord: String,
+            pointDifferential: Int,
+            isControlled: Bool
+        ) {
+            self.stableID = stableID
+            self.team = team
+            self.conferenceRecord = conferenceRecord
+            self.overallRecord = overallRecord
+            self.pointDifferential = pointDifferential
+            self.isControlled = isControlled
+        }
+    }
+
     public struct Place: Sendable, Equatable, Identifiable {
         public let stableID: String
         public let team: CoachWorldTeamReference
@@ -133,6 +165,10 @@ public struct LeagueMapReadModel: Sendable, Equatable {
     public let gridHeight: Int
     public let regions: [Region]
     public let places: [Place]
+    /// The coach's own conference, as a table. Empty when the programme has no conference or no
+    /// results yet — an empty table is honest, a table of zeroes is not.
+    public let conferenceStandings: [ConferenceStanding]
+    public let conferenceName: String?
 
     public init(
         snapshotID: String,
@@ -147,7 +183,9 @@ public struct LeagueMapReadModel: Sendable, Equatable {
         gridWidth: Int,
         gridHeight: Int,
         regions: [Region],
-        places: [Place]
+        places: [Place],
+        conferenceStandings: [ConferenceStanding] = [],
+        conferenceName: String? = nil
     ) {
         self.snapshotID = snapshotID
         self.provenance = provenance
@@ -162,6 +200,8 @@ public struct LeagueMapReadModel: Sendable, Equatable {
         self.gridHeight = gridHeight
         self.regions = regions
         self.places = places
+        self.conferenceStandings = conferenceStandings
+        self.conferenceName = conferenceName
     }
 }
 
@@ -267,7 +307,34 @@ public enum CoachWorldLeagueMapSampleData {
                     ),
                 ]
             ),
-        ]
+        ],
+        conferenceStandings: [
+            .init(stableID: "cs-1", team: CoachWorldTeamReference(
+                stableID: "team-halloran", name: "Halloran Tech", abbreviation: "HAL"),
+                conferenceRecord: "4\u{2013}0", overallRecord: "5\u{2013}1",
+                pointDifferential: 82, isControlled: false),
+            .init(stableID: "cs-2", team: CoachWorldTeamReference(
+                stableID: "team-cobalt", name: "Cobalt Valley", abbreviation: "COB"),
+                conferenceRecord: "3\u{2013}1", overallRecord: "5\u{2013}2",
+                pointDifferential: 51, isControlled: false),
+            .init(stableID: "cs-3", team: CoachWorldTeamReference(
+                stableID: "team-carson", name: "Carson Tech", abbreviation: "CAR"),
+                conferenceRecord: "3\u{2013}1", overallRecord: "4\u{2013}2",
+                pointDifferential: 34, isControlled: true),
+            .init(stableID: "cs-4", team: CoachWorldTeamReference(
+                stableID: "team-ellenwood", name: "Ellenwood", abbreviation: "ELL"),
+                conferenceRecord: "3\u{2013}2", overallRecord: "4\u{2013}3",
+                pointDifferential: 19, isControlled: false),
+            .init(stableID: "cs-5", team: CoachWorldTeamReference(
+                stableID: "team-cedar", name: "Cedar Falls", abbreviation: "CED"),
+                conferenceRecord: "2\u{2013}3", overallRecord: "3\u{2013}4",
+                pointDifferential: -12, isControlled: false),
+            .init(stableID: "cs-6", team: CoachWorldTeamReference(
+                stableID: "team-marchmont", name: "Marchmont", abbreviation: "MAR"),
+                conferenceRecord: "1\u{2013}3", overallRecord: "2\u{2013}5",
+                pointDifferential: -47, isControlled: false),
+        ],
+        conferenceName: "Northern Reach Conference"
     )
 }
 #endif

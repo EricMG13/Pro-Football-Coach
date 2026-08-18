@@ -44,6 +44,10 @@ public struct PlayerProfileReadModel: Identifiable, Sendable, Equatable {
     public let person: CoachWorldPersonReference
     public let number: Int
     public let position: String
+    /// The player's overall rating, on the 40-99 scale `04` section 6 states. The roster row that
+    /// owns this profile already carries it; the profile carries it too so the dial has a figure
+    /// rather than one assembled from the attribute groups, which would be a second opinion.
+    public let overall: Int
     public let academicYear: String
     public let hometown: String
     public let rosterRole: String
@@ -66,6 +70,7 @@ public struct PlayerProfileReadModel: Identifiable, Sendable, Equatable {
         person: CoachWorldPersonReference,
         number: Int,
         position: String,
+        overall: Int,
         academicYear: String,
         hometown: String,
         rosterRole: String,
@@ -84,6 +89,7 @@ public struct PlayerProfileReadModel: Identifiable, Sendable, Equatable {
         self.person = person
         self.number = number
         self.position = position
+        self.overall = min(99, max(0, overall))
         self.academicYear = academicYear
         self.hometown = hometown
         self.rosterRole = rosterRole
@@ -222,7 +228,7 @@ public extension CoachWorldSampleData {
                     .init(stableID: "\(id)-\(key)-\(index)", label: pair.0, value: pair.1, confidence: "Known")
                 })
             }
-            let profile = PlayerProfileReadModel(stableID: "\(id)-profile", person: person, number: number, position: position, academicYear: year, hometown: hometown, rosterRole: role, availability: availability, condition: condition, schemeFit: fit, staffSummary: summary, strengths: strengths, concern: concern, attributeGroups: [
+            let profile = PlayerProfileReadModel(stableID: "\(id)-profile", person: person, number: number, position: position, overall: overall, academicYear: year, hometown: hometown, rosterRole: role, availability: availability, condition: condition, schemeFit: fit, staffSummary: summary, strengths: strengths, concern: concern, attributeGroups: [
                 group("athletic", "Athletic", ["Speed", "Strength", "Stamina"], athletic),
                 group("technical", "Technical", ["Technique", "Position Skill", "Ball Security"], technical),
                 group("mental", "Mental", ["Decisions", "Awareness", "Leadership"], mental),

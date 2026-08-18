@@ -1,13 +1,18 @@
 import SwiftUI
 
-public struct LegacyHistoryView: View {
+public struct LegacyHistoryView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: LegacyHistoryReadModel
     public let focus: CoachWorldScreenID
     public let statusMessage: String?
     public let onClose: () -> Void
     public let onNavigate: (CoachWorldScreenID) -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
 
     public init(model: LegacyHistoryReadModel, focus: CoachWorldScreenID,
                 statusMessage: String? = nil, onClose: @escaping () -> Void,
@@ -20,26 +25,26 @@ public struct LegacyHistoryView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     public var body: some View {
-        VStack(spacing: .zero) {
-            topBar
-            if let statusMessage {
-                Text(statusMessage).foregroundStyle(palette.stateWarning.color)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, CoachWorldTokens.Space.md)
-            }
-            ScrollView {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                    section
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
+            VStack(spacing: .zero) {
+                topBar
+                if let statusMessage {
+                    Text(statusMessage).foregroundStyle(palette.stateWarning.color)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, CoachWorldTokens.Space.md)
                 }
-                .padding(CoachWorldTokens.Space.md)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                        section
+                    }
+                    .padding(CoachWorldTokens.Space.md)
+                }
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
     }
 
     private var topBar: some View {
@@ -83,7 +88,9 @@ public struct LegacyHistoryView: View {
     private var records: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
             Text("Durable records").font(CoachWorldTokens.TypeRole.headline.weight(.black))
-            if model.records.isEmpty { Text("No team records recorded.").foregroundStyle(palette.contentSecondary.color) }
+            if model.records.isEmpty {
+                CoachWorldSystemState(.empty("No team records recorded."), palette: palette)
+            }
             ForEach(model.records) { row in
                 HStack {
                     Text(row.title).frame(maxWidth: .infinity, alignment: .leading)
@@ -102,7 +109,9 @@ public struct LegacyHistoryView: View {
     private var rivalries: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
             Text("Rivalries").font(CoachWorldTokens.TypeRole.headline.weight(.black))
-            if model.rivalries.isEmpty { Text("No rivalry recorded.").foregroundStyle(palette.contentSecondary.color) }
+            if model.rivalries.isEmpty {
+                CoachWorldSystemState(.empty("No rivalry recorded."), palette: palette)
+            }
             ForEach(model.rivalries) { row in
                 HStack {
                     VStack(alignment: .leading) {
@@ -124,7 +133,9 @@ public struct LegacyHistoryView: View {
     private var careerLine: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
             Text("Career line").font(CoachWorldTokens.TypeRole.headline.weight(.black))
-            if model.careerLine.isEmpty { Text("No recorded assignments.").foregroundStyle(palette.contentSecondary.color) }
+            if model.careerLine.isEmpty {
+                CoachWorldSystemState(.empty("No recorded assignments."), palette: palette)
+            }
             ForEach(model.careerLine) { row in
                 HStack {
                     Text("Season \(row.season)").monospacedDigit().frame(width: 105, alignment: .leading)
@@ -136,12 +147,17 @@ public struct LegacyHistoryView: View {
                 .accessibilityLabel("Season \(row.season), \(row.role), \(row.organisation.name)")
             }
         }
+        // Career & Legacy, `04` section 2: "earned ceremony — one entrance, held, never a
+        // repeating flourish". The coach's whole timeline, read once as it appears.
+        .coachWorldEntrance()
     }
 
     private var coachingTree: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
             Text("Coaching tree").font(CoachWorldTokens.TypeRole.headline.weight(.black))
-            if model.coachingTree.isEmpty { Text("No recorded coaching relationships.").foregroundStyle(palette.contentSecondary.color) }
+            if model.coachingTree.isEmpty {
+                CoachWorldSystemState(.empty("No recorded coaching relationships."), palette: palette)
+            }
             ForEach(model.coachingTree) { branch in
                 VStack(alignment: .leading, spacing: .zero) {
                     Text(branch.mentorName).fontWeight(.bold)

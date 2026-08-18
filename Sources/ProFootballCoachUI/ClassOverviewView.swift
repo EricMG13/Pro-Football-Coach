@@ -1,11 +1,16 @@
 import SwiftUI
 
-public struct ClassOverviewView: View {
+public struct ClassOverviewView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: RecruitingBoardReadModel
     public let statusMessage: String?
     public let onClose: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(model: RecruitingBoardReadModel, statusMessage: String? = nil,
@@ -16,26 +21,26 @@ public struct ClassOverviewView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
-                if let statusMessage { Text(statusMessage).foregroundStyle(palette.stateWarning.color) }
-                summary
-                needs
-                Text("BOARD PROSPECTS · \(model.prospects.count)")
-                    .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                Text("DISCOVERABLE PROSPECTS · \(model.discovery.count)")
-                    .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                    .foregroundStyle(palette.contentSecondary.color)
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
+                    if let statusMessage { Text(statusMessage).foregroundStyle(palette.stateWarning.color) }
+                    summary
+                    needs
+                    Text("BOARD PROSPECTS · \(model.prospects.count)")
+                        .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
+                    Text("DISCOVERABLE PROSPECTS · \(model.discovery.count)")
+                        .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
+                        .foregroundStyle(palette.contentSecondary.color)
+                }
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .accessibilitySortPriority(100)
     }
 

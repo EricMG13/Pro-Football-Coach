@@ -20,6 +20,11 @@ public struct CoachWorldAppRootView: View {
     @State private var screen: CoachWorldScreenID = .coachingHQ
     @State private var teamHealthOrigin: CoachWorldScreenID = .coachingHQ
     @State private var inboxOrigin: CoachWorldScreenID = .coachingHQ
+    /// Where Tactics opened Game Plan from, so submitting or closing returns there rather than to
+    /// Coaching HQ. Not persisted across a relaunch the way `teamHealthOrigin`/`inboxOrigin` are —
+    /// quitting mid-adjustment lands back on Coaching HQ instead of Match Day on the next launch, a
+    /// narrower gap than the two return routes already wired into the save document.
+    @State private var gamePlanOrigin: CoachWorldScreenID = .coachingHQ
     @State private var recruitingProspectID: String?
     @State private var recoveryRequired = false
     @State private var showingNewCareerSetup = false
@@ -67,18 +72,21 @@ public struct CoachWorldAppRootView: View {
                 title
             }
         }
+        .background(CoachWorldTokens.dark.page.color)
+        .preferredColorScheme(.dark)
         .task { await restoreExistingCareer() }
     }
 
-    /// Which screen is on the glass, and nothing else. A family with no production view reports
-    /// that it has none rather than presenting an empty one — `04` §4.4 again, applied to
-    /// navigation: an empty Depth Chart would claim the screen exists.
+    /// Which screen is on the glass, and nothing else. A reachable route whose read model has not
+    /// been retained reports that truthfully through `surface(_:screen:content:)` rather than
+    /// rendering nothing — `04` §4.4 again, applied to navigation: an empty Depth Chart would claim
+    /// the screen exists, but so would a blank one.
     @ViewBuilder
     private func career(_ store: CoachWorldStore) -> some View {
         Group {
             switch screen {
             case .roster:
-                if let model = store.roster {
+                surface(store.roster, screen: .roster) { model in
                     RosterView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -88,14 +96,22 @@ public struct CoachWorldAppRootView: View {
                             store.openDevelopmentEvidence(for: playerID)
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .roster, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .developmentPlan:
-                if let model = store.roster {
+                surface(store.roster, screen: .developmentPlan) { model in
                     DevelopmentPlanView(model: model, statusMessage: failure ?? store.statusMessage,
                                         onClose: { navigate(.roster, in: store) })
+                    .floodlitChrome(
+                        chrome(for: .developmentPlan, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .inbox:
-                if let model = store.inbox {
+                surface(store.inbox, screen: .inbox) { model in
                     InboxView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -107,50 +123,78 @@ public struct CoachWorldAppRootView: View {
                         },
                         onContinue: { Task { await advance(store) } }
                     )
+                    .floodlitChrome(
+                        chrome(for: .inbox, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .opponentReportFilmRoom:
-                if let model = store.opponentFilm {
+                surface(store.opponentFilm, screen: .opponentReportFilmRoom) { model in
                     OpponentReportFilmRoomView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
                         onClose: { closeCareer(in: store) },
                         onContinue: { Task { await advance(store) } }
                     )
+                    .floodlitChrome(
+                        chrome(for: .opponentReportFilmRoom, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .news:
-                if let model = store.news {
+                surface(store.news, screen: .news) { model in
                     NewsView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .news, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .recordBook:
-                if let model = store.legacyHistory {
+                surface(store.legacyHistory, screen: .recordBook) { model in
                     RecordBookView(model: model, statusMessage: failure ?? store.statusMessage,
                                    onClose: { closeCareer(in: store) },
                                    onNavigate: { navigate($0, in: store) })
+                    .floodlitChrome(
+                        chrome(for: .recordBook, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .rivalries:
-                if let model = store.legacyHistory {
+                surface(store.legacyHistory, screen: .rivalries) { model in
                     RivalriesView(model: model, statusMessage: failure ?? store.statusMessage,
                                   onClose: { closeCareer(in: store) },
                                   onNavigate: { navigate($0, in: store) })
+                    .floodlitChrome(
+                        chrome(for: .rivalries, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .careerLine:
-                if let model = store.legacyHistory {
+                surface(store.legacyHistory, screen: .careerLine) { model in
                     CareerLineView(model: model, statusMessage: failure ?? store.statusMessage,
                                    onClose: { closeCareer(in: store) },
                                    onNavigate: { navigate($0, in: store) })
+                    .floodlitChrome(
+                        chrome(for: .careerLine, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .coachingTree:
-                if let model = store.legacyHistory {
+                surface(store.legacyHistory, screen: .coachingTree) { model in
                     CoachingTreeView(model: model, statusMessage: failure ?? store.statusMessage,
                                      onClose: { closeCareer(in: store) },
                                      onNavigate: { navigate($0, in: store) })
+                    .floodlitChrome(
+                        chrome(for: .coachingTree, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .recruitingBoard:
-                if let model = store.recruitingBoard {
+                surface(store.recruitingBoard, screen: .recruitingBoard) { model in
                     RecruitingBoardView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -170,9 +214,13 @@ public struct CoachWorldAppRootView: View {
                             navigate(.shortlist, in: store)
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .recruitingBoard, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .prospectProfile:
-                if let model = store.recruitingBoard {
+                surface(store.recruitingBoard, screen: .prospectProfile) { model in
                     ProspectProfileView(
                         model: model,
                         prospectID: recruitingProspectID,
@@ -182,9 +230,13 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { navigate(.recruitingBoard, in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .prospectProfile, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .shortlist:
-                if let model = store.recruitingBoard {
+                surface(store.recruitingBoard, screen: .shortlist) { model in
                     ShortlistView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -197,14 +249,22 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { navigate(.recruitingBoard, in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .shortlist, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .classOverview:
-                if let model = store.recruitingBoard {
+                surface(store.recruitingBoard, screen: .classOverview) { model in
                     ClassOverviewView(model: model, statusMessage: failure ?? store.statusMessage,
                                       onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .classOverview, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .contactVisitPlanner:
-                if let model = store.recruitingBoard {
+                surface(store.recruitingBoard, screen: .contactVisitPlanner) { model in
                     ContactVisitPlannerView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -213,24 +273,40 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .contactVisitPlanner, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .statisticsLeaders:
-                if let model = store.statisticsLeaders {
+                surface(store.statisticsLeaders, screen: .statisticsLeaders) { model in
                     StatisticsLeadersView(model: model, statusMessage: failure ?? store.statusMessage,
                                           onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .statisticsLeaders, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .awardsHonours:
-                if let model = store.awardsHonours {
+                surface(store.awardsHonours, screen: .awardsHonours) { model in
                     AwardsHonoursView(model: model, statusMessage: failure ?? store.statusMessage,
                                       onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .awardsHonours, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .realignmentEvent:
-                if let model = store.realignment {
+                surface(store.realignment, screen: .realignmentEvent) { model in
                     RealignmentEventView(model: model, statusMessage: failure ?? store.statusMessage,
                                          onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .realignmentEvent, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .leagueMap:
-                if let model = store.leagueMap {
+                surface(store.leagueMap, screen: .leagueMap) { model in
                     LeagueMapView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -247,9 +323,13 @@ public struct CoachWorldAppRootView: View {
                             }
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .leagueMap, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .matchDay:
-                if let model = store.matchDay {
+                surface(store.matchDay, screen: .matchDay) { model in
                     MatchDayView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -258,22 +338,52 @@ public struct CoachWorldAppRootView: View {
                         },
                         onInterruption: { intentID in
                             Task { await matchControl(intentID, in: store) }
-                        }
+                        },
+                        // The handoff's "← WEEK" link. Until it existed there was no way off this
+                        // screen at all — every other surface here already takes an `onClose`.
+                        onExit: { navigate(.coachingHQ, in: store) }
                     )
                 }
             case .gamePlan:
-                if let model = store.gamePlan {
+                surface(store.gamePlan, screen: .gamePlan) { model in
                     GamePlanView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
                         onSelect: { plan in
-                            Task { await setGamePlan(plan, in: store) }
+                            // Tactics opened this screen mid-match: the choice must reach
+                            // MatchAction.setTacticalPlan on the live session, not setGamePlan's
+                            // pre-game weekly plan store, which a live match never reads from again
+                            // once kicked off.
+                            if gamePlanOrigin == .matchDay,
+                               let tacticsControl = store.matchDay?.controls.first(where: {
+                                   $0.id == .tactics
+                               }) {
+                                let encoded = CoachWorldIntentID(rawValue: [
+                                    tacticsControl.intentID.rawValue,
+                                    String(plan.runPassBias.rawValue),
+                                    String(plan.tempo.rawValue),
+                                    String(plan.pressure.rawValue),
+                                ].joined(separator: "|"))
+                                Task { await matchControl(encoded, in: store) }
+                            } else {
+                                Task { await setGamePlan(plan, in: store) }
+                            }
                         },
-                        onClose: { navigate(.coachingHQ, in: store) }
+                        onClose: {
+                            if gamePlanOrigin == .matchDay {
+                                screen = .matchDay
+                            } else {
+                                navigate(gamePlanOrigin, in: store)
+                            }
+                        }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .gamePlan, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .practicePlan:
-                if let model = store.practicePlan {
+                surface(store.practicePlan, screen: .practicePlan) { model in
                     PracticePlanView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -282,9 +392,13 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { navigate(.coachingHQ, in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .practicePlan, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .depthChart:
-                if let model = store.depthChart {
+                surface(store.depthChart, screen: .depthChart) { model in
                     DepthChartView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -293,18 +407,26 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { navigate(.roster, in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .depthChart, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .teamHealth:
-                if let model = store.teamHealth {
+                surface(store.teamHealth, screen: .teamHealth) { model in
                     TeamHealthView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
                         onClose: { navigate(teamHealthOrigin, in: store) },
                         onContinue: { Task { await advance(store) } }
                     )
+                    .floodlitChrome(
+                        chrome(for: .teamHealth, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .proOffseason:
-                if let model = store.proOffseason {
+                surface(store.proOffseason, screen: .proOffseason) { model in
                     ProOffseasonView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -313,18 +435,26 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .proOffseason, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .draftBoard:
-                if let model = store.proOffseason {
+                surface(store.proOffseason, screen: .draftBoard) { model in
                     DraftBoardView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
                         onAction: { action in Task { await store.actOnProMarket(action) } },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .draftBoard, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .draftRoom:
-                if let model = store.proOffseason {
+                surface(store.proOffseason, screen: .draftRoom) { model in
                     DraftRoomView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -333,27 +463,39 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .draftRoom, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .freeAgency:
-                if let model = store.proOffseason {
+                surface(store.proOffseason, screen: .freeAgency) { model in
                     FreeAgencyView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
                         onAction: { action in Task { await store.actOnProMarket(action) } },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .freeAgency, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .proScoutingBoard:
-                if let model = store.proOffseason {
+                surface(store.proOffseason, screen: .proScoutingBoard) { model in
                     ProScoutingBoardView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
                         onAction: { action in Task { await store.actOnProMarket(action) } },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .proScoutingBoard, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .collegeOffseason:
-                if let model = store.collegeOffseason {
+                surface(store.collegeOffseason, screen: .collegeOffseason) { model in
                     CollegeOffseasonView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -361,44 +503,68 @@ public struct CoachWorldAppRootView: View {
                         onContinue: { Task { await advance(store) } },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .collegeOffseason, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .portalHub:
-                if let model = store.collegeOffseason {
+                surface(store.collegeOffseason, screen: .portalHub) { model in
                     PortalHubView(model: model, statusMessage: failure ?? store.statusMessage,
                                   onCommit: { id in Task { await commit(id, in: store) } },
                                   onContinue: { Task { await advance(store) } },
                                   onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .portalHub, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .retentionDecisions:
-                if let model = store.collegeOffseason {
+                surface(store.collegeOffseason, screen: .retentionDecisions) { model in
                     RetentionDecisionsView(model: model, statusMessage: failure ?? store.statusMessage,
                                             onCommit: { id in Task { await commit(id, in: store) } },
                                             onContinue: { Task { await advance(store) } },
                                             onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .retentionDecisions, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .portalMarket:
-                if let model = store.collegeOffseason {
+                surface(store.collegeOffseason, screen: .portalMarket) { model in
                     PortalMarketView(model: model, statusMessage: failure ?? store.statusMessage,
                                      onCommit: { id in Task { await commit(id, in: store) } },
                                      onContinue: { Task { await advance(store) } },
                                      onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .portalMarket, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .nilAllocation:
-                if let model = store.collegeOffseason {
+                surface(store.collegeOffseason, screen: .nilAllocation) { model in
                     NilAllocationView(model: model, statusMessage: failure ?? store.statusMessage,
                                       onCommit: { id in Task { await commit(id, in: store) } },
                                       onContinue: { Task { await advance(store) } },
                                       onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .nilAllocation, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .signingDay:
-                if let model = store.collegeOffseason {
+                surface(store.collegeOffseason, screen: .signingDay) { model in
                     SigningDayView(model: model, statusMessage: failure ?? store.statusMessage,
                                    onCommit: { id in Task { await commit(id, in: store) } },
                                    onContinue: { Task { await advance(store) } },
                                    onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .signingDay, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .capContracts:
-                if let model = store.proManagement {
+                surface(store.proManagement, screen: .capContracts) { model in
                     CapContractsView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -407,9 +573,13 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .capContracts, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .contractNegotiation:
-                if let model = store.proManagement {
+                surface(store.proManagement, screen: .contractNegotiation) { model in
                     ContractNegotiationView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -418,49 +588,73 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .contractNegotiation, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .rosterCutsTransactions:
-                if let model = store.proManagement {
+                surface(store.proManagement, screen: .rosterCutsTransactions) { model in
                     RosterCutsTransactionsView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
                         onAction: { action in Task { await store.actOnProManagement(action) } },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .rosterCutsTransactions, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .staffRoom:
-                if let model = store.staffRoom {
+                surface(store.staffRoom, screen: .staffRoom) { model in
                     StaffRoomView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .staffRoom, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .staffMarketProfile:
-                if let model = store.staffRoom {
+                surface(store.staffRoom, screen: .staffMarketProfile) { model in
                     StaffMarketProfileView(model: model, statusMessage: failure ?? store.statusMessage,
                                            onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .staffMarketProfile, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .schemeBook:
-                if let model = store.gamePlan {
+                surface(store.gamePlan, screen: .schemeBook) { model in
                     SchemeBookView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
                         onSelect: { plan in Task { await setGamePlan(plan, in: store) } },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .schemeBook, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .personnelPackages:
-                if let model = store.depthChart {
+                surface(store.depthChart, screen: .personnelPackages) { model in
                     PersonnelPackagesView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
                         onSelect: { plan in Task { await setPersonnelPlan(plan, in: store) } },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .personnelPackages, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .aftermath:
-                if let model = store.aftermath {
+                surface(store.aftermath, screen: .aftermath) { model in
                     AftermathView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -470,16 +664,24 @@ public struct CoachWorldAppRootView: View {
                             Task { await persistOrReport(store) }
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .aftermath, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .gameDetailBoxScore:
-                if let model = store.aftermath {
+                surface(store.aftermath, screen: .gameDetailBoxScore) { model in
                     GameDetailBoxScoreView(
                         model: model,
                         onClose: { navigate(.aftermath, in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .gameDetailBoxScore, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .careerHub:
-                if let model = store.careerHub {
+                surface(store.careerHub, screen: .careerHub) { model in
                     CareerHubView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -492,36 +694,52 @@ public struct CoachWorldAppRootView: View {
                         onResign: { Task { await resignCareer(in: store) } },
                         onContinue: { Task { await advance(store) } }
                     )
+                    .floodlitChrome(
+                        chrome(for: .careerHub, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .jobBoard:
-                if let model = store.careerHub {
+                surface(store.careerHub, screen: .jobBoard) { model in
                     JobBoardView(model: model, statusMessage: failure ?? store.statusMessage,
                                  onClose: { closeCareer(in: store) },
                                  onNavigate: { navigate($0, in: store) },
                                  onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
                                  onResign: { Task { await resignCareer(in: store) } },
                                  onContinue: { Task { await advance(store) } })
+                    .floodlitChrome(
+                        chrome(for: .jobBoard, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .offer:
-                if let model = store.careerHub {
+                surface(store.careerHub, screen: .offer) { model in
                     OfferView(model: model, statusMessage: failure ?? store.statusMessage,
                               onClose: { closeCareer(in: store) },
                               onNavigate: { navigate($0, in: store) },
                               onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
                               onResign: { Task { await resignCareer(in: store) } },
                               onContinue: { Task { await advance(store) } })
+                    .floodlitChrome(
+                        chrome(for: .offer, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .appointment:
-                if let model = store.careerHub {
+                surface(store.careerHub, screen: .appointment) { model in
                     AppointmentView(model: model, statusMessage: failure ?? store.statusMessage,
                                     onClose: { closeCareer(in: store) },
                                     onNavigate: { navigate($0, in: store) },
                                     onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
                                     onResign: { Task { await resignCareer(in: store) } },
                                     onContinue: { Task { await advance(store) } })
+                    .floodlitChrome(
+                        chrome(for: .appointment, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .jobSecurity:
-                if let model = store.careerHub {
+                surface(store.careerHub, screen: .jobSecurity) { model in
                     JobSecurityView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -533,9 +751,13 @@ public struct CoachWorldAppRootView: View {
                         onResign: { Task { await resignCareer(in: store) } },
                         onContinue: { Task { await advance(store) } }
                     )
+                    .floodlitChrome(
+                        chrome(for: .jobSecurity, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .stakeholders:
-                if let model = store.careerHub {
+                surface(store.careerHub, screen: .stakeholders) { model in
                     StakeholdersView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -547,9 +769,13 @@ public struct CoachWorldAppRootView: View {
                         onResign: { Task { await resignCareer(in: store) } },
                         onContinue: { Task { await advance(store) } }
                     )
+                    .floodlitChrome(
+                        chrome(for: .stakeholders, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .promotionDecision:
-                if let model = store.careerHub {
+                surface(store.careerHub, screen: .promotionDecision) { model in
                     PromotionDecisionView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -561,9 +787,13 @@ public struct CoachWorldAppRootView: View {
                         onResign: { Task { await resignCareer(in: store) } },
                         onContinue: { Task { await advance(store) } }
                     )
+                    .floodlitChrome(
+                        chrome(for: .promotionDecision, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .coachingCarousel:
-                if let model = store.careerHub {
+                surface(store.careerHub, screen: .coachingCarousel) { model in
                     CoachingCarouselView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -575,9 +805,13 @@ public struct CoachWorldAppRootView: View {
                         onResign: { Task { await resignCareer(in: store) } },
                         onContinue: { Task { await advance(store) } }
                     )
+                    .floodlitChrome(
+                        chrome(for: .coachingCarousel, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .standings:
-                if let model = store.standings {
+                surface(store.standings, screen: .standings) { model in
                     StandingsView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -590,9 +824,13 @@ public struct CoachWorldAppRootView: View {
                             }
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .standings, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .schedule:
-                if let model = store.schedule {
+                surface(store.schedule, screen: .schedule) { model in
                     ScheduleView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -605,9 +843,13 @@ public struct CoachWorldAppRootView: View {
                             }
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .schedule, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .teamProgrammeProfile:
-                if let model = store.teamProgrammeProfile {
+                surface(store.teamProgrammeProfile, screen: .teamProgrammeProfile) { model in
                     TeamProgrammeProfileView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -619,9 +861,13 @@ public struct CoachWorldAppRootView: View {
                             }
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .teamProgrammeProfile, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .worldSearch:
-                if let model = store.worldSearch {
+                surface(store.worldSearch, screen: .worldSearch) { model in
                     WorldSearchView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -633,9 +879,13 @@ public struct CoachWorldAppRootView: View {
                             }
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .worldSearch, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .rankingsPlayoffPicture:
-                if let model = store.competitionOverview {
+                surface(store.competitionOverview, screen: .rankingsPlayoffPicture) { model in
                     RankingsPlayoffPictureView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -648,9 +898,13 @@ public struct CoachWorldAppRootView: View {
                             }
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .rankingsPlayoffPicture, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .bracketPostseason:
-                if let model = store.competitionOverview {
+                surface(store.competitionOverview, screen: .bracketPostseason) { model in
                     BracketPostseasonView(
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
@@ -663,9 +917,13 @@ public struct CoachWorldAppRootView: View {
                             }
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .bracketPostseason, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             default:
-                if let model = store.coachingHQ {
+                surface(store.coachingHQ, screen: .coachingHQ) { model in
                     CoachingHQView(
                         model: model,
                         // A save failure has to reach the player while they are playing, so it
@@ -693,11 +951,82 @@ public struct CoachWorldAppRootView: View {
                         showsContractNegotiation: store.proManagement != nil,
                         showsRecruitingBoard: store.recruitingBoard != nil
                     )
+                    .floodlitChrome(
+                        chrome(for: .coachingHQ, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             }
         }
         .disabled(store.isWorking)
         .overlay { if store.isWorking { working } }
+    }
+
+    /// One truthful state for every registered route with no retained read model, in place of the
+    /// 62 copies of an unwrapped optional binding with no `else` this file used to carry — a nil
+    /// model rendered nothing at all, not even navigation chrome. Never invents a fallback model or
+    /// changes which routes `navigate(_:in:)` considers reachable; it only changes what the glass
+    /// shows when a reachable route's model has not been retained.
+    @ViewBuilder
+    private func surface<Model, Content: View>(
+        _ model: Model?,
+        screen: CoachWorldScreenID,
+        @ViewBuilder content: (Model) -> Content
+    ) -> some View {
+        if let model {
+            content(model)
+        } else {
+            CoachWorldSystemState(
+                .empty(
+                    "\(screen.canonicalName) unavailable. No retained career evidence is "
+                        + "available for this surface."
+                ),
+                palette: CoachWorldTokens.dark
+            )
+        }
+    }
+
+
+    /// The shared management chrome for a converted surface, or nil when the week hub's identity
+    /// has not been retained — the header prints the programme, so without it there is nothing
+    /// truthful to draw and the surface renders on the bare stage instead.
+    private func chrome(
+        for screen: CoachWorldScreenID,
+        in store: CoachWorldStore
+    ) -> FloodlitChromeReadModel? {
+        guard let hub = store.coachingHQ else { return nil }
+        return CoachWorldReadModelProvider.chrome(
+            for: screen, hub: hub, context: headerContext(for: screen, in: store)
+        )
+    }
+
+    /// The header chip's surface context. The reference varies it per screen rather than printing
+    /// the coming fixture everywhere, so each surface that holds its own headline figures supplies
+    /// them; anything else falls back to the fixture, which is what the week hub shows.
+    private func headerContext(
+        for screen: CoachWorldScreenID,
+        in store: CoachWorldStore
+    ) -> String? {
+        switch screen {
+        case .roster, .depthChart, .developmentPlan, .staffRoom:
+            guard let roster = store.roster else { return nil }
+            return "\(roster.players.count) of \(roster.rosterLimit) on roster"
+        case .recruitingBoard, .shortlist, .classOverview, .contactVisitPlanner:
+            guard let board = store.recruitingBoard else { return nil }
+            return "\(board.prospects.count) on the board"
+        default:
+            return nil
+        }
+    }
+
+    /// Routes an identity-header or icon-rail tap. Chrome navigation goes through the same
+    /// `navigate(_:in:)` every other route uses, so a rail tap cannot reach a screen the router
+    /// considers unreachable.
+    private func navigateChrome(_ intentID: CoachWorldIntentID, in store: CoachWorldStore) {
+        guard let destination = CoachWorldReadModelProvider.routedScreen(for: intentID) else {
+            return
+        }
+        navigate(destination, in: store)
     }
 
     private func navigate(_ destination: CoachWorldScreenID, in store: CoachWorldStore) {
@@ -776,6 +1105,7 @@ public struct CoachWorldAppRootView: View {
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
         case .gamePlan where store.gamePlan != nil:
+            gamePlanOrigin = screen == .matchDay ? .matchDay : .coachingHQ
             screen = .gamePlan
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
@@ -930,9 +1260,15 @@ public struct CoachWorldAppRootView: View {
         do {
             let outcome = try await coordinator.load()
             guard case let .loaded(document, _) = outcome else {
-                if ProcessInfo.processInfo.environment["PROOF_NEW_CAREER"] != nil {
-                    await beginNewCareerSetup()
+#if DEBUG
+                if let raw = ProcessInfo.processInfo.environment["PROOF_NEW_CAREER"] {
+                    if let seed = UInt64(raw) {
+                        await beginProofCareer(seed: seed)
+                    } else {
+                        await beginNewCareerSetup()
+                    }
                 }
+#endif
                 return
             }
             store = try await CoachWorldStore.load(document: document)
@@ -949,11 +1285,49 @@ public struct CoachWorldAppRootView: View {
             }
             failure = nil
             recoveryRequired = false
+#if DEBUG
+            if let proofScreen = Self.proofScreenNumber() {
+                screen = proofScreen
+            }
+#endif
         } catch {
             failure = Self.saveErrorMessage(error)
             recoveryRequired = true
         }
     }
+
+#if DEBUG
+    /// Reads `PROOF_NEW_CAREER`'s value as a seed and starts the same career the interactive setup
+    /// button starts, on the first available job for that seed — bypassing
+    /// `NewCareerCoachIdentityView` so a screenshot harness launches straight into a real, playable
+    /// career with no hand on the device. Synthetic identity, chosen to read unmistakably as
+    /// non-real. Gated `#if DEBUG` so this seam never reaches a release build regardless.
+    private func beginProofCareer(seed: UInt64) async {
+        let jobs = await CoachWorldStore.startingJobs(seed: seed)
+        guard let first = jobs.first else { return }
+        await startNewCareer(
+            firstName: "Proof",
+            lastName: "Coach",
+            seed: seed,
+            programmeID: first.id
+        )
+        // startNewCareer never throws out of this call — it catches its own failures and leaves
+        // `store` nil, setting `setupError` instead. Applying the override on that outcome would
+        // silently land the harness on a plausible-looking screen with no signal that career
+        // creation actually failed.
+        guard store != nil, let proofScreen = Self.proofScreenNumber() else { return }
+        screen = proofScreen
+    }
+
+    /// `PROOF_SCREEN_NUMBER`: the registry number of the surface a proof harness wants to land on,
+    /// preferred over whatever the restored or newly started career's presentation route would have
+    /// set. Invalid or out-of-range values are ignored silently, not treated as a launch failure.
+    private static func proofScreenNumber() -> CoachWorldScreenID? {
+        guard let raw = ProcessInfo.processInfo.environment["PROOF_SCREEN_NUMBER"],
+              let rawValue = Int(raw) else { return nil }
+        return CoachWorldScreenID(rawValue: rawValue)
+    }
+#endif
 
     private func recoverFromBackup() async {
         guard !isRestoring && !isStarting else { return }
@@ -1120,6 +1494,16 @@ public struct CoachWorldAppRootView: View {
         _ intentID: CoachWorldIntentID,
         in store: CoachWorldStore
     ) async {
+        // A bare four-part "...tactics" intent is the button being tapped, not a plan being
+        // submitted — GamePlanView's onSelect above appends the three chosen dial values before
+        // this function sees a tactics intent again. Routing here rather than through the engine
+        // keeps the tap itself from touching MatchSessionState at all: opening the picker is
+        // presentation, the skill's "must not alter the recorded moment" for exactly this control.
+        let parts = intentID.rawValue.split(separator: "|", omittingEmptySubsequences: false)
+        if parts.count == 4, parts[3] == "tactics" {
+            navigate(.gamePlan, in: store)
+            return
+        }
         await store.matchControl(intentID)
         if store.matchDay == nil {
             if store.aftermath != nil {

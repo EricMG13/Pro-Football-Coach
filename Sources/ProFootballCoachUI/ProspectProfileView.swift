@@ -2,14 +2,19 @@ import SwiftUI
 
 /// A focused prospect dossier backed by the same recruiting-board projection.
 /// The selected ID is route-scoped; the board remains the authority for every action.
-public struct ProspectProfileView: View {
+public struct ProspectProfileView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: RecruitingBoardReadModel
     public let prospectID: String?
     public let statusMessage: String?
     public let onAction: (String, CoachWorldIntentID) -> Void
     public let onClose: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(
@@ -27,7 +32,7 @@ public struct ProspectProfileView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     private var prospect: RecruitingBoardReadModel.Prospect? {
@@ -39,28 +44,30 @@ public struct ProspectProfileView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
-                if let statusMessage {
-                    Text(statusMessage)
-                        .foregroundStyle(palette.stateWarning.color)
-                        .fixedSize(horizontal: false, vertical: true)
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
+                    if let statusMessage {
+                        Text(statusMessage)
+                            .foregroundStyle(palette.stateWarning.color)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let prospect {
+                        dossier(prospect)
+                    } else {
+                        CoachWorldSystemState(
+                            .empty(
+                                "No prospect selected. Return to the recruiting board to "
+                                    + "choose a prospect."
+                            ),
+                            palette: palette
+                        )
+                    }
                 }
-                if let prospect {
-                    dossier(prospect)
-                } else {
-                    ContentUnavailableView(
-                        "No prospect selected",
-                        systemImage: "person.crop.rectangle",
-                        description: Text("Return to the recruiting board to choose a prospect.")
-                    )
-                }
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .accessibilitySortPriority(100)
     }
 
@@ -88,7 +95,7 @@ public struct ProspectProfileView: View {
                 .foregroundStyle(palette.collegeIdentity.color)
             Text(model.team.name)
                 .font(CoachWorldTokens.TypeRole.display.weight(.black))
-            Text("Stable-ID dossier · (model.prospects.count + model.discovery.count) visible prospects")
+            Text("Stable-ID dossier · \(model.prospects.count + model.discovery.count) visible prospects")
                 .foregroundStyle(palette.contentSecondary.color)
         }
     }
@@ -205,7 +212,10 @@ public struct ProspectProfileView: View {
         }
         .padding(CoachWorldTokens.Space.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(palette.raised.color.opacity(0.72))
+        .coachWorldFloodlitPanel(
+            fill: palette.raised.color,
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+        )
         .accessibilityElement(children: .contain)
     }
 

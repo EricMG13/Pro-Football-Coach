@@ -2,7 +2,13 @@ import SwiftUI
 
 /// Shared rankings/playoff picture surface. Ranking and bracket data are read from the same
 /// competition snapshot so the two views cannot disagree about the field.
-public struct CompetitionOverviewView: View {
+public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: CompetitionOverviewReadModel
     public let focus: CoachWorldScreenID
     public let statusMessage: String?
@@ -10,7 +16,6 @@ public struct CompetitionOverviewView: View {
     public let onContinue: () -> Void
     public let onSelectTeam: (UUID) -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(
@@ -30,131 +35,226 @@ public struct CompetitionOverviewView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     public var body: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            surface.accessibilitySortPriority(100)
-        } else {
-            surface.accessibilitySortPriority(100)
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
+            scrollContent
         }
+        .accessibilitySortPriority(100)
     }
 
-    private var surface: some View {
-        VStack(spacing: .zero) {
-            topBar
-            if let statusMessage {
-                Text(statusMessage)
-                    .font(CoachWorldTokens.TypeRole.callout)
-                    .foregroundStyle(palette.stateWarning.color)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, CoachWorldTokens.Space.md)
-            }
-            ScrollView {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                    if focus == .rankingsPlayoffPicture || model.bracket.isEmpty {
-                        rankings
-                    }
-                    if focus == .bracketPostseason || !model.bracket.isEmpty {
-                        bracket
+    private var scrollContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.md) {
+                header
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.callout)
+                        .foregroundStyle(palette.stateWarning.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if dynamicTypeSize.isAccessibilitySize {
+                    rankingColumn
+                    bracketColumn
+                } else {
+                    HStack(alignment: .top, spacing: CoachWorldTokens.Gap.lg) {
+                        rankingColumn
+                            .frame(width: CompetitionMetric.rankingColumn)
+                        bracketColumn
                     }
                 }
-                .padding(CoachWorldTokens.Space.md)
             }
+            .padding(.vertical, CoachWorldTokens.Pad.panel.v)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
+        .safeAreaInset(edge: .bottom) { footer }
     }
 
-    private var topBar: some View {
-        HStack(spacing: CoachWorldTokens.Space.sm) {
-            Button("League", action: onClose)
-                .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
-                       minHeight: CoachWorldTokens.Shape.minimumTarget)
-            VStack(alignment: .leading, spacing: .zero) {
-                Text(focus == .bracketPostseason ? "Postseason" : "Rankings")
-                    .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                Text(model.tier + " · " + model.seasonLabel)
-                    .font(CoachWorldTokens.TypeRole.caption)
-                    .foregroundStyle(palette.contentSecondary.color)
-            }
-            Spacer()
-            Button(action: onContinue) {
-                Label("Continue", systemImage: "forward.end.fill")
-            }
-            .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-        }
-        .padding(.horizontal, CoachWorldTokens.Space.sm)
-        .background(palette.raised.color)
-    }
-
-    private var rankings: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            Text("Current ranking")
-                .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-            ForEach(model.rankings, content: rankingRow)
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.md) {
+            FloodlitLabel3(
+                "\(model.tier) \u{00B7} \(model.seasonLabel)", palette: palette
+            )
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            FloodlitLabel3(focusLabel, palette: palette, tint: palette.actionPrimary.color)
         }
     }
 
-    private var bracket: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            Text("Postseason path")
-                .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-            if model.bracket.isEmpty {
-                Text("No postseason games are scheduled yet.")
-                    .foregroundStyle(palette.contentSecondary.color)
+    /// Three registry entries share this composition. What differs is which column the route is
+    /// about, so the label says which -- not a different screen with the same data in it.
+    private var focusLabel: String {
+        switch focus {
+        case .rankingsPlayoffPicture: "The picture"
+        case .bracketPostseason: "The bracket"
+        default: "Rankings and bracket"
+        }
+    }
+
+    /// The ranked field, in the order the competition records it.
+    private var rankingColumn: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+            FloodlitLabel3("Ranked", palette: palette)
+            if model.rankings.isEmpty {
+                CoachWorldSystemState(
+                    .empty("No ranking is recorded for this competition yet."),
+                    palette: palette
+                )
             } else {
-                ForEach(model.bracket, content: bracketRow)
+                ForEach(model.rankings) { row in rankingRow(row) }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func rankingRow(_ row: CompetitionOverviewReadModel.RankingRow) -> some View {
         Button {
-            guard let id = UUID(uuidString: row.id) else { return }
-            onSelectTeam(id)
+            if let id = UUID(uuidString: row.team.stableID) { onSelectTeam(id) }
         } label: {
-            HStack(spacing: CoachWorldTokens.Space.sm) {
-                Text(String(row.rank))
-                    .frame(width: 34, alignment: .leading)
-                    .monospacedDigit()
-                Text(row.team.name)
-                    .fontWeight(row.isControlled ? .bold : .regular)
+            HStack(spacing: CoachWorldTokens.Gap.md) {
+                Text("\(row.rank)")
+                    .font(
+                        CoachWorldTokens.figure(
+                            CoachWorldTokens.DisplaySize.row, weight: .semibold
+                        )
+                    )
+                    .foregroundStyle(
+                        row.isControlled ? palette.actionPrimary.color : palette.contentQuiet.color
+                    )
+                    .frame(width: CompetitionMetric.rankColumn, alignment: .leading)
+                Text(row.team.name.uppercased())
+                    .font(
+                        CoachWorldTokens.display(
+                            CoachWorldTokens.DisplaySize.actionSmall,
+                            weight: row.isControlled ? .heavy : .bold
+                        )
+                    )
+                    .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Text(row.record).monospacedDigit()
+                Text(row.record)
+                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .foregroundStyle(palette.contentSecondary.color)
+                    .frame(width: CompetitionMetric.recordColumn, alignment: .trailing)
             }
-            .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-        }
-        .buttonStyle(.plain)
-        .background(row.isControlled ? palette.collegeIdentity.color.opacity(0.14) : .clear)
-        .accessibilityLabel(String(row.rank) + ", " + row.team.name + ", " + row.record)
-    }
-
-    private func bracketRow(_ game: CompetitionOverviewReadModel.BracketGame) -> some View {
-        Button {
-            guard let id = UUID(uuidString: game.home.stableID) else { return }
-            onSelectTeam(id)
-        } label: {
-            HStack(spacing: CoachWorldTokens.Space.sm) {
-                VStack(alignment: .leading, spacing: .zero) {
-                    Text(game.stage)
-                        .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                    Text(game.week)
-                        .font(CoachWorldTokens.TypeRole.caption)
-                        .foregroundStyle(palette.contentSecondary.color)
+            .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+            .frame(minHeight: CompetitionMetric.rowHeight)
+            .background(
+                CoachWorldCutCorner.row.fill(
+                    palette.work.color.opacity(
+                        row.isControlled ? CompetitionMetric.ownFill : CompetitionMetric.rowFill
+                    )
+                )
+            )
+            .overlay {
+                if row.isControlled {
+                    CoachWorldCutCorner.row.stroke(
+                        palette.actionPrimary.color, lineWidth: CoachWorldTokens.Shape.hairline
+                    )
                 }
-                .frame(width: 125, alignment: .leading)
-                Text(game.away.name + " at " + game.home.name)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Text(game.score ?? "—").monospacedDigit()
             }
-            .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+            .contentShape(CoachWorldCutCorner.row)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(
-            game.stage + ", " + game.away.name + " at " + game.home.name
-                + ", " + (game.score ?? "scheduled")
+            "Number \(row.rank), \(row.team.name), \(row.record)"
+                + (row.isControlled ? ". Your programme." : "")
         )
     }
+
+    /// The postseason, grouped by the stage each game belongs to.
+    ///
+    /// The reference draws a bracket as connected lines. This build records a flat list of games
+    /// with a stage name and no parent-child link between rounds, so the stages are drawn as
+    /// groups. Lines that imply who advances into whom would be a claim the model does not make.
+    private var bracketColumn: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.sm) {
+            if model.bracket.isEmpty {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+                    FloodlitLabel3("Postseason", palette: palette)
+                    CoachWorldSystemState(
+                        .empty("The postseason has not been scheduled yet."),
+                        palette: palette
+                    )
+                }
+            } else {
+                ForEach(stages, id: \.self) { stage in
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+                        FloodlitLabel3(stage, palette: palette, tint: palette.stateInfo.color)
+                        ForEach(model.bracket.filter { $0.stage == stage }) { game in
+                            bracketRow(game)
+                        }
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var stages: [String] {
+        var seen = Set<String>()
+        return model.bracket.compactMap { seen.insert($0.stage).inserted ? $0.stage : nil }
+    }
+
+    private func bracketRow(_ game: CompetitionOverviewReadModel.BracketGame) -> some View {
+        HStack(spacing: CoachWorldTokens.Gap.md) {
+            Text(game.week.uppercased())
+                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                .foregroundStyle(palette.contentQuiet.color)
+                .lineLimit(1)
+                .frame(width: CompetitionMetric.weekColumn, alignment: .leading)
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                Text(game.away.name.uppercased())
+                    .font(
+                        CoachWorldTokens.display(
+                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                        )
+                    )
+                    .lineLimit(1)
+                Text("at \(game.home.name)".uppercased())
+                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                    .foregroundStyle(palette.contentQuiet.color)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Text(game.score ?? "to play")
+                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                .foregroundStyle(
+                    game.score == nil ? palette.contentQuiet.color : palette.contentPrimary.color
+                )
+                .lineLimit(1)
+                .frame(width: CompetitionMetric.scoreColumn, alignment: .trailing)
+        }
+        .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+        .frame(minHeight: CompetitionMetric.bracketRowHeight)
+        .background(CoachWorldCutCorner.row.fill(palette.work.color.opacity(CompetitionMetric.rowFill)))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "\(game.stage), \(game.week), \(game.away.name) at \(game.home.name), "
+                + (game.score.map { "final \($0)" } ?? "not played")
+        )
+    }
+
+    private var footer: some View {
+        HStack(spacing: CoachWorldTokens.Gap.mdPlus) {
+            Text("The field as it stands. Nobody is projected into a round they have not reached.")
+                .font(CoachWorldTokens.TypeRole.callout)
+                .foregroundStyle(palette.contentSecondary.color)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            FloodlitCommittingAction("Continue", action: onContinue)
+        }
+        .floodlitFooterStrip(palette: palette)
+    }
+}
+
+private enum CompetitionMetric {
+    static let rankingColumn: CGFloat = 330
+    static let rankColumn: CGFloat = 24
+    static let recordColumn: CGFloat = 56
+    static let weekColumn: CGFloat = 34
+    static let scoreColumn: CGFloat = 62
+    static let rowHeight: CGFloat = 29
+    static let bracketRowHeight: CGFloat = 38
+    static let rowFill = 0.32
+    static let ownFill = 0.5
 }

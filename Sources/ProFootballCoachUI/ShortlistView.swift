@@ -1,13 +1,18 @@
 import SwiftUI
 
 /// A bounded active-board view. The recruiting board remains the mutation authority.
-public struct ShortlistView: View {
+public struct ShortlistView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: RecruitingBoardReadModel
     public let statusMessage: String?
     public let onOpenProspect: (String) -> Void
     public let onClose: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var query = ""
 
@@ -24,7 +29,7 @@ public struct ShortlistView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     private var filteredProspects: [RecruitingBoardReadModel.Prospect] {
@@ -38,6 +43,13 @@ public struct ShortlistView: View {
     }
 
     public var body: some View {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
+            scrollContent
+        }
+        .accessibilitySortPriority(100)
+    }
+
+    private var scrollContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                 header
@@ -54,10 +66,12 @@ public struct ShortlistView: View {
                     .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                     .foregroundStyle(palette.collegeIdentity.color)
                 if filteredProspects.isEmpty {
-                    ContentUnavailableView(
-                        "No monitored prospects",
-                        systemImage: "list.number",
-                        description: Text("Add evaluated prospects to the board before monitoring contact windows.")
+                    CoachWorldSystemState(
+                        .empty(
+                            "No monitored prospects. Add evaluated prospects to the board "
+                                + "before monitoring contact windows."
+                        ),
+                        palette: palette
                     )
                 } else {
                     ForEach(filteredProspects, id: \.stableID) { prospect in
@@ -79,7 +93,11 @@ public struct ShortlistView: View {
                             }
                             .padding(CoachWorldTokens.Space.sm)
                             .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-                            .background(palette.raised.color.opacity(0.72))
+                            .coachWorldFloodlitPanel(
+                                fill: palette.raised.color,
+                                border: palette.contentQuiet.color
+                                    .opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+                            )
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(
@@ -91,9 +109,6 @@ public struct ShortlistView: View {
             }
             .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
-        .accessibilitySortPriority(100)
     }
 
     private var header: some View {

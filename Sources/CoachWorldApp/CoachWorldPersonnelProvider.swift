@@ -195,6 +195,7 @@ public extension CoachWorldReadModelProvider {
             person: person(player),
             number: number,
             position: label(player.position),
+            overall: player.overall.value,
             academicYear: academicYear(player),
             // The root records where a *prospect* came from, not where a rostered player grew up.
             // Until it does, the field says nothing rather than borrowing the programme's city.

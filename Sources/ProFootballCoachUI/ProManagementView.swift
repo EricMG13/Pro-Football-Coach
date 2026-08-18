@@ -1,14 +1,19 @@
 import SwiftUI
 import FootballSimCore
 
-public struct ProManagementView: View {
+public struct ProManagementView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: ProManagementReadModel
     public let title: String
     public let statusMessage: String?
     public let onAction: (ProManagementAction) -> Void
     public let onClose: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(
@@ -26,27 +31,27 @@ public struct ProManagementView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
-                if let statusMessage {
-                    Text(statusMessage)
-                        .font(CoachWorldTokens.TypeRole.callout)
-                        .foregroundStyle(palette.stateWarning.color)
-                        .fixedSize(horizontal: false, vertical: true)
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
+                    if let statusMessage {
+                        Text(statusMessage)
+                            .font(CoachWorldTokens.TypeRole.callout)
+                            .foregroundStyle(palette.stateWarning.color)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    summary
+                    rosterSection("ACTIVE ROSTER", model.activeRoster)
+                    rosterSection("PRACTICE SQUAD", model.practiceSquad)
                 }
-                summary
-                rosterSection("ACTIVE ROSTER", model.activeRoster)
-                rosterSection("PRACTICE SQUAD", model.practiceSquad)
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .accessibilitySortPriority(100)
     }
 
@@ -112,9 +117,10 @@ public struct ProManagementView: View {
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                 .foregroundStyle(palette.contentSecondary.color)
             if rows.isEmpty {
-                Text("No contracted players are recorded here.")
-                    .font(CoachWorldTokens.TypeRole.body)
-                    .foregroundStyle(palette.contentSecondary.color)
+                CoachWorldSystemState(
+                    .empty("No contracted players are recorded here."),
+                    palette: palette
+                )
             } else {
                 ForEach(rows) { player in
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
@@ -135,7 +141,11 @@ public struct ProManagementView: View {
                     }
                     .padding(CoachWorldTokens.Space.sm)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(palette.raised.color.opacity(0.7))
+                    .coachWorldFloodlitPanel(
+                        fill: palette.raised.color,
+                        border: palette.contentQuiet.color
+                            .opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+                    )
                     .accessibilityElement(children: .contain)
                 }
             }

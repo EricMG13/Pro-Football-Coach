@@ -1,6 +1,12 @@
 import SwiftUI
 
-public struct RecruitingBoardView: View {
+public struct RecruitingBoardView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: RecruitingBoardReadModel
     public let statusMessage: String?
     public let onAction: (String, CoachWorldIntentID) -> Void
@@ -9,7 +15,6 @@ public struct RecruitingBoardView: View {
     public let onOpenProspect: (String) -> Void
     public let onOpenShortlist: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var deskGap = CoachWorldTokens.Space.xs
     @State private var selectedProspectID: String
@@ -38,7 +43,7 @@ public struct RecruitingBoardView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     private var selectedProspect: RecruitingBoardReadModel.Prospect? {
@@ -53,18 +58,17 @@ public struct RecruitingBoardView: View {
     }
 
     public var body: some View {
-        Group {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             if dynamicTypeSize.isAccessibilitySize {
                 accessibleLayout
             } else {
                 VStack(spacing: .zero) {
-                    worldStrip
+                    // The shared chrome's identity header already states the programme.
+                    if chrome == nil { worldStrip }
                     standardLayout
                 }
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
     }
 
     private var worldStrip: some View {
@@ -125,10 +129,8 @@ public struct RecruitingBoardView: View {
 
     private var standardLayout: some View {
         HStack(spacing: deskGap) {
-            ScrollView(.vertical) {
-                boardSurface
-            }
-            .frame(maxWidth: .infinity)
+            boardSurface
+                .frame(maxWidth: .infinity)
             dossier
                 .frame(width: RecruitingMetric.dossierWidth)
         }
@@ -140,10 +142,12 @@ public struct RecruitingBoardView: View {
             VStack(spacing: .zero) {
                 boardHeader
                 if !hasProspects {
-                    ContentUnavailableView(
-                        "No prospects on the board",
-                        systemImage: "list.number",
-                        description: Text("Add evaluated prospects before assigning recruiting time.")
+                    CoachWorldSystemState(
+                        .empty(
+                            "No prospects on the board. Add evaluated prospects before "
+                                + "assigning recruiting time."
+                        ),
+                        palette: palette
                     )
                 } else {
                     accessibleProspectRows
@@ -159,14 +163,6 @@ public struct RecruitingBoardView: View {
                 }
                 accessibleWorldContext
             }
-        }
-        .background {
-            RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.surfaceRadius)
-                .fill(palette.work.color)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.surfaceRadius)
-                .stroke(palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity), lineWidth: CoachWorldTokens.Shape.hairline)
         }
         .accessibilitySortPriority(100)
     }
@@ -202,19 +198,56 @@ public struct RecruitingBoardView: View {
             boardHeader
             capacityStrip
             if !hasProspects {
-                ContentUnavailableView(
-                    "No prospects on the board",
-                    systemImage: "list.number",
-                    description: Text("Add evaluated prospects before assigning recruiting time.")
+                CoachWorldSystemState(
+                    .empty(
+                        "No prospects on the board. Add evaluated prospects before "
+                            + "assigning recruiting time."
+                    ),
+                    palette: palette
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                comparisonTable
-                discoveryTable
+                // The rows scroll inside the panel, so the panel frames the pane at its full
+                // height. Scrolling the panel itself would push its cut corners and lower border
+                // off-screen on a full board, and spread the specular gradient over the whole
+                // content height instead of the pane.
+                ScrollView(.vertical) {
+                    VStack(spacing: .zero) {
+                        comparisonTable
+                        discoveryTable
+                    }
+                }
+                positionPlanFooter
             }
         }
-        .background(palette.work.color)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .coachWorldFloodlitPanel(
+            fill: palette.work.color,
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity),
+            depth: .deep
+        )
         .accessibilitySortPriority(100)
+    }
+
+
+    /// The class plan every row on the board is judged against (`MLB 0/2 · WR 2/3 · …`).
+    ///
+    /// A footer, not a header chip: it is the sum of the table above it, and in the header it
+    /// competed with the title and truncated.
+    private var positionPlanFooter: some View {
+        HStack(spacing: CoachWorldTokens.Gap.xs) {
+            FloodlitLabel3("Position plan", palette: palette)
+            Text(positionPlanLine)
+                .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
+                .foregroundStyle(palette.contentSecondary.color)
+                .lineLimit(1)
+                .minimumScaleFactor(RecruitingMetric.planScaleFloor)
+            Spacer(minLength: .zero)
+        }
+        .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+        .frame(minHeight: RecruitingMetric.planHeight)
+        .overlay(alignment: .top) { seam }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Position plan. \(positionPlanLine)")
     }
 
     private var boardHeader: some View {
@@ -231,11 +264,7 @@ public struct RecruitingBoardView: View {
                 HStack(spacing: CoachWorldTokens.Space.sm) {
                     boardTitle
                     sampleCareerFlag
-                    Spacer()
-                    Text(positionPlanLine)
-                        .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
-                        .foregroundStyle(palette.contentSecondary.color)
-                        .lineLimit(1)
+                    Spacer(minLength: CoachWorldTokens.Gap.xs)
                 }
             }
         }
@@ -284,7 +313,7 @@ public struct RecruitingBoardView: View {
                     )
                 }
             } else {
-                HStack(spacing: .zero) {
+                HStack(spacing: CoachWorldTokens.Gap.lg) {
                     capacityValue(
                         "SLOTS",
                         value: "\(model.capacity.scholarshipSlotsRemaining)",
@@ -300,7 +329,9 @@ public struct RecruitingBoardView: View {
                         value: "\(model.capacity.officialVisitsRemaining)",
                         suffix: "left"
                     )
+                    Spacer(minLength: .zero)
                 }
+                .padding(.horizontal, CoachWorldTokens.Pad.row.h)
             }
         }
         .frame(minHeight: RecruitingMetric.capacityHeight)
@@ -338,8 +369,8 @@ public struct RecruitingBoardView: View {
                 .foregroundStyle(palette.contentSecondary.color)
         }
         .padding(.horizontal, CoachWorldTokens.Space.xs)
-        .frame(maxWidth: .infinity, minHeight: RecruitingMetric.capacityHeight)
-        .overlay(alignment: .trailing) { verticalSeam }
+        .fixedSize(horizontal: true, vertical: false)
+        .frame(minHeight: RecruitingMetric.capacityHeight)
         .accessibilityElement(children: .combine)
     }
 
@@ -363,6 +394,11 @@ public struct RecruitingBoardView: View {
             }
             Spacer(minLength: .zero)
         }
+        // Acquisition Room, `04` section 2: "a rank may travel, because the movement is the fact
+        // being reported" -- the one register where a reorder is itself the content, not decoration.
+        // Rows are already keyed by stableID rather than array position, which is what lets SwiftUI
+        // interpolate a reorder instead of cross-fading unrelated rows into each other's places.
+        .coachWorldAnimation(CoachWorldTokens.Motion.world, value: model.prospects)
     }
 
     private var discoveryTable: some View {
@@ -565,19 +601,26 @@ public struct RecruitingBoardView: View {
                     .background(palette.page.color)
                     .overlay(alignment: .top) { seam }
             }
-            .coachWorldDeskSurface(
+            .coachWorldFloodlitPanel(
                 fill: palette.page.color,
                 border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
             )
             .accessibilitySortPriority(80)
         } else {
-            ContentUnavailableView(
-                "No prospect selected",
-                systemImage: "person.crop.rectangle",
-                description: Text("Select a prospect to review the system evaluation.")
+            // The empty dossier is still a bounded pane beside the board, so it keeps the panel
+            // the filled dossier has. Only a full-screen ground would be dropped here.
+            CoachWorldSystemState(
+                .empty(
+                    "No prospect selected. Select a prospect to review the system evaluation."
+                ),
+                palette: palette
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(palette.page.color)
+            .coachWorldFloodlitPanel(
+                fill: palette.page.color,
+                border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+            )
+            .accessibilitySortPriority(80)
         }
     }
 
@@ -836,6 +879,9 @@ private struct RecruitingCollegeCutShape: Shape {
 }
 
 private enum RecruitingMetric {
+    static let planHeight: CGFloat = 30
+    static let planScaleFloor: CGFloat = 0.7
+
     static let worldStripHeight: CGFloat = 48
     static let dossierWidth: CGFloat = 326
     static let boardHeaderHeight: CGFloat = 36

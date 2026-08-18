@@ -1,5 +1,5 @@
 import Foundation
-import ProFootballCoachUI
+@testable import ProFootballCoachUI
 
 // The M8 production-UI entry gate, as tests (05, phase P11a).
 //
@@ -20,7 +20,7 @@ import ProFootballCoachUI
 
 // MARK: - Canon readers
 
-private func canonText() -> String {
+func canonText() -> String {
     let url = packageRoot().appendingPathComponent("docs/04-UX-AND-DESIGN-SYSTEM.md")
     return (try? String(contentsOf: url, encoding: .utf8)) ?? ""
 }
@@ -54,8 +54,26 @@ private func canonSymbolClasses(_ canon: String) -> [(name: String, cap: Int, me
     return classes
 }
 
+/// 04 section 6.6's Control furniture row: capped but not a `canonSymbolClasses` entry, because its
+/// cap cell reads "not a learned class" rather than an `Int`. Shared so a member added to Control
+/// furniture is seen by every scan that needs it, not just the one it was written for.
+func canonControlFurnitureMembers(_ canon: String) -> Set<String> {
+    let row = canon.split(separator: "\n", omittingEmptySubsequences: false)
+        .map(String.init)
+        .first { $0.contains("Control furniture") } ?? ""
+    return Set(matches(of: "`([a-z][a-zA-Z0-9.]*)`", in: row))
+}
+
+/// Comment-only lines removed, so a scan counting a source pattern is not corrupted by a doc
+/// comment that quotes the pattern in prose to explain what the scan does.
+func strippingLineComments(_ text: String) -> String {
+    text.split(separator: "\n", omittingEmptySubsequences: false)
+        .map { $0.trimmingCharacters(in: .whitespaces).hasPrefix("//") ? "" : String($0) }
+        .joined(separator: "\n")
+}
+
 /// Regex helper returning the first capture group of every match.
-private func matches(of pattern: String, in text: String) -> [String] {
+func matches(of pattern: String, in text: String) -> [String] {
     guard let expression = try? NSRegularExpression(pattern: pattern) else { return [] }
     let range = NSRange(text.startIndex..., in: text)
     return expression.matches(in: text, range: range).compactMap { match in
@@ -168,13 +186,7 @@ func runDesignContractTests() {
         test("every SF Symbol the UI draws is a registered member") {
             let classes = canonSymbolClasses(canon)
             let registered = classes.reduce(into: Set<String>()) { $0.formUnion($1.members) }
-            // Control furniture is not a learned class: 04 section 6.6 lists it with no cap, so its
-            // members parse into no class. They are still legitimate, so read them from the row.
-            let furniture = Set(matches(of: "`([a-z][a-zA-Z0-9.]*)`",
-                                        in: canon.split(separator: "\n")
-                                            .map(String.init)
-                                            .first { $0.contains("Control furniture") } ?? ""))
-            let permitted = registered.union(furniture)
+            let permitted = registered.union(canonControlFurnitureMembers(canon))
             expect(permitted.count >= 12, "the register parsed as \(permitted.count) symbols")
 
             // Every file that draws, enumerated by the UI import rather than by directory. It read
@@ -203,6 +215,73 @@ func runDesignContractTests() {
             let drawn = Set(matches(of: "systemName:\\s*\"([^\"]+)\"", in: planted))
             expect(!drawn.subtracting(registered).isEmpty,
                    "a planted unregistered symbol must not be reported as registered")
+        }
+
+        // MatchDayControlID's icons used to be a bare String returned from a switch — invisible to
+        // the literal scan above, which is exactly how sparkles.tv shipped. MatchDayControlSymbol
+        // closes that one instance the way CoachWorldStatusChip.Symbol closes Status: a typed,
+        // CaseIterable enum a contract test can enumerate. Unlike Status, these five do not own
+        // their class exclusively — Control furniture is a shared pool other components draw from
+        // too — so the assertion is membership, not the equality CoachWorldStatusChip.Symbol uses.
+        test("MatchDayControlSymbol's members are registered, fill variants included") {
+            let classes = canonSymbolClasses(canon)
+            let registered = classes.reduce(into: Set<String>()) { $0.formUnion($1.members) }
+            let permitted = registered.union(canonControlFurnitureMembers(canon))
+            expect(permitted.count >= 12, "the register parsed as \(permitted.count) symbols")
+
+            let shipped = Set(MatchDayControlSymbol.allCases.map(\.rawValue))
+            // Same rule the general scan above applies: a filled variant is the same member as its
+            // base (04 section 6.6) — hand.raised.fill for Status's hand.raised, here.
+            let unregistered = shipped.subtracting(permitted)
+                .filter { !permitted.contains($0.replacingOccurrences(of: ".fill", with: "")) }
+            expect(unregistered.isEmpty,
+                   "MatchDayControlSymbol ships \(unregistered.count) symbol(s) 04 section 6.6 does "
+                       + "not hold: \(unregistered.sorted().joined(separator: ", "))")
+        }
+
+        test("every non-literal symbol call site is a known one") {
+            // The scan above matches only a literal string directly after the SwiftUI symbol
+            // argument, so a computed value — a switch, a ternary, a stored field — is invisible to
+            // it. Closing every instance of that shape is not buildable by regex; this instead pins
+            // how many such call sites exist, so a new one moving the count is a build failure a
+            // human must look at. It does not itself prove the symbol underneath is registered —
+            // CoachWorldStatusChip.Symbol, CoachWorldDeltaMark and MatchDayControlSymbol prove that
+            // for their own sites with a dedicated canon-sync test; the rest were checked by hand
+            // when this pin was set and must be re-checked by hand when it moves.
+            let knownNonLiteralSites = 9
+            var found = 0
+            var byFile: [String] = []
+            for file in swiftFilesImportingUIFramework() {
+                let filtered = strippingLineComments(file.text)
+                let total = matches(of: "(system(?:Name|Image):)", in: filtered).count
+                let literal = matches(of: "(system(?:Name|Image):\\s*\"[^\"]+\")", in: filtered).count
+                let nonLiteral = total - literal
+                if nonLiteral > 0 {
+                    found += nonLiteral
+                    byFile.append("\(file.path)=\(nonLiteral)")
+                }
+            }
+            expectEqual(found, knownNonLiteralSites,
+                        "non-literal systemName/systemImage call sites now total \(found), pinned "
+                            + "at \(knownNonLiteralSites): \(byFile.sorted().joined(separator: ", ")). "
+                            + "Resolve a new one through a typed, canon-tested enum (04 section 6.6) "
+                            + "like MatchDayControlSymbol, then move this pin either way, growing or "
+                            + "shrinking it.")
+        }
+
+        test("the non-literal scan counts a planted site and ignores prose that quotes the pattern") {
+            let planted = "Image(systemName: someComputedValue)"
+            let total = matches(of: "(system(?:Name|Image):)", in: planted).count
+            let literal = matches(of: "(system(?:Name|Image):\\s*\"[^\"]+\")", in: planted).count
+            expectEqual(total - literal, 1, "a planted non-literal call site must be counted")
+
+            // This is not a hypothetical: writing the test above, in this same file, first shipped
+            // as its own false positive — the doc comment on MatchDayControlSymbol names
+            // "systemName:" and "systemImage:" in prose to explain what the scan matches.
+            let comment = "    /// the scan reads systemName: and systemImage: as plain prose here"
+            expectEqual(strippingLineComments(comment), "",
+                        "a comment-only line must be stripped before counting, or explaining this "
+                            + "scan in its own file becomes a false positive")
         }
     }
 
@@ -282,6 +361,101 @@ func runDesignContractTests() {
             let canonRatios = Set(matches(of: "\\b(\\d{1,2}\\.\\d{2})\\b", in: canon))
             expect(!canonRatios.contains("7.77"),
                    "the planted ratio must not coincidentally exist in canon")
+        }
+    }
+
+    suite("Floodlit dark-only (06.1a)") {
+        // 04 section 6.1a (2026-08-16): Floodlit is dark-only, with no production light palette and
+        // no user-facing appearance switch. `Palette.light` and every `colorScheme` branch that
+        // chose between `.dark`/`.light` are the code shape the amendment retires; this is the test
+        // half of G-07 for that amendment, enumerated by directory per CLAUDE.md's coverage rule.
+        test("no UI file resolves a palette by system colour scheme") {
+            for file in swiftFiles(under: "Sources/ProFootballCoachUI") {
+                expect(!file.text.contains("CoachWorldTokens.light"),
+                       "\(file.path) still references CoachWorldTokens.light; 04 section 6.1a "
+                           + "retired the light palette")
+                expect(!file.text.contains("Environment(\\.colorScheme)"),
+                       "\(file.path) still reads colorScheme; Floodlit has no appearance switch")
+            }
+        }
+
+        test("the scan would notice a reintroduced light branch") {
+            let planted = "colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light"
+            expect(planted.contains("CoachWorldTokens.light"),
+                   "the predicate the real assertion uses must catch a planted light reference")
+        }
+
+        test("DesignTokens.swift declares no light palette") {
+            let tokenFiles = swiftFiles(under: "Sources/ProFootballCoachUI")
+                .filter { $0.path.hasSuffix("DesignTokens.swift") }
+            expect(!tokenFiles.isEmpty, "DesignTokens.swift not found")
+            for file in tokenFiles {
+                expect(!file.text.contains("public static let light"),
+                       "\(file.path) still declares a light Palette instance")
+            }
+        }
+    }
+
+    suite("Floodlit vocabulary symbol sourcing (Task 4)") {
+        // The existing "every SF Symbol the UI draws is a registered member" scan (above) only
+        // matches a literal string directly after systemName:/systemImage:. CoachWorldStatusChip
+        // and CoachWorldDeltaMark resolve their symbol through a typed enum for call-site safety,
+        // which makes their raw values invisible to that regex — a real blind spot, closed here by
+        // reading the same canon table these enums were written against.
+        test("CoachWorldStatusChip.Symbol is exactly the canon Status class") {
+            let classes = canonSymbolClasses(canon)
+            guard let status = classes.first(where: { $0.name.contains("StatusChip") }) else {
+                expect(false, "04 section 6.6 no longer names a StatusChip row")
+                return
+            }
+            let shipped = Set(CoachWorldStatusChip.Symbol.allCases.map(\.rawValue))
+            expectEqual(shipped, status.members,
+                        "CoachWorldStatusChip.Symbol must be exactly the canon Status class, no "
+                            + "more and no fewer")
+        }
+
+        test("CoachWorldDeltaMark's two directions are the canon Change class") {
+            let classes = canonSymbolClasses(canon)
+            guard let change = classes.first(where: { $0.name.contains("DeltaMark") }) else {
+                expect(false, "04 section 6.6 no longer names a DeltaMark row")
+                return
+            }
+            let shipped: Set<String> = [
+                CoachWorldDeltaMark(value: 1).symbolName,
+                CoachWorldDeltaMark(value: -1).symbolName,
+            ].compactMap { $0 }.reduce(into: Set<String>()) { $0.insert($1) }
+            expectEqual(shipped, change.members, "the two directions must be exactly the canon "
+                            + "Change class")
+        }
+
+        test("CoachWorldAgendaRow's obligation marks are the canon Obligation class") {
+            let classes = canonSymbolClasses(canon)
+            guard let obligation = classes.first(where: { $0.name.contains("AgendaRow") }) else {
+                expect(false, "04 section 6.6 no longer names an AgendaRow row")
+                return
+            }
+            expectEqual(obligation.members, ["checkmark.circle.fill", "person.badge.clock"],
+                        "CoachWorldAgendaRow draws exactly these two members inline; if canon's "
+                            + "row changes, this test and the view must change together")
+        }
+    }
+
+    suite("Floodlit geometry (06.1a)") {
+        // The asymmetric four-radius shape 04 section 6.1a names, with its three presets. A shape
+        // built from a single `cut` value cannot express 4/22/4/22, so the type itself is the
+        // contract: this only compiles if the presets exist with the stated radii.
+        test("the three named CutCorner presets match 04 section 6.1a's radii") {
+            let panel = CoachWorldCutCorner.panel
+            expectEqual(panel.topLeading, 4); expectEqual(panel.topTrailing, 22)
+            expectEqual(panel.bottomTrailing, 4); expectEqual(panel.bottomLeading, 22)
+
+            let row = CoachWorldCutCorner.row
+            expectEqual(row.topLeading, 3); expectEqual(row.topTrailing, 14)
+            expectEqual(row.bottomTrailing, 3); expectEqual(row.bottomLeading, 14)
+
+            let action = CoachWorldCutCorner.action
+            expectEqual(action.topLeading, 22); expectEqual(action.topTrailing, 22)
+            expectEqual(action.bottomTrailing, 22); expectEqual(action.bottomLeading, 5)
         }
     }
 }

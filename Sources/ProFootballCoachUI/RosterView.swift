@@ -1,13 +1,18 @@
 import SwiftUI
 
-public struct RosterView: View {
+public struct RosterView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: RosterReadModel
     public let statusMessage: String?
     public let onContinue: () -> Void
     public let onNavigate: (CoachWorldScreenID) -> Void
     public let onInspectDevelopment: (String) -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var workspaceGap = CoachWorldTokens.Space.xs
     @State private var selectedPlayerID: String
@@ -30,7 +35,7 @@ public struct RosterView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     private var visiblePlayers: [RosterReadModel.PlayerRow] {
@@ -43,19 +48,21 @@ public struct RosterView: View {
     }
 
     public var body: some View {
-        Group {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             if dynamicTypeSize.isAccessibilitySize {
                 accessibleLayout
             } else {
                 VStack(spacing: .zero) {
-                    worldStrip
-                    personnelRoutes
+                    // The shared chrome's identity header already states the programme, so drawing
+                    // this surface's own strip as well stacks two navigations.
+                    if chrome == nil { worldStrip }
+                    // The identity header already lists this family's surfaces; drawing them
+                    // again as tabs is the same navigation twice on one screen.
+                    if chrome == nil { personnelRoutes }
                     standardLayout
                 }
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .onChange(of: model.players.map(\.stableID), initial: true) { _, stableIDs in
             if !stableIDs.contains(selectedPlayerID) {
                 selectedPlayerID = stableIDs.first ?? ""
@@ -290,20 +297,21 @@ public struct RosterView: View {
         VStack(spacing: .zero) {
             summaryRibbon
             if model.players.isEmpty {
-                ContentUnavailableView(
-                    "No players on the roster",
-                    systemImage: "person.3",
-                    description: Text("Players appear here when a career roster is available.")
+                CoachWorldSystemState(
+                    .empty(
+                        "No players on the roster. Players appear here when a career "
+                            + "roster is available."
+                    ),
+                    palette: palette
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 comparisonTable
             }
         }
-        .background(palette.work.color)
-        .coachWorldDeskSurface(
+        .coachWorldFloodlitPanel(
             fill: palette.work.color,
-            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity),
+            depth: .deep
         )
         .accessibilitySortPriority(100)
     }
@@ -322,21 +330,22 @@ public struct RosterView: View {
     }
 
     private var tableHeader: some View {
+        // The reference's column order: POS, NO., PLAYER, YR, RATING, FIT, FRESH, ST.
         HStack(spacing: CoachWorldTokens.Space.xxs) {
-            sortButton("#", accessibilityName: "Number", field: .number,
+            sortButton("POS", accessibilityName: "Position", field: .position,
+                       width: RosterMetric.positionWidth)
+            sortButton("NO.", accessibilityName: "Number", field: .number,
                        width: RosterMetric.numberWidth, alignment: .trailing)
             sortButton("PLAYER", accessibilityName: "Player", field: .name,
                        alignment: .leading)
-            sortButton("POS", accessibilityName: "Position", field: .position,
-                       width: RosterMetric.positionWidth)
-            sortButton("OVR", accessibilityName: "Overall", field: .overall,
-                       width: RosterMetric.ratingWidth)
-            sortButton("DEV Δ", accessibilityName: "Development change", field: .development,
+                .layoutPriority(1)
+            tableHeading("YR", width: RosterMetric.yearWidth)
+            sortButton("RATING", accessibilityName: "Rating", field: .overall,
                        width: RosterMetric.ratingWidth)
             tableHeading("FIT", width: RosterMetric.fitWidth)
-            sortButton("COND", accessibilityName: "Condition", field: .condition,
-                       width: RosterMetric.ratingWidth)
-            tableHeading("STATUS", width: RosterMetric.statusWidth)
+            sortButton("FRESH", accessibilityName: "Freshness", field: .condition,
+                       width: RosterMetric.freshWidth)
+            tableHeading("ST", width: RosterMetric.statusWidth)
         }
         .padding(.horizontal, CoachWorldTokens.Space.xs)
         .frame(minHeight: RosterMetric.headerHeight)
@@ -389,25 +398,43 @@ public struct RosterView: View {
         let isSelected = player.stableID == selectedPlayer?.stableID
         return Button(action: { selectedPlayerID = player.stableID }) {
             HStack(spacing: CoachWorldTokens.Space.xxs) {
+                // The slot, as a role token in cool ink — registry #18, and what maps a table row
+                // to a place on the field diagram.
+                Text(player.position.uppercased())
+                    .foregroundStyle(palette.stateInfo.color)
+                    .frame(width: RosterMetric.positionWidth, alignment: .leading)
                 Text("\(player.number)")
                     .monospacedDigit()
+                    .foregroundStyle(palette.actionPrimary.color)
                     .frame(width: RosterMetric.numberWidth, alignment: .trailing)
-                VStack(alignment: .leading, spacing: .zero) {
-                    Text(player.person.name)
-                        .font(CoachWorldTokens.TypeRole.body.weight(.bold))
-                    Text("\(player.academicYear) · \(player.rosterRole)")
-                        .font(CoachWorldTokens.TypeRole.caption)
-                        .foregroundStyle(palette.contentSecondary.color)
-                }
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                Text(player.position)
-                    .frame(width: RosterMetric.positionWidth)
+                // The name takes its ideal width and a spacer absorbs the slack. Wrapping it in
+                // `.frame(maxWidth: .infinity)` truncated it against a proposal made before the
+                // cell expanded — the ellipsis appeared with visible empty space beside it.
+                Text(player.person.name)
+                    .font(CoachWorldTokens.TypeRole.body.weight(.bold))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                Spacer(minLength: CoachWorldTokens.Gap.xxs)
+                Text(player.academicYear)
+                    .foregroundStyle(palette.contentSecondary.color)
+                    .frame(width: RosterMetric.yearWidth)
                 ratingCell(player.overall)
-                developmentDeltaCell(player.developmentDelta)
                 Text(player.schemeFit)
                     .frame(width: RosterMetric.fitWidth)
-                ratingCell(player.condition)
+                // Freshness is a proportion of full condition, so the arc family's 4 pt step is
+                // the right mark — beside the figure, never instead of it.
+                HStack(spacing: CoachWorldTokens.Gap.xxs) {
+                    Text("\(player.condition)")
+                        .monospacedDigit()
+                        .foregroundStyle(ratingColor(player.condition))
+                    FloodlitShareBar(
+                        proportion: Double(player.condition) / 100,
+                        tint: ratingColor(player.condition),
+                        palette: palette
+                    )
+                    .frame(width: RosterMetric.freshBar)
+                }
+                .frame(width: RosterMetric.freshWidth)
                 Text(player.availability)
                     .foregroundStyle(availabilityColor(player.availability))
                     .frame(width: RosterMetric.statusWidth)
@@ -458,37 +485,34 @@ public struct RosterView: View {
             ScrollView {
                 inspectorContent(selected)
             }
-            .coachWorldDeskSurface(
+            .coachWorldFloodlitPanel(
                 fill: palette.page.color,
                 border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
             )
             .accessibilitySortPriority(80)
         } else {
-            ContentUnavailableView(
-                "No player selected",
-                systemImage: "person.crop.rectangle",
-                description: Text("Select a player to review the dossier.")
+            CoachWorldSystemState(
+                .empty("No player selected. Select a player to review the dossier."),
+                palette: palette
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
     private func inspectorContent(_ selected: RosterReadModel.PlayerRow) -> some View {
         VStack(alignment: .leading, spacing: .zero) {
-            HStack(alignment: .top, spacing: CoachWorldTokens.Space.sm) {
-                CoachWorldBlankPhotoPlate(
-                    name: selected.person.name,
-                    palette: palette,
-                    width: RosterMetric.photoWidth,
-                    height: RosterMetric.photoHeight
+            // The reference leads the dossier with the rating as a ValueRing beside the name,
+            // not a photo plate — the rating is what the row was selected for.
+            HStack(alignment: .center, spacing: CoachWorldTokens.Space.sm) {
+                CoachWorldRatingRing(
+                    value: selected.overall,
+                    diameter: RosterMetric.dossierRing,
+                    palette: palette
                 )
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                    Text("#\(selected.number) · \(selected.position)")
-                        .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                        .foregroundStyle(palette.contentSecondary.color)
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                     Text(selected.person.name)
                         .font(CoachWorldTokens.TypeRole.title.weight(.black))
-                    Text("\(selected.academicYear) · \(selected.rosterRole)")
+                        .lineLimit(1)
+                    Text("\(selected.academicYear) · #\(selected.number) · \(selected.position)")
                         .font(CoachWorldTokens.TypeRole.caption)
                         .foregroundStyle(palette.contentSecondary.color)
                 }
@@ -498,6 +522,8 @@ public struct RosterView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(palette.raised.color.opacity(0.5))
 
+            dossierAttributes(selected)
+            dossierFlags(selected)
             inspectorSection("STRENGTHS", selected.profile.strengths.joined(separator: " · "))
             inspectorSection("CONCERN", selected.profile.concern)
             inspectorSection(
@@ -510,6 +536,75 @@ public struct RosterView: View {
             }
             .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
             .padding(CoachWorldTokens.Space.sm)
+        }
+    }
+
+
+    /// The reference's four attribute bars. Each is a rating on the 40-99 scale, so the heat bands
+    /// apply here — unlike the week hub's stakeholder standing, which is a different scale.
+    @ViewBuilder
+    private func dossierAttributes(_ selected: RosterReadModel.PlayerRow) -> some View {
+        let attributes = selected.profile.attributeGroups
+            .flatMap(\.attributes)
+            .prefix(RosterMetric.dossierAttributeCount)
+        if !attributes.isEmpty {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+                FloodlitLabel3("Attributes", palette: palette)
+                ForEach(Array(attributes), id: \.stableID) { attribute in
+                    HStack(spacing: CoachWorldTokens.Gap.xs) {
+                        Text(attribute.label.uppercased())
+                            .font(
+                                CoachWorldTokens.display(
+                                    CoachWorldTokens.DisplaySize.flag, weight: .bold
+                                )
+                            )
+                            .foregroundStyle(palette.contentSecondary.color)
+                            .frame(width: RosterMetric.attributeLabel, alignment: .leading)
+                        FloodlitShareBar(
+                            proportion: proportion(of: attribute.value),
+                            tint: ratingColor(attribute.value),
+                            palette: palette
+                        )
+                        Text("\(attribute.value)")
+                            .font(
+                                CoachWorldTokens.figure(
+                                    CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                                )
+                            )
+                            .frame(width: RosterMetric.attributeValue, alignment: .trailing)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(attribute.label), \(attribute.value)")
+                }
+            }
+            .padding(CoachWorldTokens.Space.sm)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .top) { seam }
+        }
+    }
+
+    /// Where the rating sits on the 40-99 scale, which is the proportion a bar may draw. Drawing
+    /// `value / 100` would make a 40 — the floor of the scale — look like 40 per cent of something.
+    private func proportion(of rating: Int) -> Double {
+        let floor = Double(CoachWorldTokens.Heat.scaleFloor)
+        let ceiling = Double(CoachWorldTokens.Heat.scaleCeiling)
+        return min(1, max(0, (Double(rating) - floor) / (ceiling - floor)))
+    }
+
+    /// Trait flags — the reference's `ICE IN VEINS · match` pair. A staff verdict, not a status.
+    @ViewBuilder
+    private func dossierFlags(_ selected: RosterReadModel.PlayerRow) -> some View {
+        let flags = selected.profile.strengths.prefix(RosterMetric.dossierFlagCount)
+        if !flags.isEmpty {
+            HStack(spacing: CoachWorldTokens.Gap.xs) {
+                ForEach(Array(flags), id: \.self) { flag in
+                    FloodlitFlag(flag, palette: palette)
+                }
+                Spacer(minLength: .zero)
+            }
+            .padding(.horizontal, CoachWorldTokens.Space.sm)
+            .padding(.vertical, CoachWorldTokens.Gap.xs)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -533,10 +628,12 @@ public struct RosterView: View {
             VStack(spacing: .zero) {
                 summaryRibbon
                 if model.players.isEmpty {
-                    ContentUnavailableView(
-                        "No players on the roster",
-                        systemImage: "person.3",
-                        description: Text("Players appear here when a career roster is available.")
+                    CoachWorldSystemState(
+                        .empty(
+                            "No players on the roster. Players appear here when a career "
+                                + "roster is available."
+                        ),
+                        palette: palette
                     )
                 } else {
                     accessibleRosterRows
@@ -547,7 +644,6 @@ public struct RosterView: View {
                 accessibleWorldRoutes
             }
         }
-        .background(palette.work.color)
         .accessibilitySortPriority(100)
     }
 
@@ -711,6 +807,17 @@ public struct RosterView: View {
 }
 
 private enum RosterMetric {
+    static let dossierRing: CGFloat = 44
+    static let dossierAttributeCount = 4
+    static let dossierFlagCount = 2
+    static let attributeLabel: CGFloat = 62
+    static let attributeValue: CGFloat = 26
+
+    /// The reference's academic-year and freshness columns.
+    static let yearWidth: CGFloat = 30
+    static let freshWidth: CGFloat = 66
+    static let freshBar: CGFloat = 34
+
     static let worldStripHeight: CGFloat = 48
     static let summaryHeight: CGFloat = 44
     static let headerHeight: CGFloat = 44
@@ -718,12 +825,12 @@ private enum RosterMetric {
     static let selectedRuleWidth: CGFloat = 3
     static let markWidth: CGFloat = 34
     static let markHeight: CGFloat = 22
-    static let tableFraction: CGFloat = 0.64
+    static let tableFraction: CGFloat = 0.68
     static let numberWidth: CGFloat = 28
     static let positionWidth: CGFloat = 34
-    static let ratingWidth: CGFloat = 48
-    static let fitWidth: CGFloat = 52
-    static let statusWidth: CGFloat = 66
+    static let ratingWidth: CGFloat = 78
+    static let fitWidth: CGFloat = 46
+    static let statusWidth: CGFloat = 60
     static let photoWidth: CGFloat = 52
     static let photoHeight: CGFloat = 64
 }

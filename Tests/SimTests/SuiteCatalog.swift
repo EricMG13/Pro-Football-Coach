@@ -1,6 +1,15 @@
 import Foundation
 
 /// Release lanes are data so the default harness and CI can enumerate the same gates.
+///
+/// **Not every case below has a runner behind it.** `.reduceMotion` does, as of
+/// `ReduceMotionContractTests.swift`, and that file's own dispatch test proves it — not just that
+/// the name is registered, which is all `runCommitmentCoverageTest` below ever checked. Whether the
+/// same is true of the other thirteen `defaultRun` cases is not audited here: several read as
+/// tangential mentions inside `ContractTests.swift` and `AccessibilityReflowTests.swift` rather than
+/// a dedicated runner, and classifying which is which needs a case-by-case read this file does not
+/// attempt. Stated rather than mechanised, so a reader does not mistake this comment's presence for
+/// that audit having happened.
 enum ReleaseGateID: String, CaseIterable, Sendable {
     case commitmentCoverage = "CommitmentCoverageTest"
     case contrastByConstruction = "ContrastByConstructionTest"

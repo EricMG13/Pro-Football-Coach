@@ -1,12 +1,17 @@
 import SwiftUI
 
-public struct ContactVisitPlannerView: View {
+public struct ContactVisitPlannerView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: RecruitingBoardReadModel
     public let statusMessage: String?
     public let onAction: (String, CoachWorldIntentID) -> Void
     public let onClose: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(model: RecruitingBoardReadModel, statusMessage: String? = nil,
@@ -19,29 +24,31 @@ public struct ContactVisitPlannerView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
-                if let statusMessage { Text(statusMessage).foregroundStyle(palette.stateWarning.color) }
-                Text("Choose an existing recruiting action. Costs and refusal reasons come from the current board.")
-                    .foregroundStyle(palette.contentSecondary.color)
-                    .fixedSize(horizontal: false, vertical: true)
-                ForEach(model.prospects, id: \.stableID) { prospect in
-                    prospectRow(prospect)
-                }
-                if model.prospects.isEmpty {
-                    Text("No board prospects have a contact or visit plan.")
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
+                    if let statusMessage { Text(statusMessage).foregroundStyle(palette.stateWarning.color) }
+                    Text("Choose an existing recruiting action. Costs and refusal reasons come from the current board.")
                         .foregroundStyle(palette.contentSecondary.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                    ForEach(model.prospects, id: \.stableID) { prospect in
+                        prospectRow(prospect)
+                    }
+                    if model.prospects.isEmpty {
+                        CoachWorldSystemState(
+                            .empty("No board prospects have a contact or visit plan."),
+                            palette: palette
+                        )
+                    }
                 }
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .accessibilitySortPriority(100)
     }
 
@@ -103,7 +110,10 @@ public struct ContactVisitPlannerView: View {
         }
         .padding(CoachWorldTokens.Space.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(palette.raised.color.opacity(0.7))
+        .coachWorldFloodlitPanel(
+            fill: palette.raised.color,
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+        )
         .accessibilityElement(children: .contain)
     }
 }

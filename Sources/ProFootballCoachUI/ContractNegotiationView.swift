@@ -3,13 +3,18 @@ import FootballSimCore
 
 /// The persistent offer/counter surface. Every mutation is a `ProManagementAction`; this view
 /// never edits a player or cap ledger directly.
-public struct ContractNegotiationView: View {
+public struct ContractNegotiationView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: ProManagementReadModel
     public let statusMessage: String?
     public let onAction: (ProManagementAction) -> Void
     public let onClose: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(
@@ -25,30 +30,30 @@ public struct ContractNegotiationView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     private var teamID: UUID? { UUID(uuidString: model.team.stableID) }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
-                if let statusMessage {
-                    Text(statusMessage)
-                        .foregroundStyle(palette.stateWarning.color)
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
+                    if let statusMessage {
+                        Text(statusMessage)
+                            .foregroundStyle(palette.stateWarning.color)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Text("Offers and counters are retained until accepted, rejected, withdrawn, or expired. Cap previews use the current team ledger.")
+                        .foregroundStyle(palette.contentSecondary.color)
                         .fixedSize(horizontal: false, vertical: true)
+                    activeNegotiations
+                    startNegotiations
                 }
-                Text("Offers and counters are retained until accepted, rejected, withdrawn, or expired. Cap previews use the current team ledger.")
-                    .foregroundStyle(palette.contentSecondary.color)
-                    .fixedSize(horizontal: false, vertical: true)
-                activeNegotiations
-                startNegotiations
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .accessibilitySortPriority(100)
     }
 
@@ -93,8 +98,10 @@ public struct ContractNegotiationView: View {
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                 .foregroundStyle(palette.proIdentity.color)
             if model.negotiations.isEmpty {
-                Text("No contract offers are on file.")
-                    .foregroundStyle(palette.contentSecondary.color)
+                CoachWorldSystemState(
+                    .empty("No contract offers are on file."),
+                    palette: palette
+                )
             } else {
                 ForEach(model.negotiations) { negotiation in
                     NegotiationCard(
@@ -141,7 +148,11 @@ public struct ContractNegotiationView: View {
                         .padding(.horizontal, CoachWorldTokens.Space.sm)
                         .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget,
                                alignment: .leading)
-                        .background(palette.raised.color.opacity(0.72))
+                        .coachWorldFloodlitPanel(
+                            fill: palette.raised.color,
+                            border: palette.contentQuiet.color
+                                .opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+                        )
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Start contract offer for \(player.name)")
@@ -217,7 +228,10 @@ private struct NegotiationCard: View {
         }
         .padding(CoachWorldTokens.Space.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(palette.raised.color.opacity(0.72))
+        .coachWorldFloodlitPanel(
+            fill: palette.raised.color,
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+        )
         .accessibilityElement(children: .contain)
     }
 

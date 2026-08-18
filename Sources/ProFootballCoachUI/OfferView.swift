@@ -1,6 +1,12 @@
 import SwiftUI
 
-public struct OfferView: View {
+public struct OfferView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: CareerHubReadModel
     public let statusMessage: String?
     public let onClose: () -> Void
@@ -34,6 +40,7 @@ public struct OfferView: View {
                       focus: .offer, onNavigate: onNavigate,
                       onAcceptOpportunity: onAcceptOpportunity, onResign: onResign,
                       onContinue: onContinue)
+            .floodlitChrome(chrome, onNavigate: onNavigateChrome)
             .accessibilitySortPriority(dynamicTypeSize.isAccessibilitySize ? 100 : 90)
     }
 }

@@ -1,14 +1,19 @@
 import SwiftUI
 import FootballSimCore
 
-public struct ProOffseasonView: View {
+public struct ProOffseasonView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: ProOffseasonReadModel
     public let title: String
     public let statusMessage: String?
     public let onAction: (ProMarketAction) -> Void
     public let onClose: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(
@@ -26,35 +31,35 @@ public struct ProOffseasonView: View {
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                header
-                if let statusMessage {
-                    Text(statusMessage)
-                        .font(CoachWorldTokens.TypeRole.callout)
-                        .foregroundStyle(palette.stateWarning.color)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                summary
-                if !model.actions.isEmpty {
-                    section("MARKET ACTIONS") {
-                        ForEach(model.actions) { row in
-                            actionButton(row)
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+                    header
+                    if let statusMessage {
+                        Text(statusMessage)
+                            .font(CoachWorldTokens.TypeRole.callout)
+                            .foregroundStyle(palette.stateWarning.color)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    summary
+                    if !model.actions.isEmpty {
+                        section("MARKET ACTIONS") {
+                            ForEach(model.actions) { row in
+                                actionButton(row)
+                            }
                         }
                     }
+                    prospectsSection
+                    freeAgentsSection
+                    waiversSection
                 }
-                prospectsSection
-                freeAgentsSection
-                waiversSection
+                .padding(CoachWorldTokens.Space.md)
             }
-            .padding(CoachWorldTokens.Space.md)
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
         .accessibilitySortPriority(100)
     }
 
@@ -141,7 +146,11 @@ public struct ProOffseasonView: View {
                     }
                     .padding(CoachWorldTokens.Space.sm)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(palette.raised.color.opacity(0.7))
+                    .coachWorldFloodlitPanel(
+                        fill: palette.raised.color,
+                        border: palette.contentQuiet.color
+                            .opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+                    )
                     .accessibilityElement(children: .contain)
                     .accessibilityLabel(
                         "\(prospect.name), \(prospect.position), "
@@ -210,7 +219,10 @@ public struct ProOffseasonView: View {
         }
         .padding(CoachWorldTokens.Space.sm)
         .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-        .background(palette.raised.color.opacity(0.7))
+        .coachWorldFloodlitPanel(
+            fill: palette.raised.color,
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+        )
     }
 
     private func actionButton(_ action: ProOffseasonReadModel.ActionRow) -> some View {
@@ -255,10 +267,7 @@ public struct ProOffseasonView: View {
     }
 
     private func emptyText(_ text: String) -> some View {
-        Text(text)
-            .font(CoachWorldTokens.TypeRole.body)
-            .foregroundStyle(palette.contentSecondary.color)
-            .fixedSize(horizontal: false, vertical: true)
+        CoachWorldSystemState(.empty(text), palette: palette)
     }
 
     private var phaseLabel: String {

@@ -95,7 +95,9 @@ if CommandLine.arguments.contains("--catalog") {
     runSeedDerivationTests()
     runContractTests()
     runDesignContractTests()
+    runMotionContractTests()
     runAccessibilityReflowTests()
+    runReduceMotionContractTests()
     runSaveEnvelopeTests()
     runRulesTests()
     runModelTests()
@@ -129,13 +131,19 @@ if CommandLine.arguments.contains("--catalog") {
     runGenerationTests()
 } else if CommandLine.arguments.contains("--design-contracts") {
     runDesignContractTests()
+    runMotionContractTests()
     runAccessibilityReflowTests()
+    runReduceMotionContractTests()
 } else if CommandLine.arguments.contains("--architecture-only") {
     runArchitectureTests()
 } else if CommandLine.arguments.contains("--m2-soak") {
     runM2SoakTests(seasons: 20)
 } else if CommandLine.arguments.contains("--m1-soak") {
     runM1SoakTests(seasons: 20)
+} else if CommandLine.arguments.contains("--snap-anchors") {
+    runSnapAnchorTests()
+} else if CommandLine.arguments.contains("--reduce-motion") {
+    runReduceMotionContractTests()
 } else {
     runSeededRandomTests()
     runSeedDerivationTests()
@@ -148,6 +156,7 @@ if CommandLine.arguments.contains("--catalog") {
     runIdentityDistributionTests()
     runEngineTests()
     runSnapResolverTests()
+    runSnapAnchorTests()
     runGameLoopTests()
     runCalibrationTests()
     runArchitectureTests()
@@ -191,7 +200,9 @@ if CommandLine.arguments.contains("--catalog") {
     // the one every release claim quotes — did not include the orientation policy, the token sync,
     // the symbol register, the sheet lint or the AX5 contract.
     runDesignContractTests()
+    runMotionContractTests()
     runAccessibilityReflowTests()
+    runReduceMotionContractTests()
     runCommitmentCoverageTest()
     runSaveDocumentTests()
 }

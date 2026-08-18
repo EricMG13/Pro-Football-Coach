@@ -5,6 +5,11 @@ public enum MatchAction: Codable, Sendable, Equatable {
     case togglePause
     case toggleTakeover
     case chooseCallIn(TacticalCallInAction)
+    /// `02` section 3.2's mid-match tactical change: tempo, aggression and run/pass bias, moved on
+    /// the coach's own side only. Distinct from `chooseCallIn`, which is a coordinator's proposal
+    /// answered at a specific snap; this is the coach reaching for the plan unprompted, the way
+    /// Tactics does.
+    case setTacticalPlan(TacticalPlan)
 }
 
 public enum MatchPauseBoundary: String, Codable, Sendable, Equatable {
@@ -429,6 +434,7 @@ public enum MatchReducerError: Error, Sendable, Equatable {
     case awaitingCallIn
     case noPendingCallIn
     case unavailableCallIn(TacticalCallInAction)
+    case unavailableTactics
 }
 
 private struct MatchPlayCaller: PlayCaller, Sendable {
@@ -498,6 +504,17 @@ public enum MatchReducer {
                 chooseCallIn(action, state: &state, callerOverride: callerOverride),
                 state: &state
             )
+        case .setTacticalPlan(let plan):
+            guard let controlledSide = state.controlledSide else {
+                throw MatchReducerError.unavailableTactics
+            }
+            guard state.pendingCallIn == nil else { throw MatchReducerError.awaitingCallIn }
+            if controlledSide == .home {
+                state.homePlan = plan
+            } else {
+                state.awayPlan = plan
+            }
+            return commit(MatchStepReceipt(boundary: .snap), state: &state)
         case .advance:
             guard !state.isPaused else { throw MatchReducerError.paused }
             guard state.pendingCallIn == nil else { throw MatchReducerError.awaitingCallIn }

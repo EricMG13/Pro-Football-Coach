@@ -851,6 +851,8 @@ func runReadModelProviderTests() {
             expect(model.controls.contains {
                 $0.id == .takeOver && $0.isEnabled && $0.isSelected && $0.value == "Hand back"
             }, "a controlled checkpoint did not expose hand-back control")
+            expect(model.controls.contains { $0.id == .tactics && $0.isEnabled },
+                   "a controlled checkpoint with no pending call-in must allow a tactics change")
 
             var interrupted = checkpoint
             guard var session = interrupted.matchSession else {
@@ -874,6 +876,9 @@ func runReadModelProviderTests() {
             expect(interruptedModel?.controls.contains {
                 $0.id == .pause && !$0.isEnabled
             } == true, "pause remained enabled while a call-in required a choice")
+            expect(interruptedModel?.controls.contains {
+                $0.id == .tactics && !$0.isEnabled
+            } == true, "tactics remained enabled while a call-in required a choice")
         }
 
         test("a promoted professional career still has a live coaching HQ") {

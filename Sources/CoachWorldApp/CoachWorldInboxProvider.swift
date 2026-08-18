@@ -24,10 +24,15 @@ public extension CoachWorldReadModelProvider {
         var items: [InboxReadModel.Item] = decisions.map { decision in
             let stableID = "decision:" + decision.id.uuidString
             let subject = subjectLabel(decision.subject, in: state)
-            let reasons = decision.reasons.prefix(2).map { "\($0.code.rawValue): \($0.value)" }
+            // The reason codes are engine spelling -- `playingTime`, `eligibility`. A coach reads
+            // the sentence, so they print through the same label map the rest of the application
+            // uses rather than leaking the raw case name into copy.
+            let reasons = decision.reasons.prefix(2).map {
+                "\(CoachWorldReadModelProvider.label($0.code)) \($0.value)"
+            }
             let body = reasons.isEmpty
                 ? "A response is required before the listed deadline."
-                : "Evidence: " + reasons.joined(separator: " · ")
+                : "What is on the desk: " + reasons.joined(separator: " · ")
             return InboxReadModel.Item(
                 stableID: stableID,
                 kind: .decision,
