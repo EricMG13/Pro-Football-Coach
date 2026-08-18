@@ -219,14 +219,93 @@ public struct LeagueMapView: View, CoachWorldChromedSurface {
 
     private var standardLayout: some View {
         HStack(spacing: .zero) {
-            mapSurface
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .accessibilitySortPriority(100)
+            VStack(spacing: CoachWorldTokens.Gap.xs) {
+                mapSurface
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                conferenceTable
+            }
+            .accessibilitySortPriority(100)
             Divider().overlay(palette.contentQuiet.color)
             detailRail
                 .frame(width: LeagueMapMetric.railWidth)
                 .background(palette.work.color)
                 .accessibilitySortPriority(80)
+        }
+    }
+
+
+    /// The coach's conference as a table, beside the map that says where everyone is.
+    ///
+    /// The reference's League surface leads with this table; the owner's decision was to keep the
+    /// map and add the table rather than replace one with the other, so both are here. Empty when
+    /// the programme has no conference or no results — an empty table is honest, a table of zeroes
+    /// is not.
+    @ViewBuilder
+    private var conferenceTable: some View {
+        if !model.conferenceStandings.isEmpty {
+            VStack(spacing: .zero) {
+                HStack(spacing: CoachWorldTokens.Gap.xs) {
+                    FloodlitLabel3(
+                        model.conferenceName ?? "Conference", palette: palette
+                    )
+                    Spacer(minLength: .zero)
+                    FloodlitLabel3("Conf · overall · diff", palette: palette)
+                }
+                .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+                .frame(minHeight: LeagueMapMetric.tableHeaderHeight)
+
+                ForEach(model.conferenceStandings.prefix(LeagueMapMetric.tableRowCap)) { row in
+                    HStack(spacing: CoachWorldTokens.Gap.xs) {
+                        Text(row.team.name)
+                            .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
+                            .lineLimit(1)
+                            .foregroundStyle(
+                                row.isControlled
+                                    ? palette.actionPrimary.color
+                                    : palette.contentPrimary.color
+                            )
+                        Spacer(minLength: CoachWorldTokens.Gap.xxs)
+                        Text(row.conferenceRecord)
+                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                            .frame(width: LeagueMapMetric.recordColumn, alignment: .trailing)
+                        Text(row.overallRecord)
+                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                            .foregroundStyle(palette.contentSecondary.color)
+                            .frame(width: LeagueMapMetric.recordColumn, alignment: .trailing)
+                        // Signed, and the sign is the point of it.
+                        Text(row.pointDifferential > 0
+                            ? "+\(row.pointDifferential)"
+                            : "\(row.pointDifferential)")
+                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                            .foregroundStyle(
+                                row.pointDifferential >= 0
+                                    ? palette.stateLive.color
+                                    : palette.stateNegative.color
+                            )
+                            .frame(width: LeagueMapMetric.diffColumn, alignment: .trailing)
+                    }
+                    .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+                    .frame(minHeight: LeagueMapMetric.tableRowHeight)
+                    .background(
+                        row.isControlled
+                            ? palette.actionPrimary.color.opacity(0.10)
+                            : Color.clear
+                    )
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(
+                        "\(row.team.name), conference \(row.conferenceRecord), "
+                            + "overall \(row.overallRecord), differential \(row.pointDifferential)"
+                    )
+                }
+            }
+            .padding(.vertical, CoachWorldTokens.Gap.xxs)
+            .coachWorldFloodlitPanel(
+                fill: CoachWorldTokens.Floodlit.glassFlatDeep.color,
+                border: Color.white.opacity(CoachWorldTokens.Glass.line),
+                depth: .deep,
+                shape: CoachWorldCutCorner.card
+            )
+            .frame(maxHeight: LeagueMapMetric.tableMaxHeight)
         }
     }
 
@@ -663,6 +742,15 @@ struct LeagueMapLayout {
 }
 
 private enum LeagueMapMetric {
+    static let tableHeaderHeight: CGFloat = 22
+    static let tableRowHeight: CGFloat = 24
+    /// Bounded: `04` section 4.5 asks every growable list for a stated ceiling, and a conference
+    /// can be any size.
+    static let tableRowCap = 8
+    static let tableMaxHeight: CGFloat = 232
+    static let recordColumn: CGFloat = 40
+    static let diffColumn: CGFloat = 38
+
     static let worldStripHeight: CGFloat = 48
     static let markWidth: CGFloat = 34
     static let markHeight: CGFloat = 22

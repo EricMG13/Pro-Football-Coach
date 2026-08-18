@@ -1433,6 +1433,11 @@ public struct MatchDayReadModel: Sendable, Equatable {
         public let firstDownLineX: Double
         public let endSpotX: Double
         public let sentence: String
+        /// Whether the coach paused the session. `Pause` previously stopped the *next* snap from
+        /// being submitted — the engine's own `guard !isPaused` before advancing — but a snap
+        /// already in flight kept animating to completion regardless, because nothing carried the
+        /// session's paused state down into what the field was replaying.
+        public let isPaused: Bool
 
         public init(
             stableID: String,
@@ -1443,7 +1448,8 @@ public struct MatchDayReadModel: Sendable, Equatable {
             lineOfScrimmageX: Double,
             firstDownLineX: Double,
             endSpotX: Double,
-            sentence: String
+            sentence: String,
+            isPaused: Bool = false
         ) {
             self.stableID = stableID
             self.durationSeconds = durationSeconds
@@ -1454,6 +1460,7 @@ public struct MatchDayReadModel: Sendable, Equatable {
             self.firstDownLineX = firstDownLineX
             self.endSpotX = endSpotX
             self.sentence = sentence
+            self.isPaused = isPaused
         }
     }
 
@@ -2169,6 +2176,44 @@ public enum CoachWorldSampleData {
                 intentID: .init(rawValue: "sample-match-\(control.rawValue)")
             )
         }
+        // A short out route: X releases from the line, catches at the fraction the ball's air
+        // leg ends, then picks up yards after the catch. Every other actor holds — most of the 22
+        // do, on a real recorded snap, so a static formation around one moving carrier is
+        // representative rather than a simplification of what PROOF_SCREEN=match should show.
+        let playback = MatchDayReadModel.Playback(
+            stableID: "sample-playback-snap",
+            durationSeconds: 4,
+            actors: [
+                MatchDayReadModel.Playback.ActorTrack(
+                    stableID: "sample-home-2",
+                    side: .home,
+                    uniformNumber: "1",
+                    startX: 54, startY: 0.08,
+                    endX: 69, endY: 0.24,
+                    waypoints: [.init(x: 63, y: 0.20, fraction: 0.55)],
+                    role: "carrier"
+                ),
+            ],
+            ball: [
+                MatchDayReadModel.Playback.BallLeg(
+                    kind: "snap", fromX: 56, fromY: 0.50, toX: 51, toY: 0.50,
+                    startFraction: 0, endFraction: 0.15
+                ),
+                MatchDayReadModel.Playback.BallLeg(
+                    kind: "air", fromX: 51, fromY: 0.50, toX: 63, toY: 0.20,
+                    startFraction: 0.15, endFraction: 0.55, apexHeight: 1
+                ),
+                MatchDayReadModel.Playback.BallLeg(
+                    kind: "carry", fromX: 63, fromY: 0.20, toX: 69, toY: 0.24,
+                    startFraction: 0.55, endFraction: 1
+                ),
+            ],
+            foregroundIDs: ["sample-home-0", "sample-home-2", "sample-away-9"],
+            lineOfScrimmageX: 58,
+            firstDownLineX: 68,
+            endSpotX: 69,
+            sentence: "X catches the out route and picks up eight yards after contact."
+        )
         return try! MatchDayReadModel(
             recordedOutcomeID: "sample-recorded-outcome",
             provenance: .sample,
@@ -2221,7 +2266,8 @@ public enum CoachWorldSampleData {
                     ),
                 ]
             ),
-            controls: controls
+            controls: controls,
+            playback: playback
         )
     }()
 }

@@ -91,8 +91,35 @@ public extension CoachWorldReadModelProvider {
                     talentDensity: $0.talentDensity.value
                 )
             },
-            places: places
+            places: places,
+            conferenceStandings: conferenceStandings(for: programme.id, in: state),
+            conferenceName: programme.conferenceID.flatMap { conferencesByID[$0]?.name }
         )
+    }
+
+    /// The coach's own conference, ordered as the standings hold it.
+    ///
+    /// Derived from the same `state.competition.standings` the Standings surface reads, so the map
+    /// and that surface cannot disagree about the table. Filtered to the coach's conference — the
+    /// map's table is about the neighbours you play, not the whole tier.
+    static func conferenceStandings(
+        for programmeID: UUID,
+        in state: GameState
+    ) -> [LeagueMapReadModel.ConferenceStanding] {
+        guard let standings = state.competition.standings[.college],
+              let own = state.programmes[programmeID] else { return [] }
+        return standings
+            .filter { state.programmes[$0.id]?.conferenceID == own.conferenceID }
+            .map { standing in
+                LeagueMapReadModel.ConferenceStanding(
+                    stableID: standing.id.uuidString,
+                    team: teamReference(standing.id, in: state),
+                    conferenceRecord: "\(standing.conferenceWins)\u{2013}\(standing.conferenceLosses)",
+                    overallRecord: "\(standing.wins)\u{2013}\(standing.losses)",
+                    pointDifferential: standing.pointsFor - standing.pointsAgainst,
+                    isControlled: standing.id == programmeID
+                )
+            }
     }
 
     // MARK: - One place

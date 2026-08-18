@@ -542,3 +542,66 @@ private enum Pattern {
     static let flagTracking: CGFloat = 1.35
     static let monogram: CGFloat = 26
 }
+
+// MARK: - 9. Confidence tag (registry 12)
+
+/// A banded confidence, an unknown, or an observation count — `04` section 6.5 #12.
+///
+/// This is **this codebase's equivalent of the reference's `78 ±3`**, and the difference is a
+/// modelling decision rather than a gap. The reference prints a numeric band on every rating,
+/// including players on your own roster. This game does not fog players you own — their attributes
+/// carry `confidence: "Known"` — because a head coach knows his own squad. Fog belongs to the
+/// people you have *not* coached: recruits (`Evaluation.uncertainty`) and scouted pros
+/// (`ProspectRow.estimatedOverall` with `confidence`).
+///
+/// So a confidence tag is drawn where an estimate is genuinely an estimate, and nowhere else.
+/// Printing one on a known rating would claim a doubt the simulation does not hold.
+struct CoachWorldConfidenceTag: View {
+    /// What the tag is qualifying.
+    enum Band: Equatable {
+        /// A stated band: `Low`, `Medium`, `High`.
+        case banded(String)
+        /// Nothing has been observed yet.
+        case unknown
+        /// How many observations back the estimate.
+        case observations(Int)
+    }
+
+    let band: Band
+    var palette: CoachWorldTokens.Palette = CoachWorldTokens.dark
+
+    private var text: String {
+        switch band {
+        case let .banded(label): label
+        case .unknown: "Unknown"
+        case let .observations(count):
+            count == 1 ? "1 look" : "\(count) looks"
+        }
+    }
+
+    /// Unknown is quiet, not alarming: an absent observation is not a bad one.
+    private var tint: Color {
+        switch band {
+        case .unknown: palette.contentQuiet.color
+        default: palette.stateInfo.color
+        }
+    }
+
+    var body: some View {
+        Text(text.uppercased())
+            .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+            .tracking(
+                CoachWorldTokens.DisplaySize.tracking(0.12, at: CoachWorldTokens.DisplaySize.flag)
+            )
+            .foregroundStyle(tint)
+            .lineLimit(1)
+            .padding(.horizontal, CoachWorldTokens.Gap.xxs)
+            .padding(.vertical, CoachWorldTokens.Gap.hair)
+            .overlay {
+                CoachWorldCutCorner.row.stroke(
+                    tint.opacity(0.45), lineWidth: CoachWorldTokens.Shape.hairline
+                )
+            }
+            .accessibilityLabel("Confidence: \(text)")
+    }
+}

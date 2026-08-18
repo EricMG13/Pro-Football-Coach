@@ -70,7 +70,8 @@ public extension CoachWorldReadModelProvider {
                 // grain the playback clock has to restart on.
                 stableID: "\(fixtureID.uuidString)-\(session.revision)",
                 numbers: homeNumbers.merging(awayNumbers) { first, _ in first },
-                offenseDirection: .leftToRight
+                offenseDirection: .leftToRight,
+                isPaused: session.isPaused
             )
         }
 
@@ -142,7 +143,8 @@ public extension CoachWorldReadModelProvider {
         from set: SnapAnchorSet,
         stableID: String,
         numbers: [UUID: Int] = [:],
-        offenseDirection: MatchFieldDirection
+        offenseDirection: MatchFieldDirection,
+        isPaused: Bool = false
     ) -> MatchDayReadModel.Playback {
         func x(_ yard: Double) -> Double { fieldX(yard: yard, direction: offenseDirection) }
 
@@ -174,14 +176,20 @@ public extension CoachWorldReadModelProvider {
                     toX: x(segment.to.yard),
                     toY: segment.to.lateral,
                     startFraction: segment.startFraction,
-                    endFraction: segment.endFraction
+                    endFraction: segment.endFraction,
+                    // Every leg was grounded before this: BallLeg.apexHeight defaults to 0 and
+                    // nothing here ever passed one, so BallToken's lift/apex-scale/tilt/shadow code
+                    // was dead on the live path. Only .air is actually airborne -- a snap, handoff,
+                    // carry or a loose ball after an interception all stay on the turf.
+                    apexHeight: segment.kind == .air ? 1 : 0
                 )
             },
             foregroundIDs: set.foregroundIDs.map(\.uuidString),
             lineOfScrimmageX: x(set.lineOfScrimmage),
             firstDownLineX: x(set.firstDownLine),
             endSpotX: x(set.endSpot),
-            sentence: set.sentence
+            sentence: set.sentence,
+            isPaused: isPaused
         )
     }
 

@@ -168,13 +168,46 @@ distinction; ours arguably makes it harder to miss. Not worth churning the table
 
 ---
 
-## F-19 — escalated, not implemented
+## F-09 — answered: the equivalent is a confidence *band*, not a `±`
+
+Asked what the code's equivalent is. It exists, in three places, and it is a **band** rather than a
+numeric interval:
+
+| Where | Field | Meaning |
+|---|---|---|
+| Pro scouting | `ProOffseasonReadModels.ProspectRow.estimatedOverall` + `confidence: Int?` | an estimate, with how sure the scouts are |
+| Recruiting | `RecruitingBoardReadModel.Evaluation.uncertainty: String` | `Low` / `Medium` / `High` |
+| Your own roster | `PlayerProfileReadModel.Attribute.confidence: String` | `"Known"` |
+
+That last row is the answer to why the roster has no `±`. **This game does not fog players you
+coach** — their attributes are `Known`, because a head coach knows his own squad. The reference
+prints `78 ±3` on a roster table, which claims a doubt this simulation does not hold. The fog
+belongs to people you have *not* coached: recruits and scouted pros.
+
+So the correct port is not a fabricated `±` on the roster. It is `ConfidenceTag` — **registry 12,
+defined in `04` section 6.5 and never implemented** — drawn where an estimate really is an estimate.
+Built now as `CoachWorldConfidenceTag`, with `banded` / `unknown` / `observations` states.
+
+**F-09 closed** on that basis: the equivalent is implemented, and it is deliberately absent from the
+roster table.
+
+## F-19 — resolved by owner decision: keep the map, add the table
 
 The reference's **League Map** surface is a conference standings table (`# PROGRAMME CONF OVERALL
 PWR LAST 5`) beside a `SATURDAY ACROSS THE LEAGUE` fixture panel. The app's `LeagueMapView` is a
 geographic dot map with a team-profile panel.
 
-**I have not changed it, deliberately.** Three reasons:
+**Owner decision (2026-08-18): keep the USA map view, add the conference table.** Done — the map
+keeps its column and the conference standings table sits beneath it, with the coach's own programme
+highlighted. `LeagueMapReadModel` gained `conferenceStandings` and `conferenceName`, populated from
+the same `state.competition.standings` the Standings surface reads, so the two cannot disagree; the
+table is capped at eight rows per `04` section 4.5's bounded-list rule. `LAST 5` is still absent —
+no per-team recent-form record exists — so the table carries conference record, overall record and
+point differential, and does not invent a form string.
+
+The original escalation is kept below for the record.
+
+~~**I have not changed it, deliberately.** Three reasons:~~
 
 1. **The handoff contradicts itself.** Section 3's own table says "League | *the conference as a
    map* | `LeagueMapView.swift`". Its rendering draws a table. One of those is wrong and I cannot

@@ -30,6 +30,13 @@ public struct MatchDayView: View {
     /// redrawing for as long as Match Day is on screen, which is most of a game.
     @State private var playbackComplete = false
     @State private var speedIndex = 0
+    /// Total wall-clock time spent paused so far during the current snap, across however many
+    /// pause/resume cycles happened. Without this, resuming after any real pause duration jumps the
+    /// animation forward by that same duration — elapsed time keeps passing in the world regardless
+    /// of whether the coach is watching it.
+    @State private var pausedAccumulated: TimeInterval = 0
+    /// Set while an in-progress pause has not yet been folded into `pausedAccumulated`.
+    @State private var pausedSince: Date?
     @State private var topRightStackHeight: CGFloat = .zero
 
     public init(
@@ -76,9 +83,16 @@ public struct MatchDayView: View {
     ///
     /// Reaching 1 leaves every dot at its end position, which is the pre-snap state for the next
     /// play — so the animation settles rather than snapping back.
+    ///
+    /// Subtracts every pause: `pausedAccumulated` for spans already finished, plus whatever of the
+    /// current one — if `pausedSince` is set — has elapsed by `date`. Without the second term,
+    /// checking progress *while still paused* would keep advancing with real time regardless, which
+    /// is exactly the freeze this whole calculation exists to produce.
     private func progress(at date: Date, duration: Double) -> Double {
         guard let playbackStart, duration > 0 else { return 1 }
-        let elapsed = date.timeIntervalSince(playbackStart) * speedMultiplier
+        let ongoingPause = pausedSince.map { date.timeIntervalSince($0) } ?? 0
+        let elapsed = (date.timeIntervalSince(playbackStart) - pausedAccumulated - ongoingPause)
+            * speedMultiplier
         return Swift.min(1, Swift.max(0, elapsed / duration))
     }
 
@@ -439,7 +453,7 @@ public struct MatchDayView: View {
                 if let playback = model.playback, !reduceMotion {
                     TimelineView(
                         .animation(minimumInterval: MatchMetric.playbackTick,
-                                   paused: playbackComplete)
+                                   paused: playbackComplete || playback.isPaused)
                     ) { timeline in
                         let t = progress(at: timeline.date, duration: playback.durationSeconds)
                         ZStack(alignment: .topLeading) {
@@ -483,9 +497,27 @@ public struct MatchDayView: View {
                 return
             }
             playbackStart = Date()
+            pausedAccumulated = 0
+            // A new snap cannot begin while paused — the engine's own guard blocks advancing — so
+            // starting unpaused here is a structural guarantee, not an assumption.
+            pausedSince = nil
             playbackComplete = false
-            try? await Task.sleep(for: .seconds(playback.durationSeconds / speedMultiplier))
+            // Polled rather than a single fixed sleep, so completion naturally respects a pause:
+            // the same progress(at:duration:) the view renders from is what this loop is waiting
+            // on, so a pause that freezes the drawing also freezes this loop's notion of "done".
+            while !Task.isCancelled, progress(at: Date(), duration: playback.durationSeconds) < 1 {
+                try? await Task.sleep(for: .seconds(MatchMetric.playbackTick))
+            }
+            guard !Task.isCancelled else { return }
             playbackComplete = true
+        }
+        .onChange(of: model.playback?.isPaused ?? false) { _, isPaused in
+            if isPaused {
+                pausedSince = Date()
+            } else if let since = pausedSince {
+                pausedAccumulated += Date().timeIntervalSince(since)
+                pausedSince = nil
+            }
         }
     }
 
