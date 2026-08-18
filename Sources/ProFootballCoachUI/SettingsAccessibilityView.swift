@@ -2,7 +2,13 @@ import SwiftUI
 
 /// Read-only beta product commitments. Presentation preferences remain system-owned until their
 /// persisted contract is introduced; this surface never implies a setting was changed.
-public struct SettingsAccessibilityView: View {
+public struct SettingsAccessibilityView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let onClose: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -16,7 +22,7 @@ public struct SettingsAccessibilityView: View {
     }
 
     public var body: some View {
-        CoachWorldFloodlitStage(palette: palette) {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             ScrollView {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                     Text("SETTINGS & ACCESSIBILITY")

@@ -153,24 +153,40 @@ public struct CoachWorldAppRootView: View {
                     RecordBookView(model: model, statusMessage: failure ?? store.statusMessage,
                                    onClose: { closeCareer(in: store) },
                                    onNavigate: { navigate($0, in: store) })
+                    .floodlitChrome(
+                        chrome(for: .recordBook, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .rivalries:
                 surface(store.legacyHistory, screen: .rivalries) { model in
                     RivalriesView(model: model, statusMessage: failure ?? store.statusMessage,
                                   onClose: { closeCareer(in: store) },
                                   onNavigate: { navigate($0, in: store) })
+                    .floodlitChrome(
+                        chrome(for: .rivalries, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .careerLine:
                 surface(store.legacyHistory, screen: .careerLine) { model in
                     CareerLineView(model: model, statusMessage: failure ?? store.statusMessage,
                                    onClose: { closeCareer(in: store) },
                                    onNavigate: { navigate($0, in: store) })
+                    .floodlitChrome(
+                        chrome(for: .careerLine, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .coachingTree:
                 surface(store.legacyHistory, screen: .coachingTree) { model in
                     CoachingTreeView(model: model, statusMessage: failure ?? store.statusMessage,
                                      onClose: { closeCareer(in: store) },
                                      onNavigate: { navigate($0, in: store) })
+                    .floodlitChrome(
+                        chrome(for: .coachingTree, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .recruitingBoard:
                 surface(store.recruitingBoard, screen: .recruitingBoard) { model in
@@ -650,6 +666,10 @@ public struct CoachWorldAppRootView: View {
                         onResign: { Task { await resignCareer(in: store) } },
                         onContinue: { Task { await advance(store) } }
                     )
+                    .floodlitChrome(
+                        chrome(for: .careerHub, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .jobBoard:
                 surface(store.careerHub, screen: .jobBoard) { model in
@@ -659,6 +679,10 @@ public struct CoachWorldAppRootView: View {
                                  onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
                                  onResign: { Task { await resignCareer(in: store) } },
                                  onContinue: { Task { await advance(store) } })
+                    .floodlitChrome(
+                        chrome(for: .jobBoard, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .offer:
                 surface(store.careerHub, screen: .offer) { model in
@@ -668,6 +692,10 @@ public struct CoachWorldAppRootView: View {
                               onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
                               onResign: { Task { await resignCareer(in: store) } },
                               onContinue: { Task { await advance(store) } })
+                    .floodlitChrome(
+                        chrome(for: .offer, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .appointment:
                 surface(store.careerHub, screen: .appointment) { model in
@@ -677,6 +705,10 @@ public struct CoachWorldAppRootView: View {
                                     onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
                                     onResign: { Task { await resignCareer(in: store) } },
                                     onContinue: { Task { await advance(store) } })
+                    .floodlitChrome(
+                        chrome(for: .appointment, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .jobSecurity:
                 surface(store.careerHub, screen: .jobSecurity) { model in
@@ -690,6 +722,10 @@ public struct CoachWorldAppRootView: View {
                         },
                         onResign: { Task { await resignCareer(in: store) } },
                         onContinue: { Task { await advance(store) } }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .jobSecurity, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .stakeholders:
@@ -705,6 +741,10 @@ public struct CoachWorldAppRootView: View {
                         onResign: { Task { await resignCareer(in: store) } },
                         onContinue: { Task { await advance(store) } }
                     )
+                    .floodlitChrome(
+                        chrome(for: .stakeholders, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .promotionDecision:
                 surface(store.careerHub, screen: .promotionDecision) { model in
@@ -719,6 +759,10 @@ public struct CoachWorldAppRootView: View {
                         onResign: { Task { await resignCareer(in: store) } },
                         onContinue: { Task { await advance(store) } }
                     )
+                    .floodlitChrome(
+                        chrome(for: .promotionDecision, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .coachingCarousel:
                 surface(store.careerHub, screen: .coachingCarousel) { model in
@@ -732,6 +776,10 @@ public struct CoachWorldAppRootView: View {
                         },
                         onResign: { Task { await resignCareer(in: store) } },
                         onContinue: { Task { await advance(store) } }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .coachingCarousel, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .standings:

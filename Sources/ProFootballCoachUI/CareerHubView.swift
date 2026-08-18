@@ -2,7 +2,13 @@ import SwiftUI
 
 /// A live career ledger backed by the employment transaction boundary. Every displayed row gives
 /// the coach a durable explanation of current status, support, history, and offers.
-public struct CareerHubView: View {
+public struct CareerHubView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: CareerHubReadModel
     public let statusMessage: String?
     public let onClose: () -> Void
@@ -39,7 +45,7 @@ public struct CareerHubView: View {
     }
 
     public var body: some View {
-        CoachWorldFloodlitStage(palette: palette) {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             ScrollView {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                     header

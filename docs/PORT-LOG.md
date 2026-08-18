@@ -623,3 +623,34 @@ so it takes the chrome but has no wiring site of its own.
 
 **Verified:** `--core-contracts` (202 / 2228) and `--design-contracts` (29 / 613) green, partition
 still 62 converted / 0 pending.
+
+## 2026-08-18 — milestone 3f: career (final family)
+
+**Converted (15 surfaces):** Career Hub, Career Line, Job Security, Stakeholders, Promotion
+Decision, Job Board, Offer, Record Book, Rivalries, Legacy History, Title / Continue, Settings &
+Accessibility, Coaching Carousel, Coaching Tree, Appointment.
+
+Most of this family are focus-scoped wrappers over `CareerHubView` or `LegacyHistoryView`. Four of
+them (Coaching Carousel, Job Security, Promotion Decision, Stakeholders) bind the delegated view to
+a `let` before branching on type size, so the chrome attaches at the binding rather than to a
+branch.
+
+**A trap worth naming.** `floodlitChrome` is declared on the concrete conforming type, so
+`.frame(...)` — which erases to `some View` — must come *after* it. The first pass appended the
+modifier at the end of the chain and eight files failed to compile. That failure was the good case:
+had the modifier been merely reachable-but-ineffective rather than a type error, those surfaces
+would have silently rendered without chrome. To be sure that is not true anywhere, a sweep now
+checks that every type conforming to `CoachWorldChromedSurface` actually consumes its `chrome`
+(either `chrome: chrome` into a stage, or `.floodlitChrome(chrome…)` onto a delegate). It reports
+zero unattached.
+
+**Not wired, correctly:** Title / Continue renders before a career exists, so there is no programme
+to name and `chrome(for:in:)` would return nil anyway. It is also one of the three surfaces
+`FLOODLIT-SURFACES.md` section 3 says carries no icon rail — with Job Board and Offer — which
+`CoachWorldScreenID.showsIconRail` encodes and the composition honours by starting at the rail-free
+leading edge.
+
+**Milestone 3 complete.** All six families converted; the conversion partition reports 62 converted
+/ 0 pending throughout.
+
+**Verified:** `--core-contracts` (202 / 2228) and `--design-contracts` (29 / 613) green.

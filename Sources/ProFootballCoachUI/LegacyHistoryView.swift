@@ -1,6 +1,12 @@
 import SwiftUI
 
-public struct LegacyHistoryView: View {
+public struct LegacyHistoryView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: LegacyHistoryReadModel
     public let focus: CoachWorldScreenID
     public let statusMessage: String?
@@ -23,7 +29,7 @@ public struct LegacyHistoryView: View {
     }
 
     public var body: some View {
-        CoachWorldFloodlitStage(palette: palette) {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             VStack(spacing: .zero) {
                 topBar
                 if let statusMessage {

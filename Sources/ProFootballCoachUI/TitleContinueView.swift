@@ -1,7 +1,13 @@
 import SwiftUI
 
 /// Entry surface for restoring a career or starting a new one.
-public struct TitleContinueView: View {
+public struct TitleContinueView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let failure: String?
     public let isStarting: Bool
     public let isRestoring: Bool
@@ -31,7 +37,7 @@ public struct TitleContinueView: View {
     }
 
     public var body: some View {
-        CoachWorldFloodlitStage(palette: palette) {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             content
         }
         .accessibilitySortPriority(100)
