@@ -579,3 +579,19 @@ rest had no identity chrome at all before this.
 
 **Verified:** `--core-contracts` (202 / 2228) and `--design-contracts` (29 / 613) green, partition
 still 62 converted / 0 pending.
+
+## 2026-08-18 — milestone 3c: recruiting (college)
+
+**Converted (11 surfaces):** Recruiting Board, Prospect Profile, Shortlist, Contact & Visit
+Planner, Class Overview, Signing Day, Portal Hub, Retention Decisions, Portal Market, NIL
+Allocation, College Offseason.
+
+Four of the eleven are wrappers over `CollegeOffseasonView` with a different title (Portal Hub,
+Retention Decisions, Portal Market, NIL Allocation). They take the same pass-through treatment as
+the other delegating wrappers rather than each growing a stage.
+
+`RecruitingBoardView` was the third and last surface carrying its own world strip; it now draws it
+only when no chrome is supplied.
+
+**Verified:** `--core-contracts` (202 / 2228) and `--design-contracts` (29 / 613) green, partition
+still 62 converted / 0 pending.

@@ -1,7 +1,13 @@
 import SwiftUI
 import FootballSimCore
 
-public struct SigningDayView: View {
+public struct SigningDayView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: CollegeOffseasonReadModel
     public let statusMessage: String?
     public let onCommit: (CoachWorldIntentID) -> Void
@@ -42,7 +48,7 @@ public struct SigningDayView: View {
             } else {
                 // The closed branch draws its own world: it does not delegate, so it needs the
                 // stage the delegated branch inherits from CollegeOffseasonView.
-                CoachWorldFloodlitStage(palette: palette) {
+                CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
                     CoachWorldSystemState(
                         .empty(
                             "Signing day is closed. The signing period is not active "

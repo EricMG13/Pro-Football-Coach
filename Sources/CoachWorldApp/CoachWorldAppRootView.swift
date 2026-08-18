@@ -189,6 +189,10 @@ public struct CoachWorldAppRootView: View {
                             navigate(.shortlist, in: store)
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .recruitingBoard, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .prospectProfile:
                 surface(store.recruitingBoard, screen: .prospectProfile) { model in
@@ -200,6 +204,10 @@ public struct CoachWorldAppRootView: View {
                             Task { await actOnProspect(prospectID, intentID, in: store) }
                         },
                         onClose: { navigate(.recruitingBoard, in: store) }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .prospectProfile, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .shortlist:
@@ -216,11 +224,19 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { navigate(.recruitingBoard, in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .shortlist, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .classOverview:
                 surface(store.recruitingBoard, screen: .classOverview) { model in
                     ClassOverviewView(model: model, statusMessage: failure ?? store.statusMessage,
                                       onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .classOverview, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .contactVisitPlanner:
                 surface(store.recruitingBoard, screen: .contactVisitPlanner) { model in
@@ -231,6 +247,10 @@ public struct CoachWorldAppRootView: View {
                             Task { await actOnProspect(prospectID, intentID, in: store) }
                         },
                         onClose: { closeCareer(in: store) }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .contactVisitPlanner, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .statisticsLeaders:
@@ -399,6 +419,10 @@ public struct CoachWorldAppRootView: View {
                         onContinue: { Task { await advance(store) } },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .collegeOffseason, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .portalHub:
                 surface(store.collegeOffseason, screen: .portalHub) { model in
@@ -406,6 +430,10 @@ public struct CoachWorldAppRootView: View {
                                   onCommit: { id in Task { await commit(id, in: store) } },
                                   onContinue: { Task { await advance(store) } },
                                   onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .portalHub, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .retentionDecisions:
                 surface(store.collegeOffseason, screen: .retentionDecisions) { model in
@@ -413,6 +441,10 @@ public struct CoachWorldAppRootView: View {
                                             onCommit: { id in Task { await commit(id, in: store) } },
                                             onContinue: { Task { await advance(store) } },
                                             onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .retentionDecisions, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .portalMarket:
                 surface(store.collegeOffseason, screen: .portalMarket) { model in
@@ -420,6 +452,10 @@ public struct CoachWorldAppRootView: View {
                                      onCommit: { id in Task { await commit(id, in: store) } },
                                      onContinue: { Task { await advance(store) } },
                                      onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .portalMarket, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .nilAllocation:
                 surface(store.collegeOffseason, screen: .nilAllocation) { model in
@@ -427,6 +463,10 @@ public struct CoachWorldAppRootView: View {
                                       onCommit: { id in Task { await commit(id, in: store) } },
                                       onContinue: { Task { await advance(store) } },
                                       onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .nilAllocation, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .signingDay:
                 surface(store.collegeOffseason, screen: .signingDay) { model in
@@ -434,6 +474,10 @@ public struct CoachWorldAppRootView: View {
                                    onCommit: { id in Task { await commit(id, in: store) } },
                                    onContinue: { Task { await advance(store) } },
                                    onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .signingDay, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .capContracts:
                 surface(store.proManagement, screen: .capContracts) { model in

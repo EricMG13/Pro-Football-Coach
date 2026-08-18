@@ -1,7 +1,13 @@
 import SwiftUI
 
 /// A bounded active-board view. The recruiting board remains the mutation authority.
-public struct ShortlistView: View {
+public struct ShortlistView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: RecruitingBoardReadModel
     public let statusMessage: String?
     public let onOpenProspect: (String) -> Void
@@ -37,7 +43,7 @@ public struct ShortlistView: View {
     }
 
     public var body: some View {
-        CoachWorldFloodlitStage(palette: palette) {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             scrollContent
         }
         .accessibilitySortPriority(100)
