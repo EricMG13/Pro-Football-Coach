@@ -457,3 +457,66 @@ other surface in `CoachWorldAppRootView` takes an `onClose`, and Match Day took 
 no way to leave the match screen at all. `MatchDayView` now takes an optional `onExit` (optional so
 a caller with nowhere to go gets no dead control), the lower third draws the link when it is
 supplied, and both the production root and the debug proof harness wire it to the coaching HQ.
+
+## 2026-08-18 — Floodlit handoff, milestone 2: shared chrome and the eight patterns
+
+Source: `FLOODLIT-SURFACES.md` sections 1 and 2. Milestone 2 only — the stage every management
+surface renders inside, and the composition grammar those surfaces are built from. **No surfaces
+were converted**; that is milestone 3, and `ScreenRegistry.swift` is unchanged in count and naming.
+
+**Doc-first again.** `04` gains section 6.1c, which records the management chrome: the stage
+geometry, the three worlds, the content-column widths, the flattened non-hero glass, the eight
+patterns, and the derivation `844 − 115 − 20 = 709` so the content width stays right if the floor
+ever moves. Three new fills are declared with measured ratios (`#11141E`, `#0B0D14`, `#04070C`).
+
+**One accessibility carve-out is recorded rather than hidden.** The identity header's second row is
+16 pt by design and its sibling links are 9.5 pt — far under the 44 pt minimum target. The row
+height is load-bearing for the header's proportion, so the *visible* text keeps its drawn size and
+each link carries a 44 pt hit area instead. Section 6.1c states the rule that makes this legal:
+visible size and tappable size may differ; tappable size may not drop below 44.
+
+**Registry.** `CoachWorldSurfaceFamily` and `CoachWorldScreenID.family` are new. The header's second
+row is the whole of this game's navigation, so the grouping has to live where both the header and
+the rail can read it, and the registry is the only thing that already knows every surface. It is
+derived by an exhaustive `switch` rather than stored alongside, so a new case cannot be added
+without the compiler asking which family it joins. `showsIconRail` carries the handoff's rule that
+Title, Job Board and Offer sit outside the coaching week and so have no rail.
+
+**New:** `FloodlitChrome.swift` (read model, `CoachWorldFloodlitSurface`, the three world backdrops,
+identity header, pennant, icon rail, registered-not-built) and `FloodlitPatterns.swift` (Label3,
+Row, Card, ArcGauge, AttributeDial, ShareBar, Pill, Flag, StaffVoice, CommittingAction, CostLine).
+Three of the eight already shipped and were **not** rebuilt: the glass panel is
+`coachWorldFloodlitPanel`, and the arc family's smallest and largest existing steps are
+`CoachWorldRatingRing` and `CoachWorldMeter`.
+
+**Two contract findings, both real, both fixed.** The suite caught them, not review:
+
+1. `CoachWorldPennant` read `team.primaryColorHex` directly, bypassing `CoachWorldTeamIdentity` —
+   which is exactly where the contrast floors live and where a generated pair that cannot be read
+   is refused (`04` section 5). It would have painted an illegible pennant for precisely the
+   generated pairs the identity type exists to catch. Now resolved through the identity type, with
+   the neutral club field as the honest fallback and the *measured* ink for the dot rather than a
+   fixed pale one.
+2. A design-token literal in `FloodlitArcGauge`'s arc geometry, now a derived named constant.
+
+**Three layout bugs the simulator caught, all fixed.** None were visible from the code:
+
+1. The sibling links used `.frame(minHeight: 44)` for their tap target, which grew the header to
+   44 pt per row and pushed it underneath the content column — the header and the first content
+   row overlapped. Replaced with padding-out-then-cancel, so the hit area is 44 and the row stays 16.
+2. `FloodlitAttributeDial` rotated its whole `ZStack` to place the arc's start angle, which turned
+   the figure and its label upside down. Only the arcs rotate now.
+3. The proof harness scaled the 212 pt hero dial into a 120 pt frame with `scaleEffect`, which
+   shrinks the 7 pt stroke and the 34 pt figure with it — both stated sizes. The dial now takes a
+   `diameter` and a caller with less room asks for a smaller one honestly.
+
+**Verified:** package builds; `--core-contracts` (202 tests / 2220 checks) and `--design-contracts`
+(29 / 610) green; the chrome and all eight patterns rendered together on a simulator via a new
+`PROOF_SCREEN=chrome` proof surface, hosted on Scheme Book because it is registered-not-built and
+so cannot collide with a real surface's composition.
+
+**A capture-harness correction worth recording.** Mid-milestone I reported that Match Day had
+regressed to a blank screen. It had not. The screenshot script's readiness check was gating on
+brightness, which the plain-white iOS launch screen satisfies, so it was capturing the launch
+transition rather than the app. The app log showed a clean launch and no crash throughout. The
+check now waits for the launch screen to actually clear.

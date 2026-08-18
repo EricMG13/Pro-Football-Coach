@@ -1,3 +1,36 @@
+/// The six management families plus entry, `FLOODLIT-SURFACES.md` section 3.
+///
+/// This is what the identity header's second row names, and what its sibling links enumerate.
+/// `entry` covers the surfaces that reach the world before a coaching week exists; they carry no
+/// family navigation because there is nowhere sideways to go from them yet.
+public enum CoachWorldSurfaceFamily: String, CaseIterable, Sendable, Equatable {
+    case weeklyCommand
+    case personnel
+    case recruiting
+    case proManagement
+    case league
+    case career
+    case entry
+
+    /// Written sentence case and uppercased on render, per `04` section 6.1c's Label3 rule.
+    public var canonicalName: String {
+        switch self {
+        case .weeklyCommand: "This week"
+        case .personnel: "Personnel"
+        case .recruiting: "Recruiting"
+        case .proManagement: "Pro management"
+        case .league: "League"
+        case .career: "Career"
+        case .entry: "Entry"
+        }
+    }
+
+    /// The family's surfaces, in registry order — the header's sibling links.
+    public var surfaces: [CoachWorldScreenID] {
+        CoachWorldScreenID.allCases.filter { $0.family == self }
+    }
+}
+
 public enum CoachWorldScreenID: Int, CaseIterable, Sendable {
     case titleContinue = 1
     case newCareerCoachIdentity = 2
@@ -63,6 +96,50 @@ public enum CoachWorldScreenID: Int, CaseIterable, Sendable {
     case proOffseason = 62
 
     public var number: Int { rawValue }
+
+    /// Which family a surface belongs to (`FLOODLIT-SURFACES.md` section 3).
+    ///
+    /// The identity header's second row is the whole of this game's navigation: the family name,
+    /// then that family's siblings as links. So the grouping has to live somewhere both the header
+    /// and the icon rail can read, and the registry is the only thing that already knows every
+    /// surface. Derived from the screen rather than stored beside it, so a new case cannot be added
+    /// without the compiler asking which family it joins.
+    public var family: CoachWorldSurfaceFamily {
+        switch self {
+        case .coachingHQ, .inbox, .opponentReportFilmRoom, .gamePlan, .practicePlan,
+             .teamHealth, .matchDay, .aftermath, .gameDetailBoxScore:
+            return .weeklyCommand
+        case .roster, .depthChart, .playerProfile, .developmentPlan, .staffRoom,
+             .staffMarketProfile, .schemeBook, .personnelPackages:
+            return .personnel
+        case .recruitingBoard, .prospectProfile, .shortlist, .contactVisitPlanner,
+             .classOverview, .signingDay, .portalHub, .retentionDecisions, .portalMarket,
+             .nilAllocation, .collegeOffseason:
+            return .recruiting
+        case .capContracts, .contractNegotiation, .rosterCutsTransactions, .proOffseason,
+             .proScoutingBoard, .draftBoard, .draftRoom, .freeAgency:
+            return .proManagement
+        case .leagueMap, .teamProgrammeProfile, .standings, .schedule, .rankingsPlayoffPicture,
+             .bracketPostseason, .statisticsLeaders, .awardsHonours, .news, .realignmentEvent,
+             .worldSearch:
+            return .league
+        case .careerHub, .careerLine, .jobSecurity, .stakeholders, .promotionDecision,
+             .jobBoard, .offer, .recordBook, .rivalries, .titleContinue,
+             .settingsAccessibility, .coachingCarousel, .coachingTree:
+            return .career
+        case .newCareerCoachIdentity, .appointment:
+            return .entry
+        }
+    }
+
+    /// The three surfaces that sit outside the coaching week and so carry no icon rail
+    /// (`FLOODLIT-SURFACES.md` section 3). They start at the rail-free leading edge instead.
+    public var showsIconRail: Bool {
+        switch self {
+        case .titleContinue, .jobBoard, .offer: false
+        default: true
+        }
+    }
 
     public var canonicalName: String {
         switch self {

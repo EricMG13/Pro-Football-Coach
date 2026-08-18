@@ -1785,6 +1785,52 @@ public enum CoachWorldSampleData {
         role: "Head coach"
     )
 
+    /// The shared management chrome, for one surface (`04` section 6.1c).
+    ///
+    /// The rail's seven entries are the seven kinds of thing a coaching week contains; the
+    /// siblings come off the registry rather than a second hand-written list, so a surface added
+    /// to a family appears in its family's navigation the day it is added rather than the day
+    /// someone remembers to add it here.
+    public static func chrome(
+        for screen: CoachWorldScreenID,
+        world: FloodlitChromeReadModel.World = .facility
+    ) -> FloodlitChromeReadModel {
+        let rail: [(CoachWorldScreenID, String, String)] = [
+            (.coachingHQ, "calendar", "Week"),
+            (.inbox, "tray.full", "Inbox"),
+            (.roster, "person.2", "Squad"),
+            (.gamePlan, "rectangle.3.group", "Plan"),
+            (.opponentReportFilmRoom, "film", "Film"),
+            (.teamHealth, "cross.case", "Health"),
+            (.leagueMap, "map", "League"),
+        ]
+        return FloodlitChromeReadModel(
+            screen: screen,
+            world: world,
+            club: homeTeam,
+            record: "4\u{2013}2",
+            ranking: "#21",
+            conference: "Meridian Valley",
+            context: "Sat \u{00B7} Southern State",
+            contextOpponent: awayTeam,
+            rail: rail.map { entry in
+                .init(
+                    screen: entry.0,
+                    symbol: entry.1,
+                    label: entry.2,
+                    intentID: .init(rawValue: "sample-rail-\(entry.0.number)")
+                )
+            },
+            siblings: screen.family.surfaces.prefix(5).map { sibling in
+                .init(
+                    screen: sibling,
+                    title: sibling.canonicalName,
+                    intentID: .init(rawValue: "sample-sibling-\(sibling.number)")
+                )
+            }
+        )
+    }
+
     public static let coachingHQ: CoachingHQReadModel = {
         let decision = try! CoachingHQReadModel.Decision(
             stableID: "sample-practice-decision",

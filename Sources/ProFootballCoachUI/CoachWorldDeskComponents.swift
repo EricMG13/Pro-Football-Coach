@@ -50,6 +50,13 @@ struct CoachWorldCutCorner: Shape {
     static let playCard = CoachWorldCutCorner(
         topLeading: 14, topTrailing: 14, bottomTrailing: 6, bottomLeading: 6
     )
+    /// The identity header's band, and the small chips inside it (`04` section 6.1c).
+    static let headerBand = CoachWorldCutCorner(
+        topLeading: 2, topTrailing: 14, bottomTrailing: 2, bottomLeading: 14
+    )
+    static let chip = CoachWorldCutCorner(
+        topLeading: 3, topTrailing: 12, bottomTrailing: 3, bottomLeading: 12
+    )
 
     func path(in rect: CGRect) -> Path {
         let maxRadius = min(rect.width, rect.height) / 2

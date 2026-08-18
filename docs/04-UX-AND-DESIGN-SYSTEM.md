@@ -506,6 +506,76 @@ every value below `display-lead` is subject to the sizing pass §6.2 already req
 authored floor is unchanged and binding: the handoff's 10.5 pt and 9 pt values are permitted **only**
 for tracked uppercase micro-labels, which §6.2 already exempts, and never for prose.
 
+### 6.1c Floodlit management chrome (2026-08-18 amendment)
+
+Source: the same owner-supplied handoff §6.1b records, `FLOODLIT-SURFACES.md` §1 and §2. Where
+§6.1b governs the one broadcast surface, this section governs every **management** surface: the
+shared stage they all render inside, and the eight moves they are all built from.
+
+**The stage.** Composed at the install floor with absolute positions. There is no tab bar and no
+nav rail beyond the icon column — navigation lives in the identity header, family on the left and
+jump-to on the right.
+
+| Element | Geometry |
+|---|---|
+| World backdrop | full bleed, bottom bleed 0.55, receding as density rises but never absent |
+| Identity header | top 3, leading 115, trailing 20; two rows, 22 then 16 |
+| Icon rail | leading 59, top 46, width 44; 44 pt targets, `.row` radius, 2 pt gaps |
+| Content | leading 115, top 46, to the trailing gutter at 20 — max width **709** |
+| Grain | over everything, 128 px tile, overlay, 0.5 |
+
+`844 − 115 − 20 = 709`, so the content column is the frame minus the rail and the gutter, and the
+number is derived rather than chosen. **Title, Job Board and Offer start at leading 63 and carry no
+icon rail** — they sit outside the coaching week, so the rail would name places the player cannot
+go from there.
+
+**Three worlds, one variable.** The backdrop is `pitch | facility | film`, and it is the single
+thing that changes per screen. It is a read-model fact, not a view's guess. **Film is the one place
+the light goes cold**: its world is the projector beam and its glass loses the warm sheen every
+other surface carries.
+
+**Content column widths are deliberate, not fluid** (`FLOODLIT-SURFACES.md` §4): 150, 250, 300,
+330, 345, 380, 396, 400, 402, 404, 410, 420, 428, 430, 474, 697, 709, 761. A surface either uses
+the full 709 or a named narrower column with the world showing beside it.
+
+**The hero object breaks the safe area on purpose** — the week arc, the jersey cut-out, the
+attribute dial, the hand of play cards. Do not inset it to be tidy.
+
+**Blur only where something is genuinely in front of something else.** Non-hero glass flattens to a
+solid fill rather than stacking blur over a transformed plane, which smears. Two fills carry that:
+
+| Token | Hex | Use | Measured |
+|---|---|---|---|
+| `glass-flat` | `#11141E` | non-hero glass, standard depth | `content.primary` 17.54, `content.secondary` 9.28 |
+| `glass-flat-deep` | `#0B0D14` | non-hero glass, deep depth | `content.primary` 18.52, `content.secondary` 9.80 |
+| `overlay-scrim` | `#04070C` | the registry overlay's ground | `content.primary` 19.25, `content.secondary` 10.19 |
+
+**The eight composition patterns.** Every management surface is built from these and nothing else;
+a surface that needs a ninth is a finding, not a licence. Names map 1:1 onto Swift types, and each
+folds into §6.5's registry rather than starting a parallel one.
+
+| Pattern | Spec |
+|---|---|
+| Glass panel | `.panel` radius, padding 11/15, 1 px white-13 hairline, 148° sheen, `shadow-panel` |
+| Row / chip | `.row` radius, padding 10/12, min height 32–44, 1 px white-14, gold border on selection |
+| Card | `.card` radius, padding 12/13 |
+| Label3 | 9 pt uppercase, 0.2em tracking, quiet ink — **written sentence case in source and uppercased on render**, so the string stays readable to a translator |
+| Arc family | one idea at four scales: `ValueRing` 26 → `ArcGauge` (panel) → `AttributeDial` 212 → `ShareBar` 4. An arc is permitted **only** where the datum is a proportion |
+| Pill / Flag | the only capsules in the system. Pill 10.5, selected takes the gold field. Flag 9 at 1.35 px tracking |
+| Staff voice | monogram avatar plus quoted advice, 11 pt in `content.secondary`, curly quotes, em dash for the turn |
+| Committing action | one per screen, bottom-right in the thumb arc: gold field, `.action` radius, `glow-gold`, 14 pt/700 uppercase verb |
+
+**Costs, not recommendations.** Every option on a decision surface carries a cost in clock time, an
+attributed staff voice, and an exposure, then a consequence with a real arrow (`Gains four → fourth
+and three`). The interface never says which to pick. This is §4.4's rejection of invented authority
+stated as a layout rule.
+
+**One accessibility carve-out, and its remedy.** The identity header's second row is 16 pt tall and
+its sibling links are 9.5 pt text — well under §6.3's 44 pt minimum target. The row height is
+load-bearing for the header's two-row proportion, so the visible text keeps its drawn size and each
+link carries a **44 pt hit area** via an expanded content shape instead. Visible size and tappable
+size are allowed to differ; tappable size is not allowed to drop below 44.
+
 ### 6.2 Typography
 
 Use the system family in production and a system stack in references. The hierarchy relies on scale,

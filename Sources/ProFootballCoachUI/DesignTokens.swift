@@ -23,6 +23,29 @@ public enum CoachWorldTokens {
         public static let lowerThirdWidthRatio: CGFloat = 338 / 932
     }
 
+    /// The management stage's geometry, `04` section 6.1c. Absolute positions at the install
+    /// floor: the icon rail sits against the sensor housing, the content column is what is left
+    /// after the rail and the trailing gutter, and the header spans that same column.
+    public enum Stage {
+        public static let railLeading: CGFloat = 59
+        public static let railWidth: CGFloat = 44
+        public static let railTop: CGFloat = 46
+        public static let railGap: CGFloat = 2
+        public static let contentLeading: CGFloat = 115
+        public static let contentTop: CGFloat = 46
+        public static let headerTop: CGFloat = 3
+        public static let headerPrimaryRow: CGFloat = 22
+        public static let headerSecondaryRow: CGFloat = 16
+        /// `844 - 115 - 20`: the frame minus the rail column and the trailing gutter. Derived, not
+        /// chosen, so it stays right if the floor ever moves.
+        public static let contentWidth: CGFloat =
+            Frame.floorWidth - contentLeading - Frame.gutter
+        /// Title, Job Board and Offer carry no icon rail — they sit outside the coaching week.
+        public static let railFreeLeading: CGFloat = 63
+        /// How far the world backdrop bleeds past the bottom edge.
+        public static let worldBottomBleed: CGFloat = 0.55
+    }
+
     /// The handoff's gap ladder, verbatim. It is deliberately not a 4/8 grid — Floodlit tunes gaps
     /// per surface, and snapping them to a grid is what makes a dense screen read as a template.
     public enum Gap {
@@ -295,6 +318,14 @@ public enum CoachWorldTokens {
         public static let ballHighlight = ColorValue(hex: 0xA6572A)
         public static let ballMid = ColorValue(hex: 0x7A3E1C)
         public static let ballShade = ColorValue(hex: 0x46220F)
+
+        /// Non-hero glass, flattened (`04` section 6.1c). Blur belongs only where something is
+        /// genuinely in front of something else; stacked over a transformed plane it smears, so
+        /// panels that are not the hero take a solid fill at the same two depths instead.
+        public static let glassFlat = ColorValue(hex: 0x11141E)
+        public static let glassFlatDeep = ColorValue(hex: 0x0B0D14)
+        /// The registry overlay's ground.
+        public static let overlayScrim = ColorValue(hex: 0x04070C)
 
         /// The committing action's fill, and the only gradient that means "this moves the game
         /// forward". Gold never means "this is good".
