@@ -101,3 +101,15 @@ private extension CoachWorldReadModelProvider {
         screen.family == .weeklyCommand
     }
 }
+
+extension CareerStakeholder {
+    /// Sentence case in source; the panel's rows print it as written.
+    var displayName: String {
+        switch self {
+        case .administration: "Athletic dir."
+        case .boosters: "Boosters"
+        case .fanbase: "Fanbase"
+        case .lockerRoom: "Locker room"
+        }
+    }
+}

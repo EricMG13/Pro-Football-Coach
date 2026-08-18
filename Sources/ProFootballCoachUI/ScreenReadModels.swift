@@ -263,7 +263,50 @@ public struct CoachingHQReadModel: Sendable, Equatable {
     public let obligations: [Obligation]
     public let decision: Decision?
     public let staffRecommendation: StaffRecommendation?
+    public struct SquadHealthRow: Sendable, Equatable, Identifiable {
+        public var id: String { stableID }
+        public let stableID: String
+        /// The depth-chart slot, as a role token: `RT`, `CB2`, `LB2`.
+        public let slot: String
+        public let player: String
+        /// What the medical room actually says: `Qtd`, `Flg 71`, `Cleared`.
+        public let status: String
+        /// Whether the status is a concern, so colour is a second reading of the printed word
+        /// rather than the only one.
+        public let isConcern: Bool
+
+        public init(
+            stableID: String, slot: String, player: String, status: String, isConcern: Bool
+        ) {
+            self.stableID = stableID
+            self.slot = slot
+            self.player = player
+            self.status = status
+            self.isConcern = isConcern
+        }
+    }
+
+    public struct StakeholderRow: Sendable, Equatable, Identifiable {
+        public var id: String { stableID }
+        public let stableID: String
+        public let name: String
+        /// 0 to 100 support. A proportion, so the share bar beside it is legitimate.
+        public let support: Int
+
+        public init(stableID: String, name: String, support: Int) {
+            self.stableID = stableID
+            self.name = name
+            self.support = max(0, min(100, support))
+        }
+    }
+
     public let correspondence: [Correspondence]
+    /// The three availability facts the week hub prints top-right, from the same evidence Team
+    /// Health holds. Empty when nothing is flagged — an empty panel is honest, an invented one is
+    /// not.
+    public let squadHealth: [SquadHealthRow]
+    /// Stakeholder standing, from `careerArc.stakeholderSupport`. Empty before a career exists.
+    public let stakeholders: [StakeholderRow]
 
     public init(
         snapshotID: String,
@@ -281,7 +324,9 @@ public struct CoachingHQReadModel: Sendable, Equatable {
         obligations: [Obligation],
         decision: Decision?,
         staffRecommendation: StaffRecommendation?,
-        correspondence: [Correspondence]
+        correspondence: [Correspondence],
+        squadHealth: [SquadHealthRow] = [],
+        stakeholders: [StakeholderRow] = []
     ) {
         self.snapshotID = snapshotID
         self.provenance = provenance
@@ -299,6 +344,8 @@ public struct CoachingHQReadModel: Sendable, Equatable {
         self.decision = decision
         self.staffRecommendation = staffRecommendation
         self.correspondence = correspondence
+        self.squadHealth = squadHealth
+        self.stakeholders = stakeholders
     }
 }
 
@@ -1905,6 +1952,20 @@ public enum CoachWorldSampleData {
                     received: "08:15",
                     isUnread: true
                 ),
+            ],
+            squadHealth: [
+                .init(stableID: "sh-1", slot: "RT", player: "L. Vasquez",
+                      status: "Out 2w", isConcern: true),
+                .init(stableID: "sh-2", slot: "CB2", player: "M. Lourdes",
+                      status: "Flg 71", isConcern: true),
+                .init(stableID: "sh-3", slot: "LB2", player: "K. Trace",
+                      status: "Cleared", isConcern: false),
+            ],
+            stakeholders: [
+                .init(stableID: "sk-1", name: "Athletic dir.", support: 58),
+                .init(stableID: "sk-2", name: "Boosters", support: 61),
+                .init(stableID: "sk-3", name: "Fanbase", support: 74),
+                .init(stableID: "sk-4", name: "Locker room", support: 69),
             ]
         )
     }()

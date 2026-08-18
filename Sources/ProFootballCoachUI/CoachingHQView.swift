@@ -237,13 +237,242 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
         )
     }
 
+    /// The week hub as the Floodlit reference draws it: the week's open agenda on the left, the
+    /// one decision in the middle, availability and standing on the right, and the single
+    /// committing action bottom-right.
+    ///
+    /// The columns are the reference's named widths, not fluid — `04` section 6.1c states that
+    /// content columns are deliberate.
     private var standardLayout: some View {
-        HStack(spacing: deskGap) {
-            identityRail.frame(width: 202)
-            decisionFloor.frame(maxWidth: .infinity)
-            deskWire.frame(width: 232)
+        HStack(alignment: .top, spacing: CoachWorldTokens.Gap.smPlus) {
+            weekAgendaColumn.frame(width: HQMetric.agendaColumn)
+            decisionColumn.frame(maxWidth: .infinity, alignment: .topLeading)
+            supportColumn.frame(width: HQMetric.supportColumn)
         }
-        .padding(CoachWorldTokens.Space.sm)
+    }
+
+    // MARK: The week's agenda
+
+    private var weekAgendaColumn: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+            FloodlitLabel3(
+                "\(model.week.weekLabel) \u{00B7} \(model.week.currentDay)", palette: palette
+            )
+            Text("\(model.obligations.count) OPEN")
+                .font(CoachWorldTokens.display(HQMetric.heroSize, weight: .heavy))
+                .foregroundStyle(palette.contentPrimary.color)
+                .lineLimit(1)
+                .minimumScaleFactor(HQMetric.heroScaleFloor)
+            // Nothing here is cleared: every row is a decision the week still owes an answer to.
+            Text("0 of \(model.obligations.count) cleared")
+                .font(CoachWorldTokens.TypeRole.caption)
+                .foregroundStyle(palette.contentSecondary.color)
+            VStack(spacing: CoachWorldTokens.Gap.hair) {
+                ForEach(model.obligations, id: \.stableID) { obligation in
+                    FloodlitRow(palette: palette) {
+                        HStack(spacing: CoachWorldTokens.Gap.xs) {
+                            Text(obligation.title.uppercased())
+                                .font(
+                                    CoachWorldTokens.display(
+                                        CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                                    )
+                                )
+                                .lineLimit(1)
+                                .minimumScaleFactor(HQMetric.rowScaleFloor)
+                            Spacer(minLength: CoachWorldTokens.Gap.xxs)
+                            FloodlitLabel3(
+                                obligation.isMandatory ? "Must" : "Open",
+                                palette: palette,
+                                tint: palette.actionPrimary.color
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(minLength: .zero)
+        }
+        .accessibilitySortPriority(70)
+    }
+
+    // MARK: The decision
+
+    @ViewBuilder
+    private var decisionColumn: some View {
+        if let decision = model.decision {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
+                HStack {
+                    FloodlitLabel3(
+                        model.opponent.map { "\(decision.deadline) \u{00B7} \($0.name)" }
+                            ?? decision.deadline,
+                        palette: palette
+                    )
+                    Spacer(minLength: CoachWorldTokens.Gap.xs)
+                    FloodlitLabel3("You decide", palette: palette, tint: palette.actionPrimary.color)
+                }
+                Text(decision.title)
+                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.lead, weight: .bold))
+                    .fixedSize(horizontal: false, vertical: true)
+                if let evidence = decision.evidence.first {
+                    Text(evidence)
+                        .font(CoachWorldTokens.TypeRole.body)
+                        .foregroundStyle(palette.contentSecondary.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                VStack(spacing: CoachWorldTokens.Gap.xxs) {
+                    ForEach(decision.choices, id: \.intentID) { choice in
+                        choiceRow(choice)
+                    }
+                }
+                HStack(spacing: CoachWorldTokens.Gap.xs) {
+                    FloodlitLabel3("Why it is here", palette: palette)
+                    Spacer(minLength: CoachWorldTokens.Gap.xs)
+                    secondaryAction("Open film", action: onInspect)
+                    secondaryAction("Delegate", action: onDelegate)
+                }
+                Spacer(minLength: .zero)
+            }
+            .accessibilitySortPriority(90)
+        } else {
+            CoachWorldSystemState(
+                .empty("No decision is open. The week advances when its obligations are cleared."),
+                palette: palette
+            )
+        }
+    }
+
+    /// One option, carrying its own cost. The interface never says which to pick, so there is no
+    /// recommended state here (`04` section 4.4).
+    private func choiceRow(_ choice: CoachWorldActionChoice) -> some View {
+        FloodlitRow(
+            isSelected: selectedChoiceID == choice.intentID,
+            palette: palette,
+            action: {
+                selectedChoiceID = choice.intentID
+                onCommit(choice.intentID)
+            }
+        ) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                Text(choice.title.uppercased())
+                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                    .lineLimit(1)
+                FloodlitCostLine(
+                    cost: choice.cost,
+                    exposure: choice.isAvailable ? nil : choice.unavailableReason,
+                    palette: palette
+                )
+            }
+        }
+        .disabled(!choice.isAvailable)
+        .opacity(choice.isAvailable ? 1 : CoachWorldTokens.Motion.disabledOpacity)
+    }
+
+    private func secondaryAction(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title.uppercased())
+                .font(
+                    CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold)
+                )
+                .tracking(
+                    CoachWorldTokens.DisplaySize.tracking(0.1, at: CoachWorldTokens.DisplaySize.flag)
+                )
+                .padding(.horizontal, CoachWorldTokens.Gap.md)
+                .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(palette.contentSecondary.color)
+        .overlay {
+            CoachWorldCutCorner.row.stroke(
+                Color.white.opacity(0.14), lineWidth: CoachWorldTokens.Shape.hairline
+            )
+        }
+        .contentShape(CoachWorldCutCorner.row)
+    }
+
+    // MARK: Availability and standing
+
+    private var supportColumn: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
+            if !model.squadHealth.isEmpty {
+                FloodlitCard(palette: palette, depth: .deep) {
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+                        FloodlitLabel3("Squad health", palette: palette)
+                        ForEach(model.squadHealth) { row in
+                            HStack(spacing: CoachWorldTokens.Gap.xs) {
+                                Text(row.slot.uppercased())
+                                    .font(
+                                        CoachWorldTokens.display(
+                                            CoachWorldTokens.DisplaySize.flag, weight: .bold
+                                        )
+                                    )
+                                    .foregroundStyle(palette.stateInfo.color)
+                                    .frame(width: HQMetric.slotColumn, alignment: .leading)
+                                Text(row.player)
+                                    .font(CoachWorldTokens.TypeRole.caption)
+                                    .lineLimit(1)
+                                Spacer(minLength: CoachWorldTokens.Gap.xxs)
+                                Text(row.status)
+                                    .font(
+                                        CoachWorldTokens.display(
+                                            CoachWorldTokens.DisplaySize.flag, weight: .bold
+                                        )
+                                    )
+                                    .foregroundStyle(
+                                        row.isConcern
+                                            ? palette.stateWarning.color
+                                            : palette.stateLive.color
+                                    )
+                            }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(row.slot) \(row.player), \(row.status)")
+                        }
+                    }
+                }
+            }
+
+            if !model.stakeholders.isEmpty {
+                FloodlitCard(palette: palette, depth: .deep) {
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+                        FloodlitLabel3("Stakeholders", palette: palette)
+                        ForEach(model.stakeholders) { row in
+                            HStack(spacing: CoachWorldTokens.Gap.xs) {
+                                Text(row.name)
+                                    .font(CoachWorldTokens.TypeRole.caption)
+                                    .lineLimit(1)
+                                Spacer(minLength: CoachWorldTokens.Gap.xxs)
+                                Text("\(row.support)")
+                                    .font(
+                                        CoachWorldTokens.figure(
+                                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                                        )
+                                    )
+                                // Support is a proportion of a stated whole, so an arc is legitimate
+                                // here — and it is a second reading of the printed figure, never the
+                                // only one.
+                                // One tint, not the rating heat bands: those are defined for the
+                                // 40-99 rating scale, and support is a 0-100 standing. Colouring a
+                                // 58 support red because 58 is a poor *rating* states something
+                                // the figure does not mean.
+                                FloodlitShareBar(
+                                    proportion: Double(row.support) / 100, palette: palette
+                                )
+                                .frame(width: HQMetric.supportBar)
+                            }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(row.name), support \(row.support) of 100")
+                        }
+                    }
+                }
+            }
+
+            Spacer(minLength: .zero)
+
+            Text("\(model.obligations.count) still open")
+                .font(CoachWorldTokens.TypeRole.caption)
+                .foregroundStyle(palette.contentSecondary.color)
+            FloodlitCommittingAction("Advance", action: onContinue)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .accessibilitySortPriority(60)
     }
 
     private var accessibleLayout: some View {
@@ -698,5 +927,15 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
 }
 
 private enum HQMetric {
+    /// The reference's named column widths. Deliberate, not fluid (`04` section 6.1c).
+    static let agendaColumn: CGFloat = 150
+    static let supportColumn: CGFloat = 250
+    /// The week's open count is the surface's dominant object, so it takes display-figure size.
+    static let heroSize: CGFloat = 34
+    static let heroScaleFloor: CGFloat = 0.6
+    static let rowScaleFloor: CGFloat = 0.7
+    static let slotColumn: CGFloat = 34
+    static let supportBar: CGFloat = 44
+
     static let worldStripHeight: CGFloat = 52
 }

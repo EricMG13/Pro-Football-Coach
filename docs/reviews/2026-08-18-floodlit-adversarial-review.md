@@ -111,6 +111,23 @@ composition" rather than "wrap the existing view".
   the row.
 - **F-22** — the rail's seventh entry is `ALL 62`, not `LEAGUE`.
 
-**Open — the substance of the review.** F-01 through F-19 and F-23 are unaddressed. They are the
+**Week hub rebuilt (F-02 to F-07).** The composition now matches the reference: the open agenda as
+the dominant object (count, cleared line, obligation rows), the decision with a headline, evidence
+and per-option cost lines, the `SQUAD HEALTH` and `STAKEHOLDERS` panels, and the single gold
+`ADVANCE` bottom-right.
+
+No data was invented for it. Squad health reads the same `PlayerLifecycleState` Team Health reads,
+so the two surfaces cannot disagree about who is fit; stakeholder standing reads
+`careerArc.stakeholderSupport`, which the engine already holds. Both are empty rather than faked
+when the state is absent.
+
+Two defects were introduced and caught in the same pass. The stakeholder share bars were tinted
+with `CoachWorldTokens.Heat`, whose bands are defined for the **40–99 rating scale** — applied to a
+**0–100 standing** it reported 58 support as poor using a scale that does not describe it. Colour
+must be a second reading of the same figure, not of a different one; the bars now take a single
+tint. Two labels also truncated and were shortened.
+
+**Open — the substance of the review.** F-01 (for the remaining surfaces), F-08 to F-19 and F-23
+are unaddressed. They are the
 surface interiors, and they are the work. Nothing in this disposition should be read as reducing
 F-01: the chrome is now right, and the compositions inside it are still not the reference's.

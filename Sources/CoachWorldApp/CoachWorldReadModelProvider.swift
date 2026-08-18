@@ -87,8 +87,50 @@ public enum CoachWorldReadModelProvider {
             ),
             // No inbound-event or correspondence system exists — `WorldScheduler`'s
             // `expiringInboundEvents` step is inactive for exactly this reason.
-            correspondence: []
+            correspondence: [],
+            squadHealth: squadHealth(in: state),
+            stakeholders: stakeholders(in: state)
         )
+    }
+
+    /// The week hub's availability panel: the players whose status a coach would act on.
+    ///
+    /// Sourced from the same `PlayerLifecycleState` Team Health reads, so the hub and that surface
+    /// cannot disagree about who is fit. Bounded to three, which is what the design draws — and a
+    /// panel that grows without bound is what `04` section 4.5 calls a density leak.
+    static func squadHealth(in state: GameState) -> [CoachingHQReadModel.SquadHealthRow] {
+        guard let roster = roster(from: state) else { return [] }
+        let flagged = roster.players.compactMap { row -> CoachingHQReadModel.SquadHealthRow? in
+            guard let playerID = UUID(uuidString: row.stableID),
+                  let lifecycle = state.people.playerLifecycle[playerID] else { return nil }
+            if let injury = lifecycle.injury {
+                return .init(
+                    stableID: row.stableID, slot: row.position, player: row.person.name,
+                    status: "Out \(injury.weeksRemaining)w", isConcern: true
+                )
+            }
+            if let suspension = lifecycle.suspension {
+                return .init(
+                    stableID: row.stableID, slot: row.position, player: row.person.name,
+                    status: "Susp \(suspension.weeksRemaining)w", isConcern: true
+                )
+            }
+            guard lifecycle.fatigue > 0 else { return nil }
+            return .init(
+                stableID: row.stableID, slot: row.position, player: row.person.name,
+                status: "Flg \(row.condition)", isConcern: true
+            )
+        }
+        return Array(flagged.prefix(3))
+    }
+
+    /// Stakeholder standing, straight off `careerArc.stakeholderSupport`. Empty before a career
+    /// exists, which the panel renders as absent rather than as zero support.
+    static func stakeholders(in state: GameState) -> [CoachingHQReadModel.StakeholderRow] {
+        CareerStakeholder.allCases.compactMap { holder in
+            guard let value = state.careerArc.stakeholderSupport[holder] else { return nil }
+            return .init(stableID: holder.rawValue, name: holder.displayName, support: value)
+        }
     }
 
     public static func gamePlan(from state: GameState) -> GamePlanReadModel? {
