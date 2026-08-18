@@ -87,24 +87,29 @@ struct CoachWorldFloodlitComposition<Content: View>: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
+    /// AX5 keeps the same information and drops the absolute composition.
+    ///
+    /// Deliberately **not** a `ScrollView`. Every converted surface already scrolls its own
+    /// accessible layout, and wrapping that in a second scroll view nests two vertical scrollers —
+    /// the inner one swallows the drag and the header above it becomes unreachable. The header and
+    /// the rail are fixed here and the content scrolls itself.
     private var accessibleLayout: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
-                FloodlitIdentityHeader(model: model, palette: palette, onNavigate: onNavigate)
-                    .accessibilitySortPriority(100)
-                content()
-                    .accessibilitySortPriority(80)
-                if model.showsIconRail {
-                    FloodlitIconRail(
-                        entries: model.rail, current: model.screen, palette: palette,
-                        onNavigate: onNavigate, axis: .horizontal
-                    )
-                    .accessibilitySortPriority(40)
-                }
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
+            FloodlitIdentityHeader(model: model, palette: palette, onNavigate: onNavigate)
+                .accessibilitySortPriority(100)
+            content()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .accessibilitySortPriority(80)
+            if model.showsIconRail {
+                FloodlitIconRail(
+                    entries: model.rail, current: model.screen, palette: palette,
+                    onNavigate: onNavigate, axis: .horizontal
+                )
+                .accessibilitySortPriority(40)
             }
-            .padding(.horizontal, CoachWorldTokens.Pad.panel.h)
-            .padding(.vertical, CoachWorldTokens.Pad.panel.v)
         }
+        .padding(.horizontal, CoachWorldTokens.Pad.panel.h)
+        .padding(.vertical, CoachWorldTokens.Pad.panel.v)
     }
 }
 

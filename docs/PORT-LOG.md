@@ -667,3 +667,27 @@ sweep** — not by screenshot. That is weaker evidence and is named as such rath
 sweep is the part that makes it meaningful: it checks every type conforming to
 `CoachWorldChromedSurface` actually consumes its chrome, so "it compiles" cannot hide a surface
 that silently renders without one.
+
+### Confidence review of milestone 3
+
+Four things checked after the six families landed; two were findings.
+
+1. **Every conforming type consumes its chrome** — swept mechanically, zero unattached. This is the
+   check that makes "it compiles" mean something, because the failure mode here is silent.
+2. **No surface takes chrome twice** — no file both passes `chrome:` into a stage and applies
+   `.floodlitChrome` to a delegate. Clean.
+3. **Nested scroll views at AX5 — a real defect, fixed.** The composition's accessible layout was a
+   `ScrollView`, and every converted surface already scrolls its own accessible layout. That nests
+   two vertical scrollers: the inner one swallows the drag and the header above it becomes
+   unreachable at exactly the type size where reaching it matters most. The composition's AX layout
+   is now a `VStack` and the content keeps its own scrolling.
+4. **`PlayerProfileView` never receives chrome, and should not.** In production it is presented as
+   a sheet from `RosterView`, and `04` section 6.4 clause 5 puts player, prospect and contract
+   previews in a popover or detented sheet *rather than replacing the management screen*. A modal
+   carrying an identity header and a navigation rail is a category error. It conforms — so a future
+   full-screen route can supply chrome — but renders on the bare stage while it is a sheet. Named
+   here so the gap between it and the section 3 table is a decision on the record rather than an
+   omission.
+
+`TitleContinueView` is the one surface rendered by the root without chrome, deliberately: it runs
+before a career exists, so there is no programme to name.
