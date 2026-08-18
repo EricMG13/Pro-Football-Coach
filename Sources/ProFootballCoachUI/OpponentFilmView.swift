@@ -183,7 +183,7 @@ public struct OpponentFilmView: View, CoachWorldChromedSurface {
                 .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.panel, weight: .semibold))
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(label), \(value)")
+        .accessibilityLabel("\(label.capitalized), \(value)")
     }
 
     /// One committing action, bottom-right in the thumb arc.
