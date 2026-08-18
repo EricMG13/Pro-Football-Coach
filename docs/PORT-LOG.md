@@ -739,3 +739,46 @@ construction — every file declaring a strip — and is recorded here so it is 
 Two families remain confirmed only by compilation, the contract suites and the attachment sweep:
 **pro management** and **career**. Neither is reachable from the debug proof harness, so confirming
 them needs either a harness entry or a live career.
+
+## 2026-08-18 — the weekly-command family, rebuilt to the reference
+
+F-01 in `docs/reviews/2026-08-18-floodlit-adversarial-review.md` said the surfaces carried the
+Floodlit chrome but not the Floodlit composition: inside the frame they were still a scroll of
+generic cards. Six surfaces are now built to the compositions the handoff actually draws.
+
+| Surface | What it became | Commit |
+|---|---|---|
+| Game plan | dials, install costs, one committing action | `f900c0c` |
+| Practice plan | a 60-minute allocator, four sessions as shares | `3a2a226` |
+| Team health | an alert bar, drawn only when something is wrong | `3a2a226` |
+| Inbox | the handoff's two columns: tagged list, reading pane | `3a2a226` |
+| Film room | evidence rows: situation, share, split, how much film | `722151c` |
+| Aftermath | the result, a grade table, the payoff strip | `e5d73e0` |
+
+**What was deliberately not drawn.** The reference draws more than this build records, and the rule
+each time was to draw what the read model holds and leave the rest absent rather than approximated:
+
+- **Film room** — six tendency rows, a matchup table, formation shares and players to watch.
+  `OpponentFilmReadModel` holds pass rate, turnover rate, confidence and two counts. Two rows are
+  drawn. A down-and-distance tendency assembled from adjacent numbers is the invented evidence
+  `04` §4.4 refuses.
+- **Aftermath** — the grade table's delta column. `AftermathReadModel.Grade` records no prior
+  grade, so there is no difference to state.
+- **Aftermath** — the payoff strip's `chart.line.uptrend.xyaxis`. `04` §6.6 does not hold it, and
+  the symbol register test caught it on the first run. The sentence beside it already carried the
+  meaning.
+- **Team health** — the alert bar is conditional. A permanent bar reading "0 injured" is furniture,
+  and furniture where alarms appear teaches a coach to stop looking there.
+
+**One contract proxy moved.** `ContractTests` asserted `film.contains("OPPONENT REPORT")` — a
+heading string standing in for "this is the real surface". The Floodlit conversion moved every
+converted surface's title into the shared chrome header, so the proxy no longer described the code.
+It now asserts the evidence figures are drawn, which is what the check was for.
+
+**A staging mistake, recorded rather than hidden.** Commit `e5d73e0` staged
+`Tests/SimTests/Suites/ContractTests.swift` by explicit path, but the file already held another
+agent's uncommitted work on this shared branch — the `SnapAnchors.swift` rng-purity scan — and that
+work went in under this commit's message. It compiles, both suites are green, and nothing was lost;
+the branch is pushed, so the history is not being rewritten to unpick it. The lesson is that
+explicit-path staging is not sufficient protection on a shared branch: a path is only safe if the
+*file* is clean, and `git status` must be read before staging, not only after.
