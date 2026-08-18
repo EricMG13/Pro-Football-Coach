@@ -19,6 +19,34 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-18 — Floodlit design handoff, all three milestones implemented.** The owner-supplied
+> handoff `design_handoff_floodlit_surfaces_and_match_day/` is built end to end:
+>
+> - **Milestone 1** — the token layer and Match Day. `04` gained section 6.1b for the broadcast
+>   register. Commit `12f9063`.
+> - **Milestone 2** — the shared management chrome and the eight composition patterns. `04` gained
+>   section 6.1c. Commit `73c112d`.
+> - **Milestone 3** — all six surface families rendered inside that chrome, one commit per family
+>   (`627e0ca`, `47f0586`, `a980969`, `6e15327`, `eb0da69`, `6808372`), plus `b35fa2a`.
+>
+> **What is verified, precisely.** `swift build` is green in debug and release. `--core-contracts`
+> (202 tests / 2,228 checks) and `--design-contracts` (29 / 613) are green on the final tree, and
+> those are the suites that scan the view layer — the design-token-literal scan, the symbol
+> register, the AX5 contract and the Floodlit conversion partition, which reports **62 converted /
+> 0 pending**. A sweep confirms every type conforming to `CoachWorldChromedSurface` actually
+> consumes its chrome, because that failure mode is silent rather than a compile error.
+>
+> **What is not verified.** Only two families were confirmed on a simulator — weekly command
+> (Coaching HQ) and personnel (Roster) — plus the chrome-and-patterns proof surface. The other four
+> rest on compilation, the contract suites and that sweep. Release-mode `SimTests` remains blocked
+> by a pre-existing `ModuleNotTestable` defect that reproduces on a clean worktree, so it is
+> unverified here for that reason and not because of this work. No surface has been through the
+> `04b` audit rubric at 31/40, and no owner simulator walkthrough has happened.
+>
+> The full per-milestone record, including every divergence from the handoff and why, is
+> `docs/PORT-LOG.md`.
+
+
 > **2026-08-10 master-plan rebaseline:** the attached Master Build Documentation is now the primary
 > product and technical authority. Its Milestone 0 architecture hardening is implemented. The
 > previous P0–P4 work below remains an accurate account of the preserved deterministic foundation,
