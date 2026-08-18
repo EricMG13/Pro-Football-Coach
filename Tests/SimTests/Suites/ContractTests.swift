@@ -192,6 +192,17 @@ private func mintsAmbientIdentity(_ line: String) -> Bool {
     return markers.contains { line.contains($0) }
 }
 
+/// True for any reference to the engine's RNG type or its conventional parameter name.
+///
+/// Phase 5's E1: `SnapAnchors.swift` derives what to draw from an already-resolved `SnapOutcome`
+/// and must never itself draw a random value, or `03` section 9.3's purity clause is unenforced
+/// prose. `SeededRandom` catches the type; `\brng\b` catches the parameter and argument-label
+/// spelling every engine call site uses for it, on a word boundary so it does not also match a name
+/// that merely contains the letters, e.g. a hypothetical "wrong" or "strength".
+private func usesRandomNumberGenerator(_ line: String) -> Bool {
+    line.contains("SeededRandom") || line.range(of: "\\brng\\b", options: .regularExpression) != nil
+}
+
 /// True if `text` contains a numeric literal that stands alone as a token.
 ///
 /// A number that continues an identifier or follows a member dot is not a literal in the sense that
@@ -522,6 +533,32 @@ func runContractTests() {
                    "the scan matched a module whose name merely starts with SwiftUI")
         }
 
+        test("SnapAnchors.swift never draws a random value") {
+            // Phase 5, E1: blocking and pursuit anchors read outcome.matchups and
+            // outcome.brokenTackleAttempts, values SnapResolver already computed. Deriving them a
+            // second time from the RNG rather than reading the record would be a second opinion the
+            // view has no business forming, and this is what makes that unrepresentable rather than
+            // merely catchable.
+            let anchors = swiftFiles(under: "Sources/FootballSimCore")
+                .filter { $0.path.hasSuffix("SnapAnchors.swift") }
+            expect(!anchors.isEmpty, "SnapAnchors.swift not found under Sources/FootballSimCore")
+            let offenders = offendingLines(in: anchors, where: usesRandomNumberGenerator)
+            expect(offenders.isEmpty,
+                   "SnapAnchors.swift must stay rng-free (03 section 9.3): "
+                       + offenders.joined(separator: ", "))
+        }
+
+        test("the rng scan catches SeededRandom, the rng token, and not a look-alike name") {
+            expect(caught("var rng: SeededRandom\n", by: usesRandomNumberGenerator),
+                   "a planted SeededRandom declaration was not caught")
+            expect(caught("Leverage.score(rng: &rng)\n", by: usesRandomNumberGenerator),
+                   "a planted rng argument label was not caught")
+            expect(!caught("// uses rng internally\n", by: usesRandomNumberGenerator),
+                   "a commented-out reference was reported as an offender")
+            expect(!caught("let strength = wrong.value\n", by: usesRandomNumberGenerator),
+                   "the scan matched \"rng\" inside an unrelated identifier")
+        }
+
         test("no file that imports a UI framework owns or reads the authoritative root") {
             // Enumerated by construction rather than by directory. This scan read
             // `Sources/ProFootballCoachUI` until 2026-08-13, which made the directory the rule
@@ -596,8 +633,14 @@ func runContractTests() {
             }?.text ?? ""
             let filmProvider = swiftFiles(under: "Sources/CoachWorldApp")
                 .first { $0.path.hasSuffix("/CoachWorldOpponentFilmProvider.swift") }?.text ?? ""
+            // Was `film.contains("OPPONENT REPORT")`. That literal was a proxy for the surface
+            // being the real one, and the Floodlit conversion moved the screen title into the
+            // shared chrome header, where every converted surface's title now lives. The figures
+            // are the better proxy: they assert the evidence is drawn, not that a heading exists.
             expect(film.contains("public struct OpponentFilmView")
-                       && film.contains("OPPONENT REPORT"),
+                       && film.contains("model.sourceGameCount")
+                       && film.contains("model.confidence")
+                       && film.contains("model.sourceFixtureCount"),
                    "film must render an evidence-backed production surface")
             expect(filmModel.contains("public struct OpponentFilmReadModel")
                        && filmModel.contains("Observer-scoped"),
