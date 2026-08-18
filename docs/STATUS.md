@@ -40,9 +40,15 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > 0 pending**. A sweep confirms every type conforming to `CoachWorldChromedSurface` actually
 > consumes its chrome, because that failure mode is silent rather than a compile error.
 >
-> **What is not verified.** Only two families were confirmed on a simulator — weekly command
-> (Coaching HQ) and personnel (Roster) — plus the chrome-and-patterns proof surface. The other four
-> rest on compilation, the contract suites and that sweep. Release-mode `SimTests` remains blocked
+> **What is not verified.** Four of six families were confirmed on a simulator — weekly command
+> (Coaching HQ), personnel (Roster), recruiting (Recruiting Board) and league (League Map) — plus
+> the chrome-and-patterns proof surface. **Pro management and career were not**: neither is
+> reachable from the debug proof harness and neither has sample read models, so confirming them
+> visually would mean authoring two large fixtures for a screenshot. That was judged
+> disproportionate *after* the structural check those screenshots exist to catch — a surface
+> drawing its own identity strip under the shared header — was made exhaustive across the whole
+> module rather than per family. Those two families rest on compilation, the contract suites, the
+> chrome-attachment sweep and that structural check. Release-mode `SimTests` remains blocked
 > by a pre-existing `ModuleNotTestable` defect that reproduces on a clean worktree, so it is
 > unverified here for that reason and not because of this work. No surface has been through the
 > `04b` audit rubric at 31/40, and no owner simulator walkthrough has happened.
