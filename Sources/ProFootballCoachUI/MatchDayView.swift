@@ -183,8 +183,9 @@ public struct MatchDayView: View {
                 }
             }
             .onPreferenceChange(TopRightStackHeightKey.self) { topRightStackHeight = $0 }
-            .animation(reduceMotion ? nil : CoachWorldTokens.Motion.standard(CoachWorldTokens.Motion.panelEnter),
-                       value: model.staffInterruption != nil)
+            .coachWorldAnimation(
+                CoachWorldTokens.Motion.panelEnter, value: model.staffInterruption != nil
+            )
         }
         .aspectRatio(MatchMetric.frameAspect, contentMode: .fit)
         .accessibilityIdentifier("match-day-standard")

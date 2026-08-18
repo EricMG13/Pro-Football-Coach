@@ -72,7 +72,7 @@ public enum CoachWorldTokens {
         public static let band = (v: CGFloat(14), h: CGFloat(16))
     }
 
-    /// The handoff's motion contract, canonical at `04` section 6.7. One easing curve, four
+    /// The handoff's motion contract, canonical at `04` section 6.7. One easing curve, five
     /// durations, and press is a dimming rather than a scale.
     public enum Motion {
         public static let press: Double = 0.12
@@ -80,15 +80,21 @@ public enum CoachWorldTokens {
         public static let world: Double = 0.42
         /// The panel push-in the staff call-in enters with.
         public static let panelEnter: Double = 0.24
+        /// The live-snap dot's cycle length. A period, not a state-change duration — the one row
+        /// that repeats rather than resolving once, so it is always paired with
+        /// `.repeatForever(autoreverses: true)` rather than used alone.
+        public static let pulse: Double = 1.5
         public static let panelPushDistance: CGFloat = 14
         /// Press dims rather than scales, so a committing action never shrinks under the thumb
         /// that is committing with it.
         public static let pressDim: Double = 0.12
         public static let disabledOpacity: Double = 0.4
 
-        public static func standard(_ duration: Double) -> Animation {
-            .timingCurve(0.32, 0.72, 0, 1, duration: duration)
-        }
+        // The curve constructor that turns these durations into an `Animation` lives in
+        // `CoachWorldMotion.swift`, not here — this enum is data, per `04` section 6.7; scheduling
+        // an animation is behaviour, and `04` section 6.7 names the choke point as the one file
+        // permitted that. Splitting them is what makes the containment scan meaningful rather than
+        // requiring an exemption on the file that also holds every other view's numbers.
     }
 
     /// The 40-99 rating scale's three bands. Always a *second* reading of a printed figure — the

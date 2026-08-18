@@ -20,7 +20,7 @@ import Foundation
 
 // MARK: - Canon readers
 
-private func canonText() -> String {
+func canonText() -> String {
     let url = packageRoot().appendingPathComponent("docs/04-UX-AND-DESIGN-SYSTEM.md")
     return (try? String(contentsOf: url, encoding: .utf8)) ?? ""
 }
@@ -55,7 +55,7 @@ private func canonSymbolClasses(_ canon: String) -> [(name: String, cap: Int, me
 }
 
 /// Regex helper returning the first capture group of every match.
-private func matches(of pattern: String, in text: String) -> [String] {
+func matches(of pattern: String, in text: String) -> [String] {
     guard let expression = try? NSRegularExpression(pattern: pattern) else { return [] }
     let range = NSRange(text.startIndex..., in: text)
     return expression.matches(in: text, range: range).compactMap { match in

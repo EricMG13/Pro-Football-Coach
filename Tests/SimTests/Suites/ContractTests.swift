@@ -256,9 +256,20 @@ private func argumentSpan(of line: String, from start: String.Index, balanced: B
 /// plus the label spellings of the same properties. Literal colours are 03b's fourth token class and
 /// are NOT covered here; P11 owns extending this set as the component registry makes the class
 /// enumerable by construction. Recorded in docs/STATUS.md rather than left implicit.
+///
+/// **Timing and easing markers, added with `04` section 6.7.** `duration:`/`response:`/
+/// `dampingFraction:`/`minimumInterval:` and `.delay(`/`.speed(`/`.repeatCount(` are motion's own
+/// design-token position, and were invisible before this: `MatchDayScoreBug.swift:468` shipped
+/// `withAnimation(.easeInOut(duration: 1.5)…)` — a literal duration — because nothing was looking at
+/// this class of argument. Deliberately **not** added: bare `count:` and bare `speed:`, which collide
+/// with `Array(repeating:count:)`, `prefix(count:)` and `ForEach(0..<count)`; `.repeatCount(` and
+/// `.speed(` (the call forms) are unambiguous and carry the same intent.
 private func containsDesignTokenLiteral(_ line: String) -> Bool {
-    let callMarkers = [".padding(", ".cornerRadius("]
-    let labelMarkers = ["spacing:", "cornerRadius:", "size:", "radius:", "lineWidth:"]
+    let callMarkers = [".padding(", ".cornerRadius(", ".delay(", ".speed(", ".repeatCount("]
+    let labelMarkers = [
+        "spacing:", "cornerRadius:", "size:", "radius:", "lineWidth:",
+        "duration:", "response:", "dampingFraction:", "minimumInterval:"
+    ]
     for (markers, balanced) in [(callMarkers, true), (labelMarkers, false)] {
         for marker in markers {
             var searchStart = line.startIndex
@@ -809,7 +820,12 @@ func runContractTests() {
             // wish.
             // Enumerated by the UI import, not by directory: the rule is about code that draws,
             // and the composition layer added a second target that does.
+            //
+            // CoachWorldMotion.swift is exempt: it is where `04` section 6.7's durations are
+            // *defined*, and a definition site necessarily holds the literal a consumer must not.
+            // Nothing else may claim this exemption — see `04` section 6.7's own line about it.
             let views = swiftFilesImportingUIFramework()
+                .filter { !$0.path.hasSuffix("/CoachWorldMotion.swift") }
             expect(!views.isEmpty, "found no view sources to scan — the scan would pass vacuously")
             let offenders = offendingLines(in: views, where: containsDesignTokenLiteral)
             expect(
@@ -851,6 +867,34 @@ func runContractTests() {
                    "a token-valued spacing was reported as an offender")
             expect(!caught("Text(\"hi\").padding(Token.gutter2)\n", by: containsDesignTokenLiteral),
                    "a digit inside a token's name was mistaken for a literal")
+
+            // The timing and easing markers `04` section 6.7 added.
+            expect(caught("withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true))",
+                          by: containsDesignTokenLiteral),
+                   "the exact literal MatchDayScoreBug.swift:468 shipped was not caught")
+            expect(caught(".spring(response: 0.4, dampingFraction: 0.8)\n",
+                          by: containsDesignTokenLiteral),
+                   "a planted literal spring response was not caught")
+            expect(caught("TimelineView(.animation(minimumInterval: 0.016)) { _ in }\n",
+                          by: containsDesignTokenLiteral),
+                   "a planted literal minimumInterval was not caught")
+            expect(caught("Animation.easeIn.delay(0.3)\n", by: containsDesignTokenLiteral),
+                   "a planted .delay(0.3) was not caught")
+            expect(caught("Animation.linear.speed(2)\n", by: containsDesignTokenLiteral),
+                   "a planted .speed(2) was not caught")
+            expect(caught("Animation.linear.repeatCount(3)\n", by: containsDesignTokenLiteral),
+                   "a planted .repeatCount(3) was not caught")
+            expect(
+                !caught(".coachWorldAnimation(CoachWorldTokens.Motion.value, value: x)\n",
+                        by: containsDesignTokenLiteral),
+                "a token-valued duration through the choke point was reported as an offender"
+            )
+            expect(
+                !caught("TimelineView(.animation(minimumInterval: MatchMetric.playbackTick)) { _ in }\n",
+                        by: containsDesignTokenLiteral),
+                "a token-valued minimumInterval — live at MatchDayView.swift:440 — was reported as "
+                    + "an offender"
+            )
         }
 
         test("the production UI tokens preserve the canonical scales") {

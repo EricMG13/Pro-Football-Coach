@@ -819,7 +819,8 @@ unbounded class is a finding under §4.5.
 **One curve for the whole product.** `timingCurve(0.32, 0.72, 0, 1)` — a fast-in, gentle-out ease
 used for every timed transition. No second curve may ship without amending this line first; if a
 surface needs a different feel, that is a finding against this section, not a reason to add a curve
-inline.
+inline. **`pulse`'s repetition is not a second curve** — `.repeatForever(autoreverses:)` runs the
+same one curve back and forth; the shape of a single cycle is unchanged, only its recurrence.
 
 | Duration | Seconds | Reduced form | Where used |
 |---|---:|---|---|
@@ -827,6 +828,7 @@ inline.
 | **value** | 0.22 | discrete: the new figure appears, no settle | A rating, score or attribute value changing |
 | **world** | 0.42 | discrete: the destination appears, no travel | A world-scale transition — screen to screen, register to register |
 | **panelEnter** | 0.24 | discrete: the panel is present or absent, never entering | The staff call-in panel's entrance |
+| **pulse** | 1.5 | discrete: the live indicator is shown at full opacity, never dimming | The live-snap dot, `04:448`'s named example — a period, not a state-change duration, so it is the one row that repeats rather than resolving once |
 
 **Companions, not durations:**
 
@@ -834,6 +836,7 @@ inline.
 |---|---:|---|
 | **panelPushDistance** | 14 pt | How far `panelEnter` travels a panel in from its edge |
 | **pressDim** | 0.12 | How far a committing control dims on press — a dim, never a scale, so a control never shrinks under the thumb committing it |
+| **disabledOpacity** | 0.4 | The resting opacity of a disabled control. Not paired with an animation — a control does not animate into disabled, it simply is — but it ships from `Motion` alongside the values that do, so it belongs in this table rather than nowhere |
 
 **The reduced-form rule, stated once rather than four times.** `04:826` already requires it globally:
 Reduce Motion replaces travel, reveal and field animation with discrete state changes. Applied to
@@ -846,6 +849,14 @@ ball's flight, the live dot's pulse and the panel push are removed, not accelera
 currency decide *whether* a state change may carry motion at all; this table only fixes *how*, once
 that permission exists. A screen that animates without an entry in §2's row for its register is a
 finding under §4.4 regardless of whether the duration is drawn from this table.
+
+**One file holds both halves of this contract in code: `Sources/ProFootballCoachUI/CoachWorldMotion.swift`.**
+It is the single definition site for this table's values — necessarily exempt from the literal-number
+scan that polices every consumer, the same way a token's own declaration is not itself a violation —
+and it is the only file permitted the raw vocabulary (`Animation.timingCurve`, `withAnimation`,
+`.repeatForever`) that schedules motion at all. Every other file reaches motion through
+`.coachWorldAnimation(_:value:)` or `.coachWorldPulse()`, never directly, so an off-token duration or
+an un-reduced animation is unrepresentable outside this one file rather than merely catchable in it.
 
 ## 7. Device and accessibility contract
 

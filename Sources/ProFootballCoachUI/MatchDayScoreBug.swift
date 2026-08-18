@@ -455,20 +455,11 @@ struct MatchLowerThird: View {
 }
 
 private struct LiveDot: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var pulsing = false
-
     var body: some View {
         Circle()
             .fill(CoachWorldTokens.dark.stateNegative.color)
             .frame(width: 5, height: 5)
-            .opacity(pulsing ? 0.4 : 1)
-            .onAppear {
-                guard !reduceMotion else { return }
-                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                    pulsing = true
-                }
-            }
+            .coachWorldPulse()
             .accessibilityHidden(true)
     }
 }
