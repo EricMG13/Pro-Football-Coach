@@ -159,7 +159,13 @@ public struct GamePlanView: View, CoachWorldChromedSurface {
                                 )
                             )
                             .lineLimit(1)
-                        FloodlitCostLine(cost: option.consequence, palette: palette)
+                        // A sentence, not a cost phrase: `FloodlitCostLine` uppercases and
+                        // tracks its cost slot, which turns prose into a tracked-capitals
+                        // paragraph. These options carry a consequence and no cost figure.
+                        Text(option.consequence)
+                            .font(CoachWorldTokens.TypeRole.caption)
+                            .foregroundStyle(palette.contentSecondary.color)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .accessibilityLabel("\(option.title). \(option.consequence)")

@@ -72,10 +72,15 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
     /// `TacticalPracticePlan.weeklyMinutes` — a stated total, not an open-ended count.
     @ViewBuilder
     private var allocator: some View {
-        if let plan = model.currentPlan {
+        if let plan = allocatedPlan {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
                 HStack(spacing: CoachWorldTokens.Gap.xs) {
-                    FloodlitLabel3("This week", palette: palette)
+                    FloodlitLabel3(
+                        model.currentPlan == nil ? "Not set yet \u{00B7} what this option would do"
+                                                 : "This week",
+                        palette: palette,
+                        tint: model.currentPlan == nil ? palette.stateWarning.color : nil
+                    )
                     Spacer(minLength: .zero)
                     Text("\(TacticalPracticePlan.weeklyMinutes)\u{2032} total")
                         .font(CoachWorldTokens.TypeRole.caption)
@@ -90,6 +95,16 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
                 )
             }
         }
+    }
+
+
+    /// The allocation the bars draw. Before the week is committed there is no stored plan, and the
+    /// reference's allocator is the whole point of the screen -- so it draws what the selected
+    /// option *would* allocate, labelled as not yet set rather than presented as the week.
+    private var allocatedPlan: TacticalPracticePlan? {
+        if let current = model.currentPlan { return current }
+        let selected = model.options.first { $0.id == selectedID } ?? model.options.first
+        return selected?.plan
     }
 
     private func session(_ name: String, minutes: Int) -> some View {
@@ -145,7 +160,10 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
                                 )
                             )
                             .lineLimit(1)
-                        FloodlitCostLine(cost: option.consequence, palette: palette)
+                        Text(option.consequence)
+                            .font(CoachWorldTokens.TypeRole.caption)
+                            .foregroundStyle(palette.contentSecondary.color)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .accessibilityLabel("\(option.title). \(option.consequence)")
