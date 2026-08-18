@@ -595,3 +595,17 @@ only when no chrome is supplied.
 
 **Verified:** `--core-contracts` (202 / 2228) and `--design-contracts` (29 / 613) green, partition
 still 62 converted / 0 pending.
+
+## 2026-08-18 — milestone 3d: pro management
+
+**Converted (9 surfaces):** Cap & Contracts, Contract Negotiation, Roster Cuts & Transactions, Pro
+Offseason, Pro Scouting Board, Draft Board, Draft Room, Free Agency, and the shared
+`ProManagementView` the first and third of those wrap.
+
+`ProManagementView` is not itself a registry surface — it is the composition Cap & Contracts and
+Roster Cuts both render. It takes the chrome too, so those wrappers hand it down to the view that
+owns the stage rather than each growing one. Cap, dead money and cuts share state, which is why
+`FLOODLIT-SURFACES.md` section 3 says to port them together.
+
+**Verified:** `--core-contracts` (202 / 2228) and `--design-contracts` (29 / 613) green, partition
+still 62 converted / 0 pending.

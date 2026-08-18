@@ -1,7 +1,13 @@
 import SwiftUI
 import FootballSimCore
 
-public struct DraftBoardView: View {
+public struct DraftBoardView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: ProOffseasonReadModel
     public let statusMessage: String?
     public let onAction: (ProMarketAction) -> Void
@@ -29,6 +35,7 @@ public struct DraftBoardView: View {
             onAction: onAction,
             onClose: onClose
         )
+        .floodlitChrome(chrome, onNavigate: onNavigateChrome)
         .accessibilitySortPriority(dynamicTypeSize.isAccessibilitySize ? 100 : 90)
     }
 }

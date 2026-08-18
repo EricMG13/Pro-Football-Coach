@@ -371,6 +371,10 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .proOffseason, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .draftBoard:
                 surface(store.proOffseason, screen: .draftBoard) { model in
@@ -379,6 +383,10 @@ public struct CoachWorldAppRootView: View {
                         statusMessage: failure ?? store.statusMessage,
                         onAction: { action in Task { await store.actOnProMarket(action) } },
                         onClose: { closeCareer(in: store) }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .draftBoard, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .draftRoom:
@@ -391,6 +399,10 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .draftRoom, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .freeAgency:
                 surface(store.proOffseason, screen: .freeAgency) { model in
@@ -400,6 +412,10 @@ public struct CoachWorldAppRootView: View {
                         onAction: { action in Task { await store.actOnProMarket(action) } },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .freeAgency, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .proScoutingBoard:
                 surface(store.proOffseason, screen: .proScoutingBoard) { model in
@@ -408,6 +424,10 @@ public struct CoachWorldAppRootView: View {
                         statusMessage: failure ?? store.statusMessage,
                         onAction: { action in Task { await store.actOnProMarket(action) } },
                         onClose: { closeCareer(in: store) }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .proScoutingBoard, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .collegeOffseason:
@@ -489,6 +509,10 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .capContracts, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .contractNegotiation:
                 surface(store.proManagement, screen: .contractNegotiation) { model in
@@ -500,6 +524,10 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .contractNegotiation, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .rosterCutsTransactions:
                 surface(store.proManagement, screen: .rosterCutsTransactions) { model in
@@ -508,6 +536,10 @@ public struct CoachWorldAppRootView: View {
                         statusMessage: failure ?? store.statusMessage,
                         onAction: { action in Task { await store.actOnProManagement(action) } },
                         onClose: { closeCareer(in: store) }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .rosterCutsTransactions, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .staffRoom:

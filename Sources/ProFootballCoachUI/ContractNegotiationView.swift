@@ -3,7 +3,13 @@ import FootballSimCore
 
 /// The persistent offer/counter surface. Every mutation is a `ProManagementAction`; this view
 /// never edits a player or cap ledger directly.
-public struct ContractNegotiationView: View {
+public struct ContractNegotiationView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: ProManagementReadModel
     public let statusMessage: String?
     public let onAction: (ProManagementAction) -> Void
@@ -30,7 +36,7 @@ public struct ContractNegotiationView: View {
     private var teamID: UUID? { UUID(uuidString: model.team.stableID) }
 
     public var body: some View {
-        CoachWorldFloodlitStage(palette: palette) {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             ScrollView {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                     header
