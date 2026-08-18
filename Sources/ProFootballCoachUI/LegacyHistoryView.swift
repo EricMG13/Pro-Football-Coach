@@ -147,6 +147,9 @@ public struct LegacyHistoryView: View, CoachWorldChromedSurface {
                 .accessibilityLabel("Season \(row.season), \(row.role), \(row.organisation.name)")
             }
         }
+        // Career & Legacy, `04` section 2: "earned ceremony — one entrance, held, never a
+        // repeating flourish". The coach's whole timeline, read once as it appears.
+        .coachWorldEntrance()
     }
 
     private var coachingTree: some View {

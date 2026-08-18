@@ -52,7 +52,12 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
                     careerViews
                     if let currentJob = model.currentJob {
                         section("CURRENT APPOINTMENT") {
+                            // Ceremony, `04` section 2: "rare, focused, minimal controls...
+                            // held, not looped" -- the appointment itself, read once as it
+                            // appears. The resign control beside it is an ordinary action, not
+                            // part of the moment, so it is not part of the entrance.
                             jobRow(currentJob)
+                                .coachWorldEntrance()
                             if currentJob.canResign {
                                 Button("Resign from appointment", action: onResign)
                                     .buttonStyle(CoachWorldActionButtonStyle(

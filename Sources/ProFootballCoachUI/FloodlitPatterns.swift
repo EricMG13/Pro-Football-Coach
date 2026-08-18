@@ -256,6 +256,10 @@ struct FloodlitAttributeDial: View {
             }
         }
         .frame(width: diameter, height: diameter)
+        // Personnel Room, `04` section 2: "a value settles to its new figure, it does not slide
+        // there" — the arc's fill and the printed number move together on a rating change, never a
+        // hard cut between two states.
+        .coachWorldAnimation(CoachWorldTokens.Motion.value, value: rating)
         // The whole dial is one element; the ring is a second reading of the printed figure, never
         // the only one (`04` section 4.4).
         .accessibilityElement(children: .ignore)

@@ -394,6 +394,11 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
             }
             Spacer(minLength: .zero)
         }
+        // Acquisition Room, `04` section 2: "a rank may travel, because the movement is the fact
+        // being reported" -- the one register where a reorder is itself the content, not decoration.
+        // Rows are already keyed by stableID rather than array position, which is what lets SwiftUI
+        // interpolate a reorder instead of cross-fading unrelated rows into each other's places.
+        .coachWorldAnimation(CoachWorldTokens.Motion.world, value: model.prospects)
     }
 
     private var discoveryTable: some View {

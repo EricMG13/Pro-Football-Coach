@@ -236,6 +236,9 @@ struct CoachWorldRatingRing: View {
                 .foregroundStyle(palette.contentPrimary.color)
         }
         .frame(width: diameter, height: diameter)
+        // Personnel Room, `04` section 2: "a value settles to its new figure, it does not slide
+        // there".
+        .coachWorldAnimation(CoachWorldTokens.Motion.value, value: value)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("rating \(value)")
     }

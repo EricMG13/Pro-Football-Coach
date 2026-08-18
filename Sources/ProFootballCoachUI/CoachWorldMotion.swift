@@ -35,6 +35,30 @@ private struct CoachWorldAnimationModifier<Value: Equatable>: ViewModifier {
     }
 }
 
+/// `04` section 2: Career & Legacy's "one entrance, held, never a repeating flourish" and
+/// Ceremony's "held, not looped" name the same shape — distinct from `CoachWorldPulseModifier`,
+/// which is defined by repeating.
+private struct CoachWorldEntranceModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var revealed = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(revealed ? 1 : 0)
+            .onAppear {
+                guard !reduceMotion else {
+                    // `04:826`: a reveal becomes a discrete state change under Reduce Motion, not a
+                    // slowed fade — the content is simply present from the first frame.
+                    revealed = true
+                    return
+                }
+                withAnimation(standard(CoachWorldTokens.Motion.panelEnter)) {
+                    revealed = true
+                }
+            }
+    }
+}
+
 private struct CoachWorldPulseModifier: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pulsing = false
@@ -69,5 +93,14 @@ extension View {
     /// view stays at full opacity, still legible as "live" without the motion.
     func coachWorldPulse() -> some View {
         modifier(CoachWorldPulseModifier())
+    }
+
+    /// A one-shot fade to full opacity when the view first appears, on `04` section 6.7's
+    /// `panelEnter` duration — Career & Legacy's and Ceremony's "earned ceremony", held rather than
+    /// repeated. Fires once per appearance; a view that reappears (a fresh row in a `ForEach`, a
+    /// screen pushed again) earns its entrance again, which is what "held" describes rather than a
+    /// flourish that plays on every redraw.
+    func coachWorldEntrance() -> some View {
+        modifier(CoachWorldEntranceModifier())
     }
 }

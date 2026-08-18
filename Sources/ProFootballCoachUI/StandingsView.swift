@@ -63,6 +63,10 @@ public struct StandingsView: View, CoachWorldChromedSurface {
                     }
                 }
             }
+            // League & Media, `04` section 2: "a standing resettles in place between weeks" -- rows
+            // are keyed by id, not index, so a rank change interpolates rather than cross-fading
+            // unrelated rows into each other's places.
+            .coachWorldAnimation(CoachWorldTokens.Motion.world, value: model.rows)
             .padding(.vertical, CoachWorldTokens.Pad.panel.v)
         }
         .safeAreaInset(edge: .bottom) { footer }
