@@ -256,7 +256,8 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                         .background(palette.work.color)
                         .overlay(alignment: .top) { seam }
                 }
-                worldStrip
+                // The shared chrome states the programme; drawing this as well stacks two navigations.
+                if chrome == nil { worldStrip }
                 HStack(alignment: .top, spacing: deskGap) {
                     identityRail
                     deskWire

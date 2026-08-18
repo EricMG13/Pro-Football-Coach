@@ -91,6 +91,10 @@ private struct DebugCoachingHQRoot: View {
                     },
                     onOpenShortlist: { currentScreen = .shortlist }
                 )
+                .floodlitChrome(
+                    CoachWorldSampleData.chrome(for: .recruitingBoard, world: .facility),
+                    onNavigate: { statusMessage = "Navigated \($0.rawValue)" }
+                )
             } else if currentScreen == .prospectProfile {
                 ProspectProfileView(
                     model: recruitingBoard,
@@ -115,6 +119,10 @@ private struct DebugCoachingHQRoot: View {
                     statusMessage: statusMessage,
                     onContinue: { statusMessage = "No later event is available yet" },
                     onNavigate: navigate
+                )
+                .floodlitChrome(
+                    CoachWorldSampleData.chrome(for: .leagueMap, world: .facility),
+                    onNavigate: { statusMessage = "Navigated \($0.rawValue)" }
                 )
             } else {
                 CoachingHQView(

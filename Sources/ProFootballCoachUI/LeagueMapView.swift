@@ -61,7 +61,8 @@ public struct LeagueMapView: View, CoachWorldChromedSurface {
                 accessibleLayout
             } else {
                 VStack(spacing: .zero) {
-                    worldStrip
+                    // The shared chrome states the programme; drawing this as well stacks two navigations.
+                    if chrome == nil { worldStrip }
                     standardLayout
                 }
             }
@@ -539,7 +540,8 @@ public struct LeagueMapView: View, CoachWorldChromedSurface {
     private var accessibleLayout: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: .zero) {
-                worldStrip
+                // The shared chrome states the programme; drawing this as well stacks two navigations.
+                if chrome == nil { worldStrip }
                 tierControl
                     .padding(CoachWorldTokens.Space.sm)
                 ForEach(model.regions) { region in

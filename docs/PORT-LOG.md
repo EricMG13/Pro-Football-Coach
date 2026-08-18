@@ -717,3 +717,25 @@ it stands rather than the six-family tree: **897 tests, 769,755 checks, 5 failur
 self-re-exec scratch-path artifacts, with `AX5 contract: 62 landed, 0 pending` and
 `Floodlit conversion: 62 converted, 0 pending`. The Xcode app target also builds on the final tree,
 and all three shipping SwiftPM targets compile in release.
+
+### Visual coverage raised to four families — and what that caught
+
+Wiring the debug harness for recruiting and league lifted simulator-confirmed coverage from two
+families to four (weekly command, personnel, recruiting, league). Doing so immediately found a bug
+the contract suites could not see.
+
+**`LeagueMapView` was drawing its own world strip under the shared header** — the same
+double-navigation defect already fixed in Coaching HQ, Roster and Recruiting Board, in a fourth
+surface that the earlier sweep missed because that sweep only walked the weekly-command file list
+rather than every file that declares a strip. Re-running it properly across the whole module found
+three unguarded uses: one in `CoachingHQView`'s accessible layout and two in `LeagueMapView`. All
+three are now guarded, and the residual check reports none.
+
+The lesson is the one `CLAUDE.md` already states about coverage boundaries: the first sweep's file
+list was hand-scoped to the family being worked on, so it became a quality boundary rather than a
+coverage boundary the moment another family had the same defect. The check now enumerates by
+construction — every file declaring a strip — and is recorded here so it is re-run that way.
+
+Two families remain confirmed only by compilation, the contract suites and the attachment sweep:
+**pro management** and **career**. Neither is reachable from the debug proof harness, so confirming
+them needs either a harness entry or a live career.
