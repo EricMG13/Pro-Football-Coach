@@ -111,6 +111,7 @@ case "$lane" in
         ;;
     accessibility)
         run_sim design-contracts --design-contracts
+        run_sim reduce-motion --reduce-motion
         run_sim read-models --screen-read-models
         ;;
     archive)

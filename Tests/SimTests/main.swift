@@ -97,6 +97,7 @@ if CommandLine.arguments.contains("--catalog") {
     runDesignContractTests()
     runMotionContractTests()
     runAccessibilityReflowTests()
+    runReduceMotionContractTests()
     runSaveEnvelopeTests()
     runRulesTests()
     runModelTests()
@@ -132,6 +133,7 @@ if CommandLine.arguments.contains("--catalog") {
     runDesignContractTests()
     runMotionContractTests()
     runAccessibilityReflowTests()
+    runReduceMotionContractTests()
 } else if CommandLine.arguments.contains("--architecture-only") {
     runArchitectureTests()
 } else if CommandLine.arguments.contains("--m2-soak") {
@@ -140,6 +142,8 @@ if CommandLine.arguments.contains("--catalog") {
     runM1SoakTests(seasons: 20)
 } else if CommandLine.arguments.contains("--snap-anchors") {
     runSnapAnchorTests()
+} else if CommandLine.arguments.contains("--reduce-motion") {
+    runReduceMotionContractTests()
 } else {
     runSeededRandomTests()
     runSeedDerivationTests()
@@ -198,6 +202,7 @@ if CommandLine.arguments.contains("--catalog") {
     runDesignContractTests()
     runMotionContractTests()
     runAccessibilityReflowTests()
+    runReduceMotionContractTests()
     runCommitmentCoverageTest()
     runSaveDocumentTests()
 }
