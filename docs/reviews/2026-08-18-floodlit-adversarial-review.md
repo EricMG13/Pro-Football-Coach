@@ -127,7 +127,27 @@ with `CoachWorldTokens.Heat`, whose bands are defined for the **40–99 rating s
 must be a second reading of the same figure, not of a different one; the bars now take a single
 tint. Two labels also truncated and were shortened.
 
-**Open — the substance of the review.** F-01 (for the remaining surfaces), F-08 to F-19 and F-23
-are unaddressed. They are the
+**Personnel rebuilt (F-08, F-10 to F-13).** The table now carries the reference's columns in its
+order — `POS NO. PLAYER YR RATING FIT FRESH ST` — with the slot as a role token in cool ink, the
+number in gold, and freshness as the arc family's 4 pt share bar beside its figure rather than
+instead of it. The dossier leads with a `ValueRing`, then attribute bars and trait `Flag`s.
+
+Attribute bars draw `(value − 40) / (99 − 40)`, not `value / 100`: the ratings scale starts at 40,
+so a bar drawn against 100 would show the floor of the scale as 40 per cent of something.
+
+The five route tabs are gone under chrome (**F-13**) — they repeated the identity header's own
+family links, which is the same navigation twice on one screen. The reference's `OFF / DEF / ST`
+group filter is **not** built in their place: the read model carries no unit field, and deriving
+one in the view is the computation the read-model seam exists to prevent.
+
+**F-09 is refused, not deferred.** The reference prints `78 ±3` on every rating. No per-player
+rating uncertainty exists anywhere in the engine — `Player.potential` is hidden truth, and the
+confidence-band model `02` section 5 describes was never built. Deriving a band from academic year
+or games played would be inventing a scouting model and printing its output as fact, which `04`
+section 4.4 forbids outright. The same applies to the dossier's `CEILING EST 80–86`. Both need
+engine work first; until then the surfaces print what is known and nothing more.
+
+**Open — the substance of the review.** F-01 (for the remaining surfaces), F-09, F-14 to F-19 and
+F-23 are unaddressed. They are the
 surface interiors, and they are the work. Nothing in this disposition should be read as reducing
 F-01: the chrome is now right, and the compositions inside it are still not the reference's.
