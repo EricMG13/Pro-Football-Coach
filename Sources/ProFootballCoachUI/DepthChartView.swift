@@ -126,19 +126,36 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
                         )
                         .accessibilityHidden(true)
                 }
-                ForEach(visibleGroups) { group in
-                    if let spot = DepthSpot.spot(for: group.id) {
-                        token(group)
-                            .frame(width: DepthMetric.tokenWidth, height: DepthMetric.tokenHeight)
-                            .offset(
-                                x: proxy.size.width * spot.x - DepthMetric.tokenWidth / 2,
-                                y: proxy.size.height * spot.y - DepthMetric.tokenHeight / 2
-                            )
-                    }
+                ForEach(placedGroups, id: \.group.id) { placed in
+                    let width = tokenWidth(for: placed.placement, in: proxy.size)
+                    token(placed.group)
+                        .frame(width: width, height: DepthMetric.tokenHeight)
+                        .offset(
+                            x: proxy.size.width * placed.placement.x - width / 2,
+                            y: proxy.size.height * placed.placement.y - DepthMetric.tokenHeight / 2
+                        )
                 }
             }
         }
         .accessibilityHidden(true)
+    }
+
+    /// The groups the convention has a spot for, with that spot resolved. A group with no spot is
+    /// not drawn on the field; it is still in the list, which is the authority.
+    private var placedGroups: [(group: DepthChartReadModel.PositionGroup, placement: DepthPlacement)] {
+        visibleGroups.compactMap { group in
+            DepthPlacement.placement(for: group.id).map { (group, $0) }
+        }
+    }
+
+    /// A token is as wide as its row allows, never wider than the handoff's 84pt. Fixing the width
+    /// instead would overlap the six-across line row on a 390pt field, which is what the first pass
+    /// did -- the tokens are what the row can hold, not a constant.
+    private func tokenWidth(for placement: DepthPlacement, in size: CGSize) -> CGFloat {
+        min(
+            DepthMetric.tokenWidth,
+            size.width / CGFloat(placement.columns) - DepthMetric.tokenGap
+        )
     }
 
     private func token(_ group: DepthChartReadModel.PositionGroup) -> some View {
@@ -151,7 +168,7 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
             openPositionID = group.id
         } label: {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
-                Text(DepthSpot.abbreviation(for: group.id))
+                Text(DepthPlacement.abbreviation(for: group.id))
                     .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.pill, weight: .bold))
                     .foregroundStyle(
                         vacant ? palette.stateWarning.color : palette.contentPrimary.color
@@ -334,28 +351,43 @@ private enum DepthUnit: String, CaseIterable {
     }
 }
 
-/// Where each position stands, as a fraction of the diagram. A drawing convention of the sport,
-/// not a formation the simulation recorded: the offence lines up across the middle with the
-/// quarterback behind it, the defence in front of it, the specialists deep.
-private enum DepthSpot {
-    static func spot(for positionID: String) -> (x: Double, y: Double)? {
+/// Where each position stands on the diagram, as a row and a column within that row.
+///
+/// A drawing convention of the sport, not a formation the simulation recorded: the line stands
+/// across the middle with the quarterback behind it and the back behind him; the secondary plays
+/// deepest and the rush stands closest. Rows and columns rather than free coordinates because the
+/// tokens must not overlap at any field width -- a fixed pair of fractions overlapped the
+/// six-across line row and pushed the wide receiver off the plane.
+private struct DepthPlacement {
+    let row: Int
+    let rows: Int
+    let column: Int
+    let columns: Int
+
+    var x: Double { (Double(column) + 0.5) / Double(columns) }
+    var y: Double { (Double(row) + 0.5) / Double(rows) }
+
+    static func placement(for positionID: String) -> DepthPlacement? {
         guard let position = Position(rawValue: positionID) else { return nil }
         switch position {
-        case .leftTackle: return (0.18, 0.58)
-        case .guardPosition: return (0.36, 0.58)
-        case .center: return (0.50, 0.58)
-        case .rightTackle: return (0.82, 0.58)
-        case .tightEnd: return (0.94, 0.58)
-        case .quarterback: return (0.50, 0.76)
-        case .runningBack: return (0.50, 0.92)
-        case .wideReceiver: return (0.06, 0.58)
-        case .edgeRusher: return (0.24, 0.42)
-        case .defensiveTackle: return (0.50, 0.42)
-        case .linebacker: return (0.50, 0.26)
-        case .cornerback: return (0.10, 0.26)
-        case .safety: return (0.76, 0.10)
-        case .kicker: return (0.22, 0.92)
-        case .punter: return (0.80, 0.92)
+        // Offence: the line across, the quarterback behind it, the back behind him.
+        case .wideReceiver: return .init(row: 0, rows: 3, column: 0, columns: 6)
+        case .leftTackle: return .init(row: 0, rows: 3, column: 1, columns: 6)
+        case .guardPosition: return .init(row: 0, rows: 3, column: 2, columns: 6)
+        case .center: return .init(row: 0, rows: 3, column: 3, columns: 6)
+        case .rightTackle: return .init(row: 0, rows: 3, column: 4, columns: 6)
+        case .tightEnd: return .init(row: 0, rows: 3, column: 5, columns: 6)
+        case .quarterback: return .init(row: 1, rows: 3, column: 0, columns: 1)
+        case .runningBack: return .init(row: 2, rows: 3, column: 0, columns: 1)
+        // Defence: the secondary deepest, the rush nearest the line.
+        case .cornerback: return .init(row: 0, rows: 3, column: 0, columns: 2)
+        case .safety: return .init(row: 0, rows: 3, column: 1, columns: 2)
+        case .linebacker: return .init(row: 1, rows: 3, column: 0, columns: 1)
+        case .edgeRusher: return .init(row: 2, rows: 3, column: 0, columns: 2)
+        case .defensiveTackle: return .init(row: 2, rows: 3, column: 1, columns: 2)
+        // Specialists: both on the one row, because that is the whole unit.
+        case .kicker: return .init(row: 0, rows: 1, column: 0, columns: 2)
+        case .punter: return .init(row: 0, rows: 1, column: 1, columns: 2)
         }
     }
 
@@ -383,10 +415,15 @@ private enum DepthSpot {
 }
 
 private enum DepthMetric {
-    /// The handoff's 390x222 field.
+    /// The handoff's 390pt-wide field. Its 222pt height does not survive the port: the handoff
+    /// draws a bare 46pt nav row above the field where this build carries the identity band and
+    /// the sibling row, which together stand about 40pt taller. 185 is what is left between the
+    /// unit pills and the alert strip at the 844x390 install floor, and a field that overlapped
+    /// its own alert bar would be worse than a shorter one.
     static let fieldWidth: CGFloat = 390
-    static let fieldHeight: CGFloat = 222
+    static let fieldHeight: CGFloat = 185
     static let tokenWidth: CGFloat = 84
+    static let tokenGap: CGFloat = 5
     static let tokenHeight: CGFloat = 32
     static let rankColumn: CGFloat = 40
     static let yardLines = 4

@@ -134,7 +134,7 @@ public struct InboxView: View, CoachWorldChromedSurface {
                     }
                 ) {
                     HStack(spacing: CoachWorldTokens.Gap.md) {
-                        Text(tag(for: item))
+                        Text(tag(for: item).uppercased())
                             .font(
                                 CoachWorldTokens.display(
                                     CoachWorldTokens.DisplaySize.flag, weight: .bold
@@ -216,12 +216,13 @@ public struct InboxView: View, CoachWorldChromedSurface {
                         exposure: item.deadline,
                         palette: palette
                     )
+                    Spacer(minLength: CoachWorldTokens.Gap.xs)
                     if let destination = item.destination {
                         Button {
                             onRead(item.stableID)
                             onOpen(destination)
                         } label: {
-                            Text("Open \(destination.navigationName.lowercased())")
+                            Text("Open the \(destination.navigationName.lowercased())")
                                 .font(
                                     CoachWorldTokens.display(
                                         CoachWorldTokens.DisplaySize.action, weight: .bold
@@ -236,6 +237,7 @@ public struct InboxView: View, CoachWorldChromedSurface {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .frame(minHeight: InboxMetric.paneHeight, alignment: .top)
         }
     }
 
@@ -290,4 +292,6 @@ private enum InboxMetric {
     static let listWidth: CGFloat = 310
     static let tagColumn: CGFloat = 62
     static let subjectLines = 2
+    /// The handoff's 313pt reading pane.
+    static let paneHeight: CGFloat = 313
 }
