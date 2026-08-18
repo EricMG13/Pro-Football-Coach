@@ -216,6 +216,7 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
                         discoveryTable
                     }
                 }
+                positionPlanFooter
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
@@ -225,6 +226,28 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
             depth: .deep
         )
         .accessibilitySortPriority(100)
+    }
+
+
+    /// The class plan every row on the board is judged against (`MLB 0/2 · WR 2/3 · …`).
+    ///
+    /// A footer, not a header chip: it is the sum of the table above it, and in the header it
+    /// competed with the title and truncated.
+    private var positionPlanFooter: some View {
+        HStack(spacing: CoachWorldTokens.Gap.xs) {
+            FloodlitLabel3("Position plan", palette: palette)
+            Text(positionPlanLine)
+                .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
+                .foregroundStyle(palette.contentSecondary.color)
+                .lineLimit(1)
+                .minimumScaleFactor(RecruitingMetric.planScaleFloor)
+            Spacer(minLength: .zero)
+        }
+        .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+        .frame(minHeight: RecruitingMetric.planHeight)
+        .overlay(alignment: .top) { seam }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Position plan. \(positionPlanLine)")
     }
 
     private var boardHeader: some View {
@@ -241,11 +264,7 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
                 HStack(spacing: CoachWorldTokens.Space.sm) {
                     boardTitle
                     sampleCareerFlag
-                    Spacer()
-                    Text(positionPlanLine)
-                        .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
-                        .foregroundStyle(palette.contentSecondary.color)
-                        .lineLimit(1)
+                    Spacer(minLength: CoachWorldTokens.Gap.xs)
                 }
             }
         }
@@ -294,7 +313,7 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
                     )
                 }
             } else {
-                HStack(spacing: .zero) {
+                HStack(spacing: CoachWorldTokens.Gap.lg) {
                     capacityValue(
                         "SLOTS",
                         value: "\(model.capacity.scholarshipSlotsRemaining)",
@@ -310,7 +329,9 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
                         value: "\(model.capacity.officialVisitsRemaining)",
                         suffix: "left"
                     )
+                    Spacer(minLength: .zero)
                 }
+                .padding(.horizontal, CoachWorldTokens.Pad.row.h)
             }
         }
         .frame(minHeight: RecruitingMetric.capacityHeight)
@@ -348,8 +369,8 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentSecondary.color)
         }
         .padding(.horizontal, CoachWorldTokens.Space.xs)
-        .frame(maxWidth: .infinity, minHeight: RecruitingMetric.capacityHeight)
-        .overlay(alignment: .trailing) { verticalSeam }
+        .fixedSize(horizontal: true, vertical: false)
+        .frame(minHeight: RecruitingMetric.capacityHeight)
         .accessibilityElement(children: .combine)
     }
 
@@ -853,6 +874,9 @@ private struct RecruitingCollegeCutShape: Shape {
 }
 
 private enum RecruitingMetric {
+    static let planHeight: CGFloat = 30
+    static let planScaleFloor: CGFloat = 0.7
+
     static let worldStripHeight: CGFloat = 48
     static let dossierWidth: CGFloat = 326
     static let boardHeaderHeight: CGFloat = 36

@@ -147,7 +147,21 @@ or games played would be inventing a scouting model and printing its output as f
 section 4.4 forbids outright. The same applies to the dossier's `CEILING EST 80–86`. Both need
 engine work first; until then the surfaces print what is known and nothing more.
 
-**Open — the substance of the review.** F-01 (for the remaining surfaces), F-09, F-14 to F-19 and
+**Recruiting rebuilt (F-14, F-16).** The `POSITION PLAN` line already existed but sat in the board
+header, where it competed with the title and the provenance flag and truncated to `QB 0/1 · DL 1/3 ·
+O...`. It is now the reference's full-width footer under the table, which is also where it belongs
+semantically: it is the sum of the rows above it. The budget strip is one compact inline line
+(`SLOTS 8 open · CONTACT 22 left · VISITS 4 left`) rather than three tiles that each took a third of
+the width.
+
+**F-17 was my error, not the app's.** I reported hometowns as missing from the board rows. They were
+always there; I read them off a capture where the column had truncated. Withdrawn.
+
+**F-18 stands, but is not a defect.** The `SAMPLE CAREER` flag is provenance labelling — it marks
+fixture data as fixture data, which `04` section 4.4 requires. It should not be removed. Its
+placement overlapping the title is the only real issue and is cosmetic.
+
+**Open — the substance of the review.** F-01 (for the remaining surfaces), F-09, F-15, F-19 and
 F-23 are unaddressed. They are the
 surface interiors, and they are the work. Nothing in this disposition should be read as reducing
 F-01: the chrome is now right, and the compositions inside it are still not the reference's.
