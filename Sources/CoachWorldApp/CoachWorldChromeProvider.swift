@@ -11,17 +11,25 @@ public extension CoachWorldReadModelProvider {
     static func chrome(
         for screen: CoachWorldScreenID,
         hub: CoachingHQReadModel,
-        conference: String? = nil
+        conference: String? = nil,
+        /// Surface context for the header's right-hand chip. The reference varies this per screen
+        /// — scholarships on personnel, the class on recruiting, conference position on league —
+        /// so a caller that holds a surface's own figures passes them. Nil falls back to the next
+        /// fixture, which is what the week hub itself shows.
+        context surfaceContext: String? = nil
     ) -> FloodlitChromeReadModel {
-        FloodlitChromeReadModel(
+        let context = surfaceContext
+            ?? hub.opponent.map { "\(hub.week.currentDay) \u{00B7} \($0.name)" }
+        return FloodlitChromeReadModel(
             screen: screen,
             world: world(for: screen),
             club: hub.team,
             record: hub.recordLabel,
             ranking: hub.rankLabel,
             conference: conference,
-            context: hub.opponent.map { "\(hub.week.currentDay) \u{00B7} \($0.name)" },
-            contextOpponent: hub.opponent,
+            context: context,
+            // The opponent pennant belongs to the chip only when the chip is about the fixture.
+            contextOpponent: context == nil || !isFixtureContext(for: screen) ? nil : hub.opponent,
             rail: rail(current: screen),
             siblings: siblings(for: screen)
         )
@@ -53,7 +61,8 @@ public extension CoachWorldReadModelProvider {
             (.gamePlan, "rectangle.3.group", "Plan"),
             (.opponentReportFilmRoom, "film", "Film"),
             (.teamHealth, "cross.case", "Health"),
-            (.leagueMap, "map", "League"),
+            // The reference's seventh entry opens the registry overlay, not the league.
+            (.worldSearch, "square.grid.3x3", "All 62"),
         ]
         return entries.map { entry in
             .init(
@@ -71,7 +80,8 @@ public extension CoachWorldReadModelProvider {
         screen.family.surfaces.map { sibling in
             .init(
                 screen: sibling,
-                title: sibling.canonicalName,
+                // Short form for the row; `canonicalName` stays the accessible name.
+                title: sibling.navigationName,
                 intentID: .init(rawValue: "route|\(sibling.rawValue)")
             )
         }
@@ -82,5 +92,12 @@ public extension CoachWorldReadModelProvider {
         let parts = intentID.rawValue.split(separator: "|")
         guard parts.count == 2, parts[0] == "route", let raw = Int(parts[1]) else { return nil }
         return CoachWorldScreenID(rawValue: raw)
+    }
+}
+
+private extension CoachWorldReadModelProvider {
+    /// Whether the header chip is about the coming fixture, and so earns the opponent pennant.
+    static func isFixtureContext(for screen: CoachWorldScreenID) -> Bool {
+        screen.family == .weeklyCommand
     }
 }

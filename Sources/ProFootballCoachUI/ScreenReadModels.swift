@@ -1793,7 +1793,10 @@ public enum CoachWorldSampleData {
     /// someone remembers to add it here.
     public static func chrome(
         for screen: CoachWorldScreenID,
-        world: FloodlitChromeReadModel.World = .facility
+        world: FloodlitChromeReadModel.World = .facility,
+        /// Surface context for the header chip, as the reference varies it per screen. Nil falls
+        /// back to the fixture.
+        context: String? = nil
     ) -> FloodlitChromeReadModel {
         let rail: [(CoachWorldScreenID, String, String)] = [
             (.coachingHQ, "calendar", "Week"),
@@ -1802,7 +1805,7 @@ public enum CoachWorldSampleData {
             (.gamePlan, "rectangle.3.group", "Plan"),
             (.opponentReportFilmRoom, "film", "Film"),
             (.teamHealth, "cross.case", "Health"),
-            (.leagueMap, "map", "League"),
+            (.worldSearch, "square.grid.3x3", "All 62"),
         ]
         return FloodlitChromeReadModel(
             screen: screen,
@@ -1811,8 +1814,8 @@ public enum CoachWorldSampleData {
             record: "4\u{2013}2",
             ranking: "#21",
             conference: "Meridian Valley",
-            context: "Sat \u{00B7} Southern State",
-            contextOpponent: awayTeam,
+            context: context ?? "Sat \u{00B7} Southern State",
+            contextOpponent: context == nil ? awayTeam : nil,
             rail: rail.map { entry in
                 .init(
                     screen: entry.0,
@@ -1824,7 +1827,7 @@ public enum CoachWorldSampleData {
             siblings: screen.family.surfaces.prefix(5).map { sibling in
                 .init(
                     screen: sibling,
-                    title: sibling.canonicalName,
+                    title: sibling.navigationName,
                     intentID: .init(rawValue: "sample-sibling-\(sibling.number)")
                 )
             }

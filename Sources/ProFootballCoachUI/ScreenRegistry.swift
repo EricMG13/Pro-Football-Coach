@@ -132,6 +132,50 @@ public enum CoachWorldScreenID: Int, CaseIterable, Sendable {
         }
     }
 
+    /// The short form the identity header's sibling row prints (`FLOODLIT-SURFACES.md` §1).
+    ///
+    /// Distinct from `canonicalName`, which is the registry's full title and stays the accessible
+    /// name. The reference prints `FILM ROOM`, `PLAYER`, `DEVELOPMENT` where the registry says
+    /// "Opponent Report / Film Room", "Player Profile", "Development Plan" — the long forms
+    /// overflow a 16 pt row and push the rest of the family off the end of it.
+    public var navigationName: String {
+        switch self {
+        case .coachingHQ: "Hub"
+        case .opponentReportFilmRoom: "Film room"
+        case .practicePlan: "Practice"
+        case .gamePlan: "Game plan"
+        case .gameDetailBoxScore: "Box score"
+        case .playerProfile: "Player"
+        case .developmentPlan: "Development"
+        case .staffMarketProfile: "Staff market"
+        case .personnelPackages: "Packages"
+        case .recruitingBoard: "Board"
+        case .prospectProfile: "Prospect"
+        case .contactVisitPlanner: "Visits"
+        case .classOverview: "Class"
+        case .retentionDecisions: "Retention"
+        case .nilAllocation: "NIL"
+        case .collegeOffseason: "Offseason"
+        case .capContracts: "Cap"
+        case .contractNegotiation: "Negotiation"
+        case .rosterCutsTransactions: "Roster cuts"
+        case .proScoutingBoard: "Pro scouting"
+        case .rankingsPlayoffPicture: "Rankings"
+        case .bracketPostseason: "Bracket"
+        case .statisticsLeaders: "Statistics"
+        case .awardsHonours: "Awards"
+        case .realignmentEvent: "Realignment"
+        case .teamProgrammeProfile: "Team"
+        case .leagueMap: "Map"
+        case .settingsAccessibility: "Settings"
+        case .newCareerCoachIdentity: "Coach identity"
+        case .promotionDecision: "Promotion"
+        case .coachingCarousel: "Carousel"
+        case .titleContinue: "Title"
+        default: canonicalName
+        }
+    }
+
     /// The three surfaces that sit outside the coaching week and so carry no icon rail
     /// (`FLOODLIT-SURFACES.md` section 3). They start at the rail-free leading edge instead.
     public var showsIconRail: Bool {

@@ -49,8 +49,13 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
     public struct Sibling: Sendable, Equatable, Identifiable {
         public var id: CoachWorldScreenID { screen }
         public let screen: CoachWorldScreenID
+        /// The short form the 16 pt row prints.
         public let title: String
         public let intentID: CoachWorldIntentID
+
+        /// What VoiceOver says. Shortening a link to fit a row must not shorten what the screen is
+        /// called to someone who cannot see the row, so this stays the registry's full title.
+        public var accessibleTitle: String { screen.canonicalName }
 
         public init(screen: CoachWorldScreenID, title: String, intentID: CoachWorldIntentID) {
             self.screen = screen
@@ -438,7 +443,7 @@ struct FloodlitIdentityHeader: View {
                 .padding(.vertical, -Chrome.siblingTargetPad)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(sibling.title)
+        .accessibilityLabel(sibling.accessibleTitle)
         .accessibilityAddTraits(isCurrent ? .isSelected : [])
     }
 }

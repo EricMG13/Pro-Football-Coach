@@ -967,7 +967,28 @@ public struct CoachWorldAppRootView: View {
         in store: CoachWorldStore
     ) -> FloodlitChromeReadModel? {
         guard let hub = store.coachingHQ else { return nil }
-        return CoachWorldReadModelProvider.chrome(for: screen, hub: hub)
+        return CoachWorldReadModelProvider.chrome(
+            for: screen, hub: hub, context: headerContext(for: screen, in: store)
+        )
+    }
+
+    /// The header chip's surface context. The reference varies it per screen rather than printing
+    /// the coming fixture everywhere, so each surface that holds its own headline figures supplies
+    /// them; anything else falls back to the fixture, which is what the week hub shows.
+    private func headerContext(
+        for screen: CoachWorldScreenID,
+        in store: CoachWorldStore
+    ) -> String? {
+        switch screen {
+        case .roster, .depthChart, .developmentPlan, .staffRoom:
+            guard let roster = store.roster else { return nil }
+            return "\(roster.players.count) of \(roster.rosterLimit) on roster"
+        case .recruitingBoard, .shortlist, .classOverview, .contactVisitPlanner:
+            guard let board = store.recruitingBoard else { return nil }
+            return "\(board.prospects.count) on the board"
+        default:
+            return nil
+        }
     }
 
     /// Routes an identity-header or icon-rail tap. Chrome navigation goes through the same

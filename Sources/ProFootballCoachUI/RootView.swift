@@ -75,7 +75,7 @@ private struct DebugCoachingHQRoot: View {
                     onInspectDevelopment: inspectDevelopment
                 )
                 .floodlitChrome(
-                    CoachWorldSampleData.chrome(for: .roster, world: .facility),
+                    CoachWorldSampleData.chrome(for: .roster, world: .facility, context: "85 scholarships · 3 open"),
                     onNavigate: { statusMessage = "Navigated \($0.rawValue)" }
                 )
             } else if currentScreen == .recruitingBoard {
@@ -92,7 +92,7 @@ private struct DebugCoachingHQRoot: View {
                     onOpenShortlist: { currentScreen = .shortlist }
                 )
                 .floodlitChrome(
-                    CoachWorldSampleData.chrome(for: .recruitingBoard, world: .facility),
+                    CoachWorldSampleData.chrome(for: .recruitingBoard, world: .facility, context: "Class of 2027 · 14 of 22"),
                     onNavigate: { statusMessage = "Navigated \($0.rawValue)" }
                 )
             } else if currentScreen == .prospectProfile {
@@ -121,7 +121,7 @@ private struct DebugCoachingHQRoot: View {
                     onNavigate: navigate
                 )
                 .floodlitChrome(
-                    CoachWorldSampleData.chrome(for: .leagueMap, world: .facility),
+                    CoachWorldSampleData.chrome(for: .leagueMap, world: .facility, context: "4–2 · 3rd in conference"),
                     onNavigate: { statusMessage = "Navigated \($0.rawValue)" }
                 )
             } else {
