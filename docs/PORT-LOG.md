@@ -846,3 +846,59 @@ in the **status** class and an award is not a status. The news story's body para
 records a dateline and a headline. The development plan's coach-hours allocator: this build records
 movement already earned and holds nothing a coach can spend, so a dial there would commit nothing.
 The staff room's delegation chip: nothing records what is delegated to whom.
+
+## 2026-08-18 — the last ten surfaces, and an adversarial review before landing
+
+The Floodlit conversion is complete: 62/62 registry entries now render the reference
+composition. Ten files closed the last fifteen registry entries (several delegate to a shared
+view): shortlist, contact/visit planner, class overview, prospect profile, cap & contracts
+(+ roster cuts), contract negotiation, the pro offseason shell (+ scouting board, draft board,
+draft room, free agency), and team programme profile.
+
+**Every rewrite went through adversarial review before landing.** Ten prepared rewrites, ten
+independent reviewer agents, one per surface — each re-deriving what the real data model holds
+from the provider code rather than trusting the draft's own doc comments. Four confirmed defects
+came back that neither the compiler nor either contract suite would have caught:
+
+1. **Class overview misread `PositionNeed`.** `committed`/`target` is whole-roster headcount
+   against the league's minimum-playable-roster rule, not recruiting-class progress — a position
+   filled entirely by returning veterans with zero new recruits would have shown "full." The
+   headline's "X of Y" figure summed two unrelated denominators (committed prospects + open
+   scholarship slots against the 85-man limit) into a number backed by nothing; it now reads
+   against `CollegeRules.initialSigningsPerClass`, the engine's real per-class target. The
+   position-need rings are gone too: `CoachWorldRatingRing`'s colour bands are calibrated to the
+   40-99 player-rating scale, so every one of these 0-5 roster counts painted red regardless of
+   fill — `FloodlitShareBar` carries no such assumption.
+2. **Cap & contracts painted a roster cut gold.** An immediately-executing cut action shared the
+   same gold `04` §6.5 reserves for the screen's one committing action, and the real committing
+   action (Negotiate) plus the `model.negotiations` data behind it were absent entirely — though
+   both the data and the route to reach it (`CoachWorldScreenID.contractNegotiation` via the
+   `route|<rawValue>` chrome-navigation intent every sibling already uses) already existed.
+3. **Contract negotiation could show two gold fields at once**: the footer's Done plus a gold
+   Accept on every open card. A codebase-wide grep found every other converted surface has exactly
+   one `FloodlitCommittingAction` call site; this was the only one with more than one.
+4. **Pro offseason's list-picking logic had a fifth, unguarded route.** `ProOffseasonView` is also
+   reached directly (title "PRO OFFSEASON", no phase restriction) via a real button in
+   `CoachingHQView`, and the title-text match that chose which list to show made free agents and
+   waivers permanently unreachable from that route — during free agency itself, the hub would show
+   the draft board and hide the free agents it's the phase for.
+
+Two more real fixes, lower severity: two AX5 reflow branches were dropped along with genuinely
+unused `dynamicTypeSize` properties, caught by the design-contract suite itself
+(`AX5 reflow contract`) and restored with real reflow decisions (stacking fixed-width columns,
+not a no-op flag reference); and team programme profile's rivalry row bypassed `FloodlitRow`'s own
+44pt-on-action contract via a manual `onTapGesture` instead of passing `action:` the way every
+other tappable row in the codebase does.
+
+**Team programme profile also lost invented duplicate content.** The first draft drew a full
+12-game schedule and all eight rivalries — content that already has dedicated screens
+(`ScheduleView`, `StandingsView`). It now matches the reference's own proportions: a derived
+"Form, last six" (win/loss read from `Fixture.score`'s fixed "home–away" format plus `isHome`,
+never guessed) and a single highlighted rival rather than a full list.
+
+**What device verification could and couldn't reach.** Class overview's honest reframe and team
+profile's trimmed composition are screenshot-confirmed correct. Cap & contracts, contract
+negotiation and the pro offseason family are pro-tier screens gated
+`where store.proManagement != nil` (pre-existing, unrelated to this change) and unreachable from
+the college-tier proof career this session's harness runs — verified by compile, both contract
+suites, and the adversarial review pass only, stated plainly rather than claimed as seen.
