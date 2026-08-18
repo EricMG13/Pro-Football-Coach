@@ -811,3 +811,38 @@ reach. Surfaces are not done when the suites pass; they are done when they have 
 grid of cards that add minutes. This engine commits whole `TacticalPracticePlan` values, not free
 minutes, so a card that looks tappable would do nothing. The sessions are drawn as allocation rows
 instead, and the options below them are what actually changes the week.
+
+## 2026-08-18 — league and career families
+
+| Surface | What it became | Commit |
+|---|---|---|
+| Standings | the handoff's dense table, own programme on a gold hairline | `35aeaa7` |
+| Schedule | the two-column fixture grid | `35aeaa7` |
+| Statistics | the two-column leaders grid | `680c443` |
+| Awards | the 430pt honours column | `680c443` |
+| News | story list beside a reading panel | `680c443` |
+| World search | one field, scope chips, results grouped by tier | `e8a911b` |
+| Career hub (+ job security, stakeholders, promotion) | three columns; the fourth entry is the panel's contents | `1963300` |
+| Staff room, development plan | list beside a panel | `00105f5` |
+
+**Two semantic errors caught before they shipped**, both of the same kind — reading a field's *name*
+rather than its *definition*:
+
+1. **`ScheduleReadModel.GameRow.isControlled`** was read as "we are the away side" and used to draw
+   an opponent name and a venue chip. The provider sets it `homeID == controlled || awayID ==
+   controlled` — it says the programme is *in* the fixture. Every home game would have read AWAY.
+   The model carries no controlled-team reference at all, so both sides are named instead.
+2. **`NewsReadModel.Item.weight`** was compared against 3 to light a dateline. It is
+   `DomainEvent.historicalWeight`, a 0–100 scale: a season ending is 100, a suspension 15. Every
+   dateline would have lit. The threshold is 60.
+
+**One defect found only by looking**: eight surfaces pinned a transparent footer, so the table rows
+scrolled straight through the sentence. `safeAreaInset` draws *over* its content. There is now one
+`floodlitFooterStrip`, because writing the treatment eight more times is eight more chances to omit
+the background.
+
+**Deviations recorded.** The award row's leading mark: `04` §6.6 holds `star` and `checkmark.seal`
+in the **status** class and an award is not a status. The news story's body paragraph: the model
+records a dateline and a headline. The development plan's coach-hours allocator: this build records
+movement already earned and holds nothing a coach can spend, so a dial there would commit nothing.
+The staff room's delegation chip: nothing records what is delegated to whom.
