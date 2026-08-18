@@ -2236,6 +2236,7 @@ public enum CoachWorldSampleData {
             lineOfScrimmage: 58,
             firstDownLine: 68,
             foregroundActorIDs: ["sample-home-0", "sample-home-4", "sample-away-10"],
+            playback: playback,
             causalCommentary: "The safety stepped down after the tight end motion.",
             staffInterruption: .init(
                 stableID: "sample-call-in",
@@ -2266,8 +2267,7 @@ public enum CoachWorldSampleData {
                     ),
                 ]
             ),
-            controls: controls,
-            playback: playback
+            controls: controls
         )
     }()
 }
