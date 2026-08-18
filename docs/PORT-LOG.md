@@ -782,3 +782,32 @@ work went in under this commit's message. It compiles, both suites are green, an
 the branch is pushed, so the history is not being rewritten to unpick it. The lesson is that
 explicit-path staging is not sufficient protection on a shared branch: a path is only safe if the
 *file* is clean, and `git status` must be read before staging, not only after.
+
+## 2026-08-18 — what a device found that the suites could not
+
+Six surfaces were rendered on a booted simulator after the rebuild. Every one of the following was
+invisible to both contract suites, which were green throughout:
+
+1. **Team health had not actually been rebuilt.** It had gained an alert bar and kept the
+   pre-Floodlit scroll of tinted cards underneath. The commit message said the surface was rebuilt;
+   the screenshot said otherwise. Now the handoff's readiness table beside the case panel.
+2. **The depth chart's tokens overlapped and clipped.** Six positions across a 390pt line row at
+   84pt each is 504pt of token in 390pt of field. Placement is now a row and a column within that
+   row, so no arrangement of the fifteen positions can overlap at any width.
+3. **The depth chart's field was 30pt taller than its slot.** The handoff draws a bare 46pt nav row
+   above it; this build carries the identity band and the sibling row.
+4. **The practice allocator drew nothing.** It was gated on the stored plan, and no plan is stored
+   until the coach sets one — so in week one the surface whose whole point is an allocation showed
+   no allocation.
+5. **Three option lists rendered prose as tracked capitals.** `FloodlitCostLine` uppercases its
+   cost slot, which is right for "3 practice hours" and wrong for a sentence.
+6. **The inbox printed engine spelling into copy**: "Evidence: playingTime: 2 · eligibility: 1".
+
+The pattern is worth stating plainly: **a green suite is evidence about contracts, not about
+composition.** Every one of these is a defect a person sees in one second and no string scan can
+reach. Surfaces are not done when the suites pass; they are done when they have been looked at.
+
+**Deliberate deviation recorded.** The handoff draws the four practice sessions as a tappable 2x2
+grid of cards that add minutes. This engine commits whole `TacticalPracticePlan` values, not free
+minutes, so a card that looks tappable would do nothing. The sessions are drawn as allocation rows
+instead, and the options below them are what actually changes the week.
