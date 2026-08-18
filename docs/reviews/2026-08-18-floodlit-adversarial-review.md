@@ -161,7 +161,45 @@ always there; I read them off a capture where the column had truncated. Withdraw
 fixture data as fixture data, which `04` section 4.4 requires. It should not be removed. Its
 placement overlapping the title is the only real issue and is cosmetic.
 
-**Open — the substance of the review.** F-01 (for the remaining surfaces), F-09, F-15, F-19 and
-F-23 are unaddressed. They are the
+**F-15 downgraded.** Discovery prospects are already separated — they render under their own
+`DISCOVERY · AVAILABLE PROSPECTS` heading in college-identity colour rather than mixed into the
+ranked rows. The reference instead marks them inline with a `D` and greys them. Both make the
+distinction; ours arguably makes it harder to miss. Not worth churning the table for.
+
+---
+
+## F-19 — escalated, not implemented
+
+The reference's **League Map** surface is a conference standings table (`# PROGRAMME CONF OVERALL
+PWR LAST 5`) beside a `SATURDAY ACROSS THE LEAGUE` fixture panel. The app's `LeagueMapView` is a
+geographic dot map with a team-profile panel.
+
+**I have not changed it, deliberately.** Three reasons:
+
+1. **The handoff contradicts itself.** Section 3's own table says "League | *the conference as a
+   map* | `LeagueMapView.swift`". Its rendering draws a table. One of those is wrong and I cannot
+   tell which from the artefacts.
+2. **It is destructive and hard to reverse.** `LeagueMapView` is ~28 KB of working code with its
+   own `LeagueMapReadModels`, a College/Professional tier switch and region/rival context. Replacing
+   it with a table discards a distinct surface, not a layout.
+3. **The data is not all there anyway.** `StandingsReadModel` covers `#`, `PROGRAMME`, `CONF`,
+   `OVERALL` and can derive `PWR` from points for/against, but **`LAST 5` has no source** — no
+   per-team recent-form record exists. So even a faithful port would print five of six columns.
+
+This is an owner decision: *should the geographic league map be discarded in favour of the
+reference's conference table?* If yes, it is a day's work plus a form-record field on the standings
+model. If the map is wanted, the reference's table is already most of what `StandingsView`
+(registry 43) shows, and the two surfaces may simply have been conflated in the prototype.
+
+---
+
+## Remaining open
+
+| # | Sev | State |
+|---|---|---|
+| F-01 | P0 | Partially closed. Week hub, personnel and recruiting rebuilt; the other ~59 surfaces are still chrome-only. |
+| F-09 | P0 | **Refused** — needs a scouting-confidence model in the engine. Printing a derived band as fact is what `04` §4.4 forbids. |
+| F-19 | P0 | **Escalated** — needs an owner decision, see above. |
+| F-23 | P2 | Registry overlay not built. | They are the
 surface interiors, and they are the work. Nothing in this disposition should be read as reducing
 F-01: the chrome is now right, and the compositions inside it are still not the reference's.
