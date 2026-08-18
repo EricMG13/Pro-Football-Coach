@@ -2,7 +2,13 @@ import SwiftUI
 
 /// Shared rankings/playoff picture surface. Ranking and bracket data are read from the same
 /// competition snapshot so the two views cannot disagree about the field.
-public struct CompetitionOverviewView: View {
+public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: CompetitionOverviewReadModel
     public let focus: CoachWorldScreenID
     public let statusMessage: String?
@@ -41,7 +47,7 @@ public struct CompetitionOverviewView: View {
     }
 
     private var surface: some View {
-        CoachWorldFloodlitStage(palette: palette) {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             VStack(spacing: .zero) {
                 topBar
                 if let statusMessage {

@@ -1,6 +1,12 @@
 import SwiftUI
 
-public struct NewsView: View {
+public struct NewsView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: NewsReadModel
     public let statusMessage: String?
     public let onClose: () -> Void
@@ -15,7 +21,7 @@ public struct NewsView: View {
 
     public var body: some View {
         let palette = CoachWorldTokens.dark
-        CoachWorldFloodlitStage(palette: palette) {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             ScrollView {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                     header(palette: palette)

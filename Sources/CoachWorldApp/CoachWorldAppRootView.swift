@@ -143,6 +143,10 @@ public struct CoachWorldAppRootView: View {
                         statusMessage: failure ?? store.statusMessage,
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .news, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .recordBook:
                 surface(store.legacyHistory, screen: .recordBook) { model in
@@ -257,16 +261,28 @@ public struct CoachWorldAppRootView: View {
                 surface(store.statisticsLeaders, screen: .statisticsLeaders) { model in
                     StatisticsLeadersView(model: model, statusMessage: failure ?? store.statusMessage,
                                           onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .statisticsLeaders, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .awardsHonours:
                 surface(store.awardsHonours, screen: .awardsHonours) { model in
                     AwardsHonoursView(model: model, statusMessage: failure ?? store.statusMessage,
                                       onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .awardsHonours, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .realignmentEvent:
                 surface(store.realignment, screen: .realignmentEvent) { model in
                     RealignmentEventView(model: model, statusMessage: failure ?? store.statusMessage,
                                          onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .realignmentEvent, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .leagueMap:
                 surface(store.leagueMap, screen: .leagueMap) { model in
@@ -285,6 +301,10 @@ public struct CoachWorldAppRootView: View {
                                 navigate(.teamProgrammeProfile, in: store)
                             }
                         }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .leagueMap, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .matchDay:
@@ -728,6 +748,10 @@ public struct CoachWorldAppRootView: View {
                             }
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .standings, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .schedule:
                 surface(store.schedule, screen: .schedule) { model in
@@ -743,6 +767,10 @@ public struct CoachWorldAppRootView: View {
                             }
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .schedule, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .teamProgrammeProfile:
                 surface(store.teamProgrammeProfile, screen: .teamProgrammeProfile) { model in
@@ -757,6 +785,10 @@ public struct CoachWorldAppRootView: View {
                             }
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .teamProgrammeProfile, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .worldSearch:
                 surface(store.worldSearch, screen: .worldSearch) { model in
@@ -770,6 +802,10 @@ public struct CoachWorldAppRootView: View {
                                 navigate(.teamProgrammeProfile, in: store)
                             }
                         }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .worldSearch, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .rankingsPlayoffPicture:
@@ -786,6 +822,10 @@ public struct CoachWorldAppRootView: View {
                             }
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .rankingsPlayoffPicture, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .bracketPostseason:
                 surface(store.competitionOverview, screen: .bracketPostseason) { model in
@@ -800,6 +840,10 @@ public struct CoachWorldAppRootView: View {
                                 navigate(.teamProgrammeProfile, in: store)
                             }
                         }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .bracketPostseason, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             default:

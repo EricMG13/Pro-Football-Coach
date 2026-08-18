@@ -14,7 +14,13 @@ import SwiftUI
 /// hand-built accessibility tree; positioned buttons give both by construction. The one `Canvas`
 /// here draws the rivalry links, which are at most eight lines carrying nothing the detail rail
 /// does not also state in words.
-public struct LeagueMapView: View {
+public struct LeagueMapView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: LeagueMapReadModel
     public let statusMessage: String?
     public let onContinue: () -> Void
@@ -50,7 +56,7 @@ public struct LeagueMapView: View {
     }
 
     public var body: some View {
-        CoachWorldFloodlitStage(palette: palette) {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             if dynamicTypeSize.isAccessibilitySize {
                 accessibleLayout
             } else {

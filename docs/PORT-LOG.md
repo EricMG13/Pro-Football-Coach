@@ -609,3 +609,17 @@ owns the stage rather than each growing one. Cap, dead money and cuts share stat
 
 **Verified:** `--core-contracts` (202 / 2228) and `--design-contracts` (29 / 613) green, partition
 still 62 converted / 0 pending.
+
+## 2026-08-18 — milestone 3e: league
+
+**Converted (12 surfaces):** League Map, Team / Programme Profile, Standings, Schedule, Rankings &
+Playoff Picture, Bracket / Postseason, Competition Overview, Statistics & Leaders, Awards &
+Honours, News, Realignment Event, World Search.
+
+Rankings and Bracket are focus-scoped wrappers over `CompetitionOverviewView`; like every other
+wrapper in this port they hand the chrome down to the composition that owns the stage.
+`CompetitionOverviewView` itself is never rendered directly by the root — only through those two —
+so it takes the chrome but has no wiring site of its own.
+
+**Verified:** `--core-contracts` (202 / 2228) and `--design-contracts` (29 / 613) green, partition
+still 62 converted / 0 pending.
