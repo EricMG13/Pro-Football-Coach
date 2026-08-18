@@ -75,8 +75,12 @@ public struct WorldSearchView: View, CoachWorldChromedSurface {
                 }
             }
             .padding(.vertical, CoachWorldTokens.Pad.panel.v)
+            // The column is the handoff's width, held at the leading edge. A bare `maxWidth`
+            // inside a ScrollView centres what it constrains, which floated this column into the
+            // middle of the stage instead of starting it at the content inset.
             .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : SearchMetric.column,
                    alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .safeAreaInset(edge: .bottom) { footer }
     }
