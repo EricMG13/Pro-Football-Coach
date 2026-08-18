@@ -455,6 +455,32 @@ public final class CoachWorldStore {
             }
             return
         }
+        // A bare tap (four parts, no trailing dial values) is Tactics opening the picker, which the
+        // screen router handles before this method is ever reached — it never emits nothing but
+        // "tactics", so reaching here means either a stale intent or a submitted plan. The three
+        // trailing raw values are the plan `GamePlanView`'s row carried; see
+        // `CoachWorldAppRootView.matchControl(_:in:)`.
+        if parts[3] == "tactics" {
+            guard parts.count >= 7,
+                  let runPassBiasRaw = Int(parts[4]),
+                  let runPassBias = TacticalRunPassBias(rawValue: runPassBiasRaw),
+                  let tempoRaw = Int(parts[5]),
+                  let tempo = TacticalTempo(rawValue: tempoRaw),
+                  let pressureRaw = Int(parts[6]),
+                  let pressure = TacticalPressure(rawValue: pressureRaw) else {
+                statusMessage = "That tactical plan is no longer available"
+                return
+            }
+            let plan = TacticalPlan(runPassBias: runPassBias, tempo: tempo, pressure: pressure)
+            await run {
+                try await self.session.resolveMatch(
+                    fixtureID: fixtureID,
+                    revision: revision,
+                    action: .setTacticalPlan(plan)
+                )
+            }
+            return
+        }
         guard parts.count >= 5, parts[3] == "callin" else {
             statusMessage = "That match action is unavailable at this checkpoint"
             return

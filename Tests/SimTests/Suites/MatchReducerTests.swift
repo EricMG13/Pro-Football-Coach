@@ -201,6 +201,73 @@ func runMatchReducerTests() {
             expect(state.isTakeover)
         }
 
+        test("a mid-match tactical plan change lands on the coach's own side and no other") {
+            // 02 section 3.2: "tempo, aggression, personnel packages" are named mid-match changes.
+            // This is Tactics' engine half -- it must move the controlled side's plan and leave the
+            // opponent's untouched, exactly the way chooseCallIn already moves only the possessing
+            // side's plan.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let newPlan = TacticalPlan(runPassBias: .passHeavy, tempo: .hurry, pressure: .attack)
+            var homeControlled = MatchReducer.start(
+                tier: .pro, home: personnel, away: personnel, seed: 8_121, controlledSide: .home
+            )
+            _ = try! MatchReducer.reduce(.setTacticalPlan(newPlan), state: &homeControlled)
+            expectEqual(homeControlled.homePlan, newPlan)
+            expectEqual(homeControlled.awayPlan, .balanced,
+                        "changing the coach's own plan must not touch the opponent's")
+
+            var awayControlled = MatchReducer.start(
+                tier: .pro, home: personnel, away: personnel, seed: 8_122, controlledSide: .away
+            )
+            _ = try! MatchReducer.reduce(.setTacticalPlan(newPlan), state: &awayControlled)
+            expectEqual(awayControlled.awayPlan, newPlan)
+            expectEqual(awayControlled.homePlan, .balanced)
+
+            let reopened = try! JSONDecoder.stable().decode(
+                MatchSessionState.self, from: JSONEncoder.stable().encode(homeControlled)
+            )
+            expectEqual(reopened, homeControlled)
+        }
+
+        test("a tactical plan change needs a controlled side and no pending call-in") {
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            var uncontrolled = MatchReducer.start(
+                tier: .pro, home: personnel, away: personnel, seed: 8_123, controlledSide: nil
+            )
+            do {
+                _ = try MatchReducer.reduce(.setTacticalPlan(.balanced), state: &uncontrolled)
+                expect(false, "an uncontrolled match accepted a tactics change")
+            } catch MatchReducerError.unavailableTactics {
+                expect(true)
+            } catch {
+                expect(false, "the wrong error came back for an uncontrolled tactics change")
+            }
+
+            // Same 4th-and-short, deep-territory situation the call-in test above already relies on
+            // to trigger a proposal in one snap, rather than a discovery loop over an unbounded
+            // number of advances that could in principle run past the game's own completion.
+            let situation = Situation(
+                down: 4, distance: 2, yardLine: 72, possession: .home,
+                homeScore: 14, awayScore: 17, quarter: 4, secondsRemainingInQuarter: 80,
+                timeoutsRemaining: [.home: 3, .away: 3]
+            )
+            var awaitingCallIn = MatchReducer.start(
+                tier: .pro, home: personnel, away: personnel, seed: 8_124,
+                controlledSide: .home, initialSituation: situation
+            )
+            _ = try! MatchReducer.reduce(.advance, state: &awaitingCallIn)
+            expect(awaitingCallIn.pendingCallIn != nil,
+                   "the engineered situation must reliably propose a call-in in one snap")
+            do {
+                _ = try MatchReducer.reduce(.setTacticalPlan(.balanced), state: &awaitingCallIn)
+                expect(false, "a tactics change slipped in ahead of a pending call-in decision")
+            } catch MatchReducerError.awaitingCallIn {
+                expect(true)
+            } catch {
+                expect(false, "the wrong error came back for a tactics change during a call-in")
+            }
+        }
+
         test("legacy controlled checkpoints default to coach takeover") {
             let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
             let state = MatchReducer.start(

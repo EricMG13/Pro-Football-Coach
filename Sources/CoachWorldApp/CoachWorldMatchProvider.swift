@@ -269,8 +269,17 @@ public extension CoachWorldReadModelProvider {
                     intentID: .init(rawValue: prefix + "takeover")
                 )
             case .tactics:
-                return .init(id: id, value: "Plan fixed", isEnabled: false, isSelected: false,
-                             intentID: .init(rawValue: prefix + id.rawValue))
+                // `02` section 3.2 names tempo, aggression and personnel packages as mid-match
+                // changes. Gated exactly like Take Over: a side to change it for, no call-in
+                // decision the coach must answer first, and a live game to change it in.
+                return .init(
+                    id: id, value: "Adjust",
+                    isEnabled: session.controlledSide != nil
+                        && session.pendingCallIn == nil
+                        && !session.completed,
+                    isSelected: false,
+                    intentID: .init(rawValue: prefix + id.rawValue)
+                )
             }
         }
     }

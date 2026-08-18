@@ -494,6 +494,7 @@ public struct MatchDayView: View {
         .task(id: "\(model.playback?.stableID ?? model.recordedOutcomeID)|\(speedIndex)") {
             guard let playback = model.playback, !reduceMotion else {
                 playbackComplete = true
+                await autoAdvanceIfEligible()
                 return
             }
             playbackStart = Date()
@@ -510,6 +511,7 @@ public struct MatchDayView: View {
             }
             guard !Task.isCancelled else { return }
             playbackComplete = true
+            await autoAdvanceIfEligible()
         }
         .onChange(of: model.playback?.isPaused ?? false) { _, isPaused in
             if isPaused {
@@ -519,6 +521,26 @@ public struct MatchDayView: View {
                 pausedSince = nil
             }
         }
+    }
+
+    /// Continuous drive playback: once a snap has finished, hold on the result briefly, then submit
+    /// the same intent Key Moments' own tap already sends — this only ever emits an intent the
+    /// coach could have tapped themselves, never anything the read model did not already offer.
+    /// Cancelled the instant a new snap's `.task(id:)` identity fires, exactly like the completion
+    /// loop above; nothing here can advance a snap this view is no longer showing.
+    private func autoAdvanceIfEligible() async {
+        // model is this task's own captured snapshot, frozen for as long as its id (keyed on the
+        // current snap) does not change — safe to read staffInterruption and controls from it once,
+        // since neither can change without the id changing too, but not safe to trust for a live
+        // pause read across the sleep below. pausedSince is the same @State the onChange handler
+        // above keeps current regardless of what this task captured, which is why pause is checked
+        // through it instead.
+        guard model.staffInterruption == nil, pausedSince == nil,
+              let advance = model.controls.first(where: { $0.id == .keyMoments })
+        else { return }
+        try? await Task.sleep(for: .seconds(MatchMetric.autoAdvanceDwellSeconds / speedMultiplier))
+        guard !Task.isCancelled, pausedSince == nil else { return }
+        onControl(advance.intentID)
     }
 
     private func screenY(_ fraction: Double, height: CGFloat, banded: Bool) -> CGFloat {
@@ -987,4 +1009,10 @@ private enum MatchMetric {
     /// Guards the division that maps playback progress onto one ball leg. A zero-length leg is
     /// legal in the contract, and dividing by it would produce a position of nan.
     static let minimumLegSpan: Double = 0.0001
+    /// How long a finished snap holds before the next one begins on its own. `02` section 3.1:
+    /// "Between call-ins the match plays at drive granularity: the field animates, the drive
+    /// summarises, the player watches" — watching, not tapping Key Moments after every play. Real
+    /// time at 1x, scaled the same way the snap's own duration is, so a coach watching at 4x is not
+    /// held on a dwell four times longer than the play that just finished.
+    static let autoAdvanceDwellSeconds: Double = 1.2
 }

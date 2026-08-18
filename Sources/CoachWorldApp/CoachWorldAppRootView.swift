@@ -20,6 +20,11 @@ public struct CoachWorldAppRootView: View {
     @State private var screen: CoachWorldScreenID = .coachingHQ
     @State private var teamHealthOrigin: CoachWorldScreenID = .coachingHQ
     @State private var inboxOrigin: CoachWorldScreenID = .coachingHQ
+    /// Where Tactics opened Game Plan from, so submitting or closing returns there rather than to
+    /// Coaching HQ. Not persisted across a relaunch the way `teamHealthOrigin`/`inboxOrigin` are —
+    /// quitting mid-adjustment lands back on Coaching HQ instead of Match Day on the next launch, a
+    /// narrower gap than the two return routes already wired into the save document.
+    @State private var gamePlanOrigin: CoachWorldScreenID = .coachingHQ
     @State private var recruitingProspectID: String?
     @State private var recoveryRequired = false
     @State private var showingNewCareerSetup = false
@@ -345,9 +350,32 @@ public struct CoachWorldAppRootView: View {
                         model: model,
                         statusMessage: failure ?? store.statusMessage,
                         onSelect: { plan in
-                            Task { await setGamePlan(plan, in: store) }
+                            // Tactics opened this screen mid-match: the choice must reach
+                            // MatchAction.setTacticalPlan on the live session, not setGamePlan's
+                            // pre-game weekly plan store, which a live match never reads from again
+                            // once kicked off.
+                            if gamePlanOrigin == .matchDay,
+                               let tacticsControl = store.matchDay?.controls.first(where: {
+                                   $0.id == .tactics
+                               }) {
+                                let encoded = CoachWorldIntentID(rawValue: [
+                                    tacticsControl.intentID.rawValue,
+                                    String(plan.runPassBias.rawValue),
+                                    String(plan.tempo.rawValue),
+                                    String(plan.pressure.rawValue),
+                                ].joined(separator: "|"))
+                                Task { await matchControl(encoded, in: store) }
+                            } else {
+                                Task { await setGamePlan(plan, in: store) }
+                            }
                         },
-                        onClose: { navigate(.coachingHQ, in: store) }
+                        onClose: {
+                            if gamePlanOrigin == .matchDay {
+                                screen = .matchDay
+                            } else {
+                                navigate(gamePlanOrigin, in: store)
+                            }
+                        }
                     )
                     .floodlitChrome(
                         chrome(for: .gamePlan, in: store),
@@ -1077,6 +1105,7 @@ public struct CoachWorldAppRootView: View {
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
         case .gamePlan where store.gamePlan != nil:
+            gamePlanOrigin = screen == .matchDay ? .matchDay : .coachingHQ
             screen = .gamePlan
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
@@ -1465,6 +1494,16 @@ public struct CoachWorldAppRootView: View {
         _ intentID: CoachWorldIntentID,
         in store: CoachWorldStore
     ) async {
+        // A bare four-part "...tactics" intent is the button being tapped, not a plan being
+        // submitted — GamePlanView's onSelect above appends the three chosen dial values before
+        // this function sees a tactics intent again. Routing here rather than through the engine
+        // keeps the tap itself from touching MatchSessionState at all: opening the picker is
+        // presentation, the skill's "must not alter the recorded moment" for exactly this control.
+        let parts = intentID.rawValue.split(separator: "|", omittingEmptySubsequences: false)
+        if parts.count == 4, parts[3] == "tactics" {
+            navigate(.gamePlan, in: store)
+            return
+        }
         await store.matchControl(intentID)
         if store.matchDay == nil {
             if store.aftermath != nil {

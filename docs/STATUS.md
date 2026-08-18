@@ -535,11 +535,23 @@ presentation space, so D2's whole point — the sack drawn as the protection due
 render. Each now has a test that fails if it returns. The lesson is the one `04b` keeps making: a
 green suite bounds what was checked, not what is true.
 
-Two further limits are by design rather than debt, and are stated so a reader does not mistake them
-for defects. Alignment is a `03` §9.4 template because per-snap alignment is not recorded, and
-movement is sparse — blockers hold, rushers converge, the carrier runs to the end spot, route runners
-reach the recorded air-yard depth, and nothing else moves, because `04` §9 prohibits inventing the
-rest. Continuous drive playback and key-moment scrubbing remain unbuilt.
+One further limit is by design rather than debt, and is stated so a reader does not mistake it for a
+defect. Alignment is a `03` §9.4 template because per-snap alignment is not recorded, and movement is
+sparse — a blocker who lost his duel is driven back, one who won holds; rushers converge; a defender
+who broke free of a tackle draws a near miss and whoever finally stopped him converges on the ball;
+the carrier runs to the end spot; route runners reach the recorded air-yard depth; nothing else moves,
+because `04` §9 prohibits inventing the rest.
+
+**Continuous drive playback landed 2026-08-18; key-moment scrubbing did not.** Once a snap's
+animation finishes, `MatchDayView` holds briefly on the result then submits the same intent Key
+Moments' own tap already sends, chaining through a drive without a manual tap per snap — `02` §3.1's
+"the field animates, the drive summarises, the player watches," rather than the coach tapping through
+every play. Reviewing an *earlier* snap — scrubbing back to one already played — remains unbuilt: the
+engine already retains the current drive's past plays (`MatchSessionState.currentDrive.plays`,
+`drives[].plays`), so the gap is a read-model projection and a browsing surface, not retained data,
+but no canon anywhere specifies what that surface should look like, and building the projection with
+nothing in the UI reading it would be exactly the kind of half-finished, dead-on-arrival plumbing this
+document exists to flag rather than ship quietly.
 
 **Recruiting Board is truthful too, added 2026-08-13.** `Capacity.weeklyHoursRemaining` is
 `ProgrammeRecruitingState.contactPointsRemaining` — a real, weekly-reset resource
