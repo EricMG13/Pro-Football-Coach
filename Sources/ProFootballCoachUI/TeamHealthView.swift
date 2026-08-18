@@ -34,6 +34,7 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
             ScrollView {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
                     header
+                    alertBar
 
                     if let statusMessage {
                         Text(statusMessage)
@@ -80,6 +81,51 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
         .frame(maxWidth: .infinity,
                alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
         .accessibilitySortPriority(100)
+    }
+
+    /// The reference's alert bar: full width above the readout, stating what is actually wrong.
+    ///
+    /// Drawn only when something is wrong. A permanent bar reading "0 injuries" is furniture that
+    /// teaches a coach to ignore the place alarms appear.
+    @ViewBuilder
+    private var alertBar: some View {
+        let concerns = [
+            model.injuryCount > 0
+                ? "\(model.injuryCount) injured" : nil,
+            model.suspensionCount > 0
+                ? "\(model.suspensionCount) suspended" : nil,
+        ].compactMap { $0 }
+        if !concerns.isEmpty {
+            HStack(spacing: CoachWorldTokens.Gap.smPlus) {
+                Image(systemName: "cross.case")
+                    .font(.system(size: TeamHealthMetric.alertIcon, weight: .semibold))
+                    .foregroundStyle(palette.stateWarning.color)
+                    .accessibilityHidden(true)
+                Text(concerns.joined(separator: " \u{00B7} "))
+                    .font(CoachWorldTokens.TypeRole.body.weight(.bold))
+                Spacer(minLength: CoachWorldTokens.Gap.xs)
+                Text("Average condition \(model.averageCondition)")
+                    .font(CoachWorldTokens.TypeRole.caption)
+                    .foregroundStyle(palette.contentSecondary.color)
+            }
+            .padding(.vertical, CoachWorldTokens.Pad.alert.v)
+            .padding(.horizontal, CoachWorldTokens.Pad.alert.h)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                CoachWorldCutCorner.alert.fill(palette.stateWarning.color.opacity(0.12))
+            )
+            .overlay {
+                CoachWorldCutCorner.alert.stroke(
+                    palette.stateWarning.color.opacity(0.45),
+                    lineWidth: CoachWorldTokens.Shape.hairline
+                )
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(
+                "Availability alert. \(concerns.joined(separator: ", ")). "
+                    + "Average condition \(model.averageCondition)."
+            )
+        }
     }
 
     @ViewBuilder
@@ -179,4 +225,8 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
         )
         .accessibilitySortPriority(50)
     }
+}
+
+private enum TeamHealthMetric {
+    static let alertIcon: CGFloat = 19
 }

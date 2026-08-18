@@ -129,6 +129,8 @@ public enum CoachWorldTokens {
         public static let figure: CGFloat = 34
         public static let screen: CGFloat = 25
         public static let title: CGFloat = 20
+        /// The subject line of an opened message: the handoff's inbox reading pane.
+        public static let subject: CGFloat = 22
         public static let clock: CGFloat = 19
         public static let lead: CGFloat = 17
         public static let panel: CGFloat = 16

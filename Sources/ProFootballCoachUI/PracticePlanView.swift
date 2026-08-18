@@ -45,80 +45,124 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
 
     private var scrollContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                HStack {
-                    VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                        Text("PRACTICE PLAN")
-                            .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                            .foregroundStyle(palette.collegeIdentity.color)
-                        Text(model.team.name)
-                            .font(CoachWorldTokens.TypeRole.display.weight(.black))
-                        Text("\(model.weekLabel) · 60 minutes")
-                            .font(CoachWorldTokens.TypeRole.body)
-                            .foregroundStyle(palette.contentSecondary.color)
-                    }
-                    Spacer()
-                    Button("Done", action: onClose)
-                        .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
-                               minHeight: CoachWorldTokens.Shape.minimumTarget)
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
+                HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.xs) {
+                    FloodlitLabel3("Practice plan \u{00B7} \(model.weekLabel)", palette: palette)
+                    Spacer(minLength: CoachWorldTokens.Gap.xs)
+                    FloodlitLabel3("You decide", palette: palette, tint: palette.actionPrimary.color)
                 }
-
                 if let statusMessage {
                     Text(statusMessage)
                         .font(CoachWorldTokens.TypeRole.callout)
                         .foregroundStyle(palette.stateWarning.color)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Text("Every option spends the existing 60-minute weekly budget. Effects are consumed by readiness and development.")
-                    .font(CoachWorldTokens.TypeRole.body)
-                    .foregroundStyle(palette.contentSecondary.color)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                ForEach(model.options) { option in
-                    Button {
-                        selectedID = option.id
-                        onSelect(option.plan)
-                    } label: {
-                        HStack(alignment: .top, spacing: CoachWorldTokens.Space.sm) {
-                            Image(systemName: selectedID == option.id
-                                ? "checkmark.circle.fill" : "circle")
-                                .accessibilityHidden(true)
-                            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                                Text(option.title)
-                                    .font(CoachWorldTokens.TypeRole.headline.weight(.bold))
-                                Text(option.consequence)
-                                    .font(CoachWorldTokens.TypeRole.body)
-                                    .foregroundStyle(palette.contentSecondary.color)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            Spacer(minLength: 0)
-                            Text("60m")
-                                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                                .foregroundStyle(palette.collegeIdentity.color)
-                        }
-                        .padding(CoachWorldTokens.Space.sm)
-                        .frame(maxWidth: .infinity, minHeight: 54, alignment: .leading)
-                        .background(
-                            selectedID == option.id
-                                ? palette.collegeIdentity.color.opacity(0.16)
-                                : palette.raised.color.opacity(0.6)
-                        )
-                        .overlay {
-                            RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.rowRadius)
-                                .stroke(
-                                    selectedID == option.id
-                                        ? palette.collegeIdentity.color
-                                        : palette.contentQuiet.color.opacity(0.65),
-                                    lineWidth: CoachWorldTokens.Shape.hairline
-                                )
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(option.title). \(option.consequence). 60 minutes.")
-                    .accessibilityAddTraits(selectedID == option.id ? .isSelected : [])
-                }
+                allocator
+                options
             }
-            .padding(CoachWorldTokens.Space.md)
+            .padding(.vertical, CoachWorldTokens.Pad.panel.v)
+        }
+        .safeAreaInset(edge: .bottom) { commitBar }
+    }
+
+    /// The week's minutes as an allocation, which is what the reference's allocator shows: four
+    /// sessions sharing one stated whole.
+    ///
+    /// A share bar is legitimate here precisely because each session is a proportion of
+    /// `TacticalPracticePlan.weeklyMinutes` — a stated total, not an open-ended count.
+    @ViewBuilder
+    private var allocator: some View {
+        if let plan = model.currentPlan {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+                HStack(spacing: CoachWorldTokens.Gap.xs) {
+                    FloodlitLabel3("This week", palette: palette)
+                    Spacer(minLength: .zero)
+                    Text("\(TacticalPracticePlan.weeklyMinutes)\u{2032} total")
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.contentSecondary.color)
+                }
+                session("Install", minutes: plan.installMinutes)
+                session("Conditioning", minutes: plan.conditioningMinutes)
+                session("Recovery", minutes: plan.recoveryMinutes)
+                session(
+                    plan.positionFocus.map { "Focus \u{00B7} \(label($0))" } ?? "Position focus",
+                    minutes: plan.positionFocusMinutes
+                )
+            }
         }
     }
+
+    private func session(_ name: String, minutes: Int) -> some View {
+        FloodlitRow(palette: palette) {
+            HStack(spacing: CoachWorldTokens.Gap.xs) {
+                Text(name.uppercased())
+                    .font(
+                        CoachWorldTokens.display(
+                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                        )
+                    )
+                    .lineLimit(1)
+                    .frame(width: PracticeMetric.sessionLabel, alignment: .leading)
+                FloodlitShareBar(
+                    proportion: Double(minutes) / Double(TacticalPracticePlan.weeklyMinutes),
+                    palette: palette
+                )
+                // Minutes take a prime, per the handoff's copy rules.
+                Text("\(minutes)\u{2032}")
+                    .font(
+                        CoachWorldTokens.figure(
+                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                        )
+                    )
+                    .frame(width: PracticeMetric.minutesColumn, alignment: .trailing)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(name), \(minutes) minutes of \(TacticalPracticePlan.weeklyMinutes)")
+    }
+
+    private func label(_ group: PositionGroup) -> String {
+        String(describing: group).replacingOccurrences(of: "_", with: " ").capitalized
+    }
+
+    private var options: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+            FloodlitLabel3("What a different week costs", palette: palette)
+            ForEach(model.options) { option in
+                FloodlitRow(
+                    isSelected: selectedID == option.id,
+                    palette: palette,
+                    action: {
+                        selectedID = option.id
+                        onSelect(option.plan)
+                    }
+                ) {
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                        Text(option.title.uppercased())
+                            .font(
+                                CoachWorldTokens.display(
+                                    CoachWorldTokens.DisplaySize.row, weight: .bold
+                                )
+                            )
+                            .lineLimit(1)
+                        FloodlitCostLine(cost: option.consequence, palette: palette)
+                    }
+                }
+                .accessibilityLabel("\(option.title). \(option.consequence)")
+            }
+        }
+    }
+
+    private var commitBar: some View {
+        HStack {
+            Spacer(minLength: .zero)
+            FloodlitCommittingAction("Set the week", action: onClose)
+        }
+        .padding(.top, CoachWorldTokens.Gap.xs)
+    }
+}
+
+private enum PracticeMetric {
+    static let sessionLabel: CGFloat = 104
+    static let minutesColumn: CGFloat = 38
 }

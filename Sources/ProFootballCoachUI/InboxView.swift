@@ -14,6 +14,7 @@ public struct InboxView: View, CoachWorldChromedSurface {
     public let onContinue: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var selectedID: String = ""
 
     public init(
         model: InboxReadModel,
@@ -37,128 +38,256 @@ public struct InboxView: View, CoachWorldChromedSurface {
 
     public var body: some View {
         CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                    header
-                    if let statusMessage {
-                        Text(statusMessage)
-                            .font(CoachWorldTokens.TypeRole.callout)
-                            .foregroundStyle(palette.stateWarning.color)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    if model.items.isEmpty {
-                        CoachWorldSystemState(
-                            .empty(
-                                "Inbox is clear. No decisions or current-week stories "
-                                    + "are recorded."
-                            ),
-                            palette: palette
-                        )
-                    } else {
-                        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-                            Text("RECENT INBOX")
-                                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                                .foregroundStyle(palette.contentSecondary.color)
-                            ForEach(model.items) { item in
-                                itemRow(item)
-                            }
-                        }
-                    }
-                    Button(action: onContinue) {
-                        Label("Continue", systemImage: "forward.end.fill")
-                            .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
-                    }
-                    .buttonStyle(CoachWorldActionButtonStyle(
-                        role: model.canContinue ? .primary : .secondary,
-                        palette: palette
-                    ))
-                    .disabled(!model.canContinue)
-                    .accessibilityHint(model.continueReason ?? "")
-                }
-                .padding(CoachWorldTokens.Space.md)
-            }
+            scrollContent
         }
         .accessibilitySortPriority(100)
     }
 
-    @ViewBuilder
+    private var scrollContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.md) {
+                header
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.callout)
+                        .foregroundStyle(palette.stateWarning.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if model.items.isEmpty {
+                    CoachWorldSystemState(
+                        .empty(
+                            "Inbox is clear. No decisions or current-week stories "
+                                + "are recorded."
+                        ),
+                        palette: palette
+                    )
+                } else if dynamicTypeSize.isAccessibilitySize {
+                    // At AX sizes the two columns stack: the reading pane cannot hold a message
+                    // beside a list of six at 310 points wide, and cutting the message is worse
+                    // than scrolling to it.
+                    messageList
+                    readingPane
+                } else {
+                    HStack(alignment: .top, spacing: CoachWorldTokens.Gap.lg) {
+                        messageList
+                            .frame(width: InboxMetric.listWidth)
+                        readingPane
+                    }
+                }
+            }
+            .padding(.vertical, CoachWorldTokens.Pad.panel.v)
+        }
+        .safeAreaInset(edge: .bottom) { commitBar }
+    }
+
     private var header: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-                titleBlock
-                Button("Done", action: onClose)
-                    .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
-                           minHeight: CoachWorldTokens.Shape.minimumTarget)
+        HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.xs) {
+            // The rail is the way back once the chrome is present; the link only exists for the
+            // bare stage, where nothing else leaves this screen.
+            if chrome == nil {
+                Button(action: onClose) {
+                    Text("\u{2190} Back")
+                        .font(
+                            CoachWorldTokens.display(
+                                CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                            )
+                        )
+                        .foregroundStyle(palette.contentSecondary.color)
+                        .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
+                               minHeight: CoachWorldTokens.Shape.minimumTarget,
+                               alignment: .leading)
+                }
+                .buttonStyle(.plain)
             }
-        } else {
-            HStack(alignment: .top) {
-                titleBlock
-                Spacer(minLength: CoachWorldTokens.Space.sm)
-                Button("Done", action: onClose)
-                    .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
-                           minHeight: CoachWorldTokens.Shape.minimumTarget)
+            FloodlitLabel3("Inbox \u{00B7} \(model.weekLabel)", palette: palette)
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            if unreadCount > 0 {
+                FloodlitLabel3(
+                    "\(unreadCount) unanswered",
+                    palette: palette,
+                    tint: palette.actionPrimary.color
+                )
             }
         }
     }
 
-    private var titleBlock: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-            Text("INBOX")
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.collegeIdentity.color)
-            Text(model.team.name)
-                .font(CoachWorldTokens.TypeRole.display.weight(.black))
-                .fixedSize(horizontal: false, vertical: true)
-            Text(model.weekLabel)
-                .font(CoachWorldTokens.TypeRole.body)
-                .foregroundStyle(palette.contentSecondary.color)
+    private var unreadCount: Int {
+        model.items.filter(\.isUnread).count
+    }
+
+    /// The message the reading pane is showing. Selection is presentation state, so it falls back
+    /// to the first message rather than carrying an empty pane.
+    private var selected: InboxReadModel.Item? {
+        model.items.first { $0.stableID == selectedID } ?? model.items.first
+    }
+
+    /// The left column: one tappable row per message, tag then subject then sender.
+    private var messageList: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xxs) {
+            ForEach(model.items) { item in
+                FloodlitRow(
+                    isSelected: selected?.stableID == item.stableID,
+                    palette: palette,
+                    action: {
+                        selectedID = item.stableID
+                        onRead(item.stableID)
+                    }
+                ) {
+                    HStack(spacing: CoachWorldTokens.Gap.md) {
+                        Text(tag(for: item))
+                            .font(
+                                CoachWorldTokens.display(
+                                    CoachWorldTokens.DisplaySize.flag, weight: .bold
+                                )
+                            )
+                            .tracking(
+                                CoachWorldTokens.DisplaySize.tracking(
+                                    CoachWorldTokens.DisplaySize.labelTracking,
+                                    at: CoachWorldTokens.DisplaySize.flag
+                                )
+                            )
+                            .foregroundStyle(tone(for: item))
+                            .lineLimit(1)
+                            .frame(width: InboxMetric.tagColumn, alignment: .leading)
+                        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                            Text(item.title)
+                                .font(
+                                    CoachWorldTokens.display(
+                                        CoachWorldTokens.DisplaySize.row, weight: .bold
+                                    )
+                                )
+                                .foregroundStyle(
+                                    item.isUnread
+                                        ? palette.contentPrimary.color
+                                        : palette.contentSecondary.color
+                                )
+                                .lineLimit(InboxMetric.subjectLines)
+                                .multilineTextAlignment(.leading)
+                            Text(item.sourceLabel.uppercased())
+                                .font(
+                                    CoachWorldTokens.display(
+                                        CoachWorldTokens.DisplaySize.flag, weight: .bold
+                                    )
+                                )
+                                .tracking(
+                                    CoachWorldTokens.DisplaySize.tracking(
+                                        CoachWorldTokens.DisplaySize.labelTracking,
+                                        at: CoachWorldTokens.DisplaySize.flag
+                                    )
+                                )
+                                .foregroundStyle(palette.contentQuiet.color)
+                                .lineLimit(1)
+                        }
+                        Spacer(minLength: .zero)
+                    }
+                }
+                .accessibilityLabel(
+                    "\(item.title), from \(item.sourceLabel), "
+                        + "\(item.isUnread ? "unread" : "read") \(item.kind.rawValue)"
+                )
+            }
         }
     }
 
+    /// The right column: the opened message, whole, with what it is waiting on.
     @ViewBuilder
-    private func itemRow(_ item: InboxReadModel.Item) -> some View {
-        let content = VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(item.title)
-                    .font(CoachWorldTokens.TypeRole.headline.weight(.bold))
-                Spacer(minLength: CoachWorldTokens.Space.xs)
-                Text(item.isUnread
-                     ? (item.kind == .task ? "TODO" : "NEW")
-                     : (item.kind == .decision ? "DUE" : "READ"))
-                    .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                    .foregroundStyle(item.isUnread ? palette.collegeIdentity.color : palette.contentSecondary.color)
+    private var readingPane: some View {
+        if let item = selected {
+            FloodlitCard(palette: palette, depth: .deep) {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
+                    HStack(spacing: CoachWorldTokens.Gap.smPlus) {
+                        FloodlitLabel3(item.sourceLabel, palette: palette)
+                        Spacer(minLength: CoachWorldTokens.Gap.xs)
+                        FloodlitFlag(tag(for: item), tint: tone(for: item), palette: palette)
+                    }
+                    Text(item.title)
+                        .font(
+                            CoachWorldTokens.display(
+                                CoachWorldTokens.DisplaySize.subject, weight: .bold
+                            )
+                        )
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(item.body)
+                        .font(CoachWorldTokens.TypeRole.callout)
+                        .foregroundStyle(palette.contentSecondary.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                    FloodlitCostLine(
+                        cost: item.received,
+                        exposure: item.deadline,
+                        palette: palette
+                    )
+                    if let destination = item.destination {
+                        Button {
+                            onRead(item.stableID)
+                            onOpen(destination)
+                        } label: {
+                            Text("Open \(destination.navigationName.lowercased())")
+                                .font(
+                                    CoachWorldTokens.display(
+                                        CoachWorldTokens.DisplaySize.action, weight: .bold
+                                    )
+                                )
+                                .foregroundStyle(palette.actionPrimary.color)
+                                .frame(minHeight: CoachWorldTokens.Shape.minimumTarget,
+                                       alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            Text(item.body)
-                .font(CoachWorldTokens.TypeRole.callout)
-                .fixedSize(horizontal: false, vertical: true)
-            Text([item.sourceLabel, item.received, item.deadline].compactMap { $0 }.joined(separator: " · "))
-                .font(CoachWorldTokens.TypeRole.caption)
-                .foregroundStyle(palette.contentSecondary.color)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(CoachWorldTokens.Space.sm)
-        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-        .background(palette.raised.color.opacity(0.72))
-        .overlay {
-            RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.rowRadius)
-                .stroke(palette.contentQuiet.color.opacity(0.6), lineWidth: CoachWorldTokens.Shape.hairline)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "\(item.title), \(item.body), \(item.sourceLabel), \(item.received)"
-                + (item.deadline.map { ", \($0)" } ?? "")
-                + ", \(item.isUnread ? "Unread" : "Read") \(item.kind.rawValue)"
-        )
-
-        if let destination = item.destination {
-            Button {
-                onRead(item.stableID)
-                onOpen(destination)
-            } label: { content }
-                .buttonStyle(.plain)
-        } else {
-            Button(action: { onRead(item.stableID) }) { content }
-                .buttonStyle(.plain)
         }
     }
+
+    /// The tag the reference prints at the head of every row: what the message wants, not what
+    /// kind of object it is. A decision is waiting on the coach; a task is on the staff; a story
+    /// is only news.
+    private func tag(for item: InboxReadModel.Item) -> String {
+        switch item.kind {
+        case .decision: item.deadline == nil ? "Decide" : "Due"
+        case .task: "To do"
+        case .story: item.isUnread ? "New" : "Filed"
+        }
+    }
+
+    private func tone(for item: InboxReadModel.Item) -> Color {
+        switch item.kind {
+        case .decision: palette.actionPrimary.color
+        case .task: palette.contentSecondary.color
+        case .story: item.isUnread ? palette.contentPrimary.color : palette.contentQuiet.color
+        }
+    }
+
+    /// One committing action, bottom-right in the thumb arc, with the reference's quiet "File it"
+    /// beside it.
+    private var commitBar: some View {
+        HStack(spacing: CoachWorldTokens.Gap.md) {
+            Spacer(minLength: .zero)
+            if let item = selected, item.isUnread {
+                Button("File it") { onRead(item.stableID) }
+                    .font(
+                        CoachWorldTokens.display(
+                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                        )
+                    )
+                    .foregroundStyle(palette.contentQuiet.color)
+                    .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
+                           minHeight: CoachWorldTokens.Shape.minimumTarget)
+            }
+            FloodlitCommittingAction(
+                "Continue",
+                isEnabled: model.canContinue,
+                action: onContinue
+            )
+            .accessibilityHint(model.continueReason ?? "")
+        }
+        .padding(.top, CoachWorldTokens.Gap.xs)
+    }
+}
+
+private enum InboxMetric {
+    /// The handoff's 300pt message list, plus the row padding the reference draws inside it.
+    static let listWidth: CGFloat = 310
+    static let tagColumn: CGFloat = 62
+    static let subjectLines = 2
 }
