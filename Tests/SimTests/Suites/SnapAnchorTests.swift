@@ -116,6 +116,100 @@ func runSnapAnchorTests() {
                                          isOffense: false), .runFit)
         }
 
+        test("a beaten blocker is driven back, and a winning blocker holds his ground") {
+            // Phase 5: blocking needs no engine change. .passProtection and .runLane duels are
+            // already in outcome.matchups, keyed on the blocker as attacker -- this is derivation,
+            // not recording.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let leftTackle = personnel.offense[6]
+            let center = personnel.offense[8]
+            let rusher = personnel.defense[0]
+            let interior = personnel.defense[2]
+            let play = PlayRecord(
+                situation: Situation(down: 1, distance: 10, yardLine: 40),
+                offensiveCall: OffensiveCall(playType: .pass),
+                defensiveCall: DefensiveCall(coverage: .man),
+                outcome: SnapOutcome(
+                    result: .sack, yards: -7, secondsElapsed: 6,
+                    matchups: [
+                        MatchupRecord(kind: .passProtection, attackerID: leftTackle.id,
+                                     defenderID: rusher.id, leverage: -0.6),
+                        MatchupRecord(kind: .passProtection, attackerID: center.id,
+                                     defenderID: interior.id, leverage: 0.5),
+                    ],
+                    passerID: personnel.offense[0].id
+                ),
+                callInTriggers: []
+            )
+            let set = SnapAnchors.choreograph(
+                play: play, offense: Array(personnel.offense.prefix(11)),
+                defense: Array(personnel.defense.prefix(11))
+            )
+            let leftTackleAnchor = set.actors.first { $0.playerID == leftTackle.id }!
+            let centerAnchor = set.actors.first { $0.playerID == center.id }!
+            expect(leftTackleAnchor.end.yard < leftTackleAnchor.start.yard,
+                   "a blocker who lost his duel must be drawn driven back off the line")
+            expectEqual(centerAnchor.end.yard, centerAnchor.start.yard,
+                        "a blocker who won his duel must hold his ground")
+            expectEqual(centerAnchor.end.lateral, centerAnchor.start.lateral,
+                        "a blocker who won his duel must hold his ground")
+            expectIn(leftTackleAnchor.end.yard, 0...100, "a beaten blocker was drawn off the field")
+        }
+
+        test("a broken-tackle chain draws a near miss for each defender and still finds who closed") {
+            // Phase 5: SnapOutcome.brokenTackleAttempts records every attempt beyond the first. A
+            // chain that ends on attempt two or three must still resolve a closing tackler -- only
+            // the first attempt ever lands in outcome.matchups, so the search has to look at both.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let carrier = personnel.offense[1]
+            let first = personnel.defense[4]
+            let second = personnel.defense[5]
+            let closer = personnel.defense[9]
+            let play = PlayRecord(
+                situation: Situation(down: 1, distance: 10, yardLine: 40),
+                offensiveCall: OffensiveCall(playType: .run),
+                defensiveCall: DefensiveCall(coverage: .man),
+                outcome: SnapOutcome(
+                    result: .gain, yards: 14, secondsElapsed: 7,
+                    matchups: [
+                        MatchupRecord(kind: .carrierVersusPursuit, attackerID: carrier.id,
+                                     defenderID: first.id, leverage: 0.5),
+                    ],
+                    brokenTackleAttempts: [
+                        MatchupRecord(kind: .carrierVersusPursuit, attackerID: carrier.id,
+                                     defenderID: second.id, leverage: 0.45),
+                        MatchupRecord(kind: .carrierVersusPursuit, attackerID: carrier.id,
+                                     defenderID: closer.id, leverage: -0.3),
+                    ],
+                    ballCarrierID: carrier.id
+                ),
+                callInTriggers: []
+            )
+            let set = SnapAnchors.choreograph(
+                play: play, offense: Array(personnel.offense.prefix(11)),
+                defense: Array(personnel.defense.prefix(11))
+            )
+            let firstAnchor = set.actors.first { $0.playerID == first.id }!
+            let secondAnchor = set.actors.first { $0.playerID == second.id }!
+            let closerAnchor = set.actors.first { $0.playerID == closer.id }!
+
+            expectEqual(closerAnchor.end.yard, set.endSpot,
+                        "the closing tackler, found in brokenTackleAttempts, must converge on the "
+                            + "ball exactly as one found in matchups already does")
+
+            for missed in [firstAnchor, secondAnchor] {
+                expect(!missed.path.isEmpty, "a broken-tackle defender needs a waypoint to time the "
+                           + "near miss")
+                expect(missed.end.yard != set.endSpot || missed.end.lateral != closerAnchor.end.lateral,
+                       "a defender who missed must not be drawn arriving where the ball ends -- "
+                           + "only the closing tackler does")
+                expectIn(missed.end.yard, 0...100, "a broken-tackle near miss left the field")
+                expectIn(missed.end.lateral, 0...1, "a broken-tackle near miss left the sidelines")
+            }
+            expect(firstAnchor.path[0].fraction < secondAnchor.path[0].fraction,
+                   "broken-tackle defenders must close in the order their attempts happened")
+        }
+
         test("every result kind produces a non-empty accessible sentence") {
             // Driven from allCases: a new SnapResult that nobody wrote a sentence for fails here.
             let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
@@ -252,11 +346,24 @@ func runSnapAnchorTests() {
                 )
             }
             let before = resolveOnce()
+
+            // E4: SnapOutcome equality alone cannot prove choreograph left the RNG untouched — two
+            // different draw counts can coincide on one outcome, never on state. `choreograph` takes
+            // no `rng` parameter at all, so this cannot fail by construction; the assertion is the
+            // belt to that suspender, and it is what would catch a future change that gave it one.
+            var threaded = SeededRandom(seed: 4242)
+            let threadedOutcome = SnapResolver.resolve(
+                offensiveCall: OffensiveCall(playType: .pass),
+                defensiveCall: DefensiveCall(coverage: .man),
+                personnel: personnel, situation: Situation(), rules: rules, rng: &threaded
+            )
+            let rngStateAfterResolve = threaded
+
             let play = PlayRecord(
                 situation: Situation(),
                 offensiveCall: OffensiveCall(playType: .pass),
                 defensiveCall: DefensiveCall(coverage: .man),
-                outcome: before,
+                outcome: threadedOutcome,
                 callInTriggers: []
             )
             _ = SnapAnchors.choreograph(
@@ -264,6 +371,7 @@ func runSnapAnchorTests() {
                 offense: Array(personnel.offense.prefix(11)),
                 defense: Array(personnel.defense.prefix(11))
             )
+            expectEqual(threaded, rngStateAfterResolve, "choreography perturbed the RNG state")
             expectEqual(resolveOnce(), before, "choreography perturbed the simulation")
         }
 

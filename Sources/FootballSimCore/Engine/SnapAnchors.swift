@@ -201,6 +201,13 @@ public enum AnchorRules {
     /// How far a specialist stands off the formation.
     public static let specialistDepth = 8.0
     public static let maximumForegrounded = 3
+    /// How far a blocker who lost his duel gets driven back off the line. Smaller than
+    /// `rusherClosingYards`: this is the shove, not the rusher's own surge toward the passer.
+    public static let beatenBlockerPushYards = 1.5
+    /// How far of the way to the carrier's end spot a broken-tackle defender closes before the
+    /// record says he missed. Short of 1 on purpose -- reaching it would draw a tackle nothing in
+    /// the record says happened.
+    public static let missedTackleCloseFraction = 0.7
 }
 
 /// Turns a recorded snap into a sparse spatial description of it.
@@ -477,6 +484,14 @@ public enum SnapAnchors {
             }
             return AnchorRules.handoffFraction
         }()
+        // Every pursuit attempt the carrier faced, in the order `SnapResolver.yardsAfterContact`
+        // made them. Only the first ever lands in `matchups`; the rest, if any, are
+        // `brokenTackleAttempts` — kept out of `matchups` so recording them cannot move
+        // `playByPlayFingerprint` (see that property's own comment). Combining them here is what
+        // lets a chain of more than one attempt still find its closing tackler.
+        let pursuitAttempts = outcome.matchups.filter { $0.kind == .carrierVersusPursuit }
+            + outcome.brokenTackleAttempts
+
         // The one defender the record names as having ended the play. `.carrierVersusPursuit` names
         // the tackler outright; a lost protection duel names the rusher who got home. Nobody else
         // converges, because nobody else is recorded — see `03` §9.6.
@@ -484,10 +499,9 @@ public enum SnapAnchors {
             // Only when he actually won it. `.carrierVersusPursuit` names the carrier as attacker,
             // so `attackerWon` means the carrier broke the tackle — and drawing that defender
             // arriving at the end spot would claim a stop he did not make. On a touchdown it would
-            // put a tackler on the goal line of a play nobody stopped.
-            if let pursuit = outcome.matchups.first(where: {
-                $0.kind == .carrierVersusPursuit && !$0.attackerWon
-            }) {
+            // put a tackler on the goal line of a play nobody stopped. The chain stops the instant
+            // a defender wins, so at most one attempt in the whole sequence can be a loss.
+            if let pursuit = pursuitAttempts.first(where: { !$0.attackerWon }) {
                 return pursuit.defenderID
             }
             if outcome.result == .sack || outcome.result == .safety,
@@ -498,6 +512,16 @@ public enum SnapAnchors {
             }
             return nil
         }()
+
+        // Every attempt the carrier won — closed on him, missed. `firstIndex` rather than a running
+        // count because the same defender can appear twice: the resolver clamps to the last man in
+        // the pursuit list once the attempt count outruns how many defenders are actually there.
+        var brokenTackleDefenderIDs: [UUID] = []
+        for attempt in pursuitAttempts where attempt.attackerWon {
+            if !brokenTackleDefenderIDs.contains(attempt.defenderID) {
+                brokenTackleDefenderIDs.append(attempt.defenderID)
+            }
+        }
 
         let actors = placed.map { placement in
             if placement.player.id == closingDefenderID {
@@ -513,9 +537,34 @@ public enum SnapAnchors {
                     path: [ActorWaypoint(point: placement.start, fraction: carryBegins)]
                 )
             }
+            if let index = brokenTackleDefenderIDs.firstIndex(of: placement.player.id) {
+                // Spread evenly across the after-contact window, in the order the attempts actually
+                // happened — real data. Exact timing within that order is not recorded, so evenly
+                // spaced is the least invented placement, not a claim of precision the record does
+                // not support.
+                let fraction = carryBegins + (1 - carryBegins)
+                    * Double(index + 1) / Double(brokenTackleDefenderIDs.count + 1)
+                let closePoint = FieldPoint(
+                    yard: placement.start.yard
+                        + (ballRestsAt.yard - placement.start.yard)
+                        * AnchorRules.missedTackleCloseFraction,
+                    lateral: placement.start.lateral
+                        + (ballRestsAt.lateral - placement.start.lateral)
+                        * AnchorRules.missedTackleCloseFraction
+                )
+                return ActorAnchor(
+                    playerID: placement.player.id,
+                    side: placement.side,
+                    role: placement.role,
+                    start: placement.start,
+                    end: closePoint,
+                    path: [ActorWaypoint(point: placement.start, fraction: fraction)]
+                )
+            }
             let movement = movement(
                 role: placement.role,
                 start: placement.start,
+                playerID: placement.player.id,
                 call: play.offensiveCall,
                 outcome: outcome,
                 lineOfScrimmage: los,
@@ -584,6 +633,7 @@ public enum SnapAnchors {
     private static func movement(
         role: SnapRole,
         start: FieldPoint,
+        playerID: UUID,
         call: OffensiveCall,
         outcome: SnapOutcome,
         lineOfScrimmage: Double,
@@ -643,7 +693,23 @@ public enum SnapAnchors {
                 []
             )
 
-        case .blocker, .decoy, .coverage, .runFit, .kicker, .blockLeverage:
+        case .blocker:
+            // Blocking needs no engine change (Phase 5): `.passProtection` and `.runLane` duels are
+            // already in `outcome.matchups`, keyed on this player as the attacker. A blocker who
+            // held his ground is drawn exactly as he lined up — the winning case needs no invented
+            // motion, and `04` §995 forbids drawing more than the record supports.
+            guard let duel = outcome.matchups.first(where: {
+                ($0.kind == .passProtection || $0.kind == .runLane) && $0.attackerID == playerID
+            }), !duel.attackerWon else {
+                return (start, [])
+            }
+            return (
+                FieldPoint(yard: start.yard - AnchorRules.beatenBlockerPushYards,
+                          lateral: start.lateral),
+                []
+            )
+
+        case .decoy, .coverage, .runFit, .kicker, .blockLeverage:
             return (start, [])
         }
     }

@@ -180,15 +180,15 @@ public enum SnapResolver {
 
         // 6. Yards after the catch, from the receiver against the nearest pursuit.
         let air = offensiveCall.passDepth.airYards
-        let (afterCatch, pursuitRecord) = yardsAfterContact(
+        let (afterCatch, pursuitRecord, extraPursuitAttempts) = yardsAfterContact(
             carrier: target.element.receiver, pursuit: assignment.pursuit,
             aggression: offensiveCall.aggression, homeFieldAdvantage: homeFieldAdvantage, rng: &rng
         )
         if let pursuitRecord { matchups.append(pursuitRecord) }
         let gained = air + afterCatch
         return finish(gained: gained, situation: situation, elapsed: elapsed, matchups: matchups,
-                      carrier: target.element.receiver, passer: passer,
-                      target: target.element.receiver, rng: &rng)
+                      brokenTackleAttempts: extraPursuitAttempts, carrier: target.element.receiver,
+                      passer: passer, target: target.element.receiver, rng: &rng)
     }
 
     /// How attractive a target is: openness, pulled toward progression order as decision falls.
@@ -232,7 +232,7 @@ public enum SnapResolver {
                                matchups: matchups)
         }
 
-        let (broken, pursuitRecord) = yardsAfterContact(
+        let (broken, pursuitRecord, extraPursuitAttempts) = yardsAfterContact(
             carrier: carrier, pursuit: assignment.pursuit, aggression: offensiveCall.aggression,
             homeFieldAdvantage: homeFieldAdvantage, rng: &rng
         )
@@ -242,7 +242,8 @@ public enum SnapResolver {
         let gained = Int((lane * MatchupRules.laneYardScale * outside).rounded()) + broken
         return finish(gained: gained, situation: situation,
                       elapsed: rules.inBoundsPlaySeconds, matchups: matchups,
-                      carrier: carrier, passer: nil, target: nil, rng: &rng)
+                      brokenTackleAttempts: extraPursuitAttempts, carrier: carrier, passer: nil,
+                      target: nil, rng: &rng)
     }
 
     /// The carrier against pursuit, with a bounded break-tackle chain.
@@ -264,10 +265,15 @@ public enum SnapResolver {
         aggression: Double,
         homeFieldAdvantage: Double,
         rng: inout SeededRandom
-    ) -> (yards: Int, record: MatchupRecord?) {
-        guard let tackler = pursuit.first else { return (0, nil) }
+    ) -> (yards: Int, record: MatchupRecord?, extraAttempts: [MatchupRecord]) {
+        guard let tackler = pursuit.first else { return (0, nil, []) }
         var yards = 0
         var record: MatchupRecord?
+        // Attempts beyond the first, kept out of `record` for the same reason `record` alone used
+        // to be returned: only the first ever flowed into `SnapOutcome.matchups`, which
+        // `playByPlayFingerprint` hashes. These are pure observation of leverage values this loop
+        // already computes — recording them draws nothing extra from `rng`.
+        var extraAttempts: [MatchupRecord] = []
         for attempt in 0..<MatchupRules.maximumBrokenTackles {
             let defender = pursuit[Swift.min(attempt, pursuit.count - 1)]
             // Vision gets the carrier to the second level; elusiveness is what beats the man
@@ -285,11 +291,14 @@ public enum SnapResolver {
             if record == nil {
                 record = MatchupRecord(kind: .carrierVersusPursuit, attackerID: carrier.id,
                                        defenderID: tackler.id, leverage: leverage)
+            } else {
+                extraAttempts.append(MatchupRecord(kind: .carrierVersusPursuit, attackerID: carrier.id,
+                                                   defenderID: defender.id, leverage: leverage))
             }
             guard leverage > MatchupRules.breakTackleThreshold else { break }
             yards += MatchupRules.brokenTackleYards * (attempt + 1)
         }
-        return (yards, record)
+        return (yards, record, extraAttempts)
     }
 
     // MARK: - Kicks
@@ -350,6 +359,7 @@ public enum SnapResolver {
         situation: Situation,
         elapsed: Int,
         matchups: [MatchupRecord],
+        brokenTackleAttempts: [MatchupRecord] = [],
         carrier: Player,
         passer: Player?,
         target: Player?,
@@ -361,22 +371,23 @@ public enum SnapResolver {
         let fumble = rng.chance(MatchupRules.fumbleChance)
         if fumble {
             return SnapOutcome(result: .fumbleLost, yards: gained, secondsElapsed: elapsed,
-                               matchups: matchups, ballCarrierID: carrier.id, passerID: passer?.id,
-                               targetID: target?.id)
+                               matchups: matchups, brokenTackleAttempts: brokenTackleAttempts,
+                               ballCarrierID: carrier.id, passerID: passer?.id, targetID: target?.id)
         }
         if gained >= situation.yardsToGoal {
             return SnapOutcome(result: .touchdown, yards: situation.yardsToGoal,
                                secondsElapsed: elapsed, matchups: matchups,
+                               brokenTackleAttempts: brokenTackleAttempts,
                                ballCarrierID: carrier.id, passerID: passer?.id, targetID: target?.id)
         }
         if situation.yardLine + gained <= 0 {
             return SnapOutcome(result: .safety, yards: -situation.yardLine, secondsElapsed: elapsed,
-                               matchups: matchups, ballCarrierID: carrier.id, passerID: passer?.id,
-                               targetID: target?.id)
+                               matchups: matchups, brokenTackleAttempts: brokenTackleAttempts,
+                               ballCarrierID: carrier.id, passerID: passer?.id, targetID: target?.id)
         }
         return SnapOutcome(result: .gain, yards: gained, secondsElapsed: elapsed,
-                           matchups: matchups, ballCarrierID: carrier.id, passerID: passer?.id,
-                           targetID: target?.id)
+                           matchups: matchups, brokenTackleAttempts: brokenTackleAttempts,
+                           ballCarrierID: carrier.id, passerID: passer?.id, targetID: target?.id)
     }
 
     /// A sack, unless the tackle happened behind the offence's own goal line.
