@@ -691,3 +691,21 @@ Four things checked after the six families landed; two were findings.
 
 `TitleContinueView` is the one surface rendered by the root without chrome, deliberately: it runs
 before a career exists, so there is no programme to name.
+
+### Full-suite result, and a correction
+
+The no-argument suite completed on the six-family tree: **897 tests, 769,755 checks, 5 failures**,
+all five the known self-re-exec scratch-path artifact (`NSCocoaErrorDomain Code=4, "The file
+'SimTests' doesn't exist"`) that reproduces on an unmodified checkout. The run also reports
+`AX5 contract: 62 landed, 0 pending` and `Floodlit conversion: 62 converted, 0 pending`.
+
+Check count rose from 769,735 to 769,755 across milestone 3 — the twenty additional checks are the
+registry's new family partition being exercised, not a suite that grew looser.
+
+**Correction, recorded because it was stated aloud during the work.** Mid-verification I reported
+that this run had "died mid-suite". It had not; it completed. I had tailed the output file at a
+point where the harness had not yet flushed its summary, saw the process gone, and concluded a
+crash. The same wrong call was made earlier in the session about Match Day regressing to a blank
+screen, and the root cause is the same shape both times: treating an incomplete observation of a
+long-running job as evidence of failure. The reliable signal is the harness's own totals line, and
+that is what the wait loops now block on.
