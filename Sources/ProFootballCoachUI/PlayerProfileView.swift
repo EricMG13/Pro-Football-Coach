@@ -32,12 +32,7 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
             if dynamicTypeSize.isAccessibilitySize {
                 ScrollView { accessibleLayout }
             } else {
-                VStack(spacing: .zero) {
-                    identityBand
-                    routeBar
-                    routeContent
-                    actionArea
-                }
+                workspace
             }
         }
     }
@@ -46,61 +41,299 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
         CoachWorldTokens.dark
     }
 
-    private var identityBand: some View {
-        HStack(alignment: .top, spacing: CoachWorldTokens.Space.sm) {
-            VStack(spacing: CoachWorldTokens.Space.xxs) {
-                CoachWorldBlankPhotoPlate(
-                    name: model.person.name,
-                    palette: palette,
-                    width: ProfileMetric.photoWidth,
-                    height: ProfileMetric.photoHeight
-                )
-                uniformMark
-            }
-
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                Text("#\(model.number)")
-                    .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                    .monospacedDigit()
-                    .foregroundStyle(numberInk.color)
-                Text(model.person.name)
-                    .font(CoachWorldTokens.TypeRole.display)
-                    .lineLimit(1)
-                Text("\(model.position) · \(model.academicYear)")
-                    .font(CoachWorldTokens.TypeRole.headline)
-                Text(model.hometown)
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                identityFact("ROLE", model.rosterRole)
-                identityFact("AVAILABILITY", model.availability)
-                identityFact("CONDITION", "\(model.condition)")
+    /// The reference's two columns: the dial and the identity on the left, the open route's panel
+    /// on the right.
+    private var workspace: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
+            routeBar
+            HStack(alignment: .top, spacing: CoachWorldTokens.Gap.xl) {
+                identityColumn
+                    .frame(width: ProfileMetric.identityColumn)
+                ScrollView { routePanel }
             }
         }
-        .font(CoachWorldTokens.TypeRole.body)
-        .padding(CoachWorldTokens.Space.md)
-        .background(palette.raised.color)
-        .overlay(alignment: .bottom) { seam }
+        .padding(.vertical, CoachWorldTokens.Pad.panel.v)
+    }
+
+    /// Pills, then the way back. The reference sets the return as a quiet link rather than a
+    /// button, because leaving is not the thing this screen is for.
+    private var routeBar: some View {
+        HStack(spacing: CoachWorldTokens.Gap.xs) {
+            ForEach(ProfileRoute.allCases, id: \.rawValue) { route in
+                FloodlitPill(
+                    route.rawValue,
+                    isSelected: activeRoute == route,
+                    palette: palette,
+                    action: { activeRoute = route }
+                )
+            }
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            Button(action: onClose) {
+                Text("Back to personnel")
+                    .font(
+                        CoachWorldTokens.display(
+                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                        )
+                    )
+                    .foregroundStyle(palette.contentQuiet.color)
+                    .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+            }
+            .buttonStyle(.plain)
+        }
+        .accessibilitySortPriority(350)
+    }
+
+    /// The dial, the jersey, the name, and the first four attributes as shares.
+    private var identityColumn: some View {
+        HStack(alignment: .center, spacing: CoachWorldTokens.Gap.xl) {
+            FloodlitAttributeDial(
+                rating: model.overall,
+                title: model.position,
+                diameter: ProfileMetric.dialDiameter,
+                palette: palette
+            )
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+                HStack(spacing: CoachWorldTokens.Gap.smPlus) {
+                    uniformMark
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                        FloodlitLabel3(
+                            model.rosterRole, palette: palette, tint: palette.stateInfo.color
+                        )
+                        Text(model.person.name)
+                            .font(
+                                CoachWorldTokens.display(
+                                    CoachWorldTokens.DisplaySize.screen, weight: .bold
+                                )
+                            )
+                            .lineLimit(1)
+                            .minimumScaleFactor(ProfileMetric.nameScaleFloor)
+                    }
+                }
+                FloodlitLabel3(originLine, palette: palette)
+                Text(statusLine)
+                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .foregroundStyle(palette.contentSecondary.color)
+                    .lineLimit(1)
+                headlineAttributes
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(identityAccessibilityLabel)
-        .accessibilitySortPriority(400)
+    }
+
+    /// The programme, and where the player is from when the root records it. It does not, for
+    /// rostered players -- so the line says the programme alone rather than borrowing its city.
+    private var originLine: String {
+        model.hometown.isEmpty ? team.name : "\(team.name) \u{00B7} \(model.hometown)"
+    }
+
+    private var statusLine: String {
+        "\(model.academicYear) \u{00B7} \(model.availability) \u{00B7} "
+            + "condition \(model.condition)"
+    }
+
+    /// The reference sets four attribute shares beside the name. They are the first four the model
+    /// records, in the order it records them; picking the four highest would be the interface
+    /// deciding what about a player matters.
+    private var headlineAttributes: some View {
+        let attributes = model.attributeGroups
+            .flatMap(\.attributes)
+            .prefix(ProfileMetric.headlineAttributeCount)
+        return VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+            ForEach(Array(attributes)) { attribute in
+                HStack(spacing: CoachWorldTokens.Gap.sm) {
+                    FloodlitLabel3(attribute.label, palette: palette)
+                        .frame(width: ProfileMetric.attributeLabel, alignment: .leading)
+                    FloodlitShareBar(
+                        proportion: proportion(of: attribute.value),
+                        tint: CoachWorldTokens.Heat.color(for: attribute.value, palette: palette),
+                        palette: palette
+                    )
+                    Text("\(attribute.value)")
+                        .font(
+                            CoachWorldTokens.figure(
+                                CoachWorldTokens.DisplaySize.pill, weight: .semibold
+                            )
+                        )
+                        .frame(width: ProfileMetric.attributeValue, alignment: .trailing)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(
+                    "\(attribute.label), \(attribute.value), \(attribute.confidence)"
+                )
+            }
+        }
+        .padding(.top, CoachWorldTokens.Gap.xxs)
+    }
+
+    /// Where a rating sits on the 40-99 scale, not a percentage of 99.
+    private func proportion(of rating: Int) -> Double {
+        let floor = CoachWorldTokens.Heat.scaleFloor
+        let ceiling = CoachWorldTokens.Heat.scaleCeiling
+        let clamped = min(max(rating, floor), ceiling)
+        return Double(clamped - floor) / Double(ceiling - floor)
+    }
+
+    /// The right panel: one route at a time, each ending in the action that route leads to.
+    private var routePanel: some View {
+        FloodlitCard(palette: palette, depth: .deep) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
+                HStack(spacing: CoachWorldTokens.Gap.smPlus) {
+                    FloodlitLabel3(routeTitle, palette: palette)
+                    Spacer(minLength: CoachWorldTokens.Gap.xs)
+                    Text(routeMeta)
+                        .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                        .foregroundStyle(palette.contentQuiet.color)
+                        .lineLimit(1)
+                }
+                routeRows
+                if activeRoute == .overview || activeRoute == .development {
+                    HStack {
+                        Spacer(minLength: .zero)
+                        FloodlitCommittingAction("Into the development plan") {
+                            activeRoute = .development
+                            onInspectDevelopment(model.stableID)
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var routeTitle: String {
+        switch activeRoute {
+        case .overview: "What the staff has"
+        case .attributes: "Every attribute"
+        case .development: "How the player is coming on"
+        case .history: "What is on the record"
+        }
+    }
+
+    private var routeMeta: String {
+        switch activeRoute {
+        case .overview: return model.schemeFit
+        case .attributes:
+            let count = model.attributeGroups.flatMap(\.attributes).count
+            return count == 1 ? "1 attribute" : "\(count) attributes"
+        case .development, .history:
+            return model.recentForm.isEmpty
+                ? "no games recorded"
+                : "\(model.recentForm.count) games recorded"
+        }
+    }
+
+    @ViewBuilder
+    private var routeRows: some View {
+        switch activeRoute {
+        case .overview:
+            VStack(alignment: .leading, spacing: .zero) {
+                ForEach(Array(model.strengths.enumerated()), id: \.offset) { _, strength in
+                    panelRow("Strength", strength)
+                }
+                panelRow("Concern", model.concern.isEmpty ? "None recorded." : model.concern)
+                panelRow("Fit", model.schemeFit)
+                panelRow("Role", model.rosterRole)
+            }
+            quote(model.staffSummary)
+        case .attributes:
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
+                ForEach(model.attributeGroups) { group in
+                    attributeGroup(group)
+                }
+            }
+        case .development:
+            VStack(alignment: .leading, spacing: .zero) {
+                formRows
+            }
+            quote(model.developmentEvidence)
+        case .history:
+            VStack(alignment: .leading, spacing: .zero) {
+                panelRow("Available", model.availability)
+                panelRow("Condition", "\(model.condition)", value: model.condition)
+                formRows
+            }
+            quote(model.historyEvidence)
+        }
+    }
+
+    @ViewBuilder
+    private var formRows: some View {
+        if model.recentForm.isEmpty {
+            panelRow("Form", "No recent form recorded.")
+        } else {
+            ForEach(model.recentForm) { entry in
+                panelRow(entry.opponent, "Graded \(entry.rating)", value: entry.rating)
+            }
+        }
+    }
+
+    /// The reference's panel row: a key, a value, a share of the scale, and the figure.
+    private func panelRow(_ key: String, _ text: String, value: Int? = nil) -> some View {
+        HStack(spacing: CoachWorldTokens.Gap.md) {
+            FloodlitLabel3(key, palette: palette)
+                .frame(width: ProfileMetric.panelKey, alignment: .leading)
+            Text(text)
+                .font(CoachWorldTokens.TypeRole.caption)
+                .lineLimit(ProfileMetric.panelValueLines)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            if let value {
+                FloodlitShareBar(
+                    proportion: proportion(of: value),
+                    tint: CoachWorldTokens.Heat.color(for: value, palette: palette),
+                    palette: palette
+                )
+                .frame(width: ProfileMetric.panelBar)
+                Text("\(value)")
+                    .font(
+                        CoachWorldTokens.figure(
+                            CoachWorldTokens.DisplaySize.pill, weight: .semibold
+                        )
+                    )
+                    .foregroundStyle(CoachWorldTokens.Heat.color(for: value, palette: palette))
+                    .frame(width: ProfileMetric.panelFigure, alignment: .trailing)
+            }
+        }
+        .frame(minHeight: ProfileMetric.panelRowHeight)
+        .overlay(alignment: .bottom) { seam }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(key), \(text)")
+    }
+
+    /// Attributed prose, or the gap where it will be. `04` section 4.4 refuses a sentence in the
+    /// interface's own voice, so an absent staff summary says it is absent rather than inventing one.
+    @ViewBuilder
+    private func quote(_ text: String) -> some View {
+        Text(text.isEmpty ? "No staff evidence recorded yet." : text)
+            .font(CoachWorldTokens.TypeRole.caption)
+            .foregroundStyle(
+                text.isEmpty ? palette.contentQuiet.color : palette.contentSecondary.color
+            )
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func attributeGroup(_ group: PlayerProfileReadModel.AttributeGroup) -> some View {
+        VStack(alignment: .leading, spacing: .zero) {
+            FloodlitLabel3(group.title, palette: palette)
+            ForEach(group.attributes) { attribute in
+                panelRow(attribute.label, attribute.confidence, value: attribute.value)
+            }
+        }
     }
 
     /// The player's club: uniform mark in the programme's secondary, which `04` section 5 names as
     /// identity furniture rather than decoration.
     private var uniformMark: some View {
-        Text(team.abbreviation)
-            .font(CoachWorldTokens.TypeRole.caption.weight(.black))
+        Text("\(model.number)")
+            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.subject, weight: .semibold))
             .foregroundStyle(markInk.color)
-            .padding(.horizontal, CoachWorldTokens.Space.xxs)
+            .padding(.horizontal, CoachWorldTokens.Gap.xs)
             .frame(minWidth: ProfileMetric.markWidth, minHeight: ProfileMetric.markHeight)
             .background(
                 (identity?.accent.color ?? palette.collegeIdentity.color),
-                in: RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.rowRadius)
+                in: CoachWorldCutCorner.chip
             )
-            .accessibilityLabel(team.name)
+            .accessibilityLabel("\(team.name), number \(model.number)")
     }
 
     private var identity: CoachWorldTeamIdentity? {
@@ -111,296 +344,26 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
         )
     }
 
-    private var numberInk: CoachWorldTokens.ColorValue {
-        identity?.selectionRule(on: palette.raised) ?? palette.collegeIdentity
-    }
-
     private var markInk: CoachWorldTokens.ColorValue {
         guard let accent = identity?.accent else { return palette.page }
         return accent.mostLegibleInk(from: [palette.page, palette.contentPrimary]) ?? palette.page
     }
 
-    private func identityFact(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: .zero) {
-            Text(label)
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.contentSecondary.color)
-            Text(value)
-                .font(CoachWorldTokens.TypeRole.body.weight(.bold))
-                .lineLimit(1)
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(label), \(value)")
-    }
-
-    private var routeBar: some View {
-        HStack(spacing: .zero) {
-            ForEach(ProfileRoute.allCases, id: \.rawValue) { route in
-                Button(route.rawValue) {
-                    activeRoute = route
-                }
-                .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
-                .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
-                .buttonStyle(.plain)
-                .background(
-                    activeRoute.rawValue == route.rawValue
-                        ? numberInk.color.opacity(0.16)
-                        : Color.clear
-                )
-                .accessibilityAddTraits(
-                    activeRoute.rawValue == route.rawValue ? .isSelected : []
-                )
-            }
-        }
-        .background(palette.page.color)
-        .overlay(alignment: .bottom) { seam }
-        .accessibilitySortPriority(350)
-    }
-
-    @ViewBuilder
-    private var routeContent: some View {
-        switch activeRoute {
-        case .overview:
-            GeometryReader { proxy in
-                // Landscape leaves this band about 200 points tall, which is less
-                // than three attribute rows plus the evidence rail need. Each
-                // column scrolls so nothing is silently clipped off the bottom.
-                HStack(alignment: .top, spacing: ProfileMetric.workspaceGap) {
-                    ScrollView { attributeBody }
-                        .frame(width: proxy.size.width * ProfileMetric.attributeFraction)
-                    ScrollView { evidenceRail }
-                        .frame(maxWidth: .infinity)
-                }
-                .padding(.horizontal, CoachWorldTokens.Space.xs)
-            }
-        case .attributes:
-            ScrollView { attributeBody.padding(.horizontal, CoachWorldTokens.Space.xs) }
-        case .development:
-            ScrollView {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
-                    recentForm
-                    evidenceFact("DEVELOPMENT EVIDENCE", model.developmentEvidence)
-                    evidenceFact("SCHEME FIT", model.schemeFit)
-                }
-                .padding(.horizontal, CoachWorldTokens.Space.sm)
-                .padding(.vertical, CoachWorldTokens.Space.xs)
-            }
-        case .history:
-            ScrollView {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
-                    evidenceFact("HISTORY", model.historyEvidence)
-                    recentForm
-                    evidenceFact("AVAILABILITY", model.availability)
-                }
-                .padding(.horizontal, CoachWorldTokens.Space.sm)
-                .padding(.vertical, CoachWorldTokens.Space.xs)
-            }
-        }
-    }
-
-    private var attributeBody: some View {
-        HStack(alignment: .top, spacing: CoachWorldTokens.Space.xs) {
-            ForEach(model.attributeGroups) { group in
-                attributeGroup(group)
-            }
-        }
-        .padding(.vertical, CoachWorldTokens.Space.xs)
-        .accessibilitySortPriority(300)
-    }
-
-    private func attributeGroup(_ group: PlayerProfileReadModel.AttributeGroup) -> some View {
-        VStack(spacing: .zero) {
-            Text(group.title.uppercased())
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.contentSecondary.color)
-                .padding(CoachWorldTokens.Space.sm)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityAddTraits(.isHeader)
-
-            ForEach(group.attributes) { attribute in
-                HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Space.xxs) {
-                    Text(attribute.label)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text("\(attribute.value)")
-                        .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                        .monospacedDigit()
-                        .foregroundStyle(ratingColor(attribute.value))
-                }
-                .font(CoachWorldTokens.TypeRole.body)
-                .padding(.horizontal, CoachWorldTokens.Space.sm)
-                .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-                .overlay(alignment: .top) { seam }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(
-                    "\(attribute.label), \(attribute.value), \(attribute.confidence) confidence"
-                )
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .coachWorldFloodlitPanel(
-            fill: palette.work.color,
-            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
-        )
-    }
-
-    private var evidenceRail: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            positionDiagram
-            evidenceFact("SCHEME FIT", model.schemeFit)
-            recentForm
-            evidenceFact("STAFF SUMMARY", model.staffSummary)
-            evidenceFact("STRENGTHS", model.strengths.joined(separator: " · "))
-            evidenceFact("CONCERN", model.concern)
-        }
-        .padding(.vertical, CoachWorldTokens.Space.xs)
-        .accessibilitySortPriority(200)
-    }
-
-    private var positionDiagram: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.rowRadius)
-                .fill(palette.fieldTurf.color)
-
-            VStack(spacing: CoachWorldTokens.Space.sm) {
-                ForEach(0..<4, id: \.self) { _ in
-                    Rectangle()
-                        .fill(palette.fieldLine.color.opacity(0.72))
-                        .frame(height: CoachWorldTokens.Shape.hairline)
-                }
-            }
-            .padding(CoachWorldTokens.Space.sm)
-            .accessibilityHidden(true)
-
-            Text(model.position)
-                .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                .foregroundStyle(palette.page.color)
-                .padding(CoachWorldTokens.Space.xs)
-                .background(palette.fieldLive.color, in: Circle())
-        }
-        .frame(minHeight: ProfileMetric.fieldHeight)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(model.position) position marker")
-    }
-
-    private func evidenceFact(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-            Text(label)
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.contentSecondary.color)
-                .accessibilityAddTraits(.isHeader)
-            Text(value.isEmpty ? "No recorded evidence." : value)
-                .font(CoachWorldTokens.TypeRole.body)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
-    }
-
-    private var recentForm: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-            Text("RECENT FORM")
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.contentSecondary.color)
-                .accessibilityAddTraits(.isHeader)
-            if model.recentForm.isEmpty {
-                Text("No recent form recorded.")
-                    .font(CoachWorldTokens.TypeRole.body)
-            } else {
-                HStack(spacing: CoachWorldTokens.Space.xs) {
-                    ForEach(model.recentForm) { entry in
-                        VStack(spacing: .zero) {
-                            Text(entry.opponent)
-                            Text("\(entry.rating)")
-                                .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                                .monospacedDigit()
-                                .foregroundStyle(ratingColor(entry.rating))
-                        }
-                    }
-                }
-                .font(CoachWorldTokens.TypeRole.caption)
-            }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(recentFormAccessibilityLabel)
-    }
-
-    private var actionArea: some View {
-        HStack(spacing: CoachWorldTokens.Space.sm) {
-            Button("Review development") {
-                activeRoute = .development
-                onInspectDevelopment(model.stableID)
-            }
-            .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
-
-            Button("Close", action: onClose)
-                .buttonStyle(CoachWorldActionButtonStyle(role: .secondary, palette: palette))
-        }
-        .padding(CoachWorldTokens.Space.sm)
-        .frame(maxWidth: .infinity, alignment: .trailing)
-        .background(palette.raised.color)
-        .overlay(alignment: .top) { seam }
-        .accessibilitySortPriority(100)
-    }
-
+    /// At AX sizes the two columns stack and the dial keeps its stated stroke rather than scaling.
     private var accessibleLayout: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-            identityBand
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
             routeBar
-            switch activeRoute {
-            case .overview:
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
-                    ForEach(model.attributeGroups) { group in
-                        attributeGroup(group)
-                    }
-                }
-                .padding(.horizontal, CoachWorldTokens.Space.sm)
-                .accessibilitySortPriority(300)
-                evidenceRail
-                    .padding(.horizontal, CoachWorldTokens.Space.sm)
-            case .attributes:
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
-                    ForEach(model.attributeGroups) { group in
-                        attributeGroup(group)
-                    }
-                }
-                .padding(.horizontal, CoachWorldTokens.Space.sm)
-            case .development:
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
-                    recentForm
-                    evidenceFact("DEVELOPMENT EVIDENCE", model.developmentEvidence)
-                    evidenceFact("SCHEME FIT", model.schemeFit)
-                }
-                .padding(.horizontal, CoachWorldTokens.Space.sm)
-            case .history:
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
-                    evidenceFact("HISTORY", model.historyEvidence)
-                    recentForm
-                    evidenceFact("AVAILABILITY", model.availability)
-                }
-                .padding(.horizontal, CoachWorldTokens.Space.sm)
-            }
-            actionArea
+            identityColumn
+            routePanel
         }
+        .padding(.vertical, CoachWorldTokens.Pad.panel.v)
+        .accessibilityLabel(identityAccessibilityLabel)
     }
 
     private var identityAccessibilityLabel: String {
         "Number \(model.number), \(model.person.name), \(model.position), "
-            + "\(model.academicYear), hometown \(model.hometown), role \(model.rosterRole), "
+            + "\(model.academicYear), role \(model.rosterRole), "
             + "\(model.availability), condition \(model.condition)"
-    }
-
-    private var recentFormAccessibilityLabel: String {
-        guard !model.recentForm.isEmpty else { return "Recent form, no recent form recorded" }
-        let entries = model.recentForm
-            .map { "\($0.opponent), \($0.rating)" }
-            .joined(separator: ", then ")
-        return "Recent form, \(entries)"
-    }
-
-    private func ratingColor(_ rating: Int) -> Color {
-        if rating >= 85 { return palette.statePositive.color }
-        if rating >= 70 { return palette.stateWarning.color }
-        return palette.stateNegative.color
     }
 
     private var seam: some View {
@@ -419,11 +382,18 @@ private enum ProfileRoute: String, CaseIterable {
 }
 
 private enum ProfileMetric {
-    static let attributeFraction = 0.68
-    static let workspaceGap = CoachWorldTokens.Space.xs
-    static let photoWidth: CGFloat = 64
-    static let photoHeight: CGFloat = 72
-    static let fieldHeight: CGFloat = 96
-    static let markWidth: CGFloat = 34
-    static let markHeight: CGFloat = 20
+    /// The handoff's 340pt identity column and 150pt dial.
+    static let identityColumn: CGFloat = 340
+    static let dialDiameter: CGFloat = 150
+    static let attributeLabel: CGFloat = 50
+    static let attributeValue: CGFloat = 18
+    static let headlineAttributeCount = 4
+    static let markWidth: CGFloat = 40
+    static let markHeight: CGFloat = 38
+    static let nameScaleFloor: CGFloat = 0.7
+    static let panelKey: CGFloat = 56
+    static let panelBar: CGFloat = 44
+    static let panelFigure: CGFloat = 44
+    static let panelRowHeight: CGFloat = 27
+    static let panelValueLines = 2
 }

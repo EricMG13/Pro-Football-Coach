@@ -1053,10 +1053,20 @@ func runContractTests() {
             expect(profile.contains("let model: PlayerProfileReadModel"))
             expect(profile.contains("Button("))
             expect(!profile.contains("onTapGesture"))
-            expect(profile.contains("monospacedDigit"))
+            // Was `profile.contains("monospacedDigit")`. Figures now go through
+            // `CoachWorldTokens.figure(_:weight:)`, which applies the tabular face itself, so the
+            // modifier no longer appears at the call site. Either spelling satisfies the rule the
+            // check is for: a figure on this surface does not reflow as it changes.
+            expect(profile.contains("monospacedDigit") || profile.contains("CoachWorldTokens.figure("),
+                   "player profile figures must be set in the tabular face")
             expect(profile.contains("accessibilitySortPriority"))
             expect(profile.contains("dynamicTypeSize.isAccessibilitySize"))
-            expect(profile.contains("CoachWorldBlankPhotoPlate"))
+            // The photo plate left this surface with the Floodlit rebuild. The handoff's player
+            // profile leads with the attribute dial and the jersey mark and draws no portrait at
+            // all, so there is no plate to stand in for one. `CoachWorldBlankPhotoPlate` is still
+            // the only likeness slot in the product and is still asserted where it is drawn.
+            expect(profile.contains("FloodlitAttributeDial"),
+                   "player profile must lead with the attribute dial")
             expect(profile.contains("model.attributeGroups"))
             expect(profile.contains("private var routeBar"),
                    "player profile must expose its route selector in production source")
