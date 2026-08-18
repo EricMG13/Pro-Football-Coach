@@ -31,6 +31,25 @@ struct CoachWorldCutCorner: Shape {
     static let action = CoachWorldCutCorner(
         topLeading: 22, topTrailing: 22, bottomTrailing: 22, bottomLeading: 5
     )
+    /// The six the 2026-08-18 handoff adds (`04` section 6.1b).
+    static let card = CoachWorldCutCorner(
+        topLeading: 4, topTrailing: 18, bottomTrailing: 4, bottomLeading: 18
+    )
+    static let alert = CoachWorldCutCorner(
+        topLeading: 4, topTrailing: 24, bottomTrailing: 4, bottomLeading: 24
+    )
+    static let block = CoachWorldCutCorner(
+        topLeading: 4, topTrailing: 20, bottomTrailing: 4, bottomLeading: 20
+    )
+    static let wide = CoachWorldCutCorner(
+        topLeading: 3, topTrailing: 18, bottomTrailing: 3, bottomLeading: 18
+    )
+    static let actionSmall = CoachWorldCutCorner(
+        topLeading: 18, topTrailing: 18, bottomTrailing: 18, bottomLeading: 4
+    )
+    static let playCard = CoachWorldCutCorner(
+        topLeading: 14, topTrailing: 14, bottomTrailing: 6, bottomLeading: 6
+    )
 
     func path(in rect: CGRect) -> Path {
         let maxRadius = min(rect.width, rect.height) / 2
@@ -179,7 +198,7 @@ private struct CoachWorldFloodlitBackdrop: View {
     }
 }
 
-private struct CoachWorldGrainOverlay: View {
+struct CoachWorldGrainOverlay: View {
     var body: some View {
         Canvas { context, size in
             for index in 0..<140 {
@@ -311,15 +330,15 @@ struct CoachWorldRouteButton: View {
     }
 }
 
-private struct CoachWorldFloodlitPanelModifier: ViewModifier {
+private struct CoachWorldFloodlitPanelModifier<S: Shape>: ViewModifier {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     let fill: Color
     let border: Color
     let depth: CoachWorldFloodlitPanelDepth
+    let shape: S
 
     func body(content: Content) -> some View {
-        let shape = CoachWorldCutCorner.panel
         content
             .background {
                 if reduceTransparency {
@@ -346,11 +365,15 @@ private struct CoachWorldFloodlitPanelModifier: ViewModifier {
 }
 
 extension View {
-    func coachWorldFloodlitPanel(
+    /// - Parameter shape: defaults to `.panel` (4/22/4/22). Match Day furniture passes one of the
+    ///   `04` section 6.1b presets — `.card` for the scorebug and the call-in panels, `.playCard`
+    ///   for call-in options — so one modifier serves both registers.
+    func coachWorldFloodlitPanel<S: Shape>(
         fill: Color,
         border: Color,
-        depth: CoachWorldFloodlitPanelDepth = .glass
+        depth: CoachWorldFloodlitPanelDepth = .glass,
+        shape: S = CoachWorldCutCorner.panel
     ) -> some View {
-        modifier(CoachWorldFloodlitPanelModifier(fill: fill, border: border, depth: depth))
+        modifier(CoachWorldFloodlitPanelModifier(fill: fill, border: border, depth: depth, shape: shape))
     }
 }

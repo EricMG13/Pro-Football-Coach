@@ -419,7 +419,92 @@ asymmetric four-corner shape (`CutCorner`, independent `topLeading`/`topTrailing
 | `.action` | 22 / 22 / 22 / 5 | Committing controls — soft on three corners, cut on the last |
 
 College identity furniture may take one restrained 9° cut per §5; Pro stays orthogonal. BROADCAST
-radius stays 0 — square geometry is unchanged by this amendment.
+radius stays 0 — square geometry is unchanged by this amendment. **Superseded for Match Day alone
+by §6.1b (2026-08-18).**
+
+### 6.1b Match Day broadcast register (2026-08-18 amendment)
+
+Source: the owner-supplied design handoff `design_handoff_floodlit_surfaces_and_match_day/`
+(`MATCH-DAY.md`, `FLOODLIT-SURFACES.md`, `README.md`). It carries the same authority as the
+2026-08-15 Floodlit spec §6.1a records, and where the two disagree this section is the later
+decision.
+
+**What changes.** §6.1a closed with "BROADCAST radius stays 0 — square geometry is unchanged by
+this amendment", and §9 has read since the rebuild began as *no desk chrome, cards, gradients,
+glow or decorative broadcast effects on a live match surface*. Match Day as drawn is glass
+furniture with cut corners floating over a gradient turf plane, with one gold-glowing committing
+action. **Those two rules are retired for the Match Day surface only**, and replaced by the
+constraints below. Aftermath, box score and every other `.broadcast` surface keep §6.1a's square,
+flat treatment until a design says otherwise.
+
+The reason the old rule existed still holds and is restated as a constraint rather than a ban:
+decoration must never sit between the coach and the state of the game. So:
+
+- **Nothing decorative may carry meaning.** Glow marks the one committing action and the
+  first-down line, and nothing else. A panel's material never encodes a value.
+- **The field is the dominant object** (§4.1). Furniture is glass over it, never a card beside it.
+- **Reduce Transparency still removes glass, grain and blur** on this surface exactly as
+  `CoachWorldFloodlitStage` already implements. No consumer may render glass without that branch.
+- **Reduce Motion still removes the ball's flight, the live dot's pulse and the panel push.**
+
+**Geometry.** Match Day takes the same `CutCorner` presets §6.1a names, extended by six the
+handoff's per-surface table adds. All are on `CoachWorldCutCorner`:
+
+| Preset | Radii (pt) | Use |
+|---|---|---|
+| `.card` | 4 / 18 / 4 / 18 | Scorebug, call-in budget bug, staff call-in panel |
+| `.alert` | 4 / 24 / 4 / 24 | Alert surfaces |
+| `.block` | 4 / 20 / 4 / 20 | Blocks |
+| `.wide` | 3 / 18 / 3 / 18 | Wide rows — the halftime plan's slot rows |
+| `.actionSmall` | 18 / 18 / 18 / 4 | Small committing controls |
+| `.playCard` | 14 / 14 / 6 / 6 | Call-in options, halftime footer action |
+
+**Frame.** The install floor is 844 × 390 (§7). Left-anchored furniture clears the sensor housing
+at `59 + 4 = 63`; the bottom band clears the home indicator at `21 + 4 = 25`; the trailing gutter is
+`20`; top furniture sits at `12`. Minimum tap target stays 44.
+
+**Colour.** The values below are the Floodlit ramp the handoff ships, in addition to §6.1a's roles.
+Ratios are the same WCAG 2.2 relative-luminance method §6.1 uses.
+
+| Token | Hex | Carries text? | Measured |
+|---|---|---|---|
+| `room-deep` | `#07060B` | ground | `content.primary` 19.27, `content.secondary` 10.19 |
+| `turf` | `#1C6E42` | field ground | `field.line` 5.97 |
+| `turf-hot` | `#37A868` | field ground | — |
+| `turf-crown` | `#2A8850` | field gradient stop | — |
+| `turf-mid` | `#124E2E` | field gradient stop | — |
+| `turf-shade` | `#0A311D` | field gradient stop | — |
+| `turf-night` | `#05150D` | field gradient stop | — |
+| `lamp` | `#FFF2CE` | floodlight pool | 17.78 on `page` |
+| `gold-light` | `#FFE196` | yes | 15.53 on `page` |
+| `gold-deep` | `#D89713` | gradient stop | — |
+| `gold-ink` | `#150F02` | yes, on gold fill | 12.08 on `action.primary`, 14.95 on `gold-light` |
+| `live-ink` | `#FF8E9C` | yes | 9.06 on `page` |
+| `go-ink` | `#7DF0B6` | yes | 14.16 on `page` |
+| `cool-ink` | `#9CC8EE` | yes | 11.24 on `page` |
+| `club-field` | `#0F5637` | ground | `club-ink` 7.71 |
+| `club-ink` | `#EAF3EE` | yes | 7.71 on `club-field` |
+| `opponent-field` | `#123A5E` | ground | `opponent-accent` 6.45, `opponent-ink` 8.46 |
+| `opponent-accent` | `#9CC5E8` | yes | 10.91 on `page`, 6.45 on `opponent-field` |
+| `opponent-ink` | `#C7DEF3` | yes | 8.46 on `opponent-field` |
+| `endzone-opponent` | `#1B2431` | end zone fill | — |
+| `bowl-ink` | `#C9A968` | yes | 8.79 on the bowl bug's ground |
+| `ball-highlight` | `#A6572A` | ball gradient | — |
+| `ball-mid` | `#7A3E1C` | ball gradient | — |
+| `ball-shade` | `#46220F` | ball gradient | — |
+
+**One handoff value is refused: `ink-3` `#65788F`.** It measures 4.37 / 4.23 / 3.58 on
+`page` / `work` / `raised` and so fails 4.5:1 on every ground, including the two it is drawn on.
+§6.1a's `content.quiet` `#7A8A9E` is the same role at 5.62 / 5.43 / 4.61 and is what ships wherever
+the handoff writes `ink-3`. The handoff's "the prototype's literal value wins" rule governs
+paddings and hues; it does not override §7's accessibility contract.
+
+**Type.** The handoff's literal px scale (66 / 60 / 54 / 52 / 40 / 34 / 25 / 20 / 19 / 17 / 16 /
+15 / 14 / 12 / 10.5 / 9) is a *drawing* scale in Archivo Narrow. In the app it is
+`Font.system(size:).width(.condensed)`, and SF Pro Condensed sets wider at the same point size, so
+every value below `display-lead` is subject to the sizing pass §6.2 already requires. §6.2's 12 pt
+authored floor is unchanged and binding: the handoff's 10.5 pt and 9 pt values are permitted **only**
+for tracked uppercase micro-labels, which §6.2 already exempts, and never for prose.
 
 ### 6.2 Typography
 

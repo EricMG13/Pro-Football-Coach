@@ -1066,6 +1066,45 @@ public enum MatchFieldDirection: String, Sendable, Equatable {
     case rightToLeft
 }
 
+/// What kind of game this is. Selects the scorebug variant, the midfield mark and the 25-yard
+/// paint (`04` section 6.1b, handoff MATCH-DAY.md section 3).
+///
+/// A read-model fact, not a UI flag: the same fixture is a bowl game or it is not, and the view
+/// must not decide from the venue string.
+public enum MatchGameKind: String, CaseIterable, Sendable, Equatable {
+    case regular
+    case conference
+    case bowl
+    case playoff
+    case championship
+}
+
+/// Which tier's rulebook the field is painted to. Hash rows sit at 37.5% / 62.5% in the college
+/// game and 44.2% / 55.8% in the pro one, and nothing else on the field differs.
+public enum MatchTier: String, CaseIterable, Sendable, Equatable {
+    case college
+    case pro
+}
+
+/// The call-in rate ceiling: how often staff may interrupt with a decision. A read-model fact
+/// (handoff MATCH-DAY.md section 5's "control depth selector"), not one of the five primary
+/// controls the render-recorded-match contract fixes — it sets a rate, it does not touch the
+/// recorded moment, and it is not part of `MatchDayControlID`.
+public enum MatchControlDepth: String, CaseIterable, Sendable, Equatable {
+    case everySnap
+    case coordinator
+    case leverage
+
+    /// Call-ins allowed per game: ceiling, default, floor.
+    public var gameRate: Int {
+        switch self {
+        case .everySnap: 40
+        case .coordinator: 25
+        case .leverage: 12
+        }
+    }
+}
+
 public enum MatchDayControlID: String, CaseIterable, Sendable, Equatable {
     case speed
     case pause
@@ -1079,6 +1118,7 @@ public struct MatchDayReadModel: Sendable, Equatable {
         case invalidOutcomeID
         case invalidTeamIdentity
         case invalidScore
+        case invalidEvent(String)
         case invalidSituation(String)
         case commentaryRequired
         case actorCount(Int)
@@ -1094,10 +1134,77 @@ public struct MatchDayReadModel: Sendable, Equatable {
     public struct TeamScore: Sendable, Equatable {
         public let team: CoachWorldTeamReference
         public let score: Int
+        /// The conference bug's per-team line (`7-1 CONF`), and nothing else. Nil on every other
+        /// scorebug variant.
+        public let subline: String?
+        /// The playoff bug's seed chip. Nil unless this is a playoff fixture.
+        public let seed: Int?
 
-        public init(team: CoachWorldTeamReference, score: Int) {
+        public init(
+            team: CoachWorldTeamReference,
+            score: Int,
+            subline: String? = nil,
+            seed: Int? = nil
+        ) {
             self.team = team
             self.score = score
+            self.subline = subline
+            self.seed = seed
+        }
+    }
+
+    /// What the call-in budget bug prints.
+    ///
+    /// A count of decisions already spent against the allowance the control depth sets, plus the
+    /// three on-screen marks. `rateNote` is a description of what is installed, never a
+    /// recommendation and never a forecast.
+    public struct CallInBudget: Sendable, Equatable {
+        public let used: Int
+        public let total: Int
+        /// Unspent marks of the on-screen three.
+        public let marks: Int
+        public let rateNote: String
+
+        public init(used: Int, total: Int, marks: Int, rateNote: String) {
+            self.used = max(0, used)
+            self.total = max(0, total)
+            self.marks = min(3, max(0, marks))
+            self.rateNote = rateNote
+        }
+    }
+
+    /// The postseason furniture one non-regular fixture carries.
+    ///
+    /// Every string here comes from the save. The fixture cast's values ("The Example Bowl", "EC",
+    /// "44th annual") are placeholders the handoff flags for the owner — real postseason naming is
+    /// an open question, not a decision this type makes.
+    public struct EventBadge: Sendable, Equatable {
+        /// The bug's band line: `EXAMPLE CONFERENCE CHAMPIONSHIP`, `The Example Bowl`.
+        public let title: String
+        /// The band's second line: `NEUTRAL SITE`, `44TH ANNUAL`, `WINNER TO THE FINAL`.
+        public let subtitle: String?
+        /// The midfield mark's centred glyph: `EC`, `XLIV`, `PLAYOFF`.
+        public let mark: String
+        /// The mark's line above, and its line below.
+        public let markLead: String?
+        public let markTrail: String?
+        /// The 25-yard paint, at x 29.2% and 70.8%. Regular-season games have none.
+        public let paint: String?
+
+        public init(
+            title: String,
+            subtitle: String? = nil,
+            mark: String,
+            markLead: String? = nil,
+            markTrail: String? = nil,
+            paint: String? = nil
+        ) {
+            self.title = title
+            self.subtitle = subtitle
+            self.mark = mark
+            self.markLead = markLead
+            self.markTrail = markTrail
+            self.paint = paint
         }
     }
 
@@ -1217,6 +1324,14 @@ public struct MatchDayReadModel: Sendable, Equatable {
             public let toY: Double
             public let startFraction: Double
             public let endFraction: Double
+            /// How far off the turf this leg's arc peaks: 0 is a handoff or a carry, 1 is a thrown
+            /// ball at its apex. The view reads an instantaneous `ballHeight` off this and draws
+            /// lift, scale, tilt and shadow separation from that one number, so a sim that later
+            /// holds a real trajectory can drive it continuously without the view changing.
+            ///
+            /// Defaulted so every existing call site keeps compiling as a grounded leg, which is
+            /// what a run and a handoff already were.
+            public let apexHeight: Double
 
             public init(
                 kind: String,
@@ -1225,7 +1340,8 @@ public struct MatchDayReadModel: Sendable, Equatable {
                 toX: Double,
                 toY: Double,
                 startFraction: Double,
-                endFraction: Double
+                endFraction: Double,
+                apexHeight: Double = 0
             ) {
                 self.kind = kind
                 self.fromX = fromX
@@ -1234,6 +1350,17 @@ public struct MatchDayReadModel: Sendable, Equatable {
                 self.toY = toY
                 self.startFraction = startFraction
                 self.endFraction = endFraction
+                self.apexHeight = min(1, max(0, apexHeight))
+            }
+
+            /// This leg's height at a point through it, as a single parabolic arc peaking at the
+            /// midpoint — `4t(1-t)` is 0 at both ends and 1 at `t = 0.5`, which is the shape a
+            /// thrown ball's trajectory reads as at this scale without pulling in `Foundation`
+            /// for `sin`.
+            public func height(at local: Double) -> Double {
+                guard apexHeight > 0 else { return 0 }
+                let t = min(1, max(0, local))
+                return apexHeight * 4 * t * (1 - t)
             }
         }
 
@@ -1396,6 +1523,24 @@ public struct MatchDayReadModel: Sendable, Equatable {
     public let venue: CoachWorldVenueReference
     public let home: TeamScore
     public let away: TeamScore
+    /// Which side is the coach's own program — the design's "our cell" versus "their cell"
+    /// (handoff MATCH-DAY.md section 3). `home`/`away` name which team owns the venue, which is
+    /// independent of this: an away game is still played by "us", and the scorebug's gold rail,
+    /// team-colour fills and end-zone identity treatment all follow `perspective`, never `home`.
+    public let perspective: MatchSide
+    /// Selects the scorebug variant, the midfield mark and the 25-yard paint.
+    public let kind: MatchGameKind
+    /// Where the hash rows sit. College and pro paint the same field differently.
+    public let tier: MatchTier
+    /// The postseason furniture. Required by every kind but `.regular`, forbidden on it.
+    public let event: EventBadge?
+    /// What the call-in budget bug prints. Nil while the session holds no allowance, and the bug
+    /// then does not draw — an absent budget is not a budget of zero.
+    public let callInBudget: CallInBudget?
+    public let controlDepth: MatchControlDepth
+    /// Cycles `controlDepth`. Its own field, not a `ControlState`, for the same reason
+    /// `callInBudget` is not one: it is furniture, not one of the five primary controls.
+    public let controlDepthIntentID: CoachWorldIntentID
     public let situation: Situation
     public let offenseDirection: MatchFieldDirection
     public let actors: [Actor]
@@ -1415,6 +1560,13 @@ public struct MatchDayReadModel: Sendable, Equatable {
         venue: CoachWorldVenueReference,
         home: TeamScore,
         away: TeamScore,
+        perspective: MatchSide = .home,
+        kind: MatchGameKind = .regular,
+        tier: MatchTier = .college,
+        event: EventBadge? = nil,
+        callInBudget: CallInBudget? = nil,
+        controlDepth: MatchControlDepth = .coordinator,
+        controlDepthIntentID: CoachWorldIntentID = .init(rawValue: "match-control-depth"),
         situation: Situation,
         offenseDirection: MatchFieldDirection,
         actors: [Actor],
@@ -1434,6 +1586,12 @@ public struct MatchDayReadModel: Sendable, Equatable {
         }
         guard home.score >= 0, away.score >= 0 else {
             throw ValidationError.invalidScore
+        }
+        // A postseason bug with nothing to print is the failure this catches: the band, the
+        // midfield mark and the 25-yard paint all read off `event`, and a nil one would draw a
+        // championship as a regular-season game.
+        guard (kind == .regular) == (event == nil) else {
+            throw ValidationError.invalidEvent(kind.rawValue)
         }
         guard situation.quarter >= 1 else {
             throw ValidationError.invalidSituation("quarter")
@@ -1497,6 +1655,13 @@ public struct MatchDayReadModel: Sendable, Equatable {
         self.venue = venue
         self.home = home
         self.away = away
+        self.perspective = perspective
+        self.kind = kind
+        self.tier = tier
+        self.event = event
+        self.callInBudget = callInBudget
+        self.controlDepth = controlDepth
+        self.controlDepthIntentID = controlDepthIntentID
         self.situation = situation
         self.offenseDirection = offenseDirection
         self.actors = actors
@@ -1852,9 +2017,12 @@ public enum CoachWorldSampleData {
     public static let matchDay: MatchDayReadModel = {
         let homeFormation: [(number: String, position: String, x: Double, y: Double)] = [
             ("12", "QB", 51, 0.50), ("24", "RB", 46, 0.50),
-            ("1", "WR", 54, 0.08), ("11", "WR", 54, 0.92), ("87", "TE", 55, 0.24),
+            // Receiver shorthands, not two identical "WR"s: MATCH-DAY.md section 4's offensive
+            // vocabulary is `LT LG C RG RT QB RB X H Z TE`, which distinguishes the split end from
+            // the flanker instead of printing the same two letters twice on one field.
+            ("1", "X", 54, 0.08), ("11", "Z", 54, 0.92), ("87", "TE", 55, 0.24),
             ("72", "LT", 56, 0.34), ("65", "LG", 56, 0.42), ("55", "C", 56, 0.50),
-            ("68", "RG", 56, 0.58), ("76", "RT", 56, 0.66), ("6", "SLOT", 53, 0.78),
+            ("68", "RG", 56, 0.58), ("76", "RT", 56, 0.66), ("6", "H", 53, 0.78),
         ]
         let homeActors: [MatchDayReadModel.Actor] = homeFormation.enumerated().map { index, actor in
             return MatchDayReadModel.Actor(
@@ -1898,6 +2066,9 @@ public enum CoachWorldSampleData {
             venue: venue,
             home: .init(team: homeTeam, score: 28),
             away: .init(team: awayTeam, score: 24),
+            perspective: .home,
+            callInBudget: .init(used: 18, total: 25, marks: 1, rateNote: "25 a game · the default"),
+            controlDepth: .coordinator,
             situation: .init(
                 quarter: 3,
                 clockSecondsRemaining: 502,

@@ -261,7 +261,10 @@ public struct CoachWorldAppRootView: View {
                         },
                         onInterruption: { intentID in
                             Task { await matchControl(intentID, in: store) }
-                        }
+                        },
+                        // The handoff's "← WEEK" link. Until it existed there was no way off this
+                        // screen at all — every other surface here already takes an `onClose`.
+                        onExit: { navigate(.coachingHQ, in: store) }
                     )
                 }
             case .gamePlan:

@@ -50,7 +50,8 @@ private struct DebugCoachingHQRoot: View {
                     model: matchDay,
                     statusMessage: statusMessage,
                     onControl: useMatchControl,
-                    onInterruption: answerMatchInterruption
+                    onInterruption: answerMatchInterruption,
+                    onExit: { currentScreen = .coachingHQ }
                 )
             } else if currentScreen == .playerProfile, let profile = roster.players.first?.profile {
                 PlayerProfileView(

@@ -87,6 +87,10 @@ public extension CoachWorldReadModelProvider {
                 team: teamReference(game.awayID, in: state),
                 score: max(0, session.situation.awayScore)
             ),
+            // Which side the coach's own program is on — independent of who owns the venue, so
+            // an away game still gets "our" scorebug treatment rather than the home team's.
+            perspective: state.careerArc.currentJob?.organisationID == game.awayID ? .away : .home,
+            tier: session.tier == .college ? .college : .pro,
             situation: .init(
                 quarter: max(1, session.situation.quarter),
                 clockSecondsRemaining: clock,
@@ -327,7 +331,10 @@ public extension CoachWorldReadModelProvider {
         case .guardPosition: return "G"
         case .center: return "C"
         case .rightTackle: return "RT"
-        case .edgeRusher: return "EDGE"
+        // Two characters at most, like every other label here: these are drawn inside a 15 pt
+        // field token, and MATCH-DAY.md section 4 fixes the vocabulary at one- and two-letter
+        // shorthands for that reason. "EDGE" truncated to an ellipsis on the field.
+        case .edgeRusher: return "DE"
         case .defensiveTackle: return "DT"
         case .linebacker: return "LB"
         case .cornerback: return "CB"

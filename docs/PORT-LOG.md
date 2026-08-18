@@ -264,3 +264,196 @@ The plan document `docs/plans/2026-08-09-p0-foundation.md` recorded the starting
 18,412 checks over 88 tracked files, measured 2026-08-09. Re-measuring at the top of P0 found 324 /
 18,631 over 93 files. The plan told the executing session to re-run rather than trust it, which is
 why the numbers above are the measured ones and not the written ones.
+
+## 2026-08-18 — Floodlit Surfaces + Match Day handoff, milestone 1
+
+Source: `design_handoff_floodlit_surfaces_and_match_day/` (README.md, MATCH-DAY.md,
+FLOODLIT-SURFACES.md). Milestone 1 only — tokens and Match Day. Surfaces by family (milestone 3)
+have not started; `ScreenRegistry.swift` is unchanged.
+
+**Doc-first amendment.** `04-UX-AND-DESIGN-SYSTEM.md` gained new section 6.1b before any code
+changed, per `CLAUDE.md`'s doc-first rule. It records the Match Day broadcast register — the
+handoff's glass-over-turf treatment superseding §6.1a's "BROADCAST radius stays 0" for Match Day
+only — the Floodlit colour ramp the handoff adds, the six new `CutCorner` presets, the re-derived
+844 x 390 frame offsets, and one refusal: the handoff's `ink-3` `#65788F` measures 4.37 / 4.23 /
+3.58 on page/work/raised and fails 4.5:1 on every ground it is drawn on. `content.quiet` `#7A8A9E`
+ships in its place everywhere the handoff writes `ink-3`.
+
+**Tokens.** `DesignTokens.swift` gained `CoachWorldTokens.Frame` (the 844x390 offsets),
+`.Gap` (the handoff's literal gap ladder, deliberately not a 4/8 grid), `.Pad` (per-surface
+padding), `.Motion` (the one easing curve, three durations), `.Heat` (the 40-99 band function),
+`.DisplaySize` (the literal px scale, resolved through `.display()`/`.figure()` rather than
+Archivo Narrow / IBM Plex Mono), and `.Floodlit` (the turf/gold/ball/club/opponent hues no
+existing role name could carry). `CoachWorldCutCorner` gained `.card`, `.alert`, `.block`,
+`.wide`, `.actionSmall`, `.playCard`. `coachWorldFloodlitPanel` took a generic `shape` parameter
+(defaulted to `.panel`) so Match Day furniture can ask for `.card`/`.playCard` through the same
+modifier every other glass panel already uses.
+
+**Match Day.** `MatchDayReadModel` gained `kind: MatchGameKind`, `tier: MatchTier`,
+`event: EventBadge?` (validated: required iff `kind != .regular`), `callInBudget:
+CallInBudget?`, `controlDepth: MatchControlDepth`, and `Playback.BallLeg.apexHeight` (0 = grounded,
+1 = apex; `height(at:)` returns a parabolic in-between so the model, not the view, drives lift).
+New views: `FieldPlane` (the eight-layer turf stack, rasterised via `.drawingGroup()` per
+`BUILD.md`'s heaviest-thing-in-the-app warning), `EndZonePaint`, `FieldMark` (five game-kind
+variants), `PlayerToken`, `BallToken` (the lens silhouette, not an ellipse), `ScoreBug` (five
+variants), `CallInBudgetBug`, `ControlDepthSelector`, `MatchLowerThird`, `CommittingAction`. The
+standard (non-AX5) layout changed structurally from stacked chrome rows beside the field to a
+full-bleed field with glass furniture floating above it, per MATCH-DAY.md section 1 ("the field
+fills the frame, glass furniture sits above it"); the AX5 layout keeps the prior stacked,
+scrollable structure, which the render-recorded-match contract requires.
+
+**Approximated, not silently diverged:**
+
+- The render-recorded-match skill's gate fixes Match Day at **exactly five primary controls**
+  (Speed, Pause, Key Moments, Take Over, Tactics), asserted by `MatchDayReadModel`'s own
+  validation (`controls.count == MatchDayControlID.allCases.count`). The handoff draws a
+  different furniture set (call-in budget bug, control depth selector, halftime chip, speed
+  cycle, "NEXT CALL-IN", the committing action) with no 1:1 mapping to the five. The five are
+  preserved and remapped onto the handoff's positions: Speed to the speed-cycle pill, Key
+  Moments to the committing action (its `.value`/`.isEnabled` already carried "Next
+  snap"/"Call-in pending" before this milestone), Pause and Take Over to small glass icon
+  chips, Tactics to the halftime chip. The handoff's separate "NEXT CALL-IN" button has no
+  analogue — a sixth control would break the validated five-control shape — and was dropped;
+  the committing action's own label already carries that meaning.
+- `MatchControlDepth` cycling emits one shared `controlDepthIntentID` regardless of which of the
+  three cells was tapped, matching every other Match Day control's one-intent-per-control
+  convention. Selecting an exact value (rather than cycling) is provider wiring the handoff does
+  not specify.
+- `CoachWorldMatchProvider` was given `tier` (from `session.tier`, a real fact). `kind` and
+  `event` were left at their `.regular`/`nil` defaults — mapping `CompetitionStage` to
+  `MatchGameKind` needs real postseason names, and the handoff itself flags "The Example Bowl",
+  "EC", "44th annual" as fixture-cast placeholders needing a product-owner decision before ship.
+- Player/ball vertical placement uses two different mappings depending on layout: the standard
+  layout's full-bleed field applies MATCH-DAY.md section 2's `y% = 10 + v * 0.80` band so tokens
+  stay clear of the floating scorebug and lower third even where the field itself paints edge to
+  edge; the AX5 layout's dedicated, chrome-free field frame uses the plain 0-1 span it always
+  did. This is a real difference in where the same `yFraction` lands on screen between the two
+  layouts, not an oversight.
+
+**A confidence review caught one real bug before this landed.** The design's scorebug, end
+zones and player tokens are drawn "our cell" versus "their cell" — MATCH-DAY.md section 3's own
+language. The first pass keyed that off `MatchDayReadModel.home`/`.away` directly, which is wrong:
+`home`/`away` name which team owns the venue, and this codebase already tracks that separately
+from which program the coach works for (`session.controlledSide`, `careerArc.currentJob`) — an
+away game is still "ours". Styling by literal `home` would have painted the *opponent* gold and
+the coach's own team as neutral navy on every away game. Fixed by adding
+`MatchDayReadModel.perspective: MatchSide` (defaulted `.home`, so every existing call site keeps
+compiling unchanged), wiring `CoachWorldMatchProvider` to set it from
+`state.careerArc.currentJob?.organisationID` against `game.awayID`, and rereading every "ours"
+check in `ScoreBug`, `EndZonePaint`/`identity(for:)` and the field's `actorToken` off `perspective`
+instead of `isHome`. Caught by re-tracing "which team's colour goes where" against how `home`/
+`away` are actually populated elsewhere in the codebase, not by a test — no test asserts on this
+view-layer colour logic today, which is itself worth naming as a gap rather than closing silently.
+
+**Verified:** `swift build` (debug, clean) and `swift build -c release` both compile. The
+no-argument `SimTests` run (`--design-contracts`, `--core-contracts`) was run in **debug** mode
+only — `swift run -c release SimTests`, exactly as `scripts/verify.sh`'s `full` lane invokes it,
+fails in this environment with `error: module 'ProFootballCoachUI' was not compiled for testing
+[#ModuleNotTestable]` on a completely clean worktree with a fresh `--scratch-path`, i.e. before any
+change in this milestone. This is a pre-existing environment defect, not a regression; release-mode
+`SimTests` is unverified here for that reason, not because of anything this milestone touched.
+`--core-contracts` and `--design-contracts` pass in debug with zero failures, after fixing one
+symbol-register finding (two `Image(systemName:)` calls where `04` section 6.6 requires the two
+Broadcast marks to be drawn shapes, not SF Symbols), six design-token-literal findings (magic
+numbers that needed named constants), and the perspective bug above.
+
+A full unattended no-argument debug run (897 tests, 769,735 checks) also completed twice, both
+under background tasks whose output did not surface until well after this milestone's other work
+was reported, so the result is recorded here rather than folded into the paragraph above. The
+first ran on the code immediately before the perspective fix; the second, after it — same 897
+tests, same 769,735 checks, same result both times. 892 of 897 passed, including
+`ReadModelProviderTests`'s live `"a controlled checkpoint produces a live Match Day model"` test
+(32 "Read model provider: identity" checks) and every portal, college, competition and career-arc
+suite. The 5 failures are the same known hazard on both runs: a self-re-exec test tries to spawn
+the `SimTests` binary at a path computed from the standard `.build` layout, and both runs used a
+custom `--scratch-path` the re-exec logic does not account for (`NSCocoaErrorDomain Code=4, "The
+file 'SimTests' doesn't exist"`) — matching the project's known self-re-exec scratch-path hazard,
+not a regression. This is now a genuine green run of the full suite against the code as it stands,
+not a traced-by-hand read.
+
+**Visual check.** The app was built via `xcodegen` + `xcodebuild` for the iOS Simulator and run
+through the existing `RootView` debug proof harness (`PROOF_SCREEN=match`), which boots straight
+into `MatchDayView` with `CoachWorldSampleData.matchDay`. The first simulator used carried a
+leftover accessibility text-size setting from earlier work in this repo, which correctly (per the
+render-recorded-match contract) routed the app into the AX5 `accessibleLayout` rather than the new
+full-bleed `standardLayout` this milestone built — a simulator-state artifact, not a code defect,
+confirmed by erasing that simulator to factory defaults and re-launching, at which point the new
+layout rendered: turf plane, painted "CAR" end-zone lettering, the gold line of scrimmage, the
+staff call-in panel in its new glass treatment, and the gold committing action. That simulator's
+device orientation itself did not rotate to landscape in this headless flow, so the captured
+screenshot showed the content rotated 90° — worked around by capturing with `xcrun simctl io
+screenshot` (which reads the true device framebuffer, 1320×2868 portrait) and rotating the file
+90° counter-clockwise with `sips -r -90` rather than fighting the simulator's own display state.
+
+**Two real layout bugs the corrected screenshot caught, both fixed:**
+
+1. `topRightStack` (call-in budget bug, control depth selector, pause/take-over/tactics chips) and
+   `staffCallInPanel` both anchored at the same `top: 12` on the trailing edge, so the panel — drawn
+   later in the `ZStack` — fully hid the persistent furniture behind it whenever a call-in was open.
+   MATCH-DAY.md section 5 states the panel starts at "top 122" *specifically so* the budget bug,
+   control depth and halftime chip stay visible above it; a fixed offset equal to the furniture's
+   own top inset could never satisfy that, since the furniture's height is not constant (the budget
+   bug is conditional on `model.callInBudget`). Fixed with a `PreferenceKey` that reports
+   `topRightStack`'s actual rendered height, read via `.onPreferenceChange` and used as the panel's
+   top offset instead of a literal.
+2. The call-in panel (244 pt wide, right-anchored) and `bottomRightCluster` (the speed pill and the
+   gold committing action, right-anchored, narrower) share the same right edge and both reach the
+   same bottom inset, so the panel — again drawn later — fully covered the committing action
+   whenever a call-in was open. The committing action is already disabled in that state
+   (`.keyMoments`'s control is gated on `pendingCallIn == nil` upstream in `CoachWorldMatchProvider`),
+   so covering it is arguably the right *outcome*, but achieving that by stacking an opaque panel
+   over a still-present, still-hit-testable button is a latent VoiceOver-order and hit-testing
+   hazard regardless of what it looks like. Made the hide explicit: `bottomRightCluster` now only
+   renders `if model.staffInterruption == nil`.
+
+Neither bug was visible until the rotation was fixed — the earlier, sideways screenshots put
+enough of the frame off-frame or foreshortened that the overlap did not read clearly. `--core-
+contracts` and `--design-contracts` were re-run after both fixes and stayed green (both touch
+layout only, not the read-model shape or the symbol/token scans).
+
+### Side-by-side against the reference prototype
+
+The reference was served over a local HTTP server (the browser pane refuses `file://` outside the
+project) and rendered at its own 932 × 430 mock, then compared region by region against the
+upright simulator capture. Six further divergences found; all six fixed.
+
+1. **The scorebug was not drawing at all.** `CallInBudgetBug`'s inner `HStack` used
+   `Spacer(minLength:)`, which is greedy — the bug stretched to the full frame width, and because
+   `topRightStack` is drawn after `scoreBug` in the `ZStack` it painted straight over it. The
+   entire top-left scorebug was invisible and I had read the wide dark band across the top as
+   "the budget bug" rather than as a symptom. Fixed with `.fixedSize(horizontal: true,
+   vertical: false)` so the panel hugs its content and the spacer collapses to its `minLength`,
+   which is the gap the design actually asks for.
+2. **Clock-cell type was oversized**: clock at 19 pt and down-and-spot at 14 pt against the
+   handoff's stated 14 and 10. The oversize wrapped "1ST & 10 · CAR BALL" onto a second line and
+   made the whole bug roughly twice its drawn height.
+3. **Cell order was wrong.** The handoff's order is our cell, their cell, clock cell. The code
+   ordered by `home`/`away`, so on a home game the opponent came first. Now ordered by
+   `perspective`, the same fact the colour treatment already reads.
+4. **The possession wedge led the cell instead of trailing it.** The handoff's stated order within
+   the cell is rail, name, score, triangle.
+5. **Player tokens carried jersey numbers, and only three of twenty-two carried anything.** The
+   handoff is explicit — "labels are position shorthand, not numbers" — and the reference labels
+   all twenty-two. The earlier reasoning for labelling only three (the 12 pt authored floor) does
+   not survive inspection: this view already drew a 9 pt label on those three, so the floor was
+   already being spent, and `04` section 6.2 exempts tracked uppercase micro-labels, which is what
+   a position shorthand is. Two-letter shorthands also fit a 15 pt token where two-digit numbers
+   did not — which is why the design specifies shorthands. All twenty-two now carry their position;
+   foreground is a ring rather than being the only mark with text on it. Two supporting data fixes
+   fell out of this: the live provider emitted `EDGE` (four characters, truncated to an ellipsis on
+   the field) which is now `DE`, and the sample fixture's two identical `WR`s and its `SLOT` are now
+   `X`, `Z` and `H`, per the handoff's stated vocabulary.
+6. **The top-right stack was one row taller than the design's and buried the opponent's painted
+   end-zone name.** Pause and Take Over were parked there purely because they are two of the five
+   contract-fixed primary controls and needed somewhere to live; the design's top-right column is
+   only the budget bug, the depth selector and the halftime chip, and it is short specifically so
+   the end-zone lettering reads. They now sit in the bottom-right cluster, which is both closer to
+   the design and closer to the thumb. This also supersedes the earlier note in this log that
+   described Pause/Take Over as living in the top-right.
+
+**One gap the comparison closed that was not a styling issue.** The handoff's lower third carries a
+right-aligned `← WEEK` link, which had not been built. Checking why surfaced something worse: every
+other surface in `CoachWorldAppRootView` takes an `onClose`, and Match Day took none — so there was
+no way to leave the match screen at all. `MatchDayView` now takes an optional `onExit` (optional so
+a caller with nowhere to go gets no dead control), the lower third draws the link when it is
+supplied, and both the production root and the debug proof harness wire it to the coaching HQ.

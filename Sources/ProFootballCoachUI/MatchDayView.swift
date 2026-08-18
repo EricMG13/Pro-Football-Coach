@@ -1,10 +1,26 @@
 import SwiftUI
 
+/// Reports `topRightStack`'s rendered height, so the staff call-in panel can start below it
+/// instead of guessing a fixed offset that drifts the moment the stack's content changes (the
+/// call-in budget bug is conditional on `model.callInBudget`, so the stack's height is not a
+/// constant). MATCH-DAY.md section 5 states the panel begins at "top 122" specifically so the
+/// budget bug, the control depth selector and the halftime chip stay visible above it — a fixed
+/// top inset equal to the stack's own top offset hid all three behind the panel instead.
+private struct TopRightStackHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 public struct MatchDayView: View {
     public let model: MatchDayReadModel
     public let statusMessage: String?
     public let onControl: (CoachWorldIntentID) -> Void
     public let onInterruption: (CoachWorldIntentID) -> Void
+    /// Leaves Match Day — the handoff's "← WEEK" link in the lower third. Optional, and drawn only
+    /// when supplied, so a caller with nowhere to go does not get a dead control.
+    public let onExit: (() -> Void)?
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -14,17 +30,20 @@ public struct MatchDayView: View {
     /// redrawing for as long as Match Day is on screen, which is most of a game.
     @State private var playbackComplete = false
     @State private var speedIndex = 0
+    @State private var topRightStackHeight: CGFloat = .zero
 
     public init(
         model: MatchDayReadModel,
         statusMessage: String? = nil,
         onControl: @escaping (CoachWorldIntentID) -> Void,
-        onInterruption: @escaping (CoachWorldIntentID) -> Void
+        onInterruption: @escaping (CoachWorldIntentID) -> Void,
+        onExit: (() -> Void)? = nil
     ) {
         self.model = model
         self.statusMessage = statusMessage
         self.onControl = onControl
         self.onInterruption = onInterruption
+        self.onExit = onExit
     }
 
     private var palette: CoachWorldTokens.Palette {
@@ -63,6 +82,16 @@ public struct MatchDayView: View {
         return Swift.min(1, Swift.max(0, elapsed / duration))
     }
 
+    /// PRE-SNAP / SNAP / RESULT, `04` section 9's three frames — derived from presentation state
+    /// only (whether a snap has been recorded, and whether its animation has settled), exactly
+    /// like `isAnimatingSnap` already is. Drives the lower third's phase label and the committing
+    /// action's cycling copy.
+    private var phase: (label: String, isLive: Bool) {
+        guard model.playback != nil else { return ("Pre-snap", false) }
+        if isAnimatingSnap, !playbackComplete { return ("Snap", true) }
+        return ("Result", false)
+    }
+
     public var body: some View {
         CoachWorldFloodlitStage(palette: palette, register: .broadcast) {
             Group {
@@ -76,30 +105,246 @@ public struct MatchDayView: View {
         .sheet(isPresented: $showsEvidence) { evidenceSheet }
     }
 
+    // MARK: - Standard layout
+    //
+    // `04` section 6.1b: the field fills the frame edge to edge, and every other element is glass
+    // furniture floating above it, positioned from the 844 x 390 frame's own edges rather than
+    // stacked in rows beside the field. `CoachWorldTokens.Frame` carries the re-derived offsets.
+
     private var standardLayout: some View {
-        VStack(spacing: .zero) {
-            scorebug
-            HStack(spacing: .zero) {
-                field
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+        GeometryReader { geometry in
+            let size = geometry.size
+            ZStack(alignment: .topLeading) {
+                field(bandedVertical: true)
+                    .frame(width: size.width, height: size.height)
+
+                scoreBug
+                    .padding(.leading, CoachWorldTokens.Frame.leadingInset)
+                    .padding(.top, CoachWorldTokens.Frame.topInset)
+
+                topRightStack
+                    .padding(.trailing, CoachWorldTokens.Frame.gutter)
+                    .padding(.top, CoachWorldTokens.Frame.topInset)
+                    .frame(maxWidth: size.width, alignment: .trailing)
+                    .background {
+                        GeometryReader { stackGeometry in
+                            Color.clear.preference(
+                                key: TopRightStackHeightKey.self, value: stackGeometry.size.height
+                            )
+                        }
+                    }
+
+                MatchLowerThird(
+                    model: model, phase: phase.label, isLive: phase.isLive,
+                    headline: model.playback?.sentence, onExit: onExit
+                )
+                .frame(width: size.width * CoachWorldTokens.Frame.lowerThirdWidthRatio)
+                .padding(.leading, CoachWorldTokens.Frame.leadingInset)
+                .padding(.bottom, CoachWorldTokens.Frame.bottomInset)
+                .frame(maxHeight: size.height, alignment: .bottom)
+
+                // The staff call-in panel occupies this same trailing column while a call-in is
+                // open, and the committing action is already disabled then (`.keyMoments`'s
+                // control is gated on `pendingCallIn == nil` upstream) — so this is a state change,
+                // not decoration hidden under decoration. An always-present but untappable button
+                // sitting invisibly beneath an opaque panel is a hit-testing and VoiceOver-order
+                // hazard even when nothing is visually wrong; hiding it outright removes both.
+                if model.staffInterruption == nil {
+                    bottomRightCluster
+                        .padding(.trailing, CoachWorldTokens.Frame.gutter)
+                        .padding(.bottom, CoachWorldTokens.Frame.bottomInset)
+                        .frame(width: size.width, height: size.height, alignment: .bottomTrailing)
+                }
+
                 if let interruption = model.staffInterruption {
-                    ScrollView { interruptionRail(interruption) }
+                    staffCallInPanel(interruption)
                         .frame(width: MatchMetric.callInWidth)
+                        .padding(.trailing, CoachWorldTokens.Frame.gutter)
+                        // Below the persistent top-right furniture, never over it — MATCH-DAY.md
+                        // section 5 states this panel starts at "top 122" specifically so the
+                        // budget bug, control depth and halftime chip stay visible above it.
+                        .padding(.top, topRightStackHeight + CoachWorldTokens.Gap.lg)
+                        .padding(.bottom, CoachWorldTokens.Frame.bottomInset)
+                        .frame(width: size.width, height: size.height, alignment: .topTrailing)
+                        .transition(
+                            .move(edge: .trailing).combined(with: .opacity)
+                        )
+                }
+
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.contentSecondary.color)
+                        .padding(.horizontal, CoachWorldTokens.Space.sm)
+                        .padding(.vertical, CoachWorldTokens.Space.xxs)
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .padding(.top, CoachWorldTokens.Frame.topInset)
+                        .frame(width: size.width, alignment: .top)
                 }
             }
-            lowerThird
-            controlBar
+            .onPreferenceChange(TopRightStackHeightKey.self) { topRightStackHeight = $0 }
+            .animation(reduceMotion ? nil : CoachWorldTokens.Motion.standard(CoachWorldTokens.Motion.panelEnter),
+                       value: model.staffInterruption != nil)
+        }
+        .aspectRatio(MatchMetric.frameAspect, contentMode: .fit)
+        .accessibilityIdentifier("match-day-standard")
+    }
+
+    private var scoreBug: some View {
+        ScoreBug(
+            model: model,
+            quarterLabel: quarterLabel,
+            clockLabel: clockLabel,
+            downDistance: "\(ordinal(model.situation.down)) & \(model.situation.yardsToGo)",
+            spot: "\(possessionTeam.abbreviation) BALL"
+        )
+        .accessibilitySortPriority(100)
+    }
+
+    /// Exactly the three the handoff draws top-right: the call-in budget bug, the control depth
+    /// selector, the halftime chip.
+    ///
+    /// Pause and Take Over used to sit here too, as a fourth row, purely because they are two of
+    /// the five contract-fixed primary controls and needed somewhere to live. That made the stack
+    /// tall enough to cover the vertical middle of the opponent's end zone, which is exactly where
+    /// its painted name is drawn — the design keeps this column short so that lettering reads. They
+    /// now sit in the bottom-right cluster instead, which is both closer to the thumb and closer to
+    /// what the design draws.
+    private var topRightStack: some View {
+        VStack(alignment: .trailing, spacing: CoachWorldTokens.Gap.lg) {
+            if let budget = model.callInBudget {
+                CallInBudgetBug(budget: budget)
+            }
+            ControlDepthSelector(depth: model.controlDepth) {
+                onControl(model.controlDepthIntentID)
+            }
+            .frame(width: MatchMetric.controlDepthWidth)
+            furnitureControlButton(.tactics, wide: true, label: "HALFTIME · PLAN EDIT")
+        }
+        .accessibilitySortPriority(85)
+    }
+
+    private var bottomRightCluster: some View {
+        HStack(spacing: CoachWorldTokens.Gap.xs) {
+            speedCycleButton
+            furnitureControlButton(.pause)
+            furnitureControlButton(.takeOver)
+            committingAction
+        }
+        .accessibilitySortPriority(95)
+    }
+
+    private var speedCycleButton: some View {
+        let control = orderedControls.first { $0.id == .speed }
+        return Button {
+            speedIndex = (speedIndex + 1) % MatchMetric.speedMultipliers.count
+            if let control { onControl(control.intentID) }
+        } label: {
+            Text("\(Int(speedMultiplier))×")
+                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.action, weight: .bold))
+                .frame(width: MatchMetric.speedPillWidth)
+                .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+        }
+        .foregroundStyle(palette.actionPrimary.color)
+        .coachWorldFloodlitPanel(
+            fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(0.86),
+            border: Color.white.opacity(CoachWorldTokens.Glass.line),
+            depth: .deep,
+            shape: CoachWorldCutCorner.actionSmall
+        )
+        .disabled(control?.isEnabled == false)
+        .opacity(control?.isEnabled == false ? CoachWorldTokens.Motion.disabledOpacity : 1)
+        .accessibilityLabel("Speed, \(Int(speedMultiplier)) times")
+    }
+
+    private var committingAction: some View {
+        let control = orderedControls.first { $0.id == .keyMoments }
+        let label = control?.isEnabled == false
+            ? (control?.value ?? "Call-in pending")
+            : committingLabel
+        return CommittingAction(title: label) {
+            if let control { onControl(control.intentID) }
+        }
+        .disabled(control?.isEnabled == false)
+        .opacity(control?.isEnabled == false ? CoachWorldTokens.Motion.disabledOpacity : 1)
+    }
+
+    /// `Snap it` before a recorded play exists, `Play on` while its animation runs, `Next snap`
+    /// once it has settled — the handoff's per-frame cycle, read off the same presentation phase
+    /// the lower third uses.
+    private var committingLabel: String {
+        switch phase.label {
+        case "Pre-snap": "Snap it"
+        case "Snap": "Play on"
+        default: "Next snap"
         }
     }
+
+    /// Pause and Take Over: two of the five contract-fixed primary controls, rendered as small
+    /// glass icon chips rather than a bottom bar, per `04` section 6.1b's furniture-first layout.
+    /// Tactics reuses the same chip, widened, carrying the handoff's literal halftime copy.
+    private func furnitureControlButton(
+        _ id: MatchDayControlID, wide: Bool = false, label: String? = nil
+    ) -> some View {
+        let control = orderedControls.first { $0.id == id }
+        let presentation = controlPresentation(id)
+        return Button {
+            if let control { onControl(control.intentID) }
+        } label: {
+            Group {
+                if wide {
+                    Text((label ?? presentation.title).uppercased())
+                        .font(
+                            CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold)
+                        )
+                        .tracking(
+                            CoachWorldTokens.DisplaySize
+                                .tracking(0.1, at: CoachWorldTokens.DisplaySize.flag)
+                        )
+                } else {
+                    Image(systemName: presentation.symbol)
+                        .font(.system(size: MatchMetric.furnitureIconSize, weight: .bold))
+                }
+            }
+            .frame(
+                minWidth: wide ? MatchMetric.controlDepthWidth : CoachWorldTokens.Shape.minimumTarget,
+                minHeight: CoachWorldTokens.Shape.minimumTarget
+            )
+        }
+        .foregroundStyle(control?.isSelected == true
+            ? palette.actionPrimary.color : palette.contentPrimary.color)
+        .coachWorldFloodlitPanel(
+            fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(0.86),
+            border: Color.white.opacity(CoachWorldTokens.Glass.line),
+            depth: .deep,
+            shape: CoachWorldCutCorner.actionSmall
+        )
+        .disabled(control?.isEnabled == false)
+        .opacity(control?.isEnabled == false ? CoachWorldTokens.Motion.disabledOpacity : 1)
+        .accessibilityLabel(label ?? presentation.title)
+        .accessibilityAddTraits(control?.isSelected == true ? .isSelected : [])
+    }
+
+    // MARK: - Accessible layout
+    //
+    // AX5 keeps the field whole and moves supporting text into a scrollable stack instead of
+    // floating chrome, per the render-recorded-match contract. It reuses the same field and score
+    // pieces at a fixed, generous size rather than the standard layout's frame-relative overlay
+    // positions.
 
     private var accessibleLayout: some View {
         ScrollView {
             VStack(spacing: .zero) {
                 accessibleScoreStrip
-                field
+                field(bandedVertical: false)
                     .aspectRatio(MatchMetric.fieldAspect, contentMode: .fit)
                     .frame(height: MatchMetric.accessibleFieldHeight)
-                lowerThird
+                MatchLowerThird(
+                    model: model, phase: phase.label, isLive: phase.isLive,
+                    headline: model.playback?.sentence, onExit: onExit
+                )
+                .padding(.horizontal, CoachWorldTokens.Space.sm)
+                .padding(.top, CoachWorldTokens.Space.sm)
                 if let interruption = model.staffInterruption {
                     interruptionRail(interruption)
                 }
@@ -154,72 +399,42 @@ public struct MatchDayView: View {
         .accessibilitySortPriority(100)
     }
 
-    private var scorebug: some View {
-        HStack(spacing: .zero) {
-            scoreTeam(model.away, isHome: false)
-            scoreTeam(model.home, isHome: true)
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                Text("\(quarterLabel) · \(clockLabel)")
-                    .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                    .monospacedDigit()
-                Text("\(ordinal(model.situation.down)) & \(model.situation.yardsToGo) · \(possessionTeam.abbreviation) BALL")
-                    .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                    .foregroundStyle(palette.contentSecondary.color)
-            }
-            .padding(.horizontal, CoachWorldTokens.Space.sm)
-            .frame(maxWidth: .infinity, minHeight: MatchMetric.scorebugHeight,
-                   alignment: .leading)
-            Text("LIVE CHECKPOINT")
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.stateLive.color)
-                .padding(.horizontal, CoachWorldTokens.Space.sm)
-        }
-        .background(palette.raised.color)
-        .overlay(alignment: .bottom) { seam }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "\(model.away.team.name) \(model.away.score), "
-                + "\(model.home.team.name) \(model.home.score), "
-                + "\(quarterLabel), \(clockLabel), \(ordinal(model.situation.down)) and "
-                + "\(model.situation.yardsToGo), \(possessionTeam.name) ball, live checkpoint"
-        )
-        .accessibilitySortPriority(100)
-    }
+    // MARK: - The field
+    //
+    // Shared by both layouts. `bandedVertical` selects the vertical mapping: the standard layout's
+    // full-bleed field keeps tokens inside the 10-90% band `04` section 6.1b states, clear of the
+    // scorebug and lower third; the accessible layout's field sits in its own dedicated frame with
+    // no chrome overlaid on it, so its tokens use the field's plain 0-1 span.
 
-    private func scoreTeam(_ score: MatchDayReadModel.TeamScore, isHome: Bool) -> some View {
-        HStack(spacing: CoachWorldTokens.Space.xs) {
-            Text(score.team.abbreviation)
-                .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-            Text("\(score.score)")
-                .font(CoachWorldTokens.TypeRole.title.weight(.black))
-                .monospacedDigit()
-        }
-        .padding(.horizontal, CoachWorldTokens.Space.sm)
-        .frame(minHeight: MatchMetric.scorebugHeight)
-        .foregroundStyle(isHome ? palette.page.color : palette.contentPrimary.color)
-        .background(isHome ? palette.collegeIdentity.color : palette.work.color)
-        .overlay(alignment: .trailing) { verticalSeam }
-    }
-
-    private var field: some View {
+    private func field(bandedVertical: Bool) -> some View {
         GeometryReader { geometry in
             let size = geometry.size
             ZStack(alignment: .topLeading) {
-                fieldSurface
-                endZone(at: .leading, size: size, label: leftEndZoneTeam.abbreviation)
-                endZone(at: .trailing, size: size, label: rightEndZoneTeam.abbreviation)
+                FieldPlane(
+                    tier: model.tier,
+                    leftIdentity: identity(for: leftEndZoneTeam),
+                    rightIdentity: identity(for: rightEndZoneTeam),
+                    leftLabel: leftEndZoneTeam.abbreviation,
+                    rightLabel: rightEndZoneTeam.abbreviation,
+                    mark: fieldMarkContent
+                )
+                .equatable()
+
                 fieldMarker(
                     x: size.width * CGFloat(drawnLines.lineOfScrimmage / 120),
                     height: size.height,
-                    color: palette.fieldAnnotation.color,
+                    color: palette.fieldLine.color,
+                    glow: false,
                     label: "Line of scrimmage"
                 )
                 fieldMarker(
                     x: size.width * CGFloat(drawnLines.firstDown / 120),
                     height: size.height,
-                    color: palette.fieldLive.color,
+                    color: palette.actionPrimary.color,
+                    glow: true,
                     label: "First-down line"
                 )
+
                 if let playback = model.playback, !reduceMotion {
                     TimelineView(
                         .animation(minimumInterval: MatchMetric.playbackTick,
@@ -232,10 +447,11 @@ public struct MatchDayView: View {
                                     track,
                                     at: t,
                                     isForeground: playback.foregroundIDs.contains(track.stableID),
-                                    size: size
+                                    size: size,
+                                    banded: bandedVertical
                                 )
                             }
-                            ballMark(playback, at: t, size: size)
+                            ballMark(playback, at: t, size: size, banded: bandedVertical)
                         }
                         // Pinned to the reader's size. `.position` resolves against its container's
                         // bounds, and this ZStack sits a level deeper than `actorMark` does, so
@@ -247,13 +463,11 @@ public struct MatchDayView: View {
                     // discrete state changes rather than fast travel, so this is a separate path and
                     // not an animation with its duration set to zero.
                     ForEach(model.actors, id: \.stableID) { actor in
-                        actorMark(actor, size: size)
+                        actorMark(actor, size: size, banded: bandedVertical)
                     }
                 }
             }
         }
-        .aspectRatio(MatchMetric.fieldAspect, contentMode: .fit)
-        .background(palette.fieldTurf.color)
         .environment(\.layoutDirection, .leftToRight)
         .accessibilitySortPriority(80)
         // Keyed on the playback's own identity, which changes every snap. `recordedOutcomeID` is
@@ -274,6 +488,12 @@ public struct MatchDayView: View {
         }
     }
 
+    private func screenY(_ fraction: Double, height: CGFloat, banded: Bool) -> CGFloat {
+        banded
+            ? MatchFieldGeometry.y(fraction: fraction, in: height)
+            : height * CGFloat(fraction)
+    }
+
     /// One dot, between where it started and where the record says it finished.
     ///
     /// The foreground flag comes from the playback rather than from `model.foregroundActorIDs`.
@@ -285,17 +505,20 @@ public struct MatchDayView: View {
         _ track: MatchDayReadModel.Playback.ActorTrack,
         at fraction: Double,
         isForeground: Bool,
-        size: CGSize
+        size: CGSize,
+        banded: Bool
     ) -> some View {
         let spot = Self.position(of: track, at: fraction)
-        let x = spot.x
-        let y = spot.y
-        return actorDisc(
-            number: track.uniformNumber,
-            isHome: track.side == .home,
+        return actorToken(
+            // The track's role, not its number — same rule the static field follows below.
+            label: track.role,
+            isOurs: track.side == model.perspective,
             isForeground: isForeground
         )
-        .position(x: size.width * CGFloat(x / 120), y: size.height * CGFloat(y))
+        .position(
+            x: size.width * CGFloat(spot.x / 120),
+            y: screenY(spot.y, height: size.height, banded: banded)
+        )
         .accessibilityHidden(true)
     }
 
@@ -330,53 +553,44 @@ public struct MatchDayView: View {
         return (track.endX, track.endY)
     }
 
-    /// One actor's mark, in the two sizes `04` §9 asks for.
+    /// One actor's mark: a 15 pt token carrying its **position shorthand**, for all twenty-two.
     ///
-    /// §9 caps the foreground at three, and §6.5 #18 makes the diagram's marks role tokens rather
-    /// than jersey numbers. Numbering all twenty-two contradicted both, and could not be fixed by
-    /// shrinking: `authoredFloor` is a 12 pt contract, so a disc with text in it cannot go below
-    /// about 20 pt, while the template puts adjacent linemen roughly 3 yards — some 16 pt — apart.
-    /// Text on every actor and no overlap are not simultaneously satisfiable at this field scale.
+    /// The handoff (MATCH-DAY.md section 4) is explicit on both counts — "labels are position
+    /// shorthand, not numbers: `LT LG C RG RT QB RB X H Z TE` and `RE NT DT LE W M N RC LC FS SS`"
+    /// — and the reference prototype labels every one of the twenty-two. `04` section 6.5 #18
+    /// agrees: the diagram's marks are role tokens, which is what a position shorthand is and what
+    /// a jersey number is not.
     ///
-    /// So the three that matter carry their number, and the other nineteen are plain marks small
-    /// enough to sit beside one another. Nothing is lost: at 20 pt the background numbers overlapped
-    /// into illegibility anyway, so they were costing clarity rather than adding it.
-    private func actorDisc(number: String, isHome: Bool, isForeground: Bool) -> some View {
-        let fill = isHome ? palette.collegeIdentity.color : palette.raised.color
-        return Group {
-            if isForeground {
-                Text(number)
-                    .font(.system(size: CoachWorldTokens.TypeRole.authoredFloor, weight: .black))
-                    .foregroundStyle(isHome ? palette.page.color : palette.contentPrimary.color)
-                    .frame(width: MatchMetric.actorSize, height: MatchMetric.actorSize)
-                    .background(fill)
-                    .overlay {
-                        Circle().stroke(
-                            palette.fieldLive.color, lineWidth: MatchMetric.foregroundStroke
-                        )
-                    }
-                    .clipShape(Circle())
-            } else {
-                Circle()
-                    .fill(fill)
-                    .frame(
-                        width: MatchMetric.backgroundActorSize,
-                        height: MatchMetric.backgroundActorSize
+    /// An earlier pass here labelled only the three foregrounded actors, and did so with their
+    /// jersey numbers, reasoning from section 6.2's 12 pt authored floor that a legible disc cannot
+    /// go below about 20 pt. That reasoning does not survive contact with what actually shipped:
+    /// this view already draws a 9 pt label on those three, so the floor was already being spent —
+    /// it just bought three labels instead of twenty-two. Section 6.2 exempts tracked uppercase
+    /// micro-labels from the floor, and a position shorthand is exactly that. Two-letter shorthands
+    /// at 9 pt in a 15 pt token also fit where two-digit numbers did not, which is why the design
+    /// specifies shorthands rather than numbers in the first place.
+    ///
+    /// Foreground still reads differently — `04` section 9 caps it at three and the deciding
+    /// matchup has to be findable — but it now does so with a ring, not by being the only mark
+    /// that carries any text at all.
+    private func actorToken(label: String, isOurs: Bool, isForeground: Bool) -> some View {
+        PlayerToken(label: label, isOurs: isOurs)
+            .overlay {
+                if isForeground {
+                    Circle().stroke(
+                        palette.fieldLive.color, lineWidth: MatchMetric.foregroundRing
                     )
-                    .overlay {
-                        Circle().stroke(
-                            palette.fieldLine.color, lineWidth: CoachWorldTokens.Shape.hairline
-                        )
-                    }
+                }
             }
-        }
     }
 
-    /// The ball, on whichever leg of its journey is current.
+    /// The ball, on whichever leg of its journey is current. Height comes straight off the leg's
+    /// own `apexHeight` — the model drives lift, scale, tilt and shadow separation, not the view.
     private func ballMark(
         _ playback: MatchDayReadModel.Playback,
         at fraction: Double,
-        size: CGSize
+        size: CGSize,
+        banded: Bool
     ) -> some View {
         let leg = playback.ball.last { $0.startFraction <= fraction } ?? playback.ball.first
         return Group {
@@ -385,172 +599,154 @@ public struct MatchDayView: View {
                 let local = Swift.min(1, Swift.max(0, (fraction - leg.startFraction) / span))
                 let x = leg.fromX + (leg.toX - leg.fromX) * local
                 let y = leg.fromY + (leg.toY - leg.fromY) * local
-                Circle()
-                    .fill(palette.fieldAnnotation.color)
-                    .frame(width: MatchMetric.ballMarkSize, height: MatchMetric.ballMarkSize)
-                    .position(x: size.width * CGFloat(x / 120), y: size.height * CGFloat(y))
-            }
-        }
-        .accessibilityHidden(true)
-    }
-
-    private var fieldSurface: some View {
-        Canvas { context, size in
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(palette.fieldTurf.color))
-
-            for index in 0..<12 where index.isMultiple(of: 2) {
-                let band = CGRect(
-                    x: size.width * CGFloat(index) / 12,
-                    y: .zero,
-                    width: size.width / 12,
-                    height: size.height
-                )
-                context.fill(Path(band), with: .color(palette.fieldLine.color.opacity(0.035)))
-            }
-
-            for index in 0...12 {
-                let x = size.width * CGFloat(index) / 12
-                var rule = Path()
-                rule.move(to: CGPoint(x: x, y: .zero))
-                rule.addLine(to: CGPoint(x: x, y: size.height))
-                context.stroke(
-                    rule,
-                    with: .color(palette.fieldLine.color.opacity(0.42)),
-                    lineWidth: CoachWorldTokens.Shape.hairline
-                )
-            }
-
-            for yard in 10...110 {
-                let x = size.width * CGFloat(yard) / 120
-                for yFraction in MatchMetric.hashYFractions {
-                    let y = size.height * yFraction
-                    var hash = Path()
-                    hash.move(to: CGPoint(x: x, y: y - MatchMetric.hashHalfHeight))
-                    hash.addLine(to: CGPoint(x: x, y: y + MatchMetric.hashHalfHeight))
-                    context.stroke(
-                        hash,
-                        with: .color(palette.fieldLine.color.opacity(0.52)),
-                        lineWidth: CoachWorldTokens.Shape.hairline
+                BallToken(ballHeight: leg.height(at: local))
+                    .position(
+                        x: size.width * CGFloat(x / 120),
+                        y: screenY(y, height: size.height, banded: banded)
                     )
-                }
-            }
-
-            for fieldYard in stride(from: 20, through: 100, by: 10) {
-                let displayYard = fieldYard <= 60 ? fieldYard - 10 : 110 - fieldYard
-                let label = context.resolve(
-                    Text("\(displayYard)")
-                        .font(.system(size: CoachWorldTokens.TypeRole.authoredFloor, weight: .bold))
-                        .foregroundStyle(palette.fieldLine.color.opacity(0.72))
-                )
-                let x = size.width * CGFloat(fieldYard) / 120
-                context.draw(label, at: CGPoint(x: x, y: size.height * 0.18))
-                context.draw(label, at: CGPoint(x: x, y: size.height * 0.82))
             }
         }
         .accessibilityHidden(true)
-    }
-
-    private func endZone(at alignment: Alignment, size: CGSize, label: String) -> some View {
-        Text(label)
-            .font(.system(size: CoachWorldTokens.TypeRole.authoredFloor, weight: .black))
-            .foregroundStyle(palette.fieldLine.color)
-            .frame(width: size.width / 12, height: size.height)
-            .background(palette.page.color.opacity(0.28))
-            .frame(maxWidth: .infinity, alignment: alignment)
-            .accessibilityHidden(true)
     }
 
     private func fieldMarker(
         x: CGFloat,
         height: CGFloat,
         color: Color,
+        glow: Bool,
         label: String
     ) -> some View {
         Rectangle()
             .fill(color)
-            .frame(width: MatchMetric.markerWidth, height: height)
-            .offset(x: x - MatchMetric.markerWidth / 2)
+            .frame(width: glow ? MatchMetric.firstDownWidth : MatchMetric.losWidth, height: height)
+            .shadow(
+                color: glow ? color.opacity(0.7) : .clear,
+                radius: glow ? MatchMetric.firstDownGlow : .zero
+            )
+            .offset(x: x - (glow ? MatchMetric.firstDownWidth : MatchMetric.losWidth) / 2)
             .accessibilityLabel(label)
     }
 
-    private func actorMark(_ actor: MatchDayReadModel.Actor, size: CGSize) -> some View {
+    private func actorMark(_ actor: MatchDayReadModel.Actor, size: CGSize, banded: Bool) -> some View {
         let foreground = model.foregroundActorIDs.contains(actor.stableID)
         let offense = actor.side == model.situation.possession
-        // The same two marks the animated path uses, so the pre-snap field and the animated one
-        // cannot drift apart in how they read. The accessible sentence is unchanged either way:
-        // shrinking a background dot must not shrink what VoiceOver says about it.
-        return actorDisc(
-            number: actor.uniformNumber,
-            isHome: actor.side == .home,
-            isForeground: foreground
+        // The same mark the animated path uses, so the pre-snap field and the animated one cannot
+        // drift apart in how they read. The accessible sentence is unchanged either way: the mark's
+        // printed label getting shorter must not shorten what VoiceOver says about it, which is why
+        // the label below still names the number as well as the position.
+        return actorToken(
+            label: actor.position, isOurs: actor.side == model.perspective, isForeground: foreground
         )
-        .position(
-            x: size.width * CGFloat(actor.xYardsFromLeftGoalLine / 120),
-            y: size.height * CGFloat(actor.yFraction)
+            .position(
+                x: size.width * CGFloat(actor.xYardsFromLeftGoalLine / 120),
+                y: screenY(actor.yFraction, height: size.height, banded: banded)
+            )
+            // Explicit, because a background mark is a `Circle` and a shape is not an accessibility
+            // element on its own. Without this the label would attach for the three foregrounded
+            // actors, whose mark is built from a `Text`, and silently detach for the other
+            // nineteen — the mark getting smaller must never make the actor quieter.
+            .accessibilityElement()
+            .accessibilityLabel(
+                "\(offense ? "Offense" : "Defense"), \(actor.position) "
+                    + "number \(actor.uniformNumber), at yard \(Int(actor.xYardsFromLeftGoalLine))"
+            )
+    }
+
+    // MARK: - Staff call-in
+
+    /// The handoff's floating panel: 2 pt live-red top rail, glass ground, options as
+    /// `.playCard`-shaped rows, a footer naming the rate that governs it.
+    private func staffCallInPanel(_ interruption: MatchDayReadModel.StaffInterruption) -> some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
+            Text("STAFF CALL-IN")
+                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                .tracking(
+                    CoachWorldTokens.DisplaySize.tracking(0.18, at: CoachWorldTokens.DisplaySize.flag)
+                )
+                .foregroundStyle(CoachWorldTokens.Floodlit.liveInk.color)
+            HStack(alignment: .top, spacing: CoachWorldTokens.Gap.xs) {
+                CoachWorldBlankPhotoPlate(name: interruption.staff.name, palette: palette, width: 36, height: 40)
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                    Text(interruption.staff.name)
+                        .font(CoachWorldTokens.TypeRole.body.weight(.bold))
+                    Text(interruption.staff.role)
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.contentSecondary.color)
+                }
+            }
+            Text(interruption.message)
+                .font(CoachWorldTokens.TypeRole.body)
+                .fixedSize(horizontal: false, vertical: true)
+            Rectangle()
+                .fill(Color.white.opacity(CoachWorldTokens.Glass.hairline))
+                .frame(height: CoachWorldTokens.Shape.hairline)
+            VStack(spacing: CoachWorldTokens.Gap.xs) {
+                ForEach(interruption.actions, id: \.path) { action in
+                    interruptionButton(action)
+                }
+            }
+            Text("CALL-IN \(callInFooterCount) · RATE SET BY CONTROL DEPTH")
+                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                .foregroundStyle(palette.contentQuiet.color)
+        }
+        .padding(.vertical, CoachWorldTokens.Pad.card.v)
+        .padding(.horizontal, CoachWorldTokens.Pad.card.h)
+        .coachWorldFloodlitPanel(
+            fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(0.90),
+            border: Color.white.opacity(CoachWorldTokens.Glass.line),
+            depth: .deep,
+            shape: CoachWorldCutCorner.card
         )
-        // Explicit, because a background mark is a `Circle` and a shape is not an accessibility
-        // element on its own. Without this the label would attach for the three foregrounded actors,
-        // whose mark is built from a `Text`, and silently detach for the other nineteen — the mark
-        // getting smaller must never make the actor quieter.
-        .accessibilityElement()
+        .overlay(alignment: .top) {
+            Rectangle().fill(palette.stateNegative.color).frame(height: 2)
+                .clipShape(CoachWorldCutCorner.card)
+        }
+        .accessibilitySortPriority(90)
+    }
+
+    private var callInFooterCount: String {
+        guard let budget = model.callInBudget else { return "" }
+        return "\(budget.used) OF \(budget.total)"
+    }
+
+    private func interruptionButton(
+        _ action: MatchDayReadModel.StaffInterruption.Action
+    ) -> some View {
+        Button {
+            onInterruption(action.intentID)
+            if action.path == .inspectEvidence { showsEvidence = true }
+        } label: {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                Text(action.title)
+                    .font(CoachWorldTokens.TypeRole.body.weight(.bold))
+                Text(action.cost)
+                    .font(CoachWorldTokens.TypeRole.caption)
+                    .foregroundStyle(palette.contentSecondary.color)
+            }
+            .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget, alignment: .leading)
+            .padding(.horizontal, CoachWorldTokens.Space.xs)
+        }
+        .buttonStyle(.plain)
+        .disabled(!action.isEnabled)
+        .coachWorldFloodlitPanel(
+            fill: .clear,
+            border: action.path == .accept
+                ? palette.actionPrimary.color.opacity(0.6)
+                : Color.white.opacity(CoachWorldTokens.Glass.line),
+            depth: .glass,
+            shape: CoachWorldCutCorner.playCard
+        )
         .accessibilityLabel(
-            "\(offense ? "Offense" : "Defense"), \(actor.position) "
-                + "number \(actor.uniformNumber), at yard \(Int(actor.xYardsFromLeftGoalLine))"
+            "\(action.title). Cost: \(action.cost). Consequence: \(action.consequence)"
         )
     }
 
-    private var lowerThird: some View {
-        HStack(spacing: CoachWorldTokens.Space.sm) {
-            Text("WHY THIS PLAY")
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.stateLive.color)
-            Text(model.causalCommentary)
-                .font(CoachWorldTokens.TypeRole.body.weight(.bold))
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
-            // The snap's accessible sentence. Under Reduce Motion this carries the narration the
-            // animation would otherwise have carried, per `04` §9's per-snap equivalent.
-            if let sentence = model.playback?.sentence {
-                Text(sentence)
-                    .font(CoachWorldTokens.TypeRole.caption)
-                    .foregroundStyle(palette.contentSecondary.color)
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
-            }
-            Spacer(minLength: .zero)
-            if !dynamicTypeSize.isAccessibilitySize, let statusMessage {
-                Text(statusMessage)
-                    .font(CoachWorldTokens.TypeRole.caption)
-                    .foregroundStyle(palette.contentSecondary.color)
-                    .lineLimit(1)
-            }
-        }
-        .padding(.horizontal, CoachWorldTokens.Space.sm)
-        .frame(maxWidth: .infinity, minHeight: MatchMetric.lowerThirdHeight, alignment: .leading)
-        .background(palette.work.color)
-        .overlay(alignment: .top) { seam }
-        .overlay(alignment: .bottom) { seam }
-        .accessibilityElement(children: .combine)
-        .accessibilitySortPriority(70)
-    }
-
-    private var controlBar: some View {
-        HStack(spacing: .zero) {
-            ForEach(orderedControls, id: \.id) { control in
-                controlButton(control)
-            }
-        }
-        .frame(minHeight: MatchMetric.controlHeight)
-        .background(palette.raised.color)
-        .accessibilitySortPriority(60)
-    }
+    // MARK: - AX5 controls and interruption rail (unchanged structure, restyled)
 
     private func controlButton(_ control: MatchDayReadModel.ControlState) -> some View {
         let presentation = controlPresentation(control.id)
-        // Playback rate is presentation, so the view owns the displayed value for this one control
-        // and the intent only records that a cycle happened.
         let displayedValue = control.id == .speed ? "\(Int(speedMultiplier))x" : control.value
-        let accessibilityLabel = displayedValue.map {
-            "\(presentation.title), \($0)"
-        } ?? presentation.title
+        let accessibilityLabel = displayedValue.map { "\(presentation.title), \($0)" } ?? presentation.title
 
         return Button {
             if control.id == .speed {
@@ -562,16 +758,12 @@ public struct MatchDayView: View {
                 Image(systemName: presentation.symbol)
                     .font(.caption.weight(.bold))
                     .accessibilityHidden(true)
-                Text(presentation.title)
-                    .font(.caption.weight(.bold))
+                Text(presentation.title).font(.caption.weight(.bold))
                 if let value = displayedValue { Text(value).font(.caption) }
             }
             .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
         }
-        .buttonStyle(MatchControlButtonStyle(
-            selected: control.isSelected,
-            palette: palette
-        ))
+        .buttonStyle(MatchControlButtonStyle(selected: control.isSelected, palette: palette))
         .disabled(!control.isEnabled)
         .accessibilityLabel(Text(accessibilityLabel))
         .accessibilityAddTraits(control.isSelected ? .isSelected : [])
@@ -585,12 +777,7 @@ public struct MatchDayView: View {
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                 .foregroundStyle(palette.stateWarning.color)
             HStack(alignment: .top, spacing: CoachWorldTokens.Space.xs) {
-                CoachWorldBlankPhotoPlate(
-                    name: interruption.staff.name,
-                    palette: palette,
-                    width: 44,
-                    height: 50
-                )
+                CoachWorldBlankPhotoPlate(name: interruption.staff.name, palette: palette, width: 44, height: 50)
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                     Text(interruption.staff.name).font(.headline.weight(.black))
                     Text(interruption.staff.role)
@@ -611,42 +798,7 @@ public struct MatchDayView: View {
         .padding(CoachWorldTokens.Space.sm)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(palette.page.color)
-        .overlay(alignment: .leading) { verticalSeam }
         .accessibilitySortPriority(90)
-    }
-
-    private func interruptionButton(
-        _ action: MatchDayReadModel.StaffInterruption.Action
-    ) -> some View {
-        Button {
-            onInterruption(action.intentID)
-            if action.path == .inspectEvidence { showsEvidence = true }
-        } label: {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                Text(action.title).font(.headline.weight(.black))
-                Text(action.cost)
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(palette.stateWarning.color)
-                Text(action.consequence)
-                    .font(.caption)
-                    .foregroundStyle(palette.contentSecondary.color)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget,
-                   alignment: .leading)
-            .padding(.horizontal, CoachWorldTokens.Space.xs)
-        }
-        .buttonStyle(.plain)
-        .disabled(!action.isEnabled)
-        .overlay {
-            Rectangle().stroke(
-                action.path == .accept ? palette.actionPrimary.color : palette.contentQuiet.color,
-                lineWidth: CoachWorldTokens.Shape.hairline
-            )
-        }
-        .accessibilityLabel(
-            "\(action.title). Cost: \(action.cost). Consequence: \(action.consequence)"
-        )
     }
 
     private var evidenceSheet: some View {
@@ -656,6 +808,8 @@ public struct MatchDayView: View {
                 .toolbar { Button("Done") { showsEvidence = false } }
         }
     }
+
+    // MARK: - Derived facts
 
     private var orderedControls: [MatchDayReadModel.ControlState] {
         MatchDayControlID.allCases.compactMap { id in model.controls.first { $0.id == id } }
@@ -675,6 +829,35 @@ public struct MatchDayView: View {
 
     private var rightEndZoneTeam: CoachWorldTeamReference {
         model.offenseDirection == .leftToRight ? defendingTeam : possessionTeam
+    }
+
+    /// The coach's own team. `home`/`away` is which side owns the venue, not who the coach
+    /// works for — an away game is still "ours" — so this reads `model.perspective`, never
+    /// `home` outright.
+    private var ourTeam: CoachWorldTeamReference {
+        model.perspective == .home ? model.home.team : model.away.team
+    }
+
+    /// Whichever end zone belongs to `ourTeam` carries identity styling; the other is always the
+    /// neutral opponent ground, whatever the opponent's real colours are.
+    private func identity(for team: CoachWorldTeamReference) -> CoachWorldTeamIdentity? {
+        guard team.stableID == ourTeam.stableID else { return nil }
+        return CoachWorldTeamIdentity(
+            team: ourTeam,
+            behind: CoachWorldTokens.Floodlit.roomDeep,
+            inks: [CoachWorldTokens.dark.contentPrimary, CoachWorldTokens.Floodlit.goldInk]
+        )
+    }
+
+    private var fieldMarkContent: FieldMarkContent {
+        guard let event = model.event else {
+            return FieldMarkContent(
+                kind: .regular, glyph: ourTeam.abbreviation, lead: nil, trail: nil
+            )
+        }
+        return FieldMarkContent(
+            kind: model.kind, glyph: event.mark, lead: event.markLead, trail: event.markTrail
+        )
     }
 
     private var quarterLabel: String { "Q\(model.situation.quarter)" }
@@ -707,20 +890,6 @@ public struct MatchDayView: View {
         case .tactics: ("Tactics", "rectangle.3.group")
         }
     }
-
-    private var seam: some View {
-        Rectangle()
-            .fill(palette.contentQuiet.color.opacity(0.45))
-            .frame(height: CoachWorldTokens.Shape.hairline)
-            .accessibilityHidden(true)
-    }
-
-    private var verticalSeam: some View {
-        Rectangle()
-            .fill(palette.contentQuiet.color.opacity(0.45))
-            .frame(width: CoachWorldTokens.Shape.hairline)
-            .accessibilityHidden(true)
-    }
 }
 
 private struct MatchControlButtonStyle: ButtonStyle {
@@ -735,10 +904,7 @@ private struct MatchControlButtonStyle: ButtonStyle {
             .foregroundStyle(selected ? palette.page.color : palette.contentPrimary.color)
             .background(selected ? palette.stateLive.color : palette.raised.color)
             .overlay {
-                Rectangle().stroke(
-                    palette.contentQuiet.color,
-                    lineWidth: CoachWorldTokens.Shape.hairline
-                )
+                Rectangle().stroke(palette.contentQuiet.color, lineWidth: CoachWorldTokens.Shape.hairline)
             }
             .opacity(isEnabled ? 1 : 0.55)
             .brightness(configuration.isPressed ? -0.08 : 0)
@@ -747,24 +913,24 @@ private struct MatchControlButtonStyle: ButtonStyle {
 
 private enum MatchMetric {
     static let fieldAspect: CGFloat = 120 / 53.3
-    static let scorebugHeight: CGFloat = 52
-    static let lowerThirdHeight: CGFloat = 44
-    static let controlHeight: CGFloat = 48
-    static let callInWidth: CGFloat = 270
-    static let actorSize: CGFloat = 20
-    static let markerWidth: CGFloat = 3
-    static let foregroundStroke: CGFloat = 3
+    /// The install floor's own aspect, so `standardLayout` scales as one frame rather than
+    /// stretching the field to whatever the container happens to be.
+    static let frameAspect: CGFloat = CoachWorldTokens.Frame.floorWidth / CoachWorldTokens.Frame.floorHeight
+    static let callInWidth: CGFloat = 244
+    static let controlDepthWidth: CGFloat = 140
+    static let speedPillWidth: CGFloat = 44
+    static let losWidth: CGFloat = 2
+    static let firstDownWidth: CGFloat = 2
+    static let firstDownGlow: CGFloat = 8
+    static let furnitureIconSize: CGFloat = 15
     static let accessibleScoreHeight: CGFloat = 64
     static let accessibleFieldHeight: CGFloat = 250
     static let accessibleScoreScale: CGFloat = 0.5
-    static let hashHalfHeight: CGFloat = 3
-    static let hashYFractions: [CGFloat] = [0.36, 0.64]
-    /// A background actor carries no text, so no type floor applies to it and it can be small
-    /// enough not to collide. At this field scale a yard is roughly 5 pt, and the template puts
-    /// adjacent linemen about 3 yards apart, so anything much above this overlaps its neighbour.
-    static let backgroundActorSize: CGFloat = 11
+    /// The ring that marks one of `04` section 9's at-most-three foreground actors. All twenty-two
+    /// tokens are the same size and all carry a label, so foreground is a ring rather than being
+    /// the only mark with any text on it.
+    static let foregroundRing: CGFloat = 2
     static let speedMultipliers: [Double] = [1, 2, 4]
-    static let ballMarkSize: CGFloat = 8
     /// 60 Hz. D4's frame ceiling is 16.7 ms, and asking the timeline for more than that is asking
     /// for frames the budget does not have.
     static let playbackTick: Double = 1.0 / 60.0
