@@ -2,7 +2,13 @@ import SwiftUI
 
 /// A roster-scoped development ledger. It shows recorded deltas only; potential and projections
 /// remain outside the read model until an authoritative plan exists.
-public struct DevelopmentPlanView: View {
+public struct DevelopmentPlanView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: RosterReadModel
     public let statusMessage: String?
     public let onClose: () -> Void
@@ -20,7 +26,7 @@ public struct DevelopmentPlanView: View {
     }
 
     public var body: some View {
-        CoachWorldFloodlitStage(palette: palette) {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             scrollContent
         }
         .accessibilitySortPriority(dynamicTypeSize.isAccessibilitySize ? 100 : 90)

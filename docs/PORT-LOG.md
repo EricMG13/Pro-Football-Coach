@@ -562,3 +562,20 @@ second stage around one that already has one.
 **Verified:** package builds; `--core-contracts` (202 / 2228) and `--design-contracts` (29 / 613)
 green, with the conversion partition still reporting 62 converted / 0 pending; Coaching HQ captured
 on a simulator inside the chrome.
+
+## 2026-08-18 — milestone 3b: personnel
+
+**Converted (8 surfaces):** Roster, Player Profile, Depth Chart, Development Plan, Staff Room,
+Staff Market & Profile, Scheme Book, Personnel Packages.
+
+Three of the eight are pure delegating wrappers (Staff Market over Staff Room, Scheme Book over
+Game Plan, Personnel Packages over Depth Chart). They pass the chrome through to the view that
+actually draws it rather than wrapping a second stage around one that already has one — the same
+treatment the film room took in 3a.
+
+`RosterView` carried its own world strip and now draws it only when no chrome is supplied, matching
+`CoachingHQView`. Those two were the only surfaces in either family with a strip of their own; the
+rest had no identity chrome at all before this.
+
+**Verified:** `--core-contracts` (202 / 2228) and `--design-contracts` (29 / 613) green, partition
+still 62 converted / 0 pending.

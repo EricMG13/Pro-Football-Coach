@@ -91,11 +91,19 @@ public struct CoachWorldAppRootView: View {
                             store.openDevelopmentEvidence(for: playerID)
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .roster, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .developmentPlan:
                 surface(store.roster, screen: .developmentPlan) { model in
                     DevelopmentPlanView(model: model, statusMessage: failure ?? store.statusMessage,
                                         onClose: { navigate(.roster, in: store) })
+                    .floodlitChrome(
+                        chrome(for: .developmentPlan, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .inbox:
                 surface(store.inbox, screen: .inbox) { model in
@@ -315,6 +323,10 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { navigate(.roster, in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .depthChart, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .teamHealth:
                 surface(store.teamHealth, screen: .teamHealth) { model in
@@ -461,11 +473,19 @@ public struct CoachWorldAppRootView: View {
                         statusMessage: failure ?? store.statusMessage,
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .staffRoom, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .staffMarketProfile:
                 surface(store.staffRoom, screen: .staffMarketProfile) { model in
                     StaffMarketProfileView(model: model, statusMessage: failure ?? store.statusMessage,
                                            onClose: { closeCareer(in: store) })
+                    .floodlitChrome(
+                        chrome(for: .staffMarketProfile, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .schemeBook:
                 surface(store.gamePlan, screen: .schemeBook) { model in
@@ -475,6 +495,10 @@ public struct CoachWorldAppRootView: View {
                         onSelect: { plan in Task { await setGamePlan(plan, in: store) } },
                         onClose: { closeCareer(in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .schemeBook, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .personnelPackages:
                 surface(store.depthChart, screen: .personnelPackages) { model in
@@ -483,6 +507,10 @@ public struct CoachWorldAppRootView: View {
                         statusMessage: failure ?? store.statusMessage,
                         onSelect: { plan in Task { await setPersonnelPlan(plan, in: store) } },
                         onClose: { closeCareer(in: store) }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .personnelPackages, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .aftermath:

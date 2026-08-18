@@ -1,6 +1,12 @@
 import SwiftUI
 
-public struct PlayerProfileView: View {
+public struct PlayerProfileView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: PlayerProfileReadModel
     public let team: CoachWorldTeamReference
     public let onClose: () -> Void
@@ -22,7 +28,7 @@ public struct PlayerProfileView: View {
     }
 
     public var body: some View {
-        CoachWorldFloodlitStage(palette: palette) {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             if dynamicTypeSize.isAccessibilitySize {
                 ScrollView { accessibleLayout }
             } else {
