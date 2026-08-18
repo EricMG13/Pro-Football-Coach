@@ -446,6 +446,79 @@ func runSnapAnchorTests() {
             }
         }
 
+        test("the tackler meets the ball where the play ended") {
+            // 03 section 9.6. The record names the man who ended it -- SnapResolver writes
+            // MatchupRecord(kind: .carrierVersusPursuit, defenderID: tackler) -- so drawing him
+            // converge is reading the record, not inventing a pursuit path.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let offense = Array(personnel.offense.prefix(11))
+            let defense = Array(personnel.defense.prefix(11))
+            let carrier = offense[1]
+            let tackler = defense[5]
+            let play = PlayRecord(
+                situation: Situation(down: 1, distance: 10, yardLine: 30),
+                offensiveCall: OffensiveCall(playType: .run),
+                defensiveCall: DefensiveCall(coverage: .man),
+                outcome: SnapOutcome(
+                    result: .gain, yards: 7, secondsElapsed: 6,
+                    matchups: [MatchupRecord(
+                        kind: .carrierVersusPursuit, attackerID: carrier.id,
+                        defenderID: tackler.id, leverage: -0.4
+                    )],
+                    ballCarrierID: carrier.id, passerID: offense[0].id
+                ),
+                callInTriggers: []
+            )
+            let set = SnapAnchors.choreograph(play: play, offense: offense, defense: defense)
+            let tacklerAnchor = set.actors.first { $0.playerID == tackler.id }
+            let carrierAnchor = set.actors.first { $0.playerID == carrier.id }
+            expect(tacklerAnchor != nil && carrierAnchor != nil, "fixture actors missing")
+
+            let tacklerEnd = SnapAnchors.position(of: tacklerAnchor!, at: 1)
+            let carrierEnd = SnapAnchors.position(of: carrierAnchor!, at: 1)
+            expectClose(tacklerEnd.yard, carrierEnd.yard, 0.001,
+                        "the tackler did not arrive where the carrier was stopped")
+            expectClose(tacklerEnd.lateral, carrierEnd.lateral, 0.001,
+                        "the tackler arrived on a different part of the field")
+            expect(tacklerAnchor!.start.yard != tacklerEnd.yard,
+                   "the tackler never actually moved")
+
+            // Nobody else converges. The record names one man, so one man moves; a second would be
+            // a path nothing recorded.
+            let others = set.actors.filter {
+                $0.side != play.situation.possession && $0.playerID != tackler.id
+            }
+            expect(!others.isEmpty, "fixture has no other defenders to check")
+            for other in others where other.role == .coverage || other.role == .runFit {
+                expectClose(SnapAnchors.position(of: other, at: 1).yard, other.start.yard, 0.001,
+                            "a defender the record never named drifted toward the ball")
+            }
+        }
+
+        test("no tackler is drawn when the record names none") {
+            // 03 section 9.6: a tackle is never asserted where the record does not claim one. An
+            // incompletion has nobody to tackle, and a matchup-less snap names nobody.
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let offense = Array(personnel.offense.prefix(11))
+            let defense = Array(personnel.defense.prefix(11))
+            let play = PlayRecord(
+                situation: Situation(down: 2, distance: 8, yardLine: 40),
+                offensiveCall: OffensiveCall(playType: .pass),
+                defensiveCall: DefensiveCall(coverage: .zoneUnder),
+                outcome: SnapOutcome(
+                    result: .incompletion, yards: 0, secondsElapsed: 5, matchups: [],
+                    passerID: offense[0].id, targetID: offense[2].id
+                ),
+                callInTriggers: []
+            )
+            let set = SnapAnchors.choreograph(play: play, offense: offense, defense: defense)
+            for actor in set.actors where actor.side != play.situation.possession {
+                guard actor.role == .coverage || actor.role == .runFit else { continue }
+                expectClose(SnapAnchors.position(of: actor, at: 1).yard, actor.start.yard, 0.001,
+                            "a defender converged on a play that recorded no tackler")
+            }
+        }
+
         test("a sacked passer is dragged down with the ball, not left standing") {
             // role() checks passerID before ballCarrierID, so a sacked quarterback was classed
             // .passer and told to hold his drop point while the ball travelled back to the sack

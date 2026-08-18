@@ -462,7 +462,57 @@ public enum SnapAnchors {
             )
         }()
 
+        // Where the ball comes to rest, and when the man carrying it has it. Both are needed by the
+        // pursuit rule, which is `03` §9.6: the defender the record names ends where the ball ends.
+        let ballRestsAt = FieldPoint(
+            yard: endSpot,
+            lateral: catchSpot?.lateral
+                ?? placed.first { $0.player.id == outcome.ballCarrierID }?.start.lateral
+                ?? AnchorRules.centerLateral
+        )
+        let carryBegins: Double = {
+            if catchSpot != nil { return AnchorRules.releaseFraction }
+            guard let carrierID = outcome.ballCarrierID, carrierID != outcome.passerID else {
+                return AnchorRules.snapFraction
+            }
+            return AnchorRules.handoffFraction
+        }()
+        // The one defender the record names as having ended the play. `.carrierVersusPursuit` names
+        // the tackler outright; a lost protection duel names the rusher who got home. Nobody else
+        // converges, because nobody else is recorded — see `03` §9.6.
+        let closingDefenderID: UUID? = {
+            // Only when he actually won it. `.carrierVersusPursuit` names the carrier as attacker,
+            // so `attackerWon` means the carrier broke the tackle — and drawing that defender
+            // arriving at the end spot would claim a stop he did not make. On a touchdown it would
+            // put a tackler on the goal line of a play nobody stopped.
+            if let pursuit = outcome.matchups.first(where: {
+                $0.kind == .carrierVersusPursuit && !$0.attackerWon
+            }) {
+                return pursuit.defenderID
+            }
+            if outcome.result == .sack || outcome.result == .safety,
+               let beaten = outcome.matchups.first(where: {
+                   $0.kind == .passProtection && !$0.attackerWon
+               }) {
+                return beaten.defenderID
+            }
+            return nil
+        }()
+
         let actors = placed.map { placement in
+            if placement.player.id == closingDefenderID {
+                return ActorAnchor(
+                    playerID: placement.player.id,
+                    side: placement.side,
+                    role: placement.role,
+                    start: placement.start,
+                    end: ballRestsAt,
+                    // He holds his alignment until the carrier actually has the ball, then closes,
+                    // arriving as the ball does. The tackle is not a mark of its own — it is two
+                    // dots the record says met, meeting.
+                    path: [ActorWaypoint(point: placement.start, fraction: carryBegins)]
+                )
+            }
             let movement = movement(
                 role: placement.role,
                 start: placement.start,

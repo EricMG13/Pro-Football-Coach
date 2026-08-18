@@ -300,3 +300,50 @@ deterministic and testable. A template living in the view would be geometry no t
 
 Nothing is persisted. An anchor set is derived on demand from a `PlayRecord` that the save already
 holds under D7's current-game play-by-play bound, so G-06 adds no save growth at all.
+
+### 9.6 Pursuit and the tackle (added 2026-08-18)
+
+`04` §9 prohibits invented movement, and pursuit looks at first glance like exactly that — the record
+holds no path a defender ran. It holds something better: **it names him.**
+
+`SnapResolver` records `MatchupRecord(kind: .carrierVersusPursuit, attackerID: carrier,
+defenderID: tackler, …)`, and `.passProtection` records the blocker against the rusher who beat him.
+So the man who ended the play is recorded by identity, in the same way `ballCarrierID` and `passerID`
+already are. Drawing him is reading the record, not inventing a second opinion about it.
+
+**The rule, and it is one rule:** *the defender the record names as ending the play is where the ball
+is when the play ends.* He converges from his alignment on the spot the ball finished at, arriving as
+it arrives. The tackle is not a separate mark or an animation of its own — it is the moment two dots
+that the record says met, meet.
+
+That is deliberately the whole of it, because it is the whole of what is recorded:
+
+- **One man converges on the ball, and only one.** The record names a single tackler per snap, so a
+  single dot closes on the end spot. A second defender drifting that way would be a path nothing
+  recorded, which is the prohibition in `04` §9 exactly. Rushers are the one other defenders who
+  move, and they move because `.passProtection` names them in a duel; their closing *depth* is a
+  template in the §9.4 sense, not a recorded distance. Everyone in coverage or a run fit holds.
+- **No pursuit angle, no closing speed, no missed-tackle geometry.** `maximumBrokenTackles` means a
+  carrier may beat several men, and the record keeps only the first duel. Drawing the broken tackles
+  would mean inventing where they happened.
+- **A tackle is not asserted where the record does not claim one.** An incompletion has no carrier to
+  tackle, a kick has no tackler, and a snap whose matchups are empty names nobody. Each draws no
+  convergence at all rather than a plausible one.
+- **Only the defender who *won* his duel converges.** `.carrierVersusPursuit` names the carrier as
+  the attacker, so `attackerWon` means the carrier broke the tackle. Drawing that defender arriving
+  at the end spot would claim a stop he did not make — on a touchdown it would stand a tackler on
+  the goal line of a play nobody stopped. When the carrier won, nobody converges, because the record
+  keeps only that first duel and cannot say who eventually brought him down.
+
+### 9.7 What is still not drawn
+
+Stated here so the gap is a decision rather than an omission a reader has to discover:
+
+1. **Blocking.** `.passProtection` and `.runLane` name blocker-against-defender duels on every snap,
+   and none of them move. Only the rusher who *won* is drawn, and only on a sack.
+2. **Route shapes.** A route is a straight line to the recorded air-yard depth. The record holds a
+   depth, not a shape, and the shape is the part that is someone's expression.
+3. **Broken tackles**, as above.
+
+Each is absent for the same reason: the record does not hold it. Each becomes drawable the day the
+engine records it, and not before.
