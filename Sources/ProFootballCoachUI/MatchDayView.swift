@@ -885,7 +885,10 @@ public struct MatchDayView: View {
         switch id {
         case .speed: ("Speed", "speedometer")
         case .pause: ("Pause", "pause.fill")
-        case .keyMoments: ("Key Moments", "sparkles.tv")
+        // forward.end.fill, not sparkles.tv: already a Control-furniture member (04 section 6.6),
+        // and growing the vocabulary for a symbol that also read wrong for "advance to the next key
+        // moment" was two defects, not one.
+        case .keyMoments: ("Key Moments", "forward.end.fill")
         case .takeOver: ("Take Over", "hand.raised.fill")
         case .tactics: ("Tactics", "rectangle.3.group")
         }

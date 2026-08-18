@@ -55,15 +55,15 @@ come from forcing every screen into one chassis.
 
 | Register | Player fantasy | Dominant objects | Shape and motion |
 |---|---|---|---|
-| **Coach's Office** | Run the week | week plan, correspondence, pressure, staff notes | disciplined seams, writable schedules, restrained motion |
-| **Personnel Room** | Build and develop the team | team sheet, depth chart, player dossier, medical and staff files | dense comparison where earned; identity-led detail |
-| **Acquisition Room** | Compete for future talent | recruiting board, territory, relationship history, offer ledger | live market movement, physical ranking/territory cues |
-| **Front Office** | Keep the pro roster legal and competitive | cap ledger, contracts, draft board, market | harder steel geometry, transaction receipts, clocks only when real |
-| **League & Media** | Understand the living world | map, standings, schedule, stories, records | editorial hierarchy; data tied to teams, games and history |
-| **Career & Legacy** | Read the coach's story | timeline, stakeholders, jobs, rivals, record book | chronological composition; earned ceremony |
-| **Film Room** | Study evidence | field film, tendencies, matchup evidence, staff interpretation | dark analytical environment; annotation belongs to evidence |
-| **Broadcast** | Experience live or timed football | full field, score, clock, causal commentary, call-in | square geometry, team identity, no management chrome |
-| **Ceremony** | Mark an irreversible career moment | appointment, signing, promotion, trophy | rare, focused, minimal controls |
+| **Coach's Office** | Run the week | week plan, correspondence, pressure, staff notes | disciplined seams, writable schedules, restrained motion — a plan changes state, it does not travel to prove it |
+| **Personnel Room** | Build and develop the team | team sheet, depth chart, player dossier, medical and staff files | dense comparison where earned; identity-led detail; a value settles to its new figure, it does not slide there |
+| **Acquisition Room** | Compete for future talent | recruiting board, territory, relationship history, offer ledger | live market movement, physical ranking/territory cues — the one register where a rank *may* travel, because the movement is the fact being reported |
+| **Front Office** | Keep the pro roster legal and competitive | cap ledger, contracts, draft board, market | harder steel geometry, transaction receipts, clocks only when real; a receipt confirms, it does not animate in |
+| **League & Media** | Understand the living world | map, standings, schedule, stories, records | editorial hierarchy; data tied to teams, games and history; a standing resettles in place between weeks |
+| **Career & Legacy** | Read the coach's story | timeline, stakeholders, jobs, rivals, record book | chronological composition; earned ceremony — one entrance, held, never a repeating flourish |
+| **Film Room** | Study evidence | field film, tendencies, matchup evidence, staff interpretation | dark analytical environment; annotation belongs to evidence and appears with it, never before it |
+| **Broadcast** | Experience live or timed football | full field, score, clock, causal commentary, call-in | square geometry, team identity, no management chrome; the register that actually animates — the ball's flight, the live dot's pulse, the panel push, per §6.1b and §9 |
+| **Ceremony** | Mark an irreversible career moment | appointment, signing, promotion, trophy | rare, focused, minimal controls; the "earned ceremony" §6.7 names — held, not looped |
 
 No screen may describe itself as “Film Room” unless it belongs to that row.
 
@@ -136,8 +136,8 @@ Prototype truth disclosure belongs in gallery chrome outside the native device f
 
 *Adopted 2026-08-12 from `docs/briefs/2026-08-12-density-model.md`.*
 
-Density is spent in five currencies: points, taps, working memory, learned symbols and verdict
-lines. A management screen may spend: one dominant object (at least 60% of the initial viewport) and
+Density is spent in six currencies: points, taps, working memory, learned symbols, verdict lines and
+motion. A management screen may spend: one dominant object (at least 60% of the initial viewport) and
 at most two secondary regions; 24–28 pt table tracks with six to nine fact columns beside identity,
 further facts arriving as column sets rather than horizontal scroll; at most three status glyphs per
 row from the global status vocabulary of at most twelve, each changing a decision (that cap governs
@@ -149,11 +149,15 @@ within two taps. Comparisons happen on one surface; a flow that requires remembe
 screen is over budget regardless of fit. Pixels are spent before taps; working memory is never
 spent. Verdicts, bands and change marks are drawn only where the simulation owns the computation
 behind them: a verdict without an engine baseline, a band without a recorded observation, or a
-change mark without a retained delta is fabrication under §4.4. At AX5 the composition reflows to
-one column preserving order and dropping nothing. A screen is over budget when a second dominant
-object appears, the glyph vocabulary grows to accommodate it, type falls below its floor to make
-something fit, or AX5 loses data. The registry's per-screen budget statements are audited under
-`04b`; a surface the inventory does not price is a finding, not a licence.
+change mark without a retained delta is fabrication under §4.4. **Motion is spent only to carry a
+state change that is already true without it** — a value settling to its new figure, a panel
+entering, a snap replaying — never to manufacture meaning motion alone supplies; every duration and
+curve is drawn from §6.7's closed register, the same discipline §6.6 already holds symbols to. At
+AX5 the composition reflows to one column preserving order and dropping nothing. A screen is over
+budget when a second dominant object appears, the glyph vocabulary grows to accommodate it, type
+falls below its floor to make something fit, AX5 loses data, or a state change is illegible without
+watching it animate. The registry's per-screen budget statements are audited under `04b`; a surface
+the inventory does not price is a finding, not a licence.
 
 ## 5. Identity system
 
@@ -799,6 +803,50 @@ without the shipping form beside it. A verdict at high confidence is not the onl
 drawing: a thin sample and a low-confidence judgement are what make a simulation honest under
 uncertainty, so a surface that can produce them draws one.
 
+### 6.7 The motion register (added 2026-08-18)
+
+*Written for values that were already shipping in `CoachWorldTokens.Motion`
+(`Sources/ProFootballCoachUI/DesignTokens.swift`) with nowhere in this document naming them. The
+tokens came from the owner's Floodlit design handoff; the handoff directory itself is not in the
+repository, so until this section existed the values had no home a builder could read — exactly the
+failure §6.6 closes for symbols, and the rule stated there applies here without amendment: **this
+document is the only canonical home, and a value appearing only in code has not shipped.**
+
+Motion is capped the same way symbols are, because an uncapped motion vocabulary is the same leak as
+an uncapped glyph vocabulary: every curve and duration the player learns to read is a class, and an
+unbounded class is a finding under §4.5.
+
+**One curve for the whole product.** `timingCurve(0.32, 0.72, 0, 1)` — a fast-in, gentle-out ease
+used for every timed transition. No second curve may ship without amending this line first; if a
+surface needs a different feel, that is a finding against this section, not a reason to add a curve
+inline.
+
+| Duration | Seconds | Reduced form | Where used |
+|---|---:|---|---|
+| **press** | 0.12 | discrete: the pressed state applies with no dim | A committing control's press feedback |
+| **value** | 0.22 | discrete: the new figure appears, no settle | A rating, score or attribute value changing |
+| **world** | 0.42 | discrete: the destination appears, no travel | A world-scale transition — screen to screen, register to register |
+| **panelEnter** | 0.24 | discrete: the panel is present or absent, never entering | The staff call-in panel's entrance |
+
+**Companions, not durations:**
+
+| Token | Value | What it is |
+|---|---:|---|
+| **panelPushDistance** | 14 pt | How far `panelEnter` travels a panel in from its edge |
+| **pressDim** | 0.12 | How far a committing control dims on press — a dim, never a scale, so a control never shrinks under the thumb committing it |
+
+**The reduced-form rule, stated once rather than four times.** `04:826` already requires it globally:
+Reduce Motion replaces travel, reveal and field animation with discrete state changes. Applied to
+this table, a reduced form is never "the same animation, faster" — duration collapsing to near-zero
+still asks a screen reader and a motion-sensitive player to track something moving. It is the
+*destination state*, presented immediately, exactly as `04:448` already requires for Match Day: the
+ball's flight, the live dot's pulse and the panel push are removed, not accelerated.
+
+**Nothing here licenses a screen to animate.** §2's per-register motion phrase and §4.5's motion
+currency decide *whether* a state change may carry motion at all; this table only fixes *how*, once
+that permission exists. A screen that animates without an entry in §2's row for its register is a
+finding under §4.4 regardless of whether the duration is drawn from this table.
+
 ## 7. Device and accessibility contract
 
 *Window rewritten 2026-08-12 under D15 (option b) from verified sizes — Apple HIG Layout via
@@ -845,6 +893,12 @@ than the day someone remembers to list it.
    with no AX5 branch has not had AX5 considered; this catches the omission, not the quality.
 2. It declares deterministic VoiceOver order (`accessibilitySortPriority`). This is the
    world-context → dominant-object → evidence → actions → navigation rule above, made checkable.
+3. **Added 2026-08-18.** If it uses a construct §6.7 cannot wrap in the choke point —
+   `TimelineView`, `matchedGeometryEffect`, `phaseAnimator`, `keyframeAnimator`, `symbolEffect` — it
+   also declares `accessibilityReduceMotion` is read. `04:826`'s reduced-form requirement is a
+   contract clause the enumeration machinery already existed to check; this is `ReduceMotionContractTest`,
+   the release gate `PRODUCT.md` already names, made to actually run rather than exist as a
+   registered name with nothing behind it.
 
 **What is not asserted, and must not be claimed.** *No datum lost* and *no clipping* are properties
 of a render, and the suite is a headless executable with neither XCTest nor a view host — it cannot

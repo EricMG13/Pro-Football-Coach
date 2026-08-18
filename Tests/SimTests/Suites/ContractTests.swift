@@ -53,7 +53,7 @@ func swiftFiles(under relativePath: String) -> [(path: String, text: String)] {
 /// blanking its content, which is the safe direction. A raw string containing a backslash could
 /// mis-track the closing quote and blank the rest of the line — a false negative on a line no
 /// pattern here occupies. Revisit if the tree ever gains raw strings.
-private func codeLines(of text: String) -> [String] {
+func codeLines(of text: String) -> [String] {
     var lines: [String] = []
     var inBlockComment = false
     for rawLine in text.split(separator: "\n", omittingEmptySubsequences: false) {
@@ -100,7 +100,7 @@ private func codeLines(of text: String) -> [String] {
 }
 
 /// Every line whose *code* matches `predicate`, as "path:line".
-private func offendingLines(
+func offendingLines(
     in files: [(path: String, text: String)],
     where predicate: (String) -> Bool
 ) -> [String] {
@@ -150,10 +150,18 @@ private func importsUIFramework(_ line: String) -> Bool {
 /// The class "code that draws" defined by what makes code draw, so a target added tomorrow is
 /// covered the day it is added rather than the day someone remembers it (`CLAUDE.md`: a test's
 /// coverage boundary must not become the quality boundary).
-func swiftFilesImportingUIFramework() -> [(path: String, text: String)] {
+/// Cached: `AccessibilityReflowTests`, `ReduceMotionContractTests` and the design-contract scans each
+/// call this, and `floodlitConvertedTypes()` calls it again inside its own fixpoint loop — uncached,
+/// one full `--design-contracts` run re-read the same ~80 files roughly a dozen times. A single
+/// process runs the whole suite once, so a static cache cannot see a stale tree mid-run.
+private let uiFrameworkFilesCache: [(path: String, text: String)] = {
     swiftFiles(under: "Sources").filter { file in
         file.text.split(separator: "\n").contains { importsUIFramework(String($0)) }
     }
+}()
+
+func swiftFilesImportingUIFramework() -> [(path: String, text: String)] {
+    uiFrameworkFilesCache
 }
 
 private func referencesAuthoritativeRoot(_ line: String) -> Bool {
@@ -275,7 +283,7 @@ private func savedShapeFiles() -> [(path: String, text: String)] {
 
 /// Runs a predicate against a synthetic in-memory file, so a self-test never has to write to the
 /// tree it is scanning.
-private func caught(_ source: String, by predicate: (String) -> Bool) -> Bool {
+func caught(_ source: String, by predicate: (String) -> Bool) -> Bool {
     !offendingLines(in: [(path: "planted.swift", text: source)], where: predicate).isEmpty
 }
 

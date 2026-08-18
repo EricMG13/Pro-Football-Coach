@@ -72,7 +72,8 @@ public enum CoachWorldTokens {
         public static let band = (v: CGFloat(14), h: CGFloat(16))
     }
 
-    /// The handoff's motion contract. One easing curve, three durations, and press is a dimming.
+    /// The handoff's motion contract, canonical at `04` section 6.7. One easing curve, four
+    /// durations, and press is a dimming rather than a scale.
     public enum Motion {
         public static let press: Double = 0.12
         public static let value: Double = 0.22

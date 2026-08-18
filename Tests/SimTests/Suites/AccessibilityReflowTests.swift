@@ -18,7 +18,7 @@ private func viewFileName(for screen: CoachWorldScreenID) -> String {
     return name.prefix(1).uppercased() + name.dropFirst() + "View.swift"
 }
 
-private struct FamilyView {
+struct FamilyView {
     let screen: CoachWorldScreenID
     let path: String
     let text: String
@@ -68,7 +68,9 @@ private func isFloodlitConverted(_ family: FamilyView) -> Bool {
     return floodlitConvertedTypes().contains(name)
 }
 
-private func landedFamilies() -> (landed: [FamilyView], pending: [CoachWorldScreenID]) {
+/// Reused by `ReduceMotionContractTests` — the same partition, not a second one, so the two
+/// contracts cannot silently cover different sets of families.
+func landedFamilies() -> (landed: [FamilyView], pending: [CoachWorldScreenID]) {
     let sources = swiftFilesImportingUIFramework()
     var landed: [FamilyView] = []
     var pending: [CoachWorldScreenID] = []
