@@ -87,7 +87,14 @@ run_command() {
 run_sim() {
     local label="$1"
     shift
-    run_command "$label" swift run --scratch-path "$lane_root/scratch" -c release SimTests "$@"
+    # SimTests is a plain executable target that @testable imports ProFootballCoachUI (03b section
+    # 5: "the ported TestKit harness, run as an executable target" -- not a recognised .testTarget,
+    # so SwiftPM has no reason to infer testability the way `swift test` would). -c release does not
+    # enable it by default the way debug builds happen to, so a release run fails every target that
+    # @testable imports anything with "module ... was not compiled for testing" unless asked for
+    # explicitly.
+    run_command "$label" swift run --scratch-path "$lane_root/scratch" -c release \
+        -Xswiftc -enable-testing SimTests "$@"
 }
 
 note "toolchain"
@@ -150,7 +157,10 @@ case "$lane" in
             build
         ;;
     full)
-        run_command build swift build --scratch-path "$lane_root/scratch" -c release
+        # -enable-testing for the same reason run_sim needs it: an unfiltered `swift build` also
+        # builds SimTests, which @testable imports ProFootballCoachUI.
+        run_command build swift build --scratch-path "$lane_root/scratch" -c release \
+            -Xswiftc -enable-testing
         if [ "$build_only" = true ]; then
             printf '\n%s passed, %s failed\n' "$pass" "$fail"
             exit "$((fail > 0))"
