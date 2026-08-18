@@ -51,102 +51,192 @@ public struct ShortlistView: View, CoachWorldChromedSurface {
 
     private var scrollContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
                 header
                 if let statusMessage {
                     Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.callout)
                         .foregroundStyle(palette.stateWarning.color)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                TextField("Search active board", text: $query)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-                    .accessibilityLabel("Search active recruiting board")
-                Text("MONITORED · \(filteredProspects.count) of \(model.prospects.count)")
-                    .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                    .foregroundStyle(palette.collegeIdentity.color)
-                if filteredProspects.isEmpty {
-                    CoachWorldSystemState(
-                        .empty(
-                            "No monitored prospects. Add evaluated prospects to the board "
-                                + "before monitoring contact windows."
-                        ),
-                        palette: palette
-                    )
+                if dynamicTypeSize.isAccessibilitySize {
+                    monitoredList
+                    needsPanel
                 } else {
-                    ForEach(filteredProspects, id: \.stableID) { prospect in
-                        Button { onOpenProspect(prospect.stableID) } label: {
-                            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                                HStack {
-                                    Text(prospect.person.name)
-                                        .font(CoachWorldTokens.TypeRole.headline.weight(.bold))
-                                    Spacer()
-                                    Text(prospect.position)
-                                        .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                                }
-                                Text("#\(prospect.boardRank) · \(prospect.status) · \(prospect.interest) interest")
-                                    .font(CoachWorldTokens.TypeRole.caption)
-                                    .foregroundStyle(palette.contentSecondary.color)
-                                Text("Next contact: \(nextContact(prospect))")
-                                    .font(CoachWorldTokens.TypeRole.caption)
-                                    .foregroundStyle(palette.contentSecondary.color)
-                            }
-                            .padding(CoachWorldTokens.Space.sm)
-                            .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-                            .coachWorldFloodlitPanel(
-                                fill: palette.raised.color,
-                                border: palette.contentQuiet.color
-                                    .opacity(CoachWorldTokens.Depth.panelBorderOpacity)
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(
-                            "\(prospect.person.name), board rank \(prospect.boardRank), "
-                                + "\(prospect.position), \(prospect.status), open profile"
-                        )
+                    HStack(alignment: .top, spacing: CoachWorldTokens.Gap.lg) {
+                        monitoredList
+                            .frame(width: ShortlistMetric.listColumn)
+                        needsPanel
+                            .frame(width: ShortlistMetric.panelColumn)
                     }
                 }
             }
-            .padding(CoachWorldTokens.Space.md)
+            .padding(.vertical, CoachWorldTokens.Pad.panel.v)
         }
+        .safeAreaInset(edge: .bottom) { footer }
     }
 
     private var header: some View {
-        Group {
-            if dynamicTypeSize.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-                    titleBlock
-                    closeButton
-                }
+        HStack(spacing: CoachWorldTokens.Gap.md) {
+            TextField("Name, position or status", text: $query)
+                .textFieldStyle(.plain)
+                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.actionSmall))
+                .accessibilityLabel("Filter the board by name, position or status")
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            FloodlitLabel3(countLabel, palette: palette)
+        }
+        .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+        .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+        .background(
+            CoachWorldCutCorner.row.fill(palette.work.color.opacity(ShortlistMetric.fieldFill))
+        )
+        .overlay {
+            CoachWorldCutCorner.row.stroke(
+                Color.white.opacity(CoachWorldTokens.Glass.line),
+                lineWidth: CoachWorldTokens.Shape.hairline
+            )
+        }
+    }
+
+    private var countLabel: String {
+        let shown = filteredProspects.count
+        let total = model.prospects.count
+        return shown == total ? "\(total) monitored" : "\(shown) of \(total)"
+    }
+
+    /// The board, narrowed. Rank leads because the board's order is the coach's own judgement.
+    private var monitoredList: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+            if filteredProspects.isEmpty {
+                CoachWorldSystemState(
+                    .empty("No prospect on the board matches that filter."),
+                    palette: palette
+                )
             } else {
-                HStack(alignment: .top) {
-                    titleBlock
-                    Spacer()
-                    closeButton
+                ForEach(filteredProspects, id: \.stableID) { prospect in
+                    prospectRow(prospect)
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var titleBlock: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-            Text("SHORTLIST")
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.collegeIdentity.color)
-            Text(model.team.name)
-                .font(CoachWorldTokens.TypeRole.display.weight(.black))
-            Text("Active board prospects with bounded status and next-contact context")
-                .foregroundStyle(palette.contentSecondary.color)
+    private func prospectRow(_ prospect: RecruitingBoardReadModel.Prospect) -> some View {
+        FloodlitRow(palette: palette, action: { onOpenProspect(prospect.stableID) }) {
+            HStack(spacing: CoachWorldTokens.Gap.md) {
+                Text("\(prospect.boardRank)")
+                    .font(
+                        CoachWorldTokens.figure(
+                            CoachWorldTokens.DisplaySize.actionSmall, weight: .semibold
+                        )
+                    )
+                    .foregroundStyle(palette.contentQuiet.color)
+                    .frame(width: ShortlistMetric.rankColumn, alignment: .leading)
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                    Text(prospect.person.name.uppercased())
+                        .font(
+                            CoachWorldTokens.display(
+                                CoachWorldTokens.DisplaySize.row, weight: .bold
+                            )
+                        )
+                        .lineLimit(1)
+                    FloodlitLabel3(
+                        "\(prospect.position) \u{00B7} \(prospect.status)", palette: palette
+                    )
+                }
+                Spacer(minLength: CoachWorldTokens.Gap.xs)
+                Text(prospect.interest.uppercased())
+                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                    .foregroundStyle(palette.stateInfo.color)
+                    .lineLimit(1)
+                    .frame(width: ShortlistMetric.interestColumn, alignment: .trailing)
+            }
+        }
+        .accessibilityLabel(
+            "Board rank \(prospect.boardRank), \(prospect.person.name), \(prospect.position), "
+                + "\(prospect.status), \(prospect.interest) interest. "
+                + "Last contact: \(nextContact(prospect))."
+        )
+    }
+
+    /// The reference's "what the class still needs": one row per position, committed against target.
+    ///
+    /// A share bar is honest here because `PositionNeed` states its own target -- the whole is the
+    /// number of bodies the class is meant to hold, not an open-ended count.
+    private var needsPanel: some View {
+        FloodlitCard(palette: palette, depth: .deep) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
+                FloodlitLabel3("What the class still needs", palette: palette)
+                if model.positionNeeds.isEmpty {
+                    Text("No position need is recorded for this class.")
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.contentQuiet.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    ForEach(model.positionNeeds, id: \.stableID) { need in
+                        needRow(need)
+                    }
+                }
+                FloodlitLabel3(
+                    "\(model.capacity.scholarshipSlotsRemaining) scholarships left",
+                    palette: palette,
+                    tint: palette.actionPrimary.color
+                )
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    private var closeButton: some View {
-        Button("Done", action: onClose)
-            .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
-                   minHeight: CoachWorldTokens.Shape.minimumTarget)
+    private func needRow(_ need: RecruitingBoardReadModel.PositionNeed) -> some View {
+        let short = max(0, need.target - need.committed)
+        return HStack(spacing: CoachWorldTokens.Gap.smPlus) {
+            Text(need.position.uppercased())
+                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.pill, weight: .bold))
+                .lineLimit(1)
+                .frame(width: ShortlistMetric.needLabel, alignment: .leading)
+            FloodlitShareBar(
+                proportion: need.target > 0 ? Double(need.committed) / Double(need.target) : 0,
+                tint: short == 0 ? palette.statePositive.color : palette.actionPrimary.color,
+                palette: palette
+            )
+            Text("\(need.committed)/\(need.target)")
+                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill, weight: .semibold))
+                .frame(width: ShortlistMetric.needFigure, alignment: .trailing)
+        }
+        .frame(minHeight: ShortlistMetric.needRowHeight)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            short == 0
+                ? "\(need.position), full at \(need.target)"
+                : "\(need.position), \(need.committed) of \(need.target), \(short) short"
+        )
+    }
+
+    private var footer: some View {
+        HStack(spacing: CoachWorldTokens.Gap.mdPlus) {
+            Text("The board in your own order. Nothing here ranks the class for you.")
+                .font(CoachWorldTokens.TypeRole.callout)
+                .foregroundStyle(palette.contentSecondary.color)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            FloodlitCommittingAction("Done", action: onClose)
+        }
+        .floodlitFooterStrip(palette: palette)
     }
 
     private func nextContact(_ prospect: RecruitingBoardReadModel.Prospect) -> String {
         prospect.relationshipHistory.first?.dateLabel ?? "No contact recorded"
     }
+}
+
+private enum ShortlistMetric {
+    /// The handoff's 430pt board column and 263pt needs panel.
+    static let listColumn: CGFloat = 430
+    static let panelColumn: CGFloat = 263
+    static let rankColumn: CGFloat = 22
+    static let interestColumn: CGFloat = 64
+    static let needLabel: CGFloat = 46
+    static let needFigure: CGFloat = 46
+    static let needRowHeight: CGFloat = 22
+    static let fieldFill = 0.5
 }

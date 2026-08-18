@@ -33,182 +33,270 @@ public struct TeamProgrammeProfileView: View, CoachWorldChromedSurface {
 
     public var body: some View {
         CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
-            VStack(spacing: .zero) {
-                topBar
+            scrollContent
+        }
+        .accessibilitySortPriority(100)
+    }
+
+    private var scrollContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.md) {
                 if let statusMessage {
                     Text(statusMessage)
                         .font(CoachWorldTokens.TypeRole.callout)
                         .foregroundStyle(palette.stateWarning.color)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, CoachWorldTokens.Space.md)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                ScrollView {
-                    VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                        identity
-                        facts
-                        fixtures
-                        rivals
-                        traditions
+                if dynamicTypeSize.isAccessibilitySize {
+                    identityColumn
+                    recordColumn
+                } else {
+                    HStack(alignment: .top, spacing: CoachWorldTokens.Gap.xl) {
+                        identityColumn
+                            .frame(width: ProfileMetric.identityColumn)
+                        recordColumn
                     }
-                    .padding(CoachWorldTokens.Space.md)
+                }
+            }
+            .padding(.vertical, CoachWorldTokens.Pad.panel.v)
+        }
+        .safeAreaInset(edge: .bottom) { footer }
+    }
+
+    /// The reference leads with the programme name at display size, over the city and conference,
+    /// then the facts a coach would ask about first.
+    private var identityColumn: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+                FloodlitLabel3(
+                    "\(model.cityName) \u{00B7} \(model.regionName)", palette: palette
+                )
+                Text(model.team.name.uppercased())
+                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.figure, weight: .bold))
+                    .lineLimit(ProfileMetric.nameLines)
+                    .minimumScaleFactor(ProfileMetric.nameScaleFloor)
+                Text(conferenceLine)
+                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .foregroundStyle(palette.contentSecondary.color)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(
+                "\(model.team.name), \(model.cityName), \(model.tier), \(conferenceLine)"
+            )
+            HStack(alignment: .lastTextBaseline, spacing: CoachWorldTokens.Gap.smPlus) {
+                Text(model.record)
+                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.title, weight: .semibold))
+                if let rank = model.rank {
+                    FloodlitLabel3(rank, palette: palette, tint: palette.actionPrimary.color)
+                }
+            }
+            VStack(alignment: .leading, spacing: .zero) {
+                fact("Venue", model.venue.name)
+                fact("Prestige", "\(model.prestige)")
+                fact("Roster", "\(model.rosterCount)")
+                fact("Staff", "\(model.staffCount)")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var conferenceLine: String {
+        var line = "\(model.tier) \u{00B7} \(model.conference)"
+        if let division = model.division { line += " \u{00B7} \(division)" }
+        line += " \u{00B7} \(model.seasonLabel)"
+        return line
+    }
+
+    private func fact(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.md) {
+            FloodlitLabel3(label, palette: palette)
+                .frame(width: ProfileMetric.factKey, alignment: .leading)
+            Text(value)
+                .font(CoachWorldTokens.TypeRole.caption)
+                .foregroundStyle(palette.contentSecondary.color)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(minHeight: ProfileMetric.factHeight)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.white.opacity(ProfileMetric.seamAlpha))
+                .frame(height: CoachWorldTokens.Shape.hairline)
+                .accessibilityHidden(true)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label), \(value)")
+    }
+
+    private var recordColumn: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
+            formSection
+            rivalrySection
+            traditionsSection
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The reference's "Form · last six": a bar and a W/L letter per recent result. Not the full
+    /// twelve-game schedule -- that duplicates `ScheduleView.swift`, a dedicated screen this app
+    /// already has -- and not a fabricated win/loss: `Fixture.score` is always formatted
+    /// "homeScore-awayScore" (`CoachWorldTeamProfileProvider.swift`), so combined with `isHome`
+    /// the actual result is derivable without guessing.
+    private var formSection: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+            FloodlitLabel3("Form \u{00B7} last six", palette: palette)
+            if recentResults.isEmpty {
+                Text("No games played yet.")
+                    .font(CoachWorldTokens.TypeRole.caption)
+                    .foregroundStyle(palette.contentQuiet.color)
+            } else {
+                HStack(alignment: .bottom, spacing: CoachWorldTokens.Gap.xs) {
+                    ForEach(recentResults, id: \.fixture.id) { entry in
+                        formChip(entry)
+                    }
                 }
             }
         }
-        .frame(maxWidth: .infinity,
-               alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
-        .accessibilitySortPriority(100)
     }
 
-    private var topBar: some View {
-        HStack(spacing: CoachWorldTokens.Space.sm) {
-            Button("League", action: onClose)
-                .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
-                       minHeight: CoachWorldTokens.Shape.minimumTarget)
-            VStack(alignment: .leading, spacing: .zero) {
-                Text("Team profile")
-                    .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                Text(model.seasonLabel)
-                    .font(CoachWorldTokens.TypeRole.caption)
-                    .foregroundStyle(palette.contentSecondary.color)
+    /// The last six PLAYED fixtures, oldest first (reading left to right as recent form usually
+    /// does), each paired with whether the controlled programme actually won it.
+    private var recentResults: [(fixture: TeamProgrammeProfileReadModel.Fixture, won: Bool)] {
+        model.fixtures
+            .compactMap { fixture -> (TeamProgrammeProfileReadModel.Fixture, Bool)? in
+                guard let score = fixture.score else { return nil }
+                let parts = score.split(separator: "\u{2013}")
+                guard parts.count == 2,
+                      let homeScore = Int(parts[0]),
+                      let awayScore = Int(parts[1]) else { return nil }
+                let won = fixture.isHome ? homeScore > awayScore : awayScore > homeScore
+                return (fixture, won)
             }
-            Spacer()
-        }
-        .padding(.horizontal, CoachWorldTokens.Space.sm)
-        .background(palette.raised.color)
+            .suffix(ProfileMetric.formGames)
+            .map { ($0.0, $0.1) }
     }
 
-    private var identity: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            Text(model.team.name)
-                .font(CoachWorldTokens.TypeRole.display.weight(.black))
-            Text(model.cityName + " · " + model.regionName)
-                .font(CoachWorldTokens.TypeRole.body)
-                .foregroundStyle(palette.contentSecondary.color)
-            Text(model.tier + " · " + model.conference)
-                .font(CoachWorldTokens.TypeRole.callout.weight(.bold))
-            if let division = model.division {
-                Text(division)
-                    .font(CoachWorldTokens.TypeRole.caption)
-                    .foregroundStyle(palette.contentSecondary.color)
-            }
+    private func formChip(_ entry: (fixture: TeamProgrammeProfileReadModel.Fixture, won: Bool)) -> some View {
+        VStack(spacing: CoachWorldTokens.Gap.xxs) {
+            RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.hairline)
+                .fill(entry.won ? palette.statePositive.color : palette.stateNegative.color)
+                .frame(width: ProfileMetric.formChipWidth, height: ProfileMetric.formChipHeight)
+            Text(entry.won ? "W" : "L")
+                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                .foregroundStyle(entry.won ? palette.statePositive.color : palette.stateNegative.color)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(model.team.name + ", " + model.cityName + ", " + model.tier)
-    }
-
-    private var facts: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            Text("Programme facts")
-                .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-            fact("Venue", model.venue.name)
-            fact("Record", model.record)
-            fact("Rank", model.rank ?? "Unranked")
-            fact("Prestige", String(model.prestige))
-            fact("Roster", String(model.rosterCount))
-            fact("Staff", String(model.staffCount))
-        }
-    }
-
-    private var fixtures: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            Text("Schedule")
-                .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-            if model.fixtures.isEmpty {
-                CoachWorldSystemState(.empty("No fixtures recorded"), palette: palette)
-            } else {
-                ForEach(model.fixtures, content: fixtureRow)
-            }
-        }
-    }
-
-    private func fixtureRow(_ fixture: TeamProgrammeProfileReadModel.Fixture) -> some View {
-        let opponentLabel = (fixture.isHome ? "vs " : "at ") + fixture.opponent.name
-        let scoreLabel = fixture.score ?? "—"
-        return HStack(spacing: CoachWorldTokens.Space.sm) {
-            VStack(alignment: .leading, spacing: .zero) {
-                Text(fixture.week)
-                    .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                Text(fixture.stage)
-                    .font(CoachWorldTokens.TypeRole.caption)
-                    .foregroundStyle(palette.contentSecondary.color)
-            }
-            .frame(width: 130, alignment: .leading)
-            Text(opponentLabel)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Text(scoreLabel).monospacedDigit()
-        }
-        .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(
-            fixture.week + ", " + (fixture.isHome ? "versus " : "at ")
-                + fixture.opponent.name + ", " + (fixture.score ?? "scheduled")
+            (entry.won ? "Won" : "Lost") + " versus " + entry.fixture.opponent.name
         )
     }
 
-    private var rivals: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            Text("Rivalries")
-                .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-            if model.rivals.isEmpty {
-                CoachWorldSystemState(.empty("No rivalry recorded"), palette: palette)
+    /// The reference highlights ONE rival at a time, with a series record and a note neither of
+    /// which `Rival` records. This shows the strongest rivalry the model actually has -- origin
+    /// and intensity -- rather than reproducing text that isn't backed by a real field.
+    @ViewBuilder
+    private var rivalrySection: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+            FloodlitLabel3("The rivalry", palette: palette)
+            if let rival = model.rivals.first {
+                rivalRow(rival)
             } else {
-                ForEach(model.rivals) { rival in
-                    Button {
-                        guard let id = UUID(uuidString: rival.id) else { return }
-                        onSelectTeam(id)
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: .zero) {
-                                Text(rival.team.name).fontWeight(.bold)
-                                Text(rival.origin)
-                                    .font(CoachWorldTokens.TypeRole.caption)
-                                    .foregroundStyle(palette.contentSecondary.color)
-                            }
-                            Spacer()
-                            Text(String(rival.intensity)).monospacedDigit()
-                        }
-                        .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(
-                        rival.team.name + ", " + rival.origin + ", intensity "
-                            + String(rival.intensity)
-                    )
-                }
+                Text("No rivalry recorded.")
+                    .font(CoachWorldTokens.TypeRole.caption)
+                    .foregroundStyle(palette.contentQuiet.color)
             }
         }
     }
 
-    private var traditions: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            Text("Traditions")
-                .font(CoachWorldTokens.TypeRole.headline.weight(.black))
+    private func rivalRow(_ rival: TeamProgrammeProfileReadModel.Rival) -> some View {
+        FloodlitRow(
+            palette: palette,
+            action: {
+                guard let id = UUID(uuidString: rival.id) else { return }
+                onSelectTeam(id)
+            }
+        ) {
+            HStack(spacing: CoachWorldTokens.Gap.md) {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                    Text(rival.team.name.uppercased())
+                        .font(
+                            CoachWorldTokens.display(
+                                CoachWorldTokens.DisplaySize.row, weight: .bold
+                            )
+                        )
+                        .lineLimit(1)
+                    FloodlitLabel3(rival.origin, palette: palette)
+                }
+                Spacer(minLength: CoachWorldTokens.Gap.xs)
+                // Not CoachWorldTokens.Heat.color: intensity is a genuine 40-99 Rating, so the
+                // scale mapping is correct, but the middle Heat band is literally
+                // `actionPrimary.color` -- the same gold the screen's one committing action uses.
+                // A fixed cool tint avoids a rival ever painting as if it were tappable-to-commit.
+                FloodlitShareBar(
+                    proportion: proportion(of: rival.intensity),
+                    tint: palette.stateInfo.color,
+                    palette: palette
+                )
+                .frame(width: ProfileMetric.intensityBar)
+                Text("\(rival.intensity)")
+                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill, weight: .semibold))
+                    .frame(width: ProfileMetric.intensityFigure, alignment: .trailing)
+            }
+        }
+        .accessibilityLabel(
+            "\(rival.team.name), \(rival.origin), intensity \(rival.intensity)"
+        )
+    }
+
+    private func proportion(of rating: Int) -> Double {
+        let floor = CoachWorldTokens.Heat.scaleFloor
+        let ceiling = CoachWorldTokens.Heat.scaleCeiling
+        let clamped = min(max(rating, floor), ceiling)
+        return Double(clamped - floor) / Double(ceiling - floor)
+    }
+
+    private var traditionsSection: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+            FloodlitLabel3("Traditions", palette: palette)
             if model.traditions.isEmpty {
-                CoachWorldSystemState(.empty("No traditions recorded"), palette: palette)
+                Text("No traditions recorded.")
+                    .font(CoachWorldTokens.TypeRole.caption)
+                    .foregroundStyle(palette.contentQuiet.color)
             } else {
                 ForEach(model.traditions, id: \.self) { tradition in
                     Text(tradition)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .frame(minHeight: CoachWorldTokens.Shape.minimumTarget,
-                               alignment: .leading)
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.contentSecondary.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.vertical, CoachWorldTokens.Gap.hair)
                 }
             }
         }
     }
 
-    private func fact(_ title: String, _ value: String) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(title.uppercased())
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.contentQuiet.color)
-            Spacer()
-            Text(value)
-                .font(CoachWorldTokens.TypeRole.body.weight(.bold))
-                .multilineTextAlignment(.trailing)
+    private var footer: some View {
+        HStack(spacing: CoachWorldTokens.Gap.mdPlus) {
+            Text("Every figure here is recorded for this programme, not projected.")
+                .font(CoachWorldTokens.TypeRole.callout)
+                .foregroundStyle(palette.contentSecondary.color)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            FloodlitCommittingAction("Back to the league", action: onClose)
         }
-        .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(title + ", " + value)
+        .floodlitFooterStrip(palette: palette)
     }
+}
+
+private enum ProfileMetric {
+    static let identityColumn: CGFloat = 300
+    static let factKey: CGFloat = 72
+    static let factHeight: CGFloat = 21
+    static let seamAlpha = 0.05
+    static let nameLines = 2
+    static let nameScaleFloor: CGFloat = 0.6
+    static let intensityBar: CGFloat = 60
+    static let intensityFigure: CGFloat = 26
+    /// The handoff's own "last six" window.
+    static let formGames = 6
+    static let formChipWidth: CGFloat = 28
+    static let formChipHeight: CGFloat = 40
 }

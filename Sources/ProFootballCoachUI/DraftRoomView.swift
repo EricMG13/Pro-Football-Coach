@@ -42,6 +42,7 @@ public struct DraftRoomView: View, CoachWorldChromedSurface {
                     onAction: onAction,
                     onClose: onClose
                 )
+                .floodlitChrome(chrome, onNavigate: onNavigateChrome)
             } else {
                 // The closed branch draws its own world: it does not delegate, so it needs the
                 // stage the delegated branch inherits from ProOffseasonView.

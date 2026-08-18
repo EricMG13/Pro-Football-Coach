@@ -37,66 +37,61 @@ public struct ContractNegotiationView: View, CoachWorldChromedSurface {
 
     public var body: some View {
         CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                    header
-                    if let statusMessage {
-                        Text(statusMessage)
-                            .foregroundStyle(palette.stateWarning.color)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Text("Offers and counters are retained until accepted, rejected, withdrawn, or expired. Cap previews use the current team ledger.")
-                        .foregroundStyle(palette.contentSecondary.color)
-                        .fixedSize(horizontal: false, vertical: true)
-                    activeNegotiations
-                    startNegotiations
-                }
-                .padding(CoachWorldTokens.Space.md)
-            }
+            scrollContent
         }
         .accessibilitySortPriority(100)
     }
 
-    private var header: some View {
-        Group {
-            if dynamicTypeSize.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-                    titleBlock
-                    closeButton
+    private var scrollContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.md) {
+                header
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.callout)
+                        .foregroundStyle(palette.stateWarning.color)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-            } else {
-                HStack(alignment: .top) {
-                    titleBlock
-                    Spacer()
-                    closeButton
-                }
+                Text(
+                    "Offers and counters are retained until accepted, rejected, withdrawn, "
+                        + "or expired. Cap previews use the current team ledger."
+                )
+                .font(CoachWorldTokens.TypeRole.caption)
+                .foregroundStyle(palette.contentQuiet.color)
+                .fixedSize(horizontal: false, vertical: true)
+                activeNegotiations
+                startNegotiations
             }
+            .padding(.vertical, CoachWorldTokens.Pad.panel.v)
         }
+        .safeAreaInset(edge: .bottom) { footer }
     }
 
-    private var titleBlock: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-            Text("CONTRACT NEGOTIATION")
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.proIdentity.color)
-            Text(model.team.name)
-                .font(CoachWorldTokens.TypeRole.display.weight(.black))
-            Text("Season \(model.seasonLabel) · cap remaining \(model.cap.remainingCap)")
-                .foregroundStyle(palette.contentSecondary.color)
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.md) {
+            FloodlitLabel3("Contract negotiation \u{00B7} \(model.seasonLabel)", palette: palette)
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            FloodlitLabel3(
+                "\(currency(model.cap.remainingCap)) left",
+                palette: palette,
+                tint: model.cap.remainingCap < 0
+                    ? palette.stateWarning.color
+                    : palette.actionPrimary.color
+            )
         }
-    }
-
-    private var closeButton: some View {
-        Button("Done", action: onClose)
-            .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
-                   minHeight: CoachWorldTokens.Shape.minimumTarget)
     }
 
     private var activeNegotiations: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            Text("OPEN & RECENT OFFERS · \(model.negotiations.count)")
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.proIdentity.color)
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+            HStack(spacing: CoachWorldTokens.Gap.smPlus) {
+                FloodlitLabel3("Open and recent offers", palette: palette)
+                Spacer(minLength: CoachWorldTokens.Gap.xs)
+                FloodlitLabel3(
+                    model.negotiations.count == 1
+                        ? "1 offer" : "\(model.negotiations.count) offers",
+                    palette: palette
+                )
+            }
             if model.negotiations.isEmpty {
                 CoachWorldSystemState(
                     .empty("No contract offers are on file."),
@@ -114,51 +109,99 @@ public struct ContractNegotiationView: View, CoachWorldChromedSurface {
         }
     }
 
+    /// Contracted players not already in an open negotiation: a place to start one. `04` section
+    /// 4.4 -- the interface never says which player to approach -- so every eligible name is a row,
+    /// not a shortlist.
     private var startNegotiations: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            Text("ROSTER CONTRACTS")
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.proIdentity.color)
-            ForEach(model.activeRoster.filter { player in
-                player.contract != nil
-                    && !model.negotiations.contains {
-                        $0.playerID == player.id && $0.status.isOpen
-                    }
-            }, id: \.id) { player in
-                if let contract = player.contract, let teamID {
-                    Button {
-                        onAction(.beginNegotiation(
-                            playerID: player.id,
-                            teamID: teamID,
-                            offer: contract,
-                            deadline: model.calendar.advancedWeek().advancedWeek()
-                        ))
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                                Text(player.name).font(CoachWorldTokens.TypeRole.body.weight(.bold))
-                                Text("Current cap hit \(player.capHit)")
-                                    .font(CoachWorldTokens.TypeRole.caption)
-                                    .foregroundStyle(palette.contentSecondary.color)
-                            }
-                            Spacer()
-                            Text("Start offer")
-                                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                        }
-                        .padding(.horizontal, CoachWorldTokens.Space.sm)
-                        .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget,
-                               alignment: .leading)
-                        .coachWorldFloodlitPanel(
-                            fill: palette.raised.color,
-                            border: palette.contentQuiet.color
-                                .opacity(CoachWorldTokens.Depth.panelBorderOpacity)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Start contract offer for \(player.name)")
-                }
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+            FloodlitLabel3("Start a negotiation", palette: palette)
+            ForEach(startable, id: \.id) { player in
+                startRow(player)
             }
         }
+    }
+
+    private var startable: [ProManagementReadModel.PlayerRow] {
+        model.activeRoster.filter { player in
+            player.contract != nil
+                && !model.negotiations.contains { $0.playerID == player.id && $0.status.isOpen }
+        }
+    }
+
+    @ViewBuilder
+    private func startRow(_ player: ProManagementReadModel.PlayerRow) -> some View {
+        if let contract = player.contract, let teamID {
+            FloodlitRow(
+                palette: palette,
+                action: {
+                    onAction(.beginNegotiation(
+                        playerID: player.id,
+                        teamID: teamID,
+                        offer: contract,
+                        deadline: model.calendar.advancedWeek().advancedWeek()
+                    ))
+                }
+            ) {
+                // At AX5, the name, the cap figure and "Start offer" crammed into one row would
+                // either clip the name or force the row wider than the stage. Stacking the cap
+                // figure and the offer label under the name keeps every piece legible.
+                if dynamicTypeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                        Text(player.name.uppercased())
+                            .font(
+                                CoachWorldTokens.display(
+                                    CoachWorldTokens.DisplaySize.row, weight: .bold
+                                )
+                            )
+                            .fixedSize(horizontal: false, vertical: true)
+                        HStack(spacing: CoachWorldTokens.Gap.md) {
+                            Text("\(currency(player.capHit)) now")
+                                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                                .foregroundStyle(palette.contentQuiet.color)
+                            FloodlitLabel3(
+                                "Start offer", palette: palette, tint: palette.actionPrimary.color
+                            )
+                        }
+                    }
+                } else {
+                    HStack(spacing: CoachWorldTokens.Gap.md) {
+                        Text(player.name.uppercased())
+                            .font(
+                                CoachWorldTokens.display(
+                                    CoachWorldTokens.DisplaySize.row, weight: .bold
+                                )
+                            )
+                            .lineLimit(1)
+                        Spacer(minLength: CoachWorldTokens.Gap.xs)
+                        Text("\(currency(player.capHit)) now")
+                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                            .foregroundStyle(palette.contentQuiet.color)
+                        FloodlitLabel3(
+                            "Start offer", palette: palette, tint: palette.actionPrimary.color
+                        )
+                    }
+                }
+            }
+            .accessibilityLabel(
+                "Start an offer for \(player.name), current cap hit \(currency(player.capHit))"
+            )
+        }
+    }
+
+    private var footer: some View {
+        HStack(spacing: CoachWorldTokens.Gap.mdPlus) {
+            Text("Every offer here is retained. Nothing is committed until you accept it.")
+                .font(CoachWorldTokens.TypeRole.callout)
+                .foregroundStyle(palette.contentSecondary.color)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            FloodlitCommittingAction("Done", action: onClose)
+        }
+        .floodlitFooterStrip(palette: palette)
+    }
+
+    private func currency(_ value: Int) -> String {
+        value < 0 ? "-$\(abs(value))" : "$\(value)"
     }
 }
 
@@ -167,6 +210,7 @@ private struct NegotiationCard: View {
     let palette: CoachWorldTokens.Palette
     let onAction: (ProManagementAction) -> Void
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var years: Int
     @State private var baseSalary: Int
     @State private var signingBonus: Int
@@ -193,55 +237,122 @@ private struct NegotiationCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            HStack {
-                Text(negotiation.playerName).font(CoachWorldTokens.TypeRole.headline.weight(.bold))
-                Spacer()
-                Text(negotiation.status.rawValue.uppercased())
-                    .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
+        FloodlitCard(palette: palette, depth: .deep) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
+                HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.xs) {
+                    Text(negotiation.playerName.uppercased())
+                        .font(
+                            CoachWorldTokens.display(
+                                CoachWorldTokens.DisplaySize.panel, weight: .bold
+                            )
+                        )
+                        .lineLimit(1)
+                    Spacer(minLength: CoachWorldTokens.Gap.xs)
+                    FloodlitFlag(
+                        negotiation.status.rawValue,
+                        tint: negotiation.status.isOpen
+                            ? palette.actionPrimary.color
+                            : palette.contentQuiet.color,
+                        palette: palette
+                    )
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(
+                    "\(negotiation.playerName), \(negotiation.status.rawValue)"
+                )
+                FloodlitCostLine(
+                    cost: "Offer \(negotiation.offerCount)",
+                    exposure: "$\(negotiation.currentOffer.totalValue) total",
+                    consequence: "Deadline \(negotiation.deadline.season)-\(negotiation.deadline.week)",
+                    palette: palette
+                )
+                if negotiation.status.isOpen {
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+                        Stepper(
+                            "Years: \(years)",
+                            value: $years, in: 1...ProRules.contractYearsRange.upperBound
+                        )
+                        .font(CoachWorldTokens.TypeRole.body)
+                        .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+                        TextField("Annual base salary", value: $baseSalary, format: .number)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+                        TextField("Signing bonus", value: $signingBonus, format: .number)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+                    }
+                    // Four buttons in one row is tight even at standard type; at AX5 it would
+                    // overflow the card. Two rows keeps every label legible and every target
+                    // its full 44pt regardless of scale.
+                    if dynamicTypeSize.isAccessibilitySize {
+                        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+                            HStack(spacing: CoachWorldTokens.Gap.md) {
+                                quietButton("Withdraw") {
+                                    onAction(.withdrawNegotiation(negotiationID: negotiation.id))
+                                }
+                                quietButton("Reject") {
+                                    onAction(.rejectNegotiation(negotiationID: negotiation.id))
+                                }
+                            }
+                            HStack(spacing: CoachWorldTokens.Gap.md) {
+                                quietButton("Counter") {
+                                    onAction(.counterNegotiation(
+                                        negotiationID: negotiation.id, offer: counter
+                                    ))
+                                }
+                                acceptButton {
+                                    onAction(.acceptNegotiation(negotiationID: negotiation.id))
+                                }
+                            }
+                        }
+                    } else {
+                        HStack(spacing: CoachWorldTokens.Gap.md) {
+                            quietButton("Withdraw") {
+                                onAction(.withdrawNegotiation(negotiationID: negotiation.id))
+                            }
+                            quietButton("Reject") {
+                                onAction(.rejectNegotiation(negotiationID: negotiation.id))
+                            }
+                            Spacer(minLength: CoachWorldTokens.Gap.xs)
+                            quietButton("Counter") {
+                                onAction(.counterNegotiation(
+                                    negotiationID: negotiation.id, offer: counter
+                                ))
+                            }
+                            // Not FloodlitCommittingAction, and not
+                            // CoachWorldActionButtonStyle(.primary) either -- that role also
+                            // fills with `actionPrimary.color`, the same gold, so it would
+                            // collide with the footer's Done exactly like the gold button did.
+                            // A positive but non-gold tone keeps Accept visually distinct from
+                            // Withdraw/Reject/Counter without claiming the screen's one
+                            // committing slot.
+                            acceptButton {
+                                onAction(.acceptNegotiation(negotiationID: negotiation.id))
+                            }
+                        }
+                    }
+                }
             }
-            Text("Offer \(negotiation.offerCount) · \(negotiation.currentOffer.totalValue) total · deadline \(negotiation.deadline.season)-\(negotiation.deadline.week)")
-                .font(CoachWorldTokens.TypeRole.caption)
-                .foregroundStyle(palette.contentSecondary.color)
-            if negotiation.status.isOpen {
-                Stepper("Years: \(years)", value: $years, in: 1...ProRules.contractYearsRange.upperBound)
-                    .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-                TextField("Annual base salary", value: $baseSalary, format: .number)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-                TextField("Signing bonus", value: $signingBonus, format: .number)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-                actionButton("Counter", role: .secondary) {
-                    onAction(.counterNegotiation(negotiationID: negotiation.id, offer: counter))
-                }
-                actionButton("Accept", role: .primary) {
-                    onAction(.acceptNegotiation(negotiationID: negotiation.id))
-                }
-                actionButton("Reject", role: .secondary) {
-                    onAction(.rejectNegotiation(negotiationID: negotiation.id))
-                }
-                actionButton("Withdraw", role: .secondary) {
-                    onAction(.withdrawNegotiation(negotiationID: negotiation.id))
-                }
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(CoachWorldTokens.Space.sm)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .coachWorldFloodlitPanel(
-            fill: palette.raised.color,
-            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
-        )
         .accessibilityElement(children: .contain)
     }
 
-    private func actionButton(
-        _ title: String,
-        role: CoachWorldActionRole,
-        action: @escaping () -> Void
-    ) -> some View {
+    /// Withdraw, Reject and Counter: none of them commits the offer, so none takes the gold field
+    /// `04` section 6.5 reserves for exactly one action per screen.
+    private func quietButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(title, action: action)
-            .buttonStyle(CoachWorldActionButtonStyle(role: role, palette: palette))
-            .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+            .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold))
+            .foregroundStyle(palette.contentQuiet.color)
+            .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
+                   minHeight: CoachWorldTokens.Shape.minimumTarget)
+    }
+
+    private func acceptButton(action: @escaping () -> Void) -> some View {
+        Button("Accept", action: action)
+            .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold))
+            .foregroundStyle(palette.statePositive.color)
+            .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
+                   minHeight: CoachWorldTokens.Shape.minimumTarget)
     }
 }

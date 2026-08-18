@@ -15,6 +15,7 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
     public let onClose: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var openID: UUID?
 
     public init(
         model: ProOffseasonReadModel,
@@ -36,238 +37,261 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
 
     public var body: some View {
         CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.md) {
-                    header
-                    if let statusMessage {
-                        Text(statusMessage)
-                            .font(CoachWorldTokens.TypeRole.callout)
-                            .foregroundStyle(palette.stateWarning.color)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    summary
-                    if !model.actions.isEmpty {
-                        section("MARKET ACTIONS") {
-                            ForEach(model.actions) { row in
-                                actionButton(row)
-                            }
-                        }
-                    }
-                    prospectsSection
-                    freeAgentsSection
-                    waiversSection
-                }
-                .padding(CoachWorldTokens.Space.md)
-            }
+            scrollContent
         }
         .accessibilitySortPriority(100)
     }
 
-    private var header: some View {
-        Group {
-            if dynamicTypeSize.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-                    titleBlock
-                    doneButton
+    private var scrollContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.md) {
+                header
+                capStrip
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.callout)
+                        .foregroundStyle(palette.stateWarning.color)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-            } else {
-                HStack(alignment: .top) {
-                    titleBlock
-                    Spacer(minLength: CoachWorldTokens.Space.sm)
-                    doneButton
+                if !model.actions.isEmpty {
+                    marketActions
                 }
-            }
-        }
-    }
-
-    private var titleBlock: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-            Text(title)
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.proIdentity.color)
-            Text(model.team.name)
-                .font(CoachWorldTokens.TypeRole.display.weight(.black))
-                .fixedSize(horizontal: false, vertical: true)
-            Text("\(model.seasonLabel) · \(phaseLabel)")
-                .font(CoachWorldTokens.TypeRole.body)
-                .foregroundStyle(palette.contentSecondary.color)
-        }
-    }
-
-    private var doneButton: some View {
-        Button("Done", action: onClose)
-            .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
-                   minHeight: CoachWorldTokens.Shape.minimumTarget)
-    }
-
-    private var summary: some View {
-        LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: 132), spacing: CoachWorldTokens.Space.xs)],
-            alignment: .leading,
-            spacing: CoachWorldTokens.Space.xs
-        ) {
-            summaryCell("CAP ROOM", currency(model.cap.remainingCap))
-            summaryCell("CAP LIMIT", currency(model.cap.capLimit))
-            summaryCell("COMMITTED", currency(model.cap.committedCap))
-            summaryCell("DEAD MONEY", currency(model.cap.deadMoney))
-            summaryCell("ACTIVE", "\(model.cap.activeRosterCount)/\(ProRules.activeRosterLimit)")
-            summaryCell("PRACTICE", "\(model.cap.practiceSquadCount)/\(ProRules.practiceSquadLimit)")
-            if let currentPickTeamID = model.currentPickTeamID {
-                summaryCell("NEXT PICK", "\(model.nextPick + 1)/\(max(model.totalPicks, 1))")
-                    .accessibilityLabel("Next pick, \(currentPickTeamID.uuidString)")
-            }
-        }
-        .accessibilitySortPriority(80)
-    }
-
-    private var prospectsSection: some View {
-        section("DRAFT BOARD") {
-            if model.prospects.isEmpty {
-                emptyText("No draft class is currently open.")
-            } else {
-                ForEach(model.prospects) { prospect in
-                    VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                        HStack(alignment: .firstTextBaseline) {
-                            Text(prospect.name)
-                                .font(CoachWorldTokens.TypeRole.headline.weight(.bold))
-                            Spacer(minLength: CoachWorldTokens.Space.xs)
-                            Text(prospect.position)
-                                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                                .foregroundStyle(palette.contentSecondary.color)
-                        }
-                        Text(prospect.estimatedOverall.map {
-                            "Estimated overall \($0) · confidence \(prospect.confidence ?? 0)%"
-                        } ?? "Unscouted · no estimate shown")
-                            .font(CoachWorldTokens.TypeRole.body)
-                            .foregroundStyle(palette.contentSecondary.color)
-                        if let action = prospect.action {
-                            actionButton(action)
-                        }
+                if dynamicTypeSize.isAccessibilitySize {
+                    listColumn
+                    detailPanel
+                } else {
+                    HStack(alignment: .top, spacing: CoachWorldTokens.Gap.lg) {
+                        listColumn
+                            .frame(width: OffseasonMetric.listColumn)
+                        detailPanel
+                            .frame(width: OffseasonMetric.detailColumn)
                     }
-                    .padding(CoachWorldTokens.Space.sm)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .coachWorldFloodlitPanel(
-                        fill: palette.raised.color,
-                        border: palette.contentQuiet.color
-                            .opacity(CoachWorldTokens.Depth.panelBorderOpacity)
-                    )
-                    .accessibilityElement(children: .contain)
-                    .accessibilityLabel(
-                        "\(prospect.name), \(prospect.position), "
-                            + (prospect.estimatedOverall.map { "estimated overall \($0)" }
-                               ?? "unscouted")
-                    )
                 }
             }
+            .padding(.vertical, CoachWorldTokens.Pad.panel.v)
+        }
+        .safeAreaInset(edge: .bottom) { footer }
+    }
+
+    /// Named, not tappable: the four scouting/draft/free-agency routes switch through the shared
+    /// chrome's sibling row, which is where every other multi-route family in this port switches.
+    /// A second, unconnected set of stage pills here would be a control with nothing wired to it.
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.md) {
+            FloodlitLabel3("\(title) \u{00B7} \(model.seasonLabel)", palette: palette)
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            FloodlitLabel3(phaseLabel, palette: palette, tint: palette.actionPrimary.color)
         }
     }
 
-    private var freeAgentsSection: some View {
-        section("FREE AGENTS") {
-            if model.freeAgents.isEmpty {
-                emptyText("No free agents are available in this phase.")
-            } else {
-                ForEach(model.freeAgents) { player in
-                    row(title: player.name, detail: player.position, action: player.action)
-                }
+    private var capStrip: some View {
+        HStack(spacing: CoachWorldTokens.Gap.xl) {
+            capFigure("Cap room", currency(model.cap.remainingCap))
+            capFigure("Committed", currency(model.cap.committedCap))
+            capFigure("Dead money", currency(model.cap.deadMoney))
+            capFigure(
+                "Active", "\(model.cap.activeRosterCount)/\(ProRules.activeRosterLimit)"
+            )
+            if let currentPickTeamID = model.currentPickTeamID {
+                capFigure(
+                    "On the clock",
+                    "\(model.nextPick + 1)/\(max(model.totalPicks, 1))"
+                )
+                .accessibilityLabel(
+                    "On the clock, pick \(model.nextPick + 1) of \(max(model.totalPicks, 1)), "
+                        + "team \(currentPickTeamID.uuidString)"
+                )
             }
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
         }
-    }
-
-    private var waiversSection: some View {
-        section("WAIVERS") {
-            if model.waivers.isEmpty {
-                emptyText("No active waiver claims are recorded.")
-            } else {
-                ForEach(model.waivers) { waiver in
-                    row(
-                        title: waiver.name,
-                        detail: "Claim deadline \(waiver.deadline)",
-                        action: waiver.action
-                    )
-                }
-            }
-        }
-    }
-
-    private func section<Content: View>(
-        _ title: String,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            Text(title)
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                .foregroundStyle(palette.contentSecondary.color)
-            content()
-        }
-    }
-
-    private func row(
-        title: String,
-        detail: String,
-        action: ProOffseasonReadModel.ActionRow?
-    ) -> some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title).font(CoachWorldTokens.TypeRole.headline.weight(.bold))
-                Spacer(minLength: CoachWorldTokens.Space.xs)
-                Text(detail)
-                    .font(CoachWorldTokens.TypeRole.caption)
-                    .foregroundStyle(palette.contentSecondary.color)
-            }
-            if let action { actionButton(action) }
-        }
-        .padding(CoachWorldTokens.Space.sm)
-        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-        .coachWorldFloodlitPanel(
-            fill: palette.raised.color,
-            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+        .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+        .frame(minHeight: OffseasonMetric.capStripHeight)
+        .background(
+            CoachWorldCutCorner.row.fill(palette.work.color.opacity(OffseasonMetric.stripFill))
         )
     }
 
-    private func actionButton(_ action: ProOffseasonReadModel.ActionRow) -> some View {
-        Button {
-            onAction(action.action)
-        } label: {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                Text(action.title)
-                    .font(CoachWorldTokens.TypeRole.headline.weight(.bold))
+    private func capFigure(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.xs) {
+            FloodlitLabel3(label, palette: palette)
+            Text(value)
+                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.row, weight: .semibold))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label), \(value)")
+    }
+
+    private var marketActions: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xxs) {
+            FloodlitLabel3("Market actions", palette: palette)
+            ForEach(model.actions) { row in genericActionRow(row) }
+        }
+    }
+
+    /// This shell backs five real routes, not four: the four named wrapper views AND
+    /// `ProOffseasonView` itself, reached directly via `CoachingHQView`'s "Pro offseason" button
+    /// with the default title "PRO OFFSEASON" and no phase restriction. A title-text match
+    /// (`title.contains("FREE AGENCY")`) picked one list and made the other two permanently
+    /// unreachable from that fifth route regardless of `model.phase` -- during free agency itself,
+    /// the hub screen would show the draft board and hide the very free agents it's the phase for.
+    /// Showing every non-empty section, as the pre-conversion view already did, has no such
+    /// blind spot: a route with nothing in a bucket already renders nothing for it.
+    private var listColumn: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+                FloodlitLabel3("Draft board", palette: palette)
+                if model.prospects.isEmpty {
+                    CoachWorldSystemState(
+                        .empty("No draft class is currently open."), palette: palette
+                    )
+                } else {
+                    ForEach(model.prospects) { prospect in prospectRow(prospect) }
+                }
+            }
+            if !model.freeAgents.isEmpty || !model.waivers.isEmpty {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+                    if !model.freeAgents.isEmpty {
+                        FloodlitLabel3("Free agents", palette: palette)
+                        ForEach(model.freeAgents) { player in freeAgentRow(player) }
+                    }
+                    if !model.waivers.isEmpty {
+                        FloodlitLabel3("Waivers", palette: palette)
+                        ForEach(model.waivers) { waiver in waiverRow(waiver) }
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func prospectRow(_ prospect: ProOffseasonReadModel.ProspectRow) -> some View {
+        FloodlitRow(
+            isSelected: openID == prospect.id, palette: palette, action: { openID = prospect.id }
+        ) {
+            HStack(spacing: CoachWorldTokens.Gap.md) {
+                Text(prospect.position.uppercased())
+                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.pill, weight: .bold))
+                    .foregroundStyle(palette.stateInfo.color)
+                    .lineLimit(1)
+                    .frame(width: OffseasonMetric.positionColumn, alignment: .leading)
+                Text(prospect.name.uppercased())
+                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(prospect.estimatedOverall.map { "\($0)" } ?? "\u{2014}")
+                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.row, weight: .semibold))
+                    .foregroundStyle(
+                        prospect.estimatedOverall == nil
+                            ? palette.contentQuiet.color : palette.contentPrimary.color
+                    )
+            }
+        }
+        .accessibilityLabel(
+            "\(prospect.name), \(prospect.position), "
+                + (prospect.estimatedOverall.map { "estimated overall \($0)" } ?? "unscouted")
+        )
+    }
+
+    private func freeAgentRow(_ player: ProOffseasonReadModel.FreeAgentRow) -> some View {
+        FloodlitRow(isSelected: openID == player.id, palette: palette, action: { openID = player.id }) {
+            HStack(spacing: CoachWorldTokens.Gap.md) {
+                Text(player.position.uppercased())
+                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.pill, weight: .bold))
+                    .foregroundStyle(palette.stateInfo.color)
+                    .lineLimit(1)
+                    .frame(width: OffseasonMetric.positionColumn, alignment: .leading)
+                Text(player.name.uppercased())
+                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                    .lineLimit(1)
+                Spacer(minLength: CoachWorldTokens.Gap.xs)
+            }
+        }
+        .accessibilityLabel("\(player.name), \(player.position)")
+    }
+
+    private func waiverRow(_ waiver: ProOffseasonReadModel.WaiverRow) -> some View {
+        FloodlitRow(isSelected: openID == waiver.id, palette: palette, action: { openID = waiver.id }) {
+            HStack(spacing: CoachWorldTokens.Gap.md) {
+                Text(waiver.name.uppercased())
+                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                    .lineLimit(1)
+                Spacer(minLength: CoachWorldTokens.Gap.xs)
+                FloodlitLabel3(
+                    "Due \(waiver.deadline)", palette: palette, tint: palette.stateWarning.color
+                )
+            }
+        }
+        .accessibilityLabel("\(waiver.name), claim deadline \(waiver.deadline)")
+    }
+
+    /// The selected row's own action, or the market-wide note when nothing is selected.
+    private var detailPanel: some View {
+        FloodlitCard(palette: palette, depth: .deep) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
+                FloodlitLabel3("What you can do", palette: palette)
+                if let action = openAction {
+                    genericActionRow(action)
+                } else {
+                    Text("Select a name to see what you can do about it.")
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.contentQuiet.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var openAction: ProOffseasonReadModel.ActionRow? {
+        guard let openID else { return nil }
+        if let prospect = model.prospects.first(where: { $0.id == openID }) {
+            return prospect.action
+        }
+        if let player = model.freeAgents.first(where: { $0.id == openID }) {
+            return player.action
+        }
+        if let waiver = model.waivers.first(where: { $0.id == openID }) {
+            return waiver.action
+        }
+        return nil
+    }
+
+    private func genericActionRow(_ action: ProOffseasonReadModel.ActionRow) -> some View {
+        FloodlitRow(palette: palette, action: action.isAvailable ? { onAction(action.action) } : nil) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                Text(action.title.uppercased())
+                    .font(
+                        CoachWorldTokens.display(
+                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                        )
+                    )
+                    .foregroundStyle(
+                        action.isAvailable ? palette.actionPrimary.color : palette.contentQuiet.color
+                    )
+                    .lineLimit(1)
                 Text(action.isAvailable ? action.detail : (action.unavailableReason ?? action.detail))
                     .font(CoachWorldTokens.TypeRole.caption)
+                    .foregroundStyle(palette.contentSecondary.color)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget,
-                   alignment: .leading)
         }
-        .buttonStyle(CoachWorldActionButtonStyle(
-            role: action.isAvailable ? .live : .secondary,
-            palette: palette
-        ))
-        .disabled(!action.isAvailable)
         .accessibilityLabel(
-            action.isAvailable ? action.title : "\(action.title), unavailable"
+            action.isAvailable
+                ? "\(action.title). \(action.detail)"
+                : "\(action.title), unavailable. \(action.unavailableReason ?? "")"
         )
-        .accessibilityHint(action.isAvailable ? action.detail : (action.unavailableReason ?? ""))
     }
 
-    private func summaryCell(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-            Text(label)
-                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
+    private var footer: some View {
+        HStack(spacing: CoachWorldTokens.Gap.mdPlus) {
+            Text("Every figure here is recorded. Nothing projects past this phase.")
+                .font(CoachWorldTokens.TypeRole.callout)
                 .foregroundStyle(palette.contentSecondary.color)
-            Text(value)
-                .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                .monospacedDigit()
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            FloodlitCommittingAction("Done", action: onClose)
         }
-        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-        .padding(.horizontal, CoachWorldTokens.Space.sm)
-        .background(palette.raised.color)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(label.capitalized), \(value)")
-    }
-
-    private func emptyText(_ text: String) -> some View {
-        CoachWorldSystemState(.empty(text), palette: palette)
+        .floodlitFooterStrip(palette: palette)
     }
 
     private var phaseLabel: String {
@@ -282,4 +306,12 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
     private func currency(_ value: Int) -> String {
         value < 0 ? "-$\(abs(value))" : "$\(value)"
     }
+}
+
+private enum OffseasonMetric {
+    static let listColumn: CGFloat = 424
+    static let detailColumn: CGFloat = 261
+    static let positionColumn: CGFloat = 44
+    static let capStripHeight: CGFloat = 32
+    static let stripFill = 0.5
 }
