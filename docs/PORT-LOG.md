@@ -520,3 +520,45 @@ regressed to a blank screen. It had not. The screenshot script's readiness check
 brightness, which the plain-white iOS launch screen satisfies, so it was capturing the launch
 transition rather than the app. The app log showed a clean launch and no crash throughout. The
 check now waits for the launch screen to actually clear.
+
+## 2026-08-18 — Floodlit handoff, milestone 3a: weekly command
+
+The conversion seam, and the first of the six families (`FLOODLIT-SURFACES.md` section 3).
+
+**The seam.** The chrome folded into `CoachWorldFloodlitStage` rather than becoming a wrapper type
+around it. Three reasons, in order of weight: ground/world/grain/colour-scheme keep exactly one
+owner, which is the invariant `AccessibilityReflowTests` already guards; converting a surface
+becomes a one-line change at the call site; and views keep calling the symbol the conversion scan
+recognises, so the partition cannot silently regress. `CoachWorldChromedSurface` gives a surface
+`chrome` and `onNavigateChrome` with inline defaults, so an existing public initialiser keeps
+compiling untouched and the caller opts in with `.floodlitChrome(_:onNavigate:)`.
+
+**Provider.** `CoachWorldChromeProvider` builds the chrome from `CoachingHQReadModel` rather than
+re-deriving identity from `GameState`. The week hub already answers "who are we, what is our
+record, who is next", and resolving that twice is how two headers end up disagreeing about one
+save. Rail entries and sibling links carry `route|<id>` intents that go through the same
+`navigate(_:in:)` every other route uses, so a rail tap cannot reach a screen the router considers
+unreachable.
+
+`conference` became optional: it lives on `TeamProgrammeProfileReadModel`, not on the week hub, and
+is not retained on every route. An absent conference is not a wrong conference, so the header omits
+the slot rather than guessing.
+
+**Converted (9 surfaces):** Coaching HQ, Inbox, Game Plan, Opponent Film, Opponent Report / Film
+Room, Practice Plan, Team Health, Aftermath, Box Score. The film room delegates its whole
+composition, so it passes the chrome through to the view that draws it rather than wrapping a
+second stage around one that already has one.
+
+**Two layout bugs the simulator caught:**
+
+1. The chrome was added to the composition stack *before* the content, so the content painted over
+   the identity header — the first capture showed only the header's second row, with the surface's
+   own strip sitting where the programme name belonged. Content is drawn first now and the chrome
+   over it: the chrome is the frame the surface sits in.
+2. `CoachingHQView` kept drawing its own world strip under the new header, stacking two
+   navigations. It now draws it only when no chrome is supplied, which is still the correct
+   rendering for the un-converted path.
+
+**Verified:** package builds; `--core-contracts` (202 / 2228) and `--design-contracts` (29 / 613)
+green, with the conversion partition still reporting 62 converted / 0 pending; Coaching HQ captured
+on a simulator inside the chrome.

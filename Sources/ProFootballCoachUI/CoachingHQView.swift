@@ -1,6 +1,11 @@
 import SwiftUI
 
-public struct CoachingHQView: View {
+public struct CoachingHQView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
     public let model: CoachingHQReadModel
     public let statusMessage: String?
     public let onCommit: (CoachWorldIntentID) -> Void
@@ -67,12 +72,15 @@ public struct CoachingHQView: View {
     }
 
     public var body: some View {
-        CoachWorldFloodlitStage(palette: palette) {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             VStack(spacing: .zero) {
                 if dynamicTypeSize.isAccessibilitySize {
                     accessibleLayout
                 } else {
-                    worldStrip
+                    // The shared chrome's identity header states the programme, record and next
+                    // fixture. Drawing this surface's own strip as well stacked two navigations on
+                    // top of each other.
+                    if chrome == nil { worldStrip }
                     standardLayout
                 }
             }

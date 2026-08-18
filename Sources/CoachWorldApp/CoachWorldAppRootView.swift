@@ -110,6 +110,10 @@ public struct CoachWorldAppRootView: View {
                         },
                         onContinue: { Task { await advance(store) } }
                     )
+                    .floodlitChrome(
+                        chrome(for: .inbox, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .opponentReportFilmRoom:
                 surface(store.opponentFilm, screen: .opponentReportFilmRoom) { model in
@@ -118,6 +122,10 @@ public struct CoachWorldAppRootView: View {
                         statusMessage: failure ?? store.statusMessage,
                         onClose: { closeCareer(in: store) },
                         onContinue: { Task { await advance(store) } }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .opponentReportFilmRoom, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .news:
@@ -277,6 +285,10 @@ public struct CoachWorldAppRootView: View {
                         },
                         onClose: { navigate(.coachingHQ, in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .gamePlan, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .practicePlan:
                 surface(store.practicePlan, screen: .practicePlan) { model in
@@ -287,6 +299,10 @@ public struct CoachWorldAppRootView: View {
                             Task { await setPracticePlan(plan, in: store) }
                         },
                         onClose: { navigate(.coachingHQ, in: store) }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .practicePlan, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .depthChart:
@@ -307,6 +323,10 @@ public struct CoachWorldAppRootView: View {
                         statusMessage: failure ?? store.statusMessage,
                         onClose: { navigate(teamHealthOrigin, in: store) },
                         onContinue: { Task { await advance(store) } }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .teamHealth, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .proOffseason:
@@ -476,12 +496,20 @@ public struct CoachWorldAppRootView: View {
                             Task { await persistOrReport(store) }
                         }
                     )
+                    .floodlitChrome(
+                        chrome(for: .aftermath, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .gameDetailBoxScore:
                 surface(store.aftermath, screen: .gameDetailBoxScore) { model in
                     GameDetailBoxScoreView(
                         model: model,
                         onClose: { navigate(.aftermath, in: store) }
+                    )
+                    .floodlitChrome(
+                        chrome(for: .gameDetailBoxScore, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
             case .careerHub:
@@ -699,6 +727,10 @@ public struct CoachWorldAppRootView: View {
                         showsContractNegotiation: store.proManagement != nil,
                         showsRecruitingBoard: store.recruitingBoard != nil
                     )
+                    .floodlitChrome(
+                        chrome(for: .coachingHQ, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             }
         }
@@ -728,6 +760,28 @@ public struct CoachWorldAppRootView: View {
                 palette: CoachWorldTokens.dark
             )
         }
+    }
+
+
+    /// The shared management chrome for a converted surface, or nil when the week hub's identity
+    /// has not been retained — the header prints the programme, so without it there is nothing
+    /// truthful to draw and the surface renders on the bare stage instead.
+    private func chrome(
+        for screen: CoachWorldScreenID,
+        in store: CoachWorldStore
+    ) -> FloodlitChromeReadModel? {
+        guard let hub = store.coachingHQ else { return nil }
+        return CoachWorldReadModelProvider.chrome(for: screen, hub: hub)
+    }
+
+    /// Routes an identity-header or icon-rail tap. Chrome navigation goes through the same
+    /// `navigate(_:in:)` every other route uses, so a rail tap cannot reach a screen the router
+    /// considers unreachable.
+    private func navigateChrome(_ intentID: CoachWorldIntentID, in store: CoachWorldStore) {
+        guard let destination = CoachWorldReadModelProvider.routedScreen(for: intentID) else {
+            return
+        }
+        navigate(destination, in: store)
     }
 
     private func navigate(_ destination: CoachWorldScreenID, in store: CoachWorldStore) {

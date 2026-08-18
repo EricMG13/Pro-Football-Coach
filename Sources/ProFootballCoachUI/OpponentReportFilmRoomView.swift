@@ -2,7 +2,13 @@ import SwiftUI
 
 /// Canonical screen-family entry for the observer-scoped opponent report / film room.
 /// The existing film composition remains the single implementation of the evidence surface.
-public struct OpponentReportFilmRoomView: View {
+public struct OpponentReportFilmRoomView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). This surface delegates its whole
+    /// composition, so it passes the chrome straight through to the view that draws it rather than
+    /// wrapping a second stage around one that already has one.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
     public let model: OpponentFilmReadModel
     public let statusMessage: String?
     public let onClose: () -> Void
@@ -32,5 +38,6 @@ public struct OpponentReportFilmRoomView: View {
             onClose: onClose,
             onContinue: onContinue
         )
+        .floodlitChrome(chrome, onNavigate: onNavigateChrome)
     }
 }

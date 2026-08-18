@@ -1,6 +1,11 @@
 import SwiftUI
 
-public struct AftermathView: View {
+public struct AftermathView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
     public let model: AftermathReadModel
     public let statusMessage: String?
     public let onContinue: () -> Void
@@ -21,7 +26,7 @@ public struct AftermathView: View {
 
     public var body: some View {
         let palette = CoachWorldTokens.dark
-        CoachWorldFloodlitStage(palette: palette, register: .broadcast) {
+        CoachWorldFloodlitStage(palette: palette, register: .broadcast, chrome: chrome, onNavigate: onNavigateChrome) {
             if dynamicTypeSize.isAccessibilitySize {
                 content(palette: palette).accessibilitySortPriority(100)
             } else {

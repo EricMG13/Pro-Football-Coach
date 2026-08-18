@@ -1,7 +1,12 @@
 import SwiftUI
 
 /// Detailed game/box-score family backed by the immutable post-game evidence projection.
-public struct GameDetailBoxScoreView: View {
+public struct GameDetailBoxScoreView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
     public let model: AftermathReadModel
     public let onClose: () -> Void
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -21,7 +26,7 @@ public struct GameDetailBoxScoreView: View {
     }
 
     private func content(palette: CoachWorldTokens.Palette) -> some View {
-        CoachWorldFloodlitStage(palette: palette, register: .broadcast) {
+        CoachWorldFloodlitStage(palette: palette, register: .broadcast, chrome: chrome, onNavigate: onNavigateChrome) {
             scrollContent(palette: palette)
         }
     }

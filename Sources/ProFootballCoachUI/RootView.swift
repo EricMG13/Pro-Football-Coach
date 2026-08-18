@@ -124,6 +124,10 @@ private struct DebugCoachingHQRoot: View {
                     onOpenCorrespondence: openCorrespondence,
                     onNavigate: navigate
                 )
+                .floodlitChrome(
+                    CoachWorldSampleData.chrome(for: .coachingHQ, world: .pitch),
+                    onNavigate: { statusMessage = "Navigated \($0.rawValue)" }
+                )
             }
         }
         .background(CoachWorldTokens.dark.page.color)
@@ -180,8 +184,8 @@ private struct DebugCoachingHQRoot: View {
     /// The shared chrome with the eight composition patterns inside it, so the stage and the
     /// grammar can be seen together in one capture.
     private var floodlitChromeProof: some View {
-        CoachWorldFloodlitSurface(
-            model: CoachWorldSampleData.chrome(for: .schemeBook, world: .facility),
+        CoachWorldFloodlitStage(
+            chrome: CoachWorldSampleData.chrome(for: .schemeBook, world: .facility),
             onNavigate: { statusMessage = "Navigated \($0.rawValue)" }
         ) {
             HStack(alignment: .top, spacing: CoachWorldTokens.Gap.lg) {

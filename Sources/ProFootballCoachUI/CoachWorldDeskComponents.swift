@@ -117,26 +117,55 @@ struct CoachWorldFloodlitStage<Content: View>: View {
 
     let palette: CoachWorldTokens.Palette
     let register: CoachWorldRegister
+    /// The shared management chrome (`04` section 6.1c): world, identity header and icon rail.
+    ///
+    /// Supplying it is what converts a surface. The chrome carries its own world, which replaces
+    /// the desk backdrop — the management stage varies its world per screen, where the desk
+    /// register has only ever had one. Nil keeps the historical behaviour exactly, which is what
+    /// Match Day and the entry surfaces still want.
+    let chrome: FloodlitChromeReadModel?
+    let onNavigate: ((CoachWorldIntentID) -> Void)?
     @ViewBuilder let content: () -> Content
 
     init(
         palette: CoachWorldTokens.Palette = CoachWorldTokens.dark,
         register: CoachWorldRegister = .desk,
+        chrome: FloodlitChromeReadModel? = nil,
+        onNavigate: ((CoachWorldIntentID) -> Void)? = nil,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.palette = palette
         self.register = register
+        self.chrome = chrome
+        self.onNavigate = onNavigate
         self.content = content
     }
+
+    /// Ground, backdrop, grain and colour scheme have exactly one owner, so a surface cannot paint
+    /// its own and silently lose the world beneath it.
+    private var drawsWorld: Bool { chrome != nil || register == .desk }
 
     var body: some View {
         ZStack {
             palette.page.color
-            if register == .desk {
+            if let chrome {
+                CoachWorldWorldBackdrop(world: chrome.world, palette: palette)
+            } else if register == .desk {
                 CoachWorldFloodlitBackdrop(palette: palette)
             }
-            content()
-            if register == .desk, !reduceTransparency {
+
+            if let chrome {
+                CoachWorldFloodlitComposition(
+                    model: chrome,
+                    palette: palette,
+                    onNavigate: onNavigate ?? { _ in },
+                    content: content
+                )
+            } else {
+                content()
+            }
+
+            if drawsWorld, !reduceTransparency {
                 CoachWorldGrainOverlay()
             }
         }

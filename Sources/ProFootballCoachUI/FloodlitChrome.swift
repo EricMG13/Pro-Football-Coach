@@ -66,7 +66,9 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
     public let record: String
     /// `#21`, or nil when the programme is unranked — an absent ranking is not a ranking of zero.
     public let ranking: String?
-    public let conference: String
+    /// Nil when the programme's conference is not retained on this route. An absent conference is
+    /// not a wrong conference, so the header omits the slot rather than guessing.
+    public let conference: String?
     /// The right-hand context chip: `Sat · Halloran Tech`.
     public let context: String?
     public let contextOpponent: CoachWorldTeamReference?
@@ -82,7 +84,7 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
         club: CoachWorldTeamReference,
         record: String,
         ranking: String? = nil,
-        conference: String,
+        conference: String? = nil,
         context: String? = nil,
         contextOpponent: CoachWorldTeamReference? = nil,
         rail: [RailEntry] = [],
@@ -98,116 +100,6 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
         self.contextOpponent = contextOpponent
         self.rail = rail
         self.siblings = siblings
-    }
-}
-
-// MARK: - The stage
-
-/// The container every management surface renders inside.
-///
-/// Positions are absolute at the install floor, so the composition is the same on every device and
-/// only the content column stretches. The whole thing is `.aspectRatio`-fitted to the floor's own
-/// proportion for the same reason Match Day is: the design is composed, not reflowed.
-struct CoachWorldFloodlitSurface<Content: View>: View {
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-    private let model: FloodlitChromeReadModel
-    private let palette: CoachWorldTokens.Palette
-    private let onNavigate: (CoachWorldIntentID) -> Void
-    private let content: () -> Content
-
-    init(
-        model: FloodlitChromeReadModel,
-        palette: CoachWorldTokens.Palette = CoachWorldTokens.dark,
-        onNavigate: @escaping (CoachWorldIntentID) -> Void,
-        @ViewBuilder content: @escaping () -> Content
-    ) {
-        self.model = model
-        self.palette = palette
-        self.onNavigate = onNavigate
-        self.content = content
-    }
-
-    private var leadingInset: CGFloat {
-        model.showsIconRail
-            ? CoachWorldTokens.Stage.contentLeading
-            : CoachWorldTokens.Stage.railFreeLeading
-    }
-
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-            palette.page.color
-            CoachWorldWorldBackdrop(world: model.world, palette: palette)
-
-            if dynamicTypeSize.isAccessibilitySize {
-                // AX5 keeps the same information and drops the absolute composition: the header
-                // becomes a stacked block and the rail becomes a scrollable row, because a 44 pt
-                // rail of 7.5 pt labels cannot grow and stay a rail. `04` section 7.
-                accessibleLayout
-            } else {
-                standardLayout
-            }
-
-            if !reduceTransparency {
-                CoachWorldGrainOverlay()
-                    .blendMode(.overlay)
-                    .opacity(Chrome.grainOpacity)
-            }
-        }
-        .foregroundStyle(palette.contentPrimary.color)
-        .preferredColorScheme(.dark)
-        .accessibilityIdentifier("floodlit-surface")
-    }
-
-    private var standardLayout: some View {
-        ZStack(alignment: .topLeading) {
-            FloodlitIdentityHeader(model: model, palette: palette, onNavigate: onNavigate)
-                .frame(width: CoachWorldTokens.Stage.contentWidth, alignment: .leading)
-                .padding(.leading, CoachWorldTokens.Stage.contentLeading)
-                .padding(.top, CoachWorldTokens.Stage.headerTop)
-                .accessibilitySortPriority(100)
-
-            if model.showsIconRail {
-                FloodlitIconRail(
-                    entries: model.rail, current: model.screen, palette: palette,
-                    onNavigate: onNavigate
-                )
-                .frame(width: CoachWorldTokens.Stage.railWidth)
-                .padding(.leading, CoachWorldTokens.Stage.railLeading)
-                .padding(.top, CoachWorldTokens.Stage.railTop)
-                .accessibilitySortPriority(40)
-            }
-
-            content()
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .padding(.leading, leadingInset)
-                .padding(.trailing, CoachWorldTokens.Frame.gutter)
-                .padding(.top, CoachWorldTokens.Stage.contentTop)
-                .padding(.bottom, CoachWorldTokens.Frame.bottomInset)
-                .accessibilitySortPriority(80)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private var accessibleLayout: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
-                FloodlitIdentityHeader(model: model, palette: palette, onNavigate: onNavigate)
-                    .accessibilitySortPriority(100)
-                content()
-                    .accessibilitySortPriority(80)
-                if model.showsIconRail {
-                    FloodlitIconRail(
-                        entries: model.rail, current: model.screen, palette: palette,
-                        onNavigate: onNavigate, axis: .horizontal
-                    )
-                    .accessibilitySortPriority(40)
-                }
-            }
-            .padding(.horizontal, CoachWorldTokens.Pad.panel.h)
-            .padding(.vertical, CoachWorldTokens.Pad.panel.v)
-        }
     }
 }
 
@@ -450,13 +342,15 @@ struct FloodlitIdentityHeader: View {
                 .font(CoachWorldTokens.figure(Chrome.recordSize, weight: .semibold))
                 .foregroundStyle(CoachWorldTokens.Floodlit.clubInk.color.opacity(0.78))
                 .lineLimit(1)
-            Text(model.conference.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
-                .tracking(
-                    CoachWorldTokens.DisplaySize.tracking(0.2, at: CoachWorldTokens.DisplaySize.flag)
-                )
-                .foregroundStyle(CoachWorldTokens.Floodlit.clubInk.color.opacity(0.70))
-                .lineLimit(1)
+            if let conference = model.conference {
+                Text(conference.uppercased())
+                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                    .tracking(
+                        CoachWorldTokens.DisplaySize.tracking(0.2, at: CoachWorldTokens.DisplaySize.flag)
+                    )
+                    .foregroundStyle(CoachWorldTokens.Floodlit.clubInk.color.opacity(0.70))
+                    .lineLimit(1)
+            }
             Spacer(minLength: CoachWorldTokens.Gap.smPlus)
             if let context = model.context {
                 contextChip(context)
@@ -465,12 +359,18 @@ struct FloodlitIdentityHeader: View {
         .padding(.horizontal, CoachWorldTokens.Gap.md)
         .frame(minHeight: CoachWorldTokens.Stage.headerPrimaryRow)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "\(model.club.name), \(model.record)"
-                + (model.ranking.map { ", ranked \($0)" } ?? "")
-                + ", \(model.conference)"
-                + (model.context.map { ". Next: \($0)" } ?? "")
-        )
+        .accessibilityLabel(primaryRowLabel)
+    }
+
+
+    /// Assembled in steps rather than as one chained expression — the chained form defeated the
+    /// type checker outright.
+    private var primaryRowLabel: String {
+        var parts: [String] = ["\(model.club.name), \(model.record)"]
+        if let ranking = model.ranking { parts.append("ranked \(ranking)") }
+        if let conference = model.conference { parts.append(conference) }
+        if let context = model.context { parts.append("Next: \(context)") }
+        return parts.joined(separator: ", ")
     }
 
     private func contextChip(_ context: String) -> some View {
