@@ -248,7 +248,7 @@ func runDesignContractTests() {
             // CoachWorldStatusChip.Symbol, CoachWorldDeltaMark and MatchDayControlSymbol prove that
             // for their own sites with a dedicated canon-sync test; the rest were checked by hand
             // when this pin was set and must be re-checked by hand when it moves.
-            let knownNonLiteralSites = 10
+            let knownNonLiteralSites = 9
             var found = 0
             var byFile: [String] = []
             for file in swiftFilesImportingUIFramework() {
