@@ -55,6 +55,23 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 >
 > The full per-milestone record, including every divergence from the handoff and why, is
 > `docs/PORT-LOG.md`.
+>
+> **2026-08-18, later — adversarial review against the reference.** The three milestones delivered
+> the chrome, the tokens, the eight patterns and Match Day. They did **not** port the interiors of
+> the management surfaces, and against the standing instruction that the front end must look
+> exactly like the reference, that is the outstanding work.
+> `docs/reviews/2026-08-18-floodlit-adversarial-review.md` records 23 findings from four surfaces
+> sampled of 62.
+>
+> Closed since: the three chrome defects (surface-specific header chip, short-form sibling links,
+> `ALL 62` rail entry) and the compositions of **week hub**, **personnel** and **recruiting**.
+>
+> Three findings will not close without a decision or engine work, and are named rather than
+> quietly carried: **F-09** (rating uncertainty — no scouting-confidence model exists, and deriving
+> one would print invented figures as fact); **F-19** (the reference's League is a standings table,
+> ours is a geographic map — the handoff's own text and its rendering disagree, and replacing it
+> discards a working surface); and **F-01** for the remaining ~59 surfaces, which are still
+> chrome-only.
 
 
 > **2026-08-10 master-plan rebaseline:** the attached Master Build Documentation is now the primary
