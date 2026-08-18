@@ -17,53 +17,107 @@ public struct StatisticsLeadersView: View, CoachWorldChromedSurface {
         self.model = model; self.statusMessage = statusMessage; self.onClose = onClose
     }
 
-    public var body: some View {
-        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
-            VStack(spacing: .zero) {
-                HStack(spacing: CoachWorldTokens.Space.sm) {
-                    Button("League", action: onClose)
-                        .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
-                               minHeight: CoachWorldTokens.Shape.minimumTarget)
-                    VStack(alignment: .leading, spacing: .zero) {
-                        Text("Statistics & leaders").font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                        Text(model.seasonLabel + " · " + model.weekLabel)
-                            .font(CoachWorldTokens.TypeRole.caption)
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, CoachWorldTokens.Space.sm)
-                .background(palette.raised.color)
-                if let statusMessage { Text(statusMessage).frame(maxWidth: .infinity, alignment: .leading) }
-                if model.rows.isEmpty {
-                    CoachWorldSystemState(.empty("No player statistics recorded."), palette: palette)
-                } else {
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-                            ForEach(model.rows) { row in
-                                HStack {
-                                    VStack(alignment: .leading, spacing: .zero) {
-                                        Text(row.category).font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-                                        Text(row.player.name)
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text(row.team.name).font(CoachWorldTokens.TypeRole.caption)
-                                    Text(String(row.value)).monospacedDigit().fontWeight(.bold)
-                                }
-                                .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-                                .accessibilityElement(children: .combine)
-                                .accessibilityLabel("\(row.category), \(row.player.name), \(row.value), \(row.team.name)")
-                            }
-                        }
-                        .padding(CoachWorldTokens.Space.md)
-                    }
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
-        .accessibilitySortPriority(100)
-    }
-
     private var palette: CoachWorldTokens.Palette {
         CoachWorldTokens.dark
     }
+
+    public var body: some View {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
+            scrollContent
+        }
+        .accessibilitySortPriority(100)
+    }
+
+    private var scrollContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+                header
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.callout)
+                        .foregroundStyle(palette.stateWarning.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if model.rows.isEmpty {
+                    CoachWorldSystemState(
+                        .empty("No player statistics recorded."),
+                        palette: palette
+                    )
+                } else if dynamicTypeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xxs) {
+                        ForEach(model.rows) { row in leaderRow(row) }
+                    }
+                } else {
+                    LazyVGrid(
+                        columns: [
+                            GridItem(.flexible(), spacing: CoachWorldTokens.Gap.xl),
+                            GridItem(.flexible(), spacing: CoachWorldTokens.Gap.xl),
+                        ],
+                        alignment: .leading,
+                        spacing: CoachWorldTokens.Gap.xxs
+                    ) {
+                        ForEach(model.rows) { row in leaderRow(row) }
+                    }
+                }
+            }
+            .padding(.vertical, CoachWorldTokens.Pad.panel.v)
+        }
+        .safeAreaInset(edge: .bottom) { footer }
+    }
+
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.md) {
+            FloodlitLabel3("Statistics and leaders", palette: palette)
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            FloodlitLabel3(
+                "\(model.seasonLabel) \u{00B7} \(model.weekLabel)", palette: palette
+            )
+        }
+    }
+
+    /// One leader: what the category is, who leads it, for whom, and by how much.
+    private func leaderRow(_ row: StatisticsLeadersReadModel.Row) -> some View {
+        HStack(spacing: CoachWorldTokens.Gap.mdPlus) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                FloodlitLabel3(row.category, palette: palette)
+                Text(row.player.name.uppercased())
+                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Text(row.team.name)
+                .font(CoachWorldTokens.TypeRole.caption)
+                .foregroundStyle(palette.contentQuiet.color)
+                .lineLimit(1)
+                .frame(width: StatisticsMetric.teamColumn, alignment: .leading)
+            Text("\(row.value)")
+                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.title, weight: .semibold))
+                .frame(width: StatisticsMetric.valueColumn, alignment: .trailing)
+        }
+        .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+        .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+        .background(CoachWorldCutCorner.row.fill(palette.work.color.opacity(StatisticsMetric.rowFill)))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "\(row.category): \(row.player.name), \(row.team.name), \(row.value)"
+        )
+    }
+
+    private var footer: some View {
+        HStack(spacing: CoachWorldTokens.Gap.mdPlus) {
+            Text("Season totals to date. Nobody is projected forward.")
+                .font(CoachWorldTokens.TypeRole.callout)
+                .foregroundStyle(palette.contentSecondary.color)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            FloodlitCommittingAction("Back to the league", action: onClose)
+        }
+        .padding(.top, CoachWorldTokens.Gap.xs)
+    }
+}
+
+private enum StatisticsMetric {
+    static let teamColumn: CGFloat = 84
+    static let valueColumn: CGFloat = 58
+    static let rowFill = 0.32
 }
