@@ -35,113 +35,211 @@ public struct StandingsView: View, CoachWorldChromedSurface {
 
     public var body: some View {
         CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
-            VStack(spacing: .zero) {
-                topBar
+            scrollContent
+        }
+        .accessibilitySortPriority(100)
+    }
+
+    private var scrollContent: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: .zero) {
+                header
                 if let statusMessage {
                     Text(statusMessage)
                         .font(CoachWorldTokens.TypeRole.callout)
                         .foregroundStyle(palette.stateWarning.color)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, CoachWorldTokens.Space.md)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                ScrollView {
-                    LazyVStack(spacing: .zero) {
-                        headerRow
-                        ForEach(Array(model.rows.enumerated()), id: \.element.id) { index, row in
-                            standingsRow(index: index, row: row)
-                        }
+                if !dynamicTypeSize.isAccessibilitySize { columnHeads }
+                if model.rows.isEmpty {
+                    CoachWorldSystemState(
+                        .empty("No standings are recorded for this tier."),
+                        palette: palette
+                    )
+                } else {
+                    ForEach(Array(model.rows.enumerated()), id: \.element.id) { index, row in
+                        standingsRow(index: index, row: row)
                     }
-                    .padding(CoachWorldTokens.Space.md)
                 }
             }
+            .padding(.vertical, CoachWorldTokens.Pad.panel.v)
         }
-        .frame(maxWidth: .infinity,
-               alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center)
-        .accessibilitySortPriority(100)
+        .safeAreaInset(edge: .bottom) { footer }
     }
 
-    private var topBar: some View {
-        HStack(spacing: CoachWorldTokens.Space.sm) {
-            Button("League", action: onClose)
-                .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
-                       minHeight: CoachWorldTokens.Shape.minimumTarget)
-            VStack(alignment: .leading, spacing: .zero) {
-                Text("\(model.tier) standings")
-                    .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-                Text("\(model.seasonLabel) · \(model.weekLabel)")
-                    .font(CoachWorldTokens.TypeRole.caption)
-                    .foregroundStyle(palette.contentSecondary.color)
-            }
-            Spacer()
-            Button(action: onContinue) {
-                Label("Continue", systemImage: "forward.end.fill")
-            }
-            .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.md) {
+            FloodlitLabel3("\(model.tier) standings", palette: palette)
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            FloodlitLabel3(
+                "\(model.seasonLabel) \u{00B7} \(model.weekLabel)", palette: palette
+            )
         }
-        .padding(.horizontal, CoachWorldTokens.Space.sm)
-        .background(palette.raised.color)
+        .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+        .padding(.bottom, CoachWorldTokens.Gap.xs)
     }
 
-    private var headerRow: some View {
-        HStack(spacing: CoachWorldTokens.Space.xs) {
-            Text("#").frame(width: 24, alignment: .leading)
-            Text("TEAM").frame(maxWidth: .infinity, alignment: .leading)
-            Text("REC").frame(width: 76, alignment: .leading)
-            Text("CONF").frame(width: 76, alignment: .leading)
-            Text("PF–PA").frame(width: 70, alignment: .trailing)
+    private var columnHeads: some View {
+        HStack(spacing: CoachWorldTokens.Gap.md) {
+            FloodlitLabel3("#", palette: palette)
+                .frame(width: StandingsMetric.rankColumn, alignment: .leading)
+            FloodlitLabel3("Team", palette: palette)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            FloodlitLabel3("Rec", palette: palette)
+                .frame(width: StandingsMetric.recordColumn, alignment: .leading)
+            FloodlitLabel3("Conf", palette: palette)
+                .frame(width: StandingsMetric.conferenceColumn, alignment: .leading)
+            FloodlitLabel3("For and against", palette: palette)
+                .frame(width: StandingsMetric.pointsColumn, alignment: .trailing)
         }
-        .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
-        .foregroundStyle(palette.contentSecondary.color)
-        .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Standings columns: rank, team, record, conference record, points for and against")
+        .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+        .frame(minHeight: StandingsMetric.headHeight)
+        .accessibilityHidden(true)
     }
 
+    /// The coach's own programme is the one row a coach looks for, so it takes the selected
+    /// treatment -- a gold hairline, never a fill, which `04` section 6.5 reserves for the
+    /// committing action.
     private func standingsRow(index: Int, row: StandingsReadModel.Row) -> some View {
         Button {
-            guard let id = UUID(uuidString: row.id) else { return }
-            onSelectTeam(id)
+            if let id = UUID(uuidString: row.team.stableID) { onSelectTeam(id) }
         } label: {
-            HStack(spacing: CoachWorldTokens.Space.xs) {
-            Text("\(index + 1)")
-                .frame(width: 24, alignment: .leading)
-                .monospacedDigit()
-            VStack(alignment: .leading, spacing: .zero) {
-                Text(row.team.name)
-                    .fontWeight(row.isControlled ? .bold : .regular)
-                Text(row.team.abbreviation)
-                    .font(CoachWorldTokens.TypeRole.caption)
-                    .foregroundStyle(palette.contentSecondary.color)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            Text(row.record)
-                .frame(width: 76, alignment: .leading)
-                .monospacedDigit()
-            Text(row.conferenceRecord)
-                .frame(width: 76, alignment: .leading)
-                .monospacedDigit()
-            Text("\(row.pointsFor)–\(row.pointsAgainst)")
-                .frame(width: 70, alignment: .trailing)
-                .monospacedDigit()
-            }
+            rowBody(index: index, row: row)
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, CoachWorldTokens.Space.xs)
-        .frame(minHeight: 54)
-        .background(
-            row.isControlled
-                ? palette.collegeIdentity.color.opacity(0.14)
-                : Color.clear
-        )
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity))
-                .frame(height: CoachWorldTokens.Shape.hairline)
-        }
-        .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "\(index + 1), \(row.team.name), \(row.record), conference \(row.conferenceRecord), "
+            "\(index + 1). \(row.team.name), \(recordLabel(row)), "
+                + "conference \(row.conferenceRecord), "
                 + "\(row.pointsFor) points for, \(row.pointsAgainst) against"
+                + (row.isControlled ? ". Your programme." : "")
         )
     }
+
+    /// At accessibility sizes the five columns stack into a block. A table that keeps its columns
+    /// at AX5 truncates the team name, which is the one field the row exists to state
+    /// (`04` section 7.1).
+    @ViewBuilder
+    private func rowBody(index: Int, row: StandingsReadModel.Row) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                Text("\(index + 1). \(row.team.name)")
+                    .font(CoachWorldTokens.TypeRole.headline.weight(.bold))
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "\(recordLabel(row)) \u{00B7} conference \(row.conferenceRecord)"
+                )
+                .font(CoachWorldTokens.TypeRole.body)
+                .fixedSize(horizontal: false, vertical: true)
+                Text("\(row.pointsFor) for, \(row.pointsAgainst) against")
+                    .font(CoachWorldTokens.TypeRole.body)
+                    .foregroundStyle(palette.contentSecondary.color)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(CoachWorldTokens.Pad.row.h)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                CoachWorldCutCorner.row.fill(
+                    palette.work.color.opacity(
+                        row.isControlled ? StandingsMetric.ownFill : StandingsMetric.rowFill
+                    )
+                )
+            )
+            .overlay {
+                if row.isControlled {
+                    CoachWorldCutCorner.row.stroke(
+                        palette.actionPrimary.color, lineWidth: CoachWorldTokens.Shape.hairline
+                    )
+                }
+            }
+            .contentShape(CoachWorldCutCorner.row)
+        } else {
+            HStack(spacing: CoachWorldTokens.Gap.md) {
+                Text("\(index + 1)")
+                    .font(
+                        CoachWorldTokens.figure(
+                            CoachWorldTokens.DisplaySize.row, weight: .semibold
+                        )
+                    )
+                    .foregroundStyle(
+                        row.isControlled ? palette.actionPrimary.color : palette.contentQuiet.color
+                    )
+                    .frame(width: StandingsMetric.rankColumn, alignment: .leading)
+                Text(row.team.name.uppercased())
+                    .font(
+                        CoachWorldTokens.display(
+                            CoachWorldTokens.DisplaySize.row,
+                            weight: row.isControlled ? .heavy : .bold
+                        )
+                    )
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(recordLabel(row))
+                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .frame(width: StandingsMetric.recordColumn, alignment: .leading)
+                Text(row.conferenceRecord)
+                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .foregroundStyle(palette.contentSecondary.color)
+                    .frame(width: StandingsMetric.conferenceColumn, alignment: .leading)
+                Text("\(row.pointsFor)\u{2013}\(row.pointsAgainst)")
+                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .foregroundStyle(palette.contentSecondary.color)
+                    .frame(width: StandingsMetric.pointsColumn, alignment: .trailing)
+            }
+            .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+            .frame(minHeight: StandingsMetric.rowHeight)
+            .background(
+                CoachWorldCutCorner.row.fill(
+                    palette.work.color.opacity(
+                        row.isControlled ? StandingsMetric.ownFill : StandingsMetric.rowFill
+                    )
+                )
+            )
+            .overlay {
+                if row.isControlled {
+                    CoachWorldCutCorner.row.stroke(
+                        palette.actionPrimary.color, lineWidth: CoachWorldTokens.Shape.hairline
+                    )
+                }
+            }
+            .contentShape(CoachWorldCutCorner.row)
+        }
+    }
+
+    private func recordLabel(_ row: StandingsReadModel.Row) -> String {
+        row.ties > 0
+            ? "\(row.wins)-\(row.losses)-\(row.ties)"
+            : "\(row.wins)-\(row.losses)"
+    }
+
+    private var footer: some View {
+        HStack(spacing: CoachWorldTokens.Gap.mdPlus) {
+            Text(note)
+                .font(CoachWorldTokens.TypeRole.callout)
+                .foregroundStyle(palette.contentSecondary.color)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            FloodlitCommittingAction("Continue", action: onContinue)
+        }
+        .padding(.top, CoachWorldTokens.Gap.xs)
+    }
+
+    /// What the table is and is not. It is the recorded season to date, not a projection of where
+    /// anyone finishes.
+    private var note: String {
+        let count = model.rows.count
+        let teams = count == 1 ? "one programme" : "\(count) programmes"
+        return "\(teams), as the season has actually been played. Nothing here is a forecast."
+    }
+}
+
+private enum StandingsMetric {
+    static let rankColumn: CGFloat = 22
+    static let recordColumn: CGFloat = 56
+    static let conferenceColumn: CGFloat = 56
+    static let pointsColumn: CGFloat = 84
+    static let rowHeight: CGFloat = 29
+    static let headHeight: CGFloat = 17
+    static let rowFill = 0.32
+    static let ownFill = 0.5
 }
