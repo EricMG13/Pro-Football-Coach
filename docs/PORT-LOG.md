@@ -654,3 +654,16 @@ leading edge.
 / 0 pending throughout.
 
 **Verified:** `--core-contracts` (202 / 2228) and `--design-contracts` (29 / 613) green.
+
+### Visual verification scope — stated plainly
+
+Two families were confirmed **on a simulator**: Coaching HQ (weekly command) and Roster
+(personnel), both rendering inside the chrome with the correct rail entry active, the correct
+family siblings, and one navigation rather than two. The chrome-and-patterns proof surface covers
+the grammar itself.
+
+The other four families are verified by **compilation, the contract suites, and the attachment
+sweep** — not by screenshot. That is weaker evidence and is named as such rather than implied. The
+sweep is the part that makes it meaningful: it checks every type conforming to
+`CoachWorldChromedSurface` actually consumes its chrome, so "it compiles" cannot hide a surface
+that silently renders without one.

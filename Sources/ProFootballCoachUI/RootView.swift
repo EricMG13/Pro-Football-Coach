@@ -74,6 +74,10 @@ private struct DebugCoachingHQRoot: View {
                     onNavigate: navigate,
                     onInspectDevelopment: inspectDevelopment
                 )
+                .floodlitChrome(
+                    CoachWorldSampleData.chrome(for: .roster, world: .facility),
+                    onNavigate: { statusMessage = "Navigated \($0.rawValue)" }
+                )
             } else if currentScreen == .recruitingBoard {
                 RecruitingBoardView(
                     model: recruitingBoard,
