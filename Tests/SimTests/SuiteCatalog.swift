@@ -8,13 +8,9 @@ enum ReleaseGateID: String, CaseIterable, Sendable {
     case reduceMotion = "ReduceMotionContractTest"
     case voiceOver = "VoiceOverLabelTest"
     case touchTarget = "TouchTargetTest"
-    case agencyBudget = "AgencyBudgetTests"
-    case performanceBudget = "PerformanceBudgetTests"
     case determinism = "DeterminismTests"
-    case twoTierConsistency = "TwoTierConsistencyTests"
     case reachability = "ReachabilityTest"
     case errorSurface = "ErrorSurfaceTest"
-    case smallestDeviceLayout = "SmallestDeviceLayoutTest"
     case accessibility = "AccessibilityContractTests"
     case saveOffMainActor = "SaveOffMainActorTest"
     case saveCoalescing = "SaveCoalescingTest"
@@ -57,10 +53,9 @@ struct SuiteCatalog: Sendable {
     static func lane(for gate: ReleaseGateID) -> String {
         switch gate {
         case .commitmentCoverage, .contrastByConstruction, .dynamicType, .reduceMotion,
-             .voiceOver, .touchTarget, .reachability, .errorSurface, .smallestDeviceLayout,
+             .voiceOver, .touchTarget, .reachability, .errorSurface,
              .accessibility: return "accessibility"
-        case .agencyBudget, .performanceBudget: return "performance"
-        case .determinism, .twoTierConsistency: return "determinism"
+        case .determinism: return "determinism"
         case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly: return "persistence"
         case .m1Soak, .m2Soak: return "soaks"
         case .legal: return "legal"
@@ -83,8 +78,6 @@ struct SuiteCatalog: Sendable {
             return Runner(command: "--design-contracts", function: "runAccessibilityReflowTests")
         case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly:
             return Runner(command: "--save-document", function: "runSaveDocumentTests")
-        case .agencyBudget, .performanceBudget, .twoTierConsistency, .smallestDeviceLayout:
-            return nil
         case .m1Soak:
             return Runner(command: "--m1-soak", function: "runM1SoakTests")
         case .m2Soak:
