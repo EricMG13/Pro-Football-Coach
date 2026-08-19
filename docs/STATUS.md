@@ -19,6 +19,55 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-19, still later still still — Phase 3 sweep, continued: 9 files fully migrated, one new
+> mechanism helper, one genuine mechanism limitation found and documented in place.** Continuing
+> past the first installment (`CoachWorldScaledType.swift` + `FloodlitPatterns.swift`, recorded
+> below): `MatchDayScoreBug.swift` (17 sites), `FloodlitChrome.swift` (7 of 8 — the icon rail label
+> deferred, fixed in both dimensions with a no-op `minimumScaleFactor`), `TeamHealthView.swift` (8),
+> `ProOffseasonView.swift` (8), `ProManagementView.swift` (8), `DevelopmentPlanView.swift` (8),
+> `CoachingHQView.swift` (8), `PlayerProfileView.swift` (7), and `MatchDayField.swift` (5 of 7) are
+> now fully on `coachWorldDisplay`/`coachWorldFigure`. 60 of 217 non-scaling sites closed.
+>
+> **New: `coachWorldIcon(_:relativeTo:weight:)`**, added to `CoachWorldScaledType.swift`. Five of the
+> seven raw `.font(.system(size:weight:))` sites found across the module size an
+> `Image(systemName:)` glyph, not text — `coachWorldDisplay`'s condensed width and
+> `coachWorldFigure`'s monospaced digits are both wrong for a symbol, so this is a third, plain
+> helper (default `weight: .regular`, matching SF Symbol convention rather than display type's bold).
+>
+> **Genuine mechanism limitation found and left in place, not routed around
+> (`MatchDayField.swift`'s `drawYardNumbers`).** The two `Paint.numberSize` sites paint the yard-line
+> numbers by resolving `Text` through `GraphicsContext.resolve(...)` inside a `private static func`
+> taking `inout GraphicsContext` — no `self`, no `@Environment`, so `@ScaledMetric` cannot be used
+> there at all. This is not a per-site judgement call like the fixed-frame deferrals elsewhere; it is
+> a different mechanism (Canvas-drawn text) that the `ViewModifier`-based approach cannot reach. A
+> real fix needs a scaled size computed in `FieldPlane`'s body (a genuine `View`) threaded down as a
+> parameter, plus extending `FieldPlane`'s custom `Equatable` conformance — used for `.equatable()`
+> render-suppression — to key on the environment's dynamic type category, since otherwise the raster
+> would never redraw when text size changes even after the size itself is threaded through. Left
+> documented in a code comment at the call site rather than silently migrated or silently skipped.
+>
+> Established per-file policy, applied consistently across all nine: migrate every token whose
+> container is flexible, min-only, or already carries a working (non-1.0) `minimumScaleFactor`;
+> leave existing `lineLimit(1)` clamps as a graceful-truncation policy where no established local
+> reflow convention exists; where a file already pairs `dynamicTypeSize.isAccessibilitySize` with a
+> `lineLimit` choice elsewhere in the same file, extend that same convention to sibling sites rather
+> than leave one behind (`ProOffseasonView.swift`, `ProManagementView.swift`); defer only sites fixed
+> in *both* width and height with no working shrink-back.
+>
+> **UNVERIFIED — never compiled.** Every file checked by hand for paren/brace balance with line
+> comments stripped (a bare full-text count false-alarmed on `CoachWorldScaledType.swift`'s own doc
+> comments, which quote partial code patterns like `` `.system(size:` `` deliberately unbalanced in
+> prose — confirmed a false positive, not a defect, before moving on). One real mistake caught and
+> fixed before commit: an early edit accidentally set `coachWorldFigure`'s `monospacedDigit` to
+> `false` while adding the icon helper; caught on re-read of the diff, not after the fact. None of
+> this is a compiler. Files touched: `Sources/ProFootballCoachUI/CoachWorldScaledType.swift`,
+> `MatchDayScoreBug.swift`, `FloodlitChrome.swift`, `TeamHealthView.swift`, `ProOffseasonView.swift`,
+> `ProManagementView.swift`, `DevelopmentPlanView.swift`, `CoachingHQView.swift`,
+> `PlayerProfileView.swift`, `MatchDayField.swift`.
+>
+> **Remaining:** roughly 30 files / 157 sites (see the file-by-file count taken at sweep start, still
+> accurate modulo the nine above). Continuing in the same order (by site count, descending).
+
 > **2026-08-19, still later still — merged `main` and withdrew Phase 0's `Disposition` mechanism in
 > favour of `main`'s own, simpler fix for the same defect.** While this branch was mid-flight,
 > `main` gained commit `91a108d` ("remove unimplemented release gates", owner + Codex), which
