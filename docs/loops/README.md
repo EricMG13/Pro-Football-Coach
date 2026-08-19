@@ -88,10 +88,14 @@ than hypothetical, so they are the ones with something concrete to bite on:
 - **919** — `SuiteCatalog.runner` returns `nil` for four registered gates: `AgencyBudgetTests`,
   `PerformanceBudgetTests`, `TwoTierConsistencyTests` and `SmallestDeviceLayoutTest`. Three of those are
   named in `PRODUCT.md`'s commitment table. `CommitmentCoverageTest` asserts both that every commitment
-  names a gate with a runnable command and that no registered gate lacks one, so on a plain reading of
-  the source the `--commitment-coverage` suite should be failing today. That reading has not been run
-  here — see the caveat below.
-- **906** and **915** build two of those four runners.
+  names a gate with a runnable command and that no registered gate lacks one, so the commitment table
+  currently promises three guarantees that nothing can run.
+
+  **This is confirmed, not inferred.** CI on `main` fails on it: 919 tests, 770,087 checks, two failing
+  tests, seven failed checks, all `Commitment coverage` at `SuiteCatalog.swift:128` and `:143`. Every
+  other suite in the full lane is green. It has been red on `main` since `e3b360d`
+  (2026-08-19), so the release-gate loop has a live failure to close rather than a hypothetical one.
+- **906** and **915** build two of those four runners, which is what closing 919 needs.
 
 ## Running one
 
@@ -113,4 +117,6 @@ apply to every loop and do not need repeating in the request.
 - **The published Loop Library catalog was never read** — the domain is egress-blocked. Overlap with
   published loops is therefore unchecked, and these are project-local records, not published entries.
   The `901`–`919` block is a local numbering; Loop Library numbers are assigned at publication.
-- **The failing-gate reading in "Where to start" is a reading of the source, not a test result.**
+- **The failing-gate finding in "Where to start" is the one claim here backed by a real run** — CI on
+  `main` and on this branch, not by anything executed locally. Its remedy is untested: nobody has built
+  the four missing runners, so whether closing them exposes further failures is unknown.
