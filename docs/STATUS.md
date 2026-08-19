@@ -19,6 +19,64 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-19, still later — Phase 3 of the systemic-defect remediation plan (S-0, Dynamic Type),
+> first installment: the scaling mechanism, plus a first migrated file.** This phase is the largest
+> of the four and is **not complete** — see below for exactly what is and is not done.
+>
+> **The mechanism, `Sources/ProFootballCoachUI/CoachWorldScaledType.swift`.** `@ScaledMetric` cannot
+> live inside a static function returning a bare `Font` (`CoachWorldTokens.display`/`figure`'s
+> shape) — it has to be a stored property SwiftUI re-evaluates against the live environment. New
+> file follows `CoachWorldMotion.swift`'s established shape exactly: a private `ViewModifier` whose
+> `@ScaledMetric` is seeded from a caller-supplied base size via the underscored-backing-storage
+> initialiser (`_size = ScaledMetric(wrappedValue: size, relativeTo: textStyle)`), and two `View`
+> extension methods, `coachWorldDisplay`/`coachWorldFigure`, as the scaling replacements for
+> `CoachWorldTokens.display`/`figure`. `relativeTo:` defaults to `.body` — SwiftUI's own default,
+> and a deliberate, documented choice rather than a canon-derived mapping, since canon gives an exact
+> text-style mapping only for the six semantic roles (`TypeRole`, already implemented, already
+> scaling) and none for `DisplaySize`'s granular numeric scale.
+>
+> Verified as carefully as this environment allows: the underscored-backing-storage pattern is
+> checked against `@State`'s well-documented equivalent and against `ScaledMetric`'s two public
+> inits; every API called (`Font.system(size:weight:)`, `.width(.condensed)`, `.monospacedDigit()`)
+> is the exact call the original `display()`/`figure()` functions already made, just relocated into
+> a property-wrapper-backed context — so at the *default* content size category, before any scaling
+> applies, output is provably identical to today's. Checked by hand that the new file does not trip
+> `ContractTests`' design-token-literal scanner (every `size:`-labelled argument in it is a type
+> annotation or a variable, never a bare number).
+>
+> **First file migrated in full: `FloodlitPatterns.swift`**, chosen because `FloodlitLabel3` alone is
+> used across roughly fifteen other view files, so fixing it once fixes every one of them without
+> touching the fifteen. Six of nine call sites moved to `.coachWorldDisplay`/`.coachWorldFigure`:
+> `FloodlitLabel3`, `FloodlitFlag`, `CoachWorldConfidenceTag`, `FloodlitPill`, and the two flowing
+> `FloodlitStaffVoice`/`FloodlitCostLine` lines. The four with a hard `.lineLimit(1)` also gained
+> `dynamicTypeSize.isAccessibilitySize ? nil : 1` — text that scales but stays clipped at one line
+> just cuts off the larger glyphs instead of the small ones, which `04` §6.2 does not sanction (it
+> sanctions *reflow*, not *loss*). Checked before relaxing each one that its container can actually
+> grow: `FloodlitPill`'s frame is a `minHeight`, not a fixed height.
+>
+> **Three of the nine deliberately NOT migrated in this pass**, and this is a judgement call, not an
+> oversight: `FloodlitArcGauge`'s figure, `FloodlitAttributeDial`'s rating, and
+> `FloodlitStaffVoice`'s monogram all centre text inside a frame fixed in **both** width and height
+> (a circular gauge, a square badge). Scaling the number without also reworking that fixed geometry
+> risks the glyphs overflowing a ring or badge that cannot grow with them — a real, plausible failure
+> mode this environment cannot render to check. Left as static `.font(...)` calls pending a
+> considered fix (grow the frame too, or accept and test a bound on the overflow) rather than guessed
+> at.
+>
+> **What remains.** 217 non-scaling font call sites exist across 47 files (`display()` 138,
+> `figure()` 68, `microLabel` 4, raw `.system(size:` 7); this installment closes 6. The review's own
+> framing holds: most call sites pass a named `DisplaySize` constant rather than a literal, so the
+> remaining work is concentrated in perhaps two dozen distinct constants reused across files, not 211
+> independent judgement calls — but each file still needs the same check this one got: does the
+> surrounding frame allow growth, and does an existing `.lineLimit` need the same AX5 relaxation.
+> Continuing file by file, each its own commit, per the plan.
+>
+> **UNVERIFIED — never compiled.** No `swift`/`xcodebuild` here, and this is the phase where that
+> matters most: nothing in this fix can be confirmed to actually *render* correctly, only to be
+> structurally sound and behaviourally unchanged at the default size. `04` §7.1 is explicit that the
+> rendered limb of this kind of contract stays open without a device. Files touched:
+> `Sources/ProFootballCoachUI/{CoachWorldScaledType (new),FloodlitPatterns}.swift`.
+
 > **2026-08-19, later yet — made five verification gates assert properties instead of substrings
 > (Phase 2 of the systemic-defect remediation plan).**
 >
