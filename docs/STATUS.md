@@ -19,6 +19,55 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-19, later still — made the family partition follow delegation and split off aliases
+> (Phase 1 of the systemic-defect remediation plan).** `Tests/SimTests/Suites/AccessibilityReflowTests.swift`:
+>
+> - `landedFamilies()` returns a three-way `(landed, pending, aliased)` split instead of two.
+>   `aliased` is the 15 retired routes (`isCanonicalTask == false`) that already have a view file
+>   but whose root-switch branch cannot execute (S-6) — they no longer count as `landed`, so the
+>   AX5/VoiceOver clauses (scoped to `landed`) stop certifying 16 dead files. The "Floodlit surface
+>   conversion" suite deliberately still scans `landed + aliased` — conversion is a property of a
+>   *file*, and the phase-completion tests it already contained name 14 of the 15 aliased screens
+>   by number; scoping that suite to `landed` alone would have broken those existing assertions.
+>   Caught and fixed before push, not after.
+> - `FamilyView` gained `renderedText`: the union of a family's own file and every file it wholly
+>   delegates into, resolved to a fixpoint by a new `renderingClosures()` that mirrors
+>   `floodlitConvertedTypes()`'s existing delegation rule exactly (same "draws its own state" guard).
+>   The two AX5/VoiceOver substring checks and Reduce Motion's Tier-B scan now read `renderedText`,
+>   not `text` (S-1) — `LegacyHistoryView.swift` renders four canonical families and previously held
+>   neither accessibility marker while each wrapper's own generic chrome did.
+> - Added a concrete regression test using a marker string ("No team records recorded.") that exists
+>   only inside `LegacyHistoryView`'s own body, not in the wrapper's mention of its initialiser —
+>   proving the union is load-bearing rather than checking a substring the wrapper already had.
+>
+> **What this does and does not change today.** The alias-partition half has an immediate effect:
+> 16 files no longer get certified. The delegation-closure half is mostly *infrastructure* for
+> Phase 2 — checked every canonical wrapper-style family this could plausibly affect
+> (`LegacyHistoryView`'s four, `NewCareerCoachIdentityView`, `OpponentReportFilmRoomView`,
+> `BracketPostseasonView`, `RankingsPlayoffPictureView`) and found each wrapper's *own* generic
+> modifier chain already independently contains both markers, so today's pass/fail boolean does not
+> flip for any of them. The union still matters: it is what lets Phase 2 inspect the delegate's real
+> content instead of the wrapper's incidental chrome, which the substring check alone cannot do.
+>
+> **A risk investigated and ruled out before trusting this, not after.** The delegation match is a
+> loose "file text contains `OtherFileBasename(`" substring, same as the mechanism it mirrors — the
+> concern was that this could pull unrelated shared-component files (which many views reference)
+> into a family's closure and make the checks vacuously pass everywhere. Checked by hand and by a
+> small script over every `.swift` file in `Sources/ProFootballCoachUI/`: the mechanism can only
+> match when a file's *basename* equals a type it declares, which structurally excludes the
+> multi-type pattern/vocabulary files (`FloodlitPatterns.swift`, `CoachWorldVocabulary.swift`,
+> `FloodlitChrome.swift`, `DesignTokens.swift` — all confirmed to hold neither marker regardless).
+> Every file that does carry a marker and is referenced by name from elsewhere is one of the
+> already-identified shared hosts (`CareerHubView`, `CollegeOffseasonView`, `ProOffseasonView`,
+> `CompetitionOverviewView`, `ProManagementView`, `StaffRoomView`, `GamePlanView`, `DepthChartView`,
+> `NewCareerSetupView`) — the exact pattern this fix targets, not a false positive.
+>
+> **UNVERIFIED — never compiled.** No `swift`/`xcodebuild` here. The fixpoint's termination was
+> checked by hand (each file's closure set only grows, bounded by the file count, so it terminates);
+> the tuple-shape change was traced through all 12 call sites across both files. None of that is a
+> compiler. Files touched: `Tests/SimTests/Suites/AccessibilityReflowTests.swift`,
+> `Tests/SimTests/Suites/ReduceMotionContractTests.swift`.
+
 > **2026-08-19, later — gave the release-gate catalog an explicit unwritten state (Phase 0 of the
 > systemic-defect remediation plan).** `Tests/SimTests/SuiteCatalog.swift`'s `Entry.runner: Runner?`
 > is replaced by `Entry.disposition: Disposition`, an enum of `.runnable(Runner)` or
