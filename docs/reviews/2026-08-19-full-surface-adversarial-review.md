@@ -123,6 +123,48 @@ expect(chrome.contains("static let familySize: CGFloat = 9")
 
 It string-matches to **lock in** 9 pt, and calls that protecting a readable floor.
 
+### S-8 [P1] The Match Day contrast gate measures a colour the field never draws
+
+The fifth and most complete instance of the same defect. `ContractTests.swift:2085`:
+
+```swift
+expect(contrastRatio(palette.fieldLine, palette.fieldTurf) >= 3,
+       "\(name) field lines must meet 3:1")
+```
+
+`grep fieldTurf MatchDayField.swift` returns **nothing**. The shipped field never draws that token.
+Its ground is a five-stop gradient from `Floodlit.turfCrown` to `Floodlit.turfNight` (`:76-80`), and
+the yard numbers are drawn at `line.opacity(0.33)` (`:284`, `Paint.number = 0.33` at `:831`).
+
+Composited against the stops the field actually paints, the yard numbers measure **1.92:1** at the
+top row and **2.84:1** at the bottom, against a 3:1 floor for large text. The gate asserts an opaque
+pair that is not on screen, passes green, and the pair that is on screen fails. Raising
+`Paint.number` fixes the pixels; it does not fix the gate, which must enumerate **composited draw
+pairs** by construction.
+
+### S-9 [P2] `docs/STATUS.md` carries a factual claim this review refutes
+
+STATUS.md:86 lists F-09 as one of three findings that "will not close without a decision or engine
+work", on the grounds that *"no scouting-confidence model exists, and deriving one would print
+invented figures as fact."*
+
+A scouting-confidence model does exist. `Sources/FootballSimCore/College/ScoutingState.swift:19,21`:
+
+```swift
+public let confidence: Int
+public let evidenceCount: Int
+```
+
+Both are clamped to `CollegeRules.knowledgeConfidenceRange` / `maximumScoutingEvidence` (`:34-37`),
+populated per observation, and already surfaced — `CoachWorldRecruitingBoardProvider.swift:257`
+renders `"Confidence \($0)%"`. The blocker STATUS.md records is not a blocker.
+
+What is real is smaller and different: the figure is printed under a label reading **"Uncertainty"**
+(`ProspectProfileView.swift:149`), so a coach reads the value backwards; `evidenceCount` — the
+sample `04b` §4.8 asks for — is never surfaced; and `CoachWorldConfidenceTag`, registry #12, built
+and documented for exactly this field (`FloodlitPatterns.swift:592`), is used on no recruiting
+surface. That is a presentation defect, not an engine gap. STATUS.md should be corrected.
+
 ### S-1 [P1] The accessibility gates are substring-presence checks, and they never open the file that holds the content
 
 `Tests/SimTests/Suites/AccessibilityReflowTests.swift` asserts AX5 and VoiceOver order like this:
@@ -378,9 +420,13 @@ suspected.
 | §6.5 registry elements | 23 | 23 |
 | Shared hosts / orphans | 7 | 7 |
 
-Per-family scores and findings for the other 53 surfaces follow in section 6, from the six
-delegated reviews. Delegation honoured `CLAUDE.md`'s cap of six concurrent subagents with no nested
-delegation; findings are merged and re-verified against source rather than accepted as returned.
+The 62-family assignment was checked by diffing the reviewer allocation against the
+`CoachWorldScreenID` enumeration: 62 declared, 62 assigned, zero unassigned, zero duplicated, zero
+phantom. Coverage is proven by construction, which is the standard this rubric demands of the code.
+
+Delegation honoured `CLAUDE.md`'s cap of six concurrent subagents with no nested delegation. **No
+delegated finding was accepted as returned**: every P0 and every load-bearing P1 was re-verified
+against source here, and three claims were corrected or downgraded in the process (see §4 and §6.5).
 
 ---
 
@@ -459,7 +505,28 @@ inherits it whole.
 | League | Realignment Event | 12/40 | Reject | #4 |
 | League | World Search | 21/40 | Reject | — |
 
-Career family (9) is scored in section 3. Weekly command (8) and recruiting (11) pending.
+| Weekly | Coaching HQ | 22/40 | Reject | #9 (dead branch only) |
+| Weekly | Inbox | 23/40 | Reject | #4, #6 (owner gate) |
+| Weekly | Opponent Report / Film Room | 28/40 | Revise | — |
+| Weekly | Game Plan | 24/40 | Revise | — |
+| Weekly | Practice Plan | 26/40 | Revise | — |
+| Weekly | Team Health | 26/40 | Revise | — |
+| Weekly | Match Day | 25/40 | Reject (P1) | #7 |
+| Weekly | Aftermath | 30/40 | Revise | — |
+| Recruiting | Recruiting Board | 22/40 | Reject | #7, #8 |
+| Recruiting | Prospect Profile | 20/40 | Reject | #8 |
+| Recruiting | Shortlist | 14/40 | Reject | #9 |
+| Recruiting | Contact & Visit Planner | 18/40 | Reject | — |
+| Recruiting | Class Overview | 20/40 | Reject | — |
+| Recruiting | Signing Day | 14/40 | Reject | #1, #4 |
+| Recruiting | Portal Hub | 12/40 | Reject | #1, #4 |
+| Recruiting | Retention Decisions | 12/40 | Reject | #1, #4 |
+| Recruiting | Portal Market | 12/40 | Reject | #1, #4 |
+| Recruiting | NIL Allocation | 11/40 | Reject | #1, #4 |
+| Recruiting | College Offseason | 21/40 | Reject | #1 |
+
+Career family (9) is scored in section 3. **Highest score in the application: Aftermath, 30/40 —
+one point below the gate. Nothing passes.**
 
 ### 6.3 The dominant pattern: named destinations that do not perform their named task
 
@@ -522,3 +589,89 @@ object is a different one, or absent:
   One residual, flagged not asserted: two hand-authored DEBUG fixture colour pairs
   (`LeagueMapReadModels.swift:255-259, 285-288`) sit outside the generated-pair ΔE sweep by
   construction — the same shape of gap that produced the 2026-08-12 defect. An owner checklist item.
+
+### 6.6 Weekly command and recruiting — additional confirmed P1s
+
+- **Match Day ships a fake three-way picker.** `ControlDepthSelector`
+  (`MatchDayScoreBug.swift:333-341`) renders three labelled cells carrying `.isSelected`, and every
+  one calls the identical `onSelect` closure with no `candidate` argument. The wired intent is
+  documented as a *cycle* (`ScreenReadModels.swift:1595`). It presents as a segmented picker and
+  behaves as an unlabelled cycle button — and it governs the call-in budget the coach is asked to
+  spend (`MatchDayView.swift:743`).
+- **Match Day asserts halftime unconditionally.** `MatchDayView.swift:237` renders
+  `"HALFTIME · PLAN EDIT"` with no read of `situation.quarter`, in the same frame as a scorebug
+  printing `Q1 · 14:32`, and speaks the false one to VoiceOver.
+- **Coaching HQ cannot advance the week at AX5.** Both `onContinue` call sites live in branches that
+  never render in the accessible composition (`:464` in `supportColumn`, and `continueButton` inside
+  a `chrome == nil` gate that production never satisfies). The same branch silently drops the
+  obligations list, squad health and stakeholders — a different composition, not a reflow.
+- **Recruiting: "Committed" does not say to whom.** `statusLabel`
+  (`CoachWorldRecruitingBoardProvider.swift:213-221`) switches on `.phase` alone and ignores
+  `programmeID`, so a prospect who commits to a *rival* still reads "Committed" on your board — and
+  Class Overview's 60 pt hero figure counts them in your class. The same file uses
+  `recruitment?.programmeID != programmeID` for withdraw availability (`:390`), so the provider knows
+  the distinction and does not apply it to the label. Class Overview then derives that figure by
+  string-matching a presentation label (`ClassOverviewView.swift:96`).
+- **`Withdraw` is labelled "No cost" and is destructive.** `CollegeState.withdraw(_:)` removes the
+  `ProgrammeProspectRelationship` outright — accumulated interest, `visitScheduled`,
+  `scholarshipOffered` — and drops the NIL reservation. Re-adding creates a fresh relationship; the
+  interest is gone. The control is a visual peer of Contact and Evaluate, has no destructive role,
+  and commits with no confirmation, on a surface whose siblings confirm *every* choice.
+- **Coaching HQ prints "0 of N cleared".** `CoachingHQView.swift:262` — the read model holds no
+  completion state, so the numerator is a literal `0` and the denominator *shrinks* as work is done.
+  A coach who has cleared three of five reads `0 of 2 cleared`. `:817` invents `"SATURDAY"` with no
+  day-of-week field, on a surface that also serves the pro tier.
+- **Team Health inverts fatigue.** `TeamHealthView.swift:202-206` passes `100 - fatigue` as the bar
+  proportion *and* as the heat input, while printing `fatigue`. A player at 80% fatigue shows 80%
+  beside a 20%-filled bar tinted red-for-20. The accessibility label says 80% — so the spoken and
+  sighted readings disagree.
+
+### 6.7 Refutations from the final two reviews
+
+- **"Match Day uses SpriteKit or Metal"** — refuted. No such import anywhere in `Sources/`; the
+  field is `Canvas` + `TimelineView` as `CLAUDE.md` requires.
+- **"'Into the game plan' advances the week"** (DESIGN-IS row 41) — refuted.
+  `CoachWorldAppRootView.swift:151` now reads `onContinue: { navigate(.gamePlan, in: store) }`.
+- **"Game Plan and Practice Plan commit on row selection"** — refuted a second time, independently.
+- **Reduce Motion coverage is largely sound.** `CoachWorldMotion.swift` makes an un-reduced
+  animation structurally unrepresentable. The real gap is narrower: the phase label freezes at
+  `Result` because it keys off `isAnimatingSnap`.
+- **Prior finding F-09** — refuted on its facts. See S-9.
+
+---
+
+## 7. Verdict
+
+**Reject, at the system level rather than surface by surface.**
+
+Sixty-two families scored. **None reaches 31/40.** The highest is Aftermath at 30. Nine surfaces
+score 14 or below. One P0 and more than twenty P1s are confirmed against source.
+
+But the per-surface scores are not the finding. Three system-level defects produce most of them, and
+fixing those is worth more than fixing any number of screens:
+
+1. **No text scales with Dynamic Type** (S-0). One change in the token layer moves dimension 6 on
+   all 62 surfaces at once. Every AX5 branch in the codebase is currently reflowing layout around
+   frozen type.
+2. **15 of 62 families are aliases whose code cannot run** (S-6, S-5). The product has 47 reachable
+   destinations. Sixteen view files never render. Deciding whether those families are real tasks or
+   should be deleted is a scope decision the owner has to make before any further surface work.
+3. **The verification apparatus checks strings, not properties** (S-7, S-8, S-2). Five distinct
+   instances, including a contrast gate that measures a colour the field never draws and a type-floor
+   constant that only asserts itself. This is why the first two could ship green, and it is why the
+   record says "62 converted / 0 pending".
+
+The enumeration discipline in this codebase is genuinely good — `landedFamilies()`, the legal
+sweeps and the conversion partition all enumerate by construction, and the legal tests in particular
+are exemplary (the partition comment records getting the count wrong twice by hand before deriving
+it). The failure is one layer in: having enumerated the right set, the assertions ask whether a
+substring is present. `CLAUDE.md` names this exact failure and the codebase reproduced it five times.
+
+**Recommended order:** S-0 first (widest blast radius, single locus), then S-7/S-8 (until the gates
+assert properties, no fix can be shown to hold), then the S-6 scope decision, then per-surface P0/P1s.
+
+**What this review is not.** Nothing here was built, run or rendered — there is no Swift toolchain
+and no simulator in this environment. Dimensions 6 and 8 are assessed only as far as source carries
+them, and every reviewer capped their scores accordingly and said where. The 844 × 390 geometry
+claims are arithmetic over stated constants, not observations. No owner walkthrough has happened,
+and `04b` §7's questions 1 and 4 remain owner gates that no static review can answer.
