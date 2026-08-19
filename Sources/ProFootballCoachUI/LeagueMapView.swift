@@ -270,17 +270,17 @@ public struct LeagueMapView: View, CoachWorldChromedSurface {
                             )
                         Spacer(minLength: CoachWorldTokens.Gap.xxs)
                         Text(row.conferenceRecord)
-                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                             .frame(width: LeagueMapMetric.recordColumn, alignment: .trailing)
                         Text(row.overallRecord)
-                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.flag, weight: .semibold)
                             .foregroundStyle(palette.contentSecondary.color)
                             .frame(width: LeagueMapMetric.recordColumn, alignment: .trailing)
                         // Signed, and the sign is the point of it.
                         Text(row.pointDifferential > 0
                             ? "+\(row.pointDifferential)"
                             : "\(row.pointDifferential)")
-                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                             .foregroundStyle(
                                 row.pointDifferential >= 0
                                     ? palette.stateLive.color
