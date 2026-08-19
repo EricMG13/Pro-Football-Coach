@@ -120,6 +120,7 @@ case "$lane" in
         run_sim design-contracts --design-contracts
         run_sim reduce-motion --reduce-motion
         run_sim read-models --screen-read-models
+        run_sim smallest-device-layout --smallest-device-layout
         ;;
     archive)
         run_sim history-archive --history-archive

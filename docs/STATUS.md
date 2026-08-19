@@ -19,6 +19,36 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-19 — `SmallestDeviceLayoutTest` has a runner. UNVERIFIED — never compiled.**
+>
+> The gate was registered in `SuiteCatalog` with `runner == nil`, so `--catalog` printed
+> `MISSING RUNNER` and `runCommitmentCoverageTest` failed on "registered without a runnable
+> command". CI confirmed it: seven failed checks on `main` and on every branch, four of them from
+> that second assertion. This closes one of the four.
+>
+> **Files, named because none of them has been through a compiler:**
+> `Tests/SimTests/Suites/SmallestDeviceLayoutTests.swift` (new),
+> `Tests/SimTests/SuiteCatalog.swift`, `Tests/SimTests/main.swift`, `scripts/verify.sh`.
+> This environment has no `swift` and no `xcodebuild`. **No claim here rests on a build or a test
+> run.** What was checked instead: the scan predicate and every geometric assertion were ported to
+> Python and evaluated against the real `DesignTokens.swift` values — all hold, and all six
+> planted-defect cases behave as the suite asserts. That is evidence the logic is right, not
+> evidence it compiles. CI on `macos-15` is the acceptance check.
+>
+> **What the gate asserts, and what it does not.** It asserts that the frame and stage tokens every
+> chromed surface is laid out from fit inside the install floor (844 x 390) and the promise floor
+> (852 x 393), clear the sensor housing and home indicator, and that no floor dimension is re-typed
+> as a literal away from its declaration. It does **not** assert that anything renders un-clipped or
+> that controls are reachable: those are properties of a render, and this target has neither XCTest
+> nor a view host. `04` §7.1 already records that limit for G-12 and it applies here unchanged.
+> **The rendered limb of D15's falsifier stays open**, and an audit under `04b` may not treat this
+> suite as the rendered proof.
+>
+> Still registered without a runner, so `--commitment-coverage` stays red until they are built or
+> withdrawn: `AgencyBudgetTests`, `PerformanceBudgetTests`, `TwoTierConsistencyTests`.
+> `AgencyBudgetTests` cannot be made truthful before D1's timing protocol runs — its constants are
+> recorded below as proposals, not measurements.
+
 > **2026-08-18 — Floodlit design handoff, all three milestones implemented.** The owner-supplied
 > handoff `design_handoff_floodlit_surfaces_and_match_day/` is built end to end:
 >

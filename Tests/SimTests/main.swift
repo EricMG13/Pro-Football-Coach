@@ -98,6 +98,7 @@ if CommandLine.arguments.contains("--catalog") {
     runMotionContractTests()
     runAccessibilityReflowTests()
     runReduceMotionContractTests()
+    runSmallestDeviceLayoutTests()
     runSaveEnvelopeTests()
     runRulesTests()
     runModelTests()
@@ -134,6 +135,7 @@ if CommandLine.arguments.contains("--catalog") {
     runMotionContractTests()
     runAccessibilityReflowTests()
     runReduceMotionContractTests()
+    runSmallestDeviceLayoutTests()
 } else if CommandLine.arguments.contains("--architecture-only") {
     runArchitectureTests()
 } else if CommandLine.arguments.contains("--m2-soak") {
@@ -144,6 +146,8 @@ if CommandLine.arguments.contains("--catalog") {
     runSnapAnchorTests()
 } else if CommandLine.arguments.contains("--reduce-motion") {
     runReduceMotionContractTests()
+} else if CommandLine.arguments.contains("--smallest-device-layout") {
+    runSmallestDeviceLayoutTests()
 } else {
     runSeededRandomTests()
     runSeedDerivationTests()
@@ -203,6 +207,7 @@ if CommandLine.arguments.contains("--catalog") {
     runMotionContractTests()
     runAccessibilityReflowTests()
     runReduceMotionContractTests()
+    runSmallestDeviceLayoutTests()
     runCommitmentCoverageTest()
     runSaveDocumentTests()
 }
