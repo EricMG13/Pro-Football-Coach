@@ -2482,13 +2482,36 @@ func runContractTests() {
             // are legitimately reached outside this switch, so the bar is a large majority, not
             // every last case — this exists to fail loudly if a future edit strips most of
             // career()'s branches, not to pin an exact count.
-            let explicitlyRouted = CoachWorldScreenID.allCases.filter {
+            //
+            // Phase 4, 2026-08-19: scoped to isCanonicalTask screens only. The switch subject
+            // is Self.canonicalScreen(screen), which resolves every alias to its destination before
+            // the switch runs — an explicit `case .X:` for an alias X can never execute, so the 15
+            // aliases that used to sit here as dead code are deleted, not counted as routed. The
+            // 47/62 split is the same one "the 62 legacy route numbers migrate through one
+            // canonical task table" above already asserts by construction; this test does not
+            // re-derive it, only reuses isCanonicalTask.
+            let canonicalScreens = CoachWorldScreenID.allCases.filter(\.isCanonicalTask)
+            let explicitlyRouted = canonicalScreens.filter {
                 careerBody.contains("case .\(String(describing: $0)):")
             }
-            expect(explicitlyRouted.count >= 50,
+            expect(explicitlyRouted.count >= 40,
                    "career() explicitly branches on only \(explicitlyRouted.count) of " +
-                       "\(CoachWorldScreenID.allCases.count) registered screens — either a real " +
-                       "regression, or this scan stopped reading real source")
+                       "\(canonicalScreens.count) canonical screens — either a real regression, " +
+                       "or this scan stopped reading real source")
+            // Catches a future unreachable branch by construction: no alias screen may appear as a
+            // dead `case .X:` in career(), because the switch subject is already
+            // canonicalised and such a branch can never execute. Built from
+            // CoachWorldScreenID.allCases filtered by !isCanonicalTask rather than a hand-typed
+            // list, so a screen added to the alias table later is covered the day it is added.
+            let aliasScreens = CoachWorldScreenID.allCases.filter { !$0.isCanonicalTask }
+            let deadAliasCases = aliasScreens.filter {
+                careerBody.contains("case .\(String(describing: $0)):")
+            }
+            expect(deadAliasCases.isEmpty,
+                   "career() still branches on " +
+                       "\(deadAliasCases.map { String(describing: $0) }) — these are aliases " +
+                       "whose canonicalDestination means this case can never execute; the branch " +
+                       "is dead code, not a route")
         }
 
         test("RootView commits to dark on both its DEBUG and non-DEBUG branches") {
