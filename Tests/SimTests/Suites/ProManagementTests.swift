@@ -53,6 +53,42 @@ func runProManagementTests() {
             expect(WorldIntegrity.check(released.state).isValid)
         }
 
+        test("release refuses to drop a position below its minimum playable coverage") {
+            var state = GameState.bootstrap(seed: 60_009)
+            let teamID = state.proTeams.ids[0]
+            guard let team = state.proTeams[teamID] else {
+                expect(false, "bootstrap team missing")
+                return
+            }
+            let kickerIDs = team.rosterIDs.filter { state.players[$0]?.position == .kicker }
+            expect(
+                kickerIDs.count >= 1,
+                "bootstrap roster needs at least one kicker for this test to be meaningful"
+            )
+            // Trim to exactly the minimum (1), the same direct-mutation technique
+            // `makeRosterOpening` above uses to set up a scenario without going through the API
+            // under test.
+            let lastKickerID = kickerIDs[0]
+            if kickerIDs.count > 1 {
+                _ = state.proTeams.update(teamID) { team in
+                    team.rosterIDs.removeAll { kickerIDs.contains($0) && $0 != lastKickerID }
+                }
+            }
+            expectEqual(
+                state.proTeams[teamID]?.rosterIDs.filter { state.players[$0]?.position == .kicker }.count,
+                1
+            )
+            let before = try JSONEncoder.stable().encode(state)
+            do {
+                _ = try ProManagementSystem.release(playerID: lastKickerID, from: teamID, in: state)
+                expect(false, "released the team's only kicker below minimum playable coverage")
+            } catch ProManagementError.invalidRoot {
+                expectEqual(try JSONEncoder.stable().encode(state), before)
+            } catch {
+                expect(false, "wrong rejection: \(error)")
+            }
+        }
+
         test("cap and roster boundaries reject atomically") {
             var state = GameState.bootstrap(seed: 60_003)
             let teamID = state.proTeams.ids[0]

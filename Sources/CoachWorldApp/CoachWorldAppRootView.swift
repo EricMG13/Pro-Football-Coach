@@ -26,11 +26,23 @@ public struct CoachWorldAppRootView: View {
     /// source-tracing pass: Player Profile is a real, reachable entry point into this screen
     /// ("Into the development plan"), and Close ignored it.
     @State private var developmentPlanOrigin: CoachWorldScreenID = .coachingHQ
+    /// Which player Player Profile's "Into the development plan" asked to open. Fixed 2026-08-19
+    /// second-pass source-tracing: `store.openDevelopmentEvidence(for:)` only records a status-message
+    /// receipt and drops the ID, so every open landed on the roster's single biggest mover instead of
+    /// the requested player. Session-only like `developmentPlanOrigin`; a direct chrome-rail tap into
+    /// Development (bypassing Player Profile) still has no player to seed and falls back the same way
+    /// as before this fix.
+    @State private var developmentPlanPlayerID: String?
     /// Where Tactics opened Game Plan from, so submitting or closing returns there rather than to
     /// Coaching HQ. Not persisted across a relaunch the way `teamHealthOrigin`/`inboxOrigin` are —
     /// quitting mid-adjustment lands back on Coaching HQ instead of Match Day on the next launch, a
     /// narrower gap than the two return routes already wired into the save document.
     @State private var gamePlanOrigin: CoachWorldScreenID = .coachingHQ
+    /// Where Practice Plan opened from, so Close returns there rather than always to Coaching HQ.
+    /// Session-only like `gamePlanOrigin` above. Fixed 2026-08-19 second-pass source-tracing:
+    /// Inbox routes here whenever the week's practice plan is unset (an ordinary, frequent state),
+    /// and Close ignored that, breaking Inbox's own "return to the origin route" contract.
+    @State private var practicePlanOrigin: CoachWorldScreenID = .coachingHQ
     @State private var careerFocus: CoachWorldScreenID = .careerHub
     @State private var proFocus: CoachWorldScreenID = .proOffseason
     @State private var recruitingProspectID: String?
@@ -118,6 +130,7 @@ public struct CoachWorldAppRootView: View {
             case .developmentPlan:
                 surface(store.roster, screen: .developmentPlan) { model in
                     DevelopmentPlanView(model: model, statusMessage: failure ?? store.statusMessage,
+                                        initialPlayerID: developmentPlanPlayerID,
                                         onClose: { navigate(developmentPlanOrigin, in: store) })
                     .floodlitChrome(
                         chrome(for: .developmentPlan, in: store),
@@ -410,7 +423,7 @@ public struct CoachWorldAppRootView: View {
                         onSelect: { plan in
                             Task { await setPracticePlan(plan, in: store) }
                         },
-                        onClose: { navigate(.coachingHQ, in: store) }
+                        onClose: { navigate(practicePlanOrigin, in: store) }
                     )
                     .floodlitChrome(
                         chrome(for: .practicePlan, in: store),
@@ -444,6 +457,7 @@ public struct CoachWorldAppRootView: View {
                             onClose: { navigate(.roster, in: store) },
                             onInspectDevelopment: { stableID in
                                 store.openDevelopmentEvidence(for: stableID)
+                                developmentPlanPlayerID = stableID
                                 navigate(.developmentPlan, in: store)
                             }
                         )
@@ -1250,12 +1264,14 @@ public struct CoachWorldAppRootView: View {
             gamePlanOrigin = switch screen {
             case .matchDay: .matchDay
             case .opponentReportFilmRoom: .opponentReportFilmRoom
+            case .inbox: .inbox
             default: .coachingHQ
             }
             screen = .gamePlan
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
         case .practicePlan where store.practicePlan != nil:
+            practicePlanOrigin = screen == .inbox ? .inbox : .coachingHQ
             screen = .practicePlan
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
