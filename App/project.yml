@@ -63,6 +63,9 @@ schemes:
       config: Debug
     test:
       config: Debug
+      targets:
+        - ProFootballCoachTests
+        - ProFootballCoachUITests
     profile:
       config: Release
     analyze:
@@ -79,4 +82,3 @@ schemes:
       config: Release
       targets:
         - ProFootballCoachTests
-        - ProFootballCoachUITests

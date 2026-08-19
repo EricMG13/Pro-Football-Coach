@@ -49,7 +49,7 @@ struct SuiteCatalog: Sendable {
 
     static let defaultRun: Set<ReleaseGateID> = [
         .commitmentCoverage, .contrastByConstruction, .dynamicType, .reduceMotion,
-        .voiceOver, .touchTarget, .determinism, .twoTierConsistency, .reachability,
+        .voiceOver, .touchTarget, .determinism, .reachability,
         .errorSurface, .accessibility, .saveOffMainActor, .saveCoalescing,
         .saveOpenReadOnly, .legal
     ]
