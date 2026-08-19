@@ -13,10 +13,11 @@ import SwiftUI
 /// environment, which a static function returning a bare `Font` cannot provide. This file is that
 /// property's one home: a `ViewModifier` whose `@ScaledMetric` is seeded from a caller-supplied base
 /// size via the underscored-backing-storage initialiser SwiftUI provides for exactly this case, and
-/// two `View` extension methods — `coachWorldDisplay`/`coachWorldFigure` — that are the scaling
-/// replacements for `CoachWorldTokens.display`/`figure`. A source scan should eventually assert that
-/// `.system(size:` and `CoachWorldTokens.display(`/`figure(` no longer appear as a `.font(...)`
-/// argument outside this file and `DesignTokens.swift` itself, the same shape
+/// three `View` extension methods — `coachWorldDisplay`/`coachWorldFigure`/`coachWorldIcon` — that are
+/// the scaling replacements for `CoachWorldTokens.display`/`figure` and for the raw
+/// `.font(.system(size:weight:))` sites that size an SF Symbol rather than text. A source scan should
+/// eventually assert that `.system(size:` and `CoachWorldTokens.display(`/`figure(` no longer appear
+/// as a `.font(...)` argument outside this file and `DesignTokens.swift` itself, the same shape
 /// `MotionContractTests.swift` already uses for `CoachWorldMotion.swift`.
 ///
 /// `relativeTo:` defaults to `.body` for every caller that does not name one. Canon gives an exact
@@ -75,6 +76,20 @@ extension View {
         modifier(CoachWorldScaledFontModifier(
             size: size, relativeTo: textStyle, weight: weight,
             condensed: false, monospacedDigit: true
+        ))
+    }
+
+    /// SF Symbol glyph sizes: plain, neither condensed width nor tabular digits apply to a symbol.
+    /// The scaling replacement for the handful of `.font(.system(size: X, weight: W))` sites that
+    /// size an `Image(systemName:)` rather than a `Text`.
+    func coachWorldIcon(
+        _ size: CGFloat,
+        relativeTo textStyle: Font.TextStyle = .body,
+        weight: Font.Weight = .regular
+    ) -> some View {
+        modifier(CoachWorldScaledFontModifier(
+            size: size, relativeTo: textStyle, weight: weight,
+            condensed: false, monospacedDigit: false
         ))
     }
 }
