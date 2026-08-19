@@ -91,19 +91,11 @@ public struct DevelopmentPlanView: View, CoachWorldChromedSurface {
                         palette: palette
                     )
                     Text(player.person.name.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.figure, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.figure, weight: .bold)
                         .lineLimit(DevelopmentMetric.nameLines)
                         .minimumScaleFactor(DevelopmentMetric.nameScaleFloor)
                     Text("\(player.position.uppercased()) \u{00B7} \(player.overall) overall")
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.row, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                         .foregroundStyle(palette.actionPrimary.color)
                         .lineLimit(1)
                 }
@@ -117,14 +109,10 @@ public struct DevelopmentPlanView: View, CoachWorldChromedSurface {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
                         FloodlitLabel3("Since August", palette: palette)
                         Text(deltaLabel(player.developmentDelta))
-                            .font(
-                                CoachWorldTokens.figure(
-                                    CoachWorldTokens.DisplaySize.title, weight: .semibold
-                                )
-                            )
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.title, weight: .semibold)
                             .foregroundStyle(deltaTint(player.developmentDelta))
                         Text("Condition \(player.condition)")
-                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                             .foregroundStyle(palette.contentSecondary.color)
                     }
                 }
@@ -156,34 +144,22 @@ public struct DevelopmentPlanView: View, CoachWorldChromedSurface {
                 ) {
                     HStack(spacing: CoachWorldTokens.Gap.md) {
                         Text(player.position.uppercased())
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.pill, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.pill, weight: .bold)
                             .foregroundStyle(palette.stateInfo.color)
                             .lineLimit(1)
                             .frame(width: DevelopmentMetric.positionColumn, alignment: .leading)
                         Text(player.person.name)
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.row, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                             .lineLimit(1)
                         Spacer(minLength: CoachWorldTokens.Gap.xs)
                         Text("\(player.overall)")
-                            .font(
-                                CoachWorldTokens.figure(
-                                    CoachWorldTokens.DisplaySize.row, weight: .semibold
-                                )
-                            )
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.row, weight: .semibold)
                             .foregroundStyle(
                                 CoachWorldTokens.Heat.color(for: player.overall, palette: palette)
                             )
                             .frame(width: DevelopmentMetric.figureColumn, alignment: .trailing)
                         Text(deltaLabel(player.developmentDelta))
-                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                             .foregroundStyle(deltaTint(player.developmentDelta))
                             .frame(width: DevelopmentMetric.deltaColumn, alignment: .trailing)
                     }
