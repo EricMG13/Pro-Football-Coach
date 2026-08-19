@@ -124,7 +124,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
             FloodlitLabel3(appointmentLabel, palette: palette)
             Text(model.coach.name.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.figure, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.figure, weight: .bold)
                 .lineLimit(CareerMetric.nameLines)
                 .minimumScaleFactor(CareerMetric.nameScaleFloor)
             VStack(alignment: .leading, spacing: .zero) {
@@ -201,14 +201,10 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
                         )
                         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                             Text(row.stakeholder.uppercased())
-                                .font(
-                                    CoachWorldTokens.display(
-                                        CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                                    )
-                                )
+                                .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                                 .lineLimit(1)
                             Text("\(row.value) of \(CareerMetric.supportCeiling)")
-                                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag))
+                                .coachWorldFigure(CoachWorldTokens.DisplaySize.flag)
                                 .foregroundStyle(palette.contentQuiet.color)
                         }
                         Spacer(minLength: .zero)
@@ -273,11 +269,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
             ForEach(model.history) { row in
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                     Text(row.team.name.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                         .lineLimit(1)
                     Text(historyLine(row))
                         .font(CoachWorldTokens.TypeRole.caption)
@@ -337,11 +329,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
                 } label: {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                         Text(opportunity.team.name.uppercased())
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                             .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                             .fixedSize(horizontal: false, vertical: true)
                         Text(opportunity.canAccept
@@ -389,7 +377,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
                 FloodlitLabel3("Selected offer", palette: palette,
                                tint: palette.collegeIdentity.color)
                 Text(opportunity.team.name.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.action, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.action, weight: .bold)
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                     .fixedSize(horizontal: false, vertical: true)
                 FloodlitCostLine(
@@ -440,11 +428,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             if model.currentJob?.canResign == true {
                 Button("Resign") { showingResignConfirmation = true }
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                        )
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     .foregroundStyle(palette.contentQuiet.color)
                     .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
                            minHeight: CoachWorldTokens.Shape.minimumTarget)

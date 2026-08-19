@@ -125,26 +125,20 @@ public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
         } label: {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text("\(row.rank)")
-                    .font(
-                        CoachWorldTokens.figure(
-                            CoachWorldTokens.DisplaySize.row, weight: .semibold
-                        )
-                    )
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.row, weight: .semibold)
                     .foregroundStyle(
                         row.isControlled ? palette.actionPrimary.color : palette.contentQuiet.color
                     )
                     .frame(width: CompetitionMetric.rankColumn, alignment: .leading)
                 Text(row.team.name.uppercased())
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.actionSmall,
-                            weight: row.isControlled ? .heavy : .bold
-                        )
+                    .coachWorldDisplay(
+                        CoachWorldTokens.DisplaySize.actionSmall,
+                        weight: row.isControlled ? .heavy : .bold
                     )
                     .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(row.record)
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                     .foregroundStyle(palette.contentSecondary.color)
                     .frame(width: CompetitionMetric.recordColumn, alignment: .trailing)
             }
@@ -210,26 +204,22 @@ public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
     private func bracketRow(_ game: CompetitionOverviewReadModel.BracketGame) -> some View {
         HStack(spacing: CoachWorldTokens.Gap.md) {
             Text(game.week.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                 .foregroundStyle(palette.contentQuiet.color)
                 .lineLimit(1)
                 .frame(width: CompetitionMetric.weekColumn, alignment: .leading)
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 Text(game.away.name.uppercased())
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                        )
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     .lineLimit(1)
                 Text("at \(game.home.name)".uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                     .foregroundStyle(palette.contentQuiet.color)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Text(game.score ?? "to play")
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                 .foregroundStyle(
                     game.score == nil ? palette.contentQuiet.color : palette.contentPrimary.color
                 )

@@ -122,7 +122,7 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
         let tint = CoachWorldTokens.Heat.color(for: player.condition, palette: palette)
         return HStack(spacing: CoachWorldTokens.Gap.smPlus) {
             Text(player.position.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.pill, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.pill, weight: .bold)
                 .tracking(
                     CoachWorldTokens.DisplaySize.tracking(
                         HealthMetric.positionTracking, at: CoachWorldTokens.DisplaySize.pill
@@ -132,11 +132,11 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
                 .lineLimit(1)
                 .frame(width: HealthMetric.positionColumn, alignment: .leading)
             Text(player.name)
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text(player.availability.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                 .tracking(
                     CoachWorldTokens.DisplaySize.tracking(
                         HealthMetric.statusTracking, at: CoachWorldTokens.DisplaySize.flag
@@ -152,7 +152,7 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
             )
             .frame(width: HealthMetric.barColumn)
             Text("\(player.condition)%")
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill, weight: .semibold))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.pill, weight: .semibold)
                 .foregroundStyle(tint)
                 .frame(width: HealthMetric.figureColumn, alignment: .trailing)
         }
@@ -189,14 +189,10 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
                 if let subject = caseSubject {
                     FloodlitLabel3("The case to watch", palette: palette)
                     Text(subject.name)
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.title, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.title, weight: .bold)
                         .lineLimit(HealthMetric.nameLines)
                     Text("\(subject.position) \u{00B7} \(subject.availability)")
-                        .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                        .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                         .foregroundStyle(palette.contentSecondary.color)
                     caseRow("Condition", "\(subject.condition)%", value: subject.condition)
                     caseRow(
@@ -237,7 +233,7 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
             )
             .frame(width: HealthMetric.caseBarColumn)
             Text(value)
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill, weight: .semibold))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.pill, weight: .semibold)
                 .frame(width: HealthMetric.figureColumn, alignment: .trailing)
         }
         .accessibilityElement(children: .combine)
@@ -258,7 +254,7 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
         return HStack(spacing: CoachWorldTokens.Gap.mdPlus) {
             if !isCalm {
                 Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: HealthMetric.alertIcon, weight: .semibold))
+                    .coachWorldIcon(HealthMetric.alertIcon, weight: .semibold)
                     .foregroundStyle(palette.stateWarning.color)
                     .accessibilityHidden(true)
             }

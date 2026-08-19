@@ -65,18 +65,14 @@ public struct ClassOverviewView: View, CoachWorldChromedSurface {
             FloodlitLabel3("The class \u{00B7} committed", palette: palette)
             HStack(alignment: .lastTextBaseline, spacing: CoachWorldTokens.Gap.smPlus) {
                 Text("\(committedCount)")
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.name, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.name, weight: .bold)
                 // `CollegeRules.initialSigningsPerClass` is the engine's own per-class target.
                 // The scholarship count the earlier draft compared against
                 // (`capacity.scholarshipSlotsRemaining`) is whole-roster capacity against the
                 // 85-man limit, not a signing-class size, and summing the two produced a total
                 // with no real meaning.
                 Text("of \(CollegeRules.initialSigningsPerClass)")
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.title, weight: .bold
-                        )
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.title, weight: .bold)
                     .foregroundStyle(palette.contentSecondary.color)
             }
             FloodlitLabel3(
@@ -136,7 +132,7 @@ public struct ClassOverviewView: View, CoachWorldChromedSurface {
         let tint = short == 0 ? palette.statePositive.color : palette.actionPrimary.color
         return VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
             Text(need.position.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.pill, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.pill, weight: .bold)
                 .lineLimit(1)
             FloodlitShareBar(
                 proportion: need.target > 0 ? Double(need.committed) / Double(need.target) : 0,
@@ -144,7 +140,7 @@ public struct ClassOverviewView: View, CoachWorldChromedSurface {
                 palette: palette
             )
             Text("\(need.committed)/\(need.target)")
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.flag)
                 .foregroundStyle(tint)
         }
         .frame(maxWidth: .infinity, minHeight: ClassMetric.cellHeight, alignment: .leading)
@@ -186,11 +182,11 @@ public struct ClassOverviewView: View, CoachWorldChromedSurface {
     private func committedRow(_ prospect: RecruitingBoardReadModel.Prospect) -> some View {
         HStack(spacing: CoachWorldTokens.Gap.md) {
             Text(prospect.person.name.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                 .lineLimit(1)
                 .frame(width: ClassMetric.nameColumn, alignment: .leading)
             Text(prospect.position.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                 .foregroundStyle(palette.stateInfo.color)
                 .lineLimit(1)
                 .frame(width: ClassMetric.positionColumn, alignment: .leading)
@@ -200,7 +196,7 @@ public struct ClassOverviewView: View, CoachWorldChromedSurface {
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text(prospect.status.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                 .foregroundStyle(
                     prospect.status == "Signed"
                         ? palette.statePositive.color

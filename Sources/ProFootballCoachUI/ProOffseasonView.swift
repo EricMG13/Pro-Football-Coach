@@ -149,7 +149,7 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
         HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.xs) {
             FloodlitLabel3(label, palette: palette)
             Text(value)
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.row, weight: .semibold))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.row, weight: .semibold)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(label), \(value)")
@@ -249,18 +249,18 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
         ) {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text(prospect.position.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.pill, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.pill, weight: .bold)
                     .foregroundStyle(palette.stateInfo.color)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(width: OffseasonMetric.positionColumn, alignment: .leading)
                 Text(prospect.name.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(prospect.estimatedOverall.map { "\($0)" } ?? "\u{2014}")
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.row, weight: .semibold))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.row, weight: .semibold)
                     .foregroundStyle(
                         prospect.estimatedOverall == nil
                             ? palette.contentQuiet.color : palette.contentPrimary.color
@@ -277,13 +277,13 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
         FloodlitRow(isSelected: openID == player.id, palette: palette, action: { openID = player.id }) {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text(player.position.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.pill, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.pill, weight: .bold)
                     .foregroundStyle(palette.stateInfo.color)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(width: OffseasonMetric.positionColumn, alignment: .leading)
                 Text(player.name.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: CoachWorldTokens.Gap.xs)
@@ -296,7 +296,7 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
         FloodlitRow(isSelected: openID == waiver.id, palette: palette, action: { openID = waiver.id }) {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text(waiver.name.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: CoachWorldTokens.Gap.xs)
@@ -362,15 +362,11 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
         ) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 Text(action.title.uppercased())
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                        )
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     .foregroundStyle(
                         action.isAvailable ? palette.actionPrimary.color : palette.contentQuiet.color
                     )
-                    .lineLimit(1)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                 Text(action.isAvailable ? action.detail : (action.unavailableReason ?? action.detail))
                     .font(CoachWorldTokens.TypeRole.caption)
                     .foregroundStyle(palette.contentSecondary.color)
