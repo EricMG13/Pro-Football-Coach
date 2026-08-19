@@ -1,0 +1,26 @@
+{
+  "comment": "Aspect map for docs/loops/catalog.json. Data, so the validator and a reader enumerate the same list. scripts/check-loops.mjs asserts the partition: every aspect names at least one loop, and every loop is named by at least one aspect. A loop nothing points at covers nothing anybody asked for; an aspect no loop points at is an aspect nothing hunts.",
+  "aspects": {
+    "determinism-and-seeding": ["determinism-drift-hunt"],
+    "world-generation-and-identity": ["generation-invariant-widening"],
+    "legal-guardrail": ["legal-partition-sweep"],
+    "match-engine-play-resolution": ["match-engine-oracle-widening"],
+    "calibration-bands": ["calibration-band-tightening"],
+    "two-tier-consistency": ["two-tier-agreement-gate"],
+    "season-structure-and-competition": ["season-transition-fuzz"],
+    "college-acquisition-systems": ["college-acquisition-legality-sweep"],
+    "pro-front-office-systems": ["pro-front-office-legality-sweep"],
+    "people-lifecycle-and-progression": ["people-lifecycle-drift-watch"],
+    "career-arc-and-stakes": ["career-arc-continuity-hunt"],
+    "architecture-boundaries": ["architecture-boundary-scan-widening"],
+    "save-persistence-and-migration": ["save-durability-hunt"],
+    "long-horizon-soak-and-bounds": ["soak-horizon-extension"],
+    "performance-budgets": ["performance-budget-instrumentation"],
+    "accessibility-contract": ["accessibility-matrix-widening"],
+    "design-system-discipline": ["design-token-discipline-sweep"],
+    "read-model-truthfulness": ["surface-truthfulness-audit"],
+    "screen-reachability-and-inventory": ["surface-truthfulness-audit"],
+    "release-gate-traceability": ["release-gate-traceability-loop"],
+    "documentation-truthfulness": ["release-gate-traceability-loop"]
+  }
+}
