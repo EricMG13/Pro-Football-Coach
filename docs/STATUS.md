@@ -48,6 +48,9 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > withdrawn: `AgencyBudgetTests`, `PerformanceBudgetTests`, `TwoTierConsistencyTests`.
 > `AgencyBudgetTests` cannot be made truthful before D1's timing protocol runs — its constants are
 > recorded below as proposals, not measurements.
+>
+> The local verification, and the simulator steps that close the rendered limb, are one section:
+> `docs/OWNER-WALKTHROUGH.md` §3a. It too is marked not run.
 
 > **2026-08-18 — Floodlit design handoff, all three milestones implemented.** The owner-supplied
 > handoff `design_handoff_floodlit_surfaces_and_match_day/` is built end to end:

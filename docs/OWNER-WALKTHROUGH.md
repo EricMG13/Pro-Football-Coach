@@ -8,6 +8,10 @@ Xcode 26.6 / Swift 6.3.3 against the iPhone 17 simulator (iOS 26.5), and the scr
 are what that run produced. **Nothing here has run on a phone.** §4 is the part only the owner can
 do, because it needs an Apple Developer account, and no agent may claim any of it happened.
 
+**§3a is different again, and the difference matters.** It was added 2026-08-19 by a session with
+no `swift` and no `xcodebuild` at all. **None of it has been run** — not the commands, not the
+simulator steps. Every expected result in it is a prediction to check, not something observed.
+
 ---
 
 ## 1. Build it
@@ -108,6 +112,108 @@ is deliberate: an empty screen would claim the family exists.
   `.advanceWeek` while any is open, and the refusal is shown verbatim rather than swallowed.
 - Tapping through to Team / Recruit / League / Career reports "not available yet". Those families
   have no production view — U-6, the largest remaining item.
+
+## 3a. The install floor, and `SmallestDeviceLayoutTest` (added 2026-08-19, not run)
+
+`SmallestDeviceLayoutTest` is D15's first falsifier and `04` §7's two-tier gate. Until 2026-08-19 it
+was registered in `SuiteCatalog` with `runner == nil`, so `--catalog` printed `MISSING RUNNER` for it
+and `runCommitmentCoverageTest` failed on "registered without a runnable command" — one of the seven
+failed checks CI was carrying. The runner is `Tests/SimTests/Suites/SmallestDeviceLayoutTests.swift`.
+
+### The compiler, ordered by how fast it fails
+
+Do not open with `./scripts/verify.sh`. The full lane is roughly 36 minutes, and a syntax error costs
+all of it before saying so.
+
+```bash
+swift build -Xswiftc -enable-testing
+```
+
+**Expected: it compiles.** This is the step that has never been done — see the preamble. If it fails,
+everything below is moot.
+
+```bash
+swift run -Xswiftc -enable-testing SimTests --smallest-device-layout
+```
+
+**Expected: `[ok  ] Smallest device layout — 10 tests`**, printing one
+`Smallest device layout: N landed, M pending at 844 x 390` line.
+
+```bash
+swift run -Xswiftc -enable-testing SimTests --catalog | grep -i smallest
+```
+
+**Expected:** a row ending
+`--smallest-device-layout → runSmallestDeviceLayoutTests`, **not** `MISSING RUNNER`.
+
+```bash
+swift run -Xswiftc -enable-testing SimTests --commitment-coverage
+```
+
+**Expected: six failed checks, not seven.** The `SmallestDeviceLayoutTest is registered without a
+runnable command` line is gone; `AgencyBudgetTests`, `PerformanceBudgetTests` and
+`TwoTierConsistencyTests` remain at both `SuiteCatalog.swift:128` and `:143`. This suite still fails,
+by design — three gates are still unbuilt, and `AgencyBudgetTests` cannot be made truthful before
+D1's timing protocol runs, because its constants are proposals rather than measurements.
+
+```bash
+./scripts/verify.sh --lane accessibility     # the lane SuiteCatalog declares for this gate
+./scripts/verify.sh                          # the CI equivalent, ~36 min
+```
+
+### What the suite checks, and what only the simulator can
+
+The suite asserts that the frame and stage tokens every chromed surface is laid out from fit inside
+both floors, clear the sensor housing and the home indicator, and that no floor dimension is
+re-typed as a literal away from its declaration.
+
+It does **not** assert that anything renders un-clipped or that controls are reachable. Those are
+properties of a render, and `SimTests` is a headless executable with neither XCTest nor a view host;
+`04` §7.1 already records that limit for G-12 and it applies here unchanged. **The rendered limb of
+D15's falsifier stays open, and this section is how it closes.** An audit under `04b` may not treat
+the suite as the rendered proof.
+
+### Running it at both floors
+
+§1–§2 target iPhone 17 — that is the ceiling of the design window. This gate needs the other end.
+
+| Tier | Points, landscape | Device class | What red here means |
+|---|---|---|---|
+| Install floor | 844 x 390 | iPhone 16e, or 13/14 | Below-promise devices install anyway, so a clip here ships |
+| Promise floor | 852 x 393 | iPhone 15 Pro class | The full budget must hold; D15 is falsified if it does not |
+
+```bash
+xcrun simctl list devicetypes | grep -iE "iPhone (16e|15 Pro|14|13)"
+```
+
+Pick a 390 x 844 device for tier one and a 393 x 852 device for tier two, then run §1 and §2's
+build/install/launch with that name in place of `iPhone 17`, and `Cmd+←` for landscape:
+
+```bash
+DEVICE='iPhone 16e'   # then repeat the whole block with a 15 Pro-class device
+xcodebuild -project App/ProFootballCoach.xcodeproj -scheme ProFootballCoach -configuration Release -destination "platform=iOS Simulator,name=$DEVICE" build
+xcrun simctl boot "$DEVICE"; open -a Simulator
+xcrun simctl install "$DEVICE" "$(xcodebuild -project App/ProFootballCoach.xcodeproj -scheme ProFootballCoach -configuration Release -showBuildSettings 2>/dev/null | awk -F' = ' '/ BUILT_PRODUCTS_DIR/{print $2}')/ProFootballCoach.app"
+xcrun simctl launch "$DEVICE" com.ericmg.ProFootballCoach
+```
+
+**The three things to look at**, each the rendered form of an assertion the suite can only make as
+arithmetic:
+
+1. **The icon rail clears the sensor housing.** The rail sits at 59 pt, exactly the housing width.
+   If it is drawn under the notch on the sensor side, the token is right and the safe-area ownership
+   is not.
+2. **The content column is not clipped at the trailing edge.** The band is
+   `115 + 709 + 20 = 844`, exactly the floor. It has no slack at all, so anything that adds width
+   clips rather than compresses.
+3. **The bottom band clears the home indicator.** 25 pt against a 21 pt indicator, so 4 pt of
+   clearance and no more.
+
+Check both sensor orientations — rotate 180 degrees, not just into landscape. Safe areas are owned at
+physical edges per `04` §7, so sensor-left and sensor-right are two different layouts.
+
+Anything red here falsifies D15's chosen window, which is a decision to re-argue rather than a bug
+to patch. Record it and stop; `docs/OPEN-DECISIONS.md` D15 is where it lands.
 
 ## 4. Owner-only: signing and TestFlight (B-2)
 
