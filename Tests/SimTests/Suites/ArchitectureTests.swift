@@ -44,6 +44,17 @@ private let pinnedAdvancedRootFingerprint: UInt64 = 11_229_646_605_763_785_595
 /// being written here.
 private let pinnedNegotiationLedgerFingerprint: UInt64 = 18_194_934_115_346_224_100
 
+/// `GameState.matchSession` is part of the schema-13 root, but neither pin above ever exercises a
+/// populated one: `bootstrap` leaves it `nil` by construction, and `WorldScheduler.advanceWeek`
+/// never calls `prepareControlledMatch`, so the advanced pin's session stays `nil` too. A root that
+/// carried a corrupted `SnapPersonnel`, a wrong in-drive `Situation`, or a mis-ordered call-in
+/// proposal after decode would still satisfy both fingerprints above. This pin drives a controlled
+/// fixture through `prepareControlledMatch` and one `.advance`, reaching the mid-match,
+/// pending-call-in shape, and hashes the result, so its cross-process byte-identity is actually
+/// asserted rather than assumed from the root pins. Reproduced in two independent processes before
+/// being written here.
+private let pinnedMatchSessionFingerprint: UInt64 = 222_581_002_489_681_212
+
 /// Hashes the canonical JSON body, not the save envelope.
 ///
 /// It hashed the envelope until 2026-08-12, when the body became zlib-compressed. That would have
@@ -129,6 +140,40 @@ func runArchitectureTests() {
             expectEqual(
                 try architectureFingerprint(settled.state),
                 pinnedNegotiationLedgerFingerprint
+            )
+        }
+
+        test("the match session is pinned across processes") {
+            let source = GameState.bootstrap(seed: 20_260_820)
+            guard let game = source.competition.currentSchedule.games.first(where: {
+                $0.season == source.calendar.season
+                    && $0.week == source.calendar.week
+                    && $0.result == nil
+                    && source.programmes[$0.homeID] != nil
+            }) else {
+                expect(false, "the generated fixture had no controlled college side")
+                return
+            }
+            let started = try CareerControlSystem.startCollegeCareer(at: game.homeID, in: source).state
+            var prepared = try WorldScheduler.prepareControlledMatch(in: started)
+            guard var checkpoint = prepared.matchSession else {
+                expect(false, "prepareControlledMatch did not install a match session")
+                return
+            }
+            while !checkpoint.completed {
+                let step = try MatchReducer.reduce(.advance, state: &checkpoint)
+                if step.proposal != nil { break }
+            }
+            prepared.matchSession = checkpoint
+
+            expectEqual(prepared.matchSession?.controlledSide, .home)
+            expectEqual(prepared.matchSession?.isTakeover, true)
+            expectEqual(prepared.matchSession?.pendingCallIn?.options.isEmpty, false)
+            expectEqual(prepared.matchSession?.home.offense.isEmpty, false)
+            expectEqual(prepared.matchSession?.away.defense.isEmpty, false)
+            expectEqual(
+                try architectureFingerprint(prepared),
+                pinnedMatchSessionFingerprint
             )
         }
 

@@ -673,6 +673,32 @@ drive it but neither pins a fingerprint), the news feed (`newsAndNarrative` is `
 one-week advance the scheduler-order test asserts), and `DomainEventLedger`'s archived-season path
 (the ledger pin only sees fresh, unarchived events).
 
+### 2026-08-19 — determinism coverage widened: the match session
+
+`GameState.matchSession` sat inside the same root both existing pins hash, but neither ever exercised
+a populated one: `bootstrap` leaves it `nil` by construction, and `WorldScheduler.advanceWeek` never
+calls `prepareControlledMatch`, so the advanced pin's session stays `nil` too. A root that carried a
+corrupted `SnapPersonnel`, a wrong in-drive `Situation`, or a mis-ordered call-in proposal after
+decode would have satisfied both existing pins. `makeMatchSession` is private, so the only reachable
+path is the public `WorldScheduler.prepareControlledMatch`.
+
+Added `"the match session is pinned across processes"` to `ArchitectureTests.swift`: it starts a
+college career (`CareerControlSystem.startCollegeCareer`), installs a controlled fixture
+(`prepareControlledMatch`), then advances until a call-in proposal appears — the defensive
+`while !checkpoint.completed { … if step.proposal != nil { break } }` form, not a hard-coded single
+`.advance`, since the proposal firing on the first call is a real but incidental consequence of
+`TacticalPlanSystem`'s default `.balanced` plan and should not be assumed to hold forever. The
+resulting root — mid-match, pending call-in, full home/away `SnapPersonnel` — is hashed with the same
+`architectureFingerprint` the other three pins use, against a new `pinnedMatchSessionFingerprint`
+literal. The literal was computed live, then `./scripts/verify.sh --lane determinism` was run in two
+independent process invocations — separate compiles, separate SwiftPM scratch paths — and both
+produced the identical fingerprint: `222581002489681212`. No engine divergence found; nothing was
+fixed because nothing broke.
+
+Two of the three candidates named above are now closed. Still open: the news feed
+(`newsAndNarrative` is `.inactive` in the one-week advance the scheduler-order test asserts) and
+`DomainEventLedger`'s archived-season path (the ledger pin only sees fresh, unarchived events).
+
 ### The full default suite — **green on 2026-08-12, after a two-failure fix**
 
 `./scripts/verify.sh` now passes: **602 tests / 747,027 checks, all passed**, debug build and
