@@ -78,6 +78,8 @@ if CommandLine.arguments.contains("--catalog") {
     runInvalidRedshirtCareerGamesProbe(tier: .pro)
 } else if CommandLine.arguments.contains("--m3-recruiting-calibration") {
     runM3RecruitingCalibrationTests()
+} else if CommandLine.arguments.contains("--calibration-gate") {
+    runCalibrationGateTests()
 } else if CommandLine.arguments.contains("--calibration") {
     runCalibrationTests()
 } else if CommandLine.arguments.contains("--redshirt-only") {

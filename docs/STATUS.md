@@ -1053,13 +1053,28 @@ than by margins — pro completion percentage 35.3 against 61–67, pro intercep
 team-game against 0.6–1.1, explosive run rate 0.033 against 0.105–0.130, pro plays per team-game
 89.1 against 60–68. Band values in `01` §6.4/§6.5 were not touched.
 
-**Nothing runnable measures the engine against the band table.** `verify.sh --lane calibration`
-runs `--calibration`, which tests the instrument — TOST arithmetic, total variation distance, the
-band-table shape, harness reproducibility — and never asserts `CalibrationHarness.run` against the
-bands on the holdout ladder. There is no `--calibration-gate` command in `SuiteCatalog` or
-`main.swift`. The line above that "P4's calibration gate stays red" describes prose, not a test,
-which is the distinction `CLAUDE.md` forbids blurring. Whether that gate should exist as a red
-runnable command is an owner call, because it is the only red one would be adding deliberately.
+**Until now, nothing runnable measured the engine against the band table.** `verify.sh --lane
+calibration` runs `--calibration`, which tests the instrument — TOST arithmetic, total variation
+distance, the band-table shape, harness reproducibility — and never asserted `CalibrationHarness.run`
+against the bands. So the line above that "P4's calibration gate stays red" described prose, not a
+test, which is the distinction `CLAUDE.md` forbids blurring: a regression in the engine's numbers
+would have been invisible until someone re-ran the harness by hand.
+
+**`--calibration-gate` now exists, is red, and is in no lane `verify.sh` runs** (owner decision,
+2026-08-19). `CalibrationGateTests` reports the holdout ladder — `01` §6.6 clause 2's B side, since
+gating on A would gate the model on the seeds it was fitted to — and prints every row with theta,
+CI90, band, n and confidence grade, passing rows included. It is registered in `SuiteCatalog` as
+`CalibrationGateTests`, lane `manual` — the lane column names the `verify.sh` lane that runs a gate,
+and no lane runs this one — and **not** in `defaultRun`. Red to say so, the way `--pro-soak` is.
+
+```bash
+swift run -c release -Xswiftc -enable-testing SimTests --calibration-gate
+```
+
+Today it reports **7 of 8 college bands and 11 of 16 pro bands failing**. `verify.sh` is unaffected:
+`--lane calibration` and `--lane release` were re-run green after it landed, and the no-argument
+branch `--lane full` runs does not call `runCalibrationGateTests` — that last one is read from
+`main.swift` rather than observed, because the full lane is a 36-minute run.
 
 ### P3 — match engine core
 
