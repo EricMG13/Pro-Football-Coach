@@ -1859,7 +1859,7 @@ public enum CoachWorldSampleData {
             (.gamePlan, "rectangle.3.group", "Plan"),
             (.opponentReportFilmRoom, "film", "Film"),
             (.teamHealth, "cross.case", "Health"),
-            (.worldSearch, "square.grid.3x3", "All 62"),
+            (.worldSearch, "square.grid.3x3", "All tasks"),
         ]
         return FloodlitChromeReadModel(
             screen: screen,

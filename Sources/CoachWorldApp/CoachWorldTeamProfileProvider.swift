@@ -114,7 +114,7 @@ public extension CoachWorldReadModelProvider {
                     score: game.result.map {
                         String($0.homeScore) + "–" + String($0.awayScore)
                     },
-                    stage: game.stage.rawValue
+                    stage: CoachWorldReadModelProvider.competitionStageLabel(game.stage)
                 )
             }
 

@@ -79,6 +79,9 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
     public let contextOpponent: CoachWorldTeamReference?
     public let rail: [RailEntry]
     public let siblings: [Sibling]
+    /// Canonical tasks whose read models are retained for this career. Legacy aliases are never
+    /// included here; they remain decode inputs only.
+    public let availableScreens: [CoachWorldScreenID]
 
     public var family: CoachWorldSurfaceFamily { screen.family }
     public var showsIconRail: Bool { screen.showsIconRail }
@@ -93,7 +96,8 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
         context: String? = nil,
         contextOpponent: CoachWorldTeamReference? = nil,
         rail: [RailEntry] = [],
-        siblings: [Sibling] = []
+        siblings: [Sibling] = [],
+        availableScreens: [CoachWorldScreenID] = CoachWorldScreenID.allCases
     ) {
         self.screen = screen
         self.world = world
@@ -105,6 +109,7 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
         self.contextOpponent = contextOpponent
         self.rail = rail
         self.siblings = siblings
+        self.availableScreens = availableScreens
     }
 }
 
@@ -502,6 +507,7 @@ struct FloodlitIconRail: View {
     let current: CoachWorldScreenID
     let palette: CoachWorldTokens.Palette
     let onNavigate: (CoachWorldIntentID) -> Void
+    let onOpenRegistry: () -> Void
     var axis: Axis = .vertical
 
     var body: some View {
@@ -523,7 +529,13 @@ struct FloodlitIconRail: View {
 
     private func railButton(_ entry: FloodlitChromeReadModel.RailEntry) -> some View {
         let isCurrent = entry.screen == current
-        return Button { onNavigate(entry.intentID) } label: {
+        return Button {
+            if entry.screen == .worldSearch {
+                onOpenRegistry()
+            } else {
+                onNavigate(entry.intentID)
+            }
+        } label: {
             VStack(spacing: CoachWorldTokens.Gap.hair) {
                 Image(systemName: entry.symbol)
                     .font(.system(size: Chrome.railSymbol, weight: .semibold))
@@ -626,7 +638,7 @@ private enum Chrome {
     static let recordSize: CGFloat = 11
     static let contextSize: CGFloat = 11
     static let contextChipMaxWidth: CGFloat = 210
-    static let familySize: CGFloat = 8.5
+    static let familySize: CGFloat = 9
     static let siblingSize: CGFloat = 9.5
     static let siblingUnderline: CGFloat = 2
     static let siblingUnderlineOffset: CGFloat = 3
@@ -639,8 +651,8 @@ private enum Chrome {
     static let pennantDot: CGFloat = 3
 
     static let railSymbol: CGFloat = 16
-    static let railLabel: CGFloat = 7.5
-    static let railLabelFloor: CGFloat = 0.7
+    static let railLabel: CGFloat = 9
+    static let railLabelFloor: CGFloat = 1.0
 
     static let notBuiltWidth: CGFloat = 330
     static let notBuiltPadH: CGFloat = 22

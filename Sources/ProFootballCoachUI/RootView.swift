@@ -49,7 +49,10 @@ private struct DebugCoachingHQRoot: View {
 
     var body: some View {
         Group {
-            if currentScreen == .schemeBook {
+            if ProcessInfo.processInfo.environment["PROOF_SCREEN"] == "job-redesign"
+                || CommandLine.arguments.contains("--redesigned-job-board") {
+                RedesignedJobBoardProofView()
+            } else if currentScreen == .schemeBook {
                 floodlitChromeProof
             } else if currentScreen == .matchDay {
                 MatchDayView(
@@ -72,7 +75,8 @@ private struct DebugCoachingHQRoot: View {
                     statusMessage: statusMessage,
                     onContinue: { statusMessage = "No later personnel event is available yet" },
                     onNavigate: navigate,
-                    onInspectDevelopment: inspectDevelopment
+                    onInspectDevelopment: inspectDevelopment,
+                    showsRecruitingBoard: true
                 )
                 .floodlitChrome(
                     CoachWorldSampleData.chrome(for: .roster, world: .facility, context: "85 scholarships · 3 open"),
@@ -134,7 +138,8 @@ private struct DebugCoachingHQRoot: View {
                     onPrepare: { statusMessage = "Balanced preparation delegated" },
                     onContinue: { statusMessage = "No later event is available yet" },
                     onOpenCorrespondence: openCorrespondence,
-                    onNavigate: navigate
+                    onNavigate: navigate,
+                    showsRecruitingBoard: true
                 )
                 .floodlitChrome(
                     CoachWorldSampleData.chrome(for: .coachingHQ, world: .pitch),

@@ -10,22 +10,32 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
 
     public let model: ProOffseasonReadModel
     public let title: String
+    public let focus: CoachWorldScreenID
     public let statusMessage: String?
     public let onAction: (ProMarketAction) -> Void
     public let onClose: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var openID: UUID?
+    @State private var pendingMarketAction: PendingMarketAction?
+
+    private struct PendingMarketAction: Identifiable {
+        let id: String
+        let action: ProOffseasonReadModel.ActionRow
+        let subjectName: String?
+    }
 
     public init(
         model: ProOffseasonReadModel,
         title: String = "PRO OFFSEASON",
+        focus: CoachWorldScreenID = .proOffseason,
         statusMessage: String? = nil,
         onAction: @escaping (ProMarketAction) -> Void,
         onClose: @escaping () -> Void
     ) {
         self.model = model
         self.title = title
+        self.focus = focus
         self.statusMessage = statusMessage
         self.onAction = onAction
         self.onClose = onClose
@@ -39,6 +49,20 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
         CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             scrollContent
         }
+        .alert(item: $pendingMarketAction) { action in
+            let label = action.subjectName.map { "\(action.action.title) for \($0)" }
+                ?? action.action.title
+            return Alert(
+                title: Text("\(label)?"),
+                message: Text(action.action.detail),
+                primaryButton: .default(Text("\(label) · \(action.action.detail)")) {
+                    onAction(action.action.action)
+                },
+                secondaryButton: .cancel()
+            )
+        }
+        .onChange(of: focus) { _, _ in openID = nil }
+        .onChange(of: model.phase) { _, _ in openID = nil }
         .accessibilitySortPriority(100)
     }
 
@@ -73,9 +97,6 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
         .safeAreaInset(edge: .bottom) { footer }
     }
 
-    /// Named, not tappable: the four scouting/draft/free-agency routes switch through the shared
-    /// chrome's sibling row, which is where every other multi-route family in this port switches.
-    /// A second, unconnected set of stage pills here would be a control with nothing wired to it.
     private var header: some View {
         HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.md) {
             FloodlitLabel3("\(title) \u{00B7} \(model.seasonLabel)", palette: palette)
@@ -85,7 +106,27 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
     }
 
     private var capStrip: some View {
-        HStack(spacing: CoachWorldTokens.Gap.xl) {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+                    capFigures
+                }
+            } else {
+                HStack(spacing: CoachWorldTokens.Gap.xl) {
+                    capFigures
+                    Spacer(minLength: CoachWorldTokens.Gap.xs)
+                }
+            }
+        }
+        .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+        .frame(minHeight: OffseasonMetric.capStripHeight, alignment: .leading)
+        .background(
+            CoachWorldCutCorner.row.fill(palette.work.color.opacity(OffseasonMetric.stripFill))
+        )
+    }
+
+    @ViewBuilder
+    private var capFigures: some View {
             capFigure("Cap room", currency(model.cap.remainingCap))
             capFigure("Committed", currency(model.cap.committedCap))
             capFigure("Dead money", currency(model.cap.deadMoney))
@@ -102,13 +143,6 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
                         + "team \(currentPickTeamID.uuidString)"
                 )
             }
-            Spacer(minLength: CoachWorldTokens.Gap.xs)
-        }
-        .padding(.horizontal, CoachWorldTokens.Pad.row.h)
-        .frame(minHeight: OffseasonMetric.capStripHeight)
-        .background(
-            CoachWorldCutCorner.row.fill(palette.work.color.opacity(OffseasonMetric.stripFill))
-        )
     }
 
     private func capFigure(_ label: String, _ value: String) -> some View {
@@ -128,40 +162,85 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
         }
     }
 
-    /// This shell backs five real routes, not four: the four named wrapper views AND
-    /// `ProOffseasonView` itself, reached directly via `CoachingHQView`'s "Pro offseason" button
-    /// with the default title "PRO OFFSEASON" and no phase restriction. A title-text match
-    /// (`title.contains("FREE AGENCY")`) picked one list and made the other two permanently
-    /// unreachable from that fifth route regardless of `model.phase` -- during free agency itself,
-    /// the hub screen would show the draft board and hide the very free agents it's the phase for.
-    /// Showing every non-empty section, as the pre-conversion view already did, has no such
-    /// blind spot: a route with nothing in a bucket already renders nothing for it.
     private var listColumn: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
-                FloodlitLabel3("Draft board", palette: palette)
-                if model.prospects.isEmpty {
-                    CoachWorldSystemState(
-                        .empty("No draft class is currently open."), palette: palette
-                    )
-                } else {
-                    ForEach(model.prospects) { prospect in prospectRow(prospect) }
+            if let focusUnavailableReason {
+                CoachWorldSystemState(.empty(focusUnavailableReason), palette: palette)
+            } else {
+                if showsDraftCollection {
+                    draftCollection
                 }
-            }
-            if !model.freeAgents.isEmpty || !model.waivers.isEmpty {
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
-                    if !model.freeAgents.isEmpty {
-                        FloodlitLabel3("Free agents", palette: palette)
-                        ForEach(model.freeAgents) { player in freeAgentRow(player) }
-                    }
-                    if !model.waivers.isEmpty {
-                        FloodlitLabel3("Waivers", palette: palette)
-                        ForEach(model.waivers) { waiver in waiverRow(waiver) }
-                    }
+                if showsFreeAgencyCollection {
+                    freeAgencyCollection
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var draftCollection: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+            FloodlitLabel3(draftSectionTitle, palette: palette)
+            if model.prospects.isEmpty {
+                CoachWorldSystemState(
+                    .empty("No draft class is currently open."), palette: palette
+                )
+            } else {
+                ForEach(model.prospects) { prospect in prospectRow(prospect) }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var freeAgencyCollection: some View {
+        if !model.freeAgents.isEmpty || !model.waivers.isEmpty {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
+                FloodlitLabel3("Free agency", palette: palette)
+                if !model.freeAgents.isEmpty {
+                    FloodlitLabel3("Free agents", palette: palette)
+                    ForEach(model.freeAgents) { player in freeAgentRow(player) }
+                }
+                if !model.waivers.isEmpty {
+                    FloodlitLabel3("Waivers", palette: palette)
+                    ForEach(model.waivers) { waiver in waiverRow(waiver) }
+                }
+            }
+        } else {
+            CoachWorldSystemState(.empty("No free agents are currently available."), palette: palette)
+        }
+    }
+
+    private var showsDraftCollection: Bool {
+        switch focus {
+        case .proOffseason, .draftBoard, .draftRoom, .proScoutingBoard: true
+        default: false
+        }
+    }
+
+    private var showsFreeAgencyCollection: Bool {
+        switch focus {
+        case .proOffseason, .freeAgency: true
+        default: false
+        }
+    }
+
+    private var draftSectionTitle: String {
+        switch focus {
+        case .draftRoom: "Draft room"
+        case .proScoutingBoard: "Scouting board"
+        default: "Draft board"
+        }
+    }
+
+    private var focusUnavailableReason: String? {
+        switch focus {
+        case .draftRoom where model.phase != .draft:
+            return "Draft room is closed. The controlled draft clock is not active in this phase."
+        case .freeAgency where model.phase != .freeAgency:
+            return "Free agency is closed. No free-agent action is available in this phase."
+        default:
+            return nil
+        }
     }
 
     private func prospectRow(_ prospect: ProOffseasonReadModel.ProspectRow) -> some View {
@@ -172,11 +251,13 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
                 Text(prospect.position.uppercased())
                     .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.pill, weight: .bold))
                     .foregroundStyle(palette.stateInfo.color)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(width: OffseasonMetric.positionColumn, alignment: .leading)
                 Text(prospect.name.uppercased())
                     .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
-                    .lineLimit(1)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(prospect.estimatedOverall.map { "\($0)" } ?? "\u{2014}")
                     .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.row, weight: .semibold))
@@ -198,11 +279,13 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
                 Text(player.position.uppercased())
                     .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.pill, weight: .bold))
                     .foregroundStyle(palette.stateInfo.color)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(width: OffseasonMetric.positionColumn, alignment: .leading)
                 Text(player.name.uppercased())
                     .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
-                    .lineLimit(1)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                    .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: CoachWorldTokens.Gap.xs)
             }
         }
@@ -214,7 +297,8 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text(waiver.name.uppercased())
                     .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
-                    .lineLimit(1)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                    .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: CoachWorldTokens.Gap.xs)
                 FloodlitLabel3(
                     "Due \(waiver.deadline)", palette: palette, tint: palette.stateWarning.color
@@ -230,7 +314,7 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
                 FloodlitLabel3("What you can do", palette: palette)
                 if let action = openAction {
-                    genericActionRow(action)
+                    genericActionRow(action, subjectName: openSubjectName)
                 } else {
                     Text("Select a name to see what you can do about it.")
                         .font(CoachWorldTokens.TypeRole.caption)
@@ -243,21 +327,39 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
     }
 
     private var openAction: ProOffseasonReadModel.ActionRow? {
+        guard focusUnavailableReason == nil else { return nil }
         guard let openID else { return nil }
-        if let prospect = model.prospects.first(where: { $0.id == openID }) {
+        if showsDraftCollection,
+           let prospect = model.prospects.first(where: { $0.id == openID }) {
             return prospect.action
         }
-        if let player = model.freeAgents.first(where: { $0.id == openID }) {
+        if showsFreeAgencyCollection,
+           let player = model.freeAgents.first(where: { $0.id == openID }) {
             return player.action
         }
-        if let waiver = model.waivers.first(where: { $0.id == openID }) {
+        if showsFreeAgencyCollection,
+           let waiver = model.waivers.first(where: { $0.id == openID }) {
             return waiver.action
         }
         return nil
     }
 
-    private func genericActionRow(_ action: ProOffseasonReadModel.ActionRow) -> some View {
-        FloodlitRow(palette: palette, action: action.isAvailable ? { onAction(action.action) } : nil) {
+    private func genericActionRow(
+        _ action: ProOffseasonReadModel.ActionRow,
+        subjectName: String? = nil
+    ) -> some View {
+        FloodlitRow(
+            palette: palette,
+            action: action.isAvailable
+                ? {
+                    pendingMarketAction = PendingMarketAction(
+                        id: action.id + (subjectName ?? ""),
+                        action: action,
+                        subjectName: subjectName
+                    )
+                }
+                : nil
+        ) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 Text(action.title.uppercased())
                     .font(
@@ -282,6 +384,24 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
         )
     }
 
+    private var openSubjectName: String? {
+        guard focusUnavailableReason == nil else { return nil }
+        guard let openID else { return nil }
+        if showsDraftCollection,
+           let prospect = model.prospects.first(where: { $0.id == openID }) {
+            return prospect.name
+        }
+        if showsFreeAgencyCollection,
+           let player = model.freeAgents.first(where: { $0.id == openID }) {
+            return player.name
+        }
+        if showsFreeAgencyCollection,
+           let waiver = model.waivers.first(where: { $0.id == openID }) {
+            return waiver.name
+        }
+        return nil
+    }
+
     private var footer: some View {
         HStack(spacing: CoachWorldTokens.Gap.mdPlus) {
             Text("Every figure here is recorded. Nothing projects past this phase.")
@@ -289,7 +409,8 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentSecondary.color)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
-            FloodlitCommittingAction("Done", action: onClose)
+            Button("Close", action: onClose)
+                .buttonStyle(CoachWorldActionButtonStyle(role: .secondary, palette: palette))
         }
         .floodlitFooterStrip(palette: palette)
     }
@@ -311,7 +432,7 @@ public struct ProOffseasonView: View, CoachWorldChromedSurface {
 private enum OffseasonMetric {
     static let listColumn: CGFloat = 424
     static let detailColumn: CGFloat = 261
-    static let positionColumn: CGFloat = 44
+    static let positionColumn: CGFloat = 88
     static let capStripHeight: CGFloat = 32
     static let stripFill = 0.5
 }

@@ -703,8 +703,9 @@ func runContractTests() {
                        && model.contains("prefix(256)"),
                    "history read models must be immutable and bounded")
             expect(view.contains("public struct LegacyHistoryView")
-                       && view.contains("Button(\"Record book\")"),
-                   "history must expose a native, origin-preserving view selector")
+                       && !view.contains("Menu(\"Views\")")
+                       && view.contains("let focus: CoachWorldScreenID"),
+                   "history must use shared chrome for navigation and render one focused projection")
         }
 
         test("competition leaders and honours use production routes") {
@@ -749,8 +750,9 @@ func runContractTests() {
                 .first { $0.path.hasSuffix("/DomainEvent.swift") }?.text ?? ""
             expect(root.contains("case .realignmentEvent:") && root.contains("RealignmentEventView("),
                    "realignment must reach the shipped root")
-            expect(provider.contains("case let .realignment")
-                       && provider.contains("ConferenceRealignmentSwap"),
+            expect(provider.contains("guard case let .realignment")
+                       && provider.contains("firstProgrammeID")
+                       && provider.contains("secondToConferenceID"),
                    "realignment must read typed before/after swaps")
             expect(engine.contains("case realignment(")
                        && engine.contains("ConferenceRealignmentReason"),
@@ -957,6 +959,191 @@ func runContractTests() {
                    "standard management prose must remain in the compact 12–13 point band")
         }
 
+        test("reviewed release seams retain their reachable and readable contracts") {
+            let uiFiles = swiftFiles(under: "Sources/ProFootballCoachUI")
+            let appFiles = swiftFiles(under: "Sources/CoachWorldApp")
+            let chrome = uiFiles.first { $0.path.hasSuffix("/FloodlitChrome.swift") }?.text ?? ""
+            let composition = uiFiles.first {
+                $0.path.hasSuffix("/CoachWorldFloodlitComposition.swift")
+            }?.text ?? ""
+            let hq = uiFiles.first { $0.path.hasSuffix("/CoachingHQView.swift") }?.text ?? ""
+            let roster = uiFiles.first { $0.path.hasSuffix("/RosterView.swift") }?.text ?? ""
+            let depth = uiFiles.first { $0.path.hasSuffix("/DepthChartView.swift") }?.text ?? ""
+            let gamePlan = uiFiles.first { $0.path.hasSuffix("/GamePlanView.swift") }?.text ?? ""
+            let practice = uiFiles.first { $0.path.hasSuffix("/PracticePlanView.swift") }?.text ?? ""
+            let careerHub = uiFiles.first { $0.path.hasSuffix("/CareerHubView.swift") }?.text ?? ""
+            let filmRoom = uiFiles.first {
+                $0.path.hasSuffix("/OpponentReportFilmRoomView.swift")
+            }?.text ?? ""
+            let opponentFilm = uiFiles.first {
+                $0.path.hasSuffix("/OpponentFilmView.swift")
+            }?.text ?? ""
+            let matchProvider = appFiles.first {
+                $0.path.hasSuffix("/CoachWorldMatchProvider.swift")
+            }?.text ?? ""
+            let appRoot = appFiles.first {
+                $0.path.hasSuffix("/CoachWorldAppRootView.swift")
+            }?.text ?? ""
+            let store = appFiles.first { $0.path.hasSuffix("/CoachWorldStore.swift") }?.text ?? ""
+            let competitionProvider = appFiles.first {
+                $0.path.hasSuffix("/CoachWorldCompetitionProvider.swift")
+            }?.text ?? ""
+            let competition = uiFiles.first {
+                $0.path.hasSuffix("/CompetitionOverviewView.swift")
+            }?.text ?? ""
+            let newsProvider = appFiles.first {
+                $0.path.hasSuffix("/CoachWorldNewsProvider.swift")
+            }?.text ?? ""
+            let readOnlyBacks = [
+                "NewsView.swift", "StatisticsLeadersView.swift", "AwardsHonoursView.swift",
+                "TeamProgrammeProfileView.swift", "GameDetailBoxScoreView.swift"
+            ].compactMap { filename in
+                uiFiles.first { $0.path.hasSuffix("/\(filename)") }?.text
+            }
+
+            expect(chrome.contains("static let familySize: CGFloat = 9")
+                       && chrome.contains("static let railLabel: CGFloat = 9")
+                       && chrome.contains("static let railLabelFloor: CGFloat = 1.0"),
+                   "the icon rail must not scale authored labels below the readable floor")
+            expect(composition.contains("SurfaceRegistryOverlay")
+                       && composition.contains("onOpenRegistry")
+                       && composition.contains("ALL TASKS")
+                       && composition.contains("availableScreens"),
+                   "All Tasks must open the live canonical task registry")
+            expect(hq.contains("noDecision")
+                       && hq.contains("preparationNeeded")
+                       && hq.contains("isEnabled: canAdvance"),
+                   "HQ advance must expose preparation and refusal state")
+            expect(appRoot.contains("case .settingsAccessibility:")
+                       && appRoot.contains("case .signingDay where store.collegeOffseason?.cyclePhase == .signing"),
+                   "settings and signing-day routes must be reachable in the active career")
+            expect(appRoot.contains("onContinue: { navigate(.gamePlan, in: store) }")
+                       && appRoot.contains("case .opponentReportFilmRoom: .opponentReportFilmRoom"),
+                   "film-room continuation must open Game Plan without advancing the week and preserve its origin")
+            expect(careerHub.contains(".alert(item: $pendingOpportunity)")
+                       && careerHub.contains("Accept \\(opportunity.team.name)")
+                       && careerHub.contains("showingResignConfirmation")
+                       && careerHub.contains("case .jobBoard, .offer, .appointment:"),
+                   "career offers must show evidence and confirm the named appointment before mutation")
+            expect(appRoot.contains("careerFocus")
+                       && appRoot.contains("screen = .careerHub")
+                       && appRoot.contains("private static func canonicalScreen"),
+                   "legacy career routes must migrate to the canonical career workspace")
+            expect(appRoot.contains("add(.draftRoom, when: store.proOffseason?.phase == .draft)")
+                       && appRoot.contains("case .draftRoom where store.proOffseason?.phase == .draft"),
+                   "Draft Room must remain a phase-gated canonical task")
+            expect(store.contains("split(separator: \"|\"")
+                       && store.contains("mandatoryDecision(decisionID: decisionID, optionID: optionID)"),
+                   "mandatory decisions must preserve both the decision and option identity")
+            expect(appRoot.contains("case .playerProfile:")
+                       && appRoot.contains("PlayerProfileView(")
+                       && appRoot.contains("onOpenProfile:")
+                       && appRoot.contains("$0.stableID == personnelPlayerID")
+                       && appRoot.contains(".onDisappear { personnelPlayerID = nil }")
+                       && appRoot.contains("case .playerProfile where store.roster?.players.isEmpty == false"),
+                   "Player Profile must preserve the active roster selection")
+            expect(appRoot.contains("Button(\"Back to HQ\")")
+                       && appRoot.contains("navigate(.coachingHQ, in: store)"),
+                   "unavailable routes must offer a truthful return path")
+            expect(competitionProvider.contains("competitionStageLabel")
+                       && !competitionProvider.contains("stage: game.stage.rawValue"),
+                   "competition surfaces must expose human-readable stage labels")
+            expect(competition.contains("private var focusedColumns")
+                       && competition.contains("case .rankingsPlayoffPicture")
+                       && competition.contains("case .bracketPostseason"),
+                   "rankings and postseason must focus the shared competition workspace")
+            expect(newsProvider.contains("state.calendar.season + 1")
+                       && newsProvider.contains("occurredAt.season + 1"),
+                   "news must use the same one-based season convention as the other league surfaces")
+            expect(competitionProvider.contains("controlledCompetitionTier")
+                       && store.contains("standings(tier: competitionTier")
+                       && store.contains("schedule(tier: competitionTier")
+                       && store.contains("competitionOverview = CoachWorldReadModelProvider.competitionOverview(")
+                       && store.contains("tier: competitionTier"),
+                   "the store must forward the controlled competition tier to every surface")
+            expect(readOnlyBacks.count == 5
+                       && readOnlyBacks.allSatisfy { !$0.contains("FloodlitCommittingAction(\"Back") },
+                   "read-only returns must not use the gold committing action")
+            expect(roster.contains(".frame(maxWidth: .infinity, alignment: .leading)")
+                       && !roster.contains(".fixedSize(horizontal: true, vertical: false)"),
+                   "roster names must yield width to the comparison columns")
+            expect(depth.contains("safeAreaInset(edge: .bottom, spacing: .zero)")
+                       && depth.contains("fieldPlayerName"),
+                   "depth-chart content must clear the footer and compact field tokens")
+            expect(gamePlan.contains("Choose the install")
+                       && !gamePlan.contains("What a different install costs")
+                       && !gamePlan.contains("onSelect(option.plan)")
+                       && gamePlan.contains("onSelect(selectedOption.plan)")
+                       && gamePlan.contains("onClose()"),
+                   "game-plan rows must select locally and its explicit action must commit the selected plan")
+            expect(practice.contains("Option preview")
+                       && practice.contains("Choose the week")
+                       && !practice.contains("What a different week costs")
+                       && !practice.contains("onSelect(option.plan)")
+                       && practice.contains("onSelect(selectedOption.plan)")
+                       && practice.contains("onClose()"),
+                   "practice rows must select locally and its explicit action must commit the selected plan")
+            expect(!depth.contains("onSelect(option.plan)")
+                       && depth.contains("onSelect(selectedOption.plan)")
+                       && depth.contains("selectedOption.map {")
+                       && depth.contains("Set \\($0.title)"),
+                   "depth-chart rows must select locally and its explicit action must name the selected chart")
+            expect(filmRoom.contains("dynamicTypeSize.isAccessibilitySize ? .leading : .center")
+                       && opponentFilm.contains("else if dynamicTypeSize.isAccessibilitySize")
+                       && opponentFilm.contains("HStack(alignment: .top"),
+                   "the film-room entry and delegated surface must reflow at accessibility sizes")
+            expect(matchProvider.contains("roleLabel(actor.role)")
+                       && matchProvider.contains("staffRoleLabel(staff.role)")
+                       && !matchProvider.contains("role: actor.role.rawValue"),
+                   "match-day micro labels must use compact human-readable role names")
+        }
+
+        test("the 62 legacy route numbers migrate through one canonical task table") {
+            let aliases: [CoachWorldScreenID: CoachWorldScreenID] = [
+                .jobBoard: .careerHub,
+                .offer: .careerHub,
+                .appointment: .careerHub,
+                .staffMarketProfile: .staffRoom,
+                .schemeBook: .gamePlan,
+                .personnelPackages: .depthChart,
+                .portalHub: .collegeOffseason,
+                .retentionDecisions: .collegeOffseason,
+                .portalMarket: .collegeOffseason,
+                .nilAllocation: .collegeOffseason,
+                .proScoutingBoard: .proOffseason,
+                .draftBoard: .proOffseason,
+                .freeAgency: .proOffseason,
+                .jobSecurity: .careerHub,
+                .coachingCarousel: .careerHub,
+            ]
+            expectEqual(CoachWorldScreenID.allCases.count, 62,
+                        "the legacy decode registry must retain all 62 numbers")
+            expectEqual(aliases.count, 15,
+                        "the alias table must account for every retired title-only route")
+            for screen in CoachWorldScreenID.allCases {
+                if let destination = aliases[screen] {
+                    expectEqual(screen.routeDisposition, .alias(destination),
+                                "legacy route \(screen.number) must be an explicit alias")
+                    expectEqual(screen.canonicalDestination, destination,
+                                "legacy route \(screen.number) must migrate deterministically")
+                    expect(!screen.isCanonicalTask,
+                           "alias \(screen.number) must not appear as a visible task")
+                } else {
+                    expectEqual(screen.routeDisposition, .canonical,
+                                "unlisted route \(screen.number) must be explicitly canonical")
+                    expectEqual(screen.canonicalDestination, screen,
+                                "canonical route \(screen.number) must be idempotent")
+                    expect(screen.isCanonicalTask,
+                           "canonical route \(screen.number) must appear as a visible task")
+                }
+            }
+            expectEqual(
+                CoachWorldScreenID.allCases.filter(\.isCanonicalTask).count,
+                47,
+                "the visible task registry must exclude aliases while retaining every canonical route"
+            )
+        }
+
         test("the production screen registry is complete and stably numbered") {
             let screens = CoachWorldScreenID.allCases
             expectEqual(screens.map(\.number), Array(1...62),
@@ -967,6 +1154,7 @@ func runContractTests() {
 
         test("Coaching HQ exposes an injected read-model surface and a truthful app root") {
             let uiFiles = swiftFiles(under: "Sources/ProFootballCoachUI")
+            let appFiles = swiftFiles(under: "App")
             let hq = uiFiles.first { $0.path.hasSuffix("/CoachingHQView.swift") }?.text ?? ""
             let appRoot = swiftFiles(under: "Sources/CoachWorldApp")
                 .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
@@ -1108,6 +1296,34 @@ func runContractTests() {
             expect(root.contains("RosterView(") && root.contains("PlayerProfileView("),
                    "the debug root must reach both personnel screens")
 
+            let redesignProof = uiFiles.first {
+                $0.path.hasSuffix("/RedesignedJobBoardProofView.swift")
+            }?.text ?? ""
+            expect(redesignProof.contains("#if DEBUG")
+                       && redesignProof.contains("struct RedesignedJobBoardProofView")
+                       && redesignProof.contains("CareerHubReadModel"),
+                   "the redesigned Job Board proof must be DEBUG-only and use the career read model")
+            expect(root.contains("--redesigned-job-board")
+                       && root.contains("job-redesign")
+                       && root.contains("RedesignedJobBoardProofView()"),
+                   "the redesigned Job Board proof needs both launch selectors")
+            let appEntryPoint = appFiles.first {
+                $0.path.hasSuffix("/ProFootballCoachApp.swift")
+            }?.text ?? ""
+            expect(appEntryPoint.contains("--redesigned-job-board")
+                       && appEntryPoint.contains("RootView()"),
+                   "the app entrypoint must route the argument selector into the debug proof root")
+            expect(redesignProof.contains("Button(")
+                       && redesignProof.contains(".alert(\"Accept this offer?\"")
+                       && redesignProof.contains("@AccessibilityFocusState"),
+                   "the redesigned Job Board proof must use semantic confirmation and focus")
+            expect(!redesignProof.contains("GameState")
+                       && !redesignProof.contains("CoachWorldStore")
+                       && !redesignProof.contains("onTapGesture")
+                       && !redesignProof.contains("Continue")
+                       && !redesignProof.contains("Take it"),
+                   "the redesigned Job Board proof must not invent engine access or generic actions")
+
             expect(roster.contains("CoachWorldTeamIdentity(") && roster.contains("uniformMark"),
                    "the world strip must carry generated programme identity, not neutral furniture")
             expect(roster.contains("selectionColour"),
@@ -1149,8 +1365,19 @@ func runContractTests() {
             expect(proOffseasonModel.contains("public struct ProOffseasonReadModel")
                        && proOffseasonModel.contains("ProMarketAction"),
                    "Pro Offseason must project existing market actions")
+            expect(proOffseason.contains(".alert(item: $pendingMarketAction)")
+                       && proOffseason.contains("pendingMarketAction = PendingMarketAction")
+                       && proOffseason.contains("subjectName: openSubjectName")
+                       && proOffseason.contains("public let focus: CoachWorldScreenID")
+                       && proOffseason.contains("showsDraftCollection")
+                       && proOffseason.contains("showsFreeAgencyCollection")
+                       && proOffseason.contains("onChange(of: model.phase)")
+                       && proOffseason.contains("if dynamicTypeSize.isAccessibilitySize"),
+                   "professional market actions must confirm the named consequence within a focused workspace")
             expect(appRoot.contains("case .proOffseason")
-                       && appRoot.contains("ProOffseasonView("),
+                       && appRoot.contains("ProOffseasonView(")
+                       && appRoot.contains("@State private var proFocus")
+                       && appRoot.contains("Self.proFocus(for: destination)"),
                    "Pro Offseason must be reachable from the shipped app root")
             expect(hq.contains("proOffseason") && appStore.contains("actOnProMarket"),
                    "professional offseason must be reachable only through the market seam")
@@ -1163,14 +1390,19 @@ func runContractTests() {
                 let view = uiFiles.first { $0.path.hasSuffix("/\(family.0)") }?.text ?? ""
                 expect(view.contains("public struct \(family.1)")
                            && view.contains("ProOffseasonView(")
+                           && view.contains("focus: .\(family.2)")
                            && view.contains("dynamicTypeSize.isAccessibilitySize"),
                        "\(family.1) must reuse the authoritative pro market surface")
-                expect(appRoot.contains("case .\(family.2)")
-                           && appRoot.contains("\(family.1)("),
-                       "\(family.1) must be reachable from the shipped app root")
-                expect(hq.contains("\(family.2)"),
-                       "\(family.1) must be reachable from the HQ route surface")
+                expect(hq.contains("Button(\"Pro offseason\")")
+                           && !hq.contains("Button(\"Draft board\")")
+                           && !hq.contains("Button(\"Free agency\")")
+                           && !hq.contains("Button(\"Pro scouting board\")"),
+                       "legacy professional aliases must use the canonical Pro Offseason surface")
             }
+            expect(appRoot.contains("case .proOffseason, .draftRoom:")
+                       && appRoot.contains("let focus = screen == .draftRoom ? .draftRoom : proFocus")
+                       && appRoot.contains("focus: focus"),
+                   "Draft Room and legacy pro routes must land in focused front-office modes")
             for family in [
                 ("JobBoardView.swift", "JobBoardView", "jobBoard"),
                 ("OfferView.swift", "OfferView", "offer"),
@@ -1184,8 +1416,10 @@ func runContractTests() {
                 expect(appRoot.contains("case .\(family.2)")
                            && appRoot.contains("\(family.1)("),
                        "\(family.1) must be reachable from the shipped app root")
-                expect(hq.contains("\(family.2)") && hq.contains("showsCareer"),
-                       "\(family.1) must be reachable only for a controlled career")
+                expect(!hq.contains("Button(\"Job board\")")
+                           && !hq.contains("Button(\"Offers\")")
+                           && !hq.contains("Button(\"Appointment\")"),
+                       "legacy career aliases must use the canonical Career Hub surface")
             }
             for family in [
                 ("ClassOverviewView.swift", "ClassOverviewView", "classOverview"),
@@ -1220,6 +1454,10 @@ func runContractTests() {
             expect(proManagementProvider.contains("static func proManagement(")
                        && proManagementProvider.contains("ProManagementSystem.capSnapshot"),
                    "Cap and roster management must derive from the authoritative pro engine")
+            expect(proManagement.contains(".alert(item: $pendingRelease)")
+                       && proManagement.contains("deadMoney(ifReleasedAtSeason:")
+                       && proManagement.contains("Release \\(player.name)"),
+                   "release must name the player and exact dead-money consequence before mutation")
             expect(appRoot.contains("case .capContracts")
                        && appRoot.contains("rosterCutsTransactions")
                        && appRoot.contains("CapContractsView(")
@@ -1251,8 +1489,9 @@ func runContractTests() {
                        && appRoot.contains("staffMarketProfile")
                        && appRoot.contains("StaffRoomView("),
                    "Staff Room and Staff Market & Profile must be reachable from the shipped app root")
-            expect(hq.contains("staffRoom") && hq.contains("Staff market & profile"),
-                   "Staff Room routes must be reachable from HQ")
+            expect(hq.contains("Button(\"Staff room\")")
+                       && !hq.contains("Button(\"Staff market & profile\")"),
+                   "Staff Room must be the canonical HQ staff route")
             for family in [
                 ("StaffMarketProfileView.swift", "StaffMarketProfileView", "staffMarketProfile"),
                 ("CapContractsView.swift", "CapContractsView", "capContracts"),
@@ -1299,8 +1538,9 @@ func runContractTests() {
                        && appRoot.contains("SchemeBookView(")
                        && appRoot.contains("PersonnelPackagesView("),
                    "Scheme Book and Personnel Packages must be reachable from the shipped app root")
-            expect(hq.contains("schemeBook") && hq.contains("personnelPackages"),
-                   "Scheme Book and Personnel Packages must be reachable from HQ")
+            expect(!hq.contains("Button(\"Scheme book\")")
+                       && !hq.contains("Button(\"Personnel packages\")"),
+                   "Scheme Book and Personnel Packages must use canonical host routes")
 
             let collegeOffseason = uiFiles.first {
                 $0.path.hasSuffix("/CollegeOffseasonView.swift")
@@ -1316,6 +1556,12 @@ func runContractTests() {
             expect(collegeOffseasonModel.contains("public struct CollegeOffseasonReadModel")
                        && collegeOffseasonModel.contains("CoachingHQReadModel.Decision"),
                    "College Offseason must project existing mandatory decisions")
+            expect(collegeOffseason.contains(".alert(item: $pendingDecision)")
+                       && collegeOffseason.contains("decision.stableID)|\\(choice.intentID.rawValue)")
+                       && collegeOffseason.contains("model.decisions.isEmpty && model.delegatedDecisionCount == 0")
+                       && collegeOffseason.contains("Wait for the staff decision to finish before advancing.")
+                       && collegeOffseason.contains(". Unavailable"),
+                   "college decisions must confirm the named consequence before mutation")
             expect(collegeOffseasonProvider.contains("static func collegeOffseason(")
                        && collegeOffseasonProvider.contains("from state: GameState"),
                    "College Offseason must be derived from authoritative college state")
@@ -1340,8 +1586,13 @@ func runContractTests() {
                 expect(appRoot.contains("case .\(family.2)")
                            && appRoot.contains("\(family.1)("),
                        "\(family.1) must be reachable from the shipped app root")
-                expect(hq.contains("\(family.2)"),
-                       "\(family.1) must be reachable from HQ")
+                if family.2 == "signingDay" {
+                    expect(hq.contains("Button(\"Signing day\")"),
+                           "Signing Day must remain reachable during its active phase")
+                } else {
+                    expect(!hq.contains("Button(\(family.2)"),
+                           "\(family.1) must use the canonical College Offseason host route")
+                }
             }
             let development = uiFiles.first {
                 $0.path.hasSuffix("/DevelopmentPlanView.swift")

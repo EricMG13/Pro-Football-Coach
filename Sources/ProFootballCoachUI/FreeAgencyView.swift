@@ -31,6 +31,7 @@ public struct FreeAgencyView: View, CoachWorldChromedSurface {
         ProOffseasonView(
             model: model,
             title: "FREE AGENCY",
+            focus: .freeAgency,
             statusMessage: statusMessage,
             onAction: onAction,
             onClose: onClose

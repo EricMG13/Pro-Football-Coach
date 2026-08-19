@@ -203,7 +203,8 @@ public struct WorldSearchView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentSecondary.color)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
-            FloodlitCommittingAction("Done", action: onClose)
+            Button("Back to HQ", action: onClose)
+                .buttonStyle(CoachWorldActionButtonStyle(role: .secondary, palette: palette))
         }
         .floodlitFooterStrip(palette: palette)
     }

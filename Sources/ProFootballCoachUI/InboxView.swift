@@ -277,7 +277,7 @@ public struct InboxView: View, CoachWorldChromedSurface {
                            minHeight: CoachWorldTokens.Shape.minimumTarget)
             }
             FloodlitCommittingAction(
-                "Continue",
+                "Advance week",
                 isEnabled: model.canContinue,
                 action: onContinue
             )

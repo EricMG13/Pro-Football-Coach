@@ -96,8 +96,9 @@ public final class CoachWorldStore {
         matchDay = CoachWorldReadModelProvider.matchDay(from: snapshot)
         aftermath = CoachWorldReadModelProvider.aftermath(from: snapshot)
         careerHub = CoachWorldReadModelProvider.careerHub(from: snapshot)
-        standings = CoachWorldReadModelProvider.standings(from: snapshot)
-        schedule = CoachWorldReadModelProvider.schedule(from: snapshot)
+        let competitionTier = CoachWorldReadModelProvider.controlledCompetitionTier(from: snapshot)
+        standings = CoachWorldReadModelProvider.standings(tier: competitionTier, from: snapshot)
+        schedule = CoachWorldReadModelProvider.schedule(tier: competitionTier, from: snapshot)
         let controlledID = snapshot.career.college?.programmeID
             ?? (snapshot.careerArc.currentJob?.organisationID)
         let selectedID = presentation.selectedSubjectID ?? controlledID
@@ -105,7 +106,10 @@ public final class CoachWorldStore {
             CoachWorldReadModelProvider.teamProgrammeProfile($0, from: snapshot)
         }
         worldSearch = CoachWorldReadModelProvider.worldSearch(from: snapshot)
-        competitionOverview = CoachWorldReadModelProvider.competitionOverview(from: snapshot)
+        competitionOverview = CoachWorldReadModelProvider.competitionOverview(
+            tier: competitionTier,
+            from: snapshot
+        )
         gamePlan = CoachWorldReadModelProvider.gamePlan(from: snapshot)
         practicePlan = CoachWorldReadModelProvider.practicePlan(from: snapshot)
         depthChart = CoachWorldReadModelProvider.depthChart(from: snapshot)
@@ -351,15 +355,24 @@ public final class CoachWorldStore {
             statusMessage = "That opportunity is no longer available"
             return
         }
-        await run {
-            try await self.session.resolve(
-                .career(.acceptOpportunity(opportunityID: opportunityID))
-            )
-        }
+        let teamName = careerHub?.opportunities.first { $0.id == stableID }?.team.name
+        await run(
+            {
+                try await self.session.resolve(
+                    .career(.acceptOpportunity(opportunityID: opportunityID))
+                )
+            },
+            successMessage: teamName.map { "Accepted \($0). Appointment updated." }
+                ?? "Career appointment updated."
+        )
     }
 
     public func resignCareer() async {
-        await run { try await self.session.resolve(.career(.resign)) }
+        let teamName = careerHub?.currentJob?.team.name ?? "the current appointment"
+        await run(
+            { try await self.session.resolve(.career(.resign)) },
+            successMessage: "Resigned from \(teamName). Returned to the job search."
+        )
     }
 
     public func actOnProMarket(_ action: ProMarketAction) async {
@@ -501,14 +514,22 @@ public final class CoachWorldStore {
         }
     }
 
-    /// Resolves the open mandatory decision by the option the screen committed.
+    /// Resolves the mandatory decision encoded by the screen as `decisionID|optionID`.
     ///
-    /// The intent identifier a choice carries is the option's own identifier — see
-    /// `CoachWorldReadModelProvider.decision` — so this is a lookup, not a re-derivation.
+    /// Legacy callers may still send the option ID alone; the canonical offseason surface sends
+    /// `decisionID|optionID` so every visible decision card resolves its own subject.
     public func commit(_ intentID: CoachWorldIntentID) async {
-        guard let decision = coachingHQ?.decision,
-              let optionID = UUID(uuidString: intentID.rawValue),
-              let decisionID = UUID(uuidString: decision.stableID) else {
+        let parts = intentID.rawValue.split(separator: "|", omittingEmptySubsequences: true)
+        let decisionID: UUID?
+        let optionID: UUID?
+        if parts.count == 2 {
+            decisionID = UUID(uuidString: String(parts[0]))
+            optionID = UUID(uuidString: String(parts[1]))
+        } else {
+            decisionID = coachingHQ?.decision.flatMap { UUID(uuidString: $0.stableID) }
+            optionID = UUID(uuidString: intentID.rawValue)
+        }
+        guard let decisionID, let optionID else {
             statusMessage = "That choice is no longer available"
             return
         }
@@ -533,14 +554,17 @@ public final class CoachWorldStore {
 
     /// One place where an intent is run, a refusal is reported and the read models are rebuilt, so
     /// no caller can advance the world and forget to refresh the screen.
-    private func run(_ intent: @escaping () async throws -> CareerSessionReceipt) async {
+    private func run(
+        _ intent: @escaping () async throws -> CareerSessionReceipt,
+        successMessage: String? = nil
+    ) async {
         guard !isWorking else { return }
         isWorking = true
         defer { isWorking = false }
         do {
             _ = try await intent()
             if mutationGeneration < UInt64.max { mutationGeneration += 1 }
-            statusMessage = nil
+            statusMessage = successMessage ?? "Action committed successfully."
         } catch {
             statusMessage = Self.refusalMessage(for: error)
         }

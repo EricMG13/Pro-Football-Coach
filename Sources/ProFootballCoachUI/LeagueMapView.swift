@@ -86,6 +86,10 @@ public struct LeagueMapView: View, CoachWorldChromedSurface {
         model.places.filter { $0.tierLabel == tier }
     }
 
+    private var showsRecruitingBoard: Bool {
+        model.places.first(where: \.isControlled)?.tierLabel == LeagueMapReadModel.Tier.college
+    }
+
     /// Draw order, so the two markers that must always be reachable are the two on top.
     ///
     /// Known ceiling: at the promise viewport the grid scales to about 0.43, so cities inside one
@@ -160,7 +164,7 @@ public struct LeagueMapView: View, CoachWorldChromedSurface {
             HStack(spacing: .zero) {
                 route("Office", screen: .coachingHQ)
                 route("Team", screen: .roster)
-                route("Recruit", screen: .recruitingBoard)
+                if showsRecruitingBoard { route("Recruit", screen: .recruitingBoard) }
                 route("League", screen: .leagueMap, current: true)
                 route("Table", screen: .standings)
                 route("Schedule", screen: .schedule)
@@ -172,7 +176,7 @@ public struct LeagueMapView: View, CoachWorldChromedSurface {
             .frame(maxWidth: .infinity)
 
             Button(action: onContinue) {
-                Label("Continue", systemImage: "forward.end.fill")
+                Label("Advance week", systemImage: "forward.end.fill")
             }
             .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
         }

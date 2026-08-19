@@ -195,7 +195,8 @@ public struct ContractNegotiationView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentSecondary.color)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
-            FloodlitCommittingAction("Done", action: onClose)
+            Button("Close", action: onClose)
+                .buttonStyle(CoachWorldActionButtonStyle(role: .secondary, palette: palette))
         }
         .floodlitFooterStrip(palette: palette)
     }

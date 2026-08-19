@@ -10,11 +10,11 @@ public extension CoachWorldReadModelProvider {
             snapshotID: "news-\(state.league.id.uuidString)-\(state.calendar.season)-\(state.calendar.week)",
             provenance: .simulationSnapshot,
             world: worldReference(state),
-            weekLabel: "Season \(state.calendar.season) · Week \(state.calendar.week)",
+            weekLabel: "Season \(state.calendar.season + 1) · Week \(state.calendar.week)",
             items: feed.items.map {
                 NewsReadModel.Item(
                     stableID: $0.eventID.uuidString,
-                    occurred: "Season \($0.occurredAt.season) · Week \($0.occurredAt.week)",
+                    occurred: "Season \($0.occurredAt.season + 1) · Week \($0.occurredAt.week)",
                     headline: $0.headline,
                     weight: $0.weight
                 )

@@ -101,7 +101,7 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
             .frame(maxWidth: .infinity)
 
             Button(action: onContinue) {
-                Label("Continue", systemImage: "forward.end.fill")
+                Label("Advance week", systemImage: "forward.end.fill")
             }
                 .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
                 .disabled(!model.canContinue)
@@ -181,7 +181,7 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
             route("Recruit", screen: .recruitingBoard, current: true)
             route("League", screen: .leagueMap)
             route("Career", screen: .careerHub)
-            Button("Continue", action: onContinue)
+            Button("Advance week", action: onContinue)
                 .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
                 .disabled(!model.canContinue)
                 .accessibilityHint(model.continueReason ?? "")

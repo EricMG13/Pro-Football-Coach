@@ -165,7 +165,7 @@ public extension CoachWorldReadModelProvider {
                             x: x($0.point.yard), y: $0.point.lateral, fraction: $0.fraction
                         )
                     },
-                    role: actor.role.rawValue
+                    role: roleLabel(actor.role)
                 )
             },
             ball: set.ball.map { segment in
@@ -314,7 +314,7 @@ public extension CoachWorldReadModelProvider {
             MatchDayReadModel.StaffInterruption.Action(
                 path: .dismiss,
                 intentID: .init(rawValue: actionPrefix + "dismiss|" + TacticalCallInAction.trustCoordinator.rawValue),
-                title: "Trust the coordinator",
+                title: "Keep current plan",
                 cost: "No extra adjustment",
                 consequence: "Keep the installed plan for this decision."
             ),
@@ -328,7 +328,11 @@ public extension CoachWorldReadModelProvider {
         ]
         return try? MatchDayReadModel.StaffInterruption(
             stableID: "\(fixtureID.uuidString)-callin-\(session.callInReceipts.count)",
-            staff: .init(stableID: staff.id.uuidString, name: staff.fullName, role: staff.role.rawValue),
+            staff: .init(
+                stableID: staff.id.uuidString,
+                name: staff.fullName,
+                role: staffRoleLabel(staff.role)
+            ),
             message: "Staff flagged \(proposal.trigger.label.lowercased()) before the next snap.",
             evidence: [
                 "Trigger: \(proposal.trigger.label)",
@@ -336,6 +340,32 @@ public extension CoachWorldReadModelProvider {
             ],
             actions: actions
         )
+    }
+
+    private static func roleLabel(_ role: SnapRole) -> String {
+        switch role {
+        case .passer: return "P"
+        case .blocker: return "B"
+        case .routeRunner: return "RR"
+        case .carrier: return "C"
+        case .decoy: return "D"
+        case .rusher: return "R"
+        case .coverage: return "CV"
+        case .runFit: return "FIT"
+        case .kicker: return "K"
+        case .blockLeverage: return "BL"
+        }
+    }
+
+    private static func staffRoleLabel(_ role: StaffRole) -> String {
+        switch role {
+        case .headCoach: return "Head coach"
+        case .offensiveCoordinator: return "Offensive coordinator"
+        case .defensiveCoordinator: return "Defensive coordinator"
+        case .specialTeamsCoordinator: return "Special teams coordinator"
+        case .strengthCoordinator: return "Strength coordinator"
+        case .positionCoach: return "Position coach"
+        }
     }
 
     private static func positionLabel(_ position: Position) -> String {

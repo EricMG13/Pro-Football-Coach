@@ -59,17 +59,6 @@ public struct LegacyHistoryView: View, CoachWorldChromedSurface {
                     .foregroundStyle(palette.contentSecondary.color)
             }
             Spacer()
-            Menu("Views") {
-                Button("Record book") { onNavigate(.recordBook) }
-                Button("Rivalries") { onNavigate(.rivalries) }
-                Button("Career line") { onNavigate(.careerLine) }
-                Button("Coaching tree") { onNavigate(.coachingTree) }
-                Button("Statistics & leaders") { onNavigate(.statisticsLeaders) }
-                Button("Awards & honours") { onNavigate(.awardsHonours) }
-                Button("Realignment event") { onNavigate(.realignmentEvent) }
-            }
-            .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
-                   minHeight: CoachWorldTokens.Shape.minimumTarget)
         }
         .padding(.horizontal, CoachWorldTokens.Space.sm)
         .background(palette.raised.color)

@@ -76,7 +76,7 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
                 HStack(spacing: CoachWorldTokens.Gap.xs) {
                     FloodlitLabel3(
-                        model.currentPlan == nil ? "Not set yet \u{00B7} what this option would do"
+                        model.currentPlan == nil ? "Option preview"
                                                  : "This week",
                         palette: palette,
                         tint: model.currentPlan == nil ? palette.stateWarning.color : nil
@@ -142,14 +142,13 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
 
     private var options: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
-            FloodlitLabel3("What a different week costs", palette: palette)
+            FloodlitLabel3("Choose the week", palette: palette)
             ForEach(model.options) { option in
                 FloodlitRow(
                     isSelected: selectedID == option.id,
                     palette: palette,
                     action: {
                         selectedID = option.id
-                        onSelect(option.plan)
                     }
                 ) {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
@@ -174,9 +173,21 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
     private var commitBar: some View {
         HStack {
             Spacer(minLength: .zero)
-            FloodlitCommittingAction("Set the week", action: onClose)
+            FloodlitCommittingAction(
+                selectedOption.map { "Set \($0.title)" } ?? "Set the week",
+                action: {
+                    guard let selectedOption else { return }
+                    onSelect(selectedOption.plan)
+                    onClose()
+                }
+            )
+            .disabled(selectedOption == nil)
         }
         .padding(.top, CoachWorldTokens.Gap.xs)
+    }
+
+    private var selectedOption: PracticePlanReadModel.Option? {
+        model.options.first { $0.id == selectedID } ?? model.options.first
     }
 }
 

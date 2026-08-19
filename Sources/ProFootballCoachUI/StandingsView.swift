@@ -223,7 +223,7 @@ public struct StandingsView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentSecondary.color)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
-            FloodlitCommittingAction("Continue", action: onContinue)
+            FloodlitCommittingAction("Advance week", action: onContinue)
         }
         .floodlitFooterStrip(palette: palette)
     }

@@ -16,6 +16,16 @@ public struct CollegeOffseasonView: View, CoachWorldChromedSurface {
     public let onClose: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var pendingDecision: PendingDecision?
+
+    private struct PendingDecision: Identifiable {
+        let id: String
+        let intentID: CoachWorldIntentID
+        let title: String
+        let decisionTitle: String
+        let cost: String
+        let consequence: String
+    }
 
     public init(
         model: CollegeOffseasonReadModel,
@@ -40,6 +50,18 @@ public struct CollegeOffseasonView: View, CoachWorldChromedSurface {
     public var body: some View {
         CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             scrollContent
+        }
+        .alert(item: $pendingDecision) { decision in
+            Alert(
+                title: Text("Choose \(decision.title) for \(decision.decisionTitle)?"),
+                message: Text("\(decision.cost). \(decision.consequence)"),
+                primaryButton: .default(
+                    Text("Choose \(decision.title) for \(decision.decisionTitle) · \(decision.consequence)")
+                ) {
+                    onCommit(decision.intentID)
+                },
+                secondaryButton: .cancel()
+            )
         }
         .accessibilitySortPriority(100)
     }
@@ -196,7 +218,27 @@ public struct CollegeOffseasonView: View, CoachWorldChromedSurface {
                     )
                 }
                 ForEach(decision.choices, id: \.intentID) { choice in
-                    FloodlitRow(palette: palette, action: { onCommit(choice.intentID) }) {
+                    let consequence = choice.isAvailable
+                        ? (choice.consequence.isEmpty ? "record the choice" : choice.consequence)
+                        : (choice.unavailableReason ?? choice.consequence)
+                    let encodedIntentID = CoachWorldIntentID(
+                        rawValue: "\(decision.stableID)|\(choice.intentID.rawValue)"
+                    )
+                    FloodlitRow(
+                        palette: palette,
+                        action: choice.isAvailable
+                            ? {
+                                pendingDecision = PendingDecision(
+                                    id: encodedIntentID.rawValue,
+                                    intentID: encodedIntentID,
+                                    title: choice.title,
+                                    decisionTitle: decision.title,
+                                    cost: choice.cost,
+                                    consequence: consequence
+                                )
+                            }
+                            : nil
+                    ) {
                         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                             Text(choice.title.uppercased())
                                 .font(
@@ -207,14 +249,17 @@ public struct CollegeOffseasonView: View, CoachWorldChromedSurface {
                                 .lineLimit(1)
                             FloodlitCostLine(
                                 cost: choice.cost,
-                                consequence: choice.consequence.isEmpty ? nil : choice.consequence,
+                                consequence: consequence.isEmpty ? nil : consequence,
                                 palette: palette
                             )
                         }
                     }
-                    .accessibilityLabel("\(choice.title) for \(decision.title)")
+                    .accessibilityLabel(
+                        "\(choice.title) for \(decision.title)"
+                            + (choice.isAvailable ? "" : ". Unavailable")
+                    )
                     .accessibilityHint(
-                        choice.consequence.isEmpty ? choice.cost : choice.consequence
+                        consequence.isEmpty ? choice.cost : consequence
                     )
                 }
             }
@@ -246,21 +291,24 @@ public struct CollegeOffseasonView: View, CoachWorldChromedSurface {
     }
 
     private var footer: some View {
-        HStack(spacing: CoachWorldTokens.Gap.mdPlus) {
+        let canAdvance = model.decisions.isEmpty && model.delegatedDecisionCount == 0
+        return HStack(spacing: CoachWorldTokens.Gap.mdPlus) {
             Text(footerNote)
                 .font(CoachWorldTokens.TypeRole.callout)
                 .foregroundStyle(palette.contentSecondary.color)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             FloodlitCommittingAction(
-                "Continue",
-                isEnabled: model.decisions.isEmpty,
+                "Advance week",
+                isEnabled: canAdvance,
                 action: onContinue
             )
             .accessibilityHint(
-                model.decisions.isEmpty
+                canAdvance
                     ? ""
-                    : "Answer the open decisions before the cycle moves on."
+                    : (model.delegatedDecisionCount > 0 && model.decisions.isEmpty
+                        ? "Wait for the staff decision to finish before advancing."
+                        : "Answer the open decisions before the cycle moves on.")
             )
         }
         .floodlitFooterStrip(palette: palette)

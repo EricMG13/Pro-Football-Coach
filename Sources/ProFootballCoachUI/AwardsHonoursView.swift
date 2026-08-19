@@ -111,7 +111,8 @@ public struct AwardsHonoursView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentSecondary.color)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
-            FloodlitCommittingAction("Back to the league", action: onClose)
+            Button("Back to the league", action: onClose)
+                .buttonStyle(CoachWorldActionButtonStyle(role: .secondary, palette: palette))
         }
         .floodlitFooterStrip(palette: palette)
     }

@@ -22,6 +22,10 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
     public let onContinue: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @AccessibilityFocusState private var receiptIsFocused: Bool
+    @State private var pendingOpportunity: CareerHubReadModel.OpportunityRow?
+    @State private var showingResignConfirmation = false
+    @State private var selectedOpportunityID: String?
 
     public init(
         model: CareerHubReadModel,
@@ -51,6 +55,36 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
         CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             scrollContent
         }
+        .alert(item: $pendingOpportunity) { opportunity in
+            let consequence = model.currentJob == nil
+                ? "start this appointment"
+                : "end the current appointment and start this one"
+            return Alert(
+                title: Text("Accept \(opportunity.team.name)?"),
+                message: Text(
+                    "This offer is \(opportunity.tier) with prestige \(opportunity.prestige). "
+                        + "Accepting will \(consequence)."
+                ),
+                primaryButton: .default(
+                    Text("Accept \(opportunity.team.name) · \(consequence)")
+                ) {
+                    onAcceptOpportunity(opportunity.id)
+                },
+                secondaryButton: .cancel()
+            )
+        }
+        .alert(
+            resignationTitle,
+            isPresented: $showingResignConfirmation
+        ) {
+            Button("Resign · return to job search", role: .destructive, action: onResign)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This ends the current appointment and returns the coach to the job search.")
+        }
+        .onChange(of: statusMessage) { _, message in
+            if message != nil { receiptIsFocused = true }
+        }
         .accessibilitySortPriority(100)
     }
 
@@ -62,6 +96,8 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
                         .font(CoachWorldTokens.TypeRole.callout)
                         .foregroundStyle(palette.stateWarning.color)
                         .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityFocused($receiptIsFocused)
+                        .accessibilityIdentifier("career-receipt")
                 }
                 if dynamicTypeSize.isAccessibilitySize {
                     identityColumn
@@ -110,6 +146,11 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
     private var appointmentLabel: String {
         guard let job = model.currentJob else { return "Between appointments" }
         return "\(model.coach.role) \u{00B7} \(job.team.name)"
+    }
+
+    private var resignationTitle: String {
+        let appointmentName = model.currentJob?.team.name ?? "this appointment"
+        return "Resign from \(appointmentName)?"
     }
 
     private var historyLabel: String {
@@ -200,7 +241,9 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
                     .foregroundStyle(palette.contentSecondary.color)
                     .fixedSize(horizontal: false, vertical: true)
                 case .promotionDecision:
-                    opportunityRows
+                    opportunityWorkspace
+                case .jobBoard, .offer, .appointment:
+                    opportunityWorkspace
                 default:
                     historyRows
                 }
@@ -214,6 +257,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
         case .jobSecurity: "What the board can see"
         case .stakeholders: "Who is behind you"
         case .promotionDecision: "What is on the table"
+        case .jobBoard, .offer, .appointment: "Current opportunities"
         default: "What is on the record"
         }
     }
@@ -254,50 +298,135 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
         return line
     }
 
-    /// An offer, with what it costs to take it. The interface never says which to pick.
+    /// Offers are selected locally; only the evidence panel can open the accepting confirmation.
     @ViewBuilder
-    private var opportunityRows: some View {
+    private var opportunityWorkspace: some View {
         if model.opportunities.isEmpty {
             Text("No offer is currently on the table.")
                 .font(CoachWorldTokens.TypeRole.caption)
                 .foregroundStyle(palette.contentQuiet.color)
                 .fixedSize(horizontal: false, vertical: true)
         } else {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.md) {
+                    opportunityList
+                    selectedOpportunityEvidence
+                }
+            } else {
+                HStack(alignment: .top, spacing: CoachWorldTokens.Gap.md) {
+                    opportunityList
+                        .frame(width: 210, alignment: .leading)
+                    selectedOpportunityEvidence
+                }
+            }
+        }
+    }
+
+    private var selectedOpportunity: CareerHubReadModel.OpportunityRow? {
+        model.opportunities.first { $0.id == selectedOpportunityID }
+            ?? model.opportunities.first
+    }
+
+    private var opportunityList: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+            FloodlitLabel3("Offers", palette: palette)
             ForEach(model.opportunities) { opportunity in
-                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
-                    Text(opportunity.team.name.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                            )
-                        )
-                        .lineLimit(1)
-                    FloodlitCostLine(
-                        cost: "\(opportunity.tier) \u{00B7} prestige \(opportunity.prestige)",
-                        exposure: "expires \(opportunity.expires)",
-                        consequence: opportunity.rationale,
-                        palette: palette
-                    )
-                    if opportunity.canAccept {
-                        Button("Take it") { onAcceptOpportunity(opportunity.id) }
+                let isSelected = selectedOpportunity?.id == opportunity.id
+                Button {
+                    selectedOpportunityID = opportunity.id
+                } label: {
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                        Text(opportunity.team.name.uppercased())
                             .font(
                                 CoachWorldTokens.display(
                                     CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
                                 )
                             )
-                            .foregroundStyle(palette.actionPrimary.color)
-                            .frame(minHeight: CoachWorldTokens.Shape.minimumTarget,
-                                   alignment: .leading)
-                    } else if let reason = opportunity.unavailableReason {
-                        Text(reason)
+                            .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(opportunity.canAccept
+                             ? "Available"
+                             : "Unavailable · \(opportunity.unavailableReason ?? "No reason recorded")")
                             .font(CoachWorldTokens.TypeRole.caption)
-                            .foregroundStyle(palette.contentQuiet.color)
+                            .foregroundStyle(
+                                opportunity.canAccept
+                                    ? palette.contentSecondary.color
+                                    : palette.contentQuiet.color
+                            )
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget,
+                           alignment: .leading)
+                    .padding(.horizontal, CoachWorldTokens.Space.sm)
+                    .background(
+                        isSelected
+                            ? palette.collegeIdentity.color.opacity(0.18)
+                            : palette.raised.color.opacity(0.45)
+                    )
+                    .overlay(
+                        Rectangle()
+                            .stroke(
+                                isSelected ? palette.collegeIdentity.color : .clear,
+                                lineWidth: CoachWorldTokens.Shape.hairline
+                            )
+                    )
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+                .accessibilityHint(
+                    opportunity.canAccept
+                        ? "Selects this offer to review its evidence."
+                        : "Selects this offer. It cannot be accepted: \(opportunity.unavailableReason ?? "no reason recorded")."
+                )
             }
         }
+    }
+
+    @ViewBuilder
+    private var selectedOpportunityEvidence: some View {
+        if let opportunity = selectedOpportunity {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
+                FloodlitLabel3("Selected offer", palette: palette,
+                               tint: palette.collegeIdentity.color)
+                Text(opportunity.team.name.uppercased())
+                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.action, weight: .bold))
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                    .fixedSize(horizontal: false, vertical: true)
+                FloodlitCostLine(
+                    cost: "\(opportunity.tier) \u{00B7} prestige \(opportunity.prestige)",
+                    exposure: "offered \(opportunity.offered) · expires \(opportunity.expires)",
+                    consequence: "Rationale: \(opportunity.rationale)",
+                    palette: palette
+                )
+                Text(currentJobConsequence)
+                    .font(CoachWorldTokens.TypeRole.caption)
+                    .foregroundStyle(palette.contentSecondary.color)
+                    .fixedSize(horizontal: false, vertical: true)
+                if opportunity.canAccept {
+                    FloodlitCommittingAction("Accept \(opportunity.team.name)") {
+                        pendingOpportunity = opportunity
+                    }
+                    .accessibilityHint("Opens a confirmation naming the appointment consequence.")
+                } else {
+                    Text(opportunity.unavailableReason ?? "This offer cannot be accepted.")
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.contentQuiet.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .contain)
+        } else {
+            Text("Select an offer to review its evidence.")
+                .font(CoachWorldTokens.TypeRole.caption)
+                .foregroundStyle(palette.contentQuiet.color)
+        }
+    }
+
+    private var currentJobConsequence: String {
+        model.currentJob == nil
+            ? "Consequence: starts a new appointment."
+            : "Consequence: ends \(model.currentJob?.team.name ?? "the current appointment") and starts this one."
     }
 
     /// The footer carries whichever action the coach's actual position allows: resign when
@@ -310,7 +439,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             if model.currentJob?.canResign == true {
-                Button("Resign", action: onResign)
+                Button("Resign") { showingResignConfirmation = true }
                     .font(
                         CoachWorldTokens.display(
                             CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
@@ -323,7 +452,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
                         "Ends the current appointment and returns the coach to the job search."
                     )
             }
-            FloodlitCommittingAction("Continue", action: onContinue)
+            FloodlitCommittingAction("Advance week", action: onContinue)
         }
         .floodlitFooterStrip(palette: palette)
     }

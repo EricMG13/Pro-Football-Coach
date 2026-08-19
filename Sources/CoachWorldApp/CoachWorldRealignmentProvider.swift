@@ -4,14 +4,16 @@ import ProFootballCoachUI
 
 public extension CoachWorldReadModelProvider {
     static func realignment(from state: GameState) -> RealignmentReadModel? {
-        guard state.career.coachID != nil else { return nil }
+        guard state.career.coachID != nil,
+              state.career.college != nil,
+              state.careerArc.currentJob?.tier != .professional else { return nil }
         let events = state.history.recent + state.history.archive.flatMap(\.notableEvents)
-        let payload = events.reversed().compactMap { event -> (DomainEvent, Int, ConferenceRealignmentReason, [ConferenceRealignmentSwap])? in
+        let event = events.reversed().first { event in
+            if case .realignment = event.payload { return true }
+            return false
+        }.flatMap { event -> RealignmentReadModel.Event? in
             guard case let .realignment(season, reason, swaps) = event.payload else { return nil }
-            return (event, season, reason, swaps)
-        }.first
-        let mapped = payload.map { event, season, reason, swaps in
-            RealignmentReadModel.Event(
+            return RealignmentReadModel.Event(
                 id: event.id.uuidString,
                 seasonLabel: "Season \(season + 1)",
                 reason: reason == .geographicFit ? "Geographic fit" : reason.rawValue,
@@ -32,7 +34,7 @@ public extension CoachWorldReadModelProvider {
             snapshotID: snapshotID("realignment", state.league.id, state.calendar),
             provenance: .simulationSnapshot,
             currentSeasonLabel: seasonLabel(state.calendar),
-            event: mapped
+            event: event
         )
     }
 

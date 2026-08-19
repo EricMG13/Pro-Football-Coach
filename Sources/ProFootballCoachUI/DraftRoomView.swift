@@ -38,6 +38,7 @@ public struct DraftRoomView: View, CoachWorldChromedSurface {
                 ProOffseasonView(
                     model: model,
                     title: "DRAFT ROOM",
+                    focus: .draftRoom,
                     statusMessage: statusMessage,
                     onAction: onAction,
                     onClose: onClose

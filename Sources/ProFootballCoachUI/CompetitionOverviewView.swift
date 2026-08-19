@@ -55,16 +55,7 @@ public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
                         .foregroundStyle(palette.stateWarning.color)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                if dynamicTypeSize.isAccessibilitySize {
-                    rankingColumn
-                    bracketColumn
-                } else {
-                    HStack(alignment: .top, spacing: CoachWorldTokens.Gap.lg) {
-                        rankingColumn
-                            .frame(width: CompetitionMetric.rankingColumn)
-                        bracketColumn
-                    }
-                }
+                focusedColumns
             }
             .padding(.vertical, CoachWorldTokens.Pad.panel.v)
         }
@@ -85,9 +76,30 @@ public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
     /// about, so the label says which -- not a different screen with the same data in it.
     private var focusLabel: String {
         switch focus {
-        case .rankingsPlayoffPicture: "The picture"
-        case .bracketPostseason: "The bracket"
+        case .rankingsPlayoffPicture: "Rankings"
+        case .bracketPostseason: "Postseason bracket"
         default: "Rankings and bracket"
+        }
+    }
+
+    @ViewBuilder
+    private var focusedColumns: some View {
+        switch focus {
+        case .rankingsPlayoffPicture:
+            rankingColumn
+        case .bracketPostseason:
+            bracketColumn
+        default:
+            if dynamicTypeSize.isAccessibilitySize {
+                rankingColumn
+                bracketColumn
+            } else {
+                HStack(alignment: .top, spacing: CoachWorldTokens.Gap.lg) {
+                    rankingColumn
+                        .frame(width: CompetitionMetric.rankingColumn)
+                    bracketColumn
+                }
+            }
         }
     }
 
@@ -241,7 +253,7 @@ public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentSecondary.color)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
-            FloodlitCommittingAction("Continue", action: onContinue)
+            FloodlitCommittingAction("Advance week", action: onContinue)
         }
         .floodlitFooterStrip(palette: palette)
     }

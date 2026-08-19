@@ -16,6 +16,7 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var openPlayerID: UUID?
+    @State private var pendingRelease: ProManagementReadModel.PlayerRow?
 
     public init(
         model: ProManagementReadModel,
@@ -38,6 +39,22 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
     public var body: some View {
         CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             scrollContent
+        }
+        .alert(item: $pendingRelease) { player in
+            let deadMoney = player.contract?.deadMoney(ifReleasedAtSeason: model.calendar.season) ?? 0
+            return Alert(
+                title: Text("Release \(player.name)?"),
+                message: Text(
+                    "This removes the player from the roster and adds \(currency(deadMoney)) to dead money."
+                ),
+                primaryButton: .destructive(
+                    Text("Release \(player.name) · add \(currency(deadMoney)) dead money")
+                ) {
+                    guard let action = player.action?.action else { return }
+                    onAction(action)
+                },
+                secondaryButton: .cancel()
+            )
         }
         .accessibilitySortPriority(100)
     }
@@ -227,7 +244,7 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
     ) -> some View {
         FloodlitRow(
             palette: palette,
-            action: action.isAvailable ? { onAction(action.action) } : nil
+            action: action.isAvailable ? { pendingRelease = player } : nil
         ) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 Text(action.title.uppercased())
@@ -270,11 +287,8 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentSecondary.color)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
-            Button("Done", action: onClose)
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold))
-                .foregroundStyle(palette.contentQuiet.color)
-                .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
-                       minHeight: CoachWorldTokens.Shape.minimumTarget)
+            Button("Close", action: onClose)
+                .buttonStyle(CoachWorldActionButtonStyle(role: .secondary, palette: palette))
             FloodlitCommittingAction("Negotiate") {
                 onNavigateChrome?(
                     CoachWorldIntentID(rawValue: "route|\(CoachWorldScreenID.contractNegotiation.rawValue)")

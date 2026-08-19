@@ -3,6 +3,21 @@ import FootballSimCore
 import ProFootballCoachUI
 
 public extension CoachWorldReadModelProvider {
+    static func competitionStageLabel(_ stage: CompetitionStage) -> String {
+        switch stage {
+        case .regularSeason: "Regular season"
+        case .conferenceChampionship: "Conference championship"
+        case .quarterfinal: "Quarterfinal"
+        case .semifinal: "Semifinal"
+        case .championship: "Championship"
+        }
+    }
+
+    static func controlledCompetitionTier(from state: GameState) -> Tier {
+        if state.career.college != nil { return .college }
+        return state.careerArc.currentJob?.tier == .professional ? .pro : .college
+    }
+
     static func competitionOverview(
         tier: Tier = .college,
         from state: GameState
@@ -36,7 +51,7 @@ public extension CoachWorldReadModelProvider {
                 }
                 return CompetitionOverviewReadModel.BracketGame(
                     id: game.id.uuidString,
-                    stage: game.stage.rawValue,
+                    stage: competitionStageLabel(game.stage),
                     home: teamReference(game.homeID, in: state),
                     away: teamReference(game.awayID, in: state),
                     score: game.result.map {
@@ -105,7 +120,7 @@ public extension CoachWorldReadModelProvider {
                 ScheduleReadModel.GameRow(
                     id: game.id.uuidString,
                     week: "Week \(game.week)",
-                    stage: game.stage.rawValue,
+                    stage: competitionStageLabel(game.stage),
                     home: teamReference(game.homeID, in: state),
                     away: teamReference(game.awayID, in: state),
                     score: game.result.map { "\($0.homeScore)–\($0.awayScore)" },

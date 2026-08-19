@@ -12,6 +12,8 @@ public struct RosterView: View, CoachWorldChromedSurface {
     public let onContinue: () -> Void
     public let onNavigate: (CoachWorldScreenID) -> Void
     public let onInspectDevelopment: (String) -> Void
+    public let onOpenProfile: ((String) -> Void)?
+    public let showsRecruitingBoard: Bool
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var workspaceGap = CoachWorldTokens.Space.xs
@@ -24,13 +26,17 @@ public struct RosterView: View, CoachWorldChromedSurface {
         statusMessage: String? = nil,
         onContinue: @escaping () -> Void,
         onNavigate: @escaping (CoachWorldScreenID) -> Void,
-        onInspectDevelopment: @escaping (String) -> Void
+        onInspectDevelopment: @escaping (String) -> Void,
+        onOpenProfile: ((String) -> Void)? = nil,
+        showsRecruitingBoard: Bool = false
     ) {
         self.model = model
         self.statusMessage = statusMessage
         self.onContinue = onContinue
         self.onNavigate = onNavigate
         self.onInspectDevelopment = onInspectDevelopment
+        self.onOpenProfile = onOpenProfile
+        self.showsRecruitingBoard = showsRecruitingBoard
         _selectedPlayerID = State(initialValue: model.players.first?.stableID ?? "")
     }
 
@@ -111,14 +117,14 @@ public struct RosterView: View, CoachWorldChromedSurface {
                 route("Inbox", screen: .inbox)
                 route("Film", screen: .opponentReportFilmRoom)
                 route("Team", screen: .roster, current: true)
-                route("Recruit", screen: .recruitingBoard)
+                if showsRecruitingBoard { route("Recruit", screen: .recruitingBoard) }
                 route("League", screen: .leagueMap)
                 route("Career", screen: .careerHub)
             }
             .frame(maxWidth: .infinity)
 
             Button(action: onContinue) {
-                Label("Continue", systemImage: "forward.end.fill")
+                Label("Advance week", systemImage: "forward.end.fill")
             }
             .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
             .disabled(!model.canContinue)
@@ -407,13 +413,11 @@ public struct RosterView: View, CoachWorldChromedSurface {
                     .monospacedDigit()
                     .foregroundStyle(palette.actionPrimary.color)
                     .frame(width: RosterMetric.numberWidth, alignment: .trailing)
-                // The name takes its ideal width and a spacer absorbs the slack. Wrapping it in
-                // `.frame(maxWidth: .infinity)` truncated it against a proposal made before the
-                // cell expanded — the ellipsis appeared with visible empty space beside it.
                 Text(player.person.name)
                     .font(CoachWorldTokens.TypeRole.body.weight(.bold))
                     .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .layoutPriority(1)
                 Spacer(minLength: CoachWorldTokens.Gap.xxs)
                 Text(player.academicYear)
                     .foregroundStyle(palette.contentSecondary.color)
@@ -532,7 +536,11 @@ public struct RosterView: View, CoachWorldChromedSurface {
             )
 
             Button("Open dossier") {
-                presentedProfile = selected.profile
+                if let onOpenProfile {
+                    onOpenProfile(selected.stableID)
+                } else {
+                    presentedProfile = selected.profile
+                }
             }
             .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
             .padding(CoachWorldTokens.Space.sm)
@@ -729,10 +737,10 @@ public struct RosterView: View, CoachWorldChromedSurface {
             route("Film", screen: .opponentReportFilmRoom)
             route("Team", screen: .roster, current: true)
             route("Health", screen: .teamHealth)
-            route("Recruit", screen: .recruitingBoard)
+            if showsRecruitingBoard { route("Recruit", screen: .recruitingBoard) }
             route("League", screen: .leagueMap)
             route("Career", screen: .careerHub)
-            Button("Continue", action: onContinue)
+            Button("Advance week", action: onContinue)
                 .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
                 .disabled(!model.canContinue)
                 .accessibilityHint(model.continueReason ?? "")

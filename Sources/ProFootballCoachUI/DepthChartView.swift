@@ -75,7 +75,7 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
             }
             .padding(.vertical, CoachWorldTokens.Pad.panel.v)
         }
-        .safeAreaInset(edge: .bottom) { vacancyStrip }
+        .safeAreaInset(edge: .bottom, spacing: .zero) { vacancyStrip }
     }
 
     private var unitBar: some View {
@@ -158,6 +158,13 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
         )
     }
 
+    private func fieldPlayerName(_ name: String?) -> String {
+        guard let name else { return "Vacant" }
+        let parts = name.split(separator: " ")
+        guard parts.count > 1 else { return name }
+        return "\(parts[0].prefix(1)). \(parts.dropFirst().joined(separator: " "))"
+    }
+
     private func token(_ group: DepthChartReadModel.PositionGroup) -> some View {
         let starter = group.slots.first
         let isOpen = openGroup?.id == group.id
@@ -173,7 +180,7 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
                     .foregroundStyle(
                         vacant ? palette.stateWarning.color : palette.contentPrimary.color
                     )
-                Text(starter?.playerName ?? "Vacant")
+                Text(fieldPlayerName(starter?.playerName))
                     .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag))
                     .foregroundStyle(palette.contentSecondary.color)
                     .lineLimit(1)
@@ -195,6 +202,9 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(
+            "\(DepthPlacement.abbreviation(for: group.id)), \(starter?.playerName ?? "Vacant")"
+        )
     }
 
     /// The open position's ordering, deepest chart first. This is the list the diagram is a second
@@ -255,8 +265,7 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
         )
     }
 
-    /// What a different ordering costs. The chart itself is derived from the roster; only the
-    /// override is persisted, which is what these options set.
+    /// The available chart choices. Tapping a row only selects it; the footer owns the commit.
     private var optionList: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xxs) {
             FloodlitLabel3("What a different order costs", palette: palette)
@@ -266,7 +275,6 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
                     palette: palette,
                     action: {
                         selectedID = option.id
-                        onSelect(option.plan)
                     }
                 ) {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
@@ -302,7 +310,15 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
                 )
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
-            FloodlitCommittingAction("Set the chart", action: onClose)
+            FloodlitCommittingAction(
+                selectedOption.map { "Set \($0.title)" } ?? "Set the chart",
+                action: {
+                    guard let selectedOption else { return }
+                    onSelect(selectedOption.plan)
+                    onClose()
+                }
+            )
+            .disabled(selectedOption == nil)
         }
         .padding(.vertical, CoachWorldTokens.Pad.alert.v)
         .padding(.horizontal, CoachWorldTokens.Pad.alert.h)
@@ -321,6 +337,10 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
 
     private var vacantGroups: [DepthChartReadModel.PositionGroup] {
         model.positions.filter { $0.slots.first?.isUnavailable ?? true }
+    }
+
+    private var selectedOption: DepthChartReadModel.Option? {
+        model.options.first { $0.id == selectedID } ?? model.options.first
     }
 
     private var vacancyMessage: String {

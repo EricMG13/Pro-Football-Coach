@@ -143,11 +143,17 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Text(game.score ?? game.stage)
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .font(
+                        game.score == nil
+                            ? CoachWorldTokens.TypeRole.caption
+                            : CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill)
+                    )
                     .foregroundStyle(
                         game.score == nil ? palette.contentQuiet.color : palette.contentPrimary.color
                     )
-                    .lineLimit(1)
+                    .lineLimit(game.score == nil ? 2 : 1)
+                    .multilineTextAlignment(.trailing)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(width: ScheduleMetric.resultColumn, alignment: .trailing)
             }
             .padding(.horizontal, CoachWorldTokens.Pad.row.h)
@@ -177,13 +183,25 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
     }
 
     private var footer: some View {
-        HStack(spacing: CoachWorldTokens.Gap.mdPlus) {
-            Text("Home and away are as scheduled. Nothing here is a prediction.")
-                .font(CoachWorldTokens.TypeRole.callout)
-                .foregroundStyle(palette.contentSecondary.color)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: CoachWorldTokens.Gap.xs)
-            FloodlitCommittingAction("Continue", action: onContinue)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.sm) {
+                    Text("Home and away are as scheduled. Nothing here is a prediction.")
+                        .font(CoachWorldTokens.TypeRole.callout)
+                        .foregroundStyle(palette.contentSecondary.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                    FloodlitCommittingAction("Advance week", action: onContinue)
+                }
+            } else {
+                HStack(spacing: CoachWorldTokens.Gap.mdPlus) {
+                    Text("Home and away are as scheduled. Nothing here is a prediction.")
+                        .font(CoachWorldTokens.TypeRole.callout)
+                        .foregroundStyle(palette.contentSecondary.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: CoachWorldTokens.Gap.xs)
+                    FloodlitCommittingAction("Advance week", action: onContinue)
+                }
+            }
         }
         .floodlitFooterStrip(palette: palette)
     }
@@ -191,8 +209,8 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
 
 private enum ScheduleMetric {
     static let weekColumn: CGFloat = 34
-    static let resultColumn: CGFloat = 62
-    static let rowHeight: CGFloat = 38
+    static let resultColumn: CGFloat = 104
+    static let rowHeight: CGFloat = 46
     static let rowFill = 0.32
     static let ownFill = 0.5
 }

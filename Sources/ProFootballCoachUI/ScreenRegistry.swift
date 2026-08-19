@@ -25,13 +25,24 @@ public enum CoachWorldSurfaceFamily: String, CaseIterable, Sendable, Equatable {
         }
     }
 
-    /// The family's surfaces, in registry order — the header's sibling links.
+    /// The family's canonical tasks, in registry order — the header's sibling links.
     public var surfaces: [CoachWorldScreenID] {
+        CoachWorldScreenID.allCases.filter { $0.family == self && $0.isCanonicalTask }
+    }
+
+    /// The legacy registry entries retained for decode/migration tests and proof tooling.
+    public var registeredSurfaces: [CoachWorldScreenID] {
         CoachWorldScreenID.allCases.filter { $0.family == self }
     }
 }
 
-public enum CoachWorldScreenID: Int, CaseIterable, Sendable {
+/// The disposition of a registry number after the task-first cutover.
+public enum CoachWorldRouteDisposition: Sendable, Equatable {
+    case canonical
+    case alias(CoachWorldScreenID)
+}
+
+public enum CoachWorldScreenID: Int, CaseIterable, Sendable, Hashable {
     case titleContinue = 1
     case newCareerCoachIdentity = 2
     case jobBoard = 3
@@ -96,6 +107,51 @@ public enum CoachWorldScreenID: Int, CaseIterable, Sendable {
     case proOffseason = 62
 
     public var number: Int { rawValue }
+
+    /// One migration table for both visible task navigation and legacy save restoration.
+    /// Aliases remain valid decode inputs but never appear as separate sibling tasks.
+    public var routeDisposition: CoachWorldRouteDisposition {
+        switch self {
+        case .jobBoard, .offer, .appointment:
+            return .alias(.careerHub)
+        case .staffMarketProfile:
+            return .alias(.staffRoom)
+        case .schemeBook:
+            return .alias(.gamePlan)
+        case .personnelPackages:
+            return .alias(.depthChart)
+        case .portalHub, .retentionDecisions, .portalMarket, .nilAllocation:
+            return .alias(.collegeOffseason)
+        case .proScoutingBoard, .draftBoard, .freeAgency:
+            return .alias(.proOffseason)
+        case .jobSecurity, .coachingCarousel:
+            return .alias(.careerHub)
+        default:
+            return .canonical
+        }
+    }
+
+    public var isCanonicalTask: Bool {
+        if case .canonical = routeDisposition { return true }
+        return false
+    }
+
+    /// The destination written to a new presentation route.
+    public var canonicalDestination: CoachWorldScreenID {
+        if case let .alias(destination) = routeDisposition { return destination }
+        return self
+    }
+
+    /// Player-facing name for the task list. Legacy names remain available through
+    /// `canonicalName` for migration diagnostics and accessibility of saved routes.
+    public var taskName: String {
+        switch self {
+        case .careerHub: "Opportunities"
+        case .staffRoom: "Staff profiles"
+        case .proOffseason: "Pro front office"
+        default: canonicalName
+        }
+    }
 
     /// Which family a surface belongs to (`FLOODLIT-SURFACES.md` section 3).
     ///
@@ -172,7 +228,7 @@ public enum CoachWorldScreenID: Int, CaseIterable, Sendable {
         case .promotionDecision: "Promotion"
         case .coachingCarousel: "Carousel"
         case .titleContinue: "Title"
-        default: canonicalName
+        default: taskName
         }
     }
 

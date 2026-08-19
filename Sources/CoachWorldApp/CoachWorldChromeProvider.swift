@@ -16,22 +16,27 @@ public extension CoachWorldReadModelProvider {
         /// — scholarships on personnel, the class on recruiting, conference position on league —
         /// so a caller that holds a surface's own figures passes them. Nil falls back to the next
         /// fixture, which is what the week hub itself shows.
-        context surfaceContext: String? = nil
+        context surfaceContext: String? = nil,
+        availableScreens: [CoachWorldScreenID] = CoachWorldScreenID.allCases
     ) -> FloodlitChromeReadModel {
+        let canonicalScreen = screen.canonicalDestination
         let context = surfaceContext
             ?? hub.opponent.map { "\(hub.week.currentDay) \u{00B7} \($0.name)" }
         return FloodlitChromeReadModel(
-            screen: screen,
-            world: world(for: screen),
+            screen: canonicalScreen,
+            world: world(for: canonicalScreen),
             club: hub.team,
             record: hub.recordLabel,
             ranking: hub.rankLabel,
             conference: conference,
             context: context,
             // The opponent pennant belongs to the chip only when the chip is about the fixture.
-            contextOpponent: context == nil || !isFixtureContext(for: screen) ? nil : hub.opponent,
-            rail: rail(current: screen),
-            siblings: siblings(for: screen)
+            contextOpponent: context == nil || !isFixtureContext(for: canonicalScreen)
+                ? nil
+                : hub.opponent,
+            rail: rail(current: canonicalScreen),
+            siblings: siblings(for: canonicalScreen, availableScreens: availableScreens),
+            availableScreens: availableScreens
         )
     }
 
@@ -62,7 +67,7 @@ public extension CoachWorldReadModelProvider {
             (.opponentReportFilmRoom, "film", "Film"),
             (.teamHealth, "cross.case", "Health"),
             // The reference's seventh entry opens the registry overlay, not the league.
-            (.worldSearch, "square.grid.3x3", "All 62"),
+            (.worldSearch, "square.grid.3x3", "All tasks"),
         ]
         return entries.map { entry in
             .init(
@@ -76,12 +81,15 @@ public extension CoachWorldReadModelProvider {
 
     /// The current family's surfaces, off the registry rather than a second hand-written list, so
     /// a surface joins its family's navigation the day it is added.
-    static func siblings(for screen: CoachWorldScreenID) -> [FloodlitChromeReadModel.Sibling] {
-        screen.family.surfaces.map { sibling in
+    static func siblings(
+        for screen: CoachWorldScreenID,
+        availableScreens: [CoachWorldScreenID] = CoachWorldScreenID.allCases
+    ) -> [FloodlitChromeReadModel.Sibling] {
+        screen.family.surfaces.filter { availableScreens.contains($0) }.map { sibling in
             .init(
                 screen: sibling,
-                // Short form for the row; `canonicalName` stays the accessible name.
-                title: sibling.navigationName,
+                // Short form for the row; `canonicalName` stays the migration/accessibility name.
+                title: sibling.taskName,
                 intentID: .init(rawValue: "route|\(sibling.rawValue)")
             )
         }

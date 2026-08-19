@@ -17,12 +17,12 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
     public let onNavigate: (CoachWorldScreenID) -> Void
     public let showsProOffseason: Bool
     public let showsDraftRoom: Bool
-    public let showsCareer: Bool
     public let showsSigningDay: Bool
     public let showsCollegeOffseason: Bool
     public let showsProManagement: Bool
     public let showsContractNegotiation: Bool
     public let showsRecruitingBoard: Bool
+    public let showsRealignmentEvent: Bool
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var deskGap = CoachWorldTokens.Space.xs
@@ -40,12 +40,12 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
         onNavigate: @escaping (CoachWorldScreenID) -> Void,
         showsProOffseason: Bool = false,
         showsDraftRoom: Bool = false,
-        showsCareer: Bool = false,
         showsSigningDay: Bool = false,
         showsCollegeOffseason: Bool = false,
         showsProManagement: Bool = false,
         showsContractNegotiation: Bool = false,
-        showsRecruitingBoard: Bool = false
+        showsRecruitingBoard: Bool = false,
+        showsRealignmentEvent: Bool = false
     ) {
         self.model = model
         self.statusMessage = statusMessage
@@ -58,12 +58,12 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
         self.onNavigate = onNavigate
         self.showsProOffseason = showsProOffseason
         self.showsDraftRoom = showsDraftRoom
-        self.showsCareer = showsCareer
         self.showsSigningDay = showsSigningDay
         self.showsCollegeOffseason = showsCollegeOffseason
         self.showsProManagement = showsProManagement
         self.showsContractNegotiation = showsContractNegotiation
         self.showsRecruitingBoard = showsRecruitingBoard
+        self.showsRealignmentEvent = showsRealignmentEvent
         _selectedChoiceID = State(initialValue: nil)
     }
 
@@ -126,7 +126,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                         route("Inbox", screen: .inbox)
                         route("Film", screen: .opponentReportFilmRoom)
                         route("Team", screen: .roster)
-                        route("Recruit", screen: .recruitingBoard)
+                        if showsRecruitingBoard { route("Recruit", screen: .recruitingBoard) }
                         route("League", screen: .leagueMap)
                         route("Health", screen: .teamHealth)
                         worldMenu
@@ -151,17 +151,15 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
     private var worldMenu: some View {
         Menu("World") {
             Button("Office") { onNavigate(.coachingHQ) }
+            Button("Settings & accessibility") { onNavigate(.settingsAccessibility) }
             Button("Inbox") { onNavigate(.inbox) }
             Button("Film") { onNavigate(.opponentReportFilmRoom) }
             Button("Team") { onNavigate(.roster) }
-            Button("Recruit") { onNavigate(.recruitingBoard) }
+            if showsRecruitingBoard {
+                Button("Recruit") { onNavigate(.recruitingBoard) }
+            }
             Button("League") { onNavigate(.leagueMap) }
             Button("Career") { onNavigate(.careerHub) }
-            if showsCareer {
-                Button("Job board") { onNavigate(.jobBoard) }
-                Button("Offers") { onNavigate(.offer) }
-                Button("Appointment") { onNavigate(.appointment) }
-            }
             Button("News") { onNavigate(.news) }
             Button("Record book") { onNavigate(.recordBook) }
             Button("Rivalries") { onNavigate(.rivalries) }
@@ -169,36 +167,28 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
             Button("Coaching tree") { onNavigate(.coachingTree) }
             Button("Statistics & leaders") { onNavigate(.statisticsLeaders) }
             Button("Awards & honours") { onNavigate(.awardsHonours) }
-            Button("Realignment event") { onNavigate(.realignmentEvent) }
+            if showsRealignmentEvent {
+                Button("Realignment event") { onNavigate(.realignmentEvent) }
+            }
             Button("Search") { onNavigate(.worldSearch) }
             Button("Game plan") { onNavigate(.gamePlan) }
             Button("Practice") { onNavigate(.practicePlan) }
             Button("Depth chart") { onNavigate(.depthChart) }
-            Button("Scheme book") { onNavigate(.schemeBook) }
-            Button("Personnel packages") { onNavigate(.personnelPackages) }
             Button("Team health") { onNavigate(.teamHealth) }
             Button("Staff room") { onNavigate(.staffRoom) }
-            Button("Staff market & profile") { onNavigate(.staffMarketProfile) }
             if showsProOffseason {
                 Button("Pro offseason") { onNavigate(.proOffseason) }
-                Button("Draft board") { onNavigate(.draftBoard) }
                 if showsDraftRoom {
                     Button("Draft room") { onNavigate(.draftRoom) }
                 }
-                Button("Free agency") { onNavigate(.freeAgency) }
-                Button("Pro scouting board") { onNavigate(.proScoutingBoard) }
             }
             if showsCollegeOffseason {
                 Button("College offseason") { onNavigate(.collegeOffseason) }
+            }
+            if showsRecruitingBoard {
                 if showsSigningDay {
                     Button("Signing day") { onNavigate(.signingDay) }
                 }
-                Button("Portal hub") { onNavigate(.portalHub) }
-                Button("Retention decisions") { onNavigate(.retentionDecisions) }
-                Button("Portal market") { onNavigate(.portalMarket) }
-                Button("NIL allocation") { onNavigate(.nilAllocation) }
-            }
-            if showsRecruitingBoard {
                 Button("Class overview") { onNavigate(.classOverview) }
                 Button("Contact & visit planner") { onNavigate(.contactVisitPlanner) }
             }
@@ -217,7 +207,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
     }
 
     private var continueButton: some View {
-        let available = mandatoryCount == 0 && model.decision == nil
+        let available = canAdvance
         return Button(action: onContinue) {
             Label("Continue · \(mandatoryCount) due", systemImage: "forward.end.fill")
         }
@@ -226,6 +216,11 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                 palette: palette
             ))
             .disabled(!available)
+            .accessibilityHint(
+                available
+                    ? "Advances the week."
+                    : "Complete preparation and clear mandatory decisions before advancing."
+            )
     }
 
     private func route(_ title: String, screen: CoachWorldScreenID, current: Bool = false) -> some View {
@@ -333,10 +328,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
             }
             .accessibilitySortPriority(90)
         } else {
-            CoachWorldSystemState(
-                .empty("No decision is open. The week advances when its obligations are cleared."),
-                palette: palette
-            )
+            noDecision
         }
     }
 
@@ -469,7 +461,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
             Text("\(model.obligations.count) still open")
                 .font(CoachWorldTokens.TypeRole.caption)
                 .foregroundStyle(palette.contentSecondary.color)
-            FloodlitCommittingAction("Advance", action: onContinue)
+            FloodlitCommittingAction("Advance", isEnabled: canAdvance, action: onContinue)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .accessibilitySortPriority(60)
@@ -843,12 +835,16 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
     private var noDecision: some View {
         VStack(spacing: CoachWorldTokens.Space.sm) {
             ContentUnavailableView(
-                preparationNeeded ? "Weekly preparation required" : "No mandatory work",
+                preparationNeeded
+                    ? "Weekly preparation required"
+                    : (mandatoryCount > 0 ? "Mandatory work remains" : "No mandatory work"),
                 systemImage: preparationNeeded ? "clipboard" : "checkmark.circle",
                 description: Text(
                     statusMessage ?? (preparationNeeded
                         ? "Set a game plan and practice plan before the controlled fixture."
-                        : model.week.nextDeadline)
+                        : (mandatoryCount > 0
+                            ? "Clear the remaining mandatory work before the week can advance."
+                            : model.week.nextDeadline))
                 )
             )
             if preparationNeeded {
@@ -867,6 +863,10 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
 
     private var mandatoryCount: Int {
         model.obligations.filter(\.isMandatory).count
+    }
+
+    private var canAdvance: Bool {
+        mandatoryCount == 0 && model.decision == nil && !preparationNeeded
     }
 
     private var preparationNeeded: Bool {

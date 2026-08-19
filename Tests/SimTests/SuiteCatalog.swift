@@ -1,15 +1,6 @@
 import Foundation
 
 /// Release lanes are data so the default harness and CI can enumerate the same gates.
-///
-/// **Not every case below has a runner behind it.** `.reduceMotion` does, as of
-/// `ReduceMotionContractTests.swift`, and that file's own dispatch test proves it — not just that
-/// the name is registered, which is all `runCommitmentCoverageTest` below ever checked. Whether the
-/// same is true of the other thirteen `defaultRun` cases is not audited here: several read as
-/// tangential mentions inside `ContractTests.swift` and `AccessibilityReflowTests.swift` rather than
-/// a dedicated runner, and classifying which is which needs a case-by-case read this file does not
-/// attempt. Stated rather than mechanised, so a reader does not mistake this comment's presence for
-/// that audit having happened.
 enum ReleaseGateID: String, CaseIterable, Sendable {
     case commitmentCoverage = "CommitmentCoverageTest"
     case contrastByConstruction = "ContrastByConstructionTest"
@@ -29,24 +20,38 @@ enum ReleaseGateID: String, CaseIterable, Sendable {
     case saveCoalescing = "SaveCoalescingTest"
     case saveWriteBudget = "SaveWriteBudgetTest"
     case saveOpenReadOnly = "SaveOpenIsReadOnlyTest"
+    case m1Soak = "M1SoakTests"
+    case m2Soak = "M2SoakTests"
+    case legal = "LegalTests"
 }
 
 struct SuiteCatalog: Sendable {
+    struct Runner: Sendable, Equatable {
+        let command: String
+        let function: String
+    }
+
     struct Entry: Sendable, Equatable {
         let gate: ReleaseGateID
         let lane: String
         let defaultRun: Bool
+        let runner: Runner?
     }
 
     static let entries: [Entry] = ReleaseGateID.allCases.map { gate in
-        Entry(gate: gate, lane: lane(for: gate), defaultRun: defaultRun.contains(gate))
+        Entry(
+            gate: gate,
+            lane: lane(for: gate),
+            defaultRun: defaultRun.contains(gate),
+            runner: runner(for: gate)
+        )
     }
 
     static let defaultRun: Set<ReleaseGateID> = [
         .commitmentCoverage, .contrastByConstruction, .dynamicType, .reduceMotion,
         .voiceOver, .touchTarget, .determinism, .twoTierConsistency, .reachability,
         .errorSurface, .accessibility, .saveOffMainActor, .saveCoalescing,
-        .saveOpenReadOnly
+        .saveOpenReadOnly, .legal
     ]
 
     static func lane(for gate: ReleaseGateID) -> String {
@@ -57,19 +62,49 @@ struct SuiteCatalog: Sendable {
         case .agencyBudget, .performanceBudget: return "performance"
         case .determinism, .twoTierConsistency: return "determinism"
         case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly: return "persistence"
+        case .m1Soak, .m2Soak: return "soaks"
+        case .legal: return "legal"
+        }
+    }
+
+    static func runner(for gate: ReleaseGateID) -> Runner? {
+        switch gate {
+        case .commitmentCoverage:
+            return Runner(command: "--commitment-coverage", function: "runCommitmentCoverageTest")
+        case .contrastByConstruction, .voiceOver, .touchTarget, .reachability, .errorSurface:
+            return Runner(command: "--core-contracts", function: "runContractTests")
+        case .dynamicType:
+            return Runner(command: "--design-contracts", function: "runAccessibilityReflowTests")
+        case .reduceMotion:
+            return Runner(command: "--reduce-motion", function: "runReduceMotionContractTests")
+        case .determinism:
+            return Runner(command: "--architecture-only", function: "runArchitectureTests")
+        case .accessibility:
+            return Runner(command: "--design-contracts", function: "runAccessibilityReflowTests")
+        case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly:
+            return Runner(command: "--save-document", function: "runSaveDocumentTests")
+        case .agencyBudget, .performanceBudget, .twoTierConsistency, .smallestDeviceLayout:
+            return nil
+        case .m1Soak:
+            return Runner(command: "--m1-soak", function: "runM1SoakTests")
+        case .m2Soak:
+            return Runner(command: "--m2-soak", function: "runM2SoakTests")
+        case .legal:
+            return Runner(command: "--legal-only", function: "runLegalTests")
         }
     }
 
     static func printCatalog() {
         for entry in entries {
-            print("\(entry.gate.rawValue)\t\(entry.lane)\t\(entry.defaultRun ? "default" : "release")")
+            let runner = entry.runner.map { "\($0.command) → \($0.function)" } ?? "MISSING RUNNER"
+            print("\(entry.gate.rawValue)\t\(entry.lane)\t\(entry.defaultRun ? "default" : "release")\t\(runner)")
         }
     }
 }
 
 func runCommitmentCoverageTest() {
     suite("Commitment coverage") {
-        test("every PRODUCT commitment names a registered gate") {
+        test("every PRODUCT commitment names a runnable gate") {
             let productURL = URL(fileURLWithPath: "PRODUCT.md")
             guard let product = try? String(contentsOf: productURL, encoding: .utf8) else {
                 expect(false, "PRODUCT.md is unavailable")
@@ -77,15 +112,35 @@ func runCommitmentCoverageTest() {
             }
             let identifiers = product
                 .split(separator: "\n")
-                .compactMap { line -> String? in
-                    guard line.contains("|") else { return nil }
+                .flatMap { line -> [String] in
+                    guard line.contains("|") else { return [] }
                     let matches = line.split(separator: "`")
-                    return matches.count >= 2 ? String(matches[1]) : nil
+                    return stride(from: 1, to: matches.count, by: 2).map { String(matches[$0]) }
                 }
-            let registered = Set(ReleaseGateID.allCases.map(\.rawValue))
+            let entries = Dictionary(uniqueKeysWithValues: SuiteCatalog.entries.map { ($0.gate.rawValue, $0) })
             expect(!identifiers.isEmpty, "PRODUCT.md commitment table is empty")
             for identifier in identifiers {
-                expect(registered.contains(identifier), "unregistered commitment test \(identifier)")
+                guard let entry = entries[identifier] else {
+                    expect(false, "unregistered commitment test \(identifier)")
+                    continue
+                }
+                guard let runner = entry.runner else {
+                    expect(false, "\(identifier) has no runnable command")
+                    continue
+                }
+                let main = try? String(contentsOf: URL(fileURLWithPath: "Tests/SimTests/main.swift"),
+                                       encoding: .utf8)
+                expect(main?.contains("CommandLine.arguments.contains(\"\(runner.command)\")") == true,
+                       "\(identifier) command \(runner.command) is not dispatched")
+                expect(main?.contains("\(runner.function)(") == true,
+                       "\(identifier) runner \(runner.function) is not dispatched")
+            }
+        }
+
+        test("every registered gate declares its runner state") {
+            expectEqual(SuiteCatalog.entries.count, ReleaseGateID.allCases.count)
+            for entry in SuiteCatalog.entries where entry.runner == nil {
+                expect(false, "\(entry.gate.rawValue) is registered without a runnable command")
             }
         }
     }

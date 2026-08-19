@@ -137,18 +137,17 @@ public struct GamePlanView: View, CoachWorldChromedSurface {
         }
     }
 
-    /// What a different install would cost, one row each. Every option carries its own consequence
-    /// and the interface never says which to pick.
+    /// The available installs, one row each. The read model carries consequences but no clock or
+    /// resource cost, so the heading names the choice without promising a missing figure.
     private var installs: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
-            FloodlitLabel3("What a different install costs", palette: palette)
+            FloodlitLabel3("Choose the install", palette: palette)
             ForEach(model.options) { option in
                 FloodlitRow(
                     isSelected: selectedID == option.id,
                     palette: palette,
                     action: {
                         selectedID = option.id
-                        onSelect(option.plan)
                     }
                 ) {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
@@ -159,9 +158,6 @@ public struct GamePlanView: View, CoachWorldChromedSurface {
                                 )
                             )
                             .lineLimit(1)
-                        // A sentence, not a cost phrase: `FloodlitCostLine` uppercases and
-                        // tracks its cost slot, which turns prose into a tracked-capitals
-                        // paragraph. These options carry a consequence and no cost figure.
                         Text(option.consequence)
                             .font(CoachWorldTokens.TypeRole.caption)
                             .foregroundStyle(palette.contentSecondary.color)
@@ -177,9 +173,21 @@ public struct GamePlanView: View, CoachWorldChromedSurface {
     private var commitBar: some View {
         HStack {
             Spacer(minLength: .zero)
-            FloodlitCommittingAction("Send it to the staff", action: onClose)
+            FloodlitCommittingAction(
+                selectedOption.map { "Set \($0.title)" } ?? "Set the install",
+                action: {
+                    guard let selectedOption else { return }
+                    onSelect(selectedOption.plan)
+                    onClose()
+                }
+            )
+            .disabled(selectedOption == nil)
         }
         .padding(.top, CoachWorldTokens.Gap.xs)
+    }
+
+    private var selectedOption: GamePlanReadModel.Option? {
+        model.options.first { $0.id == selectedID } ?? model.options.first
     }
 }
 

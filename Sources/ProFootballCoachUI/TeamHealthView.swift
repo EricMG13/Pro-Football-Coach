@@ -273,7 +273,7 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
             .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             FloodlitCommittingAction(
-                "Continue",
+                "Advance week",
                 isEnabled: model.canContinue,
                 action: onContinue
             )

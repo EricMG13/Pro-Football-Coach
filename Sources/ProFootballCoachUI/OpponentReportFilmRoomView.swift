@@ -14,7 +14,6 @@ public struct OpponentReportFilmRoomView: View, CoachWorldChromedSurface {
     public let onClose: () -> Void
     public let onContinue: () -> Void
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
     public init(model: OpponentFilmReadModel, statusMessage: String? = nil,
                 onClose: @escaping () -> Void, onContinue: @escaping () -> Void) {
         self.model = model
@@ -24,11 +23,12 @@ public struct OpponentReportFilmRoomView: View, CoachWorldChromedSurface {
     }
 
     public var body: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            film.accessibilitySortPriority(100)
-        } else {
-            film.accessibilitySortPriority(100)
-        }
+        film
+            .frame(
+                maxWidth: .infinity,
+                alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .center
+            )
+            .accessibilitySortPriority(100)
     }
 
     private var film: some View {

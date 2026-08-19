@@ -367,6 +367,36 @@ func runReadModelProviderTests() {
                 CoachWorldReadModelProvider.realignment(from: GameState.bootstrap(seed: 4_028)),
                 nil
             )
+
+            var professional = state
+            professional.career = CareerControlState(coachID: state.career.coachID)
+            professional.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: professional.proTeams.values[0].id,
+                    tier: .professional,
+                    startedAt: professional.calendar
+                ),
+                status: .employed
+            )
+            let event = DomainEvent(
+                id: DomainEvent.deterministicID(
+                    rootSeed: professional.league.seed,
+                    sequence: professional.history.nextSequence
+                ),
+                sequence: professional.history.nextSequence,
+                occurredAt: professional.calendar,
+                payload: .realignment(
+                    season: professional.calendar.season,
+                    reason: .geographicFit,
+                    swaps: []
+                )
+            )
+            expect(professional.history.append(event))
+            expectEqual(CoachWorldReadModelProvider.realignment(from: professional), nil)
+
+            var staleCollegeControl = professional
+            staleCollegeControl.career = state.career
+            expectEqual(CoachWorldReadModelProvider.realignment(from: staleCollegeControl), nil)
         }
 
         test("the coaching HQ is a simulation snapshot, not a fixture") {
@@ -1014,6 +1044,34 @@ func runReadModelProviderTests() {
             expect(model.rows.contains { $0.team.stableID == control.programmeID.uuidString
                 && $0.isControlled })
             expect(model.rows.allSatisfy { $0.wins >= 0 && $0.losses >= 0 && $0.ties >= 0 })
+        }
+
+        test("professional competition surfaces follow the professional career tier") {
+            let (state, team) = try professionalCareer(seed: 4_011)
+            let tier = CoachWorldReadModelProvider.controlledCompetitionTier(from: state)
+            expectEqual(tier, .pro)
+
+            guard let standings = CoachWorldReadModelProvider.standings(tier: tier, from: state),
+                  let schedule = CoachWorldReadModelProvider.schedule(tier: tier, from: state) else {
+                expect(false, "a professional career produced no professional competition surfaces")
+                return
+            }
+            let sourceGames = state.competition.currentSchedule.games.filter { $0.tier == .pro }
+            let overview = CoachWorldReadModelProvider.competitionOverview(tier: tier, from: state)
+
+            expectEqual(standings.tier, "Professional")
+            expectEqual(standings.rows.count, state.competition.standings[.pro]?.count ?? 0)
+            expect(standings.rows.contains {
+                $0.team.stableID == team.id.uuidString && $0.isControlled
+            })
+            expectEqual(schedule.tier, "Professional")
+            expectEqual(schedule.games.count, sourceGames.count)
+            expect(schedule.games.contains { $0.isControlled })
+            expectEqual(overview.tier, "Professional")
+            expectEqual(overview.rankings.count, state.competition.rankings[.pro]?.count ?? 0)
+            expect(overview.rankings.contains {
+                $0.team.stableID == team.id.uuidString && $0.isControlled
+            })
         }
 
         test("schedule rows preserve fixture identity and controlled-team context") {

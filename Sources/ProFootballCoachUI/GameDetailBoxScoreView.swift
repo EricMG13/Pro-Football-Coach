@@ -220,7 +220,8 @@ public struct GameDetailBoxScoreView: View, CoachWorldChromedSurface {
                 .font(CoachWorldTokens.TypeRole.callout)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
-            FloodlitCommittingAction("Back to the aftermath", action: onClose)
+            Button("Back to the aftermath", action: onClose)
+                .buttonStyle(CoachWorldActionButtonStyle(role: .secondary, palette: palette))
         }
         .padding(.vertical, CoachWorldTokens.Pad.alert.v)
         .padding(.horizontal, CoachWorldTokens.Pad.alert.h)
