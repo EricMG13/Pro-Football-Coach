@@ -468,7 +468,7 @@ public enum CoachWorldReadModelProvider {
     /// engine's real refusal with no warning first. Deliberately not folded into `weekPlan` itself
     /// or `CoachingHQView.preparationNeeded` -- those already work and touching working code that
     /// isn't the bug is its own risk.
-    static func weeklyPreparationReason(for organisationID: UUID, in state: GameState) -> String? {
+    public static func weeklyPreparationReason(for organisationID: UUID, in state: GameState) -> String? {
         let decisions = state.pending.mandatoryDecisions.filter { $0.programmeID == organisationID }
         let nextGame = scheduledGame(for: organisationID, in: state)
         let plan = weekPlan(

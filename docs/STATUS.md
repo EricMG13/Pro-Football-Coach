@@ -19,6 +19,104 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-19, later the same day — a 6-agent parallel source-tracing pass covered every one of
+> `docs/qa/feature-coverage.csv`'s 73 rows (all 62 screens, 9 workflows) not already covered by the
+> entry below, found 13 real defects, and fixed 8 of them with regression tests.** Continuing this
+> environment's constraint from the entry below (no Swift toolchain), each agent acted as "a real
+> user" by tracing code paths against each row's documented Expected Behaviour/Edge
+> Cases/Validation Rules rather than running the app, split by `CoachWorldSurfaceFamily` (weekly
+> command, personnel, recruiting, pro management, league, career/entry/persistence). Full detail
+> and Notes-column citations are in `docs/qa/feature-coverage.csv` itself; this is the summary.
+>
+> **Fixed, each with a regression test where the harness can reach it (read-model/engine layer;
+> `Tests/SimTests` has no view host, so pure-view fixes below have none, consistent with `03b`'s
+> architecture):**
+>
+> 1. **League Map returned `nil` for any promoted professional coach (High).** The provider guarded
+>    on `state.career.college` alone, unlike every sibling tier-aware provider, while Coaching
+>    HQ/Roster/League Map's own route bar kept advertising "League" regardless, dead-ending every
+>    tap. Generalized to resolve the controlled organisation and tier the same way
+>    `CoachWorldCompetitionProvider` already does.
+> 2. **"Use backup" save recovery could silently destroy an intact primary (High).** Unlike
+>    `.quarantinePrimary`, `.useBackup` overwrote the primary unconditionally with no quarantine
+>    step — reachable exactly when `load()` deliberately leaves a future-schema primary untouched
+>    and a player recovers via the backup instead. Now quarantines the primary first and refuses to
+>    overwrite if quarantining itself fails.
+> 3. **Roster/Team Health/Recruiting Board's `canContinue` ignored missing weekly preparation
+>    (Medium).** Each hand-computed it from pending mandatory decisions alone, unlike Coaching HQ's
+>    `weekPlan` and Inbox's `canContinue`, which already covered it. One new shared
+>    `CoachWorldReadModelProvider.weeklyPreparationReason`, worded identically to the engine's own
+>    refusal, now backs all three.
+> 4. **Team Programme Profile's "Form · last six" went permanently stale past 12 games played
+>    (Medium).** Fixtures took the earliest 12 scheduled games instead of the most recent; invisible
+>    to the existing test because college's 12-game regular season never has more than 12 to choose
+>    from at week 1 — a professional team's 17-game season always does.
+> 5. **The pro draft board never dropped an already-drafted prospect (Medium-High).**
+>    `draftClass` was never filtered against `draftedProspectIDs`, unlike `freeAgentIDs`/waivers,
+>    which correctly shrink as consumed — the common case in ordinary play, not an edge case, since
+>    the controlled team only sees the board after AI has picked ahead of it.
+> 6. **Match Day's tactics control was hardcoded "HALFTIME · PLAN EDIT" (Medium)** while available at
+>    essentially any live moment of the match. Relabeled rather than inventing a real halftime
+>    condition the engine has no distinct fact for.
+> 7. **Box Score showed a tied game with neither side "leading" (Low)**, contradicting Aftermath's
+>    deliberate both-sides-lead treatment of the identical scores one tap earlier (`>` vs `>=`).
+> 8. **Development Plan's Close always returned to Roster (Low)**, even when opened from Player
+>    Profile, a real reachable entry point. Now tracks its origin the same way `teamHealthOrigin`/
+>    `inboxOrigin` already do.
+>
+> **Found and documented, deliberately not fixed this pass:**
+>
+> - **A generic refusal message swallows every pro-management/pro-market-specific error (Medium).**
+>   `CoachWorldStore.refusalMessage` only switches on `CareerSessionError`; the entire pro subsystem
+>   throws `IntentResolutionError` instead, which falls through to "That action could not be
+>   completed." A full fix needs the same specific-reason treatment `CareerSessionError` already
+>   gets, across roughly 15 cases — broader design work, not a single-bug patch.
+> - **Roster Cuts & Transactions has no UI for practice-squad moves or trades (Medium)**, despite
+>   both being fully implemented and engine-tested. A missing feature surface, not a defect in
+>   existing code — building it is new UI work with its own plan, not a bolt-on here.
+> - **Player Profile's selected subject is not actually persisted across save restore (Low)**,
+>   contradicting the feature-coverage row's own prior claim; restore falls back to the roster's
+>   first player. No crash, no wrong data about that player, one tap corrects it.
+> - **One Low-severity, likely-unreachable dead-code gap in Roster's bare-stage tab strip** (a
+>   `.disabled` allowlist omitting Development/Staff) — no reachable path to it could be constructed,
+>   since the equivalent navigation already works via the shared chrome.
+>
+> **Stale documentation corrected, none of it a code defect:** League Map's F-19 ("map vs
+> standings") was already resolved — the conference table exists and renders; `docs/qa/feature-
+> coverage.csv`'s own note had inherited a stale half of the document it cited. Schedule's
+> "controlled-team fixtures" wording is imprecise; the tested, deliberate behaviour is the whole
+> tier's schedule with the coach's own games highlighted, matching Standings/Rankings. Match Day's
+> feature-coverage row cited `docs/reviews/2026-08-18-exhaustive-design-critique.md`, which does not
+> exist anywhere in the repository or git history — carried forward as unverified rather than
+> dropped, since the underlying navigation/landscape claim it was attached to might still be true for
+> other reasons a real device would settle. **And this file's own claim, three entries below this
+> one, that "bootstrap issues professionals no contracts" does not reproduce against current HEAD** —
+> `RosterPopulationGenerator.signed(roster:season:seed:)` has unconditionally issued every bootstrap
+> pro player a real staggered contract for 104 commits, confirmed by an empty `git diff` across that
+> whole span. Only that specific mechanism claim is corrected here; the broader "the professional
+> roster does not turn over" verdict is untouched, since settling it needs an actual multi-season
+> soak this environment cannot run.
+>
+> **One full cluster came back completely clean.** Recruiting, Prospect Profile, Shortlist,
+> Contact & Visit Planner, Class Overview, Signing Day, the four Portal/NIL legacy aliases, College
+> Offseason, and the College Management Lifecycle workflow (12 features) — every claim in
+> `docs/qa/feature-coverage.csv` for that cluster held up against current source, including alias
+> routing and tier gating verified precisely rather than trusted from the CSV's own text.
+>
+> **CI confirmed the harness works end to end on this branch.** The first commit's `full` lane ran
+> 920 tests / 770,089 checks with exactly the pre-existing, base-inherited `CommitmentCoverageTest`
+> failure described above and nothing else red — independent, compiled confirmation (not claimed
+> from this environment) that the reachability re-verification and its one new test were correct.
+> The eight fixes above and their new tests were pushed for that same CI to validate next, not
+> asserted as verified here — this environment still has no Swift toolchain, so every line changed
+> in both passes remains, per `CLAUDE.md`, unverified — never compiled by this session itself.
+>
+> **What is still genuinely blocked, and why.** Live UI/device testing (VoiceOver, AX5 reflow, real
+> layout, actual play-by-play viewing) and generating new production-scale save data both require
+> running the compiled app or the Swift generator — neither is possible without the toolchain this
+> container does not have, a constraint this document has recorded since D11(b) and re-confirmed
+> independently by this session rather than assumed from that history.
+
 > **2026-08-19 — the 62-screen Floodlit redesign was completed, scored 10/30 and called for a
 > second redesign, and this file was not updated to say so until a QA pass caught it.** Three things
 > landed on this date and none of them had reached this document before now:
