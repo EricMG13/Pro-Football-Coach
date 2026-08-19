@@ -1912,10 +1912,12 @@ public enum WorldIntegrity {
         let archivedDraftIDSet = Set(market.archivedDraftProspectIDs)
         let ownedIDs = Set(state.programmes.values.flatMap(\.rosterIDs))
             .union(state.proTeams.values.flatMap { $0.rosterIDs + $0.practiceSquadIDs })
+        // The count-and-membership pair this replaced admitted an order in which one team held
+        // every pick: 224 entries, all of them pro teams, is a legal count and a legal membership
+        // and an illegal draft. `ProRules` owns the shape (`02` section 11.2).
         let draftOrderIsValid = market.phase == .closed
             ? market.draftOrder.isEmpty
-            : market.draftOrder.count == ProRules.draftPickCount
-                && market.draftOrder.allSatisfy(proTeamIDs.contains)
+            : ProRules.isLegalDraftOrder(market.draftOrder, teamIDs: proTeamIDs)
         let draftClassIsValid = market.phase == .closed
             ? market.draftClass.isEmpty
             : market.draftClass.count == ProRules.draftPickCount

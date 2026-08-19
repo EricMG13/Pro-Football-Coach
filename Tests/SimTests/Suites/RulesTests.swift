@@ -201,6 +201,39 @@ func runRulesTests() {
                    "more players dress than are on the roster")
         }
 
+        test("a draft order is seven rounds, each a permutation of every team") {
+            let teams = (0..<ProRules.draftPicksPerRound).map { index in
+                UUID(uuidString: String(format: "00000000-0000-4000-8000-%012d", index))!
+            }
+            let teamIDs = Set(teams)
+            let straight = (0..<ProRules.draftRounds).flatMap { _ in teams }
+            let snake = (0..<ProRules.draftRounds).flatMap { round in
+                round.isMultiple(of: 2) ? teams : teams.reversed()
+            }
+            expectEqual(straight.count, ProRules.draftPickCount)
+            expect(ProRules.isLegalDraftOrder(straight, teamIDs: teamIDs))
+            expect(ProRules.isLegalDraftOrder(snake, teamIDs: teamIDs),
+                   "the snake the market actually builds was refused")
+
+            // The order the old count-and-membership pair admitted: 224 entries, every one of them
+            // a real team, and one team holding two picks in a round while another holds none.
+            var hoarded = straight
+            hoarded[1] = teams[0]
+            expect(!ProRules.isLegalDraftOrder(hoarded, teamIDs: teamIDs),
+                   "a team holding two picks in one round was accepted")
+            expect(!ProRules.isLegalDraftOrder(Array(straight.dropLast()), teamIDs: teamIDs),
+                   "a short order was accepted")
+            expect(!ProRules.isLegalDraftOrder(straight + [teams[0]], teamIDs: teamIDs),
+                   "a long order was accepted")
+            expect(!ProRules.isLegalDraftOrder(straight, teamIDs: Set(teams.dropLast())),
+                   "an order naming a team the league does not have was accepted")
+
+            // Without a team set — the decoder's case, which holds the market and not the league —
+            // the identity-free half of the rule still refuses the same shapes.
+            expect(ProRules.isLegalDraftOrder(straight))
+            expect(!ProRules.isLegalDraftOrder(hoarded))
+        }
+
         test("the cap is integer dollars and grows") {
             expectEqual(ProRules.baseSalaryCap, 255_000_000)
             expectEqual(ProRules.capGrowthPercentPerYear, 7)

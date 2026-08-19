@@ -128,4 +128,30 @@ public enum ProRules {
     public static var draftPicksPerRound: Int { teamCount }
 
     public static var draftPickCount: Int { draftRounds * draftPicksPerRound }
+
+    /// Whether a draft order is the one `02` section 11.2 states: "7 rounds of 32 picks, 224
+    /// total". Each round is a permutation of every professional team, so no team holds two picks
+    /// in a round and none holds zero.
+    ///
+    /// Round-to-round ordering is deliberately *not* fixed here. `ProMarketSystem` currently builds
+    /// a snake — round 0 in ranking order, round 1 reversed — and canon does not say whether the
+    /// order snakes or repeats, so asserting a snake would encode a design decision only in code,
+    /// which `CLAUDE.md`'s doc-first amendment rule forbids. What canon *does* fix is the shape,
+    /// and the shape is what a root can be checked against: a total pick count alone admits an
+    /// order where one team drafts 224 times.
+    /// - Parameter teamIDs: the league's professional teams, when the caller knows them. A caller
+    ///   that does not — `ProMarketState`'s decoder holds the market and not the league — passes
+    ///   nil and gets the identity-free half of the same rule: every round is the same set of
+    ///   `draftPicksPerRound` distinct holders. `WorldIntegrity` then anchors that set to the real
+    ///   teams, so the two together are the whole rule and neither is a weaker restatement of it.
+    public static func isLegalDraftOrder(_ order: [UUID], teamIDs: Set<UUID>? = nil) -> Bool {
+        guard draftPicksPerRound > 0, order.count == draftPickCount else { return false }
+        let rounds = stride(from: 0, to: order.count, by: draftPicksPerRound).map { start in
+            Set(order[start..<(start + draftPicksPerRound)])
+        }
+        guard let firstRound = rounds.first,
+              firstRound.count == draftPicksPerRound,
+              teamIDs == nil || teamIDs == firstRound else { return false }
+        return rounds.allSatisfy { $0 == firstRound }
+    }
 }
