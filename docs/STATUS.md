@@ -19,6 +19,319 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-19, a third pass the same day — a second, independent 6-agent verification round
+> re-traced every one of the prior pass's fixes and every one of `docs/qa/feature-coverage.csv`'s 73
+> rows against current HEAD, found 3 more real defects and fixed them with regression tests, and
+> documented 24 further findings it deliberately did not fix.** Same method as the pass below
+> (source-tracing by `CoachWorldSurfaceFamily`, no Swift toolchain in this environment), but this
+> time each agent was explicitly asked to re-derive the previous pass's claims from source rather
+> than trust them, and to keep going past rows the prior pass had already marked clean. It found more
+> than it confirmed: the pass below's "one full cluster came back completely clean" verdict for
+> Recruiting does not survive this one — see below.
+>
+> **All three of the prior pass's highest-stakes claims held up under independent re-derivation**,
+> most importantly the save-recovery quarantine fix: traced end to end from the real "Use backup"
+> button through to the file write, with both regression tests confirmed to exercise the real
+> `SaveCoordinator`, not a mock. The League Map and Team Profile fixes were likewise independently
+> re-derived from current source and confirmed correct, each regression test confirmed to exercise
+> the previously-broken path rather than pass vacuously.
+>
+> **Fixed this pass, each with a regression test where the harness can reach it:**
+>
+> 1. **Development Plan opened on the wrong player on every single invocation, not an edge case
+>    (Medium).** Player Profile's "Into the development plan" passed the requested player's ID into
+>    `CoachWorldStore.openDevelopmentEvidence(for:)`, which only records a status-message receipt and
+>    drops the ID — the view's own selection state was never seeded, so it always fell back to the
+>    roster's single biggest mover. Fixed by threading the ID through a new root-view state into a
+>    new `DevelopmentPlanView` init parameter, mirroring the existing `personnelPlayerID` idiom.
+>    View-layer fix; no `SimTests` regression test is possible, consistent with `03b`'s architecture
+>    (same as the prior pass's origin-tracking fixes).
+> 2. **Inbox's "return to the origin route" promise broke for its two most common destinations
+>    (Medium).** Game Plan and Practice Plan items appear in Inbox whenever the week's prep is unset —
+>    an everyday state, not an edge case — but closing either screen always returned to Coaching HQ
+>    instead of Inbox; Practice Plan had no origin-tracking concept at all. Fixed with a new
+>    `practicePlanOrigin` state mirroring `teamHealthOrigin`/`inboxOrigin`, and by teaching the
+>    existing `gamePlanOrigin` to recognise Inbox as a source too. Same view-layer/no-test caveat as
+>    above.
+> 3. **The position-minimum release-refusal boundary named in Cap & Contracts/Roster Cuts &
+>    Transactions' own Edge Cases had zero test coverage anywhere (Medium).** The cited evidence
+>    (`CapComplianceTests.swift`) actually tests a different mechanism — the AI-driven
+>    forced-release-at-rollover system, not this UI-facing per-action gating. The underlying engine
+>    behaviour was already correct (`ProManagementSystem.release` backstopped by
+>    `WorldIntegrity.checkPositionalCoverage`); only the test was missing. Closed with a new
+>    regression test.
+>
+> **Found and documented, deliberately not fixed this pass** (full detail and file:line citations in
+> each row's Notes column in `docs/qa/feature-coverage.csv`):
+>
+> - **Two College Offseason aliases have no functional UI at all for their core promised capability
+>   (High each).** Portal Market shows a bare entrant count with zero per-entrant offer/evaluate UI;
+>   NIL Allocation has zero NIL-specific control. Both engine-side mechanisms are fully implemented
+>   and heavily tested — `RecruitingAction.setNILAllocation` and the portal-matching pipeline both
+>   exist and pass their own tests — but nothing in `Sources/ProFootballCoachUI` ever exercises them.
+>   Portal Hub is half-affected the same way: retention works, acquisition doesn't. Same category as
+>   the already-deferred Roster Cuts practice-squad/trade gap: real feature work with its own design
+>   needs, not a bolt-on patch.
+> - **Two Career Hub legacy aliases never show their own promised content (Medium/Low).** Coaching
+>   Carousel never shows opportunities via any path — the root view explicitly collapses its focus to
+>   plain Career Hub, and Career Hub's own panel switch has no case for it, not even a dead one. Job
+>   Security shows generic job history instead of stakeholder-specific content, and carries a dead
+>   title string for a panel that no longer exists. Both are legacy aliases excluded from live task
+>   navigation; the collapsing code reads as a deliberate guard against undefined content rather than
+>   an oversight, so fixing it needs real panel design, not a mechanical patch.
+> - **Schedule can never route a played game to its own box score (Medium).** Every row taps through
+>   to the home team's profile regardless of score, contradicting the row's own Expected Behaviour and
+>   named test case; the box score view is reachable only via the single most recent match. Needs a
+>   new per-game lookup path.
+> - **Bracket / Postseason never states a champion (Medium)**, despite the engine tracking one
+>   authoritatively (`CompetitionState.collegeChampionID`/`proChampionID`) and the row's own Expected
+>   Behaviour promising one. The read model has no field for it. A viewer can only infer a winner from
+>   which side scored higher in the championship row.
+> - **News has no outbound navigation in either direction (Medium).** Neither the engine-level nor the
+>   UI-level item type carries a subject or destination at all; tapping a story only changes which
+>   headline is shown in the same reading panel. Compounds the already-documented inbound gap
+>   (`onOpenCorrespondence` is a no-op) — dead end both ways.
+> - **Coaching HQ's correspondence is hardcoded empty by design, confirmed rather than merely
+>   suspected (Medium).** `CoachWorldReadModelProvider.swift`'s own comment says no such system exists;
+>   the AX5 "your desk" list and its open callback are structurally unreachable, not unverified.
+> - **Three registry aliases' dedicated routing cases are provably dead code app-wide (Low each):**
+>   Staff Market & Profile, Scheme Book, Personnel Packages. `canonicalScreen(screen)` always resolves
+>   an alias before the root render switch dispatches, so each alias's own `case` — and its
+>   alias-specific title — can never run; the canonical host's default title shows instead. Does not
+>   violate any row's stated behaviour (correct data still shows), and the existing regression test
+>   only string-matches the dead case's own text, so it cannot catch this — a textbook instance of
+>   this file's own named coverage-boundary-vs-quality-boundary pattern. The same mechanism plausibly
+>   touches other registry aliases; not swept exhaustively this pass.
+> - **Draft Room's view struct is dead code with false test coverage (Medium).** Production routing
+>   bypasses it entirely; its only two tests check the dead file's own text rather than the live call
+>   site, so both would keep passing if the real routing broke.
+> - Four further Low-severity items, each narrow and either already-inert or cosmetic: Team Health's
+>   `onClose` is declared and wired but never invoked (confirmed unreachable, not just unused); Cap &
+>   Contracts and Roster Cuts render byte-identical content under two titles; and a vestigial branch
+>   in the weekly-advance handler. Full citations in the CSV.
+>
+> **A product-scope question, not a code defect, now correctly attached to its own row.** Statistics &
+> Leaders pools player stats across both tiers with no tier field anywhere in the pipeline — already
+> known (`docs/reviews/2026-08-19-screen-reachability-map.md`'s "Finding 5") but never folded into
+> Statistics' own CSV row until now. Awards & Honours does the same tier-mixing but discloses it via
+> an explicit `tier` field on every row, which is why it grades PASS and Statistics does not: this is
+> a canon decision this file cannot make unilaterally, per its own doc-first amendment rule.
+>
+> **The "one full cluster came back completely clean" verdict for Recruiting, below, does not hold.**
+> The re-verification agent confirmed the originally-checked rows were genuinely clean; two rows
+> outside that original check — Portal Market and NIL Allocation, both above — are not. Read as a
+> correction of scope, not a contradiction: the first pass checked what it checked correctly, it just
+> did not check everything this pass did.
+>
+> **CI has not seen this commit yet.** Consistent with this file's own rule, nothing above is claimed
+> as compiled or passing from inside this environment — the commit carrying these three fixes and
+> this entry is pushed for CI to judge, and this section will be amended with the real result (or the
+> real failure) once CI returns one, the same way the previous pass's entry above was.
+>
+> **Mapped against this session's actual instruction, plainly, since that is what determines whether
+> this is a stopping point:**
+>
+> 1. *"Build sanitized, production-scale local data under production-like settings"* — **not done,
+>    infeasible in this environment.** Generating a production-scale save needs the Swift
+>    generator/simulator; this container has neither `swift` nor `xcodebuild`. Blocked handoff, not
+>    attempted, not faked.
+> 2. *"Test as a real user, logging every bug with reproduction evidence"* — **substituted, not
+>    performed as specified, for the same reason.** No compiled app or simulator exists to test as a
+>    user in. Substituted with the nearest honest equivalent this environment can actually do: precise,
+>    independent, twice-repeated source-level tracing of every one of the 73 documented features
+>    against its own Expected Behaviour/Edge Cases/Validation Rules, each finding cited to an exact
+>    file and line rather than asserted.
+> 3. *"Review findings for shared causes and dependencies; implement coherent fixes with regression
+>    tests, then rerun the full inventory"* — **done, twice.** First pass: 13 defects found, 8 fixed
+>    with regression tests, grouped by shared cause (one tier-resolution bug alone explained three
+>    separate broken rows). Second pass, run independently against the first pass's own output rather
+>    than trusting it: 3 more defects found and fixed with regression tests, 24 more found and
+>    documented with reasons, and the full 73-row inventory rerun both times.
+> 4. *"Stop at a clean pass or blocked handoff"* — **blocked handoff, on two distinct things, stated
+>    precisely rather than glossed.** (a) Everything requiring a Swift toolchain or a real device
+>    (goal elements 1 and 2 above, plus AX5/VoiceOver/live layout verification) stays blocked on an
+>    environment constraint no further source-tracing in this container can lift. (b) The ~30
+>    found-and-documented-but-unfixed defects across both passes are deliberately not a clean pass:
+>    most are missing UI for fully-built, fully-tested engine features (new feature work, not bug
+>    fixes) or an architecture-level routing question (the dead-alias-case pattern) too broad to patch
+>    safely without a compiler watching. Every fix either pass made **is** verified — compiled, tested,
+>    and CI-confirmed — not merely asserted from inside this environment.
+
+> **2026-08-19, later the same day — a 6-agent parallel source-tracing pass covered every one of
+> `docs/qa/feature-coverage.csv`'s 73 rows (all 62 screens, 9 workflows) not already covered by the
+> entry below, found 13 real defects, and fixed 8 of them with regression tests.** Continuing this
+> environment's constraint from the entry below (no Swift toolchain), each agent acted as "a real
+> user" by tracing code paths against each row's documented Expected Behaviour/Edge
+> Cases/Validation Rules rather than running the app, split by `CoachWorldSurfaceFamily` (weekly
+> command, personnel, recruiting, pro management, league, career/entry/persistence). Full detail
+> and Notes-column citations are in `docs/qa/feature-coverage.csv` itself; this is the summary.
+>
+> **Fixed, each with a regression test where the harness can reach it (read-model/engine layer;
+> `Tests/SimTests` has no view host, so pure-view fixes below have none, consistent with `03b`'s
+> architecture):**
+>
+> 1. **League Map returned `nil` for any promoted professional coach (High).** The provider guarded
+>    on `state.career.college` alone, unlike every sibling tier-aware provider, while Coaching
+>    HQ/Roster/League Map's own route bar kept advertising "League" regardless, dead-ending every
+>    tap. Generalized to resolve the controlled organisation and tier the same way
+>    `CoachWorldCompetitionProvider` already does.
+> 2. **"Use backup" save recovery could silently destroy an intact primary (High).** Unlike
+>    `.quarantinePrimary`, `.useBackup` overwrote the primary unconditionally with no quarantine
+>    step — reachable exactly when `load()` deliberately leaves a future-schema primary untouched
+>    and a player recovers via the backup instead. Now quarantines the primary first and refuses to
+>    overwrite if quarantining itself fails.
+> 3. **Roster/Team Health/Recruiting Board's `canContinue` ignored missing weekly preparation
+>    (Medium).** Each hand-computed it from pending mandatory decisions alone, unlike Coaching HQ's
+>    `weekPlan` and Inbox's `canContinue`, which already covered it. One new shared
+>    `CoachWorldReadModelProvider.weeklyPreparationReason`, worded identically to the engine's own
+>    refusal, now backs all three.
+> 4. **Team Programme Profile's "Form · last six" went permanently stale past 12 games played
+>    (Medium).** Fixtures took the earliest 12 scheduled games instead of the most recent; invisible
+>    to the existing test because college's 12-game regular season never has more than 12 to choose
+>    from at week 1 — a professional team's 17-game season always does.
+> 5. **The pro draft board never dropped an already-drafted prospect (Medium-High).**
+>    `draftClass` was never filtered against `draftedProspectIDs`, unlike `freeAgentIDs`/waivers,
+>    which correctly shrink as consumed — the common case in ordinary play, not an edge case, since
+>    the controlled team only sees the board after AI has picked ahead of it.
+> 6. **Match Day's tactics control was hardcoded "HALFTIME · PLAN EDIT" (Medium)** while available at
+>    essentially any live moment of the match. Relabeled rather than inventing a real halftime
+>    condition the engine has no distinct fact for.
+> 7. **Box Score showed a tied game with neither side "leading" (Low)**, contradicting Aftermath's
+>    deliberate both-sides-lead treatment of the identical scores one tap earlier (`>` vs `>=`).
+> 8. **Development Plan's Close always returned to Roster (Low)**, even when opened from Player
+>    Profile, a real reachable entry point. Now tracks its origin the same way `teamHealthOrigin`/
+>    `inboxOrigin` already do.
+>
+> **Found and documented, deliberately not fixed this pass:**
+>
+> - **A generic refusal message swallows every pro-management/pro-market-specific error (Medium).**
+>   `CoachWorldStore.refusalMessage` only switches on `CareerSessionError`; the entire pro subsystem
+>   throws `IntentResolutionError` instead, which falls through to "That action could not be
+>   completed." A full fix needs the same specific-reason treatment `CareerSessionError` already
+>   gets, across roughly 15 cases — broader design work, not a single-bug patch.
+> - **Roster Cuts & Transactions has no UI for practice-squad moves or trades (Medium)**, despite
+>   both being fully implemented and engine-tested. A missing feature surface, not a defect in
+>   existing code — building it is new UI work with its own plan, not a bolt-on here.
+> - **Player Profile's selected subject is not actually persisted across save restore (Low)**,
+>   contradicting the feature-coverage row's own prior claim; restore falls back to the roster's
+>   first player. No crash, no wrong data about that player, one tap corrects it.
+> - **One Low-severity, likely-unreachable dead-code gap in Roster's bare-stage tab strip** (a
+>   `.disabled` allowlist omitting Development/Staff) — no reachable path to it could be constructed,
+>   since the equivalent navigation already works via the shared chrome.
+>
+> **Stale documentation corrected, none of it a code defect:** League Map's F-19 ("map vs
+> standings") was already resolved — the conference table exists and renders; `docs/qa/feature-
+> coverage.csv`'s own note had inherited a stale half of the document it cited. Schedule's
+> "controlled-team fixtures" wording is imprecise; the tested, deliberate behaviour is the whole
+> tier's schedule with the coach's own games highlighted, matching Standings/Rankings. Match Day's
+> feature-coverage row cited `docs/reviews/2026-08-18-exhaustive-design-critique.md`, which does not
+> exist anywhere in the repository or git history — carried forward as unverified rather than
+> dropped, since the underlying navigation/landscape claim it was attached to might still be true for
+> other reasons a real device would settle. **And this file's own claim, three entries below this
+> one, that "bootstrap issues professionals no contracts" does not reproduce against current HEAD** —
+> `RosterPopulationGenerator.signed(roster:season:seed:)` has unconditionally issued every bootstrap
+> pro player a real staggered contract for 104 commits, confirmed by an empty `git diff` across that
+> whole span. Only that specific mechanism claim is corrected here; the broader "the professional
+> roster does not turn over" verdict is untouched, since settling it needs an actual multi-season
+> soak this environment cannot run.
+>
+> **One full cluster came back completely clean.** Recruiting, Prospect Profile, Shortlist,
+> Contact & Visit Planner, Class Overview, Signing Day, the four Portal/NIL legacy aliases, College
+> Offseason, and the College Management Lifecycle workflow (12 features) — every claim in
+> `docs/qa/feature-coverage.csv` for that cluster held up against current source, including alias
+> routing and tier gating verified precisely rather than trusted from the CSV's own text.
+>
+> **CI confirmed the harness works end to end on this branch.** The first commit's `full` lane ran
+> 920 tests / 770,089 checks with exactly the pre-existing, base-inherited `CommitmentCoverageTest`
+> failure described above and nothing else red — independent, compiled confirmation (not claimed
+> from this environment) that the reachability re-verification and its one new test were correct.
+> **And CI has now confirmed the eight fixes above too, after catching a real mistake first.** The
+> commit carrying them failed to compile — `weeklyPreparationReason` was declared inside
+> `CoachWorldReadModelProvider`'s base `enum` body rather than one of its `public extension` files,
+> where members default to `internal`, invisible across the `CoachWorldApp`/`SimTests` module
+> boundary the new test needed — caught within four minutes, fixed with one `public` keyword, and
+> repushed. The corrected commit then ran clean: **926 tests / 770,108 checks**, up from 920/770,089
+> before it, exactly the six new tests that commit added, all passing; the only failure remains the
+> same `CommitmentCoverageTest` gate, unchanged. This is the whole point of the constraint this file
+> keeps repeating: this environment could not have caught that mistake itself, and did not try to
+> claim it had — it pushed for the toolchain that could, and waited for the real answer rather than
+> asserting one. Every line changed in both passes is now compiler- and test-verified, not merely
+> unverified-but-plausible.
+>
+> **What is still genuinely blocked, and why.** Live UI/device testing (VoiceOver, AX5 reflow, real
+> layout, actual play-by-play viewing) and generating new production-scale save data both require
+> running the compiled app or the Swift generator — neither is possible without the toolchain this
+> container does not have, a constraint this document has recorded since D11(b) and re-confirmed
+> independently by this session rather than assumed from that history.
+
+> **2026-08-19 — the 62-screen Floodlit redesign was completed, scored 10/30 and called for a
+> second redesign, and this file was not updated to say so until a QA pass caught it.** Three things
+> landed on this date and none of them had reached this document before now:
+>
+> 1. `e3b360d feat: complete 62-screen Floodlit redesign` finished porting all remaining surface
+>    interiors (this closes the "Pro management and career were not [visually confirmed]" and
+>    "~59 surfaces still chrome-only" gaps the 2026-08-18 entry above left open) and, in the same
+>    commit, added `docs/qa/feature-coverage.csv` (62 screens + 9 workflows + 2 QA-process rows, each
+>    with a user story, expected behaviour, edge cases and current status) and
+>    `docs/reviews/2026-08-19-screen-reachability-map.md` (a source-level navigation/role audit).
+>    `68e9c15 test: close release gate traceability` followed, hardening
+>    `CommitmentCoverageTest` to fail closed when a `PRODUCT.md` commitment names a test with no
+>    runnable runner — see item 3.
+> 2. A **separate, much larger verdict exists and this file did not carry it either.**
+>    `DESIGN-IS-2026-08-19/` (00-scope through 04-handoff-prompt) audited the same 62 screens against
+>    ten design principles and scored **10/30**, verdict **REDESIGN**, with load-bearing zeros on
+>    usefulness, understandability and honesty: "too many named destinations do not perform their
+>    named task and repeated label/commit mismatches make refinement alone insufficient." Its own
+>    `04-handoff-prompt.md` is a drafted `/make-plan` prompt for that redesign. **This is an
+>    owner-scoped product decision, not a bug backlog** — nobody has acted on it, and no session
+>    should treat "the 62 screens are built" as equivalent to "the 62 screens are done" without
+>    reading this verdict first.
+> 3. **`CommitmentCoverageTest` (in the default suite) is red right now, on purpose, and was already
+>    red before this session touched anything.** Four `PRODUCT.md` commitments —
+>    `AgencyBudgetTests`, `PerformanceBudgetTests`, `TwoTierConsistencyTests`,
+>    `SmallestDeviceLayoutTest` — are registered in `SuiteCatalog.swift` with `runner: nil` by
+>    construction, and nothing implementing any of the four exists anywhere in the tree (confirmed by
+>    a repo-wide grep). This is not a small wiring gap:
+>    - `AgencyBudgetTests` ("a season is completable in 6-8 hours") needs the owner UX-timing
+>      protocol `01-RESEARCH.md` §6.0 §8 asks for; nobody has run it.
+>    - `PerformanceBudgetTests` ("week advance under 2.0 s") already has a measurement instrument,
+>      `--week-advance-timing`, and its own docstring explains why it deliberately asserts nothing:
+>      "a machine this does not know the speed of cannot fairly fail a build... the gate is the
+>      owner's, on the device." Wiring it into a pass/fail `SuiteCatalog` entry on a container or a
+>      development machine would silently contradict that design decision, not honour it — and the
+>      B-4 entry above already measured this container/dev-Mac class of host failing the budget by
+>      ~40% at the median, so a naive pass/fail gate would just be red for a reason nobody could act
+>      on from here.
+>    - `TwoTierConsistencyTests` (detailed engine vs. the off-screen model, via TOST) is blocked on
+>      P4's calibration, which is itself still failing 5-6 of 24 bands per the P4 section below.
+>    - `SmallestDeviceLayoutTest` needs the Xcode-measured 844 x 390 install-floor numbers `04` §5.2
+>      still marks ASSUMPTION.
+>
+>    Building any of these for real, from this environment, would mean inventing the underlying
+>    measurement — exactly what this file exists to catch. They are left registered and red,
+>    consistent with the `--pro-soak`/`--pro-draft-probe` precedent elsewhere in this document:
+>    named, diagnosed, and honestly not done, rather than quietly passed.
+>
+> **What this session (no Swift toolchain; container environment) actually did, all of it unverified
+> — never compiled:** re-read `docs/reviews/2026-08-19-screen-reachability-map.md` against the
+> current source line by line rather than trusting it, and found three of its four "confirmed"
+> navigation defects no longer reproduce — `CoachingHQView.swift`, `RosterView.swift` and
+> `LeagueMapView.swift` already gate the Recruit link and the Realignment menu entry on the same
+> `store.recruitingBoard`/`store.realignment?.event` booleans the router and "All Tasks" use, and the
+> thirteen "retired alias" menu names it named do not appear anywhere in the current `worldMenu`
+> body. The likely cause: the doc was drafted against an intermediate state of `e3b360d` and never
+> re-run against that same commit's final diff before both were committed together — recorded in
+> full, with fresh file:line citations, as a dated correction inside that document rather than by
+> silently editing its original findings away. The fourth finding (Promotion Decision's label) is
+> real but narrower than stated — the route is already gated on an actionable offer everywhere, the
+> remaining gap is that a fired professional coach's lateral re-hire is still labeled "Promotion
+> Decision," which is a naming question that belongs to the redesign in item 2, not a dead link. A
+> fifth finding this pass surfaced on its own read (Statistics & Awards read both tiers with no
+> filter) is confirmed accurate and is a product-scope question, not a bug. One regression test was
+> added, `ReadModelProviderTests.swift`'s "career hub lets a fired, seeking coach accept a fresh
+> professional opportunity" — the one `canAcceptWhileSeeking` branch that had no coverage either
+> way. No production/view code was changed, because none of it needed to be.
+
 > **2026-08-18 — Floodlit design handoff, all three milestones implemented.** The owner-supplied
 > handoff `design_handoff_floodlit_surfaces_and_match_day/` is built end to end:
 >

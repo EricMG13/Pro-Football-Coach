@@ -78,7 +78,16 @@ public extension CoachWorldReadModelProvider {
             ))
         }
 
+        // Already-drafted prospects were never excluded here, unlike `freeAgentIDs` (shrunk by
+        // `removeFreeAgent`) and waivers (shrunk by `removeWaiver`) -- an isolated omission, not a
+        // deliberate pattern. In ordinary play the controlled team sees this board only once
+        // `ProRosterAISystem` has already run every AI pick up to its own turn, so a stale,
+        // still-enabled "Draft" row was the common case, not an edge case. Fixed 2026-08-19
+        // source-tracing pass; `ProMarketSystem.draft` already refused these correctly
+        // (`.duplicateDraftPick`), so nothing illegal could happen -- the row just never disappeared.
+        let draftedProspectIDs = Set(market.draftedProspectIDs)
         let prospects = market.draftClass
+            .filter { !draftedProspectIDs.contains($0.id) }
             .sorted { $0.id.uuidString < $1.id.uuidString }
             .prefix(ProOffseasonReadModel.maximumRows)
             .map { prospect in

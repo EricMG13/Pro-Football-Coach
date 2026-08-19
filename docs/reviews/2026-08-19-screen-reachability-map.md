@@ -3,6 +3,80 @@
 Date: 2026-08-19
 Scope: production gameplay in `CoachWorldAppRootView`; DEBUG proof routing is excluded.
 
+> **Re-verified 2026-08-19, later the same day, against HEAD `68e9c15` — 3 of the 4 "confirmed
+> defects" below no longer reproduce; the fourth is real but narrower than stated.** This document
+> was committed in `e3b360d feat: complete 62-screen Floodlit redesign` alongside the very rewrite
+> of `CoachingHQView.swift`, `CoachWorldAppRootView.swift`, `RosterView.swift` and
+> `LeagueMapView.swift` its findings cite — the analysis was evidently drafted against an
+> intermediate state of that commit and not re-run against its final diff before both landed
+> together. Read the findings below as a historical record of what a mid-commit source pass found,
+> not as the current state of the code. No source was changed in this re-verification pass; only
+> this document and `docs/STATUS.md`/`docs/qa/feature-coverage.csv` were.
+>
+> **Finding 1 (Recruit link leaks to pro coaches) — does not reproduce.** Every cited site gates on
+> a boolean already correctly derived from `store.recruitingBoard != nil`:
+> `CoachingHQView.swift:129` (`if showsRecruitingBoard { route("Recruit", ...) }`),
+> `CoachingHQView.swift:158-160` (same guard inside `worldMenu`),
+> `RosterView.swift:120` and `:740`, `LeagueMapView.swift:167`. The flag is constructed identically
+> at both `CoachWorldAppRootView.swift:105` and `:1004` (`showsRecruitingBoard: store.recruitingBoard
+> != nil`), matching the `availableScreens` gate at `:1090` and the `navigate()` guard at `:1222`.
+> `CoachWorldRecruitingBoardProvider.recruitingBoard(from:)` itself requires
+> `state.career.college != nil`, so a professional career gets `nil` and every one of these sites
+> correctly hides the link. `ReadModelProviderTests.swift` has no direct "recruiting board is nil for
+> a professional career" assertion, which is the one real gap here — see the coverage note below.
+>
+> **Finding 2 (13 retired aliases still advertised in HQ's World menu) — does not reproduce.** The
+> current `worldMenu` (`CoachingHQView.swift:151-204`) contains zero of the thirteen retired names
+> (Job Board, Offer, Appointment, Scheme Book, Personnel Packages, Staff Market & Profile, Portal Hub,
+> Retention Decisions, Portal Market, NIL Allocation, Draft Board, Free Agency, Pro Scouting Board) —
+> confirmed by reading the full menu body and by a repo-wide grep for each literal label. Those
+> strings exist only in `ScreenRegistry.swift`'s `canonicalName`, used for migration/decode
+> diagnostics, never for menu construction.
+>
+> **Finding 3 (Realignment Event exposed to pro coaches / no-event seasons) — does not reproduce.**
+> `CoachWorldRealignmentProvider.realignment(from:)`'s guard (`state.career.coachID != nil,
+> state.career.college != nil, state.careerArc.currentJob?.tier != .professional`) excludes an
+> actively-employed professional coach, and `CoachingHQView`'s menu entry
+> (`CoachingHQView.swift:170-172`) is gated on `showsRealignmentEvent`, constructed at
+> `CoachWorldAppRootView.swift:1005` as `store.realignment?.event != nil` — identical to the
+> `availableScreens` gate (`:1113`) and the `navigate()` guard (`:1210`), so a season with no event
+> correctly hides the route everywhere, not just at the destination. The specific edge this finding's
+> wording implied — a promoted coach whose `state.career.college` is still populated (stale, not
+> cleared by promotion) — is already covered by
+> `ReadModelProviderTests.swift`'s "realignment is a typed event surface, not a current-table guess"
+> test, which constructs exactly that `staleCollegeControl` root and asserts `nil`.
+>
+> **Finding 4 (Promotion Decision not scenario-gated) — real, but narrower than described.** The
+> route itself **is** already gated everywhere on an actionable offer
+> (`store.careerHub?.opportunities.contains { $0.canAccept }`), not merely `careerHub != nil` as the
+> original finding stated — see the same three call sites as above. What remains true: `canAccept`'s
+> `canAcceptWhileSeeking` branch (`CoachWorldCareerProvider.swift:74-77`) is deliberately tier-blind —
+> any fired/seeking coach, college or professional, can accept any fresh professional offer through
+> it, and the shared workspace still labels that "Promotion Decision" even for a professional coach's
+> lateral re-hire. That is a real labeling-precision gap, not a dead link (the button works). It is
+> the same shape of finding as `DESIGN-IS-2026-08-19`'s top redesign move ("make every visible label
+> name the actual transition"), so it is left for that larger, owner-scoped effort rather than
+> patched in isolation here. A previously-missing regression test for the `canAcceptWhileSeeking`
+> path itself (uncovered either way, positive or negative) has been added:
+> `ReadModelProviderTests.swift`, "career hub lets a fired, seeking coach accept a fresh professional
+> opportunity".
+>
+> **Finding 5 (Statistics & Awards mix both tiers) — confirmed, and it is a product question, not a
+> bug.** `CoachWorldStatisticsProvider.statisticsLeaders(from:)` reads
+> `state.competition.playerStatistics.values` and `awardsHonours(from:)` reads
+> `state.competition.archives` with no tier filter beyond requiring *some* controlled entity to exist
+> (`CoachWorldStatisticsProvider.swift:6-51`). This is accurately described. Per the doc-first
+> amendment rule (`CLAUDE.md`), whether these two screens are meant to be tier-global or
+> tier-scoped is a canon decision nobody has made yet, not something to silently resolve in either
+> direction here.
+>
+> **The shared cause across findings 1-3 being phantom, and 4-5 remaining open, is the same lesson
+> this document's own thesis is about: a claim about the running system is only as good as the last
+> moment it was checked against the system.** A QA document bundled into the same commit as the code
+> it audits still needs a final pass against that commit's last diff before either is committed —
+> exactly the discipline `docs/STATUS.md` enforces on itself throughout its history with dated,
+> superseded-in-place corrections. This document had not had that pass until now.
+
 ## Verdict
 
 - The registry contains **62 stable route IDs**: **47 canonical tasks** and **15 legacy aliases**.

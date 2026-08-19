@@ -72,7 +72,11 @@ public struct GameDetailBoxScoreView: View, CoachWorldChromedSurface {
     }
 
     private func scoreLine(_ side: MatchDayReadModel.TeamScore) -> some View {
-        let won = side.score > opposing(side).score
+        // `>=`, not `>`: on a tie there is no loser to demote, so both sides take the leading
+        // weight, matching `AftermathView.finalScore`'s own `isDraw || index == 0` treatment of
+        // the same underlying scores -- these two screens showed a tied game two different ways
+        // one tap apart until this (2026-08-19 source-tracing pass).
+        let won = side.score >= opposing(side).score
         return HStack(spacing: CoachWorldTokens.Gap.md) {
             Text(side.team.name.uppercased())
                 .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))

@@ -60,11 +60,11 @@ public extension CoachWorldReadModelProvider {
                 )
             }
 
-        let continueReason = state.pending.mandatoryDecisions.contains {
+        let continueReason = state.pending.mandatoryDecisions.contains(where: {
             $0.programmeID == programme.id
-        }
+        })
             ? "Complete the pending decision in Coaching HQ before advancing."
-            : nil
+            : weeklyPreparationReason(for: programme.id, in: state)
         return RecruitingBoardReadModel(
             snapshotID: snapshotID("recruiting", programme.id, state.calendar),
             provenance: .simulationSnapshot,

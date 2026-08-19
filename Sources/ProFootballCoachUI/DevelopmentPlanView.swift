@@ -16,10 +16,16 @@ public struct DevelopmentPlanView: View, CoachWorldChromedSurface {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var openPlayerID: String?
 
-    public init(model: RosterReadModel, statusMessage: String? = nil, onClose: @escaping () -> Void) {
+    public init(
+        model: RosterReadModel,
+        statusMessage: String? = nil,
+        initialPlayerID: String? = nil,
+        onClose: @escaping () -> Void
+    ) {
         self.model = model
         self.statusMessage = statusMessage
         self.onClose = onClose
+        _openPlayerID = State(initialValue: initialPlayerID)
     }
 
     private var palette: CoachWorldTokens.Palette {

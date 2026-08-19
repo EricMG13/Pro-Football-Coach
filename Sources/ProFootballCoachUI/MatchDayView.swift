@@ -234,7 +234,13 @@ public struct MatchDayView: View {
                 onControl(model.controlDepthIntentID)
             }
             .frame(width: MatchMetric.controlDepthWidth)
-            furnitureControlButton(.tactics, wide: true, label: "HALFTIME · PLAN EDIT")
+            // Not "HALFTIME · PLAN EDIT": availability is gated on `controlledSide != nil &&
+            // pendingCallIn == nil && !completed` (`CoachWorldMatchProvider.swift`), which holds at
+            // essentially any live moment, not only at halftime. The engine records a quarter
+            // (`model.situation.quarter`) but nothing distinguishing intermission from an ordinary
+            // in-quarter stoppage, so claiming "HALFTIME" specifically would be `04` §4.4's
+            // forbidden invented fact, not a derived one. Fixed 2026-08-19 source-tracing pass.
+            furnitureControlButton(.tactics, wide: true, label: "TACTICS · PLAN EDIT")
         }
         .accessibilitySortPriority(85)
     }

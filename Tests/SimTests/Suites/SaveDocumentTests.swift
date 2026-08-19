@@ -217,6 +217,60 @@ func runSaveDocumentTests() {
             expectEqual(try Data(contentsOf: quarantined[0]), corrupt)
         }
 
+        // Regression for a source-tracing pass, 2026-08-19: `.useBackup` overwrote the primary
+        // unconditionally, with no quarantine step -- unlike `.quarantinePrimary`, which is fully
+        // implemented but was never wired to any UI control. `load()` deliberately leaves a
+        // future-schema primary intact rather than auto-quarantining it (see `isFuture`, above), so
+        // a player recovering from that exact message by tapping "Use backup" could silently and
+        // permanently destroy an otherwise-intact save with no warning. This asserts the primary is
+        // always preserved before `.useBackup` replaces it, regardless of why recovery was chosen.
+        testAsync("useBackup quarantines the primary it replaces instead of destroying it") {
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("pfc-save-\(UUID().uuidString)", isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let storage = CoachWorldSaveStore(directory: directory)
+            let primaryDocument = CoachWorldSaveDocument(
+                gameState: GameState.bootstrap(seed: 20_260_820),
+                metadata: CareerSaveMetadata(generation: 4)
+            )
+            let backupDocument = CoachWorldSaveDocument(
+                gameState: GameState.bootstrap(seed: 20_260_821),
+                metadata: CareerSaveMetadata(generation: 3)
+            )
+            let primaryBytes = try SaveEnvelope.encode(primaryDocument)
+            try storage.write(primaryBytes)
+            try storage.writeBackup(try SaveEnvelope.encode(backupDocument))
+
+            let recovered = try await SaveCoordinator(storage: storage).recover(using: .useBackup)
+            expectEqual(recovered, backupDocument)
+            expectEqual(try CoachWorldSaveDocument.decode(envelopeData: try storage.read()), backupDocument)
+
+            let quarantined = try FileManager.default.contentsOfDirectory(
+                at: storage.quarantineDirectory,
+                includingPropertiesForKeys: nil
+            )
+            expectEqual(quarantined.count, 1,
+                        "recovering with the backup must quarantine the primary it is about to replace")
+            expectEqual(try Data(contentsOf: quarantined[0]), primaryBytes)
+        }
+
+        testAsync("useBackup with no existing primary needs nothing to quarantine") {
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("pfc-save-\(UUID().uuidString)", isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let storage = CoachWorldSaveStore(directory: directory)
+            let backupDocument = CoachWorldSaveDocument(
+                gameState: GameState.bootstrap(seed: 20_260_822),
+                metadata: CareerSaveMetadata(generation: 1)
+            )
+            try storage.writeBackup(try SaveEnvelope.encode(backupDocument))
+
+            let recovered = try await SaveCoordinator(storage: storage).recover(using: .useBackup)
+            expectEqual(recovered, backupDocument)
+            expect(!FileManager.default.fileExists(atPath: storage.quarantineDirectory.path),
+                   "nothing existed to quarantine, so the quarantine directory should never be created")
+        }
+
         testAsync("newer backup is promoted and latest request replaces stale pending state") {
             let directory = FileManager.default.temporaryDirectory
                 .appendingPathComponent("pfc-save-\(UUID().uuidString)", isDirectory: true)

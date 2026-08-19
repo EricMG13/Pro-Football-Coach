@@ -454,6 +454,37 @@ public enum CoachWorldReadModelProvider {
         ]
     }
 
+    /// The player-facing reason Game Plan or Practice Plan still needs attention this week, worded
+    /// exactly like `CareerSession`'s own `missingWeeklyPreparation` refusal
+    /// (`CoachWorldStore.preparationName`/`refusalMessage`) so a read model's proactive warning and
+    /// the engine's eventual refusal can never disagree.
+    ///
+    /// Factored out (2026-08-19 source-tracing pass) because `RosterReadModel`/`RecruitingBoardReadModel`
+    /// each hand-computed their own `canContinue` from `state.pending.mandatoryDecisions` alone,
+    /// never extended to cover this -- unlike `CoachingHQReadModel`'s `weekPlan` and
+    /// `InboxReadModel.canContinue`, which already did. That let a coach with no pending decision
+    /// but an unset game/practice plan see "Advance week" wrongly enabled on both screens (and on
+    /// Team Health, which reads `RosterReadModel.canContinue` directly), tap it, and hit the
+    /// engine's real refusal with no warning first. Deliberately not folded into `weekPlan` itself
+    /// or `CoachingHQView.preparationNeeded` -- those already work and touching working code that
+    /// isn't the bug is its own risk.
+    public static func weeklyPreparationReason(for organisationID: UUID, in state: GameState) -> String? {
+        let decisions = state.pending.mandatoryDecisions.filter { $0.programmeID == organisationID }
+        let nextGame = scheduledGame(for: organisationID, in: state)
+        let plan = weekPlan(
+            programmeID: organisationID, decisions: decisions, nextGame: nextGame, in: state
+        )
+        var missing: [String] = []
+        if plan.first(where: { $0.dayLabel == "Game plan" })?.isCurrent == true {
+            missing.append("game plan")
+        }
+        if plan.first(where: { $0.dayLabel == "Practice" })?.isCurrent == true {
+            missing.append("practice plan")
+        }
+        guard !missing.isEmpty else { return nil }
+        return "Set the \(missing.joined(separator: " and ")) before the week can advance."
+    }
+
     static func worldReference(_ state: GameState) -> CoachWorldReference {
         // Identity only: no view reads `world.name`, and the root holds no name for the universe.
         CoachWorldReference(stableID: state.league.id.uuidString, name: "Football Universe")

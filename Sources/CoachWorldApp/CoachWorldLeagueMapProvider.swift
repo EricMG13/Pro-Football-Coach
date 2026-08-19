@@ -12,10 +12,20 @@ import ProFootballCoachUI
 /// engine joins by identifier for the same reason; the recruiting fit cache is the precedent.
 public extension CoachWorldReadModelProvider {
     /// Nil when no career is under control, which is the only state this cannot describe.
+    ///
+    /// Resolves the controlled organisation by tier rather than assuming college, the same
+    /// `controlledID` idiom `CoachWorldCompetitionProvider.standings`/`schedule` already use — a
+    /// coach promoted to professional keeps this screen instead of losing it the moment
+    /// `state.career.college` clears (it previously nil-guarded on college control alone).
     static func leagueMap(from state: GameState) -> LeagueMapReadModel? {
-        guard let control = state.career.college,
-              let programme = state.programmes[control.programmeID],
-              let coach = state.staff[control.coachID] else { return nil }
+        guard let coachID = state.career.coachID,
+              let coach = state.staff[coachID] else { return nil }
+        let controlledTier = controlledCompetitionTier(from: state)
+        guard let controlledID = state.career.college?.programmeID
+            ?? (state.careerArc.currentJob?.tier == .professional
+                ? state.careerArc.currentJob?.organisationID
+                : nil)
+        else { return nil }
 
         let calendar = state.calendar
         // Built once and read 166 times. `GameMap.city(_:)` is a linear scan over every city, so
@@ -39,7 +49,7 @@ public extension CoachWorldReadModelProvider {
                 tierLabel: LeagueMapReadModel.Tier.college,
                 conferenceID: member.conferenceID,
                 prestige: member.prestige.value,
-                isControlled: member.id == programme.id,
+                isControlled: member.id == controlledID,
                 in: state,
                 citiesByID: citiesByID,
                 regionsByID: regionsByID,
@@ -55,9 +65,7 @@ public extension CoachWorldReadModelProvider {
                 tierLabel: LeagueMapReadModel.Tier.professional,
                 conferenceID: member.conferenceID,
                 prestige: member.prestige.value,
-                // The controlled career is a college job until the promotion arc lands; a
-                // professional team is never the player's own on this screen today.
-                isControlled: false,
+                isControlled: member.id == controlledID,
                 in: state,
                 citiesByID: citiesByID,
                 regionsByID: regionsByID,
@@ -68,11 +76,15 @@ public extension CoachWorldReadModelProvider {
             }
         }
 
+        let controlledConferenceID = controlledTier == .college
+            ? state.programmes[controlledID]?.conferenceID
+            : state.proTeams[controlledID]?.conferenceID
+
         return LeagueMapReadModel(
-            snapshotID: snapshotID("map", programme.id, calendar),
+            snapshotID: snapshotID("map", controlledID, calendar),
             provenance: .simulationSnapshot,
             world: worldReference(state),
-            team: teamReference(programme.id, in: state),
+            team: teamReference(controlledID, in: state),
             coach: CoachWorldPersonReference(
                 stableID: coach.id.uuidString,
                 name: coach.fullName,
@@ -80,8 +92,8 @@ public extension CoachWorldReadModelProvider {
             ),
             seasonLabel: seasonLabel(calendar),
             weekLabel: weekLabel(calendar),
-            recordLabel: recordLabel(programme.id, in: state),
-            rankLabel: rankLabel(programme.id, in: state),
+            recordLabel: recordLabel(controlledID, in: state),
+            rankLabel: rankLabel(controlledID, in: state),
             gridWidth: GameMap.width,
             gridHeight: GameMap.height,
             regions: state.map.regions.map {
@@ -92,8 +104,8 @@ public extension CoachWorldReadModelProvider {
                 )
             },
             places: places,
-            conferenceStandings: conferenceStandings(for: programme.id, in: state),
-            conferenceName: programme.conferenceID.flatMap { conferencesByID[$0]?.name }
+            conferenceStandings: conferenceStandings(for: controlledID, tier: controlledTier, in: state),
+            conferenceName: controlledConferenceID.flatMap { conferencesByID[$0]?.name }
         )
     }
 
@@ -101,15 +113,31 @@ public extension CoachWorldReadModelProvider {
     ///
     /// Derived from the same `state.competition.standings` the Standings surface reads, so the map
     /// and that surface cannot disagree about the table. Filtered to the coach's conference — the
-    /// map's table is about the neighbours you play, not the whole tier.
+    /// map's table is about the neighbours you play, not the whole tier. Tier-parameterized the
+    /// same way `CoachWorldCompetitionProvider.standings`/`schedule` are, so a promoted coach's own
+    /// conference reads from the professional table, not a college one they no longer belong to.
     static func conferenceStandings(
-        for programmeID: UUID,
+        for organisationID: UUID,
+        tier: Tier,
         in state: GameState
     ) -> [LeagueMapReadModel.ConferenceStanding] {
-        guard let standings = state.competition.standings[.college],
-              let own = state.programmes[programmeID] else { return [] }
+        guard let standings = state.competition.standings[tier] else { return [] }
+        let ownConferenceID: UUID?
+        switch tier {
+        case .college:
+            guard let own = state.programmes[organisationID] else { return [] }
+            ownConferenceID = own.conferenceID
+        case .pro:
+            guard let own = state.proTeams[organisationID] else { return [] }
+            ownConferenceID = own.conferenceID
+        }
         return standings
-            .filter { state.programmes[$0.id]?.conferenceID == own.conferenceID }
+            .filter { member in
+                let memberConferenceID = tier == .college
+                    ? state.programmes[member.id]?.conferenceID
+                    : state.proTeams[member.id]?.conferenceID
+                return memberConferenceID == ownConferenceID
+            }
             .map { standing in
                 LeagueMapReadModel.ConferenceStanding(
                     stableID: standing.id.uuidString,
@@ -117,7 +145,7 @@ public extension CoachWorldReadModelProvider {
                     conferenceRecord: "\(standing.conferenceWins)\u{2013}\(standing.conferenceLosses)",
                     overallRecord: "\(standing.wins)\u{2013}\(standing.losses)",
                     pointDifferential: standing.pointsFor - standing.pointsAgainst,
-                    isControlled: standing.id == programmeID
+                    isControlled: standing.id == organisationID
                 )
             }
     }

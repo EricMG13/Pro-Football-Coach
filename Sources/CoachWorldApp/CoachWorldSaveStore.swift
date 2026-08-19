@@ -366,6 +366,15 @@ public actor SaveCoordinator {
             guard FileManager.default.fileExists(atPath: storage.backupURL.path) else {
                 throw SaveCoordinatorError.noRecoverySource
             }
+            // The primary being replaced can still be intact -- e.g. a future-schema document
+            // `load()` deliberately left untouched (`isFuture`, above) rather than quarantining
+            // outright. Preserve it before overwriting, the same way `.quarantinePrimary` already
+            // does, so choosing the backup can never silently destroy a file nothing else backs up.
+            // `try`, not `try?`: if the primary can't be preserved, refuse to overwrite it rather
+            // than risk destroying it silently.
+            if storage.hasSave {
+                _ = try storage.quarantinePrimary(name: "pre-backup-restore-\(UUID().uuidString).pfcsave")
+            }
             let document = try CoachWorldSaveDocument.decode(envelopeData: storage.readBackup())
             try storage.write(try SaveEnvelope.encode(document))
             lastWrittenGeneration = document.metadata.generation
