@@ -51,7 +51,7 @@ struct SuiteCatalog: Sendable {
         .commitmentCoverage, .contrastByConstruction, .dynamicType, .reduceMotion,
         .voiceOver, .touchTarget, .determinism, .reachability,
         .errorSurface, .accessibility, .saveOffMainActor, .saveCoalescing,
-        .saveOpenReadOnly, .legal
+        .saveOpenReadOnly, .legal, .smallestDeviceLayout
     ]
 
     static func lane(for gate: ReleaseGateID) -> String {
@@ -83,7 +83,10 @@ struct SuiteCatalog: Sendable {
             return Runner(command: "--design-contracts", function: "runAccessibilityReflowTests")
         case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly:
             return Runner(command: "--save-document", function: "runSaveDocumentTests")
-        case .agencyBudget, .performanceBudget, .twoTierConsistency, .smallestDeviceLayout:
+        case .smallestDeviceLayout:
+            return Runner(command: "--smallest-device-layout",
+                          function: "runSmallestDeviceLayoutTests")
+        case .agencyBudget, .performanceBudget, .twoTierConsistency:
             return nil
         case .m1Soak:
             return Runner(command: "--m1-soak", function: "runM1SoakTests")
