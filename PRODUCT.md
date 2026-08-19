@@ -92,9 +92,9 @@ grows a row that no test backs.
 | 44 pt touch targets | `TouchTargetTest` |
 | A season is completable in 6–8 hours | `AgencyBudgetTests` |
 | Week advance under 2.0 s at shipping league size | `PerformanceBudgetTests` |
-| A save survives 20 seasons under 8 MB | soak |
+| A save survives 20 seasons under 8 MB | `M1SoakTests` + `M2SoakTests` |
 | Same seed, same league, across app launches | `DeterminismTests` + source scan |
-| All identities fictional and original | name-collision test + trade-dress ΔE test |
+| All identities fictional and original | `LegalTests` |
 | The simulation and the off-screen model agree | `TwoTierConsistencyTests` (TOST) |
 
 ---
