@@ -19,6 +19,62 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-19, final — CI actually ran, against commits from partway through this session's work,
+> and found two real regressions this branch's own static-only verification could not catch.** With
+> no `swift`/`xcodebuild` here, everything above was checked by grep, Python simulation and careful
+> reading — never a compiler. GitHub's runners finally caught up on the backlog from this branch's
+> many pushes and ran the actual `full` verify lane. Result, on the earliest commits checked: **build
+> green, 921 of 922 tests passing.** That is real, external confirmation that Phase 0-2 and the bulk
+> of Phase 3 are sound — but the one failure, and a second one found by investigating it rather than
+> waiting for CI to report it directly, are worth recording exactly.
+>
+> **Regression 1 (real, from Phase 3): `ContractTests.swift`'s "player profile figures must be set
+> in the tabular face."** This test checks `PlayerProfileView.swift`'s source text for either
+> `"monospacedDigit"` or `"CoachWorldTokens.figure("` — a substring check already showing its age
+> (the comment explains it was rewritten once before, when figures first moved from bare
+> `.monospacedDigit()` to `CoachWorldTokens.figure(_:weight:)`). Phase 3's own migration moved every
+> figure call site on that surface again, to `.coachWorldFigure(_:weight:)`
+> (`CoachWorldScaledType.swift`), which still applies `.monospacedDigit()` — just internally, not as
+> a literal token at the call site. Neither of the two spellings the test already accepted survived,
+> so it failed, even though the property it exists to protect never regressed. Fixed by adding
+> `.coachWorldFigure(` as a third accepted spelling. Confirmed by grep this was the *only* such check
+> in the whole suite affected by the sweep — `RosterView`'s and `LeagueMapView`'s equivalent
+> `monospacedDigit`-substring checks still pass, because those two files carry other, unmigrated
+> `.monospacedDigit()` calls unrelated to `CoachWorldTokens.figure(`.
+>
+> **Regression 2 (real, from Phase 4, found by investigation before CI could report it): four more
+> test blocks asserting a now-provably-false "must be reachable from the shipped app root" claim.**
+> While diagnosing regression 1, a second family-loop test elsewhere in the same file
+> (`schemeBook`/`personnelPackages`) turned up checking `appRoot.contains("case .schemeBook")` —
+> exactly the dead-case text Phase 4 had just deleted. Rather than wait for CI to surface each one
+> individually (each full run takes 35-40 minutes on these runners), re-derived the complete 15-alias
+> set from `routeDisposition` directly and searched the whole suite for every reachability check
+> referencing any of them — including the string-interpolated form (`"case .\(family.2)"`) a plain
+> literal-text grep cannot see. Found and fixed four affected blocks in total:
+> `jobBoard`/`offer`/`appointment` (a for-loop), `schemeBook`+`personnelPackages` (a standalone
+> pair), `staffMarketProfile` (split out of a loop it shared with three genuinely-canonical
+> siblings), and `portalHub`+`retentionDecisions`+`portalMarket`+`nilAllocation` (split out of a
+> loop shared with the genuinely-canonical `signingDay`). Confirmed the existing
+> `proScoutingBoard`/`draftBoard`/`freeAgency` loop was already safe — it checks the alias view
+> file's own delegation to `ProOffseasonView`, never `appRoot` case text — and that
+> `jobSecurity`/`coachingCarousel` have no per-family reachability test at all, only the
+> already-correct by-construction "62 legacy route numbers" test. Each fix replaces the false
+> "reachable" claim with the true one the registry already states
+> (`canonicalDestination`/`isCanonicalTask`, looked up via `CoachWorldScreenID.allCases` rather than
+> hand-typed) plus an explicit assertion that the dead case is genuinely gone.
+>
+> **What this changes about every earlier "UNVERIFIED — never compiled" entry above: nothing —
+> that framing held exactly as intended.** Neither regression was a claim of false verification; both
+> were static-analysis blind spots this session was honest about not being able to close alone. The
+> value here is that CI, once it actually ran, confirmed the code compiles and almost everything
+> passes, and the two real problems it found were both fixable in minutes once identified, not signs
+> of a deeper defect in the sweep's methodology.
+>
+> **UNVERIFIED — never compiled**, same as everything else in this log; these two fixes are
+> themselves unverified by the same token, checked only by re-deriving and re-running (by hand, via
+> grep and Python) the exact logic each test performs. Files touched:
+> `Tests/SimTests/Suites/ContractTests.swift` (both fixes).
+
 > **2026-08-19, later still — Phase 4: deleted the 15 unreachable alias branches from `career()`,
 > corrected the review doc's S-6 overstatement, and corrected this file's own F-09 claim below.**
 >
