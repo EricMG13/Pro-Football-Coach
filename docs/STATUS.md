@@ -649,6 +649,30 @@ is the largest remaining item. B-2 and any device measurement are the owner's. P
 cuts) is not built — and the probe's finding that no team is over the cap at the season boundary is
 worth carrying into it, because beat 2 has nothing to do until spending puts a team over.
 
+### 2026-08-19 — determinism coverage widened: the professional negotiation ledger
+
+`ProMarketState.contractNegotiations` (the schema-13 negotiation ledger) sat inside the root both
+`ArchitectureTests` fingerprints hash, but neither pin ever exercised it: `GameState.bootstrap`
+starts it empty, and `WorldScheduler.advanceWeek` never opens, counters or settles a negotiation on
+its own — only `ProManagementSystem`, a career-control action, does. A corrupted offer history, a
+wrong negotiation status, or a mis-ordered ledger after decode would have satisfied both existing
+pins.
+
+Added `"the professional negotiation ledger is pinned across processes"` to `ArchitectureTests.swift`
+(`--architecture-only`): it opens, counters and settles a negotiation from a fixed seed, then hashes
+the resulting root with the same `architectureFingerprint` the two root pins use, against a new
+`pinnedNegotiationLedgerFingerprint` literal. The literal was computed live (not invented), then
+`./scripts/verify.sh --lane determinism` was run in two independent process invocations — each a
+fresh `swift run` against its own scratch path — and both produced the identical fingerprint:
+`18194934115346224100`. No engine divergence found; nothing was fixed because nothing broke.
+
+This closes one instance of the class this loop exists to find — a persisted store reachable from
+`GameState` but never driven into a non-default shape by any pinned fingerprint — not the whole
+class. Other candidates not yet covered: `matchSession` (nil through both pins; `--m1-soak`/`--m2-soak`
+drive it but neither pins a fingerprint), the news feed (`newsAndNarrative` is `.inactive` in the
+one-week advance the scheduler-order test asserts), and `DomainEventLedger`'s archived-season path
+(the ledger pin only sees fresh, unarchived events).
+
 ### The full default suite — **green on 2026-08-12, after a two-failure fix**
 
 `./scripts/verify.sh` now passes: **602 tests / 747,027 checks, all passed**, debug build and

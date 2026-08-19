@@ -33,6 +33,17 @@ private let pinnedRootFingerprint: UInt64 = 3_251_160_748_987_753_141
 
 private let pinnedAdvancedRootFingerprint: UInt64 = 11_229_646_605_763_785_595
 
+/// The professional contract-negotiation ledger (`ProMarketState.contractNegotiations`) is part of
+/// the schema-13 root, but neither pin above ever exercises it: bootstrap starts with it empty, and
+/// `WorldScheduler.advanceWeek` never opens, counters or settles a negotiation on its own — only
+/// `ProManagementSystem` does, and that is a career-control action, not a scheduler step. A root
+/// that carried a corrupted offer history, a wrong negotiation status, or a mis-ordered ledger
+/// after decode would still satisfy both fingerprints above. This pin walks the ledger through
+/// open, counter and settle and hashes the result, so its cross-process byte-identity is actually
+/// asserted rather than assumed from the root pins. Reproduced in two independent processes before
+/// being written here.
+private let pinnedNegotiationLedgerFingerprint: UInt64 = 18_194_934_115_346_224_100
+
 /// Hashes the canonical JSON body, not the save envelope.
 ///
 /// It hashed the envelope until 2026-08-12, when the body became zlib-compressed. That would have
@@ -82,6 +93,43 @@ func runArchitectureTests() {
             let advanced = try WorldScheduler.advanceWeek(root)
             expectEqual(try architectureFingerprint(root), pinnedRootFingerprint)
             expectEqual(try architectureFingerprint(advanced), pinnedAdvancedRootFingerprint)
+        }
+
+        test("the professional negotiation ledger is pinned across processes") {
+            var state = GameState.bootstrap(seed: 20_260_819)
+            let teamID = state.proTeams.ids[0]
+            let playerID = state.proTeams[teamID]!.rosterIDs[0]
+            state.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: teamID,
+                    tier: .professional,
+                    startedAt: state.calendar
+                ),
+                status: .employed
+            )
+            let current = state.players[playerID]!.contract!
+            let opened = try ProManagementSystem.beginNegotiation(
+                playerID: playerID,
+                teamID: teamID,
+                offer: current,
+                deadline: state.calendar.advancedWeek().advancedWeek(),
+                in: state
+            )
+            let countered = try ProManagementSystem.counterNegotiation(
+                negotiationID: opened.negotiation.id,
+                offer: current,
+                in: opened.state
+            )
+            let settled = try ProManagementSystem.settleNegotiation(
+                negotiationID: opened.negotiation.id,
+                as: .accepted,
+                in: countered.state
+            )
+            expectEqual(settled.state.proMarket.contractNegotiations.count, 1)
+            expectEqual(
+                try architectureFingerprint(settled.state),
+                pinnedNegotiationLedgerFingerprint
+            )
         }
 
         test("the authoritative root survives the save envelope") {
