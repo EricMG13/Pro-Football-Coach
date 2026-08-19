@@ -92,6 +92,13 @@ public extension CoachWorldReadModelProvider {
         let division = divisionID.flatMap { id in
             state.league.divisions.first(where: { $0.id == id })?.name
         }
+        // The most recent 12 by season/week, not the earliest 12: this feeds "Form · last six"
+        // (`TeamProgrammeProfileView.recentResults`, which reads the last `formGames` of whichever
+        // fixtures land here). A regular season already schedules every game up front (17 for pro,
+        // `ProRules.gamesPerRegularSeason`), so taking the earliest 12 goes permanently stale the
+        // moment more than 12 games exist for the team -- confirmed by a source-tracing pass,
+        // 2026-08-19. College's 12-game regular season (`CollegeRules.gamesPerRegularSeason`) never
+        // hit this at week 1, which is why the existing fixture-set test above didn't catch it.
         let fixtures = state.competition.currentSchedule.games
             .filter { $0.homeID == organisationID || $0.awayID == organisationID }
             .sorted {
@@ -99,7 +106,7 @@ public extension CoachWorldReadModelProvider {
                 if $0.week != $1.week { return $0.week < $1.week }
                 return $0.id.uuidString < $1.id.uuidString
             }
-            .prefix(12)
+            .suffix(12)
             .compactMap { game -> TeamProgrammeProfileReadModel.Fixture? in
                 let isHome = game.homeID == organisationID
                 let opponentID = isHome ? game.awayID : game.homeID

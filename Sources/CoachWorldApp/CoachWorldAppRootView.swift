@@ -20,6 +20,12 @@ public struct CoachWorldAppRootView: View {
     @State private var screen: CoachWorldScreenID = .coachingHQ
     @State private var teamHealthOrigin: CoachWorldScreenID = .coachingHQ
     @State private var inboxOrigin: CoachWorldScreenID = .coachingHQ
+    /// Where Development Plan opened from, so Close returns there rather than always to Roster.
+    /// Session-only like `gamePlanOrigin` below, not persisted across a relaunch — a narrower gap
+    /// than `teamHealthOrigin`/`inboxOrigin`'s save-restored routes. Fixed 2026-08-19
+    /// source-tracing pass: Player Profile is a real, reachable entry point into this screen
+    /// ("Into the development plan"), and Close ignored it.
+    @State private var developmentPlanOrigin: CoachWorldScreenID = .coachingHQ
     /// Where Tactics opened Game Plan from, so submitting or closing returns there rather than to
     /// Coaching HQ. Not persisted across a relaunch the way `teamHealthOrigin`/`inboxOrigin` are —
     /// quitting mid-adjustment lands back on Coaching HQ instead of Match Day on the next launch, a
@@ -112,7 +118,7 @@ public struct CoachWorldAppRootView: View {
             case .developmentPlan:
                 surface(store.roster, screen: .developmentPlan) { model in
                     DevelopmentPlanView(model: model, statusMessage: failure ?? store.statusMessage,
-                                        onClose: { navigate(.roster, in: store) })
+                                        onClose: { navigate(developmentPlanOrigin, in: store) })
                     .floodlitChrome(
                         chrome(for: .developmentPlan, in: store),
                         onNavigate: { navigateChrome($0, in: store) }
@@ -1262,6 +1268,9 @@ public struct CoachWorldAppRootView: View {
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
         case .developmentPlan where store.roster != nil:
+            developmentPlanOrigin = screen == .roster
+                ? .roster
+                : (screen == .playerProfile ? .playerProfile : .coachingHQ)
             screen = .developmentPlan
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil

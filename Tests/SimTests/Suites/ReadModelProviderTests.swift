@@ -666,6 +666,44 @@ func runReadModelProviderTests() {
             expectEqual(CoachWorldReadModelProvider.proOffseason(from: fired), nil)
         }
 
+        // Regression for a source-tracing pass, 2026-08-19: `market.draftClass` was never filtered
+        // against `draftedProspectIDs`, unlike `freeAgentIDs`/waivers, which correctly shrink as
+        // they're consumed. `ProMarketSystem.draft` already refused a stale pick correctly
+        // (`.duplicateDraftPick`), so nothing illegal could ever be drafted twice -- the
+        // already-drafted prospect just never left the board, with an enabled "Draft" row
+        // indistinguishable from an available one. In ordinary play this is the common case, not an
+        // edge case: the controlled team only ever sees this board after `ProRosterAISystem` has
+        // already made every AI pick up to its own turn.
+        test("the draft board drops a prospect once any team has drafted them") {
+            var state = try professionalCareer(seed: 4_063).0
+            state = try ProMarketSystem.openOffseason(in: state)
+            guard let draftTeamID = state.proMarket.draftOrder.first,
+                  let removedPlayerID = state.proTeams[draftTeamID]?.rosterIDs.first else {
+                expect(false, "the opened market produced no draft order or roster to free a slot on")
+                return
+            }
+            // Bootstrap rosters are full (53/53), so the first pick needs room the same way
+            // `ProMarketTests.swift`'s own draft tests free it.
+            _ = state.proTeams.update(draftTeamID) { team in
+                team.rosterIDs.removeAll { $0 == removedPlayerID }
+            }
+            state.players.update(removedPlayerID) { $0.contract = nil }
+            state = try ProMarketSystem.beginDraft(in: state)
+            guard let prospect = state.proMarket.draftClass.first else {
+                expect(false, "the opened draft class was empty")
+                return
+            }
+            state = try ProMarketSystem.draft(prospectID: prospect.id, for: draftTeamID, in: state)
+            expect(state.proMarket.draftedProspectIDs.contains(prospect.id))
+
+            guard let model = CoachWorldReadModelProvider.proOffseason(from: state) else {
+                expect(false, "the drafting market produced no offseason model")
+                return
+            }
+            expect(!model.prospects.contains { $0.id == prospect.id },
+                   "a drafted prospect is still listed on the board")
+        }
+
         test("professional management projects bounded cap and roster actions") {
             let (state, team) = try professionalCareer(seed: 4_062)
             guard let model = CoachWorldReadModelProvider.proManagement(from: state),
@@ -1150,6 +1188,34 @@ func runReadModelProviderTests() {
             )
         }
 
+        // Regression for a source-tracing pass, 2026-08-19: this provider took the *earliest* 12
+        // scheduled games (`.prefix(12)` on an ascending sort) instead of the most recent, so "Form
+        // - last six" (`TeamProgrammeProfileView.recentResults`) went permanently stale once a team
+        // had played more than 12 games -- which a professional team's 17-game regular season
+        // guarantees every season. College's 12-game regular season never exposed this at week 1
+        // (prefix(12) and suffix(12) of exactly 12 games are the same set), which is why the
+        // existing fixture-set test above couldn't catch it.
+        test("team profile fixtures are the most recent games, not the earliest, once a season exceeds 12") {
+            let (state, team) = try professionalCareer(seed: 4_018)
+            guard let model = CoachWorldReadModelProvider.teamProgrammeProfile(
+                team.id,
+                from: state
+            ) else {
+                expect(false, "a professional team produced no team profile")
+                return
+            }
+            let allTeamGames = state.competition.currentSchedule.games
+                .filter { $0.homeID == team.id || $0.awayID == team.id }
+                .sorted {
+                    if $0.season != $1.season { return $0.season < $1.season }
+                    if $0.week != $1.week { return $0.week < $1.week }
+                    return $0.id.uuidString < $1.id.uuidString
+                }
+            expect(allTeamGames.count > 12,
+                   "this test needs a schedule longer than 12 games to prove which 12 survive")
+            expectEqual(model.fixtures.map(\.id), allTeamGames.suffix(12).map { $0.id.uuidString })
+        }
+
         test("world search is bounded, deterministic and uses organisation IDs") {
             let (state, _) = try startedCareer(seed: 4_017)
             let first = CoachWorldReadModelProvider.worldSearch(from: state)
@@ -1336,6 +1402,39 @@ func runReadModelProviderTests() {
             expectEqual(model?.decision, nil)
             expectEqual(CoachWorldReadModelProvider.roster(from: state)?.canContinue, false)
             expectEqual(CoachWorldReadModelProvider.recruitingBoard(from: state)?.canContinue, false)
+        }
+
+        // Regression for a source-tracing pass, 2026-08-19: Roster's and Recruiting Board's
+        // `canContinue` only ever checked `state.pending.mandatoryDecisions`, never weekly
+        // preparation -- unlike Coaching HQ's `weekPlan` and Inbox's `canContinue`, which already
+        // covered it. A career with no pending decision but an unset game/practice plan therefore
+        // showed "Advance week" as enabled on both screens (and on Team Health, which reads
+        // `RosterReadModel.canContinue` directly), only to have the engine correctly refuse the tap
+        // with no warning shown first. Both providers now share
+        // `CoachWorldReadModelProvider.weeklyPreparationReason`, so this proves they still agree
+        // with each other and with it -- not a fixed string, since the exact reason (game plan,
+        // practice plan, or both) legitimately depends on fixture state.
+        test("roster and recruiting board's canContinue agrees with weekly preparation, not just pending decisions") {
+            let (state, programme) = try startedCareer(seed: 4_014)
+            let expectedReason = CoachWorldReadModelProvider.weeklyPreparationReason(
+                for: programme.id, in: state
+            )
+            guard let roster = CoachWorldReadModelProvider.roster(from: state),
+                  let board = CoachWorldReadModelProvider.recruitingBoard(from: state) else {
+                expect(false, "a started career produced no roster or recruiting board")
+                return
+            }
+            expectEqual(roster.continueReason, expectedReason)
+            expectEqual(roster.canContinue, expectedReason == nil)
+            expectEqual(board.continueReason, expectedReason)
+            expectEqual(board.canContinue, expectedReason == nil)
+            // Guard the scenario itself, not just the equality: a fresh career must have no pending
+            // decision (or this would silently retest the case above instead) and a real missing
+            // weekly obligation (or `expectedReason == nil` on both sides would pass vacuously).
+            expect(state.pending.mandatoryDecisions.isEmpty,
+                   "this fixture now has a pending decision, so it no longer isolates the weekly-prep case")
+            expect(expectedReason != nil,
+                   "a fresh career already has its weekly plan set, so this no longer proves the fix")
         }
     }
 
@@ -2082,6 +2181,27 @@ func runReadModelProviderTests() {
             let (second, _) = try startedCareer(seed: 4_074)
             expectEqual(CoachWorldReadModelProvider.leagueMap(from: first),
                         CoachWorldReadModelProvider.leagueMap(from: second))
+        }
+
+        // Regression for a source-tracing pass, 2026-08-19: the provider guarded on
+        // `state.career.college` alone, so a coach promoted to professional got `nil` here forever
+        // -- while Coaching HQ, Roster, and League Map's own route bar kept advertising "League"
+        // unconditionally, dead-ending every tap. Every other tier-aware provider
+        // (`CoachWorldCompetitionProvider.standings`/`schedule`) already resolved the controlled
+        // organisation by tier; this provider just hadn't been.
+        test("a promoted professional coach still gets a league map, not nil") {
+            let (state, team) = try professionalCareer(seed: 4_075)
+            guard let model = CoachWorldReadModelProvider.leagueMap(from: state) else {
+                expect(false, "a professional career produced no league map")
+                return
+            }
+            expectEqual(model.places.filter(\.isControlled).count, 1)
+            expectEqual(model.places.first(where: \.isControlled)?.stableID,
+                        team.id.uuidString)
+            expectEqual(
+                model.places.filter { $0.tierLabel == LeagueMapReadModel.Tier.professional }.count,
+                state.proTeams.count
+            )
         }
     }
 }
