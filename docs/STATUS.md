@@ -19,6 +19,32 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-19, later — gave the release-gate catalog an explicit unwritten state (Phase 0 of the
+> systemic-defect remediation plan).** `Tests/SimTests/SuiteCatalog.swift`'s `Entry.runner: Runner?`
+> is replaced by `Entry.disposition: Disposition`, an enum of `.runnable(Runner)` or
+> `.unwritten(reason:spec:)`. `AgencyBudgetTests`, `PerformanceBudgetTests`,
+> `TwoTierConsistencyTests` and `SmallestDeviceLayoutTest` — previously `nil` runners that both
+> `Commitment coverage` tests failed unconditionally — are now `.unwritten` with a stated reason and
+> a citation into `docs/OPEN-DECISIONS.md` (D1, D4, D3, D15/G-09 respectively). A commitment naming
+> an unwritten gate no longer fails; an unwritten gate with an empty reason or spec still does. A
+> named-set assertion (mirroring `AccessibilityReflowTests`' "keeps the draft room family landed"
+> pattern) pins the unwritten set to exactly these four, so a fifth cannot go silently unwritten and
+> closing one requires deliberately editing the test. `docs/qa/feature-coverage.csv` QA-001 updated
+> to match: defect count 1 → 0, status reworded from "failing closed" to "explicit and cited".
+>
+> **Deliberately not done here:** the plan's lane-vocabulary sub-item (assert `SuiteCatalog.lane(for:)`
+> is a subset of `scripts/verify.sh`'s `--lane` vocabulary) was dropped after reading `verify.sh` —
+> the two serve different purposes (domain grouping for `--catalog` output vs. a curated command
+> dispatcher), so a subset assertion would either be hollow or force a design decision. Flagged for
+> the owner in the plan rather than forced through.
+>
+> **UNVERIFIED — never compiled.** No `swift`/`xcodebuild` in this environment. The switch in
+> `disposition(for:)` was checked by hand against all 21 `ReleaseGateID` cases for exhaustiveness and
+> no duplicates; `expectEqual` and `Set<ReleaseGateID>` usage were checked against
+> `TestKit.swift`'s existing signatures and the pre-existing `defaultRun: Set<ReleaseGateID>` (which
+> already relied on the same auto-synthesized `Hashable`). None of that is a compiler. Files touched:
+> `Tests/SimTests/SuiteCatalog.swift`, `docs/qa/feature-coverage.csv`.
+
 > **2026-08-19 — cherry-picked the points-per-drive calibration fix off the stale, unmerged
 > `codex/fm-touch-personnel-examples` branch (PR #7).** `CalibrationBands.swift` gains a pro-tier
 > band (1.60–1.95 `[Q]`, `01` §6.5) and `CalibrationHarness.swift` now aggregates it from
