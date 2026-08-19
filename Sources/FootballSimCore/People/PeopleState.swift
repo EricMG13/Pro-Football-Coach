@@ -896,6 +896,12 @@ public struct StaffCareerRecord: Codable, Sendable, Equatable, Identifiable {
         self.assignments = Array(assignments.suffix(PeopleRules.careerSeasonHistoryLimit))
     }
 
+    mutating func record(_ assignment: StaffCareerAssignment) {
+        assignments = Array(
+            (assignments + [assignment]).suffix(PeopleRules.careerSeasonHistoryLimit)
+        )
+    }
+
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedAssignments = try container.decode(
@@ -1097,6 +1103,31 @@ public struct PeopleState: Codable, Sendable, Equatable {
             staffID: staff.id,
             assignments: [assignment]
         )
+    }
+
+    /// Appends one assignment to a staff career, creating the record if the coach has none.
+    ///
+    /// An out-of-order season is refused rather than written: the decoder rejects a
+    /// non-chronological record, and a caller must never be able to produce a save that cannot be
+    /// read back.
+    @discardableResult
+    public mutating func recordStaffAssignment(
+        _ assignment: StaffCareerAssignment,
+        for staff: Staff
+    ) -> Bool {
+        guard var career = staffCareers[staff.id] else {
+            staffCareers[staff.id] = StaffCareerRecord(
+                staffID: staff.id,
+                assignments: [assignment]
+            )
+            return true
+        }
+        guard career.assignments.last.map({ assignment.season >= $0.season }) ?? true else {
+            return false
+        }
+        career.record(assignment)
+        staffCareers[staff.id] = career
+        return true
     }
 
     public mutating func archive(player: Player, status: PlayerLifecycleStatus) {

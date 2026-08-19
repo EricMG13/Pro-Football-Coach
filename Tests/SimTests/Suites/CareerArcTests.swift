@@ -269,5 +269,72 @@ func runCareerArcTests() {
                 "unknown career employer passed root integrity"
             )
         }
+        test("promotion carries the head-coaching seat into the pro tier") {
+            let source = GameState.bootstrap(seed: 99_120)
+            let programmeID = source.programmes.ids[0]
+            let controlled = try CareerControlSystem.startCollegeCareer(
+                at: programmeID,
+                in: source
+            ).state
+            guard let coachID = controlled.career.coachID else {
+                expect(false, "career start left no coach")
+                return
+            }
+            let proTeam = controlled.proTeams.values[0]
+            let opportunity = CareerOpportunity(
+                id: UUID(uuidString: "00000000-0000-4000-8000-000000000A20")!,
+                organisationID: proTeam.id,
+                tier: .professional,
+                offeredAt: controlled.calendar,
+                expiresAt: controlled.calendar.advancedWeek(),
+                prestige: proTeam.prestige,
+                rationale: .sustainedCollegeSuccess
+            )
+            var promoting = controlled
+            promoting.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: programmeID,
+                    tier: .college,
+                    startedAt: controlled.calendar
+                ),
+                opportunities: [opportunity],
+                status: .employed
+            )
+            let promoted = try IntentResolver.resolve(
+                .career(CareerArcRequest(
+                    calendar: promoting.calendar,
+                    action: .acceptOpportunity(opportunityID: opportunity.id)
+                )),
+                in: promoting
+            ).state
+
+            // The seat moves. Holding both at once is the duplication this asserts against.
+            expect(
+                promoted.proTeams[proTeam.id]?.staffIDs.contains(coachID) == true,
+                "promotion did not seat the coach at the pro team"
+            )
+            expect(
+                promoted.programmes[programmeID]?.staffIDs.contains(coachID) == false,
+                "promotion left the coach holding the college seat as well"
+            )
+            expectEqual(
+                promoted.proTeams[proTeam.id]?.staffIDs.filter {
+                    promoted.staff[$0]?.role == .headCoach
+                }.count,
+                1,
+                "pro team ended the promotion with more than one head coach"
+            )
+            // The coaching tree and the history archive both read staffCareers, so the pro seat
+            // has to be recorded there or the promotion vanishes from every history surface.
+            let assignments = promoted.people.staffCareers[coachID]?.assignments ?? []
+            expectEqual(assignments.last?.organisationID, proTeam.id)
+            expectEqual(assignments.last?.role, .headCoach)
+            expectEqual(assignments.last?.season, promoted.calendar.season)
+            expect(
+                assignments.contains { $0.organisationID == programmeID },
+                "promotion erased the college seat from the career record"
+            )
+            expect(WorldIntegrity.check(promoted).isValid, "promoted world failed integrity")
+        }
     }
 }

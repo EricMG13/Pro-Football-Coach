@@ -221,6 +221,104 @@ public enum CareerControlSystem {
         return CareerControlTransition(state: next, control: control)
     }
 
+    /// Moves the controlled coach's chair from whatever organisation still seats them to the
+    /// professional team they were promoted to.
+    ///
+    /// The career arc records the job; the world records the chair. Leaving the chair behind is
+    /// what let a promoted coach stay listed as their old programme's head coach, and kept the
+    /// professional seat out of `people.staffCareers` — the one authority the coaching tree and
+    /// the season history archive both read, so the promotion vanished from every history surface.
+    ///
+    /// The old chair is found in the world rather than in `career.college`, because a promotion
+    /// can also be accepted while seeking, after a resignation has already cleared that control
+    /// but left the coach on the programme's staff.
+    static func seatProfessionalPromotion(
+        teamID: UUID,
+        in state: inout GameState
+    ) {
+        guard let coachID = state.career.coachID,
+              let coach = state.staff[coachID],
+              state.proTeams[teamID] != nil else { return }
+        let season = state.calendar.season
+
+        if let programmeID = state.programmes.ids.first(where: {
+            state.programmes[$0]?.staffIDs.contains(coachID) == true
+        }), let prestige = state.programmes[programmeID]?.prestige {
+            let successorID = appointHeadCoach(
+                organisationID: programmeID,
+                prestige: prestige,
+                season: season,
+                in: &state
+            )
+            _ = state.programmes.update(programmeID) { programme in
+                programme.staffIDs = programme.staffIDs.filter { $0 != coachID } + [successorID]
+            }
+        }
+        for formerID in state.proTeams.ids where formerID != teamID {
+            guard state.proTeams[formerID]?.staffIDs.contains(coachID) == true,
+                  let prestige = state.proTeams[formerID]?.prestige else { continue }
+            let successorID = appointHeadCoach(
+                organisationID: formerID,
+                prestige: prestige,
+                season: season,
+                in: &state
+            )
+            _ = state.proTeams.update(formerID) { team in
+                team.staffIDs = team.staffIDs.filter { $0 != coachID } + [successorID]
+            }
+        }
+
+        let displaced = Set(
+            (state.proTeams[teamID]?.staffIDs ?? []).filter {
+                state.staff[$0]?.role == .headCoach
+            }
+        )
+        _ = state.proTeams.update(teamID) { team in
+            team.staffIDs = team.staffIDs.filter {
+                $0 != coachID && !displaced.contains($0)
+            } + [coachID]
+        }
+        state.people.recordStaffAssignment(
+            StaffCareerAssignment(season: season, organisationID: teamID, role: .headCoach),
+            for: coach
+        )
+    }
+
+    /// Generates and inserts a head coach for a seat the controlled coach is about to leave.
+    /// `WorldIntegrity` holds every organisation to exactly one head coach, so a vacancy is not a
+    /// state the world is allowed to be in even for one intent.
+    private static func appointHeadCoach(
+        organisationID: UUID,
+        prestige: Rating,
+        season: Int,
+        in state: inout GameState
+    ) -> UUID {
+        var ordinal = 20_000
+        var successor: Staff
+        repeat {
+            successor = StaffPopulationGenerator.replacement(
+                rootSeed: state.league.seed,
+                season: season,
+                organisationID: organisationID,
+                prestige: prestige,
+                role: .headCoach,
+                positionGroup: nil,
+                ordinal: ordinal
+            )
+            ordinal += 1
+        } while state.staff[successor.id] != nil
+        state.staff.insert(successor)
+        state.people.insert(
+            staff: successor,
+            assignment: StaffCareerAssignment(
+                season: season,
+                organisationID: organisationID,
+                role: .headCoach
+            )
+        )
+        return successor.id
+    }
+
     @discardableResult
     public static func setResponsibility(
         _ responsibility: CollegeCareerResponsibility,

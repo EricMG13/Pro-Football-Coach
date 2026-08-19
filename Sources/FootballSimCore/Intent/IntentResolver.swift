@@ -375,6 +375,12 @@ public enum IntentResolver {
                 )
                 if applied {
                     nextState.career.clearCollege()
+                    if let job = nextState.careerArc.currentJob {
+                        CareerControlSystem.seatProfessionalPromotion(
+                            teamID: job.organisationID,
+                            in: &nextState
+                        )
+                    }
                 }
             case .resign:
                 applied = nextState.careerArc.resign(at: request.calendar)
