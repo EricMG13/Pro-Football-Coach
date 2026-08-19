@@ -123,10 +123,14 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > correction of scope, not a contradiction: the first pass checked what it checked correctly, it just
 > did not check everything this pass did.
 >
-> **CI has not seen this commit yet.** Consistent with this file's own rule, nothing above is claimed
-> as compiled or passing from inside this environment — the commit carrying these three fixes and
-> this entry is pushed for CI to judge, and this section will be amended with the real result (or the
-> real failure) once CI returns one, the same way the previous pass's entry above was.
+> **CI confirmed the three fixes above compile and pass, with no manual claim of verification from
+> this environment.** `full` ran clean except the one already-known gate: **927 tests / 770,111
+> checks**, up from 926/770,108 before it — exactly the one new test this pass added
+> (`M6 professional management` now reports 9 tests, up from 8), passing. The only failure is the
+> same pre-existing `CommitmentCoverageTest` gate (the same four named commitments, the same seven
+> checks) this file has already recorded as red on purpose since before this session started; nothing
+> else regressed. This environment still cannot compile Swift itself, and does not claim to — this is
+> the compiler's answer, not an assertion made from inside this container.
 >
 > **Mapped against this session's actual instruction, plainly, since that is what determines whether
 > this is a stopping point:**
