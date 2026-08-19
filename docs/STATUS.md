@@ -19,6 +19,74 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-19 — the 62-screen Floodlit redesign was completed, scored 10/30 and called for a
+> second redesign, and this file was not updated to say so until a QA pass caught it.** Three things
+> landed on this date and none of them had reached this document before now:
+>
+> 1. `e3b360d feat: complete 62-screen Floodlit redesign` finished porting all remaining surface
+>    interiors (this closes the "Pro management and career were not [visually confirmed]" and
+>    "~59 surfaces still chrome-only" gaps the 2026-08-18 entry above left open) and, in the same
+>    commit, added `docs/qa/feature-coverage.csv` (62 screens + 9 workflows + 2 QA-process rows, each
+>    with a user story, expected behaviour, edge cases and current status) and
+>    `docs/reviews/2026-08-19-screen-reachability-map.md` (a source-level navigation/role audit).
+>    `68e9c15 test: close release gate traceability` followed, hardening
+>    `CommitmentCoverageTest` to fail closed when a `PRODUCT.md` commitment names a test with no
+>    runnable runner — see item 3.
+> 2. A **separate, much larger verdict exists and this file did not carry it either.**
+>    `DESIGN-IS-2026-08-19/` (00-scope through 04-handoff-prompt) audited the same 62 screens against
+>    ten design principles and scored **10/30**, verdict **REDESIGN**, with load-bearing zeros on
+>    usefulness, understandability and honesty: "too many named destinations do not perform their
+>    named task and repeated label/commit mismatches make refinement alone insufficient." Its own
+>    `04-handoff-prompt.md` is a drafted `/make-plan` prompt for that redesign. **This is an
+>    owner-scoped product decision, not a bug backlog** — nobody has acted on it, and no session
+>    should treat "the 62 screens are built" as equivalent to "the 62 screens are done" without
+>    reading this verdict first.
+> 3. **`CommitmentCoverageTest` (in the default suite) is red right now, on purpose, and was already
+>    red before this session touched anything.** Four `PRODUCT.md` commitments —
+>    `AgencyBudgetTests`, `PerformanceBudgetTests`, `TwoTierConsistencyTests`,
+>    `SmallestDeviceLayoutTest` — are registered in `SuiteCatalog.swift` with `runner: nil` by
+>    construction, and nothing implementing any of the four exists anywhere in the tree (confirmed by
+>    a repo-wide grep). This is not a small wiring gap:
+>    - `AgencyBudgetTests` ("a season is completable in 6-8 hours") needs the owner UX-timing
+>      protocol `01-RESEARCH.md` §6.0 §8 asks for; nobody has run it.
+>    - `PerformanceBudgetTests` ("week advance under 2.0 s") already has a measurement instrument,
+>      `--week-advance-timing`, and its own docstring explains why it deliberately asserts nothing:
+>      "a machine this does not know the speed of cannot fairly fail a build... the gate is the
+>      owner's, on the device." Wiring it into a pass/fail `SuiteCatalog` entry on a container or a
+>      development machine would silently contradict that design decision, not honour it — and the
+>      B-4 entry above already measured this container/dev-Mac class of host failing the budget by
+>      ~40% at the median, so a naive pass/fail gate would just be red for a reason nobody could act
+>      on from here.
+>    - `TwoTierConsistencyTests` (detailed engine vs. the off-screen model, via TOST) is blocked on
+>      P4's calibration, which is itself still failing 5-6 of 24 bands per the P4 section below.
+>    - `SmallestDeviceLayoutTest` needs the Xcode-measured 844 x 390 install-floor numbers `04` §5.2
+>      still marks ASSUMPTION.
+>
+>    Building any of these for real, from this environment, would mean inventing the underlying
+>    measurement — exactly what this file exists to catch. They are left registered and red,
+>    consistent with the `--pro-soak`/`--pro-draft-probe` precedent elsewhere in this document:
+>    named, diagnosed, and honestly not done, rather than quietly passed.
+>
+> **What this session (no Swift toolchain; container environment) actually did, all of it unverified
+> — never compiled:** re-read `docs/reviews/2026-08-19-screen-reachability-map.md` against the
+> current source line by line rather than trusting it, and found three of its four "confirmed"
+> navigation defects no longer reproduce — `CoachingHQView.swift`, `RosterView.swift` and
+> `LeagueMapView.swift` already gate the Recruit link and the Realignment menu entry on the same
+> `store.recruitingBoard`/`store.realignment?.event` booleans the router and "All Tasks" use, and the
+> thirteen "retired alias" menu names it named do not appear anywhere in the current `worldMenu`
+> body. The likely cause: the doc was drafted against an intermediate state of `e3b360d` and never
+> re-run against that same commit's final diff before both were committed together — recorded in
+> full, with fresh file:line citations, as a dated correction inside that document rather than by
+> silently editing its original findings away. The fourth finding (Promotion Decision's label) is
+> real but narrower than stated — the route is already gated on an actionable offer everywhere, the
+> remaining gap is that a fired professional coach's lateral re-hire is still labeled "Promotion
+> Decision," which is a naming question that belongs to the redesign in item 2, not a dead link. A
+> fifth finding this pass surfaced on its own read (Statistics & Awards read both tiers with no
+> filter) is confirmed accurate and is a product-scope question, not a bug. One regression test was
+> added, `ReadModelProviderTests.swift`'s "career hub lets a fired, seeking coach accept a fresh
+> professional opportunity" — the one `canAcceptWhileSeeking` branch that had no coverage either
+> way. No production/view code was changed, because none of it needed to be.
+
 > **2026-08-18 — Floodlit design handoff, all three milestones implemented.** The owner-supplied
 > handoff `design_handoff_floodlit_surfaces_and_match_day/` is built end to end:
 >

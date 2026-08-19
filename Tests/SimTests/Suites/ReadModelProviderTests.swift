@@ -1028,6 +1028,37 @@ func runReadModelProviderTests() {
             expectEqual(programmeID, state.career.college?.programmeID)
         }
 
+        // Closes the coverage gap `docs/reviews/2026-08-19-screen-reachability-map.md` finding #4
+        // named: nothing exercised the `canAcceptWhileSeeking` branch. A fired coach (college or
+        // professional) correctly can accept a fresh professional offer -- that part is not a bug.
+        // Whether the shared workspace should still call itself "Promotion Decision" for a fired
+        // professional coach's lateral re-hire is a labeling question for the surface-level redesign
+        // this finding is folded into, not something this data-layer test decides.
+        test("career hub lets a fired, seeking coach accept a fresh professional opportunity") {
+            var state = try startedCareer(seed: 4_013).0
+            let team = state.proTeams.values[0]
+            state.pending = PendingQueues()
+            state.careerArc = CareerArcState(
+                opportunities: [CareerOpportunity(
+                    id: UUID(uuidString: "00000000-0000-4000-8000-000000000713")!,
+                    organisationID: team.id,
+                    tier: .professional,
+                    offeredAt: state.calendar,
+                    expiresAt: state.calendar.advancedWeek(),
+                    prestige: team.prestige,
+                    rationale: .staffRecommendation
+                )],
+                status: .seeking
+            )
+            guard let offer = CoachWorldReadModelProvider.careerHub(from: state)?.opportunities.first else {
+                expect(false, "a seeking coach's fresh professional offer disappeared instead of being actionable")
+                return
+            }
+            expect(offer.canAccept,
+                   "a fired/seeking coach with an active, unexpired professional offer should be able to accept it")
+            expectEqual(offer.unavailableReason, nil)
+        }
+
         test("standings are sourced from the authoritative competition table") {
             let (state, _) = try startedCareer(seed: 4_010)
             guard let model = CoachWorldReadModelProvider.standings(from: state),
