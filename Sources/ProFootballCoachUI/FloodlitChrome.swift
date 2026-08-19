@@ -344,17 +344,17 @@ struct FloodlitIdentityHeader: View {
         HStack(spacing: CoachWorldTokens.Gap.smPlus) {
             CoachWorldPennant(team: model.club)
             Text(model.club.name.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.lead, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.lead, weight: .bold)
                 .tracking(Chrome.clubTracking)
                 .foregroundStyle(CoachWorldTokens.Floodlit.clubInk.color)
                 .lineLimit(1)
             Text(model.ranking.map { "\(model.record) · \($0)" } ?? model.record)
-                .font(CoachWorldTokens.figure(Chrome.recordSize, weight: .semibold))
+                .coachWorldFigure(Chrome.recordSize, weight: .semibold)
                 .foregroundStyle(CoachWorldTokens.Floodlit.clubInk.color.opacity(0.78))
                 .lineLimit(1)
             if let conference = model.conference {
                 Text(conference.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .semibold)
                     .tracking(
                         CoachWorldTokens.DisplaySize.tracking(0.2, at: CoachWorldTokens.DisplaySize.flag)
                     )
@@ -389,7 +389,7 @@ struct FloodlitIdentityHeader: View {
                 CoachWorldPennant(team: opponent)
             }
             Text(context.uppercased())
-                .font(CoachWorldTokens.display(Chrome.contextSize, weight: .bold))
+                .coachWorldDisplay(Chrome.contextSize, weight: .bold)
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
@@ -408,7 +408,7 @@ struct FloodlitIdentityHeader: View {
     private var secondaryRow: some View {
         HStack(spacing: CoachWorldTokens.Gap.md) {
             Text(model.family.canonicalName.uppercased())
-                .font(CoachWorldTokens.display(Chrome.familySize, weight: .bold))
+                .coachWorldDisplay(Chrome.familySize, weight: .bold)
                 .tracking(CoachWorldTokens.DisplaySize.tracking(0.2, at: Chrome.familySize))
                 .foregroundStyle(CoachWorldTokens.dark.actionPrimary.color)
             ForEach(model.siblings) { sibling in
@@ -424,7 +424,7 @@ struct FloodlitIdentityHeader: View {
         let isCurrent = sibling.screen == model.screen
         return Button { onNavigate(sibling.intentID) } label: {
             Text(sibling.title.uppercased())
-                .font(CoachWorldTokens.display(Chrome.siblingSize, weight: .semibold))
+                .coachWorldDisplay(Chrome.siblingSize, weight: .semibold)
                 .tracking(CoachWorldTokens.DisplaySize.tracking(0.09, at: Chrome.siblingSize))
                 .foregroundStyle(
                     CoachWorldTokens.Floodlit.clubInk.color.opacity(isCurrent ? 1 : 0.66)
@@ -538,8 +538,16 @@ struct FloodlitIconRail: View {
         } label: {
             VStack(spacing: CoachWorldTokens.Gap.hair) {
                 Image(systemName: entry.symbol)
-                    .font(.system(size: Chrome.railSymbol, weight: .semibold))
+                    .coachWorldIcon(Chrome.railSymbol, weight: .semibold)
                     .accessibilityHidden(true)
+                // Deferred (S-0 Phase 3, 2026-08-19): fixed in both dimensions (width:
+                // CoachWorldTokens.Stage.railWidth, height: CoachWorldTokens.Shape.minimumTarget,
+                // below), same class as FloodlitArcGauge/FloodlitAttributeDial/FloodlitStaffVoice's
+                // three deferred sites in FloodlitPatterns.swift. minimumScaleFactor(railLabelFloor)
+                // is already a no-op at 1.0 (S-3/no-clip finding), so scaling the base size here
+                // would grow text with no shrink-back and no room to wrap, inside a 44 pt tap target
+                // stacked directly under the icon above it. Needs a considered geometry fix, not a
+                // token swap.
                 Text(entry.label.uppercased())
                     .font(CoachWorldTokens.display(Chrome.railLabel, weight: .bold))
                     .tracking(CoachWorldTokens.DisplaySize.tracking(0.1, at: Chrome.railLabel))
