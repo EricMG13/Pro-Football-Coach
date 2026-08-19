@@ -382,4 +382,143 @@ Per-family scores and findings for the other 53 surfaces follow in section 6, fr
 delegated reviews. Delegation honoured `CLAUDE.md`'s cap of six concurrent subagents with no nested
 delegation; findings are merged and re-verified against source rather than accepted as returned.
 
-*Section 6 pending — delegated reviews in flight at the time of writing.*
+---
+
+## 6. Per-surface results
+
+Scores are the eight `04b` dimensions summed to 40. Every reviewer capped dimensions 6 and 8 at what
+source can prove and said so. **No surface in any family reached the 31/40 gate.**
+
+### 6.1 The one P0
+
+**Depth Chart and Personnel Packages — VoiceOver and AX5 users can reach one position group of
+fifteen.** Verified directly here against all four of its claims.
+
+`DepthChartView.swift:175` — inside `token(_:)` — is the only writer that selects a specific group:
+
+```swift
+openPositionID = group.id
+```
+
+`token(_:)` is rendered only inside `fieldDiagram`, which carries `.accessibilityHidden(true)`
+(`:140`), and which is **not constructed at all** at accessibility type sizes (`:60-64`). The
+fallback then pins the surface to the first group (`:104-106`):
+
+```swift
+visibleGroups.first { $0.id == openPositionID } ?? visibleGroups.first
+```
+
+The unit pills (`:90`) reset it to `nil`, yielding that unit's first group and nothing further. The
+authoring comment states the reasoning error exactly:
+
+```swift
+// The diagram is a second reading of the list, never the only one, so at AX
+// sizes the list stands alone rather than a 390pt field being scaled to nothing.
+```
+
+The diagram is *not* a second reading — it holds the sole selection affordance. Rubric D6 anchor 0
+and P0's "unusable supported configuration". `PersonnelPackagesView` renders `DepthChartView` and
+inherits it whole.
+
+### 6.2 Scores
+
+| Family | Surface | Total | Verdict | Auto-rejections |
+|---|---|--:|---|---|
+| Entry | Title / Continue | 16/40 | Reject | #4, #5 |
+| Entry | New Career & Coach Identity | 21/40 | Reject | — |
+| Entry | Job Board | 13/40 | Reject | #1, #4, #6, #8 |
+| Entry | Offer | 12/40 | Reject | #1, #4, #6, #8 |
+| Entry | Appointment | 12/40 | Reject | #1, #4, #6, #8 |
+| Entry | Settings & Accessibility | 13/40 | Reject | #4, #5 |
+| Personnel | Roster | 23/40 | Reject | — |
+| Personnel | Depth Chart | 20/40 | **Reject (P0)** | — |
+| Personnel | Player Profile | 26/40 | Revise | — |
+| Personnel | Development Plan | 17/40 | Reject | — |
+| Personnel | Staff Room | 23/40 | Reject | — |
+| Personnel | Staff Market & Profile | 11/40 | Reject | #1 |
+| Personnel | Scheme Book | 12/40 | Reject | #1 |
+| Personnel | Personnel Packages | 10/40 | **Reject (P0)** | #1 |
+| Pro mgmt | Cap & Contracts | 20/40 | Reject | — |
+| Pro mgmt | Contract Negotiation | 18/40 | Reject | — |
+| Pro mgmt | Roster Cuts & Transactions | 14/40 | Reject | #1, #4 |
+| Pro mgmt | Pro Scouting Board | 14/40 | Reject | #1, #8 |
+| Pro mgmt | Draft Board | 15/40 | Reject | #1, #8 |
+| Pro mgmt | Draft Room | 11/40 | Reject | #1, #4, #7 |
+| Pro mgmt | Free Agency | 14/40 | Reject | #1 |
+| Pro mgmt | Pro Offseason | 18/40 | Reject | — |
+| League | League Map | 21/40 | Reject | #4 |
+| League | Team / Programme Profile | 24/40 | Reject | — |
+| League | Standings | 24/40 | Reject | — |
+| League | Schedule | 21/40 | Reject | — |
+| League | Rankings & Playoff Picture | 16/40 | Reject | — |
+| League | Bracket / Postseason | 17/40 | Reject | — |
+| League | Game Detail / Box Score | 23/40 | Reject | — |
+| League | Statistics & Leaders | 17/40 | Reject | — |
+| League | Awards & Honours | 17/40 | Reject | — |
+| League | News | 18/40 | Reject | — |
+| League | Realignment Event | 12/40 | Reject | #4 |
+| League | World Search | 21/40 | Reject | — |
+
+Career family (9) is scored in section 3. Weekly command (8) and recruiting (11) pending.
+
+### 6.3 The dominant pattern: named destinations that do not perform their named task
+
+`04` §8 assigns each family a dominant object. Across four families, reviewers found the rendered
+object is a different one, or absent:
+
+- **Offer** — canon: "terms and accept/decline consequence". No terms exist in `OpportunityRow`, and
+  **no decline action exists anywhere** — not in the view, the read model, or the callback surface.
+- **Settings & Accessibility** — canon: "device, match and accessibility choices". Five `Text` blocks
+  and a Close button. Zero choices.
+- **Title / Continue** — canon: "current career and durable boundary". A wordmark and two buttons; no
+  Continue control exists, and no career is shown.
+- **Staff Market & Profile** — canon: "candidate comparison, contract and scheme relationship".
+  Renders your **own employed staff**, headed "STAFF MARKET · 8 on staff".
+- **Scheme Book** — canon: "offensive/defensive identity and adoption cost". Renders Game Plan's
+  composition headed by *this week's opponent*, and its commit writes `setGamePlan` — so "setting a
+  scheme" silently changes this week's tactical plan.
+- **Rankings & Playoff Picture** — canon: "selection position, neighbours and path". `RankingRow`
+  holds no seed, no cut line, no bid count. A ranked list wearing a playoff-picture name.
+- **Free Agency** — canon: "live market waves, competing bidders and offers". `FreeAgentRow` holds
+  name and position only; there is no bidding.
+
+### 6.4 Other confirmed P0/P1s worth naming
+
+- **Cap gauge contradicts itself.** `ProManagementView.swift:145-149` clamps with `min(1, …)` and
+  derives the printed figure from the clamped value, so an over-cap team renders **"100%"** three
+  lines below `Text(… "Over the cap")` (`:102`). Registry #14 requires a defined over-capacity state;
+  neither `FloodlitArcGauge` nor `CoachWorldMeter` can express one.
+- **Contract Negotiation submits superseded terms.** `NegotiationCard` seeds `@State` in `init`
+  (`:227-229`) under a `ForEach` keyed on a stable id, with no `.id()` or `.onChange` re-seed. After
+  a counter, the fields hold the old offer while the cost line shows the new one — and "Counter"
+  transmits the stale values to the engine.
+- **News contradicts itself on season.** The provider prints `season + 1`
+  (`CoachWorldNewsProvider.swift:13,17`) while the engine headline embeds the raw season
+  (`NewsFeedReadModel.swift:88`). Season 1's dateline sits beside "Season 0 ends: …".
+- **Roster prints an impossible class balance.** `classBalance` (`RosterView.swift:788-794`) buckets
+  into FR/SO/JR/SR, but pro players generate with `eligibility = nil`, so every pro roster shows
+  `ROSTER 53/69` beside `FR 0 · SO 0 · JR 0 · SR 0`. It also silently drops `GR` on college rosters.
+  The value is computed in the view and maps to no read-model field.
+- **Three rating-colour scales disagree.** `RosterView.ratingColor` (85/70),
+  `DesignTokens.Heat` (85/72) and `CoachWorldRatingRing` (85/72) use different thresholds and
+  different colour triples. A 70-rated player is amber "steady" in the Roster table and red "weak" on
+  the Player Profile one tap away — and both appear inside single panels.
+- **A dead-control pattern across six league surfaces.** `guard let id = UUID(uuidString:) else
+  { return }` silently no-ops; the bundled DEBUG fixture uses non-UUID stable ids
+  (`"team-carson"`), so in the sample path these are enabled buttons that do nothing.
+
+### 6.5 Refutations from the delegated reviews
+
+- **"Row selection commits before the explicit control"** (DESIGN-IS row 32) — **refuted** for Game
+  Plan and Depth Chart. Both cited sites set local state only, and `DepthChartView.swift:268`
+  documents the contract: *"Tapping a row only selects it; the footer owns the commit."*
+- **"`CompetitionOverviewView` is a relabelling host"** — **refuted**. It genuinely recomposes per
+  focus (`:85-104`). Rankings and Bracket fail for a different and worse reason: the read model holds
+  no playoff-picture or bracket-topology data at all.
+- **"`04b` requires dark and light appearances"** — superseded. `04` §7 retires it; Floodlit is
+  dark-only by canon, so hardcoding `CoachWorldTokens.dark` is compliant and is **not** a finding.
+- **Legal sweep across recruiting and league surfaces — clean.** No real institution, venue,
+  programme or person name; no hardcoded team colours (all resolve through `CoachWorldTeamIdentity`).
+  One residual, flagged not asserted: two hand-authored DEBUG fixture colour pairs
+  (`LeagueMapReadModels.swift:255-259, 285-288`) sit outside the generated-pair ΔE sweep by
+  construction — the same shape of gap that produced the 2026-08-12 defect. An owner checklist item.
