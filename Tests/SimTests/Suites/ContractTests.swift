@@ -667,9 +667,9 @@ func runContractTests() {
                 .first { $0.path.hasSuffix("/NewsView.swift") }?.text ?? ""
             expect(root.contains("case .news") && root.contains("NewsView("),
                    "news must be reachable from the shipped root")
-            expect(store.contains("public private(set) var news")
+            expect(store.contains("public var news")
                        && store.contains("CoachWorldReadModelProvider.news"),
-                   "news must be rebuilt from the application store seam")
+                   "news must be vended from the application store seam")
             expect(provider.contains("NewsFeedReadModel.build(from: state)"),
                    "news must derive from typed history")
             expect(view.contains("public struct NewsView")
@@ -694,8 +694,8 @@ func runContractTests() {
                        && root.contains("CareerLineView(")
                        && root.contains("CoachingTreeView("),
                    "all durable history families must reach one authoritative projection")
-            expect(store.contains("legacyHistory = CoachWorldReadModelProvider.legacyHistory"),
-                   "history must rebuild from the application store seam")
+            expect(store.contains("CoachWorldReadModelProvider.legacyHistory"),
+                   "history must be vended from the application store seam")
             expect(provider.contains("WorldHistoryReadModel.build(from: state)")
                        && provider.contains("CoachingTreeReadModel.build(from: state)"),
                    "history must use authoritative archive and coaching-tree projections")
@@ -725,9 +725,9 @@ func runContractTests() {
             expect(root.contains("RankingsPlayoffPictureView(")
                        && root.contains("BracketPostseasonView("),
                    "rankings and postseason must use named production family entries")
-            expect(store.contains("statisticsLeaders = CoachWorldReadModelProvider.statisticsLeaders")
-                       && store.contains("awardsHonours = CoachWorldReadModelProvider.awardsHonours"),
-                   "competition history must rebuild from the store seam")
+            expect(store.contains("CoachWorldReadModelProvider.statisticsLeaders")
+                       && store.contains("CoachWorldReadModelProvider.awardsHonours"),
+                   "competition history must be vended from the store seam")
             expect(provider.contains("state.competition.playerStatistics")
                        && provider.contains("state.competition.archives"),
                    "leaders and honours must derive from authoritative competition state")
@@ -985,6 +985,9 @@ func runContractTests() {
                 $0.path.hasSuffix("/CoachWorldAppRootView.swift")
             }?.text ?? ""
             let store = appFiles.first { $0.path.hasSuffix("/CoachWorldStore.swift") }?.text ?? ""
+            let availability = appFiles.first {
+                $0.path.hasSuffix("/CoachWorldAvailabilityProvider.swift")
+            }?.text ?? ""
             let competitionProvider = appFiles.first {
                 $0.path.hasSuffix("/CoachWorldCompetitionProvider.swift")
             }?.text ?? ""
@@ -1015,8 +1018,10 @@ func runContractTests() {
                        && hq.contains("isEnabled: canAdvance"),
                    "HQ advance must expose preparation and refusal state")
             expect(appRoot.contains("case .settingsAccessibility:")
-                       && appRoot.contains("case .signingDay where store.collegeOffseason?.cyclePhase == .signing"),
-                   "settings and signing-day routes must be reachable in the active career")
+                       && appRoot.contains("case .signingDay where store.availableScreens.contains(.signingDay)")
+                       && availability.contains("add(.signingDay, when: offseason?.cyclePhase == .signing)"),
+                   "settings and signing-day routes must be reachable in the active career, and "
+                       + "signing day must stay gated on the recorded cycle phase")
             expect(appRoot.contains("onContinue: { navigate(.gamePlan, in: store) }")
                        && appRoot.contains("case .opponentReportFilmRoom: .opponentReportFilmRoom"),
                    "film-room continuation must open Game Plan without advancing the week and preserve its origin")
@@ -1029,8 +1034,8 @@ func runContractTests() {
                        && appRoot.contains("screen = .careerHub")
                        && appRoot.contains("private static func canonicalScreen"),
                    "legacy career routes must migrate to the canonical career workspace")
-            expect(appRoot.contains("add(.draftRoom, when: store.proOffseason?.phase == .draft)")
-                       && appRoot.contains("case .draftRoom where store.proOffseason?.phase == .draft"),
+            expect(availability.contains("add(.draftRoom, when: proOffseason(from: state)?.phase == .draft)")
+                       && appRoot.contains("case .draftRoom where store.availableScreens.contains(.draftRoom)"),
                    "Draft Room must remain a phase-gated canonical task")
             expect(store.contains("split(separator: \"|\"")
                        && store.contains("mandatoryDecision(decisionID: decisionID, optionID: optionID)"),
@@ -1040,8 +1045,10 @@ func runContractTests() {
                        && appRoot.contains("onOpenProfile:")
                        && appRoot.contains("$0.stableID == personnelPlayerID")
                        && appRoot.contains(".onDisappear { personnelPlayerID = nil }")
-                       && appRoot.contains("case .playerProfile where store.roster?.players.isEmpty == false"),
-                   "Player Profile must preserve the active roster selection")
+                       && appRoot.contains("case .playerProfile where store.availableScreens.contains(.playerProfile)")
+                       && availability.contains("add(.playerProfile, when: (rosterPlayerCount ?? 0) > 0)"),
+                   "Player Profile must preserve the active roster selection and stay gated on a "
+                       + "roster that has players in it")
             expect(appRoot.contains("Button(\"Back to HQ\")")
                        && appRoot.contains("navigate(.coachingHQ, in: store)"),
                    "unavailable routes must offer a truthful return path")
@@ -1056,10 +1063,9 @@ func runContractTests() {
                        && newsProvider.contains("occurredAt.season + 1"),
                    "news must use the same one-based season convention as the other league surfaces")
             expect(competitionProvider.contains("controlledCompetitionTier")
-                       && store.contains("standings(tier: competitionTier")
-                       && store.contains("schedule(tier: competitionTier")
-                       && store.contains("competitionOverview = CoachWorldReadModelProvider.competitionOverview(")
-                       && store.contains("tier: competitionTier"),
+                       && store.contains("standings(tier: CoachWorldReadModelProvider.controlledCompetitionTier(from: $0)")
+                       && store.contains("schedule(tier: CoachWorldReadModelProvider.controlledCompetitionTier(from: $0)")
+                       && store.contains("competitionOverview(tier: CoachWorldReadModelProvider.controlledCompetitionTier(from: $0)"),
                    "the store must forward the controlled competition tier to every surface")
             expect(readOnlyBacks.count == 5
                        && readOnlyBacks.allSatisfy { !$0.contains("FloodlitCommittingAction(\"Back") },
