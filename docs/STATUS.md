@@ -19,6 +19,22 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-19 — cherry-picked the points-per-drive calibration fix off the stale, unmerged
+> `codex/fm-touch-personnel-examples` branch (PR #7).** `CalibrationBands.swift` gains a pro-tier
+> band (1.60–1.95 `[Q]`, `01` §6.5) and `CalibrationHarness.swift` now aggregates it from
+> `DriveRecord.pointsScored`, removing "points per drive" from `unimplementedMetrics`. The rest of
+> that PR's diff — a rewrite of the non-canonical `docs/plans/2026-08-12-road-to-beta.md` — was left
+> behind; its status claims (e.g. "56 of 62 screen families have no view") predate and are
+> superseded by the 62-screen Floodlit completion recorded below.
+>
+> **UNVERIFIED — never compiled.** This environment has no `swift` or `xcodebuild`; the change has
+> not been built or run here. `Tests/SimTests/Suites/CalibrationTests.swift`'s "the harness measures
+> every band its tier declares" test is the one that would catch a mismatch between the two files —
+> the original commit changed both in lockstep under the same metric-name string, which is why it
+> should hold, but that is reasoning from reading the diff, not a passing run. Files touched:
+> `Sources/FootballSimCore/Calibration/CalibrationBands.swift`,
+> `Sources/FootballSimCore/Calibration/CalibrationHarness.swift`.
+
 > **2026-08-18 — Floodlit design handoff, all three milestones implemented.** The owner-supplied
 > handoff `design_handoff_floodlit_surfaces_and_match_day/` is built end to end:
 >
