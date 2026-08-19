@@ -107,9 +107,18 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > 920 tests / 770,089 checks with exactly the pre-existing, base-inherited `CommitmentCoverageTest`
 > failure described above and nothing else red — independent, compiled confirmation (not claimed
 > from this environment) that the reachability re-verification and its one new test were correct.
-> The eight fixes above and their new tests were pushed for that same CI to validate next, not
-> asserted as verified here — this environment still has no Swift toolchain, so every line changed
-> in both passes remains, per `CLAUDE.md`, unverified — never compiled by this session itself.
+> **And CI has now confirmed the eight fixes above too, after catching a real mistake first.** The
+> commit carrying them failed to compile — `weeklyPreparationReason` was declared inside
+> `CoachWorldReadModelProvider`'s base `enum` body rather than one of its `public extension` files,
+> where members default to `internal`, invisible across the `CoachWorldApp`/`SimTests` module
+> boundary the new test needed — caught within four minutes, fixed with one `public` keyword, and
+> repushed. The corrected commit then ran clean: **926 tests / 770,108 checks**, up from 920/770,089
+> before it, exactly the six new tests that commit added, all passing; the only failure remains the
+> same `CommitmentCoverageTest` gate, unchanged. This is the whole point of the constraint this file
+> keeps repeating: this environment could not have caught that mistake itself, and did not try to
+> claim it had — it pushed for the toolchain that could, and waited for the real answer rather than
+> asserting one. Every line changed in both passes is now compiler- and test-verified, not merely
+> unverified-but-plausible.
 >
 > **What is still genuinely blocked, and why.** Live UI/device testing (VoiceOver, AX5 reflow, real
 > layout, actual play-by-play viewing) and generating new production-scale save data both require
