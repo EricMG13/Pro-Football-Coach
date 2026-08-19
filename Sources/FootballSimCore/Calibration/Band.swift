@@ -143,3 +143,26 @@ public enum TotalVariation {
         return sum / 2
     }
 }
+
+public extension Estimate {
+    /// The difference between two independent estimates, with the pooled standard error.
+    ///
+    /// Equivalence between two models is a two-sample question: testing the abstracted model's
+    /// interval against a band centred on the detailed model's *point* estimate would treat the
+    /// reference as exact and quietly understate the uncertainty. `SE = sqrt(SEa^2 + SEb^2)`.
+    ///
+    /// The result is carried as a `.mean` estimate whose deviation is back-solved from that
+    /// standard error, so `Band.test` applies unchanged — TOST on a difference against a
+    /// symmetric margin is the same procedure as TOST on a level against a band.
+    static func difference(of first: Estimate, and second: Estimate) -> Estimate {
+        let pooled = (first.standardError * first.standardError
+            + second.standardError * second.standardError).squareRoot()
+        let size = Swift.min(first.sampleSize, second.sampleSize)
+        guard size > 0, pooled.isFinite else {
+            return Estimate(value: first.value - second.value, sampleSize: 0,
+                            standardDeviation: 0, estimator: .mean)
+        }
+        return Estimate(value: first.value - second.value, sampleSize: size,
+                        standardDeviation: pooled * Double(size).squareRoot(), estimator: .mean)
+    }
+}

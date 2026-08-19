@@ -1021,6 +1021,35 @@ next attempt should widen the *model*, not the grid.
 attempts have happened; three were instrument repair and one was a search rather than a hand pass.
 An instrument repair is not a failed tuning attempt.
 
+**`TwoTierConsistencyTests` now exists, runs, and is red for this reason — 2026-08-19.** The gate
+`PRODUCT.md` promises (the played week and the skipped week describe the same sport) is registered
+in `SuiteCatalog` with a dispatched command, `--two-tier-consistency`, and asserts TOST on the
+*difference* between the two models rather than a range check on either. Its first metric, points
+per team-game, fails in both tiers, and the failure names which model moved:
+
+| Tier | Abstracted | Detailed | Band | Margin |
+|---|---|---|---|---|
+| Pro | 24.17, sd 8.64 | 17.42, sd 17.95 | 20–26 | ±3.0 |
+| College | 28.57, sd 10.40 | 23.19, sd 31.37 | 26–31 | ±2.5 |
+
+The abstracted model is inside its calibration band in both tiers; the detailed model is outside it
+in both, over 320 bootstrapped fixtures per tier. Its spread is the louder signal: on generated
+rosters the detailed model shuts a side out in 20 percent of professional and 30 percent of college
+team-games and returned a 156-point game, against 0.4 percent shutouts and a 57-point maximum from
+the abstracted one. That is the blowout rate above (0.75 against a band of 0.17–0.26) showing up
+where the player would see it.
+
+**So the equivalence commitment is downstream of this section, and closing it by moving the
+abstracted model would be backwards** — it would take the model that holds the band out of the band
+to match one that does not. `--calibration-report` was added alongside as a printing probe over both
+ladders, because `--calibration` tests the instrument and never ran the engine against the bands;
+the table at the top of this section is now reproducible in one command.
+
+The remaining ten metrics `03` §5.1 lists are enumerated in the suite with what each is blocked on.
+Nine of them need the abstracted model to produce something it does not produce at all — it
+simulates no play, no drive, no kick and no clock — so covering them is a change to that model
+rather than to the suite.
+
 **Sixteen of §6.5's rows are not measured at all**, listed in `CalibrationBands.unimplementedMetrics`
 with what each waits on: per-drive accounting, target shares (which need per-player stat lines the
 engine does not produce), overtime and schedule context (P6). §6.6 clause 3 wants every scalar band
