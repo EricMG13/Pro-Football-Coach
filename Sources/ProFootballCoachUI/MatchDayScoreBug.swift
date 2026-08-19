@@ -71,10 +71,10 @@ struct ScoreBug: View {
             cell(score(for: theirs), side: theirs)
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 Text("\(quarterLabel) · \(clockLabel)")
-                    .font(CoachWorldTokens.figure(Bug.clock, weight: .semibold))
+                    .coachWorldFigure(Bug.clock, weight: .semibold)
                     .foregroundStyle(CoachWorldTokens.dark.contentPrimary.color)
                 Text("\(downDistance.uppercased()) · \(spot.uppercased())")
-                    .font(CoachWorldTokens.display(Bug.subline, weight: .semibold))
+                    .coachWorldDisplay(Bug.subline, weight: .semibold)
                     .tracking(CoachWorldTokens.DisplaySize.tracking(0.14, at: Bug.subline))
                     .foregroundStyle(CoachWorldTokens.dark.contentSecondary.color)
             }
@@ -97,16 +97,16 @@ struct ScoreBug: View {
         return HStack(spacing: CoachWorldTokens.Gap.xs) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 Text(score.team.abbreviation.uppercased())
-                    .font(CoachWorldTokens.display(Bug.name, weight: .bold))
+                    .coachWorldDisplay(Bug.name, weight: .bold)
                 if let subline = score.subline {
                     Text(subline)
-                        .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .semibold)
                         .foregroundStyle(cellInk(isOurs).opacity(0.7))
                 }
             }
             if let seed = score.seed {
                 Text("\(seed)")
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                     .foregroundStyle(CoachWorldTokens.Floodlit.liveInk.color)
                     .padding(.horizontal, CoachWorldTokens.Gap.xxs)
                     .overlay {
@@ -118,7 +118,7 @@ struct ScoreBug: View {
                     .accessibilityLabel("Seed \(seed)")
             }
             Text("\(score.score)")
-                .font(CoachWorldTokens.figure(scoreSize, weight: .bold))
+                .coachWorldFigure(scoreSize, weight: .bold)
                 .foregroundStyle(cellInk(isOurs))
             // Trails the score, per the handoff's stated cell order (rail, name, score, triangle).
             if hasBall {
@@ -177,11 +177,11 @@ struct ScoreBug: View {
     private func band(_ event: MatchDayReadModel.EventBadge, placement: BandPlacement) -> some View {
         VStack(spacing: CoachWorldTokens.Gap.hair) {
             Text(event.title.uppercased())
-                .font(CoachWorldTokens.display(Bug.bandTitle, weight: .bold))
+                .coachWorldDisplay(Bug.bandTitle, weight: .bold)
                 .tracking(CoachWorldTokens.DisplaySize.tracking(0.18, at: Bug.bandTitle))
             if let subtitle = event.subtitle {
                 Text(subtitle.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .semibold)
                     .foregroundStyle(bandInk.opacity(0.75))
             }
         }
@@ -266,7 +266,7 @@ struct CallInBudgetBug: View {
         VStack(alignment: .trailing, spacing: CoachWorldTokens.Gap.xxs) {
             HStack(spacing: CoachWorldTokens.Gap.xxs) {
                 Text("CALL-INS")
-                    .font(CoachWorldTokens.display(Budget.label, weight: .bold))
+                    .coachWorldDisplay(Budget.label, weight: .bold)
                     .tracking(CoachWorldTokens.DisplaySize.tracking(0.18, at: Budget.label))
                     .foregroundStyle(CoachWorldTokens.dark.contentSecondary.color)
                 Spacer(minLength: CoachWorldTokens.Gap.sm)
@@ -287,11 +287,11 @@ struct CallInBudgetBug: View {
                 }
                 .accessibilityHidden(true)
                 Text("\(budget.used) OF \(budget.total)")
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.lead, weight: .bold))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.lead, weight: .bold)
                     .foregroundStyle(CoachWorldTokens.dark.actionPrimary.color)
             }
             Text(budget.rateNote.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .semibold)
                 .tracking(CoachWorldTokens.DisplaySize.tracking(0.12, at: CoachWorldTokens.DisplaySize.flag))
                 .foregroundStyle(CoachWorldTokens.dark.contentQuiet.color)
         }
@@ -335,7 +335,7 @@ struct ControlDepthSelector: View {
             ForEach(MatchControlDepth.allCases, id: \.self) { candidate in
                 Button(action: onSelect) {
                     Text(title(candidate))
-                        .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                         .tracking(
                             CoachWorldTokens.DisplaySize.tracking(0.1, at: CoachWorldTokens.DisplaySize.flag)
                         )
@@ -382,6 +382,7 @@ struct ControlDepthSelector: View {
 /// sits (`04` section 9's PRE-SNAP / SNAP / RESULT frames): this component renders what it is
 /// told rather than re-deriving a state machine from the read model.
 struct MatchLowerThird: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let model: MatchDayReadModel
     let phase: String
     let isLive: Bool
@@ -395,7 +396,7 @@ struct MatchLowerThird: View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xxs) {
             HStack(spacing: CoachWorldTokens.Gap.xs) {
                 Text(phase.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                     .tracking(
                         CoachWorldTokens.DisplaySize.tracking(0.18, at: CoachWorldTokens.DisplaySize.flag)
                     )
@@ -403,20 +404,14 @@ struct MatchLowerThird: View {
                 if isLive {
                     LiveDot()
                     Text("IN PLAY")
-                        .font(
-                            CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold)
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                         .foregroundStyle(CoachWorldTokens.Floodlit.liveInk.color)
                 }
                 if let onExit {
                     Spacer(minLength: CoachWorldTokens.Gap.smPlus)
                     Button(action: onExit) {
                         Text("← WEEK")
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.flag, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                             .tracking(
                                 CoachWorldTokens.DisplaySize
                                     .tracking(0.18, at: CoachWorldTokens.DisplaySize.flag)
@@ -431,8 +426,8 @@ struct MatchLowerThird: View {
                let entry = model.actors.first(where: { $0.stableID == actor }),
                let headline {
                 Text("\(entry.uniformNumber) \(entry.position) · \(headline)")
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
-                    .lineLimit(1)
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                     .truncationMode(.tail)
             }
             Text(model.causalCommentary)
@@ -478,7 +473,7 @@ struct CommittingAction: View {
         Button(action: action) {
             HStack(spacing: CoachWorldTokens.Gap.xs) {
                 Text(title.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.action, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.action, weight: .bold)
                 // The key-moment mark, `04` section 6.6's second Broadcast member.
                 BroadcastWedge()
                     .fill(CoachWorldTokens.Floodlit.goldInk.color)
