@@ -154,7 +154,85 @@ public enum ScheduleGenerator {
             }
             if !failed { return result }
         }
-        return nil
+        return constrainedPair(
+            members,
+            avoiding: usedPairs,
+            preferredGroups: preferredGroups,
+            seed: seed
+        )
+    }
+
+    /// Last resort before the round-robin fallback, and the reason that fallback is now close to
+    /// unreachable.
+    ///
+    /// The randomized greedy above takes whichever member the shuffle left on the end, which can
+    /// strand the final two on a pairing they have already played; eight attempts then all
+    /// dead-end and the whole tier drops to `roundRobinFallback`, whose byes all land in the one
+    /// leftover week. That is a legal slate by game count and an illegal one by bye distribution
+    /// -- 32 professional teams idle in the same week -- and until the season-by-seed sweep in
+    /// `CompetitionTests` there was nothing that looked at any season but the first.
+    ///
+    /// Taking the member with the fewest legal partners first spends the scarce options while
+    /// they are still interchangeable. It is O(n^3) in the week's active population, so it runs
+    /// only on a week that already failed every randomized attempt.
+    private static func constrainedPair(
+        _ members: [UUID],
+        avoiding usedPairs: Set<Pair>,
+        preferredGroups: [UUID: UUID],
+        seed: UInt64
+    ) -> [Pair]? {
+        var rng = SeededRandom(seed: SeededRandom.derive(
+            from: seed,
+            scope: .game,
+            ordinal: pairingAttemptsPerWeek
+        ))
+        var remaining = rng.shuffled(members)
+        var result: [Pair] = []
+        while !remaining.isEmpty {
+            var chosen = 0
+            var fewest = Int.max
+            for index in remaining.indices {
+                let options = legalPartners(
+                    of: index,
+                    among: remaining,
+                    avoiding: usedPairs
+                ).count
+                if options < fewest {
+                    fewest = options
+                    chosen = index
+                }
+            }
+            guard fewest > 0 else { return nil }
+            let first = remaining.remove(at: chosen)
+            let valid = remaining.indices.filter {
+                !usedPairs.contains(Pair(first, remaining[$0]))
+            }
+            let preferred = valid.filter {
+                preferredGroups[first] != nil
+                    && preferredGroups[first] == preferredGroups[remaining[$0]]
+            }
+            let pool = preferred.isEmpty ? valid : preferred
+            // Most-constrained partner too, for the same reason: an opponent with one option left
+            // must take it now or lose it to someone who had several.
+            let partner = pool.min {
+                let left = legalPartners(of: $0, among: remaining, avoiding: usedPairs).count
+                let right = legalPartners(of: $1, among: remaining, avoiding: usedPairs).count
+                return left == right ? $0 < $1 : left < right
+            }
+            guard let partner else { return nil }
+            result.append(Pair(first, remaining.remove(at: partner)))
+        }
+        return result
+    }
+
+    private static func legalPartners(
+        of index: Int,
+        among members: [UUID],
+        avoiding usedPairs: Set<Pair>
+    ) -> [Int] {
+        members.indices.filter {
+            $0 != index && !usedPairs.contains(Pair(members[index], members[$0]))
+        }
     }
 
     /// Guaranteed-valid final fallback: take distinct factors of a complete round robin and leave
