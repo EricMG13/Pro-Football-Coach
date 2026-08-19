@@ -418,15 +418,29 @@ public enum ProManagementSystem {
                 let candidates = (team.rosterIDs + team.practiceSquadIDs).compactMap {
                     playerID -> (UUID, Int)? in
                     guard let contract = next.players[playerID]?.contract else { return nil }
-                    return (playerID, contract.deadMoney(ifReleasedAtSeason: calendar.season))
+                    let deadMoneyAdded = contract.deadMoney(ifReleasedAtSeason: calendar.season)
+                    // A release sheds one season's cap hit and accelerates every unamortised
+                    // bonus dollar into that same season. When the acceleration is the larger
+                    // number the release moves the team *further* over the cap, and it is
+                    // precisely the bonus-heavy deal with almost nothing left to accelerate that
+                    // also carries the cheapest dead money on the books — so "cheapest dead money
+                    // first", left unfiltered, walks into it, releases a player for nothing, and
+                    // comes back round the loop still over cap with one fewer contract to try.
+                    // Only a release that strictly sheds cap is compliance. Strictly, not weakly:
+                    // a release that leaves committed cap where it was is a loop that never ends.
+                    guard deadMoneyAdded < contract.capHit(atSeason: calendar.season) else {
+                        return nil
+                    }
+                    return (playerID, deadMoneyAdded)
                 }
                 // Ties broken by identifier, the same rule every other deterministic ordering in
                 // this project uses, so two processes given the same root release the same player.
                 guard let (playerID, deadMoneyAdded) = candidates.min(by: { lhs, rhs in
                     lhs.1 == rhs.1 ? lhs.0.uuidString < rhs.0.uuidString : lhs.1 < rhs.1
                 }) else {
-                    // No contracted player remains and the team is still over cap: dead money
-                    // alone exceeds the limit. Nothing left to release makes it legal.
+                    // Nothing left that sheds cap: either no contracted player remains, or every
+                    // remaining deal costs more to release than it saves. Either way the overage
+                    // is structural and no sequence of releases reaches legality.
                     throw ProManagementError.capExceeded
                 }
                 guard team.deadMoney <= Int.max - deadMoneyAdded else {
