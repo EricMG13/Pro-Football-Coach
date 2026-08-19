@@ -19,6 +19,36 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-19, still later still — merged `main` and withdrew Phase 0's `Disposition` mechanism in
+> favour of `main`'s own, simpler fix for the same defect.** While this branch was mid-flight,
+> `main` gained commit `91a108d` ("remove unimplemented release gates", owner + Codex), which
+> resolves the exact same problem Phase 0 targeted — `AgencyBudgetTests`, `PerformanceBudgetTests`,
+> `TwoTierConsistencyTests` and `SmallestDeviceLayoutTest` registered as gates with no runner — but
+> by a different, incompatible route: it deletes the four `ReleaseGateID` cases outright rather than
+> giving them an explicit `.unwritten(reason:spec:)` disposition. Merging `main` in produced a real
+> conflict in `docs/qa/feature-coverage.csv`'s QA-001 row (resolved in favour of `main`'s wording,
+> which now matches the shipped mechanism) and a second, more consequential one `git` did not flag
+> as a textual conflict at all: `Tests/SimTests/SuiteCatalog.swift` auto-merged to a file combining
+> `main`'s reduced 17-case `ReleaseGateID` enum with this branch's `Disposition`-based `Entry`,
+> leaving `disposition(for:)` and the `expectedUnwritten` set referencing four enum cases that no
+> longer existed — a compile error a text-level merge cannot see.
+>
+> Resolution: `main`'s decision is the more recent, direct, owner-made call on trunk, and nothing
+> outside `SuiteCatalog.swift` itself referenced `Disposition` (checked by grep across `Tests/` and
+> `Sources/` before touching anything downstream) — Phases 1 through 3 are all untouched by this.
+> `SuiteCatalog.swift` was rewritten to `main`'s full shape verbatim: `Entry.runner: Runner?` restored,
+> `Disposition` removed, the two `Commitment coverage` tests back to their pre-Phase-0 form. Phase 0's
+> own entry below is left as an honest record of what this branch did at the time; it has since been
+> superseded on `main` and this entry is the correction. The plan's Phase 0 is therefore complete by
+> a route this branch did not originally take, and needs no further work.
+>
+> **UNVERIFIED — never compiled**, same as everywhere else in this log. The merge was checked by
+> grepping for every deleted `ReleaseGateID` case name and for `Disposition`/`disposition` across the
+> full merged tree to confirm zero remaining references, and by re-reading the full resulting file
+> against `main`'s version to confirm it is byte-for-byte the same shape — not a compiler, but the
+> nearest available substitute. Files touched: `Tests/SimTests/SuiteCatalog.swift`,
+> `docs/qa/feature-coverage.csv`.
+
 > **2026-08-19, still later — Phase 3 of the systemic-defect remediation plan (S-0, Dynamic Type),
 > first installment: the scaling mechanism, plus a first migrated file.** This phase is the largest
 > of the four and is **not complete** — see below for exactly what is and is not done.
