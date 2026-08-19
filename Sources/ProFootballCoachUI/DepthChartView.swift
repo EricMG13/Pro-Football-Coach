@@ -171,6 +171,14 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
         // The vacancy beam: a position whose starter cannot play is the thing this screen exists
         // to show, so it takes the warning tint rather than a quiet one.
         let vacant = starter == nil || starter?.isUnavailable == true
+        // Deferred (S-0 Phase 3, 2026-08-19): this token is drawn inside `fieldDiagram`, which is
+        // `.accessibilityHidden(true)` in its entirety -- the P0 finding (position-group selection
+        // has no reachable control outside this hidden diagram) is explicitly out of this phase's
+        // scope. The caller also fixes both dimensions (`token(...).frame(width:height:)` at
+        // fieldDiagram's call site), so scaling here would only risk clipping inside an already
+        // small field token for sighted low-vision users, without helping the VoiceOver user this
+        // diagram is inaccessible to either way. The reachable slot detail (`slotRow`, below) and
+        // option list already carry the same information and are migrated.
         return Button {
             openPositionID = group.id
         } label: {
@@ -232,7 +240,7 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
         FloodlitRow(palette: palette) {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text(index == 0 ? "START" : "\(index + 1)")
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                     .foregroundStyle(
                         slot.isUnavailable
                             ? palette.stateWarning.color
@@ -241,11 +249,7 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
                     .frame(width: DepthMetric.rankColumn, alignment: .leading)
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                     Text(slot.playerName.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.row, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                         .lineLimit(1)
                     Text(slot.availability)
                         .font(CoachWorldTokens.TypeRole.caption)
@@ -279,11 +283,7 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
                 ) {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                         Text(option.title.uppercased())
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.row, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                             .lineLimit(1)
                         // A sentence, not a cost phrase: `FloodlitCostLine` uppercases and
                         // tracks its cost slot, which turns prose into a tracked-capitals
