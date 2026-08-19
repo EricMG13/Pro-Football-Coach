@@ -85,6 +85,22 @@ private let pinnedMatchSessionFingerprint: UInt64 = 222_581_002_489_681_212
 /// pins. Reproduced in two independent processes before being written here.
 private let pinnedNewsFeedFingerprint: UInt64 = 8_018_401_890_798_286_268
 
+/// `DomainEventLedger` has carried a bounded `archive` of `SeasonHistoryDigest` since schema 11, and
+/// it sits inside the root every pin above hashes — but none of them ever exercises it non-empty.
+/// Bootstrap starts with a fresh, single-event ledger; `WorldScheduler.advanceWeek` from a fresh
+/// bootstrap doesn't emit enough events to overflow the default 4,096-event retention limit; and the
+/// negotiation-ledger, match-session and news-feed pins above either never touch `state.history` or
+/// replace it outright with a small ledger that stays well under retention. A root whose archived
+/// digest carried a corrupted `archivedCount`, a `notableEvents` entry that failed the
+/// `historicalWeight`-based notability filter, or an archive mis-ordered by season after decode would
+/// still satisfy every pin above. This pin builds a `DomainEventLedger(retentionLimit: 1)`, appends
+/// three events spanning two seasons so two are forced into a season-3 archive digest (one notable
+/// `.seasonCompleted`, one non-notable `.integrityChecked`) while the third stays in `recent`, and
+/// hashes the resulting root, so the archive path's cross-process byte-identity is actually asserted
+/// rather than assumed from the root pins. Reproduced in two independent processes before being
+/// written here.
+private let pinnedArchivedLedgerFingerprint: UInt64 = 11_509_177_498_617_182_391
+
 /// Hashes the canonical JSON body, not the save envelope.
 ///
 /// It hashed the envelope until 2026-08-12, when the body became zlib-compressed. That would have
@@ -265,6 +281,57 @@ func runArchitectureTests() {
 
             let dtoItems = items.map(NewsItemFingerprintDTO.init)
             expectEqual(try architectureFingerprint(dtoItems), pinnedNewsFeedFingerprint)
+        }
+
+        test("the archived-season ledger is pinned across processes") {
+            var state = GameState.bootstrap(seed: 20_260_822)
+            let college = state.programmes.ids[0]
+            let pro = state.proTeams.ids[0]
+            let staffID = state.staff.ids[0]
+
+            var ledger = DomainEventLedger(retentionLimit: 1)
+            expect(ledger.append(contentsOf: [
+                DomainEvent(
+                    id: DomainEvent.deterministicID(rootSeed: 20_260_822, sequence: 0),
+                    sequence: 0,
+                    occurredAt: CalendarState(season: 3, week: 1),
+                    payload: .seasonCompleted(
+                        season: 3,
+                        collegeChampionID: college,
+                        proChampionID: pro
+                    )
+                ),
+                DomainEvent(
+                    id: DomainEvent.deterministicID(rootSeed: 20_260_822, sequence: 1),
+                    sequence: 1,
+                    occurredAt: CalendarState(season: 3, week: 1),
+                    payload: .integrityChecked(issueCount: 0)
+                ),
+                DomainEvent(
+                    id: DomainEvent.deterministicID(rootSeed: 20_260_822, sequence: 2),
+                    sequence: 2,
+                    occurredAt: CalendarState(season: 4, week: 1),
+                    payload: .staffHired(
+                        staffID: staffID,
+                        organisationID: college,
+                        role: .headCoach
+                    )
+                ),
+            ]), "ledger construction for the archived-history fixture was rejected")
+            state.history = ledger
+
+            expectEqual(state.history.recent.count, 1)
+            expectEqual(state.history.archive.count, 1)
+            expectEqual(state.history.archive.first?.season, 3)
+            expectEqual(state.history.archive.first?.archivedCount, 2)
+            expectEqual(state.history.archive.first?.notableEvents.count, 1)
+            expectEqual(state.history.archivedCount, 2)
+            expectEqual(state.history.totalCount, 3)
+
+            expectEqual(
+                try architectureFingerprint(state),
+                pinnedArchivedLedgerFingerprint
+            )
         }
 
         test("the authoritative root survives the save envelope") {

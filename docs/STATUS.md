@@ -728,6 +728,29 @@ All three candidates named on 2026-08-19 are now closed. The next open surface, 
 unarchived events; `HistoryArchiveTests.swift` exercises archival functionally but nothing pins a
 cross-process fingerprint of a root whose ledger has actually rolled events into `.archive`).
 
+### 2026-08-20 — determinism coverage widened: the archived-season ledger
+
+`DomainEventLedger.archive` has carried a bounded `[SeasonHistoryDigest]` since schema 11, and it sits
+inside the root every architecture pin hashes — but none ever exercised it non-empty. Bootstrap starts
+with a fresh, single-event ledger; one `advanceWeek` doesn't emit enough events to overflow the default
+4,096-event retention limit; and the negotiation-ledger, match-session and news-feed pins either never
+touch `state.history` or replace it outright with a small ledger that stays well under retention. A
+root whose archived digest carried a corrupted `archivedCount`, a `notableEvents` entry that failed the
+`historicalWeight`-based notability filter, or an archive mis-ordered by season after decode would have
+satisfied every existing pin. `HistoryArchiveTests.swift` exercises archival functionally against a
+bare `DomainEventLedger`, never against a `GameState` root, and never pins a literal.
+
+Added `"the archived-season ledger is pinned across processes"` to `ArchitectureTests.swift`: a
+`DomainEventLedger(retentionLimit: 1)` is appended three events spanning two seasons, forcing two into
+a season-3 archive digest (one notable `.seasonCompleted`, one non-notable `.integrityChecked`) while
+the third stays in `recent`, then the full root is hashed the same way the first three pins do —
+`DomainEventLedger` is already `Codable` and directly on `GameState`, so no test-local DTO was needed
+here (unlike the news-feed pin). Verified across two independent process invocations: value
+`11_509_177_498_617_182_391`, identical both times. No engine divergence found; nothing was fixed
+because nothing broke.
+
+All four surfaces named since 2026-08-19 are now closed. No further candidate has been identified yet.
+
 ### The full default suite — **green on 2026-08-12, after a two-failure fix**
 
 `./scripts/verify.sh` now passes: **602 tests / 747,027 checks, all passed**, debug build and
