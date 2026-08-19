@@ -92,4 +92,21 @@ extension View {
             condensed: false, monospacedDigit: false
         ))
     }
+
+    /// A figure that also wants display type's condensed width -- `CoachWorldRatingRing`'s printed
+    /// value is the one call site found (`CoachWorldVocabulary.swift`), which built this combination
+    /// by hand: `.system(size:weight:design:).width(.condensed)` plus a separate `.monospacedDigit()`
+    /// on the `Text`. `coachWorldFigure` alone does not condense, and `coachWorldDisplay` alone does
+    /// not tabular-digit, so this is the third, narrower combination rather than forcing one of the
+    /// other two to carry a property they were not named for.
+    func coachWorldFigureCondensed(
+        _ size: CGFloat,
+        relativeTo textStyle: Font.TextStyle = .body,
+        weight: Font.Weight = .bold
+    ) -> some View {
+        modifier(CoachWorldScaledFontModifier(
+            size: size, relativeTo: textStyle, weight: weight,
+            condensed: true, monospacedDigit: true
+        ))
+    }
 }

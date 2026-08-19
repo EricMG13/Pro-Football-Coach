@@ -107,7 +107,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                 HStack(spacing: CoachWorldTokens.Space.sm) {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                         Text("COACH'S WORLD")
-                            .font(CoachWorldTokens.TypeRole.microLabel)
+                            .coachWorldDisplay(CoachWorldTokens.TypeRole.microLabelSize)
                             .tracking(CoachWorldTokens.TypeRole.microLabelTracking)
                             .foregroundStyle(palette.actionPrimary.color)
                         Text(model.team.name.uppercased())
@@ -473,7 +473,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
     private var identityRail: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
             Text("\(model.week.seasonLabel) · \(model.week.weekLabel)".uppercased())
-                .font(CoachWorldTokens.TypeRole.microLabel)
+                .coachWorldDisplay(CoachWorldTokens.TypeRole.microLabelSize)
                 .tracking(CoachWorldTokens.TypeRole.microLabelTracking)
                 .foregroundStyle(palette.actionPrimary.color)
             Text(model.week.currentDay.uppercased())
@@ -492,7 +492,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
             if let opponent = model.opponent {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                     Text("NEXT FIXTURE")
-                        .font(CoachWorldTokens.TypeRole.microLabel)
+                        .coachWorldDisplay(CoachWorldTokens.TypeRole.microLabelSize)
                         .tracking(CoachWorldTokens.TypeRole.microLabelTracking)
                         .foregroundStyle(palette.contentQuiet.color)
                     Text(opponent.name.uppercased())
