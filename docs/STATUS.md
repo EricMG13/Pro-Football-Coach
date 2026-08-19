@@ -19,6 +19,71 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-20 — the app layer was four orders of magnitude slower than the engine, and it is
+> fixed.** A front-to-back confidence review measured the path the application actually takes rather
+> than the one the probes measure, and the gap was the whole story. `CareerSession.resolve(.advanceWeek)`
+> costs **0.3 ms**. The same week advance as `CoachWorldAppRootView` sequences it cost **5 454 ms**,
+> and one snap of a match cost **5 259 ms** against its own 1 200 ms auto-advance dwell — about
+> **11.4 minutes of machine time for a 130-snap game**, on an Apple-silicon Mac, in a release build,
+> at the smallest save the game ever has. `PRODUCT.md` promises fifteen minutes a week.
+>
+> Three causes, all between the engine and the glass, all now fixed and measured:
+>
+> - **`CoachWorldStore` rebuilt all 28 screen models at the tail of every intent.** Measured on a
+>   *refused* intent, which does no simulation work at all: 1 593 ms. Screens are now memoised and
+>   built on demand, and the route map — which the chrome asks for on every render, and which used
+>   to be answered by building every screen and testing the result for nil — is answered from the
+>   root by `CoachWorldReadModelProvider.availableScreens`. `Route availability` asserts the cheap
+>   answer against the models it replaced, over every `CoachWorldScreenID`, in three career shapes;
+>   it caught two drifted guards on its first run.
+> - **Autosave wrote the whole career after every intent, and validated by decoding it.**
+>   `persist` called `flush(.explicit)` after every intent, so the coordinator's coalescing never
+>   coalesced; and `flush` decoded the file it was about to replace (1.6–2.2 s at season 0) to
+>   decide it was worth promoting to backup. The view now requests on every intent and defers the
+>   write, with an immediate flush when the app leaves the foreground, and the coordinator
+>   remembers that it verified its own last write.
+> - **Launch decoded the save *and* its backup, and parsed each body twice.** The backup is now
+>   opened only when the primary fails or is the older file, and `documentVersion` is read from the
+>   head of the body rather than by parsing 18.6 MB of JSON to find one integer.
+>
+> Measured after, same host, same seed, same release build:
+>
+> | | before | after |
+> |---|---|---|
+> | Week advance, as the app does it | 5 454 ms | **566 ms** |
+> | One match snap, as the app does it | 5 259 ms | **24 ms** |
+> | A 130-snap game | 11.4 min | **3.1 s** |
+> | Durable writes for a 25-snap burst | 25 | **1** |
+> | Route map | (28 models) | **1 ms** |
+> | Cold launch `load()` | 3 972 ms | **1 372 ms** |
+> | New career | 3 639 ms | **1 784 ms** |
+>
+> D4's 2.0 s week-advance budget is now met **on this host**, which is not the phone and must not be
+> reported as if it were. The device gate remains the owner's.
+>
+> **The save was unbounded, and the gate that was supposed to catch it asserted nothing.**
+> `PeopleState.departedPlayers` and the `playerCareers` paired with them only ever grew — measured
+> at 3.67 MB at season 0, **8.29 MB at season 2**, 14.76 MB at season 20 against a stated 8 MB
+> commitment, with `SaveEnvelope`'s own comment already recording ~26 MB before the fix. Retention
+> is now bounded by `PeopleRules.departedPlayerRetentionLimit`, evicting the oldest identities that
+> nothing retained still names, and both soaks now *assert* the ceiling and the season-over-season
+> drift instead of printing the numbers. `CommitmentCoverageTest` only ever checked that a gate name
+> was registered with a dispatched runner, which is how `SaveWriteBudgetTest` came to exist as a
+> string in an enum and nothing else; it is now a real test, and `SaveOffMainActorTest` is a
+> compile-time proof rather than a grep for two string literals.
+>
+> **Still open, and named rather than carried quietly.** The design audit filed inside commit
+> `e3b360d` — `DESIGN-IS-2026-08-19/03-verdict.md` — scores the front end **10/30 with a REDESIGN
+> verdict**, with load-bearing zeros on usefulness, understandability and honesty, at least 17 named
+> destinations that are host mismatches, and row selection that commits before the visible commit
+> control. That is a different rubric from `04b` and must not be equated with its ≥31/40 bar; what
+> both say is that no surface has been through `04b` at all. `docs/reviews/2026-08-19-screen-reachability-map.md`
+> records three role/scenario reachability defects and 13 misleading legacy links still live in the
+> HQ menu. Resident memory in the soak harness reaches about 2 GB by season 20 on macOS under no
+> memory pressure, which is not an iOS jetsam prediction and needs a device. And the in-match
+> call-in — the mechanic that replaces the removed arcade layer's decision volume — offers the same
+> three hardcoded options at every trigger, which is a design question for `02`, not a defect.
+
 > **2026-08-18 — Floodlit design handoff, all three milestones implemented.** The owner-supplied
 > handoff `design_handoff_floodlit_surfaces_and_match_day/` is built end to end:
 >
