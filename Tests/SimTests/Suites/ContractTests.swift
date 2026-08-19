@@ -1432,9 +1432,26 @@ func runContractTests() {
                            && view.contains("CareerHubView(")
                            && view.contains("dynamicTypeSize.isAccessibilitySize"),
                        "\(family.1) must reuse the authoritative career ledger")
-                expect(appRoot.contains("case .\(family.2)")
-                           && appRoot.contains("\(family.1)("),
-                       "\(family.1) must be reachable from the shipped app root")
+                // Phase 4, 2026-08-19: this used to assert
+                // `appRoot.contains("case .\(family.2)") && appRoot.contains("\(family.1)(")` under
+                // the message "must be reachable from the shipped app root" -- false, and provably
+                // so: career()'s switch subject is Self.canonicalScreen(screen), which resolves
+                // every alias to its canonicalDestination before the switch runs, so a case for an
+                // alias can never execute. That dead case (deleted this phase, see "career() routes
+                // every optional read model...") is exactly what this assertion was checking for.
+                // The true property is the one the registry already states: the alias's
+                // canonicalDestination is .careerHub, and it does not appear in career() at all.
+                guard let screen = CoachWorldScreenID.allCases.first(
+                    where: { String(describing: $0) == family.2 }
+                ) else {
+                    expect(false, "no CoachWorldScreenID case named \(family.2)")
+                    continue
+                }
+                expect(screen.canonicalDestination == .careerHub && !screen.isCanonicalTask,
+                       "\(family.1) must be a documented alias resolving to Career Hub")
+                expect(!appRoot.contains("case .\(family.2):"),
+                       "\(family.1) must not appear as a dead case in the app root -- it can " +
+                           "never execute there")
                 expect(!hq.contains("Button(\"Job board\")")
                            && !hq.contains("Button(\"Offers\")")
                            && !hq.contains("Button(\"Appointment\")"),
@@ -1511,8 +1528,11 @@ func runContractTests() {
             expect(hq.contains("Button(\"Staff room\")")
                        && !hq.contains("Button(\"Staff market & profile\")"),
                    "Staff Room must be the canonical HQ staff route")
+            // StaffMarketProfileView (family "staffMarketProfile") is a documented alias resolving
+            // to .staffRoom, handled separately below rather than in this loop -- career()'s switch
+            // subject is already canonicalised, so it cannot appear there as a case, the way the
+            // other three genuinely can (they are not aliases).
             for family in [
-                ("StaffMarketProfileView.swift", "StaffMarketProfileView", "staffMarketProfile"),
                 ("CapContractsView.swift", "CapContractsView", "capContracts"),
                 ("ContractNegotiationView.swift", "ContractNegotiationView", "contractNegotiation"),
                 ("RosterCutsTransactionsView.swift", "RosterCutsTransactionsView", "rosterCutsTransactions")
@@ -1525,6 +1545,18 @@ func runContractTests() {
                            && appRoot.contains("\(family.1)("),
                        "\(family.1) must be routed by the shipped app root")
             }
+            let staffMarketProfileView = uiFiles.first {
+                $0.path.hasSuffix("/StaffMarketProfileView.swift")
+            }?.text ?? ""
+            expect(staffMarketProfileView.contains("public struct StaffMarketProfileView")
+                       && staffMarketProfileView.contains("dynamicTypeSize.isAccessibilitySize"),
+                   "StaffMarketProfileView must be a production accessibility-aware family view")
+            expect(CoachWorldScreenID.staffMarketProfile.canonicalDestination == .staffRoom
+                       && !CoachWorldScreenID.staffMarketProfile.isCanonicalTask,
+                   "StaffMarketProfileView must be a documented alias resolving to Staff Room")
+            expect(!appRoot.contains("case .staffMarketProfile:"),
+                   "StaffMarketProfileView must not appear as a dead case in the app root -- it " +
+                       "can never execute there")
 
             let negotiationCore = swiftFiles(under: "Sources/FootballSimCore")
                 .first { $0.path.hasSuffix("/ProContractNegotiation.swift") }?.text ?? ""
@@ -1552,11 +1584,21 @@ func runContractTests() {
                        && packages.contains("DepthChartView(")
                        && packages.contains("dynamicTypeSize.isAccessibilitySize"),
                    "Personnel Packages must reuse the authoritative personnel surface")
-            expect(appRoot.contains("case .schemeBook")
-                       && appRoot.contains("case .personnelPackages")
-                       && appRoot.contains("SchemeBookView(")
-                       && appRoot.contains("PersonnelPackagesView("),
-                   "Scheme Book and Personnel Packages must be reachable from the shipped app root")
+            // Phase 4, 2026-08-19: this used to assert both dead cases were present under the
+            // message "must be reachable from the shipped app root" -- false, for the same reason
+            // as the equivalent jobBoard/offer/appointment check above: career()'s switch subject
+            // is already canonicalised, so a case for an alias can never execute, and both dead
+            // cases are deleted this phase, not merely renamed.
+            expect(CoachWorldScreenID.schemeBook.canonicalDestination == .gamePlan
+                       && !CoachWorldScreenID.schemeBook.isCanonicalTask
+                       && CoachWorldScreenID.personnelPackages.canonicalDestination == .depthChart
+                       && !CoachWorldScreenID.personnelPackages.isCanonicalTask,
+                   "Scheme Book and Personnel Packages must be documented aliases resolving to " +
+                       "their host surfaces")
+            expect(!appRoot.contains("case .schemeBook:")
+                       && !appRoot.contains("case .personnelPackages:"),
+                   "Scheme Book and Personnel Packages must not appear as dead cases in the app " +
+                       "root -- they can never execute there")
             expect(!hq.contains("Button(\"Scheme book\")")
                        && !hq.contains("Button(\"Personnel packages\")"),
                    "Scheme Book and Personnel Packages must use canonical host routes")
@@ -1590,29 +1632,47 @@ func runContractTests() {
             expect(hq.contains("showsCollegeOffseason")
                        && hq.contains("collegeOffseason"),
                    "College Offseason must be reachable from the HQ route surface")
+            // Four of these five (all but signingDay) are documented aliases resolving to
+            // .collegeOffseason -- career()'s switch subject is already canonicalised, so none of
+            // them can appear there as a case, unlike signingDay, which is genuinely canonical.
+            // Handled as two groups below rather than one uniform loop.
             for family in [
                 ("PortalHubView.swift", "PortalHubView", "portalHub"),
                 ("RetentionDecisionsView.swift", "RetentionDecisionsView", "retentionDecisions"),
                 ("PortalMarketView.swift", "PortalMarketView", "portalMarket"),
-                ("NilAllocationView.swift", "NilAllocationView", "nilAllocation"),
-                ("SigningDayView.swift", "SigningDayView", "signingDay")
+                ("NilAllocationView.swift", "NilAllocationView", "nilAllocation")
             ] {
                 let view = uiFiles.first { $0.path.hasSuffix("/\(family.0)") }?.text ?? ""
                 expect(view.contains("public struct \(family.1)")
                            && view.contains("CollegeOffseasonView(")
                            && view.contains("dynamicTypeSize.isAccessibilitySize"),
                        "\(family.1) must reuse the authoritative college offseason surface")
-                expect(appRoot.contains("case .\(family.2)")
-                           && appRoot.contains("\(family.1)("),
-                       "\(family.1) must be reachable from the shipped app root")
-                if family.2 == "signingDay" {
-                    expect(hq.contains("Button(\"Signing day\")"),
-                           "Signing Day must remain reachable during its active phase")
-                } else {
-                    expect(!hq.contains("Button(\(family.2)"),
-                           "\(family.1) must use the canonical College Offseason host route")
+                guard let screen = CoachWorldScreenID.allCases.first(
+                    where: { String(describing: $0) == family.2 }
+                ) else {
+                    expect(false, "no CoachWorldScreenID case named \(family.2)")
+                    continue
                 }
+                expect(screen.canonicalDestination == .collegeOffseason && !screen.isCanonicalTask,
+                       "\(family.1) must be a documented alias resolving to College Offseason")
+                expect(!appRoot.contains("case .\(family.2):"),
+                       "\(family.1) must not appear as a dead case in the app root -- it can " +
+                           "never execute there")
+                expect(!hq.contains("Button(\(family.2)"),
+                       "\(family.1) must use the canonical College Offseason host route")
             }
+            let signingDayView = uiFiles.first {
+                $0.path.hasSuffix("/SigningDayView.swift")
+            }?.text ?? ""
+            expect(signingDayView.contains("public struct SigningDayView")
+                       && signingDayView.contains("CollegeOffseasonView(")
+                       && signingDayView.contains("dynamicTypeSize.isAccessibilitySize"),
+                   "SigningDayView must reuse the authoritative college offseason surface")
+            expect(appRoot.contains("case .signingDay")
+                       && appRoot.contains("SigningDayView("),
+                   "SigningDayView must be reachable from the shipped app root")
+            expect(hq.contains("Button(\"Signing day\")"),
+                   "Signing Day must remain reachable during its active phase")
             let development = uiFiles.first {
                 $0.path.hasSuffix("/DevelopmentPlanView.swift")
             }?.text ?? ""
