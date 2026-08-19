@@ -366,27 +366,38 @@ P14's gate includes the per-family density-budget statement check from G-08.
 
 ### Insertion: P10c — Professional roster turnover (between P10b and P11)
 
-**Blocked on an owner decision, and that is the point of the entry.** `--pro-soak` and
-`--pro-draft-probe` are red for a real reason: bootstrap fills every professional team to exactly
-53/53 and issues no contracts, so nothing expires, nobody reaches free agency, and the 224-prospect
-draft class generated each season can never be taken — the first pick hits `activeRosterFull`.
-`ProRosterAISystem` (canon `02` §4.2) is built and correct; it has nothing to bite on. Both halves
-of professional intake are blocked by one missing mechanic.
+**Unblocked and largely landed — updated 2026-08-20.** This entry was written blocked on two owner
+questions, and canon `02` §4.2a answered both on 2026-08-12/13. (1) Bootstrap professionals do get
+contracts, rotated through `ProRules.bootstrapContractTermSpread` terms at
+`bootstrapPayrollPercentOfCap` of the cap, applied in `RosterPopulationGenerator`. (2) Cuts to 53
+are forced by cap compliance at the week-21 boundary, cheapest dead money first, in
+`ProManagementSystem.enforceCapCompliance` — inside the same `advanceWeek` transition that runs
+beat 1's expiry, so no persisted root is ever over the cap.
 
-Canon half-answers it: `02` §4.2 lists "retirements and expiring contracts" and "cap compliance — a
-hard date the player must be legal by" as the first two offseason beats, but bootstrap issues no
-contracts for anyone to expire and nothing implements the compliance date that would force cuts.
+*The paragraph this replaces said bootstrap "fills every professional team to exactly 53/53 and
+issues no contracts". That stopped being true and the entry did not say so, which is the failure
+mode `docs/STATUS.md` exists to prevent.*
 
-**The two owner questions.** (1) Do bootstrap professionals get contracts, and with what term
-spread? (2) What forces cuts to 53 — a cap-compliance date, incoming draft picks, or both? Deciding
-who gets cut and when is a design call, not an implementation detail, so it is not invented here.
+Turnover is now measured rather than argued. `--pro-draft-probe` is **green** — 327 contracts expire
+at the season rollover, roster seats open, and the first pick succeeds — and across ten soak seasons
+1,491 contracts expire and 1,476 free agents sign.
 
-**Gates:** G1, G2, G4, G6, plus `--pro-soak` and `--pro-draft-probe` turning green, which is the
-falsifier: if turnover lands and the draft still cannot make a pick, the diagnosis was wrong.
-Neither gate is in the default run, so `verify.sh` is unaffected while this is open.
+**What remains is one red gate whose cause is not diagnosed.** `--pro-soak` still fails, now on a
+single assertion: over ten seasons the draft *starts* nine times and never makes a pick
+(`draftedFinal=0`), while the cap, roster-bound, ownership and root checks all hold. The isolated
+path the probe walks — expire, open, begin, pick — succeeds, so the cause sits between that path and
+what the scheduler drives. It is not named here because it has not been measured, and this entry's
+own history is the argument against naming it early.
 
-**Blocks:** M6 completion, the professional draft, free agency, and every professional-tier surface
-that would read them.
+**This entry's falsifier has fired, and it should be read as written:** "if turnover lands and the
+draft still cannot make a pick, the diagnosis was wrong." Turnover landed. The `activeRosterFull`
+diagnosis was right about the probe's path and incomplete about the scheduler's.
+
+**Gates:** G1, G2, G4, G6, plus `--pro-soak` turning green. `--pro-draft-probe` is already green.
+Neither is in the default run, so `verify.sh` is unaffected while `--pro-soak` is open.
+
+**Blocks:** M6 completion and the professional draft. Free agency no longer blocks on this — it
+signs.
 
 ### Insertion: P11a — The M8 production-UI entry gate, as tests (immediately before P11)
 
