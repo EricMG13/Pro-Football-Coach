@@ -6,6 +6,25 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
     var value: Int
 }
 
+/// `NewsItem` is deliberately not `Codable` — "Derived, never stored" per its own doc comment, so a
+/// headline is never the source of truth a save persists. That means it cannot be handed to
+/// `architectureFingerprint` directly; this private, test-only DTO carries the same facts through
+/// `Encodable` so the read-model's *rendering* can be pinned without adding persistence surface to
+/// production `NewsItem`/`NewsFeedReadModel`.
+private struct NewsItemFingerprintDTO: Codable, Equatable {
+    let eventID: UUID
+    let occurredAt: CalendarState
+    let weight: Int
+    let headline: String
+
+    init(_ item: NewsItem) {
+        eventID = item.eventID
+        occurredAt = item.occurredAt
+        weight = item.weight
+        headline = item.headline
+    }
+}
+
 /// Both pins moved twice on 2026-08-12. First when schema 10 became schema 11: when
 /// `DomainEventLedger` gained its bounded season archive. The version and the ledger's shape are
 /// both inside the encoded root, so *every* root fingerprint moves — including a freshly
@@ -54,6 +73,17 @@ private let pinnedNegotiationLedgerFingerprint: UInt64 = 18_194_934_115_346_224_
 /// asserted rather than assumed from the root pins. Reproduced in two independent processes before
 /// being written here.
 private let pinnedMatchSessionFingerprint: UInt64 = 222_581_002_489_681_212
+
+/// `NewsFeedReadModel` is derived from `GameState.history`, not stored in it, so none of the three
+/// pins above ever exercise it: they hash the root or a projection of it, never the read-model
+/// built on top. The domain-event ledger's own byte-identity is covered by those root pins, but the
+/// *rendering* step — `NewsFeedReadModel.build`'s dedup, headline lookup and sort into `[NewsItem]`
+/// — is a separate piece of logic with its own determinism risk (a `Dictionary`-derived lookup used
+/// the wrong way, a sort comparator that stops being total) that no root fingerprint can see. This
+/// pin drives a small fixed ledger through `build(from:)` and hashes the resulting items, so the
+/// read-model's cross-process byte-identity is actually asserted rather than assumed from the root
+/// pins. Reproduced in two independent processes before being written here.
+private let pinnedNewsFeedFingerprint: UInt64 = 8_018_401_890_798_286_268
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///
@@ -175,6 +205,66 @@ func runArchitectureTests() {
                 try architectureFingerprint(prepared),
                 pinnedMatchSessionFingerprint
             )
+        }
+
+        test("the news feed is pinned across processes") {
+            var state = GameState.bootstrap(seed: 20_260_821)
+            let college = state.programmes.ids[0]
+            let otherCollege = state.programmes.ids[1]
+            let pro = state.proTeams.ids[0]
+            let staffID = state.staff.ids[0]
+            let playerID = state.players.ids[0]
+
+            var ledger = DomainEventLedger()
+            expect(ledger.append(contentsOf: [
+                DomainEvent(
+                    id: DomainEvent.deterministicID(rootSeed: 20_260_821, sequence: 0),
+                    sequence: 0,
+                    occurredAt: CalendarState(season: 3, week: 1),
+                    payload: .seasonCompleted(
+                        season: 3,
+                        collegeChampionID: college,
+                        proChampionID: pro
+                    )
+                ),
+                DomainEvent(
+                    id: DomainEvent.deterministicID(rootSeed: 20_260_821, sequence: 1),
+                    sequence: 1,
+                    occurredAt: CalendarState(season: 4, week: 1),
+                    payload: .staffHired(
+                        staffID: staffID,
+                        organisationID: college,
+                        role: .headCoach
+                    )
+                ),
+                DomainEvent(
+                    id: DomainEvent.deterministicID(rootSeed: 20_260_821, sequence: 2),
+                    sequence: 2,
+                    occurredAt: CalendarState(season: 4, week: 1),
+                    payload: .playerTransferred(
+                        playerID: playerID,
+                        sourceProgrammeID: college,
+                        destinationProgrammeID: otherCollege,
+                        targetSeason: 4,
+                        window: .postseason,
+                        sourceWasScholarship: true,
+                        finalNIL: 0
+                    )
+                ),
+            ]), "ledger construction for the news-feed fixture was rejected")
+            state.history = ledger
+
+            let items = NewsFeedReadModel.build(from: state).items
+            expectEqual(items.count, 3)
+            expectEqual(items.map(\.weight), [40, 35, 100],
+                        "within season 4 the transfer (40) must lead the hire (35)")
+            expectEqual(items.map(\.occurredAt.season), [4, 4, 3])
+            expect(!items[0].headline.isEmpty && !items[1].headline.isEmpty
+                    && items[0].headline != items[1].headline,
+                   "both season-4 headlines should resolve distinct real names")
+
+            let dtoItems = items.map(NewsItemFingerprintDTO.init)
+            expectEqual(try architectureFingerprint(dtoItems), pinnedNewsFeedFingerprint)
         }
 
         test("the authoritative root survives the save envelope") {

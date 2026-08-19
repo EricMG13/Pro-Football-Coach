@@ -699,6 +699,35 @@ Two of the three candidates named above are now closed. Still open: the news fee
 (`newsAndNarrative` is `.inactive` in the one-week advance the scheduler-order test asserts) and
 `DomainEventLedger`'s archived-season path (the ledger pin only sees fresh, unarchived events).
 
+### 2026-08-19 — determinism coverage widened: the news feed
+
+`NewsFeedReadModel` is a different kind of gap than the prior two: it is derived from `state.history`
+rather than stored in `GameState`, per its own doc comment ("Derived, never stored"), so `state.history`
+being inside the root pins does not mean the *read model built from it* is covered. Nothing pinned the
+rendering/ordering step — `NewsFeedTests.swift`'s only same-world check (`"two builds of the same world
+are identical"`) compares two in-process builds against each other, over an empty-history bootstrap,
+and never crosses a process boundary or a populated feed.
+
+Investigated `NewsFeedReadModel.build`'s two candidate risk points before pinning anything: the
+`names(in:)` dictionary is used only as a keyed lookup, never iterated to produce output, and the final
+sort has a total order (season desc, weight desc, week desc, `eventID.uuidString` asc as the last
+tiebreaker) — so no unsorted-iteration bug exists today. The new pin is regression protection, not a
+fix for a live one.
+
+Added `"the news feed is pinned across processes"` to `ArchitectureTests.swift`: a 3-event fixture
+(season-completed, staff-hired, player-transferred, across two seasons) is appended to a fresh
+`DomainEventLedger` and run through `NewsFeedReadModel.build`. Since `NewsItem`/`NewsFeedReadModel` are
+deliberately not `Codable` (derived data is never the save's source of truth), the test maps the
+result into a private, test-only `NewsItemFingerprintDTO` before reusing the existing
+`architectureFingerprint` helper unchanged — no Codable conformance was added to production types.
+Verified across two independent process invocations: value `8_018_401_890_798_286_268`, identical both
+times.
+
+All three candidates named on 2026-08-19 are now closed. The next open surface, not yet investigated:
+`DomainEventLedger`'s archived-season path (the existing ledger-adjacent pins only ever see fresh,
+unarchived events; `HistoryArchiveTests.swift` exercises archival functionally but nothing pins a
+cross-process fingerprint of a root whose ledger has actually rolled events into `.archive`).
+
 ### The full default suite — **green on 2026-08-12, after a two-failure fix**
 
 `./scripts/verify.sh` now passes: **602 tests / 747,027 checks, all passed**, debug build and
