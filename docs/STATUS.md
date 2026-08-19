@@ -775,7 +775,8 @@ asserting per season that all 32 teams stay inside the cap and every roster boun
 professional carries college eligibility, and that the root stays valid, plus a byte-identical
 two-season replay.
 
-**It fails, and the failure is the point.** Over two seasons and 42 weeks:
+**It fails, and the failure is the point.** As measured on 2026-08-13, over two seasons and 42
+weeks:
 
 ```text
 phasesSeen=closed/freeAgency  events=[proMarketClosed=1 proMarketOpened=2]
@@ -786,7 +787,7 @@ The market opens and closes. **Nothing else ever happens** — no draft pick, no
 no trade, across 32 teams and two full seasons.
 
 **Diagnosed to root cause, and it is deeper than a missing driver.** `--pro-draft-probe` reaches the
-draft directly in seconds instead of twelve minutes and reports the thrown reason:
+draft directly in seconds instead of twelve minutes and reported, on 2026-08-13, the thrown reason:
 
 ```text
 first pick threw activeRosterFull  roster=53/53  practiceSquad=0/16
@@ -855,14 +856,29 @@ teams without one — a latent defect that could never fire while no professiona
 And `--pro-week-walk` is a fast bisector that reports the exact week a professional step refuses,
 which turned a twelve-minute opaque soak failure into a named cause in seconds.
 
-**Both gates stay red to say so.** The driver cannot fire
-while every roster sits at 53/53. The remaining work is roster turnover, and it is a design question
-canon only half answers: §4.2 lists "retirements and expiring contracts" and "cap compliance — a hard
-date the player must be legal by" as the first two offseason beats, but bootstrap issues no contracts
-for anyone to expire and nothing implements the compliance date that would force cuts. Deciding who
-gets cut, and when, is an owner-level design call rather than an implementation detail, so it is not
-invented here. `--pro-soak` and `--pro-draft-probe` stay red until it is answered, in the same way
-P4's calibration gate stays red; **neither is in the default run**, so `verify.sh` is unaffected.
+**Corrected 2026-08-20: `--pro-draft-probe` is green, and `--pro-soak` is red for a narrower reason
+than the paragraph this replaces claimed.** That paragraph rested on two facts that have since
+stopped being true — that every roster sits at 53/53, and that bootstrap issues no contracts for
+anyone to expire. Roster turnover exists. The probe walks it end to end and passes:
+
+```text
+Pro expiry probe: expired=327 ledger=327/512 contractedRemaining=1369
+Pro draft probe: first pick succeeded
+```
+
+`--pro-soak` is still red, now on one assertion. Ten seasons, 210 weeks, 32 teams: the cap,
+roster-bound, ownership and root checks all hold, contracts expire and free agents sign, and the
+draft *starts* nine times — but no pick is ever made.
+
+```text
+draftedFinal=0  events=[proContractExpired=1491 proDraftStarted=9 proMarketClosed=9
+                        proMarketOpened=10 proPlayerSigned=1476]
+```
+
+**Why the draft starts and never picks is not diagnosed.** The isolated path the probe walks —
+expire, open, begin, pick — succeeds, so the cause sits between that path and what the scheduler
+drives, and naming it before measuring it would be the guess this section spends its length warning
+against. **Neither gate is in the default run**, so `verify.sh` is unaffected.
 
 ### M7C — the news feed — **implemented and green**
 
