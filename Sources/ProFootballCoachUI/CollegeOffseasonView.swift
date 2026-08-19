@@ -142,11 +142,7 @@ public struct CollegeOffseasonView: View, CoachWorldChromedSurface {
                 FloodlitLabel3(label, palette: palette)
                 Spacer(minLength: CoachWorldTokens.Gap.xs)
                 Text(figure)
-                    .font(
-                        CoachWorldTokens.figure(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .semibold
-                        )
-                    )
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.actionSmall, weight: .semibold)
                     .lineLimit(1)
             }
             FloodlitShareBar(
@@ -204,11 +200,7 @@ public struct CollegeOffseasonView: View, CoachWorldChromedSurface {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
                 HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.xs) {
                     Text(decision.title)
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.panel, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.panel, weight: .bold)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: CoachWorldTokens.Gap.xs)
                     FloodlitFlag(
@@ -241,11 +233,7 @@ public struct CollegeOffseasonView: View, CoachWorldChromedSurface {
                     ) {
                         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                             Text(choice.title.uppercased())
-                                .font(
-                                    CoachWorldTokens.display(
-                                        CoachWorldTokens.DisplaySize.row, weight: .bold
-                                    )
-                                )
+                                .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                                 .lineLimit(1)
                             FloodlitCostLine(
                                 cost: choice.cost,
