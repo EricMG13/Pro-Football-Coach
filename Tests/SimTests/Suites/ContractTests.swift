@@ -1251,11 +1251,20 @@ func runContractTests() {
             expect(profile.contains("let model: PlayerProfileReadModel"))
             expect(profile.contains("Button("))
             expect(!profile.contains("onTapGesture"))
-            // Was `profile.contains("monospacedDigit")`. Figures now go through
-            // `CoachWorldTokens.figure(_:weight:)`, which applies the tabular face itself, so the
-            // modifier no longer appears at the call site. Either spelling satisfies the rule the
-            // check is for: a figure on this surface does not reflow as it changes.
-            expect(profile.contains("monospacedDigit") || profile.contains("CoachWorldTokens.figure("),
+            // Two migrations, same rule each time: a figure on this surface does not reflow as it
+            // changes. Was `profile.contains("monospacedDigit")` directly; then every figure call
+            // site went through `CoachWorldTokens.figure(_:weight:)`, which applies the tabular
+            // face itself, so the literal modifier stopped appearing at the call site (S-0 Phase 3,
+            // 2026-08-19) migrated every `CoachWorldTokens.figure(` on this surface again, to
+            // `.coachWorldFigure(_:weight:)` (`CoachWorldScaledType.swift`), a `@ScaledMetric`-
+            // backed replacement that also applies `.monospacedDigit()` internally -- so neither of
+            // the first two spellings appears in this file's text any more, though the property
+            // they were both checking for still holds. All three are accepted here rather than only
+            // the current one, so the check keeps working across whichever spelling a given call
+            // site happens to use.
+            expect(profile.contains("monospacedDigit")
+                       || profile.contains("CoachWorldTokens.figure(")
+                       || profile.contains(".coachWorldFigure("),
                    "player profile figures must be set in the tabular face")
             expect(profile.contains("accessibilitySortPriority"))
             expect(profile.contains("dynamicTypeSize.isAccessibilitySize"))
