@@ -19,6 +19,90 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-19, latest — Phase 3 (S-0, Dynamic Type) sweep complete.** Every file identified at
+> sweep start (`Sources/ProFootballCoachUI/*.swift`, excluding `DesignTokens.swift` and
+> `CoachWorldScaledType.swift` itself) is now on `coachWorldDisplay`/`coachWorldFigure`/
+> `coachWorldIcon`/`coachWorldFigureCondensed`, or has its remaining raw sites deliberately deferred
+> and documented in place. 25 more files closed past the previous checkpoint: `WorldSearchView`,
+> `StatisticsLeadersView`, `RosterView`, `NewsView`, `GamePlanView`, `AwardsHonoursView`,
+> `CollegeOffseasonView`, `LeagueMapView`, `PracticePlanView`, `ContactVisitPlannerView`,
+> `RedesignedJobBoardProofView`, `ScheduleView`, `DepthChartView`, `MatchDayView`,
+> `OpponentFilmView`, `ProspectProfileView`, `StaffRoomView`, `StandingsView`, `AftermathView`,
+> `GameDetailBoxScoreView`, `ShortlistView`, `TeamProgrammeProfileView`, `CareerHubView`,
+> `ClassOverviewView`, `CompetitionOverviewView`, `ContractNegotiationView`, `InboxView` — plus a
+> full re-check of the nine files closed at the previous checkpoint, which surfaced the entry below.
+>
+> **A real gap found by construction, not by luck.** This sweep's own grep pattern
+> (`CoachWorldTokens\.(display|figure)\(|\.system\(size:`) could not see
+> `CoachWorldTokens.TypeRole.microLabel` — a bare property reference, not a function call — even
+> though `microLabel` (`DesignTokens.swift:211`) is itself a raw, non-scaling `Font.system(size:)`
+> despite sitting inside the otherwise-already-scaling `TypeRole` enum alongside `.display`/`.title`/
+> `.headline`/`.body`/`.callout`/`.caption`, which all use text-style-based fonts. A dedicated
+> module-wide grep for the bare property found exactly four sites — matching the plan's own separate
+> "`microLabel` 4" count exactly — three of them in `CoachingHQView.swift`, a file this sweep had
+> already marked complete. All four now use `coachWorldDisplay(CoachWorldTokens.TypeRole
+> .microLabelSize)`, which reproduces `microLabel`'s exact shape (10 pt, bold, condensed). A
+> follow-up check confirmed `display`/`title`/`headline` (lines 197-203) are the only other
+> `Font.system(` constructions in `DesignTokens.swift`, and all three are text-style-based, so this
+> was the only blind spot of this shape.
+>
+> **A fourth helper, `coachWorldFigureCondensed`.** `CoachWorldVocabulary.swift`'s
+> `CoachWorldRatingRing` prints its value with both display's condensed width and figure's
+> monospaced digits at once — a combination built by hand in the original
+> (`.system(size:weight:design:).width(.condensed)` plus a separate `.monospacedDigit()`) that
+> neither `coachWorldDisplay` nor `coachWorldFigure` alone could reproduce. Rather than force one of
+> the other two helpers to carry a property they were not named for, or leave the one call site
+> unmigrated, `CoachWorldScaledType.swift` gained a third `condensed`/`monospacedDigit` combination.
+> Guarded by an existing, real `minimumScaleFactor(0.6)` — the same non-1.0, working shrink-back
+> class as `MatchDayField.swift`'s `PlayerToken`, not the no-op class deferred elsewhere.
+>
+> **A non-`.font()`-modifier case, in `ScheduleView.swift`.** One site picked between an
+> already-scaling `Font` value and a non-scaling one inside a single `.font(condition ? A : B)`
+> call — the shape the plan's own hazard analysis warned "keep `display()`/`figure()` for any
+> non-`View` context" was meant to cover. Rather than leave it non-scaling, or rely on unverifiable
+> `.font(nil)` environment-override semantics with no compiler to check them against, it was
+> restructured into a `Group` with an `if`/`else` per font and the shared trailing modifiers
+> (`foregroundStyle`, `lineLimit`, `fixedSize`, `frame`) applied once to the `Group` — identical
+> rendered semantics, now scaling on the branch that matters.
+>
+> **Nine sites remain deliberately non-scaling, each documented at its call site**, not silently
+> skipped: `FloodlitPatterns.swift` ×3 (`FloodlitArcGauge` figure, `FloodlitAttributeDial` rating,
+> `FloodlitStaffVoice` monogram — from the first installment), `StaffRoomView.swift` ×1 (monogram,
+> same unguarded-fixed-frame class), `FloodlitChrome.swift` ×1 (icon-rail label — fixed frame plus a
+> known no-op `minimumScaleFactor(railLabelFloor == 1.0)`), `DepthChartView.swift` ×2 (the field
+> token, which renders inside `fieldDiagram`'s `.accessibilityHidden(true)` — the review's P0 finding
+> about this exact diagram is explicitly out of this phase's scope, and scaling here would only risk
+> clipping without reaching the VoiceOver user the diagram is already unreachable to), and
+> `MatchDayField.swift` ×2 (`drawYardNumbers`'s `Paint.numberSize` sites — a genuine mechanism
+> limitation: `Text` is resolved through `GraphicsContext.resolve(...)` inside a `private static
+> func` with no `self` and no `@Environment`, so `@ScaledMetric` cannot apply there at all; a real
+> fix needs a scaled value threaded down from `FieldPlane`'s body plus an update to its custom
+> `Equatable` conformance so `.equatable()` render-suppression does not go stale when text size
+> changes).
+>
+> **Verification, same discipline as every prior entry:** every touched file re-grepped after
+> editing to confirm the site count landed at the expected number (deferred sites included), and
+> checked for paren/brace balance with `//` line comments stripped (the bare, unstripped count still
+> false-alarms on this file's own doc comments, as recorded at the previous checkpoint — using the
+> stripped version throughout this pass avoided repeating that investigation). One real miss caught
+> this way: an early `replace_all` in `InboxView.swift` matched only the identically-indented
+> occurrence of a duplicated pattern, silently leaving a second, differently-indented occurrence
+> untouched; a follow-up grep after the "fully migrated" claim caught it before commit. The same
+> class of miss recurred in `ContractNegotiationView.swift`'s if/else branches. A final module-wide
+> sweep after the last file confirmed: zero raw `display()`/`figure()`/`.system(size:)` sites remain
+> outside `DesignTokens.swift`, `CoachWorldScaledType.swift` (doc-comment prose only, confirmed) and
+> the nine documented deferrals above; zero bare `TypeRole.microLabel` references remain anywhere.
+>
+> **UNVERIFIED — never compiled.** No `swift`/`xcodebuild` in this environment; every claim above is
+> from static grep/Python verification, not a compiler. Files touched, this installment: the 25 files
+> named above, plus `CoachWorldScaledType.swift` (the `coachWorldFigureCondensed` addition) and
+> `CoachWorldVocabulary.swift` (icon and ring-figure sites, alongside its `microLabel` fix).
+>
+> **What Phase 3 does not cover, left for the owner per `04` §7.1's open rendered limb:** whether the
+> scaled type actually looks right at AX5 on the 844×390 install floor — no clipping, no overlap, no
+> datum lost — can only be confirmed by building to a simulator. This sweep makes type grow; it does
+> not and cannot verify the growth reads well without rendering it.
+
 > **2026-08-19, still later still still — Phase 3 sweep, continued: 9 files fully migrated, one new
 > mechanism helper, one genuine mechanism limitation found and documented in place.** Continuing
 > past the first installment (`CoachWorldScaledType.swift` + `FloodlitPatterns.swift`, recorded
