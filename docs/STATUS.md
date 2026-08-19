@@ -19,6 +19,85 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-19, later yet — made five verification gates assert properties instead of substrings
+> (Phase 2 of the systemic-defect remediation plan).**
+>
+> **Collapsed three tautological AX5 branches.** `NewCareerCoachIdentityView.swift`,
+> `RankingsPlayoffPictureView.swift` and `BracketPostseasonView.swift` each had an
+> `if dynamicTypeSize.isAccessibilitySize { X } else { X }` with byte-identical arms (S-7) —
+> collapsed to the one statement, and the now-unused `@Environment(\.dynamicTypeSize)` removed from
+> each. Verified safe before collapsing, not after: each delegates its whole composition to a real
+> host (`NewCareerSetupView`, `CompetitionOverviewView`) and confirmed by hand that the host
+> genuinely handles AX5 in its own body, so Phase 1's `renderedText` union carries it forward —
+> the test now passes on real content, not a dead branch.
+>
+> **`Chrome` and `Paint` widened from file-private to module-internal** (`FloodlitChrome.swift`,
+> `MatchDayField.swift`) so `ContractTests` can assert their real values through `@testable import`
+> instead of string-matching source text. Checked for a name collision first — neither name is
+> declared anywhere else in the module.
+>
+> **`ContractTests.swift:1004-1007`** locked in `familySize`/`railLabel`/`railLabelFloor`'s exact
+> literals while claiming to protect "the readable floor." Replaced with a sanity-range check on the
+> real values (`> 0 && < 20`) — deliberately not a canon-conformance judgement, since `04` §6.1c
+> sanctions 9/9.5pt here while §6.2 states a 10pt floor, and that contradiction is unresolved (see
+> escalation list). `authoredFloor`/`workingProse` (`:955`) are deferred to Phase 3: nothing
+> currently consults them, so a real fix has to come from Phase 3's font-constructor rework, not from
+> rewording a test around a dead constant now.
+>
+> **`:1416-1418`**, asserting Job Board/Offer/Appointment are "reachable from the shipped app root"
+> by string-matching `case .jobBoard` — deferred to Phase 4, where the branches it checks are being
+> deleted as unreachable (S-6) anyway; fixing the assertion's wording now would be rewritten again
+> the moment the code it references is gone.
+>
+> **S-2 — colour scan widened from one file to the whole directory, and from hex literals to raw
+> `Color(...)` construction** (`DesignContractTests.swift`). The existing hex-vs-canon test only ever
+> looked at `DesignTokens.swift` and only matched `0xRRGGBB`; none of the five confirmed raw
+> `Color(red:...)` sites anywhere else in the UI could ever have tripped it. New test scans every
+> file but the token layer for `Color(red:` / `Color(hue:`, stripped of line comments first — my own
+> explanatory comments naming the pattern in prose were an immediate false positive, the same class
+> of bug `strippingLineComments` already exists in this file to prevent, caught by simulating the
+> exact test logic in Python against the real tree before trusting it. Two of the five sites are
+> fixed to reference an existing token instead of re-typing it: `MatchDayScoreBug.goldRule` was
+> precisely `0xD89713` = `Floodlit.goldDeep`; `CoachingHQView`'s ink-on-gold was ~1/255 per channel
+> off `Floodlit.goldInk`, used identically elsewhere (`FloodlitPatterns.swift:335`,
+> `MatchDayField.swift:651`) for the same isCurrent/isSelected-on-gold case. The remaining three
+> (`CoachWorldDeskComponents.swift`, `MatchDayField.swift` x2, `MatchDayScoreBug.swift`'s `.bowl`
+> ground) have no existing canon hex within reach — checked by hand against `04` §6.1's table — and
+> doc-first means a new value is a canon amendment the owner makes, not one this fix invents. Named,
+> exact-count exceptions, not a silent pass: a fourth site in any of those three files still fails.
+>
+> **S-8 — the Match Day contrast gate measured a colour the field never draws, and fixing it found a
+> canon inconsistency the review didn't.** `palette.fieldTurf` (`#072616`) hasn't been the field's
+> ground since a flat colour was replaced by a five-stop elliptical gradient
+> (`MatchDayField.swift:73-79`). `04` §6.1's colour table still states "field.line (on turf) = 15.44"
+> against that stale flat value — and my own from-scratch computation reproduces 15.44 exactly
+> against `fieldTurf`, confirming that's genuinely where the number came from — while a *later* table
+> in the same doc gives the current `turf` stop's own number, 5.97 (also reproduced exactly), but
+> never restates `field.annotation` or `field.live` against it and neither table accounts for a
+> reduced-opacity draw. That inconsistency is now a canon question for the owner, not resolved here.
+>
+> Fixed: every check now runs against all five real gradient stops, reusing the codebase's own
+> `ColorValue.mixed(with:amount:)` for the alpha-composite math and the existing `contrastRatio`
+> WCAG function — no new colour math was written. Two things it found are real, unresolved defects
+> and are pinned by their exact measured value (`expectClose`, not silently passed, not left an
+> unexplained failure): `field.live` fails 3:1 against `turfCrown` (2.2664:1), and the yard numbers,
+> composited at `Paint.number` = 0.33 opacity, fail against **every** stop (1.6987 to 2.8882:1).
+> Clearing the worst case would need `Paint.number` near 0.73 — more than double its current value —
+> which is a real visual change with no way to render and confirm it here, so the constant itself was
+> not changed.
+>
+> **Verified by construction, not by trust.** Before deciding the delegation-closure fixpoint from
+> Phase 1 was safe to lean on again here, and before writing the contrast fix, ran the *exact* test
+> logic through a small Python script against the real `Sources/ProFootballCoachUI` tree (comment-
+> stripping, regex matching, and the WCAG/alpha-blend formulas copied line-for-line from the Swift) to
+> catch what a compiler would have caught. It caught the false-positive from my own comments before
+> it shipped.
+>
+> **UNVERIFIED — never compiled.** No `swift`/`xcodebuild` here. Files touched:
+> `Sources/ProFootballCoachUI/{NewCareerCoachIdentityView,RankingsPlayoffPictureView,
+> BracketPostseasonView,FloodlitChrome,MatchDayField,MatchDayScoreBug,CoachingHQView}.swift`,
+> `Tests/SimTests/Suites/{ContractTests,DesignContractTests}.swift`.
+
 > **2026-08-19, later still — made the family partition follow delegation and split off aliases
 > (Phase 1 of the systemic-defect remediation plan).** `Tests/SimTests/Suites/AccessibilityReflowTests.swift`:
 >

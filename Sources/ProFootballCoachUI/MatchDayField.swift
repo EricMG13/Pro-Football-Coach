@@ -816,7 +816,9 @@ private enum Turf {
     ]
 }
 
-private enum Paint {
+/// Module-internal rather than file-private (2026-08-19, S-8) so `ContractTests` can assert the
+/// real yard-number opacity through `@testable import` instead of hardcoding a duplicate literal.
+enum Paint {
     static let fiveYard = 0.26
     static let fiveWidth: CGFloat = 2
     static let tick = 0.30

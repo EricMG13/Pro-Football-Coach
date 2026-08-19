@@ -248,7 +248,9 @@ private enum Bug {
     static let shadowRadius: CGFloat = 20
     static let hairline: CGFloat = 1
     static let possessionSize: CGFloat = 7
-    static let goldRule = Color(red: 216 / 255, green: 151 / 255, blue: 19 / 255).opacity(0.35)
+    // S-2, 2026-08-19 review: was a hand-typed Color(red:green:blue:) literal. Its exact value,
+    // 0xD89713, is already the canon-documented `gold-deep` token (`04` section 6.1b).
+    static let goldRule = CoachWorldTokens.Floodlit.goldDeep.color.opacity(0.35)
     /// The committing action's own glow — `glow-gold` from the token table, `04` section 6.1b.
     static let actionGlowRadius: CGFloat = 26
     static let actionGlowYOffset: CGFloat = 2

@@ -614,7 +614,11 @@ struct FloodlitRegisteredNotBuilt: View {
 
 // MARK: - Literals
 
-private enum Chrome {
+/// Module-internal rather than file-private (2026-08-19, S-7) so `ContractTests` can assert on the
+/// real values through `@testable import` instead of string-matching the source text for an exact
+/// literal — the previous test asserted the constants had not changed at all, which the codebase
+/// cannot tell apart from a genuine improvement.
+enum Chrome {
     static let grainOpacity = 0.5
     static let bleed: CGFloat = 1 + CoachWorldTokens.Stage.worldBottomBleed * 0.1
     static let lampRadiusRatio: CGFloat = 0.52

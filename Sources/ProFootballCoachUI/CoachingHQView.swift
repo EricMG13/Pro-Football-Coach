@@ -592,7 +592,12 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                                    minHeight: CoachWorldTokens.Shape.minimumTarget)
                             .background(day.isCurrent ? palette.actionPrimary.color : Color.clear)
                             .foregroundStyle(
-                                day.isCurrent ? Color(red: 0.08, green: 0.06, blue: 0.01)
+                                // S-2, 2026-08-19 review: was a hand-typed Color(red:green:blue:)
+                                // literal, ~1/255 per channel off the canon `goldInk` token
+                                // (0x150F02) that already exists for exactly this ink-on-gold
+                                // case -- FloodlitPatterns.swift:335 and MatchDayField.swift:651
+                                // use it the same way, ink on an isCurrent/isSelected gold ground.
+                                day.isCurrent ? CoachWorldTokens.Floodlit.goldInk.color
                                     : palette.contentPrimary.color
                             )
                             .accessibilityLabel("\(day.dayLabel), \(day.assignment)")
