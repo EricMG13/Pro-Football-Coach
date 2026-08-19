@@ -80,7 +80,21 @@ that consequently never renders. Add `DraftRoomView`, which is never constructed
 
 Meanwhile `docs/STATUS.md` reports "62 converted / 0 pending", `AccessibilityReflowTests` counts all
 62 as landed, and `ContractTests` certifies the dead ones as "reachable from the shipped app root".
-The app has **47** reachable destinations. Nothing in the verification record says so.
+The app has **47** reachable destinations.
+
+> **Correction, Phase 4 of the remediation plan, 2026-08-19.** The last sentence above is wrong.
+> `ContractTests.swift`'s "the 62 legacy route numbers migrate through one canonical task table"
+> (originally cited at `:1101-1145`, since renumbered by unrelated edits elsewhere in the same file)
+> already asserted the 47/62 split by construction at the time this review was written — it builds
+> the alias table from `routeDisposition`/`canonicalDestination`/`isCanonicalTask` and asserts
+> `CoachWorldScreenID.allCases.filter(\.isCanonicalTask).count == 47` directly. The verification
+> record did say so; this review just did not find that test before writing this sentence. The rest
+> of the finding held and has since been fixed: Phase 1 rescoped `AccessibilityReflowTests`'
+> `landedFamilies()` to a three-way landed/pending/aliased partition instead of counting all 62 as
+> landed; Phase 2 replaced the `ContractTests.swift:1415-1417` substring check with a real
+> `canonicalDestination`-based reachability assertion; and Phase 4 deleted all fifteen dead branches
+> from `career()` and added a by-construction test (in the same suite as the 47/62 split) asserting
+> no alias screen can ever appear there again.
 
 ### S-7 [P1] Four contract assertions check a string where their message claims a property
 

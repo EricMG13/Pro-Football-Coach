@@ -19,6 +19,63 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-19, later still — Phase 4: deleted the 15 unreachable alias branches from `career()`,
+> corrected the review doc's S-6 overstatement, and corrected this file's own F-09 claim below.**
+>
+> `Sources/CoachWorldApp/CoachWorldAppRootView.swift`'s `career(_ store:)` switches on
+> `Self.canonicalScreen(screen)`, which resolves every alias to its `canonicalDestination` before the
+> switch runs — a `case` for an alias screen can never execute. Cross-referenced
+> `ScreenRegistry.swift`'s `routeDisposition` alias table (15 entries) against the switch's case
+> labels and found all 15 present as dead code: `jobBoard`, `offer`, `appointment`,
+> `staffMarketProfile`, `schemeBook`, `personnelPackages`, `portalHub`, `retentionDecisions`,
+> `portalMarket`, `nilAllocation`, `proScoutingBoard`, `draftBoard`, `freeAgency`, `jobSecurity`,
+> `coachingCarousel`. Deleted all 15. Their view files are untouched — the earlier IA decision to
+> keep them as scaffolding was not reopened; only the unreachable call sites are gone. The switch
+> keeps its exhaustive `default:` fallback, so this changes no runtime behavior.
+>
+> `ContractTests.swift`'s "career() routes every optional read model through surface()" test counted
+> all 62 registry screens toward `explicitlyRouted.count >= 50`, a threshold the 15 dead cases used
+> to help clear. Rescoped to `isCanonicalTask` screens (47) with the threshold recalibrated to 40,
+> and a second assertion added, built the same way as the plan asked — "a test that catches a future
+> one by construction": no screen from `CoachWorldScreenID.allCases.filter { !$0.isCanonicalTask }`
+> may appear as `case .X:` in `career()` at all. Verified both assertions pass by Python simulation
+> of the exact test logic against the real edited files (`explicitlyRouted.count` lands at 42;
+> `deadAliasCases` is empty).
+>
+> **The review doc's S-6 finding overstated its own case.** Its last sentence — "Nothing in the
+> verification record says so" [that the app has 47, not 62, reachable destinations] — is wrong:
+> `ContractTests.swift`'s "the 62 legacy route numbers migrate through one canonical task table"
+> already asserted the 47/62 split by construction at the time the review was written; the review
+> just did not find that test. Added a correction note in place, directly under the sentence it
+> corrects, rather than rewriting the original finding — the rest of S-6 (fifteen dead branches, the
+> `AccessibilityReflowTests`/`ContractTests` miscounts) was accurate and is recorded above as fixed
+> across Phases 1, 2 and this one.
+>
+> **This file's own F-09 claim, dated 2026-08-18, is also wrong** — the review's S-9 finding refutes
+> it and this entry adopts that finding rather than repeat it. F-09 said *"no scouting-confidence
+> model exists, and deriving one would print invented figures as fact."* A scouting-confidence model
+> does exist: `Sources/FootballSimCore/College/ScoutingState.swift:19,21` declares `confidence: Int`
+> and `evidenceCount: Int`, both clamped (`:34-37`) to `CollegeRules.knowledgeConfidenceRange` /
+> `.maximumScoutingEvidence` and populated per observation. It is already surfaced —
+> `CoachWorldRecruitingBoardProvider.swift:257` renders `"Confidence \($0)%"` — so F-09's premise was
+> never true. What is real and still open, per S-9, is smaller: the rendered figure is stored in and
+> printed under a field/label reading **"Uncertainty"** (`ProspectProfileView.swift:147`), so a coach
+> reads the value backwards; `evidenceCount` is never surfaced at all; and `CoachWorldConfidenceTag`
+> (registry #12, built and documented for exactly this field, `FloodlitPatterns.swift:608`) is used
+> on `OpponentFilmView.swift` — a different confidence concept, opponent-film source strength, not
+> prospect evaluation — and on no recruiting surface. That is a presentation defect, not the engine
+> gap F-09 claimed, and it is a per-surface P1 the owner's scope decision defers past this plan, not
+> something this phase fixes.
+>
+> **UNVERIFIED — never compiled.** No `swift`/`xcodebuild` in this environment. All citations above
+> (`ScoutingState.swift`, `CoachWorldRecruitingBoardProvider.swift`, `ProspectProfileView.swift`,
+> `FloodlitPatterns.swift`) re-checked against the current file state, not copied from the review
+> doc verbatim — two line numbers had shifted from this session's own earlier edits
+> (`ProspectProfileView.swift` from Phase 3's font migration, `FloodlitPatterns.swift` from the same)
+> and are corrected here to their current values. Files touched:
+> `Sources/CoachWorldApp/CoachWorldAppRootView.swift`, `Tests/SimTests/Suites/ContractTests.swift`,
+> `docs/reviews/2026-08-19-full-surface-adversarial-review.md`, this file.
+
 > **2026-08-19, latest — Phase 3 (S-0, Dynamic Type) sweep complete.** Every file identified at
 > sweep start (`Sources/ProFootballCoachUI/*.swift`, excluding `DesignTokens.swift` and
 > `CoachWorldScaledType.swift` itself) is now on `coachWorldDisplay`/`coachWorldFigure`/
@@ -428,7 +485,10 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > (202 tests / 2,228 checks) and `--design-contracts` (29 / 613) are green on the final tree, and
 > those are the suites that scan the view layer — the design-token-literal scan, the symbol
 > register, the AX5 contract and the Floodlit conversion partition, which reports **62 converted /
-> 0 pending**. A sweep confirms every type conforming to `CoachWorldChromedSurface` actually
+> 0 pending**. (Superseded above, 2026-08-19: this counted every registered file as converted
+> without checking whether it was reachable. Fifteen of the 62 are routing aliases whose files never
+> render — the accounting is fixed and this figure is not the current one; see the Phase 1 and
+> Phase 4 entries above.) A sweep confirms every type conforming to `CoachWorldChromedSurface` actually
 > consumes its chrome, because that failure mode is silent rather than a compile error.
 >
 > **What is not verified.** Four of six families were confirmed on a simulator — weekly command
