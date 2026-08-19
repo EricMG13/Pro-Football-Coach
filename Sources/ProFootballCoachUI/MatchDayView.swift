@@ -256,7 +256,7 @@ public struct MatchDayView: View {
             if let control { onControl(control.intentID) }
         } label: {
             Text("\(Int(speedMultiplier))×")
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.action, weight: .bold))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.action, weight: .bold)
                 .frame(width: MatchMetric.speedPillWidth)
                 .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
         }
@@ -309,16 +309,14 @@ public struct MatchDayView: View {
             Group {
                 if wide {
                     Text((label ?? presentation.title).uppercased())
-                        .font(
-                            CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold)
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                         .tracking(
                             CoachWorldTokens.DisplaySize
                                 .tracking(0.1, at: CoachWorldTokens.DisplaySize.flag)
                         )
                 } else {
                     Image(systemName: presentation.symbol.rawValue)
-                        .font(.system(size: MatchMetric.furnitureIconSize, weight: .bold))
+                        .coachWorldIcon(MatchMetric.furnitureIconSize, weight: .bold)
                 }
             }
             .frame(
@@ -714,7 +712,7 @@ public struct MatchDayView: View {
     private func staffCallInPanel(_ interruption: MatchDayReadModel.StaffInterruption) -> some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
             Text("STAFF CALL-IN")
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                 .tracking(
                     CoachWorldTokens.DisplaySize.tracking(0.18, at: CoachWorldTokens.DisplaySize.flag)
                 )
@@ -741,7 +739,7 @@ public struct MatchDayView: View {
                 }
             }
             Text("CALL-IN \(callInFooterCount) · RATE SET BY CONTROL DEPTH")
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .semibold)
                 .foregroundStyle(palette.contentQuiet.color)
         }
         .padding(.vertical, CoachWorldTokens.Pad.card.v)
