@@ -90,6 +90,31 @@ func runCalibrationTests() {
                    "an engine with the right mean and absurd variance passed")
         }
 
+        test("a percentage-scaled rate keeps its interval") {
+            // Two of the harness's bands are stated in percent, so it scales those rates by 100.
+            // The standard error clamps the proportion to [0, 1], so an unscaled 87.9 read as p = 1
+            // returned SE = 0: the interval collapsed to a point and the band was decided by range
+            // membership. Both percentage bands passed or failed on a point estimate for as long as
+            // that held.
+            let percent = Estimate(value: 85.3, sampleSize: 1245, standardDeviation: 0,
+                                   estimator: .rate, scale: 100)
+            expect(percent.standardError > 0,
+                   "a percentage rate has no standard error, so its band is a range check")
+            // The same measurement in proportion units must produce the same interval, scaled.
+            let proportion = Estimate(value: 0.853, sampleSize: 1245, standardDeviation: 0,
+                                      estimator: .rate)
+            expectClose(percent.standardError, proportion.standardError * 100, 1e-9,
+                        "the same rate measures differently in percent and in proportion")
+            // And the fix has to be visible at the band, not only at the estimate: a percentage
+            // estimate close to an edge must now fail on it.
+            let goals = Band("field goal percentage", tier: .pro, 81, 88, estimator: .rate,
+                             confidence: "[Q]")
+            let nearCeiling = Estimate(value: 87.9, sampleSize: 1441, standardDeviation: 0,
+                                       estimator: .rate, scale: 100)
+            expect(!goals.test(nearCeiling).passed,
+                   "87.9 percent with a 1441-kick sample passed an 81 to 88 band on a point")
+        }
+
         test("an empty sample cannot pass") {
             let empty = Estimate(value: 0.55, sampleSize: 0, standardDeviation: 0, estimator: .rate)
             expect(!band.test(empty).passed, "a band passed on no data at all")

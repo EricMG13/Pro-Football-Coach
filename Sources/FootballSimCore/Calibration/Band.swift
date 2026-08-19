@@ -41,13 +41,21 @@ public struct Estimate: Sendable, Equatable {
     /// Sample standard deviation. Zero for a rate, where the SE comes from the proportion itself.
     public let standardDeviation: Double
     public let estimator: EstimatorKind
+    /// The units `value` is expressed in: 1 for a proportion, 100 for a percentage.
+    ///
+    /// A percentage-scaled rate is still a proportion underneath, and the standard error has to be
+    /// carried back into the same units. Without this, `standardError`'s clamp reads a completion
+    /// percentage of 87.9 as p = 1 and returns zero, so the interval collapses to a point and the
+    /// band is decided by range membership — the instrument `01` §6.2 rejects, wearing TOST's name.
+    public let scale: Double
 
     public init(value: Double, sampleSize: Int, standardDeviation: Double,
-                estimator: EstimatorKind) {
+                estimator: EstimatorKind, scale: Double = 1) {
         self.value = value
         self.sampleSize = sampleSize
         self.standardDeviation = standardDeviation
         self.estimator = estimator
+        self.scale = scale > 0 ? scale : 1
     }
 
     /// `01` §6.2's standard error.
@@ -55,8 +63,8 @@ public struct Estimate: Sendable, Equatable {
         guard sampleSize > 0 else { return .infinity }
         switch estimator {
         case .rate:
-            let p = Swift.min(Swift.max(value, 0), 1)
-            return (p * (1 - p) / Double(sampleSize)).squareRoot()
+            let p = Swift.min(Swift.max(value / scale, 0), 1)
+            return scale * (p * (1 - p) / Double(sampleSize)).squareRoot()
         case .mean:
             return standardDeviation / Double(sampleSize).squareRoot()
         }

@@ -215,7 +215,7 @@ public enum CalibrationHarness {
         func rateEstimate(_ hits: Int, _ trials: Int, scale: Double = 1) -> Estimate {
             let p = trials > 0 ? Double(hits) / Double(trials) : 0
             return Estimate(value: p * scale, sampleSize: trials, standardDeviation: 0,
-                            estimator: .rate)
+                            estimator: .rate, scale: scale)
         }
 
         return [

@@ -1026,6 +1026,41 @@ with what each waits on: per-drive accounting, target shares (which need per-pla
 engine does not produce), overtime and schedule context (P6). §6.6 clause 3 wants every scalar band
 gated by TOST; until that is true the honest statement is the list.
 
+#### 2026-08-19 — re-measured, and two things the earlier reports could not have seen
+
+Both ladders re-run at 240 games per tier, on a Swift 6.3.3 host. **Five of 24 bands hold on the
+tuning ladder and six on the holdout**, and the "Holding now" list above is stale in one row:
+**college points per team-game no longer holds** — theta 27.78 tuning / 27.83 holdout, CI90 low
+25.49 / 25.70 against a 26 floor, so it fails on the lower edge on both ladders.
+
+**Two percentage bands were never TOST-tested at all, and reported green anyway.** `Estimate`'s rate
+standard error clamped the proportion to [0, 1], and the harness scales completion and field-goal
+rates by 100, so `p` read as exactly 1 and the standard error came back **zero**: the interval
+collapsed to a point (`CI90=[87.9251, 87.9251]`) and both bands were decided by range membership —
+precisely the instrument `01` §6.2 rejects, wearing TOST's name, inside the one suite written to
+prevent it. `Estimate` now carries the scale it was measured in and the interval is carried back
+into the same units; `CalibrationTests` asserts a percentage rate has a non-zero standard error,
+that percent and proportion agree, and that a near-edge percentage now fails at the band.
+
+The correction changes a verdict rather than only a number. **Pro field goal percentage stops
+holding on the tuning ladder**: 87.12 percent over 1281 kicks is CI90 [85.58, 88.66] against an
+81–88 band, so it crosses the ceiling. It still holds on the holdout (85.30, CI90 [83.65, 86.95]).
+That is why the tally is 5 tuning / 6 holdout rather than 6 / 6.
+
+**No band can be tightened at present, and none was.** Tightening is only meaningful on a band the
+engine already holds with margin; 18 of 24 fail at their current width, several by multiples rather
+than by margins — pro completion percentage 35.3 against 61–67, pro interceptions 3.91 per
+team-game against 0.6–1.1, explosive run rate 0.033 against 0.105–0.130, pro plays per team-game
+89.1 against 60–68. Band values in `01` §6.4/§6.5 were not touched.
+
+**Nothing runnable measures the engine against the band table.** `verify.sh --lane calibration`
+runs `--calibration`, which tests the instrument — TOST arithmetic, total variation distance, the
+band-table shape, harness reproducibility — and never asserts `CalibrationHarness.run` against the
+bands on the holdout ladder. There is no `--calibration-gate` command in `SuiteCatalog` or
+`main.swift`. The line above that "P4's calibration gate stays red" describes prose, not a test,
+which is the distinction `CLAUDE.md` forbids blurring. Whether that gate should exist as a red
+runnable command is an owner call, because it is the only red one would be adding deliberately.
+
 ### P3 — match engine core
 
 D2's hybrid assignment/leverage resolution, per tier, with the clock, the drive loop and the game
