@@ -254,7 +254,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                 "\(model.week.weekLabel) \u{00B7} \(model.week.currentDay)", palette: palette
             )
             Text("\(model.obligations.count) OPEN")
-                .font(CoachWorldTokens.display(HQMetric.heroSize, weight: .heavy))
+                .coachWorldDisplay(HQMetric.heroSize, weight: .heavy)
                 .foregroundStyle(palette.contentPrimary.color)
                 .lineLimit(1)
                 .minimumScaleFactor(HQMetric.heroScaleFloor)
@@ -267,11 +267,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                     FloodlitRow(palette: palette) {
                         HStack(spacing: CoachWorldTokens.Gap.xs) {
                             Text(obligation.title.uppercased())
-                                .font(
-                                    CoachWorldTokens.display(
-                                        CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                                    )
-                                )
+                                .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                                 .lineLimit(1)
                                 .minimumScaleFactor(HQMetric.rowScaleFloor)
                             Spacer(minLength: CoachWorldTokens.Gap.xxs)
@@ -305,7 +301,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                     FloodlitLabel3("You decide", palette: palette, tint: palette.actionPrimary.color)
                 }
                 Text(decision.title)
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.lead, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.lead, weight: .bold)
                     .fixedSize(horizontal: false, vertical: true)
                 if let evidence = decision.evidence.first {
                     Text(evidence)
@@ -345,7 +341,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
         ) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 Text(choice.title.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                     .lineLimit(1)
                 FloodlitCostLine(
                     cost: choice.cost,
@@ -361,9 +357,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
     private func secondaryAction(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title.uppercased())
-                .font(
-                    CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold)
-                )
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                 .tracking(
                     CoachWorldTokens.DisplaySize.tracking(0.1, at: CoachWorldTokens.DisplaySize.flag)
                 )
@@ -391,11 +385,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                         ForEach(model.squadHealth) { row in
                             HStack(spacing: CoachWorldTokens.Gap.xs) {
                                 Text(row.slot.uppercased())
-                                    .font(
-                                        CoachWorldTokens.display(
-                                            CoachWorldTokens.DisplaySize.flag, weight: .bold
-                                        )
-                                    )
+                                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                                     .foregroundStyle(palette.stateInfo.color)
                                     .frame(width: HQMetric.slotColumn, alignment: .leading)
                                 Text(row.player)
@@ -403,11 +393,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                                     .lineLimit(1)
                                 Spacer(minLength: CoachWorldTokens.Gap.xxs)
                                 Text(row.status)
-                                    .font(
-                                        CoachWorldTokens.display(
-                                            CoachWorldTokens.DisplaySize.flag, weight: .bold
-                                        )
-                                    )
+                                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                                     .foregroundStyle(
                                         row.isConcern
                                             ? palette.stateWarning.color
@@ -432,11 +418,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                                     .lineLimit(1)
                                 Spacer(minLength: CoachWorldTokens.Gap.xxs)
                                 Text("\(row.support)")
-                                    .font(
-                                        CoachWorldTokens.figure(
-                                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                                        )
-                                    )
+                                    .coachWorldFigure(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                                 // Support is a proportion of a stated whole, so an arc is legitimate
                                 // here — and it is a second reading of the printed figure, never the
                                 // only one.
