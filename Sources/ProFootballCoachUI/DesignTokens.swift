@@ -103,12 +103,13 @@ public enum CoachWorldTokens {
         public static let scaleFloor = 40
         public static let scaleCeiling = 99
         public static let strongFloor = 85
-        public static let steadyFloor = 72
+        /// `04` section 6.4: "red below 70, amber from 70-84 and green from 85 upward."
+        public static let steadyFloor = 70
 
         public static func color(for rating: Int, palette: Palette) -> Color {
             switch rating {
-            case strongFloor...: palette.stateLive.color
-            case steadyFloor..<strongFloor: palette.actionPrimary.color
+            case strongFloor...: palette.statePositive.color
+            case steadyFloor..<strongFloor: palette.stateWarning.color
             default: palette.stateNegative.color
             }
         }
