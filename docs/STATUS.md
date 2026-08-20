@@ -2070,6 +2070,22 @@ rating-ordered pool, or retirement removing the unattached is an owner call, not
 
 ### Lifecycle distribution bands — **four added 2026-08-20, and two found real drift**
 
+> **Follow-up validation, 2026-08-20 — owner head `1694153`.** The long release run now holds all
+> five distributions at season indices 0, 1, 3, 6 and 10: `--people-lifecycle` completed **21 tests /
+> 520,251 checks, all passed**. The companion suites are also green: `--discipline` **9/36**,
+> `--roster-tenure` **4/5**, `--injury-evidence` **1/34**, and `--programme-evolution` **7/275**.
+> Focused owner coverage is green too: coach-season-record **3/22**, staff pruning **1/8**, career
+> arc **23/360**, season rollover **13/96**, portal transactions **17/124**, and architecture
+> **29/245**. The tactical-state lane remains a separate baseline red: **8 tests / 31 checks with
+> one `GameSummary` equality failure** after the weekly scheduler consumes a plan; it is outside this
+> lifecycle/portal change and was not loosened or patched. No decline-age or trait constant changed.
+
+> The portal-history fix closes the retention gap exposed by departed-player pruning: exact NIL-split
+> validation is now required only when retained summaries, the hot journal, or archive together prove
+> the completed window and agree on its offer count. Aggregate reservation, capacity, offer-count, and
+> accepted-position checks remain unconditional. This is a history-retention correction, not a band
+> change.
+
 Nothing banded the people model. The soak asserted bounds a league of nothing but 23-year-olds and
 a league of nothing but 33-year-olds both satisfy, an injured share that `> 0 and < 10%` leaves
 undetermined, a churn check that one graduating walk-on satisfies, and mean overall inside intervals
