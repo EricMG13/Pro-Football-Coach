@@ -278,10 +278,17 @@ func runTraitPopulationTests() {
             expectEqual(prospect.position, .quarterback)
             expectEqual(prospect.age, 19)
             expectEqual(prospect.originCityID.uuidString, "C4795271-5AC6-4182-BDA3-3F7551EAA186")
-            expectEqual(prospect.potential, Rating(73))
+            // The value half of this golden moved +6 on 2026-08-20, when prospect generation
+            // stopped carrying its own `42 + span * 28/59` and started calling the same
+            // `RosterPopulationGenerator.baseRating` a programme's roster is generated on. The
+            // identity half did not move at all — id, name, position, age, origin city and
+            // priorities are all unchanged above — which is the split this test exists to police:
+            // a trait draw must not perturb the identity stream, and it did not. The values moved
+            // because the value scale was deliberately changed, not because the stream shifted.
+            expectEqual(prospect.potential, Rating(79))
             expectEqual(Attribute.allCases.map { prospect.attributes[$0].value }, [
-                57, 58, 65, 64, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
-                40, 40, 64, 65, 70, 70, 57, 70, 40, 40, 40, 40, 40, 68, 65, 61, 64, 64,
+                63, 64, 71, 70, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
+                40, 40, 70, 71, 76, 76, 63, 76, 40, 40, 40, 40, 40, 74, 71, 67, 70, 70,
             ])
             expectEqual(
                 RecruitingPitch.allCases.map { prospect.priorities[$0]!.value },
@@ -355,5 +362,5 @@ private func isCanonicalTraits(_ traits: [Trait]) -> Bool {
     traits == Trait.allCases.filter(traits.contains)
 }
 
-private let activePopulationTraits: Set<Trait> = [.ironman, .restless]
+private let activePopulationTraits: Set<Trait> = [.ironman, .restless, .volatile]
 private let futureSimulationTraits = Trait.allCases.filter { !activePopulationTraits.contains($0) }
