@@ -569,6 +569,72 @@ func runPeopleLifecycleTests() {
     }
 }
 
+/// The M2 soak's roster and age invariants, at one season instead of twenty.
+///
+/// These invariants were wrong for nine days and nobody noticed, because `--m2-soak` is a
+/// release-only lane that takes twenty minutes and nothing else asserted them. That is the part
+/// worth fixing structurally: the same checks cost 22 weeks here and ride in the default suite, so
+/// a regression of either shape fails in seconds rather than waiting for someone to run the soak.
+///
+/// Deliberately mirrors what `runM2SoakTests` asserts rather than inventing a second opinion --
+/// same one-week peek for the college fill, same bound for professional rosters, same derived age
+/// range. If the two ever disagree, this one is the copy to delete.
+func runRosterFillTests() {
+    suite("Season-start roster fill") {
+        test("the season-boundary roster and age invariants hold in one season") {
+            var state = GameState.bootstrap(seed: 91_002)
+            for _ in 0..<SharedRules.inSeasonWeeks {
+                state = try WorldScheduler.advanceWeek(state).state
+            }
+            expectEqual(state.calendar, CalendarState(season: 1, week: 1))
+
+            // Week 1 guarantees only the per-position coverage floor: `.awaitingSpring` is a
+            // deliberate one-week gap before `.springRosterFill` tops rosters back to the limit.
+            for position in Position.allCases {
+                let minimum = SharedRules.minimumPlayableRosterByPosition[position] ?? 0
+                expect(state.programmes.values.allSatisfy { programme in
+                    programme.rosterIDs.filter {
+                        state.players[$0]?.position == position
+                    }.count >= minimum
+                }, "a college programme is below the week-1 coverage minimum for \(position)")
+            }
+
+            // One week on, the college fill has run and the exact count holds.
+            let filled = try WorldScheduler.advanceWeek(state).state
+            let collegeIDs = filled.programmes.values.flatMap(\.rosterIDs)
+            expectEqual(collegeIDs.count, CollegeRules.programmeCount * CollegeRules.rosterLimit)
+            expectEqual(Set(collegeIDs).count, collegeIDs.count)
+
+            // Professional rosters refill one signing per team per week, so they are bounded here,
+            // never exact.
+            expect(filled.proTeams.values.allSatisfy {
+                $0.rosterIDs.count <= ProRules.activeRosterLimit
+            }, "a professional roster exceeds \(ProRules.activeRosterLimit)")
+            let proIDs = filled.proTeams.values.flatMap(\.rosterIDs)
+            expectEqual(Set(proIDs).count, proIDs.count)
+
+            // The age bound, at the same derivation the soak uses.
+            let oldestObservableAge = CollegeRules.prospectAgeRange.upperBound
+                + CollegeRules.eligibilityClockYears - 1
+            let legalCollegeAges =
+                CollegeRules.prospectAgeRange.lowerBound...oldestObservableAge
+            expect(state.programmes.values.flatMap(\.rosterIDs).allSatisfy {
+                legalCollegeAges.contains(state.players[$0]?.age ?? -1)
+            }, "a college roster age falls outside \(legalCollegeAges)")
+
+            // The case that actually broke: real recruiting signs 17-year-olds, under the old
+            // `18...21` floor. Named directly so a regression says so.
+            let ages = state.programmes.values.flatMap(\.rosterIDs).compactMap {
+                state.players[$0]?.age
+            }
+            expect(ages.contains(CollegeRules.prospectAgeRange.lowerBound),
+                   "no signed freshman reached a college roster at the recruiting floor of "
+                       + "\(CollegeRules.prospectAgeRange.lowerBound); this fixture no longer "
+                       + "exercises the case it exists for")
+        }
+    }
+}
+
 func runM2SoakTests(seasons: Int) {
     suite("M2 people lifecycle soak") {
         test("target populations remain legal, staffed, bounded, and persistent") {
@@ -644,14 +710,25 @@ func runM2SoakTests(seasons: Int) {
                 expect(state.programmes.values.flatMap(\.rosterIDs).allSatisfy {
                     state.players[$0]?.eligibility?.isExhausted == false
                 })
-                // ProspectPopulationGenerator signs recruits at 17-19 (early enrollees included),
-                // and a player who spends their one spare redshirt year can still be rostered five
-                // seasons after signing. Oldest: a 19-year-old signee who redshirts, then ages
-                // through their remaining four competitive seasons (19, 20, 21, 22, 23). Youngest:
-                // a 17-year-old true freshman in their signing season. (18...21) undercounted both
-                // ends.
+                // Derived from the rules, not from what one generator currently draws.
+                // `ProspectPopulationGenerator` happens to draw 17-19 today, but that is not the
+                // engine's ceiling: `Prospect.init` *clamps* to `CollegeRules.prospectAgeRange`
+                // (17...21) and `WorldIntegrity` enforces the same range on the root, so a
+                // 21-year-old prospect is legal state that any other intake path may produce. Such
+                // a signee who spends their one spare redshirt year is rostered at 25, which a
+                // hard-coded 23 would report as a defect.
+                //
+                // `Eligibility` decrements `yearsRemaining` every enrolled year but
+                // `seasonsRemaining` only on a season actually played, and nothing graduates on age
+                // alone -- only `Eligibility.isExhausted`. So the oldest observable age is the
+                // oldest legal entry age plus one fewer than the full clock, the final enrolled
+                // year being the one that exhausts and removes them in the same step.
+                let oldestObservableAge = CollegeRules.prospectAgeRange.upperBound
+                    + CollegeRules.eligibilityClockYears - 1
+                let legalCollegeAges =
+                    CollegeRules.prospectAgeRange.lowerBound...oldestObservableAge
                 expect(state.programmes.values.flatMap(\.rosterIDs).allSatisfy {
-                    (17...23).contains(state.players[$0]?.age ?? -1)
+                    legalCollegeAges.contains(state.players[$0]?.age ?? -1)
                 })
                 expect(state.proTeams.values.flatMap(\.rosterIDs).allSatisfy { id in
                     guard let player = state.players[id] else { return false }

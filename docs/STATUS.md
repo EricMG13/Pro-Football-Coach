@@ -1734,10 +1734,28 @@ chunked or streaming persistence are M9 work that the product cannot ship withou
 > `proDraftStarted=9`, `draftedFinal=0`. Contract expiry and free agency both work now, and the
 > draft *starts* nine times; what never happens is a pick landing inside the run.
 >
-> `--pro-draft-probe` is now **green**, reporting `expired=327`, `contractedRemaining=1369`, and
-> `first pick succeeded`. The `activeRosterFull` blockage recorded below is therefore fixed: a pick
-> can be made. What remains is that the soak's ten seasons never get one, which is a pacing or
-> driver question rather than a blocked root, and is not the signing-day change's business.
+> `--pro-draft-probe` is **green**, reporting `expired=327`, `contractedRemaining=1369`, and
+> `first pick succeeded` — **and that is not evidence of anything about the live path.** Corrected
+> 2026-08-20, same day, after a peer session working the professional market pointed it out and it
+> was checked directly against the source: the probe runs `expireContracts`, then `beginDraft`, then
+> `draft`, and never calls `signFreeAgents` or `ProRosterAISystem.process` at all. It therefore
+> drafts into rosters that expiry has just emptied, and is structurally incapable of reproducing a
+> failure whose cause is free agency running *first*. An earlier revision of this note read the
+> probe's green as "the `activeRosterFull` blockage is fixed, what remains is pacing rather than a
+> blocked root". Both halves of that were wrong.
+>
+> **The real cause is a blocked root, and it is `activeRosterFull`.** `ProManagementSystem.acquire`
+> enforces the identical `rosterIDs.count < activeRosterLimit` guard for a free-agent signing and
+> for a draft pick. `ProRosterAISystem.signFreeAgents` runs until that guard stops finding a legal
+> team and then calls `beginDraft`, and nothing between the two removes anybody — so the draft's
+> first pick meets the exact ceiling free agency has just filled. Structural, every season,
+> independent of pool size; the cap sat at 170M of 272M at the throw, so cap-compliance cuts would
+> not have unblocked it either.
+>
+> A fix is on branch `claude/lifecycle-band-validation-a50138` (PR #37, unmerged at the time of
+> writing): AI free agency stops at `activeRosterLimit - draftRounds`, holding one seat per round it
+> will pick in, which `02` §4.2's "for free agency *and* the draft" already implied. Until that
+> lands, `--pro-soak` stays red on this check and the numbers above stand.
 >
 > The probe was briefly red for a reason that *was* the signing-day change: it hand-builds a root at
 > week 21 and left the recruiting phase on `active`, which the new total integrity rule refuses. It

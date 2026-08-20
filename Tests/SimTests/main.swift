@@ -137,6 +137,8 @@ if CommandLine.arguments.contains("--catalog") {
     runReduceMotionContractTests()
 } else if CommandLine.arguments.contains("--architecture-only") {
     runArchitectureTests()
+} else if CommandLine.arguments.contains("--roster-fill") {
+    runRosterFillTests()
 } else if CommandLine.arguments.contains("--m2-soak") {
     runM2SoakTests(seasons: 20)
 } else if CommandLine.arguments.contains("--m1-soak") {
@@ -165,6 +167,7 @@ if CommandLine.arguments.contains("--catalog") {
     runRosterPopulationTests()
     runTraitPopulationTests()
     runPeopleLifecycleTests()
+    runRosterFillTests()
     runCollegeStateTests()
     runCollegeCommitmentTests()
     runCollegeRedshirtTests()
