@@ -665,5 +665,108 @@ func runCareerArcTests() {
                 "a staff member ended the promotion without a career record"
             )
         }
+        test("a career of four moves keeps one unbroken job history") {
+            let source = GameState.bootstrap(seed: 99_125)
+            let firstProgrammeID = source.programmes.ids[0]
+            let secondProgrammeID = source.programmes.ids[1]
+            var state = try CareerControlSystem.startCollegeCareer(
+                at: firstProgrammeID,
+                in: source
+            ).state
+            state.pending = PendingQueues()
+            guard let coachID = state.career.coachID else {
+                expect(false, "career start left no coach")
+                return
+            }
+            let firstTeamID = state.proTeams.ids[0]
+            let secondTeamID = state.proTeams.ids[1]
+            let staffCountAtStart = state.staff.ids.count
+
+            func offer(_ teamID: UUID, _ suffix: String) -> CareerOpportunity {
+                CareerOpportunity(
+                    id: UUID(uuidString: "00000000-0000-4000-8000-0000000000\(suffix)")!,
+                    organisationID: teamID,
+                    tier: .professional,
+                    offeredAt: state.calendar,
+                    expiresAt: state.calendar.advancedWeek(),
+                    prestige: state.proTeams[teamID]?.prestige ?? Rating(50),
+                    rationale: .sustainedCollegeSuccess
+                )
+            }
+            func apply(_ action: CareerArcAction) throws {
+                state = try IntentResolver.resolve(
+                    .career(CareerArcRequest(calendar: state.calendar, action: action)),
+                    in: state
+                ).state
+                expect(WorldIntegrity.check(state).isValid, "a career move failed integrity")
+            }
+
+            // 1. Promoted out of the first college job.
+            var arc = state.careerArc
+            _ = arc.establishCollegeJob(organisationID: firstProgrammeID, at: state.calendar)
+            let firstOffer = offer(firstTeamID, "B1")
+            expect(arc.addOpportunity(firstOffer))
+            state.careerArc = arc
+            try apply(.acceptOpportunity(opportunityID: firstOffer.id))
+
+            // 2. Walks away from the professional job.
+            try apply(.resign)
+            expectEqual(state.careerArc.status, .seeking)
+
+            // 3. Hired back into the college game, at a different programme.
+            state = try CareerControlSystem.startCollegeCareer(
+                at: secondProgrammeID,
+                in: state
+            ).state
+            state.pending = PendingQueues()
+            arc = state.careerArc
+            _ = arc.establishCollegeJob(organisationID: secondProgrammeID, at: state.calendar)
+            let secondOffer = offer(secondTeamID, "B2")
+            expect(arc.addOpportunity(secondOffer))
+            state.careerArc = arc
+
+            // 4. Promoted again, to a different professional team.
+            try apply(.acceptOpportunity(opportunityID: secondOffer.id))
+
+            // The spine: four moves, three closed jobs, in order, each saying why it ended.
+            expectEqual(state.careerArc.jobHistory.count, 3)
+            expectEqual(
+                state.careerArc.jobHistory.map(\.job.organisationID),
+                [firstProgrammeID, firstTeamID, secondProgrammeID]
+            )
+            expectEqual(
+                state.careerArc.jobHistory.map(\.job.tier),
+                [.college, .professional, .college]
+            )
+            expectEqual(
+                state.careerArc.jobHistory.map(\.reason),
+                [.promoted, .resigned, .promoted]
+            )
+            expectEqual(state.careerArc.currentJob?.organisationID, secondTeamID)
+            expectEqual(state.careerArc.currentJob?.tier, .professional)
+
+            // The same career, told by the other authority. Both tiers, in the order they happened,
+            // with no seat recorded twice and none missing.
+            expectEqual(
+                state.people.staffCareers[coachID]?.assignments.map(\.organisationID),
+                [firstProgrammeID, firstTeamID, secondProgrammeID, secondTeamID]
+            )
+            expect(
+                state.people.staffCareers[coachID]?.assignments.allSatisfy {
+                    $0.role == .headCoach
+                } == true,
+                "the coach was recorded in a seat that was not the top job"
+            )
+
+            // The coach holds exactly one chair in the whole world, and it is the current one.
+            let seats = state.programmes.ids.filter {
+                state.programmes[$0]?.staffIDs.contains(coachID) == true
+            } + state.proTeams.ids.filter {
+                state.proTeams[$0]?.staffIDs.contains(coachID) == true
+            }
+            expectEqual(seats, [secondTeamID])
+            // One successor per vacated seat, and not one more: three seats were left behind.
+            expectEqual(state.staff.ids.count, staffCountAtStart + 3)
+        }
     }
 }
