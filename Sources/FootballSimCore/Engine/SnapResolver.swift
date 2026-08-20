@@ -86,8 +86,14 @@ public enum SnapResolver {
             : protectionLeverage / Double(assignment.protection.count)
         let pressure = Swift.max(0, -averageProtection)
 
+        // Backed up against his own line the passer takes a shorter drop, so an ordinary sack does
+        // not end in the end zone. Safeties stay reachable from inside the three, which is where
+        // nearly all of the real ones come from.
+        let sackLoss = situation.yardLine <= MatchupRules.backedUpYardLine
+            ? MatchupRules.backedUpSackYards
+            : MatchupRules.sackYards
         guard let passer = assignment.passer else {
-            return sackOrSafety(yards: MatchupRules.sackYards, situation: situation,
+            return sackOrSafety(yards: sackLoss, situation: situation,
                                 elapsed: rules.inBoundsPlaySeconds, matchups: matchups,
                                 passer: nil)
         }
@@ -118,7 +124,7 @@ public enum SnapResolver {
             // `finish` entirely, so the single most common real safety — a sack in your own end
             // zone — could not happen: 5,000 of 5,000 sacks from the offence's own 2 came back as
             // an ordinary loss.
-            return sackOrSafety(yards: MatchupRules.sackYards, situation: situation,
+            return sackOrSafety(yards: sackLoss, situation: situation,
                                 elapsed: rules.inBoundsPlaySeconds, matchups: matchups,
                                 passer: passer)
         }
@@ -182,10 +188,16 @@ public enum SnapResolver {
         let air = offensiveCall.passDepth.airYards
         let (afterCatch, pursuitRecord, extraPursuitAttempts) = yardsAfterContact(
             carrier: target.element.receiver, pursuit: assignment.pursuit,
-            aggression: offensiveCall.aggression, homeFieldAdvantage: homeFieldAdvantage, rng: &rng
+            aggression: offensiveCall.aggression, homeFieldAdvantage: homeFieldAdvantage,
+            threshold: MatchupRules.catchBreakTackleThreshold, rng: &rng
         )
         if let pursuitRecord { matchups.append(pursuitRecord) }
-        let gained = air + afterCatch
+        // The same three terms the run gets: what the catch is worth before anyone is beaten, what
+        // the receiver wins against the first pursuer, and what the break chain extends.
+        let catchContact = pursuitRecord?.leverage ?? 0
+        let gained = air + Int((MatchupRules.baseCatchYards
+                                  + catchContact * MatchupRules.catchYardScale).rounded())
+            + afterCatch
         return finish(gained: gained, situation: situation, elapsed: elapsed, matchups: matchups,
                       brokenTackleAttempts: extraPursuitAttempts, carrier: target.element.receiver,
                       passer: passer, target: target.element.receiver, rng: &rng)
@@ -234,7 +246,10 @@ public enum SnapResolver {
 
         let (broken, pursuitRecord, extraPursuitAttempts) = yardsAfterContact(
             carrier: carrier, pursuit: assignment.pursuit, aggression: offensiveCall.aggression,
-            homeFieldAdvantage: homeFieldAdvantage, rng: &rng
+            homeFieldAdvantage: homeFieldAdvantage,
+            threshold: MatchupRules.breakTackleThreshold
+                - (rules.tier == .college ? MatchupRules.collegeBreakTackleRelief : 0),
+            rng: &rng
         )
         if let pursuitRecord { matchups.append(pursuitRecord) }
 
@@ -243,9 +258,15 @@ public enum SnapResolver {
         // against the first pursuer, and what the break chain extended. The base is the play that
         // none of the three decides — a carry into a standstill still gains a couple of yards.
         let contact = pursuitRecord?.leverage ?? 0
+        // The college tier spreads its run outcomes wider; 01 section 6.5's explosive-run bands for
+        // the two tiers do not overlap, so this is a tier constant rather than a shared one.
+        let spread = rules.tier == .college ? MatchupRules.collegeRunSpreadMultiplier : 1.0
+        // One rounding, not two: rounding the chain separately from the rest quantised the result
+        // twice over and made the tier multiplier step rather than slide.
         let gained = Int((MatchupRules.baseRunYards
-                            + lane * MatchupRules.laneYardScale * outside
-                            + contact * MatchupRules.contactYardScale).rounded()) + broken
+                            + lane * MatchupRules.laneYardScale * outside * spread
+                            + contact * MatchupRules.contactYardScale * spread
+                            + Double(broken)).rounded())
         return finish(gained: gained, situation: situation,
                       elapsed: rules.inBoundsPlaySeconds, matchups: matchups,
                       brokenTackleAttempts: extraPursuitAttempts, carrier: carrier, passer: nil,
@@ -270,6 +291,7 @@ public enum SnapResolver {
         pursuit: [Player],
         aggression: Double,
         homeFieldAdvantage: Double,
+        threshold: Double,
         rng: inout SeededRandom
     ) -> (yards: Int, record: MatchupRecord?, extraAttempts: [MatchupRecord]) {
         guard let tackler = pursuit.first else { return (0, nil, []) }
@@ -301,7 +323,7 @@ public enum SnapResolver {
                 extraAttempts.append(MatchupRecord(kind: .carrierVersusPursuit, attackerID: carrier.id,
                                                    defenderID: defender.id, leverage: leverage))
             }
-            guard leverage > MatchupRules.breakTackleThreshold else { break }
+            guard leverage > threshold else { break }
             yards += MatchupRules.brokenTackleYards * (attempt + 1)
         }
         return (yards, record, extraAttempts)
@@ -325,7 +347,8 @@ public enum SnapResolver {
         }
         // Distance is the defender: a long kick is a harder matchup, which keeps the whole engine
         // on one scale rather than bolting a distance curve onto the side of it.
-        let difficulty = Rating(MatchupRules.fieldGoalDifficulty(distanceYards: distance))
+        let difficulty = Rating(MatchupRules.fieldGoalDifficulty(distanceYards: distance,
+                                                                 tier: rules.tier))
         let leverage = Leverage.score(
             attacker: kicker.attributes[.kickAccuracy],
             defender: difficulty,

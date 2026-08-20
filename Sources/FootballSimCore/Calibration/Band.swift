@@ -87,7 +87,7 @@ public struct BandResult: Sendable, Equatable {
 
     public var confidenceInterval: (low: Double, high: Double) {
         let half = Band.zNinety * estimate.standardError
-        return (estimate.value - half, estimate.value + half)
+        return Band.interval(around: estimate, half: half)
     }
 
     /// `01` §6.6 clause 3's failure-message contract: metric, estimate, CI90, band, n, and which
@@ -110,12 +110,29 @@ public extension Band {
     /// rather than inlining keeps `CLAUDE.md`'s no-magic-number rule and makes the alpha visible.
     static let zNinety = 1.645
 
+    /// The interval around an estimate, clamped to what the estimator can actually produce.
+    ///
+    /// **A rate cannot be negative, and the normal approximation does not know that.** The pro tie
+    /// band is `0.000…0.020`; one tie in 600 games gives a point estimate of 0.0017 and a normal
+    /// interval reaching -0.0011, so the band failed on its floor for an estimate comfortably
+    /// inside it — and would have failed for *any* non-zero rate, because the interval always
+    /// extends below zero. Clamping to [0, scale] is the estimator's own support, not a widened
+    /// band: it removes an impossible region, never a possible one. Means are unclamped because a
+    /// per-team-game mean has no such bound.
+    static func interval(around estimate: Estimate, half: Double) -> (low: Double, high: Double) {
+        let low = estimate.value - half
+        let high = estimate.value + half
+        switch estimate.estimator {
+        case .rate: return (Swift.max(0, low), Swift.min(estimate.scale, high))
+        case .mean: return (low, high)
+        }
+    }
+
     /// TOST at alpha = 0.05: pass if and only if the 90 percent confidence interval lies entirely
     /// inside the band.
     func test(_ estimate: Estimate) -> BandResult {
         let half = Band.zNinety * estimate.standardError
-        let low = estimate.value - half
-        let high = estimate.value + half
+        let (low, high) = Band.interval(around: estimate, half: half)
         let belowFloor = low < lower
         let aboveCeiling = high > upper
         let edge: String?

@@ -25,7 +25,7 @@ public enum MatchupRules {
     public static let runningDownDistance = 10
 
     /// Distance at or beyond which a deep shot is on the table.
-    public static let deepShotDistance = 8
+    public static let deepShotDistance = 9
 
     // MARK: - Leverage
 
@@ -52,7 +52,6 @@ public enum MatchupRules {
     /// How much full fatigue costs a player, in leverage units.
     public static let fatigueWeight = 0.22
 
-    /// Home advantage, in leverage units applied to every home matchup before traditions.
     /// Home advantage, per tier, in leverage units applied to every duel the home offence takes
     /// and reversed for the away one.
     ///
@@ -62,8 +61,8 @@ public enum MatchupRules {
     /// game, measured by playing even teams with the bonus zeroed (19.9 to 18.8, home winning half)
     /// and again at 0.035 (28.7 to 14.2, home winning 0.656). That conversion rate is itself a
     /// defect and is not this constant's to fix; see `docs/STATUS.md`.
-    public static let proHomeAdvantage = 0.015
-    public static let collegeHomeAdvantage = 0.055
+    public static let proHomeAdvantage = 0.017
+    public static let collegeHomeAdvantage = 0.063
 
     // MARK: - Assignment
 
@@ -149,9 +148,20 @@ public enum MatchupRules {
     /// engine came out of the break chain and the harness measured 1.34 yards a carry against a
     /// rush band of 100 to 130 per team-game. A run play that is blocked to a standstill still
     /// gains a couple of yards; that is what this is.
-    public static let baseRunYards = 2.8
+    public static let baseRunYards = 3.0
     /// Yards per unit of lane leverage.
     public static let laneYardScale = 3.5
+    /// Multiplies the lane and contact terms in the college tier.
+    ///
+    /// **Per tier because `01` §6.5's bands are**: explosive runs are 0.105 to 0.130 of carries in
+    /// the pro tier and 0.135 to 0.165 in the college one, and the two ranges do not overlap, so no
+    /// shared pair of scales can satisfy both — the same argument that put `homeAdvantage` and the
+    /// field-goal penalty on the tier. `03` §5.1 attributes the college tier's wider outcomes partly
+    /// to talent dispersion, which would be the more fundamental place to express this; the harness's
+    /// `CalibrationRoster` takes no tier and draws both tiers from one distribution, so dispersion
+    /// is not currently a lever the engine has. This is the honest stand-in and `docs/STATUS.md`
+    /// records that it is one.
+    public static let collegeRunSpreadMultiplier = 1.09
     /// Yards per unit of carrier-versus-pursuit leverage.
     ///
     /// `03` §1.1 says "the carrier's vision and elusiveness resolve against pursuit leverage **into
@@ -163,8 +173,35 @@ public enum MatchupRules {
     public static let outsideRunVariance = 1.35
     public static let crashRunBonus = 0.10
     public static let aggressionRunBonus = 0.05
+    /// Yards a completion gains after the catch before anyone is beaten, and yards per unit of the
+    /// receiver's leverage against the first pursuer.
+    ///
+    /// The pass had the defect the run had before `baseRunYards`: yards after the catch came only
+    /// from the break-tackle chain, so a receiver who caught the ball and beat nobody gained
+    /// **nothing**. Measured, every depth completed for almost exactly its air yards — short 4.7
+    /// against 5 air, mid 11.9 against 12, deep 22.4 against 24 — so the explosive-pass rate was
+    /// carried entirely by deep balls (0.385 of deep attempts, 0.006 of mid, 0.000 of short) and sat
+    /// under `01` §6.5's floor. Real receptions average around five yards after the catch, and most
+    /// of that is on the short and intermediate routes this model gave none to.
+    public static let baseCatchYards = 0.3
+    public static let catchYardScale = 1.0
+    /// Leverage above which a receiver breaks a tackle after the catch.
+    ///
+    /// Lower than `breakTackleThreshold` because the two are not the same event: a carrier meets the
+    /// front seven at the line, a receiver catches in space with one defender arriving. Sharing one
+    /// threshold meant tuning the run's tail moved the explosive-pass rate with it — `01` §6.5 bands
+    /// those separately (0.105–0.130 run against 0.125–0.150 pass in the pro tier), so one constant
+    /// could not serve both.
+    public static let catchBreakTackleThreshold = 0.46
+    /// How much lower the college tier's break threshold sits.
+    ///
+    /// A smooth lever where scaling the chain's yards was not: broken-tackle yards are integers
+    /// (4, then 12, then 24), so multiplying them by a tier factor stepped the first break from 4
+    /// to 5 between multipliers of 1.09 and 1.13 and jumped the explosive-run rate from 0.136 to
+    /// 0.171 with nothing in between. Break *probability* moves continuously with the threshold.
+    public static let collegeBreakTackleRelief = 0.05
     /// Leverage above which the carrier breaks a tackle.
-    public static let breakTackleThreshold = 0.40
+    public static let breakTackleThreshold = 0.46
     /// Yards for the first break. Each successive one is worth a multiple of this, which is what
     /// gives a run distribution its right tail.
     public static let brokenTackleYards = 4
@@ -183,11 +220,21 @@ public enum MatchupRules {
     /// defender and a 55-yarder a 95 — so the harness measured 42 percent against a band of 81 to
     /// 88. Distance still drives it; the base is where a chip shot sits.
     public static let fieldGoalBaseDifficulty = 18
+    /// Added to the base for college kicks.
+    ///
+    /// **Per tier because `01` §6.5's bands are**: field goals go 81 to 88 percent in the pro tier
+    /// and 72 to 79 in the college one, a gap of nine points that one shared constant cannot span —
+    /// the same argument that put `homeAdvantage` on the tier. College kicking is worse because
+    /// college kickers are, which is a fact about the people rather than about the posts, but the
+    /// engine has no separate college kicker population to express it through, so it lands here.
+    public static let collegeFieldGoalDifficultyPenalty = 7
 
-    public static func fieldGoalDifficulty(distanceYards: Int) -> Int {
-        Swift.min(Swift.max(fieldGoalBaseDifficulty + distanceYards,
-                            SharedRules.ratingRange.lowerBound),
-                  SharedRules.ratingRange.upperBound)
+    public static func fieldGoalDifficulty(distanceYards: Int, tier: Tier) -> Int {
+        let base = fieldGoalBaseDifficulty
+            + (tier == .college ? collegeFieldGoalDifficultyPenalty : 0)
+        return Swift.min(Swift.max(base + distanceYards,
+                                   SharedRules.ratingRange.lowerBound),
+                         SharedRules.ratingRange.upperBound)
     }
     public static let legStrengthHelp = 0.25
     public static let basePuntYards = 34
@@ -199,6 +246,14 @@ public enum MatchupRules {
     public static let fumbleChance = 0.012
 
     // MARK: - Calibration thresholds
+
+    /// Inside this many yards of his own goal line a passer takes a shorter drop.
+    ///
+    /// The quick game is what teams call from their own five, so the pocket does not collapse seven
+    /// yards deep and nearly every safety the engine produced — 27 of 28 measured — stopped coming
+    /// from an ordinary sack on an ordinary dropback.
+    public static let backedUpYardLine = 7
+    public static let backedUpSackYards = -3
 
     /// 01 section 6.5 defines a blowout as a margin of 17 or more.
     public static let blowoutMargin = 17
