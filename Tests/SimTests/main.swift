@@ -89,6 +89,8 @@ if CommandLine.arguments.contains("--catalog") {
     runCalibrationReportProbe()
 } else if CommandLine.arguments.contains("--architecture-fingerprints") {
     runArchitectureFingerprintProbe()
+} else if CommandLine.arguments.contains("--game-fingerprints") {
+    runGameFingerprintProbe()
 } else if CommandLine.arguments.contains("--redshirt-only") {
     runCollegeRedshirtTests()
 } else if CommandLine.arguments.contains("--college-commitments") {

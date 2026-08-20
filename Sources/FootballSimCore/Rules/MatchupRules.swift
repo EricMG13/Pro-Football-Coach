@@ -97,16 +97,37 @@ public enum MatchupRules {
 
     /// The rating a throw is resolved against, by depth. A deep ball is hard to complete even to an
     /// open receiver, and making depth the difficulty is what keeps incompletions reachable at all.
+    /// How hard a throw of each depth is, on the rating scale a passer's accuracy is measured on.
+    ///
+    /// **These are not difficulty rankings, they are opponents.** `Leverage` feeds
+    /// `accuracy - throwDifficulty` through a logistic scaled to 18 rating points, so the number
+    /// here is the rating a passer has to match to make the throw an even proposition. The former
+    /// 68/80/92 made an average passer a heavy underdog at mid and deep — `logistic(70 - 80)` is
+    /// -0.268 and `logistic(70 - 92)` is -0.545, against a `completionThreshold` of -0.02 — and the
+    /// harness duly read 42 percent completions against a band of 61 to 67.
+    ///
+    /// The spacing was also too wide. Twelve rating points between depths is two thirds of the
+    /// logistic's scale, which made a deep ball roughly a one-in-six proposition against a real
+    /// figure near two in five. These are spaced to reproduce completion rates by depth, and
+    /// `EngineTests` asserts each one rather than only their aggregate — the aggregate is what let
+    /// too few completions and too many yards each cancel into a passing-yards band that passed.
     public static func throwDifficulty(_ depth: PassDepth) -> Int {
         switch depth {
-        case .short: return 68
-        case .mid: return 80
-        case .deep: return 92
+        case .short: return 62
+        case .mid: return 68
+        case .deep: return 76
         }
     }
     public static let aggressionThrowBonus = 0.06
     /// Below this the throw is intercepted; below `completionThreshold` it falls incomplete.
-    public static let interceptionThreshold = -0.94
+    /// Moved with the completion cut. It sat at -0.94 because the whole throw distribution sat
+    /// low: once an average passer is no longer a heavy underdog, both cuts describe a different
+    /// distribution and neither can move alone.
+    ///
+    /// Back-solved from measurement rather than picked. With the completion cut in place the throw
+    /// distribution measured a mean near -0.02 against `leverageNoise` of 0.38, and -0.66 caught
+    /// 4.6 percent of attempts against a real figure near 2. -0.80 is where two percent falls.
+    public static let interceptionThreshold = -0.80
     public static let completionThreshold = -0.02
     /// How much a low-decision passer is pulled toward progression order rather than the open man.
     public static let progressionPenalty = 0.25

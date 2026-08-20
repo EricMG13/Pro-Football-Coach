@@ -2,12 +2,12 @@ import Foundation
 import FootballSimCore
 
 /// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
-/// Moved 2026-08-20 when the run resolver gained the structural fix `MatchupRules` documents at
-/// `baselineRunYards`: an even run had no baseline gain, its whole distribution coming from a
-/// break-tackle chain gated well above zero leverage. Both values were reproduced in two
-/// independent release-process invocations of `--game-fingerprints` before being written here.
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 298_526_883_669_804_824
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 15_447_639_113_057_491_367
+/// Moved 2026-08-20 when the run and pass resolvers gained the structural fixes `MatchupRules`
+/// documents at `baselineRunYards` and `throwDifficulty`: an even run had no baseline gain and an
+/// average passer was modelled as a heavy underdog. Both values were reproduced in two independent
+/// release-process invocations of `--game-fingerprints` before being written here.
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 460_558_079_259_663_646
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 4_199_428_307_792_163_079
 
 func runEngineTests() {
     suite("Leverage") {
@@ -307,6 +307,56 @@ func runSnapResolverTests() {
                         stateAfter(OffensiveCall(playType: .pass), DefensiveCall(coverage: .man),
                                    Situation(yardLine: 98), even),
                         "the goal-line branch changed the draw count")
+        }
+
+        test("an even passer completes at football rates, at every depth") {
+            // `throwDifficulty` is stated on the rating scale and compared to the passer's accuracy
+            // through an 18-point logistic, so a 70-rated passer throwing mid faced
+            // logistic(70 - 80) = -0.268 and deep logistic(70 - 92) = -0.545, both far below
+            // `completionThreshold` before pressure applied. An average passer was modelled as
+            // below average everywhere but short: the harness read 42 percent completions against a
+            // band of 61 to 67.
+            //
+            // Per depth rather than in aggregate, because the aggregate hid two errors at once —
+            // too few completions, each too long — which cancelled into a passing-yards band that
+            // passed while the model underneath was wrong.
+            let targets: [(depth: PassDepth, low: Double, high: Double)] = [
+                (.short, 0.66, 0.80),
+                (.mid, 0.52, 0.68),
+                (.deep, 0.30, 0.48),
+            ]
+            var attempts = 0
+            var interceptions = 0
+            for target in targets {
+                var rng = SeededRandom(seed: 7_700)
+                var complete = 0, thrown = 0
+                for _ in 0..<4_000 {
+                    let outcome = SnapResolver.resolve(
+                        offensiveCall: OffensiveCall(playType: .pass, passDepth: target.depth),
+                        defensiveCall: DefensiveCall(coverage: .man),
+                        personnel: even, situation: Situation(yardLine: 40),
+                        rules: rules, rng: &rng
+                    )
+                    switch outcome.result {
+                    case .incompletion: thrown += 1
+                    case .interception: thrown += 1; interceptions += 1
+                    case .gain, .touchdown: thrown += 1; complete += 1
+                    default: break
+                    }
+                }
+                attempts += thrown
+                let rate = thrown > 0 ? Double(complete) / Double(thrown) : 0
+                let message = "\(target.depth) completion rate is \(rate), wanted "
+                    + "\(target.low) to \(target.high)"
+                expect(rate > target.low && rate < target.high, message)
+            }
+            // Interceptions are the other side of the same cut. Roughly two attempts in a hundred;
+            // the harness band of 0.6 to 1.1 per team-game over about 34 attempts says the same.
+            let interceptionRate = attempts > 0
+                ? Double(interceptions) / Double(attempts)
+                : 0
+            let message = "interception rate per attempt is \(interceptionRate), wanted 0.012 to 0.038"
+            expect(interceptionRate > 0.012 && interceptionRate < 0.038, message)
         }
 
         test("an even run gains football yardage in both its middle and its tail") {
