@@ -574,13 +574,21 @@ func runPeopleLifecycleTests() {
             let measured = [1, 3, 6, 10]
             var injuries: [(ironman: Bool, severity: InjurySeverity, weeks: Int)] = []
             var previousRosters = rosterSnapshot(state)
+            var suspensionsThisSeason = 0
+            var playerWeeksThisSeason = 0
             checkProAgeCurve(state, season: 0)
             checkRatingSpread(state, season: 0, assertTierGap: false)
             for season in 1...(measured.max() ?? 1) {
                 for _ in 0..<SharedRules.inSeasonWeeks {
                     let transition = try WorldScheduler.advanceWeek(state)
                     state = transition.state
+                    // Player-weeks counted from the rosters the draw actually reads, so the
+                    // denominator is the population at risk rather than the whole player store.
+                    playerWeeksThisSeason += state.programmes.values.reduce(0) {
+                        $0 + $1.rosterIDs.count
+                    } + state.proTeams.values.reduce(0) { $0 + $1.rosterIDs.count }
                     for event in transition.emittedEvents {
+                        if case .playerSuspended = event.payload { suspensionsThisSeason += 1 }
                         guard case let .playerInjured(playerID, _, severity, weeks)
                             = event.payload else { continue }
                         injuries.append((
@@ -601,9 +609,18 @@ func runPeopleLifecycleTests() {
                 // consecutive. The set arithmetic is free next to the season it walks.
                 let currentRosters = rosterSnapshot(state)
                 defer { previousRosters = currentRosters }
+                let seasonSuspensions = suspensionsThisSeason
+                let seasonPlayerWeeks = playerWeeksThisSeason
+                suspensionsThisSeason = 0
+                playerWeeksThisSeason = 0
                 guard measured.contains(season) else { continue }
                 checkProAgeCurve(state, season: season)
                 checkRatingSpread(state, season: season, assertTierGap: false)
+                checkDisciplineFrequency(
+                    incidents: seasonSuspensions,
+                    playerWeeks: seasonPlayerWeeks,
+                    season: season
+                )
                 checkChurn(from: previousRosters, to: currentRosters, season: season,
                            assertPro: false)
             }
@@ -713,6 +730,60 @@ func checkInjuredShare(_ state: GameState, season: Int) {
     expect(injuredShareBand.contains(share), String(
         format: "season %d week %d: injured share %.4f is outside the band %.3f…%.3f",
         season, injurySampleWeek, share, injuredShareBand.lowerBound, injuredShareBand.upperBound
+    ))
+}
+
+// MARK: - The discipline frequency band
+
+// How often a player turns up in the weekly discipline file. Nothing could measure this before
+// 2026-08-20, and no band would have caught it: `DisciplineSystem.incidents` had zero callers in
+// `Sources/`, so the measured frequency was structurally zero no matter what the constants said.
+// The suite's nine discipline tests all called the API directly, which is why nothing noticed.
+//
+// **Band 0.004…0.030 incidents per player-week, derived `[P]`.** `DisciplineSystem` draws once a
+// week per rostered player who is not already serving, at `baseIncidentProbability` 0.004, plus
+// `volatileIncidentProbability` 0.020 if the player has the trait, plus
+// `unhappyIncidentProbability` 0.012 if morale is below `unhappyMorale`. Volatile is populated at
+// `traitPopulationProbability` 0.08, so it contributes 0.08 * 0.020 = 0.0016 league-wide. The
+// unhappy share is not derivable from a constant — morale is computed from playing time, team
+// success and investment — so the band spans from nobody unhappy (0.004 + 0.0016 = 0.0056) to
+// everyone unhappy (0.0176), and is widened to 0.030 above that for the interaction between the
+// two, and down to 0.004 below, which is the floor the base rate alone cannot go under while the
+// step runs at all. A measurement at exactly 0 means the step stopped running; at the ceiling it
+// means the file has become the soap opera `PeopleRules` says it must not be.
+//
+// **What is counted is suspensions, not incidents, and the band accounts for it.** The only
+// observable an incident leaves is `playerSuspended`, and `PeopleRules.recommendedSuspensionWeeks`
+// gives `timekeeping` zero weeks — the AI handles that one internally and emits nothing. Kind is a
+// uniform draw over the four `DisciplineIncidentKind` cases, so three in four incidents become a
+// suspension and the observable rate is about 0.75 of the incident rate: 0.75 * 0.0056 = 0.0042 at
+// the quiet end and 0.75 * 0.0176 = 0.0132 at the loud one. Hence 0.003…0.020 rather than the
+// incident band, widened a little either side of both ends. Stating the incident band and asserting
+// the suspension rate against it would be measuring one thing and bounding another.
+//
+// The rules module states the intent this band is really checking: "an incident every week is a
+// soap opera, and one a season across a roster is a football team".
+
+private let suspensionsPerPlayerWeekBand: ClosedRange<Double> = 0.003...0.020
+
+func checkDisciplineFrequency(
+    incidents: Int,
+    playerWeeks: Int,
+    season: Int
+) {
+    guard playerWeeks > 0 else {
+        expect(false, "season \(season): no player-weeks to measure discipline frequency over")
+        return
+    }
+    let rate = Double(incidents) / Double(playerWeeks)
+    print(String(
+        format: "discipline: season %d, suspensions %d over %d player-weeks, rate %.5f",
+        season, incidents, playerWeeks, rate
+    ))
+    expect(suspensionsPerPlayerWeekBand.contains(rate), String(
+        format: "season %d: suspension rate %.5f per player-week is outside the band %.3f…%.3f",
+        season, rate,
+        suspensionsPerPlayerWeekBand.lowerBound, suspensionsPerPlayerWeekBand.upperBound
     ))
 }
 

@@ -38,9 +38,17 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
 /// not move: "the same seed produces byte-identical root state" stayed green, and both values below
 /// were reproduced identically in three independent release-process invocations before being
 /// written here.
-private let pinnedRootFingerprint: UInt64 = 3_703_195_734_103_618_125
+/// Both moved once more later on 2026-08-20, for two deliberate changes to generated state at once:
+/// prospect generation began calling `RosterPopulationGenerator.baseRating` instead of carrying its
+/// own lower scale, which lifts every generated prospect's ratings, and `.volatile` joined
+/// `activeTraits` once the weekly `disciplineFile` step gave it a consumer the scheduler reaches.
+/// The advanced pin also takes the new step's own emissions. Same rule as every move above: the pin
+/// exists to notice a change in generated state, so re-pinning is the response and widening is not
+/// available. Determinism is unmoved — "the same seed produces byte-identical root state" stayed
+/// green — and both values were reproduced identically in independent release processes.
+private let pinnedRootFingerprint: UInt64 = 12_488_206_167_900_095_168
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 3_328_003_772_370_794_643
+private let pinnedAdvancedRootFingerprint: UInt64 = 280_875_820_816_293_855
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///
@@ -255,6 +263,10 @@ func runArchitectureTests() {
             expectEqual(WorldScheduler.steps, [
                 .expiringInboundEvents,
                 .injuriesAndRecovery,
+                // Between recovery and practice on purpose: `processHealth` counts a served
+                // suspension down on the `injuriesAndRecovery` tick, so a suspension drawn before
+                // it would lose a week to the tick that issued it.
+                .disciplineFile,
                 .practiceAndDevelopment,
                 .scoutingKnowledge,
                 .marketInteractions,
@@ -284,6 +296,7 @@ func runArchitectureTests() {
                 transition.stepRecords.filter { $0.status == .executed }.map(\.step),
                 [
                     .injuriesAndRecovery,
+                    .disciplineFile,
                     .practiceAndDevelopment,
                     .scoutingKnowledge,
                     .marketInteractions,
@@ -299,7 +312,7 @@ func runArchitectureTests() {
             )
             expectEqual(
                 transition.stepRecords.filter { $0.status == .inactive }.count,
-                WorldScheduler.steps.count - 12
+                WorldScheduler.steps.count - 13
             )
         }
 
@@ -380,9 +393,16 @@ func runArchitectureTests() {
                             + CollegeRules.aiWeeklyInvestmentActionLimit
                     )
                 )
+                // Counted from the ledger rather than pinned as a literal, so the weekly
+                // disciplineFile step is accounted for by what it emits instead of by a number
+                // somebody remembers to bump. This read `+ 2` and broke the day a step was added.
+                let disciplineEvents = emittedEvents.filter {
+                    if case .playerSuspended = $0.payload { return true }
+                    return false
+                }.count
                 expectEqual(
                     emittedEvents.count,
-                    scheduledThisWeek + recruitingInteractions + 2
+                    scheduledThisWeek + recruitingInteractions + disciplineEvents + 2
                 )
             case .recruitingUpdated:
                 expect(false, "advance-week intent returned a recruiting result")
