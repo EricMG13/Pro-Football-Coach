@@ -217,13 +217,18 @@ public extension CoachWorldReadModelProvider {
     /// programme is pursuing the prospect, not what the prospect has decided. `.committed` alone
     /// does not say to whom: the withdraw choice's own availability check already compares
     /// `recruitment.programmeID` against the viewing programme to tell a genuine commitment here
-    /// from a commitment elsewhere, and this label now makes the same comparison.
+    /// from a commitment elsewhere, and this label now makes the same comparison. `.signed` makes
+    /// it too, for the same reason: a prospect who committed elsewhere and was never withdrawn
+    /// stays on this board through signing day (`CollegeState.sign` only ever touches the signing
+    /// programme's own roster, and `withdraw(_:)` is the only code that prunes `boardIDs`), so an
+    /// unqualified "Signed" here would read identically to an actual own signee.
     private static func statusLabel(_ prospectID: UUID, programmeID: UUID, in state: GameState) -> String {
         let recruitment = state.college.prospectRecruitment[prospectID]
         switch recruitment?.phase {
         case .committed:
             return recruitment?.programmeID == programmeID ? "Committed" : "Committed elsewhere"
-        case .signed: return "Signed"
+        case .signed:
+            return recruitment?.programmeID == programmeID ? "Signed" : "Signed elsewhere"
         case .released: return "Released"
         case .available, nil: return "Uncommitted"
         }
@@ -395,8 +400,12 @@ public extension CoachWorldReadModelProvider {
             title: "Withdraw",
             cost: "Ends the relationship",
             consequence: "Drops recorded interest, any scheduled visit and any scholarship offer",
+            // A prospect who signed elsewhere is exactly as stuck on this board as one committed
+            // elsewhere would be without this clause — nothing else ever prunes boardIDs — so it
+            // gets the same escape hatch, matching statusLabel's own "elsewhere" distinction.
             isAvailable: recruitingOpen && onBoard && (recruitment?.phase == .available
-                || (recruitment?.phase == .committed && recruitment?.programmeID != programmeID)),
+                || (recruitment?.phase == .committed && recruitment?.programmeID != programmeID)
+                || (recruitment?.phase == .signed && recruitment?.programmeID != programmeID)),
             unavailableReason: !recruitingOpen ? phaseReason
                 : !onBoard ? boardReason
                 : recruitment?.phase == .signed ? "This prospect has signed"

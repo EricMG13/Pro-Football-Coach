@@ -1663,6 +1663,87 @@ func runReadModelProviderTests() {
             )
         }
 
+        test("a prospect signed by a rival programme reads as elsewhere, not this "
+            + "programme's own") {
+            // Phase 4 review, 2026-08-20: statusLabel's .signed arm returned a bare "Signed"
+            // with no ownership check, so a rival's signed prospect left on this programme's
+            // board was indistinguishable from an actual own signee and inflated
+            // ClassOverviewView's committed count. This reproduces the real, reachable shape of
+            // the bug rather than a hand-built fixture: CollegeRecruitingAISystem.process(in:)
+            // explicitly excludes the career-controlled programme from its own lost-pursuit
+            // cleanup, so nothing but an explicit Withdraw ever prunes this board, and this test
+            // never calls that system at all.
+            var (state, careerProgramme) = try startedCareer(seed: 4_070)
+            guard let rivalProgrammeID = state.programmes.ids.first(where: {
+                $0 != careerProgramme.id
+            }), let prospectID = state.prospects.ids.first else {
+                expect(false, "a started career produced no rival programme or prospect to use")
+                return
+            }
+
+            let addToBoard = try CollegeRecruitingSystem.apply(
+                RecruitingActionRequest(
+                    programmeID: careerProgramme.id, prospectID: prospectID, action: .addToBoard
+                ),
+                in: state
+            )
+            state.college = addToBoard.college
+            state.scouting = addToBoard.scouting
+            expect(state.college.programmes[careerProgramme.id]!.boardIDs.contains(prospectID),
+                   "the prospect never landed on the career programme's own board")
+
+            state.calendar = CalendarState(
+                season: state.calendar.season, week: CollegeRules.minimumCommitmentWeek
+            )
+            for action in [
+                RecruitingAction.addToBoard,
+                .contact(points: 60),
+                .scheduleVisit,
+                .offerScholarship,
+                .setNILAllocation(amount: 500),
+            ] {
+                let transition = try CollegeRecruitingSystem.apply(
+                    RecruitingActionRequest(
+                        programmeID: rivalProgrammeID, prospectID: prospectID, action: action
+                    ),
+                    in: state
+                )
+                state.college = transition.college
+                state.scouting = transition.scouting
+            }
+            let market = CollegeRecruitingMarketSystem.process(at: state.calendar, in: state)
+            expectEqual(market.commitments.first?.programmeID, rivalProgrammeID,
+                        "the rival programme did not win the commitment this test needs")
+            state.college = market.college
+
+            let signing = try CollegeSigningSystem.signCommitted(in: state)
+            expect(
+                signing.resolutions.contains { $0.prospectID == prospectID && $0.outcome == .signed },
+                "the rival programme's commitment did not resolve to signed"
+            )
+            state.programmes = signing.programmes
+            state.players = signing.players
+            state.people = signing.people
+            state.college = signing.college
+
+            expect(state.college.programmes[careerProgramme.id]!.boardIDs.contains(prospectID),
+                   "the prospect left the career programme's board on its own -- this test's "
+                       + "premise (nothing but Withdraw prunes it) no longer holds")
+
+            guard let model = CoachWorldReadModelProvider.recruitingBoard(from: state),
+                  let row = model.prospects.first(where: { $0.stableID == prospectID.uuidString })
+            else {
+                expect(false, "the signed-elsewhere prospect did not resolve to a board row")
+                return
+            }
+            expectEqual(row.status, "Signed elsewhere")
+            expect(!row.isCommitted,
+                   "a rival's signee counted toward this programme's own committed figure")
+            let withdraw = row.choices.first { $0.intentID == CoachWorldIntentID(rawValue: "withdraw") }
+            expect(withdraw?.isAvailable == true,
+                   "a coach can no longer clear a rival's signee off their own board")
+        }
+
         test("discovery exposes an untracked prospect and add-to-board consumes it") {
             let (state, programme) = try startedCareer(seed: 4_068)
             guard let before = CoachWorldReadModelProvider.recruitingBoard(from: state),
