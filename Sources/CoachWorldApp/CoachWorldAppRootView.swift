@@ -354,10 +354,10 @@ public struct CoachWorldAppRootView: View {
                         onContinue: { Task { await advance(store) } },
                         onNavigate: { navigate($0, in: store) },
                         onSelectTeam: { id in
-                            Task {
-                                await store.selectTeam(id)
-                                navigate(.teamProgrammeProfile, in: store)
-                            }
+                            // Selecting a subject is presentation state and one cache eviction,
+                            // so it no longer needs an actor hop to reach the world.
+                            store.selectTeam(id)
+                            navigate(.teamProgrammeProfile, in: store)
                         }
                     )
                     .floodlitChrome(
@@ -894,10 +894,10 @@ public struct CoachWorldAppRootView: View {
                         onClose: { navigate(.leagueMap, in: store) },
                         onContinue: { Task { await advance(store) } },
                         onSelectTeam: { id in
-                            Task {
-                                await store.selectTeam(id)
-                                navigate(.teamProgrammeProfile, in: store)
-                            }
+                            // Selecting a subject is presentation state and one cache eviction,
+                            // so it no longer needs an actor hop to reach the world.
+                            store.selectTeam(id)
+                            navigate(.teamProgrammeProfile, in: store)
                         }
                     )
                     .floodlitChrome(
@@ -913,10 +913,10 @@ public struct CoachWorldAppRootView: View {
                         onClose: { navigate(.leagueMap, in: store) },
                         onContinue: { Task { await advance(store) } },
                         onSelectTeam: { id in
-                            Task {
-                                await store.selectTeam(id)
-                                navigate(.teamProgrammeProfile, in: store)
-                            }
+                            // Selecting a subject is presentation state and one cache eviction,
+                            // so it no longer needs an actor hop to reach the world.
+                            store.selectTeam(id)
+                            navigate(.teamProgrammeProfile, in: store)
                         }
                     )
                     .floodlitChrome(
@@ -931,10 +931,10 @@ public struct CoachWorldAppRootView: View {
                         statusMessage: failure ?? store.statusMessage,
                         onClose: { navigate(.leagueMap, in: store) },
                         onSelectTeam: { id in
-                            Task {
-                                await store.selectTeam(id)
-                                navigate(.teamProgrammeProfile, in: store)
-                            }
+                            // Selecting a subject is presentation state and one cache eviction,
+                            // so it no longer needs an actor hop to reach the world.
+                            store.selectTeam(id)
+                            navigate(.teamProgrammeProfile, in: store)
                         }
                     )
                     .floodlitChrome(
@@ -949,10 +949,10 @@ public struct CoachWorldAppRootView: View {
                         statusMessage: failure ?? store.statusMessage,
                         onClose: { navigate(.coachingHQ, in: store) },
                         onSelectTeam: { id in
-                            Task {
-                                await store.selectTeam(id)
-                                navigate(.teamProgrammeProfile, in: store)
-                            }
+                            // Selecting a subject is presentation state and one cache eviction,
+                            // so it no longer needs an actor hop to reach the world.
+                            store.selectTeam(id)
+                            navigate(.teamProgrammeProfile, in: store)
                         }
                     )
                     .floodlitChrome(
@@ -968,10 +968,10 @@ public struct CoachWorldAppRootView: View {
                         onClose: { navigate(.leagueMap, in: store) },
                         onContinue: { Task { await advance(store) } },
                         onSelectTeam: { id in
-                            Task {
-                                await store.selectTeam(id)
-                                navigate(.teamProgrammeProfile, in: store)
-                            }
+                            // Selecting a subject is presentation state and one cache eviction,
+                            // so it no longer needs an actor hop to reach the world.
+                            store.selectTeam(id)
+                            navigate(.teamProgrammeProfile, in: store)
                         }
                     )
                     .floodlitChrome(
@@ -987,10 +987,10 @@ public struct CoachWorldAppRootView: View {
                         onClose: { navigate(.leagueMap, in: store) },
                         onContinue: { Task { await advance(store) } },
                         onSelectTeam: { id in
-                            Task {
-                                await store.selectTeam(id)
-                                navigate(.teamProgrammeProfile, in: store)
-                            }
+                            // Selecting a subject is presentation state and one cache eviction,
+                            // so it no longer needs an actor hop to reach the world.
+                            store.selectTeam(id)
+                            navigate(.teamProgrammeProfile, in: store)
                         }
                     )
                     .floodlitChrome(
