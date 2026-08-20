@@ -994,11 +994,8 @@ func runContractTests() {
             let newsProvider = appFiles.first {
                 $0.path.hasSuffix("/CoachWorldNewsProvider.swift")
             }?.text ?? ""
-            let readOnlyBacks = [
-                "NewsView.swift", "StatisticsLeadersView.swift", "AwardsHonoursView.swift",
-                "TeamProgrammeProfileView.swift", "GameDetailBoxScoreView.swift"
-            ].compactMap { filename in
-                uiFiles.first { $0.path.hasSuffix("/\(filename)") }?.text
+            let committingBacks = uiFiles.filter {
+                $0.text.contains("FloodlitCommittingAction(\"Back")
             }
 
             expect(chrome.contains("static let familySize: CGFloat = 9")
@@ -1061,9 +1058,9 @@ func runContractTests() {
                        && store.contains("competitionOverview = CoachWorldReadModelProvider.competitionOverview(")
                        && store.contains("tier: competitionTier"),
                    "the store must forward the controlled competition tier to every surface")
-            expect(readOnlyBacks.count == 5
-                       && readOnlyBacks.allSatisfy { !$0.contains("FloodlitCommittingAction(\"Back") },
-                   "read-only returns must not use the gold committing action")
+            expect(committingBacks.isEmpty,
+                   "returns must not use the gold committing action: "
+                       + committingBacks.map(\.path).sorted().joined(separator: ", "))
             expect(roster.contains(".frame(maxWidth: .infinity, alignment: .leading)")
                        && !roster.contains(".fixedSize(horizontal: true, vertical: false)"),
                    "roster names must yield width to the comparison columns")
@@ -1403,24 +1400,30 @@ func runContractTests() {
                        && appRoot.contains("let focus = screen == .draftRoom ? .draftRoom : proFocus")
                        && appRoot.contains("focus: focus"),
                    "Draft Room and legacy pro routes must land in focused front-office modes")
-            for family in [
-                ("JobBoardView.swift", "JobBoardView", "jobBoard"),
-                ("OfferView.swift", "OfferView", "offer"),
-                ("AppointmentView.swift", "AppointmentView", "appointment")
-            ] {
-                let view = uiFiles.first { $0.path.hasSuffix("/\(family.0)") }?.text ?? ""
-                expect(view.contains("public struct \(family.1)")
-                           && view.contains("CareerHubView(")
-                           && view.contains("dynamicTypeSize.isAccessibilitySize"),
-                       "\(family.1) must reuse the authoritative career ledger")
-                expect(appRoot.contains("case .\(family.2)")
-                           && appRoot.contains("\(family.1)("),
-                       "\(family.1) must be reachable from the shipped app root")
-                expect(!hq.contains("Button(\"Job board\")")
-                           && !hq.contains("Button(\"Offers\")")
-                           && !hq.contains("Button(\"Appointment\")"),
-                       "legacy career aliases must use the canonical Career Hub surface")
+            let careerAliases = CoachWorldScreenID.allCases.filter {
+                $0 != .careerHub && $0.canonicalDestination == .careerHub
             }
+            let landedViews = landedFamilies().landed
+            expect(!careerAliases.isEmpty, "the screen registry names no Career Hub aliases")
+            for screen in careerAliases {
+                guard let family = landedViews.first(where: { $0.screen == screen }) else {
+                    expect(false, "\(screen.canonicalName) has no production view source")
+                    continue
+                }
+                let viewType = String(family.path.split(separator: "/").last ?? "")
+                    .replacingOccurrences(of: ".swift", with: "")
+                expect(family.text.contains("public struct \(viewType)")
+                           && family.text.contains("CareerHubView(")
+                           && family.text.contains("dynamicTypeSize.isAccessibilitySize"),
+                       "\(viewType) must reuse the authoritative career ledger")
+                expect(appRoot.contains("case .\(screen)")
+                           && appRoot.contains("\(viewType)("),
+                       "\(viewType) must be reachable from the shipped app root")
+            }
+            expect(!hq.contains("Button(\"Job board\")")
+                       && !hq.contains("Button(\"Offers\")")
+                       && !hq.contains("Button(\"Appointment\")"),
+                   "legacy career aliases must use the canonical Career Hub surface")
             for family in [
                 ("ClassOverviewView.swift", "ClassOverviewView", "classOverview"),
                 ("ContactVisitPlannerView.swift", "ContactVisitPlannerView", "contactVisitPlanner")
