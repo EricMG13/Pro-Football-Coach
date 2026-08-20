@@ -86,6 +86,8 @@ if CommandLine.arguments.contains("--catalog") {
     runCollegeCommitmentTests()
 } else if CommandLine.arguments.contains("--college-state") {
     runCollegeStateTests()
+} else if CommandLine.arguments.contains("--college-acquisition-invariant") {
+    runCollegeAcquisitionInvariantTests()
 } else if CommandLine.arguments.contains("--injury-evidence") {
     runInjuryEvidenceTests()
 } else if CommandLine.arguments.contains("--people-lifecycle") {
@@ -167,6 +169,7 @@ if CommandLine.arguments.contains("--catalog") {
     runCollegeStateTests()
     runCollegeCommitmentTests()
     runCollegeRedshirtTests()
+    runCollegeAcquisitionInvariantTests()
     runPortalPolicyTests()
     runPortalMatchingTests()
     runPortalTransactionTests()

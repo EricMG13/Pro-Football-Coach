@@ -918,8 +918,10 @@ public enum WorldIntegrity {
                   let career = state.people.playerCareers[id] else { continue }
             let ageShapeIsValid = PeopleRules.playerAgeRange.contains(player.age)
             let collegeShapeIsValid = !collegeRosterIDs.contains(id)
-                || (player.eligibility?.isExhausted == false
-                    && player.eligibility?.isValidForActiveCollegeRoot == true
+                || (CollegeEligibilityInvariant.collegeFindings(
+                    playerID: id,
+                    eligibility: player.eligibility
+                ).isEmpty
                     && player.contract == nil
                     && lifecycle.status == .active)
             let proShapeIsValid = !proRosterIDs.contains(id)
@@ -1017,19 +1019,19 @@ public enum WorldIntegrity {
         let recruitmentIDs = Set(state.college.prospectRecruitment.keys)
         let cityIDs = Set(state.map.cities.map(\.id))
 
+        // The transaction-independent limbs live in `CollegeRedshirtInvariant`, which the college
+        // acquisition suite asserts after every transaction. The two kept here are the ones only a
+        // root at rest can carry: agreement with the calendar, which the season boundary breaks on
+        // purpose for several transactions, and the player's lifecycle status.
+        let redshirtLegalityBreaches = Set(
+            CollegeRedshirtInvariant.findings(in: state).map(\.playerID)
+        )
         for playerID in state.college.redshirtPlans.keys.sorted(by: uuidLessThan) {
             guard let plan = state.college.redshirtPlans[playerID] else { continue }
-            let player = state.players[playerID]
             let lifecycle = state.people.playerLifecycle[playerID]
-            let eligibility = player?.eligibility
-            if playerID != plan.playerID
-                || !plan.isStructurallyValid
-                || plan.season != state.college.recruitingSeason
+            if redshirtLegalityBreaches.contains(playerID)
                 || plan.season != state.calendar.season
-                || state.programmes[plan.programmeID]?.rosterIDs.contains(playerID) != true
-                || state.college.programmes[plan.programmeID] == nil
-                || lifecycle?.status != .active
-                || eligibility.map(CollegeRedshirtSystem.hasSpareClockYear) != true {
+                || lifecycle?.status != .active {
                 issues.append(.invalidRedshirtPlan(playerID: playerID))
             }
         }
@@ -1053,7 +1055,6 @@ public enum WorldIntegrity {
                   let recruiting = state.college.programmes[id] else { continue }
             let boardSet = Set(recruiting.boardIDs)
             let relationshipIDs = Set(recruiting.relationships.keys)
-            let scholarshipSet = Set(recruiting.scholarshipPlayerIDs)
             let rosterNILIDs = Set(recruiting.nilState.rosterAllocations.keys)
             let recruitingNILIDs = Set(recruiting.nilState.recruitingReservations.keys)
             let committedNIL = recruiting.nilState.rosterAllocations.values.reduce(0, +)
@@ -1078,20 +1079,19 @@ public enum WorldIntegrity {
                 || recruiting.boardIDs.count > CollegeRules.recruitingBoardLimit
                 || boardSet.count != recruiting.boardIDs.count
                 || relationshipIDs != boardSet
-                || recruiting.scholarshipPlayerIDs.count > CollegeRules.scholarshipLimit
-                || scholarshipSet.count != recruiting.scholarshipPlayerIDs.count
-                || !scholarshipSet.isSubset(of: Set(programme.rosterIDs))
-                || recruiting.scholarshipPlayerIDs.count != programme.scholarshipCount
+                || !CollegeScholarshipInvariant.findings(
+                    programmeID: id,
+                    programme: programme,
+                    recruiting: recruiting
+                ).isEmpty
                 || !(0...CollegeRules.weeklyRecruitingContactPoints).contains(
                     recruiting.contactPointsRemaining
                 )
                 || recruiting.nilState.remaining < 0 {
                 issues.append(.invalidProgrammeRecruitingState(programmeID: id))
             }
-            if commitmentCapacity.map({
-                $0.activeReservations > $0.maximumReservations
-                    || !$0.preservesMinimumPositionCoverage
-            }) ?? true {
+            if !CollegeCommitmentInvariant.capacityIsHonoured(commitmentCapacity)
+                || commitmentCapacity?.preservesMinimumPositionCoverage != true {
                 issues.append(.invalidProgrammeRecruitingState(programmeID: id))
             }
             for prospectID in boardSet.subtracting(prospectIDs).sorted(by: uuidLessThan) {

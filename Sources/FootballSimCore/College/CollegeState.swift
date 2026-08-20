@@ -145,6 +145,15 @@ public struct ProgrammeRecruitingState: Codable, Sendable, Equatable, Identifiab
         scholarshipPlayerIDs = reconciled
     }
 
+    /// Drops holders who are no longer on the roster.
+    ///
+    /// Unlike `reconcileScholarships` this never grants one to fill the gap it leaves: a departure
+    /// ends a scholarship, it does not move it to the next body on the roster.
+    mutating func retainScholarshipPlayers(on rosterIDs: [UUID]) {
+        let roster = Set(rosterIDs)
+        scholarshipPlayerIDs = scholarshipPlayerIDs.filter(roster.contains)
+    }
+
     mutating func addScholarshipPlayer(_ playerID: UUID) -> Bool {
         guard scholarshipPlayerIDs.count < CollegeRules.scholarshipLimit,
               !scholarshipPlayerIDs.contains(playerID) else { return false }
@@ -723,6 +732,14 @@ public struct CollegeState: Codable, Sendable, Equatable {
         return true
     }
 
+    /// Drops every plan at once, for the transaction that resolves the season they were filed
+    /// for. A plan outlives its own resolution otherwise: the season rollover spends the clock
+    /// year the plan was asking for and leaves the plan behind, so between that transaction and
+    /// the cycle rollover that clears it the root holds plans no player could still legally have.
+    mutating func clearResolvedRedshirtPlans() {
+        redshirtPlans = [:]
+    }
+
     mutating func clearRedshirtPlan(playerID: UUID, programmeID: UUID) -> Bool {
         guard redshirtPlans[playerID]?.programmeID == programmeID else { return false }
         redshirtPlans.removeValue(forKey: playerID)
@@ -823,7 +840,7 @@ public struct CollegeState: Codable, Sendable, Equatable {
         return true
     }
 
-    func activeReservationCount(for programmeID: UUID) -> Int {
+    package func activeReservationCount(for programmeID: UUID) -> Int {
         prospectRecruitment.values.filter {
             $0.programmeID == programmeID && ($0.phase == .committed || $0.phase == .signed)
         }.count
