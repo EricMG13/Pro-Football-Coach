@@ -65,7 +65,7 @@ public struct CoachingTreeReadModel: Sendable, Equatable {
             .sorted { $0.staffID.uuidString < $1.staffID.uuidString }
 
         let firstHeadCoachSeason = Self.firstHeadCoachSeasons(in: careers)
-        let headCoachBySeat = Self.headCoachesBySeat(in: careers)
+        let headCoachBySeat = Self.headCoachesBySeat(in: careers, state: state)
 
         var disciplesByMentor: [UUID: [CoachingTreeDisciple]] = [:]
         for career in careers {
@@ -148,7 +148,17 @@ public struct CoachingTreeReadModel: Sendable, Equatable {
     ///
     /// A season with two recorded head coaches is possible after a midseason change, and the lower
     /// UUID wins so the answer is the same on every run rather than the order the records arrived.
-    private static func headCoachesBySeat(in careers: [StaffCareerRecord]) -> [String: UUID] {
+    ///
+    /// That tie-break is arbitrary, and a promotion makes it wrong: seating the promoted coach
+    /// leaves the coach they displaced holding a true record of the same seat in the same season,
+    /// and whichever UUID sorted lower took the seat — half the time, the coach who had just been
+    /// replaced. So world truth outranks the tie-break. The coach an organisation currently seats
+    /// wins the seat their own latest head-coaching assignment there names, which is durable
+    /// rather than only correct in the season the change happened.
+    private static func headCoachesBySeat(
+        in careers: [StaffCareerRecord],
+        state: GameState
+    ) -> [String: UUID] {
         var occupants: [String: UUID] = [:]
         for career in careers {
             for assignment in career.assignments where assignment.role == .headCoach {
@@ -161,6 +171,16 @@ public struct CoachingTreeReadModel: Sendable, Equatable {
                 }
                 occupants[seat] = career.staffID
             }
+        }
+        let seated = state.programmes.ids.map { ($0, state.programmes[$0]?.staffIDs ?? []) }
+            + state.proTeams.ids.map { ($0, state.proTeams[$0]?.staffIDs ?? []) }
+        for (organisationID, staffIDs) in seated {
+            guard let holderID = staffIDs.first(where: {
+                state.staff[$0]?.role == .headCoach
+            }), let season = state.people.staffCareers[holderID]?.assignments.last(where: {
+                $0.organisationID == organisationID && $0.role == .headCoach
+            })?.season else { continue }
+            occupants[seatKey(season: season, organisationID: organisationID)] = holderID
         }
         return occupants
     }

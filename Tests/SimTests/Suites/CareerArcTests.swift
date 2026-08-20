@@ -417,5 +417,149 @@ func runCareerArcTests() {
             )
             expect(WorldIntegrity.check(rehired).isValid, "rehired world failed integrity")
         }
+        test("the promotion survives a save round trip with its job history intact") {
+            let source = GameState.bootstrap(seed: 99_122)
+            let programmeID = source.programmes.ids[0]
+            let controlled = try CareerControlSystem.startCollegeCareer(
+                at: programmeID,
+                in: source
+            ).state
+            guard let coachID = controlled.career.coachID else {
+                expect(false, "career start left no coach")
+                return
+            }
+            let proTeam = controlled.proTeams.values[0]
+            let startedAt = controlled.calendar
+            let opportunity = CareerOpportunity(
+                id: UUID(uuidString: "00000000-0000-4000-8000-000000000A21")!,
+                organisationID: proTeam.id,
+                tier: .professional,
+                offeredAt: controlled.calendar,
+                expiresAt: controlled.calendar.advancedWeek(),
+                prestige: proTeam.prestige,
+                rationale: .rivalryWin
+            )
+            var promoting = controlled
+            promoting.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: programmeID,
+                    tier: .college,
+                    startedAt: startedAt
+                ),
+                stakeholderSupport: Dictionary(uniqueKeysWithValues: [
+                    (CareerStakeholder.administration, 81),
+                    (CareerStakeholder.boosters, 74),
+                    (CareerStakeholder.fanbase, 90),
+                    (CareerStakeholder.lockerRoom, 67),
+                ]),
+                opportunities: [opportunity],
+                status: .employed
+            )
+            let promoted = try IntentResolver.resolve(
+                .career(CareerArcRequest(
+                    calendar: promoting.calendar,
+                    action: .acceptOpportunity(opportunityID: opportunity.id)
+                )),
+                in: promoting
+            ).state
+
+            // The college job becomes history rather than disappearing, and it says why it ended.
+            expectEqual(promoted.careerArc.jobHistory.count, 1)
+            expectEqual(promoted.careerArc.jobHistory.last?.job.organisationID, programmeID)
+            expectEqual(promoted.careerArc.jobHistory.last?.job.tier, .college)
+            expectEqual(promoted.careerArc.jobHistory.last?.job.startedAt, startedAt)
+            expectEqual(promoted.careerArc.jobHistory.last?.reason, .promoted)
+            // The accepted opportunity is consumed, not left standing to be taken twice.
+            expect(
+                promoted.careerArc.opportunities.isEmpty,
+                "the accepted opportunity was left on the board"
+            )
+
+            let restored = try SaveEnvelope.decode(
+                GameState.self,
+                from: SaveEnvelope.encode(promoted)
+            )
+            expectEqual(restored.careerArc, promoted.careerArc)
+            expectEqual(restored.career.coachID, coachID)
+            expectEqual(
+                restored.people.staffCareers[coachID]?.assignments,
+                promoted.people.staffCareers[coachID]?.assignments
+            )
+            expect(
+                restored.proTeams[proTeam.id]?.staffIDs.contains(coachID) == true,
+                "the reloaded save lost the professional seat"
+            )
+            // The coaching tree is deliberately not Codable and is rebuilt after load, so the
+            // reloaded world has to rebuild the same tree rather than a smaller one.
+            expectEqual(
+                CoachingTreeReadModel.build(from: restored),
+                CoachingTreeReadModel.build(from: promoted)
+            )
+            expect(WorldIntegrity.check(restored).isValid, "reloaded promoted world failed integrity")
+        }
+        test("the coaching tree attributes the professional seat to the promoted coach") {
+            let source = GameState.bootstrap(seed: 99_123)
+            let programmeID = source.programmes.ids[0]
+            let controlled = try CareerControlSystem.startCollegeCareer(
+                at: programmeID,
+                in: source
+            ).state
+            guard let coachID = controlled.career.coachID else {
+                expect(false, "career start left no coach")
+                return
+            }
+            let proTeam = controlled.proTeams.values[0]
+            let opportunity = CareerOpportunity(
+                id: UUID(uuidString: "00000000-0000-4000-8000-000000000A22")!,
+                organisationID: proTeam.id,
+                tier: .professional,
+                offeredAt: controlled.calendar,
+                expiresAt: controlled.calendar.advancedWeek(),
+                prestige: proTeam.prestige,
+                rationale: .staffRecommendation
+            )
+            var promoting = controlled
+            promoting.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: programmeID,
+                    tier: .college,
+                    startedAt: controlled.calendar
+                ),
+                opportunities: [opportunity],
+                status: .employed
+            )
+            var promoted = try IntentResolver.resolve(
+                .career(CareerArcRequest(
+                    calendar: promoting.calendar,
+                    action: .acceptOpportunity(opportunityID: opportunity.id)
+                )),
+                in: promoting
+            ).state
+
+            // One assistant on the new staff goes on to a head-coaching job of their own. The tree
+            // should name the promoted coach as who they came up under, not the coach the
+            // promotion displaced.
+            guard let assistantID = promoted.proTeams[proTeam.id]?.staffIDs.first(where: {
+                promoted.staff[$0]?.role == .offensiveCoordinator
+            }), let assistant = promoted.staff[assistantID] else {
+                expect(false, "the professional team had no coordinator to promote")
+                return
+            }
+            promoted.people.recordStaffAssignment(
+                StaffCareerAssignment(
+                    season: promoted.calendar.season + 1,
+                    organisationID: programmeID,
+                    role: .headCoach
+                ),
+                for: assistant
+            )
+
+            let tree = CoachingTreeReadModel.build(from: promoted)
+            let branch = tree.branches.first { $0.mentorID == coachID }
+            expect(
+                branch?.disciples.contains { $0.staffID == assistantID } == true,
+                "the coaching tree did not place the assistant under the promoted coach"
+            )
+        }
     }
 }
