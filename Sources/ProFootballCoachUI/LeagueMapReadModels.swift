@@ -219,7 +219,7 @@ public enum CoachWorldLeagueMapSampleData {
         provenance: .sample,
         world: CoachWorldReference(stableID: "world-sample", name: "Football Universe"),
         team: CoachWorldTeamReference(
-            stableID: "team-carson",
+            stableID: "00000000-0000-4000-8000-000000000001",
             name: "Carson Tech",
             abbreviation: "CAR",
             primaryColorHex: "2F6DB5",
@@ -250,9 +250,9 @@ public enum CoachWorldLeagueMapSampleData {
         ],
         places: [
             LeagueMapReadModel.Place(
-                stableID: "team-carson",
+                stableID: "00000000-0000-4000-8000-000000000001",
                 team: CoachWorldTeamReference(
-                    stableID: "team-carson",
+                    stableID: "00000000-0000-4000-8000-000000000001",
                     name: "Carson Tech",
                     abbreviation: "CAR",
                     primaryColorHex: "2F6DB5",
@@ -271,7 +271,7 @@ public enum CoachWorldLeagueMapSampleData {
                 venueName: "Carson Hollow Grounds",
                 rivals: [
                     LeagueMapReadModel.Rival(
-                        stableID: "team-southern",
+                        stableID: "00000000-0000-4000-8000-000000000002",
                         name: "Southern State",
                         originLabel: "Conference neighbours",
                         intensity: 78
@@ -279,9 +279,9 @@ public enum CoachWorldLeagueMapSampleData {
                 ]
             ),
             LeagueMapReadModel.Place(
-                stableID: "team-southern",
+                stableID: "00000000-0000-4000-8000-000000000002",
                 team: CoachWorldTeamReference(
-                    stableID: "team-southern",
+                    stableID: "00000000-0000-4000-8000-000000000002",
                     name: "Southern State",
                     abbreviation: "SOU",
                     primaryColorHex: "8E3B4F",
@@ -300,7 +300,7 @@ public enum CoachWorldLeagueMapSampleData {
                 venueName: "Marlow Flats Field",
                 rivals: [
                     LeagueMapReadModel.Rival(
-                        stableID: "team-carson",
+                        stableID: "00000000-0000-4000-8000-000000000001",
                         name: "Carson Tech",
                         originLabel: "Conference neighbours",
                         intensity: 78
@@ -318,7 +318,7 @@ public enum CoachWorldLeagueMapSampleData {
                 conferenceRecord: "3\u{2013}1", overallRecord: "5\u{2013}2",
                 pointDifferential: 51, isControlled: false),
             .init(stableID: "cs-3", team: CoachWorldTeamReference(
-                stableID: "team-carson", name: "Carson Tech", abbreviation: "CAR"),
+                stableID: "00000000-0000-4000-8000-000000000001", name: "Carson Tech", abbreviation: "CAR"),
                 conferenceRecord: "3\u{2013}1", overallRecord: "4\u{2013}2",
                 pointDifferential: 34, isControlled: true),
             .init(stableID: "cs-4", team: CoachWorldTeamReference(

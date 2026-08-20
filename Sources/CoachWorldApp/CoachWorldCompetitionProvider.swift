@@ -25,17 +25,44 @@ public extension CoachWorldReadModelProvider {
         let controlledID = state.career.college?.programmeID
             ?? state.careerArc.currentJob?.organisationID
         let order = state.competition.rankings[tier] ?? []
+        let qualifyingSlots = tier == .college
+            ? CollegeRules.bracketTeams
+            : ProRules.playoffSeedsPerConference
+        // Mirrors PostseasonSystem.advance's own entrant selection exactly, so a team's seed here
+        // is guaranteed to agree with what actually determines the bracket: college takes the top
+        // bracketTeams by whole-tier rank; pro reseeds 1-per-conference, top playoffSeedsPerConference
+        // of each, preserving the conference's members' relative order from the whole-tier ranking.
+        let seedsByTeam: [UUID: Int]
+        switch tier {
+        case .college:
+            seedsByTeam = Dictionary(
+                uniqueKeysWithValues: order.prefix(CollegeRules.bracketTeams).enumerated()
+                    .map { index, id in (id, index + 1) }
+            )
+        case .pro:
+            var seeds: [UUID: Int] = [:]
+            for conference in state.league.conferences(in: .pro) {
+                let entrants = order.filter(conference.memberIDs.contains)
+                    .prefix(ProRules.playoffSeedsPerConference)
+                for (index, id) in entrants.enumerated() { seeds[id] = index + 1 }
+            }
+            seedsByTeam = seeds
+        }
         let rankings = order.enumerated().compactMap { index, id -> CompetitionOverviewReadModel.RankingRow? in
             guard let row = standingRow(id, in: state) else { return nil }
             let record = row.ties == 0
                 ? String(row.wins) + "-" + String(row.losses)
                 : String(row.wins) + "-" + String(row.losses) + "-" + String(row.ties)
+            let seed = seedsByTeam[id]
             return CompetitionOverviewReadModel.RankingRow(
                 id: id.uuidString,
                 team: teamReference(id, in: state),
                 rank: index + 1,
                 record: record,
-                isControlled: id == controlledID
+                isControlled: id == controlledID,
+                seed: seed,
+                qualifyingSlots: qualifyingSlots,
+                isQualifying: seed != nil
             )
         }
         let bracket = state.competition.currentSchedule.games

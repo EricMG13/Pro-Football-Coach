@@ -15,6 +15,7 @@ public struct CareerPresentationState: Codable, Sendable, Equatable {
         case draftValues
         case pendingTaskID
         case interruptedTask
+        case callInsPerGame
     }
 
     public var route: String
@@ -27,6 +28,11 @@ public struct CareerPresentationState: Codable, Sendable, Equatable {
     public var draftValues: [String: String]
     public var pendingTaskID: UUID?
     public var interruptedTask: String?
+    /// `02` section 3.1: a per-save difficulty/pacing preference, not a global app setting --
+    /// a coach's preferred call-in rate belongs to a specific career. Always within
+    /// `SharedRules.callInsPerGameRange`; a decoded value outside it is clamped rather than
+    /// rejected, since it can only have drifted there by hand-editing a save.
+    public var callInsPerGame: Int
 
     public init(
         route: String = "8",
@@ -35,7 +41,8 @@ public struct CareerPresentationState: Codable, Sendable, Equatable {
         selectedSubjectID: UUID? = nil,
         draftValues: [String: String] = [:],
         pendingTaskID: UUID? = nil,
-        interruptedTask: String? = nil
+        interruptedTask: String? = nil,
+        callInsPerGame: Int = SharedRules.defaultCallInsPerGame
     ) {
         self.route = route
         self.returnRoute = returnRoute
@@ -44,6 +51,10 @@ public struct CareerPresentationState: Codable, Sendable, Equatable {
         self.draftValues = draftValues
         self.pendingTaskID = pendingTaskID
         self.interruptedTask = interruptedTask
+        self.callInsPerGame = min(
+            SharedRules.callInsPerGameRange.upperBound,
+            max(SharedRules.callInsPerGameRange.lowerBound, callInsPerGame)
+        )
     }
 
     public init(from decoder: any Decoder) throws {
@@ -66,6 +77,14 @@ public struct CareerPresentationState: Codable, Sendable, Equatable {
         draftValues = try container.decodeIfPresent([String: String].self, forKey: .draftValues) ?? [:]
         pendingTaskID = try container.decodeIfPresent(UUID.self, forKey: .pendingTaskID)
         interruptedTask = try container.decodeIfPresent(String.self, forKey: .interruptedTask)
+        // Absent on every save written before this field existed -- decodes to the documented
+        // default rather than failing.
+        let decodedCallIns = try container.decodeIfPresent(Int.self, forKey: .callInsPerGame)
+            ?? SharedRules.defaultCallInsPerGame
+        callInsPerGame = min(
+            SharedRules.callInsPerGameRange.upperBound,
+            max(SharedRules.callInsPerGameRange.lowerBound, decodedCallIns)
+        )
     }
 }
 
@@ -126,6 +145,10 @@ public struct CoachWorldSaveDocument: Codable, Sendable, Equatable {
     /// before the legacy path so a future document fails loudly instead of being misread as a root.
     public static func decode(envelopeData: Data) throws -> Self {
         let body = try SaveEnvelope.body(from: envelopeData)
+        if let version = documentVersion(inPrefixOf: body) {
+            try checkSupported(version)
+            return try JSONDecoder.stable().decode(Self.self, from: body)
+        }
         let object = try JSONSerialization.jsonObject(with: body)
         let dictionary = object as? [String: Any]
         if dictionary?["documentVersion"] != nil {
@@ -152,6 +175,44 @@ public struct CoachWorldSaveDocument: Codable, Sendable, Equatable {
                     : nil
             )
         )
+    }
+
+    private static func checkSupported(_ version: UInt32) throws {
+        guard version != Self.currentVersion else { return }
+        if version > Self.currentVersion {
+            throw SaveDocumentError.futureDocumentVersion(version)
+        }
+        throw SaveDocumentError.unsupportedDocumentVersion(version)
+    }
+
+    /// How far into the body the version marker is looked for. Generous beside the ~20 bytes the
+    /// marker actually occupies, and small enough that the scan is free.
+    private static let versionScanBytes = 256
+
+    /// Reads `documentVersion` out of the head of the body instead of parsing the whole file.
+    ///
+    /// `JSONEncoder.stable()` sorts keys, so a document this build wrote begins
+    /// `{"documentVersion":<n>,`. Parsing the body into Foundation objects to read one integer
+    /// cost 255 ms of a 2.16 s decode at season 0, and a launch decodes twice; the cost scales
+    /// with the save, which is the wrong direction for the one operation between a cold start and
+    /// a playable career.
+    ///
+    /// A miss falls through to the full parse, so a legacy bare root — which has no such key — and
+    /// any body whose keys are not where `.sortedKeys` puts them are still read correctly. This is
+    /// a fast path, not a new format assumption, and `decode` is the only caller.
+    private static func documentVersion(inPrefixOf body: Data) -> UInt32? {
+        let marker = Array("\"documentVersion\":".utf8)
+        let prefix = Array(body.prefix(versionScanBytes))
+        guard let start = prefix.firstRange(of: marker)?.upperBound else { return nil }
+        var value: UInt64 = 0
+        var digits = 0
+        for byte in prefix[start...] {
+            guard byte >= UInt8(ascii: "0"), byte <= UInt8(ascii: "9") else { break }
+            value = value * 10 + UInt64(byte - UInt8(ascii: "0"))
+            digits += 1
+            guard value <= UInt64(UInt32.max) else { return nil }
+        }
+        return digits > 0 ? UInt32(value) : nil
     }
 }
 

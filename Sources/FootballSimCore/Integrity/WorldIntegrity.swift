@@ -2180,7 +2180,7 @@ public enum WorldIntegrity {
             expected = Set(ranking.prefix(CollegeRules.bracketTeams))
         case .pro:
             expected = Set(state.league.conferences(in: .pro).flatMap { conference in
-                ranking.filter(conference.memberIDs.contains).prefix(4)
+                ranking.filter(conference.memberIDs.contains).prefix(ProRules.playoffSeedsPerConference)
             })
         }
         if games.count != 4

@@ -75,7 +75,9 @@ player is pulled in on flagged situations — a **call-in**.
 Call-ins fire on: fourth down; red zone; two-minute; third-and-long; the snap after a turnover; when
 the opponent has shown a tendency the plan did not anticipate; and when the game plan leaves the
 situation genuinely open. Default rate ~25 per game, tunable from ~12 to ~40 as a difficulty and
-pacing setting.
+pacing setting. **The chosen rate is a per-save preference** — set from Settings & Accessibility,
+defaulting to 25, bounded to `SharedRules.callInsPerGameRange` — not a global app setting, since a
+coach's preferred pacing is a property of a specific career, not the install.
 
 A call-in presents **at most three options**, each with what it is trying to do and what it risks,
 plus the coordinator's recommendation and the reason for it. The player picks or defers. Deferring is

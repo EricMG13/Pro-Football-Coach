@@ -185,6 +185,16 @@ public actor SaveCoordinator {
     private var lastWrittenGeneration: UInt64 = 0
     private var flushTask: Task<UInt64, Error>?
     private var flushingGeneration: UInt64?
+    /// Whether the bytes currently at `storage.url` are known to decode.
+    ///
+    /// Set when a load decodes the primary, and after a write this coordinator verified by reading
+    /// back. `flush` used to answer the same question by decoding the file again on every save —
+    /// 1.6 to 2.2 s at season 0, growing with the career, to re-establish something the write had
+    /// already proved. Remembering it costs one Bool.
+    private var primaryIsKnownGood = false
+    /// How many times durable bytes have been written. Read by `SaveWriteBudgetTest`, which exists
+    /// to hold the ratio of writes to intents down; a counter is the only way to assert it.
+    public private(set) var writeCount = 0
 
     public init(storage: CoachWorldSaveStore = CoachWorldSaveStore()) {
         self.storage = storage
@@ -199,6 +209,14 @@ public actor SaveCoordinator {
         let primary: LoadedSource?
         do { primary = try load(source: .primary) }
         catch { primary = nil; primaryError = error }
+        if let primary, !backupCouldBeNewer() {
+            // The flush order is backup-then-primary, so a primary at least as new as its backup
+            // is the current save and decoding the backup can only confirm it. Skipping that is
+            // half the cold-launch cost: two whole-root decodes at launch, one of them wasted.
+            lastWrittenGeneration = primary.document.metadata.generation
+            primaryIsKnownGood = true
+            return .loaded(primary.document, source: .primary)
+        }
         let backup: LoadedSource?
         do { backup = try load(source: .backup) }
         catch { backup = nil; backupError = error }
@@ -218,6 +236,7 @@ public actor SaveCoordinator {
         }
         if let primary {
             lastWrittenGeneration = primary.document.metadata.generation
+            primaryIsKnownGood = true
             return .loaded(primary.document, source: .primary)
         }
         if let backup {
@@ -231,6 +250,21 @@ public actor SaveCoordinator {
             throw SaveCoordinatorError.primaryAndBackupUnreadable
         }
         throw SaveCoordinatorError.noRecoverySource
+    }
+
+    /// True only when a backup exists and is strictly newer on disk than the primary.
+    ///
+    /// `flush` writes the backup before the primary, so in every completed save the primary is the
+    /// newer file. A newer backup therefore means either a write interrupted between the two, or
+    /// something outside this coordinator replaced it — both cases worth the second decode.
+    private func backupCouldBeNewer() -> Bool {
+        guard let backupDate = Self.modified(storage.backupURL) else { return false }
+        guard let primaryDate = Self.modified(storage.url) else { return true }
+        return backupDate > primaryDate
+    }
+
+    private static func modified(_ url: URL) -> Date? {
+        try? FileManager.default.attributesOfItem(atPath: url.path)[.modificationDate] as? Date
     }
 
     private struct LoadedSource: Sendable {
@@ -292,6 +326,7 @@ public actor SaveCoordinator {
             let primary = try? load(source: .primary).document.metadata.generation
             let backup = try? load(source: .backup).document.metadata.generation
             lastWrittenGeneration = max(primary ?? 0, backup ?? 0)
+            primaryIsKnownGood = primary != nil
         }
         let floor = max(
             max(lastWrittenGeneration, pending?.metadata.generation ?? 0),
@@ -327,12 +362,11 @@ public actor SaveCoordinator {
                 return
             }
             let storage = self.storage
+            let promotePrimary = primaryIsKnownGood
             flushingGeneration = document.metadata.generation
             let task = Task.detached(priority: .utility) {
                 let candidate = try SaveEnvelope.encode(document)
-                if storage.hasSave,
-                   let current = try? storage.read(),
-                   (try? CoachWorldSaveDocument.decode(envelopeData: current)) != nil {
+                if promotePrimary, storage.hasSave, let current = try? storage.read() {
                     try storage.writeBackup(current)
                 }
                 try storage.write(candidate)
@@ -355,6 +389,8 @@ public actor SaveCoordinator {
             flushTask = nil
             flushingGeneration = nil
             lastWrittenGeneration = max(lastWrittenGeneration, generation)
+            primaryIsKnownGood = true
+            writeCount += 1
             if pending?.metadata.generation == generation { pending = nil }
         }
     }

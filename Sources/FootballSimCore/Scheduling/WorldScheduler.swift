@@ -847,9 +847,16 @@ public enum WorldScheduler {
                             in: nextState
                         )
                     }
-                    // Realignment after evolution, and both before the college cycle rebuilds the
-                    // next season's schedule: the schedule is generated from conference membership,
-                    // so a swap has to land before it is read, not after.
+                    // Realignment sits here, after evolution and before the college cycle, and
+                    // it cannot be hoisted above the slate that reads it: `completeSeason` draws
+                    // the whole of next season from conference membership, and it runs earlier in
+                    // this same step because the season-completed event has to stay observable
+                    // ahead of lifecycle and cycle construction. So the slate is redrawn below
+                    // rather than the swap being moved above the event it must follow.
+                    //
+                    // Its own placement costs nothing either way — `bestSwap` scores a swap purely
+                    // on the distance from a programme's city to its conference's centroid, so
+                    // neither evolution nor the cycle can move its answer.
                     let realignment = ConferenceRealignmentSystem.processTransition(in: nextState)
                     nextState = realignment.state
                     if !realignment.swaps.isEmpty {
@@ -863,6 +870,32 @@ public enum WorldScheduler {
                             to: &nextState,
                             emittedEvents: &events
                         )
+                        // `completeSeason` drew the coming season from the map this swap has just
+                        // replaced, so every programme that moved was scheduled into the
+                        // conference it left. Redraw against the map that now exists.
+                        //
+                        // A redraw rather than a patch because `ScheduleGenerator` pairs a whole
+                        // tier at once: one changed membership shifts the preference filter for
+                        // every week, so there is no local edit that leaves the rest standing.
+                        // The professional slate is regenerated from unchanged inputs and so comes
+                        // back identical; only the college one moves. Nothing has to be rebuilt
+                        // behind it — standings and statistics read completed games, and a slate
+                        // this new has none.
+                        //
+                        // Guarded on the season having actually rolled: `completeSeason` declines
+                        // to roll one that finished without a champion, and must keep the slate it
+                        // declined on.
+                        if nextState.competition.currentSchedule.season == completed.season + 1 {
+                            nextState.competition.currentSchedule = SeasonSchedule(
+                                season: completed.season + 1,
+                                games: ScheduleGenerator.regularSeason(
+                                    seed: nextState.league.seed,
+                                    season: completed.season + 1,
+                                    programmes: nextState.programmes.values,
+                                    proTeams: nextState.proTeams.values
+                                )
+                            )
+                        }
                     }
                     nextState.college.reconcileScholarships(with: nextState.programmes)
                     checkpoint("reconcileScholarships", nextState)

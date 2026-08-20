@@ -270,17 +270,17 @@ public struct LeagueMapView: View, CoachWorldChromedSurface {
                             )
                         Spacer(minLength: CoachWorldTokens.Gap.xxs)
                         Text(row.conferenceRecord)
-                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                             .frame(width: LeagueMapMetric.recordColumn, alignment: .trailing)
                         Text(row.overallRecord)
-                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.flag, weight: .semibold)
                             .foregroundStyle(palette.contentSecondary.color)
                             .frame(width: LeagueMapMetric.recordColumn, alignment: .trailing)
                         // Signed, and the sign is the point of it.
                         Text(row.pointDifferential > 0
                             ? "+\(row.pointDifferential)"
                             : "\(row.pointDifferential)")
-                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                             .foregroundStyle(
                                 row.pointDifferential >= 0
                                     ? palette.stateLive.color
@@ -535,12 +535,13 @@ public struct LeagueMapView: View, CoachWorldChromedSurface {
                     fact("Prestige", "\(place.prestige)")
                     fact("Market", "\(place.marketSize)")
                     fact("Talent in region", talentDensityLabel(place))
+                    let profileID = UUID(uuidString: place.stableID)
                     Button("Open team profile") {
-                        guard let id = UUID(uuidString: place.stableID) else { return }
-                        onSelectTeam(id)
+                        if let profileID { onSelectTeam(profileID) }
                     }
                     .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
                            minHeight: CoachWorldTokens.Shape.minimumTarget)
+                    .disabled(profileID == nil)
                     rivalSection(place)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

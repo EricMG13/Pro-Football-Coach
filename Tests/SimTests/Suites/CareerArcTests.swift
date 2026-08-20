@@ -15,6 +15,22 @@ func runCareerArcTests() {
             expect(arc.stakeholderSupport.values.allSatisfy(CareerArcState.supportRange.contains))
         }
 
+        test("a save from before stakeholderLastMovement existed decodes to an empty record") {
+            let arc = CareerArcState()
+            let encoded = try JSONEncoder.stable().encode(arc)
+            guard var object = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+            else {
+                expect(false, "CareerArcState must encode to a JSON object")
+                return
+            }
+            expect(object.removeValue(forKey: "stakeholderLastMovement") != nil,
+                   "the fixture must actually carry the key this test removes, or it proves nothing")
+            let legacyData = try JSONSerialization.data(withJSONObject: object)
+            let restored = try JSONDecoder.stable().decode(CareerArcState.self, from: legacyData)
+            expect(restored.stakeholderLastMovement.isEmpty,
+                   "a save missing the key must decode to an empty record, not fail or crash")
+        }
+
         test("career arc records support, firing, and durable job history") {
             let organisationID = UUID(uuidString: "00000000-0000-4000-8000-000000000A01")!
             let startedAt = CalendarState(season: 0, week: 1)
@@ -22,9 +38,15 @@ func runCareerArcTests() {
             var arc = CareerArcState()
 
             expect(arc.establishCollegeJob(organisationID: organisationID, at: startedAt))
-            expect(arc.applySupport(deltas: Dictionary(uniqueKeysWithValues: 
+            expect(arc.applySupport(deltas: Dictionary(uniqueKeysWithValues:
                 CareerStakeholder.allCases.map { ($0, -100) }
             )))
+            // applySupport records the delta it actually applied per stakeholder, not just the
+            // resulting support level -- that record is what lets a surface say why support
+            // moved, and it must reflect exactly what was passed, not the clamped support value.
+            expectEqual(arc.stakeholderLastMovement, Dictionary(uniqueKeysWithValues:
+                CareerStakeholder.allCases.map { ($0, -100) }
+            ))
             expect(arc.markFired(at: endedAt))
             expectEqual(arc.status, .fired)
             expect(arc.currentJob == nil)

@@ -75,7 +75,7 @@ public struct GameDetailBoxScoreView: View, CoachWorldChromedSurface {
         let won = side.score > opposing(side).score
         return HStack(spacing: CoachWorldTokens.Gap.md) {
             Text(side.team.name.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                 .foregroundStyle(
                     won ? palette.contentPrimary.color : palette.contentSecondary.color
                 )
@@ -83,13 +83,13 @@ public struct GameDetailBoxScoreView: View, CoachWorldChromedSurface {
                 .frame(width: BoxScoreMetric.teamColumn, alignment: .leading)
             if let subline = side.subline {
                 Text(subline)
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                     .foregroundStyle(palette.contentQuiet.color)
                     .lineLimit(1)
             }
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             Text("\(side.score)")
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.screen, weight: .semibold))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.screen, weight: .semibold)
                 .foregroundStyle(
                     won ? palette.contentPrimary.color : palette.contentSecondary.color
                 )
@@ -125,11 +125,7 @@ public struct GameDetailBoxScoreView: View, CoachWorldChromedSurface {
                     FloodlitRow(palette: palette) {
                         HStack(spacing: CoachWorldTokens.Gap.md) {
                             Text(grade.position.uppercased())
-                                .font(
-                                    CoachWorldTokens.display(
-                                        CoachWorldTokens.DisplaySize.pill, weight: .bold
-                                    )
-                                )
+                                .coachWorldDisplay(CoachWorldTokens.DisplaySize.pill, weight: .bold)
                                 .tracking(
                                     CoachWorldTokens.DisplaySize.tracking(
                                         BoxScoreMetric.positionTracking,
@@ -141,11 +137,7 @@ public struct GameDetailBoxScoreView: View, CoachWorldChromedSurface {
                                 .frame(width: BoxScoreMetric.positionColumn, alignment: .leading)
                             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                                 Text(grade.player.name.uppercased())
-                                    .font(
-                                        CoachWorldTokens.display(
-                                            CoachWorldTokens.DisplaySize.row, weight: .bold
-                                        )
-                                    )
+                                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                                     .lineLimit(1)
                                 Text(grade.evidence)
                                     .font(CoachWorldTokens.TypeRole.caption)
@@ -154,11 +146,7 @@ public struct GameDetailBoxScoreView: View, CoachWorldChromedSurface {
                             }
                             Spacer(minLength: CoachWorldTokens.Gap.xs)
                             Text("\(grade.rating)")
-                                .font(
-                                    CoachWorldTokens.figure(
-                                        CoachWorldTokens.DisplaySize.row, weight: .semibold
-                                    )
-                                )
+                                .coachWorldFigure(CoachWorldTokens.DisplaySize.row, weight: .semibold)
                                 .foregroundStyle(
                                     CoachWorldTokens.Heat.color(for: grade.rating, palette: palette)
                                 )
