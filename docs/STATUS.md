@@ -1156,6 +1156,108 @@ is the largest remaining item. B-2 and any device measurement are the owner's. P
 cuts) is not built — and the probe's finding that no team is over the cap at the season boundary is
 worth carrying into it, because beat 2 has nothing to do until spending puts a team over.
 
+### 2026-08-19 — determinism coverage widened: the professional negotiation ledger
+
+`ProMarketState.contractNegotiations` (the schema-13 negotiation ledger) sat inside the root both
+`ArchitectureTests` fingerprints hash, but neither pin ever exercised it: `GameState.bootstrap`
+starts it empty, and `WorldScheduler.advanceWeek` never opens, counters or settles a negotiation on
+its own — only `ProManagementSystem`, a career-control action, does. A corrupted offer history, a
+wrong negotiation status, or a mis-ordered ledger after decode would have satisfied both existing
+pins.
+
+Added `"the professional negotiation ledger is pinned across processes"` to `ArchitectureTests.swift`
+(`--architecture-only`): it opens, counters and settles a negotiation from a fixed seed, then hashes
+the resulting root with the same `architectureFingerprint` the two root pins use, against a new
+`pinnedNegotiationLedgerFingerprint` literal. The literal was computed live (not invented), then
+`./scripts/verify.sh --lane determinism` was run in two independent process invocations — each a
+fresh `swift run` against its own scratch path — and both produced the identical fingerprint:
+`18194934115346224100`. No engine divergence found; nothing was fixed because nothing broke.
+
+This closes one instance of the class this loop exists to find — a persisted store reachable from
+`GameState` but never driven into a non-default shape by any pinned fingerprint — not the whole
+class. Other candidates not yet covered: `matchSession` (nil through both pins; `--m1-soak`/`--m2-soak`
+drive it but neither pins a fingerprint), the news feed (`newsAndNarrative` is `.inactive` in the
+one-week advance the scheduler-order test asserts), and `DomainEventLedger`'s archived-season path
+(the ledger pin only sees fresh, unarchived events).
+
+### 2026-08-19 — determinism coverage widened: the match session
+
+`GameState.matchSession` sat inside the same root both existing pins hash, but neither ever exercised
+a populated one: `bootstrap` leaves it `nil` by construction, and `WorldScheduler.advanceWeek` never
+calls `prepareControlledMatch`, so the advanced pin's session stays `nil` too. A root that carried a
+corrupted `SnapPersonnel`, a wrong in-drive `Situation`, or a mis-ordered call-in proposal after
+decode would have satisfied both existing pins. `makeMatchSession` is private, so the only reachable
+path is the public `WorldScheduler.prepareControlledMatch`.
+
+Added `"the match session is pinned across processes"` to `ArchitectureTests.swift`: it starts a
+college career (`CareerControlSystem.startCollegeCareer`), installs a controlled fixture
+(`prepareControlledMatch`), then advances until a call-in proposal appears — the defensive
+`while !checkpoint.completed { … if step.proposal != nil { break } }` form, not a hard-coded single
+`.advance`, since the proposal firing on the first call is a real but incidental consequence of
+`TacticalPlanSystem`'s default `.balanced` plan and should not be assumed to hold forever. The
+resulting root — mid-match, pending call-in, full home/away `SnapPersonnel` — is hashed with the same
+`architectureFingerprint` the other three pins use, against a new `pinnedMatchSessionFingerprint`
+literal. The literal was computed live, then `./scripts/verify.sh --lane determinism` was run in two
+independent process invocations — separate compiles, separate SwiftPM scratch paths — and both
+produced the identical fingerprint: `222581002489681212`. No engine divergence found; nothing was
+fixed because nothing broke.
+
+Two of the three candidates named above are now closed. Still open: the news feed
+(`newsAndNarrative` is `.inactive` in the one-week advance the scheduler-order test asserts) and
+`DomainEventLedger`'s archived-season path (the ledger pin only sees fresh, unarchived events).
+
+### 2026-08-19 — determinism coverage widened: the news feed
+
+`NewsFeedReadModel` is a different kind of gap than the prior two: it is derived from `state.history`
+rather than stored in `GameState`, per its own doc comment ("Derived, never stored"), so `state.history`
+being inside the root pins does not mean the *read model built from it* is covered. Nothing pinned the
+rendering/ordering step — `NewsFeedTests.swift`'s only same-world check (`"two builds of the same world
+are identical"`) compares two in-process builds against each other, over an empty-history bootstrap,
+and never crosses a process boundary or a populated feed.
+
+Investigated `NewsFeedReadModel.build`'s two candidate risk points before pinning anything: the
+`names(in:)` dictionary is used only as a keyed lookup, never iterated to produce output, and the final
+sort has a total order (season desc, weight desc, week desc, `eventID.uuidString` asc as the last
+tiebreaker) — so no unsorted-iteration bug exists today. The new pin is regression protection, not a
+fix for a live one.
+
+Added `"the news feed is pinned across processes"` to `ArchitectureTests.swift`: a 3-event fixture
+(season-completed, staff-hired, player-transferred, across two seasons) is appended to a fresh
+`DomainEventLedger` and run through `NewsFeedReadModel.build`. Since `NewsItem`/`NewsFeedReadModel` are
+deliberately not `Codable` (derived data is never the save's source of truth), the test maps the
+result into a private, test-only `NewsItemFingerprintDTO` before reusing the existing
+`architectureFingerprint` helper unchanged — no Codable conformance was added to production types.
+Verified across two independent process invocations: value `8_018_401_890_798_286_268`, identical both
+times.
+
+All three candidates named on 2026-08-19 are now closed. The next open surface, not yet investigated:
+`DomainEventLedger`'s archived-season path (the existing ledger-adjacent pins only ever see fresh,
+unarchived events; `HistoryArchiveTests.swift` exercises archival functionally but nothing pins a
+cross-process fingerprint of a root whose ledger has actually rolled events into `.archive`).
+
+### 2026-08-20 — determinism coverage widened: the archived-season ledger
+
+`DomainEventLedger.archive` has carried a bounded `[SeasonHistoryDigest]` since schema 11, and it sits
+inside the root every architecture pin hashes — but none ever exercised it non-empty. Bootstrap starts
+with a fresh, single-event ledger; one `advanceWeek` doesn't emit enough events to overflow the default
+4,096-event retention limit; and the negotiation-ledger, match-session and news-feed pins either never
+touch `state.history` or replace it outright with a small ledger that stays well under retention. A
+root whose archived digest carried a corrupted `archivedCount`, a `notableEvents` entry that failed the
+`historicalWeight`-based notability filter, or an archive mis-ordered by season after decode would have
+satisfied every existing pin. `HistoryArchiveTests.swift` exercises archival functionally against a
+bare `DomainEventLedger`, never against a `GameState` root, and never pins a literal.
+
+Added `"the archived-season ledger is pinned across processes"` to `ArchitectureTests.swift`: a
+`DomainEventLedger(retentionLimit: 1)` is appended three events spanning two seasons, forcing two into
+a season-3 archive digest (one notable `.seasonCompleted`, one non-notable `.integrityChecked`) while
+the third stays in `recent`, then the full root is hashed the same way the first three pins do —
+`DomainEventLedger` is already `Codable` and directly on `GameState`, so no test-local DTO was needed
+here (unlike the news-feed pin). Verified across two independent process invocations: value
+`11_509_177_498_617_182_391`, identical both times. No engine divergence found; nothing was fixed
+because nothing broke.
+
+All four surfaces named since 2026-08-19 are now closed. No further candidate has been identified yet.
+
 ### The full default suite — **green on 2026-08-12, after a two-failure fix**
 
 `./scripts/verify.sh` now passes: **602 tests / 747,027 checks, all passed**, debug build and
