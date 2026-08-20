@@ -47,7 +47,7 @@ struct SuiteCatalog: Sendable {
         .commitmentCoverage, .contrastByConstruction, .dynamicType, .reduceMotion,
         .voiceOver, .touchTarget, .determinism, .reachability,
         .errorSurface, .accessibility, .saveOffMainActor, .saveCoalescing,
-        .saveOpenReadOnly, .legal
+        .saveWriteBudget, .saveOpenReadOnly, .legal
     ]
 
     static func lane(for gate: ReleaseGateID) -> String {

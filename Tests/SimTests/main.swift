@@ -53,6 +53,7 @@ if CommandLine.arguments.contains("--catalog") {
     runProMarketRootProbe()
 } else if CommandLine.arguments.contains("--screen-read-models") {
     runReadModelProviderTests()
+    runAvailabilityProviderTests()
 } else if CommandLine.arguments.contains("--history-read-model") {
     runHistoryReadModelTests()
 } else if CommandLine.arguments.contains("--career-portal-decisions") {
@@ -193,6 +194,7 @@ if CommandLine.arguments.contains("--catalog") {
     runJerseyNumberTests()
     runDepthChartTests()
     runReadModelProviderTests()
+    runAvailabilityProviderTests()
     runCapComplianceTests()
     runSeasonRolloverTests()
     // The M8 entry-gate instruments. They ran only under `--design-contracts` and

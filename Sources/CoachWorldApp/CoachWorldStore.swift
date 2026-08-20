@@ -29,37 +29,86 @@ public final class CoachWorldStore {
     /// instead of a story about a world nobody else can reach.
     public static let defaultSeed: UInt64 = 20_260_812
 
-    /// Nil only while a career has not been started, which the root view treats as its title state.
-    public private(set) var coachingHQ: CoachingHQReadModel?
-    /// Rebuilt alongside the HQ rather than on navigation, so moving between screens is a state
-    /// change rather than a wait. A college roster is 85 rows; the whole model costs microseconds
-    /// beside the seconds a week advance already takes.
-    public private(set) var roster: RosterReadModel?
-    public private(set) var recruitingBoard: RecruitingBoardReadModel?
-    public private(set) var leagueMap: LeagueMapReadModel?
-    public private(set) var matchDay: MatchDayReadModel?
-    public private(set) var aftermath: AftermathReadModel?
-    public private(set) var careerHub: CareerHubReadModel?
-    public private(set) var standings: StandingsReadModel?
-    public private(set) var schedule: ScheduleReadModel?
-    public private(set) var teamProgrammeProfile: TeamProgrammeProfileReadModel?
-    public private(set) var worldSearch: WorldSearchReadModel?
-    public private(set) var competitionOverview: CompetitionOverviewReadModel?
-    public private(set) var gamePlan: GamePlanReadModel?
-    public private(set) var practicePlan: PracticePlanReadModel?
-    public private(set) var depthChart: DepthChartReadModel?
-    public private(set) var teamHealth: TeamHealthReadModel?
-    public private(set) var collegeOffseason: CollegeOffseasonReadModel?
-    public private(set) var proOffseason: ProOffseasonReadModel?
-    public private(set) var proManagement: ProManagementReadModel?
-    public private(set) var staffRoom: StaffRoomReadModel?
-    public private(set) var inbox: InboxReadModel?
-    public private(set) var opponentFilm: OpponentFilmReadModel?
-    public private(set) var news: NewsReadModel?
-    public private(set) var legacyHistory: LegacyHistoryReadModel?
-    public private(set) var statisticsLeaders: StatisticsLeadersReadModel?
-    public private(set) var awardsHonours: AwardsHonoursReadModel?
-    public private(set) var realignment: RealignmentReadModel?
+    /// The world every screen is read from. Replaced once per committed intent, never observed
+    /// directly: a screen depends on `revision` instead, so moving the world costs one notification
+    /// rather than a diff over the whole root.
+    @ObservationIgnored private var world: GameState
+    /// Bumped whenever `world` moves or a presentation input a model reads changes.
+    private var revision: UInt64 = 0
+    /// Memoised screen models, cleared with the revision.
+    ///
+    /// Screens used to be *stored*, and all of them were rebuilt at the tail of every intent —
+    /// including every match snap, and including the twenty-odd nobody was looking at. Measured on
+    /// a refused intent, which does no simulation work at all, that cost 1.59 s; the engine's own
+    /// week advance is 0.3 ms. Building the one screen on the glass, once, is the whole fix.
+    ///
+    /// Misses are cached as well as hits, so a nil model is decided once per world rather than on
+    /// every read.
+    @ObservationIgnored private var models: [String: Any] = [:]
+
+    /// Reads a screen model, building it at most once per revision.
+    ///
+    /// `revision` is read before the cache so the access is registered with the observation
+    /// registrar on a hit as well as a miss. Without that a cached read would take no dependency,
+    /// and the screen would stop redrawing when the world moved.
+    private func model<T>(_ key: String, _ build: (GameState) -> T?) -> T? {
+        _ = revision
+        if let boxed = models[key] { return boxed as? T }
+        let value = build(world)
+        models[key] = value as Any
+        return value
+    }
+
+    /// Which routes exist right now. Answered from the root, not by building every screen.
+    public var availableScreens: Set<CoachWorldScreenID> {
+        model("availableScreens") { CoachWorldReadModelProvider.availableScreens(from: $0) } ?? []
+    }
+
+    public var coachingHQ: CoachingHQReadModel? { model("coachingHQ") { CoachWorldReadModelProvider.coachingHQ(from: $0) } }
+    public var roster: RosterReadModel? { model("roster") { CoachWorldReadModelProvider.roster(from: $0) } }
+    public var recruitingBoard: RecruitingBoardReadModel? { model("recruitingBoard") { CoachWorldReadModelProvider.recruitingBoard(from: $0) } }
+    public var leagueMap: LeagueMapReadModel? { model("leagueMap") { CoachWorldReadModelProvider.leagueMap(from: $0) } }
+    public var matchDay: MatchDayReadModel? { model("matchDay") { CoachWorldReadModelProvider.matchDay(from: $0) } }
+    public var aftermath: AftermathReadModel? { model("aftermath") { CoachWorldReadModelProvider.aftermath(from: $0) } }
+    public var careerHub: CareerHubReadModel? { model("careerHub") { CoachWorldReadModelProvider.careerHub(from: $0) } }
+    public var standings: StandingsReadModel? { model("standings") { CoachWorldReadModelProvider.standings(tier: CoachWorldReadModelProvider.controlledCompetitionTier(from: $0), from: $0) } }
+    public var schedule: ScheduleReadModel? { model("schedule") { CoachWorldReadModelProvider.schedule(tier: CoachWorldReadModelProvider.controlledCompetitionTier(from: $0), from: $0) } }
+    public var worldSearch: WorldSearchReadModel? { model("worldSearch") { CoachWorldReadModelProvider.worldSearch(from: $0) } }
+    public var competitionOverview: CompetitionOverviewReadModel? { model("competitionOverview") { CoachWorldReadModelProvider.competitionOverview(tier: CoachWorldReadModelProvider.controlledCompetitionTier(from: $0), from: $0) } }
+    public var gamePlan: GamePlanReadModel? { model("gamePlan") { CoachWorldReadModelProvider.gamePlan(from: $0) } }
+    public var practicePlan: PracticePlanReadModel? { model("practicePlan") { CoachWorldReadModelProvider.practicePlan(from: $0) } }
+    public var depthChart: DepthChartReadModel? { model("depthChart") { CoachWorldReadModelProvider.depthChart(from: $0) } }
+    public var teamHealth: TeamHealthReadModel? { model("teamHealth") { CoachWorldReadModelProvider.teamHealth(from: $0) } }
+    public var collegeOffseason: CollegeOffseasonReadModel? { model("collegeOffseason") { CoachWorldReadModelProvider.collegeOffseason(from: $0) } }
+    public var proOffseason: ProOffseasonReadModel? { model("proOffseason") { CoachWorldReadModelProvider.proOffseason(from: $0) } }
+    public var proManagement: ProManagementReadModel? { model("proManagement") { CoachWorldReadModelProvider.proManagement(from: $0) } }
+    public var staffRoom: StaffRoomReadModel? { model("staffRoom") { CoachWorldReadModelProvider.staffRoom(from: $0) } }
+    public var opponentFilm: OpponentFilmReadModel? { model("opponentFilm") { CoachWorldReadModelProvider.opponentFilm(from: $0) } }
+    public var news: NewsReadModel? { model("news") { CoachWorldReadModelProvider.news(from: $0) } }
+    public var legacyHistory: LegacyHistoryReadModel? { model("legacyHistory") { CoachWorldReadModelProvider.legacyHistory(from: $0) } }
+    public var statisticsLeaders: StatisticsLeadersReadModel? { model("statisticsLeaders") { CoachWorldReadModelProvider.statisticsLeaders(from: $0) } }
+    public var awardsHonours: AwardsHonoursReadModel? { model("awardsHonours") { CoachWorldReadModelProvider.awardsHonours(from: $0) } }
+    public var realignment: RealignmentReadModel? { model("realignment") { CoachWorldReadModelProvider.realignment(from: $0) } }
+    /// Depends on the selected subject as well as the world, so `selectTeam` evicts it.
+    public var teamProgrammeProfile: TeamProgrammeProfileReadModel? {
+        model("teamProgrammeProfile") { state in
+            let controlledID = state.career.college?.programmeID
+                ?? state.careerArc.currentJob?.organisationID
+            guard let id = self.presentation.selectedSubjectID ?? controlledID else { return nil }
+            return CoachWorldReadModelProvider.teamProgrammeProfile(id, from: state)
+        }
+    }
+
+    /// Depends on the read receipts as well as the world, so `markInboxItemRead` evicts it.
+    public var inbox: InboxReadModel? {
+        model("inbox") { state in
+            CoachWorldReadModelProvider.inbox(
+                from: state,
+                readInboxItemIDs: Set(self.presentation.readInboxItemIDs)
+            )
+        }
+    }
+
     /// True while an intent is in flight. Screens disable their commit controls on it.
     public private(set) var isWorking = false
     /// The last receipt or refusal, shown verbatim. Never a guess about what happened.
@@ -84,50 +133,15 @@ public final class CoachWorldStore {
         self.presentation = presentation
         self.metadata = metadata
         self.presentationRoute = presentation.route
-        rebuildScreens(from: snapshot)
+        world = snapshot
     }
 
-    /// Rebuild every route-scoped read model from the actor snapshot in one place.
-    private func rebuildScreens(from snapshot: GameState) {
-        coachingHQ = CoachWorldReadModelProvider.coachingHQ(from: snapshot)
-        roster = CoachWorldReadModelProvider.roster(from: snapshot)
-        recruitingBoard = CoachWorldReadModelProvider.recruitingBoard(from: snapshot)
-        leagueMap = CoachWorldReadModelProvider.leagueMap(from: snapshot)
-        matchDay = CoachWorldReadModelProvider.matchDay(from: snapshot)
-        aftermath = CoachWorldReadModelProvider.aftermath(from: snapshot)
-        careerHub = CoachWorldReadModelProvider.careerHub(from: snapshot)
-        let competitionTier = CoachWorldReadModelProvider.controlledCompetitionTier(from: snapshot)
-        standings = CoachWorldReadModelProvider.standings(tier: competitionTier, from: snapshot)
-        schedule = CoachWorldReadModelProvider.schedule(tier: competitionTier, from: snapshot)
-        let controlledID = snapshot.career.college?.programmeID
-            ?? (snapshot.careerArc.currentJob?.organisationID)
-        let selectedID = presentation.selectedSubjectID ?? controlledID
-        teamProgrammeProfile = selectedID.flatMap {
-            CoachWorldReadModelProvider.teamProgrammeProfile($0, from: snapshot)
-        }
-        worldSearch = CoachWorldReadModelProvider.worldSearch(from: snapshot)
-        competitionOverview = CoachWorldReadModelProvider.competitionOverview(
-            tier: competitionTier,
-            from: snapshot
-        )
-        gamePlan = CoachWorldReadModelProvider.gamePlan(from: snapshot)
-        practicePlan = CoachWorldReadModelProvider.practicePlan(from: snapshot)
-        depthChart = CoachWorldReadModelProvider.depthChart(from: snapshot)
-        teamHealth = CoachWorldReadModelProvider.teamHealth(from: snapshot)
-        collegeOffseason = CoachWorldReadModelProvider.collegeOffseason(from: snapshot)
-        proOffseason = CoachWorldReadModelProvider.proOffseason(from: snapshot)
-        proManagement = CoachWorldReadModelProvider.proManagement(from: snapshot)
-        staffRoom = CoachWorldReadModelProvider.staffRoom(from: snapshot)
-        inbox = CoachWorldReadModelProvider.inbox(
-            from: snapshot,
-            readInboxItemIDs: Set(presentation.readInboxItemIDs)
-        )
-        opponentFilm = CoachWorldReadModelProvider.opponentFilm(from: snapshot)
-        news = CoachWorldReadModelProvider.news(from: snapshot)
-        legacyHistory = CoachWorldReadModelProvider.legacyHistory(from: snapshot)
-        statisticsLeaders = CoachWorldReadModelProvider.statisticsLeaders(from: snapshot)
-        awardsHonours = CoachWorldReadModelProvider.awardsHonours(from: snapshot)
-        realignment = CoachWorldReadModelProvider.realignment(from: snapshot)
+    /// Adopts a new world. Screens are invalidated, not rebuilt: the next read of the one on the
+    /// glass builds it, and nothing builds the rest.
+    private func adopt(_ snapshot: GameState) {
+        world = snapshot
+        models.removeAll(keepingCapacity: true)
+        revision &+= 1
     }
 
     /// Generates a world from `seed` and appoints the selected starting programme.
@@ -279,16 +293,14 @@ public final class CoachWorldStore {
                     - CareerPresentationState.maximumReadInboxItems
             )
         }
-        inbox = current.markingRead(stableID)
+        models["inbox"] = nil
+        revision &+= 1
     }
 
-    public func selectTeam(_ organisationID: UUID) async {
+    public func selectTeam(_ organisationID: UUID) {
         presentation.selectedSubjectID = organisationID
-        let snapshot = await session.snapshot()
-        teamProgrammeProfile = CoachWorldReadModelProvider.teamProgrammeProfile(
-            organisationID,
-            from: snapshot
-        )
+        models["teamProgrammeProfile"] = nil
+        revision &+= 1
     }
 
     public func selectProspect(_ prospectID: UUID) {
@@ -568,7 +580,7 @@ public final class CoachWorldStore {
         } catch {
             statusMessage = Self.refusalMessage(for: error)
         }
-        rebuildScreens(from: await session.snapshot())
+        adopt(await session.snapshot())
     }
 
     /// A refusal the player can act on, for every way the session can refuse.
