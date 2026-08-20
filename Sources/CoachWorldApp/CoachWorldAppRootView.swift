@@ -10,6 +10,12 @@ import ProFootballCoachUI
 /// the store live in separate files inside one target.
 public struct CoachWorldAppRootView: View {
     @State private var store: CoachWorldStore?
+    /// A successful restore populates `store` immediately but does not, on its own, enter
+    /// gameplay -- `restoreExistingCareer()` no longer treats "loaded" as "confirmed." The coach
+    /// sees `TitleContinueView`'s career summary and taps Continue first (`02` section 9's
+    /// durable boundary). `startNewCareer(...)` sets this directly: a freshly created career
+    /// needs no redundant confirmation of a career the coach just finished naming.
+    @State private var careerConfirmed = false
     @State private var failure: String?
     @State private var isStarting = false
     @State private var isRestoring = false
@@ -43,7 +49,7 @@ public struct CoachWorldAppRootView: View {
 
     public var body: some View {
         Group {
-            if let store {
+            if let store, careerConfirmed {
                 career(store)
             } else if showingNewCareerSetup {
                 NewCareerCoachIdentityView(
@@ -1152,6 +1158,7 @@ public struct CoachWorldAppRootView: View {
             isStarting: isStarting,
             isRestoring: isRestoring,
             recoveryRequired: recoveryRequired,
+            restoredCareer: store?.careerHub,
             onRetry: {
                 hasAttemptedRestore = false
                 recoveryRequired = false
@@ -1159,6 +1166,7 @@ public struct CoachWorldAppRootView: View {
             },
             onUseBackup: { Task { await recoverFromBackup() } },
             onNewCareer: { Task { await beginNewCareerSetup() } },
+            onContinue: { careerConfirmed = true },
             onSettings: { screen = .settingsAccessibility }
         )
     }
@@ -1217,8 +1225,13 @@ public struct CoachWorldAppRootView: View {
             failure = nil
             recoveryRequired = false
 #if DEBUG
+            // The proof/screenshot harness needs deterministic, immediate access to a named
+            // screen -- careerConfirmed's whole purpose is pausing an interactive coach at the
+            // durable boundary, which does not apply to a harness driven by an environment
+            // variable rather than a tap.
             if let proofScreen = Self.proofScreenNumber() {
                 screen = proofScreen
+                careerConfirmed = true
             }
 #endif
         } catch {
@@ -1372,6 +1385,7 @@ public struct CoachWorldAppRootView: View {
             )
             try await persist(started)
             store = started
+            careerConfirmed = true
             showingNewCareerSetup = false
             setupError = nil
             failure = nil
