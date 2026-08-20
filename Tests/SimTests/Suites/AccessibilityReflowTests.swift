@@ -102,9 +102,12 @@ func runAccessibilityReflowTests() {
             print("AX5 contract: \(landed.count) landed, \(pending.count) pending")
         }
 
-        test("every landed family declares an accessibility-size composition") {
+        test("every registered family declares an accessibility-size composition") {
             // `04` §7.1 clause 1. A screen with no AX5 branch has not had AX5 considered.
-            for family in landedFamilies().landed {
+            let (landed, pending) = landedFamilies()
+            expect(pending.isEmpty,
+                   "a registered family has no derived view file: \(pending.map(\.canonicalName))")
+            for family in landed {
                 expect(family.text.contains("dynamicTypeSize.isAccessibilitySize"),
                        "\(family.path) (\(family.screen.canonicalName)) has no accessibility-size "
                            + "composition, so AX5 reflow was never decided for it (04 section 7.1)")
@@ -120,21 +123,12 @@ func runAccessibilityReflowTests() {
             }
         }
 
-        test("the family-to-file convention resolves the views that exist") {
-            // The guard against the enumeration silently finding nothing: if the naming convention
-            // drifts, every family becomes "pending" and the two clauses above pass over an empty
-            // set. These five are the production screens `05` records as built.
+        test("the family-to-file convention resolves every registered family") {
+            // Derive the expectation from the registry: a hand-picked sample can stay green while
+            // a later family silently becomes pending.
             let landed = Set(landedFamilies().landed.map(\.screen))
-            for screen in [
-                CoachWorldScreenID.coachingHQ,
-                .matchDay,
-                .roster,
-                .playerProfile,
-                .recruitingBoard,
-            ] {
-                expect(landed.contains(screen),
-                       "\(screen.canonicalName) did not resolve to \(viewFileName(for: screen))")
-            }
+            expectEqual(landed, Set(CoachWorldScreenID.allCases),
+                        "a registered family did not resolve to its derived view file")
         }
 
         test("the convention keeps the draft room family landed") {
