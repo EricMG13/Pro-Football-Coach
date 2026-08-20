@@ -243,6 +243,12 @@ private func unattachedPlayer(id: UUID) -> Player {
     )
 }
 
+/// Opens one roster seat, and takes the departing player's contract with them.
+///
+/// The contract is not incidental. A player no professional team owns cannot hold one: `capSnapshot`
+/// sums contracts by roster, so an unowned contract is money no cap counts, which is the laundering
+/// shape `docs/PORT-LOG.md` records. Leaving it attached here built a root the engine cannot
+/// produce, so three tests spent their lives asserting against an impossible world.
 private func makeRosterOpening(teamID: UUID, in state: inout GameState) {
     guard let team = state.proTeams[teamID],
           let removableID = team.rosterIDs.first(where: {
@@ -251,4 +257,5 @@ private func makeRosterOpening(teamID: UUID, in state: inout GameState) {
     _ = state.proTeams.update(teamID) { team in
         team.rosterIDs.removeAll { $0 == removableID }
     }
+    state.players.update(removableID) { $0.contract = nil }
 }
