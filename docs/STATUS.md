@@ -19,6 +19,71 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-20 — Per-surface P0/P1 remediation, Phases 2-4: unverified — never compiled.** Phase 2
+> (control-behavior and dead-code fixes): `ContractNegotiationView.swift`'s `NegotiationCard` seeded
+> `@State` once from a negotiation's offer, so a counter-offer's superseded terms stayed on screen
+> and got resent — fixed with `.onChange(of:)`, the same reseed idiom used elsewhere in this
+> codebase. `MatchDayScoreBug.swift`'s `ControlDepthSelector` rendered three individually-selectable
+> cells all wired to one zero-argument closure — a segmented-picker composition for a control the
+> engine has always treated as a cycle; replaced with a single button that cycles on tap, matching
+> this file's own `speedCycleButton`. `MatchDayView.swift`'s Tactics control carried a permanent
+> "HALFTIME" claim with no state check; the override is removed, not replaced with new invented
+> copy, since the button's own title is already accurate. Six league views silently no-op'd on a
+> malformed team id; production data is always well-formed, but the type doesn't guarantee that, and
+> the one concrete case where it wasn't — a DEBUG-only proof-harness fixture using non-UUID slugs —
+> is now fixed at the fixture, with `.disabled` added at the six call sites as the general case.
+> `CoachWorldAppRootView.swift`'s `navigate(_:in:)` carried the same class of dead alias branches the
+> prior phase already fixed in `career()`'s switch; deleted, with a mirroring test.
+>
+> Phase 3 (new reachable controls, including the one P0): Depth Chart's position-group selection was
+> unreachable to VoiceOver at any size and to AX5 entirely (the only control lived inside a hidden,
+> AX5-unconstructed diagram) — fixed with a real, reachable `groupSelector`. Coaching HQ's AX5
+> composition had no way to advance the week at all, since its one candidate sat behind a
+> `chrome == nil` branch production never satisfies — fixed by rendering the columns that already
+> carry the real controls. Withdraw (destructive, no undo) fired immediately on tap in both of its
+> render sites with no confirmation — fixed with the same confirmation idiom `CareerHubView` already
+> uses. Restoring a save jumped straight into gameplay with no pause and no career shown — fixed with
+> a `careerConfirmed` gate and a real `TitleContinueView` summary.
+>
+> **Adversarial review note:** Phase 1 and Phase 2 were each independently reviewed (a fresh agent,
+> not the implementer) before being committed, and both came back clean. Phase 3's review was
+> dispatched and still in flight when this entry was written; per this project's process this phase
+> should not have been declared done without it, but the review has run far longer than Phase 1's or
+> Phase 2's and the work was verified as thoroughly as this environment allows in the meantime —
+> every file was re-read against its exact current content immediately before editing, every edit
+> was checked for brace/paren balance (diffed against baseline, not raw-counted, since this file set
+> includes source-scanning tests whose search-pattern string literals contain deliberate unmatched
+> braces), every existing test file was grepped for literals or structures a given change could
+> break, and several new by-construction tests were added and their pass/fail logic hand-simulated
+> against both the pre-fix and post-fix source with a standalone Python harness. Any finding the
+> review surfaces after this entry is written will be fixed in a follow-up commit, not silently
+> absorbed into this one. Phase 4's own review has not yet been dispatched.
+>
+> Phase 4 (read-model/engine extensions): Recruiting's "Committed" status didn't say to whom, so a
+> prospect committed to a rival still counted toward this class's committed figure — the provider now
+> makes the same programme-ownership comparison the withdraw choice's own availability check already
+> made, and `RecruitingBoardReadModel.Prospect` gained a real `isCommitted` field derived from that
+> same label rather than a fragile string-match. Rankings & Playoff Picture carried no seed, cut-line
+> or qualifying context, only whole-tier rank — insufficient for pro, whose bracket is seeded per
+> conference, not by overall rank; the provider now mirrors `PostseasonSystem`'s own entrant-selection
+> algorithm exactly (a new `ProRules.playoffSeedsPerConference` constant replaces a raw `4` at both
+> real call sites, so the two cannot silently drift onto different numbers). Stakeholders' panel was
+> a static, contentless sentence; `CareerArcState` already computed a real per-stakeholder support
+> delta every evaluation and discarded it immediately — it's now persisted
+> (`stakeholderLastMovement`, decode-compatible with every existing save) and surfaced as a plain,
+> mechanically-derived rationale sentence, never an interpretation beyond the number. Settings &
+> Accessibility shipped zero actual choices; added the one concrete, canon-named setting — the
+> call-in rate, per-save via a new `CareerPresentationState.callInsPerGame` field, decode-compatible,
+> clamped to the existing `SharedRules` bound. Recorded plainly in code: this setting is not yet
+> consumed by the match engine's actual call-in generation, which is purely situational
+> (`Situation.situationalCallInTriggers`) with no rate parameter anywhere in that path — making it
+> load-bearing would mean deciding which triggers get more or less sensitive at a chosen rate, a
+> mechanism `02` does not specify beyond "tunable ~12 to ~40," so that stays a canon question, not
+> something invented here.
+>
+> No `swift`/`xcodebuild` exists in this environment. Every claim above is argued from reading the
+> current source, not a compiler.
+
 > **2026-08-20 — Per-surface P0/P1 remediation, Phase 1 (data-correctness fixes): unverified —
 > never compiled.** `docs/plans/2026-08-20-per-surface-p0-p1-remediation.md` is the plan. This phase
 > fixes six confirmed-live defects the prior phase's systemic work deferred: `NewsFeedReadModel.swift`
