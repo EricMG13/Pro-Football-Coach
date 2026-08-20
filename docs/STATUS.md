@@ -1045,10 +1045,27 @@ to match one that does not. `--calibration-report` was added alongside as a prin
 ladders, because `--calibration` tests the instrument and never ran the engine against the bands;
 the table at the top of this section is now reproducible in one command.
 
-The remaining ten metrics `03` §5.1 lists are enumerated in the suite with what each is blocked on.
-Nine of them need the abstracted model to produce something it does not produce at all — it
-simulates no play, no drive, no kick and no clock — so covering them is a change to that model
-rather than to the suite.
+**Second metric, offensive plays per team-game — added 2026-08-20, and red the same way.** The
+abstracted model had no notion of a snap; it now draws a play count around `01` §6.5's band midpoint
+for the tier, with tempo as the coach's lever over it, and `TeamGameStatistics` carries the count so
+both models report it at the interface the game actually reads. A save written before the count
+existed decodes it as zero rather than failing.
+
+| Tier | Abstracted | Detailed | Band | Margin |
+|---|---|---|---|---|
+| Pro | 64.42, sd 8.32 | 97.51, sd 16.06 | 60–68 | ±4.0 |
+| College | 70.61, sd 7.95 | 105.65, sd 18.52 | 67–75 | ±4.0 |
+
+Same shape as points, from an independent direction: the abstracted model is inside its band in both
+tiers and the detailed model runs about half again as many snaps as football does. It is also the
+mechanism behind the points result — 97 snaps of a 35-percent-completion offence is what produces
+both the shutouts and the 156-point game — which is the P4 diagnosis above arriving from a second
+measurement rather than a restatement of the first.
+
+The remaining nine metrics `03` §5.1 lists are enumerated in the suite with what each is blocked on.
+Eight of them need the abstracted model to produce something it does not produce at all — it
+simulates no drive, no kick and no clock — so covering them is a change to that model rather than to
+the suite.
 
 **Sixteen of §6.5's rows are not measured at all**, listed in `CalibrationBands.unimplementedMetrics`
 with what each waits on: per-drive accounting, target shares (which need per-player stat lines the

@@ -16,6 +16,7 @@ public enum DetailedGameSummaryBuilder {
         var passing = 0
         var rushing = 0
         var turnovers = 0
+        var plays = 0
     }
 
     public static func make(
@@ -37,6 +38,10 @@ public enum DetailedGameSummaryBuilder {
         for play in record.plays {
             let side = play.situation.possession
             let yards = max(0, play.outcome.yards)
+            // Every snap the side took, kicks included. `CalibrationHarness` counts the same way,
+            // and the plays band was measured against that count: two definitions of "a play"
+            // would make the two-tier gate and the calibration gate disagree about the same model.
+            teams[side, default: TeamLine()].plays += 1
             if play.outcome.result.isTurnover {
                 teams[side, default: TeamLine()].turnovers += 1
             }
@@ -70,7 +75,8 @@ public enum DetailedGameSummaryBuilder {
                 offensiveYards: line.yards,
                 passingYards: line.passing,
                 rushingYards: line.rushing,
-                turnovers: line.turnovers
+                turnovers: line.turnovers,
+                offensivePlays: line.plays
             )
         }
 

@@ -52,6 +52,16 @@ public struct TacticalPlan: Codable, Sendable, Equatable {
     public func passingShareAdjustment() -> Int {
         runPassBias.rawValue * 8
     }
+
+    /// Plays a tempo choice adds or removes. Hurrying up is the one lever the coach has over how
+    /// many snaps a game contains, which is what makes it worth modelling off-screen at all.
+    ///
+    /// ponytail: tempo only. A better offence sustains drives and so runs slightly more plays, but
+    /// that effect is small next to tempo and the coach does not control it; add a strength term
+    /// here if the plays band ever fails on the mismatch split rather than on the mean.
+    public func playCountAdjustment() -> Double {
+        Double(tempo.rawValue) * 5
+    }
 }
 
 public struct OpponentScoutingSnapshot: Codable, Sendable, Equatable {

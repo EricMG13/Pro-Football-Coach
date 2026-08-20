@@ -106,7 +106,7 @@ instruments exist and run in CI:
 |---|---|
 | A season is completable in 6–8 hours | AgencyBudgetTests is not implemented; owner measurement remains open |
 | Week advance under 2.0 s at shipping league size | The host timing probe is evidence only; the device gate remains open |
-| The simulation and the off-screen model agree | `TwoTierConsistencyTests` runs and is **red**: the abstracted model holds the points band and the detailed one does not, so equivalence is blocked on P4 calibration, not on the instrument |
+| The simulation and the off-screen model agree | `TwoTierConsistencyTests` runs and is **red**: on both metrics asserted so far, points and plays per team-game, the abstracted model holds its band and the detailed one does not, so equivalence is blocked on P4 calibration rather than on the instrument |
 
 ---
 

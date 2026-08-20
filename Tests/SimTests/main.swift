@@ -84,6 +84,8 @@ if CommandLine.arguments.contains("--catalog") {
     runTwoTierConsistencyTests()
 } else if CommandLine.arguments.contains("--calibration-report") {
     runCalibrationReportProbe()
+} else if CommandLine.arguments.contains("--architecture-fingerprints") {
+    runArchitectureFingerprintProbe()
 } else if CommandLine.arguments.contains("--redshirt-only") {
     runCollegeRedshirtTests()
 } else if CommandLine.arguments.contains("--college-commitments") {

@@ -1,24 +1,47 @@
 import Foundation
 
 public struct TeamGameStatistics: Codable, Sendable, Equatable {
+    private enum CodingKeys: String, CodingKey {
+        case points, offensiveYards, passingYards, rushingYards, turnovers, offensivePlays
+    }
+
     public let points: Int
     public let offensiveYards: Int
     public let passingYards: Int
     public let rushingYards: Int
     public let turnovers: Int
+    /// Snaps the side took. Both models report it, so `TwoTierConsistencyTests` can hold them to
+    /// the same plays-per-team-game band, and so yards per play is a quantity rather than a guess.
+    public let offensivePlays: Int
 
     public init(
         points: Int,
         offensiveYards: Int,
         passingYards: Int,
         rushingYards: Int,
-        turnovers: Int
+        turnovers: Int,
+        offensivePlays: Int = 0
     ) {
         self.points = max(0, points)
         self.offensiveYards = max(0, offensiveYards)
         self.passingYards = max(0, passingYards)
         self.rushingYards = max(0, rushingYards)
         self.turnovers = max(0, turnovers)
+        self.offensivePlays = max(0, offensivePlays)
+    }
+
+    /// A save written before plays were counted decodes with zero rather than failing, the same
+    /// way `StandingRow` absorbed ties.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            points: try container.decode(Int.self, forKey: .points),
+            offensiveYards: try container.decode(Int.self, forKey: .offensiveYards),
+            passingYards: try container.decode(Int.self, forKey: .passingYards),
+            rushingYards: try container.decode(Int.self, forKey: .rushingYards),
+            turnovers: try container.decode(Int.self, forKey: .turnovers),
+            offensivePlays: try container.decodeIfPresent(Int.self, forKey: .offensivePlays) ?? 0
+        )
     }
 }
 

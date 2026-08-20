@@ -29,9 +29,14 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
 /// The advanced pin moved again when completed summaries gained an explicit abstracted/detailed
 /// source discriminator, so the new controlled detailed path cannot be mistaken for an abstract
 /// result after reload.
+/// It moved once more on 2026-08-20, when `TeamGameStatistics` gained a play count and the
+/// abstracted model started drawing one: a new draw shifts that model's random stream, so every
+/// completed summary in an advanced week changes. The root pin did not move and should not have —
+/// bootstrap plays no games. Both values below were reproduced in two independent release-process
+/// invocations of `--architecture-fingerprints` before being written here.
 private let pinnedRootFingerprint: UInt64 = 3_251_160_748_987_753_141
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 11_229_646_605_763_785_595
+private let pinnedAdvancedRootFingerprint: UInt64 = 14_040_606_295_534_783_127
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///
@@ -45,6 +50,23 @@ private func architectureFingerprint<T: Encodable>(_ value: T) throws -> UInt64 
     return bytes.reduce(0xCBF2_9CE4_8422_2325) { value, byte in
         (value ^ UInt64(byte)) &* 0x0000_0100_0000_01B3
     }
+}
+
+/// Prints the two pinned fingerprints so a deliberate re-pin is reproducible rather than copied out
+/// of a failure message.
+///
+/// The pins exist to catch *accidental* cross-process drift. A deliberate change to the abstracted
+/// model moves the advanced pin by design, and the house rule is that the new value is reproduced
+/// in two independent release-process invocations before it is written down. This makes that rule
+/// runnable: `--architecture-fingerprints`, twice.
+func runArchitectureFingerprintProbe() {
+    let root = GameState.bootstrap(seed: 20_260_810)
+    print("root=\((try? architectureFingerprint(root)).map(String.init) ?? "unencodable")")
+    guard let advanced = try? WorldScheduler.advanceWeek(root) else {
+        print("advanced=unavailable (advanceWeek threw)")
+        return
+    }
+    print("advanced=\((try? architectureFingerprint(advanced)).map(String.init) ?? "unencodable")")
 }
 
 func runArchitectureTests() {
