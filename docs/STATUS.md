@@ -2796,6 +2796,22 @@ same engine reads 0.025 explosive on one fixture and 0.155 across the harness's 
 that test exists to force. `--engine` now also dispatches `runSnapResolverTests`, which was
 reachable only from the no-argument branch.
 
+#### 2026-08-20 — calibration handoff correction: 21 of 25, not 21 of 24
+
+The merged `points per drive` row is live in the current `CalibrationBands.pro` list, so the prior
+handoff's denominator was stale. A fresh core-only holdout run, built in an isolated scratch path
+with one compiler job, reports **21 of 25** bands holding. The four red rows are reported from the
+TOST confidence interval, not from a point estimate:
+
+- college favourite win rate: 0.8189, CI90 [0.7978, 0.8400], band 0.70–0.78;
+- pro favourite win rate: 0.8800, CI90 [0.8622, 0.8978], band 0.62–0.72;
+- pro blowout rate: 0.6960, CI90 [0.6721, 0.7199], band 0.17–0.26;
+- pro points per drive: 2.1454, CI90 [2.1111, 2.1796], band 1.60–1.95.
+
+No calibration source changes were retained. The full release lane was attempted but its Swift build
+was killed by the operating system before the suite ran; stale executables were not used as evidence.
+The M3 recruiting-calibration suite remains unverified from a fresh build in this continuation.
+
 ### P3 — match engine core
 
 D2's hybrid assignment/leverage resolution, per tier, with the clock, the drive loop and the game

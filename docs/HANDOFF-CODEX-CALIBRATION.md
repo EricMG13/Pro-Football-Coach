@@ -1,4 +1,4 @@
-# Codex handoff — the last 3 of 24 calibration bands
+# Codex handoff — the remaining calibration bands
 
 Checkpoint from a Claude session, 2026-08-20, merged to main as PR [#44](https://github.com/EricMG13/Pro-Football-Coach/pull/44)
 (squash commit `3bba7c9`). This file is a pointer, not a substitute — `docs/STATUS.md`'s dated
@@ -7,16 +7,27 @@ from `docs/HANDOFF-CODEX.md` (PR #9's re-pin), which is still open and unrelated
 
 ## Where things stand
 
-The holdout ladder held 6 of 24 bands at the start of this session and holds **21 of 24** now.
-Run this to see the live state — it is red by design and not in any `verify.sh` lane:
+The holdout ladder held 6 of 24 bands at the start of that session and held **21 of 24** at its
+checkpoint. The current `origin/main` contains one additional measurable pro band, `points per
+drive`, so the live count is **21 of 25**. The current holdout result, measured with the TOST
+confidence interval rather than a point estimate, is:
+
+- college favourite win rate: **0.8189**, CI90 **[0.7978, 0.8400]**, band 0.70–0.78 — fail high;
+- pro favourite win rate: **0.8800**, CI90 **[0.8622, 0.8978]**, band 0.62–0.72 — fail high;
+- pro blowout rate: **0.6960**, CI90 **[0.6721, 0.7199]**, band 0.17–0.26 — fail high;
+- pro points per drive: **2.1454**, CI90 **[2.1111, 2.1796]**, band 1.60–1.95 — fail high.
+
+Run this to see the live state when the release build is available:
 
 ```bash
 swift run -c release -Xswiftc -enable-testing SimTests --calibration-gate
 ```
 
-The three still failing: `favourite win rate` (college and pro) and `blowout rate` (pro). All three
-were investigated to the point of a proof, not a guess, and the session stopped there rather than
-force them green by reshaping the test instrument. `docs/STATUS.md`'s final 2026-08-20 entry
+The four currently failing bands are the two `favourite win rate` rows, pro `blowout rate`, and pro
+`points per drive`. The first three were investigated to the point of a proof, not a guess, and the
+session stopped there rather than force them green by reshaping the test instrument. The points-per-
+drive failure is a newer measurement exposed by the merged harness change and must not be silently
+dropped from the count. The prior `docs/STATUS.md` 2026-08-20 entry
 ("the same three, re-examined after a stop-hook challenge...") has the full arithmetic. Short
 version:
 
@@ -39,7 +50,7 @@ combined by 3:1 — see the `throwAccuracyWeight` commit, `63d9d46`), which is w
 already holding — and was reverted; that revert is itself evidence, recorded in STATUS, that this is
 a real tension between the harness's sampling and the bands it is scored against, not a tuning gap.
 
-## The two questions that block the remaining three bands
+## The two questions that block the three coupled rate bands
 
 Both are `docs/OPEN-DECISIONS.md`-shaped: they need an answer recorded in canon before more code
 changes, per `CLAUDE.md`'s doc-first rule. Neither was answered by this session.
@@ -71,12 +82,12 @@ what "one rung of the talent ladder" means, not a bug.
 ## What NOT to do
 
 - Don't retune `leverageNoise`, `leverageScale`, red-zone terms, or the play-caller to chase these
-  three bands further — all four were tried and measured as either ineffective or actively harmful
+  three rate bands further — all four were tried and measured as either ineffective or actively harmful
   to other bands. Re-trying them without a new hypothesis just repeats this session's work.
 - Don't touch `talentLadder` or `CalibrationRoster`'s scatter without an owner decision on the two
   questions above recorded in `docs/OPEN-DECISIONS.md` or `01-RESEARCH.md` first. Both were tried
   ad hoc this session and both attempts were reverted because they cost other bands.
-- Don't widen a band in `CalibrationBands.swift` to make one of these three pass. `03-MATCH-ENGINE.md`
+- Don't widen a band in `CalibrationBands.swift` to make one of these bands pass. `03-MATCH-ENGINE.md`
   §5.2 is explicit that this is the one universally wrong response to a red band, and it's the reason
   this whole harness exists in its current TOST form.
 
@@ -90,13 +101,15 @@ independent of this handoff and don't touch the same code.
 
 ## Verification note
 
-This session's final commits were verified with `--engine`, `--core-contracts`, `--calibration`,
+The prior session's final commits were verified with `--engine`, `--core-contracts`, `--calibration`,
 `--competition-only`, `--architecture-only`, and `--commitment-coverage`, all green after re-pinning
 five fingerprints that moved from merging two independently-diverged root schema changes (see the
-merge commit `e420c36`, squashed into `3bba7c9`). `--match-reducer`, `--m3-recruiting-calibration`,
-and the full `verify.sh` lanes were **not** re-run after the final throw-weighting commit due to
-session time constraints — that gap is named in `docs/STATUS.md` and here rather than papered over.
-Worth running before trusting this checkpoint fully:
+merge commit `e420c36`, squashed into `3bba7c9`). The current continuation rebuilt the core
+calibration target in an isolated scratch path with one compiler job and reproduced the four results
+above. The full release lane was attempted but the Swift build was killed by the operating system
+before the suite ran; no stale executable was treated as evidence. `--m3-recruiting-calibration`
+therefore remains unverified in this continuation and must be run from a successful fresh build
+before shipping further calibration changes. Worth running before trusting this checkpoint fully:
 
 ```bash
 ./scripts/verify.sh --lane calibration
