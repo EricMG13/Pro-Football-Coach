@@ -41,13 +41,21 @@ public struct Estimate: Sendable, Equatable {
     /// Sample standard deviation. Zero for a rate, where the SE comes from the proportion itself.
     public let standardDeviation: Double
     public let estimator: EstimatorKind
+    /// The units `value` is expressed in: 1 for a proportion, 100 for a percentage.
+    ///
+    /// A percentage-scaled rate is still a proportion underneath, and the standard error has to be
+    /// carried back into the same units. Without this, `standardError`'s clamp reads a completion
+    /// percentage of 87.9 as p = 1 and returns zero, so the interval collapses to a point and the
+    /// band is decided by range membership — the instrument `01` §6.2 rejects, wearing TOST's name.
+    public let scale: Double
 
     public init(value: Double, sampleSize: Int, standardDeviation: Double,
-                estimator: EstimatorKind) {
+                estimator: EstimatorKind, scale: Double = 1) {
         self.value = value
         self.sampleSize = sampleSize
         self.standardDeviation = standardDeviation
         self.estimator = estimator
+        self.scale = scale > 0 ? scale : 1
     }
 
     /// `01` §6.2's standard error.
@@ -55,8 +63,8 @@ public struct Estimate: Sendable, Equatable {
         guard sampleSize > 0 else { return .infinity }
         switch estimator {
         case .rate:
-            let p = Swift.min(Swift.max(value, 0), 1)
-            return (p * (1 - p) / Double(sampleSize)).squareRoot()
+            let p = Swift.min(Swift.max(value / scale, 0), 1)
+            return scale * (p * (1 - p) / Double(sampleSize)).squareRoot()
         case .mean:
             return standardDeviation / Double(sampleSize).squareRoot()
         }
@@ -79,7 +87,7 @@ public struct BandResult: Sendable, Equatable {
 
     public var confidenceInterval: (low: Double, high: Double) {
         let half = Band.zNinety * estimate.standardError
-        return (estimate.value - half, estimate.value + half)
+        return Band.interval(around: estimate, half: half)
     }
 
     /// `01` §6.6 clause 3's failure-message contract: metric, estimate, CI90, band, n, and which
@@ -102,12 +110,29 @@ public extension Band {
     /// rather than inlining keeps `CLAUDE.md`'s no-magic-number rule and makes the alpha visible.
     static let zNinety = 1.645
 
+    /// The interval around an estimate, clamped to what the estimator can actually produce.
+    ///
+    /// **A rate cannot be negative, and the normal approximation does not know that.** The pro tie
+    /// band is `0.000…0.020`; one tie in 600 games gives a point estimate of 0.0017 and a normal
+    /// interval reaching -0.0011, so the band failed on its floor for an estimate comfortably
+    /// inside it — and would have failed for *any* non-zero rate, because the interval always
+    /// extends below zero. Clamping to [0, scale] is the estimator's own support, not a widened
+    /// band: it removes an impossible region, never a possible one. Means are unclamped because a
+    /// per-team-game mean has no such bound.
+    static func interval(around estimate: Estimate, half: Double) -> (low: Double, high: Double) {
+        let low = estimate.value - half
+        let high = estimate.value + half
+        switch estimate.estimator {
+        case .rate: return (Swift.max(0, low), Swift.min(estimate.scale, high))
+        case .mean: return (low, high)
+        }
+    }
+
     /// TOST at alpha = 0.05: pass if and only if the 90 percent confidence interval lies entirely
     /// inside the band.
     func test(_ estimate: Estimate) -> BandResult {
         let half = Band.zNinety * estimate.standardError
-        let low = estimate.value - half
-        let high = estimate.value + half
+        let (low, high) = Band.interval(around: estimate, half: half)
         let belowFloor = low < lower
         let aboveCeiling = high > upper
         let edge: String?

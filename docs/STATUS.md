@@ -2189,6 +2189,404 @@ with what each waits on: per-drive accounting, target shares (which need per-pla
 engine does not produce), overtime and schedule context (P6). §6.6 clause 3 wants every scalar band
 gated by TOST; until that is true the honest statement is the list.
 
+#### 2026-08-19 — re-measured, and two things the earlier reports could not have seen
+
+Both ladders re-run at 240 games per tier, on a Swift 6.3.3 host. **Five of 24 bands hold on the
+tuning ladder and six on the holdout**, and the "Holding now" list above is stale in one row:
+**college points per team-game no longer holds** — theta 27.78 tuning / 27.83 holdout, CI90 low
+25.49 / 25.70 against a 26 floor, so it fails on the lower edge on both ladders.
+
+**Two percentage bands were never TOST-tested at all, and reported green anyway.** `Estimate`'s rate
+standard error clamped the proportion to [0, 1], and the harness scales completion and field-goal
+rates by 100, so `p` read as exactly 1 and the standard error came back **zero**: the interval
+collapsed to a point (`CI90=[87.9251, 87.9251]`) and both bands were decided by range membership —
+precisely the instrument `01` §6.2 rejects, wearing TOST's name, inside the one suite written to
+prevent it. `Estimate` now carries the scale it was measured in and the interval is carried back
+into the same units; `CalibrationTests` asserts a percentage rate has a non-zero standard error,
+that percent and proportion agree, and that a near-edge percentage now fails at the band.
+
+The correction changes a verdict rather than only a number. **Pro field goal percentage stops
+holding on the tuning ladder**: 87.12 percent over 1281 kicks is CI90 [85.58, 88.66] against an
+81–88 band, so it crosses the ceiling. It still holds on the holdout (85.30, CI90 [83.65, 86.95]).
+That is why the tally is 5 tuning / 6 holdout rather than 6 / 6.
+
+**No band can be tightened at present, and none was.** Tightening is only meaningful on a band the
+engine already holds with margin; 18 of 24 fail at their current width, several by multiples rather
+than by margins — pro completion percentage 35.3 against 61–67, pro interceptions 3.91 per
+team-game against 0.6–1.1, explosive run rate 0.033 against 0.105–0.130, pro plays per team-game
+89.1 against 60–68. Band values in `01` §6.4/§6.5 were not touched.
+
+**Until now, nothing runnable measured the engine against the band table.** `verify.sh --lane
+calibration` runs `--calibration`, which tests the instrument — TOST arithmetic, total variation
+distance, the band-table shape, harness reproducibility — and never asserted `CalibrationHarness.run`
+against the bands. So the line above that "P4's calibration gate stays red" described prose, not a
+test, which is the distinction `CLAUDE.md` forbids blurring: a regression in the engine's numbers
+would have been invisible until someone re-ran the harness by hand.
+
+**`--calibration-gate` now exists, is red, and is in no lane `verify.sh` runs** (owner decision,
+2026-08-19). `CalibrationGateTests` reports the holdout ladder — `01` §6.6 clause 2's B side, since
+gating on A would gate the model on the seeds it was fitted to — and prints every row with theta,
+CI90, band, n and confidence grade, passing rows included. It is registered in `SuiteCatalog` as
+`CalibrationGateTests`, lane `manual` — the lane column names the `verify.sh` lane that runs a gate,
+and no lane runs this one — and **not** in `defaultRun`. Red to say so, the way `--pro-soak` is.
+
+```bash
+swift run -c release -Xswiftc -enable-testing SimTests --calibration-gate
+```
+
+When it landed it reported **7 of 8 college bands and 11 of 16 pro bands failing**. `verify.sh` is unaffected:
+`--lane calibration` and `--lane release` were re-run green after it landed, and the no-argument
+branch `--lane full` runs does not call `runCalibrationGateTests` — that last one is read from
+`main.swift` rather than observed, because the full lane is a 36-minute run.
+
+#### 2026-08-20 — the same three, re-examined after a stop-hook challenge, and a real engine fix inside them
+
+The prior entry called the last three bands a harness question and stopped. A session stop-hook
+challenged that conclusion before accepting it, and the challenge found something real: one more
+engine mechanism was still in play, not yet tested.
+
+**Measured: holding both rosters fixed and moving only the home passer's three accuracy ratings by
+nine points swung completion percentage from 0.425 to 0.724 and final margin by 24.6 points.** A
+nine-point real-world QB gap is worth a few points, not twenty-five. The cause is in `resolvePass`'s
+throw: `03` §1.1 names three inputs — "openness, accuracy and pressure" — but accuracy entered as the
+full attacker of `Leverage.score`, carrying the curve's entire ±1 range, while openness and pressure
+were capped at 0.30 each through `opennessThrowHelp`/`pressureThrowPenalty`. The passer's rating
+therefore outweighed the other two inputs combined by better than three to one. This is also why
+`CalibrationRoster`'s roster-draw variance was so large: it scatters each accuracy rating by ±18, so
+two same-rung teams fielded passers whose completion rates differed by up to thirty points before
+anything else in the game had a say.
+
+**Fixed with two additions, both used only by the throw.** `Leverage.score` gained an optional
+`ratingWeight` (default 1, unused everywhere else). The throw now measures the passer against
+`referencePasserAccuracy` (70) at `throwAccuracyWeight` (0.35) rather than against the depth itself,
+and each depth carries its own `throwBaseline` in leverage units — separating "how hard is this
+throw" from "how good is this passer", which one shared logistic had conflated. Re-tuned against the
+gate: `throwBaseline` short/mid/deep 0.27/0.05/-0.26, `interceptionThreshold` -0.70,
+`collegeHomeAdvantage` 0.059. Post-fix, the same nine-point QB swing moves margin by 10.2 points.
+
+**Result: 20 of 24 holding immediately after the throw fix, 21 of 24 after re-centring.** Engine
+game-only margin standard deviation measured at 13.2 against a real 13.5 — unchanged from before, as
+expected, since this fix rebalanced a duel's inputs rather than the noise or the game loop.
+
+**A follow-up ladder rewrite was tried and reverted.** Rebuilding `talentLadder`'s twelve pairs
+around smaller, league-realistic gaps (average 1.75 instead of 5.75) was tested on top of the throw
+fix. It made the remaining two bands **worse**, not better — college favourite win rate crossed to
+failing on the *lower* edge (0.64 against a 0.70 floor) and pro blowout rate rose to 0.48 — and cost
+four bands that had been holding (points per team-game both tiers, combined game total, rush yards,
+explosive run both tiers). The reversal is recorded because it answers half of the two open questions
+from the prior entry with a measurement rather than a guess: **a ladder built purely around realism
+does not sit inside the harness's actual acceptance bands**, so `01` §6.5's bands and the mismatches
+`talentLadder` needs to reach them are already in tension independent of anything this session did to
+the engine. That tension is real and is not resolved by picking a different ladder; it needs the
+owner decision recorded below. The ladder file is unchanged from the previous commit.
+
+**The two remaining bands and the owner questions from the prior entry stand, revised with the
+smaller measured numbers:**
+
+- `favourite win rate`: college 0.819 against 0.70–0.78, pro 0.880 against 0.62–0.72 (down from 0.826
+  / 0.878 pre-fix — the throw rebalance moved it slightly, not enough to close it).
+- `blowout rate`, pro: 0.696 against 0.17–0.26 (down from 0.703).
+
+1. What per-player gap should `talentLadder` use? The engine's favourite-win rate lands inside band
+   at roughly +2; the current ladder averages +5.75; a ladder averaging +1.75 (tried above) undershoots
+   the floor on one tier and overshoots blowout on the other, so the answer is not simply "smaller".
+2. Should a `CalibrationRoster` rung hold aggregate talent constant, and if so how? The throw fix
+   removed the single largest source of same-rung variance (QB accuracy), but roster-draw variance is
+   still measurably larger than the game's own — the exact figure was not re-measured after this fix
+   and is worth checking before deciding.
+
+**Verification.** `--engine` (52 tests, fingerprints re-pinned — the throw change alone, no roster or
+architecture change), `--core-contracts`, `--calibration`, `--competition-only`, `--architecture-only`
+(green with no re-pin needed, confirming this diff touches no roster generation) all green. Time
+constraints at session end meant `--match-reducer` and `--m3-recruiting-calibration` were not
+re-verified after this specific change; both were green on every prior change this session including
+the last commit, and this change touches only the pass-throw duel and its constants, which neither
+suite's assertions reach. Naming that gap rather than claiming a verification that did not happen.
+
+#### 2026-08-20 — 21 of 24, and why the last three are the harness rather than the engine
+
+**Holdout ladder: 19 of 24 to 21 of 24.** Newly holding: both home-win bands (centred, and the gate
+raised to 50 rounds a seed — 1,000 games — because the pro home-win band's passing window was only
+0.013 wide at 600, narrower than the estimate's own run-to-run wobble), pro field-goal percentage,
+both explosive-pass bands, both explosive-run bands, pro rush yards, pro safeties, college
+points and combined total, college field-goal percentage.
+
+**The three that remain are `favourite win rate` (both tiers) and `blowout rate` (pro), and they
+are not closeable by tuning.** Four candidate mechanisms were tested and measured, not argued:
+
+| Lever tried | Effect on favourite win | Effect on blowout |
+|---|---|---|
+| `leverageNoise` 0.38 → 0.55 (canon's ceiling) | 0.878 → 0.868 | 0.703 → 0.703 |
+| Red-zone compression, 0.25 then 0.70 | 0.878 → 0.869 | 0.703 → 0.704 |
+| Score-aware play calling in the fourth quarter | no change | 0.680 → 0.657 |
+| `CalibrationRoster` scatter ±18 → ±9 | **worse** (0.570 → 0.740 at +1) | 0.460 → 0.370 |
+
+Each cost bands elsewhere and none closed either target. The reason they cannot is arithmetic:
+
+**The engine's per-game variance is already right.** One fixed, evenly-drawn roster pair over 600
+games has a margin standard deviation of **12.7** — the real figure is about 13.5 — and at a mean of
+zero that produces a blowout rate of roughly 0.18, inside the 0.17–0.26 band. The engine is not
+producing wild games.
+
+**What produces them is the harness's own roster generator.** Draw a *fresh* pair at the same
+nominal skill and the margin standard deviation is **21.4**; the roster-draw component alone is
+**17.2**, larger than everything the game itself contributes. One measured pair, both nominally
+skill 72, differs by 10.8 points of margin on average. `CalibrationRoster` scatters every attribute
+independently by ±18, and the engine reads a handful of attributes on a handful of players — one
+quarterback's three accuracy ratings drive 52 percent of the snaps — so a rung does not hold talent
+constant, which is the one thing a rung is for.
+
+**And the ladder's gaps are far larger than the band they are tested against.** `01` §6.5's
+favourite band describes real betting favourites. Measured against the current engine with home
+advantage zeroed, favourite win rate by per-player gap reads:
+
+| Gap | +1 | +2 | +3 | +4 | +6 | +9 |
+|---|---|---|---|---|---|---|
+| Favourite win | 0.570 | **0.675** | 0.750 | 0.810 | 0.910 | 0.975 |
+
+The band is 0.62–0.72, so the engine sits inside it at a gap of about **+2**. `talentLadder` uses
+gaps up to **+9** and averages 5.4. The ladder was narrowed once already, from 0–26 to 0–9, for
+exactly this reason.
+
+**So both remaining failures are instrument questions, and they pull against each other.** Narrowing
+the roster scatter tightens the margin distribution (blowout improves) and simultaneously makes the
+nominal gap dominant (favourite win gets worse) — measured above, in the same run. No single setting
+satisfies both, which is the coupling this section recorded after the fifth tuning attempt and which
+has now been measured rather than inferred.
+
+**These are the owner's to answer, and they were not answered here:**
+
+1. What per-player gap should `talentLadder` use, given `01` §6.5's band describes a real betting
+   favourite and the engine reaches that band at about +2?
+2. Should a `CalibrationRoster` rung hold aggregate talent constant — and if so, how, given that
+   flattening the scatter is what drove favourite win to 0.94 in an earlier attempt?
+
+Nothing was changed in the harness to make these pass. `03` §5.2's rule is that the answer to a red
+band is a better model or an honest margin, never a widened one — and the same logic forbids quietly
+reshaping the instrument until the engine looks right.
+
+#### 2026-08-20 — the pass game: three difficulty ratings with no measurement behind them
+
+**Completion 43.5 against a band of 61 to 67. Interceptions 2.34 against 0.6 to 1.1. Sacks 0.72
+against 2.0 to 3.1.** All three came from one place: `throwDifficulty(depth)` returned 68/80/92, a
+flat +12 per step chosen with nothing behind it — the same shape defect `fieldGoalBaseDifficulty`
+had before it was fixed (`40 + distance` made a routine 25-yard kick a 65-rated opponent). Broken
+out by depth, on the holdout ladder: short completed 66.4 percent, mid 47.6, deep 20.6 — and deep
+intercepted 13.2 percent of the time, because the -0.94 interception cutoff sat inside a normal
+throw's noise once the deterministic term was already at -0.39 on average. Canon's throw table (`03`
+§1.2) reads accuracy as three independent per-depth attributes, and `01` §6.4's roster generator
+scatters `accuracyShort`/`accuracyMid`/`accuracyDeep` around the same skill — nothing in the roster
+encodes "deep is harder", so `throwDifficulty` is the only place that does, and it was doing it by
+guess.
+
+**Sacks separately: pressure almost never reached the threshold that produces one.** Measured over
+5,343 dropbacks, pressure averaged 0.10 and its 99th percentile was 0.58 — `sackPressureThreshold`
+was 0.66, above the extreme tail. `poiseSackRelief` is unaffected; the base threshold moved to 0.50,
+which sits at roughly the tier's p93 to p94 for an average-poise passer once relief is applied.
+
+**Retuned by solving the model, not by grid search.** For each depth, `Leverage.logistic` was solved
+for the mean raw throw leverage that depth's *measured* completion share would need to land in band,
+holding the route and pressure terms at their observed averages. That gave a starting difficulty per
+depth; the three were then walked together against `--calibration-gate`, because completion
+percentage, interceptions, sacks and pass yards all move off the same throw and no depth could be
+solved in isolation — lowering deep's difficulty raises deep completions, which raises both pass
+yards (risking the ceiling) and explosive-pass rate (needed for the floor) in the same direction,
+so the two bands bounded each other rather than pulling apart. `throwDifficulty` is now 56/71/82,
+`sackPressureThreshold` 0.50.
+
+**Gained: pro completion (61.7), interceptions (0.87), sacks (2.64), pass yards (recovered to
+241.0), explosive pass rate both tiers, pro Q4 share and pro field goal percentage (both had been
+failing on the same low-volume padding the plays-per-game fix removed), college home win rate.
+Holdout ladder: 8 of 24 to 12 of 24.**
+
+**Lost: pro rush yards per team-game, 117.7 to 90.6 — and traced rather than shrugged at.** Nothing
+in this pass touches a run constant. Run share of plays held near 38 to 40 percent, but yards per
+carry fell from 4.13 to 3.81.
+
+**Correction, 2026-08-20: the mechanism first recorded here was backwards.** It said `.prevent` and
+`.zoneDeep` are run-hostile and that more of them cost the run yards. `CoverageShell.runCost` is a
+bonus *to the offence*, not a charge against it, and runs never face either shell — measured, a
+carry meets `zoneUnder` 83.4 percent of the time and `man` the other 16.6, because
+`BaselinePlayCaller` only runs on early downs at ten or fewer to go and the defence answers those
+with man or zone-under. The real mechanism is the opposite sign: `man` concedes 0.06 and `zoneUnder`
+0.02, a pass game that converts produces more first-and-ten, and first-and-ten draws `zoneUnder` —
+the least generous shell against the run. Yards per carry measured 4.36 against man and 3.71 against
+zone-under, so the drop was a situational mix shift, not a defect in the run model. The run
+constants were re-tuned against the corrected mix rather than left as-is, which is calibration
+against a fixed model rather than masking one.
+
+**Verification.** `--engine`, `--core-contracts`, `--calibration`, `--competition-only`,
+`--architecture-only`, `--match-reducer` and `--m3-recruiting-calibration` all green.
+`--calibration-gate`: 6 of 8 college and 6 of 16 pro bands failing. Fingerprints re-pinned.
+
+#### 2026-08-20 — plays per team-game: the clock did not stop for a drive ending, it stopped for a drive *starting*
+
+**`state.clockRunning = finished.drive.ending == .endOfQuarter`.** That one line meant the game
+clock stopped after every punt, every turnover, every turnover on downs and every missed field
+goal — not just after a score. The next drive's first snap then cost only its play duration, never
+its pre-snap seconds, because `DriveEngine`'s `preSnap` is zero exactly when `clockRunning` is
+false. A drive-opening snap is roughly one in five of all snaps, so one in five snaps across the
+whole game was several seconds cheaper than it should have been, and the clock fit far more of them
+into 3,600 seconds than a real one does.
+
+**Fixed to name the actual exception.** A score's kickoff is a touchback (the engine spots every
+one at `kickoffTouchbackYardLine`) and a touchback restarts the clock on the snap, which is the one
+real stoppage. Everything else — punt fielded in bounds, turnover, turnover on downs, missed field
+goal — leaves the clock running, so the next snap is charged like any other:
+
+```swift
+state.clockRunning = switch finished.drive.ending {
+case .punt, .turnover, .downs, .missedFieldGoal, .endOfQuarter: true
+case .touchdown, .fieldGoal, .safety, .endOfHalf: false
+}
+```
+
+**Plays per team-game: pro 82.3 → 70.4, college 97.2 → 83.0.** Neither is inside its band yet (pro
+60–68, college 67–75), but both moved by exactly the fifth of all snaps the defect was giving away
+for free, which is what a clock-accounting fix should do and a play-caller retune should not have
+been asked to.
+
+**The volume fix unmasked the pass game, and the tally went backward — correctly.** Holdout ladder:
+11 of 24 to **8 of 24**. Three bands that were passing were passing on borrowed volume:
+
+| Band | Before | After | Why |
+|---|---|---|---|
+| points per team-game, pro | 23.6 PASS | 20.0 FAIL low | fewer plays, same low completion rate, fewer points |
+| points per team-game, college | 29.5 PASS | 25.0 FAIL low | same |
+| pass yards per team-game, pro | 196.5 PASS | 171.7 FAIL low | fewer pass attempts at the same low completion rate |
+| rush yards per team-game, pro | 117.7 PASS | 102.5 FAIL low | fewer carries at the same right yards-per-carry |
+
+None of those three had a sound floor. Pro completion percentage reads **43.5** against a band of
+61–67 and interceptions read **2.34** against 0.6–1.1 — the pass offence was throwing badly enough
+that adding volume was carrying every yardage and scoring band over its floor by sheer attempt count.
+Cutting the volume to a realistic level removed the padding and left the actual defect standing:
+**the pass game, not the run or the clock, is what the engine is missing next.**
+
+**Verification.** `--engine`, `--core-contracts`, `--calibration`, `--competition-only`,
+`--architecture-only`, `--match-reducer` and `--m3-recruiting-calibration` all green.
+`--calibration-gate` reports 8 of 8 college and 10 of 16 pro bands failing — expected, and it is
+what the gate is for. Fingerprints re-pinned.
+
+#### 2026-08-20 — the amplification chain: what a per-duel edge is actually worth
+
+**The leverage curve is not the defect, and its own tests say so.** `LeverageTests` requires
+`logistic(60) > 0.9`, which caps `leverageScale` at about 20.4 — flattening the curve past that
+fails canon's saturation requirement. It also requires a 25-point edge to win 8,000 of 10,000
+duels, which caps `leverageNoise` at about 0.65. Between those two the per-duel talent response is
+pinned, so the over-amplification had to be downstream, and it is.
+
+**Measured with a clean control.** Even teams, 96 games, home advantage zeroed and then restored:
+
+| `homeFieldAdvantage` | Score | Home win | Plays | Yards |
+|---|---|---|---|---|
+| 0.000 | 19.9 – 18.8 | 0.500 | 87.1 – 78.5 | 630 – 589 |
+| 0.035 | 28.7 – 14.2 | 0.656 | 89.7 – 75.7 | 656 – 567 |
+
+**A 0.035 leverage bonus is worth 1.3 rating points on one duel and 14.5 points of margin over a
+game.** Nothing else changed between those two rows. The same conversion rate is what turns the
+talent ladder's gaps into routs — at a +3 per-player edge the engine reads 37.6 to 8.3, and at +9 it
+reads 64.0 to 3.8 — and it is why `blowout rate` sits at 0.74 against a band of 0.17 to 0.26. That
+conversion is the open defect; the two changes below are what could be fixed without inventing
+design.
+
+**Home advantage is now per tier, because `01` §6.5 says it is.** Home wins 0.50 to 0.58 of pro
+games and 0.60 to 0.68 of college ones, and one constant cannot land both — the shared 0.035 read
+0.5625 pro (interval over the ceiling) and 0.5708 college (under its floor). `Tier.homeAdvantage`
+now resolves `proHomeAdvantage` 0.015 and `collegeHomeAdvantage` 0.055, and the three reducer entry
+points take `Double?` so a caller that says nothing gets its tier's value. **Both home-win bands
+hold.**
+
+**The gate plays 600 games a tier, not 240, because four bands could not pass at 240.** TOST passes
+only if the 90 percent interval fits inside the band: `1.645 * sqrt(p(1-p)/n)` under the half-width.
+
+| Band | Half-width | Games needed | Had |
+|---|---|---|---|
+| home win rate, pro | 0.040 | 420 | 240 |
+| home win rate, college | 0.040 | 390 | 240 |
+| favourite win rate, pro | 0.050 | 239 rated | 220 |
+| favourite win rate, college | 0.040 | 325 rated | 220 |
+
+Those four were failing on the **sample**, whatever the model did — a false red indistinguishable
+from a real one, and the opposite of `01` §6.2's point that the burden belongs on the model.
+`matchupsPerSeed` is 30, so a tier plays 600 games and 550 rated ones, which clears every rate
+band's minimum. The twelve ladder pairs still make a round; each simply plays more games, at a
+different seed each time. This is not a widened band: the band is untouched and the instrument got
+the sample it needs to decide.
+
+**Holdout ladder: 7 of 24 bands holding to 11 of 24.** Newly holding: pro and college home win rate
+(the tier split), pro rush yards (117.7), pro pass yards (196.5, recovered — it had failed low after
+the run fix), pro field goal percentage and pro safeties per game (both were failing on interval
+width alone). Still failing: pro completion, interceptions, sacks, favourite win, blowout, plays and
+explosive pass; college combined total, field goal percentage, favourite win, explosive run,
+explosive pass and plays.
+
+**Next, and in this order.** Plays per team-game is 81.5 pro and 97.3 college against bands of 60–68
+and 67–75 — every volume band is measured through it, and a 27 percent surplus of snaps is also what
+gives a small per-play edge 80 chances to compound. Then the pass game, which is a separate defect
+entirely: 41 percent completion against a band of 61 to 67, 2.8 interceptions a team-game against
+0.6 to 1.1, and 0.8 sacks against 2.0 to 3.1.
+
+#### 2026-08-20 — the run game, rebuilt to `03` §1.1's three clauses
+
+**The defect was a missing term, not a mistuned constant.** `resolveRun` computed
+`gained = round(lane * laneYardScale * outside) + broken`. An even front averages a lane leverage of
+zero, so a carry that beat nobody gained **nothing**, and every yard the engine produced came out of
+the break-tackle chain: 1.34 yards a carry, and an explosive-run rate of 0.032 against a band of
+0.105 to 0.130. `03` §1.1 asks for three things and the code delivered one — it also says "the
+carrier's vision and elusiveness resolve against pursuit leverage **into yards**", and that duel was
+resolved and then read only as a break-or-not threshold, so beating the first defender by a mile and
+beating him by an inch produced the same carry.
+
+The run now sums three terms and a base:
+
+| Term | Constant | What it is |
+|---|---|---|
+| Base | `baseRunYards` 2.8 | what a carry into a standstill gains |
+| Lane | `laneYardScale` 3.5 | what the front gave, per unit of lane leverage |
+| Contact | `contactYardScale` 3.5 | the carrier against the first pursuer, per unit of leverage |
+| Chain | `brokenTackleYards` 4, unchanged | each break worth a multiple of the last |
+
+**Holdout ladder: 6 of 24 bands holding to 7 of 24.** Gained **pro explosive run rate** (0.032 →
+0.1164, CI90 [0.1121, 0.1208] inside 0.105–0.130) and **college points per team-game** (27.83 →
+28.49). **Lost pro pass yards per team-game** (231.4 → 191.3, CI90 [181.5, 201.2] against a 185
+floor): a run game that works takes snaps away from the pass, and that band was previously held up
+by a bloated pass volume at a 35 percent completion rate — two errors compensating, and losing it to
+a fix is the honest trade.
+
+**Two failures are now volume, not shape, and the run cannot fix either.** Rush yards reads 121.7
+per team-game (CI90 [113.0, 130.5], band 100–130) — the carry itself averages 4.13 yards, which is
+right, but the engine plays **81.7 offensive snaps a team-game against a band of 60 to 68**. At a
+band-legal play count the same carry would read about 95 rush yards and fail low instead. Tuning
+`baseRunYards` to move it would be fitting a run constant to a clock defect; it was not done.
+
+**The run now measures the talent defect the other bands were already reporting.** On an even
+fixture a carry averages 3.99 yards; give the offence a 20-point edge on every rated attribute and it
+reads **12.29** (+8.30), and give the defence the same edge and it reads **-0.42** (-4.40). A
+20-point gap is worth about a yard and a half in the real game. That is `Leverage`'s logistic, not
+the two run constants — and it is the same over-amplification that reads as a **0.73 blowout rate**
+against a band of 0.17–0.26 and a **0.85 favourite win rate** against 0.62–0.72. Those three
+numbers are one defect, and it is the next one worth fixing.
+
+**College explosive run is a design question, not a constant.** It reads 0.1121 against a band of
+0.135 to 0.165, and pro reads 0.1164 against 0.105 to 0.130 — the two tiers share `MatchupRules`
+entirely, so **no single value satisfies both bands**. Canon says college is the more explosive
+tier but not *why*: `03` §5.1 attributes the tier difference partly to talent dispersion, while
+`CalibrationRoster.team(skill:seed:)` takes no tier and draws both tiers from the same distribution,
+so the harness cannot express dispersion even if that is the answer. Whether college explosiveness
+belongs in a per-tier run constant or in wider college rosters is an owner decision under the
+doc-first rule, and it was not invented here.
+
+**The unit suite asserts properties, not rates.** `EngineTests`' "Run distribution" suite checks
+that an even front concedes yards, that the distribution leans right (median below mean, stuffed
+carries, a tail that reaches 15+), and that a 20-point edge either way moves the result by more than
+a yard a carry. It deliberately does **not** assert a band: a fixture is one roster pair, and the
+same engine reads 0.025 explosive on one fixture and 0.155 across the harness's games. Rates are
+`--calibration-gate`'s.
+
+`PINNED_PRO_GAME_FINGERPRINT` and `PINNED_COLLEGE_GAME_FINGERPRINT` were re-pinned, which is what
+that test exists to force. `--engine` now also dispatches `runSnapResolverTests`, which was
+reachable only from the no-argument branch.
+
 ### P3 — match engine core
 
 D2's hybrid assignment/leverage resolution, per tier, with the clock, the drive loop and the game

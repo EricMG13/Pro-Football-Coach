@@ -60,9 +60,17 @@ private struct NewsItemFingerprintDTO: Codable, Equatable {
 /// reproduction of a hash over a fixed seed is precisely the property this test exists to check, so
 /// a second confirming run is what would actually validate that guarantee, not a second manual
 /// re-derivation of the same single number.
-private let pinnedRootFingerprint: UInt64 = 13_271_746_992_715_500_232
+///
+/// All five pins in this file moved again on 2026-08-20, merging `claude/tighten-calibration-bands`
+/// into this `stakeholderLastMovement` root: `WideReceiver`/`TightEnd` now rate `.vision` and
+/// `.elusiveness` (`03` §1.2's carrier-versus-pursuit row), so every generated roster's encoded
+/// shape changed alongside the field the other branch added. Root, advanced-root, negotiation-ledger
+/// and match-session all exercise `GameState.bootstrap` or personnel built from it and moved;
+/// `pinnedNewsFeedFingerprint` below does not touch a roster and did not move. Reproduced in this
+/// worktree's own Swift 6.3.3 toolchain, not copied from CI.
+private let pinnedRootFingerprint: UInt64 = 18_254_152_807_579_560_859
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 2_051_777_162_885_451_912
+private let pinnedAdvancedRootFingerprint: UInt64 = 2_866_677_590_436_717_403
 
 /// The professional contract-negotiation ledger (`ProMarketState.contractNegotiations`) is part of
 /// the schema-13 root, but neither pin above ever exercises it: bootstrap starts with it empty, and
@@ -77,7 +85,7 @@ private let pinnedAdvancedRootFingerprint: UInt64 = 2_051_777_162_885_451_912
 /// every `GameState`, so `CareerArcState`'s new `stakeholderLastMovement` field shifted this pin's
 /// JSON body too, not only the two above. Copied from a single CI run's own output (run 32322631469,
 /// job 96287645557), not independently reproduced -- no toolchain exists here to do that.
-private let pinnedNegotiationLedgerFingerprint: UInt64 = 7_453_535_852_306_487_647
+private let pinnedNegotiationLedgerFingerprint: UInt64 = 16_183_341_748_203_153_797
 
 /// `GameState.matchSession` is part of the schema-13 root, but neither pin above ever exercises a
 /// populated one: `bootstrap` leaves it `nil` by construction, and `WorldScheduler.advanceWeek`
@@ -90,7 +98,7 @@ private let pinnedNegotiationLedgerFingerprint: UInt64 = 7_453_535_852_306_487_6
 /// being written here.
 /// Moved on 2026-08-20 for the same reason as the negotiation-ledger pin above:
 /// `CareerArcState.stakeholderLastMovement`, copied verbatim from the same CI run, same caveat.
-private let pinnedMatchSessionFingerprint: UInt64 = 3_423_278_094_891_302_957
+private let pinnedMatchSessionFingerprint: UInt64 = 15_835_161_825_253_087_259
 
 /// `NewsFeedReadModel` is derived from `GameState.history`, not stored in it, so none of the three
 /// pins above ever exercise it: they hash the root or a projection of it, never the read-model
@@ -121,7 +129,7 @@ private let pinnedNewsFeedFingerprint: UInt64 = 10_333_429_696_101_465_295
 /// written here.
 /// Moved on 2026-08-20 for the same reason as the three pins above: `CareerArcState.stakeholderLastMovement`,
 /// copied verbatim from the same CI run, same caveat.
-private let pinnedArchivedLedgerFingerprint: UInt64 = 11_401_939_783_798_285_572
+private let pinnedArchivedLedgerFingerprint: UInt64 = 12_685_349_826_373_943_566
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///
