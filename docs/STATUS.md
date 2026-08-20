@@ -1076,6 +1076,58 @@ When it landed it reported **7 of 8 college bands and 11 of 16 pro bands failing
 branch `--lane full` runs does not call `runCalibrationGateTests` — that last one is read from
 `main.swift` rather than observed, because the full lane is a 36-minute run.
 
+#### 2026-08-20 — the pass game: three difficulty ratings with no measurement behind them
+
+**Completion 43.5 against a band of 61 to 67. Interceptions 2.34 against 0.6 to 1.1. Sacks 0.72
+against 2.0 to 3.1.** All three came from one place: `throwDifficulty(depth)` returned 68/80/92, a
+flat +12 per step chosen with nothing behind it — the same shape defect `fieldGoalBaseDifficulty`
+had before it was fixed (`40 + distance` made a routine 25-yard kick a 65-rated opponent). Broken
+out by depth, on the holdout ladder: short completed 66.4 percent, mid 47.6, deep 20.6 — and deep
+intercepted 13.2 percent of the time, because the -0.94 interception cutoff sat inside a normal
+throw's noise once the deterministic term was already at -0.39 on average. Canon's throw table (`03`
+§1.2) reads accuracy as three independent per-depth attributes, and `01` §6.4's roster generator
+scatters `accuracyShort`/`accuracyMid`/`accuracyDeep` around the same skill — nothing in the roster
+encodes "deep is harder", so `throwDifficulty` is the only place that does, and it was doing it by
+guess.
+
+**Sacks separately: pressure almost never reached the threshold that produces one.** Measured over
+5,343 dropbacks, pressure averaged 0.10 and its 99th percentile was 0.58 — `sackPressureThreshold`
+was 0.66, above the extreme tail. `poiseSackRelief` is unaffected; the base threshold moved to 0.50,
+which sits at roughly the tier's p93 to p94 for an average-poise passer once relief is applied.
+
+**Retuned by solving the model, not by grid search.** For each depth, `Leverage.logistic` was solved
+for the mean raw throw leverage that depth's *measured* completion share would need to land in band,
+holding the route and pressure terms at their observed averages. That gave a starting difficulty per
+depth; the three were then walked together against `--calibration-gate`, because completion
+percentage, interceptions, sacks and pass yards all move off the same throw and no depth could be
+solved in isolation — lowering deep's difficulty raises deep completions, which raises both pass
+yards (risking the ceiling) and explosive-pass rate (needed for the floor) in the same direction,
+so the two bands bounded each other rather than pulling apart. `throwDifficulty` is now 56/71/82,
+`sackPressureThreshold` 0.50.
+
+**Gained: pro completion (61.7), interceptions (0.87), sacks (2.64), pass yards (recovered to
+241.0), explosive pass rate both tiers, pro Q4 share and pro field goal percentage (both had been
+failing on the same low-volume padding the plays-per-game fix removed), college home win rate.
+Holdout ladder: 8 of 24 to 12 of 24.**
+
+**Lost: pro rush yards per team-game, 117.7 to 90.6 — and traced rather than shrugged at.** Nothing
+in this pass, and nothing in the prior clock or run commits, touches a run constant. Measured
+directly: run share of plays held near 38 to 40 percent (unchanged), but yards per carry fell from
+4.13 to 3.81. `BaselinePlayCaller.defensiveCall` calls `.prevent` when trailing inside two minutes
+and `.zoneDeep` on third-and-long, and `CoverageShell.runCost` charges the run 0.24 for `.prevent`
+against 0.02 for `.zoneUnder` — a twelvefold difference. A pass game that completes and explodes
+correctly now produces more decisive scores and more third-and-long situations, both of which call
+these run-hostile shells more often. **This is the amplification defect already named in the
+previous entry, arriving through a new channel** — favourite win rate reads 0.85 against 0.62 to
+0.72 and blowout rate 0.72 against 0.17 to 0.26 on this same ladder, and a defence that is up two
+scores calling `.prevent` more often is consistent with a mismatch, not a new one. Retuning a run
+constant to paper over this would be tuning a working part to hide a broken one, which `03` §5.2
+forbids in exactly this shape. It is not this pass's fix to make.
+
+**Verification.** `--engine`, `--core-contracts`, `--calibration`, `--competition-only`,
+`--architecture-only`, `--match-reducer` and `--m3-recruiting-calibration` all green.
+`--calibration-gate`: 6 of 8 college and 6 of 16 pro bands failing. Fingerprints re-pinned.
+
 #### 2026-08-20 — plays per team-game: the clock did not stop for a drive ending, it stopped for a drive *starting*
 
 **`state.clockRunning = finished.drive.ending == .endOfQuarter`.** That one line meant the game

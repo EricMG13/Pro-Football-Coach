@@ -96,7 +96,13 @@ public enum MatchupRules {
     public static let midPassAirYards = 12
     public static let deepPassAirYards = 24
     /// Average pressure above which the pocket collapses into a sack.
-    public static let sackPressureThreshold = 0.66
+    ///
+    /// Was 0.66 — above the 99th percentile of pressure the engine actually produces (measured
+    /// mean 0.10, p99 0.58 over 5,343 dropbacks), so a sack was reachable only in the extreme tail:
+    /// 1.4 percent of dropbacks against a real rate of roughly 6 to 7 percent, and `01` §6.5's band
+    /// of 2.0 to 3.1 sacks per team-game read 0.72 to 0.97. 0.50 sits at the tier's p93 to p94 for
+    /// an average-poise passer once `poiseSackRelief` is applied, which is where that real rate is.
+    public static let sackPressureThreshold = 0.50
     /// How much a maximally poised passer raises that threshold.
     public static let poiseSackRelief = 0.22
     public static let sackYards = -7
@@ -106,12 +112,26 @@ public enum MatchupRules {
     public static let opennessThrowHelp = 0.30
 
     /// The rating a throw is resolved against, by depth. A deep ball is hard to complete even to an
-    /// open receiver, and making depth the difficulty is what keeps incompletions reachable at all.
+    /// open receiver, and making depth the difficulty — rather than only reading the passer's own
+    /// depth-specific accuracy attribute — is what keeps incompletions reachable at all: `01` §6.4's
+    /// generator scatters `accuracyShort`/`accuracyMid`/`accuracyDeep` independently around the same
+    /// skill, so nothing in the roster itself encodes "deep is harder"; this is the only place that
+    /// does.
+    ///
+    /// Was 68/80/92 — a flat +12 per step chosen with no measurement behind it. Against a typical
+    /// 70-something accuracy that put completion at 66/48/21 percent by depth (league completion
+    /// 43.5 against a band of 61 to 67) and put deep's interception rate at 13.2 percent, because
+    /// `01` §6.5's -0.94 cutoff was within a normal throw's noise once the deterministic term was
+    /// already deeply negative. These three came from solving `logistic` for the mean each depth's
+    /// raw throw leverage needed to land its measured completion share in band, holding the route
+    /// and pressure terms fixed, then walking the whole three-value set against
+    /// `--calibration-gate` — completion percentage, interceptions, sacks and pass yards all move
+    /// together off the same throw, so no single depth could be solved in isolation.
     public static func throwDifficulty(_ depth: PassDepth) -> Int {
         switch depth {
-        case .short: return 68
-        case .mid: return 80
-        case .deep: return 92
+        case .short: return 56
+        case .mid: return 71
+        case .deep: return 82
         }
     }
     public static let aggressionThrowBonus = 0.06
