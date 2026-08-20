@@ -169,7 +169,7 @@ private func pngURL(for team: TeamLogoRecord) -> URL {
 private func hasTransparentEdgePixel(_ image: CGImage) -> Bool {
     let width = image.width
     let height = image.height
-    var pixels = [UInt8](repeating: 255, count: width * height * 4)
+    var pixels = [UInt8](repeating: 0, count: width * height * 4)
     guard let context = CGContext(
         data: &pixels,
         width: width,
@@ -179,6 +179,7 @@ private func hasTransparentEdgePixel(_ image: CGImage) -> Bool {
         space: CGColorSpaceCreateDeviceRGB(),
         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
     ) else { return false }
+    context.setBlendMode(.copy)
     context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
     let lastRow = (height - 1) * width
     for x in 0..<width {
@@ -196,6 +197,35 @@ private func hasTransparentEdgePixel(_ image: CGImage) -> Bool {
 
 func runTeamLogoAssetTests(family rawValue: String) {
     suite("Team logo assets") {
+        test("transparent-edge validation reads source alpha") {
+            let colorSpace = CGColorSpaceCreateDeviceRGB()
+            func image(alpha: UInt8) -> CGImage? {
+                guard let provider = CGDataProvider(
+                    data: Data([0, 0, 0, alpha]) as CFData
+                ) else { return nil }
+                return CGImage(
+                    width: 1,
+                    height: 1,
+                    bitsPerComponent: 8,
+                    bitsPerPixel: 32,
+                    bytesPerRow: 4,
+                    space: colorSpace,
+                    bitmapInfo: CGBitmapInfo(
+                        rawValue: CGImageAlphaInfo.premultipliedLast.rawValue
+                    ),
+                    provider: provider,
+                    decode: nil,
+                    shouldInterpolate: false,
+                    intent: .defaultIntent
+                )
+            }
+            guard let transparent = image(alpha: 0), let opaque = image(alpha: 255) else {
+                expect(false, "unable to create alpha regression images")
+                return
+            }
+            expect(hasTransparentEdgePixel(transparent))
+            expect(!hasTransparentEdgePixel(opaque))
+        }
         test("requested family is complete and approved") {
             guard let family = TeamLogoFamily(rawValue: rawValue) else {
                 expect(false, "unknown family \(rawValue)")
