@@ -1018,5 +1018,69 @@ func runCareerArcTests() {
             }
             expect(caught, "the separation scan did not catch a planted offender")
         }
+        test("a coordinator the promotion displaced is not the new coach's disciple") {
+            let source = GameState.bootstrap(seed: 99_128)
+            let programmeID = source.programmes.ids[0]
+            let controlled = try CareerControlSystem.startCollegeCareer(
+                at: programmeID,
+                in: source
+            ).state
+            guard let coachID = controlled.career.coachID else {
+                expect(false, "no coach")
+                return
+            }
+            let proTeam = controlled.proTeams.values[0]
+            let displacedCoordinators = (controlled.proTeams[proTeam.id]?.staffIDs ?? []).filter {
+                controlled.staff[$0].map { StaffRole.coordinators.contains($0.role) } ?? false
+            }
+            let opportunity = CareerOpportunity(
+                id: UUID(uuidString: "00000000-0000-4000-8000-000000000A28")!,
+                organisationID: proTeam.id,
+                tier: .professional,
+                offeredAt: controlled.calendar,
+                expiresAt: controlled.calendar.advancedWeek(),
+                prestige: proTeam.prestige,
+                rationale: .staffRecommendation
+            )
+            var promoting = controlled
+            promoting.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: programmeID,
+                    tier: .college,
+                    startedAt: controlled.calendar
+                ),
+                opportunities: [opportunity],
+                status: .employed
+            )
+            var promoted = try IntentResolver.resolve(
+                .career(CareerArcRequest(
+                    calendar: promoting.calendar,
+                    action: .acceptOpportunity(opportunityID: opportunity.id)
+                )),
+                in: promoting
+            ).state
+
+            // One of the coordinators the promotion threw out later becomes a head coach.
+            guard let victimID = displacedCoordinators.first,
+                  let victim = promoted.staff[victimID] else {
+                expect(false, "no displaced coordinator")
+                return
+            }
+            promoted.people.recordStaffAssignment(
+                StaffCareerAssignment(
+                    season: promoted.calendar.season + 1,
+                    organisationID: programmeID,
+                    role: .headCoach
+                ),
+                for: victim
+            )
+            let tree = CoachingTreeReadModel.build(from: promoted)
+            let branch = tree.branches.first { $0.mentorID == coachID }
+            let isPhantom = branch?.disciples.contains { $0.staffID == victimID } == true
+            expect(
+                !isPhantom,
+                "a coordinator the promotion threw out was credited as the coach's disciple"
+            )
+        }
     }
 }

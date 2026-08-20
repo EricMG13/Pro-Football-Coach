@@ -67,6 +67,16 @@ public struct CoachingTreeReadModel: Sendable, Equatable {
         let firstHeadCoachSeason = Self.firstHeadCoachSeasons(in: careers)
         let headCoachBySeat = Self.headCoachesBySeat(in: careers, state: state)
 
+        // Who each organisation employs right now, so a mentorship can be told apart from a
+        // displacement. Built once, outside the loop below.
+        let currentStaff: [UUID: Set<UUID>] = Dictionary(
+            uniqueKeysWithValues: state.programmes.ids.map {
+                ($0, Set(state.programmes[$0]?.staffIDs ?? []))
+            } + state.proTeams.ids.map {
+                ($0, Set(state.proTeams[$0]?.staffIDs ?? []))
+            }
+        )
+
         var disciplesByMentor: [UUID: [CoachingTreeDisciple]] = [:]
         for career in careers {
             guard let becameHeadCoach = firstHeadCoachSeason[career.staffID] else { continue }
@@ -89,6 +99,20 @@ public struct CoachingTreeReadModel: Sendable, Equatable {
                 // calling their new boss their mentor inverts the relationship — they held the
                 // bigger chair first.
                 guard becameHeadCoach > assignment.season else { continue }
+                // Displaced by them, not mentored by them. A head coach arriving takes the seats
+                // their own group fills, and the assistants they threw out hold a true record of
+                // serving that organisation that season — under the coach who was there before.
+                // Crediting the new arrival inverts the relationship exactly like the fired-head-
+                // coach case above, so where the record cannot tell the two apart, the safe
+                // direction is no mentor rather than the wrong one.
+                let mentorArrived = state.people.staffCareers[mentorID]?.assignments.last {
+                    $0.organisationID == assignment.organisationID && $0.role == .headCoach
+                }?.season
+                if mentorArrived == assignment.season,
+                   currentStaff[assignment.organisationID]?.contains(mentorID) == true,
+                   currentStaff[assignment.organisationID]?.contains(career.staffID) == false {
+                    continue
+                }
                 guard claimedMentors.insert(mentorID).inserted else { continue }
                 disciplesByMentor[mentorID, default: []].append(CoachingTreeDisciple(
                     staffID: career.staffID,
