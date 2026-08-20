@@ -74,9 +74,14 @@ private struct NewsItemFingerprintDTO: Codable, Equatable {
 /// `TraitPopulationGenerator.activeTraits` behind the new weekly `disciplineFile` step. Same class of
 /// move as every one above -- generated state changed, so the pin exists to notice it. Reproduced in
 /// two independent processes in this worktree.
-private let pinnedRootFingerprint: UInt64 = 5_331_851_011_546_973_875
+///
+/// Moved again on 2026-08-20 when PR #9 added 30 real NFL colour pairs to the trade-dress blocklist.
+/// Legitimate colour-collision retries shift the deterministic generation stream and therefore the
+/// encoded root and every populated fixture derived from it. Values below came from the merged
+/// PR #9/current-main release run.
+private let pinnedRootFingerprint: UInt64 = 8_349_852_581_216_838_730
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 10_834_992_634_306_729_616
+private let pinnedAdvancedRootFingerprint: UInt64 = 12_340_439_362_236_290_863
 
 /// The professional contract-negotiation ledger (`ProMarketState.contractNegotiations`) is part of
 /// the schema-13 root, but neither pin above ever exercises it: bootstrap starts with it empty, and
@@ -91,7 +96,9 @@ private let pinnedAdvancedRootFingerprint: UInt64 = 10_834_992_634_306_729_616
 /// every `GameState`, so `CareerArcState`'s new `stakeholderLastMovement` field shifted this pin's
 /// JSON body too, not only the two above. Copied from a single CI run's own output (run 32322631469,
 /// job 96287645557), not independently reproduced -- no toolchain exists here to do that.
-private let pinnedNegotiationLedgerFingerprint: UInt64 = 7_513_440_289_911_825_792
+/// It moved again in PR #9's merged tree because the blocklist's legitimate colour retries changed
+/// the generated inputs; the value below is from the same release run as the root pins.
+private let pinnedNegotiationLedgerFingerprint: UInt64 = 14_495_779_478_222_322_460
 
 /// `GameState.matchSession` is part of the schema-13 root, but neither pin above ever exercises a
 /// populated one: `bootstrap` leaves it `nil` by construction, and `WorldScheduler.advanceWeek`
@@ -104,7 +111,8 @@ private let pinnedNegotiationLedgerFingerprint: UInt64 = 7_513_440_289_911_825_7
 /// being written here.
 /// Moved on 2026-08-20 for the same reason as the negotiation-ledger pin above:
 /// `CareerArcState.stakeholderLastMovement`, copied verbatim from the same CI run, same caveat.
-private let pinnedMatchSessionFingerprint: UInt64 = 9_740_285_524_720_795_266
+/// PR #9's new trade-dress retries moved it again; this value came from the merged release run.
+private let pinnedMatchSessionFingerprint: UInt64 = 9_828_190_431_654_061_650
 
 /// `NewsFeedReadModel` is derived from `GameState.history`, not stored in it, so none of the three
 /// pins above ever exercise it: they hash the root or a projection of it, never the read-model
@@ -117,7 +125,9 @@ private let pinnedMatchSessionFingerprint: UInt64 = 9_740_285_524_720_795_266
 /// pins. Reproduced in two independent processes before being written here.
 /// Moved on 2026-08-20 for the same reason as the two pins above: `CareerArcState.stakeholderLastMovement`,
 /// copied verbatim from the same CI run, same caveat.
-private let pinnedNewsFeedFingerprint: UInt64 = 10_333_429_696_101_465_295
+/// PR #9's new trade-dress retries do not alter the read-model contract, but they do alter this
+/// generated fixture's event IDs and headlines; this value came from the merged release run.
+private let pinnedNewsFeedFingerprint: UInt64 = 9_887_564_372_083_494_882
 
 /// `DomainEventLedger` has carried a bounded `archive` of `SeasonHistoryDigest` since schema 11, and
 /// it sits inside the root every pin above hashes — but none of them ever exercises it non-empty.
@@ -135,7 +145,9 @@ private let pinnedNewsFeedFingerprint: UInt64 = 10_333_429_696_101_465_295
 /// written here.
 /// Moved on 2026-08-20 for the same reason as the three pins above: `CareerArcState.stakeholderLastMovement`,
 /// copied verbatim from the same CI run, same caveat.
-private let pinnedArchivedLedgerFingerprint: UInt64 = 13_703_084_101_146_896_759
+/// PR #9's new trade-dress retries moved this generated archive fixture again; this value came from
+/// the merged release run.
+private let pinnedArchivedLedgerFingerprint: UInt64 = 17_007_101_457_467_036_694
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///

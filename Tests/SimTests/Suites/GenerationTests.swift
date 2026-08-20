@@ -13,8 +13,13 @@ import FootballSimCore
 ///
 /// See "the encoded world matches a pinned digest" below for why these exist and when to change
 /// them.
-private let PINNED_WORLD_BYTES = 824_922
-private let PINNED_WORLD_DIGEST: UInt64 = 10_978_924_493_241_617_378
+///
+/// Moved on 2026-08-20 when PR #9 added the 30 real NFL colour pairs to the trade-dress blocklist.
+/// The new collision retries consume a different deterministic RNG path, so this is a deliberate
+/// generation change, not a per-launch instability. Values came from the merged PR #9/current-main
+/// release run.
+private let PINNED_WORLD_BYTES = 824_394
+private let PINNED_WORLD_DIGEST: UInt64 = 9_378_100_870_041_314_437
 
 /// FNV-1a over the bytes, order-sensitive.
 ///

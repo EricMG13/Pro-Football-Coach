@@ -12,123 +12,30 @@ season-record feature with code in progress and a failing test, and a seatless-s
 with canon written and no code at all. Full detail, root-cause trail, and a patch file for the
 in-progress work: `docs/plans/2026-08-20-coach-career-record-handoff.md`.
 
-## PR #9 re-pin
+## 2026-08-20 — PR #9 generation re-pin
 
-Checkpoint from a Claude session that spent 2026-08-19 22:00 UTC through 2026-08-20 ~11:00 UTC
-draining a CI backlog on this repo (many PRs merged: #8, #13, #25, #29, #30, #33, #35, #36).
-One item is left unfinished, fully diagnosed but not applied.
+PR #9 ([`claude/game-name-equivalents-qczn9r`](https://github.com/EricMG13/Pro-Football-Coach/pull/9))
+was re-based on current `main` and its downstream deterministic pins were updated in commit
+`bbfabb9` (`test: re-pin generation fingerprints after trade-dress blocklist`). The root cause was
+confirmed: the 30 real NFL colour pairs added by the legal blocklist cause bounded collision
+retries, which legitimately shifts the seeded RNG stream. This is a test-only correction; the
+production blocklist change remains intact.
 
-## The one open item: PR #9 needs four files re-pinned
+Verified locally in release mode after rebuilding the merged PR #9 tree:
 
-**PR:** [`claude/game-name-equivalents-qczn9r`](https://github.com/EricMG13/Pro-Football-Coach/pull/9)
-— "Close-but-protected name equivalents: the near-miss rule, and eight real nicknames found in our
-own pools."
+- `--generation-only`: 35 tests / 42,330 checks, passed.
+- `--architecture-only`: 29 tests / 245 checks, passed twice.
+- `--trait-population`: 8 tests / 610 checks, passed.
+- `--career-portal-decisions`: 1 test / 8 checks, passed.
 
-**Status:** CI fails (`full` lane, run `32348748812`), 9 failing tests / 14 failed checks. This is
-**not a bug** — it's the expected, deliberate consequence of a real compliance fix, and the fix
-just needs its downstream golden pins updated to match, the same way the floodlit branch's
-`ArchitectureTests.swift` pins were updated twice earlier in this same session (see commits
-`83b6710`, `869e179` on the now-merged floodlit branch, for the precedent this follows).
+The replacement full CI run is `32371185706` and was queued at handoff time; its result is the
+remaining merge gate. The local `--season-rollover` release process produced no result before the
+host session expired, so it is intentionally not claimed as a local pass.
 
-### Root cause, confirmed by isolation (not just inspected)
-
-PR #9's `Sources/FootballSimCore/Generation/Blocklist.swift` change adds 30 real NFL team colour
-pairs to `tradeDressHex`. Its own comment names the gap it closes: *"every pro team in every save
-was checked against college trade dress only ... the fifteen that did not were unguarded."* Pro
-team colours had **never** been checked against real NFL colours before this PR — a real legal
-exposure, correctly fixed.
-
-`Sources/FootballSimCore/Generation/ColourGenerator.swift`'s `collidesWithTradeDress` checks every
-generated colour pair against `Blocklist.tradeDress`, and retries (bounded, `retryBudget = 64`)
-on a collision. With 30 new real pairs to check, some pro-team colour draws that used to sail
-through unchecked now legitimately collide and retry — consuming a different number of RNG draws,
-which shifts every subsequent draw for the rest of that generation run (rosters, prospects,
-everything downstream of whichever team first collides). That's why the divergence looks total
-(different UUID, different name, different ratings) even though nothing about *how* names or
-traits are generated changed.
-
-Confirmed empirically, not just by reading the code:
-- Current `main` alone: `swift run ... SimTests --trait-population` passes clean.
-- `main` + PR #9's `NameGrammar.swift` change only (the near-miss nickname-pool swap — same array
-  counts, positions preserved, confirmed by direct diff): **passes.** That change is content-only
-  and provably cannot shift the RNG stream (`SeededRandom.pick` indexes by `count`, not content).
-- `main` + PR #9's `Blocklist.swift` change only: **fails**, byte-for-byte identical to the real CI
-  failure (same wrong UUID, same wrong name, same wrong ratings). Confirms it's the sole cause and
-  that generation is still fully deterministic (not flaky) — the shift is a real, reproducible
-  consequence of the retry, not per-launch noise.
-
-`LegalTests.swift` (the other file PR #9 touches) cannot be involved in the `--trait-population`
-failure specifically — that flag only calls `runTraitPopulationTests()`, so `LegalTests.swift`'s
-test bodies never execute in that process. It's a real, separate, and correct addition (the
-near-miss blocklist sweep) but not part of this particular mechanism.
-
-### What actually needs to change (four files, all mechanical once you have real numbers)
-
-**Do not guess the new pin values. Derive them from an actual run**, same discipline the existing
-comments in these files already establish (search each file for "Reproduced in two independent
-processes" / "Copied from a single CI run's own actual output" for the precedent and why it
-matters — a wrong pin silently defeats the determinism test it's supposed to be).
-
-1. Recreate the merge this needs to be diagnosed against (PR #9 + current `main` — **re-fetch
-   `main`, it has moved since this handoff was written**):
-   ```bash
-   git worktree add /tmp/pr9-repin origin/claude/game-name-equivalents-qczn9r
-   cd /tmp/pr9-repin
-   git checkout -B pr9-repin
-   git fetch origin main
-   git merge origin/main --no-edit
-   ```
-2. Build and run the **full default lane** (no flags — this is what CI actually runs, and all four
-   files below must come from the *same* run to stay mutually consistent):
-   ```bash
-   swift build -c release -Xswiftc -enable-testing
-   swift run --scratch-path /tmp/pr9-repin-scratch -c release -Xswiftc -enable-testing SimTests \
-     2>&1 | tee /tmp/pr9-repin-run.log
-   ```
-   Expect ~30-45 minutes. (A prior partial run of this exact merge — killed mid-run when this
-   handoff was written, not because of a failure — already confirmed the failing-suite set is
-   exactly `League generation` (2 checks), `Authoritative game state` (6 checks), and
-   `Deterministic trait population` (4 checks), consistent with real CI. That partial log is at
-   `/tmp/pr9-full-run.log` in the session that wrote this handoff, if that sandbox is still
-   reachable — otherwise just re-run.)
-3. From the failure output's `expected X, got Y` lines, update:
-   - **`Tests/SimTests/Suites/GenerationTests.swift`** — `PINNED_WORLD_BYTES` (line ~16) and
-     `PINNED_WORLD_DIGEST` (line ~17). Both come from the same "the encoded world matches a pinned
-     digest" test failure.
-   - **`Tests/SimTests/Suites/ArchitectureTests.swift`** — six `private let pinned...Fingerprint`
-     constants near the top of the file (currently `pinnedRootFingerprint`,
-     `pinnedAdvancedRootFingerprint`, `pinnedNegotiationLedgerFingerprint`,
-     `pinnedMatchSessionFingerprint`, `pinnedNewsFeedFingerprint`,
-     `pinnedArchivedLedgerFingerprint` — grep `private let pinned` to find current line numbers,
-     they've shifted before). Each has its own doc comment explaining what it covers and why it
-     moves; extend the "moved on \<date\>, and here's why" comment pattern already there rather
-     than just swapping the number in silently — that history is what lets the *next* person trust
-     a re-pin instead of re-deriving from scratch.
-   - **`Tests/SimTests/Suites/TraitPopulationTests.swift`** — the test named "trait generation
-     leaves the identity and value stream byte-for-byte stable" (grep for that title; it's inside
-     the `"Deterministic trait population"` suite). Four `expectEqual` calls fail: `initial.id`,
-     `initial.fullName`, `initial.potential`, `initial.attributes` (the array). `initial.position`
-     and `initial.age` do **not** change — those are template-assigned by roster slot, not drawn —
-     so only replace the four that actually failed, not the whole block.
-4. **Two more failures are not yet root-caused** — confirm before assuming they're the same
-   mechanism, don't just re-pin blind:
-   - `Tests/SimTests/Suites/CareerControlTests.swift:605` — `testAsync("spring retention choices
-     pause a user-owned portal responsibility")` — threw `missingWeeklyPreparation([.gamePlan,
-     .practicePlan])`.
-   - `Tests/SimTests/Suites/SeasonRolloverTests.swift:130` — `test("a compliance-forced release
-     survives a real week-21 boundary")` — threw `capComplianceFailed(.invalidRoot)`.
-
-   Both are very likely downstream fallout from the same generation shift (a fixture built on a
-   specific seed now getting different generated data, tripping an invariant that has nothing to
-   do with the actual thing each test is supposed to check) — but that's an inference, not
-   confirmed. Read what each test's fixture actually asserts before deciding whether it's a stale
-   fixture (fix the fixture) or a real bug the shifted data happened to newly expose (fix the code).
-   Use `superpowers:systematic-debugging` for these two specifically — don't guess-fix.
-5. Verify locally (re-run step 2's full lane; all counts should read clean — "all passed").
-6. Commit, push to `claude/game-name-equivalents-qczn9r`, let CI confirm green, then
-   `gh pr merge 9 --merge --delete-branch=false`, then delete the branch
-   (`git push origin --delete claude/game-name-equivalents-qczn9r`) once no worktree has it
-   checked out (`git worktree list | grep game-name-equivalents` — none did as of this handoff).
+After CI is green, merge PR #9, then leave this entry as historical. The remaining handoff items
+are the coach season-record/seatless-staff work above, lifecycle owner decisions in
+`docs/HANDOFF-CODEX-LIFECYCLE.md`, and calibration owner decisions in
+`docs/HANDOFF-CODEX-CALIBRATION.md`.
 
 ## Operational notes from today, worth knowing before you touch this repo
 

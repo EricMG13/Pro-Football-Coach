@@ -17,6 +17,15 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ---
 
+> **2026-08-20 — PR #9's deterministic pins were re-derived after the legal trade-dress fix.**
+> The added NFL colour pairs legitimately trigger bounded collision retries and therefore shift the
+> seeded generation stream; no production generator change was needed. Commit `bbfabb9` updates the
+> generation, architecture, and trait-population pins. Release verification passed for
+> `--generation-only` (**35 tests / 42,330 checks**), `--architecture-only` (**29 / 245**, twice),
+> `--trait-population` (**8 / 610**), and `--career-portal-decisions` (**1 / 8**). The replacement
+> full CI run is `32371185706`; it was queued at this entry's writing and remains the merge gate.
+> The local release `--season-rollover` attempt ended without a result, so it is not claimed here.
+
 ## Where the project actually is
 
 > **2026-08-20 — career transitions: the world half of a job change was never done.** The career
@@ -2308,6 +2317,39 @@ rule about contact.
 **Integrity:** one check of 29 is inactive, `contractExpiry`, which activates with roster turnover.
 
 **UI:** six view files against `04`'s 62 canonical screen families, all behind M8's entry gate.
+
+### 2026-08-13 — the near-miss name list — **written, and UNVERIFIED: never compiled**
+
+An IP note offered to the project was reviewed and turned into blocklist entries. `docs/briefs/
+2026-08-13-name-equivalents.md` carries the review and the whole annotated list; `02` §11.3.5
+carries the doctrine. Headline: the note's own "safe alternatives" were the marks themselves — two
+of its four were already on this repository's blocklist as real names — and that is the class the
+change is built around.
+
+The blocklist went from **274 entries to 482** across six new groups: acronym and numeral forms of
+conference marks whose spelled form was already blocked, conference names outside the top division,
+rivalry-trophy marks, bowl-game marks, award marks and their namesakes, and league, broadcast and
+competitor-product marks. Trade dress went from 39 pairs to 71 — it was a college slice while the
+generator dresses both tiers.
+
+**The finding worth reading twice: seven real college nicknames and one real nickname adjective were
+live in `NameGrammar`'s own pools**, with both legal tests green, because the nickname limb was an
+FBS-and-NFL slice. Valparaiso is Division I and "Beacons" was in the noun pool. All eight are now
+blocked and were replaced one-for-one, so pool counts and the RNG stream are unchanged and only the
+names differ.
+
+**Nothing here has been compiled or run.** There is no `swift` and no `xcodebuild` in this
+environment. Touched files: `Sources/FootballSimCore/Generation/Blocklist.swift`,
+`Sources/FootballSimCore/Generation/NameGrammar.swift`,
+`Tests/SimTests/Suites/LegalTests.swift`. Six new test cases were added and none of them has been
+executed by a compiler.
+
+What stands behind it instead is a Python mirror of the matcher, of every name shape the generator
+can emit, and of `SeededRandom` plus `ColourGenerator.pair` — validated by reproducing results the
+existing suite already asserts (the eight dual-use cities; 0 collisions, 0 fallbacks and 499
+distinct primaries at the seeds `GenerationTests` uses) before being trusted about the new entries.
+§6 of the brief states exactly what it checked. **A mirror is not a build, and this entry is not a
+claim that the suite is green.**
 
 ### Preserved pre-rebaseline P0–P4 record
 

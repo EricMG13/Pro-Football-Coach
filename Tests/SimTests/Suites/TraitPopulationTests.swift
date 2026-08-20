@@ -268,6 +268,9 @@ func runTraitPopulationTests() {
         }
 
         test("trait generation leaves the identity and value stream byte-for-byte stable") {
+            // Re-pinned on 2026-08-20 after PR #9 added real NFL trade-dress pairs. Collision
+            // retries deliberately shift the downstream deterministic stream; position and age
+            // remain slot-derived and therefore stay unchanged.
             let seed: UInt64 = 84_001
             let world = LeagueGenerator.generate(seed: seed)
             let population = RosterPopulationGenerator.generate(
@@ -293,14 +296,14 @@ func runTraitPopulationTests() {
             let initial = population.players[0]
             let prospect = prospects[0]
 
-            expectEqual(initial.id.uuidString, "65AAA77C-F093-42EC-91CA-064775DA4536")
-            expectEqual(initial.fullName, "Preston Corrcombe")
+            expectEqual(initial.id.uuidString, "7BA49480-94D0-4F53-A14C-BF289F3D7261")
+            expectEqual(initial.fullName, "Gavis Tarrstone")
             expectEqual(initial.position, .quarterback)
             expectEqual(initial.age, 18)
-            expectEqual(initial.potential, Rating(61))
+            expectEqual(initial.potential, Rating(62))
             expectEqual(Attribute.allCases.map { initial.attributes[$0].value }, [
-                59, 48, 46, 45, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
-                40, 40, 49, 46, 47, 60, 56, 57, 40, 40, 40, 40, 40, 56, 62, 59, 43, 57,
+                50, 45, 46, 60, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
+                40, 40, 51, 52, 50, 58, 54, 50, 40, 40, 40, 40, 40, 46, 57, 59, 54, 40,
             ])
 
             expectEqual(replacement.id.uuidString, "84ECCA2A-C6EA-45E2-AB7A-99C0B82291E1")
