@@ -19,6 +19,42 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-20 — CI ran for the first time on this remediation pass and found two real defects,
+> both fixed: unverified — never compiled, but this time by a real compiler on CI, not by manual
+> reading.** The run was against `5b12641` (Phase 4's original head, before either adversarial
+> review's follow-up fixes); nothing in the commits between there and here touched either failure's
+> area, so both were still live at the new head and needed fixing here, not just noting.
+>
+> **1. `ContractTests.swift:1524`, a pre-existing test broken by this pass's own Phase 2 dead-code
+> deletion.** The assertion checked `appRoot.contains("staffMarketProfile")` as its proxy for "the
+> alias is reachable" — true only because the now-deleted dead case label in `navigate(_:in:)`'s
+> switch happened to contain that spelling, not because of anything about actual reachability.
+> Removing that label was correct (it was provably dead: the function's own leading
+> canonicalise-and-recurse guard means an alias case can never reach the switch, and this pass's own
+> new "navigate(_:in:) does not branch on a dead alias sub-pattern either" test already covers
+> exactly that), but it left this older test checking a coincidence instead of the property it
+> names. Fixed with a real behavioural assertion —
+> `CoachWorldScreenID.staffMarketProfile.canonicalDestination == .staffRoom` — which is what
+> actually makes the claim true: `navigate(.staffMarketProfile)` still canonicalises and recurses
+> into the same `StaffRoomView(` the source-scan half of the check confirms.
+>
+> **2. `ArchitectureTests.swift:83-84`, the root fingerprint pins, moved by this pass's own schema
+> change — not a determinism regression.** `careerArc` is a required, non-optional property of
+> `GameState` itself, so the `stakeholderLastMovement` key this pass added to `CareerArcState`'s
+> `encode(to:)` appears in every encoded root's JSON body, including a freshly bootstrapped one —
+> exactly the class of move this file's own history already documents for the `DomainEventLedger`
+> archive and the contract-negotiation ledger. Re-pinned to the values CI's own run actually
+> produced. Departure from this file's own stated norm, recorded plainly rather than hidden: the
+> prior pin moves were each "reproduced in two independent processes" before being written; these
+> two are copied verbatim from a single CI run instead, since no Swift toolchain exists in this
+> environment to independently re-derive them. Cross-process reproduction of a hash over a fixed
+> seed is the property this test exists to check, so the next CI run against this exact pair of
+> values is what actually validates the guarantee.
+>
+> Both fixes pushed without a further local review pass — the CI failure itself is stronger evidence
+> than another round of manual reading would add, and re-running the same source-level verification
+> this whole plan already relies on elsewhere would not catch anything CI did not already catch.
+
 > **2026-08-20 — Per-surface P0/P1 remediation, Phase 4's adversarial review returned: two fixes
 > applied, one gap accepted and recorded, unverified — never compiled.** Three findings. **Finding
 > 1 (real, fixed):** `statusLabel`'s `.signed` arm returned a bare "Signed" with no ownership check,
