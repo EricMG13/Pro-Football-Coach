@@ -561,11 +561,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
                 ForEach(Array(attributes), id: \.stableID) { attribute in
                     HStack(spacing: CoachWorldTokens.Gap.xs) {
                         Text(attribute.label.uppercased())
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.flag, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                             .foregroundStyle(palette.contentSecondary.color)
                             .frame(width: RosterMetric.attributeLabel, alignment: .leading)
                         FloodlitShareBar(
@@ -574,11 +570,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
                             palette: palette
                         )
                         Text("\(attribute.value)")
-                            .font(
-                                CoachWorldTokens.figure(
-                                    CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                                )
-                            )
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                             .frame(width: RosterMetric.attributeValue, alignment: .trailing)
                     }
                     .accessibilityElement(children: .combine)

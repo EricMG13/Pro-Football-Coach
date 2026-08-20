@@ -515,45 +515,6 @@ public struct CoachWorldAppRootView: View {
                         onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
-            case .draftBoard:
-                surface(store.proOffseason, screen: .draftBoard) { model in
-                    DraftBoardView(
-                        model: model,
-                        statusMessage: failure ?? store.statusMessage,
-                        onAction: { action in Task { await store.actOnProMarket(action) } },
-                        onClose: { closeCareer(in: store) }
-                    )
-                    .floodlitChrome(
-                        chrome(for: .draftBoard, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .freeAgency:
-                surface(store.proOffseason, screen: .freeAgency) { model in
-                    FreeAgencyView(
-                        model: model,
-                        statusMessage: failure ?? store.statusMessage,
-                        onAction: { action in Task { await store.actOnProMarket(action) } },
-                        onClose: { closeCareer(in: store) }
-                    )
-                    .floodlitChrome(
-                        chrome(for: .freeAgency, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .proScoutingBoard:
-                surface(store.proOffseason, screen: .proScoutingBoard) { model in
-                    ProScoutingBoardView(
-                        model: model,
-                        statusMessage: failure ?? store.statusMessage,
-                        onAction: { action in Task { await store.actOnProMarket(action) } },
-                        onClose: { closeCareer(in: store) }
-                    )
-                    .floodlitChrome(
-                        chrome(for: .proScoutingBoard, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
             case .collegeOffseason:
                 surface(store.collegeOffseason, screen: .collegeOffseason) { model in
                     CollegeOffseasonView(
@@ -565,50 +526,6 @@ public struct CoachWorldAppRootView: View {
                     )
                     .floodlitChrome(
                         chrome(for: .collegeOffseason, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .portalHub:
-                surface(store.collegeOffseason, screen: .portalHub) { model in
-                    PortalHubView(model: model, statusMessage: failure ?? store.statusMessage,
-                                  onCommit: { id in Task { await commit(id, in: store) } },
-                                  onContinue: { Task { await advance(store) } },
-                                  onClose: { closeCareer(in: store) })
-                    .floodlitChrome(
-                        chrome(for: .portalHub, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .retentionDecisions:
-                surface(store.collegeOffseason, screen: .retentionDecisions) { model in
-                    RetentionDecisionsView(model: model, statusMessage: failure ?? store.statusMessage,
-                                            onCommit: { id in Task { await commit(id, in: store) } },
-                                            onContinue: { Task { await advance(store) } },
-                                            onClose: { closeCareer(in: store) })
-                    .floodlitChrome(
-                        chrome(for: .retentionDecisions, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .portalMarket:
-                surface(store.collegeOffseason, screen: .portalMarket) { model in
-                    PortalMarketView(model: model, statusMessage: failure ?? store.statusMessage,
-                                     onCommit: { id in Task { await commit(id, in: store) } },
-                                     onContinue: { Task { await advance(store) } },
-                                     onClose: { closeCareer(in: store) })
-                    .floodlitChrome(
-                        chrome(for: .portalMarket, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .nilAllocation:
-                surface(store.collegeOffseason, screen: .nilAllocation) { model in
-                    NilAllocationView(model: model, statusMessage: failure ?? store.statusMessage,
-                                      onCommit: { id in Task { await commit(id, in: store) } },
-                                      onContinue: { Task { await advance(store) } },
-                                      onClose: { closeCareer(in: store) })
-                    .floodlitChrome(
-                        chrome(for: .nilAllocation, in: store),
                         onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
@@ -694,41 +611,6 @@ public struct CoachWorldAppRootView: View {
                         onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
-            case .staffMarketProfile:
-                surface(store.staffRoom, screen: .staffMarketProfile) { model in
-                    StaffMarketProfileView(model: model, statusMessage: failure ?? store.statusMessage,
-                                           onClose: { closeCareer(in: store) })
-                    .floodlitChrome(
-                        chrome(for: .staffMarketProfile, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .schemeBook:
-                surface(store.gamePlan, screen: .schemeBook) { model in
-                    SchemeBookView(
-                        model: model,
-                        statusMessage: failure ?? store.statusMessage,
-                        onSelect: { plan in Task { await setGamePlan(plan, in: store) } },
-                        onClose: { closeCareer(in: store) }
-                    )
-                    .floodlitChrome(
-                        chrome(for: .schemeBook, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .personnelPackages:
-                surface(store.depthChart, screen: .personnelPackages) { model in
-                    PersonnelPackagesView(
-                        model: model,
-                        statusMessage: failure ?? store.statusMessage,
-                        onSelect: { plan in Task { await setPersonnelPlan(plan, in: store) } },
-                        onClose: { closeCareer(in: store) }
-                    )
-                    .floodlitChrome(
-                        chrome(for: .personnelPackages, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
             case .aftermath:
                 surface(store.aftermath, screen: .aftermath) { model in
                     AftermathView(
@@ -775,63 +657,6 @@ public struct CoachWorldAppRootView: View {
                         onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
-            case .jobBoard:
-                surface(store.careerHub, screen: .jobBoard) { model in
-                    JobBoardView(model: model, statusMessage: failure ?? store.statusMessage,
-                                 onClose: { closeCareer(in: store) },
-                                 onNavigate: { navigate($0, in: store) },
-                                 onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
-                                 onResign: { Task { await resignCareer(in: store) } },
-                                 onContinue: { Task { await advance(store) } })
-                    .floodlitChrome(
-                        chrome(for: .jobBoard, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .offer:
-                surface(store.careerHub, screen: .offer) { model in
-                    OfferView(model: model, statusMessage: failure ?? store.statusMessage,
-                              onClose: { closeCareer(in: store) },
-                              onNavigate: { navigate($0, in: store) },
-                              onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
-                              onResign: { Task { await resignCareer(in: store) } },
-                              onContinue: { Task { await advance(store) } })
-                    .floodlitChrome(
-                        chrome(for: .offer, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .appointment:
-                surface(store.careerHub, screen: .appointment) { model in
-                    AppointmentView(model: model, statusMessage: failure ?? store.statusMessage,
-                                    onClose: { closeCareer(in: store) },
-                                    onNavigate: { navigate($0, in: store) },
-                                    onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
-                                    onResign: { Task { await resignCareer(in: store) } },
-                                    onContinue: { Task { await advance(store) } })
-                    .floodlitChrome(
-                        chrome(for: .appointment, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .jobSecurity:
-                surface(store.careerHub, screen: .jobSecurity) { model in
-                    JobSecurityView(
-                        model: model,
-                        statusMessage: failure ?? store.statusMessage,
-                        onClose: { closeCareer(in: store) },
-                        onNavigate: { navigate($0, in: store) },
-                        onAcceptOpportunity: { id in
-                            Task { await acceptCareerOpportunity(id, in: store) }
-                        },
-                        onResign: { Task { await resignCareer(in: store) } },
-                        onContinue: { Task { await advance(store) } }
-                    )
-                    .floodlitChrome(
-                        chrome(for: .jobSecurity, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
             case .stakeholders:
                 surface(store.careerHub, screen: .stakeholders) { model in
                     StakeholdersView(
@@ -865,24 +690,6 @@ public struct CoachWorldAppRootView: View {
                     )
                     .floodlitChrome(
                         chrome(for: .promotionDecision, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .coachingCarousel:
-                surface(store.careerHub, screen: .coachingCarousel) { model in
-                    CoachingCarouselView(
-                        model: model,
-                        statusMessage: failure ?? store.statusMessage,
-                        onClose: { closeCareer(in: store) },
-                        onNavigate: { navigate($0, in: store) },
-                        onAcceptOpportunity: { id in
-                            Task { await acceptCareerOpportunity(id, in: store) }
-                        },
-                        onResign: { Task { await resignCareer(in: store) } },
-                        onContinue: { Task { await advance(store) } }
-                    )
-                    .floodlitChrome(
-                        chrome(for: .coachingCarousel, in: store),
                         onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
@@ -1068,7 +875,6 @@ public struct CoachWorldAppRootView: View {
             }
         }
     }
-
 
     /// The shared management chrome for a converted surface, or nil when the week hub's identity
     /// has not been retained — the header prints the programme, so without it there is nothing

@@ -72,11 +72,11 @@ public struct TeamProgrammeProfileView: View, CoachWorldChromedSurface {
                     "\(model.cityName) \u{00B7} \(model.regionName)", palette: palette
                 )
                 Text(model.team.name.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.figure, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.figure, weight: .bold)
                     .lineLimit(ProfileMetric.nameLines)
                     .minimumScaleFactor(ProfileMetric.nameScaleFloor)
                 Text(conferenceLine)
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                     .foregroundStyle(palette.contentSecondary.color)
             }
             .accessibilityElement(children: .combine)
@@ -85,7 +85,7 @@ public struct TeamProgrammeProfileView: View, CoachWorldChromedSurface {
             )
             HStack(alignment: .lastTextBaseline, spacing: CoachWorldTokens.Gap.smPlus) {
                 Text(model.record)
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.title, weight: .semibold))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.title, weight: .semibold)
                 if let rank = model.rank {
                     FloodlitLabel3(rank, palette: palette, tint: palette.actionPrimary.color)
                 }
@@ -181,7 +181,7 @@ public struct TeamProgrammeProfileView: View, CoachWorldChromedSurface {
                 .fill(entry.won ? palette.statePositive.color : palette.stateNegative.color)
                 .frame(width: ProfileMetric.formChipWidth, height: ProfileMetric.formChipHeight)
             Text(entry.won ? "W" : "L")
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                 .foregroundStyle(entry.won ? palette.statePositive.color : palette.stateNegative.color)
         }
         .accessibilityElement(children: .ignore)
@@ -218,11 +218,7 @@ public struct TeamProgrammeProfileView: View, CoachWorldChromedSurface {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                     Text(rival.team.name.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.row, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                         .lineLimit(1)
                     FloodlitLabel3(rival.origin, palette: palette)
                 }
@@ -238,7 +234,7 @@ public struct TeamProgrammeProfileView: View, CoachWorldChromedSurface {
                 )
                 .frame(width: ProfileMetric.intensityBar)
                 Text("\(rival.intensity)")
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill, weight: .semibold))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.pill, weight: .semibold)
                     .frame(width: ProfileMetric.intensityFigure, alignment: .trailing)
             }
         }

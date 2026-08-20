@@ -111,11 +111,7 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
         FloodlitRow(palette: palette) {
             HStack(spacing: CoachWorldTokens.Gap.xs) {
                 Text(name.uppercased())
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                        )
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     .lineLimit(1)
                     .frame(width: PracticeMetric.sessionLabel, alignment: .leading)
                 FloodlitShareBar(
@@ -124,11 +120,7 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
                 )
                 // Minutes take a prime, per the handoff's copy rules.
                 Text("\(minutes)\u{2032}")
-                    .font(
-                        CoachWorldTokens.figure(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                        )
-                    )
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     .frame(width: PracticeMetric.minutesColumn, alignment: .trailing)
             }
         }
@@ -153,11 +145,7 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
                 ) {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                         Text(option.title.uppercased())
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.row, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                             .lineLimit(1)
                         Text(option.consequence)
                             .font(CoachWorldTokens.TypeRole.caption)

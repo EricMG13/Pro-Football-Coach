@@ -118,7 +118,7 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
         } label: {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text(game.week.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                     .foregroundStyle(
                         game.score == nil ? palette.actionPrimary.color : palette.contentQuiet.color
                     )
@@ -126,35 +126,30 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
                     .frame(width: ScheduleMetric.weekColumn, alignment: .leading)
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                     Text(game.away.name.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                         .lineLimit(1)
                     Text("at \(game.home.name)".uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.flag, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                         .foregroundStyle(palette.contentQuiet.color)
                         .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                Text(game.score ?? game.stage)
-                    .font(
-                        game.score == nil
-                            ? CoachWorldTokens.TypeRole.caption
-                            : CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill)
-                    )
-                    .foregroundStyle(
-                        game.score == nil ? palette.contentQuiet.color : palette.contentPrimary.color
-                    )
-                    .lineLimit(game.score == nil ? 2 : 1)
-                    .multilineTextAlignment(.trailing)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(width: ScheduleMetric.resultColumn, alignment: .trailing)
+                Group {
+                    if game.score == nil {
+                        Text(game.score ?? game.stage)
+                            .font(CoachWorldTokens.TypeRole.caption)
+                    } else {
+                        Text(game.score ?? game.stage)
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
+                    }
+                }
+                .foregroundStyle(
+                    game.score == nil ? palette.contentQuiet.color : palette.contentPrimary.color
+                )
+                .lineLimit(game.score == nil ? 2 : 1)
+                .multilineTextAlignment(.trailing)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: ScheduleMetric.resultColumn, alignment: .trailing)
             }
             .padding(.horizontal, CoachWorldTokens.Pad.row.h)
             .frame(minHeight: ScheduleMetric.rowHeight)

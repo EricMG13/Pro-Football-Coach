@@ -84,6 +84,510 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > call-in — the mechanic that replaces the removed arcade layer's decision volume — offers the same
 > three hardcoded options at every trigger, which is a design question for `02`, not a defect.
 
+> **2026-08-19, final — CI actually ran, against commits from partway through this session's work,
+> and found two real regressions this branch's own static-only verification could not catch.** With
+> no `swift`/`xcodebuild` here, everything above was checked by grep, Python simulation and careful
+> reading — never a compiler. GitHub's runners finally caught up on the backlog from this branch's
+> many pushes and ran the actual `full` verify lane. Result, on the earliest commits checked: **build
+> green, 921 of 922 tests passing.** That is real, external confirmation that Phase 0-2 and the bulk
+> of Phase 3 are sound — but the one failure, and a second one found by investigating it rather than
+> waiting for CI to report it directly, are worth recording exactly.
+>
+> **Regression 1 (real, from Phase 3): `ContractTests.swift`'s "player profile figures must be set
+> in the tabular face."** This test checks `PlayerProfileView.swift`'s source text for either
+> `"monospacedDigit"` or `"CoachWorldTokens.figure("` — a substring check already showing its age
+> (the comment explains it was rewritten once before, when figures first moved from bare
+> `.monospacedDigit()` to `CoachWorldTokens.figure(_:weight:)`). Phase 3's own migration moved every
+> figure call site on that surface again, to `.coachWorldFigure(_:weight:)`
+> (`CoachWorldScaledType.swift`), which still applies `.monospacedDigit()` — just internally, not as
+> a literal token at the call site. Neither of the two spellings the test already accepted survived,
+> so it failed, even though the property it exists to protect never regressed. Fixed by adding
+> `.coachWorldFigure(` as a third accepted spelling. Confirmed by grep this was the *only* such check
+> in the whole suite affected by the sweep — `RosterView`'s and `LeagueMapView`'s equivalent
+> `monospacedDigit`-substring checks still pass, because those two files carry other, unmigrated
+> `.monospacedDigit()` calls unrelated to `CoachWorldTokens.figure(`.
+>
+> **Regression 2 (real, from Phase 4, found by investigation before CI could report it): four more
+> test blocks asserting a now-provably-false "must be reachable from the shipped app root" claim.**
+> While diagnosing regression 1, a second family-loop test elsewhere in the same file
+> (`schemeBook`/`personnelPackages`) turned up checking `appRoot.contains("case .schemeBook")` —
+> exactly the dead-case text Phase 4 had just deleted. Rather than wait for CI to surface each one
+> individually (each full run takes 35-40 minutes on these runners), re-derived the complete 15-alias
+> set from `routeDisposition` directly and searched the whole suite for every reachability check
+> referencing any of them — including the string-interpolated form (`"case .\(family.2)"`) a plain
+> literal-text grep cannot see. Found and fixed four affected blocks in total:
+> `jobBoard`/`offer`/`appointment` (a for-loop), `schemeBook`+`personnelPackages` (a standalone
+> pair), `staffMarketProfile` (split out of a loop it shared with three genuinely-canonical
+> siblings), and `portalHub`+`retentionDecisions`+`portalMarket`+`nilAllocation` (split out of a
+> loop shared with the genuinely-canonical `signingDay`). Confirmed the existing
+> `proScoutingBoard`/`draftBoard`/`freeAgency` loop was already safe — it checks the alias view
+> file's own delegation to `ProOffseasonView`, never `appRoot` case text — and that
+> `jobSecurity`/`coachingCarousel` have no per-family reachability test at all, only the
+> already-correct by-construction "62 legacy route numbers" test. Each fix replaces the false
+> "reachable" claim with the true one the registry already states
+> (`canonicalDestination`/`isCanonicalTask`, looked up via `CoachWorldScreenID.allCases` rather than
+> hand-typed) plus an explicit assertion that the dead case is genuinely gone.
+>
+> **What this changes about every earlier "UNVERIFIED — never compiled" entry above: nothing —
+> that framing held exactly as intended.** Neither regression was a claim of false verification; both
+> were static-analysis blind spots this session was honest about not being able to close alone. The
+> value here is that CI, once it actually ran, confirmed the code compiles and almost everything
+> passes, and the two real problems it found were both fixable in minutes once identified, not signs
+> of a deeper defect in the sweep's methodology.
+>
+> **UNVERIFIED — never compiled**, same as everything else in this log; these two fixes are
+> themselves unverified by the same token, checked only by re-deriving and re-running (by hand, via
+> grep and Python) the exact logic each test performs. Files touched:
+> `Tests/SimTests/Suites/ContractTests.swift` (both fixes).
+
+> **2026-08-19, later still — Phase 4: deleted the 15 unreachable alias branches from `career()`,
+> corrected the review doc's S-6 overstatement, and corrected this file's own F-09 claim below.**
+>
+> `Sources/CoachWorldApp/CoachWorldAppRootView.swift`'s `career(_ store:)` switches on
+> `Self.canonicalScreen(screen)`, which resolves every alias to its `canonicalDestination` before the
+> switch runs — a `case` for an alias screen can never execute. Cross-referenced
+> `ScreenRegistry.swift`'s `routeDisposition` alias table (15 entries) against the switch's case
+> labels and found all 15 present as dead code: `jobBoard`, `offer`, `appointment`,
+> `staffMarketProfile`, `schemeBook`, `personnelPackages`, `portalHub`, `retentionDecisions`,
+> `portalMarket`, `nilAllocation`, `proScoutingBoard`, `draftBoard`, `freeAgency`, `jobSecurity`,
+> `coachingCarousel`. Deleted all 15. Their view files are untouched — the earlier IA decision to
+> keep them as scaffolding was not reopened; only the unreachable call sites are gone. The switch
+> keeps its exhaustive `default:` fallback, so this changes no runtime behavior.
+>
+> `ContractTests.swift`'s "career() routes every optional read model through surface()" test counted
+> all 62 registry screens toward `explicitlyRouted.count >= 50`, a threshold the 15 dead cases used
+> to help clear. Rescoped to `isCanonicalTask` screens (47) with the threshold recalibrated to 40,
+> and a second assertion added, built the same way as the plan asked — "a test that catches a future
+> one by construction": no screen from `CoachWorldScreenID.allCases.filter { !$0.isCanonicalTask }`
+> may appear as `case .X:` in `career()` at all. Verified both assertions pass by Python simulation
+> of the exact test logic against the real edited files (`explicitlyRouted.count` lands at 42;
+> `deadAliasCases` is empty).
+>
+> **The review doc's S-6 finding overstated its own case.** Its last sentence — "Nothing in the
+> verification record says so" [that the app has 47, not 62, reachable destinations] — is wrong:
+> `ContractTests.swift`'s "the 62 legacy route numbers migrate through one canonical task table"
+> already asserted the 47/62 split by construction at the time the review was written; the review
+> just did not find that test. Added a correction note in place, directly under the sentence it
+> corrects, rather than rewriting the original finding — the rest of S-6 (fifteen dead branches, the
+> `AccessibilityReflowTests`/`ContractTests` miscounts) was accurate and is recorded above as fixed
+> across Phases 1, 2 and this one.
+>
+> **This file's own F-09 claim, dated 2026-08-18, is also wrong** — the review's S-9 finding refutes
+> it and this entry adopts that finding rather than repeat it. F-09 said *"no scouting-confidence
+> model exists, and deriving one would print invented figures as fact."* A scouting-confidence model
+> does exist: `Sources/FootballSimCore/College/ScoutingState.swift:19,21` declares `confidence: Int`
+> and `evidenceCount: Int`, both clamped (`:34-37`) to `CollegeRules.knowledgeConfidenceRange` /
+> `.maximumScoutingEvidence` and populated per observation. It is already surfaced —
+> `CoachWorldRecruitingBoardProvider.swift:257` renders `"Confidence \($0)%"` — so F-09's premise was
+> never true. What is real and still open, per S-9, is smaller: the rendered figure is stored in and
+> printed under a field/label reading **"Uncertainty"** (`ProspectProfileView.swift:147`), so a coach
+> reads the value backwards; `evidenceCount` is never surfaced at all; and `CoachWorldConfidenceTag`
+> (registry #12, built and documented for exactly this field, `FloodlitPatterns.swift:608`) is used
+> on `OpponentFilmView.swift` — a different confidence concept, opponent-film source strength, not
+> prospect evaluation — and on no recruiting surface. That is a presentation defect, not the engine
+> gap F-09 claimed, and it is a per-surface P1 the owner's scope decision defers past this plan, not
+> something this phase fixes.
+>
+> **UNVERIFIED — never compiled.** No `swift`/`xcodebuild` in this environment. All citations above
+> (`ScoutingState.swift`, `CoachWorldRecruitingBoardProvider.swift`, `ProspectProfileView.swift`,
+> `FloodlitPatterns.swift`) re-checked against the current file state, not copied from the review
+> doc verbatim — two line numbers had shifted from this session's own earlier edits
+> (`ProspectProfileView.swift` from Phase 3's font migration, `FloodlitPatterns.swift` from the same)
+> and are corrected here to their current values. Files touched:
+> `Sources/CoachWorldApp/CoachWorldAppRootView.swift`, `Tests/SimTests/Suites/ContractTests.swift`,
+> `docs/reviews/2026-08-19-full-surface-adversarial-review.md`, this file.
+
+> **2026-08-19, latest — Phase 3 (S-0, Dynamic Type) sweep complete.** Every file identified at
+> sweep start (`Sources/ProFootballCoachUI/*.swift`, excluding `DesignTokens.swift` and
+> `CoachWorldScaledType.swift` itself) is now on `coachWorldDisplay`/`coachWorldFigure`/
+> `coachWorldIcon`/`coachWorldFigureCondensed`, or has its remaining raw sites deliberately deferred
+> and documented in place. 25 more files closed past the previous checkpoint: `WorldSearchView`,
+> `StatisticsLeadersView`, `RosterView`, `NewsView`, `GamePlanView`, `AwardsHonoursView`,
+> `CollegeOffseasonView`, `LeagueMapView`, `PracticePlanView`, `ContactVisitPlannerView`,
+> `RedesignedJobBoardProofView`, `ScheduleView`, `DepthChartView`, `MatchDayView`,
+> `OpponentFilmView`, `ProspectProfileView`, `StaffRoomView`, `StandingsView`, `AftermathView`,
+> `GameDetailBoxScoreView`, `ShortlistView`, `TeamProgrammeProfileView`, `CareerHubView`,
+> `ClassOverviewView`, `CompetitionOverviewView`, `ContractNegotiationView`, `InboxView` — plus a
+> full re-check of the nine files closed at the previous checkpoint, which surfaced the entry below.
+>
+> **A real gap found by construction, not by luck.** This sweep's own grep pattern
+> (`CoachWorldTokens\.(display|figure)\(|\.system\(size:`) could not see
+> `CoachWorldTokens.TypeRole.microLabel` — a bare property reference, not a function call — even
+> though `microLabel` (`DesignTokens.swift:211`) is itself a raw, non-scaling `Font.system(size:)`
+> despite sitting inside the otherwise-already-scaling `TypeRole` enum alongside `.display`/`.title`/
+> `.headline`/`.body`/`.callout`/`.caption`, which all use text-style-based fonts. A dedicated
+> module-wide grep for the bare property found exactly four sites — matching the plan's own separate
+> "`microLabel` 4" count exactly — three of them in `CoachingHQView.swift`, a file this sweep had
+> already marked complete. All four now use `coachWorldDisplay(CoachWorldTokens.TypeRole
+> .microLabelSize)`, which reproduces `microLabel`'s exact shape (10 pt, bold, condensed). A
+> follow-up check confirmed `display`/`title`/`headline` (lines 197-203) are the only other
+> `Font.system(` constructions in `DesignTokens.swift`, and all three are text-style-based, so this
+> was the only blind spot of this shape.
+>
+> **A fourth helper, `coachWorldFigureCondensed`.** `CoachWorldVocabulary.swift`'s
+> `CoachWorldRatingRing` prints its value with both display's condensed width and figure's
+> monospaced digits at once — a combination built by hand in the original
+> (`.system(size:weight:design:).width(.condensed)` plus a separate `.monospacedDigit()`) that
+> neither `coachWorldDisplay` nor `coachWorldFigure` alone could reproduce. Rather than force one of
+> the other two helpers to carry a property they were not named for, or leave the one call site
+> unmigrated, `CoachWorldScaledType.swift` gained a third `condensed`/`monospacedDigit` combination.
+> Guarded by an existing, real `minimumScaleFactor(0.6)` — the same non-1.0, working shrink-back
+> class as `MatchDayField.swift`'s `PlayerToken`, not the no-op class deferred elsewhere.
+>
+> **A non-`.font()`-modifier case, in `ScheduleView.swift`.** One site picked between an
+> already-scaling `Font` value and a non-scaling one inside a single `.font(condition ? A : B)`
+> call — the shape the plan's own hazard analysis warned "keep `display()`/`figure()` for any
+> non-`View` context" was meant to cover. Rather than leave it non-scaling, or rely on unverifiable
+> `.font(nil)` environment-override semantics with no compiler to check them against, it was
+> restructured into a `Group` with an `if`/`else` per font and the shared trailing modifiers
+> (`foregroundStyle`, `lineLimit`, `fixedSize`, `frame`) applied once to the `Group` — identical
+> rendered semantics, now scaling on the branch that matters.
+>
+> **Nine sites remain deliberately non-scaling, each documented at its call site**, not silently
+> skipped: `FloodlitPatterns.swift` ×3 (`FloodlitArcGauge` figure, `FloodlitAttributeDial` rating,
+> `FloodlitStaffVoice` monogram — from the first installment), `StaffRoomView.swift` ×1 (monogram,
+> same unguarded-fixed-frame class), `FloodlitChrome.swift` ×1 (icon-rail label — fixed frame plus a
+> known no-op `minimumScaleFactor(railLabelFloor == 1.0)`), `DepthChartView.swift` ×2 (the field
+> token, which renders inside `fieldDiagram`'s `.accessibilityHidden(true)` — the review's P0 finding
+> about this exact diagram is explicitly out of this phase's scope, and scaling here would only risk
+> clipping without reaching the VoiceOver user the diagram is already unreachable to), and
+> `MatchDayField.swift` ×2 (`drawYardNumbers`'s `Paint.numberSize` sites — a genuine mechanism
+> limitation: `Text` is resolved through `GraphicsContext.resolve(...)` inside a `private static
+> func` with no `self` and no `@Environment`, so `@ScaledMetric` cannot apply there at all; a real
+> fix needs a scaled value threaded down from `FieldPlane`'s body plus an update to its custom
+> `Equatable` conformance so `.equatable()` render-suppression does not go stale when text size
+> changes).
+>
+> **Verification, same discipline as every prior entry:** every touched file re-grepped after
+> editing to confirm the site count landed at the expected number (deferred sites included), and
+> checked for paren/brace balance with `//` line comments stripped (the bare, unstripped count still
+> false-alarms on this file's own doc comments, as recorded at the previous checkpoint — using the
+> stripped version throughout this pass avoided repeating that investigation). One real miss caught
+> this way: an early `replace_all` in `InboxView.swift` matched only the identically-indented
+> occurrence of a duplicated pattern, silently leaving a second, differently-indented occurrence
+> untouched; a follow-up grep after the "fully migrated" claim caught it before commit. The same
+> class of miss recurred in `ContractNegotiationView.swift`'s if/else branches. A final module-wide
+> sweep after the last file confirmed: zero raw `display()`/`figure()`/`.system(size:)` sites remain
+> outside `DesignTokens.swift`, `CoachWorldScaledType.swift` (doc-comment prose only, confirmed) and
+> the nine documented deferrals above; zero bare `TypeRole.microLabel` references remain anywhere.
+>
+> **UNVERIFIED — never compiled.** No `swift`/`xcodebuild` in this environment; every claim above is
+> from static grep/Python verification, not a compiler. Files touched, this installment: the 25 files
+> named above, plus `CoachWorldScaledType.swift` (the `coachWorldFigureCondensed` addition) and
+> `CoachWorldVocabulary.swift` (icon and ring-figure sites, alongside its `microLabel` fix).
+>
+> **What Phase 3 does not cover, left for the owner per `04` §7.1's open rendered limb:** whether the
+> scaled type actually looks right at AX5 on the 844×390 install floor — no clipping, no overlap, no
+> datum lost — can only be confirmed by building to a simulator. This sweep makes type grow; it does
+> not and cannot verify the growth reads well without rendering it.
+
+> **2026-08-19, still later still still — Phase 3 sweep, continued: 9 files fully migrated, one new
+> mechanism helper, one genuine mechanism limitation found and documented in place.** Continuing
+> past the first installment (`CoachWorldScaledType.swift` + `FloodlitPatterns.swift`, recorded
+> below): `MatchDayScoreBug.swift` (17 sites), `FloodlitChrome.swift` (7 of 8 — the icon rail label
+> deferred, fixed in both dimensions with a no-op `minimumScaleFactor`), `TeamHealthView.swift` (8),
+> `ProOffseasonView.swift` (8), `ProManagementView.swift` (8), `DevelopmentPlanView.swift` (8),
+> `CoachingHQView.swift` (8), `PlayerProfileView.swift` (7), and `MatchDayField.swift` (5 of 7) are
+> now fully on `coachWorldDisplay`/`coachWorldFigure`. 60 of 217 non-scaling sites closed.
+>
+> **New: `coachWorldIcon(_:relativeTo:weight:)`**, added to `CoachWorldScaledType.swift`. Five of the
+> seven raw `.font(.system(size:weight:))` sites found across the module size an
+> `Image(systemName:)` glyph, not text — `coachWorldDisplay`'s condensed width and
+> `coachWorldFigure`'s monospaced digits are both wrong for a symbol, so this is a third, plain
+> helper (default `weight: .regular`, matching SF Symbol convention rather than display type's bold).
+>
+> **Genuine mechanism limitation found and left in place, not routed around
+> (`MatchDayField.swift`'s `drawYardNumbers`).** The two `Paint.numberSize` sites paint the yard-line
+> numbers by resolving `Text` through `GraphicsContext.resolve(...)` inside a `private static func`
+> taking `inout GraphicsContext` — no `self`, no `@Environment`, so `@ScaledMetric` cannot be used
+> there at all. This is not a per-site judgement call like the fixed-frame deferrals elsewhere; it is
+> a different mechanism (Canvas-drawn text) that the `ViewModifier`-based approach cannot reach. A
+> real fix needs a scaled size computed in `FieldPlane`'s body (a genuine `View`) threaded down as a
+> parameter, plus extending `FieldPlane`'s custom `Equatable` conformance — used for `.equatable()`
+> render-suppression — to key on the environment's dynamic type category, since otherwise the raster
+> would never redraw when text size changes even after the size itself is threaded through. Left
+> documented in a code comment at the call site rather than silently migrated or silently skipped.
+>
+> Established per-file policy, applied consistently across all nine: migrate every token whose
+> container is flexible, min-only, or already carries a working (non-1.0) `minimumScaleFactor`;
+> leave existing `lineLimit(1)` clamps as a graceful-truncation policy where no established local
+> reflow convention exists; where a file already pairs `dynamicTypeSize.isAccessibilitySize` with a
+> `lineLimit` choice elsewhere in the same file, extend that same convention to sibling sites rather
+> than leave one behind (`ProOffseasonView.swift`, `ProManagementView.swift`); defer only sites fixed
+> in *both* width and height with no working shrink-back.
+>
+> **UNVERIFIED — never compiled.** Every file checked by hand for paren/brace balance with line
+> comments stripped (a bare full-text count false-alarmed on `CoachWorldScaledType.swift`'s own doc
+> comments, which quote partial code patterns like `` `.system(size:` `` deliberately unbalanced in
+> prose — confirmed a false positive, not a defect, before moving on). One real mistake caught and
+> fixed before commit: an early edit accidentally set `coachWorldFigure`'s `monospacedDigit` to
+> `false` while adding the icon helper; caught on re-read of the diff, not after the fact. None of
+> this is a compiler. Files touched: `Sources/ProFootballCoachUI/CoachWorldScaledType.swift`,
+> `MatchDayScoreBug.swift`, `FloodlitChrome.swift`, `TeamHealthView.swift`, `ProOffseasonView.swift`,
+> `ProManagementView.swift`, `DevelopmentPlanView.swift`, `CoachingHQView.swift`,
+> `PlayerProfileView.swift`, `MatchDayField.swift`.
+>
+> **Remaining:** roughly 30 files / 157 sites (see the file-by-file count taken at sweep start, still
+> accurate modulo the nine above). Continuing in the same order (by site count, descending).
+
+> **2026-08-19, still later still — merged `main` and withdrew Phase 0's `Disposition` mechanism in
+> favour of `main`'s own, simpler fix for the same defect.** While this branch was mid-flight,
+> `main` gained commit `91a108d` ("remove unimplemented release gates", owner + Codex), which
+> resolves the exact same problem Phase 0 targeted — `AgencyBudgetTests`, `PerformanceBudgetTests`,
+> `TwoTierConsistencyTests` and `SmallestDeviceLayoutTest` registered as gates with no runner — but
+> by a different, incompatible route: it deletes the four `ReleaseGateID` cases outright rather than
+> giving them an explicit `.unwritten(reason:spec:)` disposition. Merging `main` in produced a real
+> conflict in `docs/qa/feature-coverage.csv`'s QA-001 row (resolved in favour of `main`'s wording,
+> which now matches the shipped mechanism) and a second, more consequential one `git` did not flag
+> as a textual conflict at all: `Tests/SimTests/SuiteCatalog.swift` auto-merged to a file combining
+> `main`'s reduced 17-case `ReleaseGateID` enum with this branch's `Disposition`-based `Entry`,
+> leaving `disposition(for:)` and the `expectedUnwritten` set referencing four enum cases that no
+> longer existed — a compile error a text-level merge cannot see.
+>
+> Resolution: `main`'s decision is the more recent, direct, owner-made call on trunk, and nothing
+> outside `SuiteCatalog.swift` itself referenced `Disposition` (checked by grep across `Tests/` and
+> `Sources/` before touching anything downstream) — Phases 1 through 3 are all untouched by this.
+> `SuiteCatalog.swift` was rewritten to `main`'s full shape verbatim: `Entry.runner: Runner?` restored,
+> `Disposition` removed, the two `Commitment coverage` tests back to their pre-Phase-0 form. Phase 0's
+> own entry below is left as an honest record of what this branch did at the time; it has since been
+> superseded on `main` and this entry is the correction. The plan's Phase 0 is therefore complete by
+> a route this branch did not originally take, and needs no further work.
+>
+> **UNVERIFIED — never compiled**, same as everywhere else in this log. The merge was checked by
+> grepping for every deleted `ReleaseGateID` case name and for `Disposition`/`disposition` across the
+> full merged tree to confirm zero remaining references, and by re-reading the full resulting file
+> against `main`'s version to confirm it is byte-for-byte the same shape — not a compiler, but the
+> nearest available substitute. Files touched: `Tests/SimTests/SuiteCatalog.swift`,
+> `docs/qa/feature-coverage.csv`.
+
+> **2026-08-19, still later — Phase 3 of the systemic-defect remediation plan (S-0, Dynamic Type),
+> first installment: the scaling mechanism, plus a first migrated file.** This phase is the largest
+> of the four and is **not complete** — see below for exactly what is and is not done.
+>
+> **The mechanism, `Sources/ProFootballCoachUI/CoachWorldScaledType.swift`.** `@ScaledMetric` cannot
+> live inside a static function returning a bare `Font` (`CoachWorldTokens.display`/`figure`'s
+> shape) — it has to be a stored property SwiftUI re-evaluates against the live environment. New
+> file follows `CoachWorldMotion.swift`'s established shape exactly: a private `ViewModifier` whose
+> `@ScaledMetric` is seeded from a caller-supplied base size via the underscored-backing-storage
+> initialiser (`_size = ScaledMetric(wrappedValue: size, relativeTo: textStyle)`), and two `View`
+> extension methods, `coachWorldDisplay`/`coachWorldFigure`, as the scaling replacements for
+> `CoachWorldTokens.display`/`figure`. `relativeTo:` defaults to `.body` — SwiftUI's own default,
+> and a deliberate, documented choice rather than a canon-derived mapping, since canon gives an exact
+> text-style mapping only for the six semantic roles (`TypeRole`, already implemented, already
+> scaling) and none for `DisplaySize`'s granular numeric scale.
+>
+> Verified as carefully as this environment allows: the underscored-backing-storage pattern is
+> checked against `@State`'s well-documented equivalent and against `ScaledMetric`'s two public
+> inits; every API called (`Font.system(size:weight:)`, `.width(.condensed)`, `.monospacedDigit()`)
+> is the exact call the original `display()`/`figure()` functions already made, just relocated into
+> a property-wrapper-backed context — so at the *default* content size category, before any scaling
+> applies, output is provably identical to today's. Checked by hand that the new file does not trip
+> `ContractTests`' design-token-literal scanner (every `size:`-labelled argument in it is a type
+> annotation or a variable, never a bare number).
+>
+> **First file migrated in full: `FloodlitPatterns.swift`**, chosen because `FloodlitLabel3` alone is
+> used across roughly fifteen other view files, so fixing it once fixes every one of them without
+> touching the fifteen. Six of nine call sites moved to `.coachWorldDisplay`/`.coachWorldFigure`:
+> `FloodlitLabel3`, `FloodlitFlag`, `CoachWorldConfidenceTag`, `FloodlitPill`, and the two flowing
+> `FloodlitStaffVoice`/`FloodlitCostLine` lines. The four with a hard `.lineLimit(1)` also gained
+> `dynamicTypeSize.isAccessibilitySize ? nil : 1` — text that scales but stays clipped at one line
+> just cuts off the larger glyphs instead of the small ones, which `04` §6.2 does not sanction (it
+> sanctions *reflow*, not *loss*). Checked before relaxing each one that its container can actually
+> grow: `FloodlitPill`'s frame is a `minHeight`, not a fixed height.
+>
+> **Three of the nine deliberately NOT migrated in this pass**, and this is a judgement call, not an
+> oversight: `FloodlitArcGauge`'s figure, `FloodlitAttributeDial`'s rating, and
+> `FloodlitStaffVoice`'s monogram all centre text inside a frame fixed in **both** width and height
+> (a circular gauge, a square badge). Scaling the number without also reworking that fixed geometry
+> risks the glyphs overflowing a ring or badge that cannot grow with them — a real, plausible failure
+> mode this environment cannot render to check. Left as static `.font(...)` calls pending a
+> considered fix (grow the frame too, or accept and test a bound on the overflow) rather than guessed
+> at.
+>
+> **What remains.** 217 non-scaling font call sites exist across 47 files (`display()` 138,
+> `figure()` 68, `microLabel` 4, raw `.system(size:` 7); this installment closes 6. The review's own
+> framing holds: most call sites pass a named `DisplaySize` constant rather than a literal, so the
+> remaining work is concentrated in perhaps two dozen distinct constants reused across files, not 211
+> independent judgement calls — but each file still needs the same check this one got: does the
+> surrounding frame allow growth, and does an existing `.lineLimit` need the same AX5 relaxation.
+> Continuing file by file, each its own commit, per the plan.
+>
+> **UNVERIFIED — never compiled.** No `swift`/`xcodebuild` here, and this is the phase where that
+> matters most: nothing in this fix can be confirmed to actually *render* correctly, only to be
+> structurally sound and behaviourally unchanged at the default size. `04` §7.1 is explicit that the
+> rendered limb of this kind of contract stays open without a device. Files touched:
+> `Sources/ProFootballCoachUI/{CoachWorldScaledType (new),FloodlitPatterns}.swift`.
+
+> **2026-08-19, later yet — made five verification gates assert properties instead of substrings
+> (Phase 2 of the systemic-defect remediation plan).**
+>
+> **Collapsed three tautological AX5 branches.** `NewCareerCoachIdentityView.swift`,
+> `RankingsPlayoffPictureView.swift` and `BracketPostseasonView.swift` each had an
+> `if dynamicTypeSize.isAccessibilitySize { X } else { X }` with byte-identical arms (S-7) —
+> collapsed to the one statement, and the now-unused `@Environment(\.dynamicTypeSize)` removed from
+> each. Verified safe before collapsing, not after: each delegates its whole composition to a real
+> host (`NewCareerSetupView`, `CompetitionOverviewView`) and confirmed by hand that the host
+> genuinely handles AX5 in its own body, so Phase 1's `renderedText` union carries it forward —
+> the test now passes on real content, not a dead branch.
+>
+> **`Chrome` and `Paint` widened from file-private to module-internal** (`FloodlitChrome.swift`,
+> `MatchDayField.swift`) so `ContractTests` can assert their real values through `@testable import`
+> instead of string-matching source text. Checked for a name collision first — neither name is
+> declared anywhere else in the module.
+>
+> **`ContractTests.swift:1004-1007`** locked in `familySize`/`railLabel`/`railLabelFloor`'s exact
+> literals while claiming to protect "the readable floor." Replaced with a sanity-range check on the
+> real values (`> 0 && < 20`) — deliberately not a canon-conformance judgement, since `04` §6.1c
+> sanctions 9/9.5pt here while §6.2 states a 10pt floor, and that contradiction is unresolved (see
+> escalation list). `authoredFloor`/`workingProse` (`:955`) are deferred to Phase 3: nothing
+> currently consults them, so a real fix has to come from Phase 3's font-constructor rework, not from
+> rewording a test around a dead constant now.
+>
+> **`:1416-1418`**, asserting Job Board/Offer/Appointment are "reachable from the shipped app root"
+> by string-matching `case .jobBoard` — deferred to Phase 4, where the branches it checks are being
+> deleted as unreachable (S-6) anyway; fixing the assertion's wording now would be rewritten again
+> the moment the code it references is gone.
+>
+> **S-2 — colour scan widened from one file to the whole directory, and from hex literals to raw
+> `Color(...)` construction** (`DesignContractTests.swift`). The existing hex-vs-canon test only ever
+> looked at `DesignTokens.swift` and only matched `0xRRGGBB`; none of the five confirmed raw
+> `Color(red:...)` sites anywhere else in the UI could ever have tripped it. New test scans every
+> file but the token layer for `Color(red:` / `Color(hue:`, stripped of line comments first — my own
+> explanatory comments naming the pattern in prose were an immediate false positive, the same class
+> of bug `strippingLineComments` already exists in this file to prevent, caught by simulating the
+> exact test logic in Python against the real tree before trusting it. Two of the five sites are
+> fixed to reference an existing token instead of re-typing it: `MatchDayScoreBug.goldRule` was
+> precisely `0xD89713` = `Floodlit.goldDeep`; `CoachingHQView`'s ink-on-gold was ~1/255 per channel
+> off `Floodlit.goldInk`, used identically elsewhere (`FloodlitPatterns.swift:335`,
+> `MatchDayField.swift:651`) for the same isCurrent/isSelected-on-gold case. The remaining three
+> (`CoachWorldDeskComponents.swift`, `MatchDayField.swift` x2, `MatchDayScoreBug.swift`'s `.bowl`
+> ground) have no existing canon hex within reach — checked by hand against `04` §6.1's table — and
+> doc-first means a new value is a canon amendment the owner makes, not one this fix invents. Named,
+> exact-count exceptions, not a silent pass: a fourth site in any of those three files still fails.
+>
+> **S-8 — the Match Day contrast gate measured a colour the field never draws, and fixing it found a
+> canon inconsistency the review didn't.** `palette.fieldTurf` (`#072616`) hasn't been the field's
+> ground since a flat colour was replaced by a five-stop elliptical gradient
+> (`MatchDayField.swift:73-79`). `04` §6.1's colour table still states "field.line (on turf) = 15.44"
+> against that stale flat value — and my own from-scratch computation reproduces 15.44 exactly
+> against `fieldTurf`, confirming that's genuinely where the number came from — while a *later* table
+> in the same doc gives the current `turf` stop's own number, 5.97 (also reproduced exactly), but
+> never restates `field.annotation` or `field.live` against it and neither table accounts for a
+> reduced-opacity draw. That inconsistency is now a canon question for the owner, not resolved here.
+>
+> Fixed: every check now runs against all five real gradient stops, reusing the codebase's own
+> `ColorValue.mixed(with:amount:)` for the alpha-composite math and the existing `contrastRatio`
+> WCAG function — no new colour math was written. Two things it found are real, unresolved defects
+> and are pinned by their exact measured value (`expectClose`, not silently passed, not left an
+> unexplained failure): `field.live` fails 3:1 against `turfCrown` (2.2664:1), and the yard numbers,
+> composited at `Paint.number` = 0.33 opacity, fail against **every** stop (1.6987 to 2.8882:1).
+> Clearing the worst case would need `Paint.number` near 0.73 — more than double its current value —
+> which is a real visual change with no way to render and confirm it here, so the constant itself was
+> not changed.
+>
+> **Verified by construction, not by trust.** Before deciding the delegation-closure fixpoint from
+> Phase 1 was safe to lean on again here, and before writing the contrast fix, ran the *exact* test
+> logic through a small Python script against the real `Sources/ProFootballCoachUI` tree (comment-
+> stripping, regex matching, and the WCAG/alpha-blend formulas copied line-for-line from the Swift) to
+> catch what a compiler would have caught. It caught the false-positive from my own comments before
+> it shipped.
+>
+> **UNVERIFIED — never compiled.** No `swift`/`xcodebuild` here. Files touched:
+> `Sources/ProFootballCoachUI/{NewCareerCoachIdentityView,RankingsPlayoffPictureView,
+> BracketPostseasonView,FloodlitChrome,MatchDayField,MatchDayScoreBug,CoachingHQView}.swift`,
+> `Tests/SimTests/Suites/{ContractTests,DesignContractTests}.swift`.
+
+> **2026-08-19, later still — made the family partition follow delegation and split off aliases
+> (Phase 1 of the systemic-defect remediation plan).** `Tests/SimTests/Suites/AccessibilityReflowTests.swift`:
+>
+> - `landedFamilies()` returns a three-way `(landed, pending, aliased)` split instead of two.
+>   `aliased` is the 15 retired routes (`isCanonicalTask == false`) that already have a view file
+>   but whose root-switch branch cannot execute (S-6) — they no longer count as `landed`, so the
+>   AX5/VoiceOver clauses (scoped to `landed`) stop certifying 16 dead files. The "Floodlit surface
+>   conversion" suite deliberately still scans `landed + aliased` — conversion is a property of a
+>   *file*, and the phase-completion tests it already contained name 14 of the 15 aliased screens
+>   by number; scoping that suite to `landed` alone would have broken those existing assertions.
+>   Caught and fixed before push, not after.
+> - `FamilyView` gained `renderedText`: the union of a family's own file and every file it wholly
+>   delegates into, resolved to a fixpoint by a new `renderingClosures()` that mirrors
+>   `floodlitConvertedTypes()`'s existing delegation rule exactly (same "draws its own state" guard).
+>   The two AX5/VoiceOver substring checks and Reduce Motion's Tier-B scan now read `renderedText`,
+>   not `text` (S-1) — `LegacyHistoryView.swift` renders four canonical families and previously held
+>   neither accessibility marker while each wrapper's own generic chrome did.
+> - Added a concrete regression test using a marker string ("No team records recorded.") that exists
+>   only inside `LegacyHistoryView`'s own body, not in the wrapper's mention of its initialiser —
+>   proving the union is load-bearing rather than checking a substring the wrapper already had.
+>
+> **What this does and does not change today.** The alias-partition half has an immediate effect:
+> 16 files no longer get certified. The delegation-closure half is mostly *infrastructure* for
+> Phase 2 — checked every canonical wrapper-style family this could plausibly affect
+> (`LegacyHistoryView`'s four, `NewCareerCoachIdentityView`, `OpponentReportFilmRoomView`,
+> `BracketPostseasonView`, `RankingsPlayoffPictureView`) and found each wrapper's *own* generic
+> modifier chain already independently contains both markers, so today's pass/fail boolean does not
+> flip for any of them. The union still matters: it is what lets Phase 2 inspect the delegate's real
+> content instead of the wrapper's incidental chrome, which the substring check alone cannot do.
+>
+> **A risk investigated and ruled out before trusting this, not after.** The delegation match is a
+> loose "file text contains `OtherFileBasename(`" substring, same as the mechanism it mirrors — the
+> concern was that this could pull unrelated shared-component files (which many views reference)
+> into a family's closure and make the checks vacuously pass everywhere. Checked by hand and by a
+> small script over every `.swift` file in `Sources/ProFootballCoachUI/`: the mechanism can only
+> match when a file's *basename* equals a type it declares, which structurally excludes the
+> multi-type pattern/vocabulary files (`FloodlitPatterns.swift`, `CoachWorldVocabulary.swift`,
+> `FloodlitChrome.swift`, `DesignTokens.swift` — all confirmed to hold neither marker regardless).
+> Every file that does carry a marker and is referenced by name from elsewhere is one of the
+> already-identified shared hosts (`CareerHubView`, `CollegeOffseasonView`, `ProOffseasonView`,
+> `CompetitionOverviewView`, `ProManagementView`, `StaffRoomView`, `GamePlanView`, `DepthChartView`,
+> `NewCareerSetupView`) — the exact pattern this fix targets, not a false positive.
+>
+> **UNVERIFIED — never compiled.** No `swift`/`xcodebuild` here. The fixpoint's termination was
+> checked by hand (each file's closure set only grows, bounded by the file count, so it terminates);
+> the tuple-shape change was traced through all 12 call sites across both files. None of that is a
+> compiler. Files touched: `Tests/SimTests/Suites/AccessibilityReflowTests.swift`,
+> `Tests/SimTests/Suites/ReduceMotionContractTests.swift`.
+
+> **2026-08-19, later — gave the release-gate catalog an explicit unwritten state (Phase 0 of the
+> systemic-defect remediation plan).** `Tests/SimTests/SuiteCatalog.swift`'s `Entry.runner: Runner?`
+> is replaced by `Entry.disposition: Disposition`, an enum of `.runnable(Runner)` or
+> `.unwritten(reason:spec:)`. `AgencyBudgetTests`, `PerformanceBudgetTests`,
+> `TwoTierConsistencyTests` and `SmallestDeviceLayoutTest` — previously `nil` runners that both
+> `Commitment coverage` tests failed unconditionally — are now `.unwritten` with a stated reason and
+> a citation into `docs/OPEN-DECISIONS.md` (D1, D4, D3, D15/G-09 respectively). A commitment naming
+> an unwritten gate no longer fails; an unwritten gate with an empty reason or spec still does. A
+> named-set assertion (mirroring `AccessibilityReflowTests`' "keeps the draft room family landed"
+> pattern) pins the unwritten set to exactly these four, so a fifth cannot go silently unwritten and
+> closing one requires deliberately editing the test. `docs/qa/feature-coverage.csv` QA-001 updated
+> to match: defect count 1 → 0, status reworded from "failing closed" to "explicit and cited".
+>
+> **Deliberately not done here:** the plan's lane-vocabulary sub-item (assert `SuiteCatalog.lane(for:)`
+> is a subset of `scripts/verify.sh`'s `--lane` vocabulary) was dropped after reading `verify.sh` —
+> the two serve different purposes (domain grouping for `--catalog` output vs. a curated command
+> dispatcher), so a subset assertion would either be hollow or force a design decision. Flagged for
+> the owner in the plan rather than forced through.
+>
+> **UNVERIFIED — never compiled.** No `swift`/`xcodebuild` in this environment. The switch in
+> `disposition(for:)` was checked by hand against all 21 `ReleaseGateID` cases for exhaustiveness and
+> no duplicates; `expectEqual` and `Set<ReleaseGateID>` usage were checked against
+> `TestKit.swift`'s existing signatures and the pre-existing `defaultRun: Set<ReleaseGateID>` (which
+> already relied on the same auto-synthesized `Hashable`). None of that is a compiler. Files touched:
+> `Tests/SimTests/SuiteCatalog.swift`, `docs/qa/feature-coverage.csv`.
+
+> **2026-08-19 — cherry-picked the points-per-drive calibration fix off the stale, unmerged
+> `codex/fm-touch-personnel-examples` branch (PR #7).** `CalibrationBands.swift` gains a pro-tier
+> band (1.60–1.95 `[Q]`, `01` §6.5) and `CalibrationHarness.swift` now aggregates it from
+> `DriveRecord.pointsScored`, removing "points per drive" from `unimplementedMetrics`. The rest of
+> that PR's diff — a rewrite of the non-canonical `docs/plans/2026-08-12-road-to-beta.md` — was left
+> behind; its status claims (e.g. "56 of 62 screen families have no view") predate and are
+> superseded by the 62-screen Floodlit completion recorded below.
+>
+> **UNVERIFIED — never compiled.** This environment has no `swift` or `xcodebuild`; the change has
+> not been built or run here. `Tests/SimTests/Suites/CalibrationTests.swift`'s "the harness measures
+> every band its tier declares" test is the one that would catch a mismatch between the two files —
+> the original commit changed both in lockstep under the same metric-name string, which is why it
+> should hold, but that is reasoning from reading the diff, not a passing run. Files touched:
+> `Sources/FootballSimCore/Calibration/CalibrationBands.swift`,
+> `Sources/FootballSimCore/Calibration/CalibrationHarness.swift`.
+
 > **2026-08-18 — Floodlit design handoff, all three milestones implemented.** The owner-supplied
 > handoff `design_handoff_floodlit_surfaces_and_match_day/` is built end to end:
 >
@@ -102,7 +606,10 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > (202 tests / 2,228 checks) and `--design-contracts` (29 / 613) are green on the final tree, and
 > those are the suites that scan the view layer — the design-token-literal scan, the symbol
 > register, the AX5 contract and the Floodlit conversion partition, which reports **62 converted /
-> 0 pending**. A sweep confirms every type conforming to `CoachWorldChromedSurface` actually
+> 0 pending**. (Superseded above, 2026-08-19: this counted every registered file as converted
+> without checking whether it was reachable. Fifteen of the 62 are routing aliases whose files never
+> render — the accounting is fixed and this figure is not the current one; see the Phase 1 and
+> Phase 4 entries above.) A sweep confirms every type conforming to `CoachWorldChromedSurface` actually
 > consumes its chrome, because that failure mode is silent rather than a compile error.
 >
 > **What is not verified.** Four of six families were confirmed on a simulator — weekly command

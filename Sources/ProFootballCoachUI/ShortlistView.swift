@@ -80,7 +80,7 @@ public struct ShortlistView: View, CoachWorldChromedSurface {
         HStack(spacing: CoachWorldTokens.Gap.md) {
             TextField("Name, position or status", text: $query)
                 .textFieldStyle(.plain)
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.actionSmall))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.actionSmall)
                 .accessibilityLabel("Filter the board by name, position or status")
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             FloodlitLabel3(countLabel, palette: palette)
@@ -125,20 +125,12 @@ public struct ShortlistView: View, CoachWorldChromedSurface {
         FloodlitRow(palette: palette, action: { onOpenProspect(prospect.stableID) }) {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text("\(prospect.boardRank)")
-                    .font(
-                        CoachWorldTokens.figure(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .semibold
-                        )
-                    )
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.actionSmall, weight: .semibold)
                     .foregroundStyle(palette.contentQuiet.color)
                     .frame(width: ShortlistMetric.rankColumn, alignment: .leading)
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                     Text(prospect.person.name.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.row, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                         .lineLimit(1)
                     FloodlitLabel3(
                         "\(prospect.position) \u{00B7} \(prospect.status)", palette: palette
@@ -146,7 +138,7 @@ public struct ShortlistView: View, CoachWorldChromedSurface {
                 }
                 Spacer(minLength: CoachWorldTokens.Gap.xs)
                 Text(prospect.interest.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                     .foregroundStyle(palette.stateInfo.color)
                     .lineLimit(1)
                     .frame(width: ShortlistMetric.interestColumn, alignment: .trailing)
@@ -191,7 +183,7 @@ public struct ShortlistView: View, CoachWorldChromedSurface {
         let short = max(0, need.target - need.committed)
         return HStack(spacing: CoachWorldTokens.Gap.smPlus) {
             Text(need.position.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.pill, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.pill, weight: .bold)
                 .lineLimit(1)
                 .frame(width: ShortlistMetric.needLabel, alignment: .leading)
             FloodlitShareBar(
@@ -200,7 +192,7 @@ public struct ShortlistView: View, CoachWorldChromedSurface {
                 palette: palette
             )
             Text("\(need.committed)/\(need.target)")
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill, weight: .semibold))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.pill, weight: .semibold)
                 .frame(width: ShortlistMetric.needFigure, alignment: .trailing)
         }
         .frame(minHeight: ShortlistMetric.needRowHeight)

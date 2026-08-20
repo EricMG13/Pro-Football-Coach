@@ -105,13 +105,11 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
                 FloodlitLabel3(rankLabel(prospect), palette: palette, tint: palette.actionPrimary.color)
                 Text(prospect.person.name.uppercased())
-                    .font(
-                        CoachWorldTokens.display(CoachWorldTokens.DisplaySize.figure, weight: .bold)
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.figure, weight: .bold)
                     .lineLimit(ProspectMetric.nameLines)
                     .minimumScaleFactor(ProspectMetric.nameScaleFloor)
                 Text("\(prospect.position) \u{00B7} \(prospect.hometown)")
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                     .foregroundStyle(palette.contentSecondary.color)
             }
             .accessibilityElement(children: .combine)
@@ -156,7 +154,7 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
             FloodlitLabel3(label, palette: palette)
             Text(value.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.title, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.title, weight: .bold)
                 .lineLimit(1)
                 .minimumScaleFactor(ProspectMetric.factScaleFloor)
         }
@@ -175,7 +173,7 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
                 ForEach(prospect.relationshipHistory, id: \.stableID) { event in
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                         Text(event.dateLabel)
-                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag))
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.flag)
                             .foregroundStyle(palette.contentQuiet.color)
                         Text(event.summary)
                             .font(CoachWorldTokens.TypeRole.caption)
@@ -211,11 +209,7 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
                     ) {
                         HStack(spacing: CoachWorldTokens.Gap.md) {
                             Text(choice.title.uppercased())
-                                .font(
-                                    CoachWorldTokens.display(
-                                        CoachWorldTokens.DisplaySize.row, weight: .bold
-                                    )
-                                )
+                                .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                                 .foregroundStyle(
                                     choice.isAvailable
                                         ? palette.contentPrimary.color

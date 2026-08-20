@@ -22,11 +22,12 @@ private func usesTierBConstruct(_ text: String) -> Bool {
 
 func runReduceMotionContractTests() {
     suite("Reduce Motion contract") {
-        test("every screen family is either landed and checked or pending and named") {
+        test("every screen family is landed, pending, or aliased, and the split is total") {
             // Re-asserted rather than assumed from AccessibilityReflowTests: if the
             // <Name>View.swift convention ever drifts, both contracts must fail, not just AX5's.
-            let (landed, pending) = landedFamilies()
-            expectEqual(landed.count + pending.count, CoachWorldScreenID.allCases.count,
+            let (landed, pending, aliased) = landedFamilies()
+            expectEqual(landed.count + pending.count + aliased.count,
+                        CoachWorldScreenID.allCases.count,
                         "the partition lost a family, so some family is checked by nothing")
             expectEqual(CoachWorldScreenID.allCases.count, 62)
             expect(!landed.isEmpty, "no family view was found — the scan would pass vacuously")
@@ -36,16 +37,19 @@ func runReduceMotionContractTests() {
             // `04` section 7.1 clause 3. A Tier-B construct outside the choke point still has to
             // honour Reduce Motion itself, and this is the source-visible proxy that it was
             // considered — the same discipline AX5's two clauses already use for their own concern.
+            // Checked against `renderedText`, not `text`, for the same reason AX5's clauses are
+            // (S-1): a Tier-B construct inside a delegate like LegacyHistoryView would otherwise be
+            // invisible to the wrapper's own text.
             let landed = landedFamilies().landed
-            let animating = landed.filter { usesTierBConstruct($0.text) }
-            let still = landed.filter { !usesTierBConstruct($0.text) }
+            let animating = landed.filter { usesTierBConstruct($0.renderedText) }
+            let still = landed.filter { !usesTierBConstruct($0.renderedText) }
             expectEqual(animating.count + still.count, landed.count)
             // Reported rather than pinned to a number: families land incrementally through
             // P11–P15, and a hard count here would be edited by every one of them — the same
             // reason AX5's own family count is printed, not asserted.
             print("Reduce Motion contract: \(animating.count) animating, \(still.count) still")
             for family in animating {
-                expect(family.text.contains("accessibilityReduceMotion"),
+                expect(family.renderedText.contains("accessibilityReduceMotion"),
                        "\(family.path) (\(family.screen.canonicalName)) uses a Tier-B motion "
                            + "construct with no accessibilityReduceMotion read, so Reduce Motion "
                            + "was never decided for it (04 section 7.1 clause 3)")
@@ -55,7 +59,7 @@ func runReduceMotionContractTests() {
         test("at least one landed family actually animates") {
             // Anti-vacuity: Match Day guarantees this is non-empty today. An empty result means
             // the scan broke, not that the tree got cleaner — the same guard AX5's own suite uses.
-            let animating = landedFamilies().landed.filter { usesTierBConstruct($0.text) }
+            let animating = landedFamilies().landed.filter { usesTierBConstruct($0.renderedText) }
             expect(!animating.isEmpty,
                    "no landed family uses a Tier-B construct — Match Day's TimelineView guarantees "
                        + "this is never empty while the suite is actually scanning")

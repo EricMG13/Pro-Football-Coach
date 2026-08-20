@@ -90,7 +90,7 @@ public struct WorldSearchView: View, CoachWorldChromedSurface {
         HStack(spacing: CoachWorldTokens.Gap.md) {
             TextField("Team, city or region", text: $query)
                 .textFieldStyle(.plain)
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.actionSmall))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.actionSmall)
                 .accessibilityLabel("Search current teams, cities or regions")
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             FloodlitLabel3(countLabel, palette: palette)
@@ -170,11 +170,7 @@ public struct WorldSearchView: View, CoachWorldChromedSurface {
         } label: {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text(result.team.name.uppercased())
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                        )
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     .lineLimit(1)
                     .frame(width: SearchMetric.nameColumn, alignment: .leading)
                 Text("\(result.cityName), \(result.regionName)")
