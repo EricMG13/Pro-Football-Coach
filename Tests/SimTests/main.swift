@@ -33,6 +33,8 @@ if CommandLine.arguments.contains("--catalog") {
     runProfessionalCareerSessionTests()
 } else if CommandLine.arguments.contains("--career-arc") {
     runCareerArcTests()
+} else if CommandLine.arguments.contains("--coach-season-record") {
+    runCoachSeasonRecordTests()
 } else if CommandLine.arguments.contains("--pro-management") {
     runProManagementTests()
 } else if CommandLine.arguments.contains("--pro-market") {
@@ -41,6 +43,8 @@ if CommandLine.arguments.contains("--catalog") {
     runCapComplianceTests()
 } else if CommandLine.arguments.contains("--season-rollover") {
     runSeasonRolloverTests()
+} else if CommandLine.arguments.contains("--staff-pruning") {
+    runStaffPruningTests()
 } else if CommandLine.arguments.contains("--jersey-numbers") {
     runJerseyNumberTests()
 } else if CommandLine.arguments.contains("--depth-chart") {
@@ -49,6 +53,10 @@ if CommandLine.arguments.contains("--catalog") {
     runDisciplineTests()
 } else if CommandLine.arguments.contains("--week-advance-timing") {
     runWeekAdvanceTimingProbe()
+} else if CommandLine.arguments.contains("--pro-movement-probe") {
+    runProMovementProbe()
+} else if CommandLine.arguments.contains("--pro-draft-stall-probe") {
+    runProDraftStallProbe()
 } else if CommandLine.arguments.contains("--pro-market-root-probe") {
     runProMarketRootProbe()
 } else if CommandLine.arguments.contains("--screen-read-models") {
@@ -92,6 +100,8 @@ if CommandLine.arguments.contains("--catalog") {
     runCollegeCommitmentTests()
 } else if CommandLine.arguments.contains("--college-state") {
     runCollegeStateTests()
+} else if CommandLine.arguments.contains("--college-acquisition-invariant") {
+    runCollegeAcquisitionInvariantTests()
 } else if CommandLine.arguments.contains("--injury-evidence") {
     runInjuryEvidenceTests()
 } else if CommandLine.arguments.contains("--people-lifecycle") {
@@ -178,6 +188,7 @@ if CommandLine.arguments.contains("--catalog") {
     runCollegeStateTests()
     runCollegeCommitmentTests()
     runCollegeRedshirtTests()
+    runCollegeAcquisitionInvariantTests()
     runPortalPolicyTests()
     runPortalMatchingTests()
     runPortalTransactionTests()

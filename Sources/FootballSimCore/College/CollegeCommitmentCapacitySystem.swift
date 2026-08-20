@@ -88,7 +88,7 @@ public enum CollegeCommitmentCapacitySystem {
             scholarshipOpenings
         )
         let activeRecruitment = college.prospectRecruitment.values.filter {
-            $0.programmeID == programmeID && ($0.phase == .committed || $0.phase == .signed)
+            $0.programmeID == programmeID && CollegeState.occupiesClassPlace($0)
         }
         let rosterCounts = Dictionary(grouping: returningPlayerIDs.compactMap {
             state.players[$0]?.position

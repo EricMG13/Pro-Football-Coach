@@ -20,6 +20,7 @@ public struct ProRosterAITransition: Sendable, Equatable {
 /// controlled professional team, and makes one highest-rated legal signing per AI team per week.
 /// `ponytail:` one deterministic pass; replace with a richer cap/need model when staff plans exist.
 public enum ProRosterAISystem {
+
     public static func process(at calendar: CalendarState, in state: GameState) throws -> ProRosterAITransition {
         guard calendar == state.calendar else {
             return ProRosterAITransition(state: state, eventPayloads: [], signedPlayerIDs: [])
@@ -68,7 +69,7 @@ public enum ProRosterAISystem {
             let pick = next.proMarket.nextPick
             let contract = ProMarketSystem.rookieContract(for: prospect.player)
             do {
-                next = try ProMarketSystem.draft(
+                next = try ProMarketSystem.draftForScheduler(
                     prospectID: prospect.id,
                     for: teamID,
                     contract: contract,

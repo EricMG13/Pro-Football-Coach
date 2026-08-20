@@ -25,7 +25,128 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ---
 
+> **2026-08-20 — PR #9's deterministic pins were re-derived after the legal trade-dress fix.**
+> The added NFL colour pairs legitimately trigger bounded collision retries and therefore shift the
+> seeded generation stream; no production generator change was needed. Commit `bbfabb9` updates the
+> generation, architecture, and trait-population pins. Release verification passed for
+> `--generation-only` (**35 tests / 42,330 checks**), `--architecture-only` (**29 / 245**, twice),
+> `--trait-population` (**8 / 610**), and `--career-portal-decisions` (**1 / 8**). The replacement
+> full CI run is `32371185706`; it was queued at this entry's writing and remains the merge gate.
+> The local release `--season-rollover` attempt ended without a result, so it is not claimed here.
+
 ## Where the project actually is
+
+> **2026-08-20 — career transitions: the world half of a job change was never done.** The career
+> arc moved and the world did not. Three transitions end a coach's job, and all three cleared the
+> career control record and stopped there, leaving the coach standing in their old organisation's
+> staff list as its head coach. Every staff surface then reported current employment for a coach who
+> had been promoted, had resigned, or had been fired.
+>
+> The promotion was the worst of the three: the coach never joined the professional team and never
+> gained a professional assignment in `people.staffCareers`, which is the sole authority the
+> coaching tree and the season history archive read. Promotions were therefore invisible on every
+> history surface while the college seat was duplicated. Commits `3967855` (promotion), `95932dd`
+> (resignation, plus the hire that follows it, which threw `missingHeadCoach` because a returning
+> coach's last assignment still pointed at the programme they had left), `4dc7877` (firing).
+>
+> A fourth defect sat downstream in the projection: `CoachingTreeReadModel.headCoachesBySeat` broke
+> a contested seat by lower UUID, and a promotion contests one by construction — the displaced coach
+> holds a true record of the same seat in the same season. So roughly half the time the seat, and
+> every disciple hanging off it, was credited to the coach who had just been replaced. World truth
+> now outranks the tie-break. Commit `be34fc8`.
+>
+> A fifth defect was introduced *by this work* and caught by a confidence review of its own branch.
+> Once coordinators followed a promotion, the four the promotion displaced each became a phantom
+> disciple of the coach who had just thrown them out: their record truthfully says they served that
+> organisation that season, and the seat now resolves to the arriving coach. Before the follow, only
+> the head coach was displaced, and head-coach assignments are already excluded from disciple
+> candidates, so the follow created the case. Where a mentor arrived in the same season an
+> assistant's record there ends and the assistant is no longer on that staff, the mentorship is now
+> refused — no mentor beats the wrong one. Commit `7a2a55c`.
+>
+> **Owner decision 2026-08-20 — the coordinators follow the coach.** `02` section 9 always said the
+> promotion carries "a subset of staff" without naming it. The subset is the four coordinators;
+> position coaches stay. Canon was amended before the code. It is a promotion rule and not a
+> separation rule: a coach who resigns or is fired takes nobody. Commit `c311018`.
+>
+> **What is verified.** Debug only. `--career-arc` went from 8 tests / 49 checks to 19 / 333. Every
+> named suite is green on the final tree — `--career-control`, `--coaching-tree`,
+> `--professional-career-session`, `--history-archive` — along with `--core-contracts`,
+> `--architecture-only`, `--screen-read-models`, `--history-read-model`, `--people-lifecycle`,
+> `--career-portal-decisions`, `--weekly-authority`, `--rivalry-order`, `--season-rollover`,
+> `--pro-week-walk` and `--m3-soak`. `--m7-gate` passed its 65 assertions, but only in **debug** —
+> the gate needs `swift run -c release -Xswiftc -enable-testing`, and in debug its `weekMeanMs` and
+> save-size figures are not the gate's numbers. A release run was started and died during the cold
+> build without completing, so the gate is **unverified in release on this branch**.
+>
+> **What is not verified.** No release build, no simulator walkthrough, no `04b` audit. These are
+> engine and projection changes with no view-layer surface, but nothing here has been seen running.
+>
+> **The coverage lesson, again.** All five named suites were green through every one of these
+> defects, because nothing asserted the world half of a transition. Three hand-written walks then
+> covered the three transitions that exist today, which is `AUDIT.md`'s failure verbatim — the
+> test's coverage boundary becoming the quality boundary. The class is now enumerated by
+> construction: a scan requires every `clearCollege()` in `Sources/` to be answered by a world-side
+> move within six lines, and it ships both a planted-offender self-test and a floor on the number of
+> call sites it must reach, so a scan that stops walking the tree fails instead of reporting
+> all-clear. It was also checked against a real regression, not only the synthetic one.
+>
+> **Owner decisions now implemented.** The coach's per-season wins-losses-ties line is recorded on
+> the played coach at the week-21 boundary before the career evaluation can clear a fired job, then
+> applied after the season transition's wholesale `PeopleState` replacement. It is bounded beside
+> staff assignments, save-compatible, and carries through promotion. The same boundary now builds
+> the coaching-tree projection and removes seatless staff and their career records unless the tree
+> names them as a mentor or disciple; the played coach is always protected. Focused checks are
+> `--coach-season-record` (1 test / 17 checks) and `--staff-pruning` (1 test / 6 checks), both green.
+> The implementation and verification handoff is in
+> `docs/plans/2026-08-20-coach-career-record-handoff.md`.
+>
+> Still open here: the debug `--m7-gate` reports a season-30 save of 36,871,560 B against the 8 MB
+> commitment, growing roughly linearly with archived seasons — a serialized byte count, so build
+> mode does not excuse it. A release gate and UI walkthrough remain outside this engine patch.
+
+> **2026-08-20 — college acquisition rules asserted after every transaction, two system defects
+> found and fixed.** The five college acquisition rules the rules module fixes — scholarship count,
+> eligibility clock, redshirt legality, commitment uniqueness, portal window — were already stated
+> and already checked, but only **at rest**: `WorldIntegrity` runs once a week, at
+> `.saveGrowthAndIntegrity`. Everything the season boundary does commits inside a single
+> `WorldStep`, so a rule could be breached by one transaction and repaired by a later one and the
+> week would still come to rest clean.
+>
+> Each rule is now one named predicate under `Sources/FootballSimCore/Integrity/`
+> (`CollegeScholarshipInvariant`, `CollegeEligibilityInvariant`, `CollegeRedshirtInvariant`,
+> `CollegeCommitmentInvariant`, `CollegePortalWindowInvariant`), `WorldIntegrity` delegates to it so
+> there is one statement of each, and `WorldScheduler` gained a `package` `transactionObserver`
+> fired at thirteen transaction sites plus **every** `WorldStep`. `--college-acquisition-invariant`
+> evaluates every rule at every checkpoint.
+>
+> **Two defects, both the same shape — a transaction that consumes a thing leaving the record of
+> the thing for a later transaction to clear:**
+>
+> 1. `SeasonLifecycleSystem.advance` dropped departing players from `Programme.rosterIDs` and
+>    recomputed `Programme.scholarshipCount`, but left them in
+>    `ProgrammeRecruitingState.scholarshipPlayerIDs`. Between that transaction and
+>    `CollegeState.reconcileScholarships` several transactions later, the root said graduated
+>    players still held scholarships and the two counters disagreed. The transaction now ends the
+>    scholarship and the NIL allocation itself.
+> 2. Redshirt plans outlived their own resolution. The rollover spends the clock year a plan asks
+>    for; the plan stood until `CollegeCycleSystem.closeAndOpen` cleared it, so in between the root
+>    held plans with `noSpareClockYear`. The resolving transaction now clears them.
+>
+> The second was only visible after fixing a **vacuous test**: the redshirt rule first passed while
+> sweeping an empty dictionary, because plans are filed only through `CareerSession` and a headless
+> scheduler walk never files one. Every rule now declares a `population` and the suite fails if any
+> rule swept nothing at every checkpoint.
+>
+> **What is verified.** `swift build -Xswiftc -enable-testing` green. All seven suites green on the
+> final tree: `--college-acquisition-invariant` (3 / 48), `--college-commitments` (25 / 124),
+> `--college-state` (39 / 4,102), `--redshirt-only` (33 / 104), `--portal-policy` (12 / 715),
+> `--portal-transaction` (16 / 118), `--portal-scheduler` (9 / 27,819). **Not verified:** the full
+> `verify.sh` lane, and no simulator or device run — this is engine and test work only.
+>
+> **The rule chosen is not ambiguous.** `02` §11 fixes 85 scholarships and `03` §193 states the
+> legality claim. `01-RESEARCH.md:3491` records that the real limit moved 85 → 105 for 2025–26;
+> canon overrides research, so that is a design question for the owner rather than a defect.
 
 > **2026-08-20 — CI ran against the `main` merge commit and found two more things, both fixed:
 > unverified — never compiled, but by CI, not manual reading.** Run 32322631469 (job 96287645557):
@@ -304,6 +425,31 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > was registered with a dispatched runner, which is how `SaveWriteBudgetTest` came to exist as a
 > string in an enum and nothing else; it is now a real test, and `SaveOffMainActorTest` is a
 > compile-time proof rather than a grep for two string literals.
+>
+> **2026-08-20 — the bound above still leaked, through the one category it deliberately protected
+> forever.** A 20-season `--m2-soak` retained 10,199 departed identities against the 8,192 limit:
+> `SeasonLifecycleSystem.retainedIdentityIDs` protected any career that had ever touched the transfer
+> portal, permanently, because `WorldIntegrity.checkPortalEvents` needs a portal window's full
+> entrant list — retained and returned entrants, not just transfers — for as long as that window's
+> `.portalWindowCompleted` event survives in `state.history.recent` (a bounded ~4096-event FIFO), and
+> that event's `referencedEntityIDs` is empty, so the generic event-reference protection never covered
+> those entrants on its own. Fixed by tracking exactly that instead: a career stays protected while a
+> *surviving* completion event still names one of its (season, window) pairs, not for having ever
+> entered the portal. A cruder "current season only" narrowing was tried first and is independently
+> known to be wrong — it broke the same recount for a window still resident in the journal and failed
+> at season 4 with `portalCommitFailed(.postseason)`, because it tracked the wrong thing. TDD test in
+> `PortalTransactionTests.swift` covers both directions; the full default suite (948 tests, 775,603
+> checks) passes with no regressions.
+>
+> **Not verified clean by `--m2-soak`.** The run hits three repeats of an already-known, separately-
+> owned roster-count assertion timing bug (`PeopleLifecycleTests.swift:591-599` samples college
+> rosters one week before `CollegeCycleSystem.addWalkOns(for: .springRosterFill, ...)` tops them back
+> up) and then aborts early — 49 of an expected several-thousand checks — on
+> `portalCommitFailed(.postseason)`. Whether that throw is caused by this fix or is itself downstream
+> of the pre-existing roster-count bug was not isolated: a controlled A/B (this fix stashed out,
+> identical soak) was in progress and was killed, with no result yet, when work stopped on request.
+> This is the open item in the handoff for follow-up — resolve the roster-count bug (or the A/B) first
+> so a clean run can actually reach season 20 and confirm `departedPlayers.count` stays bounded.
 >
 > **Still open, and named rather than carried quietly.** The design audit filed inside commit
 > `e3b360d` — `DESIGN-IS-2026-08-19/03-verdict.md` — scores the front end **10/30 with a REDESIGN
@@ -1907,6 +2053,148 @@ rating-ordered pool, or retirement removing the unattached is an owner call, not
 
 **Neither gate is in the default run**, so `verify.sh` is unaffected either way.
 
+### Lifecycle distribution bands — **four added 2026-08-20, and two found real drift**
+
+Nothing banded the people model. The soak asserted bounds a league of nothing but 23-year-olds and
+a league of nothing but 33-year-olds both satisfy, an injured share that `> 0 and < 10%` leaves
+undetermined, a churn check that one graduating walk-on satisfies, and mean overall inside intervals
+40 and 35 points wide on a 40-99 scale. `01` §6.5 bands the match engine; nothing banded this.
+
+Four bands now assert at season indices 0, 1, 3, 6 and 10 of a ten-season run, and at every season
+of the twenty-season M2 soak. Two hold. Two do not, and neither is widened to make the light go
+green.
+
+**Holding.** The professional age curve — mean age 26.4 to 27.1 against a band of 25.0 to 27.5, and
+the share at or past a position's decline age 0.182 to 0.223 against 0.08 to 0.30, whose ceiling of
+0.27 is derived from the escalating retirement hazard in `SeasonLifecycleSystem.retires`. The
+injured share, 0.0207 to 0.0254 against a derived 0.015 to 0.055. College churn, 0.256 to 0.305
+against a derived 0.18 to 0.45. Both standard-deviation limbs of the rating spread.
+
+**Red 1: professional turnover decays, and the draft never picks.** Professional churn falls 0.295,
+0.257, 0.162, 0.095 across ten seasons, onto 1/11.44 = 0.087 — the retirement-only rate implied by
+the same mean career length the age-curve band derives.
+
+*An earlier version of this entry said the cause was that no professional ever changes club. That
+was wrong, and the error was in the measurement rather than the model.* The churn metric compared
+week-1 rosters and classified anyone missing as departed. Contracts expire in the final week of a
+season and free agency signs out of the pool during the *next* one, so a relocating player is on
+nobody's roster at the boundary between leaving and arriving: every A-to-B move read as a departure
+at one snapshot and an unrelated arrival at the next, and `moved` was structurally pinned to zero.
+The coverage boundary became the quality boundary — the snapshot enumerated rosters, and the pool
+between them, which is where relocation lives, sat outside it. `churn` now carries a third bucket,
+`pooled`, and at a season boundary professional departures split 289 pooled against 212 gone.
+
+`--pro-movement-probe` watches every week instead of every boundary and shows a market that trades:
+
+```text
+season 1: expired=290  relocated=0    returned=0   free agency never ran, poolLeft=290
+season 2: expired=248  relocated=280  returned=10  freeAgency weeks=12
+season 3: expired=208  relocated=238  returned=10  freeAgency weeks=12
+```
+
+Season 1 has no free agency because bootstrap issues contracts but nothing has expired yet, so the
+pool is empty until week 21. From season 2 the pool clears at 280 relocations against 10 re-signings.
+
+What is genuinely red, after the correction:
+
+- **The draft took zero picks in ten seasons** while starting nine times. **Fixed 2026-08-20.**
+  `--pro-draft-stall-probe` calls the same `ProMarketSystem.draft` the live scheduler calls, at the
+  moment the live scheduler enters `.draft` — necessary because `ProRosterAISystem.makeDraftPicks`
+  swallows its own failure, breaking the loop with nothing recorded. It reported:
+
+  ```text
+  season 1: first live pick threw activeRosterFull  roster=53/53  committedCap=170182273/272850000
+  season 2: first live pick threw activeRosterFull  roster=53/53
+  season 3: first live pick threw activeRosterFull  roster=53/53
+  ```
+
+  `ProManagementSystem.acquire` enforces the identical `rosterIDs.count < activeRosterLimit` guard
+  for *both* a free-agent signing and a draft pick, and `ProRosterAISystem.signFreeAgents` runs until
+  that guard stops finding a legal club, then calls `beginDraft`. Nothing between the two removes
+  anyone, so the draft's first pick met the exact ceiling free agency had just filled — structurally,
+  every season, independent of pool size or expiry count. The cap sat at 170M of 272M when it threw,
+  so this was headcount and beat 2's cap-compliance cuts would not have unblocked it.
+
+  The fix is the conjunction `02` §4.2 already contained: beat 1 frees headcount "for free agency
+  *and* the draft". An AI club now signs only up to `activeRosterLimit - draftRounds`, holding one
+  seat per round it will pick in; expiry frees about eleven a roster against seven rounds, so the
+  reservation fits inside what beat 1 already produces and needs no cuts. `02` §4.2 states the rule
+  explicitly rather than leaving it implied. All three probe seasons now report "first live pick
+  succeeded".
+
+  Two notes for anyone reading the older entries. `--pro-draft-probe` passes but is **stale for the
+  live path**: it begins the draft immediately after `expireContracts` with free agency never run, so
+  it cannot reproduce a failure caused by free agency running first, and its green says nothing about
+  the scheduler. And drafting exposed a performance asymmetry — `ProMarketSystem.draft` ran a
+  whole-root `WorldIntegrity.check` per pick, invisible while no pick ever succeeded and 224
+  whole-world checks a season once they did. `draftForScheduler` now mirrors the existing
+  `signFreeAgentForScheduler`, so the scheduler validates once per batch at its own integrity
+  boundary.
+
+  **`--pro-soak` is green**, for the first time since `e710924` added it. Ten seasons:
+
+  ```text
+  proDraftPick=1568  proContractExpired=2288  proPlayerSigned=554  freeAgents=512
+  weekMeanMs=11195.28  2 tests, 16 checks, all passed
+  ```
+
+  1,568 picks where there were none. Expiry rose from 1,491 to 2,288 — near canon's roughly 339 a
+  season — because rosters that refill have more under contract to expire. Signings fell from 1,476
+  to 554, which is the reservation doing its job: clubs stop at 46 and the draft supplies the rest.
+
+  **Two things the green light does not say, recorded here so it does not bury them.**
+
+  `weekMeanMs` went from 2,628 to 11,195, a 4.3x slowdown, and that is *after* `draftForScheduler`
+  removed 224 whole-root integrity checks a season. The cause is real work rather than waste — a
+  league whose rosters actually refill simulates more players every week — but it is a real
+  regression against the app-latency concern, and `--pro-soak` now takes roughly three quarters of
+  an hour rather than ten minutes.
+
+  `freeAgents=512` is exactly `ProMarketState.maximumFreeAgentIDs`. **The pool is pinned at its
+  bound**: expiry now outpaces signing and unsigned players accumulate until the ledger is full.
+  Nothing fails today, because `expireContracts` refuses only when a single season's expiries exceed
+  the bound outright. But `02` §4.2a sized bootstrap's fifth-per-season expiry *specifically* to
+  "leave real headroom for carryover", and there is now none. The next thing that raises expiry, or
+  lowers signing, meets `ProMarketError.invalidRoot`. Whatever drains the pool — the cap-compliance
+  cuts of beat 2, a pool eviction policy, or clubs signing deeper — is unbuilt.
+
+  **Beat 2 remains unimplemented.** Nothing enforces a cap-compliance date, and no club ever cuts
+  anyone for money. That is still the owner-level design call `a2e3147` named; it simply was not what
+  blocked the draft.
+- **Rosters never refill.** 1,406, 1,448 and 1,488 against 32 * 53 = 1,696, with the count of
+  professionals owned by nobody growing 496, 619, 740. Consistent with intake that has lost the
+  draft half.
+- **Expiry decays, and starts below canon.** `02` §4.2a fixes bootstrap terms so "roughly a fifth of
+  each roster reaches expiry each season", about 339. Season 1 produces 290, which is 0.17 rather
+  than 0.20, and it falls to 208 by season 3. Churn decays because expiry decays, not because the
+  market froze.
+
+**Red 2: college talent decays to the recruiting pipeline's scale.** Mean college overall falls
+59.32, 58.46, 54.06, 51.38, 51.59 and settles, while professional mean holds at 65.5 to 66.1. The
+tier gap therefore more than doubles, 6.21 to 14.51, and breaks its band of 1 to 12 from season 6.
+The professional tier is not improving; the college game is degrading.
+
+The arithmetic is exact, and the two generators are on different scales from different inputs:
+
+```text
+RosterPopulationGenerator.baseRating   50 + (prestige - 40) * 25/59   ->  50...75, midpoint 62.5
+ProspectPopulationGenerator            42 + (density  - 40) * 28/59   ->  42...70, midpoint 56.0
+```
+
+Bootstrap keys off programme prestige, recruiting off city talent density, and recruiting sits 6.5
+points lower with a floor 8 points lower. With `walkOnRatingPenalty` of 12 on roughly 20 of the 105
+roster places the steady state is near 0.81 * 56 + 0.19 * 44 = 53.8 before development, against an
+observed 51.6. The intake pipeline cannot sustain the level bootstrap generates, so the league falls
+to the recruiting scale over six seasons and holds there. **Which scale is canonical is a design
+call and is not resolved here.** It also bears on P4: calibration was tuned against bootstrap
+ratings, and college ratings do not stay there.
+
+**Both red limbs assert in the soaks lane and report in the default lane**, which is where this repo
+already keeps this class of failure — `e710924` added `--pro-soak` "red for a real reason" and
+recorded that it is not in the default run. The bands themselves are unchanged: professional churn
+stays at 0.10, the tier gap at 12.
+
+
 ### M7C — the news feed — **implemented and green**
 
 The living world reports itself. `NewsFeedReadModel` renders a headline from each typed payload and
@@ -2037,6 +2325,39 @@ rule about contact.
 **Integrity:** one check of 29 is inactive, `contractExpiry`, which activates with roster turnover.
 
 **UI:** six view files against `04`'s 62 canonical screen families, all behind M8's entry gate.
+
+### 2026-08-13 — the near-miss name list — **written, and UNVERIFIED: never compiled**
+
+An IP note offered to the project was reviewed and turned into blocklist entries. `docs/briefs/
+2026-08-13-name-equivalents.md` carries the review and the whole annotated list; `02` §11.3.5
+carries the doctrine. Headline: the note's own "safe alternatives" were the marks themselves — two
+of its four were already on this repository's blocklist as real names — and that is the class the
+change is built around.
+
+The blocklist went from **274 entries to 482** across six new groups: acronym and numeral forms of
+conference marks whose spelled form was already blocked, conference names outside the top division,
+rivalry-trophy marks, bowl-game marks, award marks and their namesakes, and league, broadcast and
+competitor-product marks. Trade dress went from 39 pairs to 71 — it was a college slice while the
+generator dresses both tiers.
+
+**The finding worth reading twice: seven real college nicknames and one real nickname adjective were
+live in `NameGrammar`'s own pools**, with both legal tests green, because the nickname limb was an
+FBS-and-NFL slice. Valparaiso is Division I and "Beacons" was in the noun pool. All eight are now
+blocked and were replaced one-for-one, so pool counts and the RNG stream are unchanged and only the
+names differ.
+
+**Nothing here has been compiled or run.** There is no `swift` and no `xcodebuild` in this
+environment. Touched files: `Sources/FootballSimCore/Generation/Blocklist.swift`,
+`Sources/FootballSimCore/Generation/NameGrammar.swift`,
+`Tests/SimTests/Suites/LegalTests.swift`. Six new test cases were added and none of them has been
+executed by a compiler.
+
+What stands behind it instead is a Python mirror of the matcher, of every name shape the generator
+can emit, and of `SeededRandom` plus `ColourGenerator.pair` — validated by reproducing results the
+existing suite already asserts (the eight dual-use cities; 0 collisions, 0 fallbacks and 499
+distinct primaries at the seeds `GenerationTests` uses) before being trusted about the new entries.
+§6 of the brief states exactly what it checked. **A mirror is not a build, and this entry is not a
+claim that the suite is green.**
 
 ### Preserved pre-rebaseline P0–P4 record
 
@@ -2526,6 +2847,36 @@ same engine reads 0.025 explosive on one fixture and 0.155 across the harness's 
 `PINNED_PRO_GAME_FINGERPRINT` and `PINNED_COLLEGE_GAME_FINGERPRINT` were re-pinned, which is what
 that test exists to force. `--engine` now also dispatches `runSnapResolverTests`, which was
 reachable only from the no-argument branch.
+
+#### 2026-08-20 — calibration handoff correction: 21 of 25, not 21 of 24
+
+The merged `points per drive` row is live in the current `CalibrationBands.pro` list, so the prior
+handoff's denominator was stale. A fresh core-only holdout run, built in an isolated scratch path
+with one compiler job, reports **21 of 25** bands holding. The four red rows are reported from the
+TOST confidence interval, not from a point estimate:
+
+- college favourite win rate: 0.8189, CI90 [0.7978, 0.8400], band 0.70–0.78;
+- pro favourite win rate: 0.8800, CI90 [0.8622, 0.8978], band 0.62–0.72;
+- pro blowout rate: 0.6960, CI90 [0.6721, 0.7199], band 0.17–0.26;
+- pro points per drive: 2.1454, CI90 [2.1111, 2.1796], band 1.60–1.95.
+
+No calibration source changes were retained. The full release lane was attempted but its Swift build
+was killed by the operating system before the suite ran; stale executables were not used as evidence.
+The M3 recruiting-calibration suite remains unverified from a fresh build in this continuation.
+
+#### 2026-08-20 — continuation screening: two more hypotheses rejected
+
+Two additional calibration-only hypotheses were screened with fresh public-API executions using the
+holdout seeds and current ladder. They were not substituted for the authoritative core-only holdout
+run because the diagnostic runner used its own deterministic game-seed derivation.
+
+- Normalizing every synthetic team's per-attribute means back to its declared rung made the pro
+  favourite rate **0.8977**, CI90 **[0.8810, 0.9143]**, and blowout rate **0.7040**, CI90
+  **[0.6803, 0.7277]**. Normalizing within position groups was worse: **0.9356** and **0.7090**.
+- Extending the pro field-goal decision range to 45 yards moved points per drive only to **2.1544**,
+  CI90 **[2.1205, 2.1883]**, and blowout rate to **0.6770**, CI90 **[0.6527, 0.7013]**.
+
+Neither is a justified model fix. No source or canon-band changes were retained.
 
 ### P3 — match engine core
 

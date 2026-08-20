@@ -343,6 +343,69 @@ func runSeasonRolloverTests() {
     }
 }
 
+func runStaffPruningTests() {
+    suite("Staff pruning") {
+        test("season rollover prunes unseated staff without history") {
+            let source = GameState.bootstrap(seed: 97_008)
+            let played = try CareerControlSystem.startCollegeCareer(
+                at: source.programmes.ids[0],
+                in: source
+            ).state
+            guard let programmeID = played.programmes.ids.first(where: {
+                $0 != played.career.college?.programmeID
+            }), let programme = played.programmes[programmeID] else {
+                expect(false, "no secondary programme for the pruning fixture")
+                return
+            }
+            guard let mentorID = programme.staffIDs.first(where: {
+                played.staff[$0]?.role == .headCoach
+            }), let discipleID = programme.staffIDs.first(where: {
+                played.staff[$0]?.role == .offensiveCoordinator
+            }), let discardedID = programme.staffIDs.first(where: {
+                played.staff[$0]?.role == .defensiveCoordinator
+            }), let disciple = played.staff[discipleID] else {
+                expect(false, "secondary programme did not have the staff roles needed")
+                return
+            }
+
+            var state = played
+            _ = state.programmes.update(programmeID) {
+                $0.staffIDs.removeAll { [mentorID, discipleID, discardedID].contains($0) }
+            }
+            _ = state.people.recordStaffAssignment(
+                StaffCareerAssignment(
+                    season: state.calendar.season + 1,
+                    organisationID: state.proTeams.ids[0],
+                    role: .headCoach
+                ),
+                for: disciple
+            )
+            state.calendar = CalendarState(season: 0, week: SharedRules.inSeasonWeeks)
+            state.league.week = SharedRules.inSeasonWeeks
+
+            let transition = try SeasonLifecycleSystem.advance(
+                after: state.calendar,
+                in: state
+            )
+            expect(transition.staff[mentorID] != nil,
+                   "a seatless mentor named by the coaching tree was pruned")
+            expect(transition.people.staffCareers[discipleID] != nil,
+                   "a seatless coaching-tree disciple was pruned")
+            expect(transition.staff[discardedID] == nil,
+                   "a seatless coach with no history was retained")
+            expect(transition.people.staffCareers[discardedID] == nil,
+                   "a pruned coach left an orphaned career record")
+            expect(transition.staff[state.career.coachID!] != nil,
+                   "the played coach was pruned while unseated staff were cleaned")
+            expectEqual(
+                Set(transition.staff.ids),
+                Set(transition.people.staffCareers.keys),
+                "staff pruning left the staff and career stores out of sync"
+            )
+        }
+    }
+}
+
 private func controlledTeamID(in state: GameState) -> UUID? {
     state.careerArc.currentJob.flatMap { job in
         job.tier == .professional ? job.organisationID : nil
