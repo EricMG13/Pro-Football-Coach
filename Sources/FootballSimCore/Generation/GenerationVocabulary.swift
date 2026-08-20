@@ -20,6 +20,7 @@ import Foundation
 public enum GenerationVocabulary {
     public static var everyEmittableWord: [String] {
         NameGrammar.emittableWords
+            + ["A", "M"] // The generic college-style "A&M University" form.
             + GameMap.emittableWords
             + TraditionGrammar.emittableWords
     }

@@ -462,7 +462,7 @@ public enum CoachWorldReadModelProvider {
     static func teamReference(_ id: UUID, in state: GameState) -> CoachWorldTeamReference {
         let colours = state.identities[id]?.colours
         let name = state.programmes[id]?.name
-            ?? state.proTeams[id].map { "\($0.cityName) \($0.nickname)" }
+            ?? state.proTeams[id]?.displayName
             ?? "Unknown team"
         return CoachWorldTeamReference(
             stableID: id.uuidString,

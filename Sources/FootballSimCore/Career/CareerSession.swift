@@ -542,7 +542,7 @@ public actor CareerSession {
             tier = .professional
             programme = CollegeProgrammeProjection(
                 id: team.id,
-                name: team.name,
+                name: team.displayName,
                 nickname: team.nickname,
                 prestige: team.prestige.value,
                 resources: team.prestige.value,

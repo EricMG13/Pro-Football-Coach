@@ -40,12 +40,12 @@ public enum NameGrammar {
     /// How many distinct place names exist. Callers check they are not asking for more.
     public static var distinctPlaceNameCount: Int { realAmericanPlaces.count }
 
-    /// A generic institution name: a real place plus a non-branded descriptor.
+    /// A college-style institution name: a real place plus a generic descriptor used by real
+    /// American college naming patterns. The first draw stays a four-way branch so changing the
+    /// vocabulary does not add or remove random draws from world generation.
     public static func institutionName(place: String, using rng: inout SeededRandom) -> String {
         switch rng.int(in: 0...3) {
-        case 0: return "\(place) Institute"
-        case 1: return "\(place) \(rng.pick(institutionWords))"
-        case 2: return "\(place) \(rng.pick(institutionWords))"
+        case 0: return "\(place) University"
         default: return "\(place) \(rng.pick(institutionWords))"
         }
     }
@@ -717,9 +717,11 @@ public enum NameGrammar {
         "North", "South", "East", "West", "Upper", "Lower", "Central", "Coastal", "Inland",
     ]
     private static let institutionWords = [
+        "State University", "A&M University", "Technical University", "Polytechnic University", "Regional University",
+        "Research University", "Agricultural University", "Institute of Technology",
         "Technical Institute", "Polytechnic Institute", "Regional Institute", "Research Institute",
-        "Agricultural Institute", "Maritime Institute", "Normal Institute", "Technical College",
-        "Regional College", "City College",
+        "Agricultural Institute", "Maritime Institute", "Maritime College", "Normal University",
+        "Technical College", "Regional College", "City College", "State College",
     ]
     private static let bowlDescriptors = [
         "Classic", "Showcase", "Championship", "Football Classic",

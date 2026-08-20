@@ -12,8 +12,8 @@ import FootballSimCore
 ///
 /// See "the encoded world matches a pinned digest" below for why these exist and when to change
 /// them.
-private let PINNED_WORLD_BYTES = 825_480
-private let PINNED_WORLD_DIGEST: UInt64 = 16_135_054_583_268_133_864
+private let PINNED_WORLD_BYTES = 825_992
+private let PINNED_WORLD_DIGEST: UInt64 = 11_787_211_303_845_325_426
 
 /// FNV-1a over the bytes, order-sensitive.
 ///
@@ -146,6 +146,49 @@ func runGenerationTests() {
         test("a different seed produces a different world") {
             expect(LeagueGenerator.generate(seed: 20_260_811) != world,
                    "two seeds produced the same world, so the seed is not being read")
+        }
+
+        test("public team names follow college and pro reference shapes") {
+            let collegeDescriptors = [
+                "University", "State University", "A&M University", "Technical University",
+                "Polytechnic University", "Regional University", "Research University",
+                "Agricultural University", "Institute of Technology", "Technical Institute",
+                "Polytechnic Institute", "Regional Institute", "Research Institute",
+                "Agricultural Institute", "Maritime Institute", "Maritime College",
+                "Normal University", "Technical College", "Regional College", "City College",
+                "State College"
+            ]
+            for programme in world.programmes {
+                expect(programme.name.hasPrefix(programme.cityName + " "),
+                       "college name lost its location: (programme.name)")
+                expect(collegeDescriptors.contains { programme.name.hasSuffix($0) },
+                       "college name lost its generic institution suffix: (programme.name)")
+            }
+            for team in world.proTeams {
+                expectEqual(team.name, "\(team.cityName) \(team.nickname)",
+                            "pro team name is not location plus nickname")
+                expectEqual(team.displayName, team.name,
+                            "new pro team did not expose its full public name")
+            }
+            var legacy = world.proTeams[0]
+            legacy.name = legacy.cityName
+            expectEqual(legacy.displayName, "\(legacy.cityName) \(legacy.nickname)",
+                        "legacy market-only pro name did not get a compatibility display name")
+            var observedSuffixes = Set<String>()
+            for seed in 0..<64 {
+                var probe = SeededRandom(seed: UInt64(seed))
+                for _ in 0..<32 {
+                    let name = NameGrammar.institutionName(place: "Probe, ZZ", using: &probe)
+                    for suffix in ["University", "State University", "A&M University"]
+                    where name.hasSuffix(suffix) {
+                        observedSuffixes.insert(suffix)
+                    }
+                }
+            }
+            for suffix in ["University", "State University", "A&M University"] {
+                expect(observedSuffixes.contains(suffix),
+                       "the institution grammar never emits the common college suffix (suffix)")
+            }
         }
 
         test("the world survives the save envelope byte-identically") {

@@ -20,6 +20,13 @@ public struct ProTeam: Codable, Sendable, Equatable, Identifiable {
     /// `Contract.deadMoney(ifReleasedBeforeYear:)` owns how much.
     public var deadMoney: Int
 
+    /// Public team name used by read models. Older saves stored only the market in `name`; keeping
+    /// this compatibility projection avoids a migration while new worlds store the full
+    /// location-plus-nickname form.
+    public var displayName: String {
+        name == cityName ? "\(cityName) \(nickname)" : name
+    }
+
     public init(
         id: UUID = UUID(),
         name: String,

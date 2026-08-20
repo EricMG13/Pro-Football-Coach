@@ -48,7 +48,7 @@ public extension CoachWorldReadModelProvider {
     static func awardsHonours(from state: GameState) -> AwardsHonoursReadModel? {
         guard state.career.coachID != nil else { return nil }
         let names = Dictionary(uniqueKeysWithValues: state.programmes.values.map { ($0.id, $0.name) })
-            .merging(state.proTeams.values.map { ($0.id, "\($0.cityName) \($0.nickname)") }, uniquingKeysWith: { first, _ in first })
+            .merging(state.proTeams.values.map { ($0.id, $0.displayName) }, uniquingKeysWith: { first, _ in first })
             .merging(state.players.values.map { ($0.id, $0.fullName) }, uniquingKeysWith: { first, _ in first })
         let awards = state.competition.archives
             .sorted { $0.season > $1.season }

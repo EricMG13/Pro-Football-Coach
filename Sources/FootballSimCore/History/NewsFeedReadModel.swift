@@ -178,7 +178,7 @@ public struct NewsFeedReadModel: Sendable, Equatable {
     private static func names(in state: GameState) -> [UUID: String] {
         var result: [UUID: String] = [:]
         for programme in state.programmes.values { result[programme.id] = programme.name }
-        for team in state.proTeams.values { result[team.id] = team.name }
+        for team in state.proTeams.values { result[team.id] = team.displayName }
         for player in state.players.values { result[player.id] = player.fullName }
         for staff in state.staff.values { result[staff.id] = staff.fullName }
         for prospect in state.prospects.values {

@@ -8,7 +8,29 @@ Purpose: product naming coherence and pre-clearance risk screen before public or
 
 The canonical set now uses real U.S. city/town names qualified by state abbreviation, combined with generic institution or club descriptors. Stable UUIDs and approved logo assets are unchanged. No current full team name is an exact match for a current NFL, NBA, MLB, NHL, or MLS club name in the official league reference lists below. This is not a trademark clearance opinion.
 
+### 2026-08-20 naming-shape review
+
+The reference comparison found two product-shape gaps in the generated model: college names used a
+narrow `Institute`/`College` vocabulary, and a newly generated `ProTeam` stored only its market in
+`name` while keeping the nickname in a second field. The generator now emits a qualified place plus
+one of the common generic college forms (`University`, `State University`, `A&M University`,
+technical/polytechnic/research/agricultural university, or a generic institute/college), and new pro
+records store `place + nickname`. A compatibility `displayName` composes the same public form for
+older saves without changing their schema. The 166 stable logo UUIDs, asset names, and PNGs are not
+changed.
+
+The reference sample was deliberately structural rather than imitative: NFL's official directory
+uses location-plus-nickname forms such as Arizona Cardinals and Seattle Seahawks; NBA's directory
+uses forms such as Boston Celtics and Denver Nuggets; NCAA's official membership directory covers
+more than 1,100 institutions across three divisions, which is why the college side permits broader
+institution descriptors rather than a pro-style nickname-only convention. The sample establishes
+the shape, not a list of names to copy.
+
 The place pool is 570 incorporated U.S. cities and towns from the 2024 U.S. Census Gazetteer, rendered as `City, ST`. College-style names use generic descriptors such as `Technical Institute`, `Regional College`, or `Maritime Institute`; pro-style names keep the place and a generic plural nickname. The blocklist and generated-world sweep still screen exact and component collisions.
+
+The approved 166-record logo manifest is synchronized to the same canonical seed after the naming
+change: UUIDs, asset names, PNG bytes, family assignments, and approvals remain unchanged; only
+the display names, three-letter abbreviations, and prompt headers were refreshed.
 
 ## Naming pattern reference
 
@@ -27,7 +49,7 @@ Recommended product rule: choose one presentation per team—college-style `[rea
 
 ## Bowl-game naming
 
-The attached `Safe Generic Alternative.txt` is useful research, not legal authority. Its generic replacements are applied as a narrow rule: a projected bowl badge may use the host place plus `Classic`, `Showcase`, `Championship`, or `Football Classic`. The generator must not use `Rose Bowl`, `Sugar Bowl`, `Fiesta Bowl`, `Orange Bowl`, or near-miss substitutes intended to evoke them. The engine currently persists postseason stage rather than a bowl-title field; `NameGrammar.bowlName(place:using:)` is the single safe title helper for a future read-model badge, so no save schema changed.
+The attached `Safe Generic Alternative.txt` is useful research, not legal authority. Its generic replacements are applied as a narrow rule: a projected bowl badge may use the host place plus `Classic`, `Showcase`, `Championship`, or `Football Classic`. The generator must not use `Rose Bowl`, `Sugar Bowl`, `Fiesta Bowl`, `Orange Bowl`, or near-miss substitutes intended to evoke them. The engine currently persists postseason stage rather than a bowl-title field; `NameGrammar.bowlName(place:using:)` is the single safe title helper for a future read-model badge, so no save schema changed. The legal gate exercises 32 generated bowl titles, and the generation gate verifies the broader suffix pool across deterministic probe seeds.
 
 ## Risk tiers
 

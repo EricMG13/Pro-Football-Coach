@@ -60,7 +60,7 @@ public struct GeneratedWorld: Codable, Sendable, Equatable {
             names.append(programme.nickname)
         }
         for team in proTeams {
-            names.append(team.name)
+            names.append(team.displayName)
             names.append(team.nickname)
         }
         // Looked up through the ordered member arrays rather than by iterating `identities.values`,
@@ -189,10 +189,11 @@ public enum LeagueGenerator {
                     let city = map.cities[cityCursor]
                     cityCursor += 1
                     let teamID = rng.uuid()
+                    let nickname = NameGrammar.nickname(using: &rng)
                     proTeams.append(ProTeam(
                         id: teamID,
-                        name: city.name,
-                        nickname: NameGrammar.nickname(using: &rng),
+                        name: "\(city.name) \(nickname)",
+                        nickname: nickname,
                         cityName: city.name,
                         conferenceID: conferenceID,
                         divisionID: divisionID,
