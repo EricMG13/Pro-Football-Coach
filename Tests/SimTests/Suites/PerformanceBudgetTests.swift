@@ -1,9 +1,9 @@
 import Foundation
 import FootballSimCore
 
-/// Measures the two D4 operations on the shipping college fixture without altering the scheduler.
-func runPerformanceBudgetTests() {
-    suite("Performance budget") {
+/// Host-only evidence for the two D4 operations. Device release gates live outside this probe.
+func runPerformanceBudgetProbe() {
+    suite("Performance evidence probe — no host threshold") {
         let state = GameState.bootstrap(seed: 20_260_820)
 
         test("uses the shipping college league size") {
@@ -22,9 +22,10 @@ func runPerformanceBudgetTests() {
                 _ = try WorldScheduler.advanceWeek(state)
                 let weekSeconds = seconds(weekStarted.duration(to: clock.now))
                 print(String(
-                    format: "PERFORMANCE: shipping college %d programmes; recruiting AI %.3f s; "
+                    format: "PERFORMANCE EVIDENCE ONLY: shipping college %d programmes; "
+                        + "recruiting AI %.3f s; "
                         + "week advance %.3f s; target 1.200 s; hard ceiling 2.000 s "
-                        + "(host measurement, not a device)",
+                        + "(host measurement; no pass/fail threshold)",
                     state.programmes.count,
                     recruitingSeconds,
                     weekSeconds

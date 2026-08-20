@@ -50,7 +50,7 @@ if CommandLine.arguments.contains("--catalog") {
 } else if CommandLine.arguments.contains("--week-advance-timing") {
     runWeekAdvanceTimingProbe()
 } else if CommandLine.arguments.contains("--performance-budget") {
-    runPerformanceBudgetTests()
+    runPerformanceBudgetProbe()
 } else if CommandLine.arguments.contains("--pro-market-root-probe") {
     runProMarketRootProbe()
 } else if CommandLine.arguments.contains("--screen-read-models") {

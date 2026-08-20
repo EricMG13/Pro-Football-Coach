@@ -46,6 +46,10 @@ func runM3CollegeSoakTests() {
                 let data = try await session.saveData()
                 let state = try SaveEnvelope.decode(GameState.self, from: data)
                 let completedSeason = targetSeason - 1
+                expect(
+                    data.count <= 8 * 1024 * 1024,
+                    "save is \(data.count) B at season \(targetSeason), over the 8 MB D4 ceiling"
+                )
                 expectEqual(state.calendar, CalendarState(season: targetSeason, week: 2))
                 expectEqual(state.college.portal.phase, .closed)
                 expectEqual(state.prospects.count, CollegeRules.annualProspectCount)

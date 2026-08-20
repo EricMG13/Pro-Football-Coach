@@ -1,6 +1,6 @@
 import Foundation
 import FootballSimCore
-import CoachWorldApp
+@testable import CoachWorldApp
 
 private func legacyEnvelope(
     for state: GameState,
@@ -30,6 +30,36 @@ private func compressedEnvelope(for body: Data) throws -> Data {
     envelope.append(contentsOf: Array(repeating: UInt8(0), count: 7))
     envelope.append(try (body as NSData).compressed(using: .zlib) as Data)
     return envelope
+}
+
+private func assertInvalidCalendarRefusedBeforeOpen(_ envelope: Data) async {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("pfc-invalid-calendar-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let storage = CoachWorldSaveStore(directory: directory)
+    try! storage.write(envelope)
+    var openedDocument: CoachWorldSaveDocument?
+
+    do {
+        if case let .loaded(document, _) = try await SaveCoordinator(storage: storage).load() {
+            openedDocument = document
+        }
+        expect(false, "an invalid calendar opened a document")
+    } catch let DecodingError.dataCorrupted(context) {
+        expectEqual(
+            context.debugDescription,
+            "The world calendar is outside the supported season bounds."
+        )
+        expectEqual(
+            CoachWorldAppRootView.saveErrorMessage(DecodingError.dataCorrupted(context)),
+            "That save could not be opened. Retry, use the backup, or explicitly replace it."
+        )
+    } catch {
+        expect(false, "invalid calendar returned the wrong error: \(error)")
+    }
+
+    expectEqual(openedDocument, nil, "invalid input partially opened a career")
+    expect(FileManager.default.fileExists(atPath: storage.quarantineDirectory.path))
 }
 
 func runSaveDocumentTests() {
@@ -106,7 +136,7 @@ func runSaveDocumentTests() {
             expectEqual(decoded.presentation.selectedSubjectID, selectedSubjectID)
         }
 
-        test("a current document with an invalid calendar is refused before opening") {
+        testAsync("a current document with an invalid calendar is refused before opening") {
             let document = CoachWorldSaveDocument(
                 gameState: GameState.bootstrap(seed: 20_260_824)
             )
@@ -120,22 +150,10 @@ func runSaveDocumentTests() {
             object["gameState"] = gameState
             let body = try! JSONSerialization.data(withJSONObject: object)
 
-            do {
-                _ = try CoachWorldSaveDocument.decode(
-                    envelopeData: compressedEnvelope(for: body)
-                )
-                expect(false, "an invalid calendar opened a document")
-            } catch let DecodingError.dataCorrupted(context) {
-                expectEqual(
-                    context.debugDescription,
-                    "The world calendar is outside the supported season bounds."
-                )
-            } catch {
-                expect(false, "invalid calendar returned the wrong error: \(error)")
-            }
+            await assertInvalidCalendarRefusedBeforeOpen(try! compressedEnvelope(for: body))
         }
 
-        test("a legacy root with an invalid calendar is refused instead of migrating") {
+        testAsync("a legacy root with an invalid calendar is refused instead of migrating") {
             var object = try! JSONSerialization.jsonObject(
                 with: JSONEncoder.stable().encode(GameState.bootstrap(seed: 20_260_825))
             ) as! [String: Any]
@@ -145,19 +163,7 @@ func runSaveDocumentTests() {
             object["calendar"] = calendar
             let body = try! JSONSerialization.data(withJSONObject: object)
 
-            do {
-                _ = try CoachWorldSaveDocument.decode(
-                    envelopeData: compressedEnvelope(for: body)
-                )
-                expect(false, "an invalid legacy calendar migrated into a document")
-            } catch let DecodingError.dataCorrupted(context) {
-                expectEqual(
-                    context.debugDescription,
-                    "The world calendar is outside the supported season bounds."
-                )
-            } catch {
-                expect(false, "invalid legacy calendar returned the wrong error: \(error)")
-            }
+            await assertInvalidCalendarRefusedBeforeOpen(try! compressedEnvelope(for: body))
         }
 
         test("current document without inbox receipts remains readable") {

@@ -106,14 +106,6 @@ public struct PlayerProfileReadModel: Identifiable, Sendable, Equatable {
     }
 }
 
-public struct RosterFeedbackReadModel: Sendable, Equatable {
-    public let message: String
-
-    public init(message: String) {
-        self.message = message
-    }
-}
-
 public struct RosterReadModel: Sendable, Equatable {
     public struct PlayerRow: Identifiable, Sendable, Equatable {
         public let stableID: String

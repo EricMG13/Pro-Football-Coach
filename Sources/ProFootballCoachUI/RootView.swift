@@ -72,7 +72,7 @@ private struct DebugCoachingHQRoot: View {
             } else if currentScreen == .roster {
                 RosterView(
                     model: roster,
-                    feedback: statusMessage.map { RosterFeedbackReadModel(message: $0) },
+                    statusMessage: statusMessage,
                     onContinue: { statusMessage = "No later personnel event is available yet" },
                     onNavigate: navigate,
                     onInspectDevelopment: inspectDevelopment,

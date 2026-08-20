@@ -91,7 +91,6 @@ grows a row that no test backs.
 | Reduce Motion honoured on every animation | `ReduceMotionContractTest` |
 | VoiceOver on every data row and control | `VoiceOverLabelTest` |
 | 44 pt touch targets | `TouchTargetTest` |
-| A save survives 20 seasons under 8 MB | `M1SoakTests` + `M2SoakTests` |
 | Same seed, same league, across app launches | `DeterminismTests` + source scan |
 | All identities fictional and original | `LegalTests` |
 
@@ -100,12 +99,13 @@ grows a row that no test backs.
 ## Unverified product targets
 
 These targets remain part of the product direction but are not release claims until their dedicated
-instruments exist and run in CI:
+instruments pass on the required hardware and run in CI:
 
 | Target | Current evidence status |
 |---|---|
 | A season is completable in 6–8 hours | AgencyBudgetTests is not implemented; owner measurement remains open |
-| Week advance under 2.0 s at shipping league size | `PerformanceBudgetTests` measured recruiting AI at 1.260 s and full week advance at 4.031 s on a Release Mac host at 134 programmes; the 2.0 s ceiling is exceeded and the iPhone gate remains open |
+| A save survives 20 seasons under 8 MB | `M3CollegeSoakTests` now asserts the ceiling, but the 20-season gate has not passed |
+| Week advance under 2.0 s at shipping league size | The host performance probe measured recruiting AI at 1.260 s and full week advance at 4.031 s on a Release Mac at 134 programmes; the 2.0 s ceiling is exceeded and the iPhone gate remains open |
 | The simulation and the off-screen model agree | TwoTierConsistencyTests is not implemented; calibration coverage remains open |
 
 ---

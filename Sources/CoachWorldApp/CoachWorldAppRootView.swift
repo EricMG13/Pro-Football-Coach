@@ -92,9 +92,7 @@ public struct CoachWorldAppRootView: View {
                 surface(store.roster, screen: .roster) { model in
                     RosterView(
                         model: model,
-                        feedback: (failure ?? store.statusMessage).map {
-                            RosterFeedbackReadModel(message: $0)
-                        },
+                        statusMessage: failure ?? store.statusMessage,
                         onContinue: { Task { await advance(store) } },
                         onNavigate: { navigate($0, in: store) },
                         onInspectDevelopment: { playerID in
@@ -1514,7 +1512,7 @@ public struct CoachWorldAppRootView: View {
         }
     }
 
-    private static func saveErrorMessage(_ error: Error) -> String {
+    nonisolated static func saveErrorMessage(_ error: Error) -> String {
         if let envelope = error as? SaveEnvelopeError,
            case .futureVersion = envelope {
             return "This save was made by a newer version of Pro Football Coach."

@@ -145,6 +145,13 @@ private func importsUIFramework(_ line: String) -> Bool {
     return uiModules.contains(String(rest.prefix { $0.isLetter || $0.isNumber || $0 == "_" }))
 }
 
+private func usesCommittingBackAction(_ text: String) -> Bool {
+    text.range(
+        of: #"FloodlitCommittingAction\s*\(\s*"Back"#,
+        options: .regularExpression
+    ) != nil
+}
+
 /// Every production Swift file that brings a UI framework into scope.
 ///
 /// SwiftPM production targets live under `Sources`; the Xcode app's `@main` shell lives under
@@ -531,6 +538,12 @@ func runContractTests() {
                    "a legitimate import was reported as an offender")
             expect(!caught("import SwiftUIX\n", by: importsUIFramework),
                    "the scan matched a module whose name merely starts with SwiftUI")
+        }
+
+        test("the committing-back scan accepts multiline formatting") {
+            expect(usesCommittingBackAction(#"FloodlitCommittingAction("Back", action: close)"#))
+            expect(usesCommittingBackAction("FloodlitCommittingAction(\n    \"Back to HQ\",\n    action: close\n)"))
+            expect(!usesCommittingBackAction(#"FloodlitCommittingAction("Advance", action: next)"#))
         }
 
         test("SnapAnchors.swift never draws a random value") {
@@ -994,9 +1007,7 @@ func runContractTests() {
             let newsProvider = appFiles.first {
                 $0.path.hasSuffix("/CoachWorldNewsProvider.swift")
             }?.text ?? ""
-            let committingBacks = uiFiles.filter {
-                $0.text.contains("FloodlitCommittingAction(\"Back")
-            }
+            let committingBacks = uiFiles.filter { usesCommittingBackAction($0.text) }
 
             expect(chrome.contains("static let familySize: CGFloat = 9")
                        && chrome.contains("static let railLabel: CGFloat = 9")

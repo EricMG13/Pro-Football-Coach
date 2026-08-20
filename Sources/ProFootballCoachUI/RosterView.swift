@@ -8,7 +8,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
 
 
     public let model: RosterReadModel
-    public let feedback: RosterFeedbackReadModel?
+    public let statusMessage: String?
     public let onContinue: () -> Void
     public let onNavigate: (CoachWorldScreenID) -> Void
     public let onInspectDevelopment: (String) -> Void
@@ -24,7 +24,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
 
     public init(
         model: RosterReadModel,
-        feedback: RosterFeedbackReadModel? = nil,
+        statusMessage: String? = nil,
         onContinue: @escaping () -> Void,
         onNavigate: @escaping (CoachWorldScreenID) -> Void,
         onInspectDevelopment: @escaping (String) -> Void,
@@ -32,7 +32,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
         showsRecruitingBoard: Bool = false
     ) {
         self.model = model
-        self.feedback = feedback
+        self.statusMessage = statusMessage
         self.onContinue = onContinue
         self.onNavigate = onNavigate
         self.onInspectDevelopment = onInspectDevelopment
@@ -94,7 +94,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
                     Text(model.team.name.uppercased())
                         .font(CoachWorldTokens.TypeRole.headline.weight(.black))
                         .lineLimit(1)
-                    Text(feedback?.message ?? worldContextLine)
+                    Text(statusMessage ?? worldContextLine)
                         .font(CoachWorldTokens.TypeRole.caption)
                         .foregroundStyle(worldContextInk)
                         .lineLimit(1)
@@ -110,7 +110,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
                 if identity?.needsBoundary == true { verticalSeam }
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(model.team.name), \(feedback?.message ?? worldContextLine)")
+            .accessibilityLabel("\(model.team.name), \(statusMessage ?? worldContextLine)")
 
             Divider().overlay(palette.contentQuiet.color)
 
@@ -166,7 +166,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
     }
 
     private var worldContextInk: Color {
-        if feedback != nil, identity == nil { return palette.statePositive.color }
+        if statusMessage != nil, identity == nil { return palette.statePositive.color }
         return (identity?.onField ?? palette.contentSecondary).color
     }
 
@@ -727,7 +727,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentSecondary.color)
             Text("\(model.team.name) · \(model.coach.name)")
                 .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-            Text(feedback?.message ?? worldContextLine)
+            Text(statusMessage ?? worldContextLine)
                 .foregroundStyle(palette.contentSecondary.color)
             route("Office", screen: .coachingHQ)
             route("Inbox", screen: .inbox)

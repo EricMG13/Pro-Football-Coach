@@ -1672,22 +1672,11 @@ public enum WorldIntegrity {
             }
         }
         // ScoutingState canonicalizes and validates each observer's slice at every mutation and
-        // decode. Partitioning by observer and sorting each bounded slice preserves the prior
-        // deterministic order without an O(n log n) global resort on every integrity check.
+        // decode. Sorting the observers preserves deterministic traversal without re-sorting each
+        // already-canonical slice on every integrity check.
         let storedSnapshots = state.scouting.portalKnowledgeByObserver.keys
             .sorted(by: uuidLessThan)
-            .flatMap { observerID in
-                (state.scouting.portalKnowledgeByObserver[observerID] ?? []).sorted { lhs, rhs in
-                    if lhs.targetSeason != rhs.targetSeason {
-                        return lhs.targetSeason < rhs.targetSeason
-                    }
-                    if lhs.window != rhs.window { return lhs.window.order < rhs.window.order }
-                    if lhs.playerID != rhs.playerID {
-                        return uuidLessThan(lhs.playerID, rhs.playerID)
-                    }
-                    return uuidLessThan(lhs.sourceProgrammeID, rhs.sourceProgrammeID)
-                }
-            }
+            .flatMap { state.scouting.portalKnowledgeByObserver[$0] ?? [] }
         for snapshot in storedSnapshots {
             let occursInFuture = occurs(state.calendar, before: snapshot.lastUpdated)
             let hasEntrantRecord = recordIdentities.contains(PortalRecordSourceKey(
