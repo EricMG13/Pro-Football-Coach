@@ -82,11 +82,53 @@ public enum MatchupRules {
 
     // MARK: - Pass
 
-    public static let shortPassAirYards = 5
-    public static let midPassAirYards = 12
-    public static let deepPassAirYards = 24
-    /// Average pressure above which the pocket collapses into a sack.
-    public static let sackPressureThreshold = 0.66
+    /// Air yards by depth. A completion gains these plus whatever the receiver makes after it.
+    ///
+    /// Trimmed from 5/12/24 once completions were arriving at a football rate: the harness measured
+    /// 12.8 yards per completion against a real figure near 11.5, which put pass yards at 268
+    /// against a 185-245 band and the explosive-pass rate at 0.178 against 0.125-0.150. Both are
+    /// the same number seen twice, because an explosive pass is defined by the yardage a completion
+    /// gains.
+    public static let shortPassAirYards = 4
+    public static let midPassAirYards = 11
+    public static let deepPassAirYards = 21
+
+    /// Scatter around a depth's air yards.
+    ///
+    /// **Without this a pass depth had no distribution.** Air yards were a constant per depth, so
+    /// every deep completion gained exactly `deepPassAirYards` before the catch and "explosive"
+    /// became a step function of the play call rather than a property of the throw: with the deep
+    /// figure above `explosivePassYards`, every deep completion was explosive by construction and
+    /// the rate simply tracked how often the caller went deep. Shortening the constants moved the
+    /// rate the *wrong* way for that reason.
+    ///
+    /// Real throws of a given depth vary continuously, which is the same thing `runYardDeviation`
+    /// says about carries.
+    public static let passAirYardDeviation = 6.0
+    /// Pressure above which the pocket collapses into a sack, measured on the *worst* protection
+    /// duel rather than the average of them.
+    ///
+    /// Raised from 0.66 when the resolver stopped averaging. The minimum of four draws sits far
+    /// below their mean, so the old threshold applied to the new statistic would have sacked the
+    /// passer on a quarter of dropbacks. At `leverageNoise` 0.38 across four rushers, this is
+    /// roughly where seven percent of dropbacks end in a sack, which is what a 2.0-3.1 per
+    /// team-game band asks for over about 34 of them.
+    ///
+    /// Fitted, not guessed. Two measurements against `CalibrationRoster` — 31.6 percent of
+    /// dropbacks at 0.28 and 3.2 percent at 0.70 — determine both parameters of the second-worst
+    /// duel's distribution: mean -0.244, deviation 0.305. Roughly seven percent of dropbacks, which
+    /// is what a 2.0-3.1 per team-game band asks for over about 34 of them, falls at a total
+    /// threshold near 0.69, of which the poise relief supplies 0.11 at an even roster's rating.
+    public static let sackPressureThreshold = 0.58
+
+    /// Which protection duel, ranked worst-first from zero, decides whether the pocket collapses.
+    ///
+    /// One means the second-worst: the pocket goes when more than one protector loses. Zero — the
+    /// single worst — hands the pass rush to the roster's weakest lineman and read 10.6 sacks per
+    /// team-game against `CalibrationRoster`'s ±18 scatter. An average, or any blend toward one,
+    /// makes blitzing counterproductive, because rushers past the front four are linebackers who
+    /// lose their duels and pull an average upward.
+    public static let protectionCollapseRank = 1
     /// How much a maximally poised passer raises that threshold.
     public static let poiseSackRelief = 0.22
     public static let sackYards = -7
@@ -144,7 +186,7 @@ public enum MatchupRules {
     /// distribution came from a break-tackle chain gated at `breakTackleThreshold`. The harness read
     /// 1.35 yards per carry against a real 4.3. A back handed the ball with his line neither winning
     /// nor losing still gains ground: the offence knows the play and the defence does not.
-    public static let baselineRunYards = 3.0
+    public static let baselineRunYards = 3.2
 
     /// Per-carry scatter, before contact.
     ///

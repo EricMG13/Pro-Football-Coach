@@ -64,7 +64,10 @@ public enum CollegeClockRules: ClockRules {
     public static let quarters = 4
     public static let quarterSeconds = 900
     public static let playClockSeconds = 40
-    public static let normalTempoSnapSeconds = 26
+    /// See `ProClockRules.normalTempoSnapSeconds`. College stops the clock on a first down as well,
+    /// so it starts from a higher stop fraction — 0.426 measured — and 26 produced 172 plays a game
+    /// against a band asking for about 142. That puts the right figure near 34.
+    public static let normalTempoSnapSeconds = 34
     public static let hurryTempoSnapSeconds = 12
     public static let bleedTempoSnapSeconds = 36
     public static let inBoundsPlaySeconds = 6
@@ -89,7 +92,14 @@ public enum ProClockRules: ClockRules {
     public static let quarters = 4
     public static let quarterSeconds = 900
     public static let playClockSeconds = 40
-    public static let normalTempoSnapSeconds = 30
+    /// Game-clock seconds between the end of one play and the next snap.
+    ///
+    /// This is not the play clock, it is how much of the *game* clock a normal-tempo huddle burns,
+    /// and 30 was too few: the clock runs from the end of one play until the next snap, and with a
+    /// 40-second play clock a team that is not hurrying uses most of it. The harness measured 146
+    /// plays a game — 24.7 seconds each — against a band asking for about 128. The implied
+    /// clock-stop fraction of 0.378 puts the right figure near 36.
+    public static let normalTempoSnapSeconds = 36
     public static let hurryTempoSnapSeconds = 14
     public static let bleedTempoSnapSeconds = 38
     public static let inBoundsPlaySeconds = 6

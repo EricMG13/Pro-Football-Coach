@@ -2,12 +2,14 @@ import Foundation
 import FootballSimCore
 
 /// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
-/// Moved 2026-08-20 when the run and pass resolvers gained the structural fixes `MatchupRules`
-/// documents at `baselineRunYards` and `throwDifficulty`: an even run had no baseline gain and an
-/// average passer was modelled as a heavy underdog. Both values were reproduced in two independent
-/// release-process invocations of `--game-fingerprints` before being written here.
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 460_558_079_259_663_646
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 4_199_428_307_792_163_079
+/// Moved 2026-08-20 for the structural fixes `MatchupRules` and `ClockRules` document: an even run
+/// had no baseline gain and no spread, an average passer was modelled as a heavy underdog at every
+/// depth but short, poise made a passer *easier* to sack, pressure was the average protection duel
+/// rather than the second-worst, air yards were a constant per depth, and the game clock burned
+/// only 30 seconds between snaps. Both values were reproduced in two independent release-process
+/// invocations of `--game-fingerprints` before being written here.
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 17_314_862_794_871_866_576
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 7_423_600_404_136_963_127
 
 func runEngineTests() {
     suite("Leverage") {
@@ -269,6 +271,18 @@ func testPersonnel(offenseSkill: Int, defenseSkill: Int) -> SnapPersonnel {
     return SnapPersonnel(offense: offense, defense: defense)
 }
 
+/// The same personnel with the quarterback's poise overridden, so a poise test moves one attribute
+/// rather than the whole roster's skill.
+func personnelWithQuarterbackPoise(_ poise: Int, base: SnapPersonnel) -> SnapPersonnel {
+    let offense = base.offense.map { player -> Player in
+        guard player.position == .quarterback else { return player }
+        var updated = player
+        updated.attributes[.poise] = Rating(poise)
+        return updated
+    }
+    return SnapPersonnel(offense: offense, defense: base.defense)
+}
+
 func runSnapResolverTests() {
     let rules = Tier.pro.clockRules
     let even = testPersonnel(offenseSkill: 70, defenseSkill: 70)
@@ -307,6 +321,84 @@ func runSnapResolverTests() {
                         stateAfter(OffensiveCall(playType: .pass), DefensiveCall(coverage: .man),
                                    Situation(yardLine: 98), even),
                         "the goal-line branch changed the draw count")
+        }
+
+        test("poise relieves sack pressure rather than inviting it") {
+            // `poiseSackRelief` is documented as "how much a maximally poised passer *raises* that
+            // threshold", and the resolver subtracted it — so the calmest passer in the league had
+            // the lowest sack threshold and went down most easily. The constant and the code
+            // disagreed about the sign, and nothing measured the direction.
+            func sackRate(poise: Int) -> Double {
+                var rng = SeededRandom(seed: 5_150)
+                var sacks = 0, dropbacks = 0
+                let personnel = personnelWithQuarterbackPoise(poise, base: even)
+                for _ in 0..<4_000 {
+                    let outcome = SnapResolver.resolve(
+                        offensiveCall: OffensiveCall(playType: .pass),
+                        defensiveCall: DefensiveCall(coverage: .man),
+                        personnel: personnel, situation: Situation(yardLine: 40),
+                        rules: rules, rng: &rng
+                    )
+                    switch outcome.result {
+                    case .sack, .safety: sacks += 1; dropbacks += 1
+                    case .incompletion, .interception, .gain, .touchdown: dropbacks += 1
+                    default: break
+                    }
+                }
+                return dropbacks > 0 ? Double(sacks) / Double(dropbacks) : 0
+            }
+            let calm = sackRate(poise: 95)
+            let rattled = sackRate(poise: 45)
+            let message = "poise 95 was sacked at \(calm) and poise 45 at \(rattled)"
+            expect(calm < rattled, message)
+        }
+
+        test("the pass rush gets home at a football rate, and blitzing helps it") {
+            // Sacks measured 1.15 per team-game against a band of 2.0 to 3.1 — a pass rush that
+            // almost never arrived, which is why pass yards ran 30 percent over their band.
+            //
+            // Pressure was the *mean* of the protection duels, which is the same variance-averaging
+            // defect the run lane had: a sack is one blocker losing, not five losing slightly. The
+            // mean also made blitzing nearly inert, because an extra rusher paired against a reused
+            // blocker barely moved an average.
+            // Measured against `CalibrationRoster`, not `testPersonnel`.
+            //
+            // This test first ran on uniform personnel, where every player carries one rating, and
+            // reported a healthy seven percent while the harness — which scatters attributes by
+            // ±18 the way a real roster does — was reading 10.6 sacks per team-game. A pass-rush
+            // model is a statement about *unequal* players, so a fixture that makes them equal is
+            // exactly the coverage boundary `CLAUDE.md` warns about: the test's boundary had become
+            // the quality boundary.
+            func sackRate(rushers: Int) -> Double {
+                var rng = SeededRandom(seed: 6_161)
+                var sacks = 0, dropbacks = 0
+                for game in 0..<12 {
+                    let scattered = SnapPersonnel(
+                        offense: CalibrationRoster.team(skill: 70, seed: UInt64(6_000 + game)).offense,
+                        defense: CalibrationRoster.team(skill: 70, seed: UInt64(9_000 + game)).defense
+                    )
+                for _ in 0..<500 {
+                    let outcome = SnapResolver.resolve(
+                        offensiveCall: OffensiveCall(playType: .pass),
+                        defensiveCall: DefensiveCall(coverage: .man, rushers: rushers),
+                        personnel: scattered, situation: Situation(yardLine: 40),
+                        rules: rules, rng: &rng
+                    )
+                    switch outcome.result {
+                    case .sack, .safety: sacks += 1; dropbacks += 1
+                    case .incompletion, .interception, .gain, .touchdown: dropbacks += 1
+                    default: break
+                    }
+                }
+                }
+                return dropbacks > 0 ? Double(sacks) / Double(dropbacks) : 0
+            }
+            let base = sackRate(rushers: 4)
+            let blitz = sackRate(rushers: 6)
+            let baseMessage = "sack rate per dropback is \(base), wanted 0.045 to 0.095"
+            expect(base > 0.045 && base < 0.095, baseMessage)
+            let blitzMessage = "four rushers sacked at \(base) and six at \(blitz)"
+            expect(blitz > base, blitzMessage)
         }
 
         test("an even passer completes at football rates, at every depth") {
