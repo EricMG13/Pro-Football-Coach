@@ -1082,37 +1082,18 @@ public struct CoachWorldAppRootView: View {
             screen = .proOffseason
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .draftBoard where store.proOffseason != nil,
-             .freeAgency where store.proOffseason != nil,
-             .proScoutingBoard where store.proOffseason != nil:
-            screen = .proOffseason
-            store.setPresentationRoute(String(CoachWorldScreenID.proOffseason.rawValue))
-            failure = nil
         case .draftRoom where store.proOffseason?.phase == .draft:
             proFocus = .draftRoom
             screen = .draftRoom
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .staffRoom where store.staffRoom != nil,
-             .staffMarketProfile where store.staffRoom != nil:
+        case .staffRoom where store.staffRoom != nil:
             screen = .staffRoom
-            store.setPresentationRoute(String(CoachWorldScreenID.staffRoom.rawValue))
-            failure = nil
-        case .schemeBook where store.gamePlan != nil,
-             .personnelPackages where store.depthChart != nil:
-            screen = destination == .schemeBook ? .gamePlan : .depthChart
-            store.setPresentationRoute(String(screen.rawValue))
+            store.setPresentationRoute(String(destination.rawValue))
             failure = nil
         case .collegeOffseason where store.collegeOffseason != nil:
             screen = .collegeOffseason
             store.setPresentationRoute(String(destination.rawValue))
-            failure = nil
-        case .portalHub where store.collegeOffseason != nil,
-             .retentionDecisions where store.collegeOffseason != nil,
-             .portalMarket where store.collegeOffseason != nil,
-             .nilAllocation where store.collegeOffseason != nil:
-            screen = .collegeOffseason
-            store.setPresentationRoute(String(CoachWorldScreenID.collegeOffseason.rawValue))
             failure = nil
         case .signingDay where store.collegeOffseason?.cyclePhase == .signing:
             screen = destination
@@ -1129,20 +1110,9 @@ public struct CoachWorldAppRootView: View {
             screen = .careerHub
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .jobBoard where store.careerHub != nil,
-             .offer where store.careerHub != nil,
-             .appointment where store.careerHub != nil:
+        case .stakeholders where store.careerHub != nil,
+             .promotionDecision where store.careerHub?.opportunities.contains { $0.canAccept } == true:
             careerFocus = destination
-            screen = .careerHub
-            store.setPresentationRoute(String(CoachWorldScreenID.careerHub.rawValue))
-            failure = nil
-        case .jobSecurity where store.careerHub != nil,
-             .stakeholders where store.careerHub != nil,
-             .promotionDecision where store.careerHub?.opportunities.contains { $0.canAccept } == true,
-             .coachingCarousel where store.careerHub != nil:
-            careerFocus = [.jobSecurity, .coachingCarousel].contains(destination)
-                ? .careerHub
-                : destination
             screen = .careerHub
             store.setPresentationRoute(String(CoachWorldScreenID.careerHub.rawValue))
             failure = nil
