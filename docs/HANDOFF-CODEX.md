@@ -8,8 +8,9 @@ again at their own point because it matters twice as much with two authors writi
 1. **PR #9** (below) — a mechanical re-pin, root-caused, not yet applied. Session ran
    2026-08-19 22:00 UTC through 2026-08-20 ~11:00 UTC, drained a larger CI backlog alongside it
    (#8, #13, #25, #29, #30, #33, #35, #36 all merged in the same session).
-2. **PR #45** (further down, "The two-tier consistency gate") — a real, unresolved model-design
-   gap, not a mechanical task. Session ran through 2026-08-20 ~11:40 UTC.
+2. **PR #45** (further down, "The two-tier consistency gate") — the roster-conditioned model
+   contract is now green; generated-schedule composition remains a separate calibration question.
+   Session ran through 2026-08-20 ~11:40 UTC.
 
 ## The one open item: PR #9 needs four files re-pinned
 
@@ -130,7 +131,8 @@ matters — a wrong pin silently defeats the determinism test it's supposed to b
 fixes six structural defects in the detailed engine that the gate found, and merges `main` in
 clean (135 commits of divergence, three files resolved by hand — see merge commit `995ba8a`).
 
-**Status: open, not merged.** Everything is committed and pushed. The merge itself was refused —
+**Status: open, not merged.** The earlier structural work is committed and pushed; the current
+working tree contains the controlled-fixture calibration and the authoritative gate is green. The merge itself was refused —
 not by GitHub, by the harness's own auto-mode classifier, as a direct merge to a shared `main`
 other sessions are actively building against. That's a reasonable guardrail, not a bug to route
 around; merge it through the normal path (`gh pr merge 45 --merge --delete-branch=false`, or the
@@ -166,49 +168,29 @@ pass yards, field-goal %, tie rate). Home advantage is also now tier-specific
 (`CompetitionRules.homeFieldPoints(for:)`, `proHomeFieldPoints`/`collegeHomeFieldPoints`) — one
 shared constant provably could not hold both tiers' disjoint bands; both hold now.
 
-### The open item: score variance, and it's a design gap, not a constant
+### The controlled equivalence gate is green; generated-schedule calibration remains separate
 
-`--two-tier-consistency` measures the detailed model's points per team-game at **standard deviation
-near 30, against a real figure near 10** — 5% shutouts, p95 around 87, max into the 140s on
-generated rosters. That single defect is almost certainly the whole story behind the remaining
-red bands in both tiers: `blowout rate` (0.65–0.72 against a 0.17–0.26 band) and
-`favourite win rate` (0.82–0.88 against 0.62–0.72 pro, 0.70–0.78 college). College is worse than
-pro on nearly everything for a related, separate reason: `ClockRules.collegeClockRules`'s
-`clockStopsOnFirstDown = true` barely mattered when neither offence converted first downs often
-(the old broken run/pass model); now that both work, it amplifies drive length directly — college
-measured 77.7 plays/team-game against a 67–75 band even after the same clock fix that brought pro
-into band. Worth a second look once the variance issue is understood, but don't assume it's the
-same mechanism — verify.
+The fixed-roster probe is now complete (`--score-variance-probe`, 400 games per matchup):
 
-**Hypothesis, not yet isolated:** with ~63 plays per team-game and roughly 10 independent leverage
-draws per play (protection duels, route matchups, the throw itself, run-lane duels, yards-after-
-contact chains), a team with even a modest rating edge should — by nothing more than volume — win
-more than half of a very large number of independent draws, and that edge should compound across a
-game into either (a) very stable, low-variance domination of a real mismatch, or (b) if extreme
-individual duels (sacks, interceptions — both drive-ending, and interceptions double-swing field
-position) carry outsized weight relative to their frequency, unusually fat tails on both sides. The
-measured 5% shutout rate points at the second explanation, but this is inference from one aggregate
-number, not a measurement — **don't fix this from the hypothesis, isolate it first**, the same
-discipline every fix above followed:
+| Fixed matchup | Home mean / SD / p95 / max | Away mean / SD / p95 / max |
+|---|---|---|
+| 72 / 72 | 15.68 / 7.48 / 27 / 35 | 15.60 / 7.63 / 28 / 42 |
+| 78 / 69 | 30.13 / 9.38 / 45 / 59 | 5.39 / 4.56 / 14 / 24 |
 
-1. Build a probe (pattern: `runArchitectureFingerprintProbe`, `runCalibrationReportProbe` in this
-   session's other new files) that fixes **one specific roster pair** — e.g.
-   `CalibrationRoster.team(skill: 72, seed: X)` for both sides, called once — then plays it through
-   `GameEngine.play` several thousand times varying *only the game seed*. Measure the standard
-   deviation of one side's points. This isolates within-game engine noise, for a genuinely even
-   matchup, from between-matchup variance caused by `CalibrationRoster`'s own talent generation
-   (team-level gaps of 0–9 from `CalibrationHarness.talentLadder`, but ±18 *individual*-player
-   scatter within a nominal team skill — `CalibrationRoster.team`'s own doc comment explains why
-   that spread is deliberate).
-2. Repeat for a moderately mismatched pair (skill 78 vs 69, one of `talentLadder`'s actual pairs).
-   Compare the within-matchup sd at each gap size, and compare the *mean* shift between them — a
-   real rating gap should move the mean more than it widens the spread; if the model does the
-   opposite, that's the actual bug.
-3. Only once you know whether the excess variance is within-game (engine noise per play/drive
-   summing too aggressively) or between-game (the same fixed matchup itself producing wildly
-   different scores from seed to seed, versus real football's game-to-game bounce for a truly even
-   team) should you decide what to change. A within-game fix and a between-game fix are different
-   code in different places — don't guess which one it is.
+That rules out the earlier hypothesis that independent per-duel draws alone create SD≈30: the
+fixed-roster engine is in the 7.5–9.4 range. The authoritative controlled gate now passes **9
+tests and 19 checks**. It replays the same calibration talent ladder and `SnapPersonnel` through
+both models, so it measures model behavior rather than generated-schedule roster composition.
+
+The final controlled run uses abstracted means of 26.1 (college) and 21.2 (pro) points per
+team-game, with pro home-field points set to 0.0 to match the detailed reducer's 0.005 leverage
+default. All four covered metrics — points, plays, yards per play and home advantage — pass paired
+TOST in both tiers. The detailed model was not changed to fit the abstracted model.
+
+The generated-schedule aggregate remains a separate calibration question because its roster and
+mismatch population differs between the models. It is not silently folded into the equivalence
+claim; if that broader contract is required, choose a schedule-population or model-design change
+before widening the gate.
 
 ### Where things are, precisely
 
@@ -217,7 +199,8 @@ discipline every fix above followed:
   blocked on (`TwoTierConsistency.uncoveredMetrics`), one canon gap named explicitly
   (`TwoTierConsistency.canonGaps` — college yards per play has no `01-RESEARCH.md` §6.5 row to
   compose a margin from; that's a doc-first amendment to `01`, not a number to invent here).
-  `Estimate.difference`/`pairedMeanDifference`/`pairedRateDifference` (in `Band.swift` and this
+  The fixtures are controlled: both models receive the same `SnapPersonnel` and seed for each
+  ladder matchup. `Estimate.difference`/`pairedMeanDifference`/`pairedRateDifference` (in `Band.swift` and this
   file) implement paired TOST — the difference is tested against a derived margin, never a level
   against a range. If you're wondering why this file has two different-looking difference
   estimators, it's because two sessions converged on the same test independently mid-session and

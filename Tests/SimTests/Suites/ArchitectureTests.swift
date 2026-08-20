@@ -64,7 +64,10 @@ private struct NewsItemFingerprintDTO: Codable, Equatable {
 /// written here.
 private let pinnedRootFingerprint: UInt64 = 13_271_746_992_715_500_232
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 7_052_534_935_444_288_135
+/// Re-pinned after the abstracted controlled-fixture score baseline and professional home-field
+/// calibration changed the scheduled-game result stream. Reproduced twice with
+/// `--architecture-fingerprints`.
+private let pinnedAdvancedRootFingerprint: UInt64 = 2_725_237_078_288_847_263
 
 /// The professional contract-negotiation ledger (`ProMarketState.contractNegotiations`) is part of
 /// the schema-13 root, but neither pin above ever exercises it: bootstrap starts with it empty, and
@@ -92,7 +95,9 @@ private let pinnedNegotiationLedgerFingerprint: UInt64 = 7_453_535_852_306_487_6
 /// being written here.
 /// Moved on 2026-08-20 for the same reason as the negotiation-ledger pin above:
 /// `CareerArcState.stakeholderLastMovement`, copied verbatim from the same CI run, same caveat.
-private let pinnedMatchSessionFingerprint: UInt64 = 3_423_278_094_891_302_957
+/// Re-pinned after the same abstracted score/home-field calibration changed the controlled match
+/// session projection. Reproduced in two independent `--architecture-only` runs.
+private let pinnedMatchSessionFingerprint: UInt64 = 15_092_144_099_021_525_577
 
 /// `NewsFeedReadModel` is derived from `GameState.history`, not stored in it, so none of the three
 /// pins above ever exercise it: they hash the root or a projection of it, never the read-model

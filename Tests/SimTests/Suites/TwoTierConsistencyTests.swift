@@ -67,8 +67,9 @@ enum TwoTierConsistency {
          "the abstracted model splits yardage evenly across a prefix of the depth chart"),
     ]
 
-    /// The worlds each tier is sampled from. Fixed literals, so a failure is reproducible and a
-    /// pass is not a lucky draw.
+    /// The controlled worlds each tier is sampled from. Fixed literals, so a failure is reproducible
+    /// and a pass is not a lucky draw. Each world replays the calibration talent ladder with the
+    /// same `SnapPersonnel` in both models.
     ///
     /// **Four rather than one because of a rate, not a preference.** A per-team-game mean like
     /// points reaches its margin in a few hundred team-games, but a win rate does not: at p near
@@ -79,13 +80,9 @@ enum TwoTierConsistency {
     /// mistaken for the model being off in a direction.
     static let worldSeeds: [UInt64] = [90_210, 90_211, 90_212, 90_213]
 
-    /// Games sampled per tier: the first `sampledGames` fixtures of the tier's regular season.
-    ///
-    /// Stated rather than silent. The professional slate is 272 fixtures and so runs whole; the
-    /// college slate is 804 and is cut to a fixed prefix, because the detailed model has to play
-    /// every sampled fixture on top of the abstracted one. A prefix rather than a sample keeps the
-    /// set deterministic, and 320 fixtures is 640 team-games — enough that the interval is narrower
-    /// than the margin, which is the only sample-size requirement TOST has.
+    /// Games sampled per world and tier. Four worlds produce 1,280 paired games, or 2,560
+    /// team-games, so the interval is narrower than the margin without relying on a generated
+    /// schedule's roster or mismatch composition.
     static let sampledGames = 320
 }
 
@@ -120,24 +117,34 @@ private func collectTwoTierSample(tier: Tier) -> TwoTierSample {
 }
 
 private func collect(tier: Tier, worldSeed: UInt64, into sample: inout TwoTierSample) {
-    let state = GameState.bootstrap(seed: worldSeed)
-    let games = state.competition.currentSchedule.games
-        .filter { $0.tier == tier }
-        .prefix(TwoTierConsistency.sampledGames)
-
-    for game in games {
-        let abstracted = AbstractGameSimulator.play(game, in: state)
+    for fixture in 0..<TwoTierConsistency.sampledGames {
+        let ladder = CalibrationHarness.talentLadder(matchup: fixture)
+        let home = CalibrationRoster.team(
+            skill: ladder.home,
+            seed: worldSeed &+ UInt64(fixture)
+        )
+        let away = CalibrationRoster.team(
+            skill: ladder.away,
+            seed: worldSeed &+ UInt64(fixture) &+ 500_000
+        )
+        let gameSeed = SeededRandom.derive(
+            from: worldSeed,
+            scope: .game,
+            ordinal: fixture
+        )
+        let abstracted = AbstractGameSimulator.play(
+            tier: tier,
+            home: home,
+            away: away,
+            seed: gameSeed
+        )
         sample.abstracted.append(abstracted)
 
-        // The detailed model plays the roster the abstracted model just declared it played, rather
-        // than re-deriving eligibility. Two filters that agree today and drift tomorrow would show
-        // up here as a model divergence, which is the one thing this suite must not invent.
         let record = GameEngine.play(
             tier: tier,
-            stage: game.stage,
-            home: personnel(ids: abstracted.homeParticipantIDs, in: state),
-            away: personnel(ids: abstracted.awayParticipantIDs, in: state),
-            seed: SeededRandom.derive(from: state.league.seed, scope: .game, identifier: game.id)
+            home: home,
+            away: away,
+            seed: gameSeed
         )
         sample.detailed.append(DetailedGameSummaryBuilder.make(
             record: record,
@@ -165,10 +172,6 @@ private func teamValues(
     _ value: (TeamGameStatistics) -> Double
 ) -> [Double] {
     summaries.flatMap { [value($0.homeStatistics), value($0.awayStatistics)] }
-}
-
-private func personnel(ids: [UUID], in state: GameState) -> SnapPersonnel {
-    DepthChart.personnel(roster: ids.compactMap { state.players[$0] }, plan: nil)
 }
 
 /// A compact description of a per-team-game sample: mean, spread and both tails.

@@ -6,10 +6,11 @@ import FootballSimCore
 /// had no baseline gain and no spread, an average passer was modelled as a heavy underdog at every
 /// depth but short, poise made a passer *easier* to sack, pressure was the average protection duel
 /// rather than the second-worst, air yards were a constant per depth, and the game clock burned
-/// only 30 seconds between snaps. Both values were reproduced in two independent release-process
-/// invocations of `--game-fingerprints` before being written here.
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 17_314_862_794_871_866_576
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 7_423_600_404_136_963_127
+/// only 30 seconds between snaps. Re-pinned after the abstracted controlled-fixture score baseline
+/// and professional home-field calibration changed the seeded abstracted summary. Both values were
+/// reproduced in two independent invocations of `--game-fingerprints` before being written here.
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 5_407_731_616_643_886_402
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 5_718_341_655_616_431_483
 
 func runEngineTests() {
     suite("Leverage") {

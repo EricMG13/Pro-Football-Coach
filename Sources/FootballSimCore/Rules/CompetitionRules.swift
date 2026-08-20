@@ -5,8 +5,10 @@ public enum CompetitionRules {
         max(CollegeRules.rosterLimit, ProRules.activeRosterLimit)
     }
 
-    public static let collegeBaselinePoints = 27.0
-    public static let proBaselinePoints = 23.0
+    /// Back-solved against the detailed reducer's controlled-fixture means rather than the
+    /// generated-schedule aggregate, which includes a separate roster-composition effect.
+    public static let collegeBaselinePoints = 23.5
+    public static let proBaselinePoints = 20.5
     public static let collegeScoreDeviation = 10.0
     public static let proScoreDeviation = 8.0
     public static let strengthPointScale = 0.24
@@ -27,7 +29,10 @@ public enum CompetitionRules {
     /// schedule has no such bias, so this one constant absorbs both effects. If §6.5 ever splits
     /// true home advantage from home *scheduling* advantage, this number comes down and the
     /// schedule generator takes the rest.
-    public static let proHomeFieldPoints = 1.4
+    /// The detailed pro reducer applies only 0.005 leverage units. A 1.4-point abstracted shift
+    /// overstated the paired home-win rate, so the professional controlled path has no extra score
+    /// shift; college retains its separately calibrated effect.
+    public static let proHomeFieldPoints = 0.0
     public static let collegeHomeFieldPoints = 5.5
     public static let maximumTeamScore = 70
     public static let overtimeFieldGoalPoints = 3

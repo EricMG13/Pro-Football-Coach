@@ -86,6 +86,8 @@ if CommandLine.arguments.contains("--catalog") {
     runCalibrationTests()
 } else if CommandLine.arguments.contains("--two-tier-consistency") {
     runTwoTierConsistencyTests()
+} else if CommandLine.arguments.contains("--score-variance-probe") {
+    runScoreVarianceProbe()
 } else if CommandLine.arguments.contains("--calibration-report") {
     runCalibrationReportProbe()
 } else if CommandLine.arguments.contains("--architecture-fingerprints") {

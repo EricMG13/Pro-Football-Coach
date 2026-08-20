@@ -13,6 +13,39 @@ public enum AbstractGameSimulator {
         play(game, in: state, tacticalPlans: [:])
     }
 
+    /// Plays a controlled fixture for the two-tier equivalence harness. Both models receive the
+    /// same personnel and seed; this keeps the gate about model behavior rather than generated
+    /// schedule composition.
+    public static func play(
+        tier: Tier,
+        stage: CompetitionStage = .regularSeason,
+        home: SnapPersonnel,
+        away: SnapPersonnel,
+        seed: UInt64
+    ) -> GameSummary {
+        let homeRoster = home.offense + home.defense
+        let awayRoster = away.offense + away.defense
+        return play(
+            tier: tier,
+            stage: stage,
+            home: TeamProfile(
+                roster: homeRoster,
+                prestige: Rating(SharedRules.ratingRange.lowerBound),
+                scheme: SchemeIdentity(offense: .proStyle, defense: .fourThree),
+                offense: controlledStrength(home.offense),
+                defense: controlledStrength(home.defense)
+            ),
+            away: TeamProfile(
+                roster: awayRoster,
+                prestige: Rating(SharedRules.ratingRange.lowerBound),
+                scheme: SchemeIdentity(offense: .proStyle, defense: .fourThree),
+                offense: controlledStrength(away.offense),
+                defense: controlledStrength(away.defense)
+            ),
+            seed: seed
+        )
+    }
+
     public static func play(
         _ game: ScheduledGame,
         in state: GameState,
@@ -131,20 +164,91 @@ public enum AbstractGameSimulator {
         } else {
             roster = availableRoster
         }
+        let personnel = DepthChart.personnel(roster: roster, plan: personnelPlan)
         return TeamProfile(
             roster: roster,
             prestige: prestige,
             scheme: scheme,
             offense: strength(
-                of: roster.filter { $0.position.unit == .offense },
+                of: personnel.offense,
                 prestige: prestige,
                 people: state.people
             ),
             defense: strength(
-                of: roster.filter { $0.position.unit == .defense },
+                of: personnel.defense,
                 prestige: prestige,
                 people: state.people
             )
+        )
+    }
+
+    private static func controlledStrength(_ players: [Player]) -> Int {
+        guard !players.isEmpty else { return SharedRules.ratingRange.lowerBound }
+        return players.reduce(0) { $0 + $1.overall.value } / players.count
+    }
+
+    private static func play(
+        tier: Tier,
+        stage: CompetitionStage,
+        home: TeamProfile,
+        away: TeamProfile,
+        seed: UInt64
+    ) -> GameSummary {
+        var rng = SeededRandom(seed: seed)
+        let baseline = CompetitionRules.baselinePoints(for: tier)
+        let deviation = CompetitionRules.scoreDeviation(for: tier)
+        var homeScore = score(
+            expectation: baseline
+                + Double(home.offense - away.defense) * CompetitionRules.strengthPointScale
+                + CompetitionRules.homeFieldPoints(for: tier),
+            deviation: deviation,
+            using: &rng
+        )
+        var awayScore = score(
+            expectation: baseline
+                + Double(away.offense - home.defense) * CompetitionRules.strengthPointScale,
+            deviation: deviation,
+            using: &rng
+        )
+        if homeScore == awayScore,
+           tier == .college || stage != .regularSeason {
+            let overtimePoints = rng.chance(CompetitionRules.overtimeFieldGoalProbability)
+                ? CompetitionRules.overtimeFieldGoalPoints
+                : CompetitionRules.overtimeTouchdownPoints
+            if rng.chance(CompetitionRules.overtimeHomeWinProbability) {
+                homeScore += overtimePoints
+            } else {
+                awayScore += overtimePoints
+            }
+        }
+
+        let homeStats = teamStatistics(
+            tier: tier,
+            points: homeScore,
+            offense: home.offense,
+            opposingDefense: away.defense,
+            scheme: home.scheme.offense,
+            tacticalPlan: .balanced,
+            using: &rng
+        )
+        let awayStats = teamStatistics(
+            tier: tier,
+            points: awayScore,
+            offense: away.offense,
+            opposingDefense: home.defense,
+            scheme: away.scheme.offense,
+            tacticalPlan: .balanced,
+            using: &rng
+        )
+        return GameSummary(
+            homeScore: homeScore,
+            awayScore: awayScore,
+            homeStatistics: homeStats,
+            awayStatistics: awayStats,
+            homeParticipantIDs: home.roster.map(\.id),
+            awayParticipantIDs: away.roster.map(\.id),
+            playerStatistics: playerLines(roster: home.roster, statistics: homeStats)
+                + playerLines(roster: away.roster, statistics: awayStats)
         )
     }
 

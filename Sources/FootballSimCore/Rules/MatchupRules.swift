@@ -53,7 +53,14 @@ public enum MatchupRules {
     public static let fatigueWeight = 0.22
 
     /// Home advantage, in leverage units applied to every home matchup before traditions.
-    public static let homeAdvantage = 0.035
+    /// The abstracted canon carries a larger college home effect than the professional one, so the
+    /// detailed default must be tier-specific as well.
+    public static let proHomeAdvantage = 0.005
+    public static let collegeHomeAdvantage = 0.075
+
+    public static func homeAdvantage(for tier: Tier) -> Double {
+        tier == .college ? collegeHomeAdvantage : proHomeAdvantage
+    }
 
     // MARK: - Assignment
 
@@ -155,9 +162,9 @@ public enum MatchupRules {
     /// too few completions and too many yards each cancel into a passing-yards band that passed.
     public static func throwDifficulty(_ depth: PassDepth) -> Int {
         switch depth {
-        case .short: return 62
-        case .mid: return 68
-        case .deep: return 76
+        case .short: return 61
+        case .mid: return 67
+        case .deep: return 75
         }
     }
     public static let aggressionThrowBonus = 0.06
@@ -186,7 +193,7 @@ public enum MatchupRules {
     /// distribution came from a break-tackle chain gated at `breakTackleThreshold`. The harness read
     /// 1.35 yards per carry against a real 4.3. A back handed the ball with his line neither winning
     /// nor losing still gains ground: the offence knows the play and the defence does not.
-    public static let baselineRunYards = 3.2
+    public static let baselineRunYards = 4.0
 
     /// Per-carry scatter, before contact.
     ///

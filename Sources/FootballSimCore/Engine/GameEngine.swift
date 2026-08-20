@@ -107,7 +107,7 @@ public enum GameEngine {
         home: SnapPersonnel,
         away: SnapPersonnel,
         caller: some PlayCaller = BaselinePlayCaller(),
-        homeFieldAdvantage: Double = MatchupRules.homeAdvantage,
+        homeFieldAdvantage: Double? = nil,
         seed: UInt64,
         initialSituation: Situation? = nil
     ) -> GameRecord {
