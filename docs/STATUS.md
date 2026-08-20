@@ -1021,23 +1021,48 @@ next attempt should widen the *model*, not the grid.
 attempts have happened; three were instrument repair and one was a search rather than a hand pass.
 An instrument repair is not a failed tuning attempt.
 
-**`TwoTierConsistencyTests` now exists, runs, and is red for this reason — 2026-08-19.** The gate
-`PRODUCT.md` promises (the played week and the skipped week describe the same sport) is registered
-in `SuiteCatalog` with a dispatched command, `--two-tier-consistency`, and asserts TOST on the
-*difference* between the two models rather than a range check on either. Its first metric, points
-per team-game, fails in both tiers, and the failure names which model moved:
+**`TwoTierConsistencyTests` now exists, runs, and is red for this reason — updated 2026-08-20.** The
+gate `PRODUCT.md` promises (the played week and the skipped week describe the same sport) is
+registered in `SuiteCatalog` with a dispatched command, `--two-tier-consistency`. It compares each
+fixture with its counterpart, so the 90 percent interval retains covariance between the two models
+instead of treating their outputs as independent samples. Four fixed world seeds provide 1,280
+college fixtures and 1,088 professional fixtures.
 
-| Tier | Abstracted | Detailed | Band | Margin |
-|---|---|---|---|---|
-| Pro | 24.17, sd 8.64 | 17.42, sd 17.95 | 20–26 | ±3.0 |
-| College | 28.57, sd 10.40 | 23.19, sd 31.37 | 26–31 | ±2.5 |
+| Metric | Tier | Abstracted | Detailed | Difference CI90 | Margin |
+|---|---|---:|---:|---:|---:|
+| Points/team-game | College | 28.14 | 22.85 | 4.31…6.27 | ±2.5 |
+| Points/team-game | Pro | 24.12 | 18.12 | 5.32…6.68 | ±3.0 |
+| Plays/team-game | College | 71.01 | 105.35 | -35.01…-33.67 | ±4.0 |
+| Plays/team-game | Pro | 64.00 | 96.75 | -33.39…-32.12 | ±4.0 |
+| Home-win rate | College | 0.6453 | 0.5992 | 0.0177…0.0744 | ±0.04 |
+| Home-win rate | Pro | 0.5407 | 0.6541 | -0.1447…-0.0819 | ±0.04 |
+| Yards/play | Pro | 5.58 | 2.15 | 3.37…3.49 | ±1.0294 |
 
-The abstracted model is inside its calibration band in both tiers; the detailed model is outside it
-in both, over 320 bootstrapped fixtures per tier. Its spread is the louder signal: on generated
-rosters the detailed model shuts a side out in 20 percent of professional and 30 percent of college
-team-games and returned a 156-point game, against 0.4 percent shutouts and a 57-point maximum from
-the abstracted one. That is the blowout rate above (0.75 against a band of 0.17–0.26) showing up
-where the player would see it.
+College yards per play remains an explicit canon gap because `01` §6.5 has no college yardage rows
+from which to derive a margin. The other seven checks are real model failures: the detailed engine
+runs roughly 33 extra snaps per team-game and scores about 5–6 fewer points, and its point
+distribution is materially wider. Home advantage now misses in opposite directions by tier, which is
+the detailed model's own spread rather than a shared bias.
+
+**Yards per play is the sharpest of these and probably explains the rest.** The detailed engine gains
+2.15 yards a snap against a composed plausible range of 4.19–6.25. A model that gains two yards a
+play has to run 97 snaps to go anywhere, stalls on most possessions and concedes short fields — which
+is the plays row, the 20–30 percent shutout rate and the 0.75 blowout rate above, all as one cause.
+It is a more specific lead for the next tuning attempt than any points-level band.
+
+**One abstracted-model divergence was found and fixed rather than reported — 2026-08-20.**
+`CompetitionRules.homeFieldPoints` was a single 2.4 shared by both tiers, which produced a 0.575
+professional and 0.562 college home-win rate: inside the professional band and below the college one.
+No single number sits in two disjoint bands, so it is now `proHomeFieldPoints` 1.4 and
+`collegeHomeFieldPoints` 5.5, back-solved from the spread those measured rates imply. Both tiers now
+hold their own band — 0.5407 and 0.6453. Carry one caveat to counsel of the design kind: 5.5 is
+roughly double what college home field is worth on a real spread, because §6.5's college band also
+absorbs the fact that real college home teams are systematically stronger and a generated schedule
+has no such bias. If §6.5 ever splits true home advantage from home *scheduling* advantage, this
+constant comes down and the schedule generator takes the rest.
+
+The abstracted professional tie rate is 0.029 against §6.5's 0.000–0.020, and was 0.036 before the
+home-field split. Pre-existing, moved toward the band rather than away, and still open.
 
 **So the equivalence commitment is downstream of this section, and closing it by moving the
 abstracted model would be backwards** — it would take the model that holds the band out of the band
@@ -1045,24 +1070,7 @@ to match one that does not. `--calibration-report` was added alongside as a prin
 ladders, because `--calibration` tests the instrument and never ran the engine against the bands;
 the table at the top of this section is now reproducible in one command.
 
-**Second metric, offensive plays per team-game — added 2026-08-20, and red the same way.** The
-abstracted model had no notion of a snap; it now draws a play count around `01` §6.5's band midpoint
-for the tier, with tempo as the coach's lever over it, and `TeamGameStatistics` carries the count so
-both models report it at the interface the game actually reads. A save written before the count
-existed decodes it as zero rather than failing.
-
-| Tier | Abstracted | Detailed | Band | Margin |
-|---|---|---|---|---|
-| Pro | 64.42, sd 8.32 | 97.51, sd 16.06 | 60–68 | ±4.0 |
-| College | 70.61, sd 7.95 | 105.65, sd 18.52 | 67–75 | ±4.0 |
-
-Same shape as points, from an independent direction: the abstracted model is inside its band in both
-tiers and the detailed model runs about half again as many snaps as football does. It is also the
-mechanism behind the points result — 97 snaps of a 35-percent-completion offence is what produces
-both the shutouts and the 156-point game — which is the P4 diagnosis above arriving from a second
-measurement rather than a restatement of the first.
-
-The remaining nine metrics `03` §5.1 lists are enumerated in the suite with what each is blocked on.
+The remaining eight metrics `03` §5.1 lists are enumerated in the suite with what each is blocked on.
 Eight of them need the abstracted model to produce something it does not produce at all — it
 simulates no drive, no kick and no clock — so covering them is a change to that model rather than to
 the suite.
