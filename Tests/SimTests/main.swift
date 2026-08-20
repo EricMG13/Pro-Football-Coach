@@ -116,6 +116,7 @@ if CommandLine.arguments.contains("--catalog") {
     runRosterTenureTests()
 } else if CommandLine.arguments.contains("--realignment") {
     runRealignmentTests()
+// Deliberate 30-season history soak; run with `-c release` (typically ~20–25 minutes).
 } else if CommandLine.arguments.contains("--m7-gate") {
     runHistoryGateTests()
 } else if CommandLine.arguments.contains("--pro-soak") {

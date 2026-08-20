@@ -543,7 +543,7 @@ Restyle `LegacyHistoryView`; keep the four route wrappers thin. Preserve archive
 
 - [ ] **Step 4: Verify and commit**
 
-Run `swift run SimTests --career-arc`, `swift run SimTests --history-read-model`, `swift run SimTests --m7-gate`, `swift run SimTests --design-contracts`, `swift build`, rewrite-tournament, and `detect_changes`. Commit exact paths as `feat: convert Floodlit career surfaces`.
+Run `swift run SimTests --career-arc`, `swift run SimTests --history-read-model`, `swift run -c release SimTests --m7-gate`, `swift run SimTests --design-contracts`, `swift build`, rewrite-tournament, and `detect_changes`. Commit exact paths as `feat: convert Floodlit career surfaces`.
 
 ---
 
