@@ -468,6 +468,7 @@ public enum CoachWorldReadModelProvider {
             stableID: id.uuidString,
             name: name,
             abbreviation: abbreviation(name),
+            mark: CoachWorldTeamLogoCatalog.mark(forStableID: id.uuidString),
             primaryColorHex: colours?.primary.hex,
             secondaryColorHex: colours?.secondary.hex
         )
