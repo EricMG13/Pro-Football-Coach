@@ -290,6 +290,41 @@ public enum CareerControlSystem {
         }
     }
 
+    /// What to write onto the played coach's career for the season that just ended, computed
+    /// without mutating anything.
+    ///
+    /// `02` section 9: one line per season, for the played coach only, taken from the standings of
+    /// the tier they were employed in. Recorded rather than computed on demand, because standings
+    /// hold only the current season and a `SeasonArchive` keeps no per-organisation win-loss, so
+    /// once the season is archived there is nothing left to compute it from.
+    ///
+    /// Split from the write on purpose: this reads `careerArc.currentJob`, and
+    /// `CareerArcSystem.evaluateSeasonEnd` can fire the coach and clear that job in the very same
+    /// transaction, immediately afterward. Computing here, before that runs, is what keeps the
+    /// season someone was sacked at the end of on their record. The write is deferred separately
+    /// because `WorldScheduler`'s season-end step reassigns `state.people` wholesale, later in the
+    /// same transaction, from a snapshot taken before any of this runs — an in-place write here
+    /// would be silently discarded by that reassignment. The caller applies the result with
+    /// `PeopleState.recordCoachSeason` after that reassignment, not before it.
+    static func pendingCoachSeason(
+        after calendar: CalendarState,
+        in state: GameState
+    ) -> (coachID: UUID, record: CoachSeasonRecord)? {
+        guard let coachID = state.career.coachID,
+              let job = state.careerArc.currentJob else { return nil }
+        let tier: Tier = job.tier == .college ? .college : .pro
+        guard let row = state.competition.standings[tier]?.first(where: {
+            $0.id == job.organisationID
+        }) else { return nil }
+        return (coachID, CoachSeasonRecord(
+            season: calendar.season,
+            organisationID: job.organisationID,
+            wins: row.wins,
+            losses: row.losses,
+            ties: row.ties
+        ))
+    }
+
     /// Takes the controlled coach off whatever staff still lists them, appointing a successor to
     /// the seat they leave.
     ///

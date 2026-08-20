@@ -74,17 +74,19 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > call sites it must reach, so a scan that stops walking the tree fails instead of reporting
 > all-clear. It was also checked against a real regression, not only the synthetic one.
 >
-> **Still open, for the owner.** There is no coach win-loss record anywhere in the engine. "Career
-> record" reads like a thing the promotion carries and there is nothing to carry; adding one is a
-> new carried thing, not a repair. Separately, the debug `--m7-gate` reports a season-30 save of
-> 36,871,560 B against the 8 MB commitment, growing roughly linearly with archived seasons — a
-> serialized byte count, so build mode does not excuse it.
+> **Owner decisions now implemented.** The coach's per-season wins-losses-ties line is recorded on
+> the played coach at the week-21 boundary before the career evaluation can clear a fired job, then
+> applied after the season transition's wholesale `PeopleState` replacement. It is bounded beside
+> staff assignments, save-compatible, and carries through promotion. The same boundary now builds
+> the coaching-tree projection and removes seatless staff and their career records unless the tree
+> names them as a mentor or disciple; the played coach is always protected. Focused checks are
+> `--coach-season-record` (1 test / 17 checks) and `--staff-pruning` (1 test / 6 checks), both green.
+> The implementation and verification handoff is in
+> `docs/plans/2026-08-20-coach-career-record-handoff.md`.
 >
-> Also open: `state.staff` grows by five entries per promotion and one per separation, and staff who
-> hold no seat are never pruned — `SeasonLifecycleSystem.resolvedStaffIDs` only retains by age
-> *within* an organisation. It is small against ~2,160 staff and thirty seasons run green, but
-> `CLAUDE.md` requires every collection that grows across seasons to have a stated bound and this one
-> has none. Who disappears from a coaching history is a design call, not a cleanup.
+> Still open here: the debug `--m7-gate` reports a season-30 save of 36,871,560 B against the 8 MB
+> commitment, growing roughly linearly with archived seasons — a serialized byte count, so build
+> mode does not excuse it. A release gate and UI walkthrough remain outside this engine patch.
 
 > **2026-08-20 — college acquisition rules asserted after every transaction, two system defects
 > found and fixed.** The five college acquisition rules the rules module fixes — scholarship count,

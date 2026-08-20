@@ -393,6 +393,7 @@ public enum WorldScheduler {
         let next = completed.advancedWeek()
         var records: [WorldStepRecord] = []
         var events: [DomainEvent] = []
+        var pendingCoachSeason: (coachID: UUID, record: CoachSeasonRecord)?
 
         for step in steps {
             switch step {
@@ -647,6 +648,14 @@ public enum WorldScheduler {
 
             case .statisticsAndRecords:
                 nextState.competition = CompetitionReducer.rebuildStatistics(from: nextState)
+                if completed.week == SharedRules.inSeasonWeeks {
+                    // Capture before the weekly or season-end evaluation can fire the coach and
+                    // clear the job that identifies the standings row to record.
+                    pendingCoachSeason = CareerControlSystem.pendingCoachSeason(
+                        after: completed,
+                        in: nextState
+                    )
+                }
                 CareerArcSystem.evaluateWeek(
                     after: completed,
                     in: nextState,
@@ -735,10 +744,6 @@ public enum WorldScheduler {
                         emittedEvents: &events
                     )
                 }
-                let peopleTransition = try SeasonLifecycleSystem.advance(
-                    after: completed,
-                    in: nextState
-                )
                 if completed.week == SharedRules.inSeasonWeeks {
                     CareerArcSystem.evaluateSeasonEnd(
                         after: completed,
@@ -746,9 +751,18 @@ public enum WorldScheduler {
                         arc: &nextState.careerArc
                     )
                     if nextState.careerArc.status == .fired {
+                        // Do this before the lifecycle snapshot so its replacement seat and
+                        // career record are carried forward instead of overwritten by the
+                        // transition's wholesale staff assignment.
                         nextState.career.clearCollege()
                         CareerControlSystem.vacateCurrentSeat(in: &nextState)
                     }
+                }
+                let peopleTransition = try SeasonLifecycleSystem.advance(
+                    after: completed,
+                    in: nextState
+                )
+                if completed.week == SharedRules.inSeasonWeeks {
                     let completion = PostseasonSystem.completeSeason(
                         after: completed,
                         in: nextState
@@ -769,6 +783,12 @@ public enum WorldScheduler {
                 nextState.players = peopleTransition.players
                 nextState.staff = peopleTransition.staff
                 nextState.people = peopleTransition.people
+                if let pendingCoachSeason {
+                    _ = nextState.people.recordCoachSeason(
+                        pendingCoachSeason.record,
+                        for: pendingCoachSeason.coachID
+                    )
+                }
                 nextState.college = peopleTransition.college
                 checkpoint("seasonLifecycle", nextState)
                 if completed.week == SharedRules.inSeasonWeeks {

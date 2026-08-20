@@ -1104,5 +1104,127 @@ func runCareerArcTests() {
                 "a coordinator the promotion threw out was credited as the coach's disciple"
             )
         }
+        test("the coach's season record is written and carries across the promotion") {
+            try assertCoachSeasonRecordCarriesAcrossPromotion()
+        }
     }
+}
+
+func runCoachSeasonRecordTests() {
+    suite("Coach season record") {
+        test("the coach's season record is written and carries across the promotion") {
+            try assertCoachSeasonRecordCarriesAcrossPromotion()
+        }
+    }
+}
+
+private func assertCoachSeasonRecordCarriesAcrossPromotion() throws {
+    let source = GameState.bootstrap(seed: 99_129)
+    let programmeID = source.programmes.ids[0]
+    var state = try CareerControlSystem.startCollegeCareer(
+        at: programmeID,
+        in: source
+    ).state
+    state.pending = PendingQueues()
+    guard let coachID = state.career.coachID else {
+        expect(false, "career start left no coach")
+        return
+    }
+    guard let delegateID = state.programmes[programmeID]?.staffIDs.first(where: {
+        state.staff[$0]?.role == .offensiveCoordinator
+    }) else {
+        expect(false, "no coordinator to delegate to")
+        return
+    }
+    for responsibility in CollegeCareerResponsibility.allCases {
+        expect(CareerControlSystem.setResponsibility(
+            responsibility,
+            owner: .delegated(staffID: delegateID),
+            in: &state
+        ))
+    }
+
+    // A whole season, so the season-end line is written from real standings.
+    var completedWins = 0
+    var completedLosses = 0
+    var completedTies = 0
+    for week in 0..<SharedRules.inSeasonWeeks {
+        if week == SharedRules.inSeasonWeeks - 1,
+           let row = state.competition.standings[.college]?.first(where: {
+               $0.id == programmeID
+           }) {
+            completedWins = row.wins
+            completedLosses = row.losses
+            completedTies = row.ties
+        }
+        state = try WorldScheduler.advanceWeek(state).state
+        state.pending = PendingQueues()
+    }
+
+    let records = state.people.staffCareers[coachID]?.seasonRecords ?? []
+    expectEqual(records.count, 1, "the season did not leave a career record line")
+    expectEqual(records.last?.season, source.calendar.season)
+    expectEqual(records.last?.organisationID, programmeID)
+    // Against the standings the completed season actually produced, not the fresh next season.
+    expectEqual(records.last?.wins, completedWins)
+    expectEqual(records.last?.losses, completedLosses)
+    expectEqual(records.last?.ties, completedTies)
+    expect(
+        (records.last?.wins ?? 0) + (records.last?.losses ?? 0) + (records.last?.ties ?? 0) > 0,
+        "the recorded season had no games in it"
+    )
+    if let record = records.last {
+        var reordered = state.people
+        expect(reordered.recordCoachSeason(
+            CoachSeasonRecord(
+                season: record.season + 1,
+                organisationID: programmeID,
+                wins: 0,
+                losses: 0,
+                ties: 0
+            ),
+            for: coachID
+        ))
+        expect(
+            !reordered.recordCoachSeason(record, for: coachID),
+            "season-record writer accepted an out-of-order line"
+        )
+    }
+    expect(WorldIntegrity.check(state).isValid, "season-end world failed integrity")
+
+    // The record lives on the coach, not on the job, so a promotion cannot drop it.
+    guard state.careerArc.status != .fired else {
+        expect(true, "coach was fired before the promotion could be walked")
+        return
+    }
+    let proTeam = state.proTeams.values[0]
+    let opportunity = CareerOpportunity(
+        id: UUID(uuidString: "00000000-0000-4000-8000-000000000A29")!,
+        organisationID: proTeam.id,
+        tier: .professional,
+        offeredAt: state.calendar,
+        expiresAt: state.calendar.advancedWeek(),
+        prestige: proTeam.prestige,
+        rationale: .sustainedCollegeSuccess
+    )
+    var promoting = state
+    var arc = promoting.careerArc
+    _ = arc.establishCollegeJob(organisationID: programmeID, at: promoting.calendar)
+    expect(arc.addOpportunity(opportunity))
+    promoting.careerArc = arc
+    let promoted = try IntentResolver.resolve(
+        .career(CareerArcRequest(
+            calendar: promoting.calendar,
+            action: .acceptOpportunity(opportunityID: opportunity.id)
+        )),
+        in: promoting
+    ).state
+    expectEqual(promoted.people.staffCareers[coachID]?.seasonRecords, records)
+
+    // And it survives the save, like the assignments beside it.
+    let restored = try SaveEnvelope.decode(
+        GameState.self,
+        from: SaveEnvelope.encode(promoted)
+    )
+    expectEqual(restored.people.staffCareers[coachID]?.seasonRecords, records)
 }
