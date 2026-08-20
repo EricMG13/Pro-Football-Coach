@@ -214,6 +214,7 @@ if CommandLine.arguments.contains("--catalog") {
     runAvailabilityProviderTests()
     runCapComplianceTests()
     runSeasonRolloverTests()
+    runStaffPruningTests()
     // The M8 entry-gate instruments. They ran only under `--design-contracts` and
     // `--core-contracts` until 2026-08-13, so the no-argument run — the one `verify.sh` makes and
     // the one every release claim quotes — did not include the orientation policy, the token sync,

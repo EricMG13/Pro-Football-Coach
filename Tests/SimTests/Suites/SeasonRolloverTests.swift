@@ -345,7 +345,7 @@ func runSeasonRolloverTests() {
 
 func runStaffPruningTests() {
     suite("Staff pruning") {
-        test("season rollover prunes unseated staff without history") {
+        test("season rollover prunes only unreferenced seatless staff") {
             let source = GameState.bootstrap(seed: 97_008)
             let played = try CareerControlSystem.startCollegeCareer(
                 at: source.programmes.ids[0],
@@ -363,6 +363,8 @@ func runStaffPruningTests() {
                 played.staff[$0]?.role == .offensiveCoordinator
             }), let discardedID = programme.staffIDs.first(where: {
                 played.staff[$0]?.role == .defensiveCoordinator
+            }), let historyID = programme.staffIDs.first(where: {
+                played.staff[$0]?.role == .positionCoach
             }), let disciple = played.staff[discipleID] else {
                 expect(false, "secondary programme did not have the staff roles needed")
                 return
@@ -370,7 +372,9 @@ func runStaffPruningTests() {
 
             var state = played
             _ = state.programmes.update(programmeID) {
-                $0.staffIDs.removeAll { [mentorID, discipleID, discardedID].contains($0) }
+                $0.staffIDs.removeAll {
+                    [mentorID, discipleID, discardedID, historyID].contains($0)
+                }
             }
             _ = state.people.recordStaffAssignment(
                 StaffCareerAssignment(
@@ -380,6 +384,17 @@ func runStaffPruningTests() {
                 ),
                 for: disciple
             )
+            let sequence = (state.history.lastSequence ?? -1) + 1
+            expect(state.history.append(DomainEvent(
+                id: DomainEvent.deterministicID(rootSeed: state.league.seed, sequence: sequence),
+                sequence: sequence,
+                occurredAt: state.calendar,
+                payload: .staffHired(
+                    staffID: historyID,
+                    organisationID: programmeID,
+                    role: .positionCoach
+                )
+            )))
             state.calendar = CalendarState(season: 0, week: SharedRules.inSeasonWeeks)
             state.league.week = SharedRules.inSeasonWeeks
 
@@ -391,6 +406,8 @@ func runStaffPruningTests() {
                    "a seatless mentor named by the coaching tree was pruned")
             expect(transition.people.staffCareers[discipleID] != nil,
                    "a seatless coaching-tree disciple was pruned")
+            expect(transition.staff[historyID] != nil,
+                   "a seatless coach named by retained history was pruned")
             expect(transition.staff[discardedID] == nil,
                    "a seatless coach with no history was retained")
             expect(transition.people.staffCareers[discardedID] == nil,

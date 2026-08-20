@@ -72,6 +72,7 @@ public enum WorldSchedulerError: Error, Equatable {
     case scheduledGameMissing(UUID)
     case scheduledGameResultMissing(UUID)
     case scheduleResultRecordingFailed(ScheduleResultRecordingError)
+    case coachSeasonRecordingFailed
     case eventAppendFailed
     case aiRecruitingActionFailed(RecruitingActionError)
     case collegeCycleFailed
@@ -648,20 +649,31 @@ public enum WorldScheduler {
 
             case .statisticsAndRecords:
                 nextState.competition = CompetitionReducer.rebuildStatistics(from: nextState)
+                let evaluatedCoachSeason = CareerControlSystem.pendingCoachSeason(
+                    after: completed,
+                    in: nextState
+                )
                 if completed.week == SharedRules.inSeasonWeeks {
                     // Capture before the weekly or season-end evaluation can fire the coach and
                     // clear the job that identifies the standings row to record.
-                    pendingCoachSeason = CareerControlSystem.pendingCoachSeason(
-                        after: completed,
-                        in: nextState
-                    )
+                    pendingCoachSeason = evaluatedCoachSeason
                 }
+                let coachWasEmployed = nextState.careerArc.status == .employed
                 CareerArcSystem.evaluateWeek(
                     after: completed,
                     in: nextState,
                     arc: &nextState.careerArc
                 )
                 if nextState.careerArc.status == .fired {
+                    if coachWasEmployed && completed.week != SharedRules.inSeasonWeeks {
+                        guard let evaluatedCoachSeason,
+                              nextState.people.recordCoachSeason(
+                                  evaluatedCoachSeason.record,
+                                  for: evaluatedCoachSeason.coachID
+                              ) else {
+                            throw WorldSchedulerError.coachSeasonRecordingFailed
+                        }
+                    }
                     // Firing revokes control in the same scheduler transaction. Leaving the
                     // college control record behind lets a fired coach keep advancing the old
                     // team through the next screen, and leaving the chair behind leaves them
@@ -784,10 +796,12 @@ public enum WorldScheduler {
                 nextState.staff = peopleTransition.staff
                 nextState.people = peopleTransition.people
                 if let pendingCoachSeason {
-                    _ = nextState.people.recordCoachSeason(
+                    guard nextState.people.recordCoachSeason(
                         pendingCoachSeason.record,
                         for: pendingCoachSeason.coachID
-                    )
+                    ) else {
+                        throw WorldSchedulerError.coachSeasonRecordingFailed
+                    }
                 }
                 nextState.college = peopleTransition.college
                 checkpoint("seasonLifecycle", nextState)

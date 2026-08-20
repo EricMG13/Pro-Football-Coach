@@ -377,6 +377,17 @@ func runCareerArcTests() {
                 ),
                 status: .employed
             )
+            let expectedSeasonRecord = resigning.competition.standings[.college]?.first(where: {
+                $0.id == programmeID
+            }).map {
+                CoachSeasonRecord(
+                    season: resigning.calendar.season,
+                    organisationID: programmeID,
+                    wins: $0.wins,
+                    losses: $0.losses,
+                    ties: $0.ties
+                )
+            }
             let resigned = try IntentResolver.resolve(
                 .career(CareerArcRequest(
                     calendar: resigning.calendar,
@@ -407,6 +418,11 @@ func runCareerArcTests() {
                     $0.organisationID == programmeID && $0.role == .headCoach
                 } == true,
                 "resignation erased the college seat from the career record"
+            )
+            expectEqual(
+                resigned.people.staffCareers[coachID]?.seasonRecords.last,
+                expectedSeasonRecord,
+                "resignation dropped the season worked before departure"
             )
             expectEqual(resigned.career.coachID, coachID)
             expect(WorldIntegrity.check(resigned).isValid, "resigned world failed integrity")
@@ -978,6 +994,11 @@ func runCareerArcTests() {
                 } == true,
                 "firing erased the job from the career record"
             )
+            expectEqual(
+                state.people.staffCareers[coachID]?.seasonRecords.last?.organisationID,
+                programmeID,
+                "firing dropped the season worked before departure"
+            )
             expectEqual(state.career.coachID, coachID)
             expectEqual(state.careerArc.jobHistory.last?.reason, .fired)
             expect(WorldIntegrity.check(state).isValid, "fired world failed integrity")
@@ -1107,15 +1128,79 @@ func runCareerArcTests() {
         test("the coach's season record is written and carries across the promotion") {
             try assertCoachSeasonRecordCarriesAcrossPromotion()
         }
+        registerCoachSeasonRecordContractTests()
     }
 }
 
 func runCoachSeasonRecordTests() {
+    if runCoachSeasonRecordInvariantProbe() { return }
     suite("Coach season record") {
         test("the coach's season record is written and carries across the promotion") {
             try assertCoachSeasonRecordCarriesAcrossPromotion()
         }
+        registerCoachSeasonRecordContractTests()
     }
+}
+
+private func runCoachSeasonRecordInvariantProbe() -> Bool {
+    let organisationID = UUID(uuidString: "00000000-0000-4000-8000-000000000A30")!
+    if ProcessInfo.processInfo.environment["INVALID_COACH_SEASON_TOTAL_PROBE"] != nil {
+        _ = CoachSeasonRecord(
+            season: 0,
+            organisationID: organisationID,
+            wins: Int.max,
+            losses: 0,
+            ties: 0
+        )
+        return true
+    }
+    if ProcessInfo.processInfo.environment["UNORDERED_COACH_SEASONS_PROBE"] != nil {
+        _ = StaffCareerRecord(
+            staffID: UUID(uuidString: "00000000-0000-4000-8000-000000000A31")!,
+            seasonRecords: [
+                CoachSeasonRecord(season: 1, organisationID: organisationID, wins: 1, losses: 0, ties: 0),
+                CoachSeasonRecord(season: 0, organisationID: organisationID, wins: 1, losses: 0, ties: 0),
+            ]
+        )
+        return true
+    }
+    return false
+}
+
+private func registerCoachSeasonRecordContractTests() {
+    test("coach season source constructors fail fast on impossible records") {
+        for probe in [
+            "INVALID_COACH_SEASON_TOTAL_PROBE",
+            "UNORDERED_COACH_SEASONS_PROBE",
+        ] {
+            let process = Process()
+            process.executableURL = currentExecutableURL()
+            process.arguments = ["--coach-season-record"]
+            var environment = ProcessInfo.processInfo.environment
+            environment[probe] = "1"
+            process.environment = environment
+            process.standardOutput = Pipe()
+            process.standardError = Pipe()
+
+            try process.run()
+            process.waitUntilExit()
+            expect(process.terminationStatus != 0, "\(probe) did not fail fast")
+        }
+    }
+
+    test("coach season decoding rejects impossible game totals") {
+        let json = """
+        {"season":0,"organisationID":"00000000-0000-4000-8000-000000000A32",\
+        "wins":9223372036854775807,"losses":0,"ties":0}
+        """
+        do {
+            _ = try JSONDecoder().decode(CoachSeasonRecord.self, from: Data(json.utf8))
+            expect(false, "coach season decoder accepted an impossible game total")
+        } catch {
+            expect(true)
+        }
+    }
+
 }
 
 private func assertCoachSeasonRecordCarriesAcrossPromotion() throws {
@@ -1148,11 +1233,13 @@ private func assertCoachSeasonRecordCarriesAcrossPromotion() throws {
     var completedWins = 0
     var completedLosses = 0
     var completedTies = 0
+    var boundaryState: GameState?
     for week in 0..<SharedRules.inSeasonWeeks {
         if week == SharedRules.inSeasonWeeks - 1,
            let row = state.competition.standings[.college]?.first(where: {
                $0.id == programmeID
            }) {
+            boundaryState = state
             completedWins = row.wins
             completedLosses = row.losses
             completedTies = row.ties
@@ -1192,9 +1279,30 @@ private func assertCoachSeasonRecordCarriesAcrossPromotion() throws {
     }
     expect(WorldIntegrity.check(state).isValid, "season-end world failed integrity")
 
+    if var rejecting = boundaryState {
+        expect(rejecting.people.recordCoachSeason(
+            CoachSeasonRecord(
+                season: rejecting.calendar.season + 1,
+                organisationID: programmeID,
+                wins: 0,
+                losses: 0,
+                ties: 0
+            ),
+            for: coachID
+        ))
+        do {
+            _ = try WorldScheduler.advanceWeek(rejecting)
+            expect(false, "season rollover hid a rejected coach record write")
+        } catch WorldSchedulerError.coachSeasonRecordingFailed {
+            expect(true)
+        }
+    } else {
+        expect(false, "season walk never reached its rollover boundary")
+    }
+
     // The record lives on the coach, not on the job, so a promotion cannot drop it.
     guard state.careerArc.status != .fired else {
-        expect(true, "coach was fired before the promotion could be walked")
+        expect(false, "coach was fired before the promotion could be walked")
         return
     }
     let proTeam = state.proTeams.values[0]
