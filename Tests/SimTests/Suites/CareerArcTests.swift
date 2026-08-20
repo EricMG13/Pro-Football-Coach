@@ -561,7 +561,7 @@ func runCareerArcTests() {
                 "the coaching tree did not place the assistant under the promoted coach"
             )
         }
-        test("promotion changes two seats and leaves the rest of the world alone") {
+        test("promotion moves the coaching group and leaves the rest of the world alone") {
             let source = GameState.bootstrap(seed: 99_124)
             let programmeID = source.programmes.ids[0]
             var controlled = try CareerControlSystem.startCollegeCareer(
@@ -636,29 +636,41 @@ func runCareerArcTests() {
                 )
             }
 
-            // The two seats that do change, change by exactly one person each.
+            // The group that moves is the head coach and the four coordinators (`02` section 9),
+            // so the two organisations that do change, change by exactly five people each and
+            // neither changes size. A drop and a duplicate both fail this.
+            let moving = Set([coachID] + StaffRole.coordinators.compactMap { role in
+                controlled.programmes[programmeID]?.staffIDs.first {
+                    controlled.staff[$0]?.role == role
+                }
+            })
+            expectEqual(moving.count, StaffRole.coordinators.count + 1)
+
             let programmeBefore = Set(controlled.programmes[programmeID]?.staffIDs ?? [])
             let programmeAfter = Set(promoted.programmes[programmeID]?.staffIDs ?? [])
-            expectEqual(programmeBefore.subtracting(programmeAfter), [coachID])
-            expectEqual(programmeAfter.subtracting(programmeBefore).count, 1)
+            expectEqual(programmeBefore.subtracting(programmeAfter), moving)
+            expectEqual(programmeAfter.subtracting(programmeBefore).count, moving.count)
             expectEqual(programmeAfter.count, programmeBefore.count)
-            expect(
-                programmeAfter.contains(delegateID),
-                "the promotion took the delegated coordinator with it"
-            )
 
             let teamBefore = Set(controlled.proTeams[proTeam.id]?.staffIDs ?? [])
             let teamAfter = Set(promoted.proTeams[proTeam.id]?.staffIDs ?? [])
-            expectEqual(teamAfter.subtracting(teamBefore), [coachID])
-            expectEqual(teamBefore.subtracting(teamAfter).count, 1)
+            expectEqual(teamAfter.subtracting(teamBefore), moving)
+            expectEqual(teamBefore.subtracting(teamAfter).count, moving.count)
             expectEqual(teamAfter.count, teamBefore.count)
+            // The coordinator the coach had delegated to is one of the people who carries the
+            // scheme, so the relationship survives the tier change even though the delegation
+            // itself does not.
+            expect(
+                teamAfter.contains(delegateID),
+                "the delegated coordinator did not follow the coach"
+            )
 
             // Nobody is deleted: a displaced coach is a person the history still names.
             expect(
                 Set(controlled.staff.ids).isSubset(of: Set(promoted.staff.ids)),
                 "the promotion deleted a staff member"
             )
-            expectEqual(promoted.staff.ids.count, controlled.staff.ids.count + 1)
+            expectEqual(promoted.staff.ids.count, controlled.staff.ids.count + moving.count)
             expectEqual(
                 Set(promoted.people.staffCareers.keys),
                 Set(promoted.staff.ids),
@@ -765,8 +777,104 @@ func runCareerArcTests() {
                 state.proTeams[$0]?.staffIDs.contains(coachID) == true
             }
             expectEqual(seats, [secondTeamID])
-            // One successor per vacated seat, and not one more: three seats were left behind.
-            expectEqual(state.staff.ids.count, staffCountAtStart + 3)
+            // One successor per vacated seat and not one more. Two promotions leave a whole
+            // coaching group behind, at five seats each; the resignation in between leaves only
+            // the coach's, because staff follow a promotion and not a separation.
+            let promotionSeats = 2 * (StaffRole.coordinators.count + 1)
+            expectEqual(state.staff.ids.count, staffCountAtStart + promotionSeats + 1)
+        }
+        test("the coordinators follow the coach into the professional tier") {
+            let source = GameState.bootstrap(seed: 99_126)
+            let programmeID = source.programmes.ids[0]
+            let controlled = try CareerControlSystem.startCollegeCareer(
+                at: programmeID,
+                in: source
+            ).state
+            guard let coachID = controlled.career.coachID else {
+                expect(false, "career start left no coach")
+                return
+            }
+            let proTeam = controlled.proTeams.values[0]
+            let followers = StaffRole.coordinators.compactMap { role in
+                controlled.programmes[programmeID]?.staffIDs.first {
+                    controlled.staff[$0]?.role == role
+                }
+            }
+            let positionCoaches = (controlled.programmes[programmeID]?.staffIDs ?? []).filter {
+                controlled.staff[$0]?.role == .positionCoach
+            }
+            expectEqual(followers.count, StaffRole.coordinators.count)
+            expect(!positionCoaches.isEmpty, "the programme had no position coaches")
+
+            let opportunity = CareerOpportunity(
+                id: UUID(uuidString: "00000000-0000-4000-8000-000000000A26")!,
+                organisationID: proTeam.id,
+                tier: .professional,
+                offeredAt: controlled.calendar,
+                expiresAt: controlled.calendar.advancedWeek(),
+                prestige: proTeam.prestige,
+                rationale: .staffRecommendation
+            )
+            var promoting = controlled
+            promoting.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: programmeID,
+                    tier: .college,
+                    startedAt: controlled.calendar
+                ),
+                opportunities: [opportunity],
+                status: .employed
+            )
+            let promoted = try IntentResolver.resolve(
+                .career(CareerArcRequest(
+                    calendar: promoting.calendar,
+                    action: .acceptOpportunity(opportunityID: opportunity.id)
+                )),
+                in: promoting
+            ).state
+
+            // Scheme identity travels with the people who hold it.
+            for followerID in followers {
+                expect(
+                    promoted.proTeams[proTeam.id]?.staffIDs.contains(followerID) == true,
+                    "a coordinator did not follow the coach to the professional team"
+                )
+                expect(
+                    promoted.programmes[programmeID]?.staffIDs.contains(followerID) == false,
+                    "a coordinator held both the college and the professional seat"
+                )
+                expectEqual(
+                    promoted.people.staffCareers[followerID]?.assignments.last?.organisationID,
+                    proTeam.id,
+                    "a coordinator's move was not recorded in their career"
+                )
+            }
+            // Position coaches are not part of the subset that carries.
+            for coachID in positionCoaches {
+                expect(
+                    promoted.programmes[programmeID]?.staffIDs.contains(coachID) == true,
+                    "a position coach was taken along by the promotion"
+                )
+            }
+
+            // Both organisations still field one coach per role: five seats vacated, five filled.
+            for organisationStaff in [
+                promoted.programmes[programmeID]?.staffIDs ?? [],
+                promoted.proTeams[proTeam.id]?.staffIDs ?? [],
+            ] {
+                for role in [.headCoach] + StaffRole.coordinators {
+                    expectEqual(
+                        organisationStaff.filter { promoted.staff[$0]?.role == role }.count,
+                        1,
+                        "an organisation ended the promotion without exactly one \(role.rawValue)"
+                    )
+                }
+            }
+            expect(
+                promoted.proTeams[proTeam.id]?.staffIDs.contains(coachID) == true,
+                "the coach did not take the professional seat"
+            )
+            expect(WorldIntegrity.check(promoted).isValid, "promoted world failed integrity")
         }
     }
 }
