@@ -8,12 +8,13 @@ public struct RosterView: View, CoachWorldChromedSurface {
 
 
     public let model: RosterReadModel
-    public let statusMessage: String?
+    public let feedback: RosterFeedbackReadModel?
     public let onContinue: () -> Void
     public let onNavigate: (CoachWorldScreenID) -> Void
     public let onInspectDevelopment: (String) -> Void
     public let onOpenProfile: ((String) -> Void)?
     public let showsRecruitingBoard: Bool
+    private let showsAcademicYear: Bool
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var workspaceGap = CoachWorldTokens.Space.xs
@@ -23,7 +24,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
 
     public init(
         model: RosterReadModel,
-        statusMessage: String? = nil,
+        feedback: RosterFeedbackReadModel? = nil,
         onContinue: @escaping () -> Void,
         onNavigate: @escaping (CoachWorldScreenID) -> Void,
         onInspectDevelopment: @escaping (String) -> Void,
@@ -31,12 +32,13 @@ public struct RosterView: View, CoachWorldChromedSurface {
         showsRecruitingBoard: Bool = false
     ) {
         self.model = model
-        self.statusMessage = statusMessage
+        self.feedback = feedback
         self.onContinue = onContinue
         self.onNavigate = onNavigate
         self.onInspectDevelopment = onInspectDevelopment
         self.onOpenProfile = onOpenProfile
         self.showsRecruitingBoard = showsRecruitingBoard
+        self.showsAcademicYear = model.players.contains { !$0.academicYear.isEmpty }
         _selectedPlayerID = State(initialValue: model.players.first?.stableID ?? "")
     }
 
@@ -92,7 +94,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
                     Text(model.team.name.uppercased())
                         .font(CoachWorldTokens.TypeRole.headline.weight(.black))
                         .lineLimit(1)
-                    Text(statusMessage ?? worldContextLine)
+                    Text(feedback?.message ?? worldContextLine)
                         .font(CoachWorldTokens.TypeRole.caption)
                         .foregroundStyle(worldContextInk)
                         .lineLimit(1)
@@ -108,7 +110,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
                 if identity?.needsBoundary == true { verticalSeam }
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(model.team.name), \(statusMessage ?? worldContextLine)")
+            .accessibilityLabel("\(model.team.name), \(feedback?.message ?? worldContextLine)")
 
             Divider().overlay(palette.contentQuiet.color)
 
@@ -164,7 +166,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
     }
 
     private var worldContextInk: Color {
-        if statusMessage != nil, identity == nil { return palette.statePositive.color }
+        if feedback != nil, identity == nil { return palette.statePositive.color }
         return (identity?.onField ?? palette.contentSecondary).color
     }
 
@@ -235,14 +237,16 @@ public struct RosterView: View, CoachWorldChromedSurface {
                     summaryValue("Roster", "\(model.players.count)/\(model.rosterLimit)")
                     summaryValue("Injuries", "\(model.injuryCount)")
                     summaryValue("Open needs", "\(model.openNeedCount)")
-                    summaryValue("Class balance", classBalance)
+                    if showsAcademicYear { summaryValue("Class balance", classBalance) }
                 }
             } else {
                 HStack(spacing: .zero) {
                     summaryValue("ROSTER", "\(model.players.count)/\(model.rosterLimit)")
                     summaryValue("INJURIES", "\(model.injuryCount)")
                     summaryValue("OPEN NEEDS", "\(model.openNeedCount)")
-                    summaryValue("CLASS BALANCE", classBalance, fitsContent: true)
+                    if showsAcademicYear {
+                        summaryValue("CLASS BALANCE", classBalance, fitsContent: true)
+                    }
                 }
             }
         }
@@ -345,7 +349,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
             sortButton("PLAYER", accessibilityName: "Player", field: .name,
                        alignment: .leading)
                 .layoutPriority(1)
-            tableHeading("YR", width: RosterMetric.yearWidth)
+            if showsAcademicYear { tableHeading("YR", width: RosterMetric.yearWidth) }
             sortButton("RATING", accessibilityName: "Rating", field: .overall,
                        width: RosterMetric.ratingWidth)
             tableHeading("FIT", width: RosterMetric.fitWidth)
@@ -419,9 +423,11 @@ public struct RosterView: View, CoachWorldChromedSurface {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .layoutPriority(1)
                 Spacer(minLength: CoachWorldTokens.Gap.xxs)
-                Text(player.academicYear)
-                    .foregroundStyle(palette.contentSecondary.color)
-                    .frame(width: RosterMetric.yearWidth)
+                if showsAcademicYear {
+                    Text(player.academicYear)
+                        .foregroundStyle(palette.contentSecondary.color)
+                        .frame(width: RosterMetric.yearWidth)
+                }
                 ratingCell(player.overall)
                 Text(player.schemeFit)
                     .frame(width: RosterMetric.fitWidth)
@@ -516,7 +522,11 @@ public struct RosterView: View, CoachWorldChromedSurface {
                     Text(selected.person.name)
                         .font(CoachWorldTokens.TypeRole.title.weight(.black))
                         .lineLimit(1)
-                    Text("\(selected.academicYear) · #\(selected.number) · \(selected.position)")
+                    Text(
+                        [selected.academicYear, "#\(selected.number)", selected.position]
+                            .filter { !$0.isEmpty }
+                            .joined(separator: " · ")
+                    )
                         .font(CoachWorldTokens.TypeRole.caption)
                         .foregroundStyle(palette.contentSecondary.color)
                 }
@@ -527,9 +537,9 @@ public struct RosterView: View, CoachWorldChromedSurface {
             .background(palette.raised.color.opacity(0.5))
 
             dossierAttributes(selected)
-            dossierFlags(selected)
-            inspectorSection("STRENGTHS", selected.profile.strengths.joined(separator: " · "))
-            inspectorSection("CONCERN", selected.profile.concern)
+            if !selected.profile.concern.isEmpty {
+                inspectorSection("CONCERN", selected.profile.concern)
+            }
             inspectorSection(
                 "AVAILABILITY",
                 "\(selected.availability) · Condition \(selected.condition)"
@@ -599,23 +609,6 @@ public struct RosterView: View, CoachWorldChromedSurface {
         return min(1, max(0, (Double(rating) - floor) / (ceiling - floor)))
     }
 
-    /// Trait flags — the reference's `ICE IN VEINS · match` pair. A staff verdict, not a status.
-    @ViewBuilder
-    private func dossierFlags(_ selected: RosterReadModel.PlayerRow) -> some View {
-        let flags = selected.profile.strengths.prefix(RosterMetric.dossierFlagCount)
-        if !flags.isEmpty {
-            HStack(spacing: CoachWorldTokens.Gap.xs) {
-                ForEach(Array(flags), id: \.self) { flag in
-                    FloodlitFlag(flag, palette: palette)
-                }
-                Spacer(minLength: .zero)
-            }
-            .padding(.horizontal, CoachWorldTokens.Space.sm)
-            .padding(.vertical, CoachWorldTokens.Gap.xs)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
     private func inspectorSection(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
             Text(title)
@@ -668,7 +661,11 @@ public struct RosterView: View, CoachWorldChromedSurface {
                             Text(player.position)
                                 .font(CoachWorldTokens.TypeRole.headline.weight(.heavy))
                         }
-                        Text("\(player.academicYear) · \(player.rosterRole)")
+                        Text(
+                            [player.academicYear, player.rosterRole]
+                                .filter { !$0.isEmpty }
+                                .joined(separator: " · ")
+                        )
                             .foregroundStyle(palette.contentSecondary.color)
                         accessibleRating("OVR", player.overall)
                         accessibleDevelopmentDelta(player.developmentDelta)
@@ -730,7 +727,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentSecondary.color)
             Text("\(model.team.name) · \(model.coach.name)")
                 .font(CoachWorldTokens.TypeRole.headline.weight(.black))
-            Text(statusMessage ?? worldContextLine)
+            Text(feedback?.message ?? worldContextLine)
                 .foregroundStyle(palette.contentSecondary.color)
             route("Office", screen: .coachingHQ)
             route("Inbox", screen: .inbox)
@@ -779,10 +776,20 @@ public struct RosterView: View, CoachWorldChromedSurface {
     }
 
     private func playerAccessibilityLabel(_ player: RosterReadModel.PlayerRow) -> String {
-        "Number \(player.number), \(player.person.name), \(player.position), "
-            + "\(player.academicYear), \(player.rosterRole), overall \(player.overall), "
-            + "development change \(player.developmentDelta.map { $0 > 0 ? "+\($0)" : "\($0)" } ?? "none"), fit \(player.schemeFit), "
-            + "condition \(player.condition), \(player.availability)"
+        [
+            "Number \(player.number)",
+            player.person.name,
+            player.position,
+            player.academicYear,
+            player.rosterRole,
+            "overall \(player.overall)",
+            "development change \(player.developmentDelta.map { $0 > 0 ? "+\($0)" : "\($0)" } ?? "none")",
+            "fit \(player.schemeFit)",
+            "condition \(player.condition)",
+            player.availability,
+        ]
+        .filter { !$0.isEmpty }
+        .joined(separator: ", ")
     }
 
     private var classBalance: String {
@@ -817,7 +824,6 @@ public struct RosterView: View, CoachWorldChromedSurface {
 private enum RosterMetric {
     static let dossierRing: CGFloat = 44
     static let dossierAttributeCount = 4
-    static let dossierFlagCount = 2
     static let attributeLabel: CGFloat = 62
     static let attributeValue: CGFloat = 26
 

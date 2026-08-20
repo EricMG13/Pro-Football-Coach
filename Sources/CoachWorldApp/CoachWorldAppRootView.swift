@@ -92,7 +92,9 @@ public struct CoachWorldAppRootView: View {
                 surface(store.roster, screen: .roster) { model in
                     RosterView(
                         model: model,
-                        statusMessage: failure ?? store.statusMessage,
+                        feedback: (failure ?? store.statusMessage).map {
+                            RosterFeedbackReadModel(message: $0)
+                        },
                         onContinue: { Task { await advance(store) } },
                         onNavigate: { navigate($0, in: store) },
                         onInspectDevelopment: { playerID in
