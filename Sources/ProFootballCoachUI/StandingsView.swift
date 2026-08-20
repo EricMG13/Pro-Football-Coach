@@ -127,9 +127,17 @@ public struct StandingsView: View, CoachWorldChromedSurface {
     private func rowBody(index: Int, row: StandingsReadModel.Row) -> some View {
         if dynamicTypeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
-                Text("\(index + 1). \(row.team.name)")
-                    .font(CoachWorldTokens.TypeRole.headline.weight(.bold))
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: CoachWorldTokens.Gap.xs) {
+                    CoachWorldTeamLogo(
+                        team: row.team,
+                        size: .compact,
+                        surface: palette.work,
+                        palette: palette
+                    )
+                    Text("\(index + 1). \(row.team.name)")
+                        .font(CoachWorldTokens.TypeRole.headline.weight(.bold))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Text(
                     "\(recordLabel(row)) \u{00B7} conference \(row.conferenceRecord)"
                 )
@@ -169,15 +177,23 @@ public struct StandingsView: View, CoachWorldChromedSurface {
                         row.isControlled ? palette.actionPrimary.color : palette.contentQuiet.color
                     )
                     .frame(width: StandingsMetric.rankColumn, alignment: .leading)
-                Text(row.team.name.uppercased())
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.row,
-                            weight: row.isControlled ? .heavy : .bold
-                        )
+                HStack(spacing: CoachWorldTokens.Gap.xs) {
+                    CoachWorldTeamLogo(
+                        team: row.team,
+                        size: .compact,
+                        surface: palette.work,
+                        palette: palette
                     )
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(row.team.name.uppercased())
+                        .font(
+                            CoachWorldTokens.display(
+                                CoachWorldTokens.DisplaySize.row,
+                                weight: row.isControlled ? .heavy : .bold
+                            )
+                        )
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 Text(recordLabel(row))
                     .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
                     .frame(width: StandingsMetric.recordColumn, alignment: .leading)

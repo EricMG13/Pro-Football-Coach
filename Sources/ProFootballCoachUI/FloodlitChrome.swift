@@ -342,7 +342,12 @@ struct FloodlitIdentityHeader: View {
 
     private var primaryRow: some View {
         HStack(spacing: CoachWorldTokens.Gap.smPlus) {
-            CoachWorldPennant(team: model.club)
+            CoachWorldTeamLogo(
+                team: model.club,
+                size: .compact,
+                surface: CoachWorldTokens.Floodlit.roomDeep,
+                palette: palette
+            )
             Text(model.club.name.uppercased())
                 .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.lead, weight: .bold))
                 .tracking(Chrome.clubTracking)
@@ -386,7 +391,12 @@ struct FloodlitIdentityHeader: View {
     private func contextChip(_ context: String) -> some View {
         HStack(spacing: CoachWorldTokens.Gap.xxs) {
             if let opponent = model.contextOpponent {
-                CoachWorldPennant(team: opponent)
+                CoachWorldTeamLogo(
+                    team: opponent,
+                    size: .compact,
+                    surface: CoachWorldTokens.Floodlit.roomDeep,
+                    palette: palette
+                )
             }
             Text(context.uppercased())
                 .font(CoachWorldTokens.display(Chrome.contextSize, weight: .bold))

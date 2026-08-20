@@ -95,6 +95,11 @@ struct ScoreBug: View {
         let hasBall = model.situation.possession == side
         let isOurs = side == model.perspective
         return HStack(spacing: CoachWorldTokens.Gap.xs) {
+            CoachWorldTeamLogo(
+                team: score.team,
+                size: .compact,
+                surface: CoachWorldTokens.Floodlit.roomDeep
+            )
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 Text(score.team.abbreviation.uppercased())
                     .font(CoachWorldTokens.display(Bug.name, weight: .bold))
