@@ -211,35 +211,27 @@ The view model reserves optional asset references for future user-supplied unive
 The base game remains fictional and original. Importing custom names or media is a future product
 and legal decision, not a v1 feature; UI code must neither require it nor block it.
 
-### 5.2 Generated crests and uniform marks
+### 5.2 Canonical team marks
 
-*Added 2026-08-12, owner-approved plan. The recognition device §5.1 promises — "uniform, team" —
-made concrete without a single authored image.*
+*Revised 2026-08-20. The base universe ships one approved primary mark for every canonical
+default-seed team.*
 
-Each programme receives a **crest**: an abstract geometric mark composed from a closed heraldic
-vocabulary, drawn only in the team's own colour pair.
-
-- **Vocabulary, closed by construction.** Field divisions: pale, fess, bend, saltire, chevron,
-  quartered. Charges: roundel, arch, bordure, canton, bar. The spec type can express nothing else —
-  no letterforms, no figurative shapes, no mascots, no pictorial art. That impossibility is a
-  type-level property with an exhaustive-case test, not a review item.
-- **Grammar.** One field division plus at most two charges. Colours are `team.primary`,
-  `team.secondary` and `team.onTeam` only — a crest never mints a colour.
-- **Determinism.** The crest is a pure function of the team's stable identifier and colour pair,
-  derived at read time. It is never persisted; there is no save-schema change (the
-  rebuilt-not-persisted pattern).
-- **Where it appears.** The §5 slots: world strip, scoreboard, uniform mark, ceremony surface. At
-  chip scale it may replace the abbreviation text plate; the accessible name remains the programme
-  name.
-- **Read model.** A structured `team.crest` spec field. The §5.1 asset slots stay reserved for
-  future user-supplied media and are never used for generated crests; when a validated import
-  supplies a mark it replaces the generated crest, and the generated crest remains the offline,
-  missing-file and opt-out state — the plate pattern applied to marks.
-- **Legal posture.** The machine guarantees closure, determinism and colour provenance (colour
-  pairs already pass the trade-dress ΔE sweep). Geometric resemblance to a real mark is **not**
-  machine-testable: a deterministic crest census — a specimen grid across the legal-sweep leagues —
-  is emitted for owner review and flagged for counsel per the `CLAUDE.md` guardrail. No test claims
-  to cover crest resemblance, and no document may describe one as doing so.
+- **Packaged artwork.** Each primary mark is generated offline with AI, reviewed by a human, and
+  packaged as a text-free PNG asset. Silhouettes are unrestricted; the mark may be abstract,
+  figurative, or emblematic, provided it remains original to the fictional universe and obeys §5's
+  colour and recognition rules.
+- **Stable lookup.** `team.mark` is an optional asset reference resolved by a stable catalogue key
+  for the canonical default-seed UUID. The mark is presentation data, not simulation state: an
+  alternate-seed team or an unavailable packaged asset receives `nil` and the UI renders the
+  legible abbreviation fallback.
+- **Runtime boundary.** The shipped app performs no AI generation, network fetch, prompt handling,
+  or external-image lookup for team marks. It only resolves its packaged catalogue assets.
+- **Where it appears.** The §5 slots remain the only places a team mark may appear: world strip,
+  scoreboard, uniform mark, and ceremony surface. At chip scale it may accompany the abbreviation,
+  while the adjacent team name retains the accessible identity.
+- **Originality gate.** Exact and near-duplicate checks protect the packaged set, but automated
+  checks do not establish legal clearance. A human performs a manual similarity review before a
+  mark is approved; the owner retains final originality and real-team-similarity approval.
 
 ## 6. Foundations
 

@@ -207,6 +207,10 @@ if CommandLine.arguments.contains("--catalog") {
     runJerseyNumberTests()
     runDepthChartTests()
     runReadModelProviderTests()
+    runTeamLogoManifestTests()
+    for family in TeamLogoFamily.allCases {
+        runTeamLogoAssetTests(family: family.rawValue)
+    }
     runCapComplianceTests()
     runSeasonRolloverTests()
     // The M8 entry-gate instruments. They ran only under `--design-contracts` and

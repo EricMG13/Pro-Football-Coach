@@ -146,6 +146,68 @@ func runTeamLogoManifestTests() {
                 expect(!team.prompt.localizedCaseInsensitiveContains("NHL"))
             }
         }
+        test("all canonical records are approved and match the packaged catalogue") {
+            let teams = try loadTeamLogoManifest().teams
+            let manifestAssetNames = Set(teams.map(\.assetName))
+            expectEqual(teams.count, 166)
+            expect(teams.allSatisfy { $0.generationStatus == "approved" && $0.humanApproved })
+
+            let imagesetAssetNames = Set(
+                try FileManager.default.contentsOfDirectory(
+                    at: teamLogoAssetsURL,
+                    includingPropertiesForKeys: nil
+                )
+                .filter { $0.pathExtension == "imageset" }
+                .map { $0.deletingPathExtension().lastPathComponent }
+            )
+            expectEqual(imagesetAssetNames, manifestAssetNames)
+
+            let catalog = try String(contentsOf: teamLogoCatalogURL, encoding: .utf8)
+            for assetName in manifestAssetNames {
+                expectEqual(
+                    catalog.components(separatedBy: "\"\(assetName)\"").count - 1,
+                    1,
+                    "catalogue entry count for \(assetName)"
+                )
+            }
+        }
+        test("catalogue and renderer have no runtime external-mark path") {
+            let paths = [
+                teamLogoCatalogURL,
+                URL(fileURLWithPath: "Sources/ProFootballCoachUI/CoachWorldTeamLogo.swift")
+            ]
+            let forbidden = ["URLSession", "http://", "https://", "network", "prompt"]
+            for path in paths {
+                let source = try String(contentsOf: path, encoding: .utf8)
+                for term in forbidden {
+                    expect(!source.localizedCaseInsensitiveContains(term), "\(path.lastPathComponent) contains \(term)")
+                }
+                expect(source.range(of: #"\bAI\b"#, options: [.regularExpression, .caseInsensitive]) == nil,
+                       "\(path.lastPathComponent) contains AI")
+            }
+        }
+        test("no approved PNG is visually near-duplicated") {
+            let approved = try loadTeamLogoManifest().teams.filter(\.humanApproved)
+            let hashes = approved.compactMap { record -> (TeamLogoRecord, UInt64)? in
+                guard let source = CGImageSourceCreateWithURL(pngURL(for: record) as CFURL, nil),
+                      let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+                    expect(false, "invalid PNG \(record.filename)")
+                    return nil
+                }
+                return (record, averageHash(image))
+            }
+            expectEqual(hashes.count, approved.count)
+            for lhsIndex in hashes.indices {
+                for rhsIndex in hashes.indices.dropFirst(lhsIndex + 1) {
+                    let lhs = hashes[lhsIndex]
+                    let rhs = hashes[rhsIndex]
+                    expect(
+                        hammingDistance(lhs.1, rhs.1) > 4,
+                        "near-duplicate marks: \(lhs.0.name) and \(rhs.0.name)"
+                    )
+                }
+            }
+        }
         test("motif families are balanced") {
             let teams = try loadTeamLogoManifest().teams
             for family in TeamLogoFamily.allCases {
@@ -158,6 +220,10 @@ func runTeamLogoManifestTests() {
 
 private let teamLogoAssetsURL = URL(
     fileURLWithPath: "Sources/ProFootballCoachUI/Resources/TeamLogos.xcassets"
+)
+
+private let teamLogoCatalogURL = URL(
+    fileURLWithPath: "Sources/ProFootballCoachUI/TeamLogoCatalog.generated.swift"
 )
 
 private func pngURL(for team: TeamLogoRecord) -> URL {
@@ -193,6 +259,29 @@ private func hasTransparentEdgePixel(_ image: CGImage) -> Bool {
         }
     }
     return false
+}
+
+private func averageHash(_ image: CGImage) -> UInt64 {
+    var pixels = [UInt8](repeating: 0, count: 64)
+    let context = CGContext(
+        data: &pixels,
+        width: 8,
+        height: 8,
+        bitsPerComponent: 8,
+        bytesPerRow: 8,
+        space: CGColorSpaceCreateDeviceGray(),
+        bitmapInfo: CGImageAlphaInfo.none.rawValue
+    )!
+    context.interpolationQuality = .low
+    context.draw(image, in: CGRect(x: 0, y: 0, width: 8, height: 8))
+    let average = pixels.reduce(0) { $0 + Int($1) } / pixels.count
+    return pixels.enumerated().reduce(into: UInt64.zero) { result, entry in
+        if Int(entry.element) >= average { result |= UInt64(1) << UInt64(entry.offset) }
+    }
+}
+
+private func hammingDistance(_ lhs: UInt64, _ rhs: UInt64) -> Int {
+    (lhs ^ rhs).nonzeroBitCount
 }
 
 func runTeamLogoAssetTests(family rawValue: String) {
