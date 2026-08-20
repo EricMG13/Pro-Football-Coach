@@ -1679,6 +1679,13 @@ Measured: history archive **20 tests / 147 checks**, core contracts **146 / 955*
 
 #### The 30-season gate, in release — history passes, performance does not
 
+> **Re-run 2026-08-20 after the signing-day change: green, 65 checks.**
+> `seasons=30 weeks=630 weekMeanMs=2975.54 archivedSeasons=30 archivedEvents=2,024,655
+> hotEvents=4,096 notableBodies=960 s30=36,203,050B/12.840s`. Against the compressed figures below
+> that is 36.20 MB where 36.03 MB was recorded and 12.84 s where 12.53 s was, so the change moves
+> neither size nor encode time. FSC-003 stands exactly as written.
+
+
 ```text
 seasons=30 weeks=630 weekMeanMs=4552.18
 archivedSeasons=30 archivedEvents=2,032,988 hotEvents=4,096 notableBodies=960
