@@ -188,9 +188,24 @@ public enum ProManagementSystem {
         guard before.committedCap <= before.capLimit - contract.capHit(inYear: 0) else {
             throw ProManagementError.capExceeded
         }
+        // `signFreeAgent` and `draft` both stamp `signedSeason` before ever reaching this function,
+        // but `acquire` is `public` and is also the direct target of the controlled team's own
+        // `.acquire` intent action -- the path a player-facing free-agency or draft-pick UI action
+        // reaches, unmediated by either wrapper. A contract with no `signedSeason` is not a
+        // rejected shape: `Contract.year(atSeason:)` reads `nil` as "always year 0", so the deal
+        // would be charged at year 0 forever, and `expireContracts` explicitly skips a contract
+        // with no `signedSeason` ("left untouched because their start date is unknowable") -- so
+        // the seat could never be reclaimed by the turnover D15 depends on. Stamped here, at the
+        // one primitive every acquisition path shares, rather than trusted to every caller.
+        guard contract.signedSeason == nil || contract.signedSeason == state.proMarket.season else {
+            throw ProManagementError.invalidContract
+        }
+        let stampedContract = contract.signedSeason == nil
+            ? contract.withSignedSeason(state.proMarket.season)
+            : contract
 
         var next = state
-        next.players.update(playerID) { $0.contract = contract }
+        next.players.update(playerID) { $0.contract = stampedContract }
         next.proTeams.update(teamID) { $0.rosterIDs.append(playerID) }
         if validateIntegrity {
             guard WorldIntegrity.check(next).isValid else { throw ProManagementError.invalidRoot }
