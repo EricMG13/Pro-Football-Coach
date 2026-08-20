@@ -143,7 +143,11 @@ public struct CoachWorldAppRootView: View {
                     )
                 }
             case .settingsAccessibility:
-                SettingsAccessibilityView(onClose: { navigate(.coachingHQ, in: store) })
+                SettingsAccessibilityView(
+                    onClose: { navigate(.coachingHQ, in: store) },
+                    callInsPerGame: store.callInsPerGame,
+                    onSetCallInsPerGame: { store.setCallInsPerGame($0) }
+                )
                     .floodlitChrome(
                         chrome(for: .settingsAccessibility, in: store),
                         onNavigate: { navigateChrome($0, in: store) }
