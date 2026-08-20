@@ -89,7 +89,7 @@ public struct ClassOverviewView: View, CoachWorldChromedSurface {
     }
 
     private var committedProspects: [RecruitingBoardReadModel.Prospect] {
-        model.prospects.filter { $0.status == "Committed" || $0.status == "Signed" }
+        model.prospects.filter(\.isCommitted)
     }
 
     private var committedCount: Int { committedProspects.count }
