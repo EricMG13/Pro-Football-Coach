@@ -382,22 +382,29 @@ Turnover is now measured rather than argued. `--pro-draft-probe` is **green** �
 at the season rollover, roster seats open, and the first pick succeeds — and across ten soak seasons
 1,491 contracts expire and 1,476 free agents sign.
 
-**What remains is one red gate whose cause is not diagnosed.** `--pro-soak` still fails, now on a
-single assertion: over ten seasons the draft *starts* nine times and never makes a pick
-(`draftedFinal=0`), while the cap, roster-bound, ownership and root checks all hold. The isolated
-path the probe walks — expire, open, begin, pick — succeeds, so the cause sits between that path and
-what the scheduler drives. It is not named here because it has not been measured, and this entry's
-own history is the argument against naming it early.
+**This entry's falsifier fired, and it was right.** It read: "if turnover lands and the draft still
+cannot make a pick, the diagnosis was wrong." Turnover landed and the draft still made no pick. The
+`activeRosterFull` diagnosis was right about the symptom and wrong about the cause — the cause was
+not that nothing frees seats, it was that **free agency took every seat expiry freed before the
+draft opened**, at every seed. `02` §4.2 had free agency sign until the pool ran dry and start the
+draft on that same pass, and a dry pool is a full roster, so the draft always opened with nothing.
 
-**This entry's falsifier has fired, and it should be read as written:** "if turnover lands and the
-draft still cannot make a pick, the diagnosis was wrong." Turnover landed. The `activeRosterFull`
-diagnosis was right about the probe's path and incomplete about the scheduler's.
+Free agency now reserves the seats the draft needs (`02` §4.2, owner decision 2026-08-20). Rosters
+settle at 46, the draft opens with 224 seats for 224 prospects, and **both gates are green** —
+`--pro-soak` records 1,557 draft picks across ten seasons where every previous run recorded zero.
 
-**Gates:** G1, G2, G4, G6, plus `--pro-soak` turning green. `--pro-draft-probe` is already green.
-Neither is in the default run, so `verify.sh` is unaffected while `--pro-soak` is open.
+**What the fix surfaced, and did not fix.** The free-agent pool now sits pinned at its 512 bound
+rather than draining each season, and `openOffseason` truncates it in `uuidString` order, so which
+free agents the league can see is decided by identifier rather than by rating. `02` §4.2a picked the
+one-fifth term spread to leave "real headroom for carryover" and that premise no longer holds. A
+larger bound, a rating-ordered pool, or retirement removing the unattached are the candidates; the
+choice is an owner call. See `docs/STATUS.md`.
 
-**Blocks:** M6 completion and the professional draft. Free agency no longer blocks on this — it
-signs.
+**Gates:** G1, G2, G4, G6, plus `--pro-soak` and `--pro-draft-probe`, both now green. Neither is in
+the default run, so `verify.sh` is unaffected either way.
+
+**Blocks:** nothing further. M6 completion, the professional draft and free agency all clear this
+entry.
 
 ### Insertion: P11a — The M8 production-UI entry gate, as tests (immediately before P11)
 
