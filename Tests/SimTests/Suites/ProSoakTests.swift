@@ -248,6 +248,42 @@ func runProDraftProbeTests() {
                 expect(false, "the first draft pick of a fresh world cannot be made: \(error)")
             }
         }
+
+        test("a full round of picks all carry a properly stamped, cap-legal contract") {
+            // The probe above proves pick one; nothing had proven pick two through
+            // `draftPicksPerRound`. `acquire` now stamps `signedSeason` for every caller
+            // (2026-08-20), and this is that fix walked across a whole round rather than trusted to
+            // the first pick alone or to a slow, stochastic soak.
+            var state = GameState.bootstrap(seed: 96_005)
+            let rollover = CalendarState(season: 0, week: SharedRules.inSeasonWeeks)
+            state.calendar = rollover
+            state.league.week = rollover.week
+            state = try ProMarketSystem.expireContracts(at: rollover, in: state).state
+            state = try ProMarketSystem.openOffseason(in: state)
+            state = try ProMarketSystem.beginDraft(in: state)
+            let marketSeason = state.proMarket.season
+
+            for pick in 0..<ProRules.draftPicksPerRound {
+                guard let teamID = state.proMarket.currentPickTeamID,
+                      let prospect = state.proMarket.draftClass.first(where: {
+                          !state.proMarket.draftedProspectIDs.contains($0.id)
+                      }) else {
+                    expect(false, "the draft ran dry before pick \(pick) of a single round")
+                    return
+                }
+                state = try ProMarketSystem.draft(prospectID: prospect.id, for: teamID, in: state)
+                guard let contract = state.players[prospect.id]?.contract else {
+                    expect(false, "pick \(pick) landed with no contract on the drafted player")
+                    return
+                }
+                expectEqual(contract.signedSeason, marketSeason,
+                            "pick \(pick) carried a contract not stamped to the market season")
+                let cap = try ProManagementSystem.capSnapshot(teamID: teamID, in: state)
+                expect(cap.isWithinCap, "pick \(pick) left \(teamID) over the cap")
+            }
+            expectEqual(state.proMarket.nextPick, ProRules.draftPicksPerRound)
+            expect(WorldIntegrity.check(state).isValid, "a full legal round left an invalid root")
+        }
     }
 }
 
