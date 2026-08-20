@@ -201,6 +201,29 @@ func runRulesTests() {
                    "more players dress than are on the roster")
         }
 
+        test("the minimum playable roster covers the formation the engine actually fields") {
+            // Two rules-module constants that have to agree and were never checked against each
+            // other: `minimumPlayableRosterByPosition` is what `checkPositionalCoverage` calls a
+            // playable roster, and the depth-chart templates are what the engine puts on the field.
+            // A minimum that guarantees fewer bodies at a position than the formation starts is a
+            // minimum that does not make a roster playable -- it makes it fill that spot with
+            // somebody out of position on every snap.
+            //
+            // Enumerated over `Position.allCases` and both templates by construction, so a position
+            // added to a formation is covered the day it is added rather than the day someone
+            // remembers this test.
+            for position in Position.allCases {
+                let fielded = max(
+                    DepthChart.offensiveTemplate.filter { $0 == position }.count,
+                    DepthChart.defensiveTemplate.filter { $0 == position }.count
+                )
+                let minimum = SharedRules.minimumPlayableRosterByPosition[position] ?? 0
+                expect(minimum >= fielded,
+                       "\(position) is fielded \(fielded) at a time but the minimum playable "
+                           + "roster guarantees only \(minimum)")
+            }
+        }
+
         test("a draft order is seven rounds, each a permutation of every team") {
             let teams = (0..<ProRules.draftPicksPerRound).map { index in
                 UUID(uuidString: String(format: "00000000-0000-4000-8000-%012d", index))!

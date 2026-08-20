@@ -415,9 +415,33 @@ public enum ProManagementSystem {
                 guard let team = next.proTeams[teamID] else {
                     throw ProManagementError.missingTeam
                 }
+                // Positional coverage, counted over the active roster because that is what
+                // `WorldIntegrity.checkPositionalCoverage` counts. `expireContracts` has protected
+                // the last playable body at a position since 2026-08-13 (`02` section 4.2a) and
+                // compliance never did, so a forced release could take a team below the coverage
+                // the root gate requires and surface as `invalidRoot` from this function's own
+                // difference guard -- an error naming nothing. Latent only because the linebacker
+                // floor read 2 while the defence starts 3; raising it to match made it reachable.
+                //
+                // Practice-squad releases are unguarded on purpose: coverage does not count them,
+                // so releasing one cannot break it.
+                let rosterIDSet = Set(team.rosterIDs)
+                var rosterByPosition: [Position: Int] = [:]
+                for playerID in team.rosterIDs {
+                    guard let position = next.players[playerID]?.position else { continue }
+                    rosterByPosition[position, default: 0] += 1
+                }
                 let candidates = (team.rosterIDs + team.practiceSquadIDs).compactMap {
                     playerID -> (UUID, Int)? in
-                    guard let contract = next.players[playerID]?.contract else { return nil }
+                    guard let player = next.players[playerID],
+                          let contract = player.contract else { return nil }
+                    if rosterIDSet.contains(playerID) {
+                        let minimum = SharedRules
+                            .minimumPlayableRosterByPosition[player.position] ?? 0
+                        guard rosterByPosition[player.position, default: 0] > minimum else {
+                            return nil
+                        }
+                    }
                     let deadMoneyAdded = contract.deadMoney(ifReleasedAtSeason: calendar.season)
                     // A release sheds one season's cap hit and accelerates every unamortised
                     // bonus dollar into that same season. When the acceleration is the larger
@@ -438,9 +462,10 @@ public enum ProManagementSystem {
                 guard let (playerID, deadMoneyAdded) = candidates.min(by: { lhs, rhs in
                     lhs.1 == rhs.1 ? lhs.0.uuidString < rhs.0.uuidString : lhs.1 < rhs.1
                 }) else {
-                    // Nothing left that sheds cap: either no contracted player remains, or every
-                    // remaining deal costs more to release than it saves. Either way the overage
-                    // is structural and no sequence of releases reaches legality.
+                    // Nothing left that sheds cap: no contracted player remains, every remaining
+                    // deal costs more to release than it saves, or the only ones that would are
+                    // the last playable bodies at their positions. Either way the overage is
+                    // structural and no sequence of legal releases reaches compliance.
                     throw ProManagementError.capExceeded
                 }
                 guard team.deadMoney <= Int.max - deadMoneyAdded else {
