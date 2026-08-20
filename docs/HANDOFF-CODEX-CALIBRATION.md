@@ -11,12 +11,14 @@ from `docs/HANDOFF-CODEX.md` (PR #9's re-pin), which is still open and unrelated
 
 - calibration: **21 tests / 169 checks**;
 - M3 recruiting calibration: **20 tests / 412 checks**;
-- M3 first/repeat runtime: **61.600 s / 67.098 s**;
-- signed class range/median/mean: **5...25 / 16.0 / 15.61**;
-- fill rate range/median/mean: **28...100% / 84.0% / 76.85%**;
+- M3 first/repeat runtime: **280.789 s / 282.374 s**;
+- projected class target range/median: **13...25 / 21.0**;
+- signed class range/median/mean: **5...25 / 16.0 / 15.80**;
+- fill rate range/median/mean: **21...100% / 85.5% / 77.07%**;
 - aggregate fill/nonempty classes: **75% / 134 of 134**;
-- signed/released/walk-ons: **2,092 / 0 / 37**;
-- durable save / JSON bytes: **6,488,456 / 42,401,898**.
+- signed/released/walk-ons: **2,117 / 0 / 30**;
+- commitment/recruiting-interaction events: **2,348 / 30,141**;
+- durable save / JSON bytes: **6,522,028 / 42,601,362**.
 
 The M3 failure was a scheduler boundary defect, not a calibration-band result. The final open
 recruiting week is `CollegeRules.signingDayWeek - 1` (week 20). `WorldScheduler` now runs one
