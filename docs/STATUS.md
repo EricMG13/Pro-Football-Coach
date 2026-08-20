@@ -1193,6 +1193,20 @@ the 30-season history/performance gate. The plan for the next slice is
 records why cold event bodies are their own milestone: they change a persisted root type and need a
 bound design against FSC-002/FSC-003 and the save-size budget, which is still 84.66 MB at season 20.
 
+### 2026-08-13 — UI screen mockups of five first examples
+
+Asked for visual mockups, then narrowed to five first examples rather than the full 62-family
+inventory. Output is `docs/proofs/screen-mockups/index.html`: Coaching HQ, Roster, Player Profile,
+Recruiting Board, Match Day — 844 × 390 frames composed from the owner-approved `*-v3.dc.html`
+sheets. Dark is the desk default; HQ, Recruiting Board and Match Day also render light.
+
+They are **not canon**, **not** a ninth design-reference sheet, and **not** a claim that 62
+production views exist. `04` still owns every value. Honest blanks stay blank inside the frames
+(empty G-02 verdict, no G-06 play art). Identities are the reference shared world (Example State /
+Coach Sample / Week 9).
+
+**Unverified as a simulator render** — these are HTML. They were not photographed on a device.
+
 ### 2026-08-13 — the road to beta: B-1 answered, D-1 attributed and fixed, G-01 and U-4 landed
 
 Executed against `docs/plans/2026-08-12-road-to-beta.md`. **This session had a full Swift and Xcode
