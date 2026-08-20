@@ -1521,9 +1521,17 @@ func runContractTests() {
             expect(staffRoomProvider.contains("static func staffRoom(")
                        && staffRoomProvider.contains("state.staff"),
                    "Staff Room must derive from authoritative staff records")
+            // Staff Market & Profile's own half of this claim is a behavioural check, not a
+            // source-scan: 2026-08-20 remediation removed its case label from navigate(_:in:)'s
+            // switch as provably dead code (the function's own leading canonicalise-and-recurse
+            // guard means an alias can never reach that switch), so a bare
+            // appRoot.contains("staffMarketProfile") substring check -- true only by the
+            // coincidence of the now-deleted dead label's spelling -- stopped holding even though
+            // the actual reachability this test names never changed: navigate(.staffMarketProfile)
+            // still canonicalises to .staffRoom and recurses into the exact same StaffRoomView(.
             expect(appRoot.contains("case .staffRoom")
-                       && appRoot.contains("staffMarketProfile")
-                       && appRoot.contains("StaffRoomView("),
+                       && appRoot.contains("StaffRoomView(")
+                       && CoachWorldScreenID.staffMarketProfile.canonicalDestination == .staffRoom,
                    "Staff Room and Staff Market & Profile must be reachable from the shipped app root")
             expect(hq.contains("Button(\"Staff room\")")
                        && !hq.contains("Button(\"Staff market & profile\")"),
