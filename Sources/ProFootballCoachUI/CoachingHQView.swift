@@ -258,8 +258,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentPrimary.color)
                 .lineLimit(1)
                 .minimumScaleFactor(HQMetric.heroScaleFloor)
-            // Nothing here is cleared: every row is a decision the week still owes an answer to.
-            Text("0 of \(model.obligations.count) cleared")
+            Text("\(model.obligations.count) still open")
                 .font(CoachWorldTokens.TypeRole.caption)
                 .foregroundStyle(palette.contentSecondary.color)
             VStack(spacing: CoachWorldTokens.Gap.hair) {
@@ -801,7 +800,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
 
             if let opponent = model.opponent {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-                    Text("SATURDAY · OPPONENT").font(.caption.weight(.heavy))
+                    Text("NEXT FIXTURE").font(.caption.weight(.heavy))
                     Text(opponent.name).font(.headline)
                     Text(model.venue?.name ?? "Venue not set")
                         .font(.caption)

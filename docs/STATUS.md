@@ -19,6 +19,37 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-20 — Per-surface P0/P1 remediation, Phase 1 (data-correctness fixes): unverified —
+> never compiled.** `docs/plans/2026-08-20-per-surface-p0-p1-remediation.md` is the plan. This phase
+> fixes six confirmed-live defects the prior phase's systemic work deferred: `NewsFeedReadModel.swift`
+> displayed the engine's 0-indexed season directly in four headlines, contradicting every other
+> season-display call site's `+1` convention; `ProManagementView.swift`'s cap gauge clamped the
+> printed percentage to the same 100% ceiling as the arc's fill, so an over-cap team's figure agreed
+> with "Under the cap" rather than "Over the cap" three lines above it; `RosterView.swift`'s class
+> balance fabricated "FR 0 · SO 0 · JR 0 · SR 0" for pro rosters (which carry no eligibility concept
+> at all) and silently dropped graduate players on college ones; `DesignTokens.Heat` and
+> `CoachWorldRatingRing` used a 72-point amber floor and non-canonical colour roles, disagreeing with
+> both `docs/04-UX-AND-DESIGN-SYSTEM.md` §6.4's stated 70/85 scale and with `RosterView.ratingColor`,
+> which already matched canon — both now delegate to `Heat.color` instead of carrying independent
+> banding logic, so the three cannot drift again; `TeamHealthView.swift`'s fatigue row filled its bar
+> and picked its tint from `100 - fatigue` while the printed number and accessibility label read raw
+> `fatigue`, so the bar visually disagreed with the text beside it; and `CoachingHQView.swift` printed
+> a literal "0 of N cleared" (the read model holds no completion state at all — a cleared decision is
+> removed from the source list, not flagged) and a fabricated "SATURDAY" (the calendar's finest grain
+> is a week; there is no day-of-week field anywhere in the engine), both replaced with honest text
+> already used elsewhere in the same file rather than invented data.
+>
+> Two new tests: one asserting `NewsFeedReadModel`'s season-boundary headlines display 1-indexed,
+> not raw; one parsing `04` §6.4's heat-scale sentence at runtime and asserting `Heat.color` matches
+> it across the full `40...99` rating range, not a handful of sample points. An independent
+> adversarial review of the full diff (a fresh agent, not the one that implemented it) confirmed no
+> defects and no regressed test elsewhere in the suite.
+>
+> No `swift`/`xcodebuild` exists in this environment. Every claim above is argued from reading the
+> current source and hand-tracing the logic (including simulating the new tests' pass/fail behavior
+> against both the pre-fix and post-fix source with a standalone Python harness, not a real compiler)
+> — CI is what actually confirms it.
+
 > **2026-08-19, final — CI actually ran, against commits from partway through this session's work,
 > and found two real regressions this branch's own static-only verification could not catch.** With
 > no `swift`/`xcodebuild` here, everything above was checked by grep, Python simulation and careful
