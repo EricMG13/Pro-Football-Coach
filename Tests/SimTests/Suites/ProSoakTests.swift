@@ -66,6 +66,17 @@ func runProSoakTests() {
                             "s\(targetSeason) \(team.name): \(cap.practiceSquadCount) practice squad"
                         )
                     }
+                    // D15's falsifier. Dead money is a single-season charge, discharged at the
+                    // season boundary, so it is bounded by one season of releases -- which is what
+                    // makes `03` section 6's "bounded overage from dead money only" a statement
+                    // with a number behind it. An assertion that could not be written at all while
+                    // the charge accumulated for the life of the save.
+                    if cap.deadMoney > cap.capLimit {
+                        capBreaches.append(
+                            "s\(targetSeason) \(team.name): dead money \(cap.deadMoney) "
+                                + "exceeds the cap \(cap.capLimit)"
+                        )
+                    }
                 }
 
                 // A contracted professional must be owned by exactly one team, and an owned

@@ -495,6 +495,26 @@ public enum ProManagementSystem {
         return ProCapComplianceReceipt(state: next, releases: releases)
     }
 
+    /// D15 (`02` section 4.2a): dead money is a single-season charge, discharged at the season
+    /// boundary.
+    ///
+    /// `Contract.deadMoney` accelerates every unamortised bonus dollar into the season of release,
+    /// which is a statement that the charge belongs to that season. The scheduler discharges
+    /// between beat 1 and beat 2, so the season now ending has been paid for and the compliance
+    /// pass that immediately follows charges the season about to start.
+    ///
+    /// Before this, `deadMoney` had two write sites and both were `+=`: a dollar charged in season
+    /// 3 was still charged in season 20. Because releasing accelerates the whole remaining bonus,
+    /// the cap-shedding options shrink as the charge grows, so the end state was a team no release
+    /// could legalise and a week advance that failed outright.
+    public static func dischargeDeadMoney(in state: GameState) -> GameState {
+        var next = state
+        for teamID in state.proTeams.ids {
+            _ = next.proTeams.update(teamID) { $0.deadMoney = 0 }
+        }
+        return next
+    }
+
     /// Losers draft first from the most recently archived professional ranking; before the first
     /// archive, UUID order is the only stable fallback.
     public static func draftOrder(in state: GameState) -> [UUID] {

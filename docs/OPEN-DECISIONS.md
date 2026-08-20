@@ -28,7 +28,7 @@ assumptions, cheap to change. `ESCALATED` — blocking owner question, do not bu
 | D12 | Accessibility contract | DECIDED (REVERSIBLE) |
 | D13 | Content volume | DECIDED |
 | D14 | Build order and league size | DECIDED (REVERSIBLE) — added in v4 execution |
-| D15 | Dead money discharge | **ESCALATED 2026-08-20** — blocking; see below |
+| D15 | Dead money discharge | **DECIDED 2026-08-20** — option (a), single-season charge |
 
 ---
 
@@ -646,8 +646,10 @@ the `docs/STATUS.md` platform note. No save, engine or schema cost in any direct
 
 ## D15 — Dead money discharge
 
-**ESCALATED 2026-08-20. Do not build past it.** The cap's behaviour over a career depends on the
-answer, and every option below is cheap now and expensive after a save ships.
+**DECIDED 2026-08-20 — option (a), owner.** Dead money is a single-season charge, discharged at the
+season boundary between beat 1 and beat 2, so each season's dead money is exactly that season's
+releases. `02` §4.2a states the rule; `ProManagementSystem.dischargeDeadMoney` implements it. The
+rest of this entry is kept as the argument that produced the choice.
 
 **The question.** When, if ever, does a professional team's dead money leave its books?
 
@@ -684,9 +686,9 @@ work in every surface that reads the number.
 (c) **Never discharged — today's behaviour, made explicit.** Only tenable with a defined product
 answer for a team that cannot be made legal, because the week advance failing is not one.
 
-**Recommendation: (a), with (b) as a later slice if the cap needs more teeth.** (a) is the smallest
-change that makes canon true and costs no migration; (b) is the better game and should be chosen
-deliberately rather than arrived at.
+**Chosen: (a), owner 2026-08-20**, with (b) as a later slice if the cap needs more teeth. (a) is the
+smallest change that makes canon true and costs no migration; (b) is the better game and remains on
+the table as a deliberate choice rather than something to arrive at.
 
 **Falsifier — instruments, fixed in advance.**
 - `--pro-soak` reports `deadMoneyTotal` and `deadMoneyMax` against the season's cap, added
