@@ -622,8 +622,10 @@ public enum WorldScheduler {
                 if nextState.careerArc.status == .fired {
                     // Firing revokes control in the same scheduler transaction. Leaving the
                     // college control record behind lets a fired coach keep advancing the old
-                    // team through the next screen.
+                    // team through the next screen, and leaving the chair behind leaves them
+                    // listed as the programme's head coach on every staff surface.
                     nextState.career.clearCollege()
+                    CareerControlSystem.vacateCurrentSeat(in: &nextState)
                 }
                 records.append(WorldStepRecord(step: step, status: .executed))
 
@@ -711,6 +713,7 @@ public enum WorldScheduler {
                     )
                     if nextState.careerArc.status == .fired {
                         nextState.career.clearCollege()
+                        CareerControlSystem.vacateCurrentSeat(in: &nextState)
                     }
                     let completion = PostseasonSystem.completeSeason(
                         after: completed,

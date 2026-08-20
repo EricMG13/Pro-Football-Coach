@@ -876,5 +876,89 @@ func runCareerArcTests() {
             )
             expect(WorldIntegrity.check(promoted).isValid, "promoted world failed integrity")
         }
+        test("being fired vacates the seat the same way resigning does") {
+            let source = GameState.bootstrap(seed: 99_127)
+            let programmeID = source.programmes.ids[0]
+            var state = try CareerControlSystem.startCollegeCareer(
+                at: programmeID,
+                in: source
+            ).state
+            state.pending = PendingQueues()
+            guard let coachID = state.career.coachID else {
+                expect(false, "career start left no coach")
+                return
+            }
+            // Fully delegated, so the scheduler may abstract the controlled fixture instead of
+            // demanding it be played through a match session.
+            guard let delegateID = state.programmes[programmeID]?.staffIDs.first(where: {
+                state.staff[$0]?.role == .offensiveCoordinator
+            }) else {
+                expect(false, "the programme had no coordinator to delegate to")
+                return
+            }
+            for responsibility in CollegeCareerResponsibility.allCases {
+                expect(CareerControlSystem.setResponsibility(
+                    responsibility,
+                    owner: .delegated(staffID: delegateID),
+                    in: &state
+                ))
+            }
+
+            // Support on the floor, so the first week that resolves ends the job.
+            state.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: programmeID,
+                    tier: .college,
+                    startedAt: state.calendar
+                ),
+                stakeholderSupport: Dictionary(
+                    uniqueKeysWithValues: CareerStakeholder.allCases.map { ($0, 0) }
+                ),
+                status: .employed
+            )
+
+            var weeks = 0
+            while state.careerArc.status != .fired, weeks < SharedRules.inSeasonWeeks {
+                state = try WorldScheduler.advanceWeek(state).state
+                state.pending = PendingQueues()
+                weeks += 1
+            }
+            expectEqual(state.careerArc.status, .fired)
+            expect(state.career.college == nil, "firing left the coach controlling the programme")
+
+            // A fired coach is off the staff, exactly like one who resigned. The programme is not
+            // left short a head coach either.
+            expect(
+                state.programmes[programmeID]?.staffIDs.contains(coachID) == false,
+                "firing left the coach on the programme's staff"
+            )
+            expectEqual(
+                state.programmes[programmeID]?.staffIDs.filter {
+                    state.staff[$0]?.role == .headCoach
+                }.count,
+                1,
+                "firing left the programme without exactly one head coach"
+            )
+            // Firing is a separation, so nobody follows them out.
+            for role in StaffRole.coordinators {
+                expectEqual(
+                    state.programmes[programmeID]?.staffIDs.filter {
+                        state.staff[$0]?.role == role
+                    }.count,
+                    1,
+                    "firing disturbed a coordinator seat"
+                )
+            }
+            // The career record keeps the job that just ended.
+            expect(
+                state.people.staffCareers[coachID]?.assignments.contains {
+                    $0.organisationID == programmeID && $0.role == .headCoach
+                } == true,
+                "firing erased the job from the career record"
+            )
+            expectEqual(state.career.coachID, coachID)
+            expectEqual(state.careerArc.jobHistory.last?.reason, .fired)
+            expect(WorldIntegrity.check(state).isValid, "fired world failed integrity")
+        }
     }
 }
