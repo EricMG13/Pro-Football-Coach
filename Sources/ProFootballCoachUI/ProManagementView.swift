@@ -116,7 +116,7 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
             HStack(spacing: CoachWorldTokens.Gap.xl) {
                 FloodlitArcGauge(
                     proportion: committedShare,
-                    figure: "\(Int((committedShare * 100).rounded()))%",
+                    figure: "\(committedPercent)%",
                     caption: "Committed",
                     palette: palette
                 )
@@ -136,6 +136,14 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
 
     private var capTint: Color {
         model.cap.remainingCap >= 0 ? palette.statePositive.color : palette.stateWarning.color
+    }
+
+    /// Unclamped, unlike `committedShare`: the gauge's ring cannot draw past a full circle, but the
+    /// printed figure must still be able to say "108%" for an over-cap team rather than repeating
+    /// the ring's capped "100%" beside the "Over the cap" text three lines above it.
+    private var committedPercent: Int {
+        guard model.cap.capLimit > 0 else { return 0 }
+        return Int((Double(model.cap.committedCap) / Double(model.cap.capLimit) * 100).rounded())
     }
 
     private var committedShare: Double {
