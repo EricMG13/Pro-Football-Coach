@@ -325,6 +325,15 @@ private struct NegotiationCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .contain)
+        // `negotiation.id` is stable across a counter-offer, so SwiftUI keeps this exact card
+        // instance and its @State alive rather than re-running `init` -- the fields must be
+        // reseeded by hand, or "Counter" sends the terms the coach was looking at before the last
+        // counter, not the ones on screen.
+        .onChange(of: negotiation.currentOffer) { _, newOffer in
+            years = newOffer.years
+            baseSalary = newOffer.baseSalaryByYear.first ?? 0
+            signingBonus = newOffer.signingBonus
+        }
     }
 
     /// Withdraw, Reject and Counter: none of them commits the offer, so none takes the gold field

@@ -10,6 +10,12 @@ import ProFootballCoachUI
 /// the store live in separate files inside one target.
 public struct CoachWorldAppRootView: View {
     @State private var store: CoachWorldStore?
+    /// A successful restore populates `store` immediately but does not, on its own, enter
+    /// gameplay -- `restoreExistingCareer()` no longer treats "loaded" as "confirmed." The coach
+    /// sees `TitleContinueView`'s career summary and taps Continue first (`02` section 9's
+    /// durable boundary). `startNewCareer(...)` sets this directly: a freshly created career
+    /// needs no redundant confirmation of a career the coach just finished naming.
+    @State private var careerConfirmed = false
     @State private var failure: String?
     @State private var isStarting = false
     @State private var isRestoring = false
@@ -57,7 +63,7 @@ public struct CoachWorldAppRootView: View {
 
     public var body: some View {
         Group {
-            if let store {
+            if let store, careerConfirmed {
                 career(store)
             } else if showingNewCareerSetup {
                 NewCareerCoachIdentityView(
@@ -160,7 +166,11 @@ public struct CoachWorldAppRootView: View {
                     )
                 }
             case .settingsAccessibility:
-                SettingsAccessibilityView(onClose: { navigate(.coachingHQ, in: store) })
+                SettingsAccessibilityView(
+                    onClose: { navigate(.coachingHQ, in: store) },
+                    callInsPerGame: store.callInsPerGame,
+                    onSetCallInsPerGame: { store.setCallInsPerGame($0) }
+                )
                     .floodlitChrome(
                         chrome(for: .settingsAccessibility, in: store),
                         onNavigate: { navigateChrome($0, in: store) }
@@ -1053,37 +1063,18 @@ public struct CoachWorldAppRootView: View {
             screen = .proOffseason
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .draftBoard where store.availableScreens.contains(.proOffseason),
-             .freeAgency where store.availableScreens.contains(.proOffseason),
-             .proScoutingBoard where store.availableScreens.contains(.proOffseason):
-            screen = .proOffseason
-            store.setPresentationRoute(String(CoachWorldScreenID.proOffseason.rawValue))
-            failure = nil
         case .draftRoom where store.availableScreens.contains(.draftRoom):
             proFocus = .draftRoom
             screen = .draftRoom
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .staffRoom where store.availableScreens.contains(.staffRoom),
-             .staffMarketProfile where store.availableScreens.contains(.staffRoom):
+        case .staffRoom where store.availableScreens.contains(.staffRoom):
             screen = .staffRoom
-            store.setPresentationRoute(String(CoachWorldScreenID.staffRoom.rawValue))
-            failure = nil
-        case .schemeBook where store.availableScreens.contains(.gamePlan),
-             .personnelPackages where store.availableScreens.contains(.depthChart):
-            screen = destination == .schemeBook ? .gamePlan : .depthChart
-            store.setPresentationRoute(String(screen.rawValue))
+            store.setPresentationRoute(String(destination.rawValue))
             failure = nil
         case .collegeOffseason where store.availableScreens.contains(.collegeOffseason):
             screen = .collegeOffseason
             store.setPresentationRoute(String(destination.rawValue))
-            failure = nil
-        case .portalHub where store.availableScreens.contains(.collegeOffseason),
-             .retentionDecisions where store.availableScreens.contains(.collegeOffseason),
-             .portalMarket where store.availableScreens.contains(.collegeOffseason),
-             .nilAllocation where store.availableScreens.contains(.collegeOffseason):
-            screen = .collegeOffseason
-            store.setPresentationRoute(String(CoachWorldScreenID.collegeOffseason.rawValue))
             failure = nil
         case .signingDay where store.availableScreens.contains(.signingDay):
             screen = destination
@@ -1100,20 +1091,9 @@ public struct CoachWorldAppRootView: View {
             screen = .careerHub
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .jobBoard where store.availableScreens.contains(.careerHub),
-             .offer where store.availableScreens.contains(.careerHub),
-             .appointment where store.availableScreens.contains(.careerHub):
+        case .stakeholders where store.availableScreens.contains(.stakeholders),
+             .promotionDecision where store.availableScreens.contains(.promotionDecision):
             careerFocus = destination
-            screen = .careerHub
-            store.setPresentationRoute(String(CoachWorldScreenID.careerHub.rawValue))
-            failure = nil
-        case .jobSecurity where store.availableScreens.contains(.careerHub),
-             .stakeholders where store.availableScreens.contains(.careerHub),
-             .promotionDecision where store.availableScreens.contains(.promotionDecision),
-             .coachingCarousel where store.availableScreens.contains(.careerHub):
-            careerFocus = [.jobSecurity, .coachingCarousel].contains(destination)
-                ? .careerHub
-                : destination
             screen = .careerHub
             store.setPresentationRoute(String(CoachWorldScreenID.careerHub.rawValue))
             failure = nil
@@ -1153,6 +1133,7 @@ public struct CoachWorldAppRootView: View {
             isStarting: isStarting,
             isRestoring: isRestoring,
             recoveryRequired: recoveryRequired,
+            restoredCareer: store?.careerHub,
             onRetry: {
                 hasAttemptedRestore = false
                 recoveryRequired = false
@@ -1160,6 +1141,7 @@ public struct CoachWorldAppRootView: View {
             },
             onUseBackup: { Task { await recoverFromBackup() } },
             onNewCareer: { Task { await beginNewCareerSetup() } },
+            onContinue: { careerConfirmed = true },
             onSettings: { screen = .settingsAccessibility }
         )
     }
@@ -1218,8 +1200,13 @@ public struct CoachWorldAppRootView: View {
             failure = nil
             recoveryRequired = false
 #if DEBUG
+            // The proof/screenshot harness needs deterministic, immediate access to a named
+            // screen -- careerConfirmed's whole purpose is pausing an interactive coach at the
+            // durable boundary, which does not apply to a harness driven by an environment
+            // variable rather than a tap.
             if let proofScreen = Self.proofScreenNumber() {
                 screen = proofScreen
+                careerConfirmed = true
             }
 #endif
         } catch {
@@ -1373,6 +1360,7 @@ public struct CoachWorldAppRootView: View {
             )
             try await persist(started)
             store = started
+            careerConfirmed = true
             showingNewCareerSetup = false
             setupError = nil
             failure = nil

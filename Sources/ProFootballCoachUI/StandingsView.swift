@@ -106,12 +106,14 @@ public struct StandingsView: View, CoachWorldChromedSurface {
     /// treatment -- a gold hairline, never a fill, which `04` section 6.5 reserves for the
     /// committing action.
     private func standingsRow(index: Int, row: StandingsReadModel.Row) -> some View {
-        Button {
-            if let id = UUID(uuidString: row.team.stableID) { onSelectTeam(id) }
+        let teamID = UUID(uuidString: row.team.stableID)
+        return Button {
+            if let teamID { onSelectTeam(teamID) }
         } label: {
             rowBody(index: index, row: row)
         }
         .buttonStyle(.plain)
+        .disabled(teamID == nil)
         .accessibilityLabel(
             "\(index + 1). \(row.team.name), \(recordLabel(row)), "
                 + "conference \(row.conferenceRecord), "

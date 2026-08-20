@@ -15,6 +15,7 @@ public struct CareerPresentationState: Codable, Sendable, Equatable {
         case draftValues
         case pendingTaskID
         case interruptedTask
+        case callInsPerGame
     }
 
     public var route: String
@@ -27,6 +28,11 @@ public struct CareerPresentationState: Codable, Sendable, Equatable {
     public var draftValues: [String: String]
     public var pendingTaskID: UUID?
     public var interruptedTask: String?
+    /// `02` section 3.1: a per-save difficulty/pacing preference, not a global app setting --
+    /// a coach's preferred call-in rate belongs to a specific career. Always within
+    /// `SharedRules.callInsPerGameRange`; a decoded value outside it is clamped rather than
+    /// rejected, since it can only have drifted there by hand-editing a save.
+    public var callInsPerGame: Int
 
     public init(
         route: String = "8",
@@ -35,7 +41,8 @@ public struct CareerPresentationState: Codable, Sendable, Equatable {
         selectedSubjectID: UUID? = nil,
         draftValues: [String: String] = [:],
         pendingTaskID: UUID? = nil,
-        interruptedTask: String? = nil
+        interruptedTask: String? = nil,
+        callInsPerGame: Int = SharedRules.defaultCallInsPerGame
     ) {
         self.route = route
         self.returnRoute = returnRoute
@@ -44,6 +51,10 @@ public struct CareerPresentationState: Codable, Sendable, Equatable {
         self.draftValues = draftValues
         self.pendingTaskID = pendingTaskID
         self.interruptedTask = interruptedTask
+        self.callInsPerGame = min(
+            SharedRules.callInsPerGameRange.upperBound,
+            max(SharedRules.callInsPerGameRange.lowerBound, callInsPerGame)
+        )
     }
 
     public init(from decoder: any Decoder) throws {
@@ -66,6 +77,14 @@ public struct CareerPresentationState: Codable, Sendable, Equatable {
         draftValues = try container.decodeIfPresent([String: String].self, forKey: .draftValues) ?? [:]
         pendingTaskID = try container.decodeIfPresent(UUID.self, forKey: .pendingTaskID)
         interruptedTask = try container.decodeIfPresent(String.self, forKey: .interruptedTask)
+        // Absent on every save written before this field existed -- decodes to the documented
+        // default rather than failing.
+        let decodedCallIns = try container.decodeIfPresent(Int.self, forKey: .callInsPerGame)
+            ?? SharedRules.defaultCallInsPerGame
+        callInsPerGame = min(
+            SharedRules.callInsPerGameRange.upperBound,
+            max(SharedRules.callInsPerGameRange.lowerBound, decodedCallIns)
+        )
     }
 }
 

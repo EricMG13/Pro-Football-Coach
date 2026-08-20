@@ -208,12 +208,10 @@ public struct TeamProgrammeProfileView: View, CoachWorldChromedSurface {
     }
 
     private func rivalRow(_ rival: TeamProgrammeProfileReadModel.Rival) -> some View {
-        FloodlitRow(
+        let rivalID = UUID(uuidString: rival.id)
+        return FloodlitRow(
             palette: palette,
-            action: {
-                guard let id = UUID(uuidString: rival.id) else { return }
-                onSelectTeam(id)
-            }
+            action: rivalID.map { id in { onSelectTeam(id) } }
         ) {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {

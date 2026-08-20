@@ -752,9 +752,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
     }
 
     private func ratingColor(_ rating: Int) -> Color {
-        if rating >= 85 { return palette.statePositive.color }
-        if rating >= 70 { return palette.stateWarning.color }
-        return palette.stateNegative.color
+        CoachWorldTokens.Heat.color(for: rating, palette: palette)
     }
 
     private func developmentDeltaColor(_ delta: Int?) -> Color {
@@ -777,10 +775,16 @@ public struct RosterView: View, CoachWorldChromedSurface {
             + "condition \(player.condition), \(player.availability)"
     }
 
+    /// Pro players carry no eligibility, so `academicYear` is empty for every one of them — the
+    /// only per-roster signal this read model has for "this roster has no class concept at all."
+    /// Reporting a false "FR 0 · SO 0 · JR 0 · SR 0" for a pro roster is worse than saying nothing.
     private var classBalance: String {
+        guard model.players.contains(where: { !$0.academicYear.isEmpty }) else {
+            return "No class data"
+        }
         let counts = Dictionary(grouping: model.players, by: \.academicYear)
             .mapValues(\.count)
-        return ["FR", "SO", "JR", "SR"]
+        return ["FR", "SO", "JR", "SR", "GR"]
             .map { "\($0) \(counts[$0, default: 0])" }
             .joined(separator: " · ")
     }

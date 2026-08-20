@@ -229,13 +229,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
                 )
                 switch focus {
                 case .stakeholders:
-                    Text(
-                        "These are the current support figures, and nothing beyond them. "
-                            + "No interpretation is recorded."
-                    )
-                    .font(CoachWorldTokens.TypeRole.caption)
-                    .foregroundStyle(palette.contentSecondary.color)
-                    .fixedSize(horizontal: false, vertical: true)
+                    stakeholderRows
                 case .promotionDecision:
                     opportunityWorkspace
                 case .jobBoard, .offer, .appointment:
@@ -255,6 +249,34 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
         case .promotionDecision: "What is on the table"
         case .jobBoard, .offer, .appointment: "Current opportunities"
         default: "What is on the record"
+        }
+    }
+
+    /// A plain, mechanically-derived sentence per stakeholder -- never an interpretation beyond
+    /// the signed delta `CareerArcState.stakeholderLastMovement` recorded, matching this
+    /// codebase's convention against invented evidence.
+    @ViewBuilder
+    private var stakeholderRows: some View {
+        if model.support.isEmpty {
+            Text("No support is recorded yet.")
+                .font(CoachWorldTokens.TypeRole.caption)
+                .foregroundStyle(palette.contentQuiet.color)
+                .fixedSize(horizontal: false, vertical: true)
+        } else {
+            ForEach(model.support) { row in
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                    Text(row.stakeholder.uppercased())
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
+                        .lineLimit(1)
+                    Text(row.rationale ?? "No movement recorded yet.")
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.contentSecondary.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(row.stakeholder). \(row.rationale ?? "No movement recorded yet.")")
+            }
         }
     }
 

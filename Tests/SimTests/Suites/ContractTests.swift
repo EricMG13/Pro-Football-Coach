@@ -1527,9 +1527,17 @@ func runContractTests() {
             expect(staffRoomProvider.contains("static func staffRoom(")
                        && staffRoomProvider.contains("state.staff"),
                    "Staff Room must derive from authoritative staff records")
+            // Staff Market & Profile's own half of this claim is a behavioural check, not a
+            // source-scan: 2026-08-20 remediation removed its case label from navigate(_:in:)'s
+            // switch as provably dead code (the function's own leading canonicalise-and-recurse
+            // guard means an alias can never reach that switch), so a bare
+            // appRoot.contains("staffMarketProfile") substring check -- true only by the
+            // coincidence of the now-deleted dead label's spelling -- stopped holding even though
+            // the actual reachability this test names never changed: navigate(.staffMarketProfile)
+            // still canonicalises to .staffRoom and recurses into the exact same StaffRoomView(.
             expect(appRoot.contains("case .staffRoom")
-                       && appRoot.contains("staffMarketProfile")
-                       && appRoot.contains("StaffRoomView("),
+                       && appRoot.contains("StaffRoomView(")
+                       && CoachWorldScreenID.staffMarketProfile.canonicalDestination == .staffRoom,
                    "Staff Room and Staff Market & Profile must be reachable from the shipped app root")
             expect(hq.contains("Button(\"Staff room\")")
                        && !hq.contains("Button(\"Staff market & profile\")"),
@@ -2587,6 +2595,64 @@ func runContractTests() {
                        "\(deadAliasCases.map { String(describing: $0) }) — these are aliases " +
                        "whose canonicalDestination means this case can never execute; the branch " +
                        "is dead code, not a route")
+        }
+
+        test("navigate(_:in:) does not branch on a dead alias sub-pattern either") {
+            // The exact defect class the scan above already guards against in career(), found in
+            // navigate() during the 2026-08-20 remediation: this function's own opening lines
+            // resolve any alias to its canonicalDestination and recurse before the switch below
+            // ever runs, so a case keyed to an alias here is exactly as dead as one would be in
+            // career(). Some of the mixed alias/canonical arms (e.g. stakeholders and
+            // promotionDecision, both canonical, alongside jobSecurity and coachingCarousel,
+            // both aliases) needed only the alias half removed rather than the whole arm, so this
+            // scans for a case label anywhere in the body, not only a whole standalone arm — and
+            // checks the `where`-guarded continuation shape this switch actually uses, not only
+            // a bare `case .X:`.
+            let root = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
+            guard let start = root.range(
+                of: "private func navigate(_ destination: CoachWorldScreenID, in store: CoachWorldStore) {"
+            ), let end = root.range(
+                of: "\n    private func closeCareer(",
+                range: start.upperBound..<root.endIndex
+            ) else {
+                expect(false, "could not locate navigate(_:in:) to scan it")
+                return
+            }
+            let navigateBody = String(root[start.upperBound..<end.lowerBound])
+            let aliasScreens = CoachWorldScreenID.allCases.filter { !$0.isCanonicalTask }
+            let deadAliasCases = aliasScreens.filter {
+                let name = String(describing: $0)
+                return navigateBody.contains("case .\(name):")
+                    || navigateBody.contains("case .\(name) where")
+                    || navigateBody.contains(".\(name) where")
+            }
+            expect(deadAliasCases.isEmpty,
+                   "navigate(_:in:) still branches on " +
+                       "\(deadAliasCases.map { String(describing: $0) }) — the function's own " +
+                       "leading canonicalise-and-recurse guard means an alias can never reach the " +
+                       "switch below, so this branch is dead code, not a route")
+        }
+
+        test("the pro playoff seed provider reads the same constant PostseasonSystem seeds by") {
+            // ReadModelProviderTests.swift separately re-derives the seed algorithm and checks the
+            // provider's output against it -- that catches a typo in the provider's own logic, but
+            // not the provider and PostseasonSystem quietly settling on two different numbers for
+            // "how many seeds per conference." This is the complementary check: both files must
+            // spell the same named constant, so a future change to one automatically reaches the
+            // other rather than needing to be remembered twice.
+            let postseason = swiftFiles(under: "Sources/FootballSimCore/Competition")
+                .first { $0.path.hasSuffix("/PostseasonSystem.swift") }?.text ?? ""
+            let provider = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldCompetitionProvider.swift") }?.text ?? ""
+            expect(!postseason.isEmpty, "PostseasonSystem.swift must exist")
+            expect(!provider.isEmpty, "CoachWorldCompetitionProvider.swift must exist")
+            expect(postseason.contains("ProRules.playoffSeedsPerConference"),
+                   "PostseasonSystem must seed the pro bracket from ProRules.playoffSeedsPerConference, "
+                       + "not a literal, or this scan cannot prove the two agree")
+            expect(provider.contains("ProRules.playoffSeedsPerConference"),
+                   "CoachWorldCompetitionProvider must compute pro seeds from "
+                       + "ProRules.playoffSeedsPerConference, not a second, independently-chosen number")
         }
 
         test("RootView commits to dark on both its DEBUG and non-DEBUG branches") {

@@ -258,8 +258,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentPrimary.color)
                 .lineLimit(1)
                 .minimumScaleFactor(HQMetric.heroScaleFloor)
-            // Nothing here is cleared: every row is a decision the week still owes an answer to.
-            Text("0 of \(model.obligations.count) cleared")
+            Text("\(model.obligations.count) still open")
                 .font(CoachWorldTokens.TypeRole.caption)
                 .foregroundStyle(palette.contentSecondary.color)
             VStack(spacing: CoachWorldTokens.Gap.hair) {
@@ -465,6 +464,14 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                     identityRail
                     deskWire
                 }
+                // Neither column takes a fixed width of its own -- standardLayout applies that at
+                // its call site -- so both flow full width here instead of the side-by-side
+                // columns standardLayout uses. Without these, accessibleLayout carried no way to
+                // advance the week at all (its only continueButton call sat inside worldStrip,
+                // itself gated on chrome == nil, which production's shared-chrome construction
+                // never satisfies) and silently dropped squad health and stakeholders too.
+                weekAgendaColumn
+                supportColumn
             }
             .padding(CoachWorldTokens.Space.sm)
         }
@@ -801,7 +808,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
 
             if let opponent = model.opponent {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-                    Text("SATURDAY · OPPONENT").font(.caption.weight(.heavy))
+                    Text("NEXT FIXTURE").font(.caption.weight(.heavy))
                     Text(opponent.name).font(.headline)
                     Text(model.venue?.name ?? "Venue not set")
                         .font(.caption)

@@ -196,6 +196,37 @@ func runAccessibilityReflowTests() {
             }
         }
 
+        test("Depth Chart's position-group selector is reachable in the accessible "
+            + "composition, not only the standard layout") {
+            // 3.1, 2026-08-20 remediation: `groupSelector` replaced `openGroup`'s dependence on
+            // `fieldDiagram`'s token taps, which are `.accessibilityHidden(true)` at every type
+            // size and aren't constructed at all once `dynamicTypeSize.isAccessibilitySize` — so
+            // before this fix, an AX5 or VoiceOver coach could reach only the first group of
+            // whichever unit the pills last selected, never the other fourteen. A whole-file scan
+            // would pass whether `groupSelector` sits inside the accessible branch or only the
+            // standard one, so this isolates that branch's own text and checks it specifically —
+            // the same tautology risk the 2026-08-19 review named for other gates.
+            guard let depthChart = landedFamilies().landed.first(where: { $0.screen == .depthChart })
+            else {
+                expect(false, "Depth Chart did not resolve to a landed family")
+                return
+            }
+            guard let start = depthChart.renderedText.range(
+                of: "if dynamicTypeSize.isAccessibilitySize {"
+            ), let end = depthChart.renderedText.range(
+                of: "} else {",
+                range: start.upperBound..<depthChart.renderedText.endIndex
+            ) else {
+                expect(false, "could not locate the AX5/default composition split to scan it")
+                return
+            }
+            let accessibleBranch = String(depthChart.renderedText[start.upperBound..<end.lowerBound])
+            expect(accessibleBranch.contains("groupSelector"),
+                   "the accessible composition no longer calls groupSelector, so AX5 and "
+                       + "VoiceOver coaches are back to reaching only the first position group "
+                       + "of each unit (04 section 7.1)")
+        }
+
         test("every landed family declares deterministic VoiceOver order") {
             // `04` §7.1 clause 2: world context, dominant object, evidence, actions, navigation.
             // Checked against `renderedText`, not `text` — see FamilyView's doc comment (S-1).

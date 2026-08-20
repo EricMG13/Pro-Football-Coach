@@ -280,6 +280,27 @@ public final class CoachWorldStore {
         presentation.returnRoute = route
     }
 
+    /// `02` section 3.1: a per-save difficulty/pacing preference. `CareerPresentationState`'s own
+    /// init and decoder already clamp to `SharedRules.callInsPerGameRange`, so this setter does
+    /// not need to repeat that bound -- assigning a value outside it is caught the same way a
+    /// decoded one is.
+    ///
+    /// Persisted and player-adjustable, not yet consumed: `situationalCallInTriggers(rules:
+    /// isSnapAfterTurnover:)` (`Situation.swift`) decides call-ins from fixed situational booleans
+    /// (fourth down, red zone, two-minute, third-and-long, after a turnover) with no rate
+    /// parameter anywhere in that path, so this value does not yet change how often a call-in
+    /// actually fires. Making it do so means deciding *which* triggers get more or less sensitive
+    /// at a chosen rate -- a mechanism `02` does not specify beyond "tunable ~12 to ~40" -- so it
+    /// stays a canon question, not a Phase 4 implementation detail.
+    public var callInsPerGame: Int { presentation.callInsPerGame }
+
+    public func setCallInsPerGame(_ value: Int) {
+        presentation.callInsPerGame = min(
+            SharedRules.callInsPerGameRange.upperBound,
+            max(SharedRules.callInsPerGameRange.lowerBound, value)
+        )
+    }
+
     /// A read receipt changes only presentation state. It is bounded and immediately reflected in
     /// the current model, while the next save carries it through the application document.
     public func markInboxItemRead(_ stableID: String) {

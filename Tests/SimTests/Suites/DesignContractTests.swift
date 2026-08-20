@@ -214,6 +214,37 @@ func runDesignContractTests() {
             expect(!matches(of: "Color\\((red|hue):", in: planted).isEmpty,
                    "a planted raw Color(red:...) literal must be caught")
         }
+
+        // S-2 follow-up, 2026-08-20 remediation: three independent rating-colour bandings
+        // (RosterView, DesignTokens.Heat, CoachWorldRatingRing) disagreed with each other and with
+        // this exact canon sentence. RosterView and CoachWorldRatingRing now delegate to
+        // `Heat.color(for:palette:)` rather than each carrying their own switch, so testing this one
+        // function against canon, across the whole rating range, is what makes all three agree by
+        // construction rather than by three people remembering to keep three copies in sync.
+        test("Heat.color's banding matches 04 section 6.4's stated heat scale, across the whole range") {
+            guard let steadyFloorText = matches(of: "red below (\\d+)", in: canon).first,
+                  let strongFloorText = matches(of: "green from (\\d+) upward", in: canon).first,
+                  let canonSteadyFloor = Int(steadyFloorText),
+                  let canonStrongFloor = Int(strongFloorText)
+            else {
+                expect(false, "could not parse 04 section 6.4's heat-scale sentence — "
+                    + "the parser, not the tokens, is what failed")
+                return
+            }
+            expectEqual(CoachWorldTokens.Heat.steadyFloor, canonSteadyFloor,
+                        "Heat.steadyFloor must match 04 section 6.4's stated amber floor")
+            expectEqual(CoachWorldTokens.Heat.strongFloor, canonStrongFloor,
+                        "Heat.strongFloor must match 04 section 6.4's stated green floor")
+
+            let palette = CoachWorldTokens.dark
+            for rating in CoachWorldTokens.Heat.scaleFloor...CoachWorldTokens.Heat.scaleCeiling {
+                let expected = rating >= canonStrongFloor ? palette.statePositive.color
+                    : rating >= canonSteadyFloor ? palette.stateWarning.color
+                    : palette.stateNegative.color
+                expectEqual(CoachWorldTokens.Heat.color(for: rating, palette: palette), expected,
+                            "rating \(rating) does not land in the band 04 section 6.4 describes")
+            }
+        }
     }
 
     suite("Symbol register") {

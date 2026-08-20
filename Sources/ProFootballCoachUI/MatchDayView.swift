@@ -234,7 +234,7 @@ public struct MatchDayView: View {
                 onControl(model.controlDepthIntentID)
             }
             .frame(width: MatchMetric.controlDepthWidth)
-            furnitureControlButton(.tactics, wide: true, label: "HALFTIME · PLAN EDIT")
+            furnitureControlButton(.tactics, wide: true)
         }
         .accessibilitySortPriority(85)
     }
@@ -297,7 +297,11 @@ public struct MatchDayView: View {
 
     /// Pause and Take Over: two of the five contract-fixed primary controls, rendered as small
     /// glass icon chips rather than a bottom bar, per `04` section 6.1b's furniture-first layout.
-    /// Tactics reuses the same chip, widened, carrying the handoff's literal halftime copy.
+    /// Tactics reuses the same chip, widened. It no longer carries a hardcoded "HALFTIME" claim --
+    /// the control's own action never changes with game state, so its label should not pretend to
+    /// either, and no state anywhere in the app is retained across the actual halftime instant to
+    /// gate a truthful one (`MatchPauseBoundary.halftime` is a one-shot reducer receipt, never
+    /// captured past the step that produces it).
     private func furnitureControlButton(
         _ id: MatchDayControlID, wide: Bool = false, label: String? = nil
     ) -> some View {

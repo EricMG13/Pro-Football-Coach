@@ -198,7 +198,8 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
                     caseRow(
                         "Fatigue",
                         "\(subject.fatigue)%",
-                        value: HealthMetric.fullPercent - subject.fatigue
+                        value: subject.fatigue,
+                        heatValue: HealthMetric.fullPercent - subject.fatigue
                     )
                     Text(subject.statusDetail)
                         .font(CoachWorldTokens.TypeRole.caption)
@@ -222,13 +223,19 @@ public struct TeamHealthView: View, CoachWorldChromedSurface {
             ?? orderedPlayers.first
     }
 
-    private func caseRow(_ label: String, _ value: String, value proportionOf: Int) -> some View {
+    /// `proportionOf` drives both the bar's fill and the printed figure, so they always agree with
+    /// each other. `heatValue` drives only the tint, and defaults to `proportionOf` — pass it
+    /// separately when the row's "more is worse" (fatigue) rather than "more is better" (condition),
+    /// so the bar still fills to the true reading while the colour still reads high-is-bad as red.
+    private func caseRow(
+        _ label: String, _ value: String, value proportionOf: Int, heatValue: Int? = nil
+    ) -> some View {
         HStack(spacing: CoachWorldTokens.Gap.smPlus) {
             FloodlitLabel3(label, palette: palette)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             FloodlitShareBar(
                 proportion: Double(proportionOf) / HealthMetric.percentScale,
-                tint: CoachWorldTokens.Heat.color(for: proportionOf, palette: palette),
+                tint: CoachWorldTokens.Heat.color(for: heatValue ?? proportionOf, palette: palette),
                 palette: palette
             )
             .frame(width: HealthMetric.caseBarColumn)

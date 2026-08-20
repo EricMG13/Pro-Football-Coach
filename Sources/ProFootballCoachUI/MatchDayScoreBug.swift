@@ -320,48 +320,36 @@ struct CallInBudgetBug: View {
     }
 }
 
-/// The three-cell selector that sets `MatchControlDepth`.
+/// The control that cycles `MatchControlDepth`.
 ///
-/// `onSelect` fires the same signal regardless of which cell was tapped, matching the convention
-/// every other Match Day control already follows: one intent per control, with the provider
-/// deciding what it means. Which exact value a tap should choose is provider wiring the handoff
-/// does not specify.
+/// Three individually labelled, individually `.isSelected`-tagged cells used to sit here, all
+/// wired to the identical `onSelect` closure with no per-cell candidate argument -- a
+/// segmented-picker composition that promised a direct choice the control never actually made.
+/// `onSelect` really does cycle to the next depth (`ScreenReadModels.swift`'s
+/// `controlDepthIntentID` names it a cycle, not one of the five contract-fixed primary controls),
+/// so the control now presents as what it is, matching this file's `speedCycleButton`.
 struct ControlDepthSelector: View {
     let depth: MatchControlDepth
     let onSelect: () -> Void
 
     var body: some View {
-        HStack(spacing: .zero) {
-            ForEach(MatchControlDepth.allCases, id: \.self) { candidate in
-                Button(action: onSelect) {
-                    Text(title(candidate))
-                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
-                        .tracking(
-                            CoachWorldTokens.DisplaySize.tracking(0.1, at: CoachWorldTokens.DisplaySize.flag)
-                        )
-                        .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
-                }
-                .foregroundStyle(depth == candidate
-                    ? CoachWorldTokens.dark.contentPrimary.color
-                    : CoachWorldTokens.dark.contentSecondary.color)
-                .overlay {
-                    if depth == candidate {
-                        Rectangle().stroke(
-                            CoachWorldTokens.dark.actionPrimary.color,
-                            lineWidth: CoachWorldTokens.Shape.hairline
-                        )
-                    }
-                }
-                .accessibilityLabel(title(candidate))
-                .accessibilityAddTraits(depth == candidate ? .isSelected : [])
-            }
+        Button(action: onSelect) {
+            Text(title(depth))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
+                .tracking(
+                    CoachWorldTokens.DisplaySize.tracking(0.1, at: CoachWorldTokens.DisplaySize.flag)
+                )
+                .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
         }
+        .foregroundStyle(CoachWorldTokens.dark.contentPrimary.color)
         .coachWorldFloodlitPanel(
             fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(0.86),
             border: Color.white.opacity(CoachWorldTokens.Glass.line),
             depth: .deep,
             shape: CoachWorldCutCorner.card
         )
+        .accessibilityLabel("Control depth, \(title(depth))")
+        .accessibilityHint("Cycles to the next control depth.")
     }
 
     private func title(_ depth: MatchControlDepth) -> String {
