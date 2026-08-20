@@ -1291,9 +1291,13 @@ func runPortalTransactionTests() {
     }
 
     suite("Portal-touched departed-player retention") {
-        test("a departed portal entrant is protected only while its window's completion event survives") {
+        test("portal window retention stays atomic across live references") {
             let projected = projectedPostseasonTransition(fixture)
             let entrantIDs = fixture.entrantIDs
+            let offerEvent = projected.state.history.recent.first {
+                if case .portalOfferMade = $0.payload { return true }
+                return false
+            }!
 
             func fillerIdentity() -> DepartedPlayerIdentity {
                 DepartedPlayerIdentity(
@@ -1309,7 +1313,10 @@ func runPortalTransactionTests() {
                 )
             }
 
-            func buildState(dropCompletionEvent: Bool) -> GameState {
+            func buildState(
+                dropCompletionEvent: Bool,
+                retainedEvent: DomainEvent? = nil
+            ) -> GameState {
                 var state = projected.state
                 let fillerIdentities = (0..<PeopleRules.departedPlayerRetentionLimit).map { _ in
                     fillerIdentity()
@@ -1338,6 +1345,10 @@ func runPortalTransactionTests() {
                     // aged out of the bounded hot journal, the way it eventually does after
                     // enough later seasons of unrelated activity.
                     state.history = DomainEventLedger()
+                } else if let retainedEvent {
+                    var history = DomainEventLedger()
+                    precondition(history.append(retainedEvent))
+                    state.history = history
                 }
                 state.calendar = CalendarState(season: 1, week: SharedRules.inSeasonWeeks)
                 state.league.week = SharedRules.inSeasonWeeks
@@ -1356,6 +1367,19 @@ func runPortalTransactionTests() {
             expectEqual(
                 liveTransition.people.departedPlayers.count,
                 PeopleRules.departedPlayerRetentionLimit
+            )
+
+            let liveOffer = buildState(
+                dropCompletionEvent: false,
+                retainedEvent: offerEvent
+            )
+            let liveOfferTransition = try SeasonLifecycleSystem.advance(
+                after: liveOffer.calendar,
+                in: liveOffer
+            )
+            expect(
+                entrantIDs.allSatisfy { liveOfferTransition.people.departedPlayers[$0] != nil },
+                "a portal entrant was evicted while another event for its window was still live"
             )
 
             let agedOutCompletion = buildState(dropCompletionEvent: true)

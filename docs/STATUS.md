@@ -432,30 +432,23 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > string in an enum and nothing else; it is now a real test, and `SaveOffMainActorTest` is a
 > compile-time proof rather than a grep for two string literals.
 >
-> **2026-08-20 — the bound above still leaked, through the one category it deliberately protected
-> forever.** A 20-season `--m2-soak` retained 10,199 departed identities against the 8,192 limit:
-> `SeasonLifecycleSystem.retainedIdentityIDs` protected any career that had ever touched the transfer
-> portal, permanently, because `WorldIntegrity.checkPortalEvents` needs a portal window's full
-> entrant list — retained and returned entrants, not just transfers — for as long as that window's
-> `.portalWindowCompleted` event survives in `state.history.recent` (a bounded ~4096-event FIFO), and
-> that event's `referencedEntityIDs` is empty, so the generic event-reference protection never covered
-> those entrants on its own. Fixed by tracking exactly that instead: a career stays protected while a
-> *surviving* completion event still names one of its (season, window) pairs, not for having ever
-> entered the portal. A cruder "current season only" narrowing was tried first and is independently
-> known to be wrong — it broke the same recount for a window still resident in the journal and failed
-> at season 4 with `portalCommitFailed(.postseason)`, because it tracked the wrong thing. TDD test in
-> `PortalTransactionTests.swift` covers both directions; the full default suite (948 tests, 775,603
-> checks) passes with no regressions.
+> **2026-08-20 — portal retention is now bounded by the portal system's live-window rule.** The
+> original 20-season `--m2-soak` retained 10,199 departed identities against the 8,192 limit because
+> `SeasonLifecycleSystem.retainedIdentityIDs` protected every career that had ever touched the
+> portal. The replacement protects every career record in a `(target season, window)` named by any
+> still-hot portal event — entry, retention resolution, offer, transfer, or completion — so
+> `WorldIntegrity.checkPortalEvents` can still recount a complete live window. Historical career
+> records remain available for career history, but capacity validation is scoped to the current
+> target window; otherwise pruning a departed member of an old window leaves a partial historical
+> capacity aggregate and rejects a later portal commit. The focused portal suite is green (17 tests,
+> 124 checks).
 >
-> **Not verified clean by `--m2-soak`.** The run hits three repeats of an already-known, separately-
-> owned roster-count assertion timing bug (`PeopleLifecycleTests.swift:591-599` samples college
-> rosters one week before `CollegeCycleSystem.addWalkOns(for: .springRosterFill, ...)` tops them back
-> up) and then aborts early — 49 of an expected several-thousand checks — on
-> `portalCommitFailed(.postseason)`. Whether that throw is caused by this fix or is itself downstream
-> of the pre-existing roster-count bug was not isolated: a controlled A/B (this fix stashed out,
-> identical soak) was in progress and was killed, with no result yet, when work stopped on request.
-> This is the open item in the handoff for follow-up — resolve the roster-count bug (or the A/B) first
-> so a clean run can actually reach season 20 and confirm `departedPlayers.count` stays bounded.
+> A fresh release `--m2-soak` on `origin/main` reached all 20 seasons in 3,867.623 seconds with no
+> `portalCommitFailed` and no `departed identities are unbounded` failure. It exited nonzero only on
+> 20 pre-existing calibration/population checks: the tier-gap band, low professional decline-share
+> bands in seasons 5 and 7, and the final expected-player-count check (18,368 vs 15,766). The
+> portal-retention assertion therefore passed through season 20, but the soak is not an overall green
+> result until those unrelated checks are resolved.
 >
 > **Still open, and named rather than carried quietly.** The design audit filed inside commit
 > `e3b360d` — `DESIGN-IS-2026-08-19/03-verdict.md` — scores the front end **10/30 with a REDESIGN
