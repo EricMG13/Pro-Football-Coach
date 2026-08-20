@@ -73,7 +73,11 @@ private let pinnedAdvancedRootFingerprint: UInt64 = 2_051_777_162_885_451_912
 /// open, counter and settle and hashes the result, so its cross-process byte-identity is actually
 /// asserted rather than assumed from the root pins. Reproduced in two independent processes before
 /// being written here.
-private let pinnedNegotiationLedgerFingerprint: UInt64 = 18_194_934_115_346_224_100
+/// Moved on 2026-08-20 for the same reason the root pins did: `careerArc` is a required property of
+/// every `GameState`, so `CareerArcState`'s new `stakeholderLastMovement` field shifted this pin's
+/// JSON body too, not only the two above. Copied from a single CI run's own output (run 32322631469,
+/// job 96287645557), not independently reproduced -- no toolchain exists here to do that.
+private let pinnedNegotiationLedgerFingerprint: UInt64 = 7_453_535_852_306_487_647
 
 /// `GameState.matchSession` is part of the schema-13 root, but neither pin above ever exercises a
 /// populated one: `bootstrap` leaves it `nil` by construction, and `WorldScheduler.advanceWeek`
@@ -84,7 +88,9 @@ private let pinnedNegotiationLedgerFingerprint: UInt64 = 18_194_934_115_346_224_
 /// pending-call-in shape, and hashes the result, so its cross-process byte-identity is actually
 /// asserted rather than assumed from the root pins. Reproduced in two independent processes before
 /// being written here.
-private let pinnedMatchSessionFingerprint: UInt64 = 222_581_002_489_681_212
+/// Moved on 2026-08-20 for the same reason as the negotiation-ledger pin above:
+/// `CareerArcState.stakeholderLastMovement`, copied verbatim from the same CI run, same caveat.
+private let pinnedMatchSessionFingerprint: UInt64 = 3_423_278_094_891_302_957
 
 /// `NewsFeedReadModel` is derived from `GameState.history`, not stored in it, so none of the three
 /// pins above ever exercise it: they hash the root or a projection of it, never the read-model
@@ -95,7 +101,9 @@ private let pinnedMatchSessionFingerprint: UInt64 = 222_581_002_489_681_212
 /// pin drives a small fixed ledger through `build(from:)` and hashes the resulting items, so the
 /// read-model's cross-process byte-identity is actually asserted rather than assumed from the root
 /// pins. Reproduced in two independent processes before being written here.
-private let pinnedNewsFeedFingerprint: UInt64 = 8_018_401_890_798_286_268
+/// Moved on 2026-08-20 for the same reason as the two pins above: `CareerArcState.stakeholderLastMovement`,
+/// copied verbatim from the same CI run, same caveat.
+private let pinnedNewsFeedFingerprint: UInt64 = 10_333_429_696_101_465_295
 
 /// `DomainEventLedger` has carried a bounded `archive` of `SeasonHistoryDigest` since schema 11, and
 /// it sits inside the root every pin above hashes — but none of them ever exercises it non-empty.
@@ -111,7 +119,9 @@ private let pinnedNewsFeedFingerprint: UInt64 = 8_018_401_890_798_286_268
 /// hashes the resulting root, so the archive path's cross-process byte-identity is actually asserted
 /// rather than assumed from the root pins. Reproduced in two independent processes before being
 /// written here.
-private let pinnedArchivedLedgerFingerprint: UInt64 = 11_509_177_498_617_182_391
+/// Moved on 2026-08-20 for the same reason as the three pins above: `CareerArcState.stakeholderLastMovement`,
+/// copied verbatim from the same CI run, same caveat.
+private let pinnedArchivedLedgerFingerprint: UInt64 = 11_401_939_783_798_285_572
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///
