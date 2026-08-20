@@ -535,12 +535,13 @@ public struct LeagueMapView: View, CoachWorldChromedSurface {
                     fact("Prestige", "\(place.prestige)")
                     fact("Market", "\(place.marketSize)")
                     fact("Talent in region", talentDensityLabel(place))
+                    let profileID = UUID(uuidString: place.stableID)
                     Button("Open team profile") {
-                        guard let id = UUID(uuidString: place.stableID) else { return }
-                        onSelectTeam(id)
+                        if let profileID { onSelectTeam(profileID) }
                     }
                     .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
                            minHeight: CoachWorldTokens.Shape.minimumTarget)
+                    .disabled(profileID == nil)
                     rivalSection(place)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -113,8 +113,9 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
     /// away-at-home order the sport states them, and the coach's own fixture takes the selected
     /// treatment. Deriving a venue from `isControlled` would have labelled every home game away.
     private func gameRow(_ game: ScheduleReadModel.GameRow) -> some View {
-        Button {
-            if let id = UUID(uuidString: game.home.stableID) { onSelectTeam(id) }
+        let homeID = UUID(uuidString: game.home.stableID)
+        return Button {
+            if let homeID { onSelectTeam(homeID) }
         } label: {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text(game.week.uppercased())
@@ -170,6 +171,7 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
             .contentShape(CoachWorldCutCorner.row)
         }
         .buttonStyle(.plain)
+        .disabled(homeID == nil)
         .accessibilityLabel(
             "\(game.week), \(game.away.name) at \(game.home.name), "
                 + (game.score.map { "final \($0)" } ?? "not played")

@@ -120,8 +120,9 @@ public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
     }
 
     private func rankingRow(_ row: CompetitionOverviewReadModel.RankingRow) -> some View {
-        Button {
-            if let id = UUID(uuidString: row.team.stableID) { onSelectTeam(id) }
+        let teamID = UUID(uuidString: row.team.stableID)
+        return Button {
+            if let teamID { onSelectTeam(teamID) }
         } label: {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text("\(row.rank)")
@@ -161,6 +162,7 @@ public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
             .contentShape(CoachWorldCutCorner.row)
         }
         .buttonStyle(.plain)
+        .disabled(teamID == nil)
         .accessibilityLabel(
             "Number \(row.rank), \(row.team.name), \(row.record)"
                 + (row.isControlled ? ". Your programme." : "")

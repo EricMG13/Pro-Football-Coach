@@ -164,9 +164,9 @@ public struct WorldSearchView: View, CoachWorldChromedSurface {
     }
 
     private func resultRow(_ result: WorldSearchReadModel.Result) -> some View {
-        Button {
-            guard let id = UUID(uuidString: result.id) else { return }
-            onSelectTeam(id)
+        let teamID = UUID(uuidString: result.id)
+        return Button {
+            if let teamID { onSelectTeam(teamID) }
         } label: {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text(result.team.name.uppercased())
@@ -187,6 +187,7 @@ public struct WorldSearchView: View, CoachWorldChromedSurface {
             .contentShape(CoachWorldCutCorner.row)
         }
         .buttonStyle(.plain)
+        .disabled(teamID == nil)
         .accessibilityLabel(
             "\(result.team.name), \(result.tier), \(result.cityName), \(result.regionName)"
         )
