@@ -141,11 +141,10 @@ case "$lane" in
         }
         package_root="$verify_root/pro-football-coach"
         project_root="$package_root/App"
-        mkdir -p "$project_root"
-        cp Package.swift "$package_root/Package.swift"
-        cp -R Sources "$package_root/Sources"
+        mkdir -p "$package_root"
+        cp -cR Package.swift Sources App Tests "$package_root"
         project="$project_root/ProFootballCoach.xcodeproj"
-        run_command xcodegen xcodegen generate --spec App/project.yml --project "$project_root"
+        run_command xcodegen xcodegen generate --spec "$project_root/project.yml" --project "$project_root"
         run_command xcodebuild xcodebuild \
             -project "$project" \
             -scheme ProFootballCoach \
@@ -154,6 +153,7 @@ case "$lane" in
             -derivedDataPath "$lane_root/derived-data" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
             build
         ;;
     full)

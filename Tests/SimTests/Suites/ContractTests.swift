@@ -2517,6 +2517,19 @@ func runContractTests() {
     // app roots. `career(_:)` used to repeat `if let model = store.X { View(...) }` with no `else`
     // once per registered screen — a nil model rendered nothing at all, not even navigation chrome.
     suite("Floodlit root: dark commitment and no silent-blank routes") {
+        test("backgrounding requests and releases iOS execution time around the save") {
+            let root = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
+            expect(root.contains("flushForBackground()"),
+                   "the scene lifecycle must route background saves through one helper")
+            expect(root.contains("beginBackgroundTask"),
+                   "the background save must request iOS execution time before awaiting disk I/O")
+            expect(root.contains("endBackgroundTask"),
+                   "the background save must release its iOS execution allowance")
+            expect(root.contains("await flushNow(reason: .background)"),
+                   "the background execution window must wrap the pending save flush")
+        }
+
         test("the shipped root commits to dark at its own body and owns the surface() helper") {
             let root = swiftFiles(under: "Sources/CoachWorldApp")
                 .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""

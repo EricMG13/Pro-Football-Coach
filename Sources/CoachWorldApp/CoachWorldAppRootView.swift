@@ -1,6 +1,9 @@
 import SwiftUI
 import FootballSimCore
 import ProFootballCoachUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// The shipped application root: the screen the beta actually launches into.
 ///
@@ -39,6 +42,9 @@ public struct CoachWorldAppRootView: View {
     /// The one deferred write. While it is outstanding, further intents only hand the coordinator a
     /// newer document; the task that is already waiting writes whichever is newest when it fires.
     @State private var flushTask: Task<Void, Never>?
+#if canImport(UIKit)
+    @State private var backgroundSaveTaskID = UIBackgroundTaskIdentifier.invalid
+#endif
     @Environment(\.scenePhase) private var scenePhase
 
     /// How long a committed intent may sit unwritten.
@@ -97,9 +103,7 @@ public struct CoachWorldAppRootView: View {
         // or killed behind the coach's back.
         .onChange(of: scenePhase) { _, phase in
             guard phase != .active else { return }
-            flushTask?.cancel()
-            flushTask = nil
-            Task { await flushNow(reason: .background) }
+            flushForBackground()
         }
     }
 
@@ -1521,6 +1525,36 @@ public struct CoachWorldAppRootView: View {
             await flushNow()
         }
     }
+
+    /// Flushes the pending document while iOS grants the app background execution time.
+    private func flushForBackground() {
+        flushTask?.cancel()
+        flushTask = nil
+#if canImport(UIKit)
+        guard backgroundSaveTaskID == .invalid else { return }
+        backgroundSaveTaskID = UIApplication.shared.beginBackgroundTask(
+            withName: "Finish saving career"
+        ) {
+            Task { @MainActor in endBackgroundSaveTask() }
+        }
+#endif
+        Task { @MainActor in
+            await flushNow(reason: .background)
+#if canImport(UIKit)
+            endBackgroundSaveTask()
+#endif
+        }
+    }
+
+#if canImport(UIKit)
+    @MainActor
+    private func endBackgroundSaveTask() {
+        guard backgroundSaveTaskID != .invalid else { return }
+        let taskID = backgroundSaveTaskID
+        backgroundSaveTaskID = .invalid
+        UIApplication.shared.endBackgroundTask(taskID)
+    }
+#endif
 
     /// Writes whatever is pending, now. Used by the deferred task and by leaving the app.
     private func flushNow(reason: SaveFlushReason = .explicit) async {
