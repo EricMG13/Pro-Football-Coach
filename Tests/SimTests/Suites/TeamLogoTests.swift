@@ -1,0 +1,236 @@
+import CoreGraphics
+import CryptoKit
+import Foundation
+import FootballSimCore
+import ImageIO
+
+enum TeamLogoFamily: String, Codable, CaseIterable {
+    case animalCreature
+    case regionalSymbol
+    case equipmentVehicle
+    case originalCharacter
+    case framedEmblem
+    case abstractMotion
+}
+
+struct TeamLogoManifest: Codable {
+    let schemaVersion: Int
+    let worldSeed: UInt64
+    var teams: [TeamLogoRecord]
+}
+
+struct TeamLogoRecord: Codable {
+    let stableID: String
+    let name: String
+    let abbreviation: String
+    let primaryColorHex: String
+    let secondaryColorHex: String
+    var family: TeamLogoFamily
+    var concept: String
+    var prompt: String
+    let assetName: String
+    let filename: String
+    var generationStatus: String
+    var humanApproved: Bool
+    var reviewNotes: String
+}
+
+private let teamLogoManifestURL = URL(
+    fileURLWithPath: "Tools/TeamLogos/manifest.json"
+)
+
+private func loadTeamLogoManifest() throws -> TeamLogoManifest {
+    try JSONDecoder().decode(
+        TeamLogoManifest.self,
+        from: Data(contentsOf: teamLogoManifestURL)
+    )
+}
+
+func runTeamLogoManifestExport() throws {
+    let state = GameState.bootstrap(seed: 20_260_812)
+    let ids = Set(state.programmes.ids).union(state.proTeams.ids)
+    let families = TeamLogoFamily.allCases
+    let records = ids.sorted { $0.uuidString < $1.uuidString }.enumerated().map { index, id in
+        let name = state.programmes[id]?.name
+            ?? state.proTeams[id].map { "\($0.cityName) \($0.nickname)" }
+            ?? "Unknown team"
+        let letters = name.filter(\.isLetter)
+        let assetName = "TeamLogo_" + id.uuidString.replacingOccurrences(of: "-", with: "")
+        return TeamLogoRecord(
+            stableID: id.uuidString,
+            name: name,
+            abbreviation: String(letters.prefix(3)).uppercased(),
+            primaryColorHex: state.identities[id].map { "#\($0.colours.primary.hex)" } ?? "",
+            secondaryColorHex: state.identities[id].map { "#\($0.colours.secondary.hex)" } ?? "",
+            family: families[index % families.count],
+            concept: "",
+            prompt: "",
+            assetName: assetName,
+            filename: assetName + ".png",
+            generationStatus: "pending",
+            humanApproved: false,
+            reviewNotes: ""
+        )
+    }
+    let manifest = TeamLogoManifest(schemaVersion: 1, worldSeed: 20_260_812, teams: records)
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+    try FileManager.default.createDirectory(
+        at: teamLogoManifestURL.deletingLastPathComponent(),
+        withIntermediateDirectories: true
+    )
+    try encoder.encode(manifest).write(to: teamLogoManifestURL, options: .atomic)
+}
+
+func runTeamLogoManifestTests() {
+    suite("Team logo manifest") {
+        test("manifest exactly matches the canonical world") {
+            let manifest = try loadTeamLogoManifest()
+            let world = GameState.bootstrap(seed: manifest.worldSeed)
+            let worldIDs = Set(world.programmes.ids).union(world.proTeams.ids).map(\.uuidString)
+            expectEqual(manifest.schemaVersion, 1)
+            expectEqual(manifest.worldSeed, 20_260_812)
+            expectEqual(manifest.teams.count, 166)
+            expectEqual(Set(manifest.teams.map(\.stableID)), Set(worldIDs))
+        }
+        test("lookup keys, names and prompts are unique and complete") {
+            let teams = try loadTeamLogoManifest().teams
+            expectEqual(Set(teams.map(\.stableID)).count, 166)
+            expectEqual(Set(teams.map(\.assetName)).count, 166)
+            expectEqual(Set(teams.map(\.filename)).count, 166)
+            for team in teams {
+                expect(UUID(uuidString: team.stableID) != nil)
+                expect(!team.name.isEmpty)
+                expect(team.abbreviation.count == 3)
+                expect(team.primaryColorHex.count == 7)
+                expect(team.secondaryColorHex.count == 7)
+                expect(!team.concept.trimmingCharacters(in: .whitespaces).isEmpty)
+                expect(!team.prompt.trimmingCharacters(in: .whitespaces).isEmpty)
+                expect(!team.prompt.localizedCaseInsensitiveContains("NFL"))
+                expect(!team.prompt.localizedCaseInsensitiveContains("NBA"))
+                expect(!team.prompt.localizedCaseInsensitiveContains("MLB"))
+                expect(!team.prompt.localizedCaseInsensitiveContains("NHL"))
+            }
+        }
+        test("motif families are balanced") {
+            let teams = try loadTeamLogoManifest().teams
+            for family in TeamLogoFamily.allCases {
+                let count = teams.filter { $0.family == family }.count
+                expect(count == 27 || count == 28, "\(family.rawValue) has \(count) teams")
+            }
+        }
+    }
+}
+
+private let teamLogoAssetsURL = URL(
+    fileURLWithPath: "Sources/ProFootballCoachUI/Resources/TeamLogos.xcassets"
+)
+
+private func pngURL(for team: TeamLogoRecord) -> URL {
+    teamLogoAssetsURL
+        .appendingPathComponent(team.assetName + ".imageset")
+        .appendingPathComponent(team.filename)
+}
+
+private func hasTransparentEdgePixel(_ image: CGImage) -> Bool {
+    let width = image.width
+    let height = image.height
+    var pixels = [UInt8](repeating: 255, count: width * height * 4)
+    guard let context = CGContext(
+        data: &pixels,
+        width: width,
+        height: height,
+        bitsPerComponent: 8,
+        bytesPerRow: width * 4,
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    ) else { return false }
+    context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+    let lastRow = (height - 1) * width
+    for x in 0..<width {
+        if pixels[x * 4 + 3] == 0 || pixels[(lastRow + x) * 4 + 3] == 0 {
+            return true
+        }
+    }
+    for y in 0..<height {
+        if pixels[(y * width) * 4 + 3] == 0 || pixels[(y * width + width - 1) * 4 + 3] == 0 {
+            return true
+        }
+    }
+    return false
+}
+
+func runTeamLogoAssetTests(family rawValue: String) {
+    suite("Team logo assets") {
+        test("requested family is complete and approved") {
+            guard let family = TeamLogoFamily(rawValue: rawValue) else {
+                expect(false, "unknown family \(rawValue)")
+                return
+            }
+            let records = try loadTeamLogoManifest().teams.filter { $0.family == family }
+            expect(records.count == 27 || records.count == 28)
+            expect(records.allSatisfy { $0.generationStatus == "approved" && $0.humanApproved })
+            expect(records.allSatisfy { !$0.reviewNotes.isEmpty })
+        }
+        test("requested family PNGs are square alpha images with transparent edges") {
+            guard let family = TeamLogoFamily(rawValue: rawValue) else { return }
+            let records = try loadTeamLogoManifest().teams.filter { $0.family == family }
+            for record in records {
+                let url = pngURL(for: record)
+                expect(FileManager.default.fileExists(atPath: url.path), "missing \(url.path)")
+                guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                      let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)
+                        as? [CFString: Any],
+                      let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { continue }
+                expectEqual(properties[kCGImagePropertyPixelWidth] as? Int, Optional(1024))
+                expectEqual(properties[kCGImagePropertyPixelHeight] as? Int, Optional(1024))
+                expectEqual(properties[kCGImagePropertyHasAlpha] as? Bool, Optional(true))
+                expect(hasTransparentEdgePixel(image), "opaque edge in \(record.filename)")
+            }
+        }
+        test("no approved PNG is reused") {
+            let approved = try loadTeamLogoManifest().teams.filter(\.humanApproved)
+            var hashes = Set<Data>()
+            hashes.reserveCapacity(approved.count)
+            for record in approved {
+                hashes.insert(Data(SHA256.hash(data: try Data(contentsOf: pngURL(for: record)))))
+            }
+            expectEqual(hashes.count, approved.count)
+        }
+    }
+}
+
+func writeTeamLogoSpecimen(family rawValue: String) throws {
+    let manifest = try loadTeamLogoManifest()
+    let teams: [TeamLogoRecord]
+    if rawValue == "all" {
+        teams = manifest.teams
+    } else if let family = TeamLogoFamily(rawValue: rawValue) {
+        teams = manifest.teams.filter { $0.family == family }
+    } else {
+        fatalError("unknown team-logo family \(rawValue)")
+    }
+    let cards = teams.sorted { $0.name < $1.name }.map { team in
+        let source = pngURL(for: team).absoluteString
+        return """
+        <article><h2>\(team.name)</h2>
+          <div class="dark"><img class="c" src="\(source)"><img class="m" src="\(source)"><img class="l" src="\(source)"></div>
+          <div class="light"><img class="c" src="\(source)"><img class="m" src="\(source)"><img class="l" src="\(source)"></div>
+        </article>
+        """
+    }.joined(separator: "\n")
+    let html = """
+    <!doctype html><meta charset="utf-8"><title>Team logo specimen: \(rawValue)</title>
+    <style>
+      body{font:14px system-ui;background:#111827;color:#f8fafc;margin:24px}
+      main{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+      article{border:1px solid #475569;padding:12px}h2{font-size:13px;margin:0 0 8px}
+      .dark,.light{height:56px;display:flex;align-items:center;gap:18px;padding:8px}
+      .dark{background:#07111f}.light{background:#f8fafc}.c{width:20px;height:20px}.m{width:32px;height:32px}.l{width:44px;height:44px}img{object-fit:contain}
+    </style><main>\(cards)</main>
+    """
+    let output = FileManager.default.temporaryDirectory
+        .appendingPathComponent("team-logo-specimen-\(rawValue).html")
+    try html.write(to: output, atomically: true, encoding: .utf8)
+    print(output.path)
+}

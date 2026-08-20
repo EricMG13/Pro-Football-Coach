@@ -53,6 +53,16 @@ if CommandLine.arguments.contains("--catalog") {
     runPerformanceBudgetTests()
 } else if CommandLine.arguments.contains("--pro-market-root-probe") {
     runProMarketRootProbe()
+} else if CommandLine.arguments.contains("--export-team-logo-manifest") {
+    try runTeamLogoManifestExport()
+} else if CommandLine.arguments.contains("--team-logo-manifest") {
+    runTeamLogoManifestTests()
+} else if let index = CommandLine.arguments.firstIndex(of: "--team-logo-assets"),
+          CommandLine.arguments.indices.contains(index + 1) {
+    runTeamLogoAssetTests(family: CommandLine.arguments[index + 1])
+} else if let index = CommandLine.arguments.firstIndex(of: "--team-logo-specimen"),
+          CommandLine.arguments.indices.contains(index + 1) {
+    try writeTeamLogoSpecimen(family: CommandLine.arguments[index + 1])
 } else if CommandLine.arguments.contains("--screen-read-models") {
     runReadModelProviderTests()
 } else if CommandLine.arguments.contains("--history-read-model") {
