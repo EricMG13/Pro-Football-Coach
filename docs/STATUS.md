@@ -4,6 +4,14 @@ The honest picture: what exists, what is verified, what is not.
 
 **Read this first, before believing any other document about the state of the build.**
 
+> **2026-08-20 — Calibration continuation:** the fresh isolated
+> `./scripts/verify.sh --lane calibration` lane is green: calibration **21 tests / 169 checks**
+> and M3 recruiting calibration **20 tests / 412 checks**. The M3 terminal-week defect was fixed
+> at the scheduler boundary: week 20 now runs one post-AI recruiting-market pass, while week 21
+> retains its ordinary pre-AI pass. The four failing holdout bands remain honestly measured by
+> TOST CI and are recorded in `docs/HANDOFF-CODEX-CALIBRATION.md`; no canonical band was widened or
+> amended.
+
 > **UI direction correction — owner decision 2026-08-11:** the v2 sheets, Stitch output and
 > 34-screen Film Room gallery described in older dated entries below are rejected and removed.
 > They are historical build notes, not references. The only current UI authority is

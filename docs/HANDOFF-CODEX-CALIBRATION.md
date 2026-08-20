@@ -5,6 +5,29 @@ Checkpoint from a Claude session, 2026-08-20, merged to main as PR [#44](https:/
 entries under "P4 — calibration harness and bands" carry every measurement. This is a separate item
 from `docs/HANDOFF-CODEX.md` (PR #9's re-pin), which is still open and unrelated.
 
+## Fresh continuation result — 2026-08-20
+
+`./scripts/verify.sh --lane calibration` now passes from a fresh isolated release build:
+
+- calibration: **21 tests / 169 checks**;
+- M3 recruiting calibration: **20 tests / 412 checks**;
+- M3 first/repeat runtime: **61.600 s / 67.098 s**;
+- signed class range/median/mean: **5...25 / 16.0 / 15.61**;
+- fill rate range/median/mean: **28...100% / 84.0% / 76.85%**;
+- aggregate fill/nonempty classes: **75% / 134 of 134**;
+- signed/released/walk-ons: **2,092 / 0 / 37**;
+- durable save / JSON bytes: **6,488,456 / 42,401,898**.
+
+The M3 failure was a scheduler boundary defect, not a calibration-band result. The final open
+recruiting week is `CollegeRules.signingDayWeek - 1` (week 20). `WorldScheduler` now runs one
+terminal recruiting-market pass after that week's AI step, so the last AI investment can create a
+commitment before signing week. Week 21 keeps its ordinary pre-AI market pass; the redundant second
+pass was removed. The M3 causal-order test now advances week 20 and then the week-21 signing
+rollover, matching `docs/02-GAME-DESIGN.md` §4.1 and `SeasonRolloverTests`.
+
+No canonical band was amended or widened. The four TOST failures below remain the honest holdout
+result. Ask the owner before changing a band in canon.
+
 ## Where things stand
 
 The holdout ladder held 6 of 24 bands at the start of that session and held **21 of 24** at its
@@ -112,16 +135,16 @@ independent of this handoff and don't touch the same code.
 The prior session's final commits were verified with `--engine`, `--core-contracts`, `--calibration`,
 `--competition-only`, `--architecture-only`, and `--commitment-coverage`, all green after re-pinning
 five fingerprints that moved from merging two independently-diverged root schema changes (see the
-merge commit `e420c36`, squashed into `3bba7c9`). The current continuation rebuilt the core
-calibration target in an isolated scratch path with one compiler job and reproduced the four results
-above. The full release lane was attempted but the Swift build was killed by the operating system
-before the suite ran; no stale executable was treated as evidence. `--m3-recruiting-calibration`
-therefore remains unverified in this continuation and must be run from a successful fresh build
-before shipping further calibration changes. Worth running before trusting this checkpoint fully:
+merge commit `e420c36`, squashed into `3bba7c9`). The current continuation rebuilt the release
+target in an isolated scratch path with one compiler job and reproduced the four results above. The
+full calibration lane then passed from a fresh build, including `--m3-recruiting-calibration`; no
+stale executable was treated as evidence. The remaining work is owner input on the two
+ladder/roster questions and the points-per-drive definition, not widening a band to make a gate
+pass:
 
 ```bash
-./scripts/verify.sh --lane calibration
-./scripts/verify.sh --lane core
-swift run -c release -Xswiftc -enable-testing SimTests --match-reducer
-swift run -c release -Xswiftc -enable-testing SimTests --m3-recruiting-calibration
+college favourite win: 0.8189, CI90 [0.7978, 0.8400], band [0.70, 0.78]
+pro favourite win: 0.8800, CI90 [0.8622, 0.8978], band [0.62, 0.72]
+pro blowout: 0.6960, CI90 [0.6721, 0.7199], band [0.17, 0.26]
+pro points/drive: 2.1454, CI90 [2.1111, 2.1796], band [1.60, 1.95]
 ```

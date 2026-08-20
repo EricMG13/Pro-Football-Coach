@@ -1328,8 +1328,12 @@ func runM3RecruitingCalibrationTests() {
                     && $0.prospectID == fixture.prospectID
             })
 
-            let transition = try WorldScheduler.advanceWeek(fixture.state)
-            let relevantEvents = transition.emittedEvents.enumerated().compactMap {
+            let terminalTransition = try WorldScheduler.advanceWeek(fixture.state)
+            // Signing is the week-21 rollover boundary, so carry the week-20 commitment into the
+            // signing-week transition before asserting resolution and player intake.
+            let signingTransition = try WorldScheduler.advanceWeek(terminalTransition.state)
+            let emittedEvents = terminalTransition.emittedEvents + signingTransition.emittedEvents
+            let relevantEvents = emittedEvents.enumerated().compactMap {
                 index, event -> (Int, DomainEventPayload)? in
                 let prospectID: UUID?
                 switch event.payload {
@@ -1371,7 +1375,7 @@ func runM3RecruitingCalibrationTests() {
                 expect(commitmentIndex < resolutionIndex)
                 expect(resolutionIndex < joinIndex)
             }
-            let origin = transition.state.people.playerCareers[fixture.prospectID]?
+            let origin = signingTransition.state.people.playerCareers[fixture.prospectID]?
                 .recruitingOrigin
             expectEqual(origin?.programmeID, fixture.programmeID)
             expectEqual(origin?.commitmentHistory.count, 1)
