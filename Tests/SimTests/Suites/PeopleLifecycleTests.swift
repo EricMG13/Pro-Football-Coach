@@ -92,6 +92,32 @@ func runPeopleLifecycleTests() {
             expectEqual(restored.people, state.people)
         }
 
+        test("compaction keeps active and recent people while discarding stale records") {
+            let state = GameState.bootstrap(seed: 80_003)
+            let activeID = state.players.ids[0]
+            let recentDepartureID = state.players.ids[1]
+            let staleDepartureID = state.players.ids[2]
+            let retainedStaffID = state.staff.ids[0]
+            let staleStaffID = state.staff.ids[1]
+            var people = state.people
+            people.archive(player: state.players[recentDepartureID]!, status: .graduated)
+            people.archive(player: state.players[staleDepartureID]!, status: .graduated)
+
+            let compacted = people.compacted(
+                retainingPlayerIDs: [recentDepartureID],
+                staffIDs: [retainedStaffID]
+            )
+
+            expect(compacted.playerLifecycle[activeID] != nil)
+            expect(compacted.playerCareers[activeID] != nil)
+            expect(compacted.departedPlayers[recentDepartureID] != nil)
+            expect(compacted.playerCareers[recentDepartureID] != nil)
+            expect(compacted.departedPlayers[staleDepartureID] == nil)
+            expect(compacted.playerCareers[staleDepartureID] == nil)
+            expect(compacted.staffCareers[retainedStaffID] != nil)
+            expect(compacted.staffCareers[staleStaffID] == nil)
+        }
+
         test("attribute history is causal, bounded, and legacy-defaulted") {
             let playerID = UUID(uuidString: "00000000-0000-4000-8000-000000008010")!
             var lifecycle = PlayerLifecycleState(playerID: playerID)

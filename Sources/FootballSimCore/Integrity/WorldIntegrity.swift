@@ -1446,7 +1446,7 @@ public enum WorldIntegrity {
         for playerID in repeatedTransferPlayerIDs {
             issues.append(.invalidPortalCareer(playerID: playerID))
         }
-        checkPortalCapacity(allCareerRecords, issues: &issues)
+        checkPortalCapacity(currentTargetRecords, issues: &issues)
         checkPortalEvents(
             state.history.recent,
             recordsByKey: recordsByKey,

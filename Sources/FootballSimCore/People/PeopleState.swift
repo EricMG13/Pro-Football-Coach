@@ -774,6 +774,18 @@ public struct PlayerCareerRecord: Codable, Sendable, Equatable, Identifiable {
         endStatus = status
     }
 
+    /// D7 keeps departed players as identity plus season aggregates. Recruiting and portal
+    /// decision detail remains only while the bounded history still cites the player.
+    func compactedForDeparture() -> PlayerCareerRecord {
+        PlayerCareerRecord(
+            playerID: playerID,
+            seasons: seasons,
+            portalWindows: [],
+            endedAt: endedAt,
+            endStatus: endStatus
+        )
+    }
+
     private static func portalHistoryIsValid(
         playerID: UUID,
         seasons: [PlayerCareerSeason],
@@ -1050,6 +1062,80 @@ public struct PeopleState: Codable, Sendable, Equatable {
                 )
             }
         )
+    }
+
+    /// Keeps active people, bounded recent departures, and identities still named by history.
+    public func compacted(
+        retainingPlayerIDs: Set<UUID>,
+        staffIDs: Set<UUID>
+    ) -> PeopleState {
+        var recentlyEndedPlayerIDs: [UUID] = []
+        recentlyEndedPlayerIDs.reserveCapacity(departedPlayers.count)
+        for id in departedPlayers.keys
+        where !retainingPlayerIDs.contains(id) && playerCareers[id]?.endedAt != nil {
+            recentlyEndedPlayerIDs.append(id)
+        }
+        if recentlyEndedPlayerIDs.count > PeopleRules.maximumRetainedDepartedPlayers {
+            recentlyEndedPlayerIDs.sort { lhs, rhs in
+                let lhsEnd = playerCareers[lhs]?.endedAt
+                let rhsEnd = playerCareers[rhs]?.endedAt
+                if lhsEnd?.season != rhsEnd?.season {
+                    return (lhsEnd?.season ?? -1) > (rhsEnd?.season ?? -1)
+                }
+                if lhsEnd?.week != rhsEnd?.week {
+                    return (lhsEnd?.week ?? -1) > (rhsEnd?.week ?? -1)
+                }
+                return lhs.uuidString < rhs.uuidString
+            }
+            recentlyEndedPlayerIDs = Array(
+                recentlyEndedPlayerIDs.prefix(PeopleRules.maximumRetainedDepartedPlayers)
+            )
+        }
+        var retainedDepartedPlayerIDs = retainingPlayerIDs
+        retainedDepartedPlayerIDs.formUnion(recentlyEndedPlayerIDs)
+
+        let changesPlayerCareers = playerCareers.contains { id, career in
+            guard playerLifecycle[id] == nil else { return false }
+            guard retainedDepartedPlayerIDs.contains(id) else { return true }
+            return !retainingPlayerIDs.contains(id)
+                && (career.recruitingOrigin != nil || !career.portalWindows.isEmpty)
+        }
+        let removesStaffCareers = staffCareers.contains { !staffIDs.contains($0.key) }
+        let removesDepartedPlayers = departedPlayers.contains {
+            !retainedDepartedPlayerIDs.contains($0.key)
+        }
+        guard changesPlayerCareers || removesStaffCareers || removesDepartedPlayers else {
+            return self
+        }
+
+        var compacted = self
+        var compactedPlayerCareers: [UUID: PlayerCareerRecord] = [:]
+        compactedPlayerCareers.reserveCapacity(
+            min(playerCareers.count, playerLifecycle.count + retainedDepartedPlayerIDs.count)
+        )
+        for (id, career) in playerCareers {
+            if playerLifecycle[id] != nil || retainingPlayerIDs.contains(id) {
+                compactedPlayerCareers[id] = career
+            } else if retainedDepartedPlayerIDs.contains(id) {
+                compactedPlayerCareers[id] = career.compactedForDeparture()
+            }
+        }
+        var compactedStaffCareers: [UUID: StaffCareerRecord] = [:]
+        compactedStaffCareers.reserveCapacity(min(staffCareers.count, staffIDs.count))
+        for (id, career) in staffCareers where staffIDs.contains(id) {
+            compactedStaffCareers[id] = career
+        }
+        var compactedDepartedPlayers: [UUID: DepartedPlayerIdentity] = [:]
+        compactedDepartedPlayers.reserveCapacity(
+            min(departedPlayers.count, retainedDepartedPlayerIDs.count)
+        )
+        for (id, identity) in departedPlayers where retainedDepartedPlayerIDs.contains(id) {
+            compactedDepartedPlayers[id] = identity
+        }
+        compacted.playerCareers = compactedPlayerCareers
+        compacted.staffCareers = compactedStaffCareers
+        compacted.departedPlayers = compactedDepartedPlayers
+        return compacted
     }
 
     @discardableResult

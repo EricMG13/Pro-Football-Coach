@@ -108,8 +108,124 @@ func runM3CollegeSoakTests() {
                 expect(state.programmes.values.flatMap(\.rosterIDs).allSatisfy {
                     (17...23).contains(state.players[$0]?.age ?? -1)
                 })
+
+                let hotReferencedIDs = Set(state.history.recent.flatMap {
+                    $0.payload.referencedEntityIDs
+                })
+                let archivedAwardPlayerIDs = Set(state.competition.archives.flatMap { archive in
+                    archive.awards.compactMap { award in
+                        award.kind == .playerOfTheYear ? award.winnerID : nil
+                    }
+                })
+                let retainedPlayerIDs = Set(state.players.ids)
+                    .union(hotReferencedIDs)
+                    .union(archivedAwardPlayerIDs)
+                let employedStaffIDs = Set(
+                    state.programmes.values.flatMap(\.staffIDs)
+                        + state.proTeams.values.flatMap(\.staffIDs)
+                )
+                var retainedStaffIDs = employedStaffIDs.union(hotReferencedIDs)
+                if let coachID = state.career.coachID {
+                    retainedStaffIDs.insert(coachID)
+                }
+                let playerIdentityIDs = Set(state.players.ids)
+                    .union(state.people.departedPlayers.keys)
+                let archivedProspectIDs = Set(
+                    state.history.recent.flatMap { $0.payload.referencedProspectIDs }
+                )
+                    .subtracting(Set(state.prospects.ids))
+                    .subtracting(playerIdentityIDs)
+
                 expect(state.history.recent.count <= state.history.retentionLimit)
-                expect(state.history.archivedCount >= 0)
+                expect(state.history.archive.count <= DomainEventLedger.maximumArchivedSeasons)
+                expect(state.history.archive.allSatisfy {
+                    $0.notableEvents.count <= SeasonHistoryDigest.maximumNotableEvents
+                })
+                expect(state.competition.archives.count <= CompetitionState.archiveLimit)
+                expect(state.rivalries.values.allSatisfy {
+                    $0.notableMeetings.count <= Rivalry.notableMeetingLimit
+                })
+                expectEqual(Set(state.people.playerLifecycle.keys), Set(state.players.ids))
+                let departedPlayerIDs = Set(state.people.departedPlayers.keys)
+                let exceptionalDepartedPlayerIDs = departedPlayerIDs.intersection(retainedPlayerIDs)
+                expect(exceptionalDepartedPlayerIDs.count
+                    <= state.history.recent.count * 6
+                        + state.competition.archives.count * Tier.allCases.count)
+                expect(departedPlayerIDs.subtracting(exceptionalDepartedPlayerIDs).count
+                    <= PeopleRules.maximumRetainedDepartedPlayers)
+                expect(departedPlayerIDs.count <= PeopleRules.maximumRetainedDepartedPlayers
+                    + exceptionalDepartedPlayerIDs.count)
+                expectEqual(Set(state.people.playerCareers.keys),
+                            Set(state.players.ids).union(departedPlayerIDs))
+                expect(departedPlayerIDs.subtracting(exceptionalDepartedPlayerIDs).allSatisfy {
+                    state.people.playerCareers[$0]?.recruitingOrigin == nil
+                        && state.people.playerCareers[$0]?.portalWindows.isEmpty == true
+                })
+                expect(state.people.playerCareers.values.allSatisfy {
+                    $0.seasons.count <= PeopleRules.careerSeasonHistoryLimit
+                        && $0.portalWindows.count <= PeopleRules.portalWindowHistoryLimit
+                })
+                expect(state.people.playerLifecycle.values.allSatisfy {
+                    $0.recentChanges.count <= PeopleRules.recentChangeHistoryLimit
+                })
+                expect(Set(state.staff.ids).isSubset(of: retainedStaffIDs))
+                expectEqual(Set(state.people.staffCareers.keys), Set(state.staff.ids))
+                expect(state.people.staffCareers.values.allSatisfy {
+                    $0.assignments.count <= PeopleRules.careerSeasonHistoryLimit
+                })
+                expectEqual(Set(state.college.archivedProspects.keys), archivedProspectIDs)
+                expect(state.career.mandatoryDecisionResolutions.count
+                    <= CareerControlState.maximumMandatoryDecisionResolutions)
+                expect(state.careerArc.jobHistory.count <= CareerArcState.maximumJobHistory)
+                expect(state.careerArc.opportunities.count <= CareerArcState.maximumOpportunities)
+                expect(state.pending.mandatoryDecisions.count
+                    <= PendingQueues.maximumMandatoryDecisions)
+                expect(state.college.portal.entries.count <= CollegePortalPolicyV1.maximumEntrants)
+                expect(state.college.portal.summaries.count
+                    <= CollegeRules.portalWindowCount)
+                expect(state.people.playerCareers.values.flatMap(\.portalWindows).allSatisfy {
+                    $0.offers.count <= CollegePortalPolicyV1.maximumOffersPerEntrant
+                })
+                expect(state.scouting.observationsByObserver.values.allSatisfy {
+                    $0.count <= CollegeRules.maximumObservationsPerProgramme
+                })
+                expect(state.scouting.pendingEvaluations.count
+                    <= CollegeRules.maximumPendingEvaluations)
+                expect(state.scouting.portalKnowledgeByObserver.count
+                    <= CollegePortalPolicyV1.maximumKnowledgeObservers)
+                expect(state.scouting.portalKnowledgeByObserver.values.allSatisfy { snapshots in
+                    snapshots.allSatisfy {
+                            $0.targetSeason == state.college.portal.targetSeason
+                        }
+                        && Dictionary(grouping: snapshots, by: \.window).values.allSatisfy {
+                            $0.count <= CollegePortalPolicyV1.maximumKnowledgePerObserverWindow
+                        }
+                })
+                expect(state.tactical.plansByOrganisation.count <= TacticalState.maximumPlans)
+                expect(state.tactical.practicePlansByOrganisation.count <= TacticalState.maximumPlans)
+                expect(state.tactical.personnelPlansByOrganisation.count <= TacticalState.maximumPlans)
+                expect(state.tactical.practiceReceiptsByOrganisation.count <= TacticalState.maximumPlans)
+                expect(state.tactical.opponentScouting.count
+                    <= TacticalState.maximumScoutingSnapshots)
+                expect(state.tactical.opponentObservations.count
+                    <= TacticalState.maximumOpponentObservations)
+                expect(state.tactical.opponentObservations.values.allSatisfy {
+                    $0.sourceGameIDs.count <= OpponentObservation.maximumSourceGames
+                })
+                expect(state.tactical.reviews.count <= TacticalState.maximumReviews)
+                expect(state.proMarket.draftClass.count <= ProMarketState.maximumDraftClassSize)
+                expect(state.proMarket.draftOrder.count <= ProRules.draftPickCount)
+                expect(state.proMarket.draftedProspectIDs.count <= ProRules.draftPickCount)
+                expect(state.proMarket.freeAgentIDs.count <= ProMarketState.maximumFreeAgentIDs)
+                expect(state.proMarket.observations.count <= ProMarketState.maximumObservations)
+                expect(state.proMarket.archivedDraftProspectIDs.count
+                    <= ProMarketState.maximumArchivedProspectIDs)
+                expect(state.proMarket.waivers.count <= ProMarketState.maximumWaivers)
+                expect(state.proMarket.contractNegotiations.count
+                    <= ProMarketState.maximumContractNegotiations)
+                expect(state.proMarket.contractNegotiations.allSatisfy {
+                    $0.offerHistory.count <= ProContractNegotiation.maximumOfferHistory
+                })
 
                 if checkpoints.contains(targetSeason) {
                     saveSizes[targetSeason] = data.count

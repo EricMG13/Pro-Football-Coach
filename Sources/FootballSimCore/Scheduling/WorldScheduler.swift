@@ -897,7 +897,7 @@ public enum WorldScheduler {
                 records.append(WorldStepRecord(step: step, status: .executed))
 
             case .saveGrowthAndIntegrity:
-                nextState.college = CollegeCycleSystem.pruningArchivedProspects(in: nextState)
+                nextState = compactHistoryBoundState(nextState)
                 var integrityProjection = nextState
                 if completed.week == SharedRules.inSeasonWeeks {
                     integrityProjection.calendar = next
@@ -914,7 +914,7 @@ public enum WorldScheduler {
                     to: &nextState,
                     emittedEvents: &events
                 )
-                nextState.college = CollegeCycleSystem.pruningArchivedProspects(in: nextState)
+                nextState = compactHistoryBoundState(nextState)
                 records.append(WorldStepRecord(step: step, status: .executed))
 
             case .weekSnapshot:
@@ -932,7 +932,7 @@ public enum WorldScheduler {
                     to: &nextState,
                     emittedEvents: &events
                 )
-                nextState.college = CollegeCycleSystem.pruningArchivedProspects(in: nextState)
+                nextState = compactHistoryBoundState(nextState)
                 records.append(WorldStepRecord(step: step, status: .executed))
 
             default:
@@ -951,6 +951,41 @@ public enum WorldScheduler {
             stepRecords: records,
             emittedEvents: events
         )
+    }
+
+    private static func compactHistoryBoundState(_ state: GameState) -> GameState {
+        var retainedPlayerIDs = Set<UUID>()
+        var retainedStaffIDs = Set<UUID>()
+        for event in state.history.recent {
+            let referencedIDs = event.payload.referencedEntityIDs
+            retainedPlayerIDs.formUnion(referencedIDs)
+            retainedStaffIDs.formUnion(referencedIDs)
+        }
+        for archive in state.competition.archives {
+            for award in archive.awards where award.kind == .playerOfTheYear {
+                retainedPlayerIDs.insert(award.winnerID)
+            }
+        }
+        for programme in state.programmes.values {
+            retainedStaffIDs.formUnion(programme.staffIDs)
+        }
+        for team in state.proTeams.values {
+            retainedStaffIDs.formUnion(team.staffIDs)
+        }
+        if let coachID = state.career.coachID {
+            retainedStaffIDs.insert(coachID)
+        }
+        var compacted = state
+        compacted.college = CollegeCycleSystem.pruningArchivedProspects(in: state)
+        compacted.people = state.people.compacted(
+            retainingPlayerIDs: retainedPlayerIDs,
+            staffIDs: retainedStaffIDs
+        )
+        let retainedStaff = state.staff.values.filter { retainedStaffIDs.contains($0.id) }
+        if retainedStaff.count != state.staff.count {
+            compacted.staff = EntityStore(retainedStaff)
+        }
+        return compacted
     }
 
     private static func appendEvents(

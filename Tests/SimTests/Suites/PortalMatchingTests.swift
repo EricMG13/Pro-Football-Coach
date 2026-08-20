@@ -439,6 +439,42 @@ func runPortalMatchingTests() {
             )
         }
 
+        test("scouting retains knowledge for durable offers only") {
+            let fixture = portalMatchingFixture(
+                entrantCount: 7,
+                destinationOpenings: [1],
+                destinationNIL: [1_000],
+                destinationQuarterbackRooms: [4]
+            )
+            let result = CollegePortalPolicyV1.match(using:
+                CollegePortalPolicyV1.makeMarketSnapshot(
+                    targetSeason: 1,
+                    window: .postseason,
+                    in: fixture.state
+                )!
+            )!
+            let offers = result.entrants.flatMap(\.offers)
+            let storedCount = result.scouting.portalKnowledgeByObserver.values.reduce(0) {
+                $0 + $1.count
+            }
+
+            expectEqual(storedCount, offers.count)
+            for entrant in result.entrants {
+                for offer in entrant.offers {
+                    expectEqual(
+                        result.scouting.portalKnowledge(
+                            observerProgrammeID: offer.destinationProgrammeID,
+                            playerID: entrant.playerID,
+                            sourceProgrammeID: entrant.sourceProgrammeID,
+                            targetSeason: 1,
+                            window: .postseason
+                        ),
+                        offer.knowledge
+                    )
+                }
+            }
+        }
+
         test("willingness is top five per opening and losing reservations refund") {
             let fixture = portalMatchingFixture(
                 entrantCount: 7,
@@ -447,6 +483,11 @@ func runPortalMatchingTests() {
                 destinationQuarterbackRooms: [4]
             )
             let destinationID = fixture.destinationProgrammeIDs[0]
+            let policy = CollegePortalPolicyV1.makeSnapshot(
+                targetSeason: 1,
+                window: .postseason,
+                in: fixture.state
+            )!
             let result = CollegePortalPolicyV1.match(using:
                 CollegePortalPolicyV1.makeMarketSnapshot(
                     targetSeason: 1,
@@ -467,12 +508,10 @@ func runPortalMatchingTests() {
 
             let admissionOrder = result.entrants.compactMap { entrant
                 -> (UUID, Int)? in
-                guard let knowledge = result.scouting.portalKnowledge(
+                guard let knowledge = CollegePortalPolicyV1.knowledgeSnapshot(
                     observerProgrammeID: destinationID,
                     playerID: entrant.playerID,
-                    sourceProgrammeID: entrant.sourceProgrammeID,
-                    targetSeason: 1,
-                    window: .postseason
+                    using: policy
                 ) else { return nil }
                 let evidence = CollegePortalAdmissionEvidence(
                     position: knowledge.position,

@@ -3,6 +3,8 @@ import Foundation
 public enum PeopleRules {
     public static let fatigueRange: ClosedRange<Int> = 0...100
     public static let careerSeasonHistoryLimit = 40
+    /// Recent departed profiles retained beside the bounded history and awards archives.
+    public static let maximumRetainedDepartedPlayers = 4_096
     public static var portalWindowHistoryLimit: Int {
         CollegeRules.portalWindowCount * CollegeRules.eligibilityClockYears
     }

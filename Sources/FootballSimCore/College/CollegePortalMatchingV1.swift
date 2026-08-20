@@ -366,13 +366,6 @@ extension CollegePortalPolicyV1 {
                 generatedKnowledge.append(knowledge)
             }
         }
-        var scouting = market.scouting
-        guard scouting.recordPortalKnowledgeBatch(
-            generatedKnowledge,
-            targetSeason: market.targetSeason,
-            window: market.window
-        ) else { return nil }
-
         var pairsByDestinationID: [UUID: [CollegePortalMatchingPair]] = [:]
         for knowledge in generatedKnowledge {
             guard let intent = intentByPlayerID[knowledge.playerID],
@@ -506,6 +499,13 @@ extension CollegePortalPolicyV1 {
             }
             offersByPlayerID[playerID] = offers.sorted(by: offerPreferenceRanksBefore)
         }
+
+        var scouting = market.scouting
+        guard scouting.recordPortalKnowledgeBatch(
+            offersByPlayerID.values.flatMap { $0.map(\.knowledge) },
+            targetSeason: market.targetSeason,
+            window: market.window
+        ) else { return nil }
 
         guard let acceptedDestinationByPlayerID = deferredAcceptance(
             offersByPlayerID: offersByPlayerID,
