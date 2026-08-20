@@ -90,7 +90,8 @@ public enum SnapResolver {
         // not end in the end zone. Safeties stay reachable from inside the three, which is where
         // nearly all of the real ones come from.
         let sackLoss = situation.yardLine <= MatchupRules.backedUpYardLine
-            ? MatchupRules.backedUpSackYards
+            ? Swift.max(MatchupRules.sackYards,
+                        Swift.min(MatchupRules.backedUpSackYards, 1 - situation.yardLine))
             : MatchupRules.sackYards
         guard let passer = assignment.passer else {
             return sackOrSafety(yards: sackLoss, situation: situation,

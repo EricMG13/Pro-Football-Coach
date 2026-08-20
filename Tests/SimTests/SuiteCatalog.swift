@@ -84,9 +84,9 @@ struct SuiteCatalog: Sendable {
         case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly:
             return Runner(command: "--save-document", function: "runSaveDocumentTests")
         case .calibrationGate:
-            // Red today, and out of the default run for that reason: the engine holds 6 of 24
-            // bands. `verify.sh` runs no lane containing it. STATUS's P4 section carries the
-            // measurement; this is the command that reproduces it.
+            // Red today, and out of the default run for that reason. `verify.sh` runs no lane
+            // containing it. STATUS's P4 section carries the measurement; this command reproduces
+            // it.
             return Runner(command: "--calibration-gate", function: "runCalibrationGateTests")
         case .m1Soak:
             return Runner(command: "--m1-soak", function: "runM1SoakTests")

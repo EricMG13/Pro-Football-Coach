@@ -9,9 +9,8 @@ import FootballSimCore
 // prose rather than a test — the distinction `CLAUDE.md` forbids blurring, and a regression in the
 // engine's numbers would have been invisible until someone re-ran the harness by hand.
 //
-// **This gate is red today, by design, and is not in any lane `verify.sh` runs.** Eighteen of 24
-// bands fail, several by multiples rather than margins. It is registered exactly as `--pro-soak` is:
-// out of the default run, red to say so.
+// **This gate is red today, by design, and is not in any lane `verify.sh` runs.** It is registered
+// exactly as `--pro-soak` is: out of the default run, red to say so.
 //
 // It reports against the **holdout** ladder. `01` section 6.6 clause 2: tune against A, report
 // against B. Gating on the tuning ladder would gate the model on the seeds it was fitted to.

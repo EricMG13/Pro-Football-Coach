@@ -40,18 +40,16 @@ public enum CalibrationHarness {
     /// Games per seed. Each seed plays rounds of matchups across the talent ladder, so the sample
     /// covers even games and mismatches rather than only the middle.
     ///
-    /// **Thirty, not twelve, because TOST cannot decide some of these bands at twelve.** A rate
+    /// **Fifty, not twelve, because TOST cannot decide some of these bands at twelve.** A rate
     /// band is passable only if the 90 percent interval can fit inside it: `1.645 * sqrt(p(1-p)/n)`
     /// must be under the band's half-width. At 12 matchups a tier plays 240 games, and the home-win
     /// band (0.50 to 0.58, half-width 0.04) needs **420**; the college favourite-win band needs 325
     /// of the 220 rated games the ladder produced. Those bands failed on the *sample*, whatever the
     /// model did — a false red that reads exactly like a real one, and the opposite of `01` §6.2's
-    /// point that the burden belongs on the model. Fifty rounds gives 1,000 games and 917 rated ones.
-    /// Thirty cleared every band's bare minimum, but the pro home-win band's passing window was then
-    /// only 0.013 wide — narrower than the run-to-run wobble of the estimate itself, so which side
-    /// of the line it landed on was luck rather than model. Precision is the burden TOST puts on
-    /// the model, and buying more of it is not widening anything. Twelve pairs still make a round, so the ladder's
-    /// shape is unchanged; each pair simply plays more games, at a different seed each time.
+    /// point that the burden belongs on the model. Fifty rounds gives 1,000 games and enough rated
+    /// matchups for the declared bands. Precision is the burden TOST puts on the model, and buying
+    /// more of it is not widening anything. Twelve pairs still make a round, so the ladder's shape
+    /// is unchanged; each pair simply plays more games, at a different seed each time.
     public static let matchupsPerSeed = 50
 
     /// A game and the talent it was played at, so the favourite can be identified.
@@ -69,9 +67,14 @@ public enum CalibrationHarness {
                 let ladder = talentLadder(matchup: matchup)
                 games.append(SampledGame(record: GameEngine.play(
                     tier: tier,
-                    home: CalibrationRoster.team(skill: ladder.home, seed: seed &+ UInt64(matchup)),
-                    away: CalibrationRoster.team(skill: ladder.away,
-                                                 seed: seed &+ UInt64(matchup) &+ 500_000),
+                    home: CalibrationRoster.team(
+                        skill: ladder.home,
+                        seed: rosterSeed(base: seed, matchup: matchup, side: .home)
+                    ),
+                    away: CalibrationRoster.team(
+                        skill: ladder.away,
+                        seed: rosterSeed(base: seed, matchup: matchup, side: .away)
+                    ),
                     seed: SeededRandom.derive(from: seed, scope: .game, ordinal: matchup)
                 ), homeSkill: ladder.home, awaySkill: ladder.away))
             }
@@ -83,6 +86,12 @@ public enum CalibrationHarness {
             gamesPlayed: games.count,
             results: bands.compactMap { band in measured[band.metric].map(band.test) }
         )
+    }
+
+    static func rosterSeed(base: UInt64, matchup: Int, side: Side) -> UInt64 {
+        let game = SeededRandom.derive(from: base, scope: .game, ordinal: matchup)
+        return SeededRandom.derive(from: game, scope: .personnel,
+                                   ordinal: side == .home ? 0 : 1)
     }
 
     /// The talent pairing for one matchup index.
@@ -119,7 +128,7 @@ public enum CalibrationHarness {
         var teamRushYards: [Double] = []
         var teamSacks: [Double] = []
         var teamInterceptions: [Double] = []
-        var teamSafeties: [Double] = []
+        var gameSafeties: [Double] = []
         var combinedTotals: [Double] = []
 
         var passAttempts = 0, completions = 0
@@ -196,8 +205,8 @@ public enum CalibrationHarness {
                 teamRushYards.append(Double(tally.rush))
                 teamSacks.append(Double(tally.sacks))
                 teamInterceptions.append(Double(tally.ints))
-                teamSafeties.append(Double(tally.safeties))
             }
+            gameSafeties.append(Double(perSide.values.reduce(0) { $0 + $1.safeties }))
 
             for drive in game.drives where drive.ending == .touchdown || drive.ending == .fieldGoal {
                 pointsTotal += drive.pointsScored
@@ -245,7 +254,7 @@ public enum CalibrationHarness {
             "rush yards per team-game": meanEstimate(teamRushYards),
             "sacks per team-game": meanEstimate(teamSacks),
             "interceptions per team-game": meanEstimate(teamInterceptions),
-            "safeties per game": meanEstimate(teamSafeties),
+            "safeties per game": meanEstimate(gameSafeties),
             "completion percentage": rateEstimate(completions, passAttempts, scale: 100),
             "field goal percentage": rateEstimate(kicksMade, kickAttempts, scale: 100),
             "home win rate": rateEstimate(homeWins, decidedGames),

@@ -2,8 +2,8 @@ import Foundation
 import FootballSimCore
 
 /// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 4_503_778_970_393_344_366
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 17_250_142_579_245_208_452
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 4_829_279_090_211_500_185
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 1_420_226_565_880_312_401
 
 func runEngineTests() {
     suite("Leverage") {
@@ -101,6 +101,18 @@ func runEngineTests() {
                    "a tired attacker did not lose ground")
             expect(score(fit: 0, attackerFatigue: 0, defenderFatigue: 1) > neutral,
                    "a tired defender did not lose ground")
+        }
+
+        test("ratingWeight scales only the rating term") {
+            func score(weight: Double) -> Double {
+                var rng = SeededRandom(seed: 7)
+                return Leverage.score(attacker: Rating(75), defender: Rating(65),
+                                      ratingWeight: weight, rng: &rng)
+            }
+            let noise = score(weight: 0)
+            let fullRatingTerm = score(weight: 1) - noise
+            expectClose(score(weight: 0.35) - noise, fullRatingTerm * 0.35, 1e-9,
+                        "ratingWeight did not proportionally downweight the rating term")
         }
 
         test("a better player wins more matchups than a worse one, over many draws") {
@@ -350,6 +362,37 @@ func runSnapResolverTests() {
                 expect(!deciding.attackerWon, "the blocker won the duel that produced a sack")
             }
             expect(found, "a heavy blitz against a weak line never produced a sack in 400 snaps")
+        }
+
+        test("backed-up sack loss is continuous and still permits safeties") {
+            let call = OffensiveCall(playType: .pass)
+            let defense = DefensiveCall(coverage: .man, rushers: 7, aggression: 1)
+            let personnel = testPersonnel(offenseSkill: 45, defenseSkill: 95)
+            var found = false
+            for seed in UInt64(0)..<400 {
+                var sevenRNG = SeededRandom(seed: seed)
+                var eightRNG = SeededRandom(seed: seed)
+                var threeRNG = SeededRandom(seed: seed)
+                let seven = SnapResolver.resolve(
+                    offensiveCall: call, defensiveCall: defense, personnel: personnel,
+                    situation: Situation(yardLine: 7), rules: rules, rng: &sevenRNG
+                )
+                let eight = SnapResolver.resolve(
+                    offensiveCall: call, defensiveCall: defense, personnel: personnel,
+                    situation: Situation(yardLine: 8), rules: rules, rng: &eightRNG
+                )
+                let three = SnapResolver.resolve(
+                    offensiveCall: call, defensiveCall: defense, personnel: personnel,
+                    situation: Situation(yardLine: 3), rules: rules, rng: &threeRNG
+                )
+                guard seven.result == .sack, eight.result == .sack else { continue }
+                found = true
+                expectEqual(seven.yards, -6)
+                expectEqual(eight.yards, -7)
+                expectEqual(three.result, .safety)
+                break
+            }
+            expect(found, "the fixture never produced a sack")
         }
 
         test("every snap result is reachable") {
