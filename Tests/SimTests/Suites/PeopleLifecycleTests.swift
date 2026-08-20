@@ -573,6 +573,7 @@ func runPeopleLifecycleTests() {
             var state = GameState.bootstrap(seed: 84_010)
             let measured = [1, 3, 6, 10]
             var injuries: [(ironman: Bool, severity: InjurySeverity, weeks: Int)] = []
+            var previousRosters = rosterSnapshot(state)
             checkProAgeCurve(state, season: 0)
             for season in 1...(measured.max() ?? 1) {
                 for _ in 0..<SharedRules.inSeasonWeeks {
@@ -594,8 +595,15 @@ func runPeopleLifecycleTests() {
                         checkInjuredShare(state, season: season)
                     }
                 }
+                // Snapshotted every season rather than only at a measured one, because churn is a
+                // difference between consecutive boundaries and the measured indices are not
+                // consecutive. The set arithmetic is free next to the season it walks.
+                let currentRosters = rosterSnapshot(state)
+                defer { previousRosters = currentRosters }
                 guard measured.contains(season) else { continue }
                 checkProAgeCurve(state, season: season)
+                checkChurn(from: previousRosters, to: currentRosters, season: season,
+                           assertPro: false)
             }
             checkIronmanShortensInjuries(injuries)
         }
@@ -706,6 +714,100 @@ func checkInjuredShare(_ state: GameState, season: Int) {
     ))
 }
 
+// MARK: - The churn band
+
+// What share of an organisation's roster is gone a season later. Nothing measured it: the soak
+// asserted only that `departedPlayers` is non-empty, which one graduating walk-on satisfies for a
+// world that has otherwise frozen solid.
+//
+// **College, 0.18…0.45, derived `[P]`.** `CollegeRules.seasonsOfCompetition` is 4 and
+// `rosterLimit` is a constant 105, so a steady state in which every player exhausts eligibility
+// turns over 105/4 = 26.25 players a season — a churn of exactly 0.25 from graduation alone.
+// `eligibilityClockYears` is 5, one longer than the seasons it holds, so a redshirt occupies a
+// roster place for five years while spending four: universal redshirting would stretch mean
+// occupancy to 5 and drop churn to 0.20. The floor sits below that at 0.18. Portal departures
+// (`02` §4.1, two windows a season) only add, so the ceiling is loose at 0.45 — past which a
+// programme is not turning over but being rebuilt wholesale.
+//
+// **Professional, 0.10…0.50, derived `[P]` and deliberately the weaker limb.**
+// `ProRules.contractYearsRange` is 1…7, so a roughly flat spread of contract lengths means a mean
+// near 4 and an expiry-driven churn near 0.25, with cuts adding and re-signing subtracting. The
+// second of those is not derivable from a constant — a team that re-signs everyone it lets expire
+// shows near-zero churn without anything being wrong — so this limb is stated wide and catches only
+// the two failures that matter: a roster nothing leaves, and a roster replaced outright.
+
+private let collegeChurnBand: ClosedRange<Double> = 0.18...0.45
+private let proChurnBand: ClosedRange<Double> = 0.10...0.50
+
+typealias RosterSnapshot = (college: [UUID: Set<UUID>], pro: [UUID: Set<UUID>])
+
+func rosterSnapshot(_ state: GameState) -> RosterSnapshot {
+    (
+        college: state.programmes.values.reduce(into: [:]) { $0[$1.id] = Set($1.rosterIDs) },
+        pro: state.proTeams.values.reduce(into: [:]) { $0[$1.id] = Set($1.rosterIDs) }
+    )
+}
+
+/// `assertPro` is false in the default lane and true in the soaks lane, which is where this repo
+/// already keeps this exact failure. The professional limb is red for the reason `a2e3147` and
+/// `4a95ca5` record — "the professional roster never turns over", blocked on an owner-level design
+/// call — and `--pro-soak` has carried that red, outside the default run, since `e710924` added it
+/// "red for a real reason". Asserting it here too would turn the default lane red for a cause
+/// already tracked elsewhere; not measuring it at all would lose the finding. So it is measured and
+/// printed everywhere, and asserted where its sibling failure lives. The band itself is NOT widened
+/// to accommodate the break: 0.10 stays 0.10.
+func checkChurn(
+    from previous: RosterSnapshot,
+    to current: RosterSnapshot,
+    season: Int,
+    assertPro: Bool
+) {
+    /// Departures as a share of the roster they left, pooled across organisations. Pooled rather
+    /// than averaged per organisation so one team with a freak roster cannot swing the figure.
+    func churn(_ before: [UUID: Set<UUID>], _ after: [UUID: Set<UUID>])
+        -> (share: Double, total: Int, moved: Int, left: Int) {
+        // Where everybody ended up, so a departure can be told apart from a transfer. Churn that is
+        // all `left` and no `moved` is a league whose market has stopped trading, which reads
+        // identically to a healthy one if you only count departures.
+        var organisationByPlayer: [UUID: UUID] = [:]
+        for (organisationID, roster) in after {
+            for playerID in roster { organisationByPlayer[playerID] = organisationID }
+        }
+        var moved = 0
+        var left = 0
+        var total = 0
+        for (organisationID, roster) in before {
+            guard after[organisationID] != nil else { continue }
+            total += roster.count
+            for playerID in roster.subtracting(after[organisationID] ?? []) {
+                if organisationByPlayer[playerID] == nil { left += 1 } else { moved += 1 }
+            }
+        }
+        let share = total > 0 ? Double(moved + left) / Double(total) : .nan
+        return (share, total, moved, left)
+    }
+    for (label, band, measure) in [
+        ("college", collegeChurnBand, churn(previous.college, current.college)),
+        ("pro", proChurnBand, churn(previous.pro, current.pro)),
+    ] {
+        let (share, total, moved, left) = measure
+        guard total > 0 else {
+            expect(false, "season \(season): no \(label) roster to measure churn over")
+            continue
+        }
+        print(String(
+            format: "churn: season %d %@, n %d, share %.3f (moved %d, left %d)",
+            season, label, total, share, moved, left
+        ))
+        guard label == "college" || assertPro else { continue }
+        expect(band.contains(share), String(
+            format: "season %d: %@ churn %.3f is outside the band %.2f…%.2f "
+                + "(moved %d, left %d)",
+            season, label, share, band.lowerBound, band.upperBound, moved, left
+        ))
+    }
+}
+
 // MARK: - Ironman has an effect, not just a spelling
 
 // `02` §11.3.3: "§5 requires every trait to have mechanical bite in a specific system", and Ironman
@@ -762,6 +864,7 @@ func runM2SoakTests(seasons: Int) {
             let employedStaffTarget = (CollegeRules.programmeCount + ProRules.teamCount)
                 * PeopleRules.staffPerOrganisation
             var saveSizes: [Int: Int] = [:]
+            var previousRosters = rosterSnapshot(state)
 
             for season in 1...seasons {
                 for _ in 0..<SharedRules.inSeasonWeeks {
@@ -813,6 +916,10 @@ func runM2SoakTests(seasons: Int) {
                 expect((45...85).contains(collegeOverall.reduce(0, +) / collegeOverall.count))
                 expect((55...90).contains(proOverall.reduce(0, +) / proOverall.count))
                 checkProAgeCurve(state, season: season)
+                let currentRosters = rosterSnapshot(state)
+                checkChurn(from: previousRosters, to: currentRosters, season: season,
+                           assertPro: true)
+                previousRosters = currentRosters
                 let report = WorldIntegrity.check(state)
                 expect(report.isValid, report.issues.map(\.description).joined(separator: ", "))
 
