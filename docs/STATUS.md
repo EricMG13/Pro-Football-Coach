@@ -19,6 +19,30 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-20 — CI ran against the `main` merge commit and found two more things, both fixed:
+> unverified — never compiled, but by CI, not manual reading.** Run 32322631469 (job 96287645557):
+> 5 failing tests, 7 failed checks, all now accounted for.
+>
+> **Four more fingerprint pins, same root cause as the two already fixed.** `main` had independently
+> added its own negotiation-ledger, match-session, news-feed and archived-ledger fingerprint pins
+> (each hashing a full `GameState` or a projection of one); `careerArc`'s new
+> `stakeholderLastMovement` field is universal to every encoded root, so all four moved for exactly
+> the reason the plain root/advanced pins already did — this pass's own re-pin just hadn't seen these
+> four yet, since they didn't exist in the tree it was checking at the time. Re-pinned to this run's
+> own values, same caveat as before: copied from one CI run, not independently reproduced across two
+> local processes, since no toolchain exists here to do that second derivation.
+>
+> **The new rival-signed-board regression test had never actually run before.** Neither CI run before
+> this one included it — it was added after both. A fresh bootstrap's roster already sits at
+> `CollegeRules.rosterLimit`/`scholarshipLimit`, so the test's rival programme had no vacancy for the
+> one prospect it commits, and `CollegeSigningSystem` correctly released that commitment instead of
+> signing it — the test's own premise was incomplete, not a defect in the fix it was written to
+> guard. Fixed by freeing one roster slot on the rival's largest position group before signing,
+> mirroring `CollegeCommitmentTests.swift`'s own proven `signingFixture` pattern.
+>
+> No `swift`/`xcodebuild` exists in this environment. Every claim above is argued from reading CI's
+> own output, not from a compiler run locally.
+
 > **2026-08-20 — CI ran for the first time on this remediation pass and found two real defects,
 > both fixed: unverified — never compiled, but this time by a real compiler on CI, not by manual
 > reading.** The run was against `5b12641` (Phase 4's original head, before either adversarial
