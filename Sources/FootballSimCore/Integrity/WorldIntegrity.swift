@@ -1034,7 +1034,11 @@ public enum WorldIntegrity {
             }
         }
 
-        if state.college.phase != .active {
+        // The phase every week carries, not merely "not the two we never expected". `02` section
+        // 4.1 makes it a function of the week, so the check is the same function: an `active` root
+        // sitting in the signing week is exactly as wrong as a `signing` root outside it, and the
+        // older `!= .active` rule could only see one of those two.
+        if state.college.phase != CollegeRules.recruitingCyclePhase(inWeek: state.calendar.week) {
             issues.append(.invalidRecruitingCyclePhase(state.college.phase))
         }
         if state.college.recruitingSeason != state.calendar.season {

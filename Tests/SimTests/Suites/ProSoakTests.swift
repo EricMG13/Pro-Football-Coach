@@ -182,6 +182,11 @@ func runProDraftProbeTests() {
             let rollover = CalendarState(season: 0, week: SharedRules.inSeasonWeeks)
             state.calendar = rollover
             state.league.week = rollover.week
+            // Week 21 is signing day (`02` section 4.1), and the cycle phase is a function of the
+            // week, so a hand-built calendar has to carry the phase that week implies. Without this
+            // the probe asserts integrity against a root the scheduler could never emit and reports
+            // a college recruiting phase as though it were a professional expiry defect.
+            state.college.phase = CollegeRules.recruitingCyclePhase(inWeek: rollover.week)
             let expiry = try ProMarketSystem.expireContracts(at: rollover, in: state)
             state = expiry.state
             expect(!expiry.expiredPlayerIDs.isEmpty,

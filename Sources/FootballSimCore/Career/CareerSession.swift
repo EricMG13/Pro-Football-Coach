@@ -100,7 +100,13 @@ public actor CareerSession {
                 || state.careerArc.currentJob?.tier == .professional else {
             throw CareerSessionError.missingControlledCareer
         }
-        let prepared = CareerMandatoryDecisionSystem.refresh(in: state)
+        var prepared = CareerMandatoryDecisionSystem.refresh(in: state)
+        // The recruiting cycle phase is derived from the week (`02` section 4.1), so recomputing it
+        // here costs nothing and carries no information loss. It exists because a root written
+        // before signing day was reachable carries `active` in the signing week, and the integrity
+        // check below would refuse it — turning an openable save into `invalidState`.
+        prepared.college.phase = CollegeRules
+            .recruitingCyclePhase(inWeek: prepared.calendar.week)
         guard WorldIntegrity.check(prepared).isValid else {
             throw CareerSessionError.invalidState
         }

@@ -935,7 +935,26 @@ development, injuries, recruiting, contracts/cap, staff/career movement, AI/dele
 storage, or production UI; those begin with M2 and later milestones. Full implementation and review
 details are in `docs/plans/2026-08-10-m1-playable-world.md`.
 
-### M2 — people lifecycle — **implemented and green**
+### M2 — people lifecycle — **implemented; its soak is red as of 2026-08-20**
+
+> **The soak below is stale.** `--m2-soak` fails at current `main` with 61 of 326 checks red, all
+> of them the same assertion: `PeopleLifecycleTests.swift:591` wants 15,766 active players at week 1
+> of each season (134 x 105 college plus 32 x 53 professional) and finds about 14,200. College
+> rosters sit roughly twelve short of the 105 limit, every season, because the week-1 assertion runs
+> before the spring walk-on fill tops them back up.
+>
+> This is **not** caused by the signing-day change: the same run at `HEAD` before that change fails
+> with the same 61 checks and the same shape (14,234 against the change's 14,143 — the change costs
+> about 0.6% of the population, well inside a failure that already existed). It was measured
+> deliberately, in a detached worktree, because a red soak that a change did not cause must not be
+> either claimed as green or fixed by loosening the assertion.
+>
+> The paragraph that follows records the 2026-08-11 measurement, when the soak took 677 seconds and
+> passed. It now takes 1,289. M3 college management landed in between and the world it produces is
+> different. Either the walk-on fill needs to run before the week-1 boundary, or the assertion needs
+> to describe the roster at the point the fill has actually happened; deciding which is not this
+> change's business.
+
 
 The authoritative world now carries people credibly across seasons:
 
@@ -1701,6 +1720,25 @@ chunked or streaming persistence are M9 work that the product cannot ship withou
 
 ### The professional soak — **built, and it is red for a real reason**
 
+> **Re-measured 2026-08-20; the diagnosis below is out of date in its particulars.** `--pro-soak`
+> is still red, and still on the same headline check — no professional draft pick across the run —
+> but the world underneath it has moved. Ten seasons now report
+> `phasesSeen=closed/draft/freeAgency`, `proContractExpired=1491`, `proPlayerSigned=1476`,
+> `proDraftStarted=9`, `draftedFinal=0`. Contract expiry and free agency both work now, and the
+> draft *starts* nine times; what never happens is a pick landing inside the run.
+>
+> `--pro-draft-probe` is now **green**, reporting `expired=327`, `contractedRemaining=1369`, and
+> `first pick succeeded`. The `activeRosterFull` blockage recorded below is therefore fixed: a pick
+> can be made. What remains is that the soak's ten seasons never get one, which is a pacing or
+> driver question rather than a blocked root, and is not the signing-day change's business.
+>
+> The probe was briefly red for a reason that *was* the signing-day change: it hand-builds a root at
+> week 21 and left the recruiting phase on `active`, which the new total integrity rule refuses. It
+> reported that as `expiry left an invalid root`, i.e. as a professional expiry defect, which it was
+> not. The fixture now derives the phase from the week and the probe passes. Worth remembering when
+> reading any probe that hand-builds a calendar: it will blame whatever it was pointed at.
+
+
 The M6/M7 handoff listed "run the full both-tier professional soak" as open. It was never written:
 M6 built the entire professional market — free agency, draft, waivers, practice squads, trades,
 sourced contract expiry — and **no soak had ever driven it across seasons**. `--pro-soak` now does,
@@ -1863,6 +1901,66 @@ trap.
 **Built and reachable by nothing.** `NewsFeedReadModel` and `CoachingTreeReadModel` have zero
 references outside their own files; `WorldHistoryReadModel` has one. All three are correct and
 tested, and no screen or career surface can reach them — they wait on M8.
+
+**Signing day was a fourth, and is fixed as of 2026-08-19.** `RecruitingCyclePhase.signing` was
+never assigned anywhere in the engine: `CollegeState.phase` defaulted to `.active`,
+`CollegeCycleSystem.closeAndOpen` reset it to `.active`, and the only assignment of `.signing` in
+the repository was a fixture in `ReadModelProviderTests`. Whole-root integrity independently
+required `.active` at every stable root, so the phase could not have persisted across a week
+boundary even if something had set it. Screen 29 rendered its "Signing day is closed" branch for
+the whole of every career, and the class signed invisibly inside the season rollover.
+
+The phase is now a function of the week (`CollegeRules.recruitingCyclePhase(inWeek:)`, `02` §4.1):
+`.active` in weeks 1 to 20, `.signing` in week 21. `WorldScheduler`'s `weekSnapshot` step assigns
+it unconditionally as the calendar moves, and the integrity rule became the same function rather
+than `!= .active`, so an `.active` root in the signing week is now as invalid as a `.signing` root
+outside it. `RecruitingCyclePhase` gained `allowsRecruitingActions` and
+`allowsCommitmentResolution`: signing day closes contact — user requests, AI board growth, AI
+investment — and leaves commitment resolution open, because the commitments closing is the
+ceremony. `.closed` remains unreachable and unused; nothing in the build assigns it.
+
+Two consequences worth naming. `CareerSession.init` recomputes the phase before its integrity
+check, so a root written before this change and sitting in week 21 opens rather than failing as
+`invalidState`. And the AI's weekly recruiting *investment* pass no longer runs in week 21, which
+is the whole of the change's cost to class sizes. `--m3-recruiting-calibration` at seed 93001:
+
+| | before | after | band |
+|---|---|---|---|
+| Aggregate fill | 78% | 76% | 50 to 100 |
+| Median fill rate | 93% | 88% | at least 50 |
+| Signed class mean | 16.25 | 15.70 | — |
+| Non-empty classes | 134 of 134 | 134 of 134 | at least 101 |
+
+**The number that mattered was the one nothing asserted.** The first cut of this change gave
+`RecruitingCyclePhase` an `allowsCommitmentResolution` predicate and gated
+`CollegeRecruitingMarketSystem` on it, which read as sufficient and was not: `CollegeState.commit`
+and `CollegeState.flip` — the mutations that actually record a commitment — still guarded on
+`== .active` underneath it. The signing week therefore built its contender lists in full and then
+refused every one of them. No test failed. The only visible trace was the weekly diagnostic line in
+the calibration harness, where week 21 read `0/0` commitments against 163 before the change, and
+aggregate fill sat at 72% instead of 76%. Both mutations now take the predicate, and
+`SeasonRolloverTests` asserts that the signing week emits `prospectCommitted` events, so the next
+regression of this shape fails rather than drifts.
+
+Week 21 now resolves 89 commitments and 7 flips, against 89/4 in week 19 and 80/7 in week 20 — the
+ordinary weekly rate. It was 163 before the change because the AI investment pass ran that week as
+well; that spike is what the deadline costs, and it is the 2 points of aggregate fill above.
+
+**A note on the fixture sweep this needed, because the first attempt at it was wrong.** Making the
+integrity rule total means a hand-built root at week 21 holding `active` is now invalid, and five
+test fixtures build one. Only two of them actually asserted anything that noticed — `ProMarketTests`
+(which checks integrity directly) and `CareerControlTests`'s portal-decision fixture (which broke
+for an unrelated reason: the phase change moved which programme the spring snapshot offered first,
+and the new one had an unplayed week-1 fixture, so `advanceWeek` paused at its match instead of
+running the portal transaction the test then asserts). The other three were "corrected" for tidiness
+and one of them — `PortalTransactionTests` — trapped a `precondition` and took the whole suite down
+with `SIGTRAP` and an empty log. Those three were reverted. A fixture that builds an unreachable
+root is untidy; a fixture edited for tidiness that traps is a defect.
+
+Redshirt planning is roster work rather than recruiting contact (`02` §4.1 puts it in spring
+development), so `CollegeRedshirtSystem` refuses only on a closed cycle and stays open on signing
+day. Reusing `allowsRecruitingActions` there would have closed it in week 21 as a side effect of a
+rule about contact.
 
 **Integrity:** one check of 29 is inactive, `contractExpiry`, which activates with roster turnover.
 

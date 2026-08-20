@@ -99,7 +99,7 @@ public extension CoachWorldReadModelProvider {
     ) -> RecruitingBoardReadModel.Prospect {
         let stableID = prospect.id.uuidString
         let boardFull = recruiting.boardIDs.count >= CollegeRules.recruitingBoardLimit
-        let activePhase = state.college.phase == .active
+        let activePhase = state.college.phase.allowsRecruitingActions
         let portalOpen = state.college.portal.phase != .awaitingSpring
         let available = activePhase && portalOpen && !boardFull && recruitingOwnerIsUser
         let reason: String?
@@ -309,7 +309,7 @@ public extension CoachWorldReadModelProvider {
         in state: GameState
     ) -> [CoachWorldActionChoice] {
         let contactCost = "\(CollegeRules.aiEvaluationContactPoints) pts"
-        let activePhase = cyclePhase == .active
+        let activePhase = cyclePhase.allowsRecruitingActions
         let portalOpen = state.college.portal.phase != .awaitingSpring
         let recruitingOpen = activePhase && portalOpen && recruitingOwnerIsUser
         let challengeAuthorized = recruitment.map {
