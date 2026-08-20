@@ -92,7 +92,7 @@ func runTeamLogoManifestExport(
         .appendingPathComponent(".\(targetURL.lastPathComponent).\(UUID().uuidString)")
     defer { try? FileManager.default.removeItem(at: temporaryURL) }
     try data.write(to: temporaryURL, options: .atomic)
-    try FileManager.default.copyItem(at: temporaryURL, to: targetURL)
+    try FileManager.default.linkItem(at: temporaryURL, to: targetURL)
 }
 
 func runTeamLogoManifestTests() {
@@ -114,6 +114,9 @@ func runTeamLogoManifestTests() {
             expectEqual(try Data(contentsOf: targetURL), sentinel)
             try runTeamLogoManifestExport(force: true, to: targetURL)
             expectEqual(try JSONDecoder().decode(TeamLogoManifest.self, from: Data(contentsOf: targetURL)).teams.count, 166)
+            let publishedURL = directory.appendingPathComponent("published.json")
+            try runTeamLogoManifestExport(to: publishedURL)
+            expectEqual(try JSONDecoder().decode(TeamLogoManifest.self, from: Data(contentsOf: publishedURL)).teams.count, 166)
         }
         test("manifest exactly matches the canonical world") {
             let manifest = try loadTeamLogoManifest()
