@@ -575,6 +575,7 @@ func runPeopleLifecycleTests() {
             var injuries: [(ironman: Bool, severity: InjurySeverity, weeks: Int)] = []
             var previousRosters = rosterSnapshot(state)
             checkProAgeCurve(state, season: 0)
+            checkRatingSpread(state, season: 0, assertTierGap: false)
             for season in 1...(measured.max() ?? 1) {
                 for _ in 0..<SharedRules.inSeasonWeeks {
                     let transition = try WorldScheduler.advanceWeek(state)
@@ -602,6 +603,7 @@ func runPeopleLifecycleTests() {
                 defer { previousRosters = currentRosters }
                 guard measured.contains(season) else { continue }
                 checkProAgeCurve(state, season: season)
+                checkRatingSpread(state, season: season, assertTierGap: false)
                 checkChurn(from: previousRosters, to: currentRosters, season: season,
                            assertPro: false)
             }
@@ -714,6 +716,79 @@ func checkInjuredShare(_ state: GameState, season: Int) {
     ))
 }
 
+// MARK: - The rating spread band
+
+// How far apart players are, within a tier and between the two. The soak asserted mean college
+// overall in 45…85 and mean pro overall in 55…90 — intervals 40 and 35 points wide on a 40…99
+// scale, which is to say they assert the rating type's own range and nothing about the population.
+// Neither says anything at all about *spread*, so a league that converged on one identical rating
+// would satisfy both. That is the grey-mush failure, and nothing could see it.
+//
+// **Within-tier standard deviation. College 3…10, pro 2.5…8. Derived `[P]`.**
+// `RosterPopulationGenerator.baseRating` sets a roster's centre from prestige — pro
+// `60 + span * 15/59`, college `50 + span * 25/59` — and each rated attribute is that base plus a
+// uniform `-10…10`, with `Player.overall` averaging the rated attributes. The uniform has sd 6.06,
+// so averaging k of them contributes 6.06/sqrt(k), about 2.7 at five rated attributes. Pro prestige
+// is uniform 48…92 (`LeagueGenerator`), giving bases 62…73, an sd of 11/sqrt(12) = 3.18, and a total
+// near sqrt(3.18^2 + 2.7^2) = 4.2. The college limb is wider on purpose: its prestige comes from
+// per-archetype floors and ceilings rather than one uniform draw, so the between-programme term is
+// not derivable the same way and the band states that honestly rather than pretending to a
+// precision it does not have.
+//
+// **Tier gap, pro mean overall minus college mean overall: 1…12. Derived `[P]`** from the same two
+// expressions, whose midpoints differ by roughly 5 to 6 at generation. The floor is what matters:
+// at or below zero the professional tier is not the better one, and the promotion arc that `02`
+// sells as the spine of the game is measuring nothing.
+//
+// Asserted across a long run because the failure mode is drift, not generation. Development is
+// bounded at +/-1 an attribute a checkpoint, which is exactly the shape that can quietly homogenise
+// a league over ten seasons while every individual step stays legal.
+
+private let collegeOverallSDBand: ClosedRange<Double> = 3.0...10.0
+private let proOverallSDBand: ClosedRange<Double> = 2.5...8.0
+private let tierGapBand: ClosedRange<Double> = 1.0...12.0
+
+/// `assertTierGap` follows the same rule as `checkChurn`'s professional limb: measured and printed
+/// everywhere, asserted in the soaks lane. The gap limb is red because college talent decays to the
+/// recruiting pipeline's scale, which is a generation-constant question for the owner and not a
+/// band to be widened. The two standard-deviation limbs assert everywhere, because they hold.
+func checkRatingSpread(_ state: GameState, season: Int, assertTierGap: Bool) {
+    func overalls(_ ids: [UUID]) -> [Double] {
+        ids.compactMap { state.players[$0].map { Double($0.overall.value) } }
+    }
+    func moments(_ values: [Double]) -> (mean: Double, sd: Double) {
+        guard !values.isEmpty else { return (.nan, .nan) }
+        let mean = values.reduce(0, +) / Double(values.count)
+        let variance = values.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(values.count)
+        return (mean, variance.squareRoot())
+    }
+    let college = moments(overalls(state.programmes.values.flatMap(\.rosterIDs)))
+    let pro = moments(overalls(state.proTeams.values.flatMap(\.rosterIDs)))
+    guard !college.mean.isNaN, !pro.mean.isNaN else {
+        expect(false, "season \(season): a tier had no rated players to measure spread over")
+        return
+    }
+    print(String(
+        format: "rating spread: season %d, college mean %.2f sd %.2f, pro mean %.2f sd %.2f, gap %.2f",
+        season, college.mean, college.sd, pro.mean, pro.sd, pro.mean - college.mean
+    ))
+    expect(collegeOverallSDBand.contains(college.sd), String(
+        format: "season %d: college overall sd %.2f is outside the band %.1f…%.1f",
+        season, college.sd, collegeOverallSDBand.lowerBound, collegeOverallSDBand.upperBound
+    ))
+    expect(proOverallSDBand.contains(pro.sd), String(
+        format: "season %d: pro overall sd %.2f is outside the band %.1f…%.1f",
+        season, pro.sd, proOverallSDBand.lowerBound, proOverallSDBand.upperBound
+    ))
+    guard assertTierGap else { return }
+    expect(tierGapBand.contains(pro.mean - college.mean), String(
+        format: "season %d: tier gap %.2f is outside the band %.1f…%.1f "
+            + "(college %.2f, pro %.2f)",
+        season, pro.mean - college.mean,
+        tierGapBand.lowerBound, tierGapBand.upperBound, college.mean, pro.mean
+    ))
+}
+
 // MARK: - The churn band
 
 // What share of an organisation's roster is gone a season later. Nothing measured it: the soak
@@ -729,7 +804,15 @@ func checkInjuredShare(_ state: GameState, season: Int) {
 // (`02` §4.1, two windows a season) only add, so the ceiling is loose at 0.45 — past which a
 // programme is not turning over but being rebuilt wholesale.
 //
-// **Professional, 0.10…0.50, derived `[P]` and deliberately the weaker limb.**
+// **Professional, 0.10…0.50.** Canon is more specific than this band: `02` §4.2a fixes bootstrap
+// terms so that "roughly a fifth of each roster reaches expiry each season", about eleven players a
+// roster, which is 0.20 before retirement is counted at all. The band stays at 0.10 rather than
+// being tightened to canon, because expiry is not churn — a club that re-signs everyone it lets
+// expire moves nobody — and 0.10 is the floor below which the market has stopped regardless. The
+// measured value fails even that: `--pro-soak` counts 149 expiries a season against the roughly 339
+// canon calls for, so the model contradicts `02` §4.2a directly and not merely a derived band.
+//
+// The rest of this limb is derived `[P]` and deliberately weak.
 // `ProRules.contractYearsRange` is 1…7, so a roughly flat spread of contract lengths means a mean
 // near 4 and an expiry-driven churn near 0.25, with cuts adding and re-signing subtracting. The
 // second of those is not derivable from a constant — a team that re-signs everyone it lets expire
@@ -916,6 +999,7 @@ func runM2SoakTests(seasons: Int) {
                 expect((45...85).contains(collegeOverall.reduce(0, +) / collegeOverall.count))
                 expect((55...90).contains(proOverall.reduce(0, +) / proOverall.count))
                 checkProAgeCurve(state, season: season)
+                checkRatingSpread(state, season: season, assertTierGap: true)
                 let currentRosters = rosterSnapshot(state)
                 checkChurn(from: previousRosters, to: currentRosters, season: season,
                            assertPro: true)

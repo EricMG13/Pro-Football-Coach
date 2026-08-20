@@ -864,6 +864,63 @@ gets cut, and when, is an owner-level design call rather than an implementation 
 invented here. `--pro-soak` and `--pro-draft-probe` stay red until it is answered, in the same way
 P4's calibration gate stays red; **neither is in the default run**, so `verify.sh` is unaffected.
 
+### Lifecycle distribution bands — **four added 2026-08-20, and two found real drift**
+
+Nothing banded the people model. The soak asserted bounds a league of nothing but 23-year-olds and
+a league of nothing but 33-year-olds both satisfy, an injured share that `> 0 and < 10%` leaves
+undetermined, a churn check that one graduating walk-on satisfies, and mean overall inside intervals
+40 and 35 points wide on a 40-99 scale. `01` §6.5 bands the match engine; nothing banded this.
+
+Four bands now assert at season indices 0, 1, 3, 6 and 10 of a ten-season run, and at every season
+of the twenty-season M2 soak. Two hold. Two do not, and neither is widened to make the light go
+green.
+
+**Holding.** The professional age curve — mean age 26.4 to 27.1 against a band of 25.0 to 27.5, and
+the share at or past a position's decline age 0.182 to 0.223 against 0.08 to 0.30, whose ceiling of
+0.27 is derived from the escalating retirement hazard in `SeasonLifecycleSystem.retires`. The
+injured share, 0.0207 to 0.0254 against a derived 0.015 to 0.055. College churn, 0.256 to 0.305
+against a derived 0.18 to 0.45. Both standard-deviation limbs of the rating spread.
+
+**Red 1: no professional has ever changed club.** Professional churn decays 0.295, 0.257, 0.162,
+0.095 across ten seasons, onto 1/11.44 = 0.087 — the retirement-only rate implied by the same mean
+career length the age-curve band derives. Splitting a departure from a transfer says why:
+professional `moved` is **exactly zero at every season across 32 clubs**, against college `moved` of
+127 to 202 a season through the portal. Every professional departure is one-way.
+
+This is the stall `a2e3147` and `4a95ca5` record, in a form neither describes. Their diagnosis was
+that bootstrap issued no contracts so nobody reached free agency. That half is fixed: `--pro-soak`
+counts 1,491 expiries and 1,476 signings across ten seasons. What no measurement caught until now is
+that those 1,476 signings **relocate nobody**, and the draft still takes zero picks in ten seasons
+while starting nine times. It also contradicts canon rather than only a derived band: `02` §4.2a
+fixes bootstrap terms so "roughly a fifth of each roster reaches expiry each season", about 339
+expiries; the model produces 149.
+
+**Red 2: college talent decays to the recruiting pipeline's scale.** Mean college overall falls
+59.32, 58.46, 54.06, 51.38, 51.59 and settles, while professional mean holds at 65.5 to 66.1. The
+tier gap therefore more than doubles, 6.21 to 14.51, and breaks its band of 1 to 12 from season 6.
+The professional tier is not improving; the college game is degrading.
+
+The arithmetic is exact, and the two generators are on different scales from different inputs:
+
+```text
+RosterPopulationGenerator.baseRating   50 + (prestige - 40) * 25/59   ->  50...75, midpoint 62.5
+ProspectPopulationGenerator            42 + (density  - 40) * 28/59   ->  42...70, midpoint 56.0
+```
+
+Bootstrap keys off programme prestige, recruiting off city talent density, and recruiting sits 6.5
+points lower with a floor 8 points lower. With `walkOnRatingPenalty` of 12 on roughly 20 of the 105
+roster places the steady state is near 0.81 * 56 + 0.19 * 44 = 53.8 before development, against an
+observed 51.6. The intake pipeline cannot sustain the level bootstrap generates, so the league falls
+to the recruiting scale over six seasons and holds there. **Which scale is canonical is a design
+call and is not resolved here.** It also bears on P4: calibration was tuned against bootstrap
+ratings, and college ratings do not stay there.
+
+**Both red limbs assert in the soaks lane and report in the default lane**, which is where this repo
+already keeps this class of failure — `e710924` added `--pro-soak` "red for a real reason" and
+recorded that it is not in the default run. The bands themselves are unchanged: professional churn
+stays at 0.10, the tier gap at 12.
+
+
 ### M7C — the news feed — **implemented and green**
 
 The living world reports itself. `NewsFeedReadModel` renders a headline from each typed payload and
