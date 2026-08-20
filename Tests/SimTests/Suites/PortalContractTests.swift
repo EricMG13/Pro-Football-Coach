@@ -274,7 +274,7 @@ func runPortalContractTests() {
     suite("College portal state contracts") {
         test("college construction fails fast when its portal targets another season") {
             let process = Process()
-            process.executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
+            process.executableURL = currentExecutableURL()
             process.arguments = ["--portal-contracts"]
             var environment = ProcessInfo.processInfo.environment
             environment["INVALID_COLLEGE_PORTAL_TARGET_PROBE"] = "1"
@@ -294,7 +294,7 @@ func runPortalContractTests() {
                 "INVALID_GAME_SCHEMA_VERSION_PROBE",
             ] {
                 let process = Process()
-                process.executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
+                process.executableURL = currentExecutableURL()
                 process.arguments = ["--portal-contracts"]
                 var environment = ProcessInfo.processInfo.environment
                 environment[probe] = "1"
@@ -319,7 +319,7 @@ func runPortalContractTests() {
         test("bootstrap exposes an empty schema-six portal for the current season") {
             let state = GameState.bootstrap(seed: 94_001)
 
-            expectEqual(GameState.schemaVersion, 11)
+            expectEqual(GameState.schemaVersion, 13)
             expectEqual(state.college.portal.targetSeason, state.college.recruitingSeason)
             expectEqual(state.college.portal.phase, .closed)
             expect(state.college.portal.entries.isEmpty)

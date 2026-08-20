@@ -70,10 +70,14 @@ public struct CollegeCareerControl: Codable, Sendable, Equatable {
 public struct CareerControlState: Codable, Sendable, Equatable {
     public static let maximumMandatoryDecisionResolutions = 10_000
     public private(set) var college: CollegeCareerControl?
+    /// The coach identity survives tier transitions and separation from a programme.
+    /// Optional decoding keeps schema-11 saves readable; new careers always set it.
+    public private(set) var coachID: UUID?
     public private(set) var mandatoryDecisionResolutions: [MandatoryDecisionResolution]
 
     public init(
         college: CollegeCareerControl? = nil,
+        coachID: UUID? = nil,
         mandatoryDecisionResolutions: [MandatoryDecisionResolution] = []
     ) {
         precondition(
@@ -83,6 +87,7 @@ public struct CareerControlState: Codable, Sendable, Equatable {
             "Career decision history is invalid."
         )
         self.college = college
+        self.coachID = coachID ?? college?.coachID
         self.mandatoryDecisionResolutions = mandatoryDecisionResolutions
     }
 
@@ -101,11 +106,13 @@ public struct CareerControlState: Codable, Sendable, Equatable {
             )
         }
         college = try container.decodeIfPresent(CollegeCareerControl.self, forKey: .college)
+        coachID = try container.decodeIfPresent(UUID.self, forKey: .coachID) ?? college?.coachID
         mandatoryDecisionResolutions = decoded
     }
 
     mutating func setCollege(_ control: CollegeCareerControl) {
         college = control
+        coachID = control.coachID
     }
 
     mutating func clearCollege() {
@@ -144,7 +151,7 @@ public enum CareerControlSystem {
         at programmeID: UUID,
         in state: GameState
     ) throws -> CareerControlTransition {
-        guard state.career.college == nil else {
+        guard state.career.college == nil, state.careerArc.currentJob == nil else {
             throw CareerControlError.careerAlreadyStarted
         }
         guard let programme = state.programmes[programmeID] else {
@@ -156,12 +163,57 @@ public enum CareerControlSystem {
         guard headCoachIDs.count == 1 else {
             throw CareerControlError.missingHeadCoach
         }
+        var coach: Staff
+        if let existingCoachID = state.career.coachID,
+           let existingCoach = state.staff[existingCoachID] {
+            coach = existingCoach
+        } else {
+            var ordinal = 10_000
+            repeat {
+                coach = StaffPopulationGenerator.replacement(
+                    rootSeed: state.league.seed,
+                    season: state.calendar.season,
+                    organisationID: programmeID,
+                    prestige: programme.prestige,
+                    role: .headCoach,
+                    positionGroup: nil,
+                    ordinal: ordinal
+                )
+                ordinal += 1
+            } while state.staff[coach.id] != nil
+        }
         let control = CollegeCareerControl(
-            coachID: headCoachIDs[0],
+            coachID: coach.id,
             programmeID: programmeID,
             startedAt: state.calendar
         )
         var next = state
+        next.staff.insert(coach)
+        for organisationID in next.programmes.ids where organisationID != programmeID {
+            _ = next.programmes.update(organisationID) { programme in
+                programme.staffIDs.removeAll { $0 == coach.id }
+            }
+        }
+        for teamID in next.proTeams.ids {
+            _ = next.proTeams.update(teamID) { team in
+                team.staffIDs.removeAll { $0 == coach.id }
+            }
+        }
+        _ = next.programmes.update(programmeID) { programme in
+            programme.staffIDs = programme.staffIDs
+                .filter { $0 != headCoachIDs[0] && $0 != coach.id }
+                + [coach.id]
+        }
+        if next.people.staffCareers[coach.id] == nil {
+            next.people.insert(
+                staff: coach,
+                assignment: StaffCareerAssignment(
+                    season: state.calendar.season,
+                    organisationID: programmeID,
+                    role: .headCoach
+                )
+            )
+        }
         next.career.setCollege(control)
         guard WorldIntegrity.check(next).isValid else {
             throw CareerControlError.missingHeadCoach

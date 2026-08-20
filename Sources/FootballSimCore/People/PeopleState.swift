@@ -71,6 +71,75 @@ public struct PlayerInjury: Codable, Sendable, Equatable {
     public var isRecovered: Bool { weeksRemaining == 0 }
 }
 
+/// Why a player is in trouble. `02` §5.2.
+///
+/// Four kinds rather than a free-text reason, because the reason decides what a suspension is worth
+/// and a string cannot be reasoned about. Nothing here is a crime: this is a football team's own
+/// discipline, which is the only kind a coach actually administers.
+public enum DisciplineIncidentKind: String, Codable, Sendable, CaseIterable, Hashable {
+    /// Missed meetings, late to treatment, the small stuff that is a pattern rather than an event.
+    case timekeeping
+    /// A flag for conduct in a game, or an argument on the sideline.
+    case conduct
+    /// A team rule, broken knowingly.
+    case teamRules
+    /// Something away from the building that the programme has to answer for.
+    case offField
+}
+
+extension DisciplineIncidentKind: CodingKeyRepresentable {}
+
+/// Time a player is serving. `02` §5.2.
+///
+/// Shaped like `PlayerInjury` on purpose: it counts down on the same weekly tick, it makes the same
+/// `isAvailable` false, and every surface that already handles a missing player therefore handles
+/// this one without being taught to. A second, differently-shaped absence would be a second thing
+/// for every depth chart and match to get wrong.
+public struct PlayerSuspension: Codable, Sendable, Equatable {
+    public let reason: DisciplineIncidentKind
+    public let occurredAt: CalendarState
+    public let originalWeeks: Int
+    public private(set) var weeksRemaining: Int
+
+    public init(
+        reason: DisciplineIncidentKind,
+        occurredAt: CalendarState,
+        originalWeeks: Int,
+        weeksRemaining: Int
+    ) {
+        self.reason = reason
+        self.occurredAt = occurredAt
+        self.originalWeeks = min(max(1, originalWeeks), PeopleRules.maximumSuspensionWeeks)
+        self.weeksRemaining = min(max(0, weeksRemaining), self.originalWeeks)
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let decodedOriginalWeeks = try container.decode(Int.self, forKey: .originalWeeks)
+        let decodedWeeksRemaining = try container.decode(Int.self, forKey: .weeksRemaining)
+        guard (1...PeopleRules.maximumSuspensionWeeks).contains(decodedOriginalWeeks),
+              (0...decodedOriginalWeeks).contains(decodedWeeksRemaining) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .weeksRemaining,
+                in: container,
+                debugDescription: "Suspension duration is outside its legal bounds."
+            )
+        }
+        self.init(
+            reason: try container.decode(DisciplineIncidentKind.self, forKey: .reason),
+            occurredAt: try container.decode(CalendarState.self, forKey: .occurredAt),
+            originalWeeks: decodedOriginalWeeks,
+            weeksRemaining: decodedWeeksRemaining
+        )
+    }
+
+    public mutating func serveWeek() {
+        weeksRemaining = max(0, weeksRemaining - 1)
+    }
+
+    public var isServed: Bool { weeksRemaining == 0 }
+}
+
 public enum DevelopmentReason: String, Codable, Sendable, CaseIterable, Hashable {
     case ageCurve
     case practice
@@ -131,6 +200,39 @@ public struct AttributeDevelopment: Codable, Sendable, Equatable {
     }
 }
 
+/// One applied attribute delta with a dated cause for the Player Profile history.
+public struct AttributeChangeRecord: Codable, Sendable, Equatable {
+    public let occurredAt: CalendarState
+    public let attribute: Attribute
+    public let delta: Int
+    public let cause: DevelopmentReason
+
+    public init(occurredAt: CalendarState, attribute: Attribute, delta: Int, cause: DevelopmentReason) {
+        self.occurredAt = occurredAt
+        self.attribute = attribute
+        self.delta = delta
+        self.cause = cause
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let delta = try container.decode(Int.self, forKey: .delta)
+        guard PeopleRules.attributeDevelopmentRange.contains(delta), delta != 0 else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .delta,
+                in: container,
+                debugDescription: "Attribute change is outside its legal range."
+            )
+        }
+        self.init(
+            occurredAt: try container.decode(CalendarState.self, forKey: .occurredAt),
+            attribute: try container.decode(Attribute.self, forKey: .attribute),
+            delta: delta,
+            cause: try container.decode(DevelopmentReason.self, forKey: .cause)
+        )
+    }
+}
+
 public struct DevelopmentSummary: Codable, Sendable, Equatable {
     public let occurredAt: CalendarState
     public let components: [DevelopmentComponent]
@@ -182,19 +284,30 @@ public struct DevelopmentSummary: Codable, Sendable, Equatable {
 }
 
 public struct PlayerLifecycleState: Codable, Sendable, Equatable, Identifiable {
+    private enum CodingKeys: String, CodingKey {
+        case playerID, fatigue, injury, status, lastDevelopment, recentChanges, suspension
+    }
+
     public var id: UUID { playerID }
     public let playerID: UUID
     public private(set) var fatigue: Int
     public private(set) var injury: PlayerInjury?
     public private(set) var status: PlayerLifecycleStatus
     public private(set) var lastDevelopment: DevelopmentSummary?
+    public private(set) var recentChanges: [AttributeChangeRecord]
+    /// Time being served. `02` §5.2. Optional and omitted when absent, so a world in which nobody is
+    /// suspended encodes to exactly the bytes it did before discipline existed — which is what keeps
+    /// this additive against a schema with no migration path.
+    public private(set) var suspension: PlayerSuspension?
 
     public init(
         playerID: UUID,
         fatigue: Int = 0,
         injury: PlayerInjury? = nil,
         status: PlayerLifecycleStatus = .active,
-        lastDevelopment: DevelopmentSummary? = nil
+        lastDevelopment: DevelopmentSummary? = nil,
+        recentChanges: [AttributeChangeRecord] = [],
+        suspension: PlayerSuspension? = nil
     ) {
         self.playerID = playerID
         self.fatigue = min(max(fatigue, PeopleRules.fatigueRange.lowerBound),
@@ -202,6 +315,8 @@ public struct PlayerLifecycleState: Codable, Sendable, Equatable, Identifiable {
         self.injury = injury
         self.status = status
         self.lastDevelopment = lastDevelopment
+        self.recentChanges = Array(recentChanges.suffix(PeopleRules.recentChangeHistoryLimit))
+        self.suspension = suspension
     }
 
     public init(from decoder: any Decoder) throws {
@@ -214,6 +329,17 @@ public struct PlayerLifecycleState: Codable, Sendable, Equatable, Identifiable {
                 debugDescription: "Player fatigue is outside its legal range."
             )
         }
+        let decodedRecentChanges = try container.decodeIfPresent(
+            [AttributeChangeRecord].self,
+            forKey: .recentChanges
+        ) ?? []
+        guard decodedRecentChanges.count <= PeopleRules.recentChangeHistoryLimit else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .recentChanges,
+                in: container,
+                debugDescription: "Recent attribute history exceeds its bound."
+            )
+        }
         self.init(
             playerID: try container.decode(UUID.self, forKey: .playerID),
             fatigue: decodedFatigue,
@@ -222,11 +348,38 @@ public struct PlayerLifecycleState: Codable, Sendable, Equatable, Identifiable {
             lastDevelopment: try container.decodeIfPresent(
                 DevelopmentSummary.self,
                 forKey: .lastDevelopment
-            )
+            ),
+            recentChanges: decodedRecentChanges,
+            suspension: try container.decodeIfPresent(PlayerSuspension.self, forKey: .suspension)
         )
     }
 
-    public var isAvailable: Bool { status == .active && injury == nil }
+    public var isAvailable: Bool { status == .active && injury == nil && suspension == nil }
+
+    /// Serving time counts down on the same tick recovery does, and returns whether it finished.
+    ///
+    /// Separate from `recoverWeek`'s return value rather than folded into it: that Bool means "came
+    /// back from an injury" and drives `.playerRecovered`, so a suspension ending would otherwise
+    /// announce a recovery from an injury the player never had.
+    @discardableResult
+    public mutating func serveSuspensionWeek() -> Bool {
+        guard var current = suspension else { return false }
+        current.serveWeek()
+        if current.isServed {
+            suspension = nil
+            return true
+        }
+        suspension = current
+        return false
+    }
+
+    /// Puts a player out. Refuses to overwrite time already being served, for the reason `sustain`
+    /// refuses to overwrite an injury: the longer absence is the one the world already knows about,
+    /// and a second call would quietly shorten it.
+    public mutating func suspend(_ newSuspension: PlayerSuspension) {
+        guard status == .active, suspension == nil else { return }
+        suspension = newSuspension
+    }
 
     @discardableResult
     public mutating func recoverWeek() -> Bool {
@@ -246,6 +399,17 @@ public struct PlayerLifecycleState: Codable, Sendable, Equatable, Identifiable {
         fatigue = min(PeopleRules.fatigueRange.upperBound, fatigue + max(0, amount))
     }
 
+    /// Applies the current week's authored practice without adding another persisted readiness
+    /// currency. Both conditioning and recovery reduce the same bounded fatigue measure that the
+    /// match-availability rules already consume.
+    public mutating func applyPracticeEffects(
+        conditioningBenefit: Int,
+        recoveryBenefit: Int
+    ) {
+        let reduction = max(0, conditioningBenefit) + max(0, recoveryBenefit)
+        fatigue = max(PeopleRules.fatigueRange.lowerBound, fatigue - reduction)
+    }
+
     public mutating func sustain(_ newInjury: PlayerInjury) {
         guard status == .active, injury == nil else { return }
         injury = newInjury
@@ -253,12 +417,24 @@ public struct PlayerLifecycleState: Codable, Sendable, Equatable, Identifiable {
 
     public mutating func recordDevelopment(_ summary: DevelopmentSummary) {
         lastDevelopment = summary
+        guard let cause = summary.components.max(by: {
+            abs($0.value) < abs($1.value)
+        })?.reason else { return }
+        recentChanges = Array((recentChanges + summary.attributeChanges.map {
+            AttributeChangeRecord(
+                occurredAt: summary.occurredAt,
+                attribute: $0.attribute,
+                delta: $0.delta,
+                cause: cause
+            )
+        }).suffix(PeopleRules.recentChangeHistoryLimit))
     }
 
     public mutating func endCareer(as endStatus: PlayerLifecycleStatus) {
         guard endStatus != .active else { return }
         status = endStatus
         injury = nil
+        suspension = nil
         fatigue = 0
     }
 }
@@ -927,5 +1103,48 @@ public struct PeopleState: Codable, Sendable, Equatable {
         guard status != .active, playerLifecycle[player.id] != nil else { return }
         playerLifecycle.removeValue(forKey: player.id)
         departedPlayers[player.id] = DepartedPlayerIdentity(player: player, status: status)
+    }
+
+    /// Drops the oldest unprotected departed identities until the retained set is inside its bound.
+    ///
+    /// The identity and its career record leave together, because `WorldIntegrity` requires
+    /// `playerCareers` to be exactly `players` united with `departedPlayers`; evicting one without
+    /// the other trades a size defect for a corruption defect.
+    ///
+    /// `protectedIDs` is the set nothing may evict. The caller builds it from every place a
+    /// departed identity is still named — the retained event journal, archived award winners,
+    /// portal history — so a bound cannot make a retained reference dangle. Eviction order is
+    /// oldest departure first, with a stable identifier tiebreak, so the same save prunes the same
+    /// way in every process.
+    ///
+    /// Returns how many identities were evicted, so a caller can record it rather than guess.
+    @discardableResult
+    public mutating func pruneDepartedPlayers(
+        limit: Int = PeopleRules.departedPlayerRetentionLimit,
+        protecting protectedIDs: Set<UUID>
+    ) -> Int {
+        let excess = departedPlayers.count - max(0, limit)
+        guard excess > 0 else { return 0 }
+        let evictable = departedPlayers.keys
+            .filter { !protectedIDs.contains($0) }
+            .sorted { lhs, rhs in
+                let left = playerCareers[lhs]?.endedAt
+                let right = playerCareers[rhs]?.endedAt
+                if left != right {
+                    // A career with no recorded end is the least informative thing retained, so it
+                    // goes first rather than last.
+                    guard let left else { return true }
+                    guard let right else { return false }
+                    if left.season != right.season { return left.season < right.season }
+                    if left.week != right.week { return left.week < right.week }
+                }
+                return lhs.uuidString < rhs.uuidString
+            }
+            .prefix(excess)
+        for id in evictable {
+            departedPlayers.removeValue(forKey: id)
+            playerCareers.removeValue(forKey: id)
+        }
+        return evictable.count
     }
 }

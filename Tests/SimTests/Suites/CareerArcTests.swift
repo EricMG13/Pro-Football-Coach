@@ -15,6 +15,22 @@ func runCareerArcTests() {
             expect(arc.stakeholderSupport.values.allSatisfy(CareerArcState.supportRange.contains))
         }
 
+        test("a save from before stakeholderLastMovement existed decodes to an empty record") {
+            let arc = CareerArcState()
+            let encoded = try JSONEncoder.stable().encode(arc)
+            guard var object = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+            else {
+                expect(false, "CareerArcState must encode to a JSON object")
+                return
+            }
+            expect(object.removeValue(forKey: "stakeholderLastMovement") != nil,
+                   "the fixture must actually carry the key this test removes, or it proves nothing")
+            let legacyData = try JSONSerialization.data(withJSONObject: object)
+            let restored = try JSONDecoder.stable().decode(CareerArcState.self, from: legacyData)
+            expect(restored.stakeholderLastMovement.isEmpty,
+                   "a save missing the key must decode to an empty record, not fail or crash")
+        }
+
         test("career arc records support, firing, and durable job history") {
             let organisationID = UUID(uuidString: "00000000-0000-4000-8000-000000000A01")!
             let startedAt = CalendarState(season: 0, week: 1)
@@ -22,9 +38,15 @@ func runCareerArcTests() {
             var arc = CareerArcState()
 
             expect(arc.establishCollegeJob(organisationID: organisationID, at: startedAt))
-            expect(arc.applySupport(deltas: Dictionary(uniqueKeysWithValues: 
+            expect(arc.applySupport(deltas: Dictionary(uniqueKeysWithValues:
                 CareerStakeholder.allCases.map { ($0, -100) }
             )))
+            // applySupport records the delta it actually applied per stakeholder, not just the
+            // resulting support level -- that record is what lets a surface say why support
+            // moved, and it must reflect exactly what was passed, not the clamped support value.
+            expectEqual(arc.stakeholderLastMovement, Dictionary(uniqueKeysWithValues:
+                CareerStakeholder.allCases.map { ($0, -100) }
+            ))
             expect(arc.markFired(at: endedAt))
             expectEqual(arc.status, .fired)
             expect(arc.currentJob == nil)
@@ -100,6 +122,8 @@ func runCareerArcTests() {
                 )),
                 in: resigning
             )
+            expect(resolved.state.career.college == nil,
+                   "resignation left the coach controlling the former programme")
             expectEqual(resolved.state.careerArc.status, .seeking)
             expect(resolved.state.careerArc.currentJob == nil)
             if case .careerUpdated = resolved.result {
@@ -112,6 +136,7 @@ func runCareerArcTests() {
         testAsync("the career actor routes resignation without exposing root state") {
             let source = GameState.bootstrap(seed: 99_106)
             let programmeID = source.programmes.ids[0]
+            let proTeam = source.proTeams.values[0]
             var controlled = try CareerControlSystem.startCollegeCareer(
                 at: programmeID,
                 in: source
@@ -122,16 +147,47 @@ func runCareerArcTests() {
                     tier: .college,
                     startedAt: controlled.calendar
                 ),
+                opportunities: [CareerOpportunity(
+                    id: UUID(uuidString: "00000000-0000-4000-8000-000000000A07")!,
+                    organisationID: proTeam.id,
+                    tier: .professional,
+                    offeredAt: controlled.calendar,
+                    expiresAt: controlled.calendar.advancedWeek(),
+                    prestige: proTeam.prestige,
+                    rationale: .staffRecommendation
+                )],
                 status: .employed
             )
+            controlled.pending = PendingQueues()
+            let delegateID = controlled.programmes[programmeID]!.staffIDs.first {
+                controlled.staff[$0]?.role == .offensiveCoordinator
+            }!
+            for responsibility in CollegeCareerResponsibility.allCases {
+                expect(CareerControlSystem.setResponsibility(
+                    responsibility,
+                    owner: .delegated(staffID: delegateID),
+                    in: &controlled
+                ))
+            }
             let session = try CareerSession(state: controlled)
             let receipt = try await session.resolve(.career(.resign))
             expectEqual(receipt.projection.calendar, controlled.calendar)
+            expectEqual(receipt.projection.tier, nil)
+            expectEqual(receipt.projection.programme, nil)
             if case .intent(.careerUpdated) = receipt.result {
                 expect(true)
             } else {
                 expect(false, "career actor did not return a career result")
             }
+
+            let restoredState = try SaveEnvelope.decode(GameState.self, from: await session.saveData())
+            let restored = try CareerSession(state: restoredState)
+            expectEqual((await restored.projection()).programme, nil)
+            let accepted = try await restored.resolve(.career(.acceptOpportunity(
+                opportunityID: UUID(uuidString: "00000000-0000-4000-8000-000000000A07")!
+            )))
+            expectEqual(accepted.projection.tier, .professional)
+            expectEqual(accepted.projection.programme?.id, proTeam.id)
         }
 
         test("season end establishes the controlled job and updates stakeholders") {
@@ -193,10 +249,21 @@ func runCareerArcTests() {
 
         test("the scheduler carries the controlled career arc through rollover") {
             let source = GameState.bootstrap(seed: 99_104)
-            let controlled = try CareerControlSystem.startCollegeCareer(
+            var controlled = try CareerControlSystem.startCollegeCareer(
                 at: source.programmes.ids[0],
                 in: source
             ).state
+            let programmeID = controlled.career.college!.programmeID
+            let delegateID = controlled.programmes[programmeID]!.staffIDs.first {
+                controlled.staff[$0]?.role == .offensiveCoordinator
+            }!
+            for responsibility in CollegeCareerResponsibility.allCases {
+                expect(CareerControlSystem.setResponsibility(
+                    responsibility,
+                    owner: .delegated(staffID: delegateID),
+                    in: &controlled
+                ))
+            }
             var state = controlled
             for _ in 0..<SharedRules.inSeasonWeeks {
                 state = try WorldScheduler.advanceWeek(state).state

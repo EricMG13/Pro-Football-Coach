@@ -72,7 +72,7 @@ func runCollegeStateTests() {
     suite("College management state") {
         test("eligibility construction rejects counters outside their supported bounds") {
             let process = Process()
-            process.executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
+            process.executableURL = currentExecutableURL()
             process.arguments = ["--college-state"]
             var environment = ProcessInfo.processInfo.environment
             environment["INVALID_ELIGIBILITY_CONSTRUCTION_PROBE"] = "1"
@@ -436,7 +436,7 @@ func runCollegeStateTests() {
         test("bootstrap creates legal programme resources and a normalized annual prospect pool") {
             let state = GameState.bootstrap(seed: 92_001)
 
-            expectEqual(GameState.schemaVersion, 11)
+            expectEqual(GameState.schemaVersion, 13)
             expectEqual(state.prospects.count, CollegeRules.annualProspectCount)
             expectEqual(state.college.programmes.count, state.programmes.count)
             expectEqual(state.college.prospectRecruitment.count, state.prospects.count)

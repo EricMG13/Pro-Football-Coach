@@ -240,6 +240,38 @@ func runGenerationTests() {
             }
         }
 
+        test("every division partitions its conference exactly, across the swept leagues") {
+            // 02 section 11.2's pro shape (2 conferences of 16, each 4 divisions of 4) is a fixed
+            // constant, not generated composition, so a single-seed member-count check cannot tell a
+            // correct partition from a division that duplicated one team and dropped another while
+            // keeping the same total. Swept across sweptWorlds' 200 leagues, checking the partition
+            // directly rather than inferring it from counts.
+            for (index, world) in sweptWorlds.enumerated() {
+                for conference in world.league.conferences(in: .pro) {
+                    let divisionsForConference = world.league.divisions.filter {
+                        $0.conferenceID == conference.id
+                    }
+                    expectEqual(divisionsForConference.count, ProRules.divisionsPerConference,
+                                "seed \(index): \(conference.name) does not list "
+                                    + "\(ProRules.divisionsPerConference) divisions")
+                    expectEqual(Set(conference.divisionIDs), Set(divisionsForConference.map(\.id)),
+                                "seed \(index): \(conference.name)'s divisionIDs do not match its "
+                                    + "actual divisions")
+                    for division in divisionsForConference {
+                        expectEqual(division.memberIDs.count, ProRules.teamsPerDivision,
+                                    "seed \(index): division \(division.name) holds "
+                                        + "\(division.memberIDs.count) teams")
+                    }
+                    let unioned = divisionsForConference.flatMap(\.memberIDs)
+                    expectEqual(Set(unioned).count, unioned.count,
+                                "seed \(index): a team appears in two divisions of \(conference.name)")
+                    expectEqual(Set(unioned), Set(conference.memberIDs),
+                                "seed \(index): \(conference.name)'s division members do not match "
+                                    + "its own member list")
+                }
+            }
+        }
+
         test("no two members, cities or venues in a league share a name") {
             // Ids were asserted distinct and names never were — the coverage-boundary pattern.
             // 166 members were drawn from a 570-name space with replacement, and the birthday

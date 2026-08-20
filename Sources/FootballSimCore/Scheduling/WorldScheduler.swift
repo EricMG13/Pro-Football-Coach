@@ -65,6 +65,9 @@ public struct WorldTransition: Codable, Sendable, Equatable {
 }
 
 public enum WorldSchedulerError: Error, Equatable {
+    /// A user-owned controlled fixture must be entered through `CareerSession` so its
+    /// resumable MatchSessionState is persisted instead of being silently abstracted.
+    case controlledMatchRequired(UUID)
     case integrityFailed([IntegrityIssue])
     case scheduledGameMissing(UUID)
     case scheduledGameResultMissing(UUID)
@@ -83,8 +86,280 @@ public enum WorldSchedulerError: Error, Equatable {
 public enum WorldScheduler {
     public static let version = 1
     public static let steps: [WorldStep] = WorldStep.allCases
+    private static let missingFixtureID = UUID(uuidString: "00000000-0000-4000-8000-000000000000")!
+
+    /// Installs a resumable controlled fixture before the weekly transaction can abstract it.
+    /// Calling this repeatedly is idempotent: an existing checkpoint is returned unchanged.
+    public static func prepareControlledMatch(in state: GameState) throws -> GameState {
+        guard state.matchSession == nil,
+              let controlledID = controlledOrganisationID(in: state),
+              let game = state.competition.currentSchedule.games.first(where: {
+                  $0.season == state.calendar.season
+                      && $0.week == state.calendar.week
+                      && $0.result == nil
+                      && ($0.homeID == controlledID || $0.awayID == controlledID)
+              }) else {
+            return state
+        }
+
+        var next = state
+        next.matchSession = makeMatchSession(for: game, controlledID: controlledID, in: &next)
+        let integrity = WorldIntegrity.check(next)
+        guard integrity.isValid else {
+            throw WorldSchedulerError.integrityFailed(integrity.issues)
+        }
+        return next
+    }
+
+    /// Commits one completed controlled fixture exactly once. The weekly scheduler remains the
+    /// owner of all later phases; its next invocation sees this result and processes only the
+    /// remaining due games before standings, records, and the week snapshot.
+    public static func finalizeControlledMatch(
+        _ completion: MatchCompletionReceipt,
+        in state: GameState
+    ) throws -> GameState {
+        guard let session = state.matchSession,
+              session.completed,
+              let fixtureID = session.fixtureID,
+              completion.evidence.fixtureID == fixtureID,
+              session.completion == completion,
+              let game = state.competition.currentSchedule.games.first(where: {
+                  $0.id == fixtureID
+              }), game.result == nil,
+              completion.record.tier == game.tier else {
+            throw WorldSchedulerError.scheduledGameMissing(
+                completion.evidence.fixtureID ?? missingFixtureID
+            )
+        }
+        let summary = DetailedGameSummaryBuilder.make(
+            record: completion.record,
+            homeParticipantIDs: session.home.offense.map(\.id) + session.home.defense.map(\.id),
+            awayParticipantIDs: session.away.offense.map(\.id) + session.away.defense.map(\.id),
+            evidence: completion.evidence
+        )
+        var next = state
+        do {
+            _ = try next.competition.currentSchedule.recordResults([
+                ScheduledGameResult(gameID: fixtureID, summary: summary)
+            ])
+        } catch let error as ScheduleResultRecordingError {
+            throw WorldSchedulerError.scheduleResultRecordingFailed(error)
+        }
+        next.matchSession = nil
+        TacticalPlanSystem.recordReviews(
+            for: game,
+            result: summary,
+            at: state.calendar,
+            in: &next.tactical
+        )
+        var emittedEvents: [DomainEvent] = []
+        try appendEvents(
+            payloads: [.gameCompleted(
+                gameID: game.id,
+                homeID: game.homeID,
+                awayID: game.awayID,
+                stage: game.stage,
+                homeScore: summary.homeScore,
+                awayScore: summary.awayScore
+            )],
+            occurredAt: state.calendar,
+            to: &next,
+            emittedEvents: &emittedEvents
+        )
+        next.competition = CompetitionReducer.rebuildStandings(from: next)
+        next.competition = CompetitionReducer.rebuildStatistics(from: next)
+        let integrity = WorldIntegrity.check(next)
+        guard integrity.isValid else {
+            throw WorldSchedulerError.integrityFailed(integrity.issues)
+        }
+        return next
+    }
+
+    private static func controlledOrganisationID(in state: GameState) -> UUID? {
+        if let college = state.career.college { return college.programmeID }
+        guard let job = state.careerArc.currentJob, job.tier == .professional else { return nil }
+        return job.organisationID
+    }
+
+    private static func attachInjuryEvidence(
+        from payloads: [DomainEventPayload],
+        at calendar: CalendarState,
+        to state: inout GameState
+    ) {
+        guard calendar.week > 1 else { return }
+        let workloadCalendar = CalendarState(season: calendar.season, week: calendar.week - 1)
+        let injuries = payloads.compactMap { payload -> (UUID, InjuryArea, InjurySeverity, Int)? in
+            guard case let .playerInjured(playerID, area, severity, weeks) = payload else {
+                return nil
+            }
+            return (playerID, area, severity, weeks)
+        }
+        guard !injuries.isEmpty else { return }
+
+        var byGame: [UUID: [GameInjuryEvidence]] = [:]
+        for (playerID, area, severity, weeks) in injuries {
+            guard let game = state.competition.currentSchedule.games
+                .filter({ game in
+                    game.season == workloadCalendar.season
+                        && game.week == workloadCalendar.week
+                        && game.result?.source == .detailed
+                        && game.result?.evidence != nil
+                        && ((game.result?.homeParticipantIDs.contains(playerID) ?? false)
+                            || (game.result?.awayParticipantIDs.contains(playerID) ?? false))
+                })
+                .sorted(by: { $0.id.uuidString < $1.id.uuidString })
+                .first,
+                  let result = game.result,
+                  let evidence = result.evidence else { continue }
+
+            let side: Side = result.homeParticipantIDs.contains(playerID) ? .home : .away
+            guard !evidence.injuries.contains(where: { $0.playerID == playerID }) else {
+                continue
+            }
+            byGame[game.id, default: []].append(GameInjuryEvidence(
+                playerID: playerID,
+                side: side,
+                area: area,
+                severity: severity,
+                weeks: weeks,
+                occurredAt: workloadCalendar
+            ))
+        }
+
+        for gameID in byGame.keys.sorted(by: { $0.uuidString < $1.uuidString }) {
+            guard var game = state.competition.currentSchedule.games.first(where: { $0.id == gameID }),
+                  let result = game.result,
+                  let evidence = result.evidence else { continue }
+            let updatedEvidence = GameEvidence(
+                fixtureID: evidence.fixtureID ?? gameID,
+                record: evidence.record,
+                homeParticipantIDs: evidence.homeParticipantIDs,
+                awayParticipantIDs: evidence.awayParticipantIDs,
+                callInReceipts: evidence.callInReceipts,
+                injuries: evidence.injuries + (byGame[gameID] ?? [])
+            )
+            game.result = GameSummary(
+                homeScore: result.homeScore,
+                awayScore: result.awayScore,
+                homeStatistics: result.homeStatistics,
+                awayStatistics: result.awayStatistics,
+                homeParticipantIDs: result.homeParticipantIDs,
+                awayParticipantIDs: result.awayParticipantIDs,
+                playerStatistics: result.playerStatistics,
+                source: result.source,
+                evidence: updatedEvidence
+            )
+            _ = state.competition.currentSchedule.replace(game)
+        }
+    }
+
+    private static func fullyDelegatedCollegeCareer(in state: GameState) -> Bool {
+        guard let control = state.career.college else { return false }
+        return CollegeCareerResponsibility.allCases.allSatisfy { responsibility in
+            if case .delegated = control.responsibilityOwners[responsibility] {
+                return true
+            }
+            return false
+        }
+    }
+
+    private static func makeMatchSession(
+        for game: ScheduledGame,
+        controlledID: UUID,
+        in state: inout GameState
+    ) -> MatchSessionState {
+        let homeRoster = playableRoster(for: game.homeID, tier: game.tier, in: state)
+        let awayRoster = playableRoster(for: game.awayID, tier: game.tier, in: state)
+        let homeUnavailable = unavailableIDs(for: game.homeID, tier: game.tier, in: state)
+        let awayUnavailable = unavailableIDs(for: game.awayID, tier: game.tier, in: state)
+        let homePersonnel = DepthChart.personnel(
+            roster: homeRoster,
+            plan: state.tactical.personnelPlan(for: game.homeID, at: state.calendar),
+            unavailableIDs: homeUnavailable
+        )
+        let awayPersonnel = DepthChart.personnel(
+            roster: awayRoster,
+            plan: state.tactical.personnelPlan(for: game.awayID, at: state.calendar),
+            unavailableIDs: awayUnavailable
+        )
+        let homePlan = TacticalPlanSystem.plan(
+            for: game.homeID,
+            against: game.awayID,
+            at: state.calendar,
+            in: state,
+            tactical: &state.tactical
+        )
+        let awayPlan = TacticalPlanSystem.plan(
+            for: game.awayID,
+            against: game.homeID,
+            at: state.calendar,
+            in: state,
+            tactical: &state.tactical
+        )
+        return MatchReducer.start(
+            tier: game.tier,
+            stage: game.stage,
+            home: homePersonnel,
+            away: awayPersonnel,
+            seed: SeededRandom.derive(
+                from: state.league.seed,
+                scope: .game,
+                identifier: game.id
+            ),
+            controlledSide: game.homeID == controlledID ? .home : .away,
+            homePlan: homePlan,
+            awayPlan: awayPlan,
+            fixtureID: game.id
+        )
+    }
+
+    private static func playableRoster(
+        for organisationID: UUID,
+        tier: Tier,
+        in state: GameState
+    ) -> [Player] {
+        let ids: [UUID]
+        switch tier {
+        case .college: ids = state.programmes[organisationID]?.rosterIDs ?? []
+        case .pro: ids = state.proTeams[organisationID]?.rosterIDs ?? []
+        }
+        return ids.compactMap { state.players[$0] }
+    }
+
+    private static func unavailableIDs(
+        for organisationID: UUID,
+        tier: Tier,
+        in state: GameState
+    ) -> Set<UUID> {
+        let roster = playableRoster(for: organisationID, tier: tier, in: state)
+        return Set(roster.compactMap { player in
+            guard state.people.playerLifecycle[player.id]?.isAvailable == true else { return player.id }
+            if tier == .college,
+               !CollegeRedshirtSystem.allowsAutomaticAppearance(
+                   playerID: player.id,
+                   programmeID: organisationID,
+                   in: state
+               ) {
+                return player.id
+            }
+            return nil
+        })
+    }
 
     public static func advanceWeek(_ state: GameState) throws -> WorldTransition {
+        if let session = state.matchSession, let fixtureID = session.fixtureID {
+            throw WorldSchedulerError.controlledMatchRequired(fixtureID)
+        }
+        if let controlledID = controlledOrganisationID(in: state),
+           let game = state.competition.currentSchedule.games.first(where: {
+               $0.season == state.calendar.season
+                   && $0.week == state.calendar.week
+                   && $0.result == nil
+                   && ($0.homeID == controlledID || $0.awayID == controlledID)
+           }),
+           !fullyDelegatedCollegeCareer(in: state) {
+            throw WorldSchedulerError.controlledMatchRequired(game.id)
+        }
         var nextState = state
         let completed = state.calendar
         let next = completed.advancedWeek()
@@ -204,6 +479,11 @@ public enum WorldScheduler {
             case .injuriesAndRecovery:
                 let transition = PeopleLifecycleSystem.processHealth(at: completed, in: nextState)
                 nextState.people = transition.people
+                attachInjuryEvidence(
+                    from: transition.eventPayloads,
+                    at: completed,
+                    to: &nextState
+                )
                 try appendEvents(
                     payloads: transition.eventPayloads,
                     occurredAt: completed,
@@ -216,7 +496,7 @@ public enum WorldScheduler {
                 let transition = DevelopmentSystem.practice(
                     at: completed,
                     in: nextState,
-                    tactical: nextState.tactical
+                    tactical: &nextState.tactical
                 )
                 nextState.players = transition.players
                 nextState.people = transition.people
@@ -268,13 +548,15 @@ public enum WorldScheduler {
                         tactical: &nextState.tactical
                     )
                 }
+                let personnelPlans = nextState.tactical.personnelPlansByOrganisation
                 let resultRecords = dueGames.map { game in
                     ScheduledGameResult(
                         gameID: game.id,
                         summary: AbstractGameSimulator.play(
                             game,
                             in: nextState,
-                            tacticalPlans: tacticalPlans
+                            tacticalPlans: tacticalPlans,
+                            personnelPlans: personnelPlans
                         )
                     )
                 }
@@ -337,6 +619,12 @@ public enum WorldScheduler {
                     in: nextState,
                     arc: &nextState.careerArc
                 )
+                if nextState.careerArc.status == .fired {
+                    // Firing revokes control in the same scheduler transaction. Leaving the
+                    // college control record behind lets a fired coach keep advancing the old
+                    // team through the next screen.
+                    nextState.career.clearCollege()
+                }
                 records.append(WorldStepRecord(step: step, status: .executed))
 
             case .relationshipsAndStakeholders:
@@ -421,6 +709,9 @@ public enum WorldScheduler {
                         in: nextState,
                         arc: &nextState.careerArc
                     )
+                    if nextState.careerArc.status == .fired {
+                        nextState.career.clearCollege()
+                    }
                     let completion = PostseasonSystem.completeSeason(
                         after: completed,
                         in: nextState
@@ -482,6 +773,12 @@ public enum WorldScheduler {
                     } catch let error as ProMarketError {
                         throw WorldSchedulerError.professionalMarketFailed(error)
                     }
+                    // D15 (`02` §4.2a): dead money is a single-season charge, so the season now
+                    // ending is discharged here -- after beat 1, before beat 2. The compliance
+                    // pass below then charges the season about to start, which makes each season's
+                    // dead money exactly that season's releases rather than every release the save
+                    // has ever made.
+                    nextState = ProManagementSystem.dischargeDeadMoney(in: nextState)
                     // Beat 2 (`02` §4.2/§4.2a), right after beat 1's expiry and before anything
                     // takes the season-projected view a later step in this same block does (the
                     // college portal's postseason commit): the same D-1 lesson applies here as it
@@ -520,10 +817,56 @@ public enum WorldScheduler {
                             in: nextState
                         )
                     }
-                    // Realignment after evolution, and both before the college cycle rebuilds the
-                    // next season's schedule: the schedule is generated from conference membership,
-                    // so a swap has to land before it is read, not after.
-                    nextState = ConferenceRealignmentSystem.process(in: nextState)
+                    // Realignment sits here, after evolution and before the college cycle, and
+                    // it cannot be hoisted above the slate that reads it: `completeSeason` draws
+                    // the whole of next season from conference membership, and it runs earlier in
+                    // this same step because the season-completed event has to stay observable
+                    // ahead of lifecycle and cycle construction. So the slate is redrawn below
+                    // rather than the swap being moved above the event it must follow.
+                    //
+                    // Its own placement costs nothing either way — `bestSwap` scores a swap purely
+                    // on the distance from a programme's city to its conference's centroid, so
+                    // neither evolution nor the cycle can move its answer.
+                    let realignment = ConferenceRealignmentSystem.processTransition(in: nextState)
+                    nextState = realignment.state
+                    if !realignment.swaps.isEmpty {
+                        try appendEvents(
+                            payloads: [.realignment(
+                                season: completed.season,
+                                reason: realignment.reason,
+                                swaps: realignment.swaps
+                            )],
+                            occurredAt: completed,
+                            to: &nextState,
+                            emittedEvents: &events
+                        )
+                        // `completeSeason` drew the coming season from the map this swap has just
+                        // replaced, so every programme that moved was scheduled into the
+                        // conference it left. Redraw against the map that now exists.
+                        //
+                        // A redraw rather than a patch because `ScheduleGenerator` pairs a whole
+                        // tier at once: one changed membership shifts the preference filter for
+                        // every week, so there is no local edit that leaves the rest standing.
+                        // The professional slate is regenerated from unchanged inputs and so comes
+                        // back identical; only the college one moves. Nothing has to be rebuilt
+                        // behind it — standings and statistics read completed games, and a slate
+                        // this new has none.
+                        //
+                        // Guarded on the season having actually rolled: `completeSeason` declines
+                        // to roll one that finished without a champion, and must keep the slate it
+                        // declined on.
+                        if nextState.competition.currentSchedule.season == completed.season + 1 {
+                            nextState.competition.currentSchedule = SeasonSchedule(
+                                season: completed.season + 1,
+                                games: ScheduleGenerator.regularSeason(
+                                    seed: nextState.league.seed,
+                                    season: completed.season + 1,
+                                    programmes: nextState.programmes.values,
+                                    proTeams: nextState.proTeams.values
+                                )
+                            )
+                        }
+                    }
                     nextState.college.reconcileScholarships(with: nextState.programmes)
                     let cycle: CollegeCycleTransition
                     do {

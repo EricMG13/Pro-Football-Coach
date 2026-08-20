@@ -14,6 +14,12 @@ public enum CompetitionRules {
     public static let maximumTeamScore = 70
     public static let overtimeFieldGoalPoints = 3
     public static let overtimeTouchdownPoints = 6
+    /// The bounded timed period used by the detailed reducer when the regulation score is tied.
+    /// College alternates possessions inside the same bound; professional regular-season games
+    /// may still finish tied after the bound expires.
+    public static let overtimePeriodSeconds = 600
+    public static let maximumOvertimePeriods = 3
+    public static let overtimePossessionYardLine = 75
     public static var maximumFinalTeamScore: Int {
         maximumTeamScore + overtimeTouchdownPoints
     }

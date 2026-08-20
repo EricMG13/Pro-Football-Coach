@@ -138,11 +138,15 @@ func runSaveEnvelopeTests() {
             // sliced Data reads the wrong bytes or traps, and a file read in chunks produces
             // exactly such a slice.
             let data = try SaveEnvelope.encode(payload)
-            let padded = Data([0xFF, 0xFF, 0xFF]) + data
-            let slice = padded.dropFirst(3)
-            expect(slice.startIndex == 3, "the fixture did not produce an offset slice")
+            let padded = Data(repeating: 0xFF, count: 12) + data
+            let slice = padded.dropFirst(12)
+            expect(slice.startIndex == 12, "the fixture did not produce an offset slice")
             expectEqual(try SaveEnvelope.schemaVersion(ofHeader: slice),
                         SaveEnvelope.currentSchemaVersion)
+            expectEqual(
+                SaveEnvelope.storedBodyLimit(ofHeader: slice),
+                SaveEnvelope.maximumStoredBodyBytes
+            )
             expectEqual(try SaveEnvelope.decode(Payload.self, from: slice), payload)
         }
 

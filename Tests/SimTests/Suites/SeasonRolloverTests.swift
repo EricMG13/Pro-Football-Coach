@@ -157,6 +157,62 @@ func runSeasonRolloverTests() {
                    "a real advanceWeek left a team over the cap after the boundary")
             expect(WorldIntegrity.check(transition.state).isValid)
         }
+
+        // `ArchitectureTests` asserts the full step ledger once, at season 0 week 1, and asserts
+        // the week-21 roll as arithmetic on `CalendarState.advancedWeek()` rather than against
+        // anything the scheduler does. Neither reaches the week that actually rolls: the boundary
+        // is the one step where the transaction runs a second batch, replaces the slate, expires
+        // contracts and rebuilds the college cycle, and it is the likeliest week for a step to be
+        // skipped, run twice or reordered without a ledger entry to show for it.
+        test("every week of the walk emits the whole step ledger in order and lands where it says") {
+            var state = GameState.bootstrap(seed: 97_007)
+            var visited: [CalendarState] = [state.calendar]
+            var ledgerFaults: [String] = []
+            var snapshotFaults: [String] = []
+
+            while state.calendar.season == 0 {
+                let before = state.calendar
+                let transition = try WorldScheduler.advanceWeek(state)
+
+                if transition.stepRecords.map(\.step) != WorldScheduler.steps {
+                    ledgerFaults.append(
+                        "S\(before.season)W\(before.week) emitted "
+                            + "\(transition.stepRecords.count) records for "
+                            + "\(WorldScheduler.steps.count) steps"
+                    )
+                }
+                // The three claims the snapshot makes about where the week started, where it
+                // ended, and that the two differ by exactly one calendar step.
+                if transition.snapshot.completed != before
+                    || transition.snapshot.next != before.advancedWeek()
+                    || transition.state.calendar != transition.snapshot.next {
+                    snapshotFaults.append(
+                        "S\(before.season)W\(before.week) reported "
+                            + "\(transition.snapshot.completed) -> \(transition.snapshot.next) "
+                            + "and landed on \(transition.state.calendar)"
+                    )
+                }
+
+                state = transition.state
+                visited.append(state.calendar)
+            }
+
+            expect(ledgerFaults.isEmpty,
+                   "\(ledgerFaults.count) weeks emitted an incomplete or reordered step ledger, "
+                       + "first \(ledgerFaults.first ?? "")")
+            expect(snapshotFaults.isEmpty,
+                   "\(snapshotFaults.count) weeks disagreed with their own snapshot, first "
+                       + "\(snapshotFaults.first ?? "")")
+
+            // The walk itself: every week of the season exactly once, in order, and the roll only
+            // at the documented last week.
+            let expected = (1...SharedRules.inSeasonWeeks).map {
+                CalendarState(season: 0, week: $0)
+            } + [CalendarState(season: 1, week: 1)]
+            expectEqual(visited, expected,
+                        "the walk skipped, repeated or rolled on a week other than "
+                            + "\(SharedRules.inSeasonWeeks)")
+        }
     }
 }
 

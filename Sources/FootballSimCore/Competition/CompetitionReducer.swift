@@ -39,9 +39,11 @@ public enum CompetitionReducer {
                 pointsAgainst: result.homeScore,
                 conferenceGame: isConferenceGame
             )
-            headToHeadWinner[teamPairKey(game.homeID, game.awayID)] = result.homeScore > result.awayScore
-                ? game.homeID
-                : game.awayID
+            if result.homeScore != result.awayScore {
+                headToHeadWinner[teamPairKey(game.homeID, game.awayID)] = result.homeScore > result.awayScore
+                    ? game.homeID
+                    : game.awayID
+            }
         }
 
         var standings: [Tier: [StandingRow]] = [:]
@@ -123,11 +125,13 @@ public enum CompetitionReducer {
     private static func equalWinningPercentage(_ lhs: StandingRow, _ rhs: StandingRow) -> Bool {
         let lhsGames = max(1, lhs.games)
         let rhsGames = max(1, rhs.games)
-        return lhs.wins * rhsGames == rhs.wins * lhsGames
+        return (lhs.wins * 2 + lhs.ties) * rhsGames
+            == (rhs.wins * 2 + rhs.ties) * lhsGames
     }
 
     private static func winningPercentageAhead(_ lhs: StandingRow, _ rhs: StandingRow) -> Bool {
-        lhs.wins * max(1, rhs.games) > rhs.wins * max(1, lhs.games)
+        (lhs.wins * 2 + lhs.ties) * max(1, rhs.games)
+            > (rhs.wins * 2 + rhs.ties) * max(1, lhs.games)
     }
 
     private static func teamPairKey(_ lhs: UUID, _ rhs: UUID) -> String {
@@ -138,8 +142,10 @@ public enum CompetitionReducer {
     private static func conferenceAndPointsAhead(_ lhs: StandingRow, _ rhs: StandingRow) -> Bool {
         let lhsConferenceGames = max(1, lhs.conferenceGames)
         let rhsConferenceGames = max(1, rhs.conferenceGames)
-        let lhsConferenceCrossProduct = lhs.conferenceWins * rhsConferenceGames
-        let rhsConferenceCrossProduct = rhs.conferenceWins * lhsConferenceGames
+        let lhsConferenceCrossProduct = (lhs.conferenceWins * 2 + lhs.conferenceTies)
+            * rhsConferenceGames
+        let rhsConferenceCrossProduct = (rhs.conferenceWins * 2 + rhs.conferenceTies)
+            * lhsConferenceGames
         if lhsConferenceCrossProduct != rhsConferenceCrossProduct {
             return lhsConferenceCrossProduct > rhsConferenceCrossProduct
         }

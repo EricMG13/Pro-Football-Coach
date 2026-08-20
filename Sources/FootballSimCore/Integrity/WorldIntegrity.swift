@@ -32,7 +32,7 @@ public enum IntegrityCheck: String, Codable, Sendable, CaseIterable, Hashable {
     case tacticalState
 }
 
-public enum IntegrityIssue: Sendable, Equatable, CustomStringConvertible {
+public enum IntegrityIssue: Sendable, Equatable, Hashable, CustomStringConvertible {
     case missingConferenceMember(conferenceID: UUID, memberID: UUID)
     case conferenceMembershipMismatch(organisationID: UUID)
     case missingDivisionMember(divisionID: UUID, memberID: UUID)
@@ -89,6 +89,7 @@ public enum IntegrityIssue: Sendable, Equatable, CustomStringConvertible {
     case invalidCareerControl
     case invalidCareerArc
     case invalidProfessionalCap(teamID: UUID)
+    case unownedProfessionalContract(playerID: UUID)
     case invalidProfessionalMarket
     case invalidMandatoryDecision(decisionID: UUID)
     case invalidTacticalState
@@ -210,6 +211,8 @@ public enum IntegrityIssue: Sendable, Equatable, CustomStringConvertible {
             return "The coaching career arc has invalid employment, support, or opportunity history."
         case let .invalidProfessionalCap(teamID):
             return "Pro team \(teamID) exceeds its salary cap or has malformed contracts."
+        case let .unownedProfessionalContract(playerID):
+            return "Player \(playerID) holds a contract no professional team owns."
         case .invalidProfessionalMarket:
             return "The professional free-agency or draft market is malformed or out of phase."
         case let .invalidMandatoryDecision(decisionID):
@@ -411,16 +414,17 @@ public enum WorldIntegrity {
                 issues.append(.illegalProRoster(teamID: team.id))
             }
         }
-        for id in playerOwners.keys.sorted(by: { $0.uuidString < $1.uuidString }) {
+        for id in playerOwners.keys.sorted(by: uuidLessThan) {
             guard let owners = playerOwners[id], owners > 1 else { continue }
             issues.append(.duplicatePlayerOwnership(id: id, owners: owners))
         }
-        for id in staffEmployers.keys.sorted(by: { $0.uuidString < $1.uuidString }) {
+        for id in staffEmployers.keys.sorted(by: uuidLessThan) {
             guard let employers = staffEmployers[id], employers > 1 else { continue }
             issues.append(.duplicateStaffEmployment(id: id, employers: employers))
         }
 
         let allEntityIDs = organisationIDSet
+            .union(state.league.conferences.map(\.id))
             .union(state.players.ids)
             .union(state.people.departedPlayers.keys)
             .union(state.prospects.ids)
@@ -548,9 +552,40 @@ public enum WorldIntegrity {
                 issues.append(.invalidTacticalState)
             }
         }
+        for (organisationID, plan) in state.tactical.personnelPlansByOrganisation {
+            guard organisationIDs.contains(organisationID),
+                  plan.organisationID == organisationID,
+                  plan.calendar == state.calendar else {
+                issues.append(.invalidTacticalState)
+                continue
+            }
+            let rosterIDs: Set<UUID>
+            if let programme = state.programmes[organisationID] {
+                rosterIDs = Set(programme.rosterIDs)
+            } else if let team = state.proTeams[organisationID] {
+                rosterIDs = Set(team.rosterIDs)
+            } else {
+                issues.append(.invalidTacticalState)
+                continue
+            }
+            if plan.overrides.contains(where: { override in
+                override.playerIDs.contains { !rosterIDs.contains($0) }
+            }) {
+                issues.append(.invalidTacticalState)
+            }
+        }
         for (opponentID, snapshot) in state.tactical.opponentScouting {
             if !organisationIDs.contains(opponentID)
                 || !isCalendar(onOrBefore: snapshot.observedThrough, state.calendar) {
+                issues.append(.invalidTacticalState)
+            }
+        }
+        for (key, observation) in state.tactical.opponentObservations {
+            if key != "\(observation.observerID.uuidString)|\(observation.opponentID.uuidString)"
+                || !organisationIDs.contains(observation.observerID)
+                || !organisationIDs.contains(observation.opponentID)
+                || observation.observerID == observation.opponentID
+                || !isCalendar(onOrBefore: observation.observedThrough, state.calendar) {
                 issues.append(.invalidTacticalState)
             }
         }
@@ -640,21 +675,25 @@ public enum WorldIntegrity {
                 ))
             }
             let resultIsValid = game.result.map {
-                $0.homeScore != $0.awayScore
+                let decided = $0.homeScore != $0.awayScore
+                    || (game.tier == .pro && game.stage == .regularSeason)
+                let boundedAbstractStats = $0.source == .detailed
+                    || (CompetitionRules.offensiveYardRange.contains(
+                            $0.homeStatistics.offensiveYards
+                        )
+                        && CompetitionRules.offensiveYardRange.contains(
+                            $0.awayStatistics.offensiveYards
+                        )
+                        && CompetitionRules.turnoverRange.contains($0.homeStatistics.turnovers)
+                        && CompetitionRules.turnoverRange.contains($0.awayStatistics.turnovers))
+                return decided
                     && $0.homeStatistics.points == $0.homeScore
                     && $0.awayStatistics.points == $0.awayScore
                     && $0.homeStatistics.passingYards + $0.homeStatistics.rushingYards
                         == $0.homeStatistics.offensiveYards
                     && $0.awayStatistics.passingYards + $0.awayStatistics.rushingYards
                         == $0.awayStatistics.offensiveYards
-                    && CompetitionRules.offensiveYardRange.contains(
-                        $0.homeStatistics.offensiveYards
-                    )
-                    && CompetitionRules.offensiveYardRange.contains(
-                        $0.awayStatistics.offensiveYards
-                    )
-                    && CompetitionRules.turnoverRange.contains($0.homeStatistics.turnovers)
-                    && CompetitionRules.turnoverRange.contains($0.awayStatistics.turnovers)
+                    && boundedAbstractStats
                     && validResultParticipants($0, game: game, state: state)
             } ?? true
             if game.homeID == game.awayID
@@ -1304,11 +1343,19 @@ public enum WorldIntegrity {
         }) {
             latestCurrentRecordByPlayer[record.playerID] = record
         }
+        var ownerCountByPlayerID: [UUID: Int] = [:]
+        var ownerByPlayerID: [UUID: UUID] = [:]
+        for programme in state.programmes.values {
+            for playerID in Set(programme.rosterIDs) {
+                ownerCountByPlayerID[playerID, default: 0] += 1
+                ownerByPlayerID[playerID] = programme.id
+            }
+        }
         for record in latestCurrentRecordByPlayer.values.sorted(by: {
             uuidLessThan($0.playerID, $1.playerID)
         }) {
-            let owners = state.programmes.values.filter { $0.rosterIDs.contains(record.playerID) }
-            if owners.count != 1 || owners.first?.id != record.finalProgrammeID {
+            if ownerCountByPlayerID[record.playerID] != 1
+                || ownerByPlayerID[record.playerID] != record.finalProgrammeID {
                 issues.append(.invalidPortalOwner(
                     playerID: record.playerID,
                     expectedProgrammeID: record.finalProgrammeID
@@ -1627,19 +1674,23 @@ public enum WorldIntegrity {
                 durableOfferKnowledge[key, default: []].append(offer.knowledge)
             }
         }
-        let storedSnapshots = state.scouting.portalKnowledgeByObserver.keys.sorted(
-            by: uuidLessThan
-        ).flatMap { observerID in
-            state.scouting.portalKnowledgeByObserver[observerID] ?? []
-        }.sorted { lhs, rhs in
-            if lhs.observerProgrammeID != rhs.observerProgrammeID {
-                return uuidLessThan(lhs.observerProgrammeID, rhs.observerProgrammeID)
+        // ScoutingState canonicalizes and validates each observer's slice at every mutation and
+        // decode. Partitioning by observer and sorting each bounded slice preserves the prior
+        // deterministic order without an O(n log n) global resort on every integrity check.
+        let storedSnapshots = state.scouting.portalKnowledgeByObserver.keys
+            .sorted(by: uuidLessThan)
+            .flatMap { observerID in
+                (state.scouting.portalKnowledgeByObserver[observerID] ?? []).sorted { lhs, rhs in
+                    if lhs.targetSeason != rhs.targetSeason {
+                        return lhs.targetSeason < rhs.targetSeason
+                    }
+                    if lhs.window != rhs.window { return lhs.window.order < rhs.window.order }
+                    if lhs.playerID != rhs.playerID {
+                        return uuidLessThan(lhs.playerID, rhs.playerID)
+                    }
+                    return uuidLessThan(lhs.sourceProgrammeID, rhs.sourceProgrammeID)
+                }
             }
-            if lhs.targetSeason != rhs.targetSeason { return lhs.targetSeason < rhs.targetSeason }
-            if lhs.window != rhs.window { return lhs.window.order < rhs.window.order }
-            if lhs.playerID != rhs.playerID { return uuidLessThan(lhs.playerID, rhs.playerID) }
-            return uuidLessThan(lhs.sourceProgrammeID, rhs.sourceProgrammeID)
-        }
         for snapshot in storedSnapshots {
             let occursInFuture = occurs(state.calendar, before: snapshot.lastUpdated)
             let hasEntrantRecord = recordIdentities.contains(PortalRecordSourceKey(
@@ -1720,7 +1771,18 @@ public enum WorldIntegrity {
     }
 
     private static func uuidLessThan(_ lhs: UUID, _ rhs: UUID) -> Bool {
-        lhs.uuidString < rhs.uuidString
+        // Canonical UUID text preserves byte order; compare the bytes directly to avoid
+        // allocating strings in the integrity and scheduler hot paths.
+        withUnsafeBytes(of: lhs.uuid) { lhsBytes in
+            withUnsafeBytes(of: rhs.uuid) { rhsBytes in
+                for index in 0..<16 {
+                    if lhsBytes[index] != rhsBytes[index] {
+                        return lhsBytes[index] < rhsBytes[index]
+                    }
+                }
+                return false
+            }
+        }
     }
 
     private static func occurs(_ lhs: CalendarState, before rhs: CalendarState) -> Bool {
@@ -1806,6 +1868,20 @@ public enum WorldIntegrity {
         _ state: GameState,
         issues: inout [IntegrityIssue]
     ) {
+        // A contract exists to be charged against a cap, and `capSnapshot` sums by roster: a
+        // contract held by a player no professional team owns is money nobody's cap counts.
+        // `docs/PORT-LOG.md` records the shape as one of the cap-laundering attacks the prior
+        // build's defences had to catch -- the practice squad as a place to hide a contract -- and
+        // this is that hole one step further out, where there is not even a squad to look in.
+        //
+        // Enumerated from the player table rather than from any roster, by construction: a check
+        // that walked rosters could never see the case it exists to catch.
+        let ownedIDs = Set(state.proTeams.values.flatMap { $0.rosterIDs + $0.practiceSquadIDs })
+        for player in state.players.values.sorted(by: { uuidLessThan($0.id, $1.id) })
+        where player.contract != nil && !ownedIDs.contains(player.id) {
+            issues.append(.unownedProfessionalContract(playerID: player.id))
+        }
+
         for team in state.proTeams.values {
             let hasCapData = team.deadMoney != 0
                 || (team.rosterIDs + team.practiceSquadIDs).contains {
@@ -1853,10 +1929,12 @@ public enum WorldIntegrity {
         let archivedDraftIDSet = Set(market.archivedDraftProspectIDs)
         let ownedIDs = Set(state.programmes.values.flatMap(\.rosterIDs))
             .union(state.proTeams.values.flatMap { $0.rosterIDs + $0.practiceSquadIDs })
+        // The count-and-membership pair this replaced admitted an order in which one team held
+        // every pick: 224 entries, all of them pro teams, is a legal count and a legal membership
+        // and an illegal draft. `ProRules` owns the shape (`02` section 11.2).
         let draftOrderIsValid = market.phase == .closed
             ? market.draftOrder.isEmpty
-            : market.draftOrder.count == ProRules.draftPickCount
-                && market.draftOrder.allSatisfy(proTeamIDs.contains)
+            : ProRules.isLegalDraftOrder(market.draftOrder, teamIDs: proTeamIDs)
         let draftClassIsValid = market.phase == .closed
             ? market.draftClass.isEmpty
             : market.draftClass.count == ProRules.draftPickCount
@@ -1910,6 +1988,37 @@ public enum WorldIntegrity {
                     && waiver.claimDeadline == waiver.openedAt.advancedWeek()
                     && openedSeasonIsPlausible
             }
+        let openNegotiationKeys = market.contractNegotiations
+            .filter(\.status.isOpen)
+            .map { "\($0.teamID.uuidString)|\($0.playerID.uuidString)" }
+        let negotiationsAreValid = market.contractNegotiations.count
+            <= ProMarketState.maximumContractNegotiations
+            && Set(market.contractNegotiations.map(\.id)).count
+                == market.contractNegotiations.count
+            && Set(openNegotiationKeys).count == openNegotiationKeys.count
+            && market.contractNegotiations.allSatisfy { negotiation in
+                guard state.proTeams[negotiation.teamID] != nil,
+                      state.players[negotiation.playerID] != nil,
+                      !negotiation.offerHistory.isEmpty,
+                      negotiation.offerHistory.count <= ProContractNegotiation.maximumOfferHistory,
+                      negotiation.deadline.isOnOrAfter(negotiation.openedAt) else {
+                    return false
+                }
+                if negotiation.status.isOpen {
+                    guard let team = state.proTeams[negotiation.teamID],
+                          let player = state.players[negotiation.playerID],
+                          (team.rosterIDs + team.practiceSquadIDs).contains(negotiation.playerID),
+                          player.contract != nil else {
+                        return false
+                    }
+                }
+                return negotiation.offerHistory.allSatisfy { contract in
+                    ProRules.contractYearsRange.contains(contract.years)
+                        && contract.baseSalaryByYear.count == contract.years
+                        && contract.baseSalaryByYear.allSatisfy { $0 >= 0 }
+                        && contract.signingBonus >= 0
+                }
+            }
         let phaseShapeIsValid: Bool
         switch market.phase {
         case .closed:
@@ -1934,6 +2043,7 @@ public enum WorldIntegrity {
               freeAgentsAreValid,
               observationsAreValid,
               waiversAreValid,
+              negotiationsAreValid,
               phaseShapeIsValid else {
             issues.append(.invalidProfessionalMarket)
             return
@@ -1949,7 +2059,13 @@ public enum WorldIntegrity {
                 issues.append(.invalidMandatoryDecision(decisionID: decision.id))
             }
             for resolution in state.career.mandatoryDecisionResolutions {
-                issues.append(.invalidMandatoryDecision(decisionID: resolution.decisionID))
+                if state.programmes[resolution.programmeID] == nil
+                    || !MandatoryDecision.actionIsValid(
+                        resolution.action,
+                        for: resolution.subject
+                    ) {
+                    issues.append(.invalidMandatoryDecision(decisionID: resolution.decisionID))
+                }
             }
             return
         }
@@ -2083,7 +2199,7 @@ public enum WorldIntegrity {
             expected = Set(ranking.prefix(CollegeRules.bracketTeams))
         case .pro:
             expected = Set(state.league.conferences(in: .pro).flatMap { conference in
-                ranking.filter(conference.memberIDs.contains).prefix(4)
+                ranking.filter(conference.memberIDs.contains).prefix(ProRules.playoffSeedsPerConference)
             })
         }
         if games.count != 4
@@ -2147,6 +2263,7 @@ public enum WorldIntegrity {
 
     private static func winnerID(_ game: ScheduledGame) -> UUID? {
         guard let result = game.result else { return nil }
+        guard result.homeScore != result.awayScore else { return nil }
         return result.homeScore > result.awayScore ? game.homeID : game.awayID
     }
 

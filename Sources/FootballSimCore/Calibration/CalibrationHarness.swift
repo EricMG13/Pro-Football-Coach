@@ -117,9 +117,14 @@ public enum CalibrationHarness {
         var runPlays = 0, explosiveRuns = 0
         var passPlays = 0, explosivePasses = 0
         var pointsInQ4 = 0, pointsTotal = 0
+        // Per-drive accounting. `DriveRecord` has carried `pointsScored` since P3; what was missing
+        // was the harness aggregating it, which is exactly what `unimplementedMetrics` said this row
+        // waited on. It is a sum over records the engine already produces, not a model change.
+        var drivePoints: [Double] = []
 
         for sample in samples {
             let game = sample.record
+            for drive in game.drives { drivePoints.append(Double(drive.pointsScored)) }
             combinedTotals.append(Double(game.homeScore + game.awayScore))
             teamPoints.append(Double(game.homeScore))
             teamPoints.append(Double(game.awayScore))
@@ -220,6 +225,7 @@ public enum CalibrationHarness {
 
         return [
             "points per team-game": meanEstimate(teamPoints),
+            "points per drive": meanEstimate(drivePoints),
             "combined game total": meanEstimate(combinedTotals),
             "offensive plays per team-game": meanEstimate(teamPlays),
             "pass yards per team-game": meanEstimate(teamPassYards),

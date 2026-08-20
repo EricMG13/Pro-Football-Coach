@@ -7,7 +7,13 @@
 // from a two-line log into an account of where it got to.
 import Foundation
 setvbuf(stdout, nil, _IONBF, 0)
-if CommandLine.arguments.contains("--event-ledger-batch") {
+if CommandLine.arguments.contains("--catalog") {
+    SuiteCatalog.printCatalog()
+} else if CommandLine.arguments.contains("--commitment-coverage") {
+    runCommitmentCoverageTest()
+} else if CommandLine.arguments.contains("--save-document") {
+    runSaveDocumentTests()
+} else if CommandLine.arguments.contains("--event-ledger-batch") {
     runEventLedgerBatchTests()
 } else if CommandLine.arguments.contains("--roster-population") {
     runRosterPopulationTests()
@@ -21,6 +27,10 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runPortalSchedulerTests()
 } else if CommandLine.arguments.contains("--career-control") {
     runCareerControlTests()
+} else if CommandLine.arguments.contains("--weekly-authority") {
+    runWeeklyAuthorityTests()
+} else if CommandLine.arguments.contains("--professional-career-session") {
+    runProfessionalCareerSessionTests()
 } else if CommandLine.arguments.contains("--career-arc") {
     runCareerArcTests()
 } else if CommandLine.arguments.contains("--pro-management") {
@@ -33,12 +43,17 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runSeasonRolloverTests()
 } else if CommandLine.arguments.contains("--jersey-numbers") {
     runJerseyNumberTests()
+} else if CommandLine.arguments.contains("--depth-chart") {
+    runDepthChartTests()
+} else if CommandLine.arguments.contains("--discipline") {
+    runDisciplineTests()
 } else if CommandLine.arguments.contains("--week-advance-timing") {
     runWeekAdvanceTimingProbe()
 } else if CommandLine.arguments.contains("--pro-market-root-probe") {
     runProMarketRootProbe()
 } else if CommandLine.arguments.contains("--screen-read-models") {
     runReadModelProviderTests()
+    runAvailabilityProviderTests()
 } else if CommandLine.arguments.contains("--history-read-model") {
     runHistoryReadModelTests()
 } else if CommandLine.arguments.contains("--career-portal-decisions") {
@@ -47,6 +62,11 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runTacticalManagementTests()
 } else if CommandLine.arguments.contains("--tactical-state") {
     runTacticalStateTests()
+} else if CommandLine.arguments.contains("--match-reducer") {
+    runMatchReducerTests()
+} else if CommandLine.arguments.contains("--engine") {
+    runEngineTests()
+    runGameLoopTests()
 } else if CommandLine.arguments.contains("--m3-soak") {
     runM3CollegeSoakTests()
 } else if CommandLine.arguments.contains("--portal-policy") {
@@ -59,12 +79,16 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runInvalidRedshirtCareerGamesProbe(tier: .pro)
 } else if CommandLine.arguments.contains("--m3-recruiting-calibration") {
     runM3RecruitingCalibrationTests()
+} else if CommandLine.arguments.contains("--calibration") {
+    runCalibrationTests()
 } else if CommandLine.arguments.contains("--redshirt-only") {
     runCollegeRedshirtTests()
 } else if CommandLine.arguments.contains("--college-commitments") {
     runCollegeCommitmentTests()
 } else if CommandLine.arguments.contains("--college-state") {
     runCollegeStateTests()
+} else if CommandLine.arguments.contains("--injury-evidence") {
+    runInjuryEvidenceTests()
 } else if CommandLine.arguments.contains("--people-lifecycle") {
     runPeopleLifecycleTests()
 } else if CommandLine.arguments.contains("--core-contracts") {
@@ -72,7 +96,9 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runSeedDerivationTests()
     runContractTests()
     runDesignContractTests()
+    runMotionContractTests()
     runAccessibilityReflowTests()
+    runReduceMotionContractTests()
     runSaveEnvelopeTests()
     runRulesTests()
     runModelTests()
@@ -96,6 +122,8 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runProSoakTests()
 } else if CommandLine.arguments.contains("--pro-draft-probe") {
     runProDraftProbeTests()
+} else if CommandLine.arguments.contains("--pro-draft-scheduler-probe") {
+    runProDraftSchedulerProbe()
 } else if CommandLine.arguments.contains("--pro-week-walk") {
     runProWeekWalkTests()
 } else if CommandLine.arguments.contains("--legal-only") {
@@ -106,13 +134,19 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runGenerationTests()
 } else if CommandLine.arguments.contains("--design-contracts") {
     runDesignContractTests()
+    runMotionContractTests()
     runAccessibilityReflowTests()
+    runReduceMotionContractTests()
 } else if CommandLine.arguments.contains("--architecture-only") {
     runArchitectureTests()
 } else if CommandLine.arguments.contains("--m2-soak") {
     runM2SoakTests(seasons: 20)
 } else if CommandLine.arguments.contains("--m1-soak") {
     runM1SoakTests(seasons: 20)
+} else if CommandLine.arguments.contains("--snap-anchors") {
+    runSnapAnchorTests()
+} else if CommandLine.arguments.contains("--reduce-motion") {
+    runReduceMotionContractTests()
 } else {
     runSeededRandomTests()
     runSeedDerivationTests()
@@ -125,6 +159,7 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runIdentityDistributionTests()
     runEngineTests()
     runSnapResolverTests()
+    runSnapAnchorTests()
     runGameLoopTests()
     runCalibrationTests()
     runArchitectureTests()
@@ -148,16 +183,20 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     runCoachingTreeTests()
     runHistoryArchiveTests()
     runNewsFeedTests()
+    runDisciplineTests()
     runProgrammeEvolutionTests()
     runRosterTenureTests()
     runRealignmentTests()
     runCareerPortalDecisionTests()
     runTacticalManagementTests()
     runTacticalStateTests()
+    runMatchReducerTests()
     runPortalContractTests()
     runEventLedgerBatchTests()
     runJerseyNumberTests()
+    runDepthChartTests()
     runReadModelProviderTests()
+    runAvailabilityProviderTests()
     runCapComplianceTests()
     runSeasonRolloverTests()
     // The M8 entry-gate instruments. They ran only under `--design-contracts` and
@@ -165,7 +204,11 @@ if CommandLine.arguments.contains("--event-ledger-batch") {
     // the one every release claim quotes — did not include the orientation policy, the token sync,
     // the symbol register, the sheet lint or the AX5 contract.
     runDesignContractTests()
+    runMotionContractTests()
     runAccessibilityReflowTests()
+    runReduceMotionContractTests()
+    runCommitmentCoverageTest()
+    runSaveDocumentTests()
 }
 
 TestKit.finish()

@@ -72,7 +72,10 @@ public enum ProMarketSystem {
         }
         let targetSeason = state.calendar.season + 1
         let order = draftOrder(for: state)
-        guard order.count == ProRules.draftPickCount else {
+        // openOffseason is the one professional transaction with no closing `WorldIntegrity.check`,
+        // so the draft-order rule is asserted here directly rather than inherited from the root
+        // gate every other transaction ends on.
+        guard ProRules.isLegalDraftOrder(order, teamIDs: Set(state.proTeams.ids)) else {
             throw ProMarketError.invalidRoot
         }
         let draftClass = makeDraftClass(
@@ -150,6 +153,37 @@ public enum ProMarketSystem {
         contract: Contract,
         in state: GameState
     ) throws -> GameState {
+        try signFreeAgent(
+            playerID: playerID,
+            teamID: teamID,
+            contract: contract,
+            in: state,
+            validateIntegrity: true
+        )
+    }
+
+    static func signFreeAgentForScheduler(
+        playerID: UUID,
+        teamID: UUID,
+        contract: Contract,
+        in state: GameState
+    ) throws -> GameState {
+        try signFreeAgent(
+            playerID: playerID,
+            teamID: teamID,
+            contract: contract,
+            in: state,
+            validateIntegrity: false
+        )
+    }
+
+    private static func signFreeAgent(
+        playerID: UUID,
+        teamID: UUID,
+        contract: Contract,
+        in state: GameState,
+        validateIntegrity: Bool
+    ) throws -> GameState {
         guard state.proMarket.phase == .freeAgency else { throw ProMarketError.invalidPhase }
         guard state.proMarket.freeAgentIDs.contains(playerID) else {
             throw ProMarketError.unavailableFreeAgent
@@ -161,7 +195,17 @@ public enum ProMarketSystem {
         guard next.proMarket.removeFreeAgent(playerID) else {
             throw ProMarketError.unavailableFreeAgent
         }
-        let receipt = try ProManagementSystem.acquire(
+        let receipt = try (validateIntegrity
+            ? ProManagementSystem.acquire(
+                playerID: playerID,
+                for: teamID,
+                kind: .freeAgency,
+                contract: contract.signedSeason == nil
+                    ? contract.withSignedSeason(state.proMarket.season)
+                    : contract,
+                in: next
+            )
+            : ProManagementSystem.acquireForScheduler(
             playerID: playerID,
             for: teamID,
             kind: .freeAgency,
@@ -169,9 +213,8 @@ public enum ProMarketSystem {
                 ? contract.withSignedSeason(state.proMarket.season)
                 : contract,
             in: next
-        )
+        ))
         next = receipt.state
-        guard WorldIntegrity.check(next).isValid else { throw ProMarketError.invalidRoot }
         return next
     }
 
@@ -505,7 +548,7 @@ public enum ProMarketSystem {
         //
         // The difference is taken by construction rather than by naming the checks expiry is
         // allowed to break, so a check added later is covered the day it is added.
-        let inherited = WorldIntegrity.check(state).issues
+        let inherited = Set(WorldIntegrity.check(state).issues)
         let introduced = WorldIntegrity.check(next).issues.filter { issue in
             !inherited.contains(issue)
         }

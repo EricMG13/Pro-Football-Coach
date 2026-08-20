@@ -69,10 +69,22 @@ public enum SharedRules {
     public static let inSeasonWeeks = 21
 
     /// Minimum playable coverage checked after every AI roster pass.
+    ///
+    /// Every entry is at least what `DepthChart`'s formation fields at that position, and
+    /// `RulesTests` asserts that against both templates by construction rather than by inspection.
+    /// Linebacker read 2 until 2026-08-20 while the defence starts 3, so a roster sitting at the
+    /// "minimum playable" coverage put somebody out of position at linebacker on every snap and
+    /// carried a spare cornerback the formation never used. Nothing compared the two constants, so
+    /// nothing said so.
+    ///
+    /// Raised rather than resolved the other way: the formation is unchanged and cornerback keeps
+    /// its floor of 3. Which base defence the league plays is a design question `02` does not
+    /// answer — the 4-3 shape lives only in `DepthChart`'s templates — and it is flagged for the
+    /// owner rather than settled here.
     public static let minimumPlayableRosterByPosition: [Position: Int] = [
         .quarterback: 1, .runningBack: 1, .wideReceiver: 3, .tightEnd: 1,
         .leftTackle: 1, .guardPosition: 2, .center: 1, .rightTackle: 1,
-        .edgeRusher: 2, .defensiveTackle: 2, .linebacker: 2,
+        .edgeRusher: 2, .defensiveTackle: 2, .linebacker: 3,
         .cornerback: 3, .safety: 2, .kicker: 1, .punter: 1,
     ]
 

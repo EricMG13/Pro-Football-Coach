@@ -691,7 +691,10 @@ private func runM3RecruitingCalibration(seed: UInt64) throws -> M3RecruitingCali
             positionCoveredProgrammes += 1
         }
         let recruiting = state.college.programmes[programme.id]
-        if programme.rosterIDs.count == CollegeRules.rosterLimit,
+        // The rollover snapshot is taken before the following week's spring fill. A legal
+        // roster may therefore be below the 105-player ceiling while still covering every
+        // playable position; the scheduler fills remaining seats at the next boundary.
+        if (1...CollegeRules.rosterLimit).contains(programme.rosterIDs.count),
            Set(programme.rosterIDs).count == programme.rosterIDs.count,
            rosterPlayers.count == programme.rosterIDs.count,
            programme.scholarshipCount <= CollegeRules.scholarshipLimit,
@@ -701,7 +704,6 @@ private func runM3RecruitingCalibration(seed: UInt64) throws -> M3RecruitingCali
             legalRosterProgrammes += 1
         }
     }
-
     let signedClassSizes = state.programmes.ids.map { signedByProgramme[$0] ?? 0 }
     let fillRates = state.programmes.ids.compactMap { programmeID -> Double? in
         guard let target = projectedTargets[programmeID], target > 0 else { return nil }
@@ -2308,6 +2310,7 @@ func runM3RecruitingCalibrationTests() {
             let encoder = JSONEncoder.stable()
             let firstBytes = try encoder.encode(first.state)
             let secondBytes = try encoder.encode(second.state)
+            let firstEnvelope = try SaveEnvelope.encode(first.state)
             let decoded = try JSONDecoder().decode(GameState.self, from: firstBytes)
             let roundTripBytes = try encoder.encode(decoded)
             let integrity = WorldIntegrity.check(first.state)
@@ -2337,7 +2340,7 @@ func runM3RecruitingCalibrationTests() {
             print("signed/released/walk-ons: \(first.signedResolutions) / \(first.releasedResolutions) / \(first.walkOnJoins)")
             print("commitment/recruiting-interaction events: \(first.commitmentEvents) / \(first.recruitingInteractionEvents)")
             print("history total/hot/archive/limit: \(first.state.history.totalCount) / \(first.state.history.recent.count) / \(first.state.history.archivedCount) / \(first.state.history.retentionLimit)")
-            print("save bytes: \(firstBytes.count)")
+            print("save bytes: \(firstEnvelope.count) durable / \(firstBytes.count) JSON")
             print("position-covered/legal rosters: \(first.positionCoveredProgrammes) / \(first.legalRosterProgrammes) of \(first.state.programmes.count)")
             print("weekly: w board/unique/max-mult offered/qualified/qualified-prospects score(min/med/max) stages(E/O/N[fnd/exh;gap/priority]/R/M) open-programmes/open-slots/reserved challengers/flip-ready commits/flips")
             for week in first.weeklyDiagnostics {
@@ -2394,7 +2397,8 @@ func runM3RecruitingCalibrationTests() {
                 ))
             expectEqual(first.state.history.recent.count, first.state.history.retentionLimit)
             expect(first.state.history.totalCount < 250_000)
-            expect(firstBytes.count < 40_000_000)
+            expectEqual(try SaveEnvelope.decode(GameState.self, from: firstEnvelope), first.state)
+            expect(firstEnvelope.count < 8_000_000)
           }
         }
     }
