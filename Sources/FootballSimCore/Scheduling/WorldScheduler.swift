@@ -962,6 +962,13 @@ public enum WorldScheduler {
                 nextState.league.week = next.week
                 nextState.tactical.advance(to: next)
                 nextState.college.resetWeeklyContactPoints()
+                // Signing day (`02` section 4.1). Set here rather than in an earlier step because
+                // this is where the calendar itself moves: `saveGrowthAndIntegrity` has already
+                // checked the root against the week being *left*, so a phase written before it
+                // would be checked against the wrong week. Assigned unconditionally, not only on
+                // the boundary that opens it, so the phase cannot survive a week it does not
+                // belong to.
+                nextState.college.phase = CollegeRules.recruitingCyclePhase(inWeek: next.week)
                 guard nextState.competition.currentSchedule.season == next.season else {
                     throw WorldSchedulerError.integrityFailed([.calendarDisagreement])
                 }

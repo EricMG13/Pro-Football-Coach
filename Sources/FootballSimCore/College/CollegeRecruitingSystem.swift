@@ -400,7 +400,7 @@ public enum CollegeRecruitingSystem {
         in state: GameState,
         fitCache: RecruitingFitCache
     ) throws -> RecruitingActionTransition {
-        guard state.college.phase == .active,
+        guard state.college.phase.allowsRecruitingActions,
               state.college.portal.phase != .awaitingSpring else {
             throw RecruitingActionError.cycleUnavailable
         }

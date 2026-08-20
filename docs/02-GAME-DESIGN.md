@@ -105,7 +105,25 @@ The offseason carries ~90 minutes of the season budget and is where the two tier
 
 ### 4.1 College
 
-1. **Signing day** resolves the recruiting cycle that ran all season.
+1. **Signing day** resolves the recruiting cycle that ran all season. It is **week 21**, the last
+   week of the shared calendar (§11.3.1) — the college bracket ends in week 17, so the college
+   coach has no game left and the class is what the week is for.
+
+   The cycle phase is therefore a function of the week, not a flag anything sets by hand:
+   `active` in weeks 1 to 20, `signing` in week 21. `signing` closes contact — no user recruiting
+   action, no AI board growth, no AI investment — while leaving commitment resolution open, because
+   the commitments closing is the ceremony. The signed class joins its programme at the rollover
+   into the next season, before the portal opens.
+
+   The player has no lever left on signing day, and that is the point of a deadline: the screen
+   shows the class the season earned and whatever mandatory decisions are still standing. A
+   recruiting cycle that kept signing people after signing day would not be a deadline.
+
+   *Recorded because the first implementation had no way to reach this state.* `signing` existed in
+   the phase enum, `SigningDayView` branched on it, and nothing ever assigned it — the world
+   integrity check required `active` at every stable root, so the phase could not have persisted
+   across a week boundary even if something had. Screen 29 rendered "Signing day is closed" for the
+   whole of every career, and signing happened invisibly inside the season rollover.
 2. **The portal** opens: departures to manage, arrivals to chase. A retention decision on every
    player with a reason to leave.
 3. **NIL budget** allocation across the roster — a scarce pot, distributed. Getting it wrong loses
@@ -501,6 +519,7 @@ the legal tests.
 | Initial signings per class | 25 | §4.3's "~25 signings" made exact |
 | Roster limit | 105 | Scholarship players plus walk-ons |
 | Eligibility | 4 seasons of competition within a 5-year clock | The redshirt year is the difference, and §4.1's redshirt decision is what spends it |
+| Signing day | week 21, the last week of the shared calendar | §4.1. The cycle phase is derived from the week, never stored independently |
 | Portal windows | two: after the bracket, and in spring | §4.1 |
 
 ### 11.2 The pro tier

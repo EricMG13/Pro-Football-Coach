@@ -261,6 +261,21 @@ public enum RecruitingCyclePhase: String, Codable, Sendable, CaseIterable, Hasha
     case active
     case signing
     case closed
+
+    /// Whether a programme may still spend contact on the class: user requests, AI board growth,
+    /// AI investment.
+    ///
+    /// Signing day closes contact. `02` section 4.1: a recruiting cycle that kept signing people
+    /// after signing day would not be a deadline.
+    public var allowsRecruitingActions: Bool { self == .active }
+
+    /// Whether commitments may still form and resolve.
+    ///
+    /// Open on signing day, deliberately, and this is the distinction the phase exists to make:
+    /// contact closing is what makes the deadline, and the commitments closing is the ceremony. A
+    /// single `== .active` gate over both would have made signing day the week the class stopped
+    /// resolving, which is the opposite of what it is.
+    public var allowsCommitmentResolution: Bool { self != .closed }
 }
 
 public enum ProspectRecruitmentPhase: String, Codable, Sendable, CaseIterable, Hashable {
@@ -736,7 +751,12 @@ public struct CollegeState: Codable, Sendable, Equatable {
         reservationLimit: Int
     ) -> Bool {
         let programmeID = context.winner.programmeID
-        guard phase == .active,
+        // `allowsCommitmentResolution`, not `== .active`: signing day closes contact and leaves the
+        // commitments closing, and this is the mutation that closes them. Gating it on `.active`
+        // made the market compute contenders all through the signing week and then silently refuse
+        // every one of them — visible only as a calibration number, six points of class fill, with
+        // nothing failing.
+        guard phase.allowsCommitmentResolution,
               context.isValid,
               context.committedAt.week >= CollegeRules.minimumCommitmentWeek,
               programmes[programmeID] != nil,
@@ -761,7 +781,8 @@ public struct CollegeState: Codable, Sendable, Equatable {
         reservationLimit: Int
     ) -> Bool {
         let programmeID = context.winner.programmeID
-        guard phase == .active,
+        // Open on signing day for the same reason `commit` is: a flip is a commitment resolving.
+        guard phase.allowsCommitmentResolution,
               context.isValid,
               context.committedAt.week >= CollegeRules.minimumCommitmentWeek,
               programmes[programmeID] != nil,

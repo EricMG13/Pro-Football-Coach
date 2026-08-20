@@ -293,6 +293,11 @@ func runProMarketTests() {
             rollover.league.season = 0
             rollover.league.week = SharedRules.inSeasonWeeks
             rollover.calendar = CalendarState(season: 0, week: SharedRules.inSeasonWeeks)
+            // The signing week carries the signing phase (`02` section 4.1). Without this the
+            // hand-built calendar produces a root the scheduler could never emit, and the integrity
+            // assertion at the end of this test is checking the fixture rather than the expiry.
+            rollover.college.phase = CollegeRules
+                .recruitingCyclePhase(inWeek: rollover.calendar.week)
             let expired = try ProMarketSystem.expireContracts(at: rollover.calendar, in: rollover)
             expect(expired.expiredPlayerIDs.contains(rolloverPlayerID))
             expect(expired.state.players[rolloverPlayerID]?.contract == nil)
