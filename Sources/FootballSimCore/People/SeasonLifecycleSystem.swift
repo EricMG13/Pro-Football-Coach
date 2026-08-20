@@ -161,10 +161,10 @@ public enum SeasonLifecycleSystem {
     /// Enumerated from the structures that name a person rather than from a hand-written list, so
     /// a new reference is covered the day the structure gains it: the retained event journal (both
     /// its generic entity references and its typed prospect references, which validate recruiting
-    /// history), archived award winners, everyone still on a roster, and everyone whose career
-    /// carries portal history — the last because `WorldIntegrity` cross-checks portal offers held
-    /// on a career record against the scouting knowledge held beside it, and dropping one half of
-    /// that pair would report as corruption.
+    /// history), archived award winners, everyone still on a roster, and everyone whose portal
+    /// window is still summarised by a live `.portalWindowCompleted` event — the last because
+    /// `WorldIntegrity` cross-checks portal offers held on a career record against the scouting
+    /// knowledge held beside it, and dropping one half of that pair would report as corruption.
     private static func retainedIdentityIDs(in state: GameState) -> Set<UUID> {
         var protectedIDs = Set(state.players.ids)
         for event in state.history.recent {
@@ -174,20 +174,42 @@ public enum SeasonLifecycleSystem {
         for archive in state.competition.archives {
             protectedIDs.formUnion(archive.awards.map(\.winnerID))
         }
-        // Any career that ever touched the portal, not just a current-season one.
+        // Every career with a record in a (season, window) that a surviving
+        // `.portalWindowCompleted` event still names — not any career that ever touched the
+        // portal.
         //
-        // Narrowing this to the live target season looked safe — `WorldIntegrity` only admits
-        // scouting knowledge for the current season — and it is not: the portal commit path reads
-        // windows this filter had already evicted, and the world failed at season 4 with
-        // `portalCommitFailed(.postseason)`. The consequence is stated rather than hidden: these
-        // careers accumulate slowly, so the retention limit binds until about season 15 and the
-        // retained set drifts above it after that (10,199 against 8,192 at season 20). That is a
-        // far smaller leak than the one this prune closed, and narrowing it needs the portal
-        // system's own retention rule rather than a guess from outside it.
-        for (playerID, career) in state.people.playerCareers where !career.portalWindows.isEmpty {
-            protectedIDs.insert(playerID)
+        // `WorldIntegrity.checkPortalEvents` recounts every entrant of that window — retained and
+        // returned entrants included, not just transfers — from `playerCareers` for as long as its
+        // summary event sits in `state.history.recent`. That event's `referencedEntityIDs` is
+        // empty (it names a window, not a player), so the generic event loop above does not cover
+        // those entrants on its own, even though the summary (`historicalWeight` 60) outlives their
+        // own entry/retention events (weight 20 and 0) in the same bounded, count-limited journal.
+        // Narrowing protection to the *current* target season, tried first, broke exactly this
+        // recount for a window still resident in the journal and failed at season 4 with
+        // `portalCommitFailed(.postseason)`. This reads the same journal the recount reads, so a
+        // career falls out of protection only once the recount can no longer need it either.
+        let survivingPortalWindows = Set(state.history.recent.compactMap { event -> PortalWindowKey? in
+            guard case let .portalWindowCompleted(summary) = event.payload else { return nil }
+            return PortalWindowKey(targetSeason: summary.targetSeason, window: summary.window)
+        })
+        if !survivingPortalWindows.isEmpty {
+            for (playerID, career) in state.people.playerCareers {
+                let stillSummarised = career.portalWindows.contains {
+                    survivingPortalWindows.contains(
+                        PortalWindowKey(targetSeason: $0.targetSeason, window: $0.window)
+                    )
+                }
+                if stillSummarised {
+                    protectedIDs.insert(playerID)
+                }
+            }
         }
         return protectedIDs
+    }
+
+    private struct PortalWindowKey: Hashable {
+        let targetSeason: Int
+        let window: CollegePortalWindow
     }
 
     private static func advanceCollegePlayers(

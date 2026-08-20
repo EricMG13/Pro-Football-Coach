@@ -407,6 +407,31 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > string in an enum and nothing else; it is now a real test, and `SaveOffMainActorTest` is a
 > compile-time proof rather than a grep for two string literals.
 >
+> **2026-08-20 — the bound above still leaked, through the one category it deliberately protected
+> forever.** A 20-season `--m2-soak` retained 10,199 departed identities against the 8,192 limit:
+> `SeasonLifecycleSystem.retainedIdentityIDs` protected any career that had ever touched the transfer
+> portal, permanently, because `WorldIntegrity.checkPortalEvents` needs a portal window's full
+> entrant list — retained and returned entrants, not just transfers — for as long as that window's
+> `.portalWindowCompleted` event survives in `state.history.recent` (a bounded ~4096-event FIFO), and
+> that event's `referencedEntityIDs` is empty, so the generic event-reference protection never covered
+> those entrants on its own. Fixed by tracking exactly that instead: a career stays protected while a
+> *surviving* completion event still names one of its (season, window) pairs, not for having ever
+> entered the portal. A cruder "current season only" narrowing was tried first and is independently
+> known to be wrong — it broke the same recount for a window still resident in the journal and failed
+> at season 4 with `portalCommitFailed(.postseason)`, because it tracked the wrong thing. TDD test in
+> `PortalTransactionTests.swift` covers both directions; the full default suite (948 tests, 775,603
+> checks) passes with no regressions.
+>
+> **Not verified clean by `--m2-soak`.** The run hits three repeats of an already-known, separately-
+> owned roster-count assertion timing bug (`PeopleLifecycleTests.swift:591-599` samples college
+> rosters one week before `CollegeCycleSystem.addWalkOns(for: .springRosterFill, ...)` tops them back
+> up) and then aborts early — 49 of an expected several-thousand checks — on
+> `portalCommitFailed(.postseason)`. Whether that throw is caused by this fix or is itself downstream
+> of the pre-existing roster-count bug was not isolated: a controlled A/B (this fix stashed out,
+> identical soak) was in progress and was killed, with no result yet, when work stopped on request.
+> This is the open item in the handoff for follow-up — resolve the roster-count bug (or the A/B) first
+> so a clean run can actually reach season 20 and confirm `departedPlayers.count` stays bounded.
+>
 > **Still open, and named rather than carried quietly.** The design audit filed inside commit
 > `e3b360d` — `DESIGN-IS-2026-08-19/03-verdict.md` — scores the front end **10/30 with a REDESIGN
 > verdict**, with load-bearing zeros on usefulness, understandability and honesty, at least 17 named
