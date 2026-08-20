@@ -942,6 +942,33 @@ What is genuinely red, after the correction:
   `signFreeAgentForScheduler`, so the scheduler validates once per batch at its own integrity
   boundary.
 
+  **`--pro-soak` is green**, for the first time since `e710924` added it. Ten seasons:
+
+  ```text
+  proDraftPick=1568  proContractExpired=2288  proPlayerSigned=554  freeAgents=512
+  weekMeanMs=11195.28  2 tests, 16 checks, all passed
+  ```
+
+  1,568 picks where there were none. Expiry rose from 1,491 to 2,288 — near canon's roughly 339 a
+  season — because rosters that refill have more under contract to expire. Signings fell from 1,476
+  to 554, which is the reservation doing its job: clubs stop at 46 and the draft supplies the rest.
+
+  **Two things the green light does not say, recorded here so it does not bury them.**
+
+  `weekMeanMs` went from 2,628 to 11,195, a 4.3x slowdown, and that is *after* `draftForScheduler`
+  removed 224 whole-root integrity checks a season. The cause is real work rather than waste — a
+  league whose rosters actually refill simulates more players every week — but it is a real
+  regression against the app-latency concern, and `--pro-soak` now takes roughly three quarters of
+  an hour rather than ten minutes.
+
+  `freeAgents=512` is exactly `ProMarketState.maximumFreeAgentIDs`. **The pool is pinned at its
+  bound**: expiry now outpaces signing and unsigned players accumulate until the ledger is full.
+  Nothing fails today, because `expireContracts` refuses only when a single season's expiries exceed
+  the bound outright. But `02` §4.2a sized bootstrap's fifth-per-season expiry *specifically* to
+  "leave real headroom for carryover", and there is now none. The next thing that raises expiry, or
+  lowers signing, meets `ProMarketError.invalidRoot`. Whatever drains the pool — the cap-compliance
+  cuts of beat 2, a pool eviction policy, or clubs signing deeper — is unbuilt.
+
   **Beat 2 remains unimplemented.** Nothing enforces a cap-compliance date, and no club ever cuts
   anyone for money. That is still the owner-level design call `a2e3147` named; it simply was not what
   blocked the draft.
