@@ -150,14 +150,20 @@ public enum SnapResolver {
         //
         // Depth is the difficulty because that is what it is: a deep ball is hard to complete to
         // an open receiver. Openness then helps, and pressure hurts.
+        // Three inputs, weighted so that each is one of three. Depth sets the baseline; the passer
+        // is measured against a reference passer rather than against the depth itself, because
+        // "how hard is this throw" and "how good is this passer" are different questions and one
+        // logistic between them made the second answer both.
         let accuracy = passer.attributes[offensiveCall.passDepth.accuracy]
         let throwLeverage = Leverage.score(
             attacker: accuracy,
-            defender: Rating(MatchupRules.throwDifficulty(offensiveCall.passDepth)),
-            situationModifier: homeFieldAdvantage
+            defender: Rating(MatchupRules.referencePasserAccuracy),
+            situationModifier: MatchupRules.throwBaseline(offensiveCall.passDepth)
+                + homeFieldAdvantage
                 + target.element.score * MatchupRules.opennessThrowHelp
                 - pressure * MatchupRules.pressureThrowPenalty
                 + offensiveCall.aggression * MatchupRules.aggressionThrowBonus,
+            ratingWeight: MatchupRules.throwAccuracyWeight,
             rng: &rng
         )
         // The defender covering the TARGET, not routes[0]. The target is the argmax over

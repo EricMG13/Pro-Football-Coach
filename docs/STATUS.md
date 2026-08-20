@@ -1076,6 +1076,70 @@ When it landed it reported **7 of 8 college bands and 11 of 16 pro bands failing
 branch `--lane full` runs does not call `runCalibrationGateTests` — that last one is read from
 `main.swift` rather than observed, because the full lane is a 36-minute run.
 
+#### 2026-08-20 — the same three, re-examined after a stop-hook challenge, and a real engine fix inside them
+
+The prior entry called the last three bands a harness question and stopped. A session stop-hook
+challenged that conclusion before accepting it, and the challenge found something real: one more
+engine mechanism was still in play, not yet tested.
+
+**Measured: holding both rosters fixed and moving only the home passer's three accuracy ratings by
+nine points swung completion percentage from 0.425 to 0.724 and final margin by 24.6 points.** A
+nine-point real-world QB gap is worth a few points, not twenty-five. The cause is in `resolvePass`'s
+throw: `03` §1.1 names three inputs — "openness, accuracy and pressure" — but accuracy entered as the
+full attacker of `Leverage.score`, carrying the curve's entire ±1 range, while openness and pressure
+were capped at 0.30 each through `opennessThrowHelp`/`pressureThrowPenalty`. The passer's rating
+therefore outweighed the other two inputs combined by better than three to one. This is also why
+`CalibrationRoster`'s roster-draw variance was so large: it scatters each accuracy rating by ±18, so
+two same-rung teams fielded passers whose completion rates differed by up to thirty points before
+anything else in the game had a say.
+
+**Fixed with two additions, both used only by the throw.** `Leverage.score` gained an optional
+`ratingWeight` (default 1, unused everywhere else). The throw now measures the passer against
+`referencePasserAccuracy` (70) at `throwAccuracyWeight` (0.35) rather than against the depth itself,
+and each depth carries its own `throwBaseline` in leverage units — separating "how hard is this
+throw" from "how good is this passer", which one shared logistic had conflated. Re-tuned against the
+gate: `throwBaseline` short/mid/deep 0.27/0.05/-0.26, `interceptionThreshold` -0.70,
+`collegeHomeAdvantage` 0.059. Post-fix, the same nine-point QB swing moves margin by 10.2 points.
+
+**Result: 20 of 24 holding immediately after the throw fix, 21 of 24 after re-centring.** Engine
+game-only margin standard deviation measured at 13.2 against a real 13.5 — unchanged from before, as
+expected, since this fix rebalanced a duel's inputs rather than the noise or the game loop.
+
+**A follow-up ladder rewrite was tried and reverted.** Rebuilding `talentLadder`'s twelve pairs
+around smaller, league-realistic gaps (average 1.75 instead of 5.75) was tested on top of the throw
+fix. It made the remaining two bands **worse**, not better — college favourite win rate crossed to
+failing on the *lower* edge (0.64 against a 0.70 floor) and pro blowout rate rose to 0.48 — and cost
+four bands that had been holding (points per team-game both tiers, combined game total, rush yards,
+explosive run both tiers). The reversal is recorded because it answers half of the two open questions
+from the prior entry with a measurement rather than a guess: **a ladder built purely around realism
+does not sit inside the harness's actual acceptance bands**, so `01` §6.5's bands and the mismatches
+`talentLadder` needs to reach them are already in tension independent of anything this session did to
+the engine. That tension is real and is not resolved by picking a different ladder; it needs the
+owner decision recorded below. The ladder file is unchanged from the previous commit.
+
+**The two remaining bands and the owner questions from the prior entry stand, revised with the
+smaller measured numbers:**
+
+- `favourite win rate`: college 0.819 against 0.70–0.78, pro 0.880 against 0.62–0.72 (down from 0.826
+  / 0.878 pre-fix — the throw rebalance moved it slightly, not enough to close it).
+- `blowout rate`, pro: 0.696 against 0.17–0.26 (down from 0.703).
+
+1. What per-player gap should `talentLadder` use? The engine's favourite-win rate lands inside band
+   at roughly +2; the current ladder averages +5.75; a ladder averaging +1.75 (tried above) undershoots
+   the floor on one tier and overshoots blowout on the other, so the answer is not simply "smaller".
+2. Should a `CalibrationRoster` rung hold aggregate talent constant, and if so how? The throw fix
+   removed the single largest source of same-rung variance (QB accuracy), but roster-draw variance is
+   still measurably larger than the game's own — the exact figure was not re-measured after this fix
+   and is worth checking before deciding.
+
+**Verification.** `--engine` (52 tests, fingerprints re-pinned — the throw change alone, no roster or
+architecture change), `--core-contracts`, `--calibration`, `--competition-only`, `--architecture-only`
+(green with no re-pin needed, confirming this diff touches no roster generation) all green. Time
+constraints at session end meant `--match-reducer` and `--m3-recruiting-calibration` were not
+re-verified after this specific change; both were green on every prior change this session including
+the last commit, and this change touches only the pass-throw duel and its constants, which neither
+suite's assertions reach. Naming that gap rather than claiming a verification that did not happen.
+
 #### 2026-08-20 — 21 of 24, and why the last three are the harness rather than the engine
 
 **Holdout ladder: 19 of 24 to 21 of 24.** Newly holding: both home-win bands (centred, and the gate

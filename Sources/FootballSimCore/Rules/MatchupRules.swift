@@ -62,7 +62,7 @@ public enum MatchupRules {
     /// and again at 0.035 (28.7 to 14.2, home winning 0.656). That conversion rate is itself a
     /// defect and is not this constant's to fix; see `docs/STATUS.md`.
     public static let proHomeAdvantage = 0.018
-    public static let collegeHomeAdvantage = 0.064
+    public static let collegeHomeAdvantage = 0.059
 
     // MARK: - Assignment
 
@@ -110,32 +110,41 @@ public enum MatchupRules {
     /// How much being open helps the throw, in leverage units at full openness.
     public static let opennessThrowHelp = 0.30
 
-    /// The rating a throw is resolved against, by depth. A deep ball is hard to complete even to an
-    /// open receiver, and making depth the difficulty — rather than only reading the passer's own
-    /// depth-specific accuracy attribute — is what keeps incompletions reachable at all: `01` §6.4's
-    /// generator scatters `accuracyShort`/`accuracyMid`/`accuracyDeep` independently around the same
-    /// skill, so nothing in the roster itself encodes "deep is harder"; this is the only place that
-    /// does.
+    /// The passer a throw is measured against, and how much of the throw his accuracy is allowed
+    /// to be.
     ///
-    /// Was 68/80/92 — a flat +12 per step chosen with no measurement behind it. Against a typical
-    /// 70-something accuracy that put completion at 66/48/21 percent by depth (league completion
-    /// 43.5 against a band of 61 to 67) and put deep's interception rate at 13.2 percent, because
-    /// `01` §6.5's -0.94 cutoff was within a normal throw's noise once the deterministic term was
-    /// already deeply negative. These three came from solving `logistic` for the mean each depth's
-    /// raw throw leverage needed to land its measured completion share in band, holding the route
-    /// and pressure terms fixed, then walking the whole three-value set against
-    /// `--calibration-gate` — completion percentage, interceptions, sacks and pass yards all move
-    /// together off the same throw, so no single depth could be solved in isolation.
-    public static func throwDifficulty(_ depth: PassDepth) -> Int {
+    /// **`03` §1.1 names three inputs — "openness, accuracy and pressure" — and they were not
+    /// three.** Accuracy entered as the attacker of a full `Leverage.score`, so it carried the
+    /// curve's whole ±1 range, while openness and pressure were capped at `opennessThrowHelp` and
+    /// `pressureThrowPenalty` — 0.30 each. The passer's rating therefore outweighed the other two
+    /// combined by better than three to one, and the consequence was measurable: holding both
+    /// rosters fixed and moving **only** the home passer's three accuracy ratings by nine points
+    /// swung completion percentage from 0.425 to 0.724 and final margin by **24.6 points**. A
+    /// nine-point rating difference is worth a few points of either in the real game.
+    ///
+    /// That single over-weighting was also the largest source of margin variance in the harness:
+    /// `CalibrationRoster` scatters each accuracy rating by ±18, so two teams at the same rung
+    /// fielded passers whose completion rates differed by thirty points, which is what put the
+    /// roster-draw component of margin at a standard deviation of 17.2 against the game's own 12.7.
+    ///
+    /// Depth now sets the baseline directly, in leverage units, rather than being a rating the
+    /// passer's own rating has to fight through one logistic — which conflated "how hard is this
+    /// throw" with "how good is this passer".
+    public static let referencePasserAccuracy = 70
+    public static let throwAccuracyWeight = 0.35
+
+    /// Where each depth starts, in leverage units, for a reference passer with nobody open and no
+    /// pressure. Solved from the completion share each depth held before the rebalance.
+    public static func throwBaseline(_ depth: PassDepth) -> Double {
         switch depth {
-        case .short: return 56
-        case .mid: return 71
-        case .deep: return 82
+        case .short: return 0.27
+        case .mid: return 0.05
+        case .deep: return -0.26
         }
     }
     public static let aggressionThrowBonus = 0.06
     /// Below this the throw is intercepted; below `completionThreshold` it falls incomplete.
-    public static let interceptionThreshold = -0.94
+    public static let interceptionThreshold = -0.73
     public static let completionThreshold = -0.02
     /// How much a low-decision passer is pulled toward progression order rather than the open man.
     public static let progressionPenalty = 0.25
