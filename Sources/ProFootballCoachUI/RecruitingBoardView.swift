@@ -729,7 +729,11 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentSecondary.color)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
-            if let reason = choice.unavailableReason {
+            // The provider always assigns unavailableReason a fallback string, never nil, so
+            // this must gate on isAvailable itself -- otherwise an enabled choice draws a reason
+            // its own state contradicts, e.g. Withdraw reading "This prospect is not on an active
+            // board" directly beside its own working button.
+            if !choice.isAvailable, let reason = choice.unavailableReason {
                 Text(reason)
                     .font(CoachWorldTokens.TypeRole.caption)
                     .foregroundStyle(palette.contentQuiet.color)
@@ -849,7 +853,8 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
                     .accessibilityLabel(
                         "\(choice.title). Cost: \(choice.cost). Consequence: "
                             + "\(choice.consequence)"
-                            + (choice.unavailableReason.map { ". Unavailable: \($0)" } ?? "")
+                            + (choice.isAvailable ? "" : (choice.unavailableReason
+                                .map { ". Unavailable: \($0)" } ?? ""))
                     )
                 }
             }
