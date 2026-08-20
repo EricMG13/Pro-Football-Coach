@@ -235,9 +235,10 @@ public enum ScheduleGenerator {
         }
     }
 
-    /// Guaranteed-valid final fallback: take distinct factors of a complete round robin and leave
-    /// the final week empty. It sacrifices bye distribution, never schedule integrity.
-    private static func roundRobinFallback(
+    /// Deterministic final fallback. Rotate the balanced bye assignment until the constrained
+    /// matcher can complete every week; if none can, preserve the generator's existing empty-slate
+    /// failure contract instead of returning a known-invalid season.
+    package static func roundRobinFallback(
         seed: UInt64,
         season: Int,
         tier: Tier,
@@ -245,29 +246,52 @@ public enum ScheduleGenerator {
         gamesPerTeam: Int,
         weeks: Int
     ) -> [ScheduledGame] {
-        var rotation = members
-        var weeklyPairs: [[Pair]] = []
-        for _ in 0..<gamesPerTeam {
-            var pairs: [Pair] = []
-            for index in 0..<(rotation.count / 2) {
-                pairs.append(Pair(rotation[index], rotation[rotation.count - 1 - index]))
+        guard members.count.isMultiple(of: 2), weeks == gamesPerTeam + 1 else { return [] }
+        let byeGroups = balancedEvenGroups(memberCount: members.count, groupCount: weeks)
+
+        for offset in members.indices {
+            let rotated = Array(members[offset...]) + Array(members[..<offset])
+            var byeWeekByMember: [UUID: Int] = [:]
+            var cursor = 0
+            for (weekIndex, size) in byeGroups.enumerated() {
+                for id in rotated[cursor..<(cursor + size)] {
+                    byeWeekByMember[id] = weekIndex + 1
+                }
+                cursor += size
             }
-            weeklyPairs.append(pairs)
-            let fixed = rotation.removeFirst()
-            let moved = rotation.removeLast()
-            rotation.insert(moved, at: 0)
-            rotation.insert(fixed, at: 0)
+
+            var usedPairs: Set<Pair> = []
+            var weeklyPairs: [[Pair]] = []
+            var completed = true
+            for week in 1...weeks {
+                let active = members.filter { byeWeekByMember[$0] != week }
+                let attemptSeed = SeededRandom.derive(
+                    from: scheduleSeed(seed: seed, season: season, tier: tier, week: week),
+                    scope: .game,
+                    ordinal: offset
+                )
+                guard let pairs = constrainedPair(
+                    active,
+                    avoiding: usedPairs,
+                    preferredGroups: [:],
+                    seed: attemptSeed
+                ) else {
+                    completed = false
+                    break
+                }
+                usedPairs.formUnion(pairs)
+                weeklyPairs.append(pairs)
+            }
+            if completed {
+                return makeGames(
+                    seed: seed,
+                    season: season,
+                    tier: tier,
+                    weeklyPairs: weeklyPairs
+                )
+            }
         }
-        weeklyPairs.append(contentsOf: Array(
-            repeating: [],
-            count: max(0, weeks - weeklyPairs.count)
-        ))
-        return makeGames(
-            seed: seed,
-            season: season,
-            tier: tier,
-            weeklyPairs: weeklyPairs
-        )
+        return []
     }
 
     private static func makeGames(

@@ -179,6 +179,45 @@ func runCompetitionTests() {
                 ) <= 2, "pro byes collapsed for seed \(seed)")
             }
         }
+
+        test("the deterministic fallback preserves distributed byes") {
+            let world = LeagueGenerator.generate(seed: 70_116)
+            let college = ScheduleGenerator.roundRobinFallback(
+                seed: 70_116,
+                season: 0,
+                tier: .college,
+                members: world.programmes.map(\.id).sorted { $0.uuidString < $1.uuidString },
+                gamesPerTeam: CollegeRules.gamesPerRegularSeason,
+                weeks: CollegeRules.regularSeasonWeeks
+            )
+            assertSeasonSlate(
+                schedule: college,
+                tier: .college,
+                memberIDs: world.programmes.map(\.id),
+                gamesPerTeam: CollegeRules.gamesPerRegularSeason,
+                weeks: CollegeRules.regularSeasonWeeks,
+                maximumByesPerWeek: 12,
+                label: "college deterministic fallback"
+            )
+
+            let pro = ScheduleGenerator.roundRobinFallback(
+                seed: 70_116,
+                season: 0,
+                tier: .pro,
+                members: world.proTeams.map(\.id).sorted { $0.uuidString < $1.uuidString },
+                gamesPerTeam: ProRules.gamesPerRegularSeason,
+                weeks: ProRules.regularSeasonWeeks
+            )
+            assertSeasonSlate(
+                schedule: pro,
+                tier: .pro,
+                memberIDs: world.proTeams.map(\.id),
+                gamesPerTeam: ProRules.gamesPerRegularSeason,
+                weeks: ProRules.regularSeasonWeeks,
+                maximumByesPerWeek: 2,
+                label: "pro deterministic fallback"
+            )
+        }
     }
 
     /// Every assertion above runs against season 0, and the boundary does not reuse that slate.
