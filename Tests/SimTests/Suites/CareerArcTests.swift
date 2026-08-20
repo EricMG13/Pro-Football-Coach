@@ -960,5 +960,63 @@ func runCareerArcTests() {
             expectEqual(state.careerArc.jobHistory.last?.reason, .fired)
             expect(WorldIntegrity.check(state).isValid, "fired world failed integrity")
         }
+        // Three transitions end a coach's job — promotion, resignation, firing — and all three
+        // shipped having cleared the career control without vacating the chair in the world. Three
+        // hand-written walks cover the three that exist today, which is the coverage boundary
+        // becoming the quality boundary: a fourth would be wrong on the day it was added.
+        //
+        // So the class is enumerated by construction instead. Every `clearCollege()` in the engine
+        // has to be answered by a world-side move within a few lines, and a new one that is not
+        // fails here rather than in a save six months from now.
+        test("every career separation in the engine also vacates the seat") {
+            let window = 6
+            var unanswered: [String] = []
+            var callSites = 0
+            for file in swiftFiles(under: "Sources") {
+                let lines = codeLines(of: file.text)
+                for (number, line) in lines.enumerated() where line.contains("clearCollege()") {
+                    // The declaration itself, not a call.
+                    guard !line.contains("func clearCollege") else { continue }
+                    callSites += 1
+                    let following = lines[number..<min(number + window, lines.count)]
+                        .joined(separator: "\n")
+                    guard !following.contains("vacateCurrentSeat"),
+                          !following.contains("seatProfessionalPromotion") else { continue }
+                    unanswered.append("\(file.path):\(number + 1)")
+                }
+            }
+            // A scan that reaches nothing also reports nothing wrong. The three transitions are
+            // four call sites — two firing, one resignation, one promotion — so anything less than
+            // that means the walk missed the tree, not that the tree is clean.
+            expect(
+                callSites >= 4,
+                "the separation scan found only \(callSites) call sites, so it is not reaching Sources"
+            )
+            expect(
+                unanswered.isEmpty,
+                "career control is cleared without vacating the seat at: \(unanswered.joined(separator: ", "))"
+            )
+        }
+
+        // A scan that has never failed is not known to be a scan. ContractTests states the rule and
+        // plants an offender in a synthetic file for each of its scans; this does the same.
+        test("the separation scan catches a clearCollege that vacates nothing") {
+            let offender = """
+            func fireTheCoach(in state: inout GameState) {
+                state.career.clearCollege()
+                state.pending = PendingQueues()
+            }
+            """
+            let lines = codeLines(of: offender)
+            var caught = false
+            for (number, line) in lines.enumerated() where line.contains("clearCollege()") {
+                let following = lines[number..<min(number + 6, lines.count)].joined(separator: "\n")
+                if !following.contains("vacateCurrentSeat"),
+                   !following.contains("seatProfessionalPromotion") {
+                    caught = true
+                }
+            }
+            expect(caught, "the separation scan did not catch a planted offender")
+        }
     }
 }
