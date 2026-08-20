@@ -10,6 +10,12 @@ import ProFootballCoachUI
 /// the store live in separate files inside one target.
 public struct CoachWorldAppRootView: View {
     @State private var store: CoachWorldStore?
+    /// A successful restore populates `store` immediately but does not, on its own, enter
+    /// gameplay -- `restoreExistingCareer()` no longer treats "loaded" as "confirmed." The coach
+    /// sees `TitleContinueView`'s career summary and taps Continue first (`02` section 9's
+    /// durable boundary). `startNewCareer(...)` sets this directly: a freshly created career
+    /// needs no redundant confirmation of a career the coach just finished naming.
+    @State private var careerConfirmed = false
     @State private var failure: String?
     @State private var isStarting = false
     @State private var isRestoring = false
@@ -36,6 +42,20 @@ public struct CoachWorldAppRootView: View {
     @State private var setupError: String?
 
     @State private var coordinator: SaveCoordinator
+    /// The one deferred write. While it is outstanding, further intents only hand the coordinator a
+    /// newer document; the task that is already waiting writes whichever is newest when it fires.
+    @State private var flushTask: Task<Void, Never>?
+    @Environment(\.scenePhase) private var scenePhase
+
+    /// How long a committed intent may sit unwritten.
+    ///
+    /// Every intent used to force a flush, which is why the coordinator's coalescing never
+    /// coalesced anything: a match snap cost a full encode, a read-back and two whole-file writes,
+    /// measured at 2.9 s at season 0 and growing with the career. Requesting is cheap and the
+    /// write is deferred, so a burst of snaps costs one write rather than one per snap. Leaving
+    /// the app writes immediately, so the exposure is a crash inside this window, against a backup
+    /// file and a previous save that both remain on disk.
+    private static let flushDelay: Duration = .seconds(4)
 
     public init(saves: CoachWorldSaveStore = CoachWorldSaveStore()) {
         _coordinator = State(initialValue: SaveCoordinator(storage: saves))
@@ -43,7 +63,7 @@ public struct CoachWorldAppRootView: View {
 
     public var body: some View {
         Group {
-            if let store {
+            if let store, careerConfirmed {
                 career(store)
             } else if showingNewCareerSetup {
                 NewCareerCoachIdentityView(
@@ -78,6 +98,15 @@ public struct CoachWorldAppRootView: View {
         .background(CoachWorldTokens.dark.page.color)
         .preferredColorScheme(.dark)
         .task { await restoreExistingCareer() }
+        // Leaving the app is the deadline the deferred write is measured against: whatever an
+        // intent committed in the last few seconds is on disk before the process can be suspended
+        // or killed behind the coach's back.
+        .onChange(of: scenePhase) { _, phase in
+            guard phase != .active else { return }
+            flushTask?.cancel()
+            flushTask = nil
+            Task { await flushNow(reason: .background) }
+        }
     }
 
     /// Which screen is on the glass, and nothing else. A reachable route whose read model has not
@@ -102,7 +131,7 @@ public struct CoachWorldAppRootView: View {
                             personnelPlayerID = playerID
                             navigate(.playerProfile, in: store)
                         },
-                        showsRecruitingBoard: store.recruitingBoard != nil
+                        showsRecruitingBoard: store.availableScreens.contains(.recruitingBoard)
                     )
                     .floodlitChrome(
                         chrome(for: .roster, in: store),
@@ -137,7 +166,11 @@ public struct CoachWorldAppRootView: View {
                     )
                 }
             case .settingsAccessibility:
-                SettingsAccessibilityView(onClose: { navigate(.coachingHQ, in: store) })
+                SettingsAccessibilityView(
+                    onClose: { navigate(.coachingHQ, in: store) },
+                    callInsPerGame: store.callInsPerGame,
+                    onSetCallInsPerGame: { store.setCallInsPerGame($0) }
+                )
                     .floodlitChrome(
                         chrome(for: .settingsAccessibility, in: store),
                         onNavigate: { navigateChrome($0, in: store) }
@@ -331,10 +364,10 @@ public struct CoachWorldAppRootView: View {
                         onContinue: { Task { await advance(store) } },
                         onNavigate: { navigate($0, in: store) },
                         onSelectTeam: { id in
-                            Task {
-                                await store.selectTeam(id)
-                                navigate(.teamProgrammeProfile, in: store)
-                            }
+                            // Selecting a subject is presentation state and one cache eviction,
+                            // so it no longer needs an actor hop to reach the world.
+                            store.selectTeam(id)
+                            navigate(.teamProgrammeProfile, in: store)
                         }
                     )
                     .floodlitChrome(
@@ -492,45 +525,6 @@ public struct CoachWorldAppRootView: View {
                         onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
-            case .draftBoard:
-                surface(store.proOffseason, screen: .draftBoard) { model in
-                    DraftBoardView(
-                        model: model,
-                        statusMessage: failure ?? store.statusMessage,
-                        onAction: { action in Task { await store.actOnProMarket(action) } },
-                        onClose: { closeCareer(in: store) }
-                    )
-                    .floodlitChrome(
-                        chrome(for: .draftBoard, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .freeAgency:
-                surface(store.proOffseason, screen: .freeAgency) { model in
-                    FreeAgencyView(
-                        model: model,
-                        statusMessage: failure ?? store.statusMessage,
-                        onAction: { action in Task { await store.actOnProMarket(action) } },
-                        onClose: { closeCareer(in: store) }
-                    )
-                    .floodlitChrome(
-                        chrome(for: .freeAgency, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .proScoutingBoard:
-                surface(store.proOffseason, screen: .proScoutingBoard) { model in
-                    ProScoutingBoardView(
-                        model: model,
-                        statusMessage: failure ?? store.statusMessage,
-                        onAction: { action in Task { await store.actOnProMarket(action) } },
-                        onClose: { closeCareer(in: store) }
-                    )
-                    .floodlitChrome(
-                        chrome(for: .proScoutingBoard, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
             case .collegeOffseason:
                 surface(store.collegeOffseason, screen: .collegeOffseason) { model in
                     CollegeOffseasonView(
@@ -545,52 +539,8 @@ public struct CoachWorldAppRootView: View {
                         onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
-            case .portalHub:
-                surface(store.collegeOffseason, screen: .portalHub) { model in
-                    PortalHubView(model: model, statusMessage: failure ?? store.statusMessage,
-                                  onCommit: { id in Task { await commit(id, in: store) } },
-                                  onContinue: { Task { await advance(store) } },
-                                  onClose: { closeCareer(in: store) })
-                    .floodlitChrome(
-                        chrome(for: .portalHub, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .retentionDecisions:
-                surface(store.collegeOffseason, screen: .retentionDecisions) { model in
-                    RetentionDecisionsView(model: model, statusMessage: failure ?? store.statusMessage,
-                                            onCommit: { id in Task { await commit(id, in: store) } },
-                                            onContinue: { Task { await advance(store) } },
-                                            onClose: { closeCareer(in: store) })
-                    .floodlitChrome(
-                        chrome(for: .retentionDecisions, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .portalMarket:
-                surface(store.collegeOffseason, screen: .portalMarket) { model in
-                    PortalMarketView(model: model, statusMessage: failure ?? store.statusMessage,
-                                     onCommit: { id in Task { await commit(id, in: store) } },
-                                     onContinue: { Task { await advance(store) } },
-                                     onClose: { closeCareer(in: store) })
-                    .floodlitChrome(
-                        chrome(for: .portalMarket, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .nilAllocation:
-                surface(store.collegeOffseason, screen: .nilAllocation) { model in
-                    NilAllocationView(model: model, statusMessage: failure ?? store.statusMessage,
-                                      onCommit: { id in Task { await commit(id, in: store) } },
-                                      onContinue: { Task { await advance(store) } },
-                                      onClose: { closeCareer(in: store) })
-                    .floodlitChrome(
-                        chrome(for: .nilAllocation, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
             case .signingDay:
-                if store.collegeOffseason != nil {
+                if store.availableScreens.contains(.collegeOffseason) {
                     surface(store.collegeOffseason, screen: .signingDay) { model in
                         SigningDayView(model: model, statusMessage: failure ?? store.statusMessage,
                                        onCommit: { id in Task { await commit(id, in: store) } },
@@ -671,41 +621,6 @@ public struct CoachWorldAppRootView: View {
                         onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
-            case .staffMarketProfile:
-                surface(store.staffRoom, screen: .staffMarketProfile) { model in
-                    StaffMarketProfileView(model: model, statusMessage: failure ?? store.statusMessage,
-                                           onClose: { closeCareer(in: store) })
-                    .floodlitChrome(
-                        chrome(for: .staffMarketProfile, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .schemeBook:
-                surface(store.gamePlan, screen: .schemeBook) { model in
-                    SchemeBookView(
-                        model: model,
-                        statusMessage: failure ?? store.statusMessage,
-                        onSelect: { plan in Task { await setGamePlan(plan, in: store) } },
-                        onClose: { closeCareer(in: store) }
-                    )
-                    .floodlitChrome(
-                        chrome(for: .schemeBook, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .personnelPackages:
-                surface(store.depthChart, screen: .personnelPackages) { model in
-                    PersonnelPackagesView(
-                        model: model,
-                        statusMessage: failure ?? store.statusMessage,
-                        onSelect: { plan in Task { await setPersonnelPlan(plan, in: store) } },
-                        onClose: { closeCareer(in: store) }
-                    )
-                    .floodlitChrome(
-                        chrome(for: .personnelPackages, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
             case .aftermath:
                 surface(store.aftermath, screen: .aftermath) { model in
                     AftermathView(
@@ -752,63 +667,6 @@ public struct CoachWorldAppRootView: View {
                         onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
-            case .jobBoard:
-                surface(store.careerHub, screen: .jobBoard) { model in
-                    JobBoardView(model: model, statusMessage: failure ?? store.statusMessage,
-                                 onClose: { closeCareer(in: store) },
-                                 onNavigate: { navigate($0, in: store) },
-                                 onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
-                                 onResign: { Task { await resignCareer(in: store) } },
-                                 onContinue: { Task { await advance(store) } })
-                    .floodlitChrome(
-                        chrome(for: .jobBoard, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .offer:
-                surface(store.careerHub, screen: .offer) { model in
-                    OfferView(model: model, statusMessage: failure ?? store.statusMessage,
-                              onClose: { closeCareer(in: store) },
-                              onNavigate: { navigate($0, in: store) },
-                              onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
-                              onResign: { Task { await resignCareer(in: store) } },
-                              onContinue: { Task { await advance(store) } })
-                    .floodlitChrome(
-                        chrome(for: .offer, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .appointment:
-                surface(store.careerHub, screen: .appointment) { model in
-                    AppointmentView(model: model, statusMessage: failure ?? store.statusMessage,
-                                    onClose: { closeCareer(in: store) },
-                                    onNavigate: { navigate($0, in: store) },
-                                    onAcceptOpportunity: { id in Task { await acceptCareerOpportunity(id, in: store) } },
-                                    onResign: { Task { await resignCareer(in: store) } },
-                                    onContinue: { Task { await advance(store) } })
-                    .floodlitChrome(
-                        chrome(for: .appointment, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
-            case .jobSecurity:
-                surface(store.careerHub, screen: .jobSecurity) { model in
-                    JobSecurityView(
-                        model: model,
-                        statusMessage: failure ?? store.statusMessage,
-                        onClose: { closeCareer(in: store) },
-                        onNavigate: { navigate($0, in: store) },
-                        onAcceptOpportunity: { id in
-                            Task { await acceptCareerOpportunity(id, in: store) }
-                        },
-                        onResign: { Task { await resignCareer(in: store) } },
-                        onContinue: { Task { await advance(store) } }
-                    )
-                    .floodlitChrome(
-                        chrome(for: .jobSecurity, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
             case .stakeholders:
                 surface(store.careerHub, screen: .stakeholders) { model in
                     StakeholdersView(
@@ -845,24 +703,6 @@ public struct CoachWorldAppRootView: View {
                         onNavigate: { navigateChrome($0, in: store) }
                     )
                 }
-            case .coachingCarousel:
-                surface(store.careerHub, screen: .coachingCarousel) { model in
-                    CoachingCarouselView(
-                        model: model,
-                        statusMessage: failure ?? store.statusMessage,
-                        onClose: { closeCareer(in: store) },
-                        onNavigate: { navigate($0, in: store) },
-                        onAcceptOpportunity: { id in
-                            Task { await acceptCareerOpportunity(id, in: store) }
-                        },
-                        onResign: { Task { await resignCareer(in: store) } },
-                        onContinue: { Task { await advance(store) } }
-                    )
-                    .floodlitChrome(
-                        chrome(for: .coachingCarousel, in: store),
-                        onNavigate: { navigateChrome($0, in: store) }
-                    )
-                }
             case .standings:
                 surface(store.standings, screen: .standings) { model in
                     StandingsView(
@@ -871,10 +711,10 @@ public struct CoachWorldAppRootView: View {
                         onClose: { navigate(.leagueMap, in: store) },
                         onContinue: { Task { await advance(store) } },
                         onSelectTeam: { id in
-                            Task {
-                                await store.selectTeam(id)
-                                navigate(.teamProgrammeProfile, in: store)
-                            }
+                            // Selecting a subject is presentation state and one cache eviction,
+                            // so it no longer needs an actor hop to reach the world.
+                            store.selectTeam(id)
+                            navigate(.teamProgrammeProfile, in: store)
                         }
                     )
                     .floodlitChrome(
@@ -890,10 +730,10 @@ public struct CoachWorldAppRootView: View {
                         onClose: { navigate(.leagueMap, in: store) },
                         onContinue: { Task { await advance(store) } },
                         onSelectTeam: { id in
-                            Task {
-                                await store.selectTeam(id)
-                                navigate(.teamProgrammeProfile, in: store)
-                            }
+                            // Selecting a subject is presentation state and one cache eviction,
+                            // so it no longer needs an actor hop to reach the world.
+                            store.selectTeam(id)
+                            navigate(.teamProgrammeProfile, in: store)
                         }
                     )
                     .floodlitChrome(
@@ -908,10 +748,10 @@ public struct CoachWorldAppRootView: View {
                         statusMessage: failure ?? store.statusMessage,
                         onClose: { navigate(.leagueMap, in: store) },
                         onSelectTeam: { id in
-                            Task {
-                                await store.selectTeam(id)
-                                navigate(.teamProgrammeProfile, in: store)
-                            }
+                            // Selecting a subject is presentation state and one cache eviction,
+                            // so it no longer needs an actor hop to reach the world.
+                            store.selectTeam(id)
+                            navigate(.teamProgrammeProfile, in: store)
                         }
                     )
                     .floodlitChrome(
@@ -926,10 +766,10 @@ public struct CoachWorldAppRootView: View {
                         statusMessage: failure ?? store.statusMessage,
                         onClose: { navigate(.coachingHQ, in: store) },
                         onSelectTeam: { id in
-                            Task {
-                                await store.selectTeam(id)
-                                navigate(.teamProgrammeProfile, in: store)
-                            }
+                            // Selecting a subject is presentation state and one cache eviction,
+                            // so it no longer needs an actor hop to reach the world.
+                            store.selectTeam(id)
+                            navigate(.teamProgrammeProfile, in: store)
                         }
                     )
                     .floodlitChrome(
@@ -945,10 +785,10 @@ public struct CoachWorldAppRootView: View {
                         onClose: { navigate(.leagueMap, in: store) },
                         onContinue: { Task { await advance(store) } },
                         onSelectTeam: { id in
-                            Task {
-                                await store.selectTeam(id)
-                                navigate(.teamProgrammeProfile, in: store)
-                            }
+                            // Selecting a subject is presentation state and one cache eviction,
+                            // so it no longer needs an actor hop to reach the world.
+                            store.selectTeam(id)
+                            navigate(.teamProgrammeProfile, in: store)
                         }
                     )
                     .floodlitChrome(
@@ -964,10 +804,10 @@ public struct CoachWorldAppRootView: View {
                         onClose: { navigate(.leagueMap, in: store) },
                         onContinue: { Task { await advance(store) } },
                         onSelectTeam: { id in
-                            Task {
-                                await store.selectTeam(id)
-                                navigate(.teamProgrammeProfile, in: store)
-                            }
+                            // Selecting a subject is presentation state and one cache eviction,
+                            // so it no longer needs an actor hop to reach the world.
+                            store.selectTeam(id)
+                            navigate(.teamProgrammeProfile, in: store)
                         }
                     )
                     .floodlitChrome(
@@ -995,14 +835,14 @@ public struct CoachWorldAppRootView: View {
                         onContinue: { Task { await advance(store) } },
                         onOpenCorrespondence: { _ in },
                         onNavigate: { navigate($0, in: store) },
-                        showsProOffseason: store.proOffseason != nil,
-                        showsDraftRoom: store.proOffseason?.phase == .draft,
-                        showsSigningDay: store.collegeOffseason?.cyclePhase == .signing,
-                        showsCollegeOffseason: store.collegeOffseason != nil,
-                        showsProManagement: store.proManagement != nil,
-                        showsContractNegotiation: store.proManagement != nil,
-                        showsRecruitingBoard: store.recruitingBoard != nil,
-                        showsRealignmentEvent: store.realignment?.event != nil
+                        showsProOffseason: store.availableScreens.contains(.proOffseason),
+                        showsDraftRoom: store.availableScreens.contains(.draftRoom),
+                        showsSigningDay: store.availableScreens.contains(.signingDay),
+                        showsCollegeOffseason: store.availableScreens.contains(.collegeOffseason),
+                        showsProManagement: store.availableScreens.contains(.capContracts),
+                        showsContractNegotiation: store.availableScreens.contains(.capContracts),
+                        showsRecruitingBoard: store.availableScreens.contains(.recruitingBoard),
+                        showsRealignmentEvent: store.availableScreens.contains(.realignmentEvent)
                     )
                     .floodlitChrome(
                         chrome(for: .coachingHQ, in: store),
@@ -1046,7 +886,6 @@ public struct CoachWorldAppRootView: View {
         }
     }
 
-
     /// The shared management chrome for a converted surface, or nil when the week hub's identity
     /// has not been retained — the header prints the programme, so without it there is nothing
     /// truthful to draw and the surface renders on the bare stage instead.
@@ -1065,62 +904,10 @@ public struct CoachWorldAppRootView: View {
 
     /// The task registry only advertises canonical surfaces whose read models exist in this
     /// career. The legacy 62 numbers remain valid migration inputs, but never become sibling links.
+    /// Sorted by registry number, because a `Set` has no order and the icon rail and the sibling
+    /// row both read this list as an order.
     private func availableScreens(in store: CoachWorldStore) -> [CoachWorldScreenID] {
-        var available: [CoachWorldScreenID] = [.settingsAccessibility]
-        func add(_ screen: CoachWorldScreenID, when condition: Bool) {
-            if condition { available.append(screen) }
-        }
-
-        add(.coachingHQ, when: store.coachingHQ != nil)
-        add(.inbox, when: store.inbox != nil)
-        add(.opponentReportFilmRoom, when: store.opponentFilm != nil)
-        add(.gamePlan, when: store.gamePlan != nil)
-        add(.practicePlan, when: store.practicePlan != nil)
-        add(.teamHealth, when: store.teamHealth != nil)
-        add(.matchDay, when: store.matchDay != nil)
-        add(.aftermath, when: store.aftermath != nil)
-        add(.gameDetailBoxScore, when: store.aftermath != nil)
-
-        add(.roster, when: store.roster != nil)
-        add(.depthChart, when: store.depthChart != nil)
-        add(.playerProfile, when: store.roster?.players.isEmpty == false)
-        add(.developmentPlan, when: store.roster != nil)
-        add(.staffRoom, when: store.staffRoom != nil)
-
-        add(.recruitingBoard, when: store.recruitingBoard != nil)
-        add(.prospectProfile, when: store.recruitingBoard != nil)
-        add(.shortlist, when: store.recruitingBoard != nil)
-        add(.contactVisitPlanner, when: store.recruitingBoard != nil)
-        add(.classOverview, when: store.recruitingBoard != nil)
-        add(.signingDay, when: store.collegeOffseason?.cyclePhase == .signing)
-        add(.collegeOffseason, when: store.collegeOffseason != nil)
-
-        add(.capContracts, when: store.proManagement != nil)
-        add(.contractNegotiation, when: store.proManagement != nil)
-        add(.rosterCutsTransactions, when: store.proManagement != nil)
-        add(.draftRoom, when: store.proOffseason?.phase == .draft)
-        add(.proOffseason, when: store.proOffseason != nil)
-
-        add(.leagueMap, when: store.leagueMap != nil)
-        add(.teamProgrammeProfile, when: store.teamProgrammeProfile != nil)
-        add(.standings, when: store.standings != nil)
-        add(.schedule, when: store.schedule != nil)
-        add(.rankingsPlayoffPicture, when: store.competitionOverview != nil)
-        add(.bracketPostseason, when: store.competitionOverview != nil)
-        add(.statisticsLeaders, when: store.statisticsLeaders != nil)
-        add(.awardsHonours, when: store.awardsHonours != nil)
-        add(.news, when: store.news != nil)
-        add(.realignmentEvent, when: store.realignment?.event != nil)
-        add(.worldSearch, when: store.worldSearch != nil)
-
-        add(.careerHub, when: store.careerHub != nil)
-        add(.stakeholders, when: store.careerHub != nil)
-        add(.promotionDecision, when: store.careerHub?.opportunities.contains { $0.canAccept } == true)
-        add(.recordBook, when: store.legacyHistory != nil)
-        add(.rivalries, when: store.legacyHistory != nil)
-        add(.careerLine, when: store.legacyHistory != nil)
-        add(.coachingTree, when: store.legacyHistory != nil)
-        return available
+        [.settingsAccessibility] + store.availableScreens.sorted { $0.rawValue < $1.rawValue }
     }
 
     /// The header chip's surface context. The reference varies it per screen rather than printing
@@ -1174,73 +961,73 @@ public struct CoachWorldAppRootView: View {
             screen = .coachingHQ
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .roster where store.roster != nil:
+        case .roster where store.availableScreens.contains(.roster):
             screen = .roster
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .inbox where store.inbox != nil:
+        case .inbox where store.availableScreens.contains(.inbox):
             inboxOrigin = screen == .roster ? .roster : .coachingHQ
             store.setPresentationReturnRoute(String(inboxOrigin.rawValue))
             screen = .inbox
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .opponentReportFilmRoom where store.opponentFilm != nil:
+        case .opponentReportFilmRoom where store.availableScreens.contains(.opponentReportFilmRoom):
             screen = .opponentReportFilmRoom
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .news where store.news != nil:
+        case .news where store.availableScreens.contains(.news):
             screen = .news
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .recordBook where store.legacyHistory != nil,
-             .rivalries where store.legacyHistory != nil,
-             .careerLine where store.legacyHistory != nil,
-             .coachingTree where store.legacyHistory != nil:
+        case .recordBook where store.availableScreens.contains(.recordBook),
+             .rivalries where store.availableScreens.contains(.recordBook),
+             .careerLine where store.availableScreens.contains(.recordBook),
+             .coachingTree where store.availableScreens.contains(.recordBook):
             screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .statisticsLeaders where store.statisticsLeaders != nil:
+        case .statisticsLeaders where store.availableScreens.contains(.statisticsLeaders):
             screen = .statisticsLeaders
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .awardsHonours where store.awardsHonours != nil:
+        case .awardsHonours where store.availableScreens.contains(.awardsHonours):
             screen = .awardsHonours
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .realignmentEvent where store.realignment?.event != nil:
+        case .realignmentEvent where store.availableScreens.contains(.realignmentEvent):
             screen = .realignmentEvent
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .gameDetailBoxScore where store.aftermath != nil:
+        case .gameDetailBoxScore where store.availableScreens.contains(.aftermath):
             screen = .gameDetailBoxScore
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .aftermath where store.aftermath != nil:
+        case .aftermath where store.availableScreens.contains(.aftermath):
             screen = .aftermath
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .recruitingBoard where store.recruitingBoard != nil:
+        case .recruitingBoard where store.availableScreens.contains(.recruitingBoard):
             screen = .recruitingBoard
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .prospectProfile where store.recruitingBoard != nil:
+        case .prospectProfile where store.availableScreens.contains(.recruitingBoard):
             screen = .prospectProfile
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .shortlist where store.recruitingBoard != nil:
+        case .shortlist where store.availableScreens.contains(.recruitingBoard):
             screen = .shortlist
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .classOverview where store.recruitingBoard != nil,
-             .contactVisitPlanner where store.recruitingBoard != nil:
+        case .classOverview where store.availableScreens.contains(.recruitingBoard),
+             .contactVisitPlanner where store.availableScreens.contains(.recruitingBoard):
             screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .leagueMap where store.leagueMap != nil:
+        case .leagueMap where store.availableScreens.contains(.leagueMap):
             screen = .leagueMap
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .gamePlan where store.gamePlan != nil:
+        case .gamePlan where store.availableScreens.contains(.gamePlan):
             gamePlanOrigin = switch screen {
             case .matchDay: .matchDay
             case .opponentReportFilmRoom: .opponentReportFilmRoom
@@ -1249,115 +1036,85 @@ public struct CoachWorldAppRootView: View {
             screen = .gamePlan
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .practicePlan where store.practicePlan != nil:
+        case .practicePlan where store.availableScreens.contains(.practicePlan):
             screen = .practicePlan
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .depthChart where store.depthChart != nil:
+        case .depthChart where store.availableScreens.contains(.depthChart):
             screen = .depthChart
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .playerProfile where store.roster?.players.isEmpty == false:
+        case .playerProfile where store.availableScreens.contains(.playerProfile):
             screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .developmentPlan where store.roster != nil:
+        case .developmentPlan where store.availableScreens.contains(.roster):
             screen = .developmentPlan
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .teamHealth where store.teamHealth != nil:
+        case .teamHealth where store.availableScreens.contains(.teamHealth):
             teamHealthOrigin = screen == .roster ? .roster : .coachingHQ
             store.setPresentationReturnRoute(String(teamHealthOrigin.rawValue))
             screen = .teamHealth
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .proOffseason where store.proOffseason != nil:
+        case .proOffseason where store.availableScreens.contains(.proOffseason):
             proFocus = .proOffseason
             screen = .proOffseason
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .draftBoard where store.proOffseason != nil,
-             .freeAgency where store.proOffseason != nil,
-             .proScoutingBoard where store.proOffseason != nil:
-            screen = .proOffseason
-            store.setPresentationRoute(String(CoachWorldScreenID.proOffseason.rawValue))
-            failure = nil
-        case .draftRoom where store.proOffseason?.phase == .draft:
+        case .draftRoom where store.availableScreens.contains(.draftRoom):
             proFocus = .draftRoom
             screen = .draftRoom
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .staffRoom where store.staffRoom != nil,
-             .staffMarketProfile where store.staffRoom != nil:
+        case .staffRoom where store.availableScreens.contains(.staffRoom):
             screen = .staffRoom
-            store.setPresentationRoute(String(CoachWorldScreenID.staffRoom.rawValue))
+            store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .schemeBook where store.gamePlan != nil,
-             .personnelPackages where store.depthChart != nil:
-            screen = destination == .schemeBook ? .gamePlan : .depthChart
-            store.setPresentationRoute(String(screen.rawValue))
-            failure = nil
-        case .collegeOffseason where store.collegeOffseason != nil:
+        case .collegeOffseason where store.availableScreens.contains(.collegeOffseason):
             screen = .collegeOffseason
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .portalHub where store.collegeOffseason != nil,
-             .retentionDecisions where store.collegeOffseason != nil,
-             .portalMarket where store.collegeOffseason != nil,
-             .nilAllocation where store.collegeOffseason != nil:
-            screen = .collegeOffseason
-            store.setPresentationRoute(String(CoachWorldScreenID.collegeOffseason.rawValue))
-            failure = nil
-        case .signingDay where store.collegeOffseason?.cyclePhase == .signing:
+        case .signingDay where store.availableScreens.contains(.signingDay):
             screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .capContracts where store.proManagement != nil,
-             .contractNegotiation where store.proManagement != nil,
-             .rosterCutsTransactions where store.proManagement != nil:
+        case .capContracts where store.availableScreens.contains(.capContracts),
+             .contractNegotiation where store.availableScreens.contains(.capContracts),
+             .rosterCutsTransactions where store.availableScreens.contains(.capContracts):
             screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .careerHub where store.careerHub != nil:
+        case .careerHub where store.availableScreens.contains(.careerHub):
             careerFocus = .careerHub
             screen = .careerHub
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .jobBoard where store.careerHub != nil,
-             .offer where store.careerHub != nil,
-             .appointment where store.careerHub != nil:
+        case .stakeholders where store.availableScreens.contains(.stakeholders),
+             .promotionDecision where store.availableScreens.contains(.promotionDecision):
             careerFocus = destination
             screen = .careerHub
             store.setPresentationRoute(String(CoachWorldScreenID.careerHub.rawValue))
             failure = nil
-        case .jobSecurity where store.careerHub != nil,
-             .stakeholders where store.careerHub != nil,
-             .promotionDecision where store.careerHub?.opportunities.contains { $0.canAccept } == true,
-             .coachingCarousel where store.careerHub != nil:
-            careerFocus = [.jobSecurity, .coachingCarousel].contains(destination)
-                ? .careerHub
-                : destination
-            screen = .careerHub
-            store.setPresentationRoute(String(CoachWorldScreenID.careerHub.rawValue))
-            failure = nil
-        case .standings where store.standings != nil:
+        case .standings where store.availableScreens.contains(.standings):
             screen = .standings
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .schedule where store.schedule != nil:
+        case .schedule where store.availableScreens.contains(.schedule):
             screen = .schedule
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .teamProgrammeProfile where store.teamProgrammeProfile != nil:
+        case .teamProgrammeProfile where store.availableScreens.contains(.teamProgrammeProfile):
             screen = .teamProgrammeProfile
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .worldSearch where store.worldSearch != nil:
+        case .worldSearch where store.availableScreens.contains(.worldSearch):
             screen = .worldSearch
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .rankingsPlayoffPicture where store.competitionOverview != nil,
-             .bracketPostseason where store.competitionOverview != nil:
+        case .rankingsPlayoffPicture where store.availableScreens.contains(.rankingsPlayoffPicture),
+             .bracketPostseason where store.availableScreens.contains(.rankingsPlayoffPicture):
             screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
@@ -1376,6 +1133,7 @@ public struct CoachWorldAppRootView: View {
             isStarting: isStarting,
             isRestoring: isRestoring,
             recoveryRequired: recoveryRequired,
+            restoredCareer: store?.careerHub,
             onRetry: {
                 hasAttemptedRestore = false
                 recoveryRequired = false
@@ -1383,6 +1141,7 @@ public struct CoachWorldAppRootView: View {
             },
             onUseBackup: { Task { await recoverFromBackup() } },
             onNewCareer: { Task { await beginNewCareerSetup() } },
+            onContinue: { careerConfirmed = true },
             onSettings: { screen = .settingsAccessibility }
         )
     }
@@ -1441,8 +1200,13 @@ public struct CoachWorldAppRootView: View {
             failure = nil
             recoveryRequired = false
 #if DEBUG
+            // The proof/screenshot harness needs deterministic, immediate access to a named
+            // screen -- careerConfirmed's whole purpose is pausing an interactive coach at the
+            // durable boundary, which does not apply to a harness driven by an environment
+            // variable rather than a tap.
             if let proofScreen = Self.proofScreenNumber() {
                 screen = proofScreen
+                careerConfirmed = true
             }
 #endif
         } catch {
@@ -1596,6 +1360,7 @@ public struct CoachWorldAppRootView: View {
             )
             try await persist(started)
             store = started
+            careerConfirmed = true
             showingNewCareerSetup = false
             setupError = nil
             failure = nil
@@ -1622,7 +1387,7 @@ public struct CoachWorldAppRootView: View {
 
     private func advance(_ store: CoachWorldStore) async {
         await store.advanceWeek()
-        if store.careerHub != nil, store.coachingHQ == nil {
+        if store.availableScreens.contains(.careerHub), store.coachingHQ == nil {
             screen = .careerHub
             store.setPresentationRoute(String(CoachWorldScreenID.careerHub.rawValue))
         } else if store.matchDay != nil {
@@ -1686,7 +1451,7 @@ public struct CoachWorldAppRootView: View {
         }
         await store.matchControl(intentID)
         if store.matchDay == nil {
-            if store.aftermath != nil {
+            if store.availableScreens.contains(.aftermath) {
                 screen = .aftermath
                 store.setPresentationRoute(String(CoachWorldScreenID.aftermath.rawValue))
             } else {
@@ -1727,7 +1492,31 @@ public struct CoachWorldAppRootView: View {
     private func persist(_ store: CoachWorldStore) async throws {
         let document = try await store.saveDocument()
         try await coordinator.requestSave(document, reason: .userAction)
-        try await coordinator.flush(reason: .explicit)
+        scheduleFlush()
+    }
+
+    /// Arms the deferred write, or leaves the armed one alone.
+    ///
+    /// Deliberately does not restart the timer on each intent. A debounce that resets would never
+    /// fire during a match, where snaps arrive faster than any sensible delay; this fires on a
+    /// fixed deadline from the first unwritten intent, so the gap between committing and writing
+    /// has a ceiling no matter how fast the coach is playing.
+    private func scheduleFlush() {
+        guard flushTask == nil else { return }
+        flushTask = Task { @MainActor in
+            try? await Task.sleep(for: Self.flushDelay)
+            flushTask = nil
+            await flushNow()
+        }
+    }
+
+    /// Writes whatever is pending, now. Used by the deferred task and by leaving the app.
+    private func flushNow(reason: SaveFlushReason = .explicit) async {
+        do {
+            try await coordinator.flush(reason: reason)
+        } catch {
+            failure = "The career could not be saved: \(error)"
+        }
     }
 
     /// A failed autosave is reported, never swallowed. `try?` here would leave the player playing a

@@ -103,7 +103,7 @@ public struct GamePlanView: View, CoachWorldChromedSurface {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 FloodlitLabel3(slot, palette: palette)
                 Text(value.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.title, weight: .heavy))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.title, weight: .heavy)
                     .lineLimit(1)
                     .minimumScaleFactor(GamePlanMetric.dialScaleFloor)
             }
@@ -152,11 +152,7 @@ public struct GamePlanView: View, CoachWorldChromedSurface {
                 ) {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                         Text(option.title.uppercased())
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.row, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                             .lineLimit(1)
                         Text(option.consequence)
                             .font(CoachWorldTokens.TypeRole.caption)

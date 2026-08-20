@@ -106,12 +106,14 @@ public struct StandingsView: View, CoachWorldChromedSurface {
     /// treatment -- a gold hairline, never a fill, which `04` section 6.5 reserves for the
     /// committing action.
     private func standingsRow(index: Int, row: StandingsReadModel.Row) -> some View {
-        Button {
-            if let id = UUID(uuidString: row.team.stableID) { onSelectTeam(id) }
+        let teamID = UUID(uuidString: row.team.stableID)
+        return Button {
+            if let teamID { onSelectTeam(teamID) }
         } label: {
             rowBody(index: index, row: row)
         }
         .buttonStyle(.plain)
+        .disabled(teamID == nil)
         .accessibilityLabel(
             "\(index + 1). \(row.team.name), \(recordLabel(row)), "
                 + "conference \(row.conferenceRecord), "
@@ -160,33 +162,27 @@ public struct StandingsView: View, CoachWorldChromedSurface {
         } else {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text("\(index + 1)")
-                    .font(
-                        CoachWorldTokens.figure(
-                            CoachWorldTokens.DisplaySize.row, weight: .semibold
-                        )
-                    )
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.row, weight: .semibold)
                     .foregroundStyle(
                         row.isControlled ? palette.actionPrimary.color : palette.contentQuiet.color
                     )
                     .frame(width: StandingsMetric.rankColumn, alignment: .leading)
                 Text(row.team.name.uppercased())
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.row,
-                            weight: row.isControlled ? .heavy : .bold
-                        )
+                    .coachWorldDisplay(
+                        CoachWorldTokens.DisplaySize.row,
+                        weight: row.isControlled ? .heavy : .bold
                     )
                     .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(recordLabel(row))
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                     .frame(width: StandingsMetric.recordColumn, alignment: .leading)
                 Text(row.conferenceRecord)
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                     .foregroundStyle(palette.contentSecondary.color)
                     .frame(width: StandingsMetric.conferenceColumn, alignment: .leading)
                 Text("\(row.pointsFor)\u{2013}\(row.pointsAgainst)")
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                     .foregroundStyle(palette.contentSecondary.color)
                     .frame(width: StandingsMetric.pointsColumn, alignment: .trailing)
             }

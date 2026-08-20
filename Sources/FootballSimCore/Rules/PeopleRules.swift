@@ -3,6 +3,18 @@ import Foundation
 public enum PeopleRules {
     public static let fatigueRange: ClosedRange<Int> = 0...100
     public static let careerSeasonHistoryLimit = 40
+    /// The stated bound on retained departed-player identities (`CLAUDE.md` conventions).
+    ///
+    /// Departure was the only unbounded inflow into `PeopleState`: a college roster turns over
+    /// completely every four seasons, so roughly three thousand identities arrived here per season
+    /// and none ever left. Measured at about 1.4 kB per departed player once the paired career
+    /// record is counted, that alone carried a season-20 save past 26 MB against an 8 MB target.
+    ///
+    /// Sized at rather more than two seasons of departures so the recent world stays nameable
+    /// without the pruner running every season on a young career. Anything a retained event, an
+    /// archived award or a portal history still names is protected regardless of this number, so
+    /// the bound can never make a retained reference dangle.
+    public static let departedPlayerRetentionLimit = 8_192
     public static var portalWindowHistoryLimit: Int {
         CollegeRules.portalWindowCount * CollegeRules.eligibilityClockYears
     }

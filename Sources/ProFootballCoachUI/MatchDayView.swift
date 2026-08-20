@@ -234,7 +234,7 @@ public struct MatchDayView: View {
                 onControl(model.controlDepthIntentID)
             }
             .frame(width: MatchMetric.controlDepthWidth)
-            furnitureControlButton(.tactics, wide: true, label: "HALFTIME · PLAN EDIT")
+            furnitureControlButton(.tactics, wide: true)
         }
         .accessibilitySortPriority(85)
     }
@@ -256,7 +256,7 @@ public struct MatchDayView: View {
             if let control { onControl(control.intentID) }
         } label: {
             Text("\(Int(speedMultiplier))×")
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.action, weight: .bold))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.action, weight: .bold)
                 .frame(width: MatchMetric.speedPillWidth)
                 .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
         }
@@ -297,7 +297,11 @@ public struct MatchDayView: View {
 
     /// Pause and Take Over: two of the five contract-fixed primary controls, rendered as small
     /// glass icon chips rather than a bottom bar, per `04` section 6.1b's furniture-first layout.
-    /// Tactics reuses the same chip, widened, carrying the handoff's literal halftime copy.
+    /// Tactics reuses the same chip, widened. It no longer carries a hardcoded "HALFTIME" claim --
+    /// the control's own action never changes with game state, so its label should not pretend to
+    /// either, and no state anywhere in the app is retained across the actual halftime instant to
+    /// gate a truthful one (`MatchPauseBoundary.halftime` is a one-shot reducer receipt, never
+    /// captured past the step that produces it).
     private func furnitureControlButton(
         _ id: MatchDayControlID, wide: Bool = false, label: String? = nil
     ) -> some View {
@@ -309,16 +313,14 @@ public struct MatchDayView: View {
             Group {
                 if wide {
                     Text((label ?? presentation.title).uppercased())
-                        .font(
-                            CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold)
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                         .tracking(
                             CoachWorldTokens.DisplaySize
                                 .tracking(0.1, at: CoachWorldTokens.DisplaySize.flag)
                         )
                 } else {
                     Image(systemName: presentation.symbol.rawValue)
-                        .font(.system(size: MatchMetric.furnitureIconSize, weight: .bold))
+                        .coachWorldIcon(MatchMetric.furnitureIconSize, weight: .bold)
                 }
             }
             .frame(
@@ -714,7 +716,7 @@ public struct MatchDayView: View {
     private func staffCallInPanel(_ interruption: MatchDayReadModel.StaffInterruption) -> some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
             Text("STAFF CALL-IN")
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                 .tracking(
                     CoachWorldTokens.DisplaySize.tracking(0.18, at: CoachWorldTokens.DisplaySize.flag)
                 )
@@ -741,7 +743,7 @@ public struct MatchDayView: View {
                 }
             }
             Text("CALL-IN \(callInFooterCount) · RATE SET BY CONTROL DEPTH")
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .semibold)
                 .foregroundStyle(palette.contentQuiet.color)
         }
         .padding(.vertical, CoachWorldTokens.Pad.card.v)

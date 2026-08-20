@@ -85,7 +85,7 @@ public struct NewsFeedReadModel: Sendable, Equatable {
 
         switch payload {
         case let .seasonCompleted(season, collegeChampionID, proChampionID):
-            return "Season \(season) ends: \(who(collegeChampionID)) take the college title, "
+            return "Season \(season + 1) ends: \(who(collegeChampionID)) take the college title, "
                 + "\(who(proChampionID)) the professional one"
         case let .realignment(_, reason, swaps):
             return "Conference realignment: \(swaps.count) swap(s) for \(reason.rawValue)"
@@ -98,12 +98,12 @@ public struct NewsFeedReadModel: Sendable, Equatable {
         case let .portalWindowCompleted(summary):
             return "The transfer portal closes with \(summary.transferredCount) moves"
         case let .proMarketOpened(season, draftClassCount, freeAgentCount):
-            return "The season \(season) professional market opens: \(draftClassCount) draft "
+            return "The season \(season + 1) professional market opens: \(draftClassCount) draft "
                 + "prospects and \(freeAgentCount) free agents"
         case let .proDraftStarted(season):
-            return "The season \(season) professional draft is under way"
+            return "The season \(season + 1) professional draft is under way"
         case let .proMarketClosed(season):
-            return "The season \(season) professional market closes"
+            return "The season \(season + 1) professional market closes"
         case let .proDraftPick(prospectID, teamID, pick, _):
             return "\(who(teamID)) take \(who(prospectID)) with pick \(pick + 1)"
         case let .playerTransferred(playerID, _, destinationProgrammeID, _, _, _, _):

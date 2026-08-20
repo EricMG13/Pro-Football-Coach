@@ -71,10 +71,10 @@ struct ScoreBug: View {
             cell(score(for: theirs), side: theirs)
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 Text("\(quarterLabel) · \(clockLabel)")
-                    .font(CoachWorldTokens.figure(Bug.clock, weight: .semibold))
+                    .coachWorldFigure(Bug.clock, weight: .semibold)
                     .foregroundStyle(CoachWorldTokens.dark.contentPrimary.color)
                 Text("\(downDistance.uppercased()) · \(spot.uppercased())")
-                    .font(CoachWorldTokens.display(Bug.subline, weight: .semibold))
+                    .coachWorldDisplay(Bug.subline, weight: .semibold)
                     .tracking(CoachWorldTokens.DisplaySize.tracking(0.14, at: Bug.subline))
                     .foregroundStyle(CoachWorldTokens.dark.contentSecondary.color)
             }
@@ -97,16 +97,16 @@ struct ScoreBug: View {
         return HStack(spacing: CoachWorldTokens.Gap.xs) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 Text(score.team.abbreviation.uppercased())
-                    .font(CoachWorldTokens.display(Bug.name, weight: .bold))
+                    .coachWorldDisplay(Bug.name, weight: .bold)
                 if let subline = score.subline {
                     Text(subline)
-                        .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .semibold)
                         .foregroundStyle(cellInk(isOurs).opacity(0.7))
                 }
             }
             if let seed = score.seed {
                 Text("\(seed)")
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                     .foregroundStyle(CoachWorldTokens.Floodlit.liveInk.color)
                     .padding(.horizontal, CoachWorldTokens.Gap.xxs)
                     .overlay {
@@ -118,7 +118,7 @@ struct ScoreBug: View {
                     .accessibilityLabel("Seed \(seed)")
             }
             Text("\(score.score)")
-                .font(CoachWorldTokens.figure(scoreSize, weight: .bold))
+                .coachWorldFigure(scoreSize, weight: .bold)
                 .foregroundStyle(cellInk(isOurs))
             // Trails the score, per the handoff's stated cell order (rail, name, score, triangle).
             if hasBall {
@@ -177,11 +177,11 @@ struct ScoreBug: View {
     private func band(_ event: MatchDayReadModel.EventBadge, placement: BandPlacement) -> some View {
         VStack(spacing: CoachWorldTokens.Gap.hair) {
             Text(event.title.uppercased())
-                .font(CoachWorldTokens.display(Bug.bandTitle, weight: .bold))
+                .coachWorldDisplay(Bug.bandTitle, weight: .bold)
                 .tracking(CoachWorldTokens.DisplaySize.tracking(0.18, at: Bug.bandTitle))
             if let subtitle = event.subtitle {
                 Text(subtitle.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .semibold)
                     .foregroundStyle(bandInk.opacity(0.75))
             }
         }
@@ -248,7 +248,9 @@ private enum Bug {
     static let shadowRadius: CGFloat = 20
     static let hairline: CGFloat = 1
     static let possessionSize: CGFloat = 7
-    static let goldRule = Color(red: 216 / 255, green: 151 / 255, blue: 19 / 255).opacity(0.35)
+    // S-2, 2026-08-19 review: was a hand-typed Color(red:green:blue:) literal. Its exact value,
+    // 0xD89713, is already the canon-documented `gold-deep` token (`04` section 6.1b).
+    static let goldRule = CoachWorldTokens.Floodlit.goldDeep.color.opacity(0.35)
     /// The committing action's own glow — `glow-gold` from the token table, `04` section 6.1b.
     static let actionGlowRadius: CGFloat = 26
     static let actionGlowYOffset: CGFloat = 2
@@ -264,7 +266,7 @@ struct CallInBudgetBug: View {
         VStack(alignment: .trailing, spacing: CoachWorldTokens.Gap.xxs) {
             HStack(spacing: CoachWorldTokens.Gap.xxs) {
                 Text("CALL-INS")
-                    .font(CoachWorldTokens.display(Budget.label, weight: .bold))
+                    .coachWorldDisplay(Budget.label, weight: .bold)
                     .tracking(CoachWorldTokens.DisplaySize.tracking(0.18, at: Budget.label))
                     .foregroundStyle(CoachWorldTokens.dark.contentSecondary.color)
                 Spacer(minLength: CoachWorldTokens.Gap.sm)
@@ -285,11 +287,11 @@ struct CallInBudgetBug: View {
                 }
                 .accessibilityHidden(true)
                 Text("\(budget.used) OF \(budget.total)")
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.lead, weight: .bold))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.lead, weight: .bold)
                     .foregroundStyle(CoachWorldTokens.dark.actionPrimary.color)
             }
             Text(budget.rateNote.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .semibold)
                 .tracking(CoachWorldTokens.DisplaySize.tracking(0.12, at: CoachWorldTokens.DisplaySize.flag))
                 .foregroundStyle(CoachWorldTokens.dark.contentQuiet.color)
         }
@@ -318,48 +320,36 @@ struct CallInBudgetBug: View {
     }
 }
 
-/// The three-cell selector that sets `MatchControlDepth`.
+/// The control that cycles `MatchControlDepth`.
 ///
-/// `onSelect` fires the same signal regardless of which cell was tapped, matching the convention
-/// every other Match Day control already follows: one intent per control, with the provider
-/// deciding what it means. Which exact value a tap should choose is provider wiring the handoff
-/// does not specify.
+/// Three individually labelled, individually `.isSelected`-tagged cells used to sit here, all
+/// wired to the identical `onSelect` closure with no per-cell candidate argument -- a
+/// segmented-picker composition that promised a direct choice the control never actually made.
+/// `onSelect` really does cycle to the next depth (`ScreenReadModels.swift`'s
+/// `controlDepthIntentID` names it a cycle, not one of the five contract-fixed primary controls),
+/// so the control now presents as what it is, matching this file's `speedCycleButton`.
 struct ControlDepthSelector: View {
     let depth: MatchControlDepth
     let onSelect: () -> Void
 
     var body: some View {
-        HStack(spacing: .zero) {
-            ForEach(MatchControlDepth.allCases, id: \.self) { candidate in
-                Button(action: onSelect) {
-                    Text(title(candidate))
-                        .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
-                        .tracking(
-                            CoachWorldTokens.DisplaySize.tracking(0.1, at: CoachWorldTokens.DisplaySize.flag)
-                        )
-                        .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
-                }
-                .foregroundStyle(depth == candidate
-                    ? CoachWorldTokens.dark.contentPrimary.color
-                    : CoachWorldTokens.dark.contentSecondary.color)
-                .overlay {
-                    if depth == candidate {
-                        Rectangle().stroke(
-                            CoachWorldTokens.dark.actionPrimary.color,
-                            lineWidth: CoachWorldTokens.Shape.hairline
-                        )
-                    }
-                }
-                .accessibilityLabel(title(candidate))
-                .accessibilityAddTraits(depth == candidate ? .isSelected : [])
-            }
+        Button(action: onSelect) {
+            Text(title(depth))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
+                .tracking(
+                    CoachWorldTokens.DisplaySize.tracking(0.1, at: CoachWorldTokens.DisplaySize.flag)
+                )
+                .frame(maxWidth: .infinity, minHeight: CoachWorldTokens.Shape.minimumTarget)
         }
+        .foregroundStyle(CoachWorldTokens.dark.contentPrimary.color)
         .coachWorldFloodlitPanel(
             fill: CoachWorldTokens.Floodlit.roomDeep.color.opacity(0.86),
             border: Color.white.opacity(CoachWorldTokens.Glass.line),
             depth: .deep,
             shape: CoachWorldCutCorner.card
         )
+        .accessibilityLabel("Control depth, \(title(depth))")
+        .accessibilityHint("Cycles to the next control depth.")
     }
 
     private func title(_ depth: MatchControlDepth) -> String {
@@ -380,6 +370,7 @@ struct ControlDepthSelector: View {
 /// sits (`04` section 9's PRE-SNAP / SNAP / RESULT frames): this component renders what it is
 /// told rather than re-deriving a state machine from the read model.
 struct MatchLowerThird: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let model: MatchDayReadModel
     let phase: String
     let isLive: Bool
@@ -393,7 +384,7 @@ struct MatchLowerThird: View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xxs) {
             HStack(spacing: CoachWorldTokens.Gap.xs) {
                 Text(phase.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                     .tracking(
                         CoachWorldTokens.DisplaySize.tracking(0.18, at: CoachWorldTokens.DisplaySize.flag)
                     )
@@ -401,20 +392,14 @@ struct MatchLowerThird: View {
                 if isLive {
                     LiveDot()
                     Text("IN PLAY")
-                        .font(
-                            CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold)
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                         .foregroundStyle(CoachWorldTokens.Floodlit.liveInk.color)
                 }
                 if let onExit {
                     Spacer(minLength: CoachWorldTokens.Gap.smPlus)
                     Button(action: onExit) {
                         Text("← WEEK")
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.flag, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                             .tracking(
                                 CoachWorldTokens.DisplaySize
                                     .tracking(0.18, at: CoachWorldTokens.DisplaySize.flag)
@@ -429,8 +414,8 @@ struct MatchLowerThird: View {
                let entry = model.actors.first(where: { $0.stableID == actor }),
                let headline {
                 Text("\(entry.uniformNumber) \(entry.position) · \(headline)")
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
-                    .lineLimit(1)
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                     .truncationMode(.tail)
             }
             Text(model.causalCommentary)
@@ -476,7 +461,7 @@ struct CommittingAction: View {
         Button(action: action) {
             HStack(spacing: CoachWorldTokens.Gap.xs) {
                 Text(title.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.action, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.action, weight: .bold)
                 // The key-moment mark, `04` section 6.6's second Broadcast member.
                 BroadcastWedge()
                     .fill(CoachWorldTokens.Floodlit.goldInk.color)

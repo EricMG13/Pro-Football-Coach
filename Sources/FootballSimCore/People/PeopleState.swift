@@ -1136,4 +1136,47 @@ public struct PeopleState: Codable, Sendable, Equatable {
         playerLifecycle.removeValue(forKey: player.id)
         departedPlayers[player.id] = DepartedPlayerIdentity(player: player, status: status)
     }
+
+    /// Drops the oldest unprotected departed identities until the retained set is inside its bound.
+    ///
+    /// The identity and its career record leave together, because `WorldIntegrity` requires
+    /// `playerCareers` to be exactly `players` united with `departedPlayers`; evicting one without
+    /// the other trades a size defect for a corruption defect.
+    ///
+    /// `protectedIDs` is the set nothing may evict. The caller builds it from every place a
+    /// departed identity is still named — the retained event journal, archived award winners,
+    /// portal history — so a bound cannot make a retained reference dangle. Eviction order is
+    /// oldest departure first, with a stable identifier tiebreak, so the same save prunes the same
+    /// way in every process.
+    ///
+    /// Returns how many identities were evicted, so a caller can record it rather than guess.
+    @discardableResult
+    public mutating func pruneDepartedPlayers(
+        limit: Int = PeopleRules.departedPlayerRetentionLimit,
+        protecting protectedIDs: Set<UUID>
+    ) -> Int {
+        let excess = departedPlayers.count - max(0, limit)
+        guard excess > 0 else { return 0 }
+        let evictable = departedPlayers.keys
+            .filter { !protectedIDs.contains($0) }
+            .sorted { lhs, rhs in
+                let left = playerCareers[lhs]?.endedAt
+                let right = playerCareers[rhs]?.endedAt
+                if left != right {
+                    // A career with no recorded end is the least informative thing retained, so it
+                    // goes first rather than last.
+                    guard let left else { return true }
+                    guard let right else { return false }
+                    if left.season != right.season { return left.season < right.season }
+                    if left.week != right.week { return left.week < right.week }
+                }
+                return lhs.uuidString < rhs.uuidString
+            }
+            .prefix(excess)
+        for id in evictable {
+            departedPlayers.removeValue(forKey: id)
+            playerCareers.removeValue(forKey: id)
+        }
+        return evictable.count
+    }
 }

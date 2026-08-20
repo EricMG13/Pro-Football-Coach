@@ -148,15 +148,11 @@ public struct ContractNegotiationView: View, CoachWorldChromedSurface {
                 if dynamicTypeSize.isAccessibilitySize {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                         Text(player.name.uppercased())
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.row, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                             .fixedSize(horizontal: false, vertical: true)
                         HStack(spacing: CoachWorldTokens.Gap.md) {
                             Text("\(currency(player.capHit)) now")
-                                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                                .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                                 .foregroundStyle(palette.contentQuiet.color)
                             FloodlitLabel3(
                                 "Start offer", palette: palette, tint: palette.actionPrimary.color
@@ -166,15 +162,11 @@ public struct ContractNegotiationView: View, CoachWorldChromedSurface {
                 } else {
                     HStack(spacing: CoachWorldTokens.Gap.md) {
                         Text(player.name.uppercased())
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.row, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                             .lineLimit(1)
                         Spacer(minLength: CoachWorldTokens.Gap.xs)
                         Text("\(currency(player.capHit)) now")
-                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                             .foregroundStyle(palette.contentQuiet.color)
                         FloodlitLabel3(
                             "Start offer", palette: palette, tint: palette.actionPrimary.color
@@ -242,11 +234,7 @@ private struct NegotiationCard: View {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
                 HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.xs) {
                     Text(negotiation.playerName.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.panel, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.panel, weight: .bold)
                         .lineLimit(1)
                     Spacer(minLength: CoachWorldTokens.Gap.xs)
                     FloodlitFlag(
@@ -337,13 +325,22 @@ private struct NegotiationCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .contain)
+        // `negotiation.id` is stable across a counter-offer, so SwiftUI keeps this exact card
+        // instance and its @State alive rather than re-running `init` -- the fields must be
+        // reseeded by hand, or "Counter" sends the terms the coach was looking at before the last
+        // counter, not the ones on screen.
+        .onChange(of: negotiation.currentOffer) { _, newOffer in
+            years = newOffer.years
+            baseSalary = newOffer.baseSalaryByYear.first ?? 0
+            signingBonus = newOffer.signingBonus
+        }
     }
 
     /// Withdraw, Reject and Counter: none of them commits the offer, so none takes the gold field
     /// `04` section 6.5 reserves for exactly one action per screen.
     private func quietButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(title, action: action)
-            .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold))
+            .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
             .foregroundStyle(palette.contentQuiet.color)
             .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
                    minHeight: CoachWorldTokens.Shape.minimumTarget)
@@ -351,7 +348,7 @@ private struct NegotiationCard: View {
 
     private func acceptButton(action: @escaping () -> Void) -> some View {
         Button("Accept", action: action)
-            .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold))
+            .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
             .foregroundStyle(palette.statePositive.color)
             .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
                    minHeight: CoachWorldTokens.Shape.minimumTarget)

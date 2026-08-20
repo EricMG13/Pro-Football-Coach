@@ -70,11 +70,7 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             Button(action: onClose) {
                 Text("Back to personnel")
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                        )
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     .foregroundStyle(palette.contentQuiet.color)
                     .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
             }
@@ -100,18 +96,14 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
                             model.rosterRole, palette: palette, tint: palette.stateInfo.color
                         )
                         Text(model.person.name)
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.screen, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.screen, weight: .bold)
                             .lineLimit(1)
                             .minimumScaleFactor(ProfileMetric.nameScaleFloor)
                     }
                 }
                 FloodlitLabel3(originLine, palette: palette)
                 Text(statusLine)
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                     .foregroundStyle(palette.contentSecondary.color)
                     .lineLimit(1)
                 headlineAttributes
@@ -150,11 +142,7 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
                         palette: palette
                     )
                     Text("\(attribute.value)")
-                        .font(
-                            CoachWorldTokens.figure(
-                                CoachWorldTokens.DisplaySize.pill, weight: .semibold
-                            )
-                        )
+                        .coachWorldFigure(CoachWorldTokens.DisplaySize.pill, weight: .semibold)
                         .frame(width: ProfileMetric.attributeValue, alignment: .trailing)
                 }
                 .accessibilityElement(children: .combine)
@@ -182,7 +170,7 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
                     FloodlitLabel3(routeTitle, palette: palette)
                     Spacer(minLength: CoachWorldTokens.Gap.xs)
                     Text(routeMeta)
-                        .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                        .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                         .foregroundStyle(palette.contentQuiet.color)
                         .lineLimit(1)
                 }
@@ -285,11 +273,7 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
                 )
                 .frame(width: ProfileMetric.panelBar)
                 Text("\(value)")
-                    .font(
-                        CoachWorldTokens.figure(
-                            CoachWorldTokens.DisplaySize.pill, weight: .semibold
-                        )
-                    )
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.pill, weight: .semibold)
                     .foregroundStyle(CoachWorldTokens.Heat.color(for: value, palette: palette))
                     .frame(width: ProfileMetric.panelFigure, alignment: .trailing)
             }
@@ -325,7 +309,7 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
     /// identity furniture rather than decoration.
     private var uniformMark: some View {
         Text("\(model.number)")
-            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.subject, weight: .semibold))
+            .coachWorldFigure(CoachWorldTokens.DisplaySize.subject, weight: .semibold)
             .foregroundStyle(markInk.color)
             .padding(.horizontal, CoachWorldTokens.Gap.xs)
             .frame(minWidth: ProfileMetric.markWidth, minHeight: ProfileMetric.markHeight)

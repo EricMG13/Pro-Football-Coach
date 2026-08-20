@@ -267,6 +267,18 @@ struct FieldPlane: View, Equatable {
         drawPylons(&context, size, goal: goal)
     }
 
+    // Deferred (S-0 Phase 3, 2026-08-19): the two `Paint.numberSize` sites below are resolved
+    // through `GraphicsContext.resolve(Text(...))` inside this `static func`, not applied as a
+    // `.font(...)` view modifier on a live `Text` in a view body. `@ScaledMetric` requires a
+    // property wrapper SwiftUI re-evaluates against the environment on body re-computation; a
+    // `static func` taking `inout GraphicsContext` has no `self` and no `@Environment` access, so
+    // `coachWorldDisplay` cannot be called here at all -- this is a mechanism limitation, not a
+    // per-site judgement call. A real fix would compute a scaled size in `FieldPlane`'s body (a
+    // genuine `View`) and thread it down as a parameter, and would also need `FieldPlane`'s custom
+    // `Equatable` conformance (used for `.equatable()` render-suppression, see the type's own
+    // comment above) extended to compare the current dynamic type category -- otherwise the raster
+    // would never redraw when text size changes even after the size itself is threaded through.
+    // That is a real architecture change, not a token swap, and is out of this commit's scope.
     private static func drawYardNumbers(
         _ context: inout GraphicsContext,
         _ size: CGSize,
@@ -437,7 +449,7 @@ struct EndZonePaint: View {
         let size = isOurs ? EndZone.oursSize : EndZone.theirsSize
         let tracking = isOurs ? EndZone.oursTracking : EndZone.theirsTracking
         let text = Text(label.uppercased())
-            .font(CoachWorldTokens.display(size, weight: .bold))
+            .coachWorldDisplay(size, weight: .bold)
             .tracking(CoachWorldTokens.DisplaySize.tracking(tracking, at: size))
         return ZStack {
             ForEach(Array(EndZone.outlineOffsets.enumerated()), id: \.offset) { _, offset in
@@ -548,7 +560,7 @@ struct FieldMark: View {
                 .frame(width: Mark.championshipInner, height: Mark.championshipInner)
             VStack(spacing: CoachWorldTokens.Gap.hair) {
                 Image(systemName: "star.fill")
-                    .font(.system(size: Mark.starSize))
+                    .coachWorldIcon(Mark.starSize)
                     .foregroundStyle(gold(0.5))
                 stack(glyphSize: .zero, tracking: 0.24)
             }
@@ -573,14 +585,14 @@ struct FieldMark: View {
 
     private func glyph(_ size: CGFloat, alpha: Double) -> some View {
         Text(content.glyph.uppercased())
-            .font(CoachWorldTokens.display(size, weight: .bold))
+            .coachWorldDisplay(size, weight: .bold)
             .foregroundStyle(line(alpha))
             .lineLimit(1)
     }
 
     private func caption(_ text: String, tracking: CGFloat) -> some View {
         Text(text.uppercased())
-            .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+            .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
             .tracking(
                 CoachWorldTokens.DisplaySize.tracking(tracking, at: CoachWorldTokens.DisplaySize.flag)
             )
@@ -645,7 +657,7 @@ struct PlayerToken: View {
 
     var body: some View {
         Text(label.uppercased())
-            .font(CoachWorldTokens.display(Token.labelSize, weight: .bold))
+            .coachWorldDisplay(Token.labelSize, weight: .bold)
             .monospacedDigit()
             .foregroundStyle(isOurs
                 ? CoachWorldTokens.Floodlit.goldInk.color
@@ -816,7 +828,9 @@ private enum Turf {
     ]
 }
 
-private enum Paint {
+/// Module-internal rather than file-private (2026-08-19, S-8) so `ContractTests` can assert the
+/// real yard-number opacity through `@testable import` instead of hardcoding a duplicate literal.
+enum Paint {
     static let fiveYard = 0.26
     static let fiveWidth: CGFloat = 2
     static let tick = 0.30

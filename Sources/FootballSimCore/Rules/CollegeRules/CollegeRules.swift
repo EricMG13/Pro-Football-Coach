@@ -165,4 +165,24 @@ public enum CollegeRules {
 
     /// `02` section 4.1: one after the bracket, one in spring.
     public static let portalWindowCount = 2
+
+    // MARK: - Signing day
+
+    /// `02` section 4.1. The last week of the shared calendar: the college bracket ends in week 17
+    /// (`seasonWeeks`), so the college coach has no game left and the class is what the week is for.
+    ///
+    /// Derived from the shared calendar rather than written as 21, so it cannot disagree with the
+    /// week the world actually ends on.
+    public static var signingDayWeek: Int { SharedRules.inSeasonWeeks }
+
+    /// The cycle phase a given week carries.
+    ///
+    /// The phase is a *function of the week*, never a flag a system sets and another reads back.
+    /// It was the latter, and the result was a case no code path could reach: `signing` existed in
+    /// the enum and in `SigningDayView`, and nothing assigned it. Deriving it here means every
+    /// caller — the scheduler that advances the world, the integrity check that polices it, and the
+    /// session that opens a saved one — agrees by construction instead of by discipline.
+    public static func recruitingCyclePhase(inWeek week: Int) -> RecruitingCyclePhase {
+        week == signingDayWeek ? .signing : .active
+    }
 }

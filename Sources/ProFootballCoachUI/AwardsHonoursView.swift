@@ -79,7 +79,7 @@ public struct AwardsHonoursView: View, CoachWorldChromedSurface {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 FloodlitLabel3(award.title, palette: palette)
                 Text(award.winner.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -89,7 +89,7 @@ public struct AwardsHonoursView: View, CoachWorldChromedSurface {
                     .foregroundStyle(palette.contentQuiet.color)
                     .lineLimit(1)
                 Text(award.seasonLabel)
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                     .foregroundStyle(palette.contentSecondary.color)
                     .lineLimit(1)
             }
