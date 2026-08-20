@@ -90,6 +90,48 @@ func runCalibrationTests() {
                    "an engine with the right mean and absurd variance passed")
         }
 
+        test("a difference estimate pools both standard errors") {
+            // Equivalence between two models is a two-sample question. Testing one model's interval
+            // against a band centred on the other model's point estimate treats the reference as
+            // exact, and the resulting interval is too narrow by exactly the reference's own error.
+            let first = Estimate(value: 24, sampleSize: 400, standardDeviation: 8, estimator: .mean)
+            let second = Estimate(value: 20, sampleSize: 400, standardDeviation: 6, estimator: .mean)
+            let difference = Estimate.difference(of: first, and: second)
+            expectClose(difference.value, 4, 1e-9)
+            expectClose(difference.standardError,
+                        (first.standardError * first.standardError
+                            + second.standardError * second.standardError).squareRoot(),
+                        1e-9, "the difference does not carry the pooled standard error")
+            expect(difference.standardError > first.standardError,
+                   "the difference is no less certain than one of its halves")
+        }
+
+        test("a difference against a symmetric margin is still TOST") {
+            // The same procedure, so the same properties: a wide interval fails even when the two
+            // models' point estimates are almost identical.
+            let margin = Band("agreement", tier: .pro, -3, 3, estimator: .mean, confidence: "[C]")
+            let precise = Estimate.difference(
+                of: Estimate(value: 24, sampleSize: 4_000, standardDeviation: 8, estimator: .mean),
+                and: Estimate(value: 23.9, sampleSize: 4_000, standardDeviation: 8, estimator: .mean)
+            )
+            let vague = Estimate.difference(
+                of: Estimate(value: 24, sampleSize: 12, standardDeviation: 8, estimator: .mean),
+                and: Estimate(value: 23.9, sampleSize: 12, standardDeviation: 8, estimator: .mean)
+            )
+            expect(margin.test(precise).passed, "a tight agreement failed")
+            expect(!margin.test(vague).passed,
+                   "a twelve-game agreement passed, so this is a point comparison wearing TOST's "
+                       + "name")
+        }
+
+        test("a difference against an empty sample cannot pass") {
+            let empty = Estimate(value: 0, sampleSize: 0, standardDeviation: 0, estimator: .mean)
+            let real = Estimate(value: 24, sampleSize: 400, standardDeviation: 8, estimator: .mean)
+            let margin = Band("agreement", tier: .pro, -3, 3, estimator: .mean, confidence: "[C]")
+            expect(!margin.test(Estimate.difference(of: real, and: empty)).passed,
+                   "a band passed against a model that produced no games")
+        }
+
         test("an empty sample cannot pass") {
             let empty = Estimate(value: 0.55, sampleSize: 0, standardDeviation: 0, estimator: .rate)
             expect(!band.test(empty).passed, "a band passed on no data at all")

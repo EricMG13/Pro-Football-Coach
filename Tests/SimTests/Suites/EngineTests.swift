@@ -2,8 +2,14 @@ import Foundation
 import FootballSimCore
 
 /// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 151_802_325_001_383_283
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 17_135_830_121_998_607_854
+/// Moved 2026-08-20 for the structural fixes `MatchupRules` and `ClockRules` document: an even run
+/// had no baseline gain and no spread, an average passer was modelled as a heavy underdog at every
+/// depth but short, poise made a passer *easier* to sack, pressure was the average protection duel
+/// rather than the second-worst, air yards were a constant per depth, and the game clock burned
+/// only 30 seconds between snaps. Both values were reproduced in two independent release-process
+/// invocations of `--game-fingerprints` before being written here.
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 17_314_862_794_871_866_576
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 7_423_600_404_136_963_127
 
 func runEngineTests() {
     suite("Leverage") {
@@ -265,6 +271,18 @@ func testPersonnel(offenseSkill: Int, defenseSkill: Int) -> SnapPersonnel {
     return SnapPersonnel(offense: offense, defense: defense)
 }
 
+/// The same personnel with the quarterback's poise overridden, so a poise test moves one attribute
+/// rather than the whole roster's skill.
+func personnelWithQuarterbackPoise(_ poise: Int, base: SnapPersonnel) -> SnapPersonnel {
+    let offense = base.offense.map { player -> Player in
+        guard player.position == .quarterback else { return player }
+        var updated = player
+        updated.attributes[.poise] = Rating(poise)
+        return updated
+    }
+    return SnapPersonnel(offense: offense, defense: base.defense)
+}
+
 func runSnapResolverTests() {
     let rules = Tier.pro.clockRules
     let even = testPersonnel(offenseSkill: 70, defenseSkill: 70)
@@ -303,6 +321,173 @@ func runSnapResolverTests() {
                         stateAfter(OffensiveCall(playType: .pass), DefensiveCall(coverage: .man),
                                    Situation(yardLine: 98), even),
                         "the goal-line branch changed the draw count")
+        }
+
+        test("poise relieves sack pressure rather than inviting it") {
+            // `poiseSackRelief` is documented as "how much a maximally poised passer *raises* that
+            // threshold", and the resolver subtracted it — so the calmest passer in the league had
+            // the lowest sack threshold and went down most easily. The constant and the code
+            // disagreed about the sign, and nothing measured the direction.
+            func sackRate(poise: Int) -> Double {
+                var rng = SeededRandom(seed: 5_150)
+                var sacks = 0, dropbacks = 0
+                let personnel = personnelWithQuarterbackPoise(poise, base: even)
+                for _ in 0..<4_000 {
+                    let outcome = SnapResolver.resolve(
+                        offensiveCall: OffensiveCall(playType: .pass),
+                        defensiveCall: DefensiveCall(coverage: .man),
+                        personnel: personnel, situation: Situation(yardLine: 40),
+                        rules: rules, rng: &rng
+                    )
+                    switch outcome.result {
+                    case .sack, .safety: sacks += 1; dropbacks += 1
+                    case .incompletion, .interception, .gain, .touchdown: dropbacks += 1
+                    default: break
+                    }
+                }
+                return dropbacks > 0 ? Double(sacks) / Double(dropbacks) : 0
+            }
+            let calm = sackRate(poise: 95)
+            let rattled = sackRate(poise: 45)
+            let message = "poise 95 was sacked at \(calm) and poise 45 at \(rattled)"
+            expect(calm < rattled, message)
+        }
+
+        test("the pass rush gets home at a football rate, and blitzing helps it") {
+            // Sacks measured 1.15 per team-game against a band of 2.0 to 3.1 — a pass rush that
+            // almost never arrived, which is why pass yards ran 30 percent over their band.
+            //
+            // Pressure was the *mean* of the protection duels, which is the same variance-averaging
+            // defect the run lane had: a sack is one blocker losing, not five losing slightly. The
+            // mean also made blitzing nearly inert, because an extra rusher paired against a reused
+            // blocker barely moved an average.
+            // Measured against `CalibrationRoster`, not `testPersonnel`.
+            //
+            // This test first ran on uniform personnel, where every player carries one rating, and
+            // reported a healthy seven percent while the harness — which scatters attributes by
+            // ±18 the way a real roster does — was reading 10.6 sacks per team-game. A pass-rush
+            // model is a statement about *unequal* players, so a fixture that makes them equal is
+            // exactly the coverage boundary `CLAUDE.md` warns about: the test's boundary had become
+            // the quality boundary.
+            func sackRate(rushers: Int) -> Double {
+                var rng = SeededRandom(seed: 6_161)
+                var sacks = 0, dropbacks = 0
+                for game in 0..<12 {
+                    let scattered = SnapPersonnel(
+                        offense: CalibrationRoster.team(skill: 70, seed: UInt64(6_000 + game)).offense,
+                        defense: CalibrationRoster.team(skill: 70, seed: UInt64(9_000 + game)).defense
+                    )
+                for _ in 0..<500 {
+                    let outcome = SnapResolver.resolve(
+                        offensiveCall: OffensiveCall(playType: .pass),
+                        defensiveCall: DefensiveCall(coverage: .man, rushers: rushers),
+                        personnel: scattered, situation: Situation(yardLine: 40),
+                        rules: rules, rng: &rng
+                    )
+                    switch outcome.result {
+                    case .sack, .safety: sacks += 1; dropbacks += 1
+                    case .incompletion, .interception, .gain, .touchdown: dropbacks += 1
+                    default: break
+                    }
+                }
+                }
+                return dropbacks > 0 ? Double(sacks) / Double(dropbacks) : 0
+            }
+            let base = sackRate(rushers: 4)
+            let blitz = sackRate(rushers: 6)
+            let baseMessage = "sack rate per dropback is \(base), wanted 0.045 to 0.095"
+            expect(base > 0.045 && base < 0.095, baseMessage)
+            let blitzMessage = "four rushers sacked at \(base) and six at \(blitz)"
+            expect(blitz > base, blitzMessage)
+        }
+
+        test("an even passer completes at football rates, at every depth") {
+            // `throwDifficulty` is stated on the rating scale and compared to the passer's accuracy
+            // through an 18-point logistic, so a 70-rated passer throwing mid faced
+            // logistic(70 - 80) = -0.268 and deep logistic(70 - 92) = -0.545, both far below
+            // `completionThreshold` before pressure applied. An average passer was modelled as
+            // below average everywhere but short: the harness read 42 percent completions against a
+            // band of 61 to 67.
+            //
+            // Per depth rather than in aggregate, because the aggregate hid two errors at once —
+            // too few completions, each too long — which cancelled into a passing-yards band that
+            // passed while the model underneath was wrong.
+            let targets: [(depth: PassDepth, low: Double, high: Double)] = [
+                (.short, 0.66, 0.80),
+                (.mid, 0.52, 0.68),
+                (.deep, 0.30, 0.48),
+            ]
+            var attempts = 0
+            var interceptions = 0
+            for target in targets {
+                var rng = SeededRandom(seed: 7_700)
+                var complete = 0, thrown = 0
+                for _ in 0..<4_000 {
+                    let outcome = SnapResolver.resolve(
+                        offensiveCall: OffensiveCall(playType: .pass, passDepth: target.depth),
+                        defensiveCall: DefensiveCall(coverage: .man),
+                        personnel: even, situation: Situation(yardLine: 40),
+                        rules: rules, rng: &rng
+                    )
+                    switch outcome.result {
+                    case .incompletion: thrown += 1
+                    case .interception: thrown += 1; interceptions += 1
+                    case .gain, .touchdown: thrown += 1; complete += 1
+                    default: break
+                    }
+                }
+                attempts += thrown
+                let rate = thrown > 0 ? Double(complete) / Double(thrown) : 0
+                let message = "\(target.depth) completion rate is \(rate), wanted "
+                    + "\(target.low) to \(target.high)"
+                expect(rate > target.low && rate < target.high, message)
+            }
+            // Interceptions are the other side of the same cut. Roughly two attempts in a hundred;
+            // the harness band of 0.6 to 1.1 per team-game over about 34 attempts says the same.
+            let interceptionRate = attempts > 0
+                ? Double(interceptions) / Double(attempts)
+                : 0
+            let message = "interception rate per attempt is \(interceptionRate), wanted 0.012 to 0.038"
+            expect(interceptionRate > 0.012 && interceptionRate < 0.038, message)
+        }
+
+        test("an even run gains football yardage in both its middle and its tail") {
+            // `03` §1.1 wants lane leverage resolving into yards. It did not: `Leverage.logistic`
+            // returns exactly zero for an even matchup, so `lane * laneYardScale` was zero, and a
+            // run's whole distribution came from a break-tackle chain that fires above a 0.40
+            // threshold. The calibration harness read 1.35 yards per carry against a real 4.3 and
+            // an explosive-run rate of 0.033 against a band of 0.105 to 0.130.
+            //
+            // The spread matters as much as the middle, and is the part a baseline alone would not
+            // fix. `lane` is the mean of three duels, so its own standard deviation is the noise
+            // over root three — about 0.22, which `laneYardScale` turns into two thirds of a yard.
+            // Real carries scatter by about six. A model with the right mean and no spread is
+            // `01` §6.3's invisible failure.
+            var rng = SeededRandom(seed: 1_234)
+            var yards: [Double] = []
+            for _ in 0..<6_000 {
+                let outcome = SnapResolver.resolve(
+                    offensiveCall: OffensiveCall(playType: .run),
+                    defensiveCall: DefensiveCall(coverage: .man),
+                    personnel: even, situation: Situation(yardLine: 40),
+                    rules: rules, rng: &rng
+                )
+                guard outcome.result == .gain || outcome.result == .touchdown else { continue }
+                yards.append(Double(outcome.yards))
+            }
+            expect(yards.count > 4_000, "too few clean carries to measure: \(yards.count)")
+            let mean = yards.reduce(0, +) / Double(yards.count)
+            let variance = yards.reduce(0) { $0 + ($1 - mean) * ($1 - mean) }
+                / Double(yards.count - 1)
+            let deviation = variance.squareRoot()
+            expect(mean > 3.6 && mean < 5.0,
+                   "yards per carry is \(mean), which is not football")
+            expect(deviation > 3.0,
+                   "yards per carry scatters by \(deviation), so the run has a mean and no shape")
+            let explosive = Double(yards.filter { $0 >= Double(MatchupRules.explosiveRunYards) }
+                .count) / Double(yards.count)
+            expect(explosive > 0.08,
+                   "explosive-run rate is \(explosive), so the distribution has no right tail")
         }
 
         test("every pass snap records the matchups that produced it") {
@@ -508,6 +693,19 @@ func runSnapResolverTests() {
 }
 
 // MARK: - Drive and game loops
+
+/// Prints the two pinned play-by-play fingerprints, for the same reason
+/// `runArchitectureFingerprintProbe` exists: a deliberate engine change moves them, and the house
+/// rule is that the new value is reproduced in two independent release-process invocations before
+/// it is written down.
+func runGameFingerprintProbe() {
+    let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
+    let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
+    let pro = GameEngine.play(tier: .pro, home: home, away: away, seed: 12_345)
+    let college = GameEngine.play(tier: .college, home: home, away: away, seed: 12_345)
+    print("pro=\(pro.playByPlayFingerprint)")
+    print("college=\(college.playByPlayFingerprint)")
+}
 
 func runGameLoopTests() {
     let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)

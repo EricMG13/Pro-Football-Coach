@@ -67,7 +67,7 @@ public enum SnapResolver {
         var matchups: [MatchupRecord] = []
 
         // 1. Protection.
-        var protectionLeverage = 0.0
+        var protectionLeverages: [Double] = []
         for duel in assignment.protection {
             let leverage = Leverage.score(
                 attacker: duel.blocker.attributes[.passBlock],
@@ -79,12 +79,40 @@ public enum SnapResolver {
             )
             matchups.append(MatchupRecord(kind: .passProtection, attackerID: duel.blocker.id,
                                           defenderID: duel.rusher.id, leverage: leverage))
-            protectionLeverage += leverage
+            protectionLeverages.append(leverage)
         }
-        let averageProtection = assignment.protection.isEmpty
+        // Pressure leans on the *worst* duel without being decided by it.
+        //
+        // Averaging destroyed the signal the same way the run lane's mean did — a sack is one
+        // blocker losing, not five losing slightly — and it left blitzing nearly inert, because an
+        // extra rusher paired against a reused blocker barely moves a mean.
+        //
+        // The pure minimum overcorrected. Against `testPersonnel`, where every player carries the
+        // same rating, it produced a believable seven percent of dropbacks; against
+        // `CalibrationRoster`, which scatters attributes by ±18 the way a real roster does, the
+        // minimum reliably found a genuinely poor blocker and the harness read 10.6 sacks per
+        // team-game against a band of 2.0 to 3.1. A pass rush decided entirely by the weakest
+        // lineman is no more football than one decided by the average, because the passer also
+        // steps up, throws hot and feels the edge.
+        // The pocket goes when more than one protector loses: the second-worst duel, not the
+        // average and not the single worst.
+        //
+        // Three models were measured here. The average made a sack five blockers losing slightly,
+        // left blitzing inert, and read 1.15 sacks per team-game against a band of 2.0 to 3.1. The
+        // pure minimum handed the pass rush to whichever lineman was worst — against
+        // `CalibrationRoster`'s ±18 scatter that read 10.6. Blending the two was worse than either
+        // for the one property that matters most: rushers past the front four are linebackers with
+        // weaker `passRush`, so they lose their duels, raise the mean, and a blend duly made a
+        // six-man rush *safer* than a four-man one.
+        //
+        // An order statistic has none of those problems. It falls as rushers are added, whatever
+        // those rushers are rated, so blitzing always buys pressure; and it survives one poor
+        // blocker, so a rush is not decided by the roster's weakest link.
+        let ordered = protectionLeverages.sorted()
+        let effectiveProtection = ordered.isEmpty
             ? -1.0
-            : protectionLeverage / Double(assignment.protection.count)
-        let pressure = Swift.max(0, -averageProtection)
+            : ordered[Swift.min(MatchupRules.protectionCollapseRank, ordered.count - 1)]
+        let pressure = Swift.max(0, -effectiveProtection)
 
         guard let passer = assignment.passer else {
             return sackOrSafety(yards: MatchupRules.sackYards, situation: situation,
@@ -110,8 +138,12 @@ public enum SnapResolver {
         }
 
         // 3. Sack, if the pocket collapsed before anyone came open.
+        // Plus, not minus. `poiseSackRelief` is documented as "how much a maximally poised passer
+        // raises that threshold" and this subtracted it, so the calmest passer in the league had
+        // the lowest sack threshold and went down most easily. Nothing measured the direction until
+        // `EngineTests` started asserting it.
         let sackThreshold = MatchupRules.sackPressureThreshold
-            - Double(passer.attributes[.poise].value - SharedRules.ratingRange.lowerBound)
+            + Double(passer.attributes[.poise].value - SharedRules.ratingRange.lowerBound)
             / Double(SharedRules.ratingRange.count) * MatchupRules.poiseSackRelief
         if pressure > sackThreshold || openness.isEmpty {
             // Through the safety check, not around it. The three sack returns used to bypass
@@ -179,7 +211,11 @@ public enum SnapResolver {
         }
 
         // 6. Yards after the catch, from the receiver against the nearest pursuit.
-        let air = offensiveCall.passDepth.airYards
+        //
+        // Air yards scatter around the depth's figure rather than being it. One draw,
+        // unconditionally, so every pass leaves the stream in the same place whatever it produced.
+        let air = Swift.max(0, Int((Double(offensiveCall.passDepth.airYards)
+            + rng.gaussian(mean: 0, sd: MatchupRules.passAirYardDeviation)).rounded()))
         let (afterCatch, pursuitRecord, extraPursuitAttempts) = yardsAfterContact(
             carrier: target.element.receiver, pursuit: assignment.pursuit,
             aggression: offensiveCall.aggression, homeFieldAdvantage: homeFieldAdvantage, rng: &rng
@@ -238,8 +274,17 @@ public enum SnapResolver {
         )
         if let pursuitRecord { matchups.append(pursuitRecord) }
 
+        // One draw, unconditionally, so every run leaves the stream in the same place whatever it
+        // produced — the property `EngineTests` asserts for the pass branch and the reason
+        // `Leverage.score` consumes its draw exactly once.
+        let scatter = rng.gaussian(mean: 0, sd: MatchupRules.runYardDeviation)
         let outside = offensiveCall.runGap.isOutside ? MatchupRules.outsideRunVariance : 1.0
-        let gained = Int((lane * MatchupRules.laneYardScale * outside).rounded()) + broken
+        // `outside` multiplies the variable part only. It is named `outsideRunVariance` and it is
+        // variance: applying it to the baseline too would have made an outside run a longer run on
+        // average rather than a streakier one.
+        let preContact = MatchupRules.baselineRunYards
+            + (lane * MatchupRules.laneYardScale + scatter) * outside
+        let gained = Int(preContact.rounded()) + broken
         return finish(gained: gained, situation: situation,
                       elapsed: rules.inBoundsPlaySeconds, matchups: matchups,
                       brokenTackleAttempts: extraPursuitAttempts, carrier: carrier, passer: nil,

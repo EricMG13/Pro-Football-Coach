@@ -64,8 +64,11 @@ if CommandLine.arguments.contains("--catalog") {
     runTacticalStateTests()
 } else if CommandLine.arguments.contains("--match-reducer") {
     runMatchReducerTests()
+} else if CommandLine.arguments.contains("--snap-resolver") {
+    runSnapResolverTests()
 } else if CommandLine.arguments.contains("--engine") {
     runEngineTests()
+    runSnapResolverTests()
     runGameLoopTests()
 } else if CommandLine.arguments.contains("--m3-soak") {
     runM3CollegeSoakTests()
@@ -81,6 +84,14 @@ if CommandLine.arguments.contains("--catalog") {
     runM3RecruitingCalibrationTests()
 } else if CommandLine.arguments.contains("--calibration") {
     runCalibrationTests()
+} else if CommandLine.arguments.contains("--two-tier-consistency") {
+    runTwoTierConsistencyTests()
+} else if CommandLine.arguments.contains("--calibration-report") {
+    runCalibrationReportProbe()
+} else if CommandLine.arguments.contains("--architecture-fingerprints") {
+    runArchitectureFingerprintProbe()
+} else if CommandLine.arguments.contains("--game-fingerprints") {
+    runGameFingerprintProbe()
 } else if CommandLine.arguments.contains("--redshirt-only") {
     runCollegeRedshirtTests()
 } else if CommandLine.arguments.contains("--college-commitments") {

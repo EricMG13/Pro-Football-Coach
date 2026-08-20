@@ -53,16 +53,18 @@ private struct NewsItemFingerprintDTO: Codable, Equatable {
 /// itself (not something that exists only once a career starts), so the new key appears in every
 /// encoded root's JSON body -- including a freshly bootstrapped one where the dictionary is empty --
 /// exactly the same class of move as the `DomainEventLedger` archive above, not a determinism
-/// regression. Unlike the moves above, these two values were not independently reproduced across
-/// two local processes before being written here -- no Swift toolchain exists in this environment
-/// (`CLAUDE.md`) -- they are copied verbatim from a single CI run's own actual output for this exact
-/// commit (`.github/workflows/tests.yml`, run 32319402462, job 96278385220). Cross-process
-/// reproduction of a hash over a fixed seed is precisely the property this test exists to check, so
-/// a second confirming run is what would actually validate that guarantee, not a second manual
-/// re-derivation of the same single number.
+/// regression.
+/// The advanced pin moved once more the same day, independently, when the abstracted model gained a
+/// drawn play count and tier-specific home advantage (`TeamGameStatistics.offensivePlays`,
+/// `CompetitionRules.homeFieldPoints(for:)`): a new draw and a changed score both shift the
+/// abstracted model's random stream and its output, so every completed summary in an advanced week
+/// changes. The root pin does not move for that reason -- bootstrap plays no games -- so it carries
+/// only the `stakeholderLastMovement` move. Both values below were reproduced in two independent
+/// release-process invocations of `--architecture-fingerprints` against the merged tree before being
+/// written here.
 private let pinnedRootFingerprint: UInt64 = 13_271_746_992_715_500_232
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 2_051_777_162_885_451_912
+private let pinnedAdvancedRootFingerprint: UInt64 = 7_052_534_935_444_288_135
 
 /// The professional contract-negotiation ledger (`ProMarketState.contractNegotiations`) is part of
 /// the schema-13 root, but neither pin above ever exercises it: bootstrap starts with it empty, and
@@ -135,6 +137,23 @@ private func architectureFingerprint<T: Encodable>(_ value: T) throws -> UInt64 
     return bytes.reduce(0xCBF2_9CE4_8422_2325) { value, byte in
         (value ^ UInt64(byte)) &* 0x0000_0100_0000_01B3
     }
+}
+
+/// Prints the two pinned fingerprints so a deliberate re-pin is reproducible rather than copied out
+/// of a failure message.
+///
+/// The pins exist to catch *accidental* cross-process drift. A deliberate change to the abstracted
+/// model moves the advanced pin by design, and the house rule is that the new value is reproduced
+/// in two independent release-process invocations before it is written down. This makes that rule
+/// runnable: `--architecture-fingerprints`, twice.
+func runArchitectureFingerprintProbe() {
+    let root = GameState.bootstrap(seed: 20_260_810)
+    print("root=\((try? architectureFingerprint(root)).map(String.init) ?? "unencodable")")
+    guard let advanced = try? WorldScheduler.advanceWeek(root) else {
+        print("advanced=unavailable (advanceWeek threw)")
+        return
+    }
+    print("advanced=\((try? architectureFingerprint(advanced)).map(String.init) ?? "unencodable")")
 }
 
 func runArchitectureTests() {

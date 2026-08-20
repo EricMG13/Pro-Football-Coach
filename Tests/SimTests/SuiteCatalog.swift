@@ -9,6 +9,7 @@ enum ReleaseGateID: String, CaseIterable, Sendable {
     case voiceOver = "VoiceOverLabelTest"
     case touchTarget = "TouchTargetTest"
     case determinism = "DeterminismTests"
+    case twoTierConsistency = "TwoTierConsistencyTests"
     case reachability = "ReachabilityTest"
     case errorSurface = "ErrorSurfaceTest"
     case accessibility = "AccessibilityContractTests"
@@ -56,6 +57,7 @@ struct SuiteCatalog: Sendable {
              .voiceOver, .touchTarget, .reachability, .errorSurface,
              .accessibility: return "accessibility"
         case .determinism: return "determinism"
+        case .twoTierConsistency: return "calibration"
         case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly: return "persistence"
         case .m1Soak, .m2Soak: return "soaks"
         case .legal: return "legal"
@@ -74,6 +76,8 @@ struct SuiteCatalog: Sendable {
             return Runner(command: "--reduce-motion", function: "runReduceMotionContractTests")
         case .determinism:
             return Runner(command: "--architecture-only", function: "runArchitectureTests")
+        case .twoTierConsistency:
+            return Runner(command: "--two-tier-consistency", function: "runTwoTierConsistencyTests")
         case .accessibility:
             return Runner(command: "--design-contracts", function: "runAccessibilityReflowTests")
         case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly:
