@@ -1076,6 +1076,68 @@ When it landed it reported **7 of 8 college bands and 11 of 16 pro bands failing
 branch `--lane full` runs does not call `runCalibrationGateTests` — that last one is read from
 `main.swift` rather than observed, because the full lane is a 36-minute run.
 
+#### 2026-08-20 — 21 of 24, and why the last three are the harness rather than the engine
+
+**Holdout ladder: 19 of 24 to 21 of 24.** Newly holding: both home-win bands (centred, and the gate
+raised to 50 rounds a seed — 1,000 games — because the pro home-win band's passing window was only
+0.013 wide at 600, narrower than the estimate's own run-to-run wobble), pro field-goal percentage,
+both explosive-pass bands, both explosive-run bands, pro rush yards, pro safeties, college
+points and combined total, college field-goal percentage.
+
+**The three that remain are `favourite win rate` (both tiers) and `blowout rate` (pro), and they
+are not closeable by tuning.** Four candidate mechanisms were tested and measured, not argued:
+
+| Lever tried | Effect on favourite win | Effect on blowout |
+|---|---|---|
+| `leverageNoise` 0.38 → 0.55 (canon's ceiling) | 0.878 → 0.868 | 0.703 → 0.703 |
+| Red-zone compression, 0.25 then 0.70 | 0.878 → 0.869 | 0.703 → 0.704 |
+| Score-aware play calling in the fourth quarter | no change | 0.680 → 0.657 |
+| `CalibrationRoster` scatter ±18 → ±9 | **worse** (0.570 → 0.740 at +1) | 0.460 → 0.370 |
+
+Each cost bands elsewhere and none closed either target. The reason they cannot is arithmetic:
+
+**The engine's per-game variance is already right.** One fixed, evenly-drawn roster pair over 600
+games has a margin standard deviation of **12.7** — the real figure is about 13.5 — and at a mean of
+zero that produces a blowout rate of roughly 0.18, inside the 0.17–0.26 band. The engine is not
+producing wild games.
+
+**What produces them is the harness's own roster generator.** Draw a *fresh* pair at the same
+nominal skill and the margin standard deviation is **21.4**; the roster-draw component alone is
+**17.2**, larger than everything the game itself contributes. One measured pair, both nominally
+skill 72, differs by 10.8 points of margin on average. `CalibrationRoster` scatters every attribute
+independently by ±18, and the engine reads a handful of attributes on a handful of players — one
+quarterback's three accuracy ratings drive 52 percent of the snaps — so a rung does not hold talent
+constant, which is the one thing a rung is for.
+
+**And the ladder's gaps are far larger than the band they are tested against.** `01` §6.5's
+favourite band describes real betting favourites. Measured against the current engine with home
+advantage zeroed, favourite win rate by per-player gap reads:
+
+| Gap | +1 | +2 | +3 | +4 | +6 | +9 |
+|---|---|---|---|---|---|---|
+| Favourite win | 0.570 | **0.675** | 0.750 | 0.810 | 0.910 | 0.975 |
+
+The band is 0.62–0.72, so the engine sits inside it at a gap of about **+2**. `talentLadder` uses
+gaps up to **+9** and averages 5.4. The ladder was narrowed once already, from 0–26 to 0–9, for
+exactly this reason.
+
+**So both remaining failures are instrument questions, and they pull against each other.** Narrowing
+the roster scatter tightens the margin distribution (blowout improves) and simultaneously makes the
+nominal gap dominant (favourite win gets worse) — measured above, in the same run. No single setting
+satisfies both, which is the coupling this section recorded after the fifth tuning attempt and which
+has now been measured rather than inferred.
+
+**These are the owner's to answer, and they were not answered here:**
+
+1. What per-player gap should `talentLadder` use, given `01` §6.5's band describes a real betting
+   favourite and the engine reaches that band at about +2?
+2. Should a `CalibrationRoster` rung hold aggregate talent constant — and if so, how, given that
+   flattening the scatter is what drove favourite win to 0.94 in an earlier attempt?
+
+Nothing was changed in the harness to make these pass. `03` §5.2's rule is that the answer to a red
+band is a better model or an honest margin, never a widened one — and the same logic forbids quietly
+reshaping the instrument until the engine looks right.
+
 #### 2026-08-20 — the pass game: three difficulty ratings with no measurement behind them
 
 **Completion 43.5 against a band of 61 to 67. Interceptions 2.34 against 0.6 to 1.1. Sacks 0.72
@@ -1111,18 +1173,20 @@ failing on the same low-volume padding the plays-per-game fix removed), college 
 Holdout ladder: 8 of 24 to 12 of 24.**
 
 **Lost: pro rush yards per team-game, 117.7 to 90.6 — and traced rather than shrugged at.** Nothing
-in this pass, and nothing in the prior clock or run commits, touches a run constant. Measured
-directly: run share of plays held near 38 to 40 percent (unchanged), but yards per carry fell from
-4.13 to 3.81. `BaselinePlayCaller.defensiveCall` calls `.prevent` when trailing inside two minutes
-and `.zoneDeep` on third-and-long, and `CoverageShell.runCost` charges the run 0.24 for `.prevent`
-against 0.02 for `.zoneUnder` — a twelvefold difference. A pass game that completes and explodes
-correctly now produces more decisive scores and more third-and-long situations, both of which call
-these run-hostile shells more often. **This is the amplification defect already named in the
-previous entry, arriving through a new channel** — favourite win rate reads 0.85 against 0.62 to
-0.72 and blowout rate 0.72 against 0.17 to 0.26 on this same ladder, and a defence that is up two
-scores calling `.prevent` more often is consistent with a mismatch, not a new one. Retuning a run
-constant to paper over this would be tuning a working part to hide a broken one, which `03` §5.2
-forbids in exactly this shape. It is not this pass's fix to make.
+in this pass touches a run constant. Run share of plays held near 38 to 40 percent, but yards per
+carry fell from 4.13 to 3.81.
+
+**Correction, 2026-08-20: the mechanism first recorded here was backwards.** It said `.prevent` and
+`.zoneDeep` are run-hostile and that more of them cost the run yards. `CoverageShell.runCost` is a
+bonus *to the offence*, not a charge against it, and runs never face either shell — measured, a
+carry meets `zoneUnder` 83.4 percent of the time and `man` the other 16.6, because
+`BaselinePlayCaller` only runs on early downs at ten or fewer to go and the defence answers those
+with man or zone-under. The real mechanism is the opposite sign: `man` concedes 0.06 and `zoneUnder`
+0.02, a pass game that converts produces more first-and-ten, and first-and-ten draws `zoneUnder` —
+the least generous shell against the run. Yards per carry measured 4.36 against man and 3.71 against
+zone-under, so the drop was a situational mix shift, not a defect in the run model. The run
+constants were re-tuned against the corrected mix rather than left as-is, which is calibration
+against a fixed model rather than masking one.
 
 **Verification.** `--engine`, `--core-contracts`, `--calibration`, `--competition-only`,
 `--architecture-only`, `--match-reducer` and `--m3-recruiting-calibration` all green.

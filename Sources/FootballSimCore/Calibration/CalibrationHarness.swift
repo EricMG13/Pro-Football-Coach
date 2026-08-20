@@ -46,10 +46,13 @@ public enum CalibrationHarness {
     /// band (0.50 to 0.58, half-width 0.04) needs **420**; the college favourite-win band needs 325
     /// of the 220 rated games the ladder produced. Those bands failed on the *sample*, whatever the
     /// model did — a false red that reads exactly like a real one, and the opposite of `01` §6.2's
-    /// point that the burden belongs on the model. Thirty rounds gives 600 games and 550 rated ones,
-    /// which clears every rate band's minimum. Twelve pairs still make a round, so the ladder's
+    /// point that the burden belongs on the model. Fifty rounds gives 1,000 games and 917 rated ones.
+    /// Thirty cleared every band's bare minimum, but the pro home-win band's passing window was then
+    /// only 0.013 wide — narrower than the run-to-run wobble of the estimate itself, so which side
+    /// of the line it landed on was luck rather than model. Precision is the burden TOST puts on
+    /// the model, and buying more of it is not widening anything. Twelve pairs still make a round, so the ladder's
     /// shape is unchanged; each pair simply plays more games, at a different seed each time.
-    public static let matchupsPerSeed = 30
+    public static let matchupsPerSeed = 50
 
     /// A game and the talent it was played at, so the favourite can be identified.
     struct SampledGame {

@@ -61,8 +61,8 @@ public enum MatchupRules {
     /// game, measured by playing even teams with the bonus zeroed (19.9 to 18.8, home winning half)
     /// and again at 0.035 (28.7 to 14.2, home winning 0.656). That conversion rate is itself a
     /// defect and is not this constant's to fix; see `docs/STATUS.md`.
-    public static let proHomeAdvantage = 0.017
-    public static let collegeHomeAdvantage = 0.063
+    public static let proHomeAdvantage = 0.018
+    public static let collegeHomeAdvantage = 0.064
 
     // MARK: - Assignment
 
