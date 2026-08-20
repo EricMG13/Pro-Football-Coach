@@ -1716,6 +1716,31 @@ func runReadModelProviderTests() {
                         "the rival programme did not win the commitment this test needs")
             state.college = market.college
 
+            // A fresh bootstrap's roster already sits at capacity, so CollegeSigningSystem would
+            // release this commitment for want of a roster/scholarship vacancy rather than sign
+            // it -- a real gate this test needs to clear, not something to route around. Frees
+            // exactly one slot by removing a player from the rival's single largest position
+            // group, which by construction sits well above SharedRules.minimumPlayableRosterByPosition's
+            // floor for every position (roster limit 105 against per-position floors of 1-3 across
+            // fifteen positions), so this cannot trip the minimum-position-coverage gate the way an
+            // arbitrarily chosen position could.
+            let rivalRoster = state.programmes[rivalProgrammeID]!.rosterIDs
+            let rivalPositionCounts = Dictionary(
+                grouping: rivalRoster.compactMap { state.players[$0]?.position }, by: { $0 }
+            ).mapValues(\.count)
+            guard let deepestPosition = rivalPositionCounts.max(by: { $0.value < $1.value })?.key,
+                  let departingID = rivalRoster.first(where: {
+                      state.players[$0]?.position == deepestPosition
+                  }) else {
+                expect(false, "could not find a rival roster player to free capacity with")
+                return
+            }
+            state.programmes.update(rivalProgrammeID) {
+                $0.rosterIDs.removeAll { $0 == departingID }
+                $0.scholarshipCount -= 1
+            }
+            state.college.reconcileScholarships(with: state.programmes)
+
             let signing = try CollegeSigningSystem.signCommitted(in: state)
             expect(
                 signing.resolutions.contains { $0.prospectID == prospectID && $0.outcome == .signed },
