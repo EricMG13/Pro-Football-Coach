@@ -1076,6 +1076,54 @@ When it landed it reported **7 of 8 college bands and 11 of 16 pro bands failing
 branch `--lane full` runs does not call `runCalibrationGateTests` — that last one is read from
 `main.swift` rather than observed, because the full lane is a 36-minute run.
 
+#### 2026-08-20 — plays per team-game: the clock did not stop for a drive ending, it stopped for a drive *starting*
+
+**`state.clockRunning = finished.drive.ending == .endOfQuarter`.** That one line meant the game
+clock stopped after every punt, every turnover, every turnover on downs and every missed field
+goal — not just after a score. The next drive's first snap then cost only its play duration, never
+its pre-snap seconds, because `DriveEngine`'s `preSnap` is zero exactly when `clockRunning` is
+false. A drive-opening snap is roughly one in five of all snaps, so one in five snaps across the
+whole game was several seconds cheaper than it should have been, and the clock fit far more of them
+into 3,600 seconds than a real one does.
+
+**Fixed to name the actual exception.** A score's kickoff is a touchback (the engine spots every
+one at `kickoffTouchbackYardLine`) and a touchback restarts the clock on the snap, which is the one
+real stoppage. Everything else — punt fielded in bounds, turnover, turnover on downs, missed field
+goal — leaves the clock running, so the next snap is charged like any other:
+
+```swift
+state.clockRunning = switch finished.drive.ending {
+case .punt, .turnover, .downs, .missedFieldGoal, .endOfQuarter: true
+case .touchdown, .fieldGoal, .safety, .endOfHalf: false
+}
+```
+
+**Plays per team-game: pro 82.3 → 70.4, college 97.2 → 83.0.** Neither is inside its band yet (pro
+60–68, college 67–75), but both moved by exactly the fifth of all snaps the defect was giving away
+for free, which is what a clock-accounting fix should do and a play-caller retune should not have
+been asked to.
+
+**The volume fix unmasked the pass game, and the tally went backward — correctly.** Holdout ladder:
+11 of 24 to **8 of 24**. Three bands that were passing were passing on borrowed volume:
+
+| Band | Before | After | Why |
+|---|---|---|---|
+| points per team-game, pro | 23.6 PASS | 20.0 FAIL low | fewer plays, same low completion rate, fewer points |
+| points per team-game, college | 29.5 PASS | 25.0 FAIL low | same |
+| pass yards per team-game, pro | 196.5 PASS | 171.7 FAIL low | fewer pass attempts at the same low completion rate |
+| rush yards per team-game, pro | 117.7 PASS | 102.5 FAIL low | fewer carries at the same right yards-per-carry |
+
+None of those three had a sound floor. Pro completion percentage reads **43.5** against a band of
+61–67 and interceptions read **2.34** against 0.6–1.1 — the pass offence was throwing badly enough
+that adding volume was carrying every yardage and scoring band over its floor by sheer attempt count.
+Cutting the volume to a realistic level removed the padding and left the actual defect standing:
+**the pass game, not the run or the clock, is what the engine is missing next.**
+
+**Verification.** `--engine`, `--core-contracts`, `--calibration`, `--competition-only`,
+`--architecture-only`, `--match-reducer` and `--m3-recruiting-calibration` all green.
+`--calibration-gate` reports 8 of 8 college and 10 of 16 pro bands failing — expected, and it is
+what the gate is for. Fingerprints re-pinned.
+
 #### 2026-08-20 — the amplification chain: what a per-duel edge is actually worth
 
 **The leverage curve is not the defect, and its own tests say so.** `LeverageTests` requires
