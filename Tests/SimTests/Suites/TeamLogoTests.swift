@@ -203,7 +203,7 @@ func runTeamLogoAssetTests(family rawValue: String) {
                 guard let provider = CGDataProvider(
                     data: Data([0, 0, 0, alpha]) as CFData
                 ) else { return nil }
-                return CGImage(
+                guard let sourceImage = CGImage(
                     width: 1,
                     height: 1,
                     bitsPerComponent: 8,
@@ -217,7 +217,18 @@ func runTeamLogoAssetTests(family rawValue: String) {
                     decode: nil,
                     shouldInterpolate: false,
                     intent: .defaultIntent
-                )
+                ) else { return nil }
+                let pngData = NSMutableData()
+                guard let destination = CGImageDestinationCreateWithData(
+                    pngData,
+                    UTType.png.identifier as CFString,
+                    1,
+                    nil
+                ) else { return nil }
+                CGImageDestinationAddImage(destination, sourceImage, nil)
+                guard CGImageDestinationFinalize(destination),
+                      let source = CGImageSourceCreateWithData(pngData, nil) else { return nil }
+                return CGImageSourceCreateImageAtIndex(source, 0, nil)
             }
             guard let transparent = image(alpha: 0), let opaque = image(alpha: 255) else {
                 expect(false, "unable to create alpha regression images")
