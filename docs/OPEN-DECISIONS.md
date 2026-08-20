@@ -28,6 +28,7 @@ assumptions, cheap to change. `ESCALATED` — blocking owner question, do not bu
 | D12 | Accessibility contract | DECIDED (REVERSIBLE) |
 | D13 | Content volume | DECIDED |
 | D14 | Build order and league size | DECIDED (REVERSIBLE) — added in v4 execution |
+| D15 | Dead money discharge | **ESCALATED 2026-08-20** — blocking; see below |
 
 ---
 
@@ -640,3 +641,62 @@ the 17e remain unsourced and are recorded as gaps, not guessed.
 **Cost of reversal: low before the `04` §7 window is rewritten and the proof matrix re-rendered;
 medium after.** The churn is proof captures, the two-tier layout test, D4's baseline sentence and
 the `docs/STATUS.md` platform note. No save, engine or schema cost in any direction.
+
+---
+
+## D15 — Dead money discharge
+
+**ESCALATED 2026-08-20. Do not build past it.** The cap's behaviour over a career depends on the
+answer, and every option below is cheap now and expensive after a save ships.
+
+**The question.** When, if ever, does a professional team's dead money leave its books?
+
+**What the build does today, read rather than assumed.** `ProTeam.deadMoney` is written in exactly
+two places — `ProManagementSystem.release` and `ProManagementSystem.enforceCapCompliance` — and both
+are `+=`. Nothing decrements it: no season rollover, no amortisation, no decay. `capSnapshot` seeds
+`committedCap` from it, so a dollar charged in season 3 is still charged in season 20.
+
+**Why it cannot stay unanswered.** Three things compound.
+
+1. `03` §6 states the soak's cap assertion as "bounded overage from dead money only". A
+   monotonically non-decreasing figure is not a bounded overage, so canon and the build disagree
+   about what the cap even means over time.
+2. A release accelerates the whole unamortised bonus into the release season, so releasing can
+   *raise* committed cap rather than lower it. Compliance now refuses those releases (2026-08-20),
+   which is correct and also means the cap-shedding options shrink as dead money grows.
+3. When no legal release reaches compliance, `enforceCapCompliance` throws `capExceeded` and
+   `WorldScheduler` turns that into a failed week advance. The end state of an unbounded charge is
+   therefore a save that cannot advance, not a league that plays badly.
+
+**The options.**
+
+(a) **A single-season charge, cleared at the season boundary.** `Contract.deadMoney` already
+accelerates the entire unamortised bonus into the release year, which is a statement that the charge
+belongs to *that year*. Under this reading `deadMoney` resets at rollover. Smallest change, no schema
+cost, and it makes `03` §6's "bounded" true — bounded by one season's releases. The cost is that
+releasing becomes cheap one season later, so the cap constrains churn less than a real one does.
+
+(b) **Amortised: keep the acceleration but spread the charge across the years the bonus covered.**
+Truest to the real mechanic and the strongest version of the cap as a constraint. It requires dead
+money to become a schedule rather than a scalar, which is a save-schema change under D7 and real
+work in every surface that reads the number.
+
+(c) **Never discharged — today's behaviour, made explicit.** Only tenable with a defined product
+answer for a team that cannot be made legal, because the week advance failing is not one.
+
+**Recommendation: (a), with (b) as a later slice if the cap needs more teeth.** (a) is the smallest
+change that makes canon true and costs no migration; (b) is the better game and should be chosen
+deliberately rather than arrived at.
+
+**Falsifier — instruments, fixed in advance.**
+- `--pro-soak` reports `deadMoneyTotal` and `deadMoneyMax` against the season's cap, added
+  2026-08-20 for this entry. Under (a) `deadMoneyMax` must not trend upward across seasons; if it
+  does, the reset is not happening where it is claimed to.
+- Under (a) or (b), a soak assertion that no team's dead money exceeds the season's cap. That
+  assertion cannot be written at all under (c), which is itself the argument against (c).
+- `enforceCapCompliance` must never throw `capExceeded` on a root the scheduler produced. A failed
+  week advance in `--pro-soak` or `--pro-week-walk` falsifies whichever option is in force.
+
+**Cost of reversal: low between (a) and (c), medium to (b).** (a) and (c) differ by one reset at the
+rollover and the assertions above. (b) costs a save-schema migration once dead money carries a
+schedule, and is the only option that gets more expensive the longer it waits.

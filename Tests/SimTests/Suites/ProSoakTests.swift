@@ -114,10 +114,21 @@ func runProSoakTests() {
                        + proEventCounts.sorted { $0.key < $1.key }
                            .map { "\($0.key)=\($0.value)" }.joined(separator: " "))
 
+            // Dead money has two write sites and both are `+=`: nothing in the build ever
+            // discharges it, so `capSnapshot` carries every past release into every future
+            // season's committed cap. `03` section 6 calls the permitted overage "bounded", which a
+            // monotonically increasing figure is not. Reported rather than asserted because what
+            // discharges it -- the next season boundary, an amortisation schedule, nothing -- is a
+            // design question canon does not answer.
+            let deadMoneyTotal = state.proTeams.values.reduce(0) { $0 + $1.deadMoney }
+            let deadMoneyMax = state.proTeams.values.map(\.deadMoney).max() ?? 0
+            let capLimit = ProRules.salaryCap(seasonsAfterBase: state.calendar.season)
+
             let sizes = checkpoints.map { "s\($0.season)=\($0.bytes)B" }.joined(separator: " ")
             let weekTotal = weekDurations.reduce(0, +)
             print("""
             Pro soak: seasons=\(requested) weeks=\(weekDurations.count) \
+            deadMoneyTotal=\(deadMoneyTotal) deadMoneyMax=\(deadMoneyMax)/\(capLimit) \
             weekMeanMs=\(String(format: "%.2f", weekDurations.isEmpty ? 0 : weekTotal / Double(weekDurations.count) * 1000)) \
             teams=\(state.proTeams.count) phasesSeen=\(marketPhasesSeen.sorted().joined(separator: "/")) \
             draftedFinal=\(draftedPerSeason.last ?? 0) \

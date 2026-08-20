@@ -497,6 +497,7 @@ the legal tests.
 | Practice squad | 16 | P8's cap-laundering defences apply here specifically |
 | Salary cap | 255,000,000 integer dollars, growing 7 percent a year | Integer dollars, never floating point |
 | Signing-bonus proration | over the contract's length, capped at 5 years | The mechanism dead money comes from |
+| Dead money discharge | **undecided — D15, escalated 2026-08-20** | Nothing in the build discharges it, so it accumulates for the life of the save. Whether it is a single-season charge, an amortised schedule, or permanent is an owner decision, and the cap's behaviour over a career depends on it |
 | Contract length | 1 to 7 years | An upper bound so a corrupt save cannot ask for an unbounded allocation. A contract of zero years carries no signing bonus |
 | Draft | 7 rounds of 32 picks, 224 total | |
 
