@@ -154,6 +154,7 @@ public extension CoachWorldReadModelProvider {
         in state: GameState
     ) -> RecruitingBoardReadModel.Prospect {
         let relationship = recruiting.relationships[prospect.id]
+        let status = statusLabel(prospect.id, programmeID: programmeID, in: state)
         return RecruitingBoardReadModel.Prospect(
             stableID: prospect.id.uuidString,
             person: CoachWorldPersonReference(
@@ -165,7 +166,10 @@ public extension CoachWorldReadModelProvider {
             position: label(prospect.position),
             hometown: hometown(prospect.originCityID, in: state),
             interest: interestLabel(relationship?.interest ?? 0),
-            status: statusLabel(prospect.id, in: state),
+            status: status,
+            // Derived from the same label rather than re-deriving the phase check, so the flag
+            // can never disagree with what the status text says.
+            isCommitted: status == "Committed" || status == "Signed",
             evaluation: evaluation(
                 prospect.id,
                 programmeID: programmeID,
@@ -210,10 +214,15 @@ public extension CoachWorldReadModelProvider {
 
     /// Read from `state.college.prospectRecruitment[id].phase` — the engine's own commitment
     /// state machine — rather than inferred from board membership, which says only that the
-    /// programme is pursuing the prospect, not what the prospect has decided.
-    private static func statusLabel(_ prospectID: UUID, in state: GameState) -> String {
-        switch state.college.prospectRecruitment[prospectID]?.phase {
-        case .committed: return "Committed"
+    /// programme is pursuing the prospect, not what the prospect has decided. `.committed` alone
+    /// does not say to whom: the withdraw choice's own availability check already compares
+    /// `recruitment.programmeID` against the viewing programme to tell a genuine commitment here
+    /// from a commitment elsewhere, and this label now makes the same comparison.
+    private static func statusLabel(_ prospectID: UUID, programmeID: UUID, in state: GameState) -> String {
+        let recruitment = state.college.prospectRecruitment[prospectID]
+        switch recruitment?.phase {
+        case .committed:
+            return recruitment?.programmeID == programmeID ? "Committed" : "Committed elsewhere"
         case .signed: return "Signed"
         case .released: return "Released"
         case .available, nil: return "Uncommitted"
