@@ -1122,6 +1122,7 @@ public struct PeopleState: Codable, Sendable, Equatable {
             )
             return true
         }
+        guard career.assignments.last != assignment else { return true }
         guard career.assignments.last.map({ assignment.season >= $0.season }) ?? true else {
             return false
         }

@@ -204,16 +204,17 @@ public enum CareerControlSystem {
                 .filter { $0 != headCoachIDs[0] && $0 != coach.id }
                 + [coach.id]
         }
-        if next.people.staffCareers[coach.id] == nil {
-            next.people.insert(
-                staff: coach,
-                assignment: StaffCareerAssignment(
-                    season: state.calendar.season,
-                    organisationID: programmeID,
-                    role: .headCoach
-                )
-            )
-        }
+        // Appended, not inserted-if-absent: a coach who resigned and was hired again already has
+        // a career record, and leaving its last assignment pointing at the former programme is the
+        // stale seat root integrity refuses.
+        next.people.recordStaffAssignment(
+            StaffCareerAssignment(
+                season: state.calendar.season,
+                organisationID: programmeID,
+                role: .headCoach
+            ),
+            for: coach
+        )
         next.career.setCollege(control)
         guard WorldIntegrity.check(next).isValid else {
             throw CareerControlError.missingHeadCoach
@@ -221,17 +222,12 @@ public enum CareerControlSystem {
         return CareerControlTransition(state: next, control: control)
     }
 
-    /// Moves the controlled coach's chair from whatever organisation still seats them to the
-    /// professional team they were promoted to.
+    /// Moves the controlled coach's chair to the professional team they were promoted to.
     ///
     /// The career arc records the job; the world records the chair. Leaving the chair behind is
     /// what let a promoted coach stay listed as their old programme's head coach, and kept the
     /// professional seat out of `people.staffCareers` — the one authority the coaching tree and
     /// the season history archive both read, so the promotion vanished from every history surface.
-    ///
-    /// The old chair is found in the world rather than in `career.college`, because a promotion
-    /// can also be accepted while seeking, after a resignation has already cleared that control
-    /// but left the coach on the programme's staff.
     static func seatProfessionalPromotion(
         teamID: UUID,
         in state: inout GameState
@@ -239,34 +235,7 @@ public enum CareerControlSystem {
         guard let coachID = state.career.coachID,
               let coach = state.staff[coachID],
               state.proTeams[teamID] != nil else { return }
-        let season = state.calendar.season
-
-        if let programmeID = state.programmes.ids.first(where: {
-            state.programmes[$0]?.staffIDs.contains(coachID) == true
-        }), let prestige = state.programmes[programmeID]?.prestige {
-            let successorID = appointHeadCoach(
-                organisationID: programmeID,
-                prestige: prestige,
-                season: season,
-                in: &state
-            )
-            _ = state.programmes.update(programmeID) { programme in
-                programme.staffIDs = programme.staffIDs.filter { $0 != coachID } + [successorID]
-            }
-        }
-        for formerID in state.proTeams.ids where formerID != teamID {
-            guard state.proTeams[formerID]?.staffIDs.contains(coachID) == true,
-                  let prestige = state.proTeams[formerID]?.prestige else { continue }
-            let successorID = appointHeadCoach(
-                organisationID: formerID,
-                prestige: prestige,
-                season: season,
-                in: &state
-            )
-            _ = state.proTeams.update(formerID) { team in
-                team.staffIDs = team.staffIDs.filter { $0 != coachID } + [successorID]
-            }
-        }
+        vacateCurrentSeat(in: &state)
 
         let displaced = Set(
             (state.proTeams[teamID]?.staffIDs ?? []).filter {
@@ -279,9 +248,56 @@ public enum CareerControlSystem {
             } + [coachID]
         }
         state.people.recordStaffAssignment(
-            StaffCareerAssignment(season: season, organisationID: teamID, role: .headCoach),
+            StaffCareerAssignment(
+                season: state.calendar.season,
+                organisationID: teamID,
+                role: .headCoach
+            ),
             for: coach
         )
+    }
+
+    /// Takes the controlled coach off whatever staff still lists them, appointing a successor to
+    /// the seat they leave.
+    ///
+    /// Separation has to reach the world, not just the career state. Clearing `career.college`
+    /// alone left a resigned or promoted coach standing in their old organisation's staff list as
+    /// its head coach, which every staff surface then reported as current employment.
+    ///
+    /// The seat is found in the world rather than in `career.college`, because a promotion can
+    /// also be accepted while seeking, after a resignation has already cleared that control.
+    /// The coach's own `staffCareers` record is left alone: it is employment history, and a
+    /// separation is not an erasure.
+    static func vacateCurrentSeat(in state: inout GameState) {
+        guard let coachID = state.career.coachID, state.staff[coachID] != nil else { return }
+        let season = state.calendar.season
+
+        for programmeID in state.programmes.ids {
+            guard state.programmes[programmeID]?.staffIDs.contains(coachID) == true,
+                  let prestige = state.programmes[programmeID]?.prestige else { continue }
+            let successorID = appointHeadCoach(
+                organisationID: programmeID,
+                prestige: prestige,
+                season: season,
+                in: &state
+            )
+            _ = state.programmes.update(programmeID) { programme in
+                programme.staffIDs = programme.staffIDs.filter { $0 != coachID } + [successorID]
+            }
+        }
+        for teamID in state.proTeams.ids {
+            guard state.proTeams[teamID]?.staffIDs.contains(coachID) == true,
+                  let prestige = state.proTeams[teamID]?.prestige else { continue }
+            let successorID = appointHeadCoach(
+                organisationID: teamID,
+                prestige: prestige,
+                season: season,
+                in: &state
+            )
+            _ = state.proTeams.update(teamID) { team in
+                team.staffIDs = team.staffIDs.filter { $0 != coachID } + [successorID]
+            }
+        }
     }
 
     /// Generates and inserts a head coach for a seat the controlled coach is about to leave.

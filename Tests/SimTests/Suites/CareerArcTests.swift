@@ -336,5 +336,86 @@ func runCareerArcTests() {
             )
             expect(WorldIntegrity.check(promoted).isValid, "promoted world failed integrity")
         }
+        test("resignation vacates the college seat and keeps the career record") {
+            let source = GameState.bootstrap(seed: 99_121)
+            let programmeID = source.programmes.ids[0]
+            var resigning = try CareerControlSystem.startCollegeCareer(
+                at: programmeID,
+                in: source
+            ).state
+            guard let coachID = resigning.career.coachID else {
+                expect(false, "career start left no coach")
+                return
+            }
+            resigning.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: programmeID,
+                    tier: .college,
+                    startedAt: resigning.calendar
+                ),
+                status: .employed
+            )
+            let resigned = try IntentResolver.resolve(
+                .career(CareerArcRequest(
+                    calendar: resigning.calendar,
+                    action: .resign
+                )),
+                in: resigning
+            ).state
+
+            expect(
+                resigned.programmes[programmeID]?.staffIDs.contains(coachID) == false,
+                "resignation left the coach on the programme's staff"
+            )
+            expectEqual(
+                resigned.programmes[programmeID]?.staffIDs.filter {
+                    resigned.staff[$0]?.role == .headCoach
+                }.count,
+                1,
+                "resignation left the programme without exactly one head coach"
+            )
+            // The coach survives separation as a person: the career record is what the coaching
+            // tree and the history archive read, and a resignation is not an erasure.
+            expect(
+                resigned.staff[coachID] != nil,
+                "resignation deleted the coach"
+            )
+            expect(
+                resigned.people.staffCareers[coachID]?.assignments.contains {
+                    $0.organisationID == programmeID && $0.role == .headCoach
+                } == true,
+                "resignation erased the college seat from the career record"
+            )
+            expectEqual(resigned.career.coachID, coachID)
+            expect(WorldIntegrity.check(resigned).isValid, "resigned world failed integrity")
+
+            // Separation has to leave a world the same coach can be hired into again, at a
+            // different programme, without the stale seat trailing behind them.
+            let nextProgrammeID = resigned.programmes.ids[1]
+            let rehired = try CareerControlSystem.startCollegeCareer(
+                at: nextProgrammeID,
+                in: resigned
+            ).state
+            expectEqual(rehired.career.coachID, coachID)
+            expect(
+                rehired.programmes[nextProgrammeID]?.staffIDs.contains(coachID) == true,
+                "the rehired coach was not seated at the new programme"
+            )
+            expect(
+                rehired.programmes[programmeID]?.staffIDs.contains(coachID) == false,
+                "the rehired coach still held the former programme's seat"
+            )
+            expectEqual(
+                rehired.people.staffCareers[coachID]?.assignments.last?.organisationID,
+                nextProgrammeID
+            )
+            expect(
+                rehired.people.staffCareers[coachID]?.assignments.contains {
+                    $0.organisationID == programmeID
+                } == true,
+                "rehiring erased the first programme from the career record"
+            )
+            expect(WorldIntegrity.check(rehired).isValid, "rehired world failed integrity")
+        }
     }
 }
