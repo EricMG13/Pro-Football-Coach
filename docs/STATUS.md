@@ -86,6 +86,49 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > `CLAUDE.md` requires every collection that grows across seasons to have a stated bound and this one
 > has none. Who disappears from a coaching history is a design call, not a cleanup.
 
+> **2026-08-20 — college acquisition rules asserted after every transaction, two system defects
+> found and fixed.** The five college acquisition rules the rules module fixes — scholarship count,
+> eligibility clock, redshirt legality, commitment uniqueness, portal window — were already stated
+> and already checked, but only **at rest**: `WorldIntegrity` runs once a week, at
+> `.saveGrowthAndIntegrity`. Everything the season boundary does commits inside a single
+> `WorldStep`, so a rule could be breached by one transaction and repaired by a later one and the
+> week would still come to rest clean.
+>
+> Each rule is now one named predicate under `Sources/FootballSimCore/Integrity/`
+> (`CollegeScholarshipInvariant`, `CollegeEligibilityInvariant`, `CollegeRedshirtInvariant`,
+> `CollegeCommitmentInvariant`, `CollegePortalWindowInvariant`), `WorldIntegrity` delegates to it so
+> there is one statement of each, and `WorldScheduler` gained a `package` `transactionObserver`
+> fired at thirteen transaction sites plus **every** `WorldStep`. `--college-acquisition-invariant`
+> evaluates every rule at every checkpoint.
+>
+> **Two defects, both the same shape — a transaction that consumes a thing leaving the record of
+> the thing for a later transaction to clear:**
+>
+> 1. `SeasonLifecycleSystem.advance` dropped departing players from `Programme.rosterIDs` and
+>    recomputed `Programme.scholarshipCount`, but left them in
+>    `ProgrammeRecruitingState.scholarshipPlayerIDs`. Between that transaction and
+>    `CollegeState.reconcileScholarships` several transactions later, the root said graduated
+>    players still held scholarships and the two counters disagreed. The transaction now ends the
+>    scholarship and the NIL allocation itself.
+> 2. Redshirt plans outlived their own resolution. The rollover spends the clock year a plan asks
+>    for; the plan stood until `CollegeCycleSystem.closeAndOpen` cleared it, so in between the root
+>    held plans with `noSpareClockYear`. The resolving transaction now clears them.
+>
+> The second was only visible after fixing a **vacuous test**: the redshirt rule first passed while
+> sweeping an empty dictionary, because plans are filed only through `CareerSession` and a headless
+> scheduler walk never files one. Every rule now declares a `population` and the suite fails if any
+> rule swept nothing at every checkpoint.
+>
+> **What is verified.** `swift build -Xswiftc -enable-testing` green. All seven suites green on the
+> final tree: `--college-acquisition-invariant` (3 / 48), `--college-commitments` (25 / 124),
+> `--college-state` (39 / 4,102), `--redshirt-only` (33 / 104), `--portal-policy` (12 / 715),
+> `--portal-transaction` (16 / 118), `--portal-scheduler` (9 / 27,819). **Not verified:** the full
+> `verify.sh` lane, and no simulator or device run — this is engine and test work only.
+>
+> **The rule chosen is not ambiguous.** `02` §11 fixes 85 scholarships and `03` §193 states the
+> legality claim. `01-RESEARCH.md:3491` records that the real limit moved 85 → 105 for 2025–26;
+> canon overrides research, so that is a design question for the owner rather than a defect.
+
 > **2026-08-20 — CI ran against the `main` merge commit and found two more things, both fixed:
 > unverified — never compiled, but by CI, not manual reading.** Run 32322631469 (job 96287645557):
 > 5 failing tests, 7 failed checks, all now accounted for.
