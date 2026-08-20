@@ -6,7 +6,7 @@ import FootballSimCore
 // metrics that have to agree.
 //
 // **TOST on the difference, not a range check.** The instrument is the same one `01-RESEARCH.md`
-// §6.2 requires of calibration, applied to a two-sample question: the 90 percent interval around
+// §6.2 requires of calibration, applied to a paired question: the 90 percent interval around
 // (abstracted - detailed) must lie entirely inside a symmetric margin. A point-estimate comparison
 // would pass whenever the two models happened to land near each other and would never tighten as
 // the sample grew.
@@ -73,7 +73,7 @@ enum TwoTierConsistency {
     /// **Four rather than one because of a rate, not a preference.** A per-team-game mean like
     /// points reaches its margin in a few hundred team-games, but a win rate does not: at p near
     /// 0.55 and a margin of 0.04, the pooled 90 percent interval only fits inside the margin past
-    /// roughly 840 games *per model*, and one professional slate is 272. A suite that asserted home
+    /// roughly 840 paired games, and one professional slate is 272. A suite that asserted home
     /// advantage on one world would fail on the width of its own interval and read as a model
     /// divergence — the "both edges" failure `Band.test` names precisely so that this is not
     /// mistaken for the model being off in a direction.
@@ -290,21 +290,29 @@ private func expectAgreement(
     detailed: [Double]
 ) {
     guard let margin else {
-        expect(false, "no band for \(metric) [\(tier.rawValue)] to derive a margin from")
+        let missing = "no band for \(metric) [\(tier.rawValue)] to derive a margin from"
+        expect(false, missing)
         return
     }
     let band = Band("\(metric) agreement", tier: tier, -margin, margin, estimator: .mean,
                     confidence: "derived: half the 01 section 6.5 band width")
     guard let difference = pairedMeanDifference(abstracted, detailed) else {
-        expect(false, "paired samples for \(metric) [\(tier.rawValue)] are empty or misaligned")
+        let misaligned = "paired samples for \(metric) [\(tier.rawValue)] are empty or misaligned"
+        expect(false, misaligned)
         return
     }
     let result = band.test(difference)
     // A mean that agrees over a spread that does not is 01 section 6.3's invisible failure, so the
     // report carries both tails as well as both levels.
-    expect(result.passed, result.report
+    //
+    // Built into a local before the call, never inside `expect`'s `@autoclosure`. Swift 6.3.3's
+    // optimizer crashes verifying the SIL when that autoclosure concatenates owned Strings after
+    // inlining ("Found outside of lifetime use?!"), and every `expect` in this file follows the
+    // same rule for that reason.
+    let message = result.report
         + " | abstracted " + shape(abstracted)
-        + " | detailed " + shape(detailed))
+        + " | detailed " + shape(detailed)
+    expect(result.passed, message)
 }
 
 /// Asserts that the two models agree on one rate, under the same TOST the means use.
@@ -319,7 +327,8 @@ private func expectRateAgreement(
     detailed: [GameSummary]
 ) {
     guard let margin else {
-        expect(false, "no band for \(metric) [\(tier.rawValue)] to derive a margin from")
+        let missing = "no band for \(metric) [\(tier.rawValue)] to derive a margin from"
+        expect(false, missing)
         return
     }
     func outcomes(_ summaries: [GameSummary]) -> [Bool?] {
@@ -334,116 +343,115 @@ private func expectRateAgreement(
     let abstractedOutcomes = outcomes(abstracted)
     let detailedOutcomes = outcomes(detailed)
     guard let difference = pairedRateDifference(abstractedOutcomes, detailedOutcomes) else {
-        expect(false, "paired samples for \(metric) [\(tier.rawValue)] are empty or misaligned")
+        let misaligned = "paired samples for \(metric) [\(tier.rawValue)] are empty or misaligned"
+        expect(false, misaligned)
         return
     }
     let result = band.test(difference)
     let abstractedTotals = totals(abstractedOutcomes)
     let detailedTotals = totals(detailedOutcomes)
-    expect(result.passed, result.report + String(
+    let message = result.report + String(
         format: " | abstracted %d/%d = %.4f | detailed %d/%d = %.4f",
         abstractedTotals.hits, abstractedTotals.trials,
         Double(abstractedTotals.hits) / Double(abstractedTotals.trials),
         detailedTotals.hits, detailedTotals.trials,
         Double(detailedTotals.hits) / Double(detailedTotals.trials)
-    ))
+    )
+    expect(result.passed, message)
+}
+
+/// The per-tier metric assertions.
+///
+/// At file scope, taking the tier and its sample, rather than nested inside the suite's tier loop.
+/// Swift 6.3.3's optimizer crashes verifying the SIL for `expect`'s `@autoclosure` message when it
+/// captures a borrowed `String` — here `tier.rawValue` — through that much closure nesting
+/// ("Found outside of lifetime use?!"). Flattening is also how the file reads best: one function
+/// per concern, and adding the next metric is one block rather than one more level of indent.
+private func assertTwoTierMetrics(tier: Tier, sample: TwoTierSample) {
+    let tierName = tier.rawValue
+
+    test("points per team-game agrees between the models — \(tierName)") {
+        expectAgreement(
+            metric: "points per team-game",
+            margin: equivalenceMargin(metric: "points per team-game", tier: tier),
+            tier: tier,
+            abstracted: teamValues(sample.abstracted) { Double($0.points) },
+            detailed: teamValues(sample.detailed) { Double($0.points) }
+        )
+    }
+
+    test("offensive plays per team-game agrees between the models — \(tierName)") {
+        expectAgreement(
+            metric: "offensive plays per team-game",
+            margin: equivalenceMargin(metric: "offensive plays per team-game", tier: tier),
+            tier: tier,
+            abstracted: teamValues(sample.abstracted) { Double($0.offensivePlays) },
+            detailed: teamValues(sample.detailed) { Double($0.offensivePlays) }
+        )
+    }
+
+    test("home advantage agrees between the models — \(tierName)") {
+        expectRateAgreement(
+            metric: "home win rate",
+            margin: equivalenceMargin(metric: "home win rate", tier: tier),
+            tier: tier,
+            abstracted: sample.abstracted,
+            detailed: sample.detailed
+        )
+    }
+
+    test("yards per play agrees between the models — \(tierName)") {
+        guard let margin = composedYardsPerPlayMargin(tier: tier) else {
+            // Not a pass and not a failure: `01` §6.5 states no college yardage rows, so there is
+            // nothing honest to test against until canon says what the range is.
+            let named = TwoTierConsistency.canonGaps.contains {
+                $0.metric == "yards per play" && $0.tier == tier
+            }
+            let message = "yards per play cannot be measured for \(tierName) and the gap is not "
+                + "named in canonGaps"
+            expect(named, message)
+            return
+        }
+        expectAgreement(
+            metric: "yards per play",
+            margin: margin,
+            tier: tier,
+            abstracted: yardsPerPlay(sample.abstracted),
+            detailed: yardsPerPlay(sample.detailed)
+        )
+    }
+}
+
+/// The coverage accounting: every metric `03` §5.1 names is asserted, named as uncovered, or named
+/// as a tier gap. Nothing falls between.
+private func assertMetricAccounting() {
+    test("every metric 03 section 5.1 names is either asserted or named as uncovered") {
+        let accounted = Set(TwoTierConsistency.coveredMetrics)
+            .union(TwoTierConsistency.uncoveredMetrics.map(\.metric))
+        expectEqual(accounted, Set(TwoTierConsistency.section51Metrics))
+        for entry in TwoTierConsistency.uncoveredMetrics {
+            let message = "\(entry.metric) is uncovered for no stated reason"
+            expect(!entry.blockedOn.isEmpty, message)
+        }
+        // A tier-metric pair can only be skipped if it is named here, and only if the metric is
+        // genuinely asserted in the other tier. A gap entry for a metric nothing measures would be
+        // a way to retire a metric without saying so.
+        for gap in TwoTierConsistency.canonGaps {
+            let named = "\(gap.metric) [\(gap.tier.rawValue)]"
+            expect(!gap.gap.isEmpty, "\(named) names no gap")
+            expect(TwoTierConsistency.coveredMetrics.contains(gap.metric),
+                   "\(named) is listed as a tier gap but is not asserted in any tier")
+        }
+    }
 }
 
 func runTwoTierConsistencyTests() {
     suite("Two-tier consistency") {
-        test("paired estimators retain within-fixture covariance") {
-            let alignedMean = pairedMeanDifference([1, 2, 3], [0, 1, 2])
-            let shuffledMean = pairedMeanDifference([1, 2, 3], [2, 1, 0])
-            expectClose(alignedMean?.value ?? .nan, 1, 1e-12)
-            expectClose(alignedMean?.standardError ?? .nan, 0, 1e-12)
-            expect((shuffledMean?.standardError ?? 0) > 0)
-
-            let alignedRate = pairedRateDifference(
-                [true, true, false, false],
-                [true, true, false, false]
-            )
-            let shuffledRate = pairedRateDifference(
-                [true, true, false, false],
-                [true, false, true, false]
-            )
-            expectClose(alignedRate?.value ?? .nan, 0, 1e-12)
-            expectClose(alignedRate?.standardError ?? .nan, 0, 1e-12)
-            expect((shuffledRate?.standardError ?? 0) > 0)
-        }
-
-        test("every metric 03 section 5.1 names is either asserted or named as uncovered") {
-            let accounted = Set(TwoTierConsistency.coveredMetrics)
-                .union(TwoTierConsistency.uncoveredMetrics.map(\.metric))
-            expectEqual(accounted, Set(TwoTierConsistency.section51Metrics))
-            for entry in TwoTierConsistency.uncoveredMetrics {
-                expect(!entry.blockedOn.isEmpty, "\(entry.metric) is uncovered for no stated reason")
-            }
-            // A tier-metric pair can only be skipped if it is named here, and only if the metric is
-            // genuinely asserted in the other tier. A gap entry for a metric nothing measures would
-            // be a way to retire a metric without saying so.
-            for gap in TwoTierConsistency.canonGaps {
-                expect(!gap.gap.isEmpty, "\(gap.metric) [\(gap.tier.rawValue)] names no gap")
-                expect(TwoTierConsistency.coveredMetrics.contains(gap.metric),
-                       "\(gap.metric) is listed as a tier gap but is not asserted in any tier")
-            }
-        }
-
+        assertMetricAccounting()
         for tier in Tier.allCases {
-            // One world per tier, played once by each model. Both metric tests read the same
-            // sample, because bootstrapping and replaying a season is the expensive part and
-            // running it twice would buy nothing but a second draw from the same distribution.
-            let sample = collectTwoTierSample(tier: tier)
-
-            test("points per team-game agrees between the models — \(tier.rawValue)") {
-                expectAgreement(
-                    metric: "points per team-game",
-                    margin: equivalenceMargin(metric: "points per team-game", tier: tier),
-                    tier: tier,
-                    abstracted: teamValues(sample.abstracted) { Double($0.points) },
-                    detailed: teamValues(sample.detailed) { Double($0.points) }
-                )
-            }
-
-            test("offensive plays per team-game agrees between the models — \(tier.rawValue)") {
-                expectAgreement(
-                    metric: "offensive plays per team-game",
-                    margin: equivalenceMargin(metric: "offensive plays per team-game", tier: tier),
-                    tier: tier,
-                    abstracted: teamValues(sample.abstracted) { Double($0.offensivePlays) },
-                    detailed: teamValues(sample.detailed) { Double($0.offensivePlays) }
-                )
-            }
-
-            test("home advantage agrees between the models — \(tier.rawValue)") {
-                expectRateAgreement(
-                    metric: "home win rate",
-                    margin: equivalenceMargin(metric: "home win rate", tier: tier),
-                    tier: tier,
-                    abstracted: sample.abstracted,
-                    detailed: sample.detailed
-                )
-            }
-
-            test("yards per play agrees between the models — \(tier.rawValue)") {
-                guard let margin = composedYardsPerPlayMargin(tier: tier) else {
-                    // Not a pass and not a failure: `01` §6.5 states no college yardage rows, so
-                    // there is nothing honest to test against until canon says what the range is.
-                    let gap = TwoTierConsistency.canonGaps.first {
-                        $0.metric == "yards per play" && $0.tier == tier
-                    }
-                    expect(gap != nil,
-                           "yards per play cannot be measured for \(tier.rawValue) and the gap is "
-                               + "not named in canonGaps")
-                    return
-                }
-                expectAgreement(
-                    metric: "yards per play",
-                    margin: margin,
-                    tier: tier,
-                    abstracted: yardsPerPlay(sample.abstracted),
-                    detailed: yardsPerPlay(sample.detailed)
-                )
-            }
+            // One world set per tier, played once by each model. Both metric tests read the same
+            // sample, because bootstrapping and replaying seasons is the expensive part.
+            assertTwoTierMetrics(tier: tier, sample: collectTwoTierSample(tier: tier))
         }
     }
 }

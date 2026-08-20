@@ -617,6 +617,24 @@ func runCareerPortalDecisionTests() {
                 return
             }
             guard let retainedIntent = snapshot.intents.first(where: { intent in
+                // The programme this test takes control of must have no fixture still to play.
+                // This suite is about portal retention; `runWeeklyAuthorityTests` owns the
+                // preparation gate. Which programme carries a retainable intent depends on season
+                // results, and so does which programmes are still alive in the postseason, so
+                // without this the test asserts on whether the two happened to coincide. They
+                // stopped coinciding when home advantage became tier-specific and the bracket
+                // moved.
+                // Scoped to this season and week, exactly as `CareerSession`'s own preparation
+                // gate scopes it. Filtering on any unplayed fixture at all rejects every candidate,
+                // because the spring window sits on a schedule whose games are still to come.
+                let awaitingKickoff = state.competition.currentSchedule.games.contains {
+                    $0.season == state.calendar.season
+                        && $0.week == state.calendar.week
+                        && $0.result == nil
+                        && ($0.homeID == intent.sourceProgrammeID
+                            || $0.awayID == intent.sourceProgrammeID)
+                }
+                guard !awaitingKickoff else { return false }
                 guard let programme = state.college.programmes[intent.sourceProgrammeID],
                       let transition = CollegePortalPolicyV1.resolveRetention(
                           for: intent.sourceProgrammeID,

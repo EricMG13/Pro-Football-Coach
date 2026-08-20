@@ -31,12 +31,14 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
 /// result after reload.
 /// It moved once more on 2026-08-20, when `TeamGameStatistics` gained a play count and the
 /// abstracted model started drawing one: a new draw shifts that model's random stream, so every
-/// completed summary in an advanced week changes. The root pin did not move and should not have —
-/// bootstrap plays no games. Both values below were reproduced in two independent release-process
-/// invocations of `--architecture-fingerprints` before being written here.
+/// completed summary in an advanced week changes. It moved again the same day when home advantage
+/// became tier-specific, which changes every abstracted score directly. The root pin did not move
+/// on either occasion and should not have — bootstrap plays no games. Both values below were
+/// reproduced in two independent release-process invocations of `--architecture-fingerprints`
+/// before being written here.
 private let pinnedRootFingerprint: UInt64 = 3_251_160_748_987_753_141
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 14_040_606_295_534_783_127
+private let pinnedAdvancedRootFingerprint: UInt64 = 8_309_439_081_324_478_024
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///

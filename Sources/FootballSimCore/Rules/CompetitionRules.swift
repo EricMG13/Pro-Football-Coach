@@ -10,7 +10,25 @@ public enum CompetitionRules {
     public static let collegeScoreDeviation = 10.0
     public static let proScoreDeviation = 8.0
     public static let strengthPointScale = 0.24
-    public static let homeFieldPoints = 2.4
+    /// Home advantage, in points, per tier.
+    ///
+    /// **One shared constant could not hold both bands.** `01-RESEARCH.md` §6.5 asks for a home win
+    /// rate of 0.50-0.58 professionally and 0.60-0.68 in college, and a single number produced
+    /// 0.575 and 0.562 — inside the professional band and below the college one. The tiers disagree
+    /// in canon, so the constant has to.
+    ///
+    /// Both values are back-solved from measurement rather than guessed: the shared 2.4 produced
+    /// those two rates, which implies a score-difference spread of 12.7 professionally and 15.5 in
+    /// college, and these are the points that put each tier at its band midpoint.
+    ///
+    /// **Caveat worth carrying to the owner.** 5.5 points is roughly double what college home-field
+    /// is worth on a real spread. §6.5's college band is high partly because real college home
+    /// teams are systematically stronger — the bought non-conference game — and a generated
+    /// schedule has no such bias, so this one constant absorbs both effects. If §6.5 ever splits
+    /// true home advantage from home *scheduling* advantage, this number comes down and the
+    /// schedule generator takes the rest.
+    public static let proHomeFieldPoints = 1.4
+    public static let collegeHomeFieldPoints = 5.5
     public static let maximumTeamScore = 70
     public static let overtimeFieldGoalPoints = 3
     public static let overtimeTouchdownPoints = 6
@@ -62,6 +80,10 @@ public enum CompetitionRules {
 
     public static func baselinePlays(for tier: Tier) -> Double {
         tier == .college ? collegeBaselinePlays : proBaselinePlays
+    }
+
+    public static func homeFieldPoints(for tier: Tier) -> Double {
+        tier == .college ? collegeHomeFieldPoints : proHomeFieldPoints
     }
 
     public static func passingSharePercent(for scheme: OffensiveScheme) -> Int {

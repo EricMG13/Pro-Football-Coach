@@ -35,7 +35,7 @@ public enum AbstractGameSimulator {
         var homeScore = score(
             expectation: baseline
                 + Double(home.offense - away.defense) * CompetitionRules.strengthPointScale
-                + CompetitionRules.homeFieldPoints
+                + CompetitionRules.homeFieldPoints(for: game.tier)
                 + homePlan.pointAdjustment(against: awayPlan),
             deviation: deviation + homePlan.scoreDeviationAdjustment(),
             using: &rng

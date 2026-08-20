@@ -497,7 +497,12 @@ func runCompetitionTests() {
             state.competition = CompetitionReducer.rebuild(from: state)
 
             let rows = state.competition.standings.values.flatMap { $0 }
-            expectEqual(rows.reduce(0) { $0 + $1.wins + $1.losses }, selected.count * 2)
+            // Ties belong in this total. A professional regular-season game may end level — the
+            // suite asserts as much two tests up, and `StandingRow` carries a `ties` column — so
+            // `wins + losses` is only the whole story for a fixture that happens to contain none.
+            // This passed on that accident until home advantage became tier-specific, narrowed
+            // professional margins and produced four.
+            expectEqual(rows.reduce(0) { $0 + $1.wins + $1.losses + $1.ties }, selected.count * 2)
             expectEqual(rows.reduce(0) { $0 + $1.pointsFor },
                         selected.reduce(0) { total, game in
                             guard let result = state.competition.currentSchedule.games
