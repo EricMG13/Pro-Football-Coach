@@ -275,7 +275,16 @@ func runProMarketTests() {
                 var state = GameState.bootstrap(seed: 60_113)
                 let controlledTeamID = try require(state.proTeams.ids.first)
                 let aiTeamID = try require(state.proTeams.ids.dropFirst().first)
-                _ = removeProRosterPlayer(teamID: aiTeamID, in: &state)
+                // Enough seats to drop the club under `freeAgencyRosterCeiling`, not just under
+                // `activeRosterLimit`. Free agency stops one seat per draft round short of the hard
+                // limit (`02` §4.2, so the draft has somewhere to put its picks), which means a
+                // club at 52 of 53 is correctly done signing and this fixture used to prove the AI
+                // signs by putting it at exactly that.
+                let seatsToOpen = ProRules.activeRosterLimit
+                    - ProRosterAISystem.freeAgencyRosterCeiling + 1
+                for _ in 0..<seatsToOpen {
+                    _ = removeProRosterPlayer(teamID: aiTeamID, in: &state)
+                }
                 state.careerArc = CareerArcState(
                     currentJob: CareerJob(
                         organisationID: controlledTeamID,
@@ -360,8 +369,26 @@ private func require<T>(_ value: T?) throws -> T {
 /// free agent. Once bootstrap began issuing contracts it silently stopped being enough: the pool
 /// came back empty, the AI signed nobody, and a test that indexed the first signing crashed the
 /// whole process instead of failing one check.
+/// Opens a roster seat without making the root illegal.
+///
+/// Takes from a position that still has more than `minimumPlayableRosterByPosition` after the
+/// removal, because a 53-man roster carries exactly one kicker and one punter and taking the first
+/// id off the list can therefore leave a club with nobody who can play a position. That did not
+/// matter while callers opened a single seat; it does now that one opens enough to drop a club
+/// under the free-agency ceiling.
 private func removeProRosterPlayer(teamID: UUID, in state: inout GameState) -> UUID? {
-    guard let playerID = state.proTeams[teamID]?.rosterIDs.first else { return nil }
+    let rosterIDs = state.proTeams[teamID]?.rosterIDs ?? []
+    var countByPosition: [Position: Int] = [:]
+    for id in rosterIDs {
+        guard let position = state.players[id]?.position else { continue }
+        countByPosition[position, default: 0] += 1
+    }
+    let surplusID = rosterIDs.first { id in
+        guard let position = state.players[id]?.position else { return false }
+        let minimum = SharedRules.minimumPlayableRosterByPosition[position] ?? 0
+        return countByPosition[position, default: 0] > minimum
+    }
+    guard let playerID = surplusID ?? state.proTeams[teamID]?.rosterIDs.first else { return nil }
     _ = state.proTeams.update(teamID) { team in
         team.rosterIDs.removeAll { $0 == playerID }
     }

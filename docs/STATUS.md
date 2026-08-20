@@ -908,31 +908,43 @@ pool is empty until week 21. From season 2 the pool clears at 280 relocations ag
 
 What is genuinely red, after the correction:
 
-- **The draft takes zero picks in ten seasons** while starting nine times. `--pro-soak` reports
-  `draftedFinal=0` independently of any churn metric. Chased to its throw site with
-  `--pro-movement-probe`'s `--pro-draft-stall-probe` variant, which calls the same
-  `ProMarketSystem.draft` the live scheduler calls, at the moment the live scheduler enters `.draft`:
+- **The draft took zero picks in ten seasons** while starting nine times. **Fixed 2026-08-20.**
+  `--pro-draft-stall-probe` calls the same `ProMarketSystem.draft` the live scheduler calls, at the
+  moment the live scheduler enters `.draft` — necessary because `ProRosterAISystem.makeDraftPicks`
+  swallows its own failure, breaking the loop with nothing recorded. It reported:
 
   ```text
-  season 1: first live pick threw activeRosterFull  roster=53/53  draftClass=224
-  season 2: first live pick threw activeRosterFull  roster=53/53  draftClass=224
-  season 3: first live pick threw activeRosterFull  roster=53/53  draftClass=224
+  season 1: first live pick threw activeRosterFull  roster=53/53  committedCap=170182273/272850000
+  season 2: first live pick threw activeRosterFull  roster=53/53
+  season 3: first live pick threw activeRosterFull  roster=53/53
   ```
 
-  `--pro-draft-probe`, which begins the draft immediately after `expireContracts` with free agency
-  never run, now succeeds — the roster-tenure fix resolved `a2e3147`'s original cause. But the live
-  scheduler does not begin the draft there: `ProRosterAISystem.signFreeAgents` runs free agency
-  first, and only calls `beginDraft` on the first week that signs nobody. Its own loop guard is
-  `team.rosterIDs.count < ProRules.activeRosterLimit`, the identical 53-player ceiling
-  `ProManagementSystem.acquire` enforces for *both* a free-agent signing and a draft pick. Free
-  agency's only stopping condition is therefore also the draft's only blocking condition: nothing
-  runs between the two that removes anyone, so the draft's first pick meets the exact ceiling free
-  agency just filled, every season, regardless of pool size or expiry count. This is not the same
-  cause `a2e3147` and `4a95ca5` named — those are fixed — it is the next-order blocker their own
-  language already anticipated: `02` §4.2 lists a cap-compliance date as the second offseason beat,
-  "cuts happen when the cap binds," and nothing implements it. Deciding who is cut, and when, to
-  open the seats the draft needs remains the owner-level design call `a2e3147` named; this only
-  narrows it to its exact mechanism.
+  `ProManagementSystem.acquire` enforces the identical `rosterIDs.count < activeRosterLimit` guard
+  for *both* a free-agent signing and a draft pick, and `ProRosterAISystem.signFreeAgents` runs until
+  that guard stops finding a legal club, then calls `beginDraft`. Nothing between the two removes
+  anyone, so the draft's first pick met the exact ceiling free agency had just filled — structurally,
+  every season, independent of pool size or expiry count. The cap sat at 170M of 272M when it threw,
+  so this was headcount and beat 2's cap-compliance cuts would not have unblocked it.
+
+  The fix is the conjunction `02` §4.2 already contained: beat 1 frees headcount "for free agency
+  *and* the draft". An AI club now signs only up to `activeRosterLimit - draftRounds`, holding one
+  seat per round it will pick in; expiry frees about eleven a roster against seven rounds, so the
+  reservation fits inside what beat 1 already produces and needs no cuts. `02` §4.2 states the rule
+  explicitly rather than leaving it implied. All three probe seasons now report "first live pick
+  succeeded".
+
+  Two notes for anyone reading the older entries. `--pro-draft-probe` passes but is **stale for the
+  live path**: it begins the draft immediately after `expireContracts` with free agency never run, so
+  it cannot reproduce a failure caused by free agency running first, and its green says nothing about
+  the scheduler. And drafting exposed a performance asymmetry — `ProMarketSystem.draft` ran a
+  whole-root `WorldIntegrity.check` per pick, invisible while no pick ever succeeded and 224
+  whole-world checks a season once they did. `draftForScheduler` now mirrors the existing
+  `signFreeAgentForScheduler`, so the scheduler validates once per batch at its own integrity
+  boundary.
+
+  **Beat 2 remains unimplemented.** Nothing enforces a cap-compliance date, and no club ever cuts
+  anyone for money. That is still the owner-level design call `a2e3147` named; it simply was not what
+  blocked the draft.
 - **Rosters never refill.** 1,406, 1,448 and 1,488 against 32 * 53 = 1,696, with the count of
   professionals owned by nobody growing 496, 619, 740. Consistent with intake that has lost the
   draft half.
