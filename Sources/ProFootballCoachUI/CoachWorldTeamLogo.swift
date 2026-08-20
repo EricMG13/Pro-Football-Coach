@@ -36,14 +36,30 @@ struct CoachWorldTeamLogo: View {
     private var packagedImage: Image? {
         guard let name = team.mark?.assetName else { return nil }
         #if canImport(UIKit)
-        guard let image = UIImage(named: name, in: .module, compatibleWith: nil) else { return nil }
+        if let image = UIImage(named: name, in: .module, compatibleWith: nil) {
+            return Image(uiImage: image)
+        }
+        guard let url = packagedResourceURL(for: name),
+              let image = UIImage(contentsOfFile: url.path) else { return nil }
         return Image(uiImage: image)
         #elseif canImport(AppKit)
-        guard let image = Bundle.module.image(forResource: NSImage.Name(name)) else { return nil }
+        if let image = Bundle.module.image(forResource: NSImage.Name(name)) {
+            return Image(nsImage: image)
+        }
+        guard let url = packagedResourceURL(for: name),
+              let image = NSImage(contentsOf: url) else { return nil }
         return Image(nsImage: image)
         #else
         return nil
         #endif
+    }
+
+    private func packagedResourceURL(for name: String) -> URL? {
+        Bundle.module.url(
+            forResource: name,
+            withExtension: "png",
+            subdirectory: "TeamLogos.xcassets/\(name).imageset"
+        )
     }
 
     private var fallback: some View {

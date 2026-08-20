@@ -98,9 +98,11 @@ private func designSheets() -> [(name: String, text: String)] {
 private func rawAssetLoaders(in source: String) -> [String] {
     let patterns = [
         "Image\\([^\\n]*\\bbundle\\s*:",
+        "Image\\s*\\(\\s*\\\"",
+        "Image\\s*\\(\\s*decorative\\s*:",
         "UIImage\\s*\\(\\s*named\\s*:",
         "NSImage\\s*\\(\\s*named\\s*:",
-        "Bundle\\.module\\.image\\s*\\("
+        "Bundle\\.module\\.(?:image|url)\\s*\\("
     ]
     return codeLines(of: source).filter { line in
         patterns.contains { line.range(of: $0, options: .regularExpression) != nil }
@@ -182,7 +184,7 @@ func runDesignContractTests() {
     suite("Team logo asset loading") {
         test("only CoachWorldTeamLogo loads packaged image assets") {
             let permittedPath = "Sources/ProFootballCoachUI/CoachWorldTeamLogo.swift"
-            let files = swiftFiles(under: "Sources/ProFootballCoachUI")
+            let files = swiftFiles(under: "Sources/ProFootballCoachUI") + swiftFiles(under: "App")
             expect(files.contains { $0.path == permittedPath },
                    "\(permittedPath) must own packaged image loading")
 
@@ -195,6 +197,10 @@ func runDesignContractTests() {
         }
 
         test("the scan would notice a raw asset loader outside the component") {
+            expect(!rawAssetLoaders(in: #"Image("rogue")"#).isEmpty,
+                   "a planted SwiftUI asset load must be caught")
+            expect(!rawAssetLoaders(in: #"Image(decorative: "rogue")"#).isEmpty,
+                   "a planted decorative asset load must be caught")
             expect(!rawAssetLoaders(in: "UIImage(named: \\\"rogue\\\")").isEmpty,
                    "a planted UIKit asset load must be caught")
             expect(!rawAssetLoaders(in: "Bundle.module.image(forResource: NSImage.Name(\\\"rogue\\\"))").isEmpty,
