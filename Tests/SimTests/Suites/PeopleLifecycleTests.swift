@@ -580,24 +580,78 @@ func runM2SoakTests(seasons: Int) {
             let employedStaffTarget = (CollegeRules.programmeCount + ProRules.teamCount)
                 * PeopleRules.staffPerOrganisation
             var saveSizes: [Int: Int] = [:]
+            // Holds a peek one week beyond each season boundary: CollegeCycleSystem
+            // .addWalkOns(for: .springRosterFill, ...) only tops college rosters back up
+            // to CollegeRules.rosterLimit during the week1->week2 advance, once
+            // CollegePortalPhase.awaitingSpring resolves. Used for the full-college-roster
+            // assertions below, both per-season and after the loop. Professional rosters
+            // have no equivalent same-week fill (see the note further down), so this peek
+            // does not make them exact too.
+            var filledState = state
 
             for season in 1...seasons {
                 for _ in 0..<SharedRules.inSeasonWeeks {
                     state = try WorldScheduler.advanceWeek(state).state
                 }
                 expectEqual(state.calendar, CalendarState(season: season, week: 1))
+
+                // `.awaitingSpring` is a deliberate one-week gap (its own
+                // CollegePortalPhase.isStableBoundary state): it lets the coach's spring
+                // mandatory decisions land before the engine auto-fills the rest of the
+                // roster. So at week 1 itself, college rosters are only guaranteed to
+                // satisfy SharedRules.minimumPlayableRosterByPosition per position (the
+                // .postseasonCoverage fill), not CollegeRules.rosterLimit. Assert that
+                // real guarantee here.
+                for position in Position.allCases {
+                    let minimum = SharedRules.minimumPlayableRosterByPosition[position] ?? 0
+                    expect(state.programmes.values.allSatisfy { programme in
+                        programme.rosterIDs.filter {
+                            state.players[$0]?.position == position
+                        }.count >= minimum
+                    }, "a college programme is below the week-1 coverage minimum for \(position)")
+                }
+
+                // CollegeCycleSystem.addWalkOns(for: .springRosterFill, ...) runs in the
+                // marketInteractions step of the week1->week2 advance, so peek one week
+                // ahead (without consuming the loop's own `state`) to assert the
+                // full-college-roster invariant at the point where it actually holds.
+                filledState = try WorldScheduler.advanceWeek(state).state
+                let filledCollegeRosterIDs = filledState.programmes.values.flatMap(\.rosterIDs)
+                expectEqual(
+                    filledCollegeRosterIDs.count,
+                    CollegeRules.programmeCount * CollegeRules.rosterLimit
+                )
+                expectEqual(Set(filledCollegeRosterIDs).count, filledCollegeRosterIDs.count)
+
+                // Professional rosters do not get a college-style bulk fill: `02` section 4.2a
+                // has roughly a fifth of each 53-man roster (about 11 players) reach expiry at
+                // once at the season boundary, then refilled by ProRosterAISystem's one
+                // free-agent signing per team per week, plus the draft once free agency runs
+                // dry. A team can stay under 53 for several weeks by design — ProSoakTests
+                // asserts the same bound this design allows, never over the limit, never an
+                // exact target.
+                expect(filledState.proTeams.values.allSatisfy {
+                    $0.rosterIDs.count <= ProRules.activeRosterLimit
+                })
+                let filledProRosterIDs = filledState.proTeams.values.flatMap(\.rosterIDs)
+                expectEqual(Set(filledProRosterIDs).count, filledProRosterIDs.count)
+
                 let activePlayerIDs = state.programmes.values.flatMap(\.rosterIDs)
                     + state.proTeams.values.flatMap(\.rosterIDs)
-                expectEqual(activePlayerIDs.count, activePlayerTarget)
-                expectEqual(Set(activePlayerIDs).count, activePlayerTarget)
                 expect(activePlayerIDs.allSatisfy {
                     state.people.playerLifecycle[$0]?.status == .active
                 })
                 expect(state.programmes.values.flatMap(\.rosterIDs).allSatisfy {
                     state.players[$0]?.eligibility?.isExhausted == false
                 })
+                // ProspectPopulationGenerator signs recruits at 17-19 (early enrollees included),
+                // and a player who spends their one spare redshirt year can still be rostered five
+                // seasons after signing. Oldest: a 19-year-old signee who redshirts, then ages
+                // through their remaining four competitive seasons (19, 20, 21, 22, 23). Youngest:
+                // a 17-year-old true freshman in their signing season. (18...21) undercounted both
+                // ends.
                 expect(state.programmes.values.flatMap(\.rosterIDs).allSatisfy {
-                    (18...21).contains(state.players[$0]?.age ?? -1)
+                    (17...23).contains(state.players[$0]?.age ?? -1)
                 })
                 expect(state.proTeams.values.flatMap(\.rosterIDs).allSatisfy { id in
                     guard let player = state.players[id] else { return false }
@@ -640,7 +694,12 @@ func runM2SoakTests(seasons: Int) {
                 }
             }
 
-            expectEqual(state.players.count, activePlayerTarget)
+            // A professional whose contract expires (ProMarketSystem.expireContracts) is never
+            // removed from the player store, only unrostered into proMarket.freeAgentIDs — the
+            // store holds the league's whole identity pool, not just who is rostered this week,
+            // so activePlayerTarget is still the right size for it even though a professional
+            // roster itself is only bounded, not exact, at this checkpoint (see the note above).
+            expectEqual(filledState.players.count, activePlayerTarget)
             expect(!state.people.departedPlayers.isEmpty,
                    "departed player identities did not persist")
             expect(state.staff.count >= employedStaffTarget,

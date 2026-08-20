@@ -733,6 +733,26 @@ weeks** in **677.408770083 seconds** with **326 checks, all passed**. It retaine
 staff counts, legal ages/eligibility, bounded injury incidence, development explanations, plausible
 broad rating bands, whole-root integrity, and save/load equality.
 
+> **2026-08-20 — the soak's own numbers were stale, and two of its assertions were wrong, not just
+> its numbers.** M3 college management landed between the measurement above and now; re-run on the
+> same code the measurement predates, `./.build/release/SimTests --m2-soak` (20 seasons) took
+> **1,348.7 seconds**, not 677. Two assertions in `PeopleLifecycleTests.swift` were checking a
+> guarantee the engine never made: the exact college-roster-count check sampled state at week 1,
+> one week before `CollegeCycleSystem.addWalkOns(for: .springRosterFill, ...)` actually tops
+> rosters back up to 105 (`.awaitingSpring` is a deliberate one-week gap for the coach's spring
+> portal decisions), and the age-range check used `(18...21)` when signing and a spent redshirt
+> year legitimately produce ages 17 through 23. Both are fixed — the roster check now peeks one
+> week ahead before asserting the exact count, and the age bound is `(17...23)` with the derivation
+> recorded inline. Professional rosters were folded into the same combined-count assertion the
+> college fix relied on, and that combination was never true: a professional roster refills at one
+> free-agent signing per team per week (`02` §4.2a), so it is only ever bounded by
+> `ProRules.activeRosterLimit`, never held to an exact count on any fixed week — matching what
+> `ProSoakTests.swift` already asserts for the same tier. Rerun after both fixes: **672 checks, 671
+> passed**. The one remaining failure — `state.people.departedPlayers` retains 10,199 identities
+> against an 8,192 limit by season 20 — is neither of the above; it is the drift
+> `SeasonLifecycleSystem.swift`'s `retainedIdentityIDs` comment already names and attributes to the
+> portal system needing its own retention rule, tracked separately rather than folded into this fix.
+
 Measured uncompressed save checkpoints were **22,119,600 bytes** after season 1, **35,262,057
 bytes** after season 5, and **84,659,139 bytes** after season 20. That does not meet the old 8 MB
 production ceiling. The snapshot remains honest and deterministic, but compression, a cold event
