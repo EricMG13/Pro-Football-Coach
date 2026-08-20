@@ -1321,7 +1321,9 @@ func runContractTests() {
                        && !redesignProof.contains("Take it"),
                    "the redesigned Job Board proof must not invent engine access or generic actions")
 
-            expect(roster.contains("CoachWorldTeamIdentity(") && roster.contains("uniformMark"),
+            expect(roster.contains("CoachWorldTeamIdentity(")
+                       && roster.contains("CoachWorldTeamLogo(")
+                       && roster.contains("size: .large"),
                    "the world strip must carry generated programme identity, not neutral furniture")
             expect(roster.contains("selectionColour"),
                    "selection speaks in programme colour where it is legible")
