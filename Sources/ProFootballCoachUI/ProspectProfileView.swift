@@ -16,6 +16,7 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
     public let onClose: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var pendingWithdrawal: PendingWithdrawal?
 
     public init(
         model: RecruitingBoardReadModel,
@@ -46,6 +47,19 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
     public var body: some View {
         CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             scrollContent
+        }
+        .alert(item: $pendingWithdrawal) { pending in
+            Alert(
+                title: Text("Withdraw \(pending.name)?"),
+                message: Text(
+                    "This drops all recorded interest, any scheduled visit and any scholarship "
+                        + "offer. There is no undo."
+                ),
+                primaryButton: .destructive(Text("Withdraw")) {
+                    onAction(pending.id, CoachWorldIntentID(rawValue: "withdraw"))
+                },
+                secondaryButton: .cancel()
+            )
         }
         .accessibilitySortPriority(100)
     }
@@ -203,9 +217,15 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
                 ForEach(prospect.choices, id: \.intentID) { choice in
                     FloodlitRow(
                         palette: palette,
-                        action: choice.isAvailable
-                            ? { onAction(prospect.stableID, choice.intentID) }
-                            : nil
+                        action: choice.isAvailable ? {
+                            if choice.intentID == CoachWorldIntentID(rawValue: "withdraw") {
+                                pendingWithdrawal = PendingWithdrawal(
+                                    id: prospect.stableID, name: prospect.person.name
+                                )
+                            } else {
+                                onAction(prospect.stableID, choice.intentID)
+                            }
+                        } : nil
                     ) {
                         HStack(spacing: CoachWorldTokens.Gap.md) {
                             Text(choice.title.uppercased())
@@ -263,6 +283,15 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
             ? "No action is currently available for this prospect."
             : "Every action here comes off this week's budget."
     }
+}
+
+/// Withdraw is the one destructive choice a prospect's action list offers, so it alone routes
+/// through a confirmation rather than firing on tap like every other listed action. `id` is the
+/// prospect's own `stableID` -- `RecruitingBoardReadModel.Prospect` is `Equatable` but not
+/// `Identifiable`, and `.alert(item:)` needs an identity to key its presentation on.
+private struct PendingWithdrawal: Identifiable {
+    let id: String
+    let name: String
 }
 
 private enum ProspectMetric {

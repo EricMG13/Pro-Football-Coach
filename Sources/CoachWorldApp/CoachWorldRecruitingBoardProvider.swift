@@ -384,8 +384,8 @@ public extension CoachWorldReadModelProvider {
         built.append(CoachWorldActionChoice(
             intentID: CoachWorldIntentID(rawValue: "withdraw"),
             title: "Withdraw",
-            cost: "No cost",
-            consequence: "Leaves the board",
+            cost: "Ends the relationship",
+            consequence: "Drops recorded interest, any scheduled visit and any scholarship offer",
             isAvailable: recruitingOpen && onBoard && (recruitment?.phase == .available
                 || (recruitment?.phase == .committed && recruitment?.programmeID != programmeID)),
             unavailableReason: !recruitingOpen ? phaseReason

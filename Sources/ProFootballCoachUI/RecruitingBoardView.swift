@@ -18,6 +18,7 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var deskGap = CoachWorldTokens.Space.xs
     @State private var selectedProspectID: String
+    @State private var pendingWithdrawal: PendingWithdrawal?
 
     public init(
         model: RecruitingBoardReadModel,
@@ -69,6 +70,28 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
                 }
             }
         }
+        .alert(item: $pendingWithdrawal) { pending in
+            Alert(
+                title: Text("Withdraw \(pending.name)?"),
+                message: Text(
+                    "This drops all recorded interest, any scheduled visit and any scholarship "
+                        + "offer. There is no undo."
+                ),
+                primaryButton: .destructive(Text("Withdraw")) {
+                    onAction(pending.id, CoachWorldIntentID(rawValue: "withdraw"))
+                },
+                secondaryButton: .cancel()
+            )
+        }
+    }
+
+    /// Withdraw is the one destructive choice a prospect's action desk offers, so it alone routes
+    /// through a confirmation rather than firing on tap like Contact, Evaluate or Offer scholarship.
+    /// `id` is the prospect's own `stableID` -- `RecruitingBoardReadModel.Prospect` is `Equatable`
+    /// but not `Identifiable`, and `.alert(item:)` needs an identity to key its presentation on.
+    private struct PendingWithdrawal: Identifiable {
+        let id: String
+        let name: String
     }
 
     private var worldStrip: some View {
@@ -784,7 +807,13 @@ public struct RecruitingBoardView: View, CoachWorldChromedSurface {
             } else {
                 ForEach(prospect.choices, id: \.intentID) { choice in
                     Button {
-                        onAction(prospect.stableID, choice.intentID)
+                        if choice.intentID == CoachWorldIntentID(rawValue: "withdraw") {
+                            pendingWithdrawal = PendingWithdrawal(
+                                id: prospect.stableID, name: prospect.person.name
+                            )
+                        } else {
+                            onAction(prospect.stableID, choice.intentID)
+                        }
                     } label: {
                         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                             HStack {
