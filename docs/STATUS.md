@@ -19,6 +19,47 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-20 — Per-surface P0/P1 remediation, Phase 4's adversarial review returned: two fixes
+> applied, one gap accepted and recorded, unverified — never compiled.** Three findings. **Finding
+> 1 (real, fixed):** `statusLabel`'s `.signed` arm returned a bare "Signed" with no ownership check,
+> unlike its own `.committed` arm right above it — and `CollegeRecruitingAISystem.process(in:)`
+> explicitly excludes the career-controlled programme from its own lost-pursuit cleanup, so a
+> prospect who commits and signs with a rival stays on this programme's board indefinitely with
+> nothing but an explicit Withdraw ever able to prune it. The label now makes the same
+> ownership comparison `.committed` already made ("Signed elsewhere"), and Withdraw's own
+> availability gained the matching clause, so a coach can actually clear the entry once it is
+> correctly labelled — fixing the label alone would have left a correctly-described but
+> permanently stuck board row. The regression test drives the real engine pipeline (recruiting
+> market, then `CollegeSigningSystem`) rather than hand-constructing recruitment state, so it
+> exercises the actual reachable shape of the bug, not a synthetic stand-in for it.
+>
+> **Self-discovered while fixing Finding 1, same feature area, also fixed:**
+> `RecruitingBoardView.swift`'s `actionConsequence()` and its choice button's accessibility label
+> both rendered `choice.unavailableReason` whenever it was non-nil, but the provider always
+> assigns that field a fallback string, never `nil`, regardless of `isAvailable` — so an
+> *available* choice could show a caption contradicting its own enabled button (Withdraw on a
+> perfectly ordinary prospect read "This prospect is not on an active board" beside its own
+> working button). `ProspectProfileView.swift` and `ContactVisitPlannerView.swift` already gate
+> the same field on `isAvailable` correctly; this file now matches that established pattern.
+>
+> **Finding 2 (coverage gap, accepted, not fixed):** the "independent" pro-seed test added in the
+> Phase 4 entry below re-derives the seed algorithm with the same per-conference-prefix logic the
+> provider itself uses, rather than deriving from a real `PostseasonSystem.advance` transition —
+> so a future change to the *algorithm itself* (not just the constant it reads) could pass both
+> this test and the provider unchanged while the two silently diverge. No test in this codebase
+> currently drives `PostseasonSystem.advance` at all, so closing this gap properly means building
+> season-simulation scaffolding this pass does not have time for, and the reviewer's own
+> characterization — "a verification-coverage gap, not a live bug today" — set it below Finding 1.
+> Recorded here rather than silently left, per this file's own standard.
+>
+> **Finding 3 (process, already disclosed):** the review confirmed what the entry below already
+> stated plainly — Phase 4 was committed while Phase 3's review was still in flight, and Phase 4's
+> own review had not yet been dispatched at that point. Nothing new to add beyond what is already
+> on the record; both reviews have now run to completion.
+>
+> No `swift`/`xcodebuild` exists in this environment. Every claim above is argued from reading the
+> current source, not a compiler.
+
 > **2026-08-20 — Per-surface P0/P1 remediation, Phase 3's adversarial review returned: two fixes
 > applied, unverified — never compiled.** The review (dispatched before Phase 3 was committed, noted
 > as still in flight in the entry below) confirmed all four Phase 3 fixes are functionally sound —
