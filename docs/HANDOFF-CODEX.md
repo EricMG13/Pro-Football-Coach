@@ -1,9 +1,22 @@
-# Codex handoff — PR #9 re-pin
+# Codex handoff — open items
+
+This file collects pointers to open handoffs from different sessions. Each session's item is its
+own dated section below; don't assume an earlier section is still current — check the PR/branch it
+names before acting on it. `docs/STATUS.md` is still the truth about the build.
+
+## 2026-08-20 — coach career record and seatless-staff pruning
+
+[PR #43](https://github.com/EricMG13/Pro-Football-Coach/pull/43) (career-transition seat handling,
+five defects) is **merged**. Two owner-approved decisions from the same session are not: a coach
+season-record feature with code in progress and a failing test, and a seatless-staff pruning rule
+with canon written and no code at all. Full detail, root-cause trail, and a patch file for the
+in-progress work: `docs/plans/2026-08-20-coach-career-record-handoff.md`.
+
+## PR #9 re-pin
 
 Checkpoint from a Claude session that spent 2026-08-19 22:00 UTC through 2026-08-20 ~11:00 UTC
 draining a CI backlog on this repo (many PRs merged: #8, #13, #25, #29, #30, #33, #35, #36).
-One item is left unfinished, fully diagnosed but not applied. This file is a pointer, not a
-substitute — `docs/STATUS.md` is still the truth about the build.
+One item is left unfinished, fully diagnosed but not applied.
 
 ## The one open item: PR #9 needs four files re-pinned
 
