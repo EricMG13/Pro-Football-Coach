@@ -53,6 +53,7 @@ if CommandLine.arguments.contains("--catalog") {
     runProMarketRootProbe()
 } else if CommandLine.arguments.contains("--screen-read-models") {
     runReadModelProviderTests()
+    runAvailabilityProviderTests()
 } else if CommandLine.arguments.contains("--history-read-model") {
     runHistoryReadModelTests()
 } else if CommandLine.arguments.contains("--career-portal-decisions") {
@@ -126,6 +127,8 @@ if CommandLine.arguments.contains("--catalog") {
     runProSoakTests()
 } else if CommandLine.arguments.contains("--pro-draft-probe") {
     runProDraftProbeTests()
+} else if CommandLine.arguments.contains("--pro-draft-scheduler-probe") {
+    runProDraftSchedulerProbe()
 } else if CommandLine.arguments.contains("--pro-week-walk") {
     runProWeekWalkTests()
 } else if CommandLine.arguments.contains("--legal-only") {
@@ -141,6 +144,8 @@ if CommandLine.arguments.contains("--catalog") {
     runReduceMotionContractTests()
 } else if CommandLine.arguments.contains("--architecture-only") {
     runArchitectureTests()
+} else if CommandLine.arguments.contains("--roster-fill") {
+    runRosterFillTests()
 } else if CommandLine.arguments.contains("--m2-soak") {
     runM2SoakTests(seasons: 20)
 } else if CommandLine.arguments.contains("--m1-soak") {
@@ -169,6 +174,7 @@ if CommandLine.arguments.contains("--catalog") {
     runRosterPopulationTests()
     runTraitPopulationTests()
     runPeopleLifecycleTests()
+    runRosterFillTests()
     runCollegeStateTests()
     runCollegeCommitmentTests()
     runCollegeRedshirtTests()
@@ -198,6 +204,7 @@ if CommandLine.arguments.contains("--catalog") {
     runJerseyNumberTests()
     runDepthChartTests()
     runReadModelProviderTests()
+    runAvailabilityProviderTests()
     runCapComplianceTests()
     runSeasonRolloverTests()
     // The M8 entry-gate instruments. They ran only under `--design-contracts` and

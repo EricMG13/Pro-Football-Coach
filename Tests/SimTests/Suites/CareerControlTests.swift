@@ -616,8 +616,25 @@ func runCareerPortalDecisionTests() {
                 expect(false, "the spring fixture did not expose an authoritative snapshot")
                 return
             }
+            // The programme must also be idle this week. This test's `advanceWeek` exists to run
+            // the spring portal transaction to completion; a controlled programme with an unplayed
+            // fixture pauses the week at its match instead, and the portal record it then asserts
+            // is never written. That requirement used to be satisfied by luck — whichever intent
+            // came first happened to belong to a programme on a bye — and it broke the day the
+            // signing-week phase changed which intents the snapshot produced. Stated rather than
+            // drawn.
+            let playingProgrammeIDs = Set(
+                state.competition.currentSchedule.games
+                    .filter {
+                        $0.season == state.calendar.season
+                            && $0.week == state.calendar.week
+                            && $0.result == nil
+                    }
+                    .flatMap { [$0.homeID, $0.awayID] }
+            )
             guard let retainedIntent = snapshot.intents.first(where: { intent in
-                guard let programme = state.college.programmes[intent.sourceProgrammeID],
+                guard !playingProgrammeIDs.contains(intent.sourceProgrammeID),
+                      let programme = state.college.programmes[intent.sourceProgrammeID],
                       let transition = CollegePortalPolicyV1.resolveRetention(
                           for: intent.sourceProgrammeID,
                           programme: programme,
@@ -625,7 +642,7 @@ func runCareerPortalDecisionTests() {
                       ) else { return false }
                 return transition.resolutions[intent.playerID]?.outcome == .retained
             }) else {
-                expect(false, "the spring fixture produced no retainable portal intent")
+                expect(false, "the spring fixture produced no retainable portal intent at an idle programme")
                 return
             }
             let controlled = try CareerControlSystem.startCollegeCareer(

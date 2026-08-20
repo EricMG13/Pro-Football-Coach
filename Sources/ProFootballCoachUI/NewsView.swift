@@ -82,11 +82,7 @@ public struct NewsView: View, CoachWorldChromedSurface {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                         FloodlitLabel3(item.occurred, palette: palette, tint: datelineTint(item))
                         Text(item.headline.uppercased())
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                             .lineLimit(NewsMetric.headlineLines)
                             .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)
@@ -122,11 +118,7 @@ public struct NewsView: View, CoachWorldChromedSurface {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
                     FloodlitLabel3(story.occurred, palette: palette, tint: datelineTint(story))
                     Text(story.headline.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.subject, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.subject, weight: .bold)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: CoachWorldTokens.Gap.xs)
                     Text("The league records the event, not the article behind it.")

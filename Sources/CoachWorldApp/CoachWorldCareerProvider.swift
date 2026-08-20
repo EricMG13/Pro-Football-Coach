@@ -119,7 +119,8 @@ public extension CoachWorldReadModelProvider {
                 CareerHubReadModel.SupportRow(
                     id: stakeholder.rawValue,
                     stakeholder: label(stakeholder),
-                    value: state.careerArc.stakeholderSupport[stakeholder] ?? 0
+                    value: state.careerArc.stakeholderSupport[stakeholder] ?? 0,
+                    rationale: stakeholderRationale(state.careerArc.stakeholderLastMovement[stakeholder])
                 )
             }
 
@@ -142,6 +143,16 @@ public extension CoachWorldReadModelProvider {
 
     private static func label(_ tier: CareerJobTier) -> String {
         tier == .college ? "College" : "Professional"
+    }
+
+    /// A plain sentence stating the signed delta, never an interpretation beyond it -- there is no
+    /// per-stakeholder cause recorded anywhere to attribute the movement to, so the rationale says
+    /// only what happened, not why, matching this codebase's convention against invented evidence.
+    private static func stakeholderRationale(_ delta: Int?) -> String? {
+        guard let delta else { return nil }
+        if delta > 0 { return "Rose by \(delta) at the last evaluation." }
+        if delta < 0 { return "Fell by \(abs(delta)) at the last evaluation." }
+        return "Unchanged at the last evaluation."
     }
 
     private static func label(_ status: CareerEmploymentStatus) -> String {

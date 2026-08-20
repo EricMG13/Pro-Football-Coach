@@ -40,6 +40,9 @@ public enum CalibrationBands {
         Band("safeties per game", tier: .pro, 0.005, 0.05, estimator: .mean,
              confidence: "provisional [U]"),
         Band("tie rate", tier: .pro, 0.000, 0.020, estimator: .rate, confidence: "[P]"),
+        // `01` §6.5. Measurable since 2026-08-12: the drive record always carried its points, and
+        // this row waited only on the harness summing them.
+        Band("points per drive", tier: .pro, 1.60, 1.95, estimator: .mean, confidence: "[Q]"),
     ]
 
     public static let college: [Band] = [
@@ -66,7 +69,6 @@ public enum CalibrationBands {
     public static let unimplementedMetrics: [(metric: String, waitingOn: String)] = [
         ("FG percentage, 50+ yards", "distance-bucketed kick accounting"),
         ("best-vs-worst win rate", "a league with a talent ordering — P6's schedule"),
-        ("points per drive", "drive-level accounting the harness does not yet aggregate"),
         ("touchdowns of 40+ yards per game", "play-length accounting"),
         ("overtime rate", "overtime, which P6 owns"),
         ("TE target share", "per-player stat lines, which P3 does not produce"),

@@ -81,6 +81,57 @@ func runRivalryOrderTests() {
             expectEqual(firstTransition.rivalries, secondTransition.rivalries)
         }
     }
+
+    suite("Rivalry order: the list a real season leaves behind") {
+        // Every test above runs on a two- or three-programme fixture and a single week. None walks
+        // a season, so none can see the list a real calendar leaves behind — and the weekly step
+        // deliberately reorders only the sides of a rivalry that was actually played, which is a
+        // correctness claim about the 133 programmes it skips, not just the one it touches.
+        //
+        // `rivalIDs` is not independent state: `LeagueGenerator` seeds it from
+        // `RivalrySeeder.strongest` and the weekly step reinstalls it from the same function, so at
+        // every week of every season it must equal exactly what the rivalry store implies. Anything
+        // else is a stale list — wrong order, a dropped rival, a rival the store no longer holds —
+        // and it is what a screen names.
+        test("every programme's rival list is the one the store implies, all season and across the boundary") {
+            var state = GameState.bootstrap(seed: 70_401)
+            let seededRivalryCount = state.rivalries.values.count
+            var violations: [String] = []
+            var weeksWalked = 0
+
+            // Check, then advance: the loop stops on the far side of the boundary so season 1
+            // week 1 is inspected rather than merely reached.
+            while true {
+                let ranked = state.rivalries.values.sorted { $0.id.uuidString < $1.id.uuidString }
+                for programme in state.programmes.values {
+                    let implied = RivalrySeeder.strongest(for: programme.id, among: ranked)
+                    guard programme.rivalIDs != implied else { continue }
+                    violations.append(
+                        "S\(state.calendar.season)W\(state.calendar.week) \(programme.name): "
+                            + "holds \(programme.rivalIDs.count), store implies \(implied.count)"
+                    )
+                }
+                // Stop at the first bad week: a stale list stays stale, so walking on would report
+                // the same defect once per remaining week and bury anything else.
+                if !violations.isEmpty || state.calendar.season > 0 { break }
+                expectEqual(state.rivalries.values.count, seededRivalryCount,
+                            "the rivalry store grew at S\(state.calendar.season)"
+                                + "W\(state.calendar.week); nothing seeds new rivalries after "
+                                + "generation and the store has no other bound")
+                state = try WorldScheduler.advanceWeek(state).state
+                weeksWalked += 1
+            }
+
+            // Not vacuous: the walk has to have inspected the far side of the boundary, not
+            // merely stopped somewhere in season 0.
+            expectEqual(state.calendar, CalendarState(season: 1, week: 1),
+                        "the walk ended somewhere other than the far side of the boundary after "
+                            + "\(weeksWalked) weeks, so it asserts nothing about a transition")
+            expect(violations.isEmpty,
+                   "\(violations.count) programmes hold a list the rivalry store does not imply, "
+                       + "first \(violations.first ?? "")")
+        }
+    }
 }
 
 private enum RivalryOrderTestError: Error { case missingFixture }

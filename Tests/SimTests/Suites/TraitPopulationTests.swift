@@ -188,6 +188,46 @@ func runTraitPopulationTests() {
             expect(traitLists.allSatisfy { $0.count <= activePopulationTraits.count })
         }
 
+        test("restless rate holds across many seeds and does not correlate with position") {
+            // The single-seed check above is a spot check: one 15,000-plus-player world where the
+            // rate happened to land inside the band. A generator bug that correlated restless with
+            // position — the ordinal derivation reading something position-shaped instead of only
+            // the player id — would not show up in an aggregate rate at all, only in the per-position
+            // breakdown. Both are checked here, across a sweep rather than one seed.
+            let seeds: [UInt64] = (0..<15).map { 84_100 + UInt64($0) }
+            var countByPosition: [Position: (restless: Int, total: Int)] = [:]
+            for seed in seeds {
+                let world = LeagueGenerator.generate(seed: seed)
+                let population = RosterPopulationGenerator.generate(
+                    seed: seed,
+                    season: 0,
+                    programmes: world.programmes,
+                    proTeams: world.proTeams
+                )
+                let prospects = ProspectPopulationGenerator.generate(
+                    rootSeed: seed,
+                    season: 1,
+                    map: world.map
+                )
+                let drawn = population.players.map { ($0.position, $0.traits) }
+                    + prospects.map { ($0.position, $0.traits) }
+                let rate = Double(drawn.filter { $0.1.contains(.restless) }.count) / Double(drawn.count)
+                expectIn(rate, 0.065...0.095, "seed \(seed): restless rate \(rate) left the 8% band")
+                for (position, traits) in drawn {
+                    var entry = countByPosition[position] ?? (restless: 0, total: 0)
+                    entry.total += 1
+                    if traits.contains(.restless) { entry.restless += 1 }
+                    countByPosition[position] = entry
+                }
+            }
+            for (position, counts) in countByPosition {
+                let rate = Double(counts.restless) / Double(counts.total)
+                expectIn(rate, 0.05...0.12,
+                         "\(position.rawValue): restless rate \(rate) across \(counts.total) draws "
+                             + "suggests the draw correlates with position rather than only the id")
+            }
+        }
+
         test("restless uses its fixed all-cases ordinal substream") {
             let seed: UInt64 = 84_005
             let world = LeagueGenerator.generate(seed: seed)

@@ -297,7 +297,10 @@ private func m3NILPolicyFixture(
 
 private func m3FinalWeekClosingFixture(seed: UInt64) throws -> M3NILPolicyFixture {
     var finalWeekState = GameState.bootstrap(seed: seed)
-    while finalWeekState.calendar.week < SharedRules.inSeasonWeeks {
+    // The last week recruiting is open, which is the week before signing day rather than the last
+    // week of the calendar: `02` section 4.1 closes contact on signing day, so a recruiting request
+    // in week 21 is refused by design and this fixture would be asserting the gate, not the policy.
+    while finalWeekState.calendar.week < CollegeRules.signingDayWeek - 1 {
         finalWeekState = try WorldScheduler.advanceWeek(finalWeekState).state
     }
     let nilPriority = SharedRules.ratingRange.upperBound

@@ -59,7 +59,7 @@ public struct CoachWorldSystemState: View {
     public var body: some View {
         VStack(spacing: CoachWorldTokens.Space.md) {
             Image(systemName: kind.symbolName)
-                .font(.system(size: CoachWorldTokens.Shape.systemStateMarkSize, weight: .semibold))
+                .coachWorldIcon(CoachWorldTokens.Shape.systemStateMarkSize, weight: .semibold)
                 .foregroundStyle(palette.contentQuiet.color)
                 .accessibilityHidden(true)
             Text(kind.message)
@@ -128,7 +128,7 @@ struct CoachWorldStatusChip: View {
             Text(text.uppercased())
                 .lineLimit(1)
         }
-        .font(CoachWorldTokens.TypeRole.microLabel)
+        .coachWorldDisplay(CoachWorldTokens.TypeRole.microLabelSize)
         .tracking(CoachWorldTokens.TypeRole.microLabelTracking)
         .foregroundStyle(tone.color(in: palette).color)
         .padding(.horizontal, CoachWorldTokens.Space.xs)
@@ -171,7 +171,7 @@ struct CoachWorldDeltaMark: View {
         HStack(spacing: CoachWorldTokens.Space.xxs) {
             if let symbolName {
                 Image(systemName: symbolName)
-                    .font(.system(size: CoachWorldTokens.TypeRole.microLabelSize, weight: .bold))
+                    .coachWorldIcon(CoachWorldTokens.TypeRole.microLabelSize, weight: .bold)
                     .accessibilityHidden(true)
             }
             Text(value == 0 ? "—" : (value > 0 ? "+\(value)" : "\(value)"))
@@ -209,13 +209,10 @@ struct CoachWorldRatingRing: View {
 
     /// The design's own banding: gold is the ordinary band, green reserved for a genuinely elite
     /// figure so it stays meaningful, red for a real weakness. Colour always repeats the printed
-    /// number beside it.
+    /// number beside it. `CoachWorldTokens.Heat.color` is the one definition of the banding, so this
+    /// stays a delegate rather than a second copy that can drift from it.
     private var ringColor: Color {
-        switch value {
-        case 85...: return palette.statePositive.color
-        case 72..<85: return palette.actionPrimary.color
-        default: return palette.stateNegative.color
-        }
+        CoachWorldTokens.Heat.color(for: value, palette: palette)
     }
 
     var body: some View {
@@ -230,8 +227,7 @@ struct CoachWorldRatingRing: View {
                 )
                 .rotationEffect(.degrees(-90))
             Text("\(value)")
-                .font(.system(size: diameter * CoachWorldTokens.Shape.ringTextRatio, weight: .heavy, design: .default).width(.condensed))
-                .monospacedDigit()
+                .coachWorldFigureCondensed(diameter * CoachWorldTokens.Shape.ringTextRatio, weight: .heavy)
                 .minimumScaleFactor(0.6)
                 .foregroundStyle(palette.contentPrimary.color)
         }

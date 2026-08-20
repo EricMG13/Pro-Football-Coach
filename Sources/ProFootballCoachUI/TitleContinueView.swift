@@ -12,23 +12,31 @@ public struct TitleContinueView: View, CoachWorldChromedSurface {
     public let isStarting: Bool
     public let isRestoring: Bool
     public let recoveryRequired: Bool
+    /// A career a successful load already restored, waiting on the coach's own confirmation to
+    /// continue into it rather than being jumped into automatically -- the durable-boundary half
+    /// of this surface's job, `02` section 9's "current career and durable boundary."
+    public let restoredCareer: CareerHubReadModel?
     public let onRetry: () -> Void
     public let onUseBackup: () -> Void
     public let onNewCareer: () -> Void
+    public let onContinue: () -> Void
     public let onSettings: () -> Void
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(failure: String? = nil, isStarting: Bool = false, isRestoring: Bool = false,
-                recoveryRequired: Bool = false, onRetry: @escaping () -> Void,
-                onUseBackup: @escaping () -> Void, onNewCareer: @escaping () -> Void,
+                recoveryRequired: Bool = false, restoredCareer: CareerHubReadModel? = nil,
+                onRetry: @escaping () -> Void, onUseBackup: @escaping () -> Void,
+                onNewCareer: @escaping () -> Void, onContinue: @escaping () -> Void = {},
                 onSettings: @escaping () -> Void) {
         self.failure = failure
         self.isStarting = isStarting
         self.isRestoring = isRestoring
         self.recoveryRequired = recoveryRequired
+        self.restoredCareer = restoredCareer
         self.onRetry = onRetry
         self.onUseBackup = onUseBackup
         self.onNewCareer = onNewCareer
+        self.onContinue = onContinue
         self.onSettings = onSettings
     }
 
@@ -62,6 +70,8 @@ public struct TitleContinueView: View, CoachWorldChromedSurface {
                     .tint(palette.actionPrimary.color)
             } else if recoveryRequired {
                 recoveryActions
+            } else if let restoredCareer {
+                careerSummary(restoredCareer)
             } else {
                 Button("New career", action: onNewCareer)
                     .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
@@ -98,5 +108,46 @@ public struct TitleContinueView: View, CoachWorldChromedSurface {
                     "Starting over deletes this career and every season in it. There is no undo."
                 )
         }
+    }
+
+    /// The current career and the durable boundary, both on the surface whose named job is
+    /// exactly this (`02` section 9) -- restoreExistingCareer used to compute this same data and
+    /// jump straight past it into gameplay; this is what the coach sees instead.
+    private func careerSummary(_ career: CareerHubReadModel) -> some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
+            Text(career.coach.name.uppercased())
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.title, weight: .bold)
+            if let job = career.currentJob {
+                Text("\(job.tier) \u{00B7} \(job.team.name) \u{00B7} since \(job.started)")
+                    .font(CoachWorldTokens.TypeRole.body)
+                    .foregroundStyle(palette.contentSecondary.color)
+            } else {
+                Text("Between appointments")
+                    .font(CoachWorldTokens.TypeRole.body)
+                    .foregroundStyle(palette.contentSecondary.color)
+            }
+            Text("\(career.status) \u{00B7} \(careerHistoryLabel(career))")
+                .font(CoachWorldTokens.TypeRole.caption)
+                .foregroundStyle(palette.contentQuiet.color)
+            Button("Continue", action: onContinue)
+                .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
+                .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+            Text("Starting over deletes this career and every season in it. There is no undo.")
+                .font(CoachWorldTokens.TypeRole.caption)
+                .foregroundStyle(palette.contentSecondary.color)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Start a new career instead", action: onNewCareer)
+                .buttonStyle(CoachWorldActionButtonStyle(role: .destructive, palette: palette))
+                .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+                .accessibilityHint(
+                    "Starting over deletes this career and every season in it. There is no undo."
+                )
+        }
+    }
+
+    private func careerHistoryLabel(_ career: CareerHubReadModel) -> String {
+        let count = career.history.count
+        if count == 0 { return "this is the first appointment" }
+        return count == 1 ? "one appointment before this" : "\(count) appointments before this"
     }
 }

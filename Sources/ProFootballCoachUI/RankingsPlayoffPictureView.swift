@@ -13,7 +13,6 @@ public struct RankingsPlayoffPictureView: View, CoachWorldChromedSurface {
     public let onClose: () -> Void
     public let onContinue: () -> Void
     public let onSelectTeam: (UUID) -> Void
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(model: CompetitionOverviewReadModel, statusMessage: String? = nil,
                 onClose: @escaping () -> Void, onContinue: @escaping () -> Void,
@@ -26,11 +25,11 @@ public struct RankingsPlayoffPictureView: View, CoachWorldChromedSurface {
     }
 
     public var body: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            content.accessibilitySortPriority(100)
-        } else {
-            content.accessibilitySortPriority(100)
-        }
+        // Both arms of the old AX5 branch here were character-for-character identical -- an
+        // accessibility-size composition that was never actually decided (S-7, 2026-08-19 review).
+        // `content` delegates its whole composition to CompetitionOverviewView, which is where AX5
+        // is genuinely handled; collapsed to the one statement both arms already agreed on.
+        content.accessibilitySortPriority(100)
     }
 
     private var content: some View {

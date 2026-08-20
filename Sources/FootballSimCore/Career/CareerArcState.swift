@@ -96,6 +96,7 @@ public struct CareerArcState: Codable, Sendable, Equatable {
         case currentJob
         case jobHistory
         case stakeholderSupport
+        case stakeholderLastMovement
         case opportunities
         case status
     }
@@ -107,6 +108,12 @@ public struct CareerArcState: Codable, Sendable, Equatable {
     public private(set) var currentJob: CareerJob?
     public private(set) var jobHistory: [CareerJobHistoryEntry]
     public private(set) var stakeholderSupport: [CareerStakeholder: Int]
+    /// The signed delta `applySupport` last applied per stakeholder -- computed by
+    /// `evaluateWeek`/`evaluateSeasonEnd` and previously discarded the moment it was folded into
+    /// `stakeholderSupport`. Kept so a surface can say *why* support moved, not only where it
+    /// stands. Absent for a stakeholder that has never been evaluated (a fresh arc, or a save from
+    /// before this field existed).
+    public private(set) var stakeholderLastMovement: [CareerStakeholder: Int]
     public private(set) var opportunities: [CareerOpportunity]
     public private(set) var status: CareerEmploymentStatus
 
@@ -116,6 +123,7 @@ public struct CareerArcState: Codable, Sendable, Equatable {
         stakeholderSupport: [CareerStakeholder: Int] = Dictionary(
             uniqueKeysWithValues: CareerStakeholder.allCases.map { ($0, 60) }
         ),
+        stakeholderLastMovement: [CareerStakeholder: Int] = [:],
         opportunities: [CareerOpportunity] = [],
         status: CareerEmploymentStatus = .seeking
     ) {
@@ -129,6 +137,7 @@ public struct CareerArcState: Codable, Sendable, Equatable {
         self.currentJob = currentJob
         self.jobHistory = jobHistory
         self.stakeholderSupport = stakeholderSupport
+        self.stakeholderLastMovement = stakeholderLastMovement
         self.opportunities = Self.sorted(opportunities)
         self.status = status
     }
@@ -141,6 +150,12 @@ public struct CareerArcState: Codable, Sendable, Equatable {
             [CareerStakeholder: Int].self,
             forKey: .stakeholderSupport
         )
+        // Absent on every save written before this field existed -- decodes to empty rather than
+        // failing, matching this initialiser's other tolerance for legacy saves.
+        let lastMovement = try container.decodeIfPresent(
+            [CareerStakeholder: Int].self,
+            forKey: .stakeholderLastMovement
+        ) ?? [:]
         let opportunities = try container.decode(
             [CareerOpportunity].self,
             forKey: .opportunities
@@ -162,6 +177,7 @@ public struct CareerArcState: Codable, Sendable, Equatable {
         self.currentJob = currentJob
         self.jobHistory = history
         self.stakeholderSupport = support
+        self.stakeholderLastMovement = lastMovement
         self.opportunities = Self.sorted(opportunities)
         self.status = status
     }
@@ -171,6 +187,7 @@ public struct CareerArcState: Codable, Sendable, Equatable {
         try container.encodeIfPresent(currentJob, forKey: .currentJob)
         try container.encode(jobHistory, forKey: .jobHistory)
         try container.encode(stakeholderSupport, forKey: .stakeholderSupport)
+        try container.encode(stakeholderLastMovement, forKey: .stakeholderLastMovement)
         try container.encode(opportunities, forKey: .opportunities)
         try container.encode(status, forKey: .status)
     }
@@ -198,13 +215,15 @@ public struct CareerArcState: Codable, Sendable, Equatable {
         guard Set(deltas.keys).isSubset(of: Set(CareerStakeholder.allCases)),
               deltas.values.allSatisfy({ (-100...100).contains($0) }) else { return false }
         for stakeholder in CareerStakeholder.allCases {
+            let delta = deltas[stakeholder, default: 0]
             stakeholderSupport[stakeholder] = min(
                 Self.supportRange.upperBound,
                 max(
                     Self.supportRange.lowerBound,
-                    stakeholderSupport[stakeholder, default: 60] + deltas[stakeholder, default: 0]
+                    stakeholderSupport[stakeholder, default: 60] + delta
                 )
             )
+            stakeholderLastMovement[stakeholder] = delta
         }
         return true
     }
