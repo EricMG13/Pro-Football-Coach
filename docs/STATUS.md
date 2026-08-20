@@ -2034,6 +2034,148 @@ rating-ordered pool, or retirement removing the unattached is an owner call, not
 
 **Neither gate is in the default run**, so `verify.sh` is unaffected either way.
 
+### Lifecycle distribution bands — **four added 2026-08-20, and two found real drift**
+
+Nothing banded the people model. The soak asserted bounds a league of nothing but 23-year-olds and
+a league of nothing but 33-year-olds both satisfy, an injured share that `> 0 and < 10%` leaves
+undetermined, a churn check that one graduating walk-on satisfies, and mean overall inside intervals
+40 and 35 points wide on a 40-99 scale. `01` §6.5 bands the match engine; nothing banded this.
+
+Four bands now assert at season indices 0, 1, 3, 6 and 10 of a ten-season run, and at every season
+of the twenty-season M2 soak. Two hold. Two do not, and neither is widened to make the light go
+green.
+
+**Holding.** The professional age curve — mean age 26.4 to 27.1 against a band of 25.0 to 27.5, and
+the share at or past a position's decline age 0.182 to 0.223 against 0.08 to 0.30, whose ceiling of
+0.27 is derived from the escalating retirement hazard in `SeasonLifecycleSystem.retires`. The
+injured share, 0.0207 to 0.0254 against a derived 0.015 to 0.055. College churn, 0.256 to 0.305
+against a derived 0.18 to 0.45. Both standard-deviation limbs of the rating spread.
+
+**Red 1: professional turnover decays, and the draft never picks.** Professional churn falls 0.295,
+0.257, 0.162, 0.095 across ten seasons, onto 1/11.44 = 0.087 — the retirement-only rate implied by
+the same mean career length the age-curve band derives.
+
+*An earlier version of this entry said the cause was that no professional ever changes club. That
+was wrong, and the error was in the measurement rather than the model.* The churn metric compared
+week-1 rosters and classified anyone missing as departed. Contracts expire in the final week of a
+season and free agency signs out of the pool during the *next* one, so a relocating player is on
+nobody's roster at the boundary between leaving and arriving: every A-to-B move read as a departure
+at one snapshot and an unrelated arrival at the next, and `moved` was structurally pinned to zero.
+The coverage boundary became the quality boundary — the snapshot enumerated rosters, and the pool
+between them, which is where relocation lives, sat outside it. `churn` now carries a third bucket,
+`pooled`, and at a season boundary professional departures split 289 pooled against 212 gone.
+
+`--pro-movement-probe` watches every week instead of every boundary and shows a market that trades:
+
+```text
+season 1: expired=290  relocated=0    returned=0   free agency never ran, poolLeft=290
+season 2: expired=248  relocated=280  returned=10  freeAgency weeks=12
+season 3: expired=208  relocated=238  returned=10  freeAgency weeks=12
+```
+
+Season 1 has no free agency because bootstrap issues contracts but nothing has expired yet, so the
+pool is empty until week 21. From season 2 the pool clears at 280 relocations against 10 re-signings.
+
+What is genuinely red, after the correction:
+
+- **The draft took zero picks in ten seasons** while starting nine times. **Fixed 2026-08-20.**
+  `--pro-draft-stall-probe` calls the same `ProMarketSystem.draft` the live scheduler calls, at the
+  moment the live scheduler enters `.draft` — necessary because `ProRosterAISystem.makeDraftPicks`
+  swallows its own failure, breaking the loop with nothing recorded. It reported:
+
+  ```text
+  season 1: first live pick threw activeRosterFull  roster=53/53  committedCap=170182273/272850000
+  season 2: first live pick threw activeRosterFull  roster=53/53
+  season 3: first live pick threw activeRosterFull  roster=53/53
+  ```
+
+  `ProManagementSystem.acquire` enforces the identical `rosterIDs.count < activeRosterLimit` guard
+  for *both* a free-agent signing and a draft pick, and `ProRosterAISystem.signFreeAgents` runs until
+  that guard stops finding a legal club, then calls `beginDraft`. Nothing between the two removes
+  anyone, so the draft's first pick met the exact ceiling free agency had just filled — structurally,
+  every season, independent of pool size or expiry count. The cap sat at 170M of 272M when it threw,
+  so this was headcount and beat 2's cap-compliance cuts would not have unblocked it.
+
+  The fix is the conjunction `02` §4.2 already contained: beat 1 frees headcount "for free agency
+  *and* the draft". An AI club now signs only up to `activeRosterLimit - draftRounds`, holding one
+  seat per round it will pick in; expiry frees about eleven a roster against seven rounds, so the
+  reservation fits inside what beat 1 already produces and needs no cuts. `02` §4.2 states the rule
+  explicitly rather than leaving it implied. All three probe seasons now report "first live pick
+  succeeded".
+
+  Two notes for anyone reading the older entries. `--pro-draft-probe` passes but is **stale for the
+  live path**: it begins the draft immediately after `expireContracts` with free agency never run, so
+  it cannot reproduce a failure caused by free agency running first, and its green says nothing about
+  the scheduler. And drafting exposed a performance asymmetry — `ProMarketSystem.draft` ran a
+  whole-root `WorldIntegrity.check` per pick, invisible while no pick ever succeeded and 224
+  whole-world checks a season once they did. `draftForScheduler` now mirrors the existing
+  `signFreeAgentForScheduler`, so the scheduler validates once per batch at its own integrity
+  boundary.
+
+  **`--pro-soak` is green**, for the first time since `e710924` added it. Ten seasons:
+
+  ```text
+  proDraftPick=1568  proContractExpired=2288  proPlayerSigned=554  freeAgents=512
+  weekMeanMs=11195.28  2 tests, 16 checks, all passed
+  ```
+
+  1,568 picks where there were none. Expiry rose from 1,491 to 2,288 — near canon's roughly 339 a
+  season — because rosters that refill have more under contract to expire. Signings fell from 1,476
+  to 554, which is the reservation doing its job: clubs stop at 46 and the draft supplies the rest.
+
+  **Two things the green light does not say, recorded here so it does not bury them.**
+
+  `weekMeanMs` went from 2,628 to 11,195, a 4.3x slowdown, and that is *after* `draftForScheduler`
+  removed 224 whole-root integrity checks a season. The cause is real work rather than waste — a
+  league whose rosters actually refill simulates more players every week — but it is a real
+  regression against the app-latency concern, and `--pro-soak` now takes roughly three quarters of
+  an hour rather than ten minutes.
+
+  `freeAgents=512` is exactly `ProMarketState.maximumFreeAgentIDs`. **The pool is pinned at its
+  bound**: expiry now outpaces signing and unsigned players accumulate until the ledger is full.
+  Nothing fails today, because `expireContracts` refuses only when a single season's expiries exceed
+  the bound outright. But `02` §4.2a sized bootstrap's fifth-per-season expiry *specifically* to
+  "leave real headroom for carryover", and there is now none. The next thing that raises expiry, or
+  lowers signing, meets `ProMarketError.invalidRoot`. Whatever drains the pool — the cap-compliance
+  cuts of beat 2, a pool eviction policy, or clubs signing deeper — is unbuilt.
+
+  **Beat 2 remains unimplemented.** Nothing enforces a cap-compliance date, and no club ever cuts
+  anyone for money. That is still the owner-level design call `a2e3147` named; it simply was not what
+  blocked the draft.
+- **Rosters never refill.** 1,406, 1,448 and 1,488 against 32 * 53 = 1,696, with the count of
+  professionals owned by nobody growing 496, 619, 740. Consistent with intake that has lost the
+  draft half.
+- **Expiry decays, and starts below canon.** `02` §4.2a fixes bootstrap terms so "roughly a fifth of
+  each roster reaches expiry each season", about 339. Season 1 produces 290, which is 0.17 rather
+  than 0.20, and it falls to 208 by season 3. Churn decays because expiry decays, not because the
+  market froze.
+
+**Red 2: college talent decays to the recruiting pipeline's scale.** Mean college overall falls
+59.32, 58.46, 54.06, 51.38, 51.59 and settles, while professional mean holds at 65.5 to 66.1. The
+tier gap therefore more than doubles, 6.21 to 14.51, and breaks its band of 1 to 12 from season 6.
+The professional tier is not improving; the college game is degrading.
+
+The arithmetic is exact, and the two generators are on different scales from different inputs:
+
+```text
+RosterPopulationGenerator.baseRating   50 + (prestige - 40) * 25/59   ->  50...75, midpoint 62.5
+ProspectPopulationGenerator            42 + (density  - 40) * 28/59   ->  42...70, midpoint 56.0
+```
+
+Bootstrap keys off programme prestige, recruiting off city talent density, and recruiting sits 6.5
+points lower with a floor 8 points lower. With `walkOnRatingPenalty` of 12 on roughly 20 of the 105
+roster places the steady state is near 0.81 * 56 + 0.19 * 44 = 53.8 before development, against an
+observed 51.6. The intake pipeline cannot sustain the level bootstrap generates, so the league falls
+to the recruiting scale over six seasons and holds there. **Which scale is canonical is a design
+call and is not resolved here.** It also bears on P4: calibration was tuned against bootstrap
+ratings, and college ratings do not stay there.
+
+**Both red limbs assert in the soaks lane and report in the default lane**, which is where this repo
+already keeps this class of failure — `e710924` added `--pro-soak` "red for a real reason" and
+recorded that it is not in the default run. The bands themselves are unchanged: professional churn
+stays at 0.10, the tier gap at 12.
+
+
 ### M7C — the news feed — **implemented and green**
 
 The living world reports itself. `NewsFeedReadModel` renders a headline from each typed payload and

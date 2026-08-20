@@ -68,9 +68,15 @@ private struct NewsItemFingerprintDTO: Codable, Equatable {
 /// and match-session all exercise `GameState.bootstrap` or personnel built from it and moved;
 /// `pinnedNewsFeedFingerprint` below does not touch a roster and did not move. Reproduced in this
 /// worktree's own Swift 6.3.3 toolchain, not copied from CI.
-private let pinnedRootFingerprint: UInt64 = 18_254_152_807_579_560_859
+///
+/// Moved a third time merging `claude/lifecycle-band-validation-a50138`: the college talent scale
+/// unified onto `RosterPopulationGenerator.baseRating`, and `.ironman`/`.volatile` joined
+/// `TraitPopulationGenerator.activeTraits` behind the new weekly `disciplineFile` step. Same class of
+/// move as every one above -- generated state changed, so the pin exists to notice it. Reproduced in
+/// two independent processes in this worktree.
+private let pinnedRootFingerprint: UInt64 = 5_331_851_011_546_973_875
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 2_866_677_590_436_717_403
+private let pinnedAdvancedRootFingerprint: UInt64 = 10_834_992_634_306_729_616
 
 /// The professional contract-negotiation ledger (`ProMarketState.contractNegotiations`) is part of
 /// the schema-13 root, but neither pin above ever exercises it: bootstrap starts with it empty, and
@@ -85,7 +91,7 @@ private let pinnedAdvancedRootFingerprint: UInt64 = 2_866_677_590_436_717_403
 /// every `GameState`, so `CareerArcState`'s new `stakeholderLastMovement` field shifted this pin's
 /// JSON body too, not only the two above. Copied from a single CI run's own output (run 32322631469,
 /// job 96287645557), not independently reproduced -- no toolchain exists here to do that.
-private let pinnedNegotiationLedgerFingerprint: UInt64 = 16_183_341_748_203_153_797
+private let pinnedNegotiationLedgerFingerprint: UInt64 = 7_513_440_289_911_825_792
 
 /// `GameState.matchSession` is part of the schema-13 root, but neither pin above ever exercises a
 /// populated one: `bootstrap` leaves it `nil` by construction, and `WorldScheduler.advanceWeek`
@@ -98,7 +104,7 @@ private let pinnedNegotiationLedgerFingerprint: UInt64 = 16_183_341_748_203_153_
 /// being written here.
 /// Moved on 2026-08-20 for the same reason as the negotiation-ledger pin above:
 /// `CareerArcState.stakeholderLastMovement`, copied verbatim from the same CI run, same caveat.
-private let pinnedMatchSessionFingerprint: UInt64 = 15_835_161_825_253_087_259
+private let pinnedMatchSessionFingerprint: UInt64 = 9_740_285_524_720_795_266
 
 /// `NewsFeedReadModel` is derived from `GameState.history`, not stored in it, so none of the three
 /// pins above ever exercise it: they hash the root or a projection of it, never the read-model
@@ -129,7 +135,7 @@ private let pinnedNewsFeedFingerprint: UInt64 = 10_333_429_696_101_465_295
 /// written here.
 /// Moved on 2026-08-20 for the same reason as the three pins above: `CareerArcState.stakeholderLastMovement`,
 /// copied verbatim from the same CI run, same caveat.
-private let pinnedArchivedLedgerFingerprint: UInt64 = 12_685_349_826_373_943_566
+private let pinnedArchivedLedgerFingerprint: UInt64 = 13_703_084_101_146_896_759
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///
@@ -526,6 +532,10 @@ func runArchitectureTests() {
             expectEqual(WorldScheduler.steps, [
                 .expiringInboundEvents,
                 .injuriesAndRecovery,
+                // Between recovery and practice on purpose: `processHealth` counts a served
+                // suspension down on the `injuriesAndRecovery` tick, so a suspension drawn before
+                // it would lose a week to the tick that issued it.
+                .disciplineFile,
                 .practiceAndDevelopment,
                 .scoutingKnowledge,
                 .marketInteractions,
@@ -555,6 +565,7 @@ func runArchitectureTests() {
                 transition.stepRecords.filter { $0.status == .executed }.map(\.step),
                 [
                     .injuriesAndRecovery,
+                    .disciplineFile,
                     .practiceAndDevelopment,
                     .scoutingKnowledge,
                     .marketInteractions,
@@ -570,7 +581,7 @@ func runArchitectureTests() {
             )
             expectEqual(
                 transition.stepRecords.filter { $0.status == .inactive }.count,
-                WorldScheduler.steps.count - 12
+                WorldScheduler.steps.count - 13
             )
         }
 
@@ -651,9 +662,16 @@ func runArchitectureTests() {
                             + CollegeRules.aiWeeklyInvestmentActionLimit
                     )
                 )
+                // Counted from the ledger rather than pinned as a literal, so the weekly
+                // disciplineFile step is accounted for by what it emits instead of by a number
+                // somebody remembers to bump. This read `+ 2` and broke the day a step was added.
+                let disciplineEvents = emittedEvents.filter {
+                    if case .playerSuspended = $0.payload { return true }
+                    return false
+                }.count
                 expectEqual(
                     emittedEvents.count,
-                    scheduledThisWeek + recruitingInteractions + 2
+                    scheduledThisWeek + recruitingInteractions + disciplineEvents + 2
                 )
             case .recruitingUpdated:
                 expect(false, "advance-week intent returned a recruiting result")

@@ -567,6 +567,460 @@ func runPeopleLifecycleTests() {
             })
         }
     }
+
+    suite("Lifecycle distributions hold their bands") {
+        test("the age curve and the injured share hold their bands across a long run") {
+            var state = GameState.bootstrap(seed: 84_010)
+            let measured = [1, 3, 6, 10]
+            var injuries: [(ironman: Bool, severity: InjurySeverity, weeks: Int)] = []
+            var previousRosters = rosterSnapshot(state)
+            var suspensionsThisSeason = 0
+            var playerWeeksThisSeason = 0
+            checkProAgeCurve(state, season: 0)
+            checkRatingSpread(state, season: 0, assertTierGap: false)
+            for season in 1...(measured.max() ?? 1) {
+                for _ in 0..<SharedRules.inSeasonWeeks {
+                    let transition = try WorldScheduler.advanceWeek(state)
+                    state = transition.state
+                    // Player-weeks counted from the rosters the draw actually reads, so the
+                    // denominator is the population at risk rather than the whole player store.
+                    playerWeeksThisSeason += state.programmes.values.reduce(0) {
+                        $0 + $1.rosterIDs.count
+                    } + state.proTeams.values.reduce(0) { $0 + $1.rosterIDs.count }
+                    for event in transition.emittedEvents {
+                        if case .playerSuspended = event.payload { suspensionsThisSeason += 1 }
+                        guard case let .playerInjured(playerID, _, severity, weeks)
+                            = event.payload else { continue }
+                        injuries.append((
+                            state.players[playerID]?.has(.ironman) ?? false,
+                            severity,
+                            weeks
+                        ))
+                    }
+                    // Sampled in-season rather than at the boundary the age curve uses: the injured
+                    // share is a steady state that fatigue has to build up to, and week 1 of a new
+                    // season measures an offseason population that no weekly draw has touched.
+                    if measured.contains(season), state.calendar.week == injurySampleWeek {
+                        checkInjuredShare(state, season: season)
+                    }
+                }
+                // Snapshotted every season rather than only at a measured one, because churn is a
+                // difference between consecutive boundaries and the measured indices are not
+                // consecutive. The set arithmetic is free next to the season it walks.
+                let currentRosters = rosterSnapshot(state)
+                defer { previousRosters = currentRosters }
+                let seasonSuspensions = suspensionsThisSeason
+                let seasonPlayerWeeks = playerWeeksThisSeason
+                suspensionsThisSeason = 0
+                playerWeeksThisSeason = 0
+                guard measured.contains(season) else { continue }
+                checkProAgeCurve(state, season: season)
+                checkRatingSpread(state, season: season, assertTierGap: false)
+                checkDisciplineFrequency(
+                    incidents: seasonSuspensions,
+                    playerWeeks: seasonPlayerWeeks,
+                    season: season
+                )
+                checkChurn(from: previousRosters, to: currentRosters, season: season,
+                           assertPro: false)
+            }
+            checkIronmanShortensInjuries(injuries)
+        }
+    }
+}
+
+// MARK: - The professional age curve band
+
+// `01` §6.5 bands the match engine and nothing bands the people model. The soak asserted only that
+// every professional is at least 22 and short of `declineAge + guaranteedRetirementYearsAfterDecline`
+// — a bound, which a league of nothing but 23-year-olds and a league of nothing but 33-year-olds
+// both satisfy. Two limbs, both stated before either was measured:
+//
+// **Mean age, 25.0…27.5.** External anchor: league-wide mean roster age in the professional game
+// sits near 26 and has been stable for decades. No page was retrieved for that figure in this
+// environment, so by `01` §0.1 it grades `provisional [U]` and the band carries roughly ±1.3 years
+// rather than a tight interval. Its upper limb is also the model's own ceiling, derived below.
+//
+// **Share at or past their position's decline age, 0.08…0.30.** Derived `[P]` from constants this
+// repo already fixes. `SeasonLifecycleSystem.retires` escalates the hazard: a player k years past
+// decline retires with probability `(k + 1) * retirementProbabilityPerYearAfterDecline`, so survival
+// runs 0.86, 0.72, 0.58, 0.44, 0.30, 0.16, 0.02 and reaches zero at k = 7 — inside
+// `guaranteedRetirementYearsAfterDecline`, which is therefore a backstop rather than the binding
+// constraint. Expected presence past decline is the sum of P(present at k) ≈ 3.04 seasons, against a
+// pre-decline span of `D - 22` ≈ 8.4 seasons at the playable-minimum-weighted decline age of ≈ 30.4.
+// That gives a ceiling share of 3.04 / 11.44 ≈ 0.27 and a ceiling mean age of ≈ 27.3. Every other
+// exit the professional market owns — cuts, contract expiry, the draft — removes veterans faster
+// than rookies, so the realised figures must sit below those ceilings. The floor is the point at
+// which the veteran tail has effectively stopped existing.
+//
+// Asserted at several season indices rather than once at the end, for the reason `ProSoakTests`
+// gives: a check that fires only at the finish says something drifted without saying when.
+
+private let proMeanAgeBand: ClosedRange<Double> = 25.0...27.5
+private let proPastDeclineShareBand: ClosedRange<Double> = 0.08...0.30
+
+/// Both limbs of the age-curve band, over the active professional rosters.
+///
+/// Practice squads are excluded on purpose: the anchor is a 53-man mean, and folding in a
+/// developmental pool of rookies would move the measured number for a reason the band is not about.
+func checkProAgeCurve(_ state: GameState, season: Int) {
+    let players = state.proTeams.values.flatMap(\.rosterIDs).compactMap { state.players[$0] }
+    guard !players.isEmpty else {
+        expect(false, "season \(season): no professional players to measure an age curve over")
+        return
+    }
+    let mean = Double(players.reduce(0) { $0 + $1.age }) / Double(players.count)
+    let pastDeclineShare = Double(players.filter(\.isDeclining).count) / Double(players.count)
+    print(String(
+        format: "pro age curve: season %d, n %d, mean %.2f, past-decline share %.3f",
+        season, players.count, mean, pastDeclineShare
+    ))
+    expect(proMeanAgeBand.contains(mean), String(
+        format: "season %d: professional mean age %.2f is outside the band %.1f…%.1f",
+        season, mean, proMeanAgeBand.lowerBound, proMeanAgeBand.upperBound
+    ))
+    expect(proPastDeclineShareBand.contains(pastDeclineShare), String(
+        format: "season %d: %.3f of professionals are at or past their decline age, "
+            + "outside the band %.2f…%.2f",
+        season, pastDeclineShare,
+        proPastDeclineShareBand.lowerBound, proPastDeclineShareBand.upperBound
+    ))
+}
+
+// MARK: - The injured-share band
+
+// What share of active players is carrying an injury in a given week. The soak asserted `> 0` and
+// `< 10%` — a bound so wide that a model producing 0.5% and a model producing 9% both satisfy it,
+// which is to say it detects only "injuries exist at all".
+//
+// **Band 0.015…0.055, derived `[P]` from constants this repo already fixes.**
+// `PeopleLifecycleSystem.processHealth` draws once per player who appeared in last week's completed
+// game, at `PeopleRules.injuryProbability` = `0.001 + fatigue * 0.000_15 + (99 - durability) *
+// 0.000_08`. Fatigue nets `gameFatigueLoad - weeklyFatigueRecovery` = +4 a week plus up to
+// `statisticalWorkloadFatigueMaximum`, so by the sample week a playing population sits somewhere
+// around 45…70 against a generated durability centred near 70 — a weekly probability of roughly
+// 0.008…0.014. Mean weeks lost is `0.72 * 1.5 + 0.23 * 4.5 + 0.05 * 10.5` = 2.64 from
+// `PeopleRules.injurySeverity`'s ladder. An injured player takes no further draw, so the steady
+// state is close to probability times duration: 0.021…0.037. The band is widened either side
+// because fatigue is a distribution rather than a point, a bye week removes a whole team from the
+// draw, and the postseason shrinks the participating population to a bracket.
+//
+// **This band describes the model as specified, not the sport.** Real football carries a materially
+// higher unavailable share than 2-4% in a given week. That gap is a design question for the owner —
+// `02` §11.3.3 and the injury constants would both have to move — and it is deliberately not
+// resolved by loosening a test.
+
+/// Late enough for fatigue to have built, early enough to be before the season boundary.
+private let injurySampleWeek = 12
+private let injuredShareBand: ClosedRange<Double> = 0.015...0.055
+
+func checkInjuredShare(_ state: GameState, season: Int) {
+    let activeIDs = state.programmes.values.flatMap(\.rosterIDs)
+        + state.proTeams.values.flatMap(\.rosterIDs)
+    guard !activeIDs.isEmpty else {
+        expect(false, "season \(season): no active players to measure an injured share over")
+        return
+    }
+    let injured = activeIDs.filter { state.people.playerLifecycle[$0]?.injury != nil }.count
+    let share = Double(injured) / Double(activeIDs.count)
+    print(String(
+        format: "injured share: season %d week %d, n %d, injured %d, share %.4f",
+        season, injurySampleWeek, activeIDs.count, injured, share
+    ))
+    expect(injuredShareBand.contains(share), String(
+        format: "season %d week %d: injured share %.4f is outside the band %.3f…%.3f",
+        season, injurySampleWeek, share, injuredShareBand.lowerBound, injuredShareBand.upperBound
+    ))
+}
+
+// MARK: - The discipline frequency band
+
+// How often a player turns up in the weekly discipline file. Nothing could measure this before
+// 2026-08-20, and no band would have caught it: `DisciplineSystem.incidents` had zero callers in
+// `Sources/`, so the measured frequency was structurally zero no matter what the constants said.
+// The suite's nine discipline tests all called the API directly, which is why nothing noticed.
+//
+// **Band 0.004…0.030 incidents per player-week, derived `[P]`.** `DisciplineSystem` draws once a
+// week per rostered player who is not already serving, at `baseIncidentProbability` 0.004, plus
+// `volatileIncidentProbability` 0.020 if the player has the trait, plus
+// `unhappyIncidentProbability` 0.012 if morale is below `unhappyMorale`. Volatile is populated at
+// `traitPopulationProbability` 0.08, so it contributes 0.08 * 0.020 = 0.0016 league-wide. The
+// unhappy share is not derivable from a constant — morale is computed from playing time, team
+// success and investment — so the band spans from nobody unhappy (0.004 + 0.0016 = 0.0056) to
+// everyone unhappy (0.0176), and is widened to 0.030 above that for the interaction between the
+// two, and down to 0.004 below, which is the floor the base rate alone cannot go under while the
+// step runs at all. A measurement at exactly 0 means the step stopped running; at the ceiling it
+// means the file has become the soap opera `PeopleRules` says it must not be.
+//
+// **What is counted is suspensions, not incidents, and the band accounts for it.** The only
+// observable an incident leaves is `playerSuspended`, and `PeopleRules.recommendedSuspensionWeeks`
+// gives `timekeeping` zero weeks — the AI handles that one internally and emits nothing. Kind is a
+// uniform draw over the four `DisciplineIncidentKind` cases, so three in four incidents become a
+// suspension and the observable rate is about 0.75 of the incident rate: 0.75 * 0.0056 = 0.0042 at
+// the quiet end and 0.75 * 0.0176 = 0.0132 at the loud one. Hence 0.003…0.020 rather than the
+// incident band, widened a little either side of both ends. Stating the incident band and asserting
+// the suspension rate against it would be measuring one thing and bounding another.
+//
+// The rules module states the intent this band is really checking: "an incident every week is a
+// soap opera, and one a season across a roster is a football team".
+
+private let suspensionsPerPlayerWeekBand: ClosedRange<Double> = 0.003...0.020
+
+func checkDisciplineFrequency(
+    incidents: Int,
+    playerWeeks: Int,
+    season: Int
+) {
+    guard playerWeeks > 0 else {
+        expect(false, "season \(season): no player-weeks to measure discipline frequency over")
+        return
+    }
+    let rate = Double(incidents) / Double(playerWeeks)
+    print(String(
+        format: "discipline: season %d, suspensions %d over %d player-weeks, rate %.5f",
+        season, incidents, playerWeeks, rate
+    ))
+    expect(suspensionsPerPlayerWeekBand.contains(rate), String(
+        format: "season %d: suspension rate %.5f per player-week is outside the band %.3f…%.3f",
+        season, rate,
+        suspensionsPerPlayerWeekBand.lowerBound, suspensionsPerPlayerWeekBand.upperBound
+    ))
+}
+
+// MARK: - The rating spread band
+
+// How far apart players are, within a tier and between the two. The soak asserted mean college
+// overall in 45…85 and mean pro overall in 55…90 — intervals 40 and 35 points wide on a 40…99
+// scale, which is to say they assert the rating type's own range and nothing about the population.
+// Neither says anything at all about *spread*, so a league that converged on one identical rating
+// would satisfy both. That is the grey-mush failure, and nothing could see it.
+//
+// **Within-tier standard deviation. College 3…10, pro 2.5…8. Derived `[P]`.**
+// `RosterPopulationGenerator.baseRating` sets a roster's centre from prestige — pro
+// `60 + span * 15/59`, college `50 + span * 25/59` — and each rated attribute is that base plus a
+// uniform `-10…10`, with `Player.overall` averaging the rated attributes. The uniform has sd 6.06,
+// so averaging k of them contributes 6.06/sqrt(k), about 2.7 at five rated attributes. Pro prestige
+// is uniform 48…92 (`LeagueGenerator`), giving bases 62…73, an sd of 11/sqrt(12) = 3.18, and a total
+// near sqrt(3.18^2 + 2.7^2) = 4.2. The college limb is wider on purpose: its prestige comes from
+// per-archetype floors and ceilings rather than one uniform draw, so the between-programme term is
+// not derivable the same way and the band states that honestly rather than pretending to a
+// precision it does not have.
+//
+// **Tier gap, pro mean overall minus college mean overall: 1…12. Derived `[P]`** from the same two
+// expressions, whose midpoints differ by roughly 5 to 6 at generation. The floor is what matters:
+// at or below zero the professional tier is not the better one, and the promotion arc that `02`
+// sells as the spine of the game is measuring nothing.
+//
+// Asserted across a long run because the failure mode is drift, not generation. Development is
+// bounded at +/-1 an attribute a checkpoint, which is exactly the shape that can quietly homogenise
+// a league over ten seasons while every individual step stays legal.
+
+private let collegeOverallSDBand: ClosedRange<Double> = 3.0...10.0
+private let proOverallSDBand: ClosedRange<Double> = 2.5...8.0
+private let tierGapBand: ClosedRange<Double> = 1.0...12.0
+
+/// `assertTierGap` follows the same rule as `checkChurn`'s professional limb: measured and printed
+/// everywhere, asserted in the soaks lane. The gap limb is red because college talent decays to the
+/// recruiting pipeline's scale, which is a generation-constant question for the owner and not a
+/// band to be widened. The two standard-deviation limbs assert everywhere, because they hold.
+func checkRatingSpread(_ state: GameState, season: Int, assertTierGap: Bool) {
+    func overalls(_ ids: [UUID]) -> [Double] {
+        ids.compactMap { state.players[$0].map { Double($0.overall.value) } }
+    }
+    func moments(_ values: [Double]) -> (mean: Double, sd: Double) {
+        guard !values.isEmpty else { return (.nan, .nan) }
+        let mean = values.reduce(0, +) / Double(values.count)
+        let variance = values.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(values.count)
+        return (mean, variance.squareRoot())
+    }
+    let college = moments(overalls(state.programmes.values.flatMap(\.rosterIDs)))
+    let pro = moments(overalls(state.proTeams.values.flatMap(\.rosterIDs)))
+    guard !college.mean.isNaN, !pro.mean.isNaN else {
+        expect(false, "season \(season): a tier had no rated players to measure spread over")
+        return
+    }
+    print(String(
+        format: "rating spread: season %d, college mean %.2f sd %.2f, pro mean %.2f sd %.2f, gap %.2f",
+        season, college.mean, college.sd, pro.mean, pro.sd, pro.mean - college.mean
+    ))
+    expect(collegeOverallSDBand.contains(college.sd), String(
+        format: "season %d: college overall sd %.2f is outside the band %.1f…%.1f",
+        season, college.sd, collegeOverallSDBand.lowerBound, collegeOverallSDBand.upperBound
+    ))
+    expect(proOverallSDBand.contains(pro.sd), String(
+        format: "season %d: pro overall sd %.2f is outside the band %.1f…%.1f",
+        season, pro.sd, proOverallSDBand.lowerBound, proOverallSDBand.upperBound
+    ))
+    guard assertTierGap else { return }
+    expect(tierGapBand.contains(pro.mean - college.mean), String(
+        format: "season %d: tier gap %.2f is outside the band %.1f…%.1f "
+            + "(college %.2f, pro %.2f)",
+        season, pro.mean - college.mean,
+        tierGapBand.lowerBound, tierGapBand.upperBound, college.mean, pro.mean
+    ))
+}
+
+// MARK: - The churn band
+
+// What share of an organisation's roster is gone a season later. Nothing measured it: the soak
+// asserted only that `departedPlayers` is non-empty, which one graduating walk-on satisfies for a
+// world that has otherwise frozen solid.
+//
+// **College, 0.18…0.45, derived `[P]`.** `CollegeRules.seasonsOfCompetition` is 4 and
+// `rosterLimit` is a constant 105, so a steady state in which every player exhausts eligibility
+// turns over 105/4 = 26.25 players a season — a churn of exactly 0.25 from graduation alone.
+// `eligibilityClockYears` is 5, one longer than the seasons it holds, so a redshirt occupies a
+// roster place for five years while spending four: universal redshirting would stretch mean
+// occupancy to 5 and drop churn to 0.20. The floor sits below that at 0.18. Portal departures
+// (`02` §4.1, two windows a season) only add, so the ceiling is loose at 0.45 — past which a
+// programme is not turning over but being rebuilt wholesale.
+//
+// **Professional, 0.10…0.50.** Canon is more specific than this band: `02` §4.2a fixes bootstrap
+// terms so that "roughly a fifth of each roster reaches expiry each season", about eleven players a
+// roster, which is 0.20 before retirement is counted at all. The band stays at 0.10 rather than
+// being tightened to canon, because expiry is not churn — a club that re-signs everyone it lets
+// expire moves nobody — and 0.10 is the floor below which the market has stopped regardless. The
+// measured value fails even that: `--pro-soak` counts 149 expiries a season against the roughly 339
+// canon calls for, so the model contradicts `02` §4.2a directly and not merely a derived band.
+//
+// The rest of this limb is derived `[P]` and deliberately weak.
+// `ProRules.contractYearsRange` is 1…7, so a roughly flat spread of contract lengths means a mean
+// near 4 and an expiry-driven churn near 0.25, with cuts adding and re-signing subtracting. The
+// second of those is not derivable from a constant — a team that re-signs everyone it lets expire
+// shows near-zero churn without anything being wrong — so this limb is stated wide and catches only
+// the two failures that matter: a roster nothing leaves, and a roster replaced outright.
+
+private let collegeChurnBand: ClosedRange<Double> = 0.18...0.45
+private let proChurnBand: ClosedRange<Double> = 0.10...0.50
+
+typealias RosterSnapshot = (
+    college: [UUID: Set<UUID>],
+    pro: [UUID: Set<UUID>],
+    pool: Set<UUID>
+)
+
+func rosterSnapshot(_ state: GameState) -> RosterSnapshot {
+    (
+        college: state.programmes.values.reduce(into: [:]) { $0[$1.id] = Set($1.rosterIDs) },
+        pro: state.proTeams.values.reduce(into: [:]) { $0[$1.id] = Set($1.rosterIDs) },
+        // The free-agent pool spans the season boundary: contracts expire in the final week of a
+        // season and free agency signs out of the pool during the *next* one. A snapshot that reads
+        // rosters alone therefore cannot see a relocation at all — the player is on nobody's roster
+        // at the boundary between leaving and arriving, so an A-to-B move reads as a departure here
+        // and an unrelated arrival a season later. Carrying the pool is what makes the three-way
+        // split below truthful.
+        pool: Set(state.proMarket.freeAgentIDs)
+    )
+}
+
+/// `assertPro` is false in the default lane and true in the soaks lane, which is where this repo
+/// already keeps this exact failure. The professional limb is red for the reason `a2e3147` and
+/// `4a95ca5` record — "the professional roster never turns over", blocked on an owner-level design
+/// call — and `--pro-soak` has carried that red, outside the default run, since `e710924` added it
+/// "red for a real reason". Asserting it here too would turn the default lane red for a cause
+/// already tracked elsewhere; not measuring it at all would lose the finding. So it is measured and
+/// printed everywhere, and asserted where its sibling failure lives. The band itself is NOT widened
+/// to accommodate the break: 0.10 stays 0.10.
+func checkChurn(
+    from previous: RosterSnapshot,
+    to current: RosterSnapshot,
+    season: Int,
+    assertPro: Bool
+) {
+    /// Departures as a share of the roster they left, pooled across organisations. Pooled rather
+    /// than averaged per organisation so one team with a freak roster cannot swing the figure.
+    func churn(_ before: [UUID: Set<UUID>], _ after: [UUID: Set<UUID>], pool: Set<UUID>)
+        -> (share: Double, total: Int, moved: Int, pooled: Int, left: Int) {
+        // Where everybody ended up, three ways. `pooled` exists because the second bucket is not
+        // "gone": a professional between contracts is mid-relocation, and counting them as departed
+        // is what made an earlier version of this read `moved == 0` and conclude the market had
+        // stopped trading. It had not. `--pro-movement-probe` watches every week instead of every
+        // boundary and counts 280 relocations in one season against ten returns.
+        var organisationByPlayer: [UUID: UUID] = [:]
+        for (organisationID, roster) in after {
+            for playerID in roster { organisationByPlayer[playerID] = organisationID }
+        }
+        var moved = 0
+        var pooled = 0
+        var left = 0
+        var total = 0
+        for (organisationID, roster) in before {
+            guard after[organisationID] != nil else { continue }
+            total += roster.count
+            for playerID in roster.subtracting(after[organisationID] ?? []) {
+                if organisationByPlayer[playerID] != nil { moved += 1 }
+                else if pool.contains(playerID) { pooled += 1 }
+                else { left += 1 }
+            }
+        }
+        let share = total > 0 ? Double(moved + pooled + left) / Double(total) : .nan
+        return (share, total, moved, pooled, left)
+    }
+    for (label, band, measure) in [
+        ("college", collegeChurnBand, churn(previous.college, current.college, pool: [])),
+        ("pro", proChurnBand, churn(previous.pro, current.pro, pool: current.pool)),
+    ] {
+        let (share, total, moved, pooled, left) = measure
+        guard total > 0 else {
+            expect(false, "season \(season): no \(label) roster to measure churn over")
+            continue
+        }
+        print(String(
+            format: "churn: season %d %@, n %d, share %.3f (moved %d, pooled %d, left %d)",
+            season, label, total, share, moved, pooled, left
+        ))
+        guard label == "college" || assertPro else { continue }
+        expect(band.contains(share), String(
+            format: "season %d: %@ churn %.3f is outside the band %.2f…%.2f "
+                + "(moved %d, pooled %d, left %d)",
+            season, label, share, band.lowerBound, band.upperBound, moved, pooled, left
+        ))
+    }
+}
+
+// MARK: - Ironman has an effect, not just a spelling
+
+// `02` §11.3.3: "§5 requires every trait to have mechanical bite in a specific system", and Ironman
+// names Injury. It had none — `PeopleRules.injuryWeeks` implemented the trait and nothing in
+// `Sources/` called it, while the suite asserted the trait's *storage* (canonical order, dedupe,
+// round-trip) and never its *effect*. That is the coverage boundary `CLAUDE.md` names becoming the
+// quality boundary: a generated Ironman was a label.
+//
+// Enumerated by construction over every injury the run emitted rather than over a hand-picked case,
+// so an injury the model learns to produce tomorrow is covered the day it appears. Both arms are
+// asserted non-empty, because a check over an empty set is a check that cannot fail.
+
+/// Every injury the long run produced, checked against the ladder its trait state implies.
+func checkIronmanShortensInjuries(_ injuries: [(ironman: Bool, severity: InjurySeverity, weeks: Int)]) {
+    func fullRange(_ severity: InjurySeverity) -> ClosedRange<Int> {
+        switch severity {
+        case .minor: return PeopleRules.minorInjuryWeeks
+        case .moderate: return PeopleRules.moderateInjuryWeeks
+        case .severe: return PeopleRules.severeInjuryWeeks
+        }
+    }
+    let ironmanInjuries = injuries.filter(\.ironman)
+    let ordinaryInjuries = injuries.filter { !$0.ironman }
+    expect(!ordinaryInjuries.isEmpty, "the run produced no injury to an ordinary player")
+    expect(!ironmanInjuries.isEmpty,
+           "the run produced no injury to an ironman, so the trait's effect went unmeasured")
+    print("ironman: \(ironmanInjuries.count) of \(injuries.count) injuries went to an ironman")
+
+    for injury in ordinaryInjuries {
+        expect(fullRange(injury.severity).contains(injury.weeks),
+               "an ordinary \(injury.severity) injury lasted \(injury.weeks) weeks, "
+                   + "outside \(fullRange(injury.severity))")
+    }
+    for injury in ironmanInjuries {
+        let expected = Set(fullRange(injury.severity).map {
+            PeopleRules.injuryWeeks($0, ironman: true)
+        })
+        expect(expected.contains(injury.weeks),
+               "an ironman \(injury.severity) injury lasted \(injury.weeks) weeks, which no "
+                   + "draw from \(fullRange(injury.severity)) shortens to — the trait is not applied")
+        expect(injury.weeks <= fullRange(injury.severity).upperBound,
+               "an ironman injury outlasted the unshortened ladder")
+    }
 }
 
 /// The M2 soak's roster and age invariants, at one season instead of twenty.
@@ -646,6 +1100,7 @@ func runM2SoakTests(seasons: Int) {
             let employedStaffTarget = (CollegeRules.programmeCount + ProRules.teamCount)
                 * PeopleRules.staffPerOrganisation
             var saveSizes: [Int: Int] = [:]
+            var previousRosters = rosterSnapshot(state)
             // Holds a peek one week beyond each season boundary: CollegeCycleSystem
             // .addWalkOns(for: .springRosterFill, ...) only tops college rosters back up
             // to CollegeRules.rosterLimit during the week1->week2 advance, once
@@ -761,6 +1216,12 @@ func runM2SoakTests(seasons: Int) {
                 }
                 expect((45...85).contains(collegeOverall.reduce(0, +) / collegeOverall.count))
                 expect((55...90).contains(proOverall.reduce(0, +) / proOverall.count))
+                checkProAgeCurve(state, season: season)
+                checkRatingSpread(state, season: season, assertTierGap: true)
+                let currentRosters = rosterSnapshot(state)
+                checkChurn(from: previousRosters, to: currentRosters, season: season,
+                           assertPro: true)
+                previousRosters = currentRosters
                 let report = WorldIntegrity.check(state)
                 expect(report.isValid, report.issues.map(\.description).joined(separator: ", "))
 

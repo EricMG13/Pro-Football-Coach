@@ -193,6 +193,19 @@ first one:
 2. **Money is enforced by the cap-compliance date — beat 2.** Cuts happen when the cap binds. A
    team at 48 players and over the cap still cuts; a team at 53 and comfortably under does not.
 
+**Free agency reserves the draft's seats — measured 2026-08-20.** Beat 1 frees headcount "for free
+agency *and* the draft", and that conjunction is a rule rather than a description: free agency runs
+first, and if it signs to the active-roster limit there is no seat left when the draft opens. That is
+exactly what happened. `--pro-draft-stall-probe` reports the live scheduler's first pick throwing
+`activeRosterFull` at `roster=53/53` in every season, with `committedCap` at 170M of 272M — the
+draft was blocked on headcount while money was nowhere near binding, so beat 2 would not have
+unblocked it. An AI club therefore signs only up to `activeRosterLimit - draftRounds`, holding one
+seat per round it is entitled to pick in. Expiry frees about eleven a roster against seven rounds, so
+the reservation fits inside what beat 1 already produces and does not need cuts to make room. A club
+may still exceed that ceiling by other routes — a trade, a waiver claim, a promotion from the
+practice squad — because the reservation is a policy about what the AI *chooses* to sign, not a new
+roster bound; `activeRosterLimit` remains the only hard one.
+
 **Bootstrap issues contracts, with a staggered term spread.** Every bootstrapped professional gets
 a contract whose remaining years are drawn deterministically so that **roughly a fifth of each
 roster reaches expiry each season** — terms of one to five years, spread evenly.

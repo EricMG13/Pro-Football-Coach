@@ -3,6 +3,10 @@ import Foundation
 public enum WorldStep: String, Codable, Sendable, CaseIterable, Hashable {
     case expiringInboundEvents
     case injuriesAndRecovery
+    /// Ordered after `injuriesAndRecovery` because `PeopleLifecycleSystem.processHealth` counts a
+    /// served suspension down on that tick. A new suspension drawn before it would be shortened by
+    /// the same week it was issued in.
+    case disciplineFile
     case practiceAndDevelopment
     case scoutingKnowledge
     case marketInteractions
@@ -517,6 +521,17 @@ public enum WorldScheduler {
                     at: completed,
                     to: &nextState
                 )
+                try appendEvents(
+                    payloads: transition.eventPayloads,
+                    occurredAt: completed,
+                    to: &nextState,
+                    emittedEvents: &events
+                )
+                records.append(WorldStepRecord(step: step, status: .executed))
+
+            case .disciplineFile:
+                let transition = try DisciplineAISystem.process(at: completed, in: nextState)
+                nextState = transition.state
                 try appendEvents(
                     payloads: transition.eventPayloads,
                     occurredAt: completed,

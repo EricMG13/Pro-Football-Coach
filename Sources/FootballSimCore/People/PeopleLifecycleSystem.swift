@@ -76,19 +76,21 @@ public enum PeopleLifecycleSystem {
                 durability: player.attributes[.durability]
             )
             guard rng.chance(probability) else { continue }
-            let severityRoll = rng.double01()
-            let severity: InjurySeverity
-            let weeks: Int
-            if severityRoll < 0.72 {
-                severity = .minor
-                weeks = rng.int(in: 1...2)
-            } else if severityRoll < 0.95 {
-                severity = .moderate
-                weeks = rng.int(in: 3...6)
-            } else {
-                severity = .severe
-                weeks = rng.int(in: 7...14)
-            }
+            // The ladder comes from the rules module rather than from literals here. It was
+            // extracted into `PeopleRules.injurySeverity` for exactly that reason and this call
+            // site was never moved over, so `0.72`, `0.95` and the three week ranges still sat
+            // inline — the magic numbers `CLAUDE.md` forbids, in the one place the rules module's
+            // own comment says they no longer lived. Same thresholds, same ranges, and the same two
+            // draws in the same order, so no seed resolves differently.
+            let (severity, weekRange) = PeopleRules.injurySeverity(roll: rng.double01())
+            // `02` §11.3.3 gives `ironman` one system and one effect, and until now it had neither:
+            // `PeopleRules.injuryWeeks` implemented the trait and nothing called it, so a generated
+            // ironman was a label that changed no outcome. The transform takes an already-drawn
+            // value, so it consumes no randomness and no seed reorders.
+            let weeks = PeopleRules.injuryWeeks(
+                rng.int(in: weekRange),
+                ironman: player.has(.ironman)
+            )
             let injury = PlayerInjury(
                 area: rng.pick(InjuryArea.allCases),
                 severity: severity,
