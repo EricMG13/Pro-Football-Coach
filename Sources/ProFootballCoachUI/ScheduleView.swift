@@ -125,21 +125,37 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
                     .lineLimit(1)
                     .frame(width: ScheduleMetric.weekColumn, alignment: .leading)
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
-                    Text(game.away.name.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                            )
+                    HStack(spacing: CoachWorldTokens.Gap.xs) {
+                        CoachWorldTeamLogo(
+                            team: game.away,
+                            size: .compact,
+                            surface: palette.work,
+                            palette: palette
                         )
-                        .lineLimit(1)
-                    Text("at \(game.home.name)".uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.flag, weight: .bold
+                        Text(game.away.name.uppercased())
+                            .font(
+                                CoachWorldTokens.display(
+                                    CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                                )
                             )
+                            .lineLimit(1)
+                    }
+                    HStack(spacing: CoachWorldTokens.Gap.xs) {
+                        CoachWorldTeamLogo(
+                            team: game.home,
+                            size: .compact,
+                            surface: palette.work,
+                            palette: palette
                         )
-                        .foregroundStyle(palette.contentQuiet.color)
-                        .lineLimit(1)
+                        Text("at \(game.home.name)".uppercased())
+                            .font(
+                                CoachWorldTokens.display(
+                                    CoachWorldTokens.DisplaySize.flag, weight: .bold
+                                )
+                            )
+                            .foregroundStyle(palette.contentQuiet.color)
+                            .lineLimit(1)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Text(game.score ?? game.stage)

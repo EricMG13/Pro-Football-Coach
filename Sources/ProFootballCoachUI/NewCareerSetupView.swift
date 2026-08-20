@@ -154,6 +154,12 @@ public struct NewCareerSetupView: View {
         } label: {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                 HStack {
+                    CoachWorldTeamLogo(
+                        team: job.programme,
+                        size: .medium,
+                        surface: palette.raised,
+                        palette: palette
+                    )
                     Text(job.programme.name)
                         .font(CoachWorldTokens.TypeRole.headline.weight(.black))
                     Spacer(minLength: CoachWorldTokens.Space.xs)

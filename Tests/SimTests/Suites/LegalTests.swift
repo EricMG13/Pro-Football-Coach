@@ -190,6 +190,19 @@ func runLegalTests() {
             }
         }
 
+        test("generated places and bowl titles use generic naming") {
+            var rng = SeededRandom(seed: 20_260_820)
+            let places = NameGrammar.distinctPlaceNames(using: &rng)
+            expectEqual(places.count, 570)
+            expect(places.allSatisfy { $0.contains(", ") },
+                   "a generated place is missing its state qualification")
+            let bowls = places.prefix(32).map {
+                NameGrammar.bowlName(place: $0, using: &rng)
+            }
+            expect(bowls.allSatisfy { !Blocklist.blocks($0) },
+                   "a generic bowl title collided with the protected-name screen")
+        }
+
         test("the sweep actually looks at every kind of generated name") {
             // The guard against the sweep passing because it swept nothing. Named kinds rather
             // than a count, because "there were some strings" would still be satisfied by a world

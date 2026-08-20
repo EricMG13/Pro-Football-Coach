@@ -49,6 +49,12 @@ public struct LegacyHistoryView: View, CoachWorldChromedSurface {
 
     private var topBar: some View {
         HStack(spacing: CoachWorldTokens.Space.sm) {
+            CoachWorldTeamLogo(
+                team: model.team,
+                size: .medium,
+                surface: palette.raised,
+                palette: palette
+            )
             Button("History", action: onClose)
                 .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
                        minHeight: CoachWorldTokens.Shape.minimumTarget)
@@ -127,6 +133,12 @@ public struct LegacyHistoryView: View, CoachWorldChromedSurface {
             }
             ForEach(model.careerLine) { row in
                 HStack {
+                    CoachWorldTeamLogo(
+                        team: row.organisation,
+                        size: .medium,
+                        surface: palette.page,
+                        palette: palette
+                    )
                     Text("Season \(row.season)").monospacedDigit().frame(width: 105, alignment: .leading)
                     Text(row.role).frame(maxWidth: .infinity, alignment: .leading)
                     Text(row.organisation.name).foregroundStyle(palette.contentSecondary.color)

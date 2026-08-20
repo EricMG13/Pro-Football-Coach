@@ -1350,7 +1350,7 @@ in, hometowns) against the venue and person limbs only. `GeneratedWorld` exposes
 separately, and the suite asserts they **partition** every generated name — a name belonging to
 neither kind is a name nothing checks, which is the hole this shape exists to close.
 
-Legal coverage is **21 tests / 98 checks**.
+Legal coverage is **23 tests / 144 checks**.
 
 **What this decision does not resolve, stated rather than left implicit.** A fictional programme
 placed in a real city, wearing that city's real programme's colours, can jointly identify the real
@@ -1359,10 +1359,11 @@ fictional but jointly identifying" gap `Blocklist`'s own header calls a counsel 
 permitting real cities makes that gap easier to fall into. It is a review obligation, not a
 threshold, and nothing in the suite asserts it.
 
-**The generator is now permitted to use real place names and does not yet do so.** `NameGrammar`
-still draws cities from its invented stems and endings, so no generated world changed. Populating it
-with real geography is a separate design change that would touch D6's geography-driven rivalry
-seeding, and under the doc-first amendment rule it belongs in canon before it is built.
+**The generator now uses real place names.** `NameGrammar` draws 570 state-qualified U.S. cities
+and towns from the 2024 Census Gazetteer, while institution names and projected bowl titles use
+generic descriptors. Stable UUIDs remain unchanged because the replacement preserves the former
+random-draw shape. This does not clear any combined school/trade-dress identity for release; the
+screen remains a counsel and common-law search obligation.
 
 ### 2026-08-10 — the app is landscape, not portrait
 

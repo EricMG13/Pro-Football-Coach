@@ -89,7 +89,12 @@ public struct RosterView: View, CoachWorldChromedSurface {
     private var worldStrip: some View {
         HStack(spacing: CoachWorldTokens.Space.xs) {
             HStack(spacing: CoachWorldTokens.Space.xs) {
-                uniformMark
+                CoachWorldTeamLogo(
+                    team: model.team,
+                    size: .large,
+                    surface: palette.raised,
+                    palette: palette
+                )
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                     Text(model.team.name.uppercased())
                         .font(CoachWorldTokens.TypeRole.headline.weight(.black))
@@ -139,30 +144,10 @@ public struct RosterView: View, CoachWorldChromedSurface {
         .accessibilitySortPriority(50)
     }
 
-    /// The programme's uniform mark: its abbreviation in the secondary, which `04` section 5 names
-    /// as identity furniture the management frame may carry.
-    private var uniformMark: some View {
-        Text(model.team.abbreviation)
-            .font(CoachWorldTokens.TypeRole.caption.weight(.black))
-            .foregroundStyle(markInk.color)
-            .padding(.horizontal, CoachWorldTokens.Space.xxs)
-            .frame(minWidth: RosterMetric.markWidth, minHeight: RosterMetric.markHeight)
-            .background(
-                (identity?.accent.color ?? palette.collegeIdentity.color),
-                in: RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.rowRadius)
-            )
-            .accessibilityHidden(true)
-    }
-
     /// Selection speaks in the programme's colour where a reader can see it against the working
     /// surface, and falls back to the tier token where the generated pair cannot clear 3:1.
     private var selectionColour: CoachWorldTokens.ColorValue {
         identity?.selectionRule(on: palette.work) ?? palette.collegeIdentity
-    }
-
-    private var markInk: CoachWorldTokens.ColorValue {
-        guard let accent = identity?.accent else { return palette.page }
-        return accent.mostLegibleInk(from: [palette.page, palette.contentPrimary]) ?? palette.page
     }
 
     private var worldContextInk: Color {

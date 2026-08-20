@@ -69,6 +69,22 @@ func runReadModelProviderTests() {
             expectEqual(CoachWorldReadModelProvider.startingJobs(from: firstState, limit: 0), [])
         }
 
+        test("canonical teams receive their stable logo references") {
+            let world = GameState.bootstrap(seed: 20_260_812)
+            let results = CoachWorldReadModelProvider.worldSearch(from: world).results
+            expectEqual(results.count, 166)
+            expect(results.allSatisfy { result in
+                result.team.mark?.stableID == result.team.stableID
+                    && result.team.mark?.assetName.hasPrefix("TeamLogo_") == true
+            })
+        }
+
+        test("alternate seeds do not borrow canonical logos") {
+            let world = GameState.bootstrap(seed: 20_260_813)
+            let results = CoachWorldReadModelProvider.worldSearch(from: world).results
+            expect(results.allSatisfy { $0.team.mark == nil })
+        }
+
         test("no controlled career produces no coaching HQ") {
             expectEqual(
                 CoachWorldReadModelProvider.coachingHQ(from: GameState.bootstrap(seed: 4_001)),

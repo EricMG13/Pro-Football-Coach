@@ -1332,7 +1332,9 @@ func runContractTests() {
                        && !redesignProof.contains("Take it"),
                    "the redesigned Job Board proof must not invent engine access or generic actions")
 
-            expect(roster.contains("CoachWorldTeamIdentity(") && roster.contains("uniformMark"),
+            expect(roster.contains("CoachWorldTeamIdentity(")
+                       && roster.contains("CoachWorldTeamLogo(")
+                       && roster.contains("size: .large"),
                    "the world strip must carry generated programme identity, not neutral furniture")
             expect(roster.contains("selectionColour"),
                    "selection speaks in programme colour where it is legible")
@@ -1690,17 +1692,32 @@ func runContractTests() {
         // and a view reading a hex directly is exactly how the legibility gates get bypassed —
         // the gates are inside that initialiser.
         test("no view resolves a generated colour except through the identity type") {
+            let directGeneratedColourAccess = "\\.(primaryColorHex|secondaryColorHex)\\b"
+            expect(
+                codeLines(of: "let colour = team.primaryColorHex").contains {
+                    $0.range(of: directGeneratedColourAccess, options: .regularExpression) != nil
+                },
+                "the generated-colour scan must catch member access"
+            )
+            expect(
+                !codeLines(of: "let team = CoachWorldTeamReference(primaryColorHex: colour)")
+                    .contains {
+                        $0.range(of: directGeneratedColourAccess, options: .regularExpression) != nil
+                    },
+                "the generated-colour scan must permit initializer labels"
+            )
             for file in swiftFilesImportingUIFramework() {
                 let isResolutionPoint = file.path.hasSuffix("/TeamIdentity.swift")
                 guard !isResolutionPoint else { continue }
                 let code = codeLines(of: file.text)
-                for property in ["primaryColorHex", "secondaryColorHex"] {
-                    expect(!code.contains(where: { $0.contains(property) }),
-                           "\(file.path) reads \(property) directly. Generated colour resolves "
-                               + "through CoachWorldTeamIdentity, which is where the contrast "
-                               + "floors live and where a pair that cannot be read is refused "
-                               + "(04 section 5).")
-                }
+                expect(
+                    !code.contains {
+                        $0.range(of: directGeneratedColourAccess, options: .regularExpression) != nil
+                    },
+                    "\(file.path) reads a generated colour field directly. Generated colour resolves "
+                        + "through CoachWorldTeamIdentity, which is where the contrast floors live "
+                        + "and where a pair that cannot be read is refused (04 section 5)."
+                )
             }
         }
 

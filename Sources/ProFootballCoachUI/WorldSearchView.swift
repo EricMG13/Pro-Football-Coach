@@ -169,6 +169,12 @@ public struct WorldSearchView: View, CoachWorldChromedSurface {
             onSelectTeam(id)
         } label: {
             HStack(spacing: CoachWorldTokens.Gap.md) {
+                CoachWorldTeamLogo(
+                    team: result.team,
+                    size: .medium,
+                    surface: palette.work,
+                    palette: palette
+                )
                 Text(result.team.name.uppercased())
                     .font(
                         CoachWorldTokens.display(
