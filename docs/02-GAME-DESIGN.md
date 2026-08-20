@@ -406,6 +406,13 @@ since a mistake that already shipped a claim is not the same as one caught befor
 
 ## 6. Staff and scheme
 
+**Staff who lose their seat are pruned unless history names them — owner decision 2026-08-20.** A
+promotion displaces a whole coaching group and a separation displaces one coach, and every one of
+them keeps a career record forever, which is a collection that grows with career length and has no
+bound. A seatless coach is kept when the coaching tree names them — as a mentor with disciples, or
+as someone who came up under one — and dropped otherwise, so what survives is the history a screen
+can actually show. The played coach is never pruned, employed or not.
+
 - Four coordinators and a set of position coaches, each with ratings for development, recruiting,
   game-planning and scheme affinity.
 - **Scheme identity** is the spine: the player picks an offensive and defensive scheme, and the
@@ -502,6 +509,19 @@ allowed to be in.
 
 This is a promotion rule, not a separation rule. A coach who resigns or is fired goes nowhere and
 takes nobody: the coordinators keep their jobs and the programme keeps its staff.
+
+**The career record is a per-season line on the coach — owner decision 2026-08-20.** "The record
+book" in the carried list above was a promise with nothing behind it: standings are rebuilt from the
+current schedule and hold only the current season, and a `SeasonArchive` keeps champions, final
+rankings, awards and league-wide totals but no per-programme win-loss. So a coach's record is not
+derivable from anything persisted, and it is recorded rather than computed.
+
+One line per season played: the season, the organisation, and wins-losses-ties. It is written for
+the played coach only — a record for all 166 organisations across every archived season is the
+expensive version of this and the save is already over its budget. The line is written at season
+end, from the standings of the tier the coach was employed in, and it carries across the promotion
+because it lives on the coach and not on the job. Bounded by the same per-coach limit as the
+assignments beside it.
 
 One-way by default, with a demotion path if the pro job ends badly. Tuned so the move is earned in
 4–12 college seasons at median play.

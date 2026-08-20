@@ -144,6 +144,13 @@ public enum SeasonLifecycleSystem {
             // The protected set is read from the pre-transition root, so this season's departures
             // are still active identities there and survive their first prune by construction.
             people.pruneDepartedPlayers(protecting: retainedIdentityIDs(in: state))
+            pruneSeatlessStaff(
+                state: state,
+                programmes: &programmes,
+                proTeams: &proTeams,
+                staff: &staff,
+                people: &people
+            )
         }
         return PeopleSeasonTransition(
             programmes: programmes,
@@ -154,6 +161,37 @@ public enum SeasonLifecycleSystem {
             college: college,
             eventPayloads: payloads
         )
+    }
+
+    private static func pruneSeatlessStaff(
+        state: GameState,
+        programmes: inout EntityStore<Programme>,
+        proTeams: inout EntityStore<ProTeam>,
+        staff: inout EntityStore<Staff>,
+        people: inout PeopleState
+    ) {
+        var projected = state
+        projected.programmes = programmes
+        projected.proTeams = proTeams
+        projected.staff = staff
+        projected.people = people
+        let tree = CoachingTreeReadModel.build(from: projected)
+        let namedByHistory = Set(
+            tree.branches.flatMap { branch in
+                [branch.mentorID] + branch.disciples.map(\.staffID)
+            }
+        )
+        let seated = Set(
+            programmes.values.flatMap(\.staffIDs)
+                + proTeams.values.flatMap(\.staffIDs)
+        )
+        let protectedIDs = namedByHistory
+            .union(seated)
+            .union(state.career.coachID.map { [$0] } ?? [])
+        for staffID in staff.ids where !protectedIDs.contains(staffID) {
+            _ = staff.remove(staffID)
+            _ = people.removeStaffCareer(staffID)
+        }
     }
 
     /// Every identity a bounded departed set must keep, read from the authoritative root.

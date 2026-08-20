@@ -33,6 +33,8 @@ if CommandLine.arguments.contains("--catalog") {
     runProfessionalCareerSessionTests()
 } else if CommandLine.arguments.contains("--career-arc") {
     runCareerArcTests()
+} else if CommandLine.arguments.contains("--coach-season-record") {
+    runCoachSeasonRecordTests()
 } else if CommandLine.arguments.contains("--pro-management") {
     runProManagementTests()
 } else if CommandLine.arguments.contains("--pro-market") {
@@ -41,6 +43,8 @@ if CommandLine.arguments.contains("--catalog") {
     runCapComplianceTests()
 } else if CommandLine.arguments.contains("--season-rollover") {
     runSeasonRolloverTests()
+} else if CommandLine.arguments.contains("--staff-pruning") {
+    runStaffPruningTests()
 } else if CommandLine.arguments.contains("--jersey-numbers") {
     runJerseyNumberTests()
 } else if CommandLine.arguments.contains("--depth-chart") {
