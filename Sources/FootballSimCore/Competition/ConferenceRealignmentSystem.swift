@@ -14,14 +14,64 @@ import Foundation
 /// The pair taken is the one that most improves **geographic fit** — each programme scored by the
 /// distance from its city to the centroid of its conference's cities — and only when the swap lowers
 /// the total. Performance and market enter through prestige, which already follows the table.
+public enum ConferenceRealignmentReason: String, Codable, Sendable, Equatable {
+    case geographicFit
+}
+
+public struct ConferenceRealignmentSwap: Codable, Sendable, Equatable {
+    public let firstProgrammeID: UUID
+    public let secondProgrammeID: UUID
+    public let firstFromConferenceID: UUID
+    public let firstToConferenceID: UUID
+    public let secondFromConferenceID: UUID
+    public let secondToConferenceID: UUID
+
+    public init(firstProgrammeID: UUID, secondProgrammeID: UUID,
+                firstFromConferenceID: UUID, firstToConferenceID: UUID,
+                secondFromConferenceID: UUID, secondToConferenceID: UUID) {
+        self.firstProgrammeID = firstProgrammeID
+        self.secondProgrammeID = secondProgrammeID
+        self.firstFromConferenceID = firstFromConferenceID
+        self.firstToConferenceID = firstToConferenceID
+        self.secondFromConferenceID = secondFromConferenceID
+        self.secondToConferenceID = secondToConferenceID
+    }
+}
+
+public struct ConferenceRealignmentTransition: Sendable, Equatable {
+    public let state: GameState
+    public let reason: ConferenceRealignmentReason
+    public let swaps: [ConferenceRealignmentSwap]
+
+    public init(state: GameState, reason: ConferenceRealignmentReason,
+                swaps: [ConferenceRealignmentSwap]) {
+        self.state = state
+        self.reason = reason
+        self.swaps = swaps
+    }
+}
+
 public enum ConferenceRealignmentSystem {
     public static func process(in state: GameState) -> GameState {
+        processTransition(in: state).state
+    }
+
+    public static func processTransition(in state: GameState) -> ConferenceRealignmentTransition {
         var next = state
+        var swaps: [ConferenceRealignmentSwap] = []
         for _ in 0..<CollegeRules.realignmentSwapsPerSeason {
             guard let swap = bestSwap(in: next) else { break }
+            swaps.append(ConferenceRealignmentSwap(
+                firstProgrammeID: swap.firstID,
+                secondProgrammeID: swap.secondID,
+                firstFromConferenceID: swap.firstConferenceID,
+                firstToConferenceID: swap.secondConferenceID,
+                secondFromConferenceID: swap.secondConferenceID,
+                secondToConferenceID: swap.firstConferenceID
+            ))
             next = applying(swap, to: next)
         }
-        return next
+        return ConferenceRealignmentTransition(state: next, reason: .geographicFit, swaps: swaps)
     }
 
     private struct Swap {

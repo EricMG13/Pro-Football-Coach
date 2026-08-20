@@ -103,71 +103,23 @@ public enum GameEngine {
     /// bounded: an unbounded loop is a hang rather than a bug.
     public static func play(
         tier: Tier,
+        stage: CompetitionStage = .regularSeason,
         home: SnapPersonnel,
         away: SnapPersonnel,
         caller: some PlayCaller = BaselinePlayCaller(),
-        homeFieldAdvantage: Double = MatchupRules.homeAdvantage,
-        seed: UInt64
+        homeFieldAdvantage: Double? = nil,
+        seed: UInt64,
+        initialSituation: Situation? = nil
     ) -> GameRecord {
-        let rules = tier.clockRules
-        var situation = Situation(
-            yardLine: MatchupRules.kickoffTouchbackYardLine,
-            possession: .home,
-            quarter: 1,
-            secondsRemainingInQuarter: rules.quarterSeconds,
-            timeoutsRemaining: [.home: rules.timeoutsPerHalf, .away: rules.timeoutsPerHalf]
-        )
-        var drives: [DriveRecord] = []
-        var afterTurnover = false
-        var clockRunning = false
-
-        for driveIndex in 0..<MatchupRules.maximumDrivesPerGame {
-            let offense = situation.possession == .home ? home : away
-            let defense = situation.possession == .home ? away : home
-            // 03 section 3 clause 6's drive node. Deriving it per drive rather than threading one
-            // generator through the whole game means a drive that ran long cannot shift the stream
-            // the next drive reads.
-            let driveSeed = SeededRandom.derive(from: seed, scope: .drive, ordinal: driveIndex)
-            let (drive, next) = DriveEngine.run(
-                from: situation, offense: offense, defense: defense, caller: caller, rules: rules,
-                homeFieldAdvantage: homeFieldAdvantage, driveSeed: driveSeed,
-                isAfterTurnover: afterTurnover, clockRunning: clockRunning
-            )
-            drives.append(drive)
-            situation = next
-            // 02 section 3.1's trigger, threaded across the drive boundary. It was a local of
-            // DriveEngine.run that nothing ever set to true, so the trigger was declared and could
-            // not fire — dead capability in the call-in system, which is the one system the
-            // previous build failed hardest at.
-            afterTurnover = drive.ending == .turnover || drive.ending == .downs
-            clockRunning = drive.ending == .endOfQuarter
-
-            // Roll the clock into the next quarter when this one runs out, and stop at the end of
-            // regulation. Overtime is a tier rule and belongs to the phase that has standings to
-            // care about a tie; P3 records the tie.
-            while situation.secondsRemainingInQuarter <= 0,
-                  situation.quarter < rules.quarters {
-                situation.quarter += 1
-                situation.secondsRemainingInQuarter += rules.quarterSeconds
-                // Halftime: the ball changes hands and both sides get their timeouts back. The
-                // quarter break between 1 and 2, or 3 and 4, changes neither.
-                if situation.quarter == rules.quarters / 2 + 1 {
-                    situation.timeoutsRemaining = [.home: rules.timeoutsPerHalf,
-                                                   .away: rules.timeoutsPerHalf]
-                    situation.possession = situation.possession.opponent
-                    situation.yardLine = MatchupRules.kickoffTouchbackYardLine
-                    situation.down = 1
-                    situation.distance = MatchupRules.yardsForFirstDown
-                    clockRunning = false
-                    afterTurnover = false
-                }
-            }
-            if situation.quarter >= rules.quarters, situation.secondsRemainingInQuarter <= 0 {
-                break
-            }
-        }
-
-        return GameRecord(homeScore: situation.homeScore, awayScore: situation.awayScore,
-                          drives: drives, tier: tier)
+        MatchReducer.playToCompletion(
+            tier: tier,
+            stage: stage,
+            home: home,
+            away: away,
+            caller: caller,
+            homeFieldAdvantage: homeFieldAdvantage,
+            seed: seed,
+            initialSituation: initialSituation
+        ).record
     }
 }

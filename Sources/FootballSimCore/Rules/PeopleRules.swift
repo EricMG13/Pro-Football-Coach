@@ -3,12 +3,26 @@ import Foundation
 public enum PeopleRules {
     public static let fatigueRange: ClosedRange<Int> = 0...100
     public static let careerSeasonHistoryLimit = 40
+    /// The stated bound on retained departed-player identities (`CLAUDE.md` conventions).
+    ///
+    /// Departure was the only unbounded inflow into `PeopleState`: a college roster turns over
+    /// completely every four seasons, so roughly three thousand identities arrived here per season
+    /// and none ever left. Measured at about 1.4 kB per departed player once the paired career
+    /// record is counted, that alone carried a season-20 save past 26 MB against an 8 MB target.
+    ///
+    /// Sized at rather more than two seasons of departures so the recent world stays nameable
+    /// without the pruner running every season on a young career. Anything a retained event, an
+    /// archived award or a portal history still names is protected regardless of this number, so
+    /// the bound can never make a retained reference dangle.
+    public static let departedPlayerRetentionLimit = 8_192
     public static var portalWindowHistoryLimit: Int {
         CollegeRules.portalWindowCount * CollegeRules.eligibilityClockYears
     }
     public static let maximumInjuryWeeks = 52
     public static let maximumDevelopmentComponents = 8
     public static let maximumAttributeChangesPerSummary = 16
+    /// Player Profile exposes the last six applied changes; older entries remain in season ledgers.
+    public static let recentChangeHistoryLimit = 6
     public static let developmentComponentRange: ClosedRange<Int> = -2...2
     public static let attributeDevelopmentRange: ClosedRange<Int> = -1...1
     public static let playerAgeRange: ClosedRange<Int> = 16...60
@@ -41,5 +55,101 @@ public enum PeopleRules {
                 * fatigueInjuryProbabilityScale
             + Double(SharedRules.ratingRange.upperBound - durability.value)
                 * durabilityInjuryProbabilityScale
+    }
+    /// How many people are available for a staff role at once. `02` §6.1. Small: a shortlist is a
+    /// decision, a directory is a search.
+    public static let staffCandidatesPerRole = 5
+    /// What is still owed to the coach being replaced, as a fraction of their salary. Replacing an
+    /// expensive coach with a cheap one is not free.
+    public static let staffSeveranceShare = 2
+
+    // MARK: - Morale
+
+    /// Where a player sits before anything has happened to them. `02` §5.1.
+    public static let baselineMorale = 60
+    public static let unhappyMorale = 45
+    public static let delightedMorale = 78
+
+    /// Appearance share, as a percentage of the team's games, at which a player counts as a starter
+    /// or as buried. Between the two they are a rotation player with nothing much to say.
+    public static let starterAppearanceShare = 70
+    public static let benchAppearanceShare = 25
+    /// Win share at which a season counts as contending or as struggling.
+    public static let contendingWinShare = 65
+    public static let strugglingWinShare = 35
+
+    public static let moralePlayingTimeBonus = 14
+    public static let moraleTeamSuccessBonus = 10
+    public static let moraleInjuryCost = 8
+    public static let moraleInvestmentBonus = 6
+
+    // MARK: - Discipline. `02` §5.2.
+
+    /// The longest a coach can put one of their own players out. Bounded because a suspension is a
+    /// stored countdown and an unbounded one is a player removed from the game by a screen.
+    public static let maximumSuspensionWeeks = 8
+
+    /// How often a settled, contented professional gets into trouble in a given week. Small: an
+    /// incident every week is a soap opera, and one a season across a roster is a football team.
+    public static let baseIncidentProbability = 0.004
+    /// What `volatile` adds to that. `02` §11.3.3 names Discipline as the trait's authoritative
+    /// system, and this is the half of it that decides who turns up in the file.
+    public static let volatileIncidentProbability = 0.020
+    /// What being unhappy adds. Morale is derived (`02` §5.1), so this is the one place the two
+    /// systems meet: a player nobody plays and nobody pays is the one who misses meetings.
+    public static let unhappyIncidentProbability = 0.012
+
+    /// What a coach is advised to give for each kind, in weeks. Advice, not enforcement — `02` §5.2
+    /// makes the response the coach's, and a game that suspended players on the coach's behalf would
+    /// be administering its own discipline.
+    public static let recommendedSuspensionWeeks: [DisciplineIncidentKind: Int] = [
+        .timekeeping: 0,
+        .conduct: 1,
+        .teamRules: 2,
+        .offField: 4,
+    ]
+
+    /// What being suspended costs morale, per week of the suspension, to a stated floor. A player
+    /// who is punished feels worse about the place, which is the loop that makes discipline a
+    /// decision rather than a free action.
+    public static let moraleSuspensionCostPerWeek = 4
+    public static let maximumMoraleSuspensionCost = 20
+
+    // MARK: - Injury severity
+
+    /// The severity ladder, as constants rather than as literals at a call site.
+    ///
+    /// These four numbers lived inline in `PeopleLifecycleSystem`'s weekly draw — `0.72`, `0.95` and
+    /// the three week ranges — which `CLAUDE.md` forbids and which mattered the moment a second
+    /// caller needed the same ladder: the match engine's in-play injuries (`02` §3.8) would
+    /// otherwise have carried a hand-copied duplicate that nothing asserts agrees.
+    public static let minorInjuryShare = 0.72
+    public static let moderateInjuryShare = 0.95
+    public static let minorInjuryWeeks: ClosedRange<Int> = 1...2
+    public static let moderateInjuryWeeks: ClosedRange<Int> = 3...6
+    public static let severeInjuryWeeks: ClosedRange<Int> = 7...14
+
+    /// Severity and its week range, from one uniform roll.
+    public static func injurySeverity(
+        roll: Double
+    ) -> (severity: InjurySeverity, weeks: ClosedRange<Int>) {
+        if roll < minorInjuryShare { return (.minor, minorInjuryWeeks) }
+        if roll < moderateInjuryShare { return (.moderate, moderateInjuryWeeks) }
+        return (.severe, severeInjuryWeeks)
+    }
+
+    /// What `ironman` is worth: a share of the weeks lost, never below one.
+    ///
+    /// `02` §11.3.3 gives the trait one system — Injury — and one effect, written there as "recovers
+    /// faster, misses fewer weeks". That is one mechanism said twice, not two: a shorter stored
+    /// duration *is* both halves, and `recoverWeek` decrementing faster on top of it would pay a
+    /// single trait against a single system twice. An earlier version of this comment split the
+    /// sentence in two and promised the first half to recovery, which is why the trait spent its
+    /// life inert — `PeopleLifecycleSystem.processHealth` is the one caller, and now calls it.
+    public static let ironmanInjuryWeekShare = 0.6
+
+    public static func injuryWeeks(_ weeks: Int, ironman: Bool) -> Int {
+        guard ironman else { return weeks }
+        return max(1, Int((Double(weeks) * ironmanInjuryWeekShare).rounded()))
     }
 }

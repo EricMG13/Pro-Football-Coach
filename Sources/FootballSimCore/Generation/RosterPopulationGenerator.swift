@@ -68,7 +68,7 @@ public enum RosterPopulationGenerator {
             ordinal: ordinal
         ))
         let name = NameGrammar.personName(using: &rng)
-        let base = baseRating(prestige: prestige, tier: tier)
+        let base = baseRating(strength: prestige, tier: tier)
         var attributes = Attributes()
         for attribute in position.ratedAttributes {
             attributes[attribute] = Rating(base + rng.int(in: -10...10))
@@ -218,7 +218,7 @@ public enum RosterPopulationGenerator {
                     ordinal: slot
                 ))
                 let name = NameGrammar.personName(using: &rng)
-                let base = baseRating(prestige: prestige, tier: tier)
+                let base = baseRating(strength: prestige, tier: tier)
                 var attributes = Attributes()
                 for attribute in position.ratedAttributes {
                     attributes[attribute] = Rating(base + rng.int(in: -10...10))
@@ -258,8 +258,17 @@ public enum RosterPopulationGenerator {
         return roster
     }
 
-    private static func baseRating(prestige: Rating, tier: Tier) -> Int {
-        let span = prestige.value - SharedRules.ratingRange.lowerBound
+    /// The talent scale both intake paths share, keyed on whatever makes the source strong.
+    ///
+    /// `strength` is a programme's prestige when generating that programme's roster, and a region's
+    /// talent density when generating the prospects it produces. The two were separate expressions
+    /// until 2026-08-20 — this one, and `42 + span * 28/59` in `ProspectPopulationGenerator` — which
+    /// put recruiting 6.5 points below bootstrap with a floor 8 points lower. Nothing asserted they
+    /// agreed, so the college game decayed from the bootstrap scale to the recruiting scale over six
+    /// seasons and settled there; the rating-spread band's tier-gap limb is what caught it. One
+    /// expression, so a change to the scale cannot move one intake path without the other.
+    static func baseRating(strength: Rating, tier: Tier) -> Int {
+        let span = strength.value - SharedRules.ratingRange.lowerBound
         switch tier {
         case .college:
             return 50 + span * 25 / 59

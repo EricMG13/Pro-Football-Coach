@@ -88,7 +88,7 @@ public enum CollegeCommitmentCapacitySystem {
             scholarshipOpenings
         )
         let activeRecruitment = college.prospectRecruitment.values.filter {
-            $0.programmeID == programmeID && ($0.phase == .committed || $0.phase == .signed)
+            $0.programmeID == programmeID && CollegeState.occupiesClassPlace($0)
         }
         let rosterCounts = Dictionary(grouping: returningPlayerIDs.compactMap {
             state.players[$0]?.position
@@ -120,13 +120,30 @@ public enum CollegeCommitmentSystem {
         in state: GameState,
         college: inout CollegeState
     ) -> Bool {
+        reserve(
+            prospectID: prospectID,
+            context: context,
+            in: state,
+            college: &college,
+            fitCache: nil
+        )
+    }
+
+    static func reserve(
+        prospectID: UUID,
+        context: RecruitingCommitmentContext,
+        in state: GameState,
+        college: inout CollegeState,
+        fitCache: RecruitingFitCache?
+    ) -> Bool {
         guard let prospect = state.prospects[prospectID],
               context.previousWinner == nil,
               contextIsAuthoritative(
                 prospectID: prospectID,
                 context: context,
                 in: state,
-                college: college
+                college: college,
+                fitCache: fitCache
               ),
               let capacity = CollegeCommitmentCapacitySystem.capacity(
                 programmeID: context.winner.programmeID,
@@ -148,6 +165,22 @@ public enum CollegeCommitmentSystem {
         in state: GameState,
         college: inout CollegeState
     ) -> Bool {
+        flip(
+            prospectID: prospectID,
+            context: context,
+            in: state,
+            college: &college,
+            fitCache: nil
+        )
+    }
+
+    static func flip(
+        prospectID: UUID,
+        context: RecruitingCommitmentContext,
+        in state: GameState,
+        college: inout CollegeState,
+        fitCache: RecruitingFitCache?
+    ) -> Bool {
         guard let prospect = state.prospects[prospectID],
               let existing = college.prospectRecruitment[prospectID],
               existing.phase == .committed,
@@ -163,7 +196,8 @@ public enum CollegeCommitmentSystem {
                 prospectID: prospectID,
                 context: context,
                 in: state,
-                college: college
+                college: college,
+                fitCache: fitCache
               ),
               let capacity = CollegeCommitmentCapacitySystem.capacity(
                 programmeID: context.winner.programmeID,
@@ -182,7 +216,8 @@ public enum CollegeCommitmentSystem {
         prospectID: UUID,
         context: RecruitingCommitmentContext,
         in state: GameState,
-        college: CollegeState
+        college: CollegeState,
+        fitCache: RecruitingFitCache?
     ) -> Bool {
         guard context.isValid,
               let prospectPosition = state.prospects[prospectID]?.position,
@@ -190,28 +225,33 @@ public enum CollegeCommitmentSystem {
               context.committedAt.week >= CollegeRules.minimumCommitmentWeek else { return false }
         var workingState = state
         workingState.college = college
+        let cache = fitCache ?? RecruitingFitCache(state: workingState)
         return contenderIsAuthoritative(
             prospectID: prospectID,
             contender: context.winner,
-            in: workingState
+            in: workingState,
+            fitCache: cache
         ) && (context.runnerUp.map {
             contenderIsAuthoritative(
                 prospectID: prospectID,
                 contender: $0,
-                in: workingState
+                in: workingState,
+                fitCache: cache
             )
         } ?? true) && (context.previousWinner.map {
             contenderIsAuthoritative(
                 prospectID: prospectID,
                 contender: $0,
-                in: workingState
+                in: workingState,
+                fitCache: cache
             )
         } ?? true) && {
             if case let .capacityFallback(blockedPreferred) = context.selectionReason {
                 return contenderIsAuthoritative(
                     prospectID: prospectID,
                     contender: blockedPreferred,
-                    in: workingState
+                    in: workingState,
+                    fitCache: cache
                 ) && CollegeCommitmentCapacitySystem.capacity(
                     programmeID: blockedPreferred.programmeID,
                     in: state,
@@ -225,7 +265,8 @@ public enum CollegeCommitmentSystem {
     private static func contenderIsAuthoritative(
         prospectID: UUID,
         contender: RecruitingCommitmentContenderContext,
-        in state: GameState
+        in state: GameState,
+        fitCache: RecruitingFitCache
     ) -> Bool {
         guard let recruiting = state.college.programmes[contender.programmeID],
               let relationship = recruiting.relationships[prospectID],
@@ -233,7 +274,8 @@ public enum CollegeCommitmentSystem {
               let explanation = RecruitingFitSystem.evaluate(
                 programmeID: contender.programmeID,
                 prospectID: prospectID,
-                in: state
+                in: state,
+                cache: fitCache
               ) else { return false }
         return contender.relationshipInterest == relationship.interest
             && contender.nilAllocation == recruiting.nilAllocation(for: prospectID)

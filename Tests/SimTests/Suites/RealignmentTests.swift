@@ -82,7 +82,78 @@ func runRealignmentTests() {
                 second.programmes.values.map { $0.conferenceID?.uuidString ?? "" }
             )
         }
+
+        test("typed transition matches the state-only API") {
+            let before = GameState.bootstrap(seed: 95_107)
+            let transition = ConferenceRealignmentSystem.processTransition(in: before)
+            expectEqual(transition.state, ConferenceRealignmentSystem.process(in: before))
+            expect(transition.swaps.count <= CollegeRules.realignmentSwapsPerSeason,
+                   "typed transition exceeded the realignment bound")
+            for swap in transition.swaps {
+                expect(swap.firstProgrammeID != swap.secondProgrammeID,
+                       "realignment swapped a programme with itself")
+                expect(swap.firstFromConferenceID != swap.firstToConferenceID,
+                       "first programme did not change conferences")
+                expect(swap.secondFromConferenceID != swap.secondToConferenceID,
+                       "second programme did not change conferences")
+            }
+        }
     }
+
+    suite("Realignment: the map the slate is built from") {
+        test("the slate the boundary installs is built from the map the boundary produced") {
+            // `WorldScheduler` stated the ordering as a requirement — "the schedule is
+            // generated from conference membership, so a swap has to land before it is read, not
+            // after" — and nothing asserted it. Every test above works on a single call to
+            // `ConferenceRealignmentSystem`; none of them walks a real season boundary, so none of
+            // them can see where the boundary puts that call relative to the slate it feeds.
+            //
+            // Advance a real world through one boundary, then rebuild the installed slate from the
+            // conference map that same boundary left behind. Identical inputs must reproduce it
+            // exactly: `ScheduleGenerator` reads nothing from a programme but its id and its
+            // conference, and sorts its members itself. A disagreement means the season the player
+            // is about to play was drawn against a map that no longer exists.
+            var state = GameState.bootstrap(seed: 95_108)
+            let start = state
+            while state.calendar.season == 0 {
+                state = try WorldScheduler.advanceWeek(state).state
+            }
+            expectEqual(state.calendar, CalendarState(season: 1, week: 1))
+            expectEqual(state.competition.currentSchedule.season, 1)
+
+            let moved = start.programmes.values.filter {
+                state.programmes[$0.id]?.conferenceID != $0.conferenceID
+            }
+            expect(!moved.isEmpty,
+                   "no programme changed conference across this boundary, so this test asserts "
+                       + "nothing; seed 95_108 needs replacing with one that realigns")
+
+            let rebuilt = ScheduleGenerator.regularSeason(
+                seed: state.league.seed,
+                season: 1,
+                programmes: state.programmes.values,
+                proTeams: state.proTeams.values
+            )
+            let installedKeys = pairingKeys(state.competition.currentSchedule.games)
+            let rebuiltKeys = pairingKeys(rebuilt)
+            let stale = installedKeys.subtracting(rebuiltKeys)
+            expect(stale.isEmpty,
+                   "\(moved.count) programmes realigned and \(stale.count) of "
+                       + "\(installedKeys.count) scheduled meetings are ones the current "
+                       + "conference map does not produce, so the slate was generated before the "
+                       + "swap landed")
+        }
+    }
+}
+
+/// Tier, week and the unordered pairing — everything about a meeting except which side is home
+/// and the identifier the generator happened to mint for it.
+private func pairingKeys(_ games: [ScheduledGame]) -> Set<String> {
+    Set(games.map { game in
+        let ordered = [game.homeID, game.awayID].sorted { $0.uuidString < $1.uuidString }
+        return "\(game.tier.rawValue)|\(game.week)|\(ordered[0].uuidString)"
+            + "|\(ordered[1].uuidString)"
+    })
 }
 
 private func conferenceSizes(in state: GameState) -> [Int] {

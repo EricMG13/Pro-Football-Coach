@@ -15,6 +15,8 @@ public extension CoachWorldReadModelProvider {
               let programme = state.programmes[control.programmeID],
               let recruiting = state.college.programmes[control.programmeID] else { return nil }
 
+        let recruitingOwnerIsUser = control.responsibilityOwners[.recruiting] == .user
+        let fitSnapshot = RecruitingFitSnapshot(in: state)
         let prospects = recruiting.boardIDs.enumerated().compactMap { index, prospectID in
             state.prospects[prospectID].map {
                 prospect(
@@ -22,11 +24,47 @@ public extension CoachWorldReadModelProvider {
                     boardRank: index + 1,
                     programmeID: programme.id,
                     recruiting: recruiting,
+                    recruitingOwnerIsUser: recruitingOwnerIsUser,
+                    fitSnapshot: fitSnapshot,
                     in: state
                 )
             }
         }
+        let boardIDs = Set(recruiting.boardIDs)
+        let discovery = state.prospects.values
+            .filter { prospect in
+                guard !boardIDs.contains(prospect.id) else { return false }
+                return state.college.prospectRecruitment[prospect.id]?.phase == .available
+            }
+            .sorted { lhs, rhs in
+                let lhsTotal = fitSnapshot.evaluate(
+                    programmeID: programme.id,
+                    prospectID: lhs.id
+                )?.total ?? 0
+                let rhsTotal = fitSnapshot.evaluate(
+                    programmeID: programme.id,
+                    prospectID: rhs.id
+                )?.total ?? 0
+                if lhsTotal != rhsTotal { return lhsTotal > rhsTotal }
+                return lhs.id.uuidString < rhs.id.uuidString
+            }
+            .prefix(RecruitingBoardReadModel.maximumDiscoveryProspects)
+            .map {
+                discoveryProspect(
+                    $0,
+                    programmeID: programme.id,
+                    recruiting: recruiting,
+                    recruitingOwnerIsUser: recruitingOwnerIsUser,
+                    fitSnapshot: fitSnapshot,
+                    in: state
+                )
+            }
 
+        let continueReason = state.pending.mandatoryDecisions.contains {
+            $0.programmeID == programme.id
+        }
+            ? "Complete the pending decision in Coaching HQ before advancing."
+            : nil
         return RecruitingBoardReadModel(
             snapshotID: snapshotID("recruiting", programme.id, state.calendar),
             provenance: .simulationSnapshot,
@@ -42,20 +80,81 @@ public extension CoachWorldReadModelProvider {
                     / CollegeRules.visitContactCost
             ),
             positionNeeds: positionNeeds(programme, in: state),
-            prospects: prospects
+            prospects: prospects,
+            discovery: discovery,
+            canContinue: continueReason == nil,
+            continueReason: continueReason
         )
     }
 
     // MARK: - Prospects
+
+    private static func discoveryProspect(
+        _ prospect: Prospect,
+        programmeID: UUID,
+        recruiting: ProgrammeRecruitingState,
+        recruitingOwnerIsUser: Bool,
+        fitSnapshot: RecruitingFitSnapshot,
+        in state: GameState
+    ) -> RecruitingBoardReadModel.Prospect {
+        let stableID = prospect.id.uuidString
+        let boardFull = recruiting.boardIDs.count >= CollegeRules.recruitingBoardLimit
+        let activePhase = state.college.phase.allowsRecruitingActions
+        let portalOpen = state.college.portal.phase != .awaitingSpring
+        let available = activePhase && portalOpen && !boardFull && recruitingOwnerIsUser
+        let reason: String?
+        if !recruitingOwnerIsUser {
+            reason = "Recruiting responsibility is delegated"
+        } else if !activePhase {
+            reason = "Recruiting is not open in this phase"
+        } else if !portalOpen {
+            reason = "Recruiting is paused for the spring portal transaction"
+        } else if boardFull {
+            reason = "The recruiting board is full"
+        } else {
+            reason = nil
+        }
+        return RecruitingBoardReadModel.Prospect(
+            stableID: stableID,
+            person: CoachWorldPersonReference(
+                stableID: "\(stableID)-person",
+                name: prospect.fullName,
+                role: label(prospect.position)
+            ),
+            boardRank: 0,
+            position: label(prospect.position),
+            hometown: hometown(prospect.originCityID, in: state),
+            interest: "Untracked",
+            status: "Discoverable",
+            evaluation: evaluation(
+                prospect.id,
+                programmeID: programmeID,
+                fitSnapshot: fitSnapshot,
+                in: state
+            ),
+            relationshipHistory: [],
+            choices: [CoachWorldActionChoice(
+                intentID: CoachWorldIntentID(rawValue: "addToBoard"),
+                title: "Add to board",
+                cost: "0 contact points",
+                consequence: "Starts a bounded relationship record for this prospect",
+                isAvailable: available,
+                unavailableReason: reason
+            )]
+        )
+    }
 
     private static func prospect(
         _ prospect: Prospect,
         boardRank: Int,
         programmeID: UUID,
         recruiting: ProgrammeRecruitingState,
+        recruitingOwnerIsUser: Bool,
+        fitSnapshot: RecruitingFitSnapshot,
         in state: GameState
     ) -> RecruitingBoardReadModel.Prospect {
         let relationship = recruiting.relationships[prospect.id]
+        let status = statusLabel(prospect.id, programmeID: programmeID, in: state)
         return RecruitingBoardReadModel.Prospect(
             stableID: prospect.id.uuidString,
             person: CoachWorldPersonReference(
@@ -67,14 +166,32 @@ public extension CoachWorldReadModelProvider {
             position: label(prospect.position),
             hometown: hometown(prospect.originCityID, in: state),
             interest: interestLabel(relationship?.interest ?? 0),
-            status: statusLabel(prospect.id, in: state),
-            evaluation: evaluation(prospect.id, programmeID: programmeID, in: state),
+            status: status,
+            // Derived from the same label rather than re-deriving the phase check, so the flag
+            // can never disagree with what the status text says.
+            isCommitted: status == "Committed" || status == "Signed",
+            evaluation: evaluation(
+                prospect.id,
+                programmeID: programmeID,
+                fitSnapshot: fitSnapshot,
+                in: state
+            ),
             // The board's own bounded event ledger holds no per-prospect interaction log; the
             // domain-event history is global and retention-bounded, not indexed by prospect. G-05
             // (opponent-knowledge boundary) is the closer relative of this gap, not a fit for a
             // fabricated history here.
             relationshipHistory: [],
-            choices: choices(for: prospect, relationship: relationship)
+            choices: choices(
+                for: prospect,
+                relationship: relationship,
+                recruiting: recruiting,
+                programme: state.programmes[programmeID],
+                recruitment: state.college.prospectRecruitment[prospect.id],
+                programmeID: programmeID,
+                cyclePhase: state.college.phase,
+                recruitingOwnerIsUser: recruitingOwnerIsUser,
+                in: state
+            )
         )
     }
 
@@ -97,11 +214,21 @@ public extension CoachWorldReadModelProvider {
 
     /// Read from `state.college.prospectRecruitment[id].phase` — the engine's own commitment
     /// state machine — rather than inferred from board membership, which says only that the
-    /// programme is pursuing the prospect, not what the prospect has decided.
-    private static func statusLabel(_ prospectID: UUID, in state: GameState) -> String {
-        switch state.college.prospectRecruitment[prospectID]?.phase {
-        case .committed: return "Committed"
-        case .signed: return "Signed"
+    /// programme is pursuing the prospect, not what the prospect has decided. `.committed` alone
+    /// does not say to whom: the withdraw choice's own availability check already compares
+    /// `recruitment.programmeID` against the viewing programme to tell a genuine commitment here
+    /// from a commitment elsewhere, and this label now makes the same comparison. `.signed` makes
+    /// it too, for the same reason: a prospect who committed elsewhere and was never withdrawn
+    /// stays on this board through signing day (`CollegeState.sign` only ever touches the signing
+    /// programme's own roster, and `withdraw(_:)` is the only code that prunes `boardIDs`), so an
+    /// unqualified "Signed" here would read identically to an actual own signee.
+    private static func statusLabel(_ prospectID: UUID, programmeID: UUID, in state: GameState) -> String {
+        let recruitment = state.college.prospectRecruitment[prospectID]
+        switch recruitment?.phase {
+        case .committed:
+            return recruitment?.programmeID == programmeID ? "Committed" : "Committed elsewhere"
+        case .signed:
+            return recruitment?.programmeID == programmeID ? "Signed" : "Signed elsewhere"
         case .released: return "Released"
         case .available, nil: return "Uncommitted"
         }
@@ -113,12 +240,12 @@ public extension CoachWorldReadModelProvider {
     private static func evaluation(
         _ prospectID: UUID,
         programmeID: UUID,
+        fitSnapshot: RecruitingFitSnapshot,
         in state: GameState
     ) -> RecruitingBoardReadModel.Evaluation {
-        guard let explanation = RecruitingFitSystem.evaluate(
+        guard let explanation = fitSnapshot.evaluate(
             programmeID: programmeID,
-            prospectID: prospectID,
-            in: state
+            prospectID: prospectID
         ) else {
             return RecruitingBoardReadModel.Evaluation(
                 verdict: "Unscored",
@@ -127,9 +254,7 @@ public extension CoachWorldReadModelProvider {
                 citedOutliers: []
             )
         }
-        let total = explanation.components.reduce(0) { $0 + $1.value }
-            + explanation.relationshipInterestAdjustment / 10
-            + explanation.nilAllocationAdjustment / 10
+        let total = explanation.total
         let schemeFitValue = explanation.components.first { $0.reason == .schemeFit }?.value ?? 0
         let confidence = state.scouting.observation(
             observerID: programmeID,
@@ -141,18 +266,29 @@ public extension CoachWorldReadModelProvider {
             .map { "\(label($0.reason)) \($0.value >= 0 ? "+" : "")\($0.value)" }
 
         return RecruitingBoardReadModel.Evaluation(
-            verdict: band(total),
-            schemeFit: band(schemeFitValue),
+            verdict: totalBand(total),
+            schemeFit: componentBand(schemeFitValue),
             uncertainty: confidence.map { "Confidence \($0)%" } ?? "No evaluation yet",
             citedOutliers: outliers
         )
     }
 
-    private static func band(_ value: Int) -> String {
+    private static func totalBand(_ value: Int) -> String {
+        // These are the same 0–100 decision bands used by the recruiting contract, so a
+        // sub-threshold fit cannot be presented as an "Elite" commitment prospect.
+        switch value {
+        case ..<60: return "Weak"
+        case 60..<70: return "Fair"
+        case 70..<85: return "Strong"
+        default: return "Elite"
+        }
+    }
+
+    private static func componentBand(_ value: Int) -> String {
         switch value {
         case ..<0: return "Weak"
-        case 0..<8: return "Fair"
-        case 8..<15: return "Strong"
+        case 0..<4: return "Fair"
+        case 4..<8: return "Strong"
         default: return "Elite"
         }
     }
@@ -163,21 +299,74 @@ public extension CoachWorldReadModelProvider {
     /// `RecruitingAction` by `CoachWorldReadModelProvider.recruitingAction(for:)`.
     private static func choices(
         for prospect: Prospect,
-        relationship: ProgrammeProspectRelationship?
+        relationship: ProgrammeProspectRelationship?,
+        recruiting: ProgrammeRecruitingState,
+        programme: Programme?,
+        recruitment: ProspectRecruitmentState?,
+        programmeID: UUID,
+        cyclePhase: RecruitingCyclePhase,
+        recruitingOwnerIsUser: Bool,
+        in state: GameState
     ) -> [CoachWorldActionChoice] {
         let contactCost = "\(CollegeRules.aiEvaluationContactPoints) pts"
+        let activePhase = cyclePhase.allowsRecruitingActions
+        let portalOpen = state.college.portal.phase != .awaitingSpring
+        let recruitingOpen = activePhase && portalOpen && recruitingOwnerIsUser
+        let challengeAuthorized = recruitment.map {
+            $0.phase == .committed
+                && RecruitingCommitmentChallengePolicy.isAuthorized(
+                    programmeID: programmeID,
+                    prospectID: prospect.id,
+                    in: state
+                )
+        } ?? false
+        let investmentPhase = recruitment?.phase == .available || challengeAuthorized
+        let pointsForContact = recruiting.contactPointsRemaining >= CollegeRules.aiEvaluationContactPoints
+        let pointsForVisit = recruiting.contactPointsRemaining >= CollegeRules.visitContactCost
+        let scholarshipAvailable = (programme?.scholarshipCount ?? CollegeRules.scholarshipLimit)
+            < CollegeRules.scholarshipLimit
+        let phaseReason: String
+        if !recruitingOwnerIsUser {
+            phaseReason = "Recruiting responsibility is delegated"
+        } else if !activePhase {
+            phaseReason = "Recruiting is not open in this phase"
+        } else if !portalOpen {
+            phaseReason = "Recruiting is paused for the spring portal transaction"
+        } else {
+            phaseReason = "Recruiting is not open in this phase"
+        }
+        let onBoard = relationship != nil
+        let boardReason = "This prospect is not on this programme's board"
+        let prospectReason: String
+        switch recruitment?.phase {
+        case .signed: prospectReason = "This prospect has signed"
+        case .released: prospectReason = "This prospect was released"
+        case .committed where !challengeAuthorized:
+            prospectReason = "This prospect is committed elsewhere"
+        default: prospectReason = "This prospect is not available"
+        }
         var built: [CoachWorldActionChoice] = [
             CoachWorldActionChoice(
                 intentID: CoachWorldIntentID(rawValue: "contact"),
                 title: "Contact",
                 cost: contactCost,
-                consequence: "Raises interest"
+                consequence: "Raises interest",
+                isAvailable: recruitingOpen && onBoard && investmentPhase && pointsForContact,
+                unavailableReason: !recruitingOpen ? phaseReason
+                    : !onBoard ? boardReason
+                    : !investmentPhase ? prospectReason
+                    : "Only \(recruiting.contactPointsRemaining) contact points remain"
             ),
             CoachWorldActionChoice(
                 intentID: CoachWorldIntentID(rawValue: "evaluate"),
                 title: "Evaluate",
                 cost: contactCost,
-                consequence: "Narrows the fog on their true ratings"
+                consequence: "Narrows the fog on their true ratings",
+                isAvailable: recruitingOpen && onBoard && investmentPhase && pointsForContact,
+                unavailableReason: !recruitingOpen ? phaseReason
+                    : !onBoard ? boardReason
+                    : !investmentPhase ? prospectReason
+                    : "Only \(recruiting.contactPointsRemaining) contact points remain"
             ),
         ]
         if relationship?.visitScheduled != true {
@@ -185,7 +374,12 @@ public extension CoachWorldReadModelProvider {
                 intentID: CoachWorldIntentID(rawValue: "scheduleVisit"),
                 title: "Schedule visit",
                 cost: "\(CollegeRules.visitContactCost) pts",
-                consequence: "Creates a commitment window"
+                consequence: "Creates a commitment window",
+                isAvailable: recruitingOpen && onBoard && investmentPhase && pointsForVisit,
+                unavailableReason: !recruitingOpen ? phaseReason
+                    : !onBoard ? boardReason
+                    : !investmentPhase ? prospectReason
+                    : "Only \(recruiting.contactPointsRemaining) contact points remain"
             ))
         }
         if relationship?.scholarshipOffered != true {
@@ -193,14 +387,31 @@ public extension CoachWorldReadModelProvider {
                 intentID: CoachWorldIntentID(rawValue: "offerScholarship"),
                 title: "Offer scholarship",
                 cost: "1 slot",
-                consequence: "Commits a scholarship slot"
+                consequence: "Commits a scholarship slot",
+                isAvailable: recruitingOpen && onBoard && investmentPhase && scholarshipAvailable,
+                unavailableReason: !recruitingOpen ? phaseReason
+                    : !onBoard ? boardReason
+                    : !investmentPhase ? prospectReason
+                    : "No scholarship slots remain"
             ))
         }
         built.append(CoachWorldActionChoice(
             intentID: CoachWorldIntentID(rawValue: "withdraw"),
             title: "Withdraw",
-            cost: "No cost",
-            consequence: "Leaves the board"
+            cost: "Ends the relationship",
+            consequence: "Drops recorded interest, any scheduled visit and any scholarship offer",
+            // A prospect who signed elsewhere is exactly as stuck on this board as one committed
+            // elsewhere would be without this clause — nothing else ever prunes boardIDs — so it
+            // gets the same escape hatch, matching statusLabel's own "elsewhere" distinction.
+            isAvailable: recruitingOpen && onBoard && (recruitment?.phase == .available
+                || (recruitment?.phase == .committed && recruitment?.programmeID != programmeID)
+                || (recruitment?.phase == .signed && recruitment?.programmeID != programmeID)),
+            unavailableReason: !recruitingOpen ? phaseReason
+                : !onBoard ? boardReason
+                : recruitment?.phase == .signed ? "This prospect has signed"
+                : recruitment?.phase == .released ? "This prospect was released"
+                : recruitment?.phase == .committed ? "This prospect is committed to this programme"
+                : "This prospect is not on an active board"
         ))
         return built
     }
@@ -240,6 +451,7 @@ public extension CoachWorldReadModelProvider {
     /// reported verbatim, the same as any other intent this app resolves.
     static func recruitingAction(for intentID: CoachWorldIntentID) -> RecruitingAction? {
         switch intentID.rawValue {
+        case "addToBoard": return .addToBoard
         case "contact": return .contact(points: CollegeRules.aiEvaluationContactPoints)
         case "evaluate": return .evaluate(points: CollegeRules.aiEvaluationContactPoints)
         case "scheduleVisit": return .scheduleVisit

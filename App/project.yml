@@ -10,7 +10,7 @@ targets:
   ProFootballCoach:
     type: application
     platform: iOS
-    sources: [.]
+    sources: [ProFootballCoachApp.swift]
     dependencies:
       - package: ProFootballCoach
         product: FootballSimCore
@@ -34,6 +34,26 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: "1.0"
+  ProFootballCoachTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [../Tests/ProFootballCoachTests/ProFootballCoachTests.swift]
+    dependencies:
+      - target: ProFootballCoach
+    settings:
+      base:
+        SWIFT_VERSION: "5.10"
+        GENERATE_INFOPLIST_FILE: YES
+  ProFootballCoachUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [../Tests/ProFootballCoachUITests/ProFootballCoachUITests.swift]
+    dependencies:
+      - target: ProFootballCoach
+    settings:
+      base:
+        SWIFT_VERSION: "5.10"
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   ProFootballCoach:
     build:
@@ -43,9 +63,22 @@ schemes:
       config: Debug
     test:
       config: Debug
+      targets:
+        - ProFootballCoachTests
+        - ProFootballCoachUITests
     profile:
       config: Release
     analyze:
       config: Debug
     archive:
       config: Release
+  ProFootballCoachRelease:
+    build:
+      targets:
+        ProFootballCoach: all
+        ProFootballCoachTests: [test]
+        ProFootballCoachUITests: [test]
+    test:
+      config: Release
+      targets:
+        - ProFootballCoachTests

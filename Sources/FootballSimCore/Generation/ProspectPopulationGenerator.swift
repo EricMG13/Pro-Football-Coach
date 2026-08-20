@@ -31,8 +31,14 @@ public enum ProspectPopulationGenerator {
                 : weightedPositions[rng.int(in: 0...(weightedPositions.count - 1))]
             let density = regions[city.regionID]?.talentDensity.value
                 ?? SharedRules.ratingRange.lowerBound
-            let base = 42 + (density - SharedRules.ratingRange.lowerBound) * 28 / 59
-                + rng.int(in: -8...8)
+            // The same scale a programme's own roster is generated on, keyed on the region's
+            // talent density rather than a programme's prestige. This was `42 + span * 28/59`, a
+            // second expression nothing asserted agreed with the first, and recruiting therefore
+            // sat 6.5 points below the league it fed.
+            let base = RosterPopulationGenerator.baseRating(
+                strength: Rating(density),
+                tier: .college
+            ) + rng.int(in: -8...8)
             var attributes = Attributes()
             for attribute in position.ratedAttributes {
                 attributes[attribute] = Rating(base + rng.int(in: -7...7))

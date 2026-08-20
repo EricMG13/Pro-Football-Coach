@@ -79,7 +79,8 @@ listing: your save is yours, on your device, and nothing phones home.
 
 ## Commitments
 
-Every row names the test that proves it. A commitment without a test is a defect
+Every verified row names the test that proves it. A commitment without a runnable test is an
+unverified target, not release evidence, and stays out of this gate table.
 (`docs/06-AUDIT-DISPOSITION.md` pattern 3) and `CommitmentCoverageTest` fails the build if this table
 grows a row that no test backs.
 
@@ -90,12 +91,23 @@ grows a row that no test backs.
 | Reduce Motion honoured on every animation | `ReduceMotionContractTest` |
 | VoiceOver on every data row and control | `VoiceOverLabelTest` |
 | 44 pt touch targets | `TouchTargetTest` |
-| A season is completable in 6–8 hours | `AgencyBudgetTests` |
-| Week advance under 2.0 s at shipping league size | `PerformanceBudgetTests` |
-| A save survives 20 seasons under 8 MB | soak |
+| A save stays bounded across 20 seasons | `M1SoakTests` + `M2SoakTests` |
 | Same seed, same league, across app launches | `DeterminismTests` + source scan |
-| All identities fictional and original | name-collision test + trade-dress ΔE test |
-| The simulation and the off-screen model agree | `TwoTierConsistencyTests` (TOST) |
+| All identities fictional and original | `LegalTests` |
+
+---
+
+## Unverified product targets
+
+These targets remain part of the product direction but are not release claims until their dedicated
+instruments exist and run in CI:
+
+| Target | Current evidence status |
+|---|---|
+| A season is completable in 6–8 hours | AgencyBudgetTests is not implemented; owner measurement remains open |
+| Week advance under 2.0 s at shipping league size | The host timing probe is evidence only; the device gate remains open |
+| The simulation and the off-screen model agree | TwoTierConsistencyTests is not implemented; calibration coverage remains open |
+| A save survives 20 seasons under 8 MB | **Not met.** Measured 14.76 MB at season 20 on the soaks' own seed, against 3.67 MB at season 0. Departed-identity retention is now bounded — it was unbounded, and the save passed 8 MB at season 2 and reached about 26 MB at season 20 — and both soaks now assert a ceiling and a drift allowance rather than printing the sizes. Reaching 8 MB needs the portal and scouting duplication looked at, which is engine work and an owner call |
 
 ---
 

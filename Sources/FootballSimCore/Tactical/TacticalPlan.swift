@@ -113,6 +113,20 @@ public struct OpponentScoutingSnapshot: Codable, Sendable, Equatable {
             turnoverRate: turnoverRate
         )
     }
+
+    public static func from(
+        teamID: UUID,
+        observedThrough: CalendarState,
+        statistics: TeamGameStatistics
+    ) -> OpponentScoutingSnapshot {
+        let totalYards = statistics.passingYards + statistics.rushingYards
+        return OpponentScoutingSnapshot(
+            teamID: teamID,
+            observedThrough: observedThrough,
+            passRate: totalYards == 0 ? 50 : min(100, statistics.passingYards * 100 / totalYards),
+            turnoverRate: min(100, statistics.turnovers * 25)
+        )
+    }
 }
 
 public enum TacticalCoordinatorSystem {
@@ -136,6 +150,18 @@ public enum TacticalCoordinatorSystem {
             tempo: tempo,
             pressure: pressure
         )
+    }
+
+    /// Uses only evidence that belongs to this observer and remains within the current bounded
+    /// window. Missing, future, or stale film deliberately falls back to the same balanced plan as
+    /// an unscouted opponent rather than reading the opponent's authoritative hidden totals.
+    public static func plan(
+        for observation: OpponentObservation?,
+        at calendar: CalendarState,
+        coordinatorRating: Rating
+    ) -> TacticalPlan {
+        let snapshot = observation.flatMap { $0.isCurrent(at: calendar) ? $0.snapshot : nil }
+        return plan(for: snapshot, coordinatorRating: coordinatorRating)
     }
 }
 

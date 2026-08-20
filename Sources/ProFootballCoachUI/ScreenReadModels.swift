@@ -1,3 +1,5 @@
+import FootballSimCore
+
 public enum CoachWorldDataProvenance: String, Sendable, Equatable {
     case simulationSnapshot
     case sample
@@ -101,19 +103,22 @@ public struct CoachWorldActionChoice: Sendable, Equatable {
     public let cost: String
     public let consequence: String
     public let isAvailable: Bool
+    public let unavailableReason: String?
 
     public init(
         intentID: CoachWorldIntentID,
         title: String,
         cost: String,
         consequence: String,
-        isAvailable: Bool = true
+        isAvailable: Bool = true,
+        unavailableReason: String? = nil
     ) {
         self.intentID = intentID
         self.title = title
         self.cost = cost
         self.consequence = consequence
         self.isAvailable = isAvailable
+        self.unavailableReason = isAvailable ? nil : unavailableReason
     }
 }
 
@@ -258,7 +263,50 @@ public struct CoachingHQReadModel: Sendable, Equatable {
     public let obligations: [Obligation]
     public let decision: Decision?
     public let staffRecommendation: StaffRecommendation?
+    public struct SquadHealthRow: Sendable, Equatable, Identifiable {
+        public var id: String { stableID }
+        public let stableID: String
+        /// The depth-chart slot, as a role token: `RT`, `CB2`, `LB2`.
+        public let slot: String
+        public let player: String
+        /// What the medical room actually says: `Qtd`, `Flg 71`, `Cleared`.
+        public let status: String
+        /// Whether the status is a concern, so colour is a second reading of the printed word
+        /// rather than the only one.
+        public let isConcern: Bool
+
+        public init(
+            stableID: String, slot: String, player: String, status: String, isConcern: Bool
+        ) {
+            self.stableID = stableID
+            self.slot = slot
+            self.player = player
+            self.status = status
+            self.isConcern = isConcern
+        }
+    }
+
+    public struct StakeholderRow: Sendable, Equatable, Identifiable {
+        public var id: String { stableID }
+        public let stableID: String
+        public let name: String
+        /// 0 to 100 support. A proportion, so the share bar beside it is legitimate.
+        public let support: Int
+
+        public init(stableID: String, name: String, support: Int) {
+            self.stableID = stableID
+            self.name = name
+            self.support = max(0, min(100, support))
+        }
+    }
+
     public let correspondence: [Correspondence]
+    /// The three availability facts the week hub prints top-right, from the same evidence Team
+    /// Health holds. Empty when nothing is flagged — an empty panel is honest, an invented one is
+    /// not.
+    public let squadHealth: [SquadHealthRow]
+    /// Stakeholder standing, from `careerArc.stakeholderSupport`. Empty before a career exists.
+    public let stakeholders: [StakeholderRow]
 
     public init(
         snapshotID: String,
@@ -276,7 +324,9 @@ public struct CoachingHQReadModel: Sendable, Equatable {
         obligations: [Obligation],
         decision: Decision?,
         staffRecommendation: StaffRecommendation?,
-        correspondence: [Correspondence]
+        correspondence: [Correspondence],
+        squadHealth: [SquadHealthRow] = [],
+        stakeholders: [StakeholderRow] = []
     ) {
         self.snapshotID = snapshotID
         self.provenance = provenance
@@ -294,10 +344,642 @@ public struct CoachingHQReadModel: Sendable, Equatable {
         self.decision = decision
         self.staffRecommendation = staffRecommendation
         self.correspondence = correspondence
+        self.squadHealth = squadHealth
+        self.stakeholders = stakeholders
+    }
+}
+
+public struct GamePlanReadModel: Sendable, Equatable {
+    public struct Option: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let title: String
+        public let plan: TacticalPlan
+        public let consequence: String
+
+        public init(id: String, title: String, plan: TacticalPlan, consequence: String) {
+            self.id = id
+            self.title = title
+            self.plan = plan
+            self.consequence = consequence
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let team: CoachWorldTeamReference
+    public let opponent: CoachWorldTeamReference?
+    public let weekLabel: String
+    public let currentPlan: TacticalPlan?
+    public let options: [Option]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        team: CoachWorldTeamReference,
+        opponent: CoachWorldTeamReference?,
+        weekLabel: String,
+        currentPlan: TacticalPlan?,
+        options: [Option]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.team = team
+        self.opponent = opponent
+        self.weekLabel = weekLabel
+        self.currentPlan = currentPlan
+        self.options = options
+    }
+}
+
+public struct PracticePlanReadModel: Sendable, Equatable {
+    public struct Option: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let title: String
+        public let plan: TacticalPracticePlan
+        public let consequence: String
+
+        public init(
+            id: String,
+            title: String,
+            plan: TacticalPracticePlan,
+            consequence: String
+        ) {
+            self.id = id
+            self.title = title
+            self.plan = plan
+            self.consequence = consequence
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let team: CoachWorldTeamReference
+    public let weekLabel: String
+    public let currentPlan: TacticalPracticePlan?
+    public let options: [Option]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        team: CoachWorldTeamReference,
+        weekLabel: String,
+        currentPlan: TacticalPracticePlan?,
+        options: [Option]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.team = team
+        self.weekLabel = weekLabel
+        self.currentPlan = currentPlan
+        self.options = options
+    }
+}
+
+public struct DepthChartReadModel: Sendable, Equatable {
+    public struct Slot: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let playerID: String
+        public let playerName: String
+        public let availability: String
+        public let isStarter: Bool
+        public let isUnavailable: Bool
+        public let isOverride: Bool
+
+        public init(
+            id: String,
+            playerID: String,
+            playerName: String,
+            availability: String,
+            isStarter: Bool,
+            isUnavailable: Bool,
+            isOverride: Bool
+        ) {
+            self.id = id
+            self.playerID = playerID
+            self.playerName = playerName
+            self.availability = availability
+            self.isStarter = isStarter
+            self.isUnavailable = isUnavailable
+            self.isOverride = isOverride
+        }
+    }
+
+    public struct PositionGroup: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let title: String
+        public let slots: [Slot]
+
+        public init(id: String, title: String, slots: [Slot]) {
+            self.id = id
+            self.title = title
+            self.slots = slots
+        }
+    }
+
+    public struct Option: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let title: String
+        public let plan: PersonnelPlan
+        public let consequence: String
+
+        public init(id: String, title: String, plan: PersonnelPlan, consequence: String) {
+            self.id = id
+            self.title = title
+            self.plan = plan
+            self.consequence = consequence
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let team: CoachWorldTeamReference
+    public let weekLabel: String
+    public let currentPlan: PersonnelPlan?
+    public let positions: [PositionGroup]
+    public let options: [Option]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        team: CoachWorldTeamReference,
+        weekLabel: String,
+        currentPlan: PersonnelPlan?,
+        positions: [PositionGroup],
+        options: [Option]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.team = team
+        self.weekLabel = weekLabel
+        self.currentPlan = currentPlan
+        self.positions = positions
+        self.options = options
+    }
+}
+
+public struct CareerHubReadModel: Sendable, Equatable {
+    public struct JobRow: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let team: CoachWorldTeamReference
+        public let tier: String
+        public let started: String
+        public let ended: String?
+        public let reason: String?
+        public let canResign: Bool
+
+        public init(
+            id: String,
+            team: CoachWorldTeamReference,
+            tier: String,
+            started: String,
+            ended: String? = nil,
+            reason: String? = nil,
+            canResign: Bool = false
+        ) {
+            self.id = id
+            self.team = team
+            self.tier = tier
+            self.started = started
+            self.ended = ended
+            self.reason = reason
+            self.canResign = canResign
+        }
+    }
+
+    public struct OpportunityRow: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let team: CoachWorldTeamReference
+        public let tier: String
+        public let offered: String
+        public let expires: String
+        public let prestige: Int
+        public let rationale: String
+        public let canAccept: Bool
+        public let unavailableReason: String?
+
+        public init(
+            id: String,
+            team: CoachWorldTeamReference,
+            tier: String,
+            offered: String,
+            expires: String,
+            prestige: Int,
+            rationale: String,
+            canAccept: Bool = true,
+            unavailableReason: String? = nil
+        ) {
+            self.id = id
+            self.team = team
+            self.tier = tier
+            self.offered = offered
+            self.expires = expires
+            self.prestige = prestige
+            self.rationale = rationale
+            self.canAccept = canAccept
+            self.unavailableReason = unavailableReason
+        }
+    }
+
+    public struct SupportRow: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let stakeholder: String
+        public let value: Int
+        /// A plain, mechanically-derived sentence from the signed delta this stakeholder's support
+        /// last moved by (`CareerArcState.stakeholderLastMovement`) -- `nil` before any evaluation
+        /// has run for them, e.g. a fresh career or a save from before this field existed.
+        public let rationale: String?
+
+        public init(id: String, stakeholder: String, value: Int, rationale: String? = nil) {
+            self.id = id
+            self.stakeholder = stakeholder
+            self.value = value
+            self.rationale = rationale
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let world: CoachWorldReference
+    public let coach: CoachWorldPersonReference
+    public let status: String
+    public let currentJob: JobRow?
+    public let history: [JobRow]
+    public let opportunities: [OpportunityRow]
+    public let support: [SupportRow]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        world: CoachWorldReference,
+        coach: CoachWorldPersonReference,
+        status: String,
+        currentJob: JobRow?,
+        history: [JobRow],
+        opportunities: [OpportunityRow],
+        support: [SupportRow]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.world = world
+        self.coach = coach
+        self.status = status
+        self.currentJob = currentJob
+        self.history = history
+        self.opportunities = opportunities
+        self.support = support
+    }
+}
+
+public struct StandingsReadModel: Sendable, Equatable {
+    public struct Row: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let team: CoachWorldTeamReference
+        public let wins: Int
+        public let losses: Int
+        public let ties: Int
+        public let conferenceRecord: String
+        public let pointsFor: Int
+        public let pointsAgainst: Int
+        public let isControlled: Bool
+
+        public init(
+            id: String,
+            team: CoachWorldTeamReference,
+            wins: Int,
+            losses: Int,
+            ties: Int,
+            conferenceRecord: String,
+            pointsFor: Int,
+            pointsAgainst: Int,
+            isControlled: Bool
+        ) {
+            self.id = id
+            self.team = team
+            self.wins = wins
+            self.losses = losses
+            self.ties = ties
+            self.conferenceRecord = conferenceRecord
+            self.pointsFor = pointsFor
+            self.pointsAgainst = pointsAgainst
+            self.isControlled = isControlled
+        }
+
+        public var record: String {
+            ties == 0 ? "\(wins)-\(losses)" : "\(wins)-\(losses)-\(ties)"
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let world: CoachWorldReference
+    public let seasonLabel: String
+    public let weekLabel: String
+    public let tier: String
+    public let rows: [Row]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        world: CoachWorldReference,
+        seasonLabel: String,
+        weekLabel: String,
+        tier: String,
+        rows: [Row]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.world = world
+        self.seasonLabel = seasonLabel
+        self.weekLabel = weekLabel
+        self.tier = tier
+        self.rows = rows
+    }
+}
+
+public struct ScheduleReadModel: Sendable, Equatable {
+    public struct GameRow: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let week: String
+        public let stage: String
+        public let home: CoachWorldTeamReference
+        public let away: CoachWorldTeamReference
+        public let score: String?
+        public let isControlled: Bool
+
+        public init(
+            id: String,
+            week: String,
+            stage: String,
+            home: CoachWorldTeamReference,
+            away: CoachWorldTeamReference,
+            score: String?,
+            isControlled: Bool
+        ) {
+            self.id = id
+            self.week = week
+            self.stage = stage
+            self.home = home
+            self.away = away
+            self.score = score
+            self.isControlled = isControlled
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let world: CoachWorldReference
+    public let seasonLabel: String
+    public let tier: String
+    public let games: [GameRow]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        world: CoachWorldReference,
+        seasonLabel: String,
+        tier: String,
+        games: [GameRow]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.world = world
+        self.seasonLabel = seasonLabel
+        self.tier = tier
+        self.games = games
+    }
+}
+
+/// Authoritative profile for any college programme or professional team.
+///
+/// This is deliberately a compact projection: identities, standings, schedule and rivalry
+/// references all retain the engine UUID so a profile opened from any surface describes the same
+/// organisation rather than a copied map card.
+public struct TeamProgrammeProfileReadModel: Sendable, Equatable {
+    public struct Fixture: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let week: String
+        public let opponent: CoachWorldTeamReference
+        public let isHome: Bool
+        public let score: String?
+        public let stage: String
+
+        public init(
+            id: String,
+            week: String,
+            opponent: CoachWorldTeamReference,
+            isHome: Bool,
+            score: String?,
+            stage: String
+        ) {
+            self.id = id
+            self.week = week
+            self.opponent = opponent
+            self.isHome = isHome
+            self.score = score
+            self.stage = stage
+        }
+    }
+
+    public struct Rival: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let team: CoachWorldTeamReference
+        public let origin: String
+        public let intensity: Int
+
+        public init(id: String, team: CoachWorldTeamReference, origin: String, intensity: Int) {
+            self.id = id
+            self.team = team
+            self.origin = origin
+            self.intensity = intensity
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let world: CoachWorldReference
+    public let team: CoachWorldTeamReference
+    public let cityName: String
+    public let regionName: String
+    public let seasonLabel: String
+    public let tier: String
+    public let conference: String
+    public let division: String?
+    public let venue: CoachWorldVenueReference
+    public let prestige: Int
+    public let record: String
+    public let rank: String?
+    public let rosterCount: Int
+    public let staffCount: Int
+    public let traditions: [String]
+    public let fixtures: [Fixture]
+    public let rivals: [Rival]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        world: CoachWorldReference,
+        team: CoachWorldTeamReference,
+        cityName: String,
+        regionName: String,
+        seasonLabel: String,
+        tier: String,
+        conference: String,
+        division: String?,
+        venue: CoachWorldVenueReference,
+        prestige: Int,
+        record: String,
+        rank: String?,
+        rosterCount: Int,
+        staffCount: Int,
+        traditions: [String],
+        fixtures: [Fixture],
+        rivals: [Rival]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.world = world
+        self.team = team
+        self.cityName = cityName
+        self.regionName = regionName
+        self.seasonLabel = seasonLabel
+        self.tier = tier
+        self.conference = conference
+        self.division = division
+        self.venue = venue
+        self.prestige = prestige
+        self.record = record
+        self.rank = rank
+        self.rosterCount = rosterCount
+        self.staffCount = staffCount
+        self.traditions = Array(traditions.prefix(8))
+        self.fixtures = Array(fixtures.prefix(12))
+        self.rivals = Array(rivals.prefix(8))
+    }
+}
+
+/// Bounded current-world organisation search. Results carry stable IDs so opening one routes to
+/// the same Team/Programme Profile used by map, standings and schedule.
+public struct WorldSearchReadModel: Sendable, Equatable {
+    public struct Result: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let team: CoachWorldTeamReference
+        public let tier: String
+        public let cityName: String
+        public let regionName: String
+
+        public init(
+            id: String,
+            team: CoachWorldTeamReference,
+            tier: String,
+            cityName: String,
+            regionName: String
+        ) {
+            self.id = id
+            self.team = team
+            self.tier = tier
+            self.cityName = cityName
+            self.regionName = regionName
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let world: CoachWorldReference
+    public let seasonLabel: String
+    public let results: [Result]
+
+    public init(
+        snapshotID: String,
+        provenance: CoachWorldDataProvenance,
+        world: CoachWorldReference,
+        seasonLabel: String,
+        results: [Result]
+    ) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.world = world
+        self.seasonLabel = seasonLabel
+        self.results = Array(results.prefix(256))
+    }
+}
+
+public struct CompetitionOverviewReadModel: Sendable, Equatable {
+    public struct RankingRow: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let team: CoachWorldTeamReference
+        /// Whole-tier rank -- position across every programme or team in the tier, not within the
+        /// group that actually determines bracket qualification (the whole tier for college, but
+        /// only the team's own conference for pro). `seed`, below, is that group-relative position.
+        public let rank: Int
+        public let record: String
+        public let isControlled: Bool
+        /// 1-based position within the group that determines bracket qualification: whole-tier
+        /// rank for college (bracketed by overall rank), conference-relative rank for pro
+        /// (bracketed per conference) -- `nil` when the team falls outside even that narrower
+        /// group's counted range and a seed number would not mean anything.
+        public let seed: Int?
+        /// How many seeds `seed` is being measured against -- `CollegeRules.bracketTeams` for
+        /// college, `ProRules.playoffSeedsPerConference` for pro.
+        public let qualifyingSlots: Int
+        public let isQualifying: Bool
+
+        public init(id: String, team: CoachWorldTeamReference, rank: Int, record: String,
+                    isControlled: Bool, seed: Int? = nil, qualifyingSlots: Int = 0,
+                    isQualifying: Bool = false) {
+            self.id = id
+            self.team = team
+            self.rank = rank
+            self.record = record
+            self.isControlled = isControlled
+            self.seed = seed
+            self.qualifyingSlots = qualifyingSlots
+            self.isQualifying = isQualifying
+        }
+    }
+
+    public struct BracketGame: Sendable, Equatable, Identifiable {
+        public let id: String
+        public let stage: String
+        public let home: CoachWorldTeamReference
+        public let away: CoachWorldTeamReference
+        public let score: String?
+        public let week: String
+
+        public init(id: String, stage: String, home: CoachWorldTeamReference,
+                    away: CoachWorldTeamReference, score: String?, week: String) {
+            self.id = id
+            self.stage = stage
+            self.home = home
+            self.away = away
+            self.score = score
+            self.week = week
+        }
+    }
+
+    public let snapshotID: String
+    public let provenance: CoachWorldDataProvenance
+    public let world: CoachWorldReference
+    public let seasonLabel: String
+    public let tier: String
+    public let rankings: [RankingRow]
+    public let bracket: [BracketGame]
+
+    public init(snapshotID: String, provenance: CoachWorldDataProvenance,
+                world: CoachWorldReference, seasonLabel: String, tier: String,
+                rankings: [RankingRow], bracket: [BracketGame]) {
+        self.snapshotID = snapshotID
+        self.provenance = provenance
+        self.world = world
+        self.seasonLabel = seasonLabel
+        self.tier = tier
+        self.rankings = Array(rankings.prefix(166))
+        self.bracket = Array(bracket.prefix(64))
     }
 }
 
 public struct RecruitingBoardReadModel: Sendable, Equatable {
+    public static let maximumDiscoveryProspects = 24
+
     public struct Capacity: Sendable, Equatable {
         public let scholarshipSlotsRemaining: Int
         /// `ProgrammeRecruitingState.contactPointsRemaining` — a real, weekly-reset engine
@@ -375,6 +1057,11 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
         public let hometown: String
         public let interest: String
         public let status: String
+        /// Whether this prospect is committed (or signed) to the *viewing* programme specifically
+        /// -- `status == "Committed"` alone does not say that; a prospect committed to a rival
+        /// also carries a status naming a commitment. Consumers counting "how many of my class have
+        /// committed" should read this field, not match the presentation string.
+        public let isCommitted: Bool
         public let evaluation: Evaluation
         public let relationshipHistory: [RelationshipEvent]
         public let choices: [CoachWorldActionChoice]
@@ -387,6 +1074,7 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
             hometown: String,
             interest: String,
             status: String,
+            isCommitted: Bool = false,
             evaluation: Evaluation,
             relationshipHistory: [RelationshipEvent],
             choices: [CoachWorldActionChoice]
@@ -398,6 +1086,7 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
             self.hometown = hometown
             self.interest = interest
             self.status = status
+            self.isCommitted = isCommitted
             self.evaluation = evaluation
             self.relationshipHistory = relationshipHistory
             self.choices = choices
@@ -411,6 +1100,11 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
     public let capacity: Capacity
     public let positionNeeds: [PositionNeed]
     public let prospects: [Prospect]
+    /// Prospects known to the simulation but not yet on this programme's board. They carry only
+    /// the same bounded system evaluation and an authoritative add-to-board action.
+    public let discovery: [Prospect]
+    public let canContinue: Bool
+    public let continueReason: String?
 
     public init(
         snapshotID: String,
@@ -419,7 +1113,10 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
         team: CoachWorldTeamReference,
         capacity: Capacity,
         positionNeeds: [PositionNeed],
-        prospects: [Prospect]
+        prospects: [Prospect],
+        discovery: [Prospect] = [],
+        canContinue: Bool = true,
+        continueReason: String? = nil
     ) {
         self.snapshotID = snapshotID
         self.provenance = provenance
@@ -428,6 +1125,9 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
         self.capacity = capacity
         self.positionNeeds = positionNeeds
         self.prospects = prospects
+        self.discovery = Array(discovery.prefix(Self.maximumDiscoveryProspects))
+        self.canContinue = canContinue
+        self.continueReason = continueReason
     }
 }
 
@@ -439,6 +1139,45 @@ public enum MatchSide: String, Sendable, Equatable {
 public enum MatchFieldDirection: String, Sendable, Equatable {
     case leftToRight
     case rightToLeft
+}
+
+/// What kind of game this is. Selects the scorebug variant, the midfield mark and the 25-yard
+/// paint (`04` section 6.1b, handoff MATCH-DAY.md section 3).
+///
+/// A read-model fact, not a UI flag: the same fixture is a bowl game or it is not, and the view
+/// must not decide from the venue string.
+public enum MatchGameKind: String, CaseIterable, Sendable, Equatable {
+    case regular
+    case conference
+    case bowl
+    case playoff
+    case championship
+}
+
+/// Which tier's rulebook the field is painted to. Hash rows sit at 37.5% / 62.5% in the college
+/// game and 44.2% / 55.8% in the pro one, and nothing else on the field differs.
+public enum MatchTier: String, CaseIterable, Sendable, Equatable {
+    case college
+    case pro
+}
+
+/// The call-in rate ceiling: how often staff may interrupt with a decision. A read-model fact
+/// (handoff MATCH-DAY.md section 5's "control depth selector"), not one of the five primary
+/// controls the render-recorded-match contract fixes — it sets a rate, it does not touch the
+/// recorded moment, and it is not part of `MatchDayControlID`.
+public enum MatchControlDepth: String, CaseIterable, Sendable, Equatable {
+    case everySnap
+    case coordinator
+    case leverage
+
+    /// Call-ins allowed per game: ceiling, default, floor.
+    public var gameRate: Int {
+        switch self {
+        case .everySnap: 40
+        case .coordinator: 25
+        case .leverage: 12
+        }
+    }
 }
 
 public enum MatchDayControlID: String, CaseIterable, Sendable, Equatable {
@@ -454,6 +1193,7 @@ public struct MatchDayReadModel: Sendable, Equatable {
         case invalidOutcomeID
         case invalidTeamIdentity
         case invalidScore
+        case invalidEvent(String)
         case invalidSituation(String)
         case commentaryRequired
         case actorCount(Int)
@@ -469,10 +1209,77 @@ public struct MatchDayReadModel: Sendable, Equatable {
     public struct TeamScore: Sendable, Equatable {
         public let team: CoachWorldTeamReference
         public let score: Int
+        /// The conference bug's per-team line (`7-1 CONF`), and nothing else. Nil on every other
+        /// scorebug variant.
+        public let subline: String?
+        /// The playoff bug's seed chip. Nil unless this is a playoff fixture.
+        public let seed: Int?
 
-        public init(team: CoachWorldTeamReference, score: Int) {
+        public init(
+            team: CoachWorldTeamReference,
+            score: Int,
+            subline: String? = nil,
+            seed: Int? = nil
+        ) {
             self.team = team
             self.score = score
+            self.subline = subline
+            self.seed = seed
+        }
+    }
+
+    /// What the call-in budget bug prints.
+    ///
+    /// A count of decisions already spent against the allowance the control depth sets, plus the
+    /// three on-screen marks. `rateNote` is a description of what is installed, never a
+    /// recommendation and never a forecast.
+    public struct CallInBudget: Sendable, Equatable {
+        public let used: Int
+        public let total: Int
+        /// Unspent marks of the on-screen three.
+        public let marks: Int
+        public let rateNote: String
+
+        public init(used: Int, total: Int, marks: Int, rateNote: String) {
+            self.used = max(0, used)
+            self.total = max(0, total)
+            self.marks = min(3, max(0, marks))
+            self.rateNote = rateNote
+        }
+    }
+
+    /// The postseason furniture one non-regular fixture carries.
+    ///
+    /// Every string here comes from the save. The fixture cast's values ("The Example Bowl", "EC",
+    /// "44th annual") are placeholders the handoff flags for the owner — real postseason naming is
+    /// an open question, not a decision this type makes.
+    public struct EventBadge: Sendable, Equatable {
+        /// The bug's band line: `EXAMPLE CONFERENCE CHAMPIONSHIP`, `The Example Bowl`.
+        public let title: String
+        /// The band's second line: `NEUTRAL SITE`, `44TH ANNUAL`, `WINNER TO THE FINAL`.
+        public let subtitle: String?
+        /// The midfield mark's centred glyph: `EC`, `XLIV`, `PLAYOFF`.
+        public let mark: String
+        /// The mark's line above, and its line below.
+        public let markLead: String?
+        public let markTrail: String?
+        /// The 25-yard paint, at x 29.2% and 70.8%. Regular-season games have none.
+        public let paint: String?
+
+        public init(
+            title: String,
+            subtitle: String? = nil,
+            mark: String,
+            markLead: String? = nil,
+            markTrail: String? = nil,
+            paint: String? = nil
+        ) {
+            self.title = title
+            self.subtitle = subtitle
+            self.mark = mark
+            self.markLead = markLead
+            self.markTrail = markTrail
+            self.paint = paint
         }
     }
 
@@ -520,6 +1327,168 @@ public struct MatchDayReadModel: Sendable, Equatable {
             self.position = position
             self.xYardsFromLeftGoalLine = xYardsFromLeftGoalLine
             self.yFraction = yFraction
+        }
+    }
+
+    /// One recorded snap, ready to animate.
+    ///
+    /// Presentation space: stable identifier strings rather than `UUID`s, and absolute 0-to-120 x
+    /// values rather than the engine's offense-relative 0-to-100. The provider does that
+    /// conversion, because direction is presentation and `03` §9.2 keeps it out of the engine.
+    ///
+    /// Optional on the model because it is genuinely absent before the first snap of a game, and the
+    /// right thing to draw then is the static field the view already draws.
+    public struct Playback: Sendable, Equatable {
+        public struct ActorTrack: Sendable, Equatable {
+            /// Somewhere the actor is, and when. Without the fraction a dot cannot be made to arrive
+            /// somewhere at the moment the ball does, which is the whole reason these exist.
+            public struct Waypoint: Sendable, Equatable {
+                public let x: Double
+                public let y: Double
+                public let fraction: Double
+
+                public init(x: Double, y: Double, fraction: Double) {
+                    self.x = x
+                    self.y = y
+                    self.fraction = fraction
+                }
+            }
+
+            public let stableID: String
+            public let side: MatchSide
+            /// Carried so an animated dot stays as identifiable as the static one beside it. A dot
+            /// that loses its number and its colour the moment it starts moving tells the coach
+            /// less at exactly the moment they are looking hardest.
+            public let uniformNumber: String
+            public let startX: Double
+            public let startY: Double
+            public let endX: Double
+            public let endY: Double
+            /// Ordered by fraction. Empty for the many actors the record says nothing more about.
+            public let waypoints: [Waypoint]
+            public let role: String
+
+            public init(
+                stableID: String,
+                side: MatchSide,
+                uniformNumber: String,
+                startX: Double,
+                startY: Double,
+                endX: Double,
+                endY: Double,
+                waypoints: [Waypoint] = [],
+                role: String
+            ) {
+                self.stableID = stableID
+                self.side = side
+                self.uniformNumber = uniformNumber
+                self.startX = startX
+                self.startY = startY
+                self.endX = endX
+                self.endY = endY
+                self.waypoints = waypoints
+                self.role = role
+            }
+        }
+
+        public struct BallLeg: Sendable, Equatable {
+            public let kind: String
+            public let fromX: Double
+            public let fromY: Double
+            public let toX: Double
+            public let toY: Double
+            public let startFraction: Double
+            public let endFraction: Double
+            /// How far off the turf this leg's arc peaks: 0 is a handoff or a carry, 1 is a thrown
+            /// ball at its apex. The view reads an instantaneous `ballHeight` off this and draws
+            /// lift, scale, tilt and shadow separation from that one number, so a sim that later
+            /// holds a real trajectory can drive it continuously without the view changing.
+            ///
+            /// Defaulted so every existing call site keeps compiling as a grounded leg, which is
+            /// what a run and a handoff already were.
+            public let apexHeight: Double
+
+            public init(
+                kind: String,
+                fromX: Double,
+                fromY: Double,
+                toX: Double,
+                toY: Double,
+                startFraction: Double,
+                endFraction: Double,
+                apexHeight: Double = 0
+            ) {
+                self.kind = kind
+                self.fromX = fromX
+                self.fromY = fromY
+                self.toX = toX
+                self.toY = toY
+                self.startFraction = startFraction
+                self.endFraction = endFraction
+                self.apexHeight = min(1, max(0, apexHeight))
+            }
+
+            /// This leg's height at a point through it, as a single parabolic arc peaking at the
+            /// midpoint — `4t(1-t)` is 0 at both ends and 1 at `t = 0.5`, which is the shape a
+            /// thrown ball's trajectory reads as at this scale without pulling in `Foundation`
+            /// for `sin`.
+            public func height(at local: Double) -> Double {
+                guard apexHeight > 0 else { return 0 }
+                let t = min(1, max(0, local))
+                return apexHeight * 4 * t * (1 - t)
+            }
+        }
+
+        /// Identifies the snap, and changes on every one.
+        ///
+        /// `recordedOutcomeID` cannot serve here: it is built from the drive index and so is
+        /// constant across every snap of a drive. Keying the playback clock on it left snaps two
+        /// onward frozen at their end positions.
+        public let stableID: String
+        public let durationSeconds: Double
+        public let actors: [ActorTrack]
+        public let ball: [BallLeg]
+        /// The deciding matchup's two players, plus the carrier. At most three, per `04` §9.
+        /// Distinct from the model's `foregroundActorIDs`, which describes the pre-snap state.
+        public let foregroundIDs: [String]
+        /// This snap's own markers, in drawn-field space.
+        ///
+        /// The model's `lineOfScrimmage` and `firstDownLine` describe the *upcoming* snap, which is
+        /// the right thing to draw when nothing has been played yet and the wrong thing to draw over
+        /// a replay of the last one — after a turnover the two sit at opposite ends of the field.
+        /// Everything drawn on the field during playback comes from one `PlayRecord`.
+        public let lineOfScrimmageX: Double
+        public let firstDownLineX: Double
+        public let endSpotX: Double
+        public let sentence: String
+        /// Whether the coach paused the session. `Pause` previously stopped the *next* snap from
+        /// being submitted — the engine's own `guard !isPaused` before advancing — but a snap
+        /// already in flight kept animating to completion regardless, because nothing carried the
+        /// session's paused state down into what the field was replaying.
+        public let isPaused: Bool
+
+        public init(
+            stableID: String,
+            durationSeconds: Double,
+            actors: [ActorTrack],
+            ball: [BallLeg],
+            foregroundIDs: [String],
+            lineOfScrimmageX: Double,
+            firstDownLineX: Double,
+            endSpotX: Double,
+            sentence: String,
+            isPaused: Bool = false
+        ) {
+            self.stableID = stableID
+            self.durationSeconds = durationSeconds
+            self.actors = actors
+            self.ball = ball
+            self.foregroundIDs = foregroundIDs
+            self.lineOfScrimmageX = lineOfScrimmageX
+            self.firstDownLineX = firstDownLineX
+            self.endSpotX = endSpotX
+            self.sentence = sentence
+            self.isPaused = isPaused
         }
     }
 
@@ -636,12 +1605,32 @@ public struct MatchDayReadModel: Sendable, Equatable {
     public let venue: CoachWorldVenueReference
     public let home: TeamScore
     public let away: TeamScore
+    /// Which side is the coach's own program — the design's "our cell" versus "their cell"
+    /// (handoff MATCH-DAY.md section 3). `home`/`away` name which team owns the venue, which is
+    /// independent of this: an away game is still played by "us", and the scorebug's gold rail,
+    /// team-colour fills and end-zone identity treatment all follow `perspective`, never `home`.
+    public let perspective: MatchSide
+    /// Selects the scorebug variant, the midfield mark and the 25-yard paint.
+    public let kind: MatchGameKind
+    /// Where the hash rows sit. College and pro paint the same field differently.
+    public let tier: MatchTier
+    /// The postseason furniture. Required by every kind but `.regular`, forbidden on it.
+    public let event: EventBadge?
+    /// What the call-in budget bug prints. Nil while the session holds no allowance, and the bug
+    /// then does not draw — an absent budget is not a budget of zero.
+    public let callInBudget: CallInBudget?
+    public let controlDepth: MatchControlDepth
+    /// Cycles `controlDepth`. Its own field, not a `ControlState`, for the same reason
+    /// `callInBudget` is not one: it is furniture, not one of the five primary controls.
+    public let controlDepthIntentID: CoachWorldIntentID
     public let situation: Situation
     public let offenseDirection: MatchFieldDirection
     public let actors: [Actor]
     public let lineOfScrimmage: Double
     public let firstDownLine: Double
     public let foregroundActorIDs: [String]
+    /// The last completed snap, if one has been played. Nil before the first snap.
+    public let playback: Playback?
     public let causalCommentary: String
     public let staffInterruption: StaffInterruption?
     public let controls: [ControlState]
@@ -653,12 +1642,20 @@ public struct MatchDayReadModel: Sendable, Equatable {
         venue: CoachWorldVenueReference,
         home: TeamScore,
         away: TeamScore,
+        perspective: MatchSide = .home,
+        kind: MatchGameKind = .regular,
+        tier: MatchTier = .college,
+        event: EventBadge? = nil,
+        callInBudget: CallInBudget? = nil,
+        controlDepth: MatchControlDepth = .coordinator,
+        controlDepthIntentID: CoachWorldIntentID = .init(rawValue: "match-control-depth"),
         situation: Situation,
         offenseDirection: MatchFieldDirection,
         actors: [Actor],
         lineOfScrimmage: Double,
         firstDownLine: Double,
         foregroundActorIDs: [String],
+        playback: Playback? = nil,
         causalCommentary: String,
         staffInterruption: StaffInterruption?,
         controls: [ControlState]
@@ -671,6 +1668,12 @@ public struct MatchDayReadModel: Sendable, Equatable {
         }
         guard home.score >= 0, away.score >= 0 else {
             throw ValidationError.invalidScore
+        }
+        // A postseason bug with nothing to print is the failure this catches: the band, the
+        // midfield mark and the 25-yard paint all read off `event`, and a nil one would draw a
+        // championship as a regular-season game.
+        guard (kind == .regular) == (event == nil) else {
+            throw ValidationError.invalidEvent(kind.rawValue)
         }
         guard situation.quarter >= 1 else {
             throw ValidationError.invalidSituation("quarter")
@@ -734,15 +1737,94 @@ public struct MatchDayReadModel: Sendable, Equatable {
         self.venue = venue
         self.home = home
         self.away = away
+        self.perspective = perspective
+        self.kind = kind
+        self.tier = tier
+        self.event = event
+        self.callInBudget = callInBudget
+        self.controlDepth = controlDepth
+        self.controlDepthIntentID = controlDepthIntentID
         self.situation = situation
         self.offenseDirection = offenseDirection
         self.actors = actors
         self.lineOfScrimmage = lineOfScrimmage
         self.firstDownLine = firstDownLine
         self.foregroundActorIDs = foregroundActorIDs
+        self.playback = playback
         self.causalCommentary = causalCommentary
         self.staffInterruption = staffInterruption
         self.controls = controls
+    }
+}
+
+/// Immutable post-game projection. It is populated only from a persisted detailed summary; a
+/// missing evidence record is an honest empty state rather than a reconstructed story.
+public struct AftermathReadModel: Sendable, Equatable {
+    public struct Grade: Sendable, Equatable, Identifiable {
+        public var id: String { stableID }
+        public let stableID: String
+        public let player: CoachWorldPersonReference
+        public let team: CoachWorldTeamReference
+        public let position: String
+        public let rating: Int
+        public let evidence: String
+
+        public init(
+            stableID: String,
+            player: CoachWorldPersonReference,
+            team: CoachWorldTeamReference,
+            position: String,
+            rating: Int,
+            evidence: String
+        ) {
+            self.stableID = stableID
+            self.player = player
+            self.team = team
+            self.position = position
+            self.rating = min(99, max(0, rating))
+            self.evidence = evidence
+        }
+    }
+
+    public let recordedOutcomeID: String
+    public let provenance: CoachWorldDataProvenance
+    public let world: CoachWorldReference
+    public let venue: CoachWorldVenueReference
+    public let home: MatchDayReadModel.TeamScore
+    public let away: MatchDayReadModel.TeamScore
+    public let resultLabel: String
+    public let headline: String
+    public let evidence: [String]
+    public let callIns: [String]
+    public let injuries: [String]
+    public let grades: [Grade]
+
+    public init(
+        recordedOutcomeID: String,
+        provenance: CoachWorldDataProvenance,
+        world: CoachWorldReference,
+        venue: CoachWorldVenueReference,
+        home: MatchDayReadModel.TeamScore,
+        away: MatchDayReadModel.TeamScore,
+        resultLabel: String,
+        headline: String,
+        evidence: [String],
+        callIns: [String],
+        injuries: [String],
+        grades: [Grade]
+    ) {
+        self.recordedOutcomeID = recordedOutcomeID
+        self.provenance = provenance
+        self.world = world
+        self.venue = venue
+        self.home = home
+        self.away = away
+        self.resultLabel = resultLabel
+        self.headline = headline
+        self.evidence = Array(evidence.prefix(16))
+        self.callIns = Array(callIns.prefix(16))
+        self.injuries = Array(injuries.prefix(16))
+        self.grades = Array(grades.prefix(32))
     }
 }
 
@@ -784,6 +1866,55 @@ public enum CoachWorldSampleData {
         name: "Eric Mercer",
         role: "Head coach"
     )
+
+    /// The shared management chrome, for one surface (`04` section 6.1c).
+    ///
+    /// The rail's seven entries are the seven kinds of thing a coaching week contains; the
+    /// siblings come off the registry rather than a second hand-written list, so a surface added
+    /// to a family appears in its family's navigation the day it is added rather than the day
+    /// someone remembers to add it here.
+    public static func chrome(
+        for screen: CoachWorldScreenID,
+        world: FloodlitChromeReadModel.World = .facility,
+        /// Surface context for the header chip, as the reference varies it per screen. Nil falls
+        /// back to the fixture.
+        context: String? = nil
+    ) -> FloodlitChromeReadModel {
+        let rail: [(CoachWorldScreenID, String, String)] = [
+            (.coachingHQ, "calendar", "Week"),
+            (.inbox, "tray.full", "Inbox"),
+            (.roster, "person.2", "Squad"),
+            (.gamePlan, "rectangle.3.group", "Plan"),
+            (.opponentReportFilmRoom, "film", "Film"),
+            (.teamHealth, "cross.case", "Health"),
+            (.worldSearch, "square.grid.3x3", "All tasks"),
+        ]
+        return FloodlitChromeReadModel(
+            screen: screen,
+            world: world,
+            club: homeTeam,
+            record: "4\u{2013}2",
+            ranking: "#21",
+            conference: "Meridian Valley",
+            context: context ?? "Sat \u{00B7} Southern State",
+            contextOpponent: context == nil ? awayTeam : nil,
+            rail: rail.map { entry in
+                .init(
+                    screen: entry.0,
+                    symbol: entry.1,
+                    label: entry.2,
+                    intentID: .init(rawValue: "sample-rail-\(entry.0.number)")
+                )
+            },
+            siblings: screen.family.surfaces.prefix(5).map { sibling in
+                .init(
+                    screen: sibling,
+                    title: sibling.navigationName,
+                    intentID: .init(rawValue: "sample-sibling-\(sibling.number)")
+                )
+            }
+        )
+    }
 
     public static let coachingHQ: CoachingHQReadModel = {
         let decision = try! CoachingHQReadModel.Decision(
@@ -856,6 +1987,20 @@ public enum CoachWorldSampleData {
                     received: "08:15",
                     isUnread: true
                 ),
+            ],
+            squadHealth: [
+                .init(stableID: "sh-1", slot: "RT", player: "L. Vasquez",
+                      status: "Out 2w", isConcern: true),
+                .init(stableID: "sh-2", slot: "CB2", player: "M. Lourdes",
+                      status: "Flg 71", isConcern: true),
+                .init(stableID: "sh-3", slot: "LB2", player: "K. Trace",
+                      status: "Cleared", isConcern: false),
+            ],
+            stakeholders: [
+                .init(stableID: "sk-1", name: "Athletic dir.", support: 58),
+                .init(stableID: "sk-2", name: "Boosters", support: 61),
+                .init(stableID: "sk-3", name: "Fanbase", support: 74),
+                .init(stableID: "sk-4", name: "Locker room", support: 69),
             ]
         )
     }()
@@ -1017,9 +2162,12 @@ public enum CoachWorldSampleData {
     public static let matchDay: MatchDayReadModel = {
         let homeFormation: [(number: String, position: String, x: Double, y: Double)] = [
             ("12", "QB", 51, 0.50), ("24", "RB", 46, 0.50),
-            ("1", "WR", 54, 0.08), ("11", "WR", 54, 0.92), ("87", "TE", 55, 0.24),
+            // Receiver shorthands, not two identical "WR"s: MATCH-DAY.md section 4's offensive
+            // vocabulary is `LT LG C RG RT QB RB X H Z TE`, which distinguishes the split end from
+            // the flanker instead of printing the same two letters twice on one field.
+            ("1", "X", 54, 0.08), ("11", "Z", 54, 0.92), ("87", "TE", 55, 0.24),
             ("72", "LT", 56, 0.34), ("65", "LG", 56, 0.42), ("55", "C", 56, 0.50),
-            ("68", "RG", 56, 0.58), ("76", "RT", 56, 0.66), ("6", "SLOT", 53, 0.78),
+            ("68", "RG", 56, 0.58), ("76", "RT", 56, 0.66), ("6", "H", 53, 0.78),
         ]
         let homeActors: [MatchDayReadModel.Actor] = homeFormation.enumerated().map { index, actor in
             return MatchDayReadModel.Actor(
@@ -1056,6 +2204,44 @@ public enum CoachWorldSampleData {
                 intentID: .init(rawValue: "sample-match-\(control.rawValue)")
             )
         }
+        // A short out route: X releases from the line, catches at the fraction the ball's air
+        // leg ends, then picks up yards after the catch. Every other actor holds — most of the 22
+        // do, on a real recorded snap, so a static formation around one moving carrier is
+        // representative rather than a simplification of what PROOF_SCREEN=match should show.
+        let playback = MatchDayReadModel.Playback(
+            stableID: "sample-playback-snap",
+            durationSeconds: 4,
+            actors: [
+                MatchDayReadModel.Playback.ActorTrack(
+                    stableID: "sample-home-2",
+                    side: .home,
+                    uniformNumber: "1",
+                    startX: 54, startY: 0.08,
+                    endX: 69, endY: 0.24,
+                    waypoints: [.init(x: 63, y: 0.20, fraction: 0.55)],
+                    role: "carrier"
+                ),
+            ],
+            ball: [
+                MatchDayReadModel.Playback.BallLeg(
+                    kind: "snap", fromX: 56, fromY: 0.50, toX: 51, toY: 0.50,
+                    startFraction: 0, endFraction: 0.15
+                ),
+                MatchDayReadModel.Playback.BallLeg(
+                    kind: "air", fromX: 51, fromY: 0.50, toX: 63, toY: 0.20,
+                    startFraction: 0.15, endFraction: 0.55, apexHeight: 1
+                ),
+                MatchDayReadModel.Playback.BallLeg(
+                    kind: "carry", fromX: 63, fromY: 0.20, toX: 69, toY: 0.24,
+                    startFraction: 0.55, endFraction: 1
+                ),
+            ],
+            foregroundIDs: ["sample-home-0", "sample-home-2", "sample-away-9"],
+            lineOfScrimmageX: 58,
+            firstDownLineX: 68,
+            endSpotX: 69,
+            sentence: "X catches the out route and picks up eight yards after contact."
+        )
         return try! MatchDayReadModel(
             recordedOutcomeID: "sample-recorded-outcome",
             provenance: .sample,
@@ -1063,6 +2249,9 @@ public enum CoachWorldSampleData {
             venue: venue,
             home: .init(team: homeTeam, score: 28),
             away: .init(team: awayTeam, score: 24),
+            perspective: .home,
+            callInBudget: .init(used: 18, total: 25, marks: 1, rateNote: "25 a game · the default"),
+            controlDepth: .coordinator,
             situation: .init(
                 quarter: 3,
                 clockSecondsRemaining: 502,
@@ -1075,6 +2264,7 @@ public enum CoachWorldSampleData {
             lineOfScrimmage: 58,
             firstDownLine: 68,
             foregroundActorIDs: ["sample-home-0", "sample-home-4", "sample-away-10"],
+            playback: playback,
             causalCommentary: "The safety stepped down after the tight end motion.",
             staffInterruption: .init(
                 stableID: "sample-call-in",

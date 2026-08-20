@@ -394,7 +394,7 @@ func runPortalPolicyTests() {
             }
 
             let emptyObserverProbe = Process()
-            emptyObserverProbe.executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
+            emptyObserverProbe.executableURL = currentExecutableURL()
             emptyObserverProbe.arguments = ["--portal-policy"]
             var probeEnvironment = ProcessInfo.processInfo.environment
             probeEnvironment["INVALID_EMPTY_PORTAL_OBSERVER_PROBE"] = "1"

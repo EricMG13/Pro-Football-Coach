@@ -55,15 +55,15 @@ come from forcing every screen into one chassis.
 
 | Register | Player fantasy | Dominant objects | Shape and motion |
 |---|---|---|---|
-| **Coach's Office** | Run the week | week plan, correspondence, pressure, staff notes | disciplined seams, writable schedules, restrained motion |
-| **Personnel Room** | Build and develop the team | team sheet, depth chart, player dossier, medical and staff files | dense comparison where earned; identity-led detail |
-| **Acquisition Room** | Compete for future talent | recruiting board, territory, relationship history, offer ledger | live market movement, physical ranking/territory cues |
-| **Front Office** | Keep the pro roster legal and competitive | cap ledger, contracts, draft board, market | harder steel geometry, transaction receipts, clocks only when real |
-| **League & Media** | Understand the living world | map, standings, schedule, stories, records | editorial hierarchy; data tied to teams, games and history |
-| **Career & Legacy** | Read the coach's story | timeline, stakeholders, jobs, rivals, record book | chronological composition; earned ceremony |
-| **Film Room** | Study evidence | field film, tendencies, matchup evidence, staff interpretation | dark analytical environment; annotation belongs to evidence |
-| **Broadcast** | Experience live or timed football | full field, score, clock, causal commentary, call-in | square geometry, team identity, no management chrome |
-| **Ceremony** | Mark an irreversible career moment | appointment, signing, promotion, trophy | rare, focused, minimal controls |
+| **Coach's Office** | Run the week | week plan, correspondence, pressure, staff notes | disciplined seams, writable schedules, restrained motion — a plan changes state, it does not travel to prove it |
+| **Personnel Room** | Build and develop the team | team sheet, depth chart, player dossier, medical and staff files | dense comparison where earned; identity-led detail; a value settles to its new figure, it does not slide there |
+| **Acquisition Room** | Compete for future talent | recruiting board, territory, relationship history, offer ledger | live market movement, physical ranking/territory cues — the one register where a rank *may* travel, because the movement is the fact being reported |
+| **Front Office** | Keep the pro roster legal and competitive | cap ledger, contracts, draft board, market | harder steel geometry, transaction receipts, clocks only when real; a receipt confirms, it does not animate in |
+| **League & Media** | Understand the living world | map, standings, schedule, stories, records | editorial hierarchy; data tied to teams, games and history; a standing resettles in place between weeks |
+| **Career & Legacy** | Read the coach's story | timeline, stakeholders, jobs, rivals, record book | chronological composition; earned ceremony — one entrance, held, never a repeating flourish |
+| **Film Room** | Study evidence | field film, tendencies, matchup evidence, staff interpretation | dark analytical environment; annotation belongs to evidence and appears with it, never before it |
+| **Broadcast** | Experience live or timed football | full field, score, clock, causal commentary, call-in | square geometry, team identity, no management chrome; the register that actually animates — the ball's flight, the live dot's pulse, the panel push, per §6.1b and §9 |
+| **Ceremony** | Mark an irreversible career moment | appointment, signing, promotion, trophy | rare, focused, minimal controls; the "earned ceremony" §6.7 names — held, not looped |
 
 No screen may describe itself as “Film Room” unless it belongs to that row.
 
@@ -136,8 +136,8 @@ Prototype truth disclosure belongs in gallery chrome outside the native device f
 
 *Adopted 2026-08-12 from `docs/briefs/2026-08-12-density-model.md`.*
 
-Density is spent in five currencies: points, taps, working memory, learned symbols and verdict
-lines. A management screen may spend: one dominant object (at least 60% of the initial viewport) and
+Density is spent in six currencies: points, taps, working memory, learned symbols, verdict lines and
+motion. A management screen may spend: one dominant object (at least 60% of the initial viewport) and
 at most two secondary regions; 24–28 pt table tracks with six to nine fact columns beside identity,
 further facts arriving as column sets rather than horizontal scroll; at most three status glyphs per
 row from the global status vocabulary of at most twelve, each changing a decision (that cap governs
@@ -149,11 +149,15 @@ within two taps. Comparisons happen on one surface; a flow that requires remembe
 screen is over budget regardless of fit. Pixels are spent before taps; working memory is never
 spent. Verdicts, bands and change marks are drawn only where the simulation owns the computation
 behind them: a verdict without an engine baseline, a band without a recorded observation, or a
-change mark without a retained delta is fabrication under §4.4. At AX5 the composition reflows to
-one column preserving order and dropping nothing. A screen is over budget when a second dominant
-object appears, the glyph vocabulary grows to accommodate it, type falls below its floor to make
-something fit, or AX5 loses data. The registry's per-screen budget statements are audited under
-`04b`; a surface the inventory does not price is a finding, not a licence.
+change mark without a retained delta is fabrication under §4.4. **Motion is spent only to carry a
+state change that is already true without it** — a value settling to its new figure, a panel
+entering, a snap replaying — never to manufacture meaning motion alone supplies; every duration and
+curve is drawn from §6.7's closed register, the same discipline §6.6 already holds symbols to. At
+AX5 the composition reflows to one column preserving order and dropping nothing. A screen is over
+budget when a second dominant object appears, the glyph vocabulary grows to accommodate it, type
+falls below its floor to make something fit, AX5 loses data, or a state change is illegible without
+watching it animate. The registry's per-screen budget statements are audited under `04b`; a surface
+the inventory does not price is a finding, not a licence.
 
 ## 5. Identity system
 
@@ -346,7 +350,235 @@ Measured constraints, binding on every consumer:
 
 No gradients, glow, glass, fake paper, leather, cork or decorative shadow. Surfaces are matte and
 opaque. Hairlines separate continuous regions; containers exist only for interaction, grouping or
-clipping.
+clipping. **Superseded for the Floodlit register by §6.1a below** — the prohibition stood while the
+production proxy was the FM captures; it does not survive the Floodlit cutover.
+
+### 6.1a Floodlit palette and material (2026-08-16 amendment, dark-only)
+
+Approved 2026-08-15 (`docs/superpowers/specs/2026-08-15-floodlit-all-surfaces-design.md`). This
+section replaces §6.1's dark production values and retires the light column entirely: **Floodlit is
+dark-only.** There is no production light palette, no derived light register, no user-facing
+appearance switch, and the app keeps its appearance when the system appearance changes. §7's
+"light/dark appearances... binding" requirement is retired by this amendment; only dark is binding.
+
+Role names are unchanged from §6.1 — every view keeps reading `palette.actionPrimary`,
+`palette.stateWarning` and so on — only the hex each role resolves to changes, plus `Palette.light`
+is deleted. Ratios below are the same WCAG 2.2 relative-luminance method as §6.1, against the actual
+`page`/`work`/`raised` grounds.
+
+| Role | Hex | on page / work / raised |
+|---|---|---|
+| `world.page` | `#060A12` | — |
+| `world.work` | `#100E16` | — |
+| `world.raised` | `#12203A` | — |
+| `content.primary` | `#F6FAFF` | 18.90 / 18.27 / 15.49 |
+| `content.secondary` | `#A9BACE` | 10.00 / 9.67 / 8.20 |
+| `content.quiet` | `#7A8A9E` | 5.62 / 5.43 / 4.61 |
+| `action.primary` | `#FFC53D` | 12.55 / 12.14 / 10.29 |
+| `action.secondary` | `#A9BACE` | 10.00 / 9.67 / 8.20 |
+| `action.destructive` | `#FF3B54` | 5.67 / 5.48 / 4.64 |
+| `state.live` | `#37E08A` | 11.50 / 11.12 / 9.43 |
+| `state.positive` | `#4FD08C` | 10.13 / 9.79 / 8.30 |
+| `state.warning` | `#FFB03A` | 10.87 / 10.51 / 8.91 |
+| `state.negative` | `#FF3B54` | 5.67 / 5.48 / 4.64 |
+| `state.info` | `#6FA8DC` | 7.84 / 7.58 / 6.43 |
+| `college.identity` | `#B07BD6` | 6.27 / 6.07 / 5.14 |
+| `pro.identity` | `#6FA8DC` | 7.84 / 7.58 / 6.43 |
+| `field.turf` | `#072616` | — |
+| `field.line` (on turf) | `#F6FAFF` | 15.44 |
+| `field.annotation` (on turf) | `#FFCE6A` | 11.01 |
+| `field.live` (on turf) | `#4FD08C` | 8.27 |
+
+Measured constraints, binding on every consumer:
+
+- **`content.quiet` clears 4.5:1 on all three grounds** (4.61 on `raised`, its lowest), so unlike
+  §6.1's v3 values it needs no working-prose exemption; §6.1's general rule that quiet stays out of
+  working prose is a density choice here, not a contrast requirement.
+- **Filled-control ink reuses `world.page` as the dark ink**, the pattern the shipped
+  `CoachWorldActionButtonStyle` already implements (`page.color` as foreground on a filled action).
+  Measured on every fill: `action.primary` 12.55, `state.live` 11.50, `state.positive` 10.13,
+  `state.warning` 10.87, `state.info` 7.84, `state.negative`/`action.destructive` 5.67. All clear
+  4.5:1; no new ink token is introduced.
+- **The team-colour fill rule is unchanged and still binding**: `dark-primary` team fill against the
+  new `world.raised` measures 1.26, `content.secondary` as the mandatory hairline on it measures
+  6.51. A team fill still always carries the boundary.
+
+**Material.** Glass, grain, blur and a directional sheen are permitted for the Floodlit register,
+implemented exactly as `CoachWorldFloodlitStage`, `CoachWorldFloodlitPanelModifier` and
+`CoachWorldGrainOverlay` already ship: `.ultraThinMaterial` plus an opacity-scaled fill from §6.1's
+existing `Depth.glassPanelOpacity` (0.56) and `Depth.deepPanelOpacity` (0.82) — `.82` remains the
+lowest value that preserves 4.5:1 body text when a panel crosses a mown stripe and a floodlight beam.
+**Reduce Transparency removes glass, grain and blur and falls back to opaque `world.work` /
+`world.raised` fills at the same depth order** — already implemented, and mandatory: no consumer may
+render glass without the Reduce Transparency branch.
+
+**Geometry.** §6.3's flat radius table is superseded for panels, rows and committing controls by an
+asymmetric four-corner shape (`CutCorner`, independent `topLeading`/`topTrailing`/`bottomTrailing`/
+`bottomLeading` radii — `RoundedRectangle` cannot express this). Three named presets:
+
+| Preset | Radii (pt) | Use |
+|---|---|---|
+| `.panel` | 4 / 22 / 4 / 22 | House panel shape — glass panels, cards |
+| `.row` | 3 / 14 / 3 / 14 | Rows and chips — tighter variant of `.panel` |
+| `.action` | 22 / 22 / 22 / 5 | Committing controls — soft on three corners, cut on the last |
+
+College identity furniture may take one restrained 9° cut per §5; Pro stays orthogonal. BROADCAST
+radius stays 0 — square geometry is unchanged by this amendment. **Superseded for Match Day alone
+by §6.1b (2026-08-18).**
+
+### 6.1b Match Day broadcast register (2026-08-18 amendment)
+
+Source: the owner-supplied design handoff `design_handoff_floodlit_surfaces_and_match_day/`
+(`MATCH-DAY.md`, `FLOODLIT-SURFACES.md`, `README.md`). It carries the same authority as the
+2026-08-15 Floodlit spec §6.1a records, and where the two disagree this section is the later
+decision.
+
+**What changes.** §6.1a closed with "BROADCAST radius stays 0 — square geometry is unchanged by
+this amendment", and §9 has read since the rebuild began as *no desk chrome, cards, gradients,
+glow or decorative broadcast effects on a live match surface*. Match Day as drawn is glass
+furniture with cut corners floating over a gradient turf plane, with one gold-glowing committing
+action. **Those two rules are retired for the Match Day surface only**, and replaced by the
+constraints below. Aftermath, box score and every other `.broadcast` surface keep §6.1a's square,
+flat treatment until a design says otherwise.
+
+The reason the old rule existed still holds and is restated as a constraint rather than a ban:
+decoration must never sit between the coach and the state of the game. So:
+
+- **Nothing decorative may carry meaning.** Glow marks the one committing action and the
+  first-down line, and nothing else. A panel's material never encodes a value.
+- **The field is the dominant object** (§4.1). Furniture is glass over it, never a card beside it.
+- **Reduce Transparency still removes glass, grain and blur** on this surface exactly as
+  `CoachWorldFloodlitStage` already implements. No consumer may render glass without that branch.
+- **Reduce Motion still removes the ball's flight, the live dot's pulse and the panel push.**
+
+**Geometry.** Match Day takes the same `CutCorner` presets §6.1a names, extended by six the
+handoff's per-surface table adds. All are on `CoachWorldCutCorner`:
+
+| Preset | Radii (pt) | Use |
+|---|---|---|
+| `.card` | 4 / 18 / 4 / 18 | Scorebug, call-in budget bug, staff call-in panel |
+| `.alert` | 4 / 24 / 4 / 24 | Alert surfaces |
+| `.block` | 4 / 20 / 4 / 20 | Blocks |
+| `.wide` | 3 / 18 / 3 / 18 | Wide rows — the halftime plan's slot rows |
+| `.actionSmall` | 18 / 18 / 18 / 4 | Small committing controls |
+| `.playCard` | 14 / 14 / 6 / 6 | Call-in options, halftime footer action |
+
+**Frame.** The install floor is 844 × 390 (§7). Left-anchored furniture clears the sensor housing
+at `59 + 4 = 63`; the bottom band clears the home indicator at `21 + 4 = 25`; the trailing gutter is
+`20`; top furniture sits at `12`. Minimum tap target stays 44.
+
+**Colour.** The values below are the Floodlit ramp the handoff ships, in addition to §6.1a's roles.
+Ratios are the same WCAG 2.2 relative-luminance method §6.1 uses.
+
+| Token | Hex | Carries text? | Measured |
+|---|---|---|---|
+| `room-deep` | `#07060B` | ground | `content.primary` 19.27, `content.secondary` 10.19 |
+| `turf` | `#1C6E42` | field ground | `field.line` 5.97 |
+| `turf-hot` | `#37A868` | field ground | — |
+| `turf-crown` | `#2A8850` | field gradient stop | — |
+| `turf-mid` | `#124E2E` | field gradient stop | — |
+| `turf-shade` | `#0A311D` | field gradient stop | — |
+| `turf-night` | `#05150D` | field gradient stop | — |
+| `lamp` | `#FFF2CE` | floodlight pool | 17.78 on `page` |
+| `gold-light` | `#FFE196` | yes | 15.53 on `page` |
+| `gold-deep` | `#D89713` | gradient stop | — |
+| `gold-ink` | `#150F02` | yes, on gold fill | 12.08 on `action.primary`, 14.95 on `gold-light` |
+| `live-ink` | `#FF8E9C` | yes | 9.06 on `page` |
+| `go-ink` | `#7DF0B6` | yes | 14.16 on `page` |
+| `cool-ink` | `#9CC8EE` | yes | 11.24 on `page` |
+| `club-field` | `#0F5637` | ground | `club-ink` 7.71 |
+| `club-ink` | `#EAF3EE` | yes | 7.71 on `club-field` |
+| `opponent-field` | `#123A5E` | ground | `opponent-accent` 6.45, `opponent-ink` 8.46 |
+| `opponent-accent` | `#9CC5E8` | yes | 10.91 on `page`, 6.45 on `opponent-field` |
+| `opponent-ink` | `#C7DEF3` | yes | 8.46 on `opponent-field` |
+| `endzone-opponent` | `#1B2431` | end zone fill | — |
+| `bowl-ink` | `#C9A968` | yes | 8.79 on the bowl bug's ground |
+| `ball-highlight` | `#A6572A` | ball gradient | — |
+| `ball-mid` | `#7A3E1C` | ball gradient | — |
+| `ball-shade` | `#46220F` | ball gradient | — |
+
+**One handoff value is refused: `ink-3` `#65788F`.** It measures 4.37 / 4.23 / 3.58 on
+`page` / `work` / `raised` and so fails 4.5:1 on every ground, including the two it is drawn on.
+§6.1a's `content.quiet` `#7A8A9E` is the same role at 5.62 / 5.43 / 4.61 and is what ships wherever
+the handoff writes `ink-3`. The handoff's "the prototype's literal value wins" rule governs
+paddings and hues; it does not override §7's accessibility contract.
+
+**Type.** The handoff's literal px scale (66 / 60 / 54 / 52 / 40 / 34 / 25 / 20 / 19 / 17 / 16 /
+15 / 14 / 12 / 10.5 / 9) is a *drawing* scale in Archivo Narrow. In the app it is
+`Font.system(size:).width(.condensed)`, and SF Pro Condensed sets wider at the same point size, so
+every value below `display-lead` is subject to the sizing pass §6.2 already requires. §6.2's 12 pt
+authored floor is unchanged and binding: the handoff's 10.5 pt and 9 pt values are permitted **only**
+for tracked uppercase micro-labels, which §6.2 already exempts, and never for prose.
+
+### 6.1c Floodlit management chrome (2026-08-18 amendment)
+
+Source: the same owner-supplied handoff §6.1b records, `FLOODLIT-SURFACES.md` §1 and §2. Where
+§6.1b governs the one broadcast surface, this section governs every **management** surface: the
+shared stage they all render inside, and the eight moves they are all built from.
+
+**The stage.** Composed at the install floor with absolute positions. There is no tab bar and no
+nav rail beyond the icon column — navigation lives in the identity header, family on the left and
+jump-to on the right.
+
+| Element | Geometry |
+|---|---|
+| World backdrop | full bleed, bottom bleed 0.55, receding as density rises but never absent |
+| Identity header | top 3, leading 115, trailing 20; two rows, 22 then 16 |
+| Icon rail | leading 59, top 46, width 44; 44 pt targets, `.row` radius, 2 pt gaps |
+| Content | leading 115, top 46, to the trailing gutter at 20 — max width **709** |
+| Grain | over everything, 128 px tile, overlay, 0.5 |
+
+`844 − 115 − 20 = 709`, so the content column is the frame minus the rail and the gutter, and the
+number is derived rather than chosen. **Title, Job Board and Offer start at leading 63 and carry no
+icon rail** — they sit outside the coaching week, so the rail would name places the player cannot
+go from there.
+
+**Three worlds, one variable.** The backdrop is `pitch | facility | film`, and it is the single
+thing that changes per screen. It is a read-model fact, not a view's guess. **Film is the one place
+the light goes cold**: its world is the projector beam and its glass loses the warm sheen every
+other surface carries.
+
+**Content column widths are deliberate, not fluid** (`FLOODLIT-SURFACES.md` §4): 150, 250, 300,
+330, 345, 380, 396, 400, 402, 404, 410, 420, 428, 430, 474, 697, 709, 761. A surface either uses
+the full 709 or a named narrower column with the world showing beside it.
+
+**The hero object breaks the safe area on purpose** — the week arc, the jersey cut-out, the
+attribute dial, the hand of play cards. Do not inset it to be tidy.
+
+**Blur only where something is genuinely in front of something else.** Non-hero glass flattens to a
+solid fill rather than stacking blur over a transformed plane, which smears. Two fills carry that:
+
+| Token | Hex | Use | Measured |
+|---|---|---|---|
+| `glass-flat` | `#11141E` | non-hero glass, standard depth | `content.primary` 17.54, `content.secondary` 9.28 |
+| `glass-flat-deep` | `#0B0D14` | non-hero glass, deep depth | `content.primary` 18.52, `content.secondary` 9.80 |
+| `overlay-scrim` | `#04070C` | the registry overlay's ground | `content.primary` 19.25, `content.secondary` 10.19 |
+
+**The eight composition patterns.** Every management surface is built from these and nothing else;
+a surface that needs a ninth is a finding, not a licence. Names map 1:1 onto Swift types, and each
+folds into §6.5's registry rather than starting a parallel one.
+
+| Pattern | Spec |
+|---|---|
+| Glass panel | `.panel` radius, padding 11/15, 1 px white-13 hairline, 148° sheen, `shadow-panel` |
+| Row / chip | `.row` radius, padding 10/12, min height 32–44, 1 px white-14, gold border on selection |
+| Card | `.card` radius, padding 12/13 |
+| Label3 | 9 pt uppercase, 0.2em tracking, quiet ink — **written sentence case in source and uppercased on render**, so the string stays readable to a translator |
+| Arc family | one idea at four scales: `ValueRing` 26 → `ArcGauge` (panel) → `AttributeDial` 212 → `ShareBar` 4. An arc is permitted **only** where the datum is a proportion |
+| Pill / Flag | the only capsules in the system. Pill 10.5, selected takes the gold field. Flag 9 at 1.35 px tracking |
+| Staff voice | monogram avatar plus quoted advice, 11 pt in `content.secondary`, curly quotes, em dash for the turn |
+| Committing action | one per screen, bottom-right in the thumb arc: gold field, `.action` radius, `glow-gold`, 14 pt/700 uppercase verb |
+
+**Costs, not recommendations.** Every option on a decision surface carries a cost in clock time, an
+attributed staff voice, and an exposure, then a consequence with a real arrow (`Gains four → fourth
+and three`). The interface never says which to pick. This is §4.4's rejection of invented authority
+stated as a layout rule.
+
+**One accessibility carve-out, and its remedy.** The identity header's second row is 16 pt tall and
+its sibling links are 9.5 pt text — well under §6.3's 44 pt minimum target. The row height is
+load-bearing for the header's two-row proportion, so the visible text keeps its drawn size and each
+link carries a **44 pt hit area** via an expanded content shape instead. Visible size and tappable
+size are allowed to differ; tappable size is not allowed to drop below 44.
 
 ### 6.2 Typography
 
@@ -529,8 +761,8 @@ grid in three different contexts. What is never permitted is an unbounded class.
 | **Obligation** (`AgendaRow`, registry 19) | 2 | `checkmark.circle.fill` (complete), `person.badge.clock` (delegated) | Week plan, inbox, any obligation list |
 | **Session type** (week grid) | 5 | `figure.run`, `film`, `airplane`, `football`, `moon.zzz` | Practice Plan week grid only |
 | **Broadcast marks** (§9) | 2 | possession wedge, key-moment mark | Match Day chrome only; both carry a printed or spoken value beside them, never count alone |
-| **Empty-state marks** (`EmptyState`, registry 23) | 6 | `person.3`, `person.crop.rectangle`, `list.number`, `checkmark.circle` | Empty and unavailable states only. Enumerated but **not a learned class**: every empty state carries a title and a description sentence, so the mark orients and the words inform. Bounded anyway, because an unbounded class is what this table exists to prevent |
-| **Control furniture** | not a learned class | `chevron.*`, `magnifyingglass`, `line.3.horizontal.decrease`, `rectangle.3.group`, `pause.fill`, `forward.end.fill`, `speedometer`, `checkmark`, `person.2`, `plus`, `xmark` | Navigation and controls; every one carries a visible or accessible label, so none is a symbol the player must learn. §6.3 anticipates the icon-first utilities (inspect film, delegate, pause, speed, tactical view) and requires their accessible names to stay explicit |
+| **Empty-state marks** (`EmptyState`, registry 23) | 6 | `person.3`, `person.crop.rectangle`, `list.number`, `checkmark.circle`, `clipboard` | Empty and unavailable states only. Enumerated but **not a learned class**: every empty state carries a title and a description sentence, so the mark orients and the words inform. Bounded anyway, because an unbounded class is what this table exists to prevent |
+| **Control furniture** | not a learned class | `chevron.*`, `magnifyingglass`, `line.3.horizontal.decrease`, `rectangle.3.group`, `pause.fill`, `forward.end.fill`, `speedometer`, `checkmark`, `person.2`, `plus`, `xmark`, `calendar`, `tray.full`, `square.grid.3x3` | Navigation and controls; every one carries a visible or accessible label, so none is a symbol the player must learn. §6.3 anticipates the icon-first utilities (inspect film, delegate, pause, speed, tactical view) and requires their accessible names to stay explicit |
 
 **Total learned symbols: 23** (12 status + 2 change + 2 obligation + 5 session + 2 broadcast). The
 last two rows are **capped but not learned**: a control is read from its label and an empty state
@@ -571,6 +803,61 @@ without the shipping form beside it. A verdict at high confidence is not the onl
 drawing: a thin sample and a low-confidence judgement are what make a simulation honest under
 uncertainty, so a surface that can produce them draws one.
 
+### 6.7 The motion register (added 2026-08-18)
+
+*Written for values that were already shipping in `CoachWorldTokens.Motion`
+(`Sources/ProFootballCoachUI/DesignTokens.swift`) with nowhere in this document naming them. The
+tokens came from the owner's Floodlit design handoff; the handoff directory itself is not in the
+repository, so until this section existed the values had no home a builder could read — exactly the
+failure §6.6 closes for symbols, and the rule stated there applies here without amendment: **this
+document is the only canonical home, and a value appearing only in code has not shipped.**
+
+Motion is capped the same way symbols are, because an uncapped motion vocabulary is the same leak as
+an uncapped glyph vocabulary: every curve and duration the player learns to read is a class, and an
+unbounded class is a finding under §4.5.
+
+**One curve for the whole product.** `timingCurve(0.32, 0.72, 0, 1)` — a fast-in, gentle-out ease
+used for every timed transition. No second curve may ship without amending this line first; if a
+surface needs a different feel, that is a finding against this section, not a reason to add a curve
+inline. **`pulse`'s repetition is not a second curve** — `.repeatForever(autoreverses:)` runs the
+same one curve back and forth; the shape of a single cycle is unchanged, only its recurrence.
+
+| Duration | Seconds | Reduced form | Where used |
+|---|---:|---|---|
+| **press** | 0.12 | discrete: the pressed state applies with no dim | A committing control's press feedback |
+| **value** | 0.22 | discrete: the new figure appears, no settle | A rating, score or attribute value changing |
+| **world** | 0.42 | discrete: the destination appears, no travel | A world-scale transition — screen to screen, register to register |
+| **panelEnter** | 0.24 | discrete: the panel is present or absent, never entering | The staff call-in panel's entrance |
+| **pulse** | 1.5 | discrete: the live indicator is shown at full opacity, never dimming | The live-snap dot, `04:448`'s named example — a period, not a state-change duration, so it is the one row that repeats rather than resolving once |
+
+**Companions, not durations:**
+
+| Token | Value | What it is |
+|---|---:|---|
+| **panelPushDistance** | 14 pt | How far `panelEnter` travels a panel in from its edge |
+| **pressDim** | 0.12 | How far a committing control dims on press — a dim, never a scale, so a control never shrinks under the thumb committing it |
+| **disabledOpacity** | 0.4 | The resting opacity of a disabled control. Not paired with an animation — a control does not animate into disabled, it simply is — but it ships from `Motion` alongside the values that do, so it belongs in this table rather than nowhere |
+
+**The reduced-form rule, stated once rather than four times.** `04:826` already requires it globally:
+Reduce Motion replaces travel, reveal and field animation with discrete state changes. Applied to
+this table, a reduced form is never "the same animation, faster" — duration collapsing to near-zero
+still asks a screen reader and a motion-sensitive player to track something moving. It is the
+*destination state*, presented immediately, exactly as `04:448` already requires for Match Day: the
+ball's flight, the live dot's pulse and the panel push are removed, not accelerated.
+
+**Nothing here licenses a screen to animate.** §2's per-register motion phrase and §4.5's motion
+currency decide *whether* a state change may carry motion at all; this table only fixes *how*, once
+that permission exists. A screen that animates without an entry in §2's row for its register is a
+finding under §4.4 regardless of whether the duration is drawn from this table.
+
+**One file holds both halves of this contract in code: `Sources/ProFootballCoachUI/CoachWorldMotion.swift`.**
+It is the single definition site for this table's values — necessarily exempt from the literal-number
+scan that polices every consumer, the same way a token's own declaration is not itself a violation —
+and it is the only file permitted the raw vocabulary (`Animation.timingCurve`, `withAnimation`,
+`.repeatForever`) that schedules motion at all. Every other file reaches motion through
+`.coachWorldAnimation(_:value:)` or `.coachWorldPulse()`, never directly, so an off-token duration or
+an un-reduced animation is unrepresentable outside this one file rather than merely catchable in it.
+
 ## 7. Device and accessibility contract
 
 *Window rewritten 2026-08-12 under D15 (option b) from verified sizes — Apple HIG Layout via
@@ -581,8 +868,9 @@ newer; all five window sizes Apple-verified: 852 × 393, 874 × 402, 932 × 430,
 844 × 390 `e`/base class below the promise). The **install floor stays 844 × 390**: below-promise
 devices can always install, so every surface renders un-clipped and reachable there forever; the
 promise floor is where the full budget must hold (two-tier `SmallestDeviceLayoutTest`, D15). Both
-sensor orientations, light/dark appearances, compact/regular landscape width classes and AX5 are
-binding.
+sensor orientations, compact/regular landscape width classes and AX5 are binding. **Light/dark
+appearances is retired by §6.1a (2026-08-16): Floodlit is dark-only, with no user-facing appearance
+switch and no derived light register.**
 
 Landscape safe-area insets are per-model and secondary-sourced (sensor edge / home edge): 59/21 for
 the 15 generation and base 16; 62/21 for the 16 Pro class; 62 sides with 20 top and bottom for the
@@ -616,6 +904,12 @@ than the day someone remembers to list it.
    with no AX5 branch has not had AX5 considered; this catches the omission, not the quality.
 2. It declares deterministic VoiceOver order (`accessibilitySortPriority`). This is the
    world-context → dominant-object → evidence → actions → navigation rule above, made checkable.
+3. **Added 2026-08-18.** If it uses a construct §6.7 cannot wrap in the choke point —
+   `TimelineView`, `matchedGeometryEffect`, `phaseAnimator`, `keyframeAnimator`, `symbolEffect` — it
+   also declares `accessibilityReduceMotion` is read. `04:826`'s reduced-form requirement is a
+   contract clause the enumeration machinery already existed to check; this is `ReduceMotionContractTest`,
+   the release gate `PRODUCT.md` already names, made to actually run rather than exist as a
+   registered name with nothing behind it.
 
 **What is not asserted, and must not be claimed.** *No datum lost* and *no clipping* are properties
 of a render, and the suite is a headless executable with neither XCTest nor a view host — it cannot
@@ -750,9 +1044,11 @@ Match is the strongest game-authenticity gate.
   formation dots per §6.5 #18's role tokens, the line-of-scrimmage and first-down rules, and the
   §6.6 broadcast marks. Route-tree and formation notation are drawn conventions of the sport, not
   protected expression; a specific playbook's diagrams are someone's expression and are never
-  reproduced. Every fixed diagram mark carries §6.2's accessible-sentence equivalent. Until G-06
-  supplies recorded routes, sheets and views draw play art in target form only, labelled "once
-  G-06 lands".
+  reproduced. Every fixed diagram mark carries §6.2's accessible-sentence equivalent.
+  **G-06's anchor contract is `03` §9, added 2026-08-17.** Match Day draws play art from a recorded
+  anchor set: alignment starts come from the §9.4 position template, and movement ends come from the
+  identities the outcome records. Sheets that have not yet adopted the anchor set still draw play art
+  in target form only.
 - Offense direction is recorded data. It owns defended end-zone labels and whether the first-down
   line lies left or right of the line of scrimmage; the view never guesses from home/away colour.
 - All 22 actors are represented; no more than three are visually foregrounded at once.

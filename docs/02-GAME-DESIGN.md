@@ -75,7 +75,9 @@ player is pulled in on flagged situations — a **call-in**.
 Call-ins fire on: fourth down; red zone; two-minute; third-and-long; the snap after a turnover; when
 the opponent has shown a tendency the plan did not anticipate; and when the game plan leaves the
 situation genuinely open. Default rate ~25 per game, tunable from ~12 to ~40 as a difficulty and
-pacing setting.
+pacing setting. **The chosen rate is a per-save preference** — set from Settings & Accessibility,
+defaulting to 25, bounded to `SharedRules.callInsPerGameRange` — not a global app setting, since a
+coach's preferred pacing is a property of a specific career, not the install.
 
 A call-in presents **at most three options**, each with what it is trying to do and what it risks,
 plus the coordinator's recommendation and the reason for it. The player picks or defers. Deferring is
@@ -103,7 +105,25 @@ The offseason carries ~90 minutes of the season budget and is where the two tier
 
 ### 4.1 College
 
-1. **Signing day** resolves the recruiting cycle that ran all season.
+1. **Signing day** resolves the recruiting cycle that ran all season. It is **week 21**, the last
+   week of the shared calendar (§11.3.1) — the college bracket ends in week 17, so the college
+   coach has no game left and the class is what the week is for.
+
+   The cycle phase is therefore a function of the week, not a flag anything sets by hand:
+   `active` in weeks 1 to 20, `signing` in week 21. `signing` closes contact — no user recruiting
+   action, no AI board growth, no AI investment — while leaving commitment resolution open, because
+   the commitments closing is the ceremony. The signed class joins its programme at the rollover
+   into the next season, before the portal opens.
+
+   The player has no lever left on signing day, and that is the point of a deadline: the screen
+   shows the class the season earned and whatever mandatory decisions are still standing. A
+   recruiting cycle that kept signing people after signing day would not be a deadline.
+
+   *Recorded because the first implementation had no way to reach this state.* `signing` existed in
+   the phase enum, `SigningDayView` branched on it, and nothing ever assigned it — the world
+   integrity check required `active` at every stable root, so the phase could not have persisted
+   across a week boundary even if something had. Screen 29 rendered "Signing day is closed" for the
+   whole of every career, and signing happened invisibly inside the season rollover.
 2. **The portal** opens: departures to manage, arrivals to chase. A retention decision on every
    player with a reason to leave.
 3. **NIL budget** allocation across the roster — a scarce pot, distributed. Getting it wrong loses
@@ -132,8 +152,21 @@ does not hold, and stops at the one they do:
 
 - The professional offseason advances **one phase per scheduled week**, driven by the roster policy
   that already runs weekly.
-- **Free agency** signs while signings remain legal. When a pass makes no signing — the pool is dry
-  or every roster is full — the draft begins.
+- **Free agency** signs while signings remain legal *and while the roster leaves room for the picks
+  the team still holds* — a team with seven picks left signs down to 46, not 53. When a pass makes
+  no signing — the pool is dry, or every roster is full to its reserved limit — the draft begins.
+
+  *The reserve is what makes §8's no-deadlock assertion true rather than hoped for — owner decision,
+  2026-08-20.* Without it the two rules below contradicted each other and the draft could never take
+  a single player at any seed: expiry frees headcount, free agency signs until the pool is dry, and
+  a dry pool is precisely the pass that starts the draft — so the draft always opened at the one
+  moment every seat was gone. Measured, season 1: expiry freed 296 seats, free agency signed exactly
+  32 a week for nine weeks until the pool hit zero and all 32 rosters read 53/53, and the first pick
+  threw `activeRosterFull` with 101M of cap space unused. Headcount was the binding constraint and
+  nothing arbitrated it.
+
+  The reserve is counted from the draft order rather than from `ProRules.draftRounds`, so a team
+  holding an unusual number of picks reserves for the picks it actually holds.
 - **The draft** is then made pick by pick in draft order by every AI team, deterministically: the
   best available prospect by rating, ties broken by prospect identity.
 - It **pauses when the controlled professional team is on the clock**, because that pick is the
@@ -159,6 +192,19 @@ first one:
    free agency and the draft, and it is why beat 1 comes first.
 2. **Money is enforced by the cap-compliance date — beat 2.** Cuts happen when the cap binds. A
    team at 48 players and over the cap still cuts; a team at 53 and comfortably under does not.
+
+**Free agency reserves the draft's seats — measured 2026-08-20.** Beat 1 frees headcount "for free
+agency *and* the draft", and that conjunction is a rule rather than a description: free agency runs
+first, and if it signs to the active-roster limit there is no seat left when the draft opens. That is
+exactly what happened. `--pro-draft-stall-probe` reports the live scheduler's first pick throwing
+`activeRosterFull` at `roster=53/53` in every season, with `committedCap` at 170M of 272M — the
+draft was blocked on headcount while money was nowhere near binding, so beat 2 would not have
+unblocked it. An AI club therefore signs only up to `activeRosterLimit - draftRounds`, holding one
+seat per round it is entitled to pick in. Expiry frees about eleven a roster against seven rounds, so
+the reservation fits inside what beat 1 already produces and does not need cuts to make room. A club
+may still exceed that ceiling by other routes — a trade, a waiver claim, a promotion from the
+practice squad — because the reservation is a policy about what the AI *chooses* to sign, not a new
+roster bound; `activeRosterLimit` remains the only hard one.
 
 **Bootstrap issues contracts, with a staggered term spread.** Every bootstrapped professional gets
 a contract whose remaining years are drawn deterministically so that **roughly a fifth of each
@@ -193,6 +239,22 @@ root — the college portal's postseason commit does, later in the same step —
 lesson applies here that applied to expiry itself: a hand-built fixture that put one team over the
 cap and skipped this step surfaced as `portalCommitFailed(.postseason)`, not as a cap error, until
 compliance was wired at the right point.
+
+**Dead money is a single-season charge — D15, owner decision 2026-08-20.** `Contract.deadMoney`
+accelerates every unamortised bonus dollar into the season of release, which is a statement that the
+charge belongs to *that* season. So it is discharged at the season boundary, between beat 1 and beat
+2: the season now ending has been paid for, and the compliance pass immediately below charges the
+season about to start. Each season's dead money is therefore exactly that season's releases, and
+`03` §6's "bounded overage from dead money only" becomes true — bounded by one season of releases
+rather than by nothing at all.
+
+*Recorded because the alternative was a save that could not advance.* Nothing discharged dead money
+before this: `ProTeam.deadMoney` had two write sites and both were `+=`, so a dollar charged in
+season 3 was still charged in season 20. Because a release accelerates the whole remaining bonus,
+releasing can *raise* committed cap rather than lower it, so the cap-shedding options shrink as the
+charge grows; when no legal release reaches compliance, `enforceCapCompliance` throws and the week
+advance fails outright. D15 records the amortised schedule — the truer mechanic, and a save-schema
+change under D7 — as a deliberate later choice rather than something to arrive at.
 
 **The controlled team's own cap choice is deliberately not built here.** Every other consequential
 choice in this game — a redshirt, a portal decision, an NIL allocation, a recruiting action — is the
@@ -430,6 +492,17 @@ record and recruiting record.
 Carried across: reputation, scheme identity, a subset of staff, the record book, the career line.
 Not carried: players, recruits, college currency.
 
+**The subset of staff is the four coordinators — owner decision 2026-08-20.** They follow the coach
+to the professional team unconditionally, displacing its incumbent coordinators the same way the
+coach displaces its head coach. Position coaches do not follow: the staff that carries is the one
+that carries *scheme identity*, which is the line above and the reason the subset exists at all.
+The seats the group vacates are backfilled at the college programme, because every organisation
+holds exactly one coach per role at all times (§11) and a vacancy is not a state the world is
+allowed to be in.
+
+This is a promotion rule, not a separation rule. A coach who resigns or is fired goes nowhere and
+takes nobody: the coordinators keep their jobs and the programme keeps its staff.
+
 One-way by default, with a demotion path if the pro job ends badly. Tuned so the move is earned in
 4–12 college seasons at median play.
 
@@ -470,6 +543,7 @@ the legal tests.
 | Initial signings per class | 25 | §4.3's "~25 signings" made exact |
 | Roster limit | 105 | Scholarship players plus walk-ons |
 | Eligibility | 4 seasons of competition within a 5-year clock | The redshirt year is the difference, and §4.1's redshirt decision is what spends it |
+| Signing day | week 21, the last week of the shared calendar | §4.1. The cycle phase is derived from the week, never stored independently |
 | Portal windows | two: after the bracket, and in spring | §4.1 |
 
 ### 11.2 The pro tier
@@ -484,6 +558,7 @@ the legal tests.
 | Practice squad | 16 | P8's cap-laundering defences apply here specifically |
 | Salary cap | 255,000,000 integer dollars, growing 7 percent a year | Integer dollars, never floating point |
 | Signing-bonus proration | over the contract's length, capped at 5 years | The mechanism dead money comes from |
+| Dead money discharge | a single-season charge, cleared at the season boundary | **D15, owner decision 2026-08-20.** `Contract.deadMoney` accelerates the whole unamortised bonus into the season of release, so the charge belongs to that season. The amortised alternative is the truer mechanic and costs a save-schema change; D15 records it as the deliberate later choice |
 | Contract length | 1 to 7 years | An upper bound so a corrupt save cannot ask for an unbounded allocation. A contract of zero years carries no signing bonus |
 | Draft | 7 rounds of 32 picks, 224 total | |
 

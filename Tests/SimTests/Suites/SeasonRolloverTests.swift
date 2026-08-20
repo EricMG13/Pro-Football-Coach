@@ -157,6 +157,189 @@ func runSeasonRolloverTests() {
                    "a real advanceWeek left a team over the cap after the boundary")
             expect(WorldIntegrity.check(transition.state).isValid)
         }
+
+        // `ArchitectureTests` asserts the full step ledger once, at season 0 week 1, and asserts
+        // the week-21 roll as arithmetic on `CalendarState.advancedWeek()` rather than against
+        // anything the scheduler does. Neither reaches the week that actually rolls: the boundary
+        // is the one step where the transaction runs a second batch, replaces the slate, expires
+        // contracts and rebuilds the college cycle, and it is the likeliest week for a step to be
+        // skipped, run twice or reordered without a ledger entry to show for it.
+        test("every week of the walk emits the whole step ledger in order and lands where it says") {
+            var state = GameState.bootstrap(seed: 97_007)
+            var visited: [CalendarState] = [state.calendar]
+            var ledgerFaults: [String] = []
+            var snapshotFaults: [String] = []
+
+            while state.calendar.season == 0 {
+                let before = state.calendar
+                let transition = try WorldScheduler.advanceWeek(state)
+
+                if transition.stepRecords.map(\.step) != WorldScheduler.steps {
+                    ledgerFaults.append(
+                        "S\(before.season)W\(before.week) emitted "
+                            + "\(transition.stepRecords.count) records for "
+                            + "\(WorldScheduler.steps.count) steps"
+                    )
+                }
+                // The three claims the snapshot makes about where the week started, where it
+                // ended, and that the two differ by exactly one calendar step.
+                if transition.snapshot.completed != before
+                    || transition.snapshot.next != before.advancedWeek()
+                    || transition.state.calendar != transition.snapshot.next {
+                    snapshotFaults.append(
+                        "S\(before.season)W\(before.week) reported "
+                            + "\(transition.snapshot.completed) -> \(transition.snapshot.next) "
+                            + "and landed on \(transition.state.calendar)"
+                    )
+                }
+
+                state = transition.state
+                visited.append(state.calendar)
+            }
+
+            expect(ledgerFaults.isEmpty,
+                   "\(ledgerFaults.count) weeks emitted an incomplete or reordered step ledger, "
+                       + "first \(ledgerFaults.first ?? "")")
+            expect(snapshotFaults.isEmpty,
+                   "\(snapshotFaults.count) weeks disagreed with their own snapshot, first "
+                       + "\(snapshotFaults.first ?? "")")
+
+            // The walk itself: every week of the season exactly once, in order, and the roll only
+            // at the documented last week.
+            let expected = (1...SharedRules.inSeasonWeeks).map {
+                CalendarState(season: 0, week: $0)
+            } + [CalendarState(season: 1, week: 1)]
+            expectEqual(visited, expected,
+                        "the walk skipped, repeated or rolled on a week other than "
+                            + "\(SharedRules.inSeasonWeeks)")
+        }
+
+        // `02` section 4.1: signing day is week 21 and the cycle phase is a function of the week.
+        //
+        // The phase enum carried a `signing` case that nothing ever assigned, and `WorldIntegrity`
+        // required `active` at every stable root, so it could not have survived a week boundary
+        // even if something had. Screen 29 rendered its closed branch for the whole of every
+        // career. These assert the phase over every week by construction rather than at the one
+        // boundary that happened to be interesting.
+        test("the recruiting cycle phase is derived from the week, every week") {
+            var state = GameState.bootstrap(seed: 97_010)
+            expectEqual(state.calendar.week, 1)
+            expectEqual(state.college.phase, .active)
+            while state.calendar.season == 0 {
+                state = try WorldScheduler.advanceWeek(state).state
+                let expected = CollegeRules.recruitingCyclePhase(inWeek: state.calendar.week)
+                expectEqual(state.college.phase, expected,
+                            "week \(state.calendar.week) carried \(state.college.phase)")
+                expect(WorldIntegrity.check(state).isValid,
+                       "week \(state.calendar.week) root is invalid: "
+                           + WorldIntegrity.check(state).issues.prefix(3)
+                               .map(\.description).joined(separator: " ; "))
+            }
+            expectEqual(state.college.phase, .active)
+        }
+
+        test("signing day opens in the signing week and only there") {
+            var state = GameState.bootstrap(seed: 97_011)
+            var signingWeeks = 0
+            while state.calendar.season == 0 {
+                state = try WorldScheduler.advanceWeek(state).state
+                guard state.calendar.season == 0 else { break }
+                if state.college.phase == .signing {
+                    signingWeeks += 1
+                    expectEqual(state.calendar.week, CollegeRules.signingDayWeek)
+                }
+            }
+            expectEqual(signingWeeks, 1,
+                        "signing day opened \(signingWeeks) times in one season")
+        }
+
+        test("the integrity check refuses a phase the week does not carry") {
+            var state = GameState.bootstrap(seed: 97_012)
+            expectEqual(state.calendar.week, 1)
+            state.college.phase = .signing
+            expect(WorldIntegrity.check(state).issues.contains(
+                .invalidRecruitingCyclePhase(.signing)
+            ), "a signing phase outside the signing week passed the integrity check")
+
+            while state.calendar.week < CollegeRules.signingDayWeek {
+                state.college.phase = CollegeRules
+                    .recruitingCyclePhase(inWeek: state.calendar.week)
+                state = try WorldScheduler.advanceWeek(state).state
+            }
+            expectEqual(state.calendar.week, CollegeRules.signingDayWeek)
+            state.college.phase = .active
+            expect(WorldIntegrity.check(state).issues.contains(
+                .invalidRecruitingCyclePhase(.active)
+            ), "an active phase in the signing week passed the integrity check")
+        }
+
+        test("signing day closes contact and leaves commitment resolution open") {
+            expect(!RecruitingCyclePhase.signing.allowsRecruitingActions)
+            expect(RecruitingCyclePhase.signing.allowsCommitmentResolution)
+            expect(RecruitingCyclePhase.active.allowsRecruitingActions)
+            expect(RecruitingCyclePhase.active.allowsCommitmentResolution)
+            expect(!RecruitingCyclePhase.closed.allowsRecruitingActions)
+            expect(!RecruitingCyclePhase.closed.allowsCommitmentResolution)
+
+            var state = GameState.bootstrap(seed: 97_013)
+            while state.calendar.week < CollegeRules.signingDayWeek {
+                state = try WorldScheduler.advanceWeek(state).state
+            }
+            expectEqual(state.college.phase, .signing)
+
+            // The cycle gate is the first thing `apply` checks, so a request that would otherwise
+            // fail on a missing programme still reports the gate. That is the point: on signing
+            // day no recruiting request is reachable, whatever it names.
+            let request = RecruitingActionRequest(
+                programmeID: state.programmes.ids.first!,
+                prospectID: state.prospects.ids.first!,
+                action: .contact(points: 1)
+            )
+            do {
+                _ = try CollegeRecruitingSystem.apply(request, in: state)
+                expect(false, "a recruiting action was accepted on signing day")
+            } catch let error as RecruitingActionError {
+                expectEqual(error, .cycleUnavailable)
+            }
+        }
+
+        // The assertion the first cut of this change did not have, and needed. `commit` and `flip`
+        // still guarded on `== .active` underneath the market's own gate, so the signing week
+        // computed contenders and then refused every one of them. Nothing failed; it showed up only
+        // as six points of class fill in a calibration number nobody had to read.
+        test("commitments still resolve during the signing week") {
+            var state = GameState.bootstrap(seed: 97_015)
+            var committedInSigningWeek = 0
+            while state.calendar.season == 0 {
+                let transition = try WorldScheduler.advanceWeek(state)
+                state = transition.state
+                for event in transition.emittedEvents {
+                    if case .prospectCommitted = event.payload,
+                       event.occurredAt.week == CollegeRules.signingDayWeek {
+                        committedInSigningWeek += 1
+                    }
+                }
+            }
+            expect(committedInSigningWeek > 0,
+                   "the signing week formed no commitments: signing day closed the class instead "
+                       + "of resolving it")
+        }
+
+        test("the class still signs after the signing week") {
+            var state = GameState.bootstrap(seed: 97_014)
+            var signed = 0
+            while state.calendar.season == 0 {
+                let transition = try WorldScheduler.advanceWeek(state)
+                state = transition.state
+                for event in transition.emittedEvents {
+                    if case let .commitmentResolved(_, _, outcome) = event.payload,
+                       outcome == .signed {
+                        signed += 1
+                    }
+                }
+            }
+            expect(signed > 0, "a full season signed nobody")
+        }
     }
 }
 

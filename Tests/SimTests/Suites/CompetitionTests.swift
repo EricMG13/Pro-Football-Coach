@@ -2,6 +2,72 @@ import Foundation
 import FootballSimCore
 
 func runCompetitionTests() {
+    suite("Player form rating") {
+        test("uses position-specific box-score production and bounded output") {
+            let id = UUID(uuidString: "00000000-0000-4000-8000-000000007000")!
+            expectEqual(
+                PlayerFormRating.rating(
+                    for: PlayerGameStatistics(playerID: id, passingYards: 200, touchdowns: 2),
+                    position: .quarterback
+                ),
+                81
+            )
+            expectEqual(
+                PlayerFormRating.rating(
+                    for: PlayerGameStatistics(playerID: id, receivingYards: 80),
+                    position: .wideReceiver
+                ),
+                63
+            )
+            expectEqual(
+                PlayerFormRating.rating(
+                    for: PlayerGameStatistics(playerID: id, touchdowns: 20),
+                    position: .cornerback
+                ),
+                SharedRules.ratingRange.upperBound
+            )
+            expectEqual(
+                PlayerFormRating.rating(
+                    for: PlayerGameStatistics(playerID: id),
+                    position: .runningBack
+                ),
+                55
+            )
+            expectEqual(
+                PlayerFormRating.rating(
+                    for: PlayerGameStatistics(
+                        playerID: id,
+                        passingYards: Int.max,
+                        touchdowns: Int.max
+                    ),
+                    position: .quarterback
+                ),
+                SharedRules.ratingRange.upperBound
+            )
+        }
+    }
+
+    suite("Tie-aware standings") {
+        test("records ties without inventing a winner and keeps legacy JSON readable") {
+            let team = UUID(uuidString: "00000000-0000-4000-8000-000000007001")!
+            var row = StandingRow(id: team)
+            row.record(pointsFor: 17, pointsAgainst: 17, conferenceGame: true)
+            expectEqual(row.wins, 0)
+            expectEqual(row.losses, 0)
+            expectEqual(row.ties, 1)
+            expectEqual(row.conferenceTies, 1)
+            expectEqual(row.games, 1)
+            expectEqual(row.winningPercentage, 0.5)
+
+            let legacy = """
+            {"id":"00000000-0000-4000-8000-000000007001","wins":2,"losses":1,"conferenceWins":1,"conferenceLosses":1,"pointsFor":42,"pointsAgainst":35}
+            """.data(using: .utf8)!
+            let restored = try JSONDecoder.stable().decode(StandingRow.self, from: legacy)
+            expectEqual(restored.ties, 0)
+            expectEqual(restored.games, 3)
+        }
+    }
+
     suite("Regular-season schedule") {
         test("bootstrap creates only the exact regular-season slate") {
             let state = GameState.bootstrap(seed: 70_001)
@@ -113,11 +179,94 @@ func runCompetitionTests() {
                 ) <= 2, "pro byes collapsed for seed \(seed)")
             }
         }
+
+        test("the deterministic fallback preserves distributed byes") {
+            let world = LeagueGenerator.generate(seed: 70_116)
+            let college = ScheduleGenerator.roundRobinFallback(
+                seed: 70_116,
+                season: 0,
+                tier: .college,
+                members: world.programmes.map(\.id).sorted { $0.uuidString < $1.uuidString },
+                gamesPerTeam: CollegeRules.gamesPerRegularSeason,
+                weeks: CollegeRules.regularSeasonWeeks
+            )
+            assertSeasonSlate(
+                schedule: college,
+                tier: .college,
+                memberIDs: world.programmes.map(\.id),
+                gamesPerTeam: CollegeRules.gamesPerRegularSeason,
+                weeks: CollegeRules.regularSeasonWeeks,
+                maximumByesPerWeek: 12,
+                label: "college deterministic fallback"
+            )
+
+            let pro = ScheduleGenerator.roundRobinFallback(
+                seed: 70_116,
+                season: 0,
+                tier: .pro,
+                members: world.proTeams.map(\.id).sorted { $0.uuidString < $1.uuidString },
+                gamesPerTeam: ProRules.gamesPerRegularSeason,
+                weeks: ProRules.regularSeasonWeeks
+            )
+            assertSeasonSlate(
+                schedule: pro,
+                tier: .pro,
+                memberIDs: world.proTeams.map(\.id),
+                gamesPerTeam: ProRules.gamesPerRegularSeason,
+                weeks: ProRules.regularSeasonWeeks,
+                maximumByesPerWeek: 2,
+                label: "pro deterministic fallback"
+            )
+        }
+    }
+
+    /// Every assertion above runs against season 0, and the boundary does not reuse that slate.
+    /// `PostseasonSystem.completeSeason` regenerates the whole regular season for season N+1 from
+    /// the same league seed with a different season ordinal, and the ordinal reaches three separate
+    /// places: `scheduleSeed` derives every week's pairing seed through it, `makeGames` flips the
+    /// home/away parity on it, and the members handed in are whatever the boundary's realignment,
+    /// evolution and college cycle have just left behind. A slate that is exact at bootstrap
+    /// therefore says nothing at all about the slate a career actually plays in season 3.
+    ///
+    /// The coverage boundary was the quality boundary here: `assertScheduleShape` enumerates its
+    /// members by construction but was only ever handed season 0.
+    suite("Season-boundary schedule") {
+        test("every season boundary regenerates an exact slate") {
+            for seed in 72_100..<72_112 {
+                let world = LeagueGenerator.generate(seed: UInt64(seed))
+                for season in 0..<8 {
+                    let schedule = ScheduleGenerator.regularSeason(
+                        seed: UInt64(seed),
+                        season: season,
+                        programmes: world.programmes,
+                        proTeams: world.proTeams
+                    )
+                    assertSeasonSlate(
+                        schedule: schedule,
+                        tier: .college,
+                        memberIDs: world.programmes.map(\.id),
+                        gamesPerTeam: CollegeRules.gamesPerRegularSeason,
+                        weeks: CollegeRules.regularSeasonWeeks,
+                        maximumByesPerWeek: 12,
+                        label: "college seed \(seed) season \(season)"
+                    )
+                    assertSeasonSlate(
+                        schedule: schedule,
+                        tier: .pro,
+                        memberIDs: world.proTeams.map(\.id),
+                        gamesPerTeam: ProRules.gamesPerRegularSeason,
+                        weeks: ProRules.regularSeasonWeeks,
+                        maximumByesPerWeek: 2,
+                        label: "pro seed \(seed) season \(season)"
+                    )
+                }
+            }
+        }
     }
 
 
     suite("Abstract competition results") {
-        test("the same scheduled game produces the same bounded non-tied summary") {
+        test("the same scheduled game produces the same bounded summary") {
             let state = GameState.bootstrap(seed: 71_001)
             let game = state.competition.currentSchedule.games[0]
             let first = AbstractGameSimulator.play(game, in: state)
@@ -125,7 +274,10 @@ func runCompetitionTests() {
 
             expectEqual(first, second)
             expect(first.homeScore >= 0 && first.awayScore >= 0)
-            expect(first.homeScore != first.awayScore, "competition overtime left a tie")
+            if game.tier == .college || game.stage != .regularSeason {
+                expect(first.homeScore != first.awayScore,
+                       "a college or postseason game ended tied")
+            }
             expectEqual(first.homeStatistics.points, first.homeScore)
             expectEqual(first.awayStatistics.points, first.awayScore)
             expectEqual(
@@ -136,6 +288,57 @@ func runCompetitionTests() {
                 first.awayStatistics.passingYards + first.awayStatistics.rushingYards,
                 first.awayStatistics.offensiveYards
             )
+        }
+
+        test("professional regular season permits ties but college and postseason do not") {
+            let state = GameState.bootstrap(seed: 71_002)
+            let home = state.proTeams.ids[0]
+            let away = state.proTeams.ids[1]
+            var observedProfessionalTie = false
+
+            for ordinal in 0..<1_024 {
+                let game = ScheduledGame(
+                    id: UUID(uuidString: String(
+                        format: "00000000-0000-4000-8004-%012d", ordinal
+                    ))!,
+                    season: state.calendar.season,
+                    tier: .pro,
+                    week: 1,
+                    stage: .regularSeason,
+                    homeID: home,
+                    awayID: away
+                )
+                let result = AbstractGameSimulator.play(game, in: state)
+                if result.homeScore == result.awayScore {
+                    observedProfessionalTie = true
+                    break
+                }
+            }
+            expect(observedProfessionalTie,
+                   "the professional regular-season model never permits a bounded tie")
+
+            for (tier, stage) in [
+                (Tier.college, CompetitionStage.regularSeason),
+                (Tier.pro, CompetitionStage.championship),
+            ] {
+                let teams = tier == .college ? state.programmes.ids : state.proTeams.ids
+                for ordinal in 0..<128 {
+                    let game = ScheduledGame(
+                        id: UUID(uuidString: String(
+                            format: "00000000-0000-4000-8005-%012d", ordinal
+                        ))!,
+                        season: state.calendar.season,
+                        tier: tier,
+                        week: 1,
+                        stage: stage,
+                        homeID: teams[0],
+                        awayID: teams[1]
+                    )
+                    let result = AbstractGameSimulator.play(game, in: state)
+                    expect(result.homeScore != result.awayScore,
+                           "\(tier.rawValue) \(stage.rawValue) returned a tie")
+                }
+            }
         }
 
         test("the abstract result records every available contributor canonically") {
@@ -850,10 +1053,87 @@ func runM1SoakTests(seasons: Int) {
             expect(Set(state.competition.archives.map(\.collegeChampionID)).count >= 3)
             expect(Set(state.competition.archives.map(\.proChampionID)).count >= 3)
 
+            assertSaveSizeIsBounded(checkpointSizes, seasons: seasons, label: "M1")
             let elapsed = started.duration(to: clock.now)
             print("M1 soak: \(seasons) seasons in \(elapsed); save checkpoints \(checkpointSizes)")
         }
     }
+}
+
+/// The whole structural shape of one tier's regular season, asserted from index maps rather than a
+/// filter per member so it stays cheap enough to run over a seed-by-season sweep.
+///
+/// Reports at most one failure per property per call: a degenerate slate breaks a property for
+/// every one of 134 members at once, and 134 identical lines bury the next property.
+private func assertSeasonSlate(
+    schedule: [ScheduledGame],
+    tier: Tier,
+    memberIDs: [UUID],
+    gamesPerTeam: Int,
+    weeks: Int,
+    maximumByesPerWeek: Int,
+    label: String
+) {
+    let games = schedule.filter { $0.tier == tier }
+    expectEqual(games.count, memberIDs.count * gamesPerTeam / 2, "\(label): slate size")
+
+    var weeksByMember: [UUID: Set<Int>] = [:]
+    var gamesByMember: [UUID: Int] = [:]
+    var doubleBooked: [String] = []
+    var repeatedPairings: [String] = []
+    var unresolvable: [String] = []
+    var outOfRange: [String] = []
+    var selfGames = 0
+    var byesByWeek = Array(repeating: memberIDs.count, count: weeks)
+    let known = Set(memberIDs)
+    var pairings: Set<[UUID]> = []
+
+    for game in games {
+        guard (1...weeks).contains(game.week) else {
+            outOfRange.append("week \(game.week)")
+            continue
+        }
+        byesByWeek[game.week - 1] -= 2
+        if game.homeID == game.awayID { selfGames += 1 }
+        for memberID in [game.homeID, game.awayID] {
+            if !known.contains(memberID) { unresolvable.append(memberID.uuidString) }
+            gamesByMember[memberID, default: 0] += 1
+            if !weeksByMember[memberID, default: []].insert(game.week).inserted {
+                doubleBooked.append("\(memberID) week \(game.week)")
+            }
+        }
+        let ordered = [game.homeID, game.awayID].sorted { $0.uuidString < $1.uuidString }
+        if !pairings.insert(ordered).inserted {
+            repeatedPairings.append("\(ordered[0]) v \(ordered[1])")
+        }
+    }
+
+    expectEqual(selfGames, 0, "\(label): a member was scheduled against itself")
+    expect(outOfRange.isEmpty,
+           "\(label): \(outOfRange.count) games outside weeks 1...\(weeks)")
+    expect(unresolvable.isEmpty,
+           "\(label): \(unresolvable.count) references to non-members")
+    expect(doubleBooked.isEmpty,
+           "\(label): \(doubleBooked.count) double-bookings, first \(doubleBooked.first ?? "")")
+    expect(repeatedPairings.isEmpty,
+           "\(label): \(repeatedPairings.count) repeated pairings, "
+               + "first \(repeatedPairings.first ?? "")")
+
+    let wrongCount = memberIDs.filter { gamesByMember[$0, default: 0] != gamesPerTeam }
+    expect(wrongCount.isEmpty,
+           "\(label): \(wrongCount.count) members off \(gamesPerTeam) games, first has "
+               + "\(gamesByMember[wrongCount.first ?? memberIDs[0], default: 0])")
+    let wrongByes = memberIDs.filter {
+        weeks - weeksByMember[$0, default: []].count != weeks - gamesPerTeam
+    }
+    expect(wrongByes.isEmpty,
+           "\(label): \(wrongByes.count) members without exactly "
+               + "\(weeks - gamesPerTeam) bye week(s)")
+
+    let worstByeWeek = byesByWeek.max() ?? memberIDs.count
+    expect(worstByeWeek <= maximumByesPerWeek,
+           "\(label): byes collapsed, worst week idles \(worstByeWeek) of "
+               + "\(memberIDs.count), bound is \(maximumByesPerWeek)")
 }
 
 private func assertScheduleShape(

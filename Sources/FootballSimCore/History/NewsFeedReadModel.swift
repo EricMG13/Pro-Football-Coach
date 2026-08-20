@@ -85,8 +85,10 @@ public struct NewsFeedReadModel: Sendable, Equatable {
 
         switch payload {
         case let .seasonCompleted(season, collegeChampionID, proChampionID):
-            return "Season \(season) ends: \(who(collegeChampionID)) take the college title, "
+            return "Season \(season + 1) ends: \(who(collegeChampionID)) take the college title, "
                 + "\(who(proChampionID)) the professional one"
+        case let .realignment(_, reason, swaps):
+            return "Conference realignment: \(swaps.count) swap(s) for \(reason.rawValue)"
         case let .worldCreated(programmes, proTeams):
             return "A new football world opens with \(programmes) programmes and \(proTeams) "
                 + "professional teams"
@@ -96,12 +98,12 @@ public struct NewsFeedReadModel: Sendable, Equatable {
         case let .portalWindowCompleted(summary):
             return "The transfer portal closes with \(summary.transferredCount) moves"
         case let .proMarketOpened(season, draftClassCount, freeAgentCount):
-            return "The season \(season) professional market opens: \(draftClassCount) draft "
+            return "The season \(season + 1) professional market opens: \(draftClassCount) draft "
                 + "prospects and \(freeAgentCount) free agents"
         case let .proDraftStarted(season):
-            return "The season \(season) professional draft is under way"
+            return "The season \(season + 1) professional draft is under way"
         case let .proMarketClosed(season):
-            return "The season \(season) professional market closes"
+            return "The season \(season + 1) professional market closes"
         case let .proDraftPick(prospectID, teamID, pick, _):
             return "\(who(teamID)) take \(who(prospectID)) with pick \(pick + 1)"
         case let .playerTransferred(playerID, _, destinationProgrammeID, _, _, _, _):
@@ -135,12 +137,17 @@ public struct NewsFeedReadModel: Sendable, Equatable {
         case let .proCapComplianceRelease(playerID, teamID, _):
             return "\(who(teamID)) release \(who(playerID)) to clear cap space"
 
+        case let .playerSuspended(playerID, organisationID, reason, weeks):
+            return "\(who(organisationID)) suspend \(who(playerID)) for \(weeks) "
+                + "\(weeks == 1 ? "week" : "weeks") over \(NewsFeedReadModel.wording(reason))"
+
         // Weekly bookkeeping, scored zero by `historicalWeight` and reported by nobody.
         case .integrityChecked,
              .weekAdvanced,
              .gameCompleted,
              .playerInjured,
              .playerRecovered,
+             .playerReinstated,
              .playerDeveloped,
              .prospectEvaluated,
              .recruitingInteraction,
@@ -156,6 +163,18 @@ public struct NewsFeedReadModel: Sendable, Equatable {
         }
     }
 
+    /// Plain words for a discipline reason. Short and unsensational: this is a football team's own
+    /// discipline, and a headline that read like a police blotter would be writing a story the
+    /// simulation never told.
+    static func wording(_ reason: DisciplineIncidentKind) -> String {
+        switch reason {
+        case .timekeeping: return "missed team commitments"
+        case .conduct: return "conduct"
+        case .teamRules: return "a team rules breach"
+        case .offField: return "an off-field matter"
+        }
+    }
+
     private static func names(in state: GameState) -> [UUID: String] {
         var result: [UUID: String] = [:]
         for programme in state.programmes.values { result[programme.id] = programme.name }
@@ -164,6 +183,9 @@ public struct NewsFeedReadModel: Sendable, Equatable {
         for staff in state.staff.values { result[staff.id] = staff.fullName }
         for prospect in state.prospects.values {
             result[prospect.id] = "\(prospect.firstName) \(prospect.lastName)"
+        }
+        for archived in state.college.archivedProspects.values {
+            result[archived.id] = "\(archived.firstName) \(archived.lastName)"
         }
         for departed in state.people.departedPlayers.values {
             result[departed.id] = departed.fullName

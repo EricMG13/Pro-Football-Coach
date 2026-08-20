@@ -19,28 +19,44 @@ import ProFootballCoachUI
 public enum CoachWorldReadModelProvider {
     /// Nil when no career is under control, which is the only state this cannot describe.
     public static func coachingHQ(from state: GameState) -> CoachingHQReadModel? {
-        guard let control = state.career.college,
-              let programme = state.programmes[control.programmeID],
-              let coach = state.staff[control.coachID] else { return nil }
+        let organisationID: UUID
+        let coach: Staff
+        if let control = state.career.college,
+           let college = state.programmes[control.programmeID],
+           let collegeCoach = state.staff[control.coachID] {
+            organisationID = college.id
+            coach = collegeCoach
+        } else if let job = state.careerArc.currentJob,
+                  job.tier == .professional,
+                  let team = state.proTeams[job.organisationID],
+                  let professionalCoach = state.career.coachID.flatMap({ state.staff[$0] })
+                      ?? team.staffIDs.compactMap({ state.staff[$0] }).first {
+            organisationID = team.id
+            coach = professionalCoach
+        } else {
+            return nil
+        }
 
         let calendar = state.calendar
-        let nextGame = scheduledGame(for: programme.id, in: state)
-        let opponentID = nextGame.map { $0.homeID == programme.id ? $0.awayID : $0.homeID }
+        let nextGame = scheduledGame(for: organisationID, in: state)
+        let opponentID = nextGame.map {
+            $0.homeID == organisationID ? $0.awayID : $0.homeID
+        }
         let decisions = state.pending.mandatoryDecisions
-            .filter { $0.programmeID == programme.id }
+            .filter { $0.programmeID == organisationID }
 
         return CoachingHQReadModel(
-            snapshotID: snapshotID("hq", programme.id, calendar),
+            snapshotID: snapshotID("hq", organisationID, calendar),
             provenance: .simulationSnapshot,
             world: worldReference(state),
-            team: teamReference(programme.id, in: state),
+            team: teamReference(organisationID, in: state),
             coach: CoachWorldPersonReference(
                 stableID: coach.id.uuidString,
                 name: coach.fullName,
                 role: label(coach.role)
             ),
-            recordLabel: recordLabel(programme.id, in: state),
-            rankLabel: rankLabel(programme.id, in: state),
+            recordLabel: recordLabel(organisationID, in: state),
+            rankLabel: rankLabel(organisationID, in: state),
             // The venue is wherever this week's game is played, which is a fact the schedule holds.
             venue: nextGame.map { venueReference($0.homeID, in: state) },
             week: CoachingHQReadModel.WeekContext(
@@ -53,26 +69,390 @@ public enum CoachWorldReadModelProvider {
                 nextDeadline: decisions.map(\.deadline).min(by: calendarOrder)
                     .map { "Due \(weekLabel($0))" } ?? "No deadline this week"
             ),
-            // Empty by construction, not by omission: there is no per-day plan in the root to
-            // render. G-14 (engine-owned load policy) is what gives this strip something to say.
-            weekPlan: [],
-            unallocatedPracticeMinutes: unallocatedPracticeMinutes(programme.id, in: state),
+            weekPlan: weekPlan(
+                programmeID: organisationID,
+                decisions: decisions,
+                nextGame: nextGame,
+                in: state
+            ),
+            unallocatedPracticeMinutes: unallocatedPracticeMinutes(organisationID, in: state),
             opponent: opponentID.map { teamReference($0, in: state) },
             obligations: decisions.map { obligation($0, in: state) },
             decision: decisions.first { $0.owner == .user }
                 .flatMap { decision($0, in: state) },
-            // G-02: engine-owned verdicts with named-staff attribution do not exist. A
-            // recommendation needs a verdict, a reason *and* a confidence; the root holds a
-            // recommended option and reason codes but no confidence, so three-quarters of a
-            // recommendation would have to be invented to show any of it.
-            staffRecommendation: nil,
+            staffRecommendation: staffRecommendation(
+                for: decisions.first,
+                organisationID: organisationID,
+                in: state
+            ),
             // No inbound-event or correspondence system exists — `WorldScheduler`'s
             // `expiringInboundEvents` step is inactive for exactly this reason.
-            correspondence: []
+            correspondence: [],
+            squadHealth: squadHealth(in: state),
+            stakeholders: stakeholders(in: state)
+        )
+    }
+
+    /// The week hub's availability panel: the players whose status a coach would act on.
+    ///
+    /// Sourced from the same `PlayerLifecycleState` Team Health reads, so the hub and that surface
+    /// cannot disagree about who is fit. Bounded to three, which is what the design draws — and a
+    /// panel that grows without bound is what `04` section 4.5 calls a density leak.
+    static func squadHealth(in state: GameState) -> [CoachingHQReadModel.SquadHealthRow] {
+        guard let roster = roster(from: state) else { return [] }
+        let flagged = roster.players.compactMap { row -> CoachingHQReadModel.SquadHealthRow? in
+            guard let playerID = UUID(uuidString: row.stableID),
+                  let lifecycle = state.people.playerLifecycle[playerID] else { return nil }
+            if let injury = lifecycle.injury {
+                return .init(
+                    stableID: row.stableID, slot: row.position, player: row.person.name,
+                    status: "Out \(injury.weeksRemaining)w", isConcern: true
+                )
+            }
+            if let suspension = lifecycle.suspension {
+                return .init(
+                    stableID: row.stableID, slot: row.position, player: row.person.name,
+                    status: "Susp \(suspension.weeksRemaining)w", isConcern: true
+                )
+            }
+            guard lifecycle.fatigue > 0 else { return nil }
+            return .init(
+                stableID: row.stableID, slot: row.position, player: row.person.name,
+                status: "Flg \(row.condition)", isConcern: true
+            )
+        }
+        return Array(flagged.prefix(3))
+    }
+
+    /// Stakeholder standing, straight off `careerArc.stakeholderSupport`. Empty before a career
+    /// exists, which the panel renders as absent rather than as zero support.
+    static func stakeholders(in state: GameState) -> [CoachingHQReadModel.StakeholderRow] {
+        CareerStakeholder.allCases.compactMap { holder in
+            guard let value = state.careerArc.stakeholderSupport[holder] else { return nil }
+            return .init(stableID: holder.rawValue, name: holder.displayName, support: value)
+        }
+    }
+
+    public static func gamePlan(from state: GameState) -> GamePlanReadModel? {
+        guard let organisationID = controlledOrganisationID(in: state),
+              let team = state.programmes[organisationID].map({ teamReference($0.id, in: state) })
+                  ?? state.proTeams[organisationID].map({ teamReference($0.id, in: state) }) else {
+            return nil
+        }
+        let opponent = scheduledGame(for: organisationID, in: state).map { game in
+            teamReference(game.homeID == organisationID ? game.awayID : game.homeID, in: state)
+        }
+        let options = [
+            GamePlanReadModel.Option(
+                id: "balanced",
+                title: "Balanced control",
+                plan: .balanced,
+                consequence: "Keeps tempo, run/pass balance, and pressure near the staff baseline."
+            ),
+            GamePlanReadModel.Option(
+                id: "pressure",
+                title: "Pressure the quarterback",
+                plan: TacticalPlan(
+                    runPassBias: .runHeavy,
+                    tempo: .deliberate,
+                    pressure: .attack
+                ),
+                consequence: "Adds early-down pressure and run support while accepting tempo cost."
+            ),
+            GamePlanReadModel.Option(
+                id: "pace",
+                title: "Play with pace",
+                plan: TacticalPlan(
+                    runPassBias: .passHeavy,
+                    tempo: .hurry,
+                    pressure: .contain
+                ),
+                consequence: "Creates more passing volume and pace while reducing defensive aggression."
+            )
+        ]
+        return GamePlanReadModel(
+            snapshotID: snapshotID("game-plan", organisationID, state.calendar),
+            provenance: .simulationSnapshot,
+            team: team,
+            opponent: opponent,
+            weekLabel: weekLabel(state.calendar),
+            currentPlan: state.tactical.plan(for: organisationID, at: state.calendar),
+            options: options
+        )
+    }
+
+    public static func practicePlan(from state: GameState) -> PracticePlanReadModel? {
+        guard let organisationID = controlledOrganisationID(in: state),
+              let team = state.programmes[organisationID].map({ teamReference($0.id, in: state) })
+                  ?? state.proTeams[organisationID].map({ teamReference($0.id, in: state) }) else {
+            return nil
+        }
+        let options = [
+            PracticePlanReadModel.Option(
+                id: "balanced",
+                title: "Balanced week",
+                plan: .balanced,
+                consequence: "Splits the 60 minutes across install, conditioning, recovery, and focus."
+            ),
+            PracticePlanReadModel.Option(
+                id: "install",
+                title: "Install and sharpen",
+                plan: TacticalPracticePlan(
+                    installMinutes: 30,
+                    conditioningMinutes: 10,
+                    recoveryMinutes: 5,
+                    positionFocusMinutes: 15,
+                    positionFocus: nil
+                ),
+                consequence: "Improves scheme installation while reducing recovery time."
+            ),
+            PracticePlanReadModel.Option(
+                id: "recovery",
+                title: "Recover and condition",
+                plan: TacticalPracticePlan(
+                    installMinutes: 10,
+                    conditioningMinutes: 20,
+                    recoveryMinutes: 15,
+                    positionFocusMinutes: 15,
+                    positionFocus: nil
+                ),
+                consequence: "Protects readiness and conditioning while installing less."
+            )
+        ]
+        return PracticePlanReadModel(
+            snapshotID: snapshotID("practice-plan", organisationID, state.calendar),
+            provenance: .simulationSnapshot,
+            team: team,
+            weekLabel: weekLabel(state.calendar),
+            currentPlan: state.tactical.practicePlan(for: organisationID, at: state.calendar),
+            options: options
+        )
+    }
+
+    public static func depthChart(from state: GameState) -> DepthChartReadModel? {
+        guard let organisationID = controlledOrganisationID(in: state),
+              let team = state.programmes[organisationID].map({ teamReference($0.id, in: state) })
+                  ?? state.proTeams[organisationID].map({ teamReference($0.id, in: state) }) else {
+            return nil
+        }
+        let rosterIDs = state.programmes[organisationID]?.rosterIDs
+            ?? state.proTeams[organisationID]?.rosterIDs
+            ?? []
+        let roster = rosterIDs.compactMap { state.players[$0] }
+        let unavailableIDs = Set(roster.compactMap { player in
+            guard state.people.playerLifecycle[player.id]?.isAvailable == true else {
+                return player.id
+            }
+            if state.programmes[organisationID] != nil,
+               !CollegeRedshirtSystem.allowsAutomaticAppearance(
+                   playerID: player.id,
+                   programmeID: organisationID,
+                   in: state
+               ) {
+                return player.id
+            }
+            return nil
+        })
+        let derived = DepthChart.derive(roster: roster, unavailableIDs: unavailableIDs)
+        let current = state.tactical.personnelPlan(for: organisationID, at: state.calendar)
+        let resolved = current?.resolve(roster: roster, unavailableIDs: unavailableIDs) ?? derived
+        let overriddenIDs = Set(current?.overrides.flatMap(\.playerIDs) ?? [])
+        let positions = Position.allCases.compactMap { position -> DepthChartReadModel.PositionGroup? in
+            guard let ids = resolved[position], !ids.isEmpty else { return nil }
+            let slots = ids.enumerated().compactMap { index, playerID -> DepthChartReadModel.Slot? in
+                guard let player = state.players[playerID] else { return nil }
+                // Match authority treats redshirt limits as unavailable even when the
+                // lifecycle flag is still healthy. Keep the row text and starter marker on
+                // that same bounded predicate so the screen cannot promise a player the
+                // detailed or abstract resolver will exclude.
+                let available = !unavailableIDs.contains(playerID)
+                return DepthChartReadModel.Slot(
+                    id: "\(position.rawValue)-\(playerID.uuidString)",
+                    playerID: playerID.uuidString,
+                    playerName: player.fullName,
+                    availability: available ? "Available" : "Unavailable · fallback applies",
+                    isStarter: index == 0 && available,
+                    isUnavailable: !available,
+                    isOverride: overriddenIDs.contains(playerID)
+                )
+            }
+            return DepthChartReadModel.PositionGroup(
+                id: position.rawValue,
+                title: positionLabel(position),
+                slots: slots
+            )
+        }
+        let baseOverrides = derived.compactMap { position, ids -> DepthChartOverride? in
+            guard !ids.isEmpty else { return nil }
+            return DepthChartOverride(position: position, playerIDs: Array(ids.prefix(3)))
+        }
+        let rotatedOverrides = derived.compactMap { position, ids -> DepthChartOverride? in
+            guard ids.count >= 2 else { return nil }
+            return DepthChartOverride(
+                position: position,
+                playerIDs: [ids[1], ids[0]] + ids.dropFirst(2).prefix(1)
+            )
+        }
+        let options = [
+            DepthChartReadModel.Option(
+                id: "derived",
+                title: "Use derived depth",
+                plan: PersonnelPlan(
+                    organisationID: organisationID,
+                    calendar: state.calendar,
+                    overrides: []
+                ),
+                consequence: "The best available player at each position starts automatically."
+            ),
+            DepthChartReadModel.Option(
+                id: "availability-first",
+                title: "Lock available depth",
+                plan: PersonnelPlan(
+                    organisationID: organisationID,
+                    calendar: state.calendar,
+                    overrides: baseOverrides
+                ),
+                consequence: "Saves the current available order and falls back when availability changes."
+            ),
+            DepthChartReadModel.Option(
+                id: "rotate-backups",
+                title: "Rotate first backups",
+                plan: PersonnelPlan(
+                    organisationID: organisationID,
+                    calendar: state.calendar,
+                    overrides: rotatedOverrides
+                ),
+                consequence: "Uses the second available player before the derived starter where legal."
+            )
+        ]
+        return DepthChartReadModel(
+            snapshotID: snapshotID("depth-chart", organisationID, state.calendar),
+            provenance: .simulationSnapshot,
+            team: team,
+            weekLabel: weekLabel(state.calendar),
+            currentPlan: current,
+            positions: positions,
+            options: options
+        )
+    }
+
+    private static func controlledOrganisationID(in state: GameState) -> UUID? {
+        state.career.college?.programmeID
+            ?? (state.careerArc.currentJob?.tier == .professional
+                ? state.careerArc.currentJob?.organisationID
+                : nil)
+    }
+
+    private static func positionLabel(_ position: Position) -> String {
+        switch position {
+        case .quarterback: return "Quarterback"
+        case .runningBack: return "Running back"
+        case .wideReceiver: return "Wide receiver"
+        case .tightEnd: return "Tight end"
+        case .leftTackle: return "Left tackle"
+        case .guardPosition: return "Guard"
+        case .center: return "Center"
+        case .rightTackle: return "Right tackle"
+        case .edgeRusher: return "Edge rusher"
+        case .defensiveTackle: return "Defensive tackle"
+        case .linebacker: return "Linebacker"
+        case .cornerback: return "Cornerback"
+        case .safety: return "Safety"
+        case .kicker: return "Kicker"
+        case .punter: return "Punter"
+        }
+    }
+
+    /// Produces a bounded staff verdict only when the root carries both a named staff member and
+    /// a mandatory decision's reason codes. The confidence is a deterministic presentation of
+    /// the coordinator's stored game-planning rating plus the number of independent reasons; it
+    /// never claims a staff opinion that the simulation did not record.
+    static func staffRecommendation(
+        for decision: MandatoryDecision?,
+        organisationID: UUID,
+        in state: GameState
+    ) -> CoachingHQReadModel.StaffRecommendation? {
+        guard let decision,
+              let programme = state.programmes[organisationID] else { return nil }
+        let candidates = programme.staffIDs.compactMap { state.staff[$0] }
+        guard let staff = candidates
+            .filter({ StaffRole.coordinators.contains($0.role) })
+            .max(by: {
+                let lhs = ($0.rating(.gamePlanning).value, $0.id.uuidString)
+                let rhs = ($1.rating(.gamePlanning).value, $1.id.uuidString)
+                return lhs < rhs
+            }) else { return nil }
+        let recommended = decision.options.first { $0.id == decision.recommendedOptionID }
+        let action = recommended.map { label($0.action) } ?? "the balanced option"
+        let reason = decision.reasons.prefix(2).map(evidence).joined(separator: " · ")
+        let confidence = min(
+            95,
+            max(25, staff.rating(.gamePlanning).value / 2 + decision.reasons.count * 8)
+        )
+        return CoachingHQReadModel.StaffRecommendation(
+            staff: CoachWorldPersonReference(
+                stableID: staff.id.uuidString,
+                name: staff.fullName,
+                role: label(staff.role)
+            ),
+            verdict: "Recommend \(action)",
+            reason: reason.isEmpty ? "No recorded reason" : reason,
+            confidence: "\(confidence)%"
         )
     }
 
     // MARK: - Shared references
+
+    /// A compact weekly agenda derived only from state that already exists. It deliberately uses
+    /// management lanes rather than inventing Monday-to-Sunday assignments: the engine calendar is
+    /// week-granular, while the four lanes name the work that can actually be due.
+    static func weekPlan(
+        programmeID: UUID,
+        decisions: [MandatoryDecision],
+        nextGame: ScheduledGame?,
+        in state: GameState
+    ) -> [CoachingHQReadModel.DayPlan] {
+        let plan = state.tactical.plan(for: programmeID, at: state.calendar)
+        let practiceMinutes = unallocatedPracticeMinutes(programmeID, in: state)
+        let recruiting = state.college.programmes[programmeID]
+        let recruitingStatus = recruiting.map {
+            "\($0.boardIDs.count) prospects · \($0.contactPointsRemaining) pts"
+        } ?? "Not available"
+        let gameStatus: String
+        if let nextGame {
+            let opponentID = nextGame.homeID == programmeID ? nextGame.awayID : nextGame.homeID
+            let opponent = teamReference(opponentID, in: state).name
+            gameStatus = plan == nil ? "Needs plan · vs \(opponent)" : "Plan set · vs \(opponent)"
+        } else {
+            gameStatus = "No game scheduled"
+        }
+        return [
+            CoachingHQReadModel.DayPlan(
+                stableID: "\(programmeID)-inbox-\(state.calendar.season)-\(state.calendar.week)",
+                dayLabel: "Inbox",
+                assignment: decisions.isEmpty ? "Clear" : "\(decisions.count) due",
+                isCurrent: !decisions.isEmpty
+            ),
+            CoachingHQReadModel.DayPlan(
+                stableID: "\(programmeID)-game-plan-\(state.calendar.season)-\(state.calendar.week)",
+                dayLabel: "Game plan",
+                assignment: gameStatus,
+                isCurrent: decisions.isEmpty && nextGame != nil && plan == nil
+            ),
+            CoachingHQReadModel.DayPlan(
+                stableID: "\(programmeID)-practice-\(state.calendar.season)-\(state.calendar.week)",
+                dayLabel: "Practice",
+                assignment: practiceMinutes == 0 ? "Planned" : "\(practiceMinutes) min open",
+                isCurrent: decisions.isEmpty && practiceMinutes > 0
+            ),
+            CoachingHQReadModel.DayPlan(
+                stableID: "\(programmeID)-recruiting-\(state.calendar.season)-\(state.calendar.week)",
+                dayLabel: "Recruiting",
+                assignment: recruitingStatus,
+                isCurrent: false
+            )
+        ]
+    }
 
     static func worldReference(_ state: GameState) -> CoachWorldReference {
         // Identity only: no view reads `world.name`, and the root holds no name for the universe.
@@ -120,6 +500,7 @@ public enum CoachWorldReadModelProvider {
             $0.season == state.calendar.season
                 && $0.week == state.calendar.week
                 && ($0.homeID == organisationID || $0.awayID == organisationID)
+                && $0.result == nil
         }
     }
 

@@ -20,6 +20,7 @@ public struct ProRosterAITransition: Sendable, Equatable {
 /// controlled professional team, and makes one highest-rated legal signing per AI team per week.
 /// `ponytail:` one deterministic pass; replace with a richer cap/need model when staff plans exist.
 public enum ProRosterAISystem {
+
     public static func process(at calendar: CalendarState, in state: GameState) throws -> ProRosterAITransition {
         guard calendar == state.calendar else {
             return ProRosterAITransition(state: state, eventPayloads: [], signedPlayerIDs: [])
@@ -68,7 +69,7 @@ public enum ProRosterAISystem {
             let pick = next.proMarket.nextPick
             let contract = ProMarketSystem.rookieContract(for: prospect.player)
             do {
-                next = try ProMarketSystem.draft(
+                next = try ProMarketSystem.draftForScheduler(
                     prospectID: prospect.id,
                     for: teamID,
                     contract: contract,
@@ -101,7 +102,21 @@ public enum ProRosterAISystem {
         var signed: [UUID] = []
         let teamIDs = state.proTeams.ids.sorted { $0.uuidString < $1.uuidString }
         for teamID in teamIDs where teamID != controlledTeamID {
-            guard let team = next.proTeams[teamID], team.rosterIDs.count < ProRules.activeRosterLimit else {
+            // `02` §4.2: free agency signs while legal *and* while the roster leaves room for the
+            // picks the team still holds. Without the reserve the draft could never take a player
+            // at any seed -- free agency signs until the pool is dry, and a dry pool is exactly the
+            // pass that starts the draft, so the draft always opened with all 53 seats filled and
+            // every pick threw `activeRosterFull`.
+            //
+            // Counted from the draft order rather than from `ProRules.draftRounds`, so a team
+            // holding an unusual number of picks reserves for the picks it actually holds. Clamped
+            // at zero because the order arrives from disk.
+            let remainingPicks = next.proMarket.draftOrder
+                .dropFirst(next.proMarket.nextPick)
+                .filter { $0 == teamID }
+                .count
+            let signingLimit = max(0, ProRules.activeRosterLimit - remainingPicks)
+            guard let team = next.proTeams[teamID], team.rosterIDs.count < signingLimit else {
                 continue
             }
             let candidates = next.proMarket.freeAgentIDs
@@ -115,7 +130,9 @@ public enum ProRosterAISystem {
             for candidate in candidates {
                 let contract = ProMarketSystem.rookieContract(for: candidate)
                 do {
-                    next = try ProMarketSystem.signFreeAgent(
+                    // The scheduler validates the complete root at its integrity boundary after
+                    // this batch; avoid repeating that full check for every AI signing.
+                    next = try ProMarketSystem.signFreeAgentForScheduler(
                         playerID: candidate.id,
                         teamID: teamID,
                         contract: contract,

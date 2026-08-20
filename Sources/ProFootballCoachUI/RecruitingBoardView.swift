@@ -1,54 +1,97 @@
 import SwiftUI
 
-public struct RecruitingBoardView: View {
+public struct RecruitingBoardView: View, CoachWorldChromedSurface {
+    /// The shared management chrome (`04` section 6.1c). Nil renders on the bare stage, which is
+    /// what this surface did before conversion.
+    public var chrome: FloodlitChromeReadModel?
+    public var onNavigateChrome: ((CoachWorldIntentID) -> Void)?
+
+
     public let model: RecruitingBoardReadModel
     public let statusMessage: String?
     public let onAction: (String, CoachWorldIntentID) -> Void
     public let onContinue: () -> Void
     public let onNavigate: (CoachWorldScreenID) -> Void
+    public let onOpenProspect: (String) -> Void
+    public let onOpenShortlist: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var deskGap = CoachWorldTokens.Space.xs
     @State private var selectedProspectID: String
+    @State private var pendingWithdrawal: PendingWithdrawal?
 
     public init(
         model: RecruitingBoardReadModel,
         statusMessage: String? = nil,
         onAction: @escaping (String, CoachWorldIntentID) -> Void,
         onContinue: @escaping () -> Void,
-        onNavigate: @escaping (CoachWorldScreenID) -> Void
+        onNavigate: @escaping (CoachWorldScreenID) -> Void,
+        onOpenProspect: @escaping (String) -> Void = { _ in },
+        onOpenShortlist: @escaping () -> Void = {}
     ) {
         self.model = model
         self.statusMessage = statusMessage
         self.onAction = onAction
         self.onContinue = onContinue
         self.onNavigate = onNavigate
-        _selectedProspectID = State(initialValue: model.prospects.first?.stableID ?? "")
+        self.onOpenProspect = onOpenProspect
+        self.onOpenShortlist = onOpenShortlist
+        _selectedProspectID = State(
+            initialValue: model.prospects.first?.stableID
+                ?? model.discovery.first?.stableID
+                ?? ""
+        )
     }
 
     private var palette: CoachWorldTokens.Palette {
-        colorScheme == .dark ? CoachWorldTokens.dark : CoachWorldTokens.light
+        CoachWorldTokens.dark
     }
 
     private var selectedProspect: RecruitingBoardReadModel.Prospect? {
         model.prospects.first(where: { $0.stableID == selectedProspectID })
+            ?? model.discovery.first(where: { $0.stableID == selectedProspectID })
             ?? model.prospects.first
+            ?? model.discovery.first
+    }
+
+    private var hasProspects: Bool {
+        !model.prospects.isEmpty || !model.discovery.isEmpty
     }
 
     public var body: some View {
-        Group {
+        CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             if dynamicTypeSize.isAccessibilitySize {
                 accessibleLayout
             } else {
                 VStack(spacing: .zero) {
-                    worldStrip
+                    // The shared chrome's identity header already states the programme.
+                    if chrome == nil { worldStrip }
                     standardLayout
                 }
             }
         }
-        .foregroundStyle(palette.contentPrimary.color)
-        .background(palette.page.color.ignoresSafeArea())
+        .alert(item: $pendingWithdrawal) { pending in
+            Alert(
+                title: Text("Withdraw \(pending.name)?"),
+                message: Text(
+                    "This drops all recorded interest, any scheduled visit and any scholarship "
+                        + "offer. There is no undo."
+                ),
+                primaryButton: .destructive(Text("Withdraw")) {
+                    onAction(pending.id, CoachWorldIntentID(rawValue: "withdraw"))
+                },
+                secondaryButton: .cancel()
+            )
+        }
+    }
+
+    /// Withdraw is the one destructive choice a prospect's action desk offers, so it alone routes
+    /// through a confirmation rather than firing on tap like Contact, Evaluate or Offer scholarship.
+    /// `id` is the prospect's own `stableID` -- `RecruitingBoardReadModel.Prospect` is `Equatable`
+    /// but not `Identifiable`, and `.alert(item:)` needs an identity to key its presentation on.
+    private struct PendingWithdrawal: Identifiable {
+        let id: String
+        let name: String
     }
 
     private var worldStrip: some View {
@@ -81,9 +124,11 @@ public struct RecruitingBoardView: View {
             .frame(maxWidth: .infinity)
 
             Button(action: onContinue) {
-                Label("Continue", systemImage: "forward.end.fill")
+                Label("Advance week", systemImage: "forward.end.fill")
             }
                 .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
+                .disabled(!model.canContinue)
+                .accessibilityHint(model.continueReason ?? "")
         }
         .padding(.horizontal, CoachWorldTokens.Space.sm)
         .frame(height: RecruitingMetric.worldStripHeight)
@@ -107,7 +152,8 @@ public struct RecruitingBoardView: View {
 
     private var standardLayout: some View {
         HStack(spacing: deskGap) {
-            boardSurface.frame(maxWidth: .infinity)
+            boardSurface
+                .frame(maxWidth: .infinity)
             dossier
                 .frame(width: RecruitingMetric.dossierWidth)
         }
@@ -118,32 +164,28 @@ public struct RecruitingBoardView: View {
         ScrollView {
             VStack(spacing: .zero) {
                 boardHeader
-                if model.prospects.isEmpty {
-                    ContentUnavailableView(
-                        "No prospects on the board",
-                        systemImage: "list.number",
-                        description: Text("Add evaluated prospects before assigning recruiting time.")
+                if !hasProspects {
+                    CoachWorldSystemState(
+                        .empty(
+                            "No prospects on the board. Add evaluated prospects before "
+                                + "assigning recruiting time."
+                        ),
+                        palette: palette
                     )
                 } else {
                     accessibleProspectRows
+                    accessibleDiscoveryRows
                     capacityStrip
                     if let prospect = selectedProspect {
                         personHeader(prospect)
                         evaluation(prospect)
                         relationship(prospect)
+                        surfaceLinks(prospect)
                         actionDesk(prospect)
                     }
                 }
                 accessibleWorldContext
             }
-        }
-        .background {
-            RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.surfaceRadius)
-                .fill(palette.work.color)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: CoachWorldTokens.Shape.surfaceRadius)
-                .stroke(palette.contentQuiet.color.opacity(0.38), lineWidth: CoachWorldTokens.Shape.hairline)
         }
         .accessibilitySortPriority(100)
     }
@@ -162,8 +204,10 @@ public struct RecruitingBoardView: View {
             route("Recruit", screen: .recruitingBoard, current: true)
             route("League", screen: .leagueMap)
             route("Career", screen: .careerHub)
-            Button("Continue", action: onContinue)
+            Button("Advance week", action: onContinue)
                 .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
+                .disabled(!model.canContinue)
+                .accessibilityHint(model.continueReason ?? "")
         }
         .padding(CoachWorldTokens.Space.md)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -176,19 +220,57 @@ public struct RecruitingBoardView: View {
         VStack(spacing: .zero) {
             boardHeader
             capacityStrip
-            if model.prospects.isEmpty {
-                ContentUnavailableView(
-                    "No prospects on the board",
-                    systemImage: "list.number",
-                    description: Text("Add evaluated prospects before assigning recruiting time.")
+            if !hasProspects {
+                CoachWorldSystemState(
+                    .empty(
+                        "No prospects on the board. Add evaluated prospects before "
+                            + "assigning recruiting time."
+                    ),
+                    palette: palette
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                comparisonTable
+                // The rows scroll inside the panel, so the panel frames the pane at its full
+                // height. Scrolling the panel itself would push its cut corners and lower border
+                // off-screen on a full board, and spread the specular gradient over the whole
+                // content height instead of the pane.
+                ScrollView(.vertical) {
+                    VStack(spacing: .zero) {
+                        comparisonTable
+                        discoveryTable
+                    }
+                }
+                positionPlanFooter
             }
         }
-        .background(palette.work.color)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .coachWorldFloodlitPanel(
+            fill: palette.work.color,
+            border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity),
+            depth: .deep
+        )
         .accessibilitySortPriority(100)
+    }
+
+
+    /// The class plan every row on the board is judged against (`MLB 0/2 · WR 2/3 · …`).
+    ///
+    /// A footer, not a header chip: it is the sum of the table above it, and in the header it
+    /// competed with the title and truncated.
+    private var positionPlanFooter: some View {
+        HStack(spacing: CoachWorldTokens.Gap.xs) {
+            FloodlitLabel3("Position plan", palette: palette)
+            Text(positionPlanLine)
+                .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
+                .foregroundStyle(palette.contentSecondary.color)
+                .lineLimit(1)
+                .minimumScaleFactor(RecruitingMetric.planScaleFloor)
+            Spacer(minLength: .zero)
+        }
+        .padding(.horizontal, CoachWorldTokens.Pad.row.h)
+        .frame(minHeight: RecruitingMetric.planHeight)
+        .overlay(alignment: .top) { seam }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Position plan. \(positionPlanLine)")
     }
 
     private var boardHeader: some View {
@@ -205,11 +287,7 @@ public struct RecruitingBoardView: View {
                 HStack(spacing: CoachWorldTokens.Space.sm) {
                     boardTitle
                     sampleCareerFlag
-                    Spacer()
-                    Text(positionPlanLine)
-                        .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
-                        .foregroundStyle(palette.contentSecondary.color)
-                        .lineLimit(1)
+                    Spacer(minLength: CoachWorldTokens.Gap.xs)
                 }
             }
         }
@@ -249,7 +327,7 @@ public struct RecruitingBoardView: View {
                         value: "\(model.capacity.scholarshipSlotsRemaining)"
                     )
                     compactCapacity(
-                        "Weekly hours",
+                        "Contact points",
                         value: "\(model.capacity.weeklyHoursRemaining)"
                     )
                     compactCapacity(
@@ -258,15 +336,15 @@ public struct RecruitingBoardView: View {
                     )
                 }
             } else {
-                HStack(spacing: .zero) {
+                HStack(spacing: CoachWorldTokens.Gap.lg) {
                     capacityValue(
                         "SLOTS",
                         value: "\(model.capacity.scholarshipSlotsRemaining)",
                         suffix: "open"
                     )
                     capacityValue(
-                        "HOURS",
-                        value: "\(model.capacity.weeklyHoursRemaining)h",
+                        "CONTACT",
+                        value: "\(model.capacity.weeklyHoursRemaining)",
                         suffix: "left"
                     )
                     capacityValue(
@@ -274,7 +352,9 @@ public struct RecruitingBoardView: View {
                         value: "\(model.capacity.officialVisitsRemaining)",
                         suffix: "left"
                     )
+                    Spacer(minLength: .zero)
                 }
+                .padding(.horizontal, CoachWorldTokens.Pad.row.h)
             }
         }
         .frame(minHeight: RecruitingMetric.capacityHeight)
@@ -312,8 +392,8 @@ public struct RecruitingBoardView: View {
                 .foregroundStyle(palette.contentSecondary.color)
         }
         .padding(.horizontal, CoachWorldTokens.Space.xs)
-        .frame(maxWidth: .infinity, minHeight: RecruitingMetric.capacityHeight)
-        .overlay(alignment: .trailing) { verticalSeam }
+        .fixedSize(horizontal: true, vertical: false)
+        .frame(minHeight: RecruitingMetric.capacityHeight)
         .accessibilityElement(children: .combine)
     }
 
@@ -337,6 +417,31 @@ public struct RecruitingBoardView: View {
             }
             Spacer(minLength: .zero)
         }
+        // Acquisition Room, `04` section 2: "a rank may travel, because the movement is the fact
+        // being reported" -- the one register where a reorder is itself the content, not decoration.
+        // Rows are already keyed by stableID rather than array position, which is what lets SwiftUI
+        // interpolate a reorder instead of cross-fading unrelated rows into each other's places.
+        .coachWorldAnimation(CoachWorldTokens.Motion.world, value: model.prospects)
+    }
+
+    private var discoveryTable: some View {
+        Group {
+            if !model.discovery.isEmpty {
+                VStack(spacing: .zero) {
+                    Text("DISCOVERY · AVAILABLE PROSPECTS")
+                        .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
+                        .foregroundStyle(palette.collegeIdentity.color)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, CoachWorldTokens.Space.sm)
+                        .frame(minHeight: RecruitingMetric.tableHeaderHeight)
+                        .background(palette.page.color)
+                        .overlay(alignment: .bottom) { seam }
+                    ForEach(model.discovery, id: \.stableID) { prospect in
+                        comparisonRow(prospect)
+                    }
+                }
+            }
+        }
     }
 
     private func tableHeader(
@@ -357,7 +462,7 @@ public struct RecruitingBoardView: View {
             selectedProspectID = prospect.stableID
         } label: {
             HStack(spacing: CoachWorldTokens.Space.xs) {
-                Text("\(prospect.boardRank)")
+                Text(prospect.boardRank == 0 ? "D" : "\(prospect.boardRank)")
                     .font(CoachWorldTokens.TypeRole.headline.weight(.black))
                     .monospacedDigit()
                     .frame(width: RecruitingMetric.rankWidth, alignment: .trailing)
@@ -451,6 +556,58 @@ public struct RecruitingBoardView: View {
         }
     }
 
+    private var accessibleDiscoveryRows: some View {
+        Group {
+            if !model.discovery.isEmpty {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
+                    Text("DISCOVERY · AVAILABLE PROSPECTS")
+                        .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
+                        .foregroundStyle(palette.collegeIdentity.color)
+                    ForEach(model.discovery, id: \.stableID) { prospect in
+                        Button {
+                            selectedProspectID = prospect.stableID
+                        } label: {
+                            VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text("Discovery · \(prospect.person.name)")
+                                        .font(CoachWorldTokens.TypeRole.headline.weight(.black))
+                                    Spacer()
+                                    Text(prospect.position)
+                                        .font(CoachWorldTokens.TypeRole.headline.weight(.heavy))
+                                }
+                                Text("\(prospect.hometown) · \(prospect.evaluation.schemeFit) fit")
+                                    .foregroundStyle(palette.contentSecondary.color)
+                                Text(prospect.status)
+                                    .foregroundStyle(palette.contentSecondary.color)
+                            }
+                            .padding(CoachWorldTokens.Space.md)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                prospect.stableID == selectedProspect?.stableID
+                                    ? palette.collegeIdentity.color.opacity(0.14)
+                                    : Color.clear
+                            )
+                            .overlay(alignment: .leading) {
+                                if prospect.stableID == selectedProspect?.stableID {
+                                    Rectangle().fill(palette.collegeIdentity.color)
+                                        .frame(width: RecruitingMetric.selectedRuleWidth)
+                                }
+                            }
+                            .overlay(alignment: .bottom) { seam }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(prospectAccessibilityLabel(prospect))
+                        .accessibilityAddTraits(
+                            prospect.stableID == selectedProspect?.stableID ? .isSelected : []
+                        )
+                    }
+                }
+                .padding(.horizontal, CoachWorldTokens.Space.md)
+                .padding(.vertical, CoachWorldTokens.Space.sm)
+            }
+        }
+    }
+
     @ViewBuilder
     private var dossier: some View {
         if let prospect = selectedProspect {
@@ -460,25 +617,33 @@ public struct RecruitingBoardView: View {
                         personHeader(prospect)
                         evaluation(prospect)
                         relationship(prospect)
+                        surfaceLinks(prospect)
                     }
                 }
                 actionDesk(prospect)
                     .background(palette.page.color)
                     .overlay(alignment: .top) { seam }
             }
-            .coachWorldDeskSurface(
+            .coachWorldFloodlitPanel(
                 fill: palette.page.color,
-                border: palette.contentQuiet.color.opacity(0.38)
+                border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
             )
             .accessibilitySortPriority(80)
         } else {
-            ContentUnavailableView(
-                "No prospect selected",
-                systemImage: "person.crop.rectangle",
-                description: Text("Select a prospect to review the staff evaluation.")
+            // The empty dossier is still a bounded pane beside the board, so it keeps the panel
+            // the filled dossier has. Only a full-screen ground would be dropped here.
+            CoachWorldSystemState(
+                .empty(
+                    "No prospect selected. Select a prospect to review the system evaluation."
+                ),
+                palette: palette
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(palette.page.color)
+            .coachWorldFloodlitPanel(
+                fill: palette.page.color,
+                border: palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity)
+            )
+            .accessibilitySortPriority(80)
         }
     }
 
@@ -491,7 +656,9 @@ public struct RecruitingBoardView: View {
                 height: RecruitingMetric.photoHeight
             )
             VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
-                Text("BOARD #\(prospect.boardRank) · \(prospect.position)")
+                Text(prospect.boardRank == 0
+                    ? "DISCOVERY · \(prospect.position)"
+                    : "BOARD #\(prospect.boardRank) · \(prospect.position)")
                     .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                     .foregroundStyle(palette.collegeIdentity.color)
                 Text(prospect.person.name)
@@ -509,14 +676,15 @@ public struct RecruitingBoardView: View {
         .overlay(alignment: .bottom) { seam }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "Board rank \(prospect.boardRank), \(prospect.person.name), "
+            (prospect.boardRank == 0 ? "Discovery prospect" : "Board rank \(prospect.boardRank)")
+                + ", \(prospect.person.name), "
                 + "\(prospect.position), \(prospect.hometown), \(prospect.status)"
         )
     }
 
     private func evaluation(_ prospect: RecruitingBoardReadModel.Prospect) -> some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-            Text("STAFF EVALUATION")
+            Text("SYSTEM EVALUATION")
                 .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
                 .foregroundStyle(palette.collegeIdentity.color)
             Text(prospect.evaluation.verdict)
@@ -549,6 +717,31 @@ public struct RecruitingBoardView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private func actionTitle(_ choice: CoachWorldActionChoice) -> some View {
+        Text(choice.title)
+            .font(CoachWorldTokens.TypeRole.body.weight(.black))
+    }
+
+    private func actionConsequence(_ choice: CoachWorldActionChoice) -> some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
+            Text(choice.consequence)
+                .font(CoachWorldTokens.TypeRole.caption)
+                .foregroundStyle(palette.contentSecondary.color)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+            // The provider always assigns unavailableReason a fallback string, never nil, so
+            // this must gate on isAvailable itself -- otherwise an enabled choice draws a reason
+            // its own state contradicts, e.g. Withdraw reading "This prospect is not on an active
+            // board" directly beside its own working button.
+            if !choice.isAvailable, let reason = choice.unavailableReason {
+                Text(reason)
+                    .font(CoachWorldTokens.TypeRole.caption)
+                    .foregroundStyle(palette.contentQuiet.color)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
     private func relationship(_ prospect: RecruitingBoardReadModel.Prospect) -> some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
             Text("RELATIONSHIP LOG")
@@ -575,6 +768,37 @@ public struct RecruitingBoardView: View {
         .overlay(alignment: .bottom) { seam }
     }
 
+    private func surfaceLinks(_ prospect: RecruitingBoardReadModel.Prospect) -> some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
+            Text("PROSPECT SURFACES")
+                .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
+                .foregroundStyle(palette.collegeIdentity.color)
+            Group {
+                if dynamicTypeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
+                        prospectLinks(prospect)
+                    }
+                } else {
+                    HStack(spacing: CoachWorldTokens.Space.xs) {
+                        prospectLinks(prospect)
+                    }
+                }
+            }
+            .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+        }
+        .padding(.horizontal, CoachWorldTokens.Space.sm)
+        .padding(.vertical, CoachWorldTokens.Space.xs)
+        .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder
+    private func prospectLinks(_ prospect: RecruitingBoardReadModel.Prospect) -> some View {
+        Button("Open profile") { onOpenProspect(prospect.stableID) }
+            .buttonStyle(CoachWorldActionButtonStyle(role: .secondary, palette: palette))
+        Button("Shortlist") { onOpenShortlist() }
+            .buttonStyle(CoachWorldActionButtonStyle(role: .secondary, palette: palette))
+    }
+
     private func actionDesk(_ prospect: RecruitingBoardReadModel.Prospect) -> some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
             Text("ASSIGN RECRUITING WORK")
@@ -587,22 +811,23 @@ public struct RecruitingBoardView: View {
             } else {
                 ForEach(prospect.choices, id: \.intentID) { choice in
                     Button {
-                        onAction(prospect.stableID, choice.intentID)
+                        if choice.intentID == CoachWorldIntentID(rawValue: "withdraw") {
+                            pendingWithdrawal = PendingWithdrawal(
+                                id: prospect.stableID, name: prospect.person.name
+                            )
+                        } else {
+                            onAction(prospect.stableID, choice.intentID)
+                        }
                     } label: {
                         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                             HStack {
-                                Text(choice.title)
-                                    .font(CoachWorldTokens.TypeRole.body.weight(.black))
+                                actionTitle(choice)
                                 Spacer()
                                 Text(choice.cost)
                                     .font(CoachWorldTokens.TypeRole.caption.weight(.bold))
                                     .foregroundStyle(palette.collegeIdentity.color)
                             }
-                            Text(choice.consequence)
-                                .font(CoachWorldTokens.TypeRole.caption)
-                                .foregroundStyle(palette.contentSecondary.color)
-                                .multilineTextAlignment(.leading)
-                                .fixedSize(horizontal: false, vertical: true)
+                            actionConsequence(choice)
                         }
                         .padding(.horizontal, CoachWorldTokens.Space.sm)
                         .frame(
@@ -628,6 +853,8 @@ public struct RecruitingBoardView: View {
                     .accessibilityLabel(
                         "\(choice.title). Cost: \(choice.cost). Consequence: "
                             + "\(choice.consequence)"
+                            + (choice.isAvailable ? "" : (choice.unavailableReason
+                                .map { ". Unavailable: \($0)" } ?? ""))
                     )
                 }
             }
@@ -637,7 +864,7 @@ public struct RecruitingBoardView: View {
 
     private var worldContextLine: String {
         "\(model.capacity.scholarshipSlotsRemaining) scholarships · "
-            + "\(model.capacity.weeklyHoursRemaining)h · "
+            + "\(model.capacity.weeklyHoursRemaining) contact points · "
             + "\(model.capacity.officialVisitsRemaining) visits"
     }
 
@@ -650,21 +877,22 @@ public struct RecruitingBoardView: View {
     private func prospectAccessibilityLabel(
         _ prospect: RecruitingBoardReadModel.Prospect
     ) -> String {
-        "Board rank \(prospect.boardRank), \(prospect.person.name), "
-            + "\(prospect.position), \(prospect.hometown), \(prospect.interest) interest, "
+            (prospect.boardRank == 0 ? "Discovery prospect" : "Board rank \(prospect.boardRank)")
+                + ", \(prospect.person.name), "
+                + "\(prospect.position), \(prospect.hometown), \(prospect.interest) interest, "
             + "\(prospect.status), \(prospect.evaluation.schemeFit) scheme fit"
     }
 
     private var seam: some View {
         Rectangle()
-            .fill(palette.contentQuiet.color.opacity(0.38))
+            .fill(palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity))
             .frame(height: CoachWorldTokens.Shape.hairline)
             .accessibilityHidden(true)
     }
 
     private var verticalSeam: some View {
         Rectangle()
-            .fill(palette.contentQuiet.color.opacity(0.38))
+            .fill(palette.contentQuiet.color.opacity(CoachWorldTokens.Depth.panelBorderOpacity))
             .frame(width: CoachWorldTokens.Shape.hairline)
             .accessibilityHidden(true)
     }
@@ -685,6 +913,9 @@ private struct RecruitingCollegeCutShape: Shape {
 }
 
 private enum RecruitingMetric {
+    static let planHeight: CGFloat = 30
+    static let planScaleFloor: CGFloat = 0.7
+
     static let worldStripHeight: CGFloat = 48
     static let dossierWidth: CGFloat = 326
     static let boardHeaderHeight: CGFloat = 36

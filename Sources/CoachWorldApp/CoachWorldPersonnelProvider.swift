@@ -13,14 +13,66 @@ import ProFootballCoachUI
 /// field with the register item that fills it.
 public extension CoachWorldReadModelProvider {
     static func roster(from state: GameState) -> RosterReadModel? {
-        guard let control = state.career.college,
-              let programme = state.programmes[control.programmeID],
-              let coach = state.staff[control.coachID] else { return nil }
+        if let control = state.career.college,
+           let programme = state.programmes[control.programmeID],
+           let coach = state.staff[control.coachID] {
+            let players = programme.rosterIDs.compactMap { state.players[$0] }
+            return rosterModel(
+                organisationID: programme.id,
+                players: players,
+                needPlayers: players,
+                coach: coach,
+                scheme: programme.scheme,
+                rosterLimit: CollegeRules.rosterLimit,
+                role: { rosterRole($0, programme: programme, in: state) },
+                in: state
+            )
+        }
+        guard let job = state.careerArc.currentJob,
+              job.tier == .professional,
+              let team = state.proTeams[job.organisationID],
+              let coach = state.career.coachID.flatMap({ state.staff[$0] })
+                  ?? team.staffIDs.compactMap({ state.staff[$0] }).first else { return nil }
+        let rosterIDs = Array(Set(team.rosterIDs + team.practiceSquadIDs)).sorted {
+            $0.uuidString < $1.uuidString
+        }
+        let players = rosterIDs.compactMap { state.players[$0] }
+        let activePlayers = team.rosterIDs.compactMap { state.players[$0] }
+        return rosterModel(
+            organisationID: team.id,
+            players: players,
+            needPlayers: activePlayers,
+            coach: coach,
+            scheme: team.scheme,
+            rosterLimit: ProRules.activeRosterLimit + ProRules.practiceSquadLimit,
+            role: { player in
+                team.rosterIDs.contains(player.id) ? "Active roster" : "Practice squad"
+            },
+            in: state
+        )
+    }
 
-        let players = programme.rosterIDs.compactMap { state.players[$0] }
+    private static func rosterModel(
+        organisationID: UUID,
+        players: [Player],
+        needPlayers: [Player],
+        coach: Staff,
+        scheme: SchemeIdentity,
+        rosterLimit: Int,
+        role: (Player) -> String,
+        in state: GameState
+    ) -> RosterReadModel {
+
         let numbers = JerseyNumbers.assign(players)
         let unsorted: [RosterReadModel.PlayerRow] = players.map { player in
-            row(player, number: numbers[player.id] ?? 0, programme: programme, in: state)
+            row(
+                player,
+                number: numbers[player.id] ?? 0,
+                organisationID: organisationID,
+                scheme: scheme,
+                rosterRole: role(player),
+                in: state
+            )
         }
         let rows = unsorted.sorted { lhs, rhs in
             lhs.number == rhs.number ? lhs.stableID < rhs.stableID : lhs.number < rhs.number
@@ -33,33 +85,65 @@ public extension CoachWorldReadModelProvider {
             name: coach.fullName,
             role: label(coach.role)
         )
+        let continueReason = state.pending.mandatoryDecisions.contains {
+            $0.programmeID == organisationID
+        }
+            ? "Complete the pending decision in Coaching HQ before advancing."
+            : nil
 
         return RosterReadModel(
-            snapshotID: snapshotID("roster", programme.id, state.calendar),
+            snapshotID: snapshotID("roster", organisationID, state.calendar),
             provenance: .simulationSnapshot,
             world: worldReference(state),
-            team: teamReference(programme.id, in: state),
+            team: teamReference(organisationID, in: state),
             coach: person,
             seasonLabel: seasonLabel(state.calendar),
             weekLabel: weekLabel(state.calendar),
-            recordLabel: recordLabel(programme.id, in: state),
-            rankLabel: rankLabel(programme.id, in: state),
-            rosterLimit: CollegeRules.rosterLimit,
+            recordLabel: recordLabel(organisationID, in: state),
+            rankLabel: rankLabel(organisationID, in: state),
+            rosterLimit: rosterLimit,
             injuryCount: injuryCount,
             // The number of positions carrying fewer bodies than the rules call playable. It is a
             // fact the rules and the roster hold between them, not a recruiting opinion.
-            openNeedCount: openNeedCount(players),
-            players: rows
+            openNeedCount: openNeedCount(needPlayers),
+            players: rows,
+            canContinue: continueReason == nil,
+            continueReason: continueReason
         )
     }
 
     static func playerProfile(_ playerID: UUID, in state: GameState) -> PlayerProfileReadModel? {
-        guard let control = state.career.college,
-              let programme = state.programmes[control.programmeID],
-              programme.rosterIDs.contains(playerID),
+        if let control = state.career.college,
+           let programme = state.programmes[control.programmeID],
+           programme.rosterIDs.contains(playerID),
+           let player = state.players[playerID] {
+            let numbers = JerseyNumbers.assign(programme.rosterIDs.compactMap { state.players[$0] })
+            return profile(
+                player,
+                number: numbers[playerID] ?? 0,
+                organisationID: programme.id,
+                scheme: programme.scheme,
+                rosterRole: rosterRole(player, programme: programme, in: state),
+                in: state
+            )
+        }
+        guard let job = state.careerArc.currentJob,
+              job.tier == .professional,
+              let team = state.proTeams[job.organisationID],
+              team.rosterIDs.contains(playerID) || team.practiceSquadIDs.contains(playerID),
               let player = state.players[playerID] else { return nil }
-        let numbers = JerseyNumbers.assign(programme.rosterIDs.compactMap { state.players[$0] })
-        return profile(player, number: numbers[playerID] ?? 0, programme: programme, in: state)
+        let rosterIDs = Array(Set(team.rosterIDs + team.practiceSquadIDs)).sorted {
+            $0.uuidString < $1.uuidString
+        }
+        let numbers = JerseyNumbers.assign(rosterIDs.compactMap { state.players[$0] })
+        return profile(
+            player,
+            number: numbers[playerID] ?? 0,
+            organisationID: team.id,
+            scheme: team.scheme,
+            rosterRole: team.rosterIDs.contains(playerID) ? "Active roster" : "Practice squad",
+            in: state
+        )
     }
 
     // MARK: - Rows and profiles
@@ -67,7 +151,9 @@ public extension CoachWorldReadModelProvider {
     private static func row(
         _ player: Player,
         number: Int,
-        programme: Programme,
+        organisationID: UUID,
+        scheme: SchemeIdentity,
+        rosterRole: String,
         in state: GameState
     ) -> RosterReadModel.PlayerRow {
         RosterReadModel.PlayerRow(
@@ -76,24 +162,32 @@ public extension CoachWorldReadModelProvider {
             number: number,
             position: label(player.position),
             academicYear: academicYear(player),
-            rosterRole: rosterRole(player, programme: programme, in: state),
+            rosterRole: rosterRole,
             overall: player.overall.value,
-            // Potential is the engine's hidden truth. Showing it raw on a roster row is a knowledge
-            // boundary question (`02` §5 says the fog is the reader's business) and the profile's
-            // confidence banding is where it belongs — but the column exists and the root holds the
-            // number, so it reports rather than inventing a second scale.
-            development: player.potential.value,
-            schemeFit: schemeFit(player, scheme: programme.scheme),
+            // Potential is hidden truth. Keep the legacy numeric slot neutral; the roster's DEV
+            // column reads the retained, dated delta below and otherwise shows no evidence.
+            development: 0,
+            schemeFit: schemeFit(player, scheme: scheme),
             condition: condition(player, in: state),
             availability: availability(player, in: state),
-            profile: profile(player, number: number, programme: programme, in: state)
+            profile: profile(
+                player,
+                number: number,
+                organisationID: organisationID,
+                scheme: scheme,
+                rosterRole: rosterRole,
+                in: state
+            ),
+            developmentDelta: state.people.playerLifecycle[player.id]?.lastDevelopment?.appliedDelta
         )
     }
 
     private static func profile(
         _ player: Player,
         number: Int,
-        programme: Programme,
+        organisationID: UUID,
+        scheme: SchemeIdentity,
+        rosterRole: String,
         in state: GameState
     ) -> PlayerProfileReadModel {
         PlayerProfileReadModel(
@@ -101,24 +195,105 @@ public extension CoachWorldReadModelProvider {
             person: person(player),
             number: number,
             position: label(player.position),
+            overall: player.overall.value,
             academicYear: academicYear(player),
             // The root records where a *prospect* came from, not where a rostered player grew up.
             // Until it does, the field says nothing rather than borrowing the programme's city.
             hometown: "",
-            rosterRole: rosterRole(player, programme: programme, in: state),
+            rosterRole: rosterRole,
             availability: availability(player, in: state),
             condition: condition(player, in: state),
-            schemeFit: schemeFit(player, scheme: programme.scheme),
+            schemeFit: schemeFit(player, scheme: scheme),
             // G-02: an engine-owned verdict in a named staff voice. There is no such thing yet, and
             // a summary sentence is exactly the invented judgement `04` §4.4 forbids.
             staffSummary: "",
             strengths: strengths(player),
-            // G-03 would make this a recorded change rather than a standing property.
             concern: concern(player, in: state),
             attributeGroups: attributeGroups(player),
-            // G-04: no per-player form series and no engine-owned player-game rating exist.
-            recentForm: []
+            recentForm: recentForm(player, programmeID: organisationID, in: state),
+            developmentEvidence: developmentEvidence(player, in: state),
+            historyEvidence: historyEvidence(player, programmeID: organisationID, in: state)
         )
+    }
+
+    private static func developmentEvidence(_ player: Player, in state: GameState) -> String {
+        guard let lifecycle = state.people.playerLifecycle[player.id] else {
+            return "No recorded development change in this snapshot."
+        }
+        if !lifecycle.recentChanges.isEmpty {
+            let changes = lifecycle.recentChanges
+                .map { change in
+                    let sign = change.delta >= 0 ? "+" : ""
+                    return "S\(change.occurredAt.season) W\(change.occurredAt.week) "
+                        + "\(change.attribute.label) \(sign)\(change.delta) (\(change.cause.rawValue))"
+                }
+                .joined(separator: "; ")
+            return changes
+        }
+        guard let summary = lifecycle.lastDevelopment else {
+            return "No recorded development change in this snapshot."
+        }
+        let latest = summary.attributeChanges
+            .map { change in
+                let sign = change.delta >= 0 ? "+" : ""
+                return "\(change.attribute.label) \(sign)\(change.delta)"
+            }
+            .joined(separator: ", ")
+        let result = latest.isEmpty ? "No attribute change" : latest
+        return "Season \(summary.occurredAt.season), week \(summary.occurredAt.week): \(result)."
+    }
+
+    private static func historyEvidence(
+        _ player: Player,
+        programmeID: UUID,
+        in state: GameState
+    ) -> String {
+        let completedGames = state.competition.currentSchedule.games.filter { game in
+            guard let result = game.result,
+                  game.homeID == programmeID || game.awayID == programmeID else { return false }
+            return result.homeParticipantIDs.contains(player.id)
+                || result.awayParticipantIDs.contains(player.id)
+        }.count
+        guard completedGames > 0 else {
+            return "No completed game history is retained in this season's schedule."
+        }
+        let formCount = recentForm(player, programmeID: programmeID, in: state).count
+        return "\(completedGames) completed game(s) retained; \(formCount) recent form result(s) shown."
+    }
+
+    /// A bounded, position-aware rating derived only from completed box-score lines. A player with
+    /// no completed appearance has a truthful empty state rather than a fabricated trend.
+    private static func recentForm(
+        _ player: Player,
+        programmeID: UUID,
+        in state: GameState
+    ) -> [PlayerProfileReadModel.FormEntry] {
+        let games = state.competition.currentSchedule.games
+            .filter {
+                $0.result != nil
+                    && ($0.homeID == programmeID || $0.awayID == programmeID)
+                    && ($0.result?.homeParticipantIDs.contains(player.id) == true
+                        || $0.result?.awayParticipantIDs.contains(player.id) == true)
+            }
+            .sorted {
+                if $0.season != $1.season { return $0.season > $1.season }
+                if $0.week != $1.week { return $0.week > $1.week }
+                return $0.id.uuidString > $1.id.uuidString
+            }
+            .prefix(5)
+        return games.compactMap { game in
+            guard let result = game.result else { return nil }
+            guard let line = result.playerStatistics.first(where: { $0.playerID == player.id }) else {
+                return nil
+            }
+            let rating = PlayerFormRating.rating(for: line, position: player.position)
+            let opponentID = game.homeID == programmeID ? game.awayID : game.homeID
+            return PlayerProfileReadModel.FormEntry(
+                stableID: "\(player.id.uuidString)-\(game.id.uuidString)",
+                opponent: teamReference(opponentID, in: state).abbreviation,
+                rating: rating
+            )
+        }
     }
 
     // MARK: - Fields
@@ -200,6 +375,9 @@ public extension CoachWorldReadModelProvider {
 
     private static func availability(_ player: Player, in state: GameState) -> String {
         guard let lifecycle = state.people.playerLifecycle[player.id] else { return "Available" }
+        if let suspension = lifecycle.suspension {
+            return "Suspended " + String(suspension.weeksRemaining) + " week(s)"
+        }
         if let injury = lifecycle.injury {
             return "Out \(injury.weeksRemaining) week(s)"
         }

@@ -37,9 +37,22 @@ public enum CalibrationHarness {
         223, 263, 311, 373, 421, 487, 547, 607, 673, 739,
     ]
 
-    /// Games per seed. Each seed plays a round of matchups across the talent ladder, so the sample
+    /// Games per seed. Each seed plays rounds of matchups across the talent ladder, so the sample
     /// covers even games and mismatches rather than only the middle.
-    public static let matchupsPerSeed = 12
+    ///
+    /// **Thirty, not twelve, because TOST cannot decide some of these bands at twelve.** A rate
+    /// band is passable only if the 90 percent interval can fit inside it: `1.645 * sqrt(p(1-p)/n)`
+    /// must be under the band's half-width. At 12 matchups a tier plays 240 games, and the home-win
+    /// band (0.50 to 0.58, half-width 0.04) needs **420**; the college favourite-win band needs 325
+    /// of the 220 rated games the ladder produced. Those bands failed on the *sample*, whatever the
+    /// model did — a false red that reads exactly like a real one, and the opposite of `01` §6.2's
+    /// point that the burden belongs on the model. Fifty rounds gives 1,000 games and 917 rated ones.
+    /// Thirty cleared every band's bare minimum, but the pro home-win band's passing window was then
+    /// only 0.013 wide — narrower than the run-to-run wobble of the estimate itself, so which side
+    /// of the line it landed on was luck rather than model. Precision is the burden TOST puts on
+    /// the model, and buying more of it is not widening anything. Twelve pairs still make a round, so the ladder's
+    /// shape is unchanged; each pair simply plays more games, at a different seed each time.
+    public static let matchupsPerSeed = 50
 
     /// A game and the talent it was played at, so the favourite can be identified.
     struct SampledGame {
@@ -117,9 +130,14 @@ public enum CalibrationHarness {
         var runPlays = 0, explosiveRuns = 0
         var passPlays = 0, explosivePasses = 0
         var pointsInQ4 = 0, pointsTotal = 0
+        // Per-drive accounting. `DriveRecord` has carried `pointsScored` since P3; what was missing
+        // was the harness aggregating it, which is exactly what `unimplementedMetrics` said this row
+        // waited on. It is a sum over records the engine already produces, not a model change.
+        var drivePoints: [Double] = []
 
         for sample in samples {
             let game = sample.record
+            for drive in game.drives { drivePoints.append(Double(drive.pointsScored)) }
             combinedTotals.append(Double(game.homeScore + game.awayScore))
             teamPoints.append(Double(game.homeScore))
             teamPoints.append(Double(game.awayScore))
@@ -215,11 +233,12 @@ public enum CalibrationHarness {
         func rateEstimate(_ hits: Int, _ trials: Int, scale: Double = 1) -> Estimate {
             let p = trials > 0 ? Double(hits) / Double(trials) : 0
             return Estimate(value: p * scale, sampleSize: trials, standardDeviation: 0,
-                            estimator: .rate)
+                            estimator: .rate, scale: scale)
         }
 
         return [
             "points per team-game": meanEstimate(teamPoints),
+            "points per drive": meanEstimate(drivePoints),
             "combined game total": meanEstimate(combinedTotals),
             "offensive plays per team-game": meanEstimate(teamPlays),
             "pass yards per team-game": meanEstimate(teamPassYards),

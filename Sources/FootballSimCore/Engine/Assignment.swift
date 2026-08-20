@@ -13,7 +13,7 @@ public enum SnapRole: String, Codable, Sendable, CaseIterable {
 ///
 /// Substitution is `02` §3.2's business and happens above this; the resolver takes who is out
 /// there. A value type, so a snap cannot mutate a roster.
-public struct SnapPersonnel: Sendable, Equatable {
+public struct SnapPersonnel: Codable, Sendable, Equatable {
     public let offense: [Player]
     public let defense: [Player]
 
