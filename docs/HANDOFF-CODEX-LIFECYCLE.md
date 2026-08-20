@@ -17,8 +17,14 @@ swift run -c release -Xswiftc -enable-testing SimTests --people-lifecycle
 Age curve, injured share, roster churn (both tiers), rating spread by tier, and discipline
 frequency. Each band states its source before being measured — a rules constant, a derived
 steady-state calculation, or an external anchor graded per `01-RESEARCH.md` §0.1 — never invented
-to make a number pass. All five held at the last full run this session completed (pre-final-merge,
-on this branch alone): 21 tests, 508,841+ checks, all passed.
+to make a number pass. All five hold on the owner head `1694153` (`fix: tolerate pruned portal history`):
+the long release run completed 21 tests and 520,251 checks, including season indices 0, 1, 3, 6 and
+10, all passed. The focused companion suites also pass: discipline (9/36), roster tenure (4/5),
+injury evidence (1/34), and programme evolution (7/275). The owner change is published as PR
+[#61](https://github.com/EricMG13/Pro-Football-Coach/pull/61).
+
+The separate 20-season M2 soak is still the slow lane. Its existing roster-retention failure and the
+tactical-state failure are recorded below rather than being hidden by the green lifecycle-band run.
 
 **What this fixed, in order of size:**
 
@@ -79,15 +85,20 @@ season. The remaining cost is real work — a league whose rosters actually refi
 players every week — not waste, but it is a real regression against the app-latency concern this
 project tracks (`docs/STATUS.md`'s "app-layer latency" line). Not profiled further here.
 
-**Final full-suite and full-soak sweep on the exact merged tree was not completed before this PR
-landed.** What *was* run and passed, on the tree at merge time: `--architecture-only` (29/245),
-`--discipline`, `--roster-tenure`, `--injury-evidence`, `--programme-evolution`, `--pro-market`
-(13/64), `--pro-management` (9/26), `--trait-population` (8/610). The full `--people-lifecycle` run
-(the five-band suite, ~16-20 minutes) and the no-argument default lane were run and green on this
-branch *before* the second merge from main (which itself only touched `ArchitectureTests.swift`'s
-fingerprint pins — no logic), but were not re-run to completion afterward; the session was directed
-to stop, commit, push and merge before that run finished. **Running both to completion against
-current `main` should be the first thing done here.**
+The exact owner release tree has now been checked in focused lanes: coach-season-record (3/22), staff
+pruning (1/8), career arc (23/360), season rollover (13/96), portal transactions (17/124), and
+architecture (29/245), in addition to the five lifecycle suites above. The tactical-state lane still
+has one known baseline failure (8 tests / 31 checks): the weekly scheduler consumes the plan, but one
+`GameSummary` equality assertion differs. That lane is outside the owner change and was not altered.
+The no-argument default lane and the 20-season M2 soak remain separate completion gates.
+
+The portal-history root cause is now fixed on the owner head. Departed-player pruning can remove the
+individual completion records needed to prove a portal window's exact NIL split, even though the
+window's retained summary or hot journal still proves the completed transaction. Integrity now uses
+the retained summary, recent journal, and archive to mark a window complete only when their offer
+counts agree; it always enforces aggregate reservation, capacity, offer-count, and accepted-position
+limits, and applies the exact split only to those proven-complete windows. No decline-age or trait
+constant was changed.
 
 ## What NOT to do
 
