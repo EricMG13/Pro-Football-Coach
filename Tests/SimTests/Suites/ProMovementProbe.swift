@@ -102,3 +102,75 @@ private func proOwnership(_ state: GameState) -> [UUID: UUID] {
     }
     return owner
 }
+
+/// Attribution probe for "the draft takes zero picks in ten seasons while starting nine times".
+///
+/// `--pro-draft-probe` says a draft immediately after expiry succeeds — `ProMarketSystem.draft`
+/// works, in isolation, right after `expireContracts`. But the live scheduler does not begin the
+/// draft there: `ProRosterAISystem.signFreeAgents` runs free agency first, refilling rosters toward
+/// 53 for as many weeks as it keeps signing someone, and only calls `beginDraft` on the first week
+/// that signs nobody. By then the roster state the draft actually starts from may look nothing like
+/// the probe's fixture. `ProRosterAISystem.makeDraftPicks` also swallows its own failure — any
+/// thrown error just `break`s the loop with no record of what it was — so the live scheduler cannot
+/// itself say why. This calls `ProMarketSystem.draft` the same way that loop does, the moment the
+/// real scheduler enters `.draft`, and prints what it throws.
+func runProDraftStallProbe() {
+    let seasons = ProcessInfo.processInfo.environment["PRO_MOVEMENT_SEASONS"]
+        .flatMap(Int.init) ?? 3
+    var state = GameState.bootstrap(seed: 96_001)
+    var reportedSeasons = 0
+
+    while reportedSeasons < seasons {
+        let before = state
+        let transition: WorldTransition
+        do {
+            transition = try WorldScheduler.advanceWeek(state)
+        } catch {
+            print("PROBE: advanceWeek failed at \(state.calendar): \(error)")
+            return
+        }
+        state = transition.state
+
+        let justEnteredDraft = before.proMarket.phase != .draft && state.proMarket.phase == .draft
+        guard justEnteredDraft else { continue }
+        reportedSeasons += 1
+
+        guard let teamID = state.proMarket.currentPickTeamID else {
+            print("PROBE season \(reportedSeasons): entered draft with no team on the clock, "
+                + "draftOrder empty=\(state.proMarket.draftOrder.isEmpty)")
+            continue
+        }
+        let team = state.proTeams[teamID]
+        let takenIDs = Set(state.proMarket.draftedProspectIDs)
+        let best = state.proMarket.draftClass
+            .filter { !takenIDs.contains($0.id) }
+            .min { lhs, rhs in
+                lhs.player.overall.value == rhs.player.overall.value
+                    ? lhs.id.uuidString < rhs.id.uuidString
+                    : lhs.player.overall.value > rhs.player.overall.value
+            }
+        guard let prospect = best else {
+            print("PROBE season \(reportedSeasons): draft class exhausted immediately, "
+                + "class=\(state.proMarket.draftClass.count) taken=\(takenIDs.count)")
+            continue
+        }
+        let cap = (try? ProManagementSystem.capSnapshot(teamID: teamID, in: state))
+        do {
+            _ = try ProMarketSystem.draft(
+                prospectID: prospect.id,
+                for: teamID,
+                contract: ProMarketSystem.rookieContract(for: prospect.player),
+                in: state
+            )
+            print("PROBE season \(reportedSeasons): first live pick succeeded for \(teamID)")
+        } catch {
+            print("""
+            PROBE season \(reportedSeasons): first live pick threw \(error) \
+            team=\(teamID) roster=\(team?.rosterIDs.count ?? -1)/\(ProRules.activeRosterLimit) \
+            practiceSquad=\(team?.practiceSquadIDs.count ?? -1)/\(ProRules.practiceSquadLimit) \
+            committedCap=\(cap?.committedCap ?? -1)/\(cap?.capLimit ?? -1) \
+            draftClass=\(state.proMarket.draftClass.count)
+            """)
+        }
+    }
+}

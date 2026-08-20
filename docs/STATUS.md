@@ -909,8 +909,30 @@ pool is empty until week 21. From season 2 the pool clears at 280 relocations ag
 What is genuinely red, after the correction:
 
 - **The draft takes zero picks in ten seasons** while starting nine times. `--pro-soak` reports
-  `draftedFinal=0` independently of any churn metric, and this is the stall `a2e3147` and `4a95ca5`
-  record.
+  `draftedFinal=0` independently of any churn metric. Chased to its throw site with
+  `--pro-movement-probe`'s `--pro-draft-stall-probe` variant, which calls the same
+  `ProMarketSystem.draft` the live scheduler calls, at the moment the live scheduler enters `.draft`:
+
+  ```text
+  season 1: first live pick threw activeRosterFull  roster=53/53  draftClass=224
+  season 2: first live pick threw activeRosterFull  roster=53/53  draftClass=224
+  season 3: first live pick threw activeRosterFull  roster=53/53  draftClass=224
+  ```
+
+  `--pro-draft-probe`, which begins the draft immediately after `expireContracts` with free agency
+  never run, now succeeds — the roster-tenure fix resolved `a2e3147`'s original cause. But the live
+  scheduler does not begin the draft there: `ProRosterAISystem.signFreeAgents` runs free agency
+  first, and only calls `beginDraft` on the first week that signs nobody. Its own loop guard is
+  `team.rosterIDs.count < ProRules.activeRosterLimit`, the identical 53-player ceiling
+  `ProManagementSystem.acquire` enforces for *both* a free-agent signing and a draft pick. Free
+  agency's only stopping condition is therefore also the draft's only blocking condition: nothing
+  runs between the two that removes anyone, so the draft's first pick meets the exact ceiling free
+  agency just filled, every season, regardless of pool size or expiry count. This is not the same
+  cause `a2e3147` and `4a95ca5` named — those are fixed — it is the next-order blocker their own
+  language already anticipated: `02` §4.2 lists a cap-compliance date as the second offseason beat,
+  "cuts happen when the cap binds," and nothing implements it. Deciding who is cut, and when, to
+  open the seats the draft needs remains the owner-level design call `a2e3147` named; this only
+  narrows it to its exact mechanism.
 - **Rosters never refill.** 1,406, 1,448 and 1,488 against 32 * 53 = 1,696, with the count of
   professionals owned by nobody growing 496, 619, 740. Consistent with intake that has lost the
   draft half.
