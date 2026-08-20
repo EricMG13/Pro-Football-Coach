@@ -68,6 +68,16 @@ public enum SharedRules {
     /// college, or section 9 has nowhere to promote them to.
     public static let inSeasonWeeks = 21
 
+    /// `02` section 11.3.1. A career runs seasons 0 through 29; the calendar may reach season 30
+    /// week 1 and rests there, and the week cannot be advanced past it.
+    ///
+    /// Owner decision 2026-08-20, and the reason is save size rather than pacing. `D7`'s bounds
+    /// table never listed `DomainEventLedger.archive`, which appends one digest per season forever,
+    /// so save growth was linear in season count with no ceiling and no measurement could be a
+    /// worst case. This is the wall that makes one exist. `01-RESEARCH.md` section 2.2 records the
+    /// precedent it follows.
+    public static let maximumCareerSeasons = 30
+
     /// Minimum playable coverage checked after every AI roster pass.
     ///
     /// Every entry is at least what `DepthChart`'s formation fields at that position, and

@@ -32,6 +32,9 @@ public enum CareerSessionError: Error, Sendable, Equatable {
     case matchNotStarted
     case staleMatchCheckpoint
     case matchActionFailed(MatchReducerError)
+    /// The career reached `SharedRules.maximumCareerSeasons`. Terminal, and the save stays
+    /// readable -- every screen still answers, the week simply cannot advance again.
+    case careerComplete
 }
 
 public struct CareerRecruitingProspectProjection: Sendable, Equatable, Identifiable {
@@ -193,6 +196,12 @@ public actor CareerSession {
                 )
             )
         case .advanceWeek:
+            // Translated here rather than left to propagate: `WorldSchedulerError` is not a
+            // `CareerSessionError`, so the app's exhaustive refusal switch would never see it and
+            // a finished career would read as "that action could not be completed".
+            guard state.calendar.season < SharedRules.maximumCareerSeasons else {
+                throw CareerSessionError.careerComplete
+            }
             guard state.matchSession == nil else { throw CareerSessionError.matchInProgress }
             var prepared = state
             let delegated = shouldDelegateControlledMatch(in: state)

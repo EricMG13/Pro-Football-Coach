@@ -641,6 +641,8 @@ public final class CoachWorldStore {
             return "That match checkpoint is no longer current."
         case .matchActionFailed:
             return "The match could not accept that action. The recorded moment is unchanged."
+        case .careerComplete:
+            return "Your \(SharedRules.maximumCareerSeasons)-season career is complete."
         }
     }
 

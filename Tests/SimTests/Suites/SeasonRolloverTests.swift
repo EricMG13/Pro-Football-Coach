@@ -340,7 +340,81 @@ func runSeasonRolloverTests() {
             }
             expect(signed > 0, "a full season signed nobody")
         }
+
+        // The career-length cap: `02` section 11.3.1, owner decision 2026-08-20. Asserted from a
+        // placed calendar rather than by playing thirty seasons, which is roughly twenty minutes of
+        // simulation -- the guard reads `calendar.season` and nothing else, so a placed root
+        // exercises exactly the branch the thirtieth season would reach.
+        test("a career cannot advance past its final season") {
+            // The last playable week: season 29 is inside the cap and must still advance.
+            let final = seasonPlacedRoot(
+                seed: 97_008,
+                season: SharedRules.maximumCareerSeasons - 1
+            )
+            do {
+                _ = try WorldScheduler.advanceWeek(final)
+            } catch let error as WorldSchedulerError {
+                expect(false, "the last season of the career refused to advance: \(error)")
+            }
+
+            // The terminal resting position: season 30 week 1 exists and cannot advance.
+            let complete = seasonPlacedRoot(
+                seed: 97_008,
+                season: SharedRules.maximumCareerSeasons
+            )
+            do {
+                _ = try WorldScheduler.advanceWeek(complete)
+                expect(false, "the week advanced past the end of the career")
+            } catch let error as WorldSchedulerError {
+                expectEqual(error, .careerComplete)
+            }
+
+            // Terminal, not broken. A finished career is a save the player still loads and reads,
+            // so the root has to stay valid at rest.
+            let report = WorldIntegrity.check(complete)
+            expect(report.isValid,
+                   "the completed career's root is invalid: "
+                       + report.issues.prefix(3).map(\.description).joined(separator: " ; "))
+        }
     }
+}
+
+/// A root placed at `season` week 1 without running the scheduler to get there.
+///
+/// Everything the calendar drags with it has to move too, or whole-root integrity rejects a root
+/// the engine could never have produced -- and this test would then fail for a reason that has
+/// nothing to do with the career cap. `TestRoots.swift` records both hazards: the professional
+/// market's season, and contracts whose term ended in the past.
+private func seasonPlacedRoot(seed: UInt64, season: Int) -> GameState {
+    var state = GameState.bootstrap(seed: seed)
+    state.calendar = CalendarState(season: season, week: 1)
+    state.league.season = season
+    state.league.week = 1
+    state.proMarket = ProMarketState(season: season)
+    // The college cycle's own season, which `SeasonLifecycleSystem` checks against the calendar
+    // before it will run a boundary at all -- a placed root without it throws
+    // `collegeSeasonMismatch` long before the career cap is reached.
+    state.college = CollegeState.bootstrap(
+        season: season,
+        programmes: state.programmes.values,
+        prospects: state.prospects.values
+    )
+    state = professionalContractsRolled(to: season, in: state)
+    state.competition = CompetitionState(
+        currentSchedule: SeasonSchedule(
+            season: season,
+            games: ScheduleGenerator.regularSeason(
+                seed: state.league.seed,
+                season: season,
+                programmes: state.programmes.values,
+                proTeams: state.proTeams.values
+            )
+        ),
+        archives: state.competition.archives,
+        recordBook: state.competition.recordBook
+    )
+    state.competition = CompetitionReducer.rebuild(from: state)
+    return state
 }
 
 private func controlledTeamID(in state: GameState) -> UUID? {

@@ -313,7 +313,31 @@ accumulated.
 
 ---
 
-## D7 — Save architecture and schema migration
+## D7 — Save architecture and schema migration — **CAREER LENGTH CAPPED 2026-08-20**
+
+> **Owner ruling, 2026-08-20: a career ends after thirty seasons.** Seasons 0 through 29 are played;
+> the calendar may reach season 30 week 1 and rests there permanently. `SharedRules.maximumCareerSeasons`
+> is the constant, `WorldScheduler.advanceWeek` is the single chokepoint that enforces it, and
+> `02-GAME-DESIGN.md` §11.3.1 is where the rule lives.
+>
+> **What this closes and what it does not.** It closes the *unbounded* half of the falsifier below:
+> before it, `DomainEventLedger.archive` appended one `SeasonHistoryDigest` per season forever, and
+> that array was the one growable collection this decision's own bounds table never listed. Growth
+> was linear in season count with no ceiling at all, so no measurement could ever be a worst case.
+> Now there is a worst case, and it is season 30.
+>
+> **It does not meet the 8 MB ceiling, and that half stays open.** Measured on 2026-08-20 via
+> `--m7-gate` (compressed, release): s1 = 6.70 MB, s20 = 26.71 MB, s30 = 37.11 MB. The cap makes
+> 37.11 MB the maximum a save can ever reach rather than an arbitrary point on an unbounded line.
+> Closing the remaining gap is `FSC-003`, which stays a release blocker.
+>
+> **The ceiling itself is now the open question, not the growth.** The 8 MB figure was inherited
+> from two sources, neither matching this project's scope: the prior build's own `< 5 MB` at ten
+> seasons, measured on a single-tier 32-team game; and FMM's console/Touch storage cap. This entry
+> already flagged that mismatch when it set the number ("~134 programmes plus recruiting history is
+> a materially larger object"). Whether 8 MB is the right number for a two-tier, 134-programme save
+> on current iPhone storage is an owner question that has not been asked yet.
+
 
 **Format:** a single versioned JSON document per save, gzip-compressed on disk, written off the main
 actor, with an atomic replace and one backup generation. No third-party dependency, human-inspectable

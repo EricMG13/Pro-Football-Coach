@@ -68,6 +68,9 @@ public enum WorldSchedulerError: Error, Equatable {
     /// A user-owned controlled fixture must be entered through `CareerSession` so its
     /// resumable MatchSessionState is persisted instead of being silently abstracted.
     case controlledMatchRequired(UUID)
+    /// The career reached `SharedRules.maximumCareerSeasons` and has ended. A terminal resting
+    /// state, not a failure: the root stays valid and readable, it simply cannot advance.
+    case careerComplete
     case integrityFailed([IntegrityIssue])
     case scheduledGameMissing(UUID)
     case scheduledGameResultMissing(UUID)
@@ -347,6 +350,12 @@ public enum WorldScheduler {
     }
 
     public static func advanceWeek(_ state: GameState) throws -> WorldTransition {
+        // First, before any other refusal: a finished career is finished whatever else is pending.
+        // This is the one chokepoint every caller reaches -- app, tests and soaks alike -- so the
+        // cap is enforced here rather than in each of them.
+        guard state.calendar.season < SharedRules.maximumCareerSeasons else {
+            throw WorldSchedulerError.careerComplete
+        }
         if let session = state.matchSession, let fixtureID = session.fixtureID {
             throw WorldSchedulerError.controlledMatchRequired(fixtureID)
         }
