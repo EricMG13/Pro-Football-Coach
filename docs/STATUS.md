@@ -220,6 +220,71 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > against both the pre-fix and post-fix source with a standalone Python harness, not a real compiler)
 > — CI is what actually confirms it.
 
+> **2026-08-20 — the app layer was four orders of magnitude slower than the engine, and it is
+> fixed.** A front-to-back confidence review measured the path the application actually takes rather
+> than the one the probes measure, and the gap was the whole story. `CareerSession.resolve(.advanceWeek)`
+> costs **0.3 ms**. The same week advance as `CoachWorldAppRootView` sequences it cost **5 454 ms**,
+> and one snap of a match cost **5 259 ms** against its own 1 200 ms auto-advance dwell — about
+> **11.4 minutes of machine time for a 130-snap game**, on an Apple-silicon Mac, in a release build,
+> at the smallest save the game ever has. `PRODUCT.md` promises fifteen minutes a week.
+>
+> Three causes, all between the engine and the glass, all now fixed and measured:
+>
+> - **`CoachWorldStore` rebuilt all 28 screen models at the tail of every intent.** Measured on a
+>   *refused* intent, which does no simulation work at all: 1 593 ms. Screens are now memoised and
+>   built on demand, and the route map — which the chrome asks for on every render, and which used
+>   to be answered by building every screen and testing the result for nil — is answered from the
+>   root by `CoachWorldReadModelProvider.availableScreens`. `Route availability` asserts the cheap
+>   answer against the models it replaced, over every `CoachWorldScreenID`, in three career shapes;
+>   it caught two drifted guards on its first run.
+> - **Autosave wrote the whole career after every intent, and validated by decoding it.**
+>   `persist` called `flush(.explicit)` after every intent, so the coordinator's coalescing never
+>   coalesced; and `flush` decoded the file it was about to replace (1.6–2.2 s at season 0) to
+>   decide it was worth promoting to backup. The view now requests on every intent and defers the
+>   write, with an immediate flush when the app leaves the foreground, and the coordinator
+>   remembers that it verified its own last write.
+> - **Launch decoded the save *and* its backup, and parsed each body twice.** The backup is now
+>   opened only when the primary fails or is the older file, and `documentVersion` is read from the
+>   head of the body rather than by parsing 18.6 MB of JSON to find one integer.
+>
+> Measured after, same host, same seed, same release build:
+>
+> | | before | after |
+> |---|---|---|
+> | Week advance, as the app does it | 5 454 ms | **566 ms** |
+> | One match snap, as the app does it | 5 259 ms | **24 ms** |
+> | A 130-snap game | 11.4 min | **3.1 s** |
+> | Durable writes for a 25-snap burst | 25 | **1** |
+> | Route map | (28 models) | **1 ms** |
+> | Cold launch `load()` | 3 972 ms | **1 372 ms** |
+> | New career | 3 639 ms | **1 784 ms** |
+>
+> D4's 2.0 s week-advance budget is now met **on this host**, which is not the phone and must not be
+> reported as if it were. The device gate remains the owner's.
+>
+> **The save was unbounded, and the gate that was supposed to catch it asserted nothing.**
+> `PeopleState.departedPlayers` and the `playerCareers` paired with them only ever grew — measured
+> at 3.67 MB at season 0, **8.29 MB at season 2**, 14.76 MB at season 20 against a stated 8 MB
+> commitment, with `SaveEnvelope`'s own comment already recording ~26 MB before the fix. Retention
+> is now bounded by `PeopleRules.departedPlayerRetentionLimit`, evicting the oldest identities that
+> nothing retained still names, and both soaks now *assert* the ceiling and the season-over-season
+> drift instead of printing the numbers. `CommitmentCoverageTest` only ever checked that a gate name
+> was registered with a dispatched runner, which is how `SaveWriteBudgetTest` came to exist as a
+> string in an enum and nothing else; it is now a real test, and `SaveOffMainActorTest` is a
+> compile-time proof rather than a grep for two string literals.
+>
+> **Still open, and named rather than carried quietly.** The design audit filed inside commit
+> `e3b360d` — `DESIGN-IS-2026-08-19/03-verdict.md` — scores the front end **10/30 with a REDESIGN
+> verdict**, with load-bearing zeros on usefulness, understandability and honesty, at least 17 named
+> destinations that are host mismatches, and row selection that commits before the visible commit
+> control. That is a different rubric from `04b` and must not be equated with its ≥31/40 bar; what
+> both say is that no surface has been through `04b` at all. `docs/reviews/2026-08-19-screen-reachability-map.md`
+> records three role/scenario reachability defects and 13 misleading legacy links still live in the
+> HQ menu. Resident memory in the soak harness reaches about 2 GB by season 20 on macOS under no
+> memory pressure, which is not an iOS jetsam prediction and needs a device. And the in-match
+> call-in — the mechanic that replaces the removed arcade layer's decision volume — offers the same
+> three hardcoded options at every trigger, which is a design question for `02`, not a defect.
+
 > **2026-08-19, final — CI actually ran, against commits from partway through this session's work,
 > and found two real regressions this branch's own static-only verification could not catch.** With
 > no `swift`/`xcodebuild` here, everything above was checked by grep, Python simulation and careful
@@ -1356,6 +1421,108 @@ Three things follow, and the first is the one that matters:
 is the largest remaining item. B-2 and any device measurement are the owner's. P-2 (cap-compliance
 cuts) is not built — and the probe's finding that no team is over the cap at the season boundary is
 worth carrying into it, because beat 2 has nothing to do until spending puts a team over.
+
+### 2026-08-19 — determinism coverage widened: the professional negotiation ledger
+
+`ProMarketState.contractNegotiations` (the schema-13 negotiation ledger) sat inside the root both
+`ArchitectureTests` fingerprints hash, but neither pin ever exercised it: `GameState.bootstrap`
+starts it empty, and `WorldScheduler.advanceWeek` never opens, counters or settles a negotiation on
+its own — only `ProManagementSystem`, a career-control action, does. A corrupted offer history, a
+wrong negotiation status, or a mis-ordered ledger after decode would have satisfied both existing
+pins.
+
+Added `"the professional negotiation ledger is pinned across processes"` to `ArchitectureTests.swift`
+(`--architecture-only`): it opens, counters and settles a negotiation from a fixed seed, then hashes
+the resulting root with the same `architectureFingerprint` the two root pins use, against a new
+`pinnedNegotiationLedgerFingerprint` literal. The literal was computed live (not invented), then
+`./scripts/verify.sh --lane determinism` was run in two independent process invocations — each a
+fresh `swift run` against its own scratch path — and both produced the identical fingerprint:
+`18194934115346224100`. No engine divergence found; nothing was fixed because nothing broke.
+
+This closes one instance of the class this loop exists to find — a persisted store reachable from
+`GameState` but never driven into a non-default shape by any pinned fingerprint — not the whole
+class. Other candidates not yet covered: `matchSession` (nil through both pins; `--m1-soak`/`--m2-soak`
+drive it but neither pins a fingerprint), the news feed (`newsAndNarrative` is `.inactive` in the
+one-week advance the scheduler-order test asserts), and `DomainEventLedger`'s archived-season path
+(the ledger pin only sees fresh, unarchived events).
+
+### 2026-08-19 — determinism coverage widened: the match session
+
+`GameState.matchSession` sat inside the same root both existing pins hash, but neither ever exercised
+a populated one: `bootstrap` leaves it `nil` by construction, and `WorldScheduler.advanceWeek` never
+calls `prepareControlledMatch`, so the advanced pin's session stays `nil` too. A root that carried a
+corrupted `SnapPersonnel`, a wrong in-drive `Situation`, or a mis-ordered call-in proposal after
+decode would have satisfied both existing pins. `makeMatchSession` is private, so the only reachable
+path is the public `WorldScheduler.prepareControlledMatch`.
+
+Added `"the match session is pinned across processes"` to `ArchitectureTests.swift`: it starts a
+college career (`CareerControlSystem.startCollegeCareer`), installs a controlled fixture
+(`prepareControlledMatch`), then advances until a call-in proposal appears — the defensive
+`while !checkpoint.completed { … if step.proposal != nil { break } }` form, not a hard-coded single
+`.advance`, since the proposal firing on the first call is a real but incidental consequence of
+`TacticalPlanSystem`'s default `.balanced` plan and should not be assumed to hold forever. The
+resulting root — mid-match, pending call-in, full home/away `SnapPersonnel` — is hashed with the same
+`architectureFingerprint` the other three pins use, against a new `pinnedMatchSessionFingerprint`
+literal. The literal was computed live, then `./scripts/verify.sh --lane determinism` was run in two
+independent process invocations — separate compiles, separate SwiftPM scratch paths — and both
+produced the identical fingerprint: `222581002489681212`. No engine divergence found; nothing was
+fixed because nothing broke.
+
+Two of the three candidates named above are now closed. Still open: the news feed
+(`newsAndNarrative` is `.inactive` in the one-week advance the scheduler-order test asserts) and
+`DomainEventLedger`'s archived-season path (the ledger pin only sees fresh, unarchived events).
+
+### 2026-08-19 — determinism coverage widened: the news feed
+
+`NewsFeedReadModel` is a different kind of gap than the prior two: it is derived from `state.history`
+rather than stored in `GameState`, per its own doc comment ("Derived, never stored"), so `state.history`
+being inside the root pins does not mean the *read model built from it* is covered. Nothing pinned the
+rendering/ordering step — `NewsFeedTests.swift`'s only same-world check (`"two builds of the same world
+are identical"`) compares two in-process builds against each other, over an empty-history bootstrap,
+and never crosses a process boundary or a populated feed.
+
+Investigated `NewsFeedReadModel.build`'s two candidate risk points before pinning anything: the
+`names(in:)` dictionary is used only as a keyed lookup, never iterated to produce output, and the final
+sort has a total order (season desc, weight desc, week desc, `eventID.uuidString` asc as the last
+tiebreaker) — so no unsorted-iteration bug exists today. The new pin is regression protection, not a
+fix for a live one.
+
+Added `"the news feed is pinned across processes"` to `ArchitectureTests.swift`: a 3-event fixture
+(season-completed, staff-hired, player-transferred, across two seasons) is appended to a fresh
+`DomainEventLedger` and run through `NewsFeedReadModel.build`. Since `NewsItem`/`NewsFeedReadModel` are
+deliberately not `Codable` (derived data is never the save's source of truth), the test maps the
+result into a private, test-only `NewsItemFingerprintDTO` before reusing the existing
+`architectureFingerprint` helper unchanged — no Codable conformance was added to production types.
+Verified across two independent process invocations: value `8_018_401_890_798_286_268`, identical both
+times.
+
+All three candidates named on 2026-08-19 are now closed. The next open surface, not yet investigated:
+`DomainEventLedger`'s archived-season path (the existing ledger-adjacent pins only ever see fresh,
+unarchived events; `HistoryArchiveTests.swift` exercises archival functionally but nothing pins a
+cross-process fingerprint of a root whose ledger has actually rolled events into `.archive`).
+
+### 2026-08-20 — determinism coverage widened: the archived-season ledger
+
+`DomainEventLedger.archive` has carried a bounded `[SeasonHistoryDigest]` since schema 11, and it sits
+inside the root every architecture pin hashes — but none ever exercised it non-empty. Bootstrap starts
+with a fresh, single-event ledger; one `advanceWeek` doesn't emit enough events to overflow the default
+4,096-event retention limit; and the negotiation-ledger, match-session and news-feed pins either never
+touch `state.history` or replace it outright with a small ledger that stays well under retention. A
+root whose archived digest carried a corrupted `archivedCount`, a `notableEvents` entry that failed the
+`historicalWeight`-based notability filter, or an archive mis-ordered by season after decode would have
+satisfied every existing pin. `HistoryArchiveTests.swift` exercises archival functionally against a
+bare `DomainEventLedger`, never against a `GameState` root, and never pins a literal.
+
+Added `"the archived-season ledger is pinned across processes"` to `ArchitectureTests.swift`: a
+`DomainEventLedger(retentionLimit: 1)` is appended three events spanning two seasons, forcing two into
+a season-3 archive digest (one notable `.seasonCompleted`, one non-notable `.integrityChecked`) while
+the third stays in `recent`, then the full root is hashed the same way the first three pins do —
+`DomainEventLedger` is already `Codable` and directly on `GameState`, so no test-local DTO was needed
+here (unlike the news-feed pin). Verified across two independent process invocations: value
+`11_509_177_498_617_182_391`, identical both times. No engine divergence found; nothing was fixed
+because nothing broke.
+
+All four surfaces named since 2026-08-19 are now closed. No further candidate has been identified yet.
 
 ### The full default suite — **green on 2026-08-12, after a two-failure fix**
 

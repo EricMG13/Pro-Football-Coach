@@ -42,6 +42,20 @@ public struct CoachWorldAppRootView: View {
     @State private var setupError: String?
 
     @State private var coordinator: SaveCoordinator
+    /// The one deferred write. While it is outstanding, further intents only hand the coordinator a
+    /// newer document; the task that is already waiting writes whichever is newest when it fires.
+    @State private var flushTask: Task<Void, Never>?
+    @Environment(\.scenePhase) private var scenePhase
+
+    /// How long a committed intent may sit unwritten.
+    ///
+    /// Every intent used to force a flush, which is why the coordinator's coalescing never
+    /// coalesced anything: a match snap cost a full encode, a read-back and two whole-file writes,
+    /// measured at 2.9 s at season 0 and growing with the career. Requesting is cheap and the
+    /// write is deferred, so a burst of snaps costs one write rather than one per snap. Leaving
+    /// the app writes immediately, so the exposure is a crash inside this window, against a backup
+    /// file and a previous save that both remain on disk.
+    private static let flushDelay: Duration = .seconds(4)
 
     public init(saves: CoachWorldSaveStore = CoachWorldSaveStore()) {
         _coordinator = State(initialValue: SaveCoordinator(storage: saves))
@@ -84,6 +98,15 @@ public struct CoachWorldAppRootView: View {
         .background(CoachWorldTokens.dark.page.color)
         .preferredColorScheme(.dark)
         .task { await restoreExistingCareer() }
+        // Leaving the app is the deadline the deferred write is measured against: whatever an
+        // intent committed in the last few seconds is on disk before the process can be suspended
+        // or killed behind the coach's back.
+        .onChange(of: scenePhase) { _, phase in
+            guard phase != .active else { return }
+            flushTask?.cancel()
+            flushTask = nil
+            Task { await flushNow(reason: .background) }
+        }
     }
 
     /// Which screen is on the glass, and nothing else. A reachable route whose read model has not
@@ -108,7 +131,7 @@ public struct CoachWorldAppRootView: View {
                             personnelPlayerID = playerID
                             navigate(.playerProfile, in: store)
                         },
-                        showsRecruitingBoard: store.recruitingBoard != nil
+                        showsRecruitingBoard: store.availableScreens.contains(.recruitingBoard)
                     )
                     .floodlitChrome(
                         chrome(for: .roster, in: store),
@@ -517,7 +540,7 @@ public struct CoachWorldAppRootView: View {
                     )
                 }
             case .signingDay:
-                if store.collegeOffseason != nil {
+                if store.availableScreens.contains(.collegeOffseason) {
                     surface(store.collegeOffseason, screen: .signingDay) { model in
                         SigningDayView(model: model, statusMessage: failure ?? store.statusMessage,
                                        onCommit: { id in Task { await commit(id, in: store) } },
@@ -812,14 +835,14 @@ public struct CoachWorldAppRootView: View {
                         onContinue: { Task { await advance(store) } },
                         onOpenCorrespondence: { _ in },
                         onNavigate: { navigate($0, in: store) },
-                        showsProOffseason: store.proOffseason != nil,
-                        showsDraftRoom: store.proOffseason?.phase == .draft,
-                        showsSigningDay: store.collegeOffseason?.cyclePhase == .signing,
-                        showsCollegeOffseason: store.collegeOffseason != nil,
-                        showsProManagement: store.proManagement != nil,
-                        showsContractNegotiation: store.proManagement != nil,
-                        showsRecruitingBoard: store.recruitingBoard != nil,
-                        showsRealignmentEvent: store.realignment?.event != nil
+                        showsProOffseason: store.availableScreens.contains(.proOffseason),
+                        showsDraftRoom: store.availableScreens.contains(.draftRoom),
+                        showsSigningDay: store.availableScreens.contains(.signingDay),
+                        showsCollegeOffseason: store.availableScreens.contains(.collegeOffseason),
+                        showsProManagement: store.availableScreens.contains(.capContracts),
+                        showsContractNegotiation: store.availableScreens.contains(.capContracts),
+                        showsRecruitingBoard: store.availableScreens.contains(.recruitingBoard),
+                        showsRealignmentEvent: store.availableScreens.contains(.realignmentEvent)
                     )
                     .floodlitChrome(
                         chrome(for: .coachingHQ, in: store),
@@ -881,62 +904,10 @@ public struct CoachWorldAppRootView: View {
 
     /// The task registry only advertises canonical surfaces whose read models exist in this
     /// career. The legacy 62 numbers remain valid migration inputs, but never become sibling links.
+    /// Sorted by registry number, because a `Set` has no order and the icon rail and the sibling
+    /// row both read this list as an order.
     private func availableScreens(in store: CoachWorldStore) -> [CoachWorldScreenID] {
-        var available: [CoachWorldScreenID] = [.settingsAccessibility]
-        func add(_ screen: CoachWorldScreenID, when condition: Bool) {
-            if condition { available.append(screen) }
-        }
-
-        add(.coachingHQ, when: store.coachingHQ != nil)
-        add(.inbox, when: store.inbox != nil)
-        add(.opponentReportFilmRoom, when: store.opponentFilm != nil)
-        add(.gamePlan, when: store.gamePlan != nil)
-        add(.practicePlan, when: store.practicePlan != nil)
-        add(.teamHealth, when: store.teamHealth != nil)
-        add(.matchDay, when: store.matchDay != nil)
-        add(.aftermath, when: store.aftermath != nil)
-        add(.gameDetailBoxScore, when: store.aftermath != nil)
-
-        add(.roster, when: store.roster != nil)
-        add(.depthChart, when: store.depthChart != nil)
-        add(.playerProfile, when: store.roster?.players.isEmpty == false)
-        add(.developmentPlan, when: store.roster != nil)
-        add(.staffRoom, when: store.staffRoom != nil)
-
-        add(.recruitingBoard, when: store.recruitingBoard != nil)
-        add(.prospectProfile, when: store.recruitingBoard != nil)
-        add(.shortlist, when: store.recruitingBoard != nil)
-        add(.contactVisitPlanner, when: store.recruitingBoard != nil)
-        add(.classOverview, when: store.recruitingBoard != nil)
-        add(.signingDay, when: store.collegeOffseason?.cyclePhase == .signing)
-        add(.collegeOffseason, when: store.collegeOffseason != nil)
-
-        add(.capContracts, when: store.proManagement != nil)
-        add(.contractNegotiation, when: store.proManagement != nil)
-        add(.rosterCutsTransactions, when: store.proManagement != nil)
-        add(.draftRoom, when: store.proOffseason?.phase == .draft)
-        add(.proOffseason, when: store.proOffseason != nil)
-
-        add(.leagueMap, when: store.leagueMap != nil)
-        add(.teamProgrammeProfile, when: store.teamProgrammeProfile != nil)
-        add(.standings, when: store.standings != nil)
-        add(.schedule, when: store.schedule != nil)
-        add(.rankingsPlayoffPicture, when: store.competitionOverview != nil)
-        add(.bracketPostseason, when: store.competitionOverview != nil)
-        add(.statisticsLeaders, when: store.statisticsLeaders != nil)
-        add(.awardsHonours, when: store.awardsHonours != nil)
-        add(.news, when: store.news != nil)
-        add(.realignmentEvent, when: store.realignment?.event != nil)
-        add(.worldSearch, when: store.worldSearch != nil)
-
-        add(.careerHub, when: store.careerHub != nil)
-        add(.stakeholders, when: store.careerHub != nil)
-        add(.promotionDecision, when: store.careerHub?.opportunities.contains { $0.canAccept } == true)
-        add(.recordBook, when: store.legacyHistory != nil)
-        add(.rivalries, when: store.legacyHistory != nil)
-        add(.careerLine, when: store.legacyHistory != nil)
-        add(.coachingTree, when: store.legacyHistory != nil)
-        return available
+        [.settingsAccessibility] + store.availableScreens.sorted { $0.rawValue < $1.rawValue }
     }
 
     /// The header chip's surface context. The reference varies it per screen rather than printing
@@ -990,73 +961,73 @@ public struct CoachWorldAppRootView: View {
             screen = .coachingHQ
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .roster where store.roster != nil:
+        case .roster where store.availableScreens.contains(.roster):
             screen = .roster
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .inbox where store.inbox != nil:
+        case .inbox where store.availableScreens.contains(.inbox):
             inboxOrigin = screen == .roster ? .roster : .coachingHQ
             store.setPresentationReturnRoute(String(inboxOrigin.rawValue))
             screen = .inbox
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .opponentReportFilmRoom where store.opponentFilm != nil:
+        case .opponentReportFilmRoom where store.availableScreens.contains(.opponentReportFilmRoom):
             screen = .opponentReportFilmRoom
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .news where store.news != nil:
+        case .news where store.availableScreens.contains(.news):
             screen = .news
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .recordBook where store.legacyHistory != nil,
-             .rivalries where store.legacyHistory != nil,
-             .careerLine where store.legacyHistory != nil,
-             .coachingTree where store.legacyHistory != nil:
+        case .recordBook where store.availableScreens.contains(.recordBook),
+             .rivalries where store.availableScreens.contains(.recordBook),
+             .careerLine where store.availableScreens.contains(.recordBook),
+             .coachingTree where store.availableScreens.contains(.recordBook):
             screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .statisticsLeaders where store.statisticsLeaders != nil:
+        case .statisticsLeaders where store.availableScreens.contains(.statisticsLeaders):
             screen = .statisticsLeaders
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .awardsHonours where store.awardsHonours != nil:
+        case .awardsHonours where store.availableScreens.contains(.awardsHonours):
             screen = .awardsHonours
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .realignmentEvent where store.realignment?.event != nil:
+        case .realignmentEvent where store.availableScreens.contains(.realignmentEvent):
             screen = .realignmentEvent
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .gameDetailBoxScore where store.aftermath != nil:
+        case .gameDetailBoxScore where store.availableScreens.contains(.aftermath):
             screen = .gameDetailBoxScore
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .aftermath where store.aftermath != nil:
+        case .aftermath where store.availableScreens.contains(.aftermath):
             screen = .aftermath
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .recruitingBoard where store.recruitingBoard != nil:
+        case .recruitingBoard where store.availableScreens.contains(.recruitingBoard):
             screen = .recruitingBoard
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .prospectProfile where store.recruitingBoard != nil:
+        case .prospectProfile where store.availableScreens.contains(.recruitingBoard):
             screen = .prospectProfile
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .shortlist where store.recruitingBoard != nil:
+        case .shortlist where store.availableScreens.contains(.recruitingBoard):
             screen = .shortlist
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .classOverview where store.recruitingBoard != nil,
-             .contactVisitPlanner where store.recruitingBoard != nil:
+        case .classOverview where store.availableScreens.contains(.recruitingBoard),
+             .contactVisitPlanner where store.availableScreens.contains(.recruitingBoard):
             screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .leagueMap where store.leagueMap != nil:
+        case .leagueMap where store.availableScreens.contains(.leagueMap):
             screen = .leagueMap
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .gamePlan where store.gamePlan != nil:
+        case .gamePlan where store.availableScreens.contains(.gamePlan):
             gamePlanOrigin = switch screen {
             case .matchDay: .matchDay
             case .opponentReportFilmRoom: .opponentReportFilmRoom
@@ -1065,85 +1036,85 @@ public struct CoachWorldAppRootView: View {
             screen = .gamePlan
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .practicePlan where store.practicePlan != nil:
+        case .practicePlan where store.availableScreens.contains(.practicePlan):
             screen = .practicePlan
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .depthChart where store.depthChart != nil:
+        case .depthChart where store.availableScreens.contains(.depthChart):
             screen = .depthChart
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .playerProfile where store.roster?.players.isEmpty == false:
+        case .playerProfile where store.availableScreens.contains(.playerProfile):
             screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .developmentPlan where store.roster != nil:
+        case .developmentPlan where store.availableScreens.contains(.roster):
             screen = .developmentPlan
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .teamHealth where store.teamHealth != nil:
+        case .teamHealth where store.availableScreens.contains(.teamHealth):
             teamHealthOrigin = screen == .roster ? .roster : .coachingHQ
             store.setPresentationReturnRoute(String(teamHealthOrigin.rawValue))
             screen = .teamHealth
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .proOffseason where store.proOffseason != nil:
+        case .proOffseason where store.availableScreens.contains(.proOffseason):
             proFocus = .proOffseason
             screen = .proOffseason
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .draftRoom where store.proOffseason?.phase == .draft:
+        case .draftRoom where store.availableScreens.contains(.draftRoom):
             proFocus = .draftRoom
             screen = .draftRoom
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .staffRoom where store.staffRoom != nil:
+        case .staffRoom where store.availableScreens.contains(.staffRoom):
             screen = .staffRoom
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .collegeOffseason where store.collegeOffseason != nil:
+        case .collegeOffseason where store.availableScreens.contains(.collegeOffseason):
             screen = .collegeOffseason
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .signingDay where store.collegeOffseason?.cyclePhase == .signing:
+        case .signingDay where store.availableScreens.contains(.signingDay):
             screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .capContracts where store.proManagement != nil,
-             .contractNegotiation where store.proManagement != nil,
-             .rosterCutsTransactions where store.proManagement != nil:
+        case .capContracts where store.availableScreens.contains(.capContracts),
+             .contractNegotiation where store.availableScreens.contains(.capContracts),
+             .rosterCutsTransactions where store.availableScreens.contains(.capContracts):
             screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .careerHub where store.careerHub != nil:
+        case .careerHub where store.availableScreens.contains(.careerHub):
             careerFocus = .careerHub
             screen = .careerHub
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .stakeholders where store.careerHub != nil,
-             .promotionDecision where store.careerHub?.opportunities.contains { $0.canAccept } == true:
+        case .stakeholders where store.availableScreens.contains(.stakeholders),
+             .promotionDecision where store.availableScreens.contains(.promotionDecision):
             careerFocus = destination
             screen = .careerHub
             store.setPresentationRoute(String(CoachWorldScreenID.careerHub.rawValue))
             failure = nil
-        case .standings where store.standings != nil:
+        case .standings where store.availableScreens.contains(.standings):
             screen = .standings
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .schedule where store.schedule != nil:
+        case .schedule where store.availableScreens.contains(.schedule):
             screen = .schedule
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .teamProgrammeProfile where store.teamProgrammeProfile != nil:
+        case .teamProgrammeProfile where store.availableScreens.contains(.teamProgrammeProfile):
             screen = .teamProgrammeProfile
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .worldSearch where store.worldSearch != nil:
+        case .worldSearch where store.availableScreens.contains(.worldSearch):
             screen = .worldSearch
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
-        case .rankingsPlayoffPicture where store.competitionOverview != nil,
-             .bracketPostseason where store.competitionOverview != nil:
+        case .rankingsPlayoffPicture where store.availableScreens.contains(.rankingsPlayoffPicture),
+             .bracketPostseason where store.availableScreens.contains(.rankingsPlayoffPicture):
             screen = destination
             store.setPresentationRoute(String(destination.rawValue))
             failure = nil
@@ -1416,7 +1387,7 @@ public struct CoachWorldAppRootView: View {
 
     private func advance(_ store: CoachWorldStore) async {
         await store.advanceWeek()
-        if store.careerHub != nil, store.coachingHQ == nil {
+        if store.availableScreens.contains(.careerHub), store.coachingHQ == nil {
             screen = .careerHub
             store.setPresentationRoute(String(CoachWorldScreenID.careerHub.rawValue))
         } else if store.matchDay != nil {
@@ -1480,7 +1451,7 @@ public struct CoachWorldAppRootView: View {
         }
         await store.matchControl(intentID)
         if store.matchDay == nil {
-            if store.aftermath != nil {
+            if store.availableScreens.contains(.aftermath) {
                 screen = .aftermath
                 store.setPresentationRoute(String(CoachWorldScreenID.aftermath.rawValue))
             } else {
@@ -1521,7 +1492,31 @@ public struct CoachWorldAppRootView: View {
     private func persist(_ store: CoachWorldStore) async throws {
         let document = try await store.saveDocument()
         try await coordinator.requestSave(document, reason: .userAction)
-        try await coordinator.flush(reason: .explicit)
+        scheduleFlush()
+    }
+
+    /// Arms the deferred write, or leaves the armed one alone.
+    ///
+    /// Deliberately does not restart the timer on each intent. A debounce that resets would never
+    /// fire during a match, where snaps arrive faster than any sensible delay; this fires on a
+    /// fixed deadline from the first unwritten intent, so the gap between committing and writing
+    /// has a ceiling no matter how fast the coach is playing.
+    private func scheduleFlush() {
+        guard flushTask == nil else { return }
+        flushTask = Task { @MainActor in
+            try? await Task.sleep(for: Self.flushDelay)
+            flushTask = nil
+            await flushNow()
+        }
+    }
+
+    /// Writes whatever is pending, now. Used by the deferred task and by leaving the app.
+    private func flushNow(reason: SaveFlushReason = .explicit) async {
+        do {
+            try await coordinator.flush(reason: reason)
+        } catch {
+            failure = "The career could not be saved: \(error)"
+        }
     }
 
     /// A failed autosave is reported, never swallowed. `try?` here would leave the player playing a

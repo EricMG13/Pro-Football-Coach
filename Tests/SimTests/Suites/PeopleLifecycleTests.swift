@@ -645,8 +645,38 @@ func runM2SoakTests(seasons: Int) {
                    "departed player identities did not persist")
             expect(state.staff.count >= employedStaffTarget,
                    "staff identities disappeared across turnover")
+            expect(state.people.departedPlayers.count <= PeopleRules.departedPlayerRetentionLimit,
+                   "departed identities are unbounded again: "
+                       + "\(state.people.departedPlayers.count) retained")
+            expectEqual(
+                Set(state.people.playerCareers.keys),
+                Set(state.players.ids).union(state.people.departedPlayers.keys),
+                "career records and player identities came apart, so pruning dropped one half of a pair"
+            )
+            assertSaveSizeIsBounded(saveSizes, seasons: seasons, label: "M2")
             let elapsed = started.duration(to: clock.now)
             print("M2 soak: \(seasons) seasons in \(elapsed); save checkpoints \(saveSizes)")
         }
     }
+}
+
+
+/// The save-size gate both soaks share.
+///
+/// It was a `print` in each of them while `PRODUCT.md` listed the size commitment as verified, which
+/// is the defect `docs/06-AUDIT-DISPOSITION.md` calls pattern 3: a named test that asserts nothing
+/// about the thing it is named for.
+func assertSaveSizeIsBounded(_ checkpoints: [Int: Int], seasons: Int, label: String) {
+    for season in checkpoints.keys.sorted() {
+        guard let bytes = checkpoints[season] else { continue }
+        expect(bytes <= SaveEnvelope.productionSaveByteCeiling,
+               "\(label) season \(season) save is \(bytes) bytes, over the "
+                   + "\(SaveEnvelope.productionSaveByteCeiling) byte ceiling")
+    }
+    guard seasons > 5, let early = checkpoints[5], let late = checkpoints[seasons], early > 0 else {
+        return
+    }
+    expect(Double(late) <= Double(early) * SaveEnvelope.productionSaveDriftRatio,
+           "\(label) save drifted from \(early) bytes at season 5 to \(late) at season "
+               + "\(seasons), beyond the \(SaveEnvelope.productionSaveDriftRatio)x allowance")
 }

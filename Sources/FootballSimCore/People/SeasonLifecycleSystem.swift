@@ -131,6 +131,12 @@ public enum SeasonLifecycleSystem {
             people: &people,
             payloads: &payloads
         )
+        if completed.week == SharedRules.inSeasonWeeks {
+            // The one unbounded inflow in people state, bounded at the only moment it grows.
+            // The protected set is read from the pre-transition root, so this season's departures
+            // are still active identities there and survive their first prune by construction.
+            people.pruneDepartedPlayers(protecting: retainedIdentityIDs(in: state))
+        }
         return PeopleSeasonTransition(
             programmes: programmes,
             proTeams: proTeams,
@@ -139,6 +145,40 @@ public enum SeasonLifecycleSystem {
             people: people,
             eventPayloads: payloads
         )
+    }
+
+    /// Every identity a bounded departed set must keep, read from the authoritative root.
+    ///
+    /// Enumerated from the structures that name a person rather than from a hand-written list, so
+    /// a new reference is covered the day the structure gains it: the retained event journal (both
+    /// its generic entity references and its typed prospect references, which validate recruiting
+    /// history), archived award winners, everyone still on a roster, and everyone whose career
+    /// carries portal history — the last because `WorldIntegrity` cross-checks portal offers held
+    /// on a career record against the scouting knowledge held beside it, and dropping one half of
+    /// that pair would report as corruption.
+    private static func retainedIdentityIDs(in state: GameState) -> Set<UUID> {
+        var protectedIDs = Set(state.players.ids)
+        for event in state.history.recent {
+            protectedIDs.formUnion(event.payload.referencedEntityIDs)
+            protectedIDs.formUnion(event.payload.referencedProspectIDs)
+        }
+        for archive in state.competition.archives {
+            protectedIDs.formUnion(archive.awards.map(\.winnerID))
+        }
+        // Any career that ever touched the portal, not just a current-season one.
+        //
+        // Narrowing this to the live target season looked safe — `WorldIntegrity` only admits
+        // scouting knowledge for the current season — and it is not: the portal commit path reads
+        // windows this filter had already evicted, and the world failed at season 4 with
+        // `portalCommitFailed(.postseason)`. The consequence is stated rather than hidden: these
+        // careers accumulate slowly, so the retention limit binds until about season 15 and the
+        // retained set drifts above it after that (10,199 against 8,192 at season 20). That is a
+        // far smaller leak than the one this prune closed, and narrowing it needs the portal
+        // system's own retention rule rather than a guess from outside it.
+        for (playerID, career) in state.people.playerCareers where !career.portalWindows.isEmpty {
+            protectedIDs.insert(playerID)
+        }
+        return protectedIDs
     }
 
     private static func advanceCollegePlayers(

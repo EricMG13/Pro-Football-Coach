@@ -970,6 +970,7 @@ func runM1SoakTests(seasons: Int) {
             expect(Set(state.competition.archives.map(\.collegeChampionID)).count >= 3)
             expect(Set(state.competition.archives.map(\.proChampionID)).count >= 3)
 
+            assertSaveSizeIsBounded(checkpointSizes, seasons: seasons, label: "M1")
             let elapsed = started.duration(to: clock.now)
             print("M1 soak: \(seasons) seasons in \(elapsed); save checkpoints \(checkpointSizes)")
         }
