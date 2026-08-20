@@ -20,6 +20,7 @@ public enum IntentResolutionError: Error, Equatable {
     case tacticalCalendarMismatch
     case careerArcUnavailable
     case careerCalendarMismatch
+    case coachSeasonRecordingFailed
     case professionalManagementUnavailable
     case professionalCalendarMismatch
     case professionalTransactionFailed(ProManagementError)
@@ -383,8 +384,19 @@ public enum IntentResolver {
                     }
                 }
             case .resign:
+                let departingSeason = CareerControlSystem.pendingCoachSeason(
+                    after: request.calendar,
+                    in: nextState
+                )
                 applied = nextState.careerArc.resign(at: request.calendar)
                 if applied {
+                    guard let departingSeason,
+                          nextState.people.recordCoachSeason(
+                              departingSeason.record,
+                              for: departingSeason.coachID
+                          ) else {
+                        throw IntentResolutionError.coachSeasonRecordingFailed
+                    }
                     // Separation is atomic: a seeking coach must not retain authority over the
                     // former programme while the carousel evaluates the next job, and must not
                     // stay on its staff as its head coach either.

@@ -892,6 +892,10 @@ public struct StaffCareerAssignment: Codable, Sendable, Equatable {
 /// current season, and a `SeasonArchive` keeps champions and rankings but no per-organisation
 /// win-loss, so there is nothing to compute a career record from once a season is archived.
 public struct CoachSeasonRecord: Codable, Sendable, Equatable {
+    private static var maximumGames: Int {
+        max(CollegeRules.maximumGamesPerSeason, ProRules.maximumGamesPerSeason)
+    }
+
     public let season: Int
     public let organisationID: UUID
     public let wins: Int
@@ -899,11 +903,22 @@ public struct CoachSeasonRecord: Codable, Sendable, Equatable {
     public let ties: Int
 
     public init(season: Int, organisationID: UUID, wins: Int, losses: Int, ties: Int) {
-        self.season = max(0, season)
+        precondition(
+            season >= 0
+                && wins >= 0
+                && losses >= 0
+                && ties >= 0
+                && wins <= Self.maximumGames
+                && losses <= Self.maximumGames
+                && ties <= Self.maximumGames
+                && wins + losses + ties <= Self.maximumGames,
+            "Coach season records require a supported season and game total."
+        )
+        self.season = season
         self.organisationID = organisationID
-        self.wins = max(0, wins)
-        self.losses = max(0, losses)
-        self.ties = max(0, ties)
+        self.wins = wins
+        self.losses = losses
+        self.ties = ties
     }
 
     public init(from decoder: any Decoder) throws {
@@ -912,7 +927,14 @@ public struct CoachSeasonRecord: Codable, Sendable, Equatable {
         let decodedWins = try container.decode(Int.self, forKey: .wins)
         let decodedLosses = try container.decode(Int.self, forKey: .losses)
         let decodedTies = try container.decode(Int.self, forKey: .ties)
-        guard decodedSeason >= 0, decodedWins >= 0, decodedLosses >= 0, decodedTies >= 0 else {
+        guard decodedSeason >= 0,
+              decodedWins >= 0,
+              decodedLosses >= 0,
+              decodedTies >= 0,
+              decodedWins <= Self.maximumGames,
+              decodedLosses <= Self.maximumGames,
+              decodedTies <= Self.maximumGames,
+              decodedWins + decodedLosses + decodedTies <= Self.maximumGames else {
             throw DecodingError.dataCorruptedError(
                 forKey: .season,
                 in: container,
@@ -940,9 +962,18 @@ public struct StaffCareerRecord: Codable, Sendable, Equatable, Identifiable {
         assignments: [StaffCareerAssignment] = [],
         seasonRecords: [CoachSeasonRecord] = []
     ) {
+        let boundedRecords = Array(
+            seasonRecords.suffix(PeopleRules.careerSeasonHistoryLimit)
+        )
+        precondition(
+            zip(boundedRecords, boundedRecords.dropFirst()).allSatisfy {
+                $0.season < $1.season
+            },
+            "Coach season records must be strictly chronological."
+        )
         self.staffID = staffID
         self.assignments = Array(assignments.suffix(PeopleRules.careerSeasonHistoryLimit))
-        self.seasonRecords = Array(seasonRecords.suffix(PeopleRules.careerSeasonHistoryLimit))
+        self.seasonRecords = boundedRecords
     }
 
     mutating func record(_ assignment: StaffCareerAssignment) {

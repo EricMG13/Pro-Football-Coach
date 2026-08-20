@@ -69,17 +69,20 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > position coaches stay. Canon was amended before the code. It is a promotion rule and not a
 > separation rule: a coach who resigns or is fired takes nobody. Commit `c311018`.
 >
-> **What is verified.** Debug only. `--career-arc` went from 8 tests / 49 checks to 19 / 333. Every
+> **What is verified.** `--career-arc` is green at 23 tests / 360 checks. Every
 > named suite is green on the final tree — `--career-control`, `--coaching-tree`,
 > `--professional-career-session`, `--history-archive` — along with `--core-contracts`,
 > `--architecture-only`, `--screen-read-models`, `--history-read-model`, `--people-lifecycle`,
 > `--career-portal-decisions`, `--weekly-authority`, `--rivalry-order`, `--season-rollover`,
-> `--pro-week-walk` and `--m3-soak`. `--m7-gate` passed its 65 assertions, but only in **debug** —
+> `--pro-week-walk` and `--m3-soak`. This follow-up also built the full package in release and ran
+> `--season-rollover` there (13 tests / 96 checks). `--m7-gate` passed its 65 assertions, but only in
+> **debug** —
 > the gate needs `swift run -c release -Xswiftc -enable-testing`, and in debug its `weekMeanMs` and
 > save-size figures are not the gate's numbers. A release run was started and died during the cold
 > build without completing, so the gate is **unverified in release on this branch**.
 >
-> **What is not verified.** No release build, no simulator walkthrough, no `04b` audit. These are
+> **What is not verified.** No full no-argument release verification, no simulator walkthrough, no
+> `04b` audit. These are
 > engine and projection changes with no view-layer surface, but nothing here has been seen running.
 >
 > **The coverage lesson, again.** All five named suites were green through every one of these
@@ -93,11 +96,14 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 >
 > **Owner decisions now implemented.** The coach's per-season wins-losses-ties line is recorded on
 > the played coach at the week-21 boundary before the career evaluation can clear a fired job, then
-> applied after the season transition's wholesale `PeopleState` replacement. It is bounded beside
-> staff assignments, save-compatible, and carries through promotion. The same boundary now builds
-> the coaching-tree projection and removes seatless staff and their career records unless the tree
-> names them as a mentor or disciple; the played coach is always protected. Focused checks are
-> `--coach-season-record` (1 test / 17 checks) and `--staff-pruning` (1 test / 6 checks), both green.
+> applied after the season transition's wholesale `PeopleState` replacement. Resignation and
+> in-season firing now record the partial season before the job disappears, and a rejected write
+> aborts the transaction instead of silently dropping history. Records are bounded, constructor and
+> decoder invariants agree, and the line carries through promotion. The same boundary now builds the
+> coaching-tree projection and removes seatless staff and their career records unless a seat, the
+> coaching tree, retained history, or the played career still names them. Focused checks are
+> `--coach-season-record` (3 tests / 22 checks) and `--staff-pruning` (1 test / 8 checks), both green;
+> staff pruning is also registered in the default release lane.
 > The implementation and verification handoff is in
 > `docs/plans/2026-08-20-coach-career-record-handoff.md`.
 >

@@ -187,6 +187,7 @@ public enum SeasonLifecycleSystem {
         )
         let protectedIDs = namedByHistory
             .union(seated)
+            .union(retainedIdentityIDs(in: state))
             .union(state.career.coachID.map { [$0] } ?? [])
         for staffID in staff.ids where !protectedIDs.contains(staffID) {
             _ = staff.remove(staffID)
