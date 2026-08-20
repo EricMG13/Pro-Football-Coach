@@ -27,6 +27,12 @@ public enum ProRules {
     /// season lands on `02` section 2.3's ~21 weeks exactly.
     public static let bracketTeams = 8
 
+    /// The per-conference half of `bracketTeams` -- named separately because the bracket is seeded
+    /// within each conference, not by overall rank (`PostseasonSystem.advance`'s pro quarterfinal
+    /// case takes the top `playoffSeedsPerConference` of each conference's own ranking, not the
+    /// top `bracketTeams` overall). `bracketTeams == conferenceCount * playoffSeedsPerConference`.
+    public static let playoffSeedsPerConference = 4
+
     public static var bracketRounds: Int { bracketTeams.trailingZeroBitCount }
 
     public static var seasonWeeks: Int { regularSeasonWeeks + bracketRounds }

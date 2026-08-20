@@ -2620,6 +2620,27 @@ func runContractTests() {
                        "switch below, so this branch is dead code, not a route")
         }
 
+        test("the pro playoff seed provider reads the same constant PostseasonSystem seeds by") {
+            // ReadModelProviderTests.swift separately re-derives the seed algorithm and checks the
+            // provider's output against it -- that catches a typo in the provider's own logic, but
+            // not the provider and PostseasonSystem quietly settling on two different numbers for
+            // "how many seeds per conference." This is the complementary check: both files must
+            // spell the same named constant, so a future change to one automatically reaches the
+            // other rather than needing to be remembered twice.
+            let postseason = swiftFiles(under: "Sources/FootballSimCore/Competition")
+                .first { $0.path.hasSuffix("/PostseasonSystem.swift") }?.text ?? ""
+            let provider = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldCompetitionProvider.swift") }?.text ?? ""
+            expect(!postseason.isEmpty, "PostseasonSystem.swift must exist")
+            expect(!provider.isEmpty, "CoachWorldCompetitionProvider.swift must exist")
+            expect(postseason.contains("ProRules.playoffSeedsPerConference"),
+                   "PostseasonSystem must seed the pro bracket from ProRules.playoffSeedsPerConference, "
+                       + "not a literal, or this scan cannot prove the two agree")
+            expect(provider.contains("ProRules.playoffSeedsPerConference"),
+                   "CoachWorldCompetitionProvider must compute pro seeds from "
+                       + "ProRules.playoffSeedsPerConference, not a second, independently-chosen number")
+        }
+
         test("RootView commits to dark on both its DEBUG and non-DEBUG branches") {
             let root = swiftFiles(under: "Sources/ProFootballCoachUI")
                 .first { $0.path.hasSuffix("/RootView.swift") }?.text ?? ""

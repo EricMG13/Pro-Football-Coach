@@ -138,6 +138,9 @@ public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
                     )
                     .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                if let seed = row.seed {
+                    FloodlitFlag("SEED \(seed)", tint: palette.stateLive.color, palette: palette)
+                }
                 Text(row.record)
                     .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                     .foregroundStyle(palette.contentSecondary.color)
@@ -165,6 +168,7 @@ public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
         .disabled(teamID == nil)
         .accessibilityLabel(
             "Number \(row.rank), \(row.team.name), \(row.record)"
+                + (row.seed.map { ", seed \($0) of \(row.qualifyingSlots)" } ?? "")
                 + (row.isControlled ? ". Your programme." : "")
         )
     }

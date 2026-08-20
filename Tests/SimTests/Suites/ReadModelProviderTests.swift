@@ -1074,6 +1074,43 @@ func runReadModelProviderTests() {
             })
         }
 
+        test("a pro ranking's seed matches an independent re-derivation of the same algorithm") {
+            // Re-implements the selection PostseasonSystem.advance's own pro quarterfinal case
+            // uses (PostseasonSystem.swift): per conference, filter the whole-tier ranking down to
+            // that conference's members (preserving order) and take the top
+            // playoffSeedsPerConference. Written independently here rather than shared with the
+            // provider, so a typo in one is unlikely to appear in the other -- this cannot prove
+            // the provider matches what a live postseason transition actually pairs, only that its
+            // computation matches a clean restatement of the documented rule; the accompanying
+            // source-scan test below is what actually guards the provider and PostseasonSystem
+            // against drifting onto two different constants.
+            let (state, _) = try professionalCareer(seed: 4_017)
+            let overview = CoachWorldReadModelProvider.competitionOverview(tier: .pro, from: state)
+            let order = state.competition.rankings[.pro] ?? []
+            expect(!order.isEmpty, "a professional career produced no pro ranking to check")
+
+            var expectedSeeds: [UUID: Int] = [:]
+            for conference in state.league.conferences(in: .pro) {
+                let entrants = order.filter(conference.memberIDs.contains)
+                    .prefix(ProRules.playoffSeedsPerConference)
+                for (index, id) in entrants.enumerated() { expectedSeeds[id] = index + 1 }
+            }
+
+            for row in overview.rankings {
+                guard let id = UUID(uuidString: row.id) else {
+                    expect(false, "ranking row \(row.id) is not a valid UUID")
+                    continue
+                }
+                expectEqual(row.seed, expectedSeeds[id],
+                            "\(row.team.name)'s seed disagrees with PostseasonSystem's own selection")
+                expectEqual(row.isQualifying, expectedSeeds[id] != nil,
+                            "\(row.team.name)'s isQualifying disagrees with whether it actually seeded")
+                expectEqual(row.qualifyingSlots, ProRules.playoffSeedsPerConference)
+            }
+            expect(overview.rankings.contains { $0.isQualifying },
+                   "at least one team in a full pro league must qualify, or this test proves nothing")
+        }
+
         test("schedule rows preserve fixture identity and controlled-team context") {
             let (state, _) = try startedCareer(seed: 4_015)
             guard let control = state.career.college,
