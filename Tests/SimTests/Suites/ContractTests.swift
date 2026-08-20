@@ -145,17 +145,17 @@ private func importsUIFramework(_ line: String) -> Bool {
     return uiModules.contains(String(rest.prefix { $0.isLetter || $0.isNumber || $0 == "_" }))
 }
 
-/// Every Swift file anywhere under `Sources/` that brings a UI framework into scope.
+/// Every production Swift file that brings a UI framework into scope.
 ///
-/// The class "code that draws" defined by what makes code draw, so a target added tomorrow is
-/// covered the day it is added rather than the day someone remembers it (`CLAUDE.md`: a test's
-/// coverage boundary must not become the quality boundary).
+/// SwiftPM production targets live under `Sources`; the Xcode app's `@main` shell lives under
+/// `App`. Scanning both production roots makes the class "code that draws" follow the build rather
+/// than a particular feature module.
 /// Cached: `AccessibilityReflowTests`, `ReduceMotionContractTests` and the design-contract scans each
 /// call this, and `floodlitConvertedTypes()` calls it again inside its own fixpoint loop — uncached,
 /// one full `--design-contracts` run re-read the same ~80 files roughly a dozen times. A single
 /// process runs the whole suite once, so a static cache cannot see a stale tree mid-run.
 private let uiFrameworkFilesCache: [(path: String, text: String)] = {
-    swiftFiles(under: "Sources").filter { file in
+    ["Sources", "App"].flatMap { swiftFiles(under: $0) }.filter { file in
         file.text.split(separator: "\n").contains { importsUIFramework(String($0)) }
     }
 }()
@@ -573,7 +573,7 @@ func runContractTests() {
             // views is indistinguishable from a scan that finds them clean.
             for known in [
                 "CoachingHQView", "RosterView", "MatchDayView", "PlayerProfileView",
-                "RecruitingBoardView", "RootView", "CoachWorldAppRootView",
+                "RecruitingBoardView", "RootView", "CoachWorldAppRootView", "ProFootballCoachApp",
             ] {
                 expect(views.contains { $0.path.hasSuffix("/\(known).swift") },
                        "\(known).swift is not in the UI-importing enumeration")
