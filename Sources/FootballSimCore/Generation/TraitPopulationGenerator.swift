@@ -9,7 +9,12 @@ import Foundation
 /// flavor-only data.
 enum TraitPopulationGenerator {
     /// Already in `Trait.allCases` order. Add a case only when its mechanical consumer is live.
-    private static let activeTraits: [Trait] = [.restless]
+    ///
+    /// `.ironman` joined when `PeopleLifecycleSystem.processHealth` began shortening its injuries
+    /// through `PeopleRules.injuryWeeks`. Until then the trait was implemented and uncalled, so it
+    /// was correctly withheld here — a populated `ironman` with no consumer is the flavour-only data
+    /// this gate exists to refuse.
+    private static let activeTraits: [Trait] = [.ironman, .restless]
 
     static func traits(for id: UUID) -> [Trait] {
         let personSeed = SeededRandom.seed(from: id)

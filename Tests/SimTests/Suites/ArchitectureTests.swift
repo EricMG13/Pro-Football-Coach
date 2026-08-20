@@ -29,9 +29,18 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
 /// The advanced pin moved again when completed summaries gained an explicit abstracted/detailed
 /// source discriminator, so the new controlled detailed path cannot be mistaken for an abstract
 /// result after reload.
-private let pinnedRootFingerprint: UInt64 = 3_251_160_748_987_753_141
+/// Both pins moved on 2026-08-20, when `ironman` was promoted into
+/// `TraitPopulationGenerator.activeTraits`. `PeopleLifecycleSystem.processHealth` began shortening
+/// its injuries through `PeopleRules.injuryWeeks`, which made the trait's mechanical consumer live
+/// and so satisfied the generator's own rule for populating it — around eight percent of every
+/// generated player now carries a trait they did not. That is a change to the generated *state*,
+/// the case this pin exists to notice, so re-pinning is the correct response. Determinism itself did
+/// not move: "the same seed produces byte-identical root state" stayed green, and both values below
+/// were reproduced identically in three independent release-process invocations before being
+/// written here.
+private let pinnedRootFingerprint: UInt64 = 3_703_195_734_103_618_125
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 11_229_646_605_763_785_595
+private let pinnedAdvancedRootFingerprint: UInt64 = 3_328_003_772_370_794_643
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///

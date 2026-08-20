@@ -567,6 +567,188 @@ func runPeopleLifecycleTests() {
             })
         }
     }
+
+    suite("Lifecycle distributions hold their bands") {
+        test("the age curve and the injured share hold their bands across a long run") {
+            var state = GameState.bootstrap(seed: 84_010)
+            let measured = [1, 3, 6, 10]
+            var injuries: [(ironman: Bool, severity: InjurySeverity, weeks: Int)] = []
+            checkProAgeCurve(state, season: 0)
+            for season in 1...(measured.max() ?? 1) {
+                for _ in 0..<SharedRules.inSeasonWeeks {
+                    let transition = try WorldScheduler.advanceWeek(state)
+                    state = transition.state
+                    for event in transition.emittedEvents {
+                        guard case let .playerInjured(playerID, _, severity, weeks)
+                            = event.payload else { continue }
+                        injuries.append((
+                            state.players[playerID]?.has(.ironman) ?? false,
+                            severity,
+                            weeks
+                        ))
+                    }
+                    // Sampled in-season rather than at the boundary the age curve uses: the injured
+                    // share is a steady state that fatigue has to build up to, and week 1 of a new
+                    // season measures an offseason population that no weekly draw has touched.
+                    if measured.contains(season), state.calendar.week == injurySampleWeek {
+                        checkInjuredShare(state, season: season)
+                    }
+                }
+                guard measured.contains(season) else { continue }
+                checkProAgeCurve(state, season: season)
+            }
+            checkIronmanShortensInjuries(injuries)
+        }
+    }
+}
+
+// MARK: - The professional age curve band
+
+// `01` §6.5 bands the match engine and nothing bands the people model. The soak asserted only that
+// every professional is at least 22 and short of `declineAge + guaranteedRetirementYearsAfterDecline`
+// — a bound, which a league of nothing but 23-year-olds and a league of nothing but 33-year-olds
+// both satisfy. Two limbs, both stated before either was measured:
+//
+// **Mean age, 25.0…27.5.** External anchor: league-wide mean roster age in the professional game
+// sits near 26 and has been stable for decades. No page was retrieved for that figure in this
+// environment, so by `01` §0.1 it grades `provisional [U]` and the band carries roughly ±1.3 years
+// rather than a tight interval. Its upper limb is also the model's own ceiling, derived below.
+//
+// **Share at or past their position's decline age, 0.08…0.30.** Derived `[P]` from constants this
+// repo already fixes. `SeasonLifecycleSystem.retires` escalates the hazard: a player k years past
+// decline retires with probability `(k + 1) * retirementProbabilityPerYearAfterDecline`, so survival
+// runs 0.86, 0.72, 0.58, 0.44, 0.30, 0.16, 0.02 and reaches zero at k = 7 — inside
+// `guaranteedRetirementYearsAfterDecline`, which is therefore a backstop rather than the binding
+// constraint. Expected presence past decline is the sum of P(present at k) ≈ 3.04 seasons, against a
+// pre-decline span of `D - 22` ≈ 8.4 seasons at the playable-minimum-weighted decline age of ≈ 30.4.
+// That gives a ceiling share of 3.04 / 11.44 ≈ 0.27 and a ceiling mean age of ≈ 27.3. Every other
+// exit the professional market owns — cuts, contract expiry, the draft — removes veterans faster
+// than rookies, so the realised figures must sit below those ceilings. The floor is the point at
+// which the veteran tail has effectively stopped existing.
+//
+// Asserted at several season indices rather than once at the end, for the reason `ProSoakTests`
+// gives: a check that fires only at the finish says something drifted without saying when.
+
+private let proMeanAgeBand: ClosedRange<Double> = 25.0...27.5
+private let proPastDeclineShareBand: ClosedRange<Double> = 0.08...0.30
+
+/// Both limbs of the age-curve band, over the active professional rosters.
+///
+/// Practice squads are excluded on purpose: the anchor is a 53-man mean, and folding in a
+/// developmental pool of rookies would move the measured number for a reason the band is not about.
+func checkProAgeCurve(_ state: GameState, season: Int) {
+    let players = state.proTeams.values.flatMap(\.rosterIDs).compactMap { state.players[$0] }
+    guard !players.isEmpty else {
+        expect(false, "season \(season): no professional players to measure an age curve over")
+        return
+    }
+    let mean = Double(players.reduce(0) { $0 + $1.age }) / Double(players.count)
+    let pastDeclineShare = Double(players.filter(\.isDeclining).count) / Double(players.count)
+    print(String(
+        format: "pro age curve: season %d, n %d, mean %.2f, past-decline share %.3f",
+        season, players.count, mean, pastDeclineShare
+    ))
+    expect(proMeanAgeBand.contains(mean), String(
+        format: "season %d: professional mean age %.2f is outside the band %.1f…%.1f",
+        season, mean, proMeanAgeBand.lowerBound, proMeanAgeBand.upperBound
+    ))
+    expect(proPastDeclineShareBand.contains(pastDeclineShare), String(
+        format: "season %d: %.3f of professionals are at or past their decline age, "
+            + "outside the band %.2f…%.2f",
+        season, pastDeclineShare,
+        proPastDeclineShareBand.lowerBound, proPastDeclineShareBand.upperBound
+    ))
+}
+
+// MARK: - The injured-share band
+
+// What share of active players is carrying an injury in a given week. The soak asserted `> 0` and
+// `< 10%` — a bound so wide that a model producing 0.5% and a model producing 9% both satisfy it,
+// which is to say it detects only "injuries exist at all".
+//
+// **Band 0.015…0.055, derived `[P]` from constants this repo already fixes.**
+// `PeopleLifecycleSystem.processHealth` draws once per player who appeared in last week's completed
+// game, at `PeopleRules.injuryProbability` = `0.001 + fatigue * 0.000_15 + (99 - durability) *
+// 0.000_08`. Fatigue nets `gameFatigueLoad - weeklyFatigueRecovery` = +4 a week plus up to
+// `statisticalWorkloadFatigueMaximum`, so by the sample week a playing population sits somewhere
+// around 45…70 against a generated durability centred near 70 — a weekly probability of roughly
+// 0.008…0.014. Mean weeks lost is `0.72 * 1.5 + 0.23 * 4.5 + 0.05 * 10.5` = 2.64 from
+// `PeopleRules.injurySeverity`'s ladder. An injured player takes no further draw, so the steady
+// state is close to probability times duration: 0.021…0.037. The band is widened either side
+// because fatigue is a distribution rather than a point, a bye week removes a whole team from the
+// draw, and the postseason shrinks the participating population to a bracket.
+//
+// **This band describes the model as specified, not the sport.** Real football carries a materially
+// higher unavailable share than 2-4% in a given week. That gap is a design question for the owner —
+// `02` §11.3.3 and the injury constants would both have to move — and it is deliberately not
+// resolved by loosening a test.
+
+/// Late enough for fatigue to have built, early enough to be before the season boundary.
+private let injurySampleWeek = 12
+private let injuredShareBand: ClosedRange<Double> = 0.015...0.055
+
+func checkInjuredShare(_ state: GameState, season: Int) {
+    let activeIDs = state.programmes.values.flatMap(\.rosterIDs)
+        + state.proTeams.values.flatMap(\.rosterIDs)
+    guard !activeIDs.isEmpty else {
+        expect(false, "season \(season): no active players to measure an injured share over")
+        return
+    }
+    let injured = activeIDs.filter { state.people.playerLifecycle[$0]?.injury != nil }.count
+    let share = Double(injured) / Double(activeIDs.count)
+    print(String(
+        format: "injured share: season %d week %d, n %d, injured %d, share %.4f",
+        season, injurySampleWeek, activeIDs.count, injured, share
+    ))
+    expect(injuredShareBand.contains(share), String(
+        format: "season %d week %d: injured share %.4f is outside the band %.3f…%.3f",
+        season, injurySampleWeek, share, injuredShareBand.lowerBound, injuredShareBand.upperBound
+    ))
+}
+
+// MARK: - Ironman has an effect, not just a spelling
+
+// `02` §11.3.3: "§5 requires every trait to have mechanical bite in a specific system", and Ironman
+// names Injury. It had none — `PeopleRules.injuryWeeks` implemented the trait and nothing in
+// `Sources/` called it, while the suite asserted the trait's *storage* (canonical order, dedupe,
+// round-trip) and never its *effect*. That is the coverage boundary `CLAUDE.md` names becoming the
+// quality boundary: a generated Ironman was a label.
+//
+// Enumerated by construction over every injury the run emitted rather than over a hand-picked case,
+// so an injury the model learns to produce tomorrow is covered the day it appears. Both arms are
+// asserted non-empty, because a check over an empty set is a check that cannot fail.
+
+/// Every injury the long run produced, checked against the ladder its trait state implies.
+func checkIronmanShortensInjuries(_ injuries: [(ironman: Bool, severity: InjurySeverity, weeks: Int)]) {
+    func fullRange(_ severity: InjurySeverity) -> ClosedRange<Int> {
+        switch severity {
+        case .minor: return PeopleRules.minorInjuryWeeks
+        case .moderate: return PeopleRules.moderateInjuryWeeks
+        case .severe: return PeopleRules.severeInjuryWeeks
+        }
+    }
+    let ironmanInjuries = injuries.filter(\.ironman)
+    let ordinaryInjuries = injuries.filter { !$0.ironman }
+    expect(!ordinaryInjuries.isEmpty, "the run produced no injury to an ordinary player")
+    expect(!ironmanInjuries.isEmpty,
+           "the run produced no injury to an ironman, so the trait's effect went unmeasured")
+    print("ironman: \(ironmanInjuries.count) of \(injuries.count) injuries went to an ironman")
+
+    for injury in ordinaryInjuries {
+        expect(fullRange(injury.severity).contains(injury.weeks),
+               "an ordinary \(injury.severity) injury lasted \(injury.weeks) weeks, "
+                   + "outside \(fullRange(injury.severity))")
+    }
+    for injury in ironmanInjuries {
+        let expected = Set(fullRange(injury.severity).map {
+            PeopleRules.injuryWeeks($0, ironman: true)
+        })
+        expect(expected.contains(injury.weeks),
+               "an ironman \(injury.severity) injury lasted \(injury.weeks) weeks, which no "
+                   + "draw from \(fullRange(injury.severity)) shortens to — the trait is not applied")
+        expect(injury.weeks <= fullRange(injury.severity).upperBound,
+               "an ironman injury outlasted the unshortened ladder")
+    }
 }
 
 func runM2SoakTests(seasons: Int) {
@@ -630,6 +812,7 @@ func runM2SoakTests(seasons: Int) {
                 }
                 expect((45...85).contains(collegeOverall.reduce(0, +) / collegeOverall.count))
                 expect((55...90).contains(proOverall.reduce(0, +) / proOverall.count))
+                checkProAgeCurve(state, season: season)
                 let report = WorldIntegrity.check(state)
                 expect(report.isValid, report.issues.map(\.description).joined(separator: ", "))
 

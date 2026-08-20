@@ -128,8 +128,12 @@ public enum PeopleRules {
 
     /// What `ironman` is worth: a share of the weeks lost, never below one.
     ///
-    /// `02` §11.3.3 says the trait "recovers faster, misses fewer weeks". This is the second half of
-    /// that sentence, and the first half stays with recovery in the lifecycle system.
+    /// `02` §11.3.3 gives the trait one system — Injury — and one effect, written there as "recovers
+    /// faster, misses fewer weeks". That is one mechanism said twice, not two: a shorter stored
+    /// duration *is* both halves, and `recoverWeek` decrementing faster on top of it would pay a
+    /// single trait against a single system twice. An earlier version of this comment split the
+    /// sentence in two and promised the first half to recovery, which is why the trait spent its
+    /// life inert — `PeopleLifecycleSystem.processHealth` is the one caller, and now calls it.
     public static let ironmanInjuryWeekShare = 0.6
 
     public static func injuryWeeks(_ weeks: Int, ironman: Bool) -> Int {

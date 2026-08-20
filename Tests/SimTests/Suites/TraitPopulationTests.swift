@@ -98,7 +98,7 @@ func runTraitPopulationTests() {
             )
         }
 
-        test("every generation path populates restless without emitting inactive traits") {
+        test("every generation path populates each active trait without emitting inactive ones") {
             let seed: UInt64 = 84_002
             let world = LeagueGenerator.generate(seed: seed)
             let population = RosterPopulationGenerator.generate(
@@ -153,14 +153,21 @@ func runTraitPopulationTests() {
                 let populated = Set(traitLists.flatMap { $0 })
                 expect(populated.isSubset(of: activePopulationTraits),
                        "\(label) generation emitted an inactive trait: \(populated)")
-                expect(traitLists.contains { $0.contains(.restless) },
-                       "\(label) generation produced no restless evidence")
+                // Enumerated from the active set rather than naming one trait, so a trait promoted
+                // here tomorrow is covered the day it is promoted rather than the day somebody
+                // remembers to add a line — the coverage boundary `CLAUDE.md` forbids becoming the
+                // quality boundary. This read `.contains(.restless)` while restless was the only
+                // active trait, and ironman would have entered generation unmeasured.
+                for trait in activePopulationTraits {
+                    expect(traitLists.contains { $0.contains(trait) },
+                           "\(label) generation produced no \(trait) evidence")
+                }
             }
             expect(walkOns.indices.allSatisfy { walkOns[$0].traits == replacements[$0].traits },
                    "rating penalties changed the deterministic trait substream")
         }
 
-        test("restless follows eight-percent direction and inactive traits stay unpopulated") {
+        test("each active trait follows eight-percent direction and inactive ones stay unpopulated") {
             expectEqual(PeopleRules.traitPopulationProbability, 0.08)
             let seed: UInt64 = 84_003
             let world = LeagueGenerator.generate(seed: seed)
@@ -177,10 +184,12 @@ func runTraitPopulationTests() {
             )
             let traitLists = population.players.map(\.traits) + prospects.map(\.traits)
 
-            let restlessRate = Double(traitLists.filter { $0.contains(.restless) }.count)
-                / Double(traitLists.count)
-            expectIn(restlessRate, 0.065...0.095,
-                     "restless did not follow the 8% population direction")
+            for trait in activePopulationTraits.sorted(by: { $0.rawValue < $1.rawValue }) {
+                let rate = Double(traitLists.filter { $0.contains(trait) }.count)
+                    / Double(traitLists.count)
+                expectIn(rate, 0.065...0.095,
+                         "\(trait) did not follow the 8% population direction")
+            }
             for trait in futureSimulationTraits {
                 expect(!traitLists.contains { $0.contains(trait) },
                        "inactive Future Simulation Contract trait \(trait) was populated")
@@ -346,5 +355,5 @@ private func isCanonicalTraits(_ traits: [Trait]) -> Bool {
     traits == Trait.allCases.filter(traits.contains)
 }
 
-private let activePopulationTraits: Set<Trait> = [.restless]
+private let activePopulationTraits: Set<Trait> = [.ironman, .restless]
 private let futureSimulationTraits = Trait.allCases.filter { !activePopulationTraits.contains($0) }
