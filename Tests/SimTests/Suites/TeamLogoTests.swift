@@ -3,6 +3,7 @@ import CryptoKit
 import Foundation
 import FootballSimCore
 import ImageIO
+import UniformTypeIdentifiers
 
 enum TeamLogoFamily: String, Codable, CaseIterable {
     case animalCreature
@@ -46,7 +47,10 @@ private func loadTeamLogoManifest() throws -> TeamLogoManifest {
     )
 }
 
-func runTeamLogoManifestExport() throws {
+func runTeamLogoManifestExport(force: Bool = false) throws {
+    guard force || !FileManager.default.fileExists(atPath: teamLogoManifestURL.path) else {
+        throw CocoaError(.fileWriteFileExists)
+    }
     let state = GameState.bootstrap(seed: 20_260_812)
     let ids = Set(state.programmes.ids).union(state.proTeams.ids)
     let families = TeamLogoFamily.allCases
@@ -84,6 +88,14 @@ func runTeamLogoManifestExport() throws {
 
 func runTeamLogoManifestTests() {
     suite("Team logo manifest") {
+        test("export refuses to overwrite the committed manifest") {
+            do {
+                try runTeamLogoManifestExport()
+                expect(false, "export unexpectedly overwrote the manifest")
+            } catch let error as CocoaError {
+                expectEqual(error.code, .fileWriteFileExists)
+            }
+        }
         test("manifest exactly matches the canonical world") {
             let manifest = try loadTeamLogoManifest()
             let world = GameState.bootstrap(seed: manifest.worldSeed)
@@ -179,9 +191,12 @@ func runTeamLogoAssetTests(family rawValue: String) {
                 let url = pngURL(for: record)
                 expect(FileManager.default.fileExists(atPath: url.path), "missing \(url.path)")
                 guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                      let sourceType = CGImageSourceGetType(source),
                       let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)
                         as? [CFString: Any],
                       let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { continue }
+                expectEqual(sourceType as String, UTType.png.identifier,
+                       "non-PNG source in \(record.filename)")
                 expectEqual(properties[kCGImagePropertyPixelWidth] as? Int, Optional(1024))
                 expectEqual(properties[kCGImagePropertyPixelHeight] as? Int, Optional(1024))
                 expectEqual(properties[kCGImagePropertyHasAlpha] as? Bool, Optional(true))
