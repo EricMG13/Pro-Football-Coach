@@ -169,7 +169,7 @@ public enum ScheduleGenerator {
     /// strand the final two on a pairing they have already played; eight attempts then all
     /// dead-end and the whole tier drops to `roundRobinFallback`, whose byes all land in the one
     /// leftover week. That is a legal slate by game count and an illegal one by bye distribution
-    /// -- 32 professional teams idle in the same week -- and until the season-by-seed sweep in
+    /// — 32 professional teams idle in the same week — and until the season-by-seed sweep in
     /// `CompetitionTests` there was nothing that looked at any season but the first.
     ///
     /// Taking the member with the fewest legal partners first spends the scarce options while
