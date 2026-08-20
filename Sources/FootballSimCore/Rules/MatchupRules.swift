@@ -115,6 +115,26 @@ public enum MatchupRules {
 
     /// Yards per unit of lane leverage.
     public static let laneYardScale = 3.0
+
+    /// What a neutral carry gains before leverage or contact.
+    ///
+    /// **Without this the run had no middle.** `Leverage.logistic` returns exactly zero for an even
+    /// matchup, by design and by `03` §1.1, so `lane * laneYardScale` was zero and a carry's whole
+    /// distribution came from a break-tackle chain gated at `breakTackleThreshold`. The harness read
+    /// 1.35 yards per carry against a real 4.3. A back handed the ball with his line neither winning
+    /// nor losing still gains ground: the offence knows the play and the defence does not.
+    public static let baselineRunYards = 3.0
+
+    /// Per-carry scatter, before contact.
+    ///
+    /// **Without this the run had no shape.** `lane` is the mean of `runLaneMatchups` duels, so its
+    /// own deviation is `leverageNoise` over root three — about 0.22, which `laneYardScale` turns
+    /// into two thirds of a yard. Real carries scatter by about six. Averaging the duels destroys
+    /// the variance by construction, and no value of `laneYardScale` restores it without also
+    /// making a good line gain twenty yards a carry: leverage has to *shift* a distribution rather
+    /// than *be* one. `docs/STATUS.md` reached the same conclusion from the other end — "the next
+    /// attempt should widen the *model*, not the grid".
+    public static let runYardDeviation = 3.6
     /// Outside runs multiply the lane result, trading certainty for the edge.
     public static let outsideRunVariance = 1.35
     public static let crashRunBonus = 0.10

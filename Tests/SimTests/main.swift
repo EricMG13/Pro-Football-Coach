@@ -63,8 +63,11 @@ if CommandLine.arguments.contains("--catalog") {
     runTacticalStateTests()
 } else if CommandLine.arguments.contains("--match-reducer") {
     runMatchReducerTests()
+} else if CommandLine.arguments.contains("--snap-resolver") {
+    runSnapResolverTests()
 } else if CommandLine.arguments.contains("--engine") {
     runEngineTests()
+    runSnapResolverTests()
     runGameLoopTests()
 } else if CommandLine.arguments.contains("--m3-soak") {
     runM3CollegeSoakTests()

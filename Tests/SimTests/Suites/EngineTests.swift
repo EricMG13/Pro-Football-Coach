@@ -2,8 +2,12 @@ import Foundation
 import FootballSimCore
 
 /// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 151_802_325_001_383_283
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 17_135_830_121_998_607_854
+/// Moved 2026-08-20 when the run resolver gained the structural fix `MatchupRules` documents at
+/// `baselineRunYards`: an even run had no baseline gain, its whole distribution coming from a
+/// break-tackle chain gated well above zero leverage. Both values were reproduced in two
+/// independent release-process invocations of `--game-fingerprints` before being written here.
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 298_526_883_669_804_824
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 15_447_639_113_057_491_367
 
 func runEngineTests() {
     suite("Leverage") {
@@ -305,6 +309,45 @@ func runSnapResolverTests() {
                         "the goal-line branch changed the draw count")
         }
 
+        test("an even run gains football yardage in both its middle and its tail") {
+            // `03` §1.1 wants lane leverage resolving into yards. It did not: `Leverage.logistic`
+            // returns exactly zero for an even matchup, so `lane * laneYardScale` was zero, and a
+            // run's whole distribution came from a break-tackle chain that fires above a 0.40
+            // threshold. The calibration harness read 1.35 yards per carry against a real 4.3 and
+            // an explosive-run rate of 0.033 against a band of 0.105 to 0.130.
+            //
+            // The spread matters as much as the middle, and is the part a baseline alone would not
+            // fix. `lane` is the mean of three duels, so its own standard deviation is the noise
+            // over root three — about 0.22, which `laneYardScale` turns into two thirds of a yard.
+            // Real carries scatter by about six. A model with the right mean and no spread is
+            // `01` §6.3's invisible failure.
+            var rng = SeededRandom(seed: 1_234)
+            var yards: [Double] = []
+            for _ in 0..<6_000 {
+                let outcome = SnapResolver.resolve(
+                    offensiveCall: OffensiveCall(playType: .run),
+                    defensiveCall: DefensiveCall(coverage: .man),
+                    personnel: even, situation: Situation(yardLine: 40),
+                    rules: rules, rng: &rng
+                )
+                guard outcome.result == .gain || outcome.result == .touchdown else { continue }
+                yards.append(Double(outcome.yards))
+            }
+            expect(yards.count > 4_000, "too few clean carries to measure: \(yards.count)")
+            let mean = yards.reduce(0, +) / Double(yards.count)
+            let variance = yards.reduce(0) { $0 + ($1 - mean) * ($1 - mean) }
+                / Double(yards.count - 1)
+            let deviation = variance.squareRoot()
+            expect(mean > 3.6 && mean < 5.0,
+                   "yards per carry is \(mean), which is not football")
+            expect(deviation > 3.0,
+                   "yards per carry scatters by \(deviation), so the run has a mean and no shape")
+            let explosive = Double(yards.filter { $0 >= Double(MatchupRules.explosiveRunYards) }
+                .count) / Double(yards.count)
+            expect(explosive > 0.08,
+                   "explosive-run rate is \(explosive), so the distribution has no right tail")
+        }
+
         test("every pass snap records the matchups that produced it") {
             // D2 rejected the distribution model because it cannot say why. A resolver that
             // returned yardage without the duels would be that model.
@@ -508,6 +551,19 @@ func runSnapResolverTests() {
 }
 
 // MARK: - Drive and game loops
+
+/// Prints the two pinned play-by-play fingerprints, for the same reason
+/// `runArchitectureFingerprintProbe` exists: a deliberate engine change moves them, and the house
+/// rule is that the new value is reproduced in two independent release-process invocations before
+/// it is written down.
+func runGameFingerprintProbe() {
+    let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)
+    let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
+    let pro = GameEngine.play(tier: .pro, home: home, away: away, seed: 12_345)
+    let college = GameEngine.play(tier: .college, home: home, away: away, seed: 12_345)
+    print("pro=\(pro.playByPlayFingerprint)")
+    print("college=\(college.playByPlayFingerprint)")
+}
 
 func runGameLoopTests() {
     let home = testPersonnel(offenseSkill: 74, defenseSkill: 72)

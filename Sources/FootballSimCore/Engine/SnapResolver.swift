@@ -238,8 +238,17 @@ public enum SnapResolver {
         )
         if let pursuitRecord { matchups.append(pursuitRecord) }
 
+        // One draw, unconditionally, so every run leaves the stream in the same place whatever it
+        // produced — the property `EngineTests` asserts for the pass branch and the reason
+        // `Leverage.score` consumes its draw exactly once.
+        let scatter = rng.gaussian(mean: 0, sd: MatchupRules.runYardDeviation)
         let outside = offensiveCall.runGap.isOutside ? MatchupRules.outsideRunVariance : 1.0
-        let gained = Int((lane * MatchupRules.laneYardScale * outside).rounded()) + broken
+        // `outside` multiplies the variable part only. It is named `outsideRunVariance` and it is
+        // variance: applying it to the baseline too would have made an outside run a longer run on
+        // average rather than a streakier one.
+        let preContact = MatchupRules.baselineRunYards
+            + (lane * MatchupRules.laneYardScale + scatter) * outside
+        let gained = Int(preContact.rounded()) + broken
         return finish(gained: gained, situation: situation,
                       elapsed: rules.inBoundsPlaySeconds, matchups: matchups,
                       brokenTackleAttempts: extraPursuitAttempts, carrier: carrier, passer: nil,
