@@ -239,7 +239,13 @@ public enum SnapResolver {
         if let pursuitRecord { matchups.append(pursuitRecord) }
 
         let outside = offensiveCall.runGap.isOutside ? MatchupRules.outsideRunVariance : 1.0
-        let gained = Int((lane * MatchupRules.laneYardScale * outside).rounded()) + broken
+        // Three terms, one per clause of 03 section 1.1: what the front gave, what the carrier won
+        // against the first pursuer, and what the break chain extended. The base is the play that
+        // none of the three decides — a carry into a standstill still gains a couple of yards.
+        let contact = pursuitRecord?.leverage ?? 0
+        let gained = Int((MatchupRules.baseRunYards
+                            + lane * MatchupRules.laneYardScale * outside
+                            + contact * MatchupRules.contactYardScale).rounded()) + broken
         return finish(gained: gained, situation: situation,
                       elapsed: rules.inBoundsPlaySeconds, matchups: matchups,
                       brokenTackleAttempts: extraPursuitAttempts, carrier: carrier, passer: nil,

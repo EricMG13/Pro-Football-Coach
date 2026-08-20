@@ -1071,10 +1071,71 @@ and no lane runs this one — and **not** in `defaultRun`. Red to say so, the wa
 swift run -c release -Xswiftc -enable-testing SimTests --calibration-gate
 ```
 
-Today it reports **7 of 8 college bands and 11 of 16 pro bands failing**. `verify.sh` is unaffected:
+When it landed it reported **7 of 8 college bands and 11 of 16 pro bands failing**. `verify.sh` is unaffected:
 `--lane calibration` and `--lane release` were re-run green after it landed, and the no-argument
 branch `--lane full` runs does not call `runCalibrationGateTests` — that last one is read from
 `main.swift` rather than observed, because the full lane is a 36-minute run.
+
+#### 2026-08-20 — the run game, rebuilt to `03` §1.1's three clauses
+
+**The defect was a missing term, not a mistuned constant.** `resolveRun` computed
+`gained = round(lane * laneYardScale * outside) + broken`. An even front averages a lane leverage of
+zero, so a carry that beat nobody gained **nothing**, and every yard the engine produced came out of
+the break-tackle chain: 1.34 yards a carry, and an explosive-run rate of 0.032 against a band of
+0.105 to 0.130. `03` §1.1 asks for three things and the code delivered one — it also says "the
+carrier's vision and elusiveness resolve against pursuit leverage **into yards**", and that duel was
+resolved and then read only as a break-or-not threshold, so beating the first defender by a mile and
+beating him by an inch produced the same carry.
+
+The run now sums three terms and a base:
+
+| Term | Constant | What it is |
+|---|---|---|
+| Base | `baseRunYards` 2.8 | what a carry into a standstill gains |
+| Lane | `laneYardScale` 3.5 | what the front gave, per unit of lane leverage |
+| Contact | `contactYardScale` 3.5 | the carrier against the first pursuer, per unit of leverage |
+| Chain | `brokenTackleYards` 4, unchanged | each break worth a multiple of the last |
+
+**Holdout ladder: 6 of 24 bands holding to 7 of 24.** Gained **pro explosive run rate** (0.032 →
+0.1164, CI90 [0.1121, 0.1208] inside 0.105–0.130) and **college points per team-game** (27.83 →
+28.49). **Lost pro pass yards per team-game** (231.4 → 191.3, CI90 [181.5, 201.2] against a 185
+floor): a run game that works takes snaps away from the pass, and that band was previously held up
+by a bloated pass volume at a 35 percent completion rate — two errors compensating, and losing it to
+a fix is the honest trade.
+
+**Two failures are now volume, not shape, and the run cannot fix either.** Rush yards reads 121.7
+per team-game (CI90 [113.0, 130.5], band 100–130) — the carry itself averages 4.13 yards, which is
+right, but the engine plays **81.7 offensive snaps a team-game against a band of 60 to 68**. At a
+band-legal play count the same carry would read about 95 rush yards and fail low instead. Tuning
+`baseRunYards` to move it would be fitting a run constant to a clock defect; it was not done.
+
+**The run now measures the talent defect the other bands were already reporting.** On an even
+fixture a carry averages 3.99 yards; give the offence a 20-point edge on every rated attribute and it
+reads **12.29** (+8.30), and give the defence the same edge and it reads **-0.42** (-4.40). A
+20-point gap is worth about a yard and a half in the real game. That is `Leverage`'s logistic, not
+the two run constants — and it is the same over-amplification that reads as a **0.73 blowout rate**
+against a band of 0.17–0.26 and a **0.85 favourite win rate** against 0.62–0.72. Those three
+numbers are one defect, and it is the next one worth fixing.
+
+**College explosive run is a design question, not a constant.** It reads 0.1121 against a band of
+0.135 to 0.165, and pro reads 0.1164 against 0.105 to 0.130 — the two tiers share `MatchupRules`
+entirely, so **no single value satisfies both bands**. Canon says college is the more explosive
+tier but not *why*: `03` §5.1 attributes the tier difference partly to talent dispersion, while
+`CalibrationRoster.team(skill:seed:)` takes no tier and draws both tiers from the same distribution,
+so the harness cannot express dispersion even if that is the answer. Whether college explosiveness
+belongs in a per-tier run constant or in wider college rosters is an owner decision under the
+doc-first rule, and it was not invented here.
+
+**The unit suite asserts properties, not rates.** `EngineTests`' "Run distribution" suite checks
+that an even front concedes yards, that the distribution leans right (median below mean, stuffed
+carries, a tail that reaches 15+), and that a 20-point edge either way moves the result by more than
+a yard a carry. It deliberately does **not** assert a band: a fixture is one roster pair, and the
+same engine reads 0.025 explosive on one fixture and 0.155 across the harness's games. Rates are
+`--calibration-gate`'s.
+
+`PINNED_PRO_GAME_FINGERPRINT` and `PINNED_COLLEGE_GAME_FINGERPRINT` were re-pinned, which is what
+that test exists to force. `--engine` now also dispatches `runSnapResolverTests`, which was
+reachable only from the no-argument branch.
 
 ### P3 — match engine core
 

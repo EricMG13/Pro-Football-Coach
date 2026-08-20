@@ -65,6 +65,9 @@ if CommandLine.arguments.contains("--catalog") {
     runMatchReducerTests()
 } else if CommandLine.arguments.contains("--engine") {
     runEngineTests()
+    // Snap resolution was reachable only from the no-argument branch, so the one suite that
+    // measures what a play produces needed a full 36-minute run to see.
+    runSnapResolverTests()
     runGameLoopTests()
 } else if CommandLine.arguments.contains("--m3-soak") {
     runM3CollegeSoakTests()

@@ -113,8 +113,22 @@ public enum MatchupRules {
 
     // MARK: - Run
 
+    /// The yards a carry gains when the front is even, the carrier wins nothing and no tackle
+    /// breaks. Without it, `resolveRun` was `lane * laneYardScale + broken` and an even front
+    /// averages a lane leverage of zero, so a neutral run gained **nothing**: every yard in the
+    /// engine came out of the break chain and the harness measured 1.34 yards a carry against a
+    /// rush band of 100 to 130 per team-game. A run play that is blocked to a standstill still
+    /// gains a couple of yards; that is what this is.
+    public static let baseRunYards = 2.8
     /// Yards per unit of lane leverage.
-    public static let laneYardScale = 3.0
+    public static let laneYardScale = 3.5
+    /// Yards per unit of carrier-versus-pursuit leverage.
+    ///
+    /// `03` §1.1 says "the carrier's vision and elusiveness resolve against pursuit leverage **into
+    /// yards**". That duel was resolved and then read only as a break-or-not threshold, so beating
+    /// the first defender by a mile and beating him by an inch produced the same carry. This is the
+    /// part of the sentence that was missing.
+    public static let contactYardScale = 3.5
     /// Outside runs multiply the lane result, trading certainty for the edge.
     public static let outsideRunVariance = 1.35
     public static let crashRunBonus = 0.10
