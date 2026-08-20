@@ -14,7 +14,12 @@ enum TraitPopulationGenerator {
     /// through `PeopleRules.injuryWeeks`. Until then the trait was implemented and uncalled, so it
     /// was correctly withheld here — a populated `ironman` with no consumer is the flavour-only data
     /// this gate exists to refuse.
-    private static let activeTraits: [Trait] = [.ironman, .restless]
+    ///
+    /// `.volatile` joined when the weekly `disciplineFile` step began running.
+    /// `DisciplineSystem.incidents` had read `player.has(.volatile)` since it was written, but no
+    /// scheduler step ever called it, so the trait had a consumer that nothing reached — the same
+    /// gate, failing one level further out than `ironman` did.
+    private static let activeTraits: [Trait] = [.ironman, .restless, .volatile]
 
     static func traits(for id: UUID) -> [Trait] {
         let personSeed = SeededRandom.seed(from: id)
