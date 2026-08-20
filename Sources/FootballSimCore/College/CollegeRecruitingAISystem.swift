@@ -114,7 +114,7 @@ public enum RecruitingDecisionPolicy {
         pursuitSaturation: Int,
         targetExplanationCache: inout [UUID: RecruitingDecisionExplanation]
     ) -> RecruitingPolicyDecision? {
-        guard state.college.phase == .active,
+        guard state.college.phase.allowsRecruitingActions,
               let recruiting = state.college.programmes[programmeID],
               capacity.openReservations > 0,
               recruiting.boardIDs.count < min(
@@ -241,7 +241,7 @@ public enum RecruitingDecisionPolicy {
         weeklyActionCounts: [UUID: Int],
         weeklyEvaluationCount: Int
     ) -> RecruitingPolicyDecision? {
-        guard state.college.phase == .active,
+        guard state.college.phase.allowsRecruitingActions,
               let recruiting = state.college.programmes[programmeID] else { return nil }
         let capacity = capacitySnapshot
         let pending = Set(state.scouting.pendingEvaluations.compactMap {
@@ -561,7 +561,7 @@ public enum CollegeRecruitingMarketSystem {
             )
         }
         let refreshed = refresh(in: state)
-        guard state.college.phase == .active,
+        guard state.college.phase.allowsCommitmentResolution,
               calendar.week >= CollegeRules.minimumCommitmentWeek else {
             return CollegeRecruitingMarketTransition(
                 college: refreshed,
@@ -811,7 +811,7 @@ public enum CollegeRecruitingAISystem {
         programmeIDs: [UUID],
         in state: GameState
     ) throws -> CollegeRecruitingAITransition {
-        guard state.college.phase == .active,
+        guard state.college.phase.allowsRecruitingActions,
               state.college.portal.phase != .awaitingSpring else {
             return CollegeRecruitingAITransition(
                 college: state.college,

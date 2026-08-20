@@ -99,7 +99,7 @@ public extension CoachWorldReadModelProvider {
     ) -> RecruitingBoardReadModel.Prospect {
         let stableID = prospect.id.uuidString
         let boardFull = recruiting.boardIDs.count >= CollegeRules.recruitingBoardLimit
-        let activePhase = state.college.phase == .active
+        let activePhase = state.college.phase.allowsRecruitingActions
         let portalOpen = state.college.portal.phase != .awaitingSpring
         let available = activePhase && portalOpen && !boardFull && recruitingOwnerIsUser
         let reason: String?
@@ -154,6 +154,7 @@ public extension CoachWorldReadModelProvider {
         in state: GameState
     ) -> RecruitingBoardReadModel.Prospect {
         let relationship = recruiting.relationships[prospect.id]
+        let status = statusLabel(prospect.id, programmeID: programmeID, in: state)
         return RecruitingBoardReadModel.Prospect(
             stableID: prospect.id.uuidString,
             person: CoachWorldPersonReference(
@@ -165,7 +166,10 @@ public extension CoachWorldReadModelProvider {
             position: label(prospect.position),
             hometown: hometown(prospect.originCityID, in: state),
             interest: interestLabel(relationship?.interest ?? 0),
-            status: statusLabel(prospect.id, in: state),
+            status: status,
+            // Derived from the same label rather than re-deriving the phase check, so the flag
+            // can never disagree with what the status text says.
+            isCommitted: status == "Committed" || status == "Signed",
             evaluation: evaluation(
                 prospect.id,
                 programmeID: programmeID,
@@ -210,11 +214,21 @@ public extension CoachWorldReadModelProvider {
 
     /// Read from `state.college.prospectRecruitment[id].phase` — the engine's own commitment
     /// state machine — rather than inferred from board membership, which says only that the
-    /// programme is pursuing the prospect, not what the prospect has decided.
-    private static func statusLabel(_ prospectID: UUID, in state: GameState) -> String {
-        switch state.college.prospectRecruitment[prospectID]?.phase {
-        case .committed: return "Committed"
-        case .signed: return "Signed"
+    /// programme is pursuing the prospect, not what the prospect has decided. `.committed` alone
+    /// does not say to whom: the withdraw choice's own availability check already compares
+    /// `recruitment.programmeID` against the viewing programme to tell a genuine commitment here
+    /// from a commitment elsewhere, and this label now makes the same comparison. `.signed` makes
+    /// it too, for the same reason: a prospect who committed elsewhere and was never withdrawn
+    /// stays on this board through signing day (`CollegeState.sign` only ever touches the signing
+    /// programme's own roster, and `withdraw(_:)` is the only code that prunes `boardIDs`), so an
+    /// unqualified "Signed" here would read identically to an actual own signee.
+    private static func statusLabel(_ prospectID: UUID, programmeID: UUID, in state: GameState) -> String {
+        let recruitment = state.college.prospectRecruitment[prospectID]
+        switch recruitment?.phase {
+        case .committed:
+            return recruitment?.programmeID == programmeID ? "Committed" : "Committed elsewhere"
+        case .signed:
+            return recruitment?.programmeID == programmeID ? "Signed" : "Signed elsewhere"
         case .released: return "Released"
         case .available, nil: return "Uncommitted"
         }
@@ -295,7 +309,7 @@ public extension CoachWorldReadModelProvider {
         in state: GameState
     ) -> [CoachWorldActionChoice] {
         let contactCost = "\(CollegeRules.aiEvaluationContactPoints) pts"
-        let activePhase = cyclePhase == .active
+        let activePhase = cyclePhase.allowsRecruitingActions
         let portalOpen = state.college.portal.phase != .awaitingSpring
         let recruitingOpen = activePhase && portalOpen && recruitingOwnerIsUser
         let challengeAuthorized = recruitment.map {
@@ -384,10 +398,14 @@ public extension CoachWorldReadModelProvider {
         built.append(CoachWorldActionChoice(
             intentID: CoachWorldIntentID(rawValue: "withdraw"),
             title: "Withdraw",
-            cost: "No cost",
-            consequence: "Leaves the board",
+            cost: "Ends the relationship",
+            consequence: "Drops recorded interest, any scheduled visit and any scholarship offer",
+            // A prospect who signed elsewhere is exactly as stuck on this board as one committed
+            // elsewhere would be without this clause — nothing else ever prunes boardIDs — so it
+            // gets the same escape hatch, matching statusLabel's own "elsewhere" distinction.
             isAvailable: recruitingOpen && onBoard && (recruitment?.phase == .available
-                || (recruitment?.phase == .committed && recruitment?.programmeID != programmeID)),
+                || (recruitment?.phase == .committed && recruitment?.programmeID != programmeID)
+                || (recruitment?.phase == .signed && recruitment?.programmeID != programmeID)),
             unavailableReason: !recruitingOpen ? phaseReason
                 : !onBoard ? boardReason
                 : recruitment?.phase == .signed ? "This prospect has signed"

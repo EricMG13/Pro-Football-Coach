@@ -124,7 +124,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
             FloodlitLabel3(appointmentLabel, palette: palette)
             Text(model.coach.name.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.figure, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.figure, weight: .bold)
                 .lineLimit(CareerMetric.nameLines)
                 .minimumScaleFactor(CareerMetric.nameScaleFloor)
             VStack(alignment: .leading, spacing: .zero) {
@@ -201,14 +201,10 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
                         )
                         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                             Text(row.stakeholder.uppercased())
-                                .font(
-                                    CoachWorldTokens.display(
-                                        CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                                    )
-                                )
+                                .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                                 .lineLimit(1)
                             Text("\(row.value) of \(CareerMetric.supportCeiling)")
-                                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag))
+                                .coachWorldFigure(CoachWorldTokens.DisplaySize.flag)
                                 .foregroundStyle(palette.contentQuiet.color)
                         }
                         Spacer(minLength: .zero)
@@ -233,13 +229,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
                 )
                 switch focus {
                 case .stakeholders:
-                    Text(
-                        "These are the current support figures, and nothing beyond them. "
-                            + "No interpretation is recorded."
-                    )
-                    .font(CoachWorldTokens.TypeRole.caption)
-                    .foregroundStyle(palette.contentSecondary.color)
-                    .fixedSize(horizontal: false, vertical: true)
+                    stakeholderRows
                 case .promotionDecision:
                     opportunityWorkspace
                 case .jobBoard, .offer, .appointment:
@@ -262,6 +252,34 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
         }
     }
 
+    /// A plain, mechanically-derived sentence per stakeholder -- never an interpretation beyond
+    /// the signed delta `CareerArcState.stakeholderLastMovement` recorded, matching this
+    /// codebase's convention against invented evidence.
+    @ViewBuilder
+    private var stakeholderRows: some View {
+        if model.support.isEmpty {
+            Text("No support is recorded yet.")
+                .font(CoachWorldTokens.TypeRole.caption)
+                .foregroundStyle(palette.contentQuiet.color)
+                .fixedSize(horizontal: false, vertical: true)
+        } else {
+            ForEach(model.support) { row in
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                    Text(row.stakeholder.uppercased())
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
+                        .lineLimit(1)
+                    Text(row.rationale ?? "No movement recorded yet.")
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.contentSecondary.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(row.stakeholder). \(row.rationale ?? "No movement recorded yet.")")
+            }
+        }
+    }
+
     @ViewBuilder
     private var historyRows: some View {
         if model.history.isEmpty {
@@ -273,11 +291,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
             ForEach(model.history) { row in
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                     Text(row.team.name.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                         .lineLimit(1)
                     Text(historyLine(row))
                         .font(CoachWorldTokens.TypeRole.caption)
@@ -337,11 +351,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
                 } label: {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                         Text(opportunity.team.name.uppercased())
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                             .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                             .fixedSize(horizontal: false, vertical: true)
                         Text(opportunity.canAccept
@@ -389,7 +399,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
                 FloodlitLabel3("Selected offer", palette: palette,
                                tint: palette.collegeIdentity.color)
                 Text(opportunity.team.name.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.action, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.action, weight: .bold)
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                     .fixedSize(horizontal: false, vertical: true)
                 FloodlitCostLine(
@@ -440,11 +450,7 @@ public struct CareerHubView: View, CoachWorldChromedSurface {
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             if model.currentJob?.canResign == true {
                 Button("Resign") { showingResignConfirmation = true }
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                        )
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     .foregroundStyle(palette.contentQuiet.color)
                     .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
                            minHeight: CoachWorldTokens.Shape.minimumTarget)

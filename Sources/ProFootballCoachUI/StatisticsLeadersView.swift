@@ -81,7 +81,7 @@ public struct StatisticsLeadersView: View, CoachWorldChromedSurface {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 FloodlitLabel3(row.category, palette: palette)
                 Text(row.player.name.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -91,7 +91,7 @@ public struct StatisticsLeadersView: View, CoachWorldChromedSurface {
                 .lineLimit(1)
                 .frame(width: StatisticsMetric.teamColumn, alignment: .leading)
             Text("\(row.value)")
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.title, weight: .semibold))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.title, weight: .semibold)
                 .frame(width: StatisticsMetric.valueColumn, alignment: .trailing)
         }
         .padding(.horizontal, CoachWorldTokens.Pad.row.h)

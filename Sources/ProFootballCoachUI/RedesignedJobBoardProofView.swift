@@ -92,7 +92,7 @@ struct RedesignedJobBoardProofView: View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
             FloodlitLabel3("Career / Job board", palette: palette, tint: palette.collegeIdentity.color)
             Text("SAMPLE CAREER")
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.screen, weight: .black))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.screen, weight: .black)
                 .foregroundStyle(palette.contentPrimary.color)
                 .accessibilityAddTraits(.isHeader)
         }
@@ -135,12 +135,12 @@ struct RedesignedJobBoardProofView: View {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.xs) {
                     Text(opportunity.team.name.uppercased())
-                        .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.action, weight: .bold))
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.action, weight: .bold)
                         .lineLimit(1)
                     Spacer(minLength: CoachWorldTokens.Gap.xs)
                     if isSelected {
                         Text("SELECTED")
-                            .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                             .foregroundStyle(palette.collegeIdentity.color)
                     }
                 }
@@ -190,7 +190,7 @@ struct RedesignedJobBoardProofView: View {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.md) {
                     FloodlitLabel3("Selected offer", palette: palette, tint: palette.collegeIdentity.color)
                     Text(opportunity.team.name.uppercased())
-                        .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.title, weight: .black))
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.title, weight: .black)
                         .lineLimit(1)
                     Text("\(opportunity.tier) appointment")
                         .font(CoachWorldTokens.TypeRole.headline)

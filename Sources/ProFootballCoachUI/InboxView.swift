@@ -87,11 +87,7 @@ public struct InboxView: View, CoachWorldChromedSurface {
             if chrome == nil {
                 Button(action: onClose) {
                     Text("\u{2190} Back")
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                         .foregroundStyle(palette.contentSecondary.color)
                         .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
                                minHeight: CoachWorldTokens.Shape.minimumTarget,
@@ -135,11 +131,7 @@ public struct InboxView: View, CoachWorldChromedSurface {
                 ) {
                     HStack(spacing: CoachWorldTokens.Gap.md) {
                         Text(tag(for: item).uppercased())
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.flag, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                             .tracking(
                                 CoachWorldTokens.DisplaySize.tracking(
                                     CoachWorldTokens.DisplaySize.labelTracking,
@@ -151,11 +143,7 @@ public struct InboxView: View, CoachWorldChromedSurface {
                             .frame(width: InboxMetric.tagColumn, alignment: .leading)
                         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                             Text(item.title)
-                                .font(
-                                    CoachWorldTokens.display(
-                                        CoachWorldTokens.DisplaySize.row, weight: .bold
-                                    )
-                                )
+                                .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                                 .foregroundStyle(
                                     item.isUnread
                                         ? palette.contentPrimary.color
@@ -164,11 +152,7 @@ public struct InboxView: View, CoachWorldChromedSurface {
                                 .lineLimit(InboxMetric.subjectLines)
                                 .multilineTextAlignment(.leading)
                             Text(item.sourceLabel.uppercased())
-                                .font(
-                                    CoachWorldTokens.display(
-                                        CoachWorldTokens.DisplaySize.flag, weight: .bold
-                                    )
-                                )
+                                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                                 .tracking(
                                     CoachWorldTokens.DisplaySize.tracking(
                                         CoachWorldTokens.DisplaySize.labelTracking,
@@ -201,11 +185,7 @@ public struct InboxView: View, CoachWorldChromedSurface {
                         FloodlitFlag(tag(for: item), tint: tone(for: item), palette: palette)
                     }
                     Text(item.title)
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.subject, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.subject, weight: .bold)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(item.body)
                         .font(CoachWorldTokens.TypeRole.callout)
@@ -223,11 +203,7 @@ public struct InboxView: View, CoachWorldChromedSurface {
                             onOpen(destination)
                         } label: {
                             Text("Open the \(destination.navigationName.lowercased())")
-                                .font(
-                                    CoachWorldTokens.display(
-                                        CoachWorldTokens.DisplaySize.action, weight: .bold
-                                    )
-                                )
+                                .coachWorldDisplay(CoachWorldTokens.DisplaySize.action, weight: .bold)
                                 .foregroundStyle(palette.actionPrimary.color)
                                 .frame(minHeight: CoachWorldTokens.Shape.minimumTarget,
                                        alignment: .leading)
@@ -267,11 +243,7 @@ public struct InboxView: View, CoachWorldChromedSurface {
             Spacer(minLength: .zero)
             if let item = selected, item.isUnread {
                 Button("File it") { onRead(item.stableID) }
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                        )
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     .foregroundStyle(palette.contentQuiet.color)
                     .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
                            minHeight: CoachWorldTokens.Shape.minimumTarget)

@@ -97,11 +97,7 @@ public struct StaffRoomView: View, CoachWorldChromedSurface {
                         monogram(for: row.name)
                         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                             Text(row.name.uppercased())
-                                .font(
-                                    CoachWorldTokens.display(
-                                        CoachWorldTokens.DisplaySize.row, weight: .bold
-                                    )
-                                )
+                                .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                                 .lineLimit(1)
                             FloodlitLabel3(row.role, palette: palette)
                         }
@@ -129,6 +125,10 @@ public struct StaffRoomView: View, CoachWorldChromedSurface {
             .prefix(2)
             .compactMap { $0.first.map(String.init) }
             .joined()
+        // Deferred (S-0 Phase 3, 2026-08-19): fixed in both dimensions, no lineLimit clamp and no
+        // minimumScaleFactor at all -- the same unguarded fixed-frame class as FloodlitStaffVoice's
+        // monogram, already deferred in FloodlitPatterns.swift. Two initials rarely overflow, but
+        // there is no safety net if they do; needs a considered geometry fix, not a token swap.
         return Text(initials.uppercased())
             .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
             .foregroundStyle(palette.contentSecondary.color)
@@ -149,14 +149,10 @@ public struct StaffRoomView: View, CoachWorldChromedSurface {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
                     FloodlitLabel3(row.role, palette: palette)
                     Text(row.name.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.subject, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.subject, weight: .bold)
                         .lineLimit(StaffMetric.nameLines)
                     Text(tenure(row))
-                        .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                        .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                         .foregroundStyle(palette.contentSecondary.color)
                     ratingRow("Development", row.development)
                     ratingRow("Recruiting", row.recruiting)
@@ -188,7 +184,7 @@ public struct StaffRoomView: View, CoachWorldChromedSurface {
                 .frame(width: StaffMetric.ratingLabel, alignment: .leading)
             FloodlitShareBar(proportion: proportion(of: value), tint: tint, palette: palette)
             Text("\(value)")
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill, weight: .semibold))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.pill, weight: .semibold)
                 .foregroundStyle(tint)
                 .frame(width: StaffMetric.ratingFigure, alignment: .trailing)
         }

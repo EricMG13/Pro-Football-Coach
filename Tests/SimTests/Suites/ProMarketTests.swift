@@ -21,6 +21,34 @@ func runProMarketTests() {
             expect(WorldIntegrity.check(closed).isValid)
         }
 
+        test("a draft order that hands one team two picks in a round is refused") {
+            let opened = try ProMarketSystem.openOffseason(in: GameState.bootstrap(seed: 60_130))
+            var market = opened.proMarket
+            let season = market.season
+            let draftClass = market.draftClass
+            let order = market.draftOrder
+            expect(ProRules.isLegalDraftOrder(order, teamIDs: Set(opened.proTeams.ids)),
+                   "the market built an illegal draft order")
+            expect(market.close())
+
+            var hoarded = order
+            hoarded[1] = hoarded[0]
+            expectEqual(hoarded.count, order.count)
+            expect(Set(hoarded).isSubset(of: Set(opened.proTeams.ids)))
+            expect(!market.open(
+                season: season,
+                draftClass: draftClass,
+                draftOrder: hoarded,
+                freeAgentIDs: []
+            ), "a round with a team holding two picks was installed")
+            expect(market.open(
+                season: season,
+                draftClass: draftClass,
+                draftOrder: order,
+                freeAgentIDs: []
+            ), "the legal order the market itself built was refused")
+        }
+
         test("scouting is observer-specific and round trips") {
             let opened = try ProMarketSystem.openOffseason(in: GameState.bootstrap(seed: 60_102))
             let prospectID = try require(opened.proMarket.draftClass.first?.id)
@@ -42,7 +70,7 @@ func runProMarketTests() {
         test("draft consumes one pick and acquires the prospect atomically") {
             var state = try ProMarketSystem.openOffseason(in: GameState.bootstrap(seed: 60_103))
             let teamID = try require(state.proMarket.draftOrder.first)
-            removeProRosterPlayer(teamID: teamID, in: &state)
+            removeProRosterPlayers(count: 1, teamID: teamID, in: &state)
             state = try ProMarketSystem.beginDraft(in: state)
             let prospect = try require(state.proMarket.draftClass.first)
             let drafted = try ProMarketSystem.draft(
@@ -64,7 +92,7 @@ func runProMarketTests() {
         test("an unattached professional can sign in free agency") {
             var state = GameState.bootstrap(seed: 60_104)
             let teamID = try require(state.proTeams.ids.first)
-            removeProRosterPlayer(teamID: teamID, in: &state)
+            removeProRosterPlayers(count: 1, teamID: teamID, in: &state)
             let player = marketFreeAgent(id: UUID(uuidString: "00000000-0000-4000-8000-000000006104")!)
             state.players.insert(player)
             state.people.insert(player: player)
@@ -187,7 +215,7 @@ func runProMarketTests() {
                 at: state.calendar,
                 in: state
             )
-            _ = removeProRosterPlayer(teamID: destinationTeamID, in: &state)
+            removeProRosterPlayers(count: 1, teamID: destinationTeamID, in: &state)
             let claimed = try ProMarketSystem.claimWaiver(
                 playerID: sourcePlayerID,
                 teamID: destinationTeamID,
@@ -232,8 +260,12 @@ func runProMarketTests() {
             }
             var state = GameState.bootstrap(seed: 60_111)
             let teamID = try require(state.proTeams.ids.first)
-            let playerID = try require(state.proTeams[teamID]?.rosterIDs.first)
-            _ = removeProRosterPlayer(teamID: teamID, in: &state)
+            // Take the identity from the helper rather than assuming which player it displaces:
+            // it frees the most-populated position so that larger removals keep the root's
+            // positional coverage, which is not necessarily `rosterIDs.first`.
+            let playerID = try require(
+                removeProRosterPlayers(count: 1, teamID: teamID, in: &state).first
+            )
             state = try ProMarketSystem.openOffseason(in: state)
             state = try ProMarketSystem.signFreeAgent(
                 playerID: playerID,
@@ -261,6 +293,11 @@ func runProMarketTests() {
             rollover.league.season = 0
             rollover.league.week = SharedRules.inSeasonWeeks
             rollover.calendar = CalendarState(season: 0, week: SharedRules.inSeasonWeeks)
+            // The signing week carries the signing phase (`02` section 4.1). Without this the
+            // hand-built calendar produces a root the scheduler could never emit, and the integrity
+            // assertion at the end of this test is checking the fixture rather than the expiry.
+            rollover.college.phase = CollegeRules
+                .recruitingCyclePhase(inWeek: rollover.calendar.week)
             let expired = try ProMarketSystem.expireContracts(at: rollover.calendar, in: rollover)
             expect(expired.expiredPlayerIDs.contains(rolloverPlayerID))
             expect(expired.state.players[rolloverPlayerID]?.contract == nil)
@@ -275,16 +312,7 @@ func runProMarketTests() {
                 var state = GameState.bootstrap(seed: 60_113)
                 let controlledTeamID = try require(state.proTeams.ids.first)
                 let aiTeamID = try require(state.proTeams.ids.dropFirst().first)
-                // Enough seats to drop the club under `freeAgencyRosterCeiling`, not just under
-                // `activeRosterLimit`. Free agency stops one seat per draft round short of the hard
-                // limit (`02` §4.2, so the draft has somewhere to put its picks), which means a
-                // club at 52 of 53 is correctly done signing and this fixture used to prove the AI
-                // signs by putting it at exactly that.
-                let seatsToOpen = ProRules.activeRosterLimit
-                    - ProRosterAISystem.freeAgencyRosterCeiling + 1
-                for _ in 0..<seatsToOpen {
-                    _ = removeProRosterPlayer(teamID: aiTeamID, in: &state)
-                }
+                removeProRosterPlayers(teamID: aiTeamID, in: &state)
                 state.careerArc = CareerArcState(
                     currentJob: CareerJob(
                         organisationID: controlledTeamID,
@@ -323,7 +351,7 @@ func runProMarketTests() {
         test("a weekly scheduler pass preserves both-tier legality after professional AI") {
             var state = GameState.bootstrap(seed: 60_114)
             let aiTeamID = try require(state.proTeams.ids.dropFirst().first)
-            _ = removeProRosterPlayer(teamID: aiTeamID, in: &state)
+            removeProRosterPlayers(teamID: aiTeamID, in: &state)
             state = try ProMarketSystem.openOffseason(in: state)
             let transition = try WorldScheduler.advanceWeek(state)
             expect(WorldIntegrity.check(transition.state).isValid)
@@ -360,8 +388,8 @@ private func require<T>(_ value: T?) throws -> T {
     return value
 }
 
-@discardableResult
-/// Opens one roster slot and puts the player it displaces into the market.
+/// Opens `count` roster slots and puts the players they displace into the market, always taking
+/// from the most-populated position so the root keeps positional coverage however many are freed.
 ///
 /// The contract goes with them, and that is not incidental. `openOffseason` builds the free-agent
 /// pool from players who are unowned **and uncontracted**, so before `0deb629` — when a generated
@@ -369,29 +397,33 @@ private func require<T>(_ value: T?) throws -> T {
 /// free agent. Once bootstrap began issuing contracts it silently stopped being enough: the pool
 /// came back empty, the AI signed nobody, and a test that indexed the first signing crashed the
 /// whole process instead of failing one check.
-/// Opens a roster seat without making the root illegal.
 ///
-/// Takes from a position that still has more than `minimumPlayableRosterByPosition` after the
-/// removal, because a 53-man roster carries exactly one kicker and one punter and taking the first
-/// id off the list can therefore leave a club with nobody who can play a position. That did not
-/// matter while callers opened a single seat; it does now that one opens enough to drop a club
-/// under the free-agency ceiling.
-private func removeProRosterPlayer(teamID: UUID, in state: inout GameState) -> UUID? {
-    let rosterIDs = state.proTeams[teamID]?.rosterIDs ?? []
-    var countByPosition: [Position: Int] = [:]
-    for id in rosterIDs {
-        guard let position = state.players[id]?.position else { continue }
-        countByPosition[position, default: 0] += 1
+/// The default is `ProRules.draftRounds + 1` rather than 1 because free agency now signs only down
+/// to the seats the draft reserves (`02` section 4.2). A fixture that frees one seat on a 53-man
+/// roster leaves it at 52, which is above the reserve, so the AI correctly signs nobody and a test
+/// that wanted to observe a signing observes nothing.
+@discardableResult
+private func removeProRosterPlayers(
+    count: Int = ProRules.draftRounds + 1,
+    teamID: UUID,
+    in state: inout GameState
+) -> [UUID] {
+    var removed: [UUID] = []
+    for _ in 0..<count {
+        guard let team = state.proTeams[teamID] else { break }
+        var byPosition: [Position: [UUID]] = [:]
+        for playerID in team.rosterIDs {
+            guard let position = state.players[playerID]?.position else { continue }
+            byPosition[position, default: []].append(playerID)
+        }
+        guard let playerID = byPosition.max(by: { lhs, rhs in
+            lhs.value.count == rhs.value.count
+                ? lhs.key.rawValue > rhs.key.rawValue
+                : lhs.value.count < rhs.value.count
+        })?.value.first else { break }
+        _ = state.proTeams.update(teamID) { $0.rosterIDs.removeAll { $0 == playerID } }
+        state.players.update(playerID) { $0.contract = nil }
+        removed.append(playerID)
     }
-    let surplusID = rosterIDs.first { id in
-        guard let position = state.players[id]?.position else { return false }
-        let minimum = SharedRules.minimumPlayableRosterByPosition[position] ?? 0
-        return countByPosition[position, default: 0] > minimum
-    }
-    guard let playerID = surplusID ?? state.proTeams[teamID]?.rosterIDs.first else { return nil }
-    _ = state.proTeams.update(teamID) { team in
-        team.rosterIDs.removeAll { $0 == playerID }
-    }
-    state.players.update(playerID) { $0.contract = nil }
-    return playerID
+    return removed
 }

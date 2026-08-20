@@ -89,6 +89,7 @@ public enum IntegrityIssue: Sendable, Equatable, Hashable, CustomStringConvertib
     case invalidCareerControl
     case invalidCareerArc
     case invalidProfessionalCap(teamID: UUID)
+    case unownedProfessionalContract(playerID: UUID)
     case invalidProfessionalMarket
     case invalidMandatoryDecision(decisionID: UUID)
     case invalidTacticalState
@@ -210,6 +211,8 @@ public enum IntegrityIssue: Sendable, Equatable, Hashable, CustomStringConvertib
             return "The coaching career arc has invalid employment, support, or opportunity history."
         case let .invalidProfessionalCap(teamID):
             return "Pro team \(teamID) exceeds its salary cap or has malformed contracts."
+        case let .unownedProfessionalContract(playerID):
+            return "Player \(playerID) holds a contract no professional team owns."
         case .invalidProfessionalMarket:
             return "The professional free-agency or draft market is malformed or out of phase."
         case let .invalidMandatoryDecision(decisionID):
@@ -1034,7 +1037,11 @@ public enum WorldIntegrity {
             }
         }
 
-        if state.college.phase != .active {
+        // The phase every week carries, not merely "not the two we never expected". `02` section
+        // 4.1 makes it a function of the week, so the check is the same function: an `active` root
+        // sitting in the signing week is exactly as wrong as a `signing` root outside it, and the
+        // older `!= .active` rule could only see one of those two.
+        if state.college.phase != CollegeRules.recruitingCyclePhase(inWeek: state.calendar.week) {
             issues.append(.invalidRecruitingCyclePhase(state.college.phase))
         }
         if state.college.recruitingSeason != state.calendar.season {
@@ -1865,6 +1872,20 @@ public enum WorldIntegrity {
         _ state: GameState,
         issues: inout [IntegrityIssue]
     ) {
+        // A contract exists to be charged against a cap, and `capSnapshot` sums by roster: a
+        // contract held by a player no professional team owns is money nobody's cap counts.
+        // `docs/PORT-LOG.md` records the shape as one of the cap-laundering attacks the prior
+        // build's defences had to catch -- the practice squad as a place to hide a contract -- and
+        // this is that hole one step further out, where there is not even a squad to look in.
+        //
+        // Enumerated from the player table rather than from any roster, by construction: a check
+        // that walked rosters could never see the case it exists to catch.
+        let ownedIDs = Set(state.proTeams.values.flatMap { $0.rosterIDs + $0.practiceSquadIDs })
+        for player in state.players.values.sorted(by: { uuidLessThan($0.id, $1.id) })
+        where player.contract != nil && !ownedIDs.contains(player.id) {
+            issues.append(.unownedProfessionalContract(playerID: player.id))
+        }
+
         for team in state.proTeams.values {
             let hasCapData = team.deadMoney != 0
                 || (team.rosterIDs + team.practiceSquadIDs).contains {
@@ -1912,10 +1933,12 @@ public enum WorldIntegrity {
         let archivedDraftIDSet = Set(market.archivedDraftProspectIDs)
         let ownedIDs = Set(state.programmes.values.flatMap(\.rosterIDs))
             .union(state.proTeams.values.flatMap { $0.rosterIDs + $0.practiceSquadIDs })
+        // The count-and-membership pair this replaced admitted an order in which one team held
+        // every pick: 224 entries, all of them pro teams, is a legal count and a legal membership
+        // and an illegal draft. `ProRules` owns the shape (`02` section 11.2).
         let draftOrderIsValid = market.phase == .closed
             ? market.draftOrder.isEmpty
-            : market.draftOrder.count == ProRules.draftPickCount
-                && market.draftOrder.allSatisfy(proTeamIDs.contains)
+            : ProRules.isLegalDraftOrder(market.draftOrder, teamIDs: proTeamIDs)
         let draftClassIsValid = market.phase == .closed
             ? market.draftClass.isEmpty
             : market.draftClass.count == ProRules.draftPickCount
@@ -2180,7 +2203,7 @@ public enum WorldIntegrity {
             expected = Set(ranking.prefix(CollegeRules.bracketTeams))
         case .pro:
             expected = Set(state.league.conferences(in: .pro).flatMap { conference in
-                ranking.filter(conference.memberIDs.contains).prefix(4)
+                ranking.filter(conference.memberIDs.contains).prefix(ProRules.playoffSeedsPerConference)
             })
         }
         if games.count != 4

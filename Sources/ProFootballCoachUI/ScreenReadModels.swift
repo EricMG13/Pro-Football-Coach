@@ -584,11 +584,16 @@ public struct CareerHubReadModel: Sendable, Equatable {
         public let id: String
         public let stakeholder: String
         public let value: Int
+        /// A plain, mechanically-derived sentence from the signed delta this stakeholder's support
+        /// last moved by (`CareerArcState.stakeholderLastMovement`) -- `nil` before any evaluation
+        /// has run for them, e.g. a fresh career or a save from before this field existed.
+        public let rationale: String?
 
-        public init(id: String, stakeholder: String, value: Int) {
+        public init(id: String, stakeholder: String, value: Int, rationale: String? = nil) {
             self.id = id
             self.stakeholder = stakeholder
             self.value = value
+            self.rationale = rationale
         }
     }
 
@@ -902,17 +907,33 @@ public struct CompetitionOverviewReadModel: Sendable, Equatable {
     public struct RankingRow: Sendable, Equatable, Identifiable {
         public let id: String
         public let team: CoachWorldTeamReference
+        /// Whole-tier rank -- position across every programme or team in the tier, not within the
+        /// group that actually determines bracket qualification (the whole tier for college, but
+        /// only the team's own conference for pro). `seed`, below, is that group-relative position.
         public let rank: Int
         public let record: String
         public let isControlled: Bool
+        /// 1-based position within the group that determines bracket qualification: whole-tier
+        /// rank for college (bracketed by overall rank), conference-relative rank for pro
+        /// (bracketed per conference) -- `nil` when the team falls outside even that narrower
+        /// group's counted range and a seed number would not mean anything.
+        public let seed: Int?
+        /// How many seeds `seed` is being measured against -- `CollegeRules.bracketTeams` for
+        /// college, `ProRules.playoffSeedsPerConference` for pro.
+        public let qualifyingSlots: Int
+        public let isQualifying: Bool
 
         public init(id: String, team: CoachWorldTeamReference, rank: Int, record: String,
-                    isControlled: Bool) {
+                    isControlled: Bool, seed: Int? = nil, qualifyingSlots: Int = 0,
+                    isQualifying: Bool = false) {
             self.id = id
             self.team = team
             self.rank = rank
             self.record = record
             self.isControlled = isControlled
+            self.seed = seed
+            self.qualifyingSlots = qualifyingSlots
+            self.isQualifying = isQualifying
         }
     }
 
@@ -1036,6 +1057,11 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
         public let hometown: String
         public let interest: String
         public let status: String
+        /// Whether this prospect is committed (or signed) to the *viewing* programme specifically
+        /// -- `status == "Committed"` alone does not say that; a prospect committed to a rival
+        /// also carries a status naming a commitment. Consumers counting "how many of my class have
+        /// committed" should read this field, not match the presentation string.
+        public let isCommitted: Bool
         public let evaluation: Evaluation
         public let relationshipHistory: [RelationshipEvent]
         public let choices: [CoachWorldActionChoice]
@@ -1048,6 +1074,7 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
             hometown: String,
             interest: String,
             status: String,
+            isCommitted: Bool = false,
             evaluation: Evaluation,
             relationshipHistory: [RelationshipEvent],
             choices: [CoachWorldActionChoice]
@@ -1059,6 +1086,7 @@ public struct RecruitingBoardReadModel: Sendable, Equatable {
             self.hometown = hometown
             self.interest = interest
             self.status = status
+            self.isCommitted = isCommitted
             self.evaluation = evaluation
             self.relationshipHistory = relationshipHistory
             self.choices = choices

@@ -232,7 +232,12 @@ public enum CollegeRedshirtSystem {
         guard CollegeRules.redshirtAppearanceLimitRange.contains(plannedAppearanceLimit) else {
             throw RedshirtPlanError.invalidAppearanceLimit
         }
-        guard state.college.phase == .active,
+        // A redshirt plan is roster work, not recruiting contact, so signing day does not stop it
+        // (`02` section 4.1 puts the redshirt decision in spring development, item 4). Only a cycle
+        // that has closed for the season does. Written as the phase rather than
+        // `allowsRecruitingActions` deliberately: reusing that predicate here would have closed
+        // redshirt planning in week 21 as a side effect of a rule about contact.
+        guard state.college.phase != .closed,
               state.college.recruitingSeason == state.calendar.season else {
             throw RedshirtPlanError.seasonUnavailable
         }
@@ -286,7 +291,12 @@ public enum CollegeRedshirtSystem {
         programmeID: UUID,
         in state: GameState
     ) throws -> CollegeState {
-        guard state.college.phase == .active,
+        // A redshirt plan is roster work, not recruiting contact, so signing day does not stop it
+        // (`02` section 4.1 puts the redshirt decision in spring development, item 4). Only a cycle
+        // that has closed for the season does. Written as the phase rather than
+        // `allowsRecruitingActions` deliberately: reusing that predicate here would have closed
+        // redshirt planning in week 21 as a side effect of a rule about contact.
+        guard state.college.phase != .closed,
               state.college.recruitingSeason == state.calendar.season else {
             throw RedshirtPlanError.seasonUnavailable
         }
