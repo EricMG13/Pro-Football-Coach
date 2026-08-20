@@ -132,8 +132,21 @@ does not hold, and stops at the one they do:
 
 - The professional offseason advances **one phase per scheduled week**, driven by the roster policy
   that already runs weekly.
-- **Free agency** signs while signings remain legal. When a pass makes no signing — the pool is dry
-  or every roster is full — the draft begins.
+- **Free agency** signs while signings remain legal *and while the roster leaves room for the picks
+  the team still holds* — a team with seven picks left signs down to 46, not 53. When a pass makes
+  no signing — the pool is dry, or every roster is full to its reserved limit — the draft begins.
+
+  *The reserve is what makes §8's no-deadlock assertion true rather than hoped for — owner decision,
+  2026-08-20.* Without it the two rules below contradicted each other and the draft could never take
+  a single player at any seed: expiry frees headcount, free agency signs until the pool is dry, and
+  a dry pool is precisely the pass that starts the draft — so the draft always opened at the one
+  moment every seat was gone. Measured, season 1: expiry freed 296 seats, free agency signed exactly
+  32 a week for nine weeks until the pool hit zero and all 32 rosters read 53/53, and the first pick
+  threw `activeRosterFull` with 101M of cap space unused. Headcount was the binding constraint and
+  nothing arbitrated it.
+
+  The reserve is counted from the draft order rather than from `ProRules.draftRounds`, so a team
+  holding an unusual number of picks reserves for the picks it actually holds.
 - **The draft** is then made pick by pick in draft order by every AI team, deterministically: the
   best available prospect by rating, ties broken by prospect identity.
 - It **pauses when the controlled professional team is on the clock**, because that pick is the
