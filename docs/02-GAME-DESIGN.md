@@ -479,6 +479,17 @@ record and recruiting record.
 Carried across: reputation, scheme identity, a subset of staff, the record book, the career line.
 Not carried: players, recruits, college currency.
 
+**The subset of staff is the four coordinators — owner decision 2026-08-20.** They follow the coach
+to the professional team unconditionally, displacing its incumbent coordinators the same way the
+coach displaces its head coach. Position coaches do not follow: the staff that carries is the one
+that carries *scheme identity*, which is the line above and the reason the subset exists at all.
+The seats the group vacates are backfilled at the college programme, because every organisation
+holds exactly one coach per role at all times (§11) and a vacancy is not a state the world is
+allowed to be in.
+
+This is a promotion rule, not a separation rule. A coach who resigns or is fired goes nowhere and
+takes nobody: the coordinators keep their jobs and the programme keeps its staff.
+
 One-way by default, with a demotion path if the pro job ends badly. Tuned so the move is earned in
 4–12 college seasons at median play.
 

@@ -19,6 +19,73 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-20 — career transitions: the world half of a job change was never done.** The career
+> arc moved and the world did not. Three transitions end a coach's job, and all three cleared the
+> career control record and stopped there, leaving the coach standing in their old organisation's
+> staff list as its head coach. Every staff surface then reported current employment for a coach who
+> had been promoted, had resigned, or had been fired.
+>
+> The promotion was the worst of the three: the coach never joined the professional team and never
+> gained a professional assignment in `people.staffCareers`, which is the sole authority the
+> coaching tree and the season history archive read. Promotions were therefore invisible on every
+> history surface while the college seat was duplicated. Commits `3967855` (promotion), `95932dd`
+> (resignation, plus the hire that follows it, which threw `missingHeadCoach` because a returning
+> coach's last assignment still pointed at the programme they had left), `4dc7877` (firing).
+>
+> A fourth defect sat downstream in the projection: `CoachingTreeReadModel.headCoachesBySeat` broke
+> a contested seat by lower UUID, and a promotion contests one by construction — the displaced coach
+> holds a true record of the same seat in the same season. So roughly half the time the seat, and
+> every disciple hanging off it, was credited to the coach who had just been replaced. World truth
+> now outranks the tie-break. Commit `be34fc8`.
+>
+> A fifth defect was introduced *by this work* and caught by a confidence review of its own branch.
+> Once coordinators followed a promotion, the four the promotion displaced each became a phantom
+> disciple of the coach who had just thrown them out: their record truthfully says they served that
+> organisation that season, and the seat now resolves to the arriving coach. Before the follow, only
+> the head coach was displaced, and head-coach assignments are already excluded from disciple
+> candidates, so the follow created the case. Where a mentor arrived in the same season an
+> assistant's record there ends and the assistant is no longer on that staff, the mentorship is now
+> refused — no mentor beats the wrong one. Commit `7a2a55c`.
+>
+> **Owner decision 2026-08-20 — the coordinators follow the coach.** `02` section 9 always said the
+> promotion carries "a subset of staff" without naming it. The subset is the four coordinators;
+> position coaches stay. Canon was amended before the code. It is a promotion rule and not a
+> separation rule: a coach who resigns or is fired takes nobody. Commit `c311018`.
+>
+> **What is verified.** Debug only. `--career-arc` went from 8 tests / 49 checks to 19 / 333. Every
+> named suite is green on the final tree — `--career-control`, `--coaching-tree`,
+> `--professional-career-session`, `--history-archive` — along with `--core-contracts`,
+> `--architecture-only`, `--screen-read-models`, `--history-read-model`, `--people-lifecycle`,
+> `--career-portal-decisions`, `--weekly-authority`, `--rivalry-order`, `--season-rollover`,
+> `--pro-week-walk` and `--m3-soak`. `--m7-gate` passed its 65 assertions, but only in **debug** —
+> the gate needs `swift run -c release -Xswiftc -enable-testing`, and in debug its `weekMeanMs` and
+> save-size figures are not the gate's numbers. A release run was started and died during the cold
+> build without completing, so the gate is **unverified in release on this branch**.
+>
+> **What is not verified.** No release build, no simulator walkthrough, no `04b` audit. These are
+> engine and projection changes with no view-layer surface, but nothing here has been seen running.
+>
+> **The coverage lesson, again.** All five named suites were green through every one of these
+> defects, because nothing asserted the world half of a transition. Three hand-written walks then
+> covered the three transitions that exist today, which is `AUDIT.md`'s failure verbatim — the
+> test's coverage boundary becoming the quality boundary. The class is now enumerated by
+> construction: a scan requires every `clearCollege()` in `Sources/` to be answered by a world-side
+> move within six lines, and it ships both a planted-offender self-test and a floor on the number of
+> call sites it must reach, so a scan that stops walking the tree fails instead of reporting
+> all-clear. It was also checked against a real regression, not only the synthetic one.
+>
+> **Still open, for the owner.** There is no coach win-loss record anywhere in the engine. "Career
+> record" reads like a thing the promotion carries and there is nothing to carry; adding one is a
+> new carried thing, not a repair. Separately, the debug `--m7-gate` reports a season-30 save of
+> 36,871,560 B against the 8 MB commitment, growing roughly linearly with archived seasons — a
+> serialized byte count, so build mode does not excuse it.
+>
+> Also open: `state.staff` grows by five entries per promotion and one per separation, and staff who
+> hold no seat are never pruned — `SeasonLifecycleSystem.resolvedStaffIDs` only retains by age
+> *within* an organisation. It is small against ~2,160 staff and thirty seasons run green, but
+> `CLAUDE.md` requires every collection that grows across seasons to have a stated bound and this one
+> has none. Who disappears from a coaching history is a design call, not a cleanup.
+
 > **2026-08-20 — college acquisition rules asserted after every transaction, two system defects
 > found and fixed.** The five college acquisition rules the rules module fixes — scholarship count,
 > eligibility clock, redshirt legality, commitment uniqueness, portal window — were already stated
