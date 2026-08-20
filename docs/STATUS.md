@@ -881,19 +881,43 @@ the share at or past a position's decline age 0.182 to 0.223 against 0.08 to 0.3
 injured share, 0.0207 to 0.0254 against a derived 0.015 to 0.055. College churn, 0.256 to 0.305
 against a derived 0.18 to 0.45. Both standard-deviation limbs of the rating spread.
 
-**Red 1: no professional has ever changed club.** Professional churn decays 0.295, 0.257, 0.162,
-0.095 across ten seasons, onto 1/11.44 = 0.087 — the retirement-only rate implied by the same mean
-career length the age-curve band derives. Splitting a departure from a transfer says why:
-professional `moved` is **exactly zero at every season across 32 clubs**, against college `moved` of
-127 to 202 a season through the portal. Every professional departure is one-way.
+**Red 1: professional turnover decays, and the draft never picks.** Professional churn falls 0.295,
+0.257, 0.162, 0.095 across ten seasons, onto 1/11.44 = 0.087 — the retirement-only rate implied by
+the same mean career length the age-curve band derives.
 
-This is the stall `a2e3147` and `4a95ca5` record, in a form neither describes. Their diagnosis was
-that bootstrap issued no contracts so nobody reached free agency. That half is fixed: `--pro-soak`
-counts 1,491 expiries and 1,476 signings across ten seasons. What no measurement caught until now is
-that those 1,476 signings **relocate nobody**, and the draft still takes zero picks in ten seasons
-while starting nine times. It also contradicts canon rather than only a derived band: `02` §4.2a
-fixes bootstrap terms so "roughly a fifth of each roster reaches expiry each season", about 339
-expiries; the model produces 149.
+*An earlier version of this entry said the cause was that no professional ever changes club. That
+was wrong, and the error was in the measurement rather than the model.* The churn metric compared
+week-1 rosters and classified anyone missing as departed. Contracts expire in the final week of a
+season and free agency signs out of the pool during the *next* one, so a relocating player is on
+nobody's roster at the boundary between leaving and arriving: every A-to-B move read as a departure
+at one snapshot and an unrelated arrival at the next, and `moved` was structurally pinned to zero.
+The coverage boundary became the quality boundary — the snapshot enumerated rosters, and the pool
+between them, which is where relocation lives, sat outside it. `churn` now carries a third bucket,
+`pooled`, and at a season boundary professional departures split 289 pooled against 212 gone.
+
+`--pro-movement-probe` watches every week instead of every boundary and shows a market that trades:
+
+```text
+season 1: expired=290  relocated=0    returned=0   free agency never ran, poolLeft=290
+season 2: expired=248  relocated=280  returned=10  freeAgency weeks=12
+season 3: expired=208  relocated=238  returned=10  freeAgency weeks=12
+```
+
+Season 1 has no free agency because bootstrap issues contracts but nothing has expired yet, so the
+pool is empty until week 21. From season 2 the pool clears at 280 relocations against 10 re-signings.
+
+What is genuinely red, after the correction:
+
+- **The draft takes zero picks in ten seasons** while starting nine times. `--pro-soak` reports
+  `draftedFinal=0` independently of any churn metric, and this is the stall `a2e3147` and `4a95ca5`
+  record.
+- **Rosters never refill.** 1,406, 1,448 and 1,488 against 32 * 53 = 1,696, with the count of
+  professionals owned by nobody growing 496, 619, 740. Consistent with intake that has lost the
+  draft half.
+- **Expiry decays, and starts below canon.** `02` §4.2a fixes bootstrap terms so "roughly a fifth of
+  each roster reaches expiry each season", about 339. Season 1 produces 290, which is 0.17 rather
+  than 0.20, and it falls to 208 by season 3. Churn decays because expiry decays, not because the
+  market froze.
 
 **Red 2: college talent decays to the recruiting pipeline's scale.** Mean college overall falls
 59.32, 58.46, 54.06, 51.38, 51.59 and settles, while professional mean holds at 65.5 to 66.1. The

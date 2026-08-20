@@ -822,12 +822,23 @@ func checkRatingSpread(_ state: GameState, season: Int, assertTierGap: Bool) {
 private let collegeChurnBand: ClosedRange<Double> = 0.18...0.45
 private let proChurnBand: ClosedRange<Double> = 0.10...0.50
 
-typealias RosterSnapshot = (college: [UUID: Set<UUID>], pro: [UUID: Set<UUID>])
+typealias RosterSnapshot = (
+    college: [UUID: Set<UUID>],
+    pro: [UUID: Set<UUID>],
+    pool: Set<UUID>
+)
 
 func rosterSnapshot(_ state: GameState) -> RosterSnapshot {
     (
         college: state.programmes.values.reduce(into: [:]) { $0[$1.id] = Set($1.rosterIDs) },
-        pro: state.proTeams.values.reduce(into: [:]) { $0[$1.id] = Set($1.rosterIDs) }
+        pro: state.proTeams.values.reduce(into: [:]) { $0[$1.id] = Set($1.rosterIDs) },
+        // The free-agent pool spans the season boundary: contracts expire in the final week of a
+        // season and free agency signs out of the pool during the *next* one. A snapshot that reads
+        // rosters alone therefore cannot see a relocation at all — the player is on nobody's roster
+        // at the boundary between leaving and arriving, so an A-to-B move reads as a departure here
+        // and an unrelated arrival a season later. Carrying the pool is what makes the three-way
+        // split below truthful.
+        pool: Set(state.proMarket.freeAgentIDs)
     )
 }
 
@@ -847,46 +858,51 @@ func checkChurn(
 ) {
     /// Departures as a share of the roster they left, pooled across organisations. Pooled rather
     /// than averaged per organisation so one team with a freak roster cannot swing the figure.
-    func churn(_ before: [UUID: Set<UUID>], _ after: [UUID: Set<UUID>])
-        -> (share: Double, total: Int, moved: Int, left: Int) {
-        // Where everybody ended up, so a departure can be told apart from a transfer. Churn that is
-        // all `left` and no `moved` is a league whose market has stopped trading, which reads
-        // identically to a healthy one if you only count departures.
+    func churn(_ before: [UUID: Set<UUID>], _ after: [UUID: Set<UUID>], pool: Set<UUID>)
+        -> (share: Double, total: Int, moved: Int, pooled: Int, left: Int) {
+        // Where everybody ended up, three ways. `pooled` exists because the second bucket is not
+        // "gone": a professional between contracts is mid-relocation, and counting them as departed
+        // is what made an earlier version of this read `moved == 0` and conclude the market had
+        // stopped trading. It had not. `--pro-movement-probe` watches every week instead of every
+        // boundary and counts 280 relocations in one season against ten returns.
         var organisationByPlayer: [UUID: UUID] = [:]
         for (organisationID, roster) in after {
             for playerID in roster { organisationByPlayer[playerID] = organisationID }
         }
         var moved = 0
+        var pooled = 0
         var left = 0
         var total = 0
         for (organisationID, roster) in before {
             guard after[organisationID] != nil else { continue }
             total += roster.count
             for playerID in roster.subtracting(after[organisationID] ?? []) {
-                if organisationByPlayer[playerID] == nil { left += 1 } else { moved += 1 }
+                if organisationByPlayer[playerID] != nil { moved += 1 }
+                else if pool.contains(playerID) { pooled += 1 }
+                else { left += 1 }
             }
         }
-        let share = total > 0 ? Double(moved + left) / Double(total) : .nan
-        return (share, total, moved, left)
+        let share = total > 0 ? Double(moved + pooled + left) / Double(total) : .nan
+        return (share, total, moved, pooled, left)
     }
     for (label, band, measure) in [
-        ("college", collegeChurnBand, churn(previous.college, current.college)),
-        ("pro", proChurnBand, churn(previous.pro, current.pro)),
+        ("college", collegeChurnBand, churn(previous.college, current.college, pool: [])),
+        ("pro", proChurnBand, churn(previous.pro, current.pro, pool: current.pool)),
     ] {
-        let (share, total, moved, left) = measure
+        let (share, total, moved, pooled, left) = measure
         guard total > 0 else {
             expect(false, "season \(season): no \(label) roster to measure churn over")
             continue
         }
         print(String(
-            format: "churn: season %d %@, n %d, share %.3f (moved %d, left %d)",
-            season, label, total, share, moved, left
+            format: "churn: season %d %@, n %d, share %.3f (moved %d, pooled %d, left %d)",
+            season, label, total, share, moved, pooled, left
         ))
         guard label == "college" || assertPro else { continue }
         expect(band.contains(share), String(
             format: "season %d: %@ churn %.3f is outside the band %.2f…%.2f "
-                + "(moved %d, left %d)",
-            season, label, share, band.lowerBound, band.upperBound, moved, left
+                + "(moved %d, pooled %d, left %d)",
+            season, label, share, band.lowerBound, band.upperBound, moved, pooled, left
         ))
     }
 }
