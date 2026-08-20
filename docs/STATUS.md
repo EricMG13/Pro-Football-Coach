@@ -2814,6 +2814,20 @@ No calibration source changes were retained. The full release lane was attempted
 was killed by the operating system before the suite ran; stale executables were not used as evidence.
 The M3 recruiting-calibration suite remains unverified from a fresh build in this continuation.
 
+#### 2026-08-20 — continuation screening: two more hypotheses rejected
+
+Two additional calibration-only hypotheses were screened with fresh public-API executions using the
+holdout seeds and current ladder. They were not substituted for the authoritative core-only holdout
+run because the diagnostic runner used its own deterministic game-seed derivation.
+
+- Normalizing every synthetic team's per-attribute means back to its declared rung made the pro
+  favourite rate **0.8977**, CI90 **[0.8810, 0.9143]**, and blowout rate **0.7040**, CI90
+  **[0.6803, 0.7277]**. Normalizing within position groups was worse: **0.9356** and **0.7090**.
+- Extending the pro field-goal decision range to 45 yards moved points per drive only to **2.1544**,
+  CI90 **[2.1205, 2.1883]**, and blowout rate to **0.6770**, CI90 **[0.6527, 0.7013]**.
+
+Neither is a justified model fix. No source or canon-band changes were retained.
+
 ### P3 — match engine core
 
 D2's hybrid assignment/leverage resolution, per tier, with the clock, the drive loop and the game
