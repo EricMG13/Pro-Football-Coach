@@ -201,44 +201,54 @@ public enum SeasonLifecycleSystem {
     /// a new reference is covered the day the structure gains it: the retained event journal (both
     /// its generic entity references and its typed prospect references, which validate recruiting
     /// history), archived award winners, everyone still on a roster, and everyone whose portal
-    /// window is still summarised by a live `.portalWindowCompleted` event — the last because
-    /// `WorldIntegrity` cross-checks portal offers held on a career record against the scouting
-    /// knowledge held beside it, and dropping one half of that pair would report as corruption.
+    /// window is still named by any live portal event — the last because `WorldIntegrity`
+    /// cross-checks live-window event counts and current-target capacity/scouting knowledge against
+    /// career records, and dropping one half of that pair would report as corruption.
     private static func retainedIdentityIDs(in state: GameState) -> Set<UUID> {
         var protectedIDs = Set(state.players.ids)
+        var survivingPortalWindows = Set<PortalWindowKey>()
         for event in state.history.recent {
-            protectedIDs.formUnion(event.payload.referencedEntityIDs)
-            protectedIDs.formUnion(event.payload.referencedProspectIDs)
+            let payload = event.payload
+            protectedIDs.formUnion(payload.referencedEntityIDs)
+            protectedIDs.formUnion(payload.referencedProspectIDs)
+            switch payload {
+            case let .portalEntered(_, _, targetSeason, window, _),
+                 let .portalRetentionResolved(_, _, targetSeason, window, _),
+                 let .portalOfferMade(_, _, targetSeason, window, _),
+                 let .playerTransferred(_, _, _, targetSeason, window, _, _):
+                survivingPortalWindows.insert(
+                    PortalWindowKey(targetSeason: targetSeason, window: window)
+                )
+            case let .portalWindowCompleted(summary):
+                survivingPortalWindows.insert(
+                    PortalWindowKey(targetSeason: summary.targetSeason, window: summary.window)
+                )
+            default:
+                break
+            }
         }
         for archive in state.competition.archives {
-            protectedIDs.formUnion(archive.awards.map(\.winnerID))
+            for award in archive.awards {
+                protectedIDs.insert(award.winnerID)
+            }
         }
-        // Every career with a record in a (season, window) that a surviving
-        // `.portalWindowCompleted` event still names — not any career that ever touched the
-        // portal.
+        // Every career with a record in a (season, window) that any surviving portal event still
+        // names — not any career that ever touched the portal.
         //
-        // `WorldIntegrity.checkPortalEvents` recounts every entrant of that window — retained and
-        // returned entrants included, not just transfers — from `playerCareers` for as long as its
-        // summary event sits in `state.history.recent`. That event's `referencedEntityIDs` is
-        // empty (it names a window, not a player), so the generic event loop above does not cover
-        // those entrants on its own, even though the summary (`historicalWeight` 60) outlives their
-        // own entry/retention events (weight 20 and 0) in the same bounded, count-limited journal.
-        // Narrowing protection to the *current* target season, tried first, broke exactly this
-        // recount for a window still resident in the journal and failed at season 4 with
-        // `portalCommitFailed(.postseason)`. This reads the same journal the recount reads, so a
-        // career falls out of protection only once the recount can no longer need it either.
-        let survivingPortalWindows = Set(state.history.recent.compactMap { event -> PortalWindowKey? in
-            guard case let .portalWindowCompleted(summary) = event.payload else { return nil }
-            return PortalWindowKey(targetSeason: summary.targetSeason, window: summary.window)
-        })
+        // `WorldIntegrity` recomputes a live window's entrant and offer counts from career records,
+        // and recomputes current-target destination capacity from its offers. Protecting only the
+        // player named by a surviving event can therefore leave a partial live window whose
+        // aggregate no longer reconciles. This reads the same bounded journal as the integrity
+        // checks, so a window falls out of portal protection only once every portal event for it
+        // can no longer be consulted.
         if !survivingPortalWindows.isEmpty {
             for (playerID, career) in state.people.playerCareers {
-                let stillSummarised = career.portalWindows.contains {
+                let matchesSurvivingWindow = career.portalWindows.contains {
                     survivingPortalWindows.contains(
                         PortalWindowKey(targetSeason: $0.targetSeason, window: $0.window)
                     )
                 }
-                if stillSummarised {
+                if matchesSurvivingWindow {
                     protectedIDs.insert(playerID)
                 }
             }
