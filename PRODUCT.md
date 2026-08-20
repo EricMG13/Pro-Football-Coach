@@ -105,7 +105,7 @@ instruments exist and run in CI:
 | Target | Current evidence status |
 |---|---|
 | A season is completable in 6–8 hours | AgencyBudgetTests is not implemented; owner measurement remains open |
-| Week advance under 2.0 s at shipping league size | The host timing probe is evidence only; the device gate remains open |
+| Week advance under 2.0 s at shipping league size | `PerformanceBudgetTests` measured recruiting AI at 1.260 s and full week advance at 4.031 s on a Release Mac host at 134 programmes; the 2.0 s ceiling is exceeded and the iPhone gate remains open |
 | The simulation and the off-screen model agree | TwoTierConsistencyTests is not implemented; calibration coverage remains open |
 
 ---

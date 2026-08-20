@@ -51,7 +51,7 @@ func runWeekAdvanceTimingProbe(weeks: Int = 21) {
     print("TIMING: worst week is \(worst > 2.0 ? "over" : "inside") the budget on this host")
 }
 
-private func seconds(_ duration: Duration) -> Double {
+func seconds(_ duration: Duration) -> Double {
     Double(duration.components.seconds)
         + Double(duration.components.attoseconds) / 1_000_000_000_000_000_000
 }

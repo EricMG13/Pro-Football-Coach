@@ -8,6 +8,7 @@ enum ReleaseGateID: String, CaseIterable, Sendable {
     case reduceMotion = "ReduceMotionContractTest"
     case voiceOver = "VoiceOverLabelTest"
     case touchTarget = "TouchTargetTest"
+    case performanceBudget = "PerformanceBudgetTests"
     case determinism = "DeterminismTests"
     case reachability = "ReachabilityTest"
     case errorSurface = "ErrorSurfaceTest"
@@ -55,6 +56,7 @@ struct SuiteCatalog: Sendable {
         case .commitmentCoverage, .contrastByConstruction, .dynamicType, .reduceMotion,
              .voiceOver, .touchTarget, .reachability, .errorSurface,
              .accessibility: return "accessibility"
+        case .performanceBudget: return "performance"
         case .determinism: return "determinism"
         case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly: return "persistence"
         case .m1Soak, .m2Soak: return "soaks"
@@ -72,6 +74,8 @@ struct SuiteCatalog: Sendable {
             return Runner(command: "--design-contracts", function: "runAccessibilityReflowTests")
         case .reduceMotion:
             return Runner(command: "--reduce-motion", function: "runReduceMotionContractTests")
+        case .performanceBudget:
+            return Runner(command: "--performance-budget", function: "runPerformanceBudgetTests")
         case .determinism:
             return Runner(command: "--architecture-only", function: "runArchitectureTests")
         case .accessibility:
@@ -135,6 +139,17 @@ func runCommitmentCoverageTest() {
             for entry in SuiteCatalog.entries where entry.runner == nil {
                 expect(false, "\(entry.gate.rawValue) is registered without a runnable command")
             }
+        }
+
+        test("performance budget has a dispatch runner") {
+            let entry = SuiteCatalog.entries.first { $0.gate.rawValue == "PerformanceBudgetTests" }
+            expectEqual(
+                entry?.runner,
+                SuiteCatalog.Runner(
+                    command: "--performance-budget",
+                    function: "runPerformanceBudgetTests"
+                )
+            )
         }
     }
 }
