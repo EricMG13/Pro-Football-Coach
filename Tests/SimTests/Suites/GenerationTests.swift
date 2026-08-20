@@ -5,16 +5,15 @@ import FootballSimCore
 ///
 /// It pinned `SaveEnvelope.encode(...)` until 2026-08-12, when the save body became zlib-compressed
 /// and this dropped from 824,938 bytes to 155,631. That is compression, not a generation change —
-/// and the new body pin, 824,922, is the old one minus exactly the 16-byte header, which is the
-/// arithmetic proof that generation itself did not move.
+/// and the body pin below now also records the intentional real-place naming policy.
 /// but the pin could not tell the difference, and a pin that moves when the compression library
 /// moves is a cross-process assertion about zlib rather than about generation. It now hashes the
 /// JSON the generator produces, which is the thing it is actually asserting.
 ///
 /// See "the encoded world matches a pinned digest" below for why these exist and when to change
 /// them.
-private let PINNED_WORLD_BYTES = 824_922
-private let PINNED_WORLD_DIGEST: UInt64 = 10_978_924_493_241_617_378
+private let PINNED_WORLD_BYTES = 825_480
+private let PINNED_WORLD_DIGEST: UInt64 = 16_135_054_583_268_133_864
 
 /// FNV-1a over the bytes, order-sensitive.
 ///

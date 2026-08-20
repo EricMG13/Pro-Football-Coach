@@ -122,10 +122,18 @@ func runTeamLogoManifestTests() {
             let manifest = try loadTeamLogoManifest()
             let world = GameState.bootstrap(seed: manifest.worldSeed)
             let worldIDs = Set(world.programmes.ids).union(world.proTeams.ids).map(\.uuidString)
+            let worldNames = Dictionary(uniqueKeysWithValues:
+                world.programmes.values.map { ($0.id.uuidString, $0.name) }
+                + world.proTeams.values.map { ($0.id.uuidString, "\($0.cityName) \($0.nickname)") }
+            )
             expectEqual(manifest.schemaVersion, 1)
             expectEqual(manifest.worldSeed, 20_260_812)
             expectEqual(manifest.teams.count, 166)
             expectEqual(Set(manifest.teams.map(\.stableID)), Set(worldIDs))
+            for team in manifest.teams {
+                expectEqual(team.name, worldNames[team.stableID],
+                            "manifest display name drifted for \(team.stableID)")
+            }
         }
         test("lookup keys, names and prompts are unique and complete") {
             let teams = try loadTeamLogoManifest().teams

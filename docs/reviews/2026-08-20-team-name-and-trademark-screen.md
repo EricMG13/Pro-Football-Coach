@@ -1,14 +1,14 @@
 # Team name and trademark screen
 
 Date: 2026-08-20  
-Scope: 166 fictional team names in `Tools/TeamLogos/manifest.json`  
+Scope: 166 generated team names in `Tools/TeamLogos/manifest.json`
 Purpose: product naming coherence and pre-clearance risk screen before public or merchandise use.
 
 ## Executive result
 
-No current team name is an exact match for a current NFL, NBA, MLB, NHL, or MLS club name in the official league reference lists below. This is not a trademark clearance opinion.
+The canonical set now uses real U.S. city/town names qualified by state abbreviation, combined with generic institution or club descriptors. Stable UUIDs and approved logo assets are unchanged. No current full team name is an exact match for a current NFL, NBA, MLB, NHL, or MLS club name in the official league reference lists below. This is not a trademark clearance opinion.
 
-The roster is more location-anchored than it first appears: 165 of 166 names contain a fictional place/root or geographic modifier. The outlier is `Lamphier`. Thirty-four names use an explicit institution-style suffix (`University`, `State`, `Academy`, `Institute`, `Polytechnic`, `Technical`, `Maritime`, `Agricultural`, `Mining`, or `Normal`). The other names can read as professional clubs or geographic programs; they do not need a suffix unless the product presents them as colleges.
+The place pool is 570 incorporated U.S. cities and towns from the 2024 U.S. Census Gazetteer, rendered as `City, ST`. College-style names use generic descriptors such as `Technical Institute`, `Regional College`, or `Maritime Institute`; pro-style names keep the place and a generic plural nickname. The blocklist and generated-world sweep still screen exact and component collisions.
 
 ## Naming pattern reference
 
@@ -23,7 +23,11 @@ Official sources:
 - MLS clubs: https://www.mlssoccer.com/clubs/
 - NCAA member-school directory: https://www.ncaa.org/about-us/membership-directory/
 
-Recommended product rule: choose one presentation per team—college-style `[fictional place] University/State/Institute/etc.` or pro-style `[fictional place] [distinctive plural nickname]`. Keep compass/geographic modifiers only when they follow a persistent fictional place root.
+Recommended product rule: choose one presentation per team—college-style `[real place, ST] [generic institute/college descriptor]` or pro-style `[real place, ST] [distinctive plural nickname]`. A real place is not a real school identity; the combined name, colors, logo, roster, and presentation still require clearance.
+
+## Bowl-game naming
+
+The attached `Safe Generic Alternative.txt` is useful research, not legal authority. Its generic replacements are applied as a narrow rule: a projected bowl badge may use the host place plus `Classic`, `Showcase`, `Championship`, or `Football Classic`. The generator must not use `Rose Bowl`, `Sugar Bowl`, `Fiesta Bowl`, `Orange Bowl`, or near-miss substitutes intended to evoke them. The engine currently persists postseason stage rather than a bowl-title field; `NameGrammar.bowlName(place:using:)` is the single safe title helper for a future read-model badge, so no save schema changed.
 
 ## Risk tiers
 
@@ -57,6 +61,8 @@ Before any public launch, filing, licensing, or merchandise sale, run a comprehe
 
 This screen is not legal advice or a finding of availability. A trademark attorney should make the final jurisdiction-specific clearance decision before filing or selling.
 
+Place-source reference: U.S. Census 2024 Gazetteer Files, National Places, https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.2024.html
+
 ## Current action
 
-Keep the stable UUIDs and generated logo assets. Do not rename the five medium-high roots automatically during artwork generation; apply the proposed changes only after owner approval because names are user-facing identity changes. Continue the remaining logo batches under the naming rule above.
+Keep the stable UUIDs and generated logo assets. Review the real-place display names for local/common-law conflicts before public release or merchandise. Apply the same place-plus-generic rule to any future bowl badge; do not add official or near-miss legacy bowl names.
