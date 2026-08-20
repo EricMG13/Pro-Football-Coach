@@ -134,10 +134,25 @@ func runSeasonRolloverTests() {
             }
             expectEqual(state.calendar.week, SharedRules.inSeasonWeeks)
             let teamID = state.proTeams.ids.first { $0 != controlledTeamID(in: state) }
-            guard let teamID, let team = state.proTeams[teamID],
-                  let playerID = team.rosterIDs.first else {
-                expect(false, "no eligible non-controlled team with a rostered player")
+            guard let teamID, let team = state.proTeams[teamID] else {
+                expect(false, "no eligible non-controlled team")
                 return
+            }
+            let positionCounts = Dictionary(
+                grouping: team.rosterIDs.compactMap { state.players[$0]?.position },
+                by: { $0 }
+            ).mapValues(\.count)
+            guard let playerID = team.rosterIDs.first(where: { playerID in
+                guard let position = state.players[playerID]?.position else { return false }
+                return positionCounts[position, default: 0]
+                    > (SharedRules.minimumPlayableRosterByPosition[position] ?? 0)
+            }) else {
+                expect(false, "no cap-release candidate above positional minimums")
+                return
+            }
+            _ = state.proTeams.update(teamID) {
+                $0.rosterIDs.removeAll { $0 == playerID }
+                $0.practiceSquadIDs.append(playerID)
             }
             let capLimit = ProRules.salaryCap(seasonsAfterBase: state.calendar.season)
             state.players.update(playerID) {

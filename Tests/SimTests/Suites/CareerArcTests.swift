@@ -1202,7 +1202,6 @@ private func registerCoachSeasonRecordContractTests() {
     }
 
 }
-
 private func assertCoachSeasonRecordCarriesAcrossPromotion() throws {
     let source = GameState.bootstrap(seed: 99_129)
     let programmeID = source.programmes.ids[0]

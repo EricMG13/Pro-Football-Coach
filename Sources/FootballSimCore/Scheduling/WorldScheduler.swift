@@ -3,6 +3,10 @@ import Foundation
 public enum WorldStep: String, Codable, Sendable, CaseIterable, Hashable {
     case expiringInboundEvents
     case injuriesAndRecovery
+    /// Ordered after `injuriesAndRecovery` because `PeopleLifecycleSystem.processHealth` counts a
+    /// served suspension down on that tick. A new suspension drawn before it would be shortened by
+    /// the same week it was issued in.
+    case disciplineFile
     case practiceAndDevelopment
     case scoutingKnowledge
     case marketInteractions
@@ -527,6 +531,17 @@ public enum WorldScheduler {
                 )
                 records.append(WorldStepRecord(step: step, status: .executed))
 
+            case .disciplineFile:
+                let transition = try DisciplineAISystem.process(at: completed, in: nextState)
+                nextState = transition.state
+                try appendEvents(
+                    payloads: transition.eventPayloads,
+                    occurredAt: completed,
+                    to: &nextState,
+                    emittedEvents: &events
+                )
+                records.append(WorldStepRecord(step: step, status: .executed))
+
             case .practiceAndDevelopment:
                 let transition = DevelopmentSystem.practice(
                     at: completed,
@@ -740,9 +755,10 @@ public enum WorldScheduler {
                             emittedEvents: &events
                         )
                     }
-                    // Resolve work performed after the ordinary pre-AI market before signing.
-                    // Appending immediately keeps commitment history causally ahead of the
-                    // resolution and join events emitted by the college cycle below.
+                }
+                if completed.week == CollegeRules.signingDayWeek - 1 {
+                    // Resolve the last open-week AI work before signing day. Appending immediately
+                    // keeps the reservation causally ahead of the signing-week rollover events.
                     let terminalMarket = CollegeRecruitingMarketSystem.process(
                         at: completed,
                         in: nextState

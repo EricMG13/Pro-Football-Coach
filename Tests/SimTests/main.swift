@@ -53,6 +53,10 @@ if CommandLine.arguments.contains("--catalog") {
     runDisciplineTests()
 } else if CommandLine.arguments.contains("--week-advance-timing") {
     runWeekAdvanceTimingProbe()
+} else if CommandLine.arguments.contains("--pro-movement-probe") {
+    runProMovementProbe()
+} else if CommandLine.arguments.contains("--pro-draft-stall-probe") {
+    runProDraftStallProbe()
 } else if CommandLine.arguments.contains("--pro-market-root-probe") {
     runProMarketRootProbe()
 } else if CommandLine.arguments.contains("--screen-read-models") {

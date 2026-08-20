@@ -186,18 +186,31 @@ public enum NameGrammar {
     // sweep found it: it is Harvard's nickname, so every "Crimson Lancers" the generator produced
     // was a collision. A rare pool word might not surface in 200 leagues at all, which is why the
     // pool is checked as a set and not only through its output.
+    // "Storm" was here and is gone. It is the nickname of Simpson College, which plays Division III
+    // football, and of Lake Erie College in Division II. An adjective is the hardest place to see
+    // this, because the word never appears alone in a generated name — but "Storm Wardens" contains
+    // it, and containment is what the blocklist evaluates. Replaced by another mineral, so the
+    // pool keeps its register and its count.
     private static let nicknameAdjectives = [
-        "Iron", "Amber", "Granite", "Silver", "Copper", "Slate", "Storm", "Frost", "Ember",
+        "Iron", "Amber", "Granite", "Silver", "Copper", "Slate", "Basalt", "Frost", "Ember",
         "Thunder", "River", "Harbor", "Timber", "Cinder", "Verdant", "Sable", "Kindled", "Hollow",
     ]
     // Miners, Lancers, Stags and Pioneers were here and are real Division I nicknames (UTEP,
     // Longwood, Fairfield, Denver). They are replaced one-for-one rather than deleted: the pool is
     // 22 nouns against 166 teams per save, and shrinking it makes the duplicate-nickname problem
     // worse, not better.
+    //
+    // Seven more went the same way on 2026-08-13, found by reading the pool against every division
+    // rather than against the FBS slice the blocklist held: Foresters (Lake Forest, III), Marauders
+    // (Mary, II), Herons (William Smith, III), Otters (Cal State Monterey Bay, II), Beacons
+    // (Valparaiso, **I**), Drovers (Science and Arts of Oklahoma, NAIA) and Harriers (Miami
+    // Hamilton, USCAA). Replaced in place, so the count stays 22 and `rng.pick` draws the same
+    // index it drew before — a swap changes the names in a save and nothing else about it.
     private static let nicknameNouns = [
-        "Wardens", "Drovers", "Delvers", "Sentinels", "Bulwarks", "Foresters", "Marauders",
-        "Prospectors", "Voyagers", "Reapers", "Anchors", "Wayfarers", "Wreckers", "Harriers",
-        "Stalkers", "Herons", "Colliers", "Otters", "Ironsides", "Quarrymen", "Beacons", "Kestrels",
+        "Wardens", "Shrikes", "Delvers", "Sentinels", "Bulwarks", "Sawyers", "Draymen",
+        "Prospectors", "Voyagers", "Reapers", "Anchors", "Wayfarers", "Wreckers", "Wheelwrights",
+        "Stalkers", "Bitterns", "Colliers", "Martens", "Ironsides", "Quarrymen", "Lamplighters",
+        "Kestrels",
     ]
 
     /// Every **word** this grammar can put into a generated name.

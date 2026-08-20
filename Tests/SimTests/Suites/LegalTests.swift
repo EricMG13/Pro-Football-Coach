@@ -325,6 +325,93 @@ func runLegalTests() {
             expect(Blocklist.blocks("Buckeyes"), "a single-word real nickname is not blocked")
         }
 
+        test("the near-miss forms a careful person reaches for are refused") {
+            // These are not inventions of this test. They are the "safe alternatives" an IP note
+            // offered to this project proposed in place of the marks it named, and two of the four
+            // were already on the blocklist as real names when it proposed them: "Southeastern
+            // Conference" *is* the SEC and "Atlantic Coast" *is* the ACC, so the mitigation was the
+            // mark. The other two are near-misses of the bodies they stand in for.
+            //
+            // The failure this guards is not ignorance. It is a careful person reasoning their way
+            // to a name that sounds cleared and is not.
+            for alternative in ["Southeastern Conference", "Atlantic Coast",
+                                "National Collegiate Association", "National Pro Football",
+                                "American Conference", "National Conference",
+                                "Collegiate Athletic Association"] {
+                expect(Blocklist.blocks(alternative),
+                       "\(alternative) reads as a safe alternative and is a mark or a near-miss "
+                           + "of one")
+            }
+        }
+
+        test("a conference whose brand is a numeral is blocked in both of its forms") {
+            // By construction over the list rather than over remembered examples. "Big Twelve" and
+            // "Big 12" normalise to different tokens — `normalised` keeps digits — so an entry for
+            // one blocks nothing about the other, and the list held only the spelled form of three
+            // conferences whose own logo is the numeral.
+            let numerals = ["eight": "8", "ten": "10", "twelve": "12"]
+            var offenders: [String] = []
+            for entry in Blocklist.entries {
+                for (spelled, digits) in numerals {
+                    if entry.contains(spelled) {
+                        let numeric = entry.map { $0 == spelled ? digits : $0 }
+                            .joined(separator: " ")
+                        if !Blocklist.blocks(numeric) { offenders.append(numeric) }
+                    }
+                    if entry.contains(digits) {
+                        let written = entry.map { $0 == digits ? spelled : $0 }
+                            .joined(separator: " ")
+                        if !Blocklist.blocks(written) { offenders.append(written) }
+                    }
+                }
+            }
+            expect(offenders.isEmpty,
+                   "these conference marks are blocked in one form only: "
+                       + offenders.sorted().joined(separator: ", "))
+        }
+
+        test("a real rivalry trophy is refused, because the generator names trophies") {
+            // TraditionGrammar emits `<rivalry adjective> <trophy noun>` — "Iron Trophy", "Old
+            // Bell", "Border Axe". Real rivalry trophies have exactly that shape, and until the
+            // marks limb existed the tradition sweep ran against a blocklist containing no trophy
+            // at all: it could not have failed.
+            for trophy in ["Little Brown Jug", "Old Oaken Bucket", "Victory Bell", "Apple Cup",
+                           "Iron Bowl", "Territorial Cup", "Floyd of Rosedale"] {
+                expect(Blocklist.blocks(trophy), "\(trophy) is a real rivalry mark")
+            }
+            expect(Blocklist.blocks("The Old Oaken Bucket Trophy"),
+                   "a trophy mark inside a longer name is still the mark")
+        }
+
+        test("the words that left the nickname pools are blocked, and are no longer emittable") {
+            // Both halves matter. Blocking alone would turn the by-construction morpheme check red;
+            // replacing alone would leave the next pool free to reintroduce them. Beacons is the
+            // one that says why this class is worth a test: Valparaiso plays Division I.
+            let declared = Set(GenerationVocabulary.everyEmittableWord.map(Blocklist.normalised))
+            for word in ["Foresters", "Marauders", "Herons", "Otters", "Beacons", "Drovers",
+                         "Harriers", "Storm"] {
+                expect(Blocklist.blocks(word), "\(word) is a real college nickname")
+                expect(!declared.contains(Blocklist.normalised(word)),
+                       "\(word) is blocked and still reachable from a generator pool")
+            }
+        }
+
+        test("the sport's own vocabulary is not blocked") {
+            // The counterweight. A denylist that errs generous costs a few nouns until it starts
+            // costing the words the game has to say, and then it gets weakened rather than obeyed.
+            //
+            // "Red zone" is the sharp case and the reason no entry is the bare mark: `normalised`
+            // drops the space, so "RedZone" and "red zone" are one token, and blocking the
+            // broadcast mark alone would block the sport's own term for the twenty-yard line in.
+            // The entries that cover these marks are longer than the descriptive phrase on purpose.
+            for permitted in ["Red Zone", "Playoff", "Playoff Picture", "Signing Day", "Combine",
+                              "Draft Board", "Draft Room", "Transfer Portal", "Head Coach",
+                              "Bowl Game", "Conference Championship", "NIL", "Two-Minute Warning"] {
+                expect(!Blocklist.blocks(permitted),
+                       "\(permitted) is ordinary football vocabulary and the game has to say it")
+            }
+        }
+
         test("an invented name is not blocked, so the test can pass at all") {
             // The other direction. A blocklist that matched everything would make the sweep above
             // meaningless in the way that always-failing gates are meaningless.
@@ -414,6 +501,19 @@ func runLegalTests() {
                                 blue: real.primary.blue + 4)
             expect(ColourGenerator.collidesWithTradeDress(nudged, real.secondary),
                    "a nudged copy of a real pair was not caught")
+        }
+
+        test("the professional tier's trade dress is on the list too") {
+            // The list was a college slice while the generator dressed both tiers, so every pro
+            // team in every save was checked against college pairs only. Named by hex rather than
+            // by index, because an index moves whenever the list is refreshed and this assertion is
+            // about a specific real identity being covered.
+            for pair in [(Colour(hex: "203731"), Colour(hex: "FFB612")),
+                         (Colour(hex: "4F2683"), Colour(hex: "FFC62F")),
+                         (Colour(hex: "0085CA"), Colour(hex: "101820"))] {
+                expect(ColourGenerator.collidesWithTradeDress(pair.0, pair.1),
+                       "\(pair.0.hex)/\(pair.1.hex) is a real professional pair and is not covered")
+            }
         }
 
         test("a swapped real pair is still a real pair") {
