@@ -95,6 +95,18 @@ private func designSheets() -> [(name: String, text: String)] {
     }
 }
 
+private func rawAssetLoaders(in source: String) -> [String] {
+    let patterns = [
+        "Image\\([^\\n]*\\bbundle\\s*:",
+        "UIImage\\s*\\(\\s*named\\s*:",
+        "NSImage\\s*\\(\\s*named\\s*:",
+        "Bundle\\.module\\.image\\s*\\("
+    ]
+    return codeLines(of: source).filter { line in
+        patterns.contains { line.range(of: $0, options: .regularExpression) != nil }
+    }
+}
+
 // MARK: - The suite
 
 func runDesignContractTests() {
@@ -164,6 +176,29 @@ func runDesignContractTests() {
             let found = Set(matches(of: "0x([0-9A-Fa-f]{6})\\b", in: planted).map { $0.uppercased() })
             expect(!found.subtracting(canonValues).isEmpty,
                    "a planted off-canon colour must not be reported as declared")
+        }
+    }
+
+    suite("Team logo asset loading") {
+        test("only CoachWorldTeamLogo loads packaged image assets") {
+            let permittedPath = "Sources/ProFootballCoachUI/CoachWorldTeamLogo.swift"
+            let files = swiftFiles(under: "Sources/ProFootballCoachUI")
+            expect(files.contains { $0.path == permittedPath },
+                   "\(permittedPath) must own packaged image loading")
+
+            for file in files where file.path != permittedPath {
+                let loaders = rawAssetLoaders(in: file.text)
+                expect(loaders.isEmpty,
+                       "\(file.path) loads packaged assets outside CoachWorldTeamLogo.swift: "
+                           + loaders.joined(separator: " | "))
+            }
+        }
+
+        test("the scan would notice a raw asset loader outside the component") {
+            expect(!rawAssetLoaders(in: "UIImage(named: \\\"rogue\\\")").isEmpty,
+                   "a planted UIKit asset load must be caught")
+            expect(!rawAssetLoaders(in: "Bundle.module.image(forResource: NSImage.Name(\\\"rogue\\\"))").isEmpty,
+                   "a planted AppKit asset load must be caught")
         }
     }
 

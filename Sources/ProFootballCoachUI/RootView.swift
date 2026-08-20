@@ -49,7 +49,9 @@ private struct DebugCoachingHQRoot: View {
 
     var body: some View {
         Group {
-            if ProcessInfo.processInfo.environment["PROOF_SCREEN"] == "job-redesign"
+            if ProcessInfo.processInfo.environment["PROOF_SCREEN"] == "team-logos" {
+                TeamLogoProofView()
+            } else if ProcessInfo.processInfo.environment["PROOF_SCREEN"] == "job-redesign"
                 || CommandLine.arguments.contains("--redesigned-job-board") {
                 RedesignedJobBoardProofView()
             } else if currentScreen == .schemeBook {
