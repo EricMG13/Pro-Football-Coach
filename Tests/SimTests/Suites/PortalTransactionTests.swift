@@ -1289,4 +1289,92 @@ func runPortalTransactionTests() {
             expectEqual(try JSONEncoder.stable().encode(corrupt), before)
         }
     }
+
+    suite("Portal-touched departed-player retention") {
+        test("a departed portal entrant is protected only while its window's completion event survives") {
+            let projected = projectedPostseasonTransition(fixture)
+            let entrantIDs = fixture.entrantIDs
+
+            func fillerIdentity() -> DepartedPlayerIdentity {
+                DepartedPlayerIdentity(
+                    player: Player(
+                        firstName: "Filler",
+                        lastName: "Player",
+                        position: .quarterback,
+                        age: 25,
+                        attributes: Attributes(),
+                        potential: Rating(60)
+                    ),
+                    status: .graduated
+                )
+            }
+
+            func buildState(dropCompletionEvent: Bool) -> GameState {
+                var state = projected.state
+                let fillerIdentities = (0..<PeopleRules.departedPlayerRetentionLimit).map { _ in
+                    fillerIdentity()
+                }
+                let fillerCareers = fillerIdentities.map {
+                    PlayerCareerRecord(
+                        playerID: $0.id,
+                        portalWindows: [],
+                        endedAt: CalendarState(season: 1, week: 1),
+                        endStatus: .graduated
+                    )
+                }
+                let realIdentities = entrantIDs.map { id -> DepartedPlayerIdentity in
+                    let player = state.players[id]!
+                    _ = state.players.remove(id)
+                    return DepartedPlayerIdentity(player: player, status: .graduated)
+                }
+                state.people = PeopleState(
+                    playerLifecycle: Array(state.people.playerLifecycle.values),
+                    playerCareers: Array(state.people.playerCareers.values) + fillerCareers,
+                    staffCareers: Array(state.people.staffCareers.values),
+                    departedPlayers: fillerIdentities + realIdentities
+                )
+                if dropCompletionEvent {
+                    // Simulates the postseason window's `.portalWindowCompleted` event having
+                    // aged out of the bounded hot journal, the way it eventually does after
+                    // enough later seasons of unrelated activity.
+                    state.history = DomainEventLedger()
+                }
+                state.calendar = CalendarState(season: 1, week: SharedRules.inSeasonWeeks)
+                state.league.week = SharedRules.inSeasonWeeks
+                return state
+            }
+
+            let liveCompletion = buildState(dropCompletionEvent: false)
+            let liveTransition = try SeasonLifecycleSystem.advance(
+                after: liveCompletion.calendar,
+                in: liveCompletion
+            )
+            expect(
+                entrantIDs.allSatisfy { liveTransition.people.departedPlayers[$0] != nil },
+                "a portal entrant was evicted while its window's completion event was still live"
+            )
+            expectEqual(
+                liveTransition.people.departedPlayers.count,
+                PeopleRules.departedPlayerRetentionLimit
+            )
+
+            let agedOutCompletion = buildState(dropCompletionEvent: true)
+            let agedOutTransition = try SeasonLifecycleSystem.advance(
+                after: agedOutCompletion.calendar,
+                in: agedOutCompletion
+            )
+            expect(
+                entrantIDs.allSatisfy { agedOutTransition.people.departedPlayers[$0] == nil },
+                "a portal entrant outlived every trace of its window once the completion event aged out"
+            )
+            expect(
+                entrantIDs.allSatisfy { agedOutTransition.people.playerCareers[$0] == nil },
+                "eviction dropped the departed identity but kept its paired career record"
+            )
+            expectEqual(
+                agedOutTransition.people.departedPlayers.count,
+                PeopleRules.departedPlayerRetentionLimit
+            )
+        }
+    }
 }

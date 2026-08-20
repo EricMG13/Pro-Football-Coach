@@ -60,9 +60,17 @@ private struct NewsItemFingerprintDTO: Codable, Equatable {
 /// reproduction of a hash over a fixed seed is precisely the property this test exists to check, so
 /// a second confirming run is what would actually validate that guarantee, not a second manual
 /// re-derivation of the same single number.
-private let pinnedRootFingerprint: UInt64 = 10_145_284_605_137_663_203
+///
+/// All five pins in this file moved again on 2026-08-20, merging `claude/tighten-calibration-bands`
+/// into this `stakeholderLastMovement` root: `WideReceiver`/`TightEnd` now rate `.vision` and
+/// `.elusiveness` (`03` §1.2's carrier-versus-pursuit row), so every generated roster's encoded
+/// shape changed alongside the field the other branch added. Root, advanced-root, negotiation-ledger
+/// and match-session all exercise `GameState.bootstrap` or personnel built from it and moved;
+/// `pinnedNewsFeedFingerprint` below does not touch a roster and did not move. Reproduced in this
+/// worktree's own Swift 6.3.3 toolchain, not copied from CI.
+private let pinnedRootFingerprint: UInt64 = 18_254_152_807_579_560_859
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 7_423_870_793_580_124_140
+private let pinnedAdvancedRootFingerprint: UInt64 = 2_866_677_590_436_717_403
 
 /// The professional contract-negotiation ledger (`ProMarketState.contractNegotiations`) is part of
 /// the schema-13 root, but neither pin above ever exercises it: bootstrap starts with it empty, and
@@ -77,7 +85,7 @@ private let pinnedAdvancedRootFingerprint: UInt64 = 7_423_870_793_580_124_140
 /// every `GameState`, so `CareerArcState`'s new `stakeholderLastMovement` field shifted this pin's
 /// JSON body too, not only the two above. Copied from a single CI run's own output (run 32322631469,
 /// job 96287645557), not independently reproduced -- no toolchain exists here to do that.
-private let pinnedNegotiationLedgerFingerprint: UInt64 = 7_091_605_260_853_072_958
+private let pinnedNegotiationLedgerFingerprint: UInt64 = 16_183_341_748_203_153_797
 
 /// `GameState.matchSession` is part of the schema-13 root, but neither pin above ever exercises a
 /// populated one: `bootstrap` leaves it `nil` by construction, and `WorldScheduler.advanceWeek`
@@ -90,7 +98,7 @@ private let pinnedNegotiationLedgerFingerprint: UInt64 = 7_091_605_260_853_072_9
 /// being written here.
 /// Moved on 2026-08-20 for the same reason as the negotiation-ledger pin above:
 /// `CareerArcState.stakeholderLastMovement`, copied verbatim from the same CI run, same caveat.
-private let pinnedMatchSessionFingerprint: UInt64 = 18_011_376_771_359_061_836
+private let pinnedMatchSessionFingerprint: UInt64 = 15_835_161_825_253_087_259
 
 /// `NewsFeedReadModel` is derived from `GameState.history`, not stored in it, so none of the three
 /// pins above ever exercise it: they hash the root or a projection of it, never the read-model
@@ -121,20 +129,7 @@ private let pinnedNewsFeedFingerprint: UInt64 = 10_333_429_696_101_465_295
 /// written here.
 /// Moved on 2026-08-20 for the same reason as the three pins above: `CareerArcState.stakeholderLastMovement`,
 /// copied verbatim from the same CI run, same caveat.
-private let pinnedArchivedLedgerFingerprint: UInt64 = 10_965_097_598_794_063_933
-/// Moved again on 2026-08-20 by three further deliberate changes to generated state, merged from
-/// the lifecycle-band branch: prospect generation began calling `RosterPopulationGenerator.baseRating`
-/// instead of carrying its own lower scale, which lifts every generated prospect's ratings; and
-/// `.ironman` and `.volatile` joined `TraitPopulationGenerator.activeTraits` once their consumers
-/// went live — injury duration through `PeopleRules.injuryWeeks`, and the new weekly `disciplineFile`
-/// step. The advanced pin additionally takes that step's own emissions. Same rule as every move
-/// above: the pin exists to notice a change in generated state, so re-pinning is the response and
-/// widening is not available. Determinism is unmoved — "the same seed produces byte-identical root
-/// state" stays green. Five pins move on the merge -- root, advanced, negotiation ledger, match
-/// session and archived ledger -- because each hashes a root that carries generated players, and the
-/// news-feed pin does not, because it replaces `state.history` outright with a ledger of its own.
-/// All five were reproduced identically in two independent release-process invocations here, which
-/// the CI-copied values above could not be.
+private let pinnedArchivedLedgerFingerprint: UInt64 = 12_685_349_826_373_943_566
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///

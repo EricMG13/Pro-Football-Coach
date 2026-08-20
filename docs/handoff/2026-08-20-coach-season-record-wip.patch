@@ -1,0 +1,355 @@
+diff --git a/Sources/FootballSimCore/Career/CareerControlState.swift b/Sources/FootballSimCore/Career/CareerControlState.swift
+index f61ff21..587e592 100644
+--- a/Sources/FootballSimCore/Career/CareerControlState.swift
++++ b/Sources/FootballSimCore/Career/CareerControlState.swift
+@@ -290,6 +290,34 @@ public enum CareerControlSystem {
+         }
+     }
+ 
++    /// Writes the played coach's line for the season that just ended.
++    ///
++    /// `02` section 9: one line per season, for the played coach only, taken from the standings of
++    /// the tier they were employed in. Recorded rather than computed, because standings hold only
++    /// the current season and a `SeasonArchive` keeps no per-organisation win-loss, so once the
++    /// season is archived there is nothing left to compute it from.
++    static func recordCoachSeason(
++        after calendar: CalendarState,
++        in state: inout GameState
++    ) {
++        guard let coachID = state.career.coachID,
++              let job = state.careerArc.currentJob else { return }
++        let tier: Tier = job.tier == .college ? .college : .pro
++        guard let row = state.competition.standings[tier]?.first(where: {
++            $0.id == job.organisationID
++        }) else { return }
++        state.people.recordCoachSeason(
++            CoachSeasonRecord(
++                season: calendar.season,
++                organisationID: job.organisationID,
++                wins: row.wins,
++                losses: row.losses,
++                ties: row.ties
++            ),
++            for: coachID
++        )
++    }
++
+     /// Takes the controlled coach off whatever staff still lists them, appointing a successor to
+     /// the seat they leave.
+     ///
+diff --git a/Sources/FootballSimCore/People/PeopleState.swift b/Sources/FootballSimCore/People/PeopleState.swift
+index 088ffd8..7b0f28b 100644
+--- a/Sources/FootballSimCore/People/PeopleState.swift
++++ b/Sources/FootballSimCore/People/PeopleState.swift
+@@ -886,14 +886,63 @@ public struct StaffCareerAssignment: Codable, Sendable, Equatable {
+     }
+ }
+ 
++/// One season a coach worked, and what the team did while they held the job.
++///
++/// `02` section 9 makes this a recorded line rather than a computed one: standings hold only the
++/// current season, and a `SeasonArchive` keeps champions and rankings but no per-organisation
++/// win-loss, so there is nothing to compute a career record from once a season is archived.
++public struct CoachSeasonRecord: Codable, Sendable, Equatable {
++    public let season: Int
++    public let organisationID: UUID
++    public let wins: Int
++    public let losses: Int
++    public let ties: Int
++
++    public init(season: Int, organisationID: UUID, wins: Int, losses: Int, ties: Int) {
++        self.season = max(0, season)
++        self.organisationID = organisationID
++        self.wins = max(0, wins)
++        self.losses = max(0, losses)
++        self.ties = max(0, ties)
++    }
++
++    public init(from decoder: any Decoder) throws {
++        let container = try decoder.container(keyedBy: CodingKeys.self)
++        let decodedSeason = try container.decode(Int.self, forKey: .season)
++        let decodedWins = try container.decode(Int.self, forKey: .wins)
++        let decodedLosses = try container.decode(Int.self, forKey: .losses)
++        let decodedTies = try container.decode(Int.self, forKey: .ties)
++        guard decodedSeason >= 0, decodedWins >= 0, decodedLosses >= 0, decodedTies >= 0 else {
++            throw DecodingError.dataCorruptedError(
++                forKey: .season,
++                in: container,
++                debugDescription: "A coach season record holds a negative count."
++            )
++        }
++        season = decodedSeason
++        organisationID = try container.decode(UUID.self, forKey: .organisationID)
++        wins = decodedWins
++        losses = decodedLosses
++        ties = decodedTies
++    }
++}
++
+ public struct StaffCareerRecord: Codable, Sendable, Equatable, Identifiable {
+     public var id: UUID { staffID }
+     public let staffID: UUID
+     public private(set) var assignments: [StaffCareerAssignment]
++    /// Bounded beside the assignments and by the same limit. Written for the played coach only
++    /// (`02` section 9), so this is empty for everyone else.
++    public private(set) var seasonRecords: [CoachSeasonRecord]
+ 
+-    public init(staffID: UUID, assignments: [StaffCareerAssignment] = []) {
++    public init(
++        staffID: UUID,
++        assignments: [StaffCareerAssignment] = [],
++        seasonRecords: [CoachSeasonRecord] = []
++    ) {
+         self.staffID = staffID
+         self.assignments = Array(assignments.suffix(PeopleRules.careerSeasonHistoryLimit))
++        self.seasonRecords = Array(seasonRecords.suffix(PeopleRules.careerSeasonHistoryLimit))
+     }
+ 
+     mutating func record(_ assignment: StaffCareerAssignment) {
+@@ -902,6 +951,18 @@ public struct StaffCareerRecord: Codable, Sendable, Equatable, Identifiable {
+         )
+     }
+ 
++    /// One line per season. A season already recorded is replaced rather than appended, so a
++    /// scheduler that reaches season end twice cannot double a coach's career.
++    mutating func record(_ seasonRecord: CoachSeasonRecord) {
++        if let index = seasonRecords.firstIndex(where: { $0.season == seasonRecord.season }) {
++            seasonRecords[index] = seasonRecord
++            return
++        }
++        seasonRecords = Array(
++            (seasonRecords + [seasonRecord]).suffix(PeopleRules.careerSeasonHistoryLimit)
++        )
++    }
++
+     public init(from decoder: any Decoder) throws {
+         let container = try decoder.container(keyedBy: CodingKeys.self)
+         let decodedAssignments = try container.decode(
+@@ -921,9 +982,28 @@ public struct StaffCareerRecord: Codable, Sendable, Equatable, Identifiable {
+                 debugDescription: "Staff career history exceeds its bound."
+             )
+         }
++        // Decoded if present, so a save written before the career record existed still reads.
++        let decodedRecords = try container.decodeIfPresent(
++            [CoachSeasonRecord].self,
++            forKey: .seasonRecords
++        ) ?? []
++        var previousRecordSeason: Int?
++        let recordsAreOrdered = decodedRecords.allSatisfy { record in
++            defer { previousRecordSeason = record.season }
++            return previousRecordSeason.map { record.season > $0 } ?? true
++        }
++        guard decodedRecords.count <= PeopleRules.careerSeasonHistoryLimit,
++              recordsAreOrdered else {
++            throw DecodingError.dataCorruptedError(
++                forKey: .seasonRecords,
++                in: container,
++                debugDescription: "Coach season records are out of order or exceed their bound."
++            )
++        }
+         self.init(
+             staffID: try container.decode(UUID.self, forKey: .staffID),
+-            assignments: decodedAssignments
++            assignments: decodedAssignments,
++            seasonRecords: decodedRecords
+         )
+     }
+ }
+@@ -1105,6 +1185,18 @@ public struct PeopleState: Codable, Sendable, Equatable {
+         )
+     }
+ 
++    /// Writes one season's line onto a coach's career.
++    @discardableResult
++    public mutating func recordCoachSeason(
++        _ seasonRecord: CoachSeasonRecord,
++        for staffID: UUID
++    ) -> Bool {
++        guard var career = staffCareers[staffID] else { return false }
++        career.record(seasonRecord)
++        staffCareers[staffID] = career
++        return true
++    }
++
+     /// Appends one assignment to a staff career, creating the record if the coach has none.
+     ///
+     /// An out-of-order season is refused rather than written: the decoder rejects a
+diff --git a/Sources/FootballSimCore/Scheduling/WorldScheduler.swift b/Sources/FootballSimCore/Scheduling/WorldScheduler.swift
+index 8515c0c..9b3024b 100644
+--- a/Sources/FootballSimCore/Scheduling/WorldScheduler.swift
++++ b/Sources/FootballSimCore/Scheduling/WorldScheduler.swift
+@@ -706,6 +706,11 @@ public enum WorldScheduler {
+                     in: nextState
+                 )
+                 if completed.week == SharedRules.inSeasonWeeks {
++                    // Written before the evaluation, not after it: evaluateSeasonEnd can sack the
++                    // coach and clear the job inside itself, and a season someone was sacked at the
++                    // end of is still a season they coached. Recording afterwards silently drops
++                    // the last season of every career that ends badly.
++                    CareerControlSystem.recordCoachSeason(after: completed, in: &nextState)
+                     CareerArcSystem.evaluateSeasonEnd(
+                         after: completed,
+                         in: nextState,
+diff --git a/Tests/SimTests/Suites/CareerArcTests.swift b/Tests/SimTests/Suites/CareerArcTests.swift
+index 10f45da..eb7869f 100644
+--- a/Tests/SimTests/Suites/CareerArcTests.swift
++++ b/Tests/SimTests/Suites/CareerArcTests.swift
+@@ -1082,5 +1082,120 @@ func runCareerArcTests() {
+                 "a coordinator the promotion threw out was credited as the coach's disciple"
+             )
+         }
++        test("the coach's season record is written and carries across the promotion") {
++            let source = GameState.bootstrap(seed: 99_129)
++            let programmeID = source.programmes.ids[0]
++            var state = try CareerControlSystem.startCollegeCareer(
++                at: programmeID,
++                in: source
++            ).state
++            state.pending = PendingQueues()
++            guard let coachID = state.career.coachID else {
++                expect(false, "career start left no coach")
++                return
++            }
++            guard let delegateID = state.programmes[programmeID]?.staffIDs.first(where: {
++                state.staff[$0]?.role == .offensiveCoordinator
++            }) else {
++                expect(false, "no coordinator to delegate to")
++                return
++            }
++            for responsibility in CollegeCareerResponsibility.allCases {
++                expect(CareerControlSystem.setResponsibility(
++                    responsibility,
++                    owner: .delegated(staffID: delegateID),
++                    in: &state
++                ))
++            }
++
++            // A whole season, so the season-end line is written from real standings.
++            for _ in 0..<SharedRules.inSeasonWeeks {
++                state = try WorldScheduler.advanceWeek(state).state
++                state.pending = PendingQueues()
++            }
++
++            let records = state.people.staffCareers[coachID]?.seasonRecords ?? []
++            expectEqual(records.count, 1, "the season did not leave a career record line")
++            expectEqual(records.last?.season, source.calendar.season)
++            expectEqual(records.last?.organisationID, programmeID)
++            // Against the standings the season actually produced, not against a guess.
++            let row = state.competition.standings[.college]?.first { $0.id == programmeID }
++            expectEqual(records.last?.wins, row?.wins)
++            expectEqual(records.last?.losses, row?.losses)
++            expectEqual(records.last?.ties, row?.ties)
++            expect(
++                (records.last?.wins ?? 0) + (records.last?.losses ?? 0) + (records.last?.ties ?? 0) > 0,
++                "the recorded season had no games in it"
++            )
++            expect(WorldIntegrity.check(state).isValid, "season-end world failed integrity")
++
++            // The record lives on the coach, not on the job, so a promotion cannot drop it.
++            guard state.careerArc.status != .fired else {
++                expect(true, "coach was fired before the promotion could be walked")
++                return
++            }
++            let proTeam = state.proTeams.values[0]
++            let opportunity = CareerOpportunity(
++                id: UUID(uuidString: "00000000-0000-4000-8000-000000000A29")!,
++                organisationID: proTeam.id,
++                tier: .professional,
++                offeredAt: state.calendar,
++                expiresAt: state.calendar.advancedWeek(),
++                prestige: proTeam.prestige,
++                rationale: .sustainedCollegeSuccess
++            )
++            var promoting = state
++            var arc = promoting.careerArc
++            _ = arc.establishCollegeJob(organisationID: programmeID, at: promoting.calendar)
++            expect(arc.addOpportunity(opportunity))
++            promoting.careerArc = arc
++            let promoted = try IntentResolver.resolve(
++                .career(CareerArcRequest(
++                    calendar: promoting.calendar,
++                    action: .acceptOpportunity(opportunityID: opportunity.id)
++                )),
++                in: promoting
++            ).state
++            expectEqual(promoted.people.staffCareers[coachID]?.seasonRecords, records)
++
++            // And it survives the save, like the assignments beside it.
++            let restored = try SaveEnvelope.decode(
++                GameState.self,
++                from: SaveEnvelope.encode(promoted)
++            )
++            expectEqual(restored.people.staffCareers[coachID]?.seasonRecords, records)
++        }
++        test("ZPROBE2 season record diagnostics") {
++            let source = GameState.bootstrap(seed: 99_129)
++            let programmeID = source.programmes.ids[0]
++            var state = try CareerControlSystem.startCollegeCareer(at: programmeID, in: source).state
++            state.pending = PendingQueues()
++            let coachID = state.career.coachID!
++            let delegateID = state.programmes[programmeID]!.staffIDs.first {
++                state.staff[$0]?.role == .offensiveCoordinator
++            }!
++            for r in CollegeCareerResponsibility.allCases {
++                _ = CareerControlSystem.setResponsibility(r, owner: .delegated(staffID: delegateID), in: &state)
++            }
++            print("ZPROBE inSeasonWeeks=\(SharedRules.inSeasonWeeks) start=\(state.calendar)")
++            for i in 0..<SharedRules.inSeasonWeeks {
++                state = try WorldScheduler.advanceWeek(state).state
++                state.pending = PendingQueues()
++                if i >= SharedRules.inSeasonWeeks - 3 || i == 0 {
++                    print("ZPROBE i=\(i) cal=\(state.calendar) job=\(String(describing: state.careerArc.currentJob?.tier)) status=\(state.careerArc.status) college=\(state.career.college != nil) records=\(state.people.staffCareers[coachID]?.seasonRecords.count ?? -1)")
++                }
++            }
++            let row = state.competition.standings[.college]?.first { $0.id == programmeID }
++            print("ZPROBE final standings row=\(String(describing: row))")
++            print("ZPROBE seasonRecords=\(state.people.staffCareers[coachID]?.seasonRecords ?? [])")
++            let played = state.competition.currentSchedule.games.filter {
++                $0.season == 0 && ($0.homeID == programmeID || $0.awayID == programmeID)
++            }
++            print("ZPROBE games for programme this season: total=\(played.count) withResult=\(played.filter { $0.result != nil }.count)")
++            print("ZPROBE careerArc.currentJob at end = \(String(describing: state.careerArc.currentJob))")
++            print("ZPROBE career.coachID at end = \(String(describing: state.career.coachID))")
++            print("ZPROBE career.college at end = \(String(describing: state.career.college))")
++            expect(true)
++        }
+     }
+ }
+diff --git a/docs/02-GAME-DESIGN.md b/docs/02-GAME-DESIGN.md
+index 1b14058..bab166c 100644
+--- a/docs/02-GAME-DESIGN.md
++++ b/docs/02-GAME-DESIGN.md
+@@ -344,6 +344,13 @@ since a mistake that already shipped a claim is not the same as one caught befor
+ 
+ ## 6. Staff and scheme
+ 
++**Staff who lose their seat are pruned unless history names them — owner decision 2026-08-20.** A
++promotion displaces a whole coaching group and a separation displaces one coach, and every one of
++them keeps a career record forever, which is a collection that grows with career length and has no
++bound. A seatless coach is kept when the coaching tree names them — as a mentor with disciples, or
++as someone who came up under one — and dropped otherwise, so what survives is the history a screen
++can actually show. The played coach is never pruned, employed or not.
++
+ - Four coordinators and a set of position coaches, each with ratings for development, recruiting,
+   game-planning and scheme affinity.
+ - **Scheme identity** is the spine: the player picks an offensive and defensive scheme, and the
+@@ -441,6 +448,19 @@ allowed to be in.
+ This is a promotion rule, not a separation rule. A coach who resigns or is fired goes nowhere and
+ takes nobody: the coordinators keep their jobs and the programme keeps its staff.
+ 
++**The career record is a per-season line on the coach — owner decision 2026-08-20.** "The record
++book" in the carried list above was a promise with nothing behind it: standings are rebuilt from the
++current schedule and hold only the current season, and a `SeasonArchive` keeps champions, final
++rankings, awards and league-wide totals but no per-programme win-loss. So a coach's record is not
++derivable from anything persisted, and it is recorded rather than computed.
++
++One line per season played: the season, the organisation, and wins-losses-ties. It is written for
++the played coach only — a record for all 166 organisations across every archived season is the
++expensive version of this and the save is already over its budget. The line is written at season
++end, from the standings of the tier the coach was employed in, and it carries across the promotion
++because it lives on the coach and not on the job. Bounded by the same per-coach limit as the
++assignments beside it.
++
+ One-way by default, with a demotion path if the pro job ends badly. Tuned so the move is earned in
+ 4–12 college seasons at median play.
+ 

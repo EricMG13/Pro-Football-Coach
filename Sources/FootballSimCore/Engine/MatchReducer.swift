@@ -278,7 +278,7 @@ public struct MatchSessionState: Codable, Sendable, Equatable {
         controlledSide: Side? = nil,
         homePlan: TacticalPlan = .balanced,
         awayPlan: TacticalPlan = .balanced,
-        homeFieldAdvantage: Double = MatchupRules.homeAdvantage,
+        homeFieldAdvantage: Double? = nil,
         initialSituation: Situation? = nil,
         fixtureID: UUID? = nil
     ) {
@@ -296,7 +296,7 @@ public struct MatchSessionState: Codable, Sendable, Equatable {
         self.home = home
         self.away = away
         self.seed = seed
-        self.homeFieldAdvantage = homeFieldAdvantage
+        self.homeFieldAdvantage = homeFieldAdvantage ?? tier.homeAdvantage
         self.controlledSide = controlledSide
         self.isTakeover = controlledSide != nil
         self.homePlan = homePlan
@@ -461,7 +461,7 @@ public enum MatchReducer {
         controlledSide: Side? = nil,
         homePlan: TacticalPlan = .balanced,
         awayPlan: TacticalPlan = .balanced,
-        homeFieldAdvantage: Double = MatchupRules.homeAdvantage,
+        homeFieldAdvantage: Double? = nil,
         initialSituation: Situation? = nil,
         fixtureID: UUID? = nil
     ) -> MatchSessionState {
@@ -549,7 +549,7 @@ public enum MatchReducer {
         home: SnapPersonnel,
         away: SnapPersonnel,
         caller: any PlayCaller = BaselinePlayCaller(),
-        homeFieldAdvantage: Double = MatchupRules.homeAdvantage,
+        homeFieldAdvantage: Double? = nil,
         seed: UInt64,
         initialSituation: Situation? = nil
     ) -> MatchCompletionReceipt {
@@ -678,7 +678,22 @@ public enum MatchReducer {
         state.nextDriveIndex += 1
         state.afterTurnover = finished.drive.ending == .turnover
             || finished.drive.ending == .downs
-        state.clockRunning = finished.drive.ending == .endOfQuarter
+        // **The game clock does not stop because a drive ended.** It read
+        // `ending == .endOfQuarter` and nothing else, so every punt, turnover and turnover on downs
+        // handed the next offence a first snap that cost **zero** game clock — and a drive-opening
+        // snap is one in five of all snaps. That is most of why the engine fitted 165 plays into 60
+        // minutes against a band of 120 to 136: `01` §6.5's plays-per-team-game band is measured
+        // through this line.
+        //
+        // A punt fielded in bounds, a turnover, a turnover on downs and a missed field goal all
+        // leave the clock running, so the next snap is charged the same pre-snap as any other. A
+        // score is the exception this model can state: the kickoff after it is a touchback
+        // (`kickoffTouchbackYardLine` is where the engine spots every one of them), and a touchback
+        // restarts the clock on the snap rather than the kick.
+        state.clockRunning = switch finished.drive.ending {
+        case .punt, .turnover, .downs, .missedFieldGoal, .endOfQuarter: true
+        case .touchdown, .fieldGoal, .safety, .endOfHalf: false
+        }
 
         let priorQuarter = state.situation.quarter
         var crossedHalf = false

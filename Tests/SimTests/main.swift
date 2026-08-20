@@ -70,6 +70,9 @@ if CommandLine.arguments.contains("--catalog") {
     runMatchReducerTests()
 } else if CommandLine.arguments.contains("--engine") {
     runEngineTests()
+    // Snap resolution was reachable only from the no-argument branch, so the one suite that
+    // measures what a play produces needed a full 36-minute run to see.
+    runSnapResolverTests()
     runGameLoopTests()
 } else if CommandLine.arguments.contains("--m3-soak") {
     runM3CollegeSoakTests()
@@ -83,6 +86,8 @@ if CommandLine.arguments.contains("--catalog") {
     runInvalidRedshirtCareerGamesProbe(tier: .pro)
 } else if CommandLine.arguments.contains("--m3-recruiting-calibration") {
     runM3RecruitingCalibrationTests()
+} else if CommandLine.arguments.contains("--calibration-gate") {
+    runCalibrationGateTests()
 } else if CommandLine.arguments.contains("--calibration") {
     runCalibrationTests()
 } else if CommandLine.arguments.contains("--redshirt-only") {
@@ -91,6 +96,8 @@ if CommandLine.arguments.contains("--catalog") {
     runCollegeCommitmentTests()
 } else if CommandLine.arguments.contains("--college-state") {
     runCollegeStateTests()
+} else if CommandLine.arguments.contains("--college-acquisition-invariant") {
+    runCollegeAcquisitionInvariantTests()
 } else if CommandLine.arguments.contains("--injury-evidence") {
     runInjuryEvidenceTests()
 } else if CommandLine.arguments.contains("--people-lifecycle") {
@@ -177,6 +184,7 @@ if CommandLine.arguments.contains("--catalog") {
     runCollegeStateTests()
     runCollegeCommitmentTests()
     runCollegeRedshirtTests()
+    runCollegeAcquisitionInvariantTests()
     runPortalPolicyTests()
     runPortalMatchingTests()
     runPortalTransactionTests()
