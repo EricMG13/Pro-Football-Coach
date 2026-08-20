@@ -79,7 +79,7 @@ public struct SettingsAccessibilityView: View, CoachWorldChromedSurface {
             )
             .font(CoachWorldTokens.TypeRole.body)
             .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
-            Text("How often the coordinator hands you a decision, from \(SharedRules.callInsPerGameRange.lowerBound) to \(SharedRules.callInsPerGameRange.upperBound) a game.")
+            Text("Your preferred call-in pacing for this career, \(SharedRules.callInsPerGameRange.lowerBound) to \(SharedRules.callInsPerGameRange.upperBound) a game.")
                 .font(CoachWorldTokens.TypeRole.caption)
                 .foregroundStyle(palette.contentQuiet.color)
                 .fixedSize(horizontal: false, vertical: true)
