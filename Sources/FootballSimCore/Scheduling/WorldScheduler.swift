@@ -88,6 +88,34 @@ public enum WorldScheduler {
     public static let steps: [WorldStep] = WorldStep.allCases
     private static let missingFixtureID = UUID(uuidString: "00000000-0000-4000-8000-000000000000")!
 
+    /// Test-only checkpoint after each committed transaction inside the weekly step loop, so an
+    /// invariant can be asserted **after every transaction** rather than only on the root the week
+    /// comes to rest on.
+    ///
+    /// `WorldIntegrity` runs once a week, at `.saveGrowthAndIntegrity`. Everything the season
+    /// boundary does — the people transition, scholarship reconciliation, the cycle rollover, both
+    /// portal windows, both walk-on windows — commits inside a single step, so a rule can be
+    /// breached and repaired between two consecutive transactions and the week still comes to rest
+    /// clean. That is not a hypothetical: `reconcileScholarships` exists precisely to repair one.
+    ///
+    /// `package`, so nothing outside this package can install one, and `nil` in every shipped
+    /// build: each checkpoint is then a null check.
+    package nonisolated(unsafe) static var transactionObserver: (
+        @Sendable (String, GameState) -> Void
+    )?
+
+    /// The label is autoclosed so a shipped build never builds one: the per-step call site
+    /// interpolates, and interpolating sixteen strings a week to hand them to a `nil` observer is
+    /// a test seam charging the game for its own existence.
+    @inline(__always)
+    private static func checkpoint(
+        _ label: @autoclosure () -> String,
+        _ state: @autoclosure () -> GameState
+    ) {
+        guard let transactionObserver else { return }
+        transactionObserver(label(), state())
+    }
+
     /// Installs a resumable controlled fixture before the weekly transaction can abstract it.
     /// Calling this repeatedly is idempotent: an existing checkpoint is returned unchanged.
     public static func prepareControlledMatch(in state: GameState) throws -> GameState {
@@ -396,6 +424,7 @@ public enum WorldScheduler {
                         state: &nextState,
                         emittedEvents: &events
                     )
+                    checkpoint("portalCommit.spring", nextState)
                     let walkOns = CollegeCycleSystem.addWalkOns(
                         for: .springRosterFill,
                         season: completed.season,
@@ -404,6 +433,7 @@ public enum WorldScheduler {
                     nextState.programmes = walkOns.programmes
                     nextState.players = walkOns.players
                     nextState.people = walkOns.people
+                    checkpoint("walkOns.springRosterFill", nextState)
                     try appendEvents(
                         payloads: walkOns.eventPayloads,
                         occurredAt: completed,
@@ -416,6 +446,7 @@ public enum WorldScheduler {
                     in: nextState
                 )
                 nextState.college = transition.college
+                checkpoint("recruitingMarket.weekly", nextState)
                 try appendEvents(
                     payloads: transition.eventPayloads,
                     occurredAt: completed,
@@ -436,6 +467,7 @@ public enum WorldScheduler {
                 }
                 nextState.college = transition.college
                 nextState.scouting = transition.scouting
+                checkpoint("recruitingAI", nextState)
                 try appendEvents(
                     payloads: transition.eventPayloads,
                     occurredAt: completed,
@@ -453,6 +485,7 @@ public enum WorldScheduler {
                 }
                 nextState.college = delegated.college
                 nextState.scouting = delegated.scouting
+                checkpoint("recruitingDelegation", nextState)
                 try appendEvents(
                     payloads: delegated.eventPayloads,
                     occurredAt: completed,
@@ -692,6 +725,7 @@ public enum WorldScheduler {
                         in: nextState
                     )
                     nextState.college = terminalMarket.college
+                    checkpoint("recruitingMarket.terminal", nextState)
                     try appendEvents(
                         payloads: terminalMarket.eventPayloads,
                         occurredAt: completed,
@@ -732,6 +766,8 @@ public enum WorldScheduler {
                 nextState.players = peopleTransition.players
                 nextState.staff = peopleTransition.staff
                 nextState.people = peopleTransition.people
+                nextState.college = peopleTransition.college
+                checkpoint("seasonLifecycle", nextState)
                 if completed.week == SharedRules.inSeasonWeeks {
                     // Contracts expire here: after the people transition and the college cycle have
                     // been applied, and before anything projects the root into the new season. It
@@ -773,6 +809,12 @@ public enum WorldScheduler {
                     } catch let error as ProMarketError {
                         throw WorldSchedulerError.professionalMarketFailed(error)
                     }
+                    // D15 (`02` §4.2a): dead money is a single-season charge, so the season now
+                    // ending is discharged here -- after beat 1, before beat 2. The compliance
+                    // pass below then charges the season about to start, which makes each season's
+                    // dead money exactly that season's releases rather than every release the save
+                    // has ever made.
+                    nextState = ProManagementSystem.dischargeDeadMoney(in: nextState)
                     // Beat 2 (`02` §4.2/§4.2a), right after beat 1's expiry and before anything
                     // takes the season-projected view a later step in this same block does (the
                     // college portal's postseason commit): the same D-1 lesson applies here as it
@@ -811,9 +853,16 @@ public enum WorldScheduler {
                             in: nextState
                         )
                     }
-                    // Realignment after evolution, and both before the college cycle rebuilds the
-                    // next season's schedule: the schedule is generated from conference membership,
-                    // so a swap has to land before it is read, not after.
+                    // Realignment sits here, after evolution and before the college cycle, and
+                    // it cannot be hoisted above the slate that reads it: `completeSeason` draws
+                    // the whole of next season from conference membership, and it runs earlier in
+                    // this same step because the season-completed event has to stay observable
+                    // ahead of lifecycle and cycle construction. So the slate is redrawn below
+                    // rather than the swap being moved above the event it must follow.
+                    //
+                    // Its own placement costs nothing either way — `bestSwap` scores a swap purely
+                    // on the distance from a programme's city to its conference's centroid, so
+                    // neither evolution nor the cycle can move its answer.
                     let realignment = ConferenceRealignmentSystem.processTransition(in: nextState)
                     nextState = realignment.state
                     if !realignment.swaps.isEmpty {
@@ -827,8 +876,35 @@ public enum WorldScheduler {
                             to: &nextState,
                             emittedEvents: &events
                         )
+                        // `completeSeason` drew the coming season from the map this swap has just
+                        // replaced, so every programme that moved was scheduled into the
+                        // conference it left. Redraw against the map that now exists.
+                        //
+                        // A redraw rather than a patch because `ScheduleGenerator` pairs a whole
+                        // tier at once: one changed membership shifts the preference filter for
+                        // every week, so there is no local edit that leaves the rest standing.
+                        // The professional slate is regenerated from unchanged inputs and so comes
+                        // back identical; only the college one moves. Nothing has to be rebuilt
+                        // behind it — standings and statistics read completed games, and a slate
+                        // this new has none.
+                        //
+                        // Guarded on the season having actually rolled: `completeSeason` declines
+                        // to roll one that finished without a champion, and must keep the slate it
+                        // declined on.
+                        if nextState.competition.currentSchedule.season == completed.season + 1 {
+                            nextState.competition.currentSchedule = SeasonSchedule(
+                                season: completed.season + 1,
+                                games: ScheduleGenerator.regularSeason(
+                                    seed: nextState.league.seed,
+                                    season: completed.season + 1,
+                                    programmes: nextState.programmes.values,
+                                    proTeams: nextState.proTeams.values
+                                )
+                            )
+                        }
                     }
                     nextState.college.reconcileScholarships(with: nextState.programmes)
+                    checkpoint("reconcileScholarships", nextState)
                     let cycle: CollegeCycleTransition
                     do {
                         cycle = try CollegeCycleSystem.closeAndOpen(
@@ -844,6 +920,7 @@ public enum WorldScheduler {
                     nextState.prospects = cycle.prospects
                     nextState.college = cycle.college
                     nextState.scouting = cycle.scouting
+                    checkpoint("collegeCycle.closeAndOpen", nextState)
                     try appendEvents(
                         payloads: peopleTransition.eventPayloads + cycle.eventPayloads,
                         occurredAt: completed,
@@ -855,6 +932,7 @@ public enum WorldScheduler {
                         state: &nextState,
                         emittedEvents: &events
                     )
+                    checkpoint("portalCommit.postseason", nextState)
                     let walkOns = CollegeCycleSystem.addWalkOns(
                         for: .postseasonCoverage,
                         season: completed.season + 1,
@@ -863,6 +941,7 @@ public enum WorldScheduler {
                     nextState.programmes = walkOns.programmes
                     nextState.players = walkOns.players
                     nextState.people = walkOns.people
+                    checkpoint("walkOns.postseasonCoverage", nextState)
                     try appendEvents(
                         payloads: walkOns.eventPayloads,
                         occurredAt: completed,
@@ -923,6 +1002,13 @@ public enum WorldScheduler {
                 nextState.league.week = next.week
                 nextState.tactical.advance(to: next)
                 nextState.college.resetWeeklyContactPoints()
+                // Signing day (`02` section 4.1). Set here rather than in an earlier step because
+                // this is where the calendar itself moves: `saveGrowthAndIntegrity` has already
+                // checked the root against the week being *left*, so a phase written before it
+                // would be checked against the wrong week. Assigned unconditionally, not only on
+                // the boundary that opens it, so the phase cannot survive a week it does not
+                // belong to.
+                nextState.college.phase = CollegeRules.recruitingCyclePhase(inWeek: next.week)
                 guard nextState.competition.currentSchedule.season == next.season else {
                     throw WorldSchedulerError.integrityFailed([.calendarDisagreement])
                 }
@@ -938,6 +1024,7 @@ public enum WorldScheduler {
             default:
                 records.append(WorldStepRecord(step: step, status: .inactive))
             }
+            checkpoint("step.\(step.rawValue)", nextState)
         }
 
         let snapshot = WeekSnapshot(

@@ -16,6 +16,7 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
     public let onClose: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var pendingWithdrawal: PendingWithdrawal?
 
     public init(
         model: RecruitingBoardReadModel,
@@ -46,6 +47,19 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
     public var body: some View {
         CoachWorldFloodlitStage(palette: palette, chrome: chrome, onNavigate: onNavigateChrome) {
             scrollContent
+        }
+        .alert(item: $pendingWithdrawal) { pending in
+            Alert(
+                title: Text("Withdraw \(pending.name)?"),
+                message: Text(
+                    "This drops all recorded interest, any scheduled visit and any scholarship "
+                        + "offer. There is no undo."
+                ),
+                primaryButton: .destructive(Text("Withdraw")) {
+                    onAction(pending.id, CoachWorldIntentID(rawValue: "withdraw"))
+                },
+                secondaryButton: .cancel()
+            )
         }
         .accessibilitySortPriority(100)
     }
@@ -105,13 +119,11 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
                 FloodlitLabel3(rankLabel(prospect), palette: palette, tint: palette.actionPrimary.color)
                 Text(prospect.person.name.uppercased())
-                    .font(
-                        CoachWorldTokens.display(CoachWorldTokens.DisplaySize.figure, weight: .bold)
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.figure, weight: .bold)
                     .lineLimit(ProspectMetric.nameLines)
                     .minimumScaleFactor(ProspectMetric.nameScaleFloor)
                 Text("\(prospect.position) \u{00B7} \(prospect.hometown)")
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                     .foregroundStyle(palette.contentSecondary.color)
             }
             .accessibilityElement(children: .combine)
@@ -156,7 +168,7 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
             FloodlitLabel3(label, palette: palette)
             Text(value.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.title, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.title, weight: .bold)
                 .lineLimit(1)
                 .minimumScaleFactor(ProspectMetric.factScaleFloor)
         }
@@ -175,7 +187,7 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
                 ForEach(prospect.relationshipHistory, id: \.stableID) { event in
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                         Text(event.dateLabel)
-                            .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.flag))
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.flag)
                             .foregroundStyle(palette.contentQuiet.color)
                         Text(event.summary)
                             .font(CoachWorldTokens.TypeRole.caption)
@@ -205,17 +217,19 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
                 ForEach(prospect.choices, id: \.intentID) { choice in
                     FloodlitRow(
                         palette: palette,
-                        action: choice.isAvailable
-                            ? { onAction(prospect.stableID, choice.intentID) }
-                            : nil
+                        action: choice.isAvailable ? {
+                            if choice.intentID == CoachWorldIntentID(rawValue: "withdraw") {
+                                pendingWithdrawal = PendingWithdrawal(
+                                    id: prospect.stableID, name: prospect.person.name
+                                )
+                            } else {
+                                onAction(prospect.stableID, choice.intentID)
+                            }
+                        } : nil
                     ) {
                         HStack(spacing: CoachWorldTokens.Gap.md) {
                             Text(choice.title.uppercased())
-                                .font(
-                                    CoachWorldTokens.display(
-                                        CoachWorldTokens.DisplaySize.row, weight: .bold
-                                    )
-                                )
+                                .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                                 .foregroundStyle(
                                     choice.isAvailable
                                         ? palette.contentPrimary.color
@@ -269,6 +283,15 @@ public struct ProspectProfileView: View, CoachWorldChromedSurface {
             ? "No action is currently available for this prospect."
             : "Every action here comes off this week's budget."
     }
+}
+
+/// Withdraw is the one destructive choice a prospect's action list offers, so it alone routes
+/// through a confirmation rather than firing on tap like every other listed action. `id` is the
+/// prospect's own `stableID` -- `RecruitingBoardReadModel.Prospect` is `Equatable` but not
+/// `Identifiable`, and `.alert(item:)` needs an identity to key its presentation on.
+private struct PendingWithdrawal: Identifiable {
+    let id: String
+    let name: String
 }
 
 private enum ProspectMetric {

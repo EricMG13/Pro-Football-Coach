@@ -72,7 +72,10 @@ public enum ProMarketSystem {
         }
         let targetSeason = state.calendar.season + 1
         let order = draftOrder(for: state)
-        guard order.count == ProRules.draftPickCount else {
+        // openOffseason is the one professional transaction with no closing `WorldIntegrity.check`,
+        // so the draft-order rule is asserted here directly rather than inherited from the root
+        // gate every other transaction ends on.
+        guard ProRules.isLegalDraftOrder(order, teamIDs: Set(state.proTeams.ids)) else {
             throw ProMarketError.invalidRoot
         }
         let draftClass = makeDraftClass(

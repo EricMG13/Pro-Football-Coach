@@ -667,9 +667,9 @@ func runContractTests() {
                 .first { $0.path.hasSuffix("/NewsView.swift") }?.text ?? ""
             expect(root.contains("case .news") && root.contains("NewsView("),
                    "news must be reachable from the shipped root")
-            expect(store.contains("public private(set) var news")
+            expect(store.contains("public var news")
                        && store.contains("CoachWorldReadModelProvider.news"),
-                   "news must be rebuilt from the application store seam")
+                   "news must be vended from the application store seam")
             expect(provider.contains("NewsFeedReadModel.build(from: state)"),
                    "news must derive from typed history")
             expect(view.contains("public struct NewsView")
@@ -694,8 +694,8 @@ func runContractTests() {
                        && root.contains("CareerLineView(")
                        && root.contains("CoachingTreeView("),
                    "all durable history families must reach one authoritative projection")
-            expect(store.contains("legacyHistory = CoachWorldReadModelProvider.legacyHistory"),
-                   "history must rebuild from the application store seam")
+            expect(store.contains("CoachWorldReadModelProvider.legacyHistory"),
+                   "history must be vended from the application store seam")
             expect(provider.contains("WorldHistoryReadModel.build(from: state)")
                        && provider.contains("CoachingTreeReadModel.build(from: state)"),
                    "history must use authoritative archive and coaching-tree projections")
@@ -725,9 +725,9 @@ func runContractTests() {
             expect(root.contains("RankingsPlayoffPictureView(")
                        && root.contains("BracketPostseasonView("),
                    "rankings and postseason must use named production family entries")
-            expect(store.contains("statisticsLeaders = CoachWorldReadModelProvider.statisticsLeaders")
-                       && store.contains("awardsHonours = CoachWorldReadModelProvider.awardsHonours"),
-                   "competition history must rebuild from the store seam")
+            expect(store.contains("CoachWorldReadModelProvider.statisticsLeaders")
+                       && store.contains("CoachWorldReadModelProvider.awardsHonours"),
+                   "competition history must be vended from the store seam")
             expect(provider.contains("state.competition.playerStatistics")
                        && provider.contains("state.competition.archives"),
                    "leaders and honours must derive from authoritative competition state")
@@ -962,7 +962,6 @@ func runContractTests() {
         test("reviewed release seams retain their reachable and readable contracts") {
             let uiFiles = swiftFiles(under: "Sources/ProFootballCoachUI")
             let appFiles = swiftFiles(under: "Sources/CoachWorldApp")
-            let chrome = uiFiles.first { $0.path.hasSuffix("/FloodlitChrome.swift") }?.text ?? ""
             let composition = uiFiles.first {
                 $0.path.hasSuffix("/CoachWorldFloodlitComposition.swift")
             }?.text ?? ""
@@ -985,6 +984,9 @@ func runContractTests() {
                 $0.path.hasSuffix("/CoachWorldAppRootView.swift")
             }?.text ?? ""
             let store = appFiles.first { $0.path.hasSuffix("/CoachWorldStore.swift") }?.text ?? ""
+            let availability = appFiles.first {
+                $0.path.hasSuffix("/CoachWorldAvailabilityProvider.swift")
+            }?.text ?? ""
             let competitionProvider = appFiles.first {
                 $0.path.hasSuffix("/CoachWorldCompetitionProvider.swift")
             }?.text ?? ""
@@ -1001,10 +1003,21 @@ func runContractTests() {
                 uiFiles.first { $0.path.hasSuffix("/\(filename)") }?.text
             }
 
-            expect(chrome.contains("static let familySize: CGFloat = 9")
-                       && chrome.contains("static let railLabel: CGFloat = 9")
-                       && chrome.contains("static let railLabelFloor: CGFloat = 1.0"),
-                   "the icon rail must not scale authored labels below the readable floor")
+            // Previously locked in the exact literal `= 9` via string-match; the assertion message
+            // said this protects a "readable floor" but a string match cannot tell a regression
+            // from a deliberate improvement (S-7). `Chrome` is now module-internal so this reads
+            // the real values via @testable import. Deliberately a sanity range, not a canon-
+            // conformance check: `04` section 6.1c sanctions 9/9.5pt here while section 6.2 states
+            // a 10pt micro-type floor, and that tension is an open canon question (flagged to the
+            // owner, not resolved by this test).
+            expect(Chrome.familySize > 0 && Chrome.familySize < 20,
+                   "family label size drifted to a value that cannot be a micro-label")
+            expect(Chrome.railLabel > 0 && Chrome.railLabel < 20,
+                   "rail label size drifted to a value that cannot be a micro-label")
+            expect(Chrome.siblingSize > 0 && Chrome.siblingSize < 20,
+                   "sibling link size drifted to a value that cannot be a micro-label")
+            expect(Chrome.railLabelFloor > 0 && Chrome.railLabelFloor <= 1,
+                   "railLabelFloor must be a valid minimumScaleFactor")
             expect(composition.contains("SurfaceRegistryOverlay")
                        && composition.contains("onOpenRegistry")
                        && composition.contains("ALL TASKS")
@@ -1015,8 +1028,10 @@ func runContractTests() {
                        && hq.contains("isEnabled: canAdvance"),
                    "HQ advance must expose preparation and refusal state")
             expect(appRoot.contains("case .settingsAccessibility:")
-                       && appRoot.contains("case .signingDay where store.collegeOffseason?.cyclePhase == .signing"),
-                   "settings and signing-day routes must be reachable in the active career")
+                       && appRoot.contains("case .signingDay where store.availableScreens.contains(.signingDay)")
+                       && availability.contains("add(.signingDay, when: offseason?.cyclePhase == .signing)"),
+                   "settings and signing-day routes must be reachable in the active career, and "
+                       + "signing day must stay gated on the recorded cycle phase")
             expect(appRoot.contains("onContinue: { navigate(.gamePlan, in: store) }")
                        && appRoot.contains("case .opponentReportFilmRoom: .opponentReportFilmRoom"),
                    "film-room continuation must open Game Plan without advancing the week and preserve its origin")
@@ -1029,8 +1044,8 @@ func runContractTests() {
                        && appRoot.contains("screen = .careerHub")
                        && appRoot.contains("private static func canonicalScreen"),
                    "legacy career routes must migrate to the canonical career workspace")
-            expect(appRoot.contains("add(.draftRoom, when: store.proOffseason?.phase == .draft)")
-                       && appRoot.contains("case .draftRoom where store.proOffseason?.phase == .draft"),
+            expect(availability.contains("add(.draftRoom, when: proOffseason(from: state)?.phase == .draft)")
+                       && appRoot.contains("case .draftRoom where store.availableScreens.contains(.draftRoom)"),
                    "Draft Room must remain a phase-gated canonical task")
             expect(store.contains("split(separator: \"|\"")
                        && store.contains("mandatoryDecision(decisionID: decisionID, optionID: optionID)"),
@@ -1040,8 +1055,10 @@ func runContractTests() {
                        && appRoot.contains("onOpenProfile:")
                        && appRoot.contains("$0.stableID == personnelPlayerID")
                        && appRoot.contains(".onDisappear { personnelPlayerID = nil }")
-                       && appRoot.contains("case .playerProfile where store.roster?.players.isEmpty == false"),
-                   "Player Profile must preserve the active roster selection")
+                       && appRoot.contains("case .playerProfile where store.availableScreens.contains(.playerProfile)")
+                       && availability.contains("add(.playerProfile, when: (rosterPlayerCount ?? 0) > 0)"),
+                   "Player Profile must preserve the active roster selection and stay gated on a "
+                       + "roster that has players in it")
             expect(appRoot.contains("Button(\"Back to HQ\")")
                        && appRoot.contains("navigate(.coachingHQ, in: store)"),
                    "unavailable routes must offer a truthful return path")
@@ -1056,10 +1073,9 @@ func runContractTests() {
                        && newsProvider.contains("occurredAt.season + 1"),
                    "news must use the same one-based season convention as the other league surfaces")
             expect(competitionProvider.contains("controlledCompetitionTier")
-                       && store.contains("standings(tier: competitionTier")
-                       && store.contains("schedule(tier: competitionTier")
-                       && store.contains("competitionOverview = CoachWorldReadModelProvider.competitionOverview(")
-                       && store.contains("tier: competitionTier"),
+                       && store.contains("standings(tier: CoachWorldReadModelProvider.controlledCompetitionTier(from: $0)")
+                       && store.contains("schedule(tier: CoachWorldReadModelProvider.controlledCompetitionTier(from: $0)")
+                       && store.contains("competitionOverview(tier: CoachWorldReadModelProvider.controlledCompetitionTier(from: $0)"),
                    "the store must forward the controlled competition tier to every surface")
             expect(readOnlyBacks.count == 5
                        && readOnlyBacks.allSatisfy { !$0.contains("FloodlitCommittingAction(\"Back") },
@@ -1241,11 +1257,20 @@ func runContractTests() {
             expect(profile.contains("let model: PlayerProfileReadModel"))
             expect(profile.contains("Button("))
             expect(!profile.contains("onTapGesture"))
-            // Was `profile.contains("monospacedDigit")`. Figures now go through
-            // `CoachWorldTokens.figure(_:weight:)`, which applies the tabular face itself, so the
-            // modifier no longer appears at the call site. Either spelling satisfies the rule the
-            // check is for: a figure on this surface does not reflow as it changes.
-            expect(profile.contains("monospacedDigit") || profile.contains("CoachWorldTokens.figure("),
+            // Two migrations, same rule each time: a figure on this surface does not reflow as it
+            // changes. Was `profile.contains("monospacedDigit")` directly; then every figure call
+            // site went through `CoachWorldTokens.figure(_:weight:)`, which applies the tabular
+            // face itself, so the literal modifier stopped appearing at the call site (S-0 Phase 3,
+            // 2026-08-19) migrated every `CoachWorldTokens.figure(` on this surface again, to
+            // `.coachWorldFigure(_:weight:)` (`CoachWorldScaledType.swift`), a `@ScaledMetric`-
+            // backed replacement that also applies `.monospacedDigit()` internally -- so neither of
+            // the first two spellings appears in this file's text any more, though the property
+            // they were both checking for still holds. All three are accepted here rather than only
+            // the current one, so the check keeps working across whichever spelling a given call
+            // site happens to use.
+            expect(profile.contains("monospacedDigit")
+                       || profile.contains("CoachWorldTokens.figure(")
+                       || profile.contains(".coachWorldFigure("),
                    "player profile figures must be set in the tabular face")
             expect(profile.contains("accessibilitySortPriority"))
             expect(profile.contains("dynamicTypeSize.isAccessibilitySize"))
@@ -1413,9 +1438,26 @@ func runContractTests() {
                            && view.contains("CareerHubView(")
                            && view.contains("dynamicTypeSize.isAccessibilitySize"),
                        "\(family.1) must reuse the authoritative career ledger")
-                expect(appRoot.contains("case .\(family.2)")
-                           && appRoot.contains("\(family.1)("),
-                       "\(family.1) must be reachable from the shipped app root")
+                // Phase 4, 2026-08-19: this used to assert
+                // `appRoot.contains("case .\(family.2)") && appRoot.contains("\(family.1)(")` under
+                // the message "must be reachable from the shipped app root" -- false, and provably
+                // so: career()'s switch subject is Self.canonicalScreen(screen), which resolves
+                // every alias to its canonicalDestination before the switch runs, so a case for an
+                // alias can never execute. That dead case (deleted this phase, see "career() routes
+                // every optional read model...") is exactly what this assertion was checking for.
+                // The true property is the one the registry already states: the alias's
+                // canonicalDestination is .careerHub, and it does not appear in career() at all.
+                guard let screen = CoachWorldScreenID.allCases.first(
+                    where: { String(describing: $0) == family.2 }
+                ) else {
+                    expect(false, "no CoachWorldScreenID case named \(family.2)")
+                    continue
+                }
+                expect(screen.canonicalDestination == .careerHub && !screen.isCanonicalTask,
+                       "\(family.1) must be a documented alias resolving to Career Hub")
+                expect(!appRoot.contains("case .\(family.2):"),
+                       "\(family.1) must not appear as a dead case in the app root -- it can " +
+                           "never execute there")
                 expect(!hq.contains("Button(\"Job board\")")
                            && !hq.contains("Button(\"Offers\")")
                            && !hq.contains("Button(\"Appointment\")"),
@@ -1485,15 +1527,26 @@ func runContractTests() {
             expect(staffRoomProvider.contains("static func staffRoom(")
                        && staffRoomProvider.contains("state.staff"),
                    "Staff Room must derive from authoritative staff records")
+            // Staff Market & Profile's own half of this claim is a behavioural check, not a
+            // source-scan: 2026-08-20 remediation removed its case label from navigate(_:in:)'s
+            // switch as provably dead code (the function's own leading canonicalise-and-recurse
+            // guard means an alias can never reach that switch), so a bare
+            // appRoot.contains("staffMarketProfile") substring check -- true only by the
+            // coincidence of the now-deleted dead label's spelling -- stopped holding even though
+            // the actual reachability this test names never changed: navigate(.staffMarketProfile)
+            // still canonicalises to .staffRoom and recurses into the exact same StaffRoomView(.
             expect(appRoot.contains("case .staffRoom")
-                       && appRoot.contains("staffMarketProfile")
-                       && appRoot.contains("StaffRoomView("),
+                       && appRoot.contains("StaffRoomView(")
+                       && CoachWorldScreenID.staffMarketProfile.canonicalDestination == .staffRoom,
                    "Staff Room and Staff Market & Profile must be reachable from the shipped app root")
             expect(hq.contains("Button(\"Staff room\")")
                        && !hq.contains("Button(\"Staff market & profile\")"),
                    "Staff Room must be the canonical HQ staff route")
+            // StaffMarketProfileView (family "staffMarketProfile") is a documented alias resolving
+            // to .staffRoom, handled separately below rather than in this loop -- career()'s switch
+            // subject is already canonicalised, so it cannot appear there as a case, the way the
+            // other three genuinely can (they are not aliases).
             for family in [
-                ("StaffMarketProfileView.swift", "StaffMarketProfileView", "staffMarketProfile"),
                 ("CapContractsView.swift", "CapContractsView", "capContracts"),
                 ("ContractNegotiationView.swift", "ContractNegotiationView", "contractNegotiation"),
                 ("RosterCutsTransactionsView.swift", "RosterCutsTransactionsView", "rosterCutsTransactions")
@@ -1506,6 +1559,18 @@ func runContractTests() {
                            && appRoot.contains("\(family.1)("),
                        "\(family.1) must be routed by the shipped app root")
             }
+            let staffMarketProfileView = uiFiles.first {
+                $0.path.hasSuffix("/StaffMarketProfileView.swift")
+            }?.text ?? ""
+            expect(staffMarketProfileView.contains("public struct StaffMarketProfileView")
+                       && staffMarketProfileView.contains("dynamicTypeSize.isAccessibilitySize"),
+                   "StaffMarketProfileView must be a production accessibility-aware family view")
+            expect(CoachWorldScreenID.staffMarketProfile.canonicalDestination == .staffRoom
+                       && !CoachWorldScreenID.staffMarketProfile.isCanonicalTask,
+                   "StaffMarketProfileView must be a documented alias resolving to Staff Room")
+            expect(!appRoot.contains("case .staffMarketProfile:"),
+                   "StaffMarketProfileView must not appear as a dead case in the app root -- it " +
+                       "can never execute there")
 
             let negotiationCore = swiftFiles(under: "Sources/FootballSimCore")
                 .first { $0.path.hasSuffix("/ProContractNegotiation.swift") }?.text ?? ""
@@ -1533,11 +1598,21 @@ func runContractTests() {
                        && packages.contains("DepthChartView(")
                        && packages.contains("dynamicTypeSize.isAccessibilitySize"),
                    "Personnel Packages must reuse the authoritative personnel surface")
-            expect(appRoot.contains("case .schemeBook")
-                       && appRoot.contains("case .personnelPackages")
-                       && appRoot.contains("SchemeBookView(")
-                       && appRoot.contains("PersonnelPackagesView("),
-                   "Scheme Book and Personnel Packages must be reachable from the shipped app root")
+            // Phase 4, 2026-08-19: this used to assert both dead cases were present under the
+            // message "must be reachable from the shipped app root" -- false, for the same reason
+            // as the equivalent jobBoard/offer/appointment check above: career()'s switch subject
+            // is already canonicalised, so a case for an alias can never execute, and both dead
+            // cases are deleted this phase, not merely renamed.
+            expect(CoachWorldScreenID.schemeBook.canonicalDestination == .gamePlan
+                       && !CoachWorldScreenID.schemeBook.isCanonicalTask
+                       && CoachWorldScreenID.personnelPackages.canonicalDestination == .depthChart
+                       && !CoachWorldScreenID.personnelPackages.isCanonicalTask,
+                   "Scheme Book and Personnel Packages must be documented aliases resolving to " +
+                       "their host surfaces")
+            expect(!appRoot.contains("case .schemeBook:")
+                       && !appRoot.contains("case .personnelPackages:"),
+                   "Scheme Book and Personnel Packages must not appear as dead cases in the app " +
+                       "root -- they can never execute there")
             expect(!hq.contains("Button(\"Scheme book\")")
                        && !hq.contains("Button(\"Personnel packages\")"),
                    "Scheme Book and Personnel Packages must use canonical host routes")
@@ -1571,29 +1646,47 @@ func runContractTests() {
             expect(hq.contains("showsCollegeOffseason")
                        && hq.contains("collegeOffseason"),
                    "College Offseason must be reachable from the HQ route surface")
+            // Four of these five (all but signingDay) are documented aliases resolving to
+            // .collegeOffseason -- career()'s switch subject is already canonicalised, so none of
+            // them can appear there as a case, unlike signingDay, which is genuinely canonical.
+            // Handled as two groups below rather than one uniform loop.
             for family in [
                 ("PortalHubView.swift", "PortalHubView", "portalHub"),
                 ("RetentionDecisionsView.swift", "RetentionDecisionsView", "retentionDecisions"),
                 ("PortalMarketView.swift", "PortalMarketView", "portalMarket"),
-                ("NilAllocationView.swift", "NilAllocationView", "nilAllocation"),
-                ("SigningDayView.swift", "SigningDayView", "signingDay")
+                ("NilAllocationView.swift", "NilAllocationView", "nilAllocation")
             ] {
                 let view = uiFiles.first { $0.path.hasSuffix("/\(family.0)") }?.text ?? ""
                 expect(view.contains("public struct \(family.1)")
                            && view.contains("CollegeOffseasonView(")
                            && view.contains("dynamicTypeSize.isAccessibilitySize"),
                        "\(family.1) must reuse the authoritative college offseason surface")
-                expect(appRoot.contains("case .\(family.2)")
-                           && appRoot.contains("\(family.1)("),
-                       "\(family.1) must be reachable from the shipped app root")
-                if family.2 == "signingDay" {
-                    expect(hq.contains("Button(\"Signing day\")"),
-                           "Signing Day must remain reachable during its active phase")
-                } else {
-                    expect(!hq.contains("Button(\(family.2)"),
-                           "\(family.1) must use the canonical College Offseason host route")
+                guard let screen = CoachWorldScreenID.allCases.first(
+                    where: { String(describing: $0) == family.2 }
+                ) else {
+                    expect(false, "no CoachWorldScreenID case named \(family.2)")
+                    continue
                 }
+                expect(screen.canonicalDestination == .collegeOffseason && !screen.isCanonicalTask,
+                       "\(family.1) must be a documented alias resolving to College Offseason")
+                expect(!appRoot.contains("case .\(family.2):"),
+                       "\(family.1) must not appear as a dead case in the app root -- it can " +
+                           "never execute there")
+                expect(!hq.contains("Button(\(family.2)"),
+                       "\(family.1) must use the canonical College Offseason host route")
             }
+            let signingDayView = uiFiles.first {
+                $0.path.hasSuffix("/SigningDayView.swift")
+            }?.text ?? ""
+            expect(signingDayView.contains("public struct SigningDayView")
+                       && signingDayView.contains("CollegeOffseasonView(")
+                       && signingDayView.contains("dynamicTypeSize.isAccessibilitySize"),
+                   "SigningDayView must reuse the authoritative college offseason surface")
+            expect(appRoot.contains("case .signingDay")
+                       && appRoot.contains("SigningDayView("),
+                   "SigningDayView must be reachable from the shipped app root")
+            expect(hq.contains("Button(\"Signing day\")"),
+                   "Signing Day must remain reachable during its active phase")
             let development = uiFiles.first {
                 $0.path.hasSuffix("/DevelopmentPlanView.swift")
             }?.text ?? ""
@@ -2082,12 +2175,66 @@ func runContractTests() {
                     expect(contrastRatio(indicator, palette.work) >= 3,
                            "\(name) action and state indicators must meet 3:1")
                 }
-                expect(contrastRatio(palette.fieldLine, palette.fieldTurf) >= 3,
-                       "\(name) field lines must meet 3:1")
-                expect(contrastRatio(palette.fieldAnnotation, palette.fieldTurf) >= 3,
-                       "\(name) field annotations must meet 3:1")
-                expect(contrastRatio(palette.fieldLive, palette.fieldTurf) >= 3,
-                       "\(name) live field marks must meet 3:1")
+                // S-8, 2026-08-19 review, and a canon inconsistency it surfaced. `palette.fieldTurf`
+                // (`#072616`) is not what the field paints and has not been since a flat ground was
+                // replaced by the five-stop elliptical gradient in MatchDayField.swift (turfCrown ->
+                // turf -> turfMid -> turfShade -> turfNight). `04` section 6.1's colour table still
+                // states "field.line (on turf) = 15.44" against the old flat value; a later table in
+                // the same doc gives the current "turf" stop's own number, 5.97, but never restates
+                // field.annotation or field.live against it, and neither accounts for a reduced-
+                // opacity draw. That inconsistency is a canon question for the owner, not resolved
+                // here. What is fixed here: every check below runs against every stop the gradient
+                // can actually show, not the one flat colour nothing paints.
+                let turfStops: [(name: String, value: CoachWorldTokens.ColorValue)] = [
+                    ("turfCrown", CoachWorldTokens.Floodlit.turfCrown),
+                    ("turf", CoachWorldTokens.Floodlit.turf),
+                    ("turfMid", CoachWorldTokens.Floodlit.turfMid),
+                    ("turfShade", CoachWorldTokens.Floodlit.turfShade),
+                    ("turfNight", CoachWorldTokens.Floodlit.turfNight),
+                ]
+                for (stopName, stop) in turfStops {
+                    expect(contrastRatio(palette.fieldLine, stop) >= 3,
+                           "\(name) field lines must meet 3:1 against the \(stopName) turf stop")
+                    expect(contrastRatio(palette.fieldAnnotation, stop) >= 3,
+                           "\(name) field annotations must meet 3:1 against the \(stopName) turf "
+                               + "stop")
+                    if stopName == "turfCrown" {
+                        // Known, unresolved: field.live measures 2.2664:1 here, the one stop of
+                        // five it fails. Pinned by value rather than silently passed or left an
+                        // unexplained failure — if this number moves, either the fix landed (raise
+                        // the tolerance check into a real >= 3 assertion and delete this branch) or
+                        // something regressed further (investigate either way).
+                        expectClose(contrastRatio(palette.fieldLive, stop), 2.2664, 0.001,
+                                    "\(name) field.live's known contrast shortfall against "
+                                        + "turfCrown moved — see the comment above this loop")
+                    } else {
+                        expect(contrastRatio(palette.fieldLive, stop) >= 3,
+                               "\(name) live field marks must meet 3:1 against the \(stopName) "
+                                   + "turf stop")
+                    }
+                }
+
+                // The yard numbers specifically (MatchDayField.swift:210,284,314) draw fieldLine at
+                // Paint.number opacity, not the full value the checks above use. Known, unresolved:
+                // composited, it fails 3:1 against every one of the five stops today (1.6987 to
+                // 2.8882). Clearing the worst stop (turfCrown) needs Paint.number near 0.73 — more
+                // than double the current 0.33 — which is a real visual change no render in this
+                // environment can confirm looks right, so it is not made here. Pinned by value
+                // rather than silently passed, so a partial change (some stops clearing 3:1, others
+                // not) is caught rather than read as done.
+                let numberContrasts: [String: Double] = [
+                    "turfCrown": 1.6987, "turf": 1.9723, "turfMid": 2.3980,
+                    "turfShade": 2.7751, "turfNight": 2.8882,
+                ]
+                for (stopName, stop) in turfStops {
+                    let composited = palette.fieldLine.mixed(with: stop, amount: 1 - Paint.number)
+                    expectClose(contrastRatio(composited, stop), numberContrasts[stopName] ?? -1,
+                                0.001,
+                                "\(name) yard numbers' known contrast shortfall against "
+                                    + "\(stopName) moved — see the comment above this loop; "
+                                    + "if every stop now clears 3:1 this pin should become a "
+                                    + "real assertion instead")
+                }
             }
         }
 
@@ -2418,13 +2565,94 @@ func runContractTests() {
             // are legitimately reached outside this switch, so the bar is a large majority, not
             // every last case — this exists to fail loudly if a future edit strips most of
             // career()'s branches, not to pin an exact count.
-            let explicitlyRouted = CoachWorldScreenID.allCases.filter {
+            //
+            // Phase 4, 2026-08-19: scoped to isCanonicalTask screens only. The switch subject
+            // is Self.canonicalScreen(screen), which resolves every alias to its destination before
+            // the switch runs — an explicit `case .X:` for an alias X can never execute, so the 15
+            // aliases that used to sit here as dead code are deleted, not counted as routed. The
+            // 47/62 split is the same one "the 62 legacy route numbers migrate through one
+            // canonical task table" above already asserts by construction; this test does not
+            // re-derive it, only reuses isCanonicalTask.
+            let canonicalScreens = CoachWorldScreenID.allCases.filter(\.isCanonicalTask)
+            let explicitlyRouted = canonicalScreens.filter {
                 careerBody.contains("case .\(String(describing: $0)):")
             }
-            expect(explicitlyRouted.count >= 50,
+            expect(explicitlyRouted.count >= 40,
                    "career() explicitly branches on only \(explicitlyRouted.count) of " +
-                       "\(CoachWorldScreenID.allCases.count) registered screens — either a real " +
-                       "regression, or this scan stopped reading real source")
+                       "\(canonicalScreens.count) canonical screens — either a real regression, " +
+                       "or this scan stopped reading real source")
+            // Catches a future unreachable branch by construction: no alias screen may appear as a
+            // dead `case .X:` in career(), because the switch subject is already
+            // canonicalised and such a branch can never execute. Built from
+            // CoachWorldScreenID.allCases filtered by !isCanonicalTask rather than a hand-typed
+            // list, so a screen added to the alias table later is covered the day it is added.
+            let aliasScreens = CoachWorldScreenID.allCases.filter { !$0.isCanonicalTask }
+            let deadAliasCases = aliasScreens.filter {
+                careerBody.contains("case .\(String(describing: $0)):")
+            }
+            expect(deadAliasCases.isEmpty,
+                   "career() still branches on " +
+                       "\(deadAliasCases.map { String(describing: $0) }) — these are aliases " +
+                       "whose canonicalDestination means this case can never execute; the branch " +
+                       "is dead code, not a route")
+        }
+
+        test("navigate(_:in:) does not branch on a dead alias sub-pattern either") {
+            // The exact defect class the scan above already guards against in career(), found in
+            // navigate() during the 2026-08-20 remediation: this function's own opening lines
+            // resolve any alias to its canonicalDestination and recurse before the switch below
+            // ever runs, so a case keyed to an alias here is exactly as dead as one would be in
+            // career(). Some of the mixed alias/canonical arms (e.g. stakeholders and
+            // promotionDecision, both canonical, alongside jobSecurity and coachingCarousel,
+            // both aliases) needed only the alias half removed rather than the whole arm, so this
+            // scans for a case label anywhere in the body, not only a whole standalone arm — and
+            // checks the `where`-guarded continuation shape this switch actually uses, not only
+            // a bare `case .X:`.
+            let root = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldAppRootView.swift") }?.text ?? ""
+            guard let start = root.range(
+                of: "private func navigate(_ destination: CoachWorldScreenID, in store: CoachWorldStore) {"
+            ), let end = root.range(
+                of: "\n    private func closeCareer(",
+                range: start.upperBound..<root.endIndex
+            ) else {
+                expect(false, "could not locate navigate(_:in:) to scan it")
+                return
+            }
+            let navigateBody = String(root[start.upperBound..<end.lowerBound])
+            let aliasScreens = CoachWorldScreenID.allCases.filter { !$0.isCanonicalTask }
+            let deadAliasCases = aliasScreens.filter {
+                let name = String(describing: $0)
+                return navigateBody.contains("case .\(name):")
+                    || navigateBody.contains("case .\(name) where")
+                    || navigateBody.contains(".\(name) where")
+            }
+            expect(deadAliasCases.isEmpty,
+                   "navigate(_:in:) still branches on " +
+                       "\(deadAliasCases.map { String(describing: $0) }) — the function's own " +
+                       "leading canonicalise-and-recurse guard means an alias can never reach the " +
+                       "switch below, so this branch is dead code, not a route")
+        }
+
+        test("the pro playoff seed provider reads the same constant PostseasonSystem seeds by") {
+            // ReadModelProviderTests.swift separately re-derives the seed algorithm and checks the
+            // provider's output against it -- that catches a typo in the provider's own logic, but
+            // not the provider and PostseasonSystem quietly settling on two different numbers for
+            // "how many seeds per conference." This is the complementary check: both files must
+            // spell the same named constant, so a future change to one automatically reaches the
+            // other rather than needing to be remembered twice.
+            let postseason = swiftFiles(under: "Sources/FootballSimCore/Competition")
+                .first { $0.path.hasSuffix("/PostseasonSystem.swift") }?.text ?? ""
+            let provider = swiftFiles(under: "Sources/CoachWorldApp")
+                .first { $0.path.hasSuffix("/CoachWorldCompetitionProvider.swift") }?.text ?? ""
+            expect(!postseason.isEmpty, "PostseasonSystem.swift must exist")
+            expect(!provider.isEmpty, "CoachWorldCompetitionProvider.swift must exist")
+            expect(postseason.contains("ProRules.playoffSeedsPerConference"),
+                   "PostseasonSystem must seed the pro bracket from ProRules.playoffSeedsPerConference, "
+                       + "not a literal, or this scan cannot prove the two agree")
+            expect(provider.contains("ProRules.playoffSeedsPerConference"),
+                   "CoachWorldCompetitionProvider must compute pro seeds from "
+                       + "ProRules.playoffSeedsPerConference, not a second, independently-chosen number")
         }
 
         test("RootView commits to dark on both its DEBUG and non-DEBUG branches") {

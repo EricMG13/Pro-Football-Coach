@@ -101,7 +101,21 @@ public enum ProRosterAISystem {
         var signed: [UUID] = []
         let teamIDs = state.proTeams.ids.sorted { $0.uuidString < $1.uuidString }
         for teamID in teamIDs where teamID != controlledTeamID {
-            guard let team = next.proTeams[teamID], team.rosterIDs.count < ProRules.activeRosterLimit else {
+            // `02` §4.2: free agency signs while legal *and* while the roster leaves room for the
+            // picks the team still holds. Without the reserve the draft could never take a player
+            // at any seed -- free agency signs until the pool is dry, and a dry pool is exactly the
+            // pass that starts the draft, so the draft always opened with all 53 seats filled and
+            // every pick threw `activeRosterFull`.
+            //
+            // Counted from the draft order rather than from `ProRules.draftRounds`, so a team
+            // holding an unusual number of picks reserves for the picks it actually holds. Clamped
+            // at zero because the order arrives from disk.
+            let remainingPicks = next.proMarket.draftOrder
+                .dropFirst(next.proMarket.nextPick)
+                .filter { $0 == teamID }
+                .count
+            let signingLimit = max(0, ProRules.activeRosterLimit - remainingPicks)
+            guard let team = next.proTeams[teamID], team.rosterIDs.count < signingLimit else {
                 continue
             }
             let candidates = next.proMarket.freeAgentIDs

@@ -83,7 +83,9 @@ public enum PostseasonSystem {
             let ranking = competition.rankings[.pro] ?? state.proTeams.ids
             var pairs: [(UUID, UUID)] = []
             for conference in state.league.conferences(in: .pro) {
-                let entrants = Array(ranking.filter(conference.memberIDs.contains).prefix(4))
+                let entrants = Array(
+                    ranking.filter(conference.memberIDs.contains).prefix(ProRules.playoffSeedsPerConference)
+                )
                 pairs.append(contentsOf: highLowPairs(entrants))
             }
             appendStage(

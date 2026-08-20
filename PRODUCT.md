@@ -91,7 +91,7 @@ grows a row that no test backs.
 | Reduce Motion honoured on every animation | `ReduceMotionContractTest` |
 | VoiceOver on every data row and control | `VoiceOverLabelTest` |
 | 44 pt touch targets | `TouchTargetTest` |
-| A save survives 20 seasons under 8 MB | `M1SoakTests` + `M2SoakTests` |
+| A save stays bounded across 20 seasons | `M1SoakTests` + `M2SoakTests` |
 | Same seed, same league, across app launches | `DeterminismTests` + source scan |
 | All identities fictional and original | `LegalTests` |
 
@@ -106,7 +106,8 @@ instruments exist and run in CI:
 |---|---|
 | A season is completable in 6–8 hours | AgencyBudgetTests is not implemented; owner measurement remains open |
 | Week advance under 2.0 s at shipping league size | The host timing probe is evidence only; the device gate remains open |
-| The simulation and the off-screen model agree | `TwoTierConsistencyTests` runs a paired four-world comparison and is **red** for points, plays and home advantage in both tiers, plus professional yards per play; equivalence is blocked on P4 calibration rather than on the instrument |
+| The simulation and the off-screen model agree | `TwoTierConsistencyTests` runs a paired four-world comparison and is **red**: seven of sixteen professional bands now hold after fixing the run baseline, pass completion, pass-rush pressure and the game clock's snap cost, but total points per team-game measures a standard deviation near 30 against a real figure near 10 — independent per-duel leverage draws compounding with no per-game correlation. Equivalence is blocked on that design gap, not on the instrument |
+| A save survives 20 seasons under 8 MB | **Not met.** Measured 14.76 MB at season 20 on the soaks' own seed, against 3.67 MB at season 0. Departed-identity retention is now bounded — it was unbounded, and the save passed 8 MB at season 2 and reached about 26 MB at season 20 — and both soaks now assert a ceiling and a drift allowance rather than printing the sizes. Reaching 8 MB needs the portal and scouting duplication looked at, which is engine work and an owner call |
 
 ---
 

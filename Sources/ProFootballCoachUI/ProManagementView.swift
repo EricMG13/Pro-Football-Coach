@@ -97,14 +97,10 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
                 FloodlitLabel3("Cap room", palette: palette)
                 Text(currency(model.cap.remainingCap))
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.name, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.name, weight: .bold)
                     .foregroundStyle(capTint)
                 Text(model.cap.remainingCap >= 0 ? "Under the cap" : "Over the cap")
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.title, weight: .bold
-                        )
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.title, weight: .bold)
                     .foregroundStyle(capTint)
             }
             .accessibilityElement(children: .combine)
@@ -120,17 +116,17 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
             HStack(spacing: CoachWorldTokens.Gap.xl) {
                 FloodlitArcGauge(
                     proportion: committedShare,
-                    figure: "\(Int((committedShare * 100).rounded()))%",
+                    figure: "\(committedPercent)%",
                     caption: "Committed",
                     palette: palette
                 )
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                     FloodlitLabel3("Roster", palette: palette)
                     Text("\(model.cap.activeRosterCount)/\(ProRules.activeRosterLimit) active")
-                        .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                        .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                         .foregroundStyle(palette.contentSecondary.color)
                     Text("\(model.cap.practiceSquadCount)/\(ProRules.practiceSquadLimit) practice")
-                        .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill))
+                        .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
                         .foregroundStyle(palette.contentSecondary.color)
                 }
             }
@@ -140,6 +136,14 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
 
     private var capTint: Color {
         model.cap.remainingCap >= 0 ? palette.statePositive.color : palette.stateWarning.color
+    }
+
+    /// Unclamped, unlike `committedShare`: the gauge's ring cannot draw past a full circle, but the
+    /// printed figure must still be able to say "108%" for an over-cap team rather than repeating
+    /// the ring's capped "100%" beside the "Over the cap" text three lines above it.
+    private var committedPercent: Int {
+        guard model.cap.capLimit > 0 else { return 0 }
+        return Int((Double(model.cap.committedCap) / Double(model.cap.capLimit) * 100).rounded())
     }
 
     private var committedShare: Double {
@@ -153,7 +157,7 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
             FloodlitLabel3(label, palette: palette)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             Text(value)
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.row, weight: .semibold))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.row, weight: .semibold)
                 .foregroundStyle(tint ?? palette.contentPrimary.color)
         }
         .frame(minHeight: ProManagementMetric.capFactHeight)
@@ -212,8 +216,8 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                     Text(player.name.uppercased())
-                        .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
-                        .lineLimit(1)
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                     // `player.position` is a full word ("Defensive tackle"), not a short code --
                     // unlike the two-to-four-letter codes this pill treatment fits elsewhere.
                     FloodlitLabel3(player.rosterKind.isEmpty ? player.position
@@ -228,7 +232,7 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
                         .frame(width: ProManagementMetric.termColumn, alignment: .trailing)
                 }
                 Text(currency(player.capHit))
-                    .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.row, weight: .semibold))
+                    .coachWorldFigure(CoachWorldTokens.DisplaySize.row, weight: .semibold)
                     .frame(width: ProManagementMetric.hitColumn, alignment: .trailing)
             }
         }
@@ -248,11 +252,7 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
         ) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 Text(action.title.uppercased())
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                        )
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     // Not the reserved gold: `player.action` is always a release/cut, an
                     // immediately-executing mutation on tap, and `04` section 6.5 reserves the
                     // gold field for exactly one committing action per screen -- the footer's
@@ -260,7 +260,7 @@ public struct ProManagementView: View, CoachWorldChromedSurface {
                     .foregroundStyle(
                         action.isAvailable ? palette.stateWarning.color : palette.contentQuiet.color
                     )
-                    .lineLimit(1)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                 Text(action.isAvailable ? action.detail : (action.unavailableReason ?? action.detail))
                     .font(CoachWorldTokens.TypeRole.caption)
                     .foregroundStyle(palette.contentSecondary.color)

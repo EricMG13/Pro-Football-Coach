@@ -76,6 +76,65 @@ func runCapComplianceTests() {
             expect(WorldIntegrity.check(receipt.state).isValid)
         }
 
+        test("compliance never releases a deal whose release costs more cap than it sheds") {
+            // A bonus-heavy deal releases *badly*: dead money accelerates every unamortised bonus
+            // dollar into this season, while the cap hit it sheds is one season's proration plus
+            // base. When the acceleration is the larger number the release moves the team further
+            // over the cap, and "cheapest dead money first" walks straight into it, because a deal
+            // with almost no bonus left to accelerate is also the cheapest dead money on the books.
+            var state = GameState.bootstrap(seed: 62_005)
+            let teamID = state.proTeams.ids[0]
+            guard let team = state.proTeams[teamID], team.rosterIDs.count >= 2 else {
+                expect(false, "the fixture team has fewer than two rostered players")
+                return
+            }
+            for playerID in team.rosterIDs + team.practiceSquadIDs {
+                state.players.update(playerID) { $0.contract = nil }
+            }
+            _ = state.proTeams.update(teamID) { $0.deadMoney = 0 }
+
+            let capLimit = ProRules.salaryCap(seasonsAfterBase: state.calendar.season)
+            let trapID = team.rosterIDs[0]
+            let payerID = team.rosterIDs[1]
+            // trap: no base, a 5-dollar bonus over five years. Cap hit 1, dead money 5 — the
+            // cheapest dead money on the roster, and releasing it *adds* 4 dollars of cap.
+            state.players.update(trapID) {
+                $0.contract = Contract(
+                    years: 5,
+                    baseSalaryByYear: Array(repeating: 0, count: 5),
+                    signingBonus: 5,
+                    signedSeason: state.calendar.season
+                )
+            }
+            // payer: the deal that actually puts the team over, and the only one whose release
+            // sheds more than it accelerates.
+            state.players.update(payerID) {
+                $0.contract = Contract(
+                    years: 5,
+                    baseSalaryByYear: [capLimit] + Array(repeating: 0, count: 4),
+                    signingBonus: 5_000_000,
+                    signedSeason: state.calendar.season
+                )
+            }
+
+            let before = try ProManagementSystem.capSnapshot(teamID: teamID, in: state)
+            expectEqual(before.committedCap, capLimit + 1_000_001)
+            expect(!before.isWithinCap, "the fixture is not actually over cap")
+
+            let receipt = try ProManagementSystem.enforceCapCompliance(
+                at: state.calendar,
+                in: state
+            )
+            expectEqual(receipt.releases.map(\.playerID), [payerID])
+            expect(receipt.state.players[trapID]?.contract != nil,
+                   "the trap deal was released even though releasing it raised the cap")
+            let after = try ProManagementSystem.capSnapshot(teamID: teamID, in: receipt.state)
+            expect(after.isWithinCap, "the team is still over cap after compliance")
+            expect(after.committedCap < before.committedCap,
+                   "compliance did not reduce committed cap")
+            expect(WorldIntegrity.check(receipt.state).isValid)
+        }
+
         test("a team already within the cap is untouched") {
             let state = GameState.bootstrap(seed: 62_002)
             let receipt = try ProManagementSystem.enforceCapCompliance(
