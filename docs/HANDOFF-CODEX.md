@@ -7,10 +7,10 @@ names before acting on it. `docs/STATUS.md` is still the truth about the build.
 ## 2026-08-20 — coach career record and seatless-staff pruning
 
 [PR #43](https://github.com/EricMG13/Pro-Football-Coach/pull/43) (career-transition seat handling,
-five defects) is **merged**. Two owner-approved decisions from the same session are not: a coach
-season-record feature with code in progress and a failing test, and a seatless-staff pruning rule
-with canon written and no code at all. Full detail, root-cause trail, and a patch file for the
-in-progress work: `docs/plans/2026-08-20-coach-career-record-handoff.md`.
+five defects) and [PR #50](https://github.com/EricMG13/Pro-Football-Coach/pull/50) (season records
+and seatless-staff pruning) are **merged**. The owner patch is verified by `--coach-season-record`
+(1 test / 17 checks) and the companion `--staff-pruning` lane (1 test / 6 checks). The full
+root-cause trail and completion record remain in `docs/plans/2026-08-20-coach-career-record-handoff.md`.
 
 ## 2026-08-20 — PR #9 generation re-pin
 
