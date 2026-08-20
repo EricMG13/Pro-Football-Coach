@@ -19,6 +19,10 @@ private func legacyEnvelope(
         object["career"] = career
     }
     let body = try JSONSerialization.data(withJSONObject: object)
+    return try compressedEnvelope(for: body)
+}
+
+private func compressedEnvelope(for body: Data) throws -> Data {
     var envelope = Data(Array("PFC1".utf8))
     var version = SaveEnvelope.currentSchemaVersion.littleEndian
     withUnsafeBytes(of: &version) { envelope.append(contentsOf: $0) }
@@ -100,6 +104,60 @@ func runSaveDocumentTests() {
             )
             expectEqual(decoded, expected)
             expectEqual(decoded.presentation.selectedSubjectID, selectedSubjectID)
+        }
+
+        test("a current document with an invalid calendar is refused before opening") {
+            let document = CoachWorldSaveDocument(
+                gameState: GameState.bootstrap(seed: 20_260_824)
+            )
+            var object = try! JSONSerialization.jsonObject(
+                with: JSONEncoder.stable().encode(document)
+            ) as! [String: Any]
+            var gameState = object["gameState"] as! [String: Any]
+            var calendar = gameState["calendar"] as! [String: Any]
+            calendar["week"] = SharedRules.inSeasonWeeks + 1
+            gameState["calendar"] = calendar
+            object["gameState"] = gameState
+            let body = try! JSONSerialization.data(withJSONObject: object)
+
+            do {
+                _ = try CoachWorldSaveDocument.decode(
+                    envelopeData: compressedEnvelope(for: body)
+                )
+                expect(false, "an invalid calendar opened a document")
+            } catch let DecodingError.dataCorrupted(context) {
+                expectEqual(
+                    context.debugDescription,
+                    "The world calendar is outside the supported season bounds."
+                )
+            } catch {
+                expect(false, "invalid calendar returned the wrong error: \(error)")
+            }
+        }
+
+        test("a legacy root with an invalid calendar is refused instead of migrating") {
+            var object = try! JSONSerialization.jsonObject(
+                with: JSONEncoder.stable().encode(GameState.bootstrap(seed: 20_260_825))
+            ) as! [String: Any]
+            object["version"] = GameState.legacySchemaVersion
+            var calendar = object["calendar"] as! [String: Any]
+            calendar["season"] = -1
+            object["calendar"] = calendar
+            let body = try! JSONSerialization.data(withJSONObject: object)
+
+            do {
+                _ = try CoachWorldSaveDocument.decode(
+                    envelopeData: compressedEnvelope(for: body)
+                )
+                expect(false, "an invalid legacy calendar migrated into a document")
+            } catch let DecodingError.dataCorrupted(context) {
+                expectEqual(
+                    context.debugDescription,
+                    "The world calendar is outside the supported season bounds."
+                )
+            } catch {
+                expect(false, "invalid legacy calendar returned the wrong error: \(error)")
+            }
         }
 
         test("current document without inbox receipts remains readable") {
