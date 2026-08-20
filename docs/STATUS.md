@@ -1708,7 +1708,8 @@ asserting per season that all 32 teams stay inside the cap and every roster boun
 professional carries college eligibility, and that the root stays valid, plus a byte-identical
 two-season replay.
 
-**It fails, and the failure is the point.** Over two seasons and 42 weeks:
+**It fails, and the failure is the point.** As measured on 2026-08-13, over two seasons and 42
+weeks:
 
 ```text
 phasesSeen=closed/freeAgency  events=[proMarketClosed=1 proMarketOpened=2]
@@ -1719,7 +1720,7 @@ The market opens and closes. **Nothing else ever happens** — no draft pick, no
 no trade, across 32 teams and two full seasons.
 
 **Diagnosed to root cause, and it is deeper than a missing driver.** `--pro-draft-probe` reaches the
-draft directly in seconds instead of twelve minutes and reports the thrown reason:
+draft directly in seconds instead of twelve minutes and reported, on 2026-08-13, the thrown reason:
 
 ```text
 first pick threw activeRosterFull  roster=53/53  practiceSquad=0/16
@@ -1788,14 +1789,52 @@ teams without one — a latent defect that could never fire while no professiona
 And `--pro-week-walk` is a fast bisector that reports the exact week a professional step refuses,
 which turned a twelve-minute opaque soak failure into a named cause in seconds.
 
-**Both gates stay red to say so.** The driver cannot fire
-while every roster sits at 53/53. The remaining work is roster turnover, and it is a design question
-canon only half answers: §4.2 lists "retirements and expiring contracts" and "cap compliance — a hard
-date the player must be legal by" as the first two offseason beats, but bootstrap issues no contracts
-for anyone to expire and nothing implements the compliance date that would force cuts. Deciding who
-gets cut, and when, is an owner-level design call rather than an implementation detail, so it is not
-invented here. `--pro-soak` and `--pro-draft-probe` stay red until it is answered, in the same way
-P4's calibration gate stays red; **neither is in the default run**, so `verify.sh` is unaffected.
+### Both professional gates are green — 2026-08-20
+
+Everything above this line is the record of a red gate, kept because the diagnosis in it was right
+about the world it was written in. It stopped describing the build in two steps.
+
+**First, roster turnover landed**, and the section above's premise — every roster at 53/53,
+bootstrap issuing no contracts — stopped being true. `--pro-draft-probe` went green.
+
+**Then the draft still made no pick, and the cause was a contradiction between two canon rules.**
+`02` §4.2 had free agency sign "while signings remain legal" and start the draft on the first pass
+that signs nobody. That pass is the one where the pool runs dry — and the pool holds exactly the
+players expiry released, so draining it puts every roster back to 53. The draft therefore always
+opened at the one moment no seat existed, at every seed. §8 asserted the draft can never deadlock;
+nothing arbitrated the headcount that assertion rested on. Measured week by week, season 1:
+
+```text
+s1w1   freeAgents=296  rosterTotal=1400     expiry frees 296 seats
+s1w2.. +32 signings a week, pool 296 -> 0, rosters 1400 -> 1696
+s1w13  draft opens: freeAgents=0, all 32 rosters 53/53, first pick threw activeRosterFull
+```
+
+Cap was never the constraint — 101M of the 272.9M limit sat unused. Headcount was, and
+`ProRosterAISystem.makeDraftPicks` caught the throw and broke the run, which is why ten soak seasons
+reported a silent zero rather than an error. `--pro-draft-scheduler-probe` is the instrument that
+named it and is kept.
+
+**Free agency now reserves the seats the draft needs** (`02` §4.2, owner decision 2026-08-20): a
+team signs while legal *and* while its roster leaves room for the picks it still holds. Rosters
+settle at 46, the draft opens with 224 seats for 224 prospects, and `--pro-soak` is green:
+
+```text
+proDraftPick=1557  proPlayerSigned=569  proContractExpired=2280
+phasesSeen=closed/draft/freeAgency/rosterBuild  freeAgents=512
+```
+
+**One thing the fix surfaced, and it is not fixed.** The free-agent pool now sits pinned at its
+`ProMarketState.maximumFreeAgentIDs` bound of 512, where before it drained to 15 each season: the
+draft takes 224 seats a year that free agents used to fill, so the unattached accumulate.
+`openOffseason` rebuilds the pool sorted by `uuidString` and truncated to 512, so once it saturates,
+**which free agents the league can see is decided by identifier order rather than by rating** — a
+good player whose UUID sorts late is permanently unsignable. That never mattered while the pool
+drained; it matters now. `02` §4.2a chose the one-fifth term spread precisely to leave "real
+headroom for carryover", and that premise no longer holds. Whether the answer is a larger bound, a
+rating-ordered pool, or retirement removing the unattached is an owner call, not one to make here.
+
+**Neither gate is in the default run**, so `verify.sh` is unaffected either way.
 
 ### M7C — the news feed — **implemented and green**
 

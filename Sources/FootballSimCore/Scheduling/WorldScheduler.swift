@@ -773,6 +773,12 @@ public enum WorldScheduler {
                     } catch let error as ProMarketError {
                         throw WorldSchedulerError.professionalMarketFailed(error)
                     }
+                    // D15 (`02` §4.2a): dead money is a single-season charge, so the season now
+                    // ending is discharged here -- after beat 1, before beat 2. The compliance
+                    // pass below then charges the season about to start, which makes each season's
+                    // dead money exactly that season's releases rather than every release the save
+                    // has ever made.
+                    nextState = ProManagementSystem.dischargeDeadMoney(in: nextState)
                     // Beat 2 (`02` §4.2/§4.2a), right after beat 1's expiry and before anything
                     // takes the season-projected view a later step in this same block does (the
                     // college portal's postseason commit): the same D-1 lesson applies here as it

@@ -66,6 +66,17 @@ func runProSoakTests() {
                             "s\(targetSeason) \(team.name): \(cap.practiceSquadCount) practice squad"
                         )
                     }
+                    // D15's falsifier. Dead money is a single-season charge, discharged at the
+                    // season boundary, so it is bounded by one season of releases -- which is what
+                    // makes `03` section 6's "bounded overage from dead money only" a statement
+                    // with a number behind it. An assertion that could not be written at all while
+                    // the charge accumulated for the life of the save.
+                    if cap.deadMoney > cap.capLimit {
+                        capBreaches.append(
+                            "s\(targetSeason) \(team.name): dead money \(cap.deadMoney) "
+                                + "exceeds the cap \(cap.capLimit)"
+                        )
+                    }
                 }
 
                 // A contracted professional must be owned by exactly one team, and an owned
@@ -114,10 +125,21 @@ func runProSoakTests() {
                        + proEventCounts.sorted { $0.key < $1.key }
                            .map { "\($0.key)=\($0.value)" }.joined(separator: " "))
 
+            // Dead money has two write sites and both are `+=`: nothing in the build ever
+            // discharges it, so `capSnapshot` carries every past release into every future
+            // season's committed cap. `03` section 6 calls the permitted overage "bounded", which a
+            // monotonically increasing figure is not. Reported rather than asserted because what
+            // discharges it -- the next season boundary, an amortisation schedule, nothing -- is a
+            // design question canon does not answer.
+            let deadMoneyTotal = state.proTeams.values.reduce(0) { $0 + $1.deadMoney }
+            let deadMoneyMax = state.proTeams.values.map(\.deadMoney).max() ?? 0
+            let capLimit = ProRules.salaryCap(seasonsAfterBase: state.calendar.season)
+
             let sizes = checkpoints.map { "s\($0.season)=\($0.bytes)B" }.joined(separator: " ")
             let weekTotal = weekDurations.reduce(0, +)
             print("""
             Pro soak: seasons=\(requested) weeks=\(weekDurations.count) \
+            deadMoneyTotal=\(deadMoneyTotal) deadMoneyMax=\(deadMoneyMax)/\(capLimit) \
             weekMeanMs=\(String(format: "%.2f", weekDurations.isEmpty ? 0 : weekTotal / Double(weekDurations.count) * 1000)) \
             teams=\(state.proTeams.count) phasesSeen=\(marketPhasesSeen.sorted().joined(separator: "/")) \
             draftedFinal=\(draftedPerSeason.last ?? 0) \
@@ -225,6 +247,42 @@ func runProDraftProbeTests() {
                 """)
                 expect(false, "the first draft pick of a fresh world cannot be made: \(error)")
             }
+        }
+
+        test("a full round of picks all carry a properly stamped, cap-legal contract") {
+            // The probe above proves pick one; nothing had proven pick two through
+            // `draftPicksPerRound`. `acquire` now stamps `signedSeason` for every caller
+            // (2026-08-20), and this is that fix walked across a whole round rather than trusted to
+            // the first pick alone or to a slow, stochastic soak.
+            var state = GameState.bootstrap(seed: 96_005)
+            let rollover = CalendarState(season: 0, week: SharedRules.inSeasonWeeks)
+            state.calendar = rollover
+            state.league.week = rollover.week
+            state = try ProMarketSystem.expireContracts(at: rollover, in: state).state
+            state = try ProMarketSystem.openOffseason(in: state)
+            state = try ProMarketSystem.beginDraft(in: state)
+            let marketSeason = state.proMarket.season
+
+            for pick in 0..<ProRules.draftPicksPerRound {
+                guard let teamID = state.proMarket.currentPickTeamID,
+                      let prospect = state.proMarket.draftClass.first(where: {
+                          !state.proMarket.draftedProspectIDs.contains($0.id)
+                      }) else {
+                    expect(false, "the draft ran dry before pick \(pick) of a single round")
+                    return
+                }
+                state = try ProMarketSystem.draft(prospectID: prospect.id, for: teamID, in: state)
+                guard let contract = state.players[prospect.id]?.contract else {
+                    expect(false, "pick \(pick) landed with no contract on the drafted player")
+                    return
+                }
+                expectEqual(contract.signedSeason, marketSeason,
+                            "pick \(pick) carried a contract not stamped to the market season")
+                let cap = try ProManagementSystem.capSnapshot(teamID: teamID, in: state)
+                expect(cap.isWithinCap, "pick \(pick) left \(teamID) over the cap")
+            }
+            expectEqual(state.proMarket.nextPick, ProRules.draftPicksPerRound)
+            expect(WorldIntegrity.check(state).isValid, "a full legal round left an invalid root")
         }
     }
 }

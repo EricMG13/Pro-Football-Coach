@@ -134,8 +134,21 @@ does not hold, and stops at the one they do:
 
 - The professional offseason advances **one phase per scheduled week**, driven by the roster policy
   that already runs weekly.
-- **Free agency** signs while signings remain legal. When a pass makes no signing — the pool is dry
-  or every roster is full — the draft begins.
+- **Free agency** signs while signings remain legal *and while the roster leaves room for the picks
+  the team still holds* — a team with seven picks left signs down to 46, not 53. When a pass makes
+  no signing — the pool is dry, or every roster is full to its reserved limit — the draft begins.
+
+  *The reserve is what makes §8's no-deadlock assertion true rather than hoped for — owner decision,
+  2026-08-20.* Without it the two rules below contradicted each other and the draft could never take
+  a single player at any seed: expiry frees headcount, free agency signs until the pool is dry, and
+  a dry pool is precisely the pass that starts the draft — so the draft always opened at the one
+  moment every seat was gone. Measured, season 1: expiry freed 296 seats, free agency signed exactly
+  32 a week for nine weeks until the pool hit zero and all 32 rosters read 53/53, and the first pick
+  threw `activeRosterFull` with 101M of cap space unused. Headcount was the binding constraint and
+  nothing arbitrated it.
+
+  The reserve is counted from the draft order rather than from `ProRules.draftRounds`, so a team
+  holding an unusual number of picks reserves for the picks it actually holds.
 - **The draft** is then made pick by pick in draft order by every AI team, deterministically: the
   best available prospect by rating, ties broken by prospect identity.
 - It **pauses when the controlled professional team is on the clock**, because that pick is the
@@ -195,6 +208,22 @@ root — the college portal's postseason commit does, later in the same step —
 lesson applies here that applied to expiry itself: a hand-built fixture that put one team over the
 cap and skipped this step surfaced as `portalCommitFailed(.postseason)`, not as a cap error, until
 compliance was wired at the right point.
+
+**Dead money is a single-season charge — D15, owner decision 2026-08-20.** `Contract.deadMoney`
+accelerates every unamortised bonus dollar into the season of release, which is a statement that the
+charge belongs to *that* season. So it is discharged at the season boundary, between beat 1 and beat
+2: the season now ending has been paid for, and the compliance pass immediately below charges the
+season about to start. Each season's dead money is therefore exactly that season's releases, and
+`03` §6's "bounded overage from dead money only" becomes true — bounded by one season of releases
+rather than by nothing at all.
+
+*Recorded because the alternative was a save that could not advance.* Nothing discharged dead money
+before this: `ProTeam.deadMoney` had two write sites and both were `+=`, so a dollar charged in
+season 3 was still charged in season 20. Because a release accelerates the whole remaining bonus,
+releasing can *raise* committed cap rather than lower it, so the cap-shedding options shrink as the
+charge grows; when no legal release reaches compliance, `enforceCapCompliance` throws and the week
+advance fails outright. D15 records the amortised schedule — the truer mechanic, and a save-schema
+change under D7 — as a deliberate later choice rather than something to arrive at.
 
 **The controlled team's own cap choice is deliberately not built here.** Every other consequential
 choice in this game — a redshirt, a portal decision, an NIL allocation, a recruiting action — is the
@@ -486,6 +515,7 @@ the legal tests.
 | Practice squad | 16 | P8's cap-laundering defences apply here specifically |
 | Salary cap | 255,000,000 integer dollars, growing 7 percent a year | Integer dollars, never floating point |
 | Signing-bonus proration | over the contract's length, capped at 5 years | The mechanism dead money comes from |
+| Dead money discharge | a single-season charge, cleared at the season boundary | **D15, owner decision 2026-08-20.** `Contract.deadMoney` accelerates the whole unamortised bonus into the season of release, so the charge belongs to that season. The amortised alternative is the truer mechanic and costs a save-schema change; D15 records it as the deliberate later choice |
 | Contract length | 1 to 7 years | An upper bound so a corrupt save cannot ask for an unbounded allocation. A contract of zero years carries no signing bonus |
 | Draft | 7 rounds of 32 picks, 224 total | |
 

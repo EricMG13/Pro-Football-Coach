@@ -122,6 +122,8 @@ if CommandLine.arguments.contains("--catalog") {
     runProSoakTests()
 } else if CommandLine.arguments.contains("--pro-draft-probe") {
     runProDraftProbeTests()
+} else if CommandLine.arguments.contains("--pro-draft-scheduler-probe") {
+    runProDraftSchedulerProbe()
 } else if CommandLine.arguments.contains("--pro-week-walk") {
     runProWeekWalkTests()
 } else if CommandLine.arguments.contains("--legal-only") {
