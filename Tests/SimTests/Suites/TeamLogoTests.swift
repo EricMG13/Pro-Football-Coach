@@ -170,6 +170,14 @@ func runTeamLogoManifestTests() {
                     "catalogue entry count for \(assetName)"
                 )
             }
+            for team in teams {
+                let entry = "\"\(team.stableID)\": \"\(team.assetName)\""
+                expectEqual(
+                    catalog.components(separatedBy: entry).count - 1,
+                    1,
+                    "catalogue mapping for \(team.name)"
+                )
+            }
         }
         test("catalogue and renderer have no runtime external-mark path") {
             let paths = [
