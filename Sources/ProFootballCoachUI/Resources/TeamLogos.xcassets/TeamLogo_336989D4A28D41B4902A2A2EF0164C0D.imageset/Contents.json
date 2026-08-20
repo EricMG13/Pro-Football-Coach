@@ -1,0 +1,13 @@
+{
+  "images" : [
+    {
+      "filename" : "TeamLogo_336989D4A28D41B4902A2A2EF0164C0D.png",
+      "idiom" : "universal",
+      "scale" : "1x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
