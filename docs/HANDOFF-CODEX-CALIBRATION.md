@@ -50,6 +50,14 @@ combined by 3:1 — see the `throwAccuracyWeight` commit, `63d9d46`), which is w
 already holding — and was reverted; that revert is itself evidence, recorded in STATUS, that this is
 a real tension between the harness's sampling and the bands it is scored against, not a tuning gap.
 
+The continuation screened two more hypotheses with fresh executions and retained neither. Normalizing
+each synthetic team's attribute means back to its declared rung made the pro rates worse (favourite
+0.8977, CI90 [0.8810, 0.9143]; blowout 0.7040, CI90 [0.6803, 0.7277]); normalizing within position
+groups was worse again (0.9356 / 0.7090). Extending the pro field-goal decision range to 45 yards
+only moved points per drive to 2.1544, CI90 [2.1205, 2.1883], and blowout to 0.6770, CI90
+[0.6527, 0.7013]. These were screening runs, not replacements for the authoritative holdout gate,
+and neither hypothesis is a justified fix.
+
 ## The two questions that block the three coupled rate bands
 
 Both are `docs/OPEN-DECISIONS.md`-shaped: they need an answer recorded in canon before more code
