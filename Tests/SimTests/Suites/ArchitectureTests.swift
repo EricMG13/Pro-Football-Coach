@@ -29,9 +29,21 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
 /// The advanced pin moved again when completed summaries gained an explicit abstracted/detailed
 /// source discriminator, so the new controlled detailed path cannot be mistaken for an abstract
 /// result after reload.
-private let pinnedRootFingerprint: UInt64 = 3_251_160_748_987_753_141
+/// Both pins moved again on 2026-08-20, when `CareerArcState` gained a persisted
+/// `stakeholderLastMovement` field: `careerArc` is a required, non-optional property of `GameState`
+/// itself (not something that exists only once a career starts), so the new key appears in every
+/// encoded root's JSON body -- including a freshly bootstrapped one where the dictionary is empty --
+/// exactly the same class of move as the `DomainEventLedger` archive above, not a determinism
+/// regression. Unlike the moves above, these two values were not independently reproduced across
+/// two local processes before being written here -- no Swift toolchain exists in this environment
+/// (`CLAUDE.md`) -- they are copied verbatim from a single CI run's own actual output for this exact
+/// commit (`.github/workflows/tests.yml`, run 32319402462, job 96278385220). Cross-process
+/// reproduction of a hash over a fixed seed is precisely the property this test exists to check, so
+/// a second confirming run is what would actually validate that guarantee, not a second manual
+/// re-derivation of the same single number.
+private let pinnedRootFingerprint: UInt64 = 13_271_746_992_715_500_232
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 11_229_646_605_763_785_595
+private let pinnedAdvancedRootFingerprint: UInt64 = 2_051_777_162_885_451_912
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///
