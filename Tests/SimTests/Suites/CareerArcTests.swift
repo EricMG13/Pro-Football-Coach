@@ -561,5 +561,109 @@ func runCareerArcTests() {
                 "the coaching tree did not place the assistant under the promoted coach"
             )
         }
+        test("promotion changes two seats and leaves the rest of the world alone") {
+            let source = GameState.bootstrap(seed: 99_124)
+            let programmeID = source.programmes.ids[0]
+            var controlled = try CareerControlSystem.startCollegeCareer(
+                at: programmeID,
+                in: source
+            ).state
+            guard let coachID = controlled.career.coachID else {
+                expect(false, "career start left no coach")
+                return
+            }
+            // Delegating first, so the promotion is walked by a coach who had staff relationships
+            // to leave behind rather than a coach who ran everything alone.
+            guard let delegateID = controlled.programmes[programmeID]?.staffIDs.first(where: {
+                controlled.staff[$0]?.role == .offensiveCoordinator
+            }) else {
+                expect(false, "the programme had no coordinator to delegate to")
+                return
+            }
+            for responsibility in CollegeCareerResponsibility.allCases {
+                expect(CareerControlSystem.setResponsibility(
+                    responsibility,
+                    owner: .delegated(staffID: delegateID),
+                    in: &controlled
+                ))
+            }
+
+            let proTeam = controlled.proTeams.values[0]
+            let opportunity = CareerOpportunity(
+                id: UUID(uuidString: "00000000-0000-4000-8000-000000000A23")!,
+                organisationID: proTeam.id,
+                tier: .professional,
+                offeredAt: controlled.calendar,
+                expiresAt: controlled.calendar.advancedWeek(),
+                prestige: proTeam.prestige,
+                rationale: .sustainedCollegeSuccess
+            )
+            var promoting = controlled
+            promoting.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: programmeID,
+                    tier: .college,
+                    startedAt: controlled.calendar
+                ),
+                opportunities: [opportunity],
+                status: .employed
+            )
+            let promoted = try IntentResolver.resolve(
+                .career(CareerArcRequest(
+                    calendar: promoting.calendar,
+                    action: .acceptOpportunity(opportunityID: opportunity.id)
+                )),
+                in: promoting
+            ).state
+
+            // World history is not the coach's to carry or to lose.
+            expectEqual(promoted.rivalries, controlled.rivalries)
+            expectEqual(promoted.competition.archives, controlled.competition.archives)
+
+            // Every organisation the coach did not touch keeps exactly the staff it had.
+            for otherID in promoted.programmes.ids where otherID != programmeID {
+                expectEqual(
+                    promoted.programmes[otherID]?.staffIDs,
+                    controlled.programmes[otherID]?.staffIDs,
+                    "an untouched programme's staff moved during the promotion"
+                )
+            }
+            for otherID in promoted.proTeams.ids where otherID != proTeam.id {
+                expectEqual(
+                    promoted.proTeams[otherID]?.staffIDs,
+                    controlled.proTeams[otherID]?.staffIDs,
+                    "an untouched professional team's staff moved during the promotion"
+                )
+            }
+
+            // The two seats that do change, change by exactly one person each.
+            let programmeBefore = Set(controlled.programmes[programmeID]?.staffIDs ?? [])
+            let programmeAfter = Set(promoted.programmes[programmeID]?.staffIDs ?? [])
+            expectEqual(programmeBefore.subtracting(programmeAfter), [coachID])
+            expectEqual(programmeAfter.subtracting(programmeBefore).count, 1)
+            expectEqual(programmeAfter.count, programmeBefore.count)
+            expect(
+                programmeAfter.contains(delegateID),
+                "the promotion took the delegated coordinator with it"
+            )
+
+            let teamBefore = Set(controlled.proTeams[proTeam.id]?.staffIDs ?? [])
+            let teamAfter = Set(promoted.proTeams[proTeam.id]?.staffIDs ?? [])
+            expectEqual(teamAfter.subtracting(teamBefore), [coachID])
+            expectEqual(teamBefore.subtracting(teamAfter).count, 1)
+            expectEqual(teamAfter.count, teamBefore.count)
+
+            // Nobody is deleted: a displaced coach is a person the history still names.
+            expect(
+                Set(controlled.staff.ids).isSubset(of: Set(promoted.staff.ids)),
+                "the promotion deleted a staff member"
+            )
+            expectEqual(promoted.staff.ids.count, controlled.staff.ids.count + 1)
+            expectEqual(
+                Set(promoted.people.staffCareers.keys),
+                Set(promoted.staff.ids),
+                "a staff member ended the promotion without a career record"
+            )
+        }
     }
 }
