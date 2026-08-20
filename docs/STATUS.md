@@ -19,6 +19,34 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-20 — Per-surface P0/P1 remediation, Phase 3's adversarial review returned: two fixes
+> applied, unverified — never compiled.** The review (dispatched before Phase 3 was committed, noted
+> as still in flight in the entry below) confirmed all four Phase 3 fixes are functionally sound —
+> `groupSelector`, the AX5 advance control, Withdraw's confirmation and the restored-career pause
+> each traced correctly to their real call sites and read models, no compile-shape defects found.
+> Two real findings, both fixed here: the new Settings & Accessibility call-in caption asserted a
+> present-tense effect ("how often the coordinator hands you a decision") the match engine does not
+> have — `Situation.situationalCallInTriggers` takes no rate parameter, exactly what this file's own
+> Phase 4 entry below already admits — reworded to describe a stored preference, not an active
+> behaviour; and Depth Chart's `groupSelector` fix shipped without the test the plan itself called
+> for ("confirming the selector is present and reachable in the accessible composition specifically,
+> not only the standard layout") — added, isolating the `isAccessibilitySize` branch's own text so
+> the assertion cannot pass by scanning the file as a whole. Both new claims were hand-verified
+> against source before commit: a Python harness confirmed brace/paren balance against the git HEAD
+> baseline (string literals excluded from the count, since a search-pattern literal can carry a
+> deliberately unmatched brace) and confirmed the new test both passes on current source and fails
+> against a hand-constructed regression where `groupSelector` is removed from only the AX5 branch.
+>
+> **Process note, stated plainly:** the review also observed that Phase 4 was committed before this
+> Phase 3 review returned, which is a real violation of this project's own "adversarial review at
+> phase end" rule — Phase 4 was built on Phase 3 code nobody had yet reviewed. That already happened
+> and cannot be undone by reordering commits; the mitigation is that Phase 4 has its own independent
+> review in flight (dispatched separately, not yet returned), so it gets the same scrutiny Phase 3
+> got, just out of the intended order. The rule itself is not being relaxed going forward.
+>
+> No `swift`/`xcodebuild` exists in this environment. Every claim above is argued from reading the
+> current source, not a compiler.
+
 > **2026-08-20 — Per-surface P0/P1 remediation, Phases 2-4: unverified — never compiled.** Phase 2
 > (control-behavior and dead-code fixes): `ContractNegotiationView.swift`'s `NegotiationCard` seeded
 > `@State` once from a negotiation's offer, so a counter-offer's superseded terms stayed on screen
