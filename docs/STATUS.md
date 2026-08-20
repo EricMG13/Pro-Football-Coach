@@ -19,7 +19,7 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 > **2026-08-20 — PR #9's deterministic pins were re-derived after the legal trade-dress fix.**
 > The added NFL colour pairs legitimately trigger bounded collision retries and therefore shift the
-> seeded generation stream; no production generator change was needed. Commit `dbaa6d4` updates the
+> seeded generation stream; no production generator change was needed. Commit `bbfabb9` updates the
 > generation, architecture, and trait-population pins. Release verification passed for
 > `--generation-only` (**35 tests / 42,330 checks**), `--architecture-only` (**29 / 245**, twice),
 > `--trait-population` (**8 / 610**), and `--career-portal-decisions` (**1 / 8**). The replacement

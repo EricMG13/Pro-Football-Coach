@@ -16,7 +16,7 @@ in-progress work: `docs/plans/2026-08-20-coach-career-record-handoff.md`.
 
 PR #9 ([`claude/game-name-equivalents-qczn9r`](https://github.com/EricMG13/Pro-Football-Coach/pull/9))
 was re-based on current `main` and its downstream deterministic pins were updated in commit
-`dbaa6d4` (`test: re-pin generation fingerprints after trade-dress blocklist`). The root cause was
+`bbfabb9` (`test: re-pin generation fingerprints after trade-dress blocklist`). The root cause was
 confirmed: the 30 real NFL colour pairs added by the legal blocklist cause bounded collision
 retries, which legitimately shifts the seeded RNG stream. This is a test-only correction; the
 production blocklist change remains intact.
