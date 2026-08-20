@@ -28,10 +28,35 @@ The initial season-record test oracle was corrected during review: post-rollover
 new season, so the test snapshots the completed row immediately before week 21. The implementation
 was preserving the completed 5–7 line; the first oracle compared it with the fresh 0–0 standings.
 
-Publication marker (the exact commit/ref and required gate results will be filled after the
-final docs-only handoff update):
+## READY-TO-VERIFY
 
-`READY-TO-VERIFY`
+- Ref: `4644809` (`claude/coach-career-promotion-integrity-f10168`), with this handoff update
+  following it.
+- Touched behavior/docs: `Sources/FootballSimCore/Career/CareerControlState.swift`,
+  `Sources/FootballSimCore/People/PeopleState.swift`,
+  `Sources/FootballSimCore/People/SeasonLifecycleSystem.swift`,
+  `Sources/FootballSimCore/Scheduling/WorldScheduler.swift`,
+  `Tests/SimTests/Suites/CareerArcTests.swift`,
+  `Tests/SimTests/Suites/SeasonRolloverTests.swift`, `Tests/SimTests/main.swift`,
+  `docs/02-GAME-DESIGN.md`, `docs/STATUS.md`, and this handoff.
+- Smallest verification: `swift build && .build/debug/SimTests --coach-season-record &&
+  .build/debug/SimTests --staff-pruning`.
+- Verification: build green; coach season record `1 test / 17 checks` green; staff pruning
+  `1 test / 6 checks` green; `git diff --check` green.
+- Confidence review: passed. The review found and corrected the completed-season oracle,
+  the wholesale-`PeopleState` write ordering, season-end firing seat overwrite, and the
+  non-tail out-of-order record write; no unresolved behavior defect remains in this scope.
+- Rewrite tournament (no-argument post-edit): incumbent holds for the scheduler and record
+  writer; the earlier pruning review also retained the incumbent. No rewrite was applied.
+- GitNexus `detect_changes()` (`scope: all`): 10 changed files, 39 changed symbols, 21
+  affected symbols/process entries, `critical` risk because `WorldScheduler.advanceWeek` is
+  a critical hub. The compare-to-`main` view includes 44 historical branch files because this
+  branch contains earlier merged/handoff commits; it is not the current 10-file worktree diff.
+  The index predates the new symbols, so `StaffCareerRecord.record` is confirmed by source
+  search rather than graph resolution.
+- The full `--career-arc`/release wrapper attempt was externally terminated by shared-runner
+  SIGSTOP/SIGTERM with no assertion output; that is infrastructure-only and remains for CI or
+  a fresh machine to verify.
 
 ## What's already merged — not part of this handoff
 
