@@ -62,8 +62,9 @@ public enum CollegeCommitmentInvariant {
             if !recruitment.isValid {
                 found.append(Finding(subjectID: key, breach: .unsupportedShape))
             }
-            let namedProgrammeIDs = Set(recruitment.commitmentHistory.map(\.winner.programmeID))
-            if !namedProgrammeIDs.isSubset(of: programmeIDs) {
+            if !recruitment.commitmentHistory.allSatisfy({
+                programmeIDs.contains($0.winner.programmeID)
+            }) {
                 found.append(Finding(subjectID: key, breach: .unknownProgramme))
             }
             switch recruitment.phase {
@@ -80,8 +81,12 @@ public enum CollegeCommitmentInvariant {
             }
         }
 
+        // One grouped pass rather than one pool sweep per programme; `CollegeState` owns the
+        // predicate both forms read, so the count here cannot drift from the count the
+        // reservation guards enforce.
+        let liveByProgramme = state.college.activeReservationCounts()
         for programmeID in programmeIDs {
-            let live = state.college.activeReservationCount(for: programmeID)
+            let live = liveByProgramme[programmeID] ?? 0
             if live > CollegeRules.initialSigningsPerClass {
                 found.append(Finding(subjectID: programmeID, breach: .classLimitExceeded))
             }

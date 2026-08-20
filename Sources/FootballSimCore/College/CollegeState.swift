@@ -614,6 +614,13 @@ public struct CollegeState: Codable, Sendable, Equatable {
             [UUID: RedshirtPlan].self,
             forKey: .redshirtPlans
         )
+        // Counts every programme's live class in one pass, replacing a scan of the whole pool per
+        // programme. Equivalent to the per-programme form it replaces, and equivalent because the
+        // history limb below rejects any commitment naming a programme this payload does not
+        // carry — guard conditions short-circuit in order, so by the time the bound is read every
+        // counted programme is a decoded one. A programme with no live class is absent here and
+        // was zero there, and zero passed the bound.
+        let decodedClassCounts = Self.activeReservationCounts(in: decodedRecruitment)
         guard decodedSeason >= 0,
               decodedPortal.targetSeason == decodedSeason,
               decodedProgrammes.allSatisfy({ $0.key == $0.value.programmeID }),
@@ -638,11 +645,8 @@ public struct CollegeState: Codable, Sendable, Equatable {
                               }()
                       }
               }),
-              decodedProgrammes.keys.allSatisfy({ programmeID in
-                  decodedRecruitment.values.filter {
-                      $0.programmeID == programmeID
-                          && ($0.phase == .committed || $0.phase == .signed)
-                  }.count <= CollegeRules.initialSigningsPerClass
+              decodedClassCounts.values.allSatisfy({
+                  $0 <= CollegeRules.initialSigningsPerClass
               }),
               decodedArchive.count <= CollegeRules.maximumArchivedProspectIdentities,
               decodedArchive.allSatisfy({ $0.key == $0.value.id }),
@@ -840,9 +844,39 @@ public struct CollegeState: Codable, Sendable, Equatable {
         return true
     }
 
+    /// Whether a recruitment row occupies a place in its programme's class.
+    ///
+    /// Stated once. The reservation guards in `commit` and `flip`, the capacity projection, the
+    /// decode bound and the integrity sweep all read this, so none of them can drift from the
+    /// others — and the rule was written out four times before this existed.
+    static func occupiesClassPlace(_ recruitment: ProspectRecruitmentState) -> Bool {
+        recruitment.phase == .committed || recruitment.phase == .signed
+    }
+
+    /// Every programme's live class count, in one pass over the pool.
+    ///
+    /// The per-programme form below is O(prospects), so asking all `programmeCount` of them costs
+    /// that many sweeps of a `annualProspectCount`-sized pool — at the shipped numbers, over half
+    /// a million steps, paid on every save decode and at every integrity check. This costs one
+    /// sweep. Programmes with no live class are absent rather than zero; read it with `?? 0`.
+    static func activeReservationCounts(
+        in recruitment: [UUID: ProspectRecruitmentState]
+    ) -> [UUID: Int] {
+        var counts: [UUID: Int] = [:]
+        for row in recruitment.values where occupiesClassPlace(row) {
+            guard let programmeID = row.programmeID else { continue }
+            counts[programmeID, default: 0] += 1
+        }
+        return counts
+    }
+
+    package func activeReservationCounts() -> [UUID: Int] {
+        Self.activeReservationCounts(in: prospectRecruitment)
+    }
+
     package func activeReservationCount(for programmeID: UUID) -> Int {
         prospectRecruitment.values.filter {
-            $0.programmeID == programmeID && ($0.phase == .committed || $0.phase == .signed)
+            $0.programmeID == programmeID && Self.occupiesClassPlace($0)
         }.count
     }
 
