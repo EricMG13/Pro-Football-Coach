@@ -1,4 +1,26 @@
-# Handoff: portal-touched retention fix — open A/B diagnostic
+# Handoff: portal-touched retention fix — resolved, full CI pending
+
+## Resolution on 2026-08-20
+
+The A/B question below is closed. A release `--m2-soak` reproduced the season-four failure and a
+temporary diagnostic identified only `invalidPortalCapacity` findings for partially retained season-one
+postseason and spring windows. `WorldIntegrity.checkPortalCapacity` had treated the surviving career
+records as the complete original offer batch and recomputed an exact NIL split from the smaller count.
+
+The fix uses retained `.portalWindowCompleted` summaries from the live portal, hot event journal, and
+season archive to prove whether all offers for a window survive. Complete windows keep the exact NIL
+split check. Partial archived windows skip only that unreconstructable equality while retaining fixed
+snapshot consistency, aggregate NIL budget, offer-count, and positional-capacity checks. The existing
+departed-player bound and event-backed protection policy remain unchanged.
+
+Verified on the final implementation: release build green; `--portal-transaction` **17 tests / 124
+checks**, all passed. Two release `--architecture-only` processes also matched at **29 / 245** each.
+The exact final `--people-lifecycle` rerun passed its short suites and season-one checkpoint before the
+owner stopped the long local run. Fresh full CI, now allowed 180 rather than 60 minutes, is the remaining
+publication check.
+
+The remainder of this file is the original diagnostic handoff, retained as investigation history.
+Its branch/PR state and unresolved warning are superseded by the resolution above.
 
 Branch `claude/hopeful-liskov-37edb2`, worktree `.claude/worktrees/hopeful-liskov-37edb2`,
 [PR #39](https://github.com/EricMG13/Pro-Football-Coach/pull/39) (open, **not merged** — marked
@@ -30,7 +52,7 @@ fact.
   no flags — everything except the soaks): **948 tests, 775,603 checks, all passed, no
   regressions.**
 
-## What's NOT resolved — the actual remaining item
+## Historical unresolved item — now closed above
 
 `.build/release/SimTests --m2-soak` (20 seasons) does not run clean. It hits three repeats of an
 already-known, separately-owned test-timing bug, then aborts early (49 checks total, nowhere near a

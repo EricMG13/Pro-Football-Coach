@@ -1453,7 +1453,30 @@ public enum WorldIntegrity {
         for playerID in repeatedTransferPlayerIDs {
             issues.append(.invalidPortalCareer(playerID: playerID))
         }
-        checkPortalCapacity(allCareerRecords, issues: &issues)
+        var completedOfferCountsByWindow: [String: Set<Int>] = [:]
+        for summary in portal.summaries {
+            completedOfferCountsByWindow[portalWindowKey(
+                targetSeason: summary.targetSeason,
+                window: summary.window
+            ), default: []].insert(summary.offerCount)
+        }
+        for event in state.history.recent + state.history.archive.flatMap(\.notableEvents) {
+            guard case let .portalWindowCompleted(summary) = event.payload else { continue }
+            completedOfferCountsByWindow[portalWindowKey(
+                targetSeason: summary.targetSeason,
+                window: summary.window
+            ), default: []].insert(summary.offerCount)
+        }
+        let completeWindowKeys = Set(recordsByWindow.compactMap { key, records in
+            completedOfferCountsByWindow[key] == [records.reduce(0) { $0 + $1.offers.count }]
+                ? key
+                : nil
+        })
+        checkPortalCapacity(
+            allCareerRecords,
+            completeWindowKeys: completeWindowKeys,
+            issues: &issues
+        )
         checkPortalEvents(
             state.history.recent,
             recordsByKey: recordsByKey,
@@ -1477,6 +1500,7 @@ public enum WorldIntegrity {
 
     private static func checkPortalCapacity(
         _ records: [CollegePortalWindowRecord],
+        completeWindowKeys: Set<String>,
         issues: inout [IntegrityIssue]
     ) {
         var offersByCapacity: [String: [CollegePortalOffer]] = [:]
@@ -1519,11 +1543,16 @@ public enum WorldIntegrity {
                 CollegePortalPolicyV1.maximumOfferNIL,
                 capacity.nilRemaining / offers.count / 100 * 100
             )
+            let windowIsComplete = completeWindowKeys.contains(portalWindowKey(
+                targetSeason: context.targetSeason,
+                window: context.window
+            ))
             let reservationTotal = offers.reduce(0) { $0 + $1.nilReservation }
             let acceptedPositions = acceptedPositionsByCapacity[key] ?? []
             if !offers.allSatisfy({
-                $0.fixedCapacity == capacity && $0.nilReservation == exactTerm
-            }) || reservationTotal > capacity.nilRemaining
+                $0.fixedCapacity == capacity
+            }) || (windowIsComplete && !offers.allSatisfy({ $0.nilReservation == exactTerm }))
+                || reservationTotal > capacity.nilRemaining
                 || offers.count > min(
                     capacity.rosterOpenings,
                     capacity.scholarshipOpenings

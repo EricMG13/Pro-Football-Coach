@@ -1371,6 +1371,20 @@ func runPortalTransactionTests() {
                 entrantIDs.allSatisfy { agedOutTransition.people.playerCareers[$0] == nil },
                 "eviction dropped the departed identity but kept its paired career record"
             )
+            var agedOutState = agedOutCompletion
+            agedOutState.programmes = agedOutTransition.programmes
+            agedOutState.proTeams = agedOutTransition.proTeams
+            agedOutState.players = agedOutTransition.players
+            agedOutState.staff = agedOutTransition.staff
+            agedOutState.people = agedOutTransition.people
+            agedOutState.college = agedOutTransition.college
+            expect(
+                !WorldIntegrity.check(agedOutState).issues.contains {
+                    if case .invalidPortalCapacity = $0 { return true }
+                    return false
+                },
+                "retained fragments of an archived portal window were treated as a complete batch"
+            )
             expectEqual(
                 agedOutTransition.people.departedPlayers.count,
                 PeopleRules.departedPlayerRetentionLimit
