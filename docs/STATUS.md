@@ -1076,6 +1076,65 @@ When it landed it reported **7 of 8 college bands and 11 of 16 pro bands failing
 branch `--lane full` runs does not call `runCalibrationGateTests` — that last one is read from
 `main.swift` rather than observed, because the full lane is a 36-minute run.
 
+#### 2026-08-20 — the amplification chain: what a per-duel edge is actually worth
+
+**The leverage curve is not the defect, and its own tests say so.** `LeverageTests` requires
+`logistic(60) > 0.9`, which caps `leverageScale` at about 20.4 — flattening the curve past that
+fails canon's saturation requirement. It also requires a 25-point edge to win 8,000 of 10,000
+duels, which caps `leverageNoise` at about 0.65. Between those two the per-duel talent response is
+pinned, so the over-amplification had to be downstream, and it is.
+
+**Measured with a clean control.** Even teams, 96 games, home advantage zeroed and then restored:
+
+| `homeFieldAdvantage` | Score | Home win | Plays | Yards |
+|---|---|---|---|---|
+| 0.000 | 19.9 – 18.8 | 0.500 | 87.1 – 78.5 | 630 – 589 |
+| 0.035 | 28.7 – 14.2 | 0.656 | 89.7 – 75.7 | 656 – 567 |
+
+**A 0.035 leverage bonus is worth 1.3 rating points on one duel and 14.5 points of margin over a
+game.** Nothing else changed between those two rows. The same conversion rate is what turns the
+talent ladder's gaps into routs — at a +3 per-player edge the engine reads 37.6 to 8.3, and at +9 it
+reads 64.0 to 3.8 — and it is why `blowout rate` sits at 0.74 against a band of 0.17 to 0.26. That
+conversion is the open defect; the two changes below are what could be fixed without inventing
+design.
+
+**Home advantage is now per tier, because `01` §6.5 says it is.** Home wins 0.50 to 0.58 of pro
+games and 0.60 to 0.68 of college ones, and one constant cannot land both — the shared 0.035 read
+0.5625 pro (interval over the ceiling) and 0.5708 college (under its floor). `Tier.homeAdvantage`
+now resolves `proHomeAdvantage` 0.015 and `collegeHomeAdvantage` 0.055, and the three reducer entry
+points take `Double?` so a caller that says nothing gets its tier's value. **Both home-win bands
+hold.**
+
+**The gate plays 600 games a tier, not 240, because four bands could not pass at 240.** TOST passes
+only if the 90 percent interval fits inside the band: `1.645 * sqrt(p(1-p)/n)` under the half-width.
+
+| Band | Half-width | Games needed | Had |
+|---|---|---|---|
+| home win rate, pro | 0.040 | 420 | 240 |
+| home win rate, college | 0.040 | 390 | 240 |
+| favourite win rate, pro | 0.050 | 239 rated | 220 |
+| favourite win rate, college | 0.040 | 325 rated | 220 |
+
+Those four were failing on the **sample**, whatever the model did — a false red indistinguishable
+from a real one, and the opposite of `01` §6.2's point that the burden belongs on the model.
+`matchupsPerSeed` is 30, so a tier plays 600 games and 550 rated ones, which clears every rate
+band's minimum. The twelve ladder pairs still make a round; each simply plays more games, at a
+different seed each time. This is not a widened band: the band is untouched and the instrument got
+the sample it needs to decide.
+
+**Holdout ladder: 7 of 24 bands holding to 11 of 24.** Newly holding: pro and college home win rate
+(the tier split), pro rush yards (117.7), pro pass yards (196.5, recovered — it had failed low after
+the run fix), pro field goal percentage and pro safeties per game (both were failing on interval
+width alone). Still failing: pro completion, interceptions, sacks, favourite win, blowout, plays and
+explosive pass; college combined total, field goal percentage, favourite win, explosive run,
+explosive pass and plays.
+
+**Next, and in this order.** Plays per team-game is 81.5 pro and 97.3 college against bands of 60–68
+and 67–75 — every volume band is measured through it, and a 27 percent surplus of snaps is also what
+gives a small per-play edge 80 chances to compound. Then the pass game, which is a separate defect
+entirely: 41 percent completion against a band of 61 to 67, 2.8 interceptions a team-game against
+0.6 to 1.1, and 0.8 sacks against 2.0 to 3.1.
+
 #### 2026-08-20 — the run game, rebuilt to `03` §1.1's three clauses
 
 **The defect was a missing term, not a mistuned constant.** `resolveRun` computed

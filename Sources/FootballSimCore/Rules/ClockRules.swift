@@ -107,6 +107,17 @@ public enum ProClockRules: ClockRules {
     public static let overtime = OvertimeFormat.timedPeriod
 }
 
+public extension Tier {
+    /// `MatchupRules`' per-tier home advantage. Lives here for the same reason `clockRules` does:
+    /// the tier is the thing that knows which constant it means.
+    var homeAdvantage: Double {
+        switch self {
+        case .college: return MatchupRules.collegeHomeAdvantage
+        case .pro: return MatchupRules.proHomeAdvantage
+        }
+    }
+}
+
 /// The tier's clock rules, as an existential-free lookup.
 ///
 /// Returns the metatype rather than an instance so the constants stay static and no allocation

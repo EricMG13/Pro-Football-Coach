@@ -53,7 +53,17 @@ public enum MatchupRules {
     public static let fatigueWeight = 0.22
 
     /// Home advantage, in leverage units applied to every home matchup before traditions.
-    public static let homeAdvantage = 0.035
+    /// Home advantage, per tier, in leverage units applied to every duel the home offence takes
+    /// and reversed for the away one.
+    ///
+    /// **Per tier because `01` §6.5's bands say so**: home wins 0.50 to 0.58 of pro games and 0.60
+    /// to 0.68 of college ones, and one constant cannot land both. Tiny numbers with a large reach —
+    /// 0.035 is worth about 1.3 rating points on a single duel and **14.5 points of margin** over a
+    /// game, measured by playing even teams with the bonus zeroed (19.9 to 18.8, home winning half)
+    /// and again at 0.035 (28.7 to 14.2, home winning 0.656). That conversion rate is itself a
+    /// defect and is not this constant's to fix; see `docs/STATUS.md`.
+    public static let proHomeAdvantage = 0.015
+    public static let collegeHomeAdvantage = 0.055
 
     // MARK: - Assignment
 
