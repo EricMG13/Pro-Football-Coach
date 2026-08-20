@@ -464,6 +464,14 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                     identityRail
                     deskWire
                 }
+                // Neither column takes a fixed width of its own -- standardLayout applies that at
+                // its call site -- so both flow full width here instead of the side-by-side
+                // columns standardLayout uses. Without these, accessibleLayout carried no way to
+                // advance the week at all (its only continueButton call sat inside worldStrip,
+                // itself gated on chrome == nil, which production's shared-chrome construction
+                // never satisfies) and silently dropped squad health and stakeholders too.
+                weekAgendaColumn
+                supportColumn
             }
             .padding(CoachWorldTokens.Space.sm)
         }
