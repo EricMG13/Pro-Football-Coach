@@ -47,10 +47,10 @@ private func loadTeamLogoManifest() throws -> TeamLogoManifest {
     )
 }
 
-func runTeamLogoManifestExport(force: Bool = false) throws {
-    guard force || !FileManager.default.fileExists(atPath: teamLogoManifestURL.path) else {
-        throw CocoaError(.fileWriteFileExists)
-    }
+func runTeamLogoManifestExport(
+    force: Bool = false,
+    to targetURL: URL = teamLogoManifestURL
+) throws {
     let state = GameState.bootstrap(seed: 20_260_812)
     let ids = Set(state.programmes.ids).union(state.proTeams.ids)
     let families = TeamLogoFamily.allCases
@@ -80,21 +80,40 @@ func runTeamLogoManifestExport(force: Bool = false) throws {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
     try FileManager.default.createDirectory(
-        at: teamLogoManifestURL.deletingLastPathComponent(),
+        at: targetURL.deletingLastPathComponent(),
         withIntermediateDirectories: true
     )
-    try encoder.encode(manifest).write(to: teamLogoManifestURL, options: .atomic)
+    let data = try encoder.encode(manifest)
+    if force {
+        try data.write(to: targetURL, options: .atomic)
+        return
+    }
+    let temporaryURL = targetURL.deletingLastPathComponent()
+        .appendingPathComponent(".\(targetURL.lastPathComponent).\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: temporaryURL) }
+    try data.write(to: temporaryURL, options: .atomic)
+    try FileManager.default.copyItem(at: temporaryURL, to: targetURL)
 }
 
 func runTeamLogoManifestTests() {
     suite("Team logo manifest") {
-        test("export refuses to overwrite the committed manifest") {
+        test("export defaults to refusal and force regenerates a temporary manifest") {
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("team-logo-export-\(UUID().uuidString)", isDirectory: true)
+            let targetURL = directory.appendingPathComponent("manifest.json")
+            defer { try? FileManager.default.removeItem(at: directory) }
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let sentinel = Data("do not replace".utf8)
+            try sentinel.write(to: targetURL)
             do {
-                try runTeamLogoManifestExport()
+                try runTeamLogoManifestExport(to: targetURL)
                 expect(false, "export unexpectedly overwrote the manifest")
             } catch let error as CocoaError {
                 expectEqual(error.code, .fileWriteFileExists)
             }
+            expectEqual(try Data(contentsOf: targetURL), sentinel)
+            try runTeamLogoManifestExport(force: true, to: targetURL)
+            expectEqual(try JSONDecoder().decode(TeamLogoManifest.self, from: Data(contentsOf: targetURL)).teams.count, 166)
         }
         test("manifest exactly matches the canonical world") {
             let manifest = try loadTeamLogoManifest()
@@ -194,7 +213,10 @@ func runTeamLogoAssetTests(family rawValue: String) {
                       let sourceType = CGImageSourceGetType(source),
                       let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)
                         as? [CFString: Any],
-                      let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { continue }
+                      let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+                    expect(false, "invalid PNG \(record.filename)")
+                    continue
+                }
                 expectEqual(sourceType as String, UTType.png.identifier,
                        "non-PNG source in \(record.filename)")
                 expectEqual(properties[kCGImagePropertyPixelWidth] as? Int, Optional(1024))
