@@ -463,51 +463,6 @@ struct FloodlitIdentityHeader: View {
     }
 }
 
-/// The team mark: a green field, a gold stripe and a pale dot. Stands for a team, never for the
-/// product — there is no logo anywhere in this game (`README` assets rule).
-struct CoachWorldPennant: View {
-    let team: CoachWorldTeamReference
-
-    /// Generated colour resolves through `CoachWorldTeamIdentity` and nowhere else — that is where
-    /// the contrast floors live, and where a pair that cannot be read at all is refused outright
-    /// (`04` section 5). Reading `primaryColorHex` here directly would paint an illegible pennant
-    /// for exactly the generated pairs the identity type exists to catch.
-    private var identity: CoachWorldTeamIdentity? {
-        CoachWorldTeamIdentity(
-            team: team,
-            behind: CoachWorldTokens.Floodlit.roomDeep,
-            inks: [CoachWorldTokens.Floodlit.clubInk, CoachWorldTokens.dark.contentPrimary]
-        )
-    }
-
-    /// The neutral club field when the team carries no legible pair. An honest fallback beats an
-    /// unreadable identity.
-    private var field: Color {
-        (identity?.field ?? CoachWorldTokens.Floodlit.clubField).color
-    }
-
-    private var dot: Color {
-        (identity?.onField ?? CoachWorldTokens.Floodlit.clubInk).color
-    }
-
-    var body: some View {
-        ZStack {
-            CoachWorldCutCorner.chip.fill(field)
-            CoachWorldCutCorner.chip.stroke(
-                CoachWorldTokens.dark.actionPrimary.color.opacity(0.55),
-                lineWidth: CoachWorldTokens.Shape.hairline
-            )
-            Circle()
-                // The measured-legible ink for this field, not a fixed pale one: on a light
-                // generated primary a fixed pale dot disappears.
-                .fill(dot)
-                .frame(width: Chrome.pennantDot, height: Chrome.pennantDot)
-        }
-        .frame(width: Chrome.pennantWidth, height: Chrome.pennantHeight)
-        .accessibilityHidden(true)
-    }
-}
-
 // MARK: - Icon rail
 
 /// Seven entries, each a 44 pt stack of a symbol over a tracked label. Icons name a kind of thing;
