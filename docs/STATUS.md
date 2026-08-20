@@ -12,6 +12,22 @@ The honest picture: what exists, what is verified, what is not.
 > TOST CI and are recorded in `docs/HANDOFF-CODEX-CALIBRATION.md`; no canonical band was widened or
 > amended.
 
+> **2026-08-20 — coach-career PR CI follow-up:** run `32397123398` compiled the merged tree, then
+> exposed five stale deterministic pins and a real season-four portal-retention failure before the
+> workflow's 60-minute limit killed the remaining run. The five pins now match both that CI process
+> and two consecutive local release processes (`--architecture-only`: **29 tests / 245 checks**
+> each). The portal failure was not a lifecycle-distribution defect: departed-player pruning had
+> legally left fragments of old portal windows, while `WorldIntegrity` still recomputed their NIL
+> split as though every original offer survived. Completion summaries from the live portal, hot
+> journal, or season archive now prove whether a batch is complete; exact splits remain enforced for
+> complete batches, while retained fragments still enforce snapshot consistency, aggregate budget,
+> offer-count, and position-capacity rules. `--portal-transaction` is green at **17 tests / 124
+> checks**. A 20-season M2 diagnostic crossed the former season-four failure and reached season eight
+> cleanly before being superseded by the stricter summary-backed implementation; the exact final
+> `--people-lifecycle` rerun passed its short suites and season-one checkpoint before the owner ended
+> the long local run. The unsharded CI job now has 180 minutes instead of 60; a fresh full CI run is
+> the remaining merge gate.
+
 > **UI direction correction — owner decision 2026-08-11:** the v2 sheets, Stitch output and
 > 34-screen Film Room gallery described in older dated entries below are rejected and removed.
 > They are historical build notes, not references. The only current UI authority is
