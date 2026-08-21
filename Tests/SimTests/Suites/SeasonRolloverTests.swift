@@ -135,10 +135,34 @@ func runSeasonRolloverTests() {
             expectEqual(state.calendar.week, SharedRules.inSeasonWeeks)
             let teamID = state.proTeams.ids.first { $0 != controlledTeamID(in: state) }
             guard let teamID, let team = state.proTeams[teamID],
-                  let playerID = team.rosterIDs.first else {
+                  let playerID = team.rosterIDs.min(by: { $0.uuidString < $1.uuidString }),
+                  let position = state.players[playerID]?.position else {
                 expect(false, "no eligible non-controlled team with a rostered player")
                 return
             }
+            let reserveID = UUID(uuidString: "FFFFFFFF-FFFF-4FFF-8FFF-FFFFFFFF9706")!
+            let reserve = Player(
+                id: reserveID,
+                firstName: "Boundary",
+                lastName: "Reserve",
+                position: position,
+                age: 24,
+                attributes: Attributes([.speed: Rating(60)]),
+                potential: Rating(60)
+            )
+            state.players.insert(reserve)
+            state.people.insert(player: reserve)
+            state = try ProManagementSystem.acquire(
+                playerID: reserveID,
+                for: teamID,
+                kind: .freeAgency,
+                contract: Contract(
+                    years: 2,
+                    baseSalaryByYear: [1_000_000, 1_000_000],
+                    signingBonus: 0
+                ),
+                in: state
+            ).state
             let capLimit = ProRules.salaryCap(seasonsAfterBase: state.calendar.season)
             state.players.update(playerID) {
                 $0.contract = Contract(
