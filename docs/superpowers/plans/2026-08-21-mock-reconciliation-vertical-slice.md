@@ -27,6 +27,11 @@ existing Floodlit components, GitNexus.
 - Reuse `CoachWorldFloodlitStage`, the existing chrome, `FloodlitCard`, `FloodlitRow`,
   `FloodlitLabel3`, `FloodlitShareBar`, and existing button styles.
 - Preserve the accessibility-size layouts and existing 44-point control targets.
+- Treat the mocks' silence about logos as neutral: preserve logos already rendered by shared chrome
+  or an existing screen component when current read models/assets provide them. Do not invent logo
+  data, duplicate a shared-chrome logo inside a screen, add logo assets, or create speculative logo
+  placements solely because the mocks omit them. Preserve existing logo accessibility semantics;
+  decorative marks must not create duplicate announcements.
 - Before editing any function, method, class, or struct, run GitNexus upstream impact analysis for
   that symbol and report direct callers, affected processes, and risk. Stop and warn before a HIGH
   or CRITICAL change.
@@ -495,6 +500,11 @@ Use the project `verify-ios-accessibility-matrix` skill. Capture the real genera
 proofs. Check VoiceOver order, Reduce Motion, Reduce Transparency, Increase Contrast, Differentiate
 Without Color, and 44-point controls.
 
+Verify that existing team/program logos remain present wherever current read models/assets and
+shared chrome or existing screen components render them. The mocks' omission is neutral: do not
+remove, duplicate, invent, or newly place logos, and confirm decorative marks do not create duplicate
+VoiceOver announcements.
+
 Do not create mock loading/success/error states to fill the matrix. Exercise only real states and
 record inapplicable states as such.
 
@@ -548,6 +558,9 @@ git commit -m "docs: record vertical slice proof"
 - The production path works with seed `424242` and existing callbacks.
 - No provider, simulation, persistence, save, or read-model schema changed.
 - No mock-only number, state, action, or promise appears in production.
+- Existing team/program logos remain preserved where current read models/assets render them; no logo
+  data, assets, duplicate shared-chrome logos, speculative placements, or duplicate announcements
+  were introduced because the mocks omit logos.
 - The supported width/accessibility matrix is inspected and recorded.
 - Focused and full gates pass.
 - `rewrite-tournament`, `confidence-review`, and final GitNexus change detection are complete.
