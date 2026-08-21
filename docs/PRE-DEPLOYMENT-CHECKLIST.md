@@ -44,7 +44,15 @@ owner-checked ones are owner-checked because no agent in this project's environm
       or coach name matches the blocklist, across N generated leagues at many seeds.
 - [ ] **Trade-dress test** green: no generated primary/secondary colour pair falls within the stated
       ΔE of a real programme's pair.
-- [ ] The blocklist has been refreshed for this release.
+- [ ] The blocklist has been refreshed for this release, **every limb of it**: institutions,
+      nicknames (below Division I as well as in it), conferences, venues and bowls, rivalry
+      trophies, people, and the marks limb — leagues, governing bodies, postseason systems,
+      broadcasts and competitors' products.
+- [ ] Every mark refreshed above is present in **each form it is written in** — acronym, numeral and
+      spelled. `02` §11.3.5's near-miss rule; the numeral derivation is a test, the rest is reading.
+- [ ] No generator pool word is itself a real nickname, conference or mark. The pool is the one
+      place a real name hides from a blocklist built from a slice: `docs/briefs/
+      2026-08-13-name-equivalents.md` §2.9 records eight that did.
 - [ ] Manual review: no real school, team, player, conference or broadcast identity appears anywhere
       in code, copy, assets, screenshots or store listing.
 - [ ] No shipped dataset derived from a licensed source. Calibration inputs were used at design time

@@ -33,6 +33,8 @@ if CommandLine.arguments.contains("--catalog") {
     runProfessionalCareerSessionTests()
 } else if CommandLine.arguments.contains("--career-arc") {
     runCareerArcTests()
+} else if CommandLine.arguments.contains("--coach-season-record") {
+    runCoachSeasonRecordTests()
 } else if CommandLine.arguments.contains("--pro-management") {
     runProManagementTests()
 } else if CommandLine.arguments.contains("--pro-market") {
@@ -41,6 +43,8 @@ if CommandLine.arguments.contains("--catalog") {
     runCapComplianceTests()
 } else if CommandLine.arguments.contains("--season-rollover") {
     runSeasonRolloverTests()
+} else if CommandLine.arguments.contains("--staff-pruning") {
+    runStaffPruningTests()
 } else if CommandLine.arguments.contains("--jersey-numbers") {
     runJerseyNumberTests()
 } else if CommandLine.arguments.contains("--depth-chart") {
@@ -49,6 +53,10 @@ if CommandLine.arguments.contains("--catalog") {
     runDisciplineTests()
 } else if CommandLine.arguments.contains("--week-advance-timing") {
     runWeekAdvanceTimingProbe()
+} else if CommandLine.arguments.contains("--pro-movement-probe") {
+    runProMovementProbe()
+} else if CommandLine.arguments.contains("--pro-draft-stall-probe") {
+    runProDraftStallProbe()
 } else if CommandLine.arguments.contains("--pro-market-root-probe") {
     runProMarketRootProbe()
 } else if CommandLine.arguments.contains("--screen-read-models") {
@@ -66,6 +74,9 @@ if CommandLine.arguments.contains("--catalog") {
     runMatchReducerTests()
 } else if CommandLine.arguments.contains("--engine") {
     runEngineTests()
+    // Snap resolution was reachable only from the no-argument branch, so the one suite that
+    // measures what a play produces needed a full 36-minute run to see.
+    runSnapResolverTests()
     runGameLoopTests()
 } else if CommandLine.arguments.contains("--m3-soak") {
     runM3CollegeSoakTests()
@@ -79,6 +90,8 @@ if CommandLine.arguments.contains("--catalog") {
     runInvalidRedshirtCareerGamesProbe(tier: .pro)
 } else if CommandLine.arguments.contains("--m3-recruiting-calibration") {
     runM3RecruitingCalibrationTests()
+} else if CommandLine.arguments.contains("--calibration-gate") {
+    runCalibrationGateTests()
 } else if CommandLine.arguments.contains("--calibration") {
     runCalibrationTests()
 } else if CommandLine.arguments.contains("--redshirt-only") {
@@ -87,6 +100,8 @@ if CommandLine.arguments.contains("--catalog") {
     runCollegeCommitmentTests()
 } else if CommandLine.arguments.contains("--college-state") {
     runCollegeStateTests()
+} else if CommandLine.arguments.contains("--college-acquisition-invariant") {
+    runCollegeAcquisitionInvariantTests()
 } else if CommandLine.arguments.contains("--injury-evidence") {
     runInjuryEvidenceTests()
 } else if CommandLine.arguments.contains("--people-lifecycle") {
@@ -116,7 +131,6 @@ if CommandLine.arguments.contains("--catalog") {
     runRosterTenureTests()
 } else if CommandLine.arguments.contains("--realignment") {
     runRealignmentTests()
-// Deliberate 30-season history soak; run with `-c release` (typically ~20–25 minutes).
 } else if CommandLine.arguments.contains("--m7-gate") {
     runHistoryGateTests()
 } else if CommandLine.arguments.contains("--pro-soak") {
@@ -174,6 +188,7 @@ if CommandLine.arguments.contains("--catalog") {
     runCollegeStateTests()
     runCollegeCommitmentTests()
     runCollegeRedshirtTests()
+    runCollegeAcquisitionInvariantTests()
     runPortalPolicyTests()
     runPortalMatchingTests()
     runPortalTransactionTests()
@@ -203,6 +218,7 @@ if CommandLine.arguments.contains("--catalog") {
     runAvailabilityProviderTests()
     runCapComplianceTests()
     runSeasonRolloverTests()
+    runStaffPruningTests()
     // The M8 entry-gate instruments. They ran only under `--design-contracts` and
     // `--core-contracts` until 2026-08-13, so the no-argument run — the one `verify.sh` makes and
     // the one every release claim quotes — did not include the orientation policy, the token sync,

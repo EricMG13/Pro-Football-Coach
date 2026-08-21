@@ -1,5 +1,5 @@
 import Foundation
-import FootballSimCore
+@testable import FootballSimCore
 
 // The instrument, tested before it is trusted to judge the engine.
 //
@@ -90,9 +90,69 @@ func runCalibrationTests() {
                    "an engine with the right mean and absurd variance passed")
         }
 
+        test("a percentage-scaled rate keeps its interval") {
+            // Two of the harness's bands are stated in percent, so it scales those rates by 100.
+            // The standard error clamps the proportion to [0, 1], so an unscaled 87.9 read as p = 1
+            // returned SE = 0: the interval collapsed to a point and the band was decided by range
+            // membership. Both percentage bands passed or failed on a point estimate for as long as
+            // that held.
+            let percent = Estimate(value: 85.3, sampleSize: 1245, standardDeviation: 0,
+                                   estimator: .rate, scale: 100)
+            expect(percent.standardError > 0,
+                   "a percentage rate has no standard error, so its band is a range check")
+            // The same measurement in proportion units must produce the same interval, scaled.
+            let proportion = Estimate(value: 0.853, sampleSize: 1245, standardDeviation: 0,
+                                      estimator: .rate)
+            expectClose(percent.standardError, proportion.standardError * 100, 1e-9,
+                        "the same rate measures differently in percent and in proportion")
+            // And the fix has to be visible at the band, not only at the estimate: a percentage
+            // estimate close to an edge must now fail on it.
+            let goals = Band("field goal percentage", tier: .pro, 81, 88, estimator: .rate,
+                             confidence: "[Q]")
+            let nearCeiling = Estimate(value: 87.9, sampleSize: 1441, standardDeviation: 0,
+                                       estimator: .rate, scale: 100)
+            expect(!goals.test(nearCeiling).passed,
+                   "87.9 percent with a 1441-kick sample passed an 81 to 88 band on a point")
+        }
+
         test("an empty sample cannot pass") {
             let empty = Estimate(value: 0.55, sampleSize: 0, standardDeviation: 0, estimator: .rate)
             expect(!band.test(empty).passed, "a band passed on no data at all")
+        }
+
+        test("a rate interval is not clipped to the estimator support") {
+            let ties = Band("tie rate", tier: .pro, 0, 0.02, estimator: .rate, confidence: "[C]")
+            let result = ties.test(Estimate(value: 1.0 / 600, sampleSize: 600,
+                                            standardDeviation: 0, estimator: .rate))
+            expect(result.confidenceInterval.low < 0,
+                   "the canonical normal interval was clipped at zero")
+            expectEqual(result.violatedEdge, "lower")
+        }
+
+        test("malformed estimates fail closed") {
+            let invalid = [
+                Estimate(value: 0.55, sampleSize: 100_000, standardDeviation: 0,
+                         estimator: .rate, scale: 0),
+                Estimate(value: 1.2, sampleSize: 100_000, standardDeviation: 0,
+                         estimator: .rate),
+                Estimate(value: 23, sampleSize: 400, standardDeviation: -1,
+                         estimator: .mean),
+                Estimate(value: .nan, sampleSize: 400, standardDeviation: 1,
+                         estimator: .mean),
+                Estimate(value: 23, sampleSize: 400, standardDeviation: .infinity,
+                         estimator: .mean),
+            ]
+            let bands = [
+                band,
+                Band("rate", tier: .pro, 1.1, 1.3, estimator: .rate, confidence: "[C]"),
+                Band("mean", tier: .pro, 20, 26, estimator: .mean, confidence: "[C]"),
+                Band("mean", tier: .pro, 20, 26, estimator: .mean, confidence: "[C]"),
+                Band("mean", tier: .pro, 20, 26, estimator: .mean, confidence: "[C]"),
+            ]
+            for (estimate, target) in zip(invalid, bands) {
+                expect(!target.test(estimate).passed,
+                       "a malformed \(estimate.estimator.rawValue) estimate passed")
+            }
         }
     }
 
@@ -191,6 +251,48 @@ func runCalibrationTests() {
             let overlap = Set(CalibrationHarness.tuningSeeds)
                 .intersection(CalibrationHarness.holdoutSeeds)
             expect(overlap.isEmpty, "the tuning and holdout ladders share \(overlap.count) seeds")
+        }
+
+        test("expanded roster streams keep tuning and holdout disjoint") {
+            func rosterSeeds(_ bases: [UInt64]) -> Set<UInt64> {
+                Set(bases.flatMap { seed in
+                    (0..<CalibrationHarness.matchupsPerSeed).flatMap { matchup in
+                        Side.allCases.map {
+                            CalibrationHarness.rosterSeed(base: seed, matchup: matchup, side: $0)
+                        }
+                    }
+                })
+            }
+            let tuning = rosterSeeds(CalibrationHarness.tuningSeeds)
+            let holdout = rosterSeeds(CalibrationHarness.holdoutSeeds)
+            let expected = CalibrationHarness.tuningSeeds.count
+                * CalibrationHarness.matchupsPerSeed * Side.allCases.count
+            expectEqual(tuning.count, expected, "the tuning ladder repeats roster streams")
+            expectEqual(holdout.count, expected, "the holdout ladder repeats roster streams")
+            expect(tuning.isDisjoint(with: holdout),
+                   "expanded tuning and holdout ladders share roster streams")
+        }
+
+        test("safeties are measured per game") {
+            let play = PlayRecord(
+                situation: Situation(possession: .home),
+                offensiveCall: OffensiveCall(playType: .pass),
+                defensiveCall: DefensiveCall(coverage: .zoneUnder),
+                outcome: SnapOutcome(result: .safety, yards: -3, secondsElapsed: 4, matchups: []),
+                callInTriggers: []
+            )
+            let game = GameRecord(
+                homeScore: 0,
+                awayScore: MatchupRules.safetyPoints,
+                drives: [DriveRecord(offense: .home, plays: [play], ending: .safety,
+                                     pointsScored: MatchupRules.safetyPoints, startYardLine: 2)],
+                tier: .pro
+            )
+            let estimate = CalibrationHarness.measure([
+                CalibrationHarness.SampledGame(record: game, homeSkill: 70, awaySkill: 70)
+            ])["safeties per game"]
+            expectClose(estimate?.value ?? -1, 1, 1e-9)
+            expectEqual(estimate?.sampleSize, 1)
         }
 
         test("the harness is reproducible from its seeds") {

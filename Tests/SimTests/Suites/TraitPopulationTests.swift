@@ -98,7 +98,7 @@ func runTraitPopulationTests() {
             )
         }
 
-        test("every generation path populates restless without emitting inactive traits") {
+        test("every generation path populates each active trait without emitting inactive ones") {
             let seed: UInt64 = 84_002
             let world = LeagueGenerator.generate(seed: seed)
             let population = RosterPopulationGenerator.generate(
@@ -153,14 +153,21 @@ func runTraitPopulationTests() {
                 let populated = Set(traitLists.flatMap { $0 })
                 expect(populated.isSubset(of: activePopulationTraits),
                        "\(label) generation emitted an inactive trait: \(populated)")
-                expect(traitLists.contains { $0.contains(.restless) },
-                       "\(label) generation produced no restless evidence")
+                // Enumerated from the active set rather than naming one trait, so a trait promoted
+                // here tomorrow is covered the day it is promoted rather than the day somebody
+                // remembers to add a line — the coverage boundary `CLAUDE.md` forbids becoming the
+                // quality boundary. This read `.contains(.restless)` while restless was the only
+                // active trait, and ironman would have entered generation unmeasured.
+                for trait in activePopulationTraits {
+                    expect(traitLists.contains { $0.contains(trait) },
+                           "\(label) generation produced no \(trait) evidence")
+                }
             }
             expect(walkOns.indices.allSatisfy { walkOns[$0].traits == replacements[$0].traits },
                    "rating penalties changed the deterministic trait substream")
         }
 
-        test("restless follows eight-percent direction and inactive traits stay unpopulated") {
+        test("each active trait follows eight-percent direction and inactive ones stay unpopulated") {
             expectEqual(PeopleRules.traitPopulationProbability, 0.08)
             let seed: UInt64 = 84_003
             let world = LeagueGenerator.generate(seed: seed)
@@ -177,10 +184,12 @@ func runTraitPopulationTests() {
             )
             let traitLists = population.players.map(\.traits) + prospects.map(\.traits)
 
-            let restlessRate = Double(traitLists.filter { $0.contains(.restless) }.count)
-                / Double(traitLists.count)
-            expectIn(restlessRate, 0.065...0.095,
-                     "restless did not follow the 8% population direction")
+            for trait in activePopulationTraits.sorted(by: { $0.rawValue < $1.rawValue }) {
+                let rate = Double(traitLists.filter { $0.contains(trait) }.count)
+                    / Double(traitLists.count)
+                expectIn(rate, 0.065...0.095,
+                         "\(trait) did not follow the 8% population direction")
+            }
             for trait in futureSimulationTraits {
                 expect(!traitLists.contains { $0.contains(trait) },
                        "inactive Future Simulation Contract trait \(trait) was populated")
@@ -259,6 +268,9 @@ func runTraitPopulationTests() {
         }
 
         test("trait generation leaves the identity and value stream byte-for-byte stable") {
+            // Re-pinned on 2026-08-20 after PR #9 added real NFL trade-dress pairs. Collision
+            // retries deliberately shift the downstream deterministic stream; position and age
+            // remain slot-derived and therefore stay unchanged.
             let seed: UInt64 = 84_001
             let world = LeagueGenerator.generate(seed: seed)
             let population = RosterPopulationGenerator.generate(
@@ -284,14 +296,14 @@ func runTraitPopulationTests() {
             let initial = population.players[0]
             let prospect = prospects[0]
 
-            expectEqual(initial.id.uuidString, "65AAA77C-F093-42EC-91CA-064775DA4536")
-            expectEqual(initial.fullName, "Preston Corrcombe")
+            expectEqual(initial.id.uuidString, "7BA49480-94D0-4F53-A14C-BF289F3D7261")
+            expectEqual(initial.fullName, "Gavis Tarrstone")
             expectEqual(initial.position, .quarterback)
             expectEqual(initial.age, 18)
-            expectEqual(initial.potential, Rating(61))
+            expectEqual(initial.potential, Rating(62))
             expectEqual(Attribute.allCases.map { initial.attributes[$0].value }, [
-                59, 48, 46, 45, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
-                40, 40, 49, 46, 47, 60, 56, 57, 40, 40, 40, 40, 40, 56, 62, 59, 43, 57,
+                50, 45, 46, 60, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
+                40, 40, 51, 52, 50, 58, 54, 50, 40, 40, 40, 40, 40, 46, 57, 59, 54, 40,
             ])
 
             expectEqual(replacement.id.uuidString, "84ECCA2A-C6EA-45E2-AB7A-99C0B82291E1")
@@ -309,10 +321,17 @@ func runTraitPopulationTests() {
             expectEqual(prospect.position, .quarterback)
             expectEqual(prospect.age, 19)
             expectEqual(prospect.originCityID.uuidString, "C4795271-5AC6-4182-BDA3-3F7551EAA186")
-            expectEqual(prospect.potential, Rating(73))
+            // The value half of this golden moved +6 on 2026-08-20, when prospect generation
+            // stopped carrying its own `42 + span * 28/59` and started calling the same
+            // `RosterPopulationGenerator.baseRating` a programme's roster is generated on. The
+            // identity half did not move at all — id, name, position, age, origin city and
+            // priorities are all unchanged above — which is the split this test exists to police:
+            // a trait draw must not perturb the identity stream, and it did not. The values moved
+            // because the value scale was deliberately changed, not because the stream shifted.
+            expectEqual(prospect.potential, Rating(79))
             expectEqual(Attribute.allCases.map { prospect.attributes[$0].value }, [
-                57, 58, 65, 64, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
-                40, 40, 64, 65, 70, 70, 57, 70, 40, 40, 40, 40, 40, 68, 65, 61, 64, 64,
+                63, 64, 71, 70, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
+                40, 40, 70, 71, 76, 76, 63, 76, 40, 40, 40, 40, 40, 74, 71, 67, 70, 70,
             ])
             expectEqual(
                 RecruitingPitch.allCases.map { prospect.priorities[$0]!.value },
@@ -386,5 +405,5 @@ private func isCanonicalTraits(_ traits: [Trait]) -> Bool {
     traits == Trait.allCases.filter(traits.contains)
 }
 
-private let activePopulationTraits: Set<Trait> = [.restless]
+private let activePopulationTraits: Set<Trait> = [.ironman, .restless, .volatile]
 private let futureSimulationTraits = Trait.allCases.filter { !activePopulationTraits.contains($0) }

@@ -2,8 +2,8 @@ import Foundation
 import FootballSimCore
 
 /// Pinned play-by-play fingerprints. See "the play-by-play fingerprint is pinned across processes".
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 151_802_325_001_383_283
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 17_135_830_121_998_607_854
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 4_829_279_090_211_500_185
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 1_420_226_565_880_312_401
 
 func runEngineTests() {
     suite("Leverage") {
@@ -101,6 +101,18 @@ func runEngineTests() {
                    "a tired attacker did not lose ground")
             expect(score(fit: 0, attackerFatigue: 0, defenderFatigue: 1) > neutral,
                    "a tired defender did not lose ground")
+        }
+
+        test("ratingWeight scales only the rating term") {
+            func score(weight: Double) -> Double {
+                var rng = SeededRandom(seed: 7)
+                return Leverage.score(attacker: Rating(75), defender: Rating(65),
+                                      ratingWeight: weight, rng: &rng)
+            }
+            let noise = score(weight: 0)
+            let fullRatingTerm = score(weight: 1) - noise
+            expectClose(score(weight: 0.35) - noise, fullRatingTerm * 0.35, 1e-9,
+                        "ratingWeight did not proportionally downweight the rating term")
         }
 
         test("a better player wins more matchups than a worse one, over many draws") {
@@ -352,6 +364,37 @@ func runSnapResolverTests() {
             expect(found, "a heavy blitz against a weak line never produced a sack in 400 snaps")
         }
 
+        test("backed-up sack loss is continuous and still permits safeties") {
+            let call = OffensiveCall(playType: .pass)
+            let defense = DefensiveCall(coverage: .man, rushers: 7, aggression: 1)
+            let personnel = testPersonnel(offenseSkill: 45, defenseSkill: 95)
+            var found = false
+            for seed in UInt64(0)..<400 {
+                var sevenRNG = SeededRandom(seed: seed)
+                var eightRNG = SeededRandom(seed: seed)
+                var threeRNG = SeededRandom(seed: seed)
+                let seven = SnapResolver.resolve(
+                    offensiveCall: call, defensiveCall: defense, personnel: personnel,
+                    situation: Situation(yardLine: 7), rules: rules, rng: &sevenRNG
+                )
+                let eight = SnapResolver.resolve(
+                    offensiveCall: call, defensiveCall: defense, personnel: personnel,
+                    situation: Situation(yardLine: 8), rules: rules, rng: &eightRNG
+                )
+                let three = SnapResolver.resolve(
+                    offensiveCall: call, defensiveCall: defense, personnel: personnel,
+                    situation: Situation(yardLine: 3), rules: rules, rng: &threeRNG
+                )
+                guard seven.result == .sack, eight.result == .sack else { continue }
+                found = true
+                expectEqual(seven.yards, -6)
+                expectEqual(eight.yards, -7)
+                expectEqual(three.result, .safety)
+                break
+            }
+            expect(found, "the fixture never produced a sack")
+        }
+
         test("every snap result is reachable") {
             // Dead capability is this project's first named failure mode. A result the engine
             // declares and never produces is exactly that.
@@ -503,6 +546,80 @@ func runSnapResolverTests() {
             expect(!SnapResult.punt.isTurnover, "a punt is a turnover")
             expect(SnapResult.incompletion.stopsClock, "an incompletion does not stop the clock")
             expect(!SnapResult.gain.stopsClock, "a gain in bounds stops the clock")
+        }
+    }
+
+    suite("Run distribution") {
+        // The shape of a carry, not one carry. `03` §1.1 gives the run three parts — lane quality,
+        // the carrier against pursuit, and a break-tackle chain that can extend the play — and only
+        // the third produced yards: `gained` was lane leverage times a scale, and an even front
+        // averages a lane leverage of zero, so a run that beat nobody gained nothing. The harness
+        // read 1.34 yards a carry against a rush band of 100 to 130 per team-game.
+        //
+        // **Rates belong to `--calibration-gate`, not here.** A fixture is one roster pair in one
+        // situation; the bands in `01` §6.5 are league statistics over hundreds of rosters, and the
+        // same engine reads 0.025 explosive on one fixture and 0.155 across the harness's games.
+        // What a fixture can assert is the model's properties, which hold at any roster draw.
+        func carries(offense: Int, defense: Int, count: Int = 8_000) -> [Int] {
+            var rng = SeededRandom(seed: 4_242)
+            let personnel = testPersonnel(offenseSkill: offense, defenseSkill: defense)
+            var yards: [Int] = []
+            for index in 0..<count {
+                // A spread of gaps, because an outside run carries its own variance multiplier.
+                // Mid-field, so no carry is clipped by a goal line.
+                let gap: RunGap = [.insideLeft, .insideRight, .outsideLeft, .outsideRight][index % 4]
+                yards.append(SnapResolver.resolve(
+                    offensiveCall: OffensiveCall(playType: .run, runGap: gap),
+                    defensiveCall: DefensiveCall(coverage: CoverageShell.allCases[index % 4],
+                                                 rushers: 4),
+                    personnel: personnel, situation: Situation(yardLine: 50), rules: rules,
+                    rng: &rng).yards)
+            }
+            return yards
+        }
+
+        let sample = carries(offense: 70, defense: 70)
+        let mean = Double(sample.reduce(0, +)) / Double(sample.count)
+        let sorted = sample.sorted()
+
+        test("a run against an even front gains yards") {
+            // The defect this closes reads about 1.3 yards here. The window is wide on purpose:
+            // `01` §6.5's rush band is 100 to 130 per team-game over about 30 carries, so a carry
+            // averages roughly 3.3 to 4.3 yards in a *league*, and one fixture is not a league.
+            expect(mean > 2.5 && mean < 6.0,
+                   "a carry averages \(mean) yards against an even front")
+        }
+
+        test("the distribution leans right rather than clustering on its mean") {
+            // Two properties one number cannot carry. A symmetric distribution with the right mean
+            // would pass the test above and still be the wrong sport: real carries pile up short of
+            // the mean, a few break long, and some are stopped where they started.
+            let stuffed = Double(sample.filter { $0 <= 0 }.count) / Double(sample.count)
+            expect(stuffed > 0.02, "only \(stuffed) of carries were stopped at or behind the line")
+            expect(Double(sorted[sorted.count / 2]) < mean,
+                   "the median is not below the mean \(mean), so there is no tail")
+            expect(sorted.last! >= 15,
+                   "the longest of \(sorted.count) carries went \(sorted.last!) yards, so the "
+                       + "break-tackle chain never extends a play")
+        }
+
+        test("blocking and pursuit both move the result") {
+            // The property the three-term model exists for. Before it, lane leverage was worth
+            // three yards a unit and the carrier's duel was read only as break-or-not, so beating
+            // the first defender by a mile and beating him by an inch produced the same carry.
+            let blocked = Double(carries(offense: 82, defense: 62).reduce(0, +)) / 8_000
+            let swarmed = Double(carries(offense: 62, defense: 82).reduce(0, +)) / 8_000
+            //
+            // Direction, not magnitude, and deliberately so: this fixture currently reads +8.3 and
+            // -4.4 yards a carry for a 20-point edge either way, which is not football — a real
+            // 20-point gap is worth about a yard and a half. That is `Leverage`'s curve rather than
+            // these two constants (the same over-amplification reads as a 0.73 blowout rate and a
+            // 0.85 favourite win rate in --calibration-gate), so pinning the magnitude here would
+            // pin a defect in place.
+            expect(blocked > mean + 1,
+                   "a 20-point blocking edge is worth only \(blocked - mean) yards a carry")
+            expect(swarmed < mean - 1,
+                   "a 20-point front edge is worth only \(mean - swarmed) yards a carry")
         }
     }
 }

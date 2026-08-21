@@ -132,6 +132,24 @@ The offseason carries ~90 minutes of the season budget and is where the two tier
 5. **Staff**: coordinators poached, replacements hired, scheme continuity at stake.
 6. **The carousel**: the player's own job resolves — extended, courted, or ended.
 
+**Portal history is retained by complete window, not by player or by season.** While any hot
+`DomainEvent` for a `(target season, window)` remains in the bounded event journal — entry,
+retention resolution, offer, transfer, or completion — every career record for that window remains
+available. `WorldIntegrity` cross-checks live-window event counts, retained capacity snapshots, and
+scouting knowledge against the matching career records; evicting only the players named by a
+surviving event would leave a partial window whose NIL totals no longer reconcile. Every retained
+offer must agree with the fixed capacity snapshot captured for its destination. The exact per-offer
+NIL split is re-derived only when a retained completion summary proves that every offer in the
+window remains present; a partial historical window still enforces aggregate budget, offer-count,
+and accepted-position capacity without pretending its missing offers still exist. A window is
+evictable once no hot portal event names it;
+unrelated identity references remain governed by the general event, award, and roster retention
+rules. This deliberately follows journal retention rather than inventing a fixed season count, so
+the bounded history remains the portal system's retention authority.
+
+Falsifier: the portal transaction suite and `--m2-soak` must show no portal commit failure, and the
+soak must keep `departedPlayers.count` at or below `PeopleRules.departedPlayerRetentionLimit`.
+
 ### 4.2 Pro
 
 1. **Retirements and expiring contracts.**
@@ -192,6 +210,19 @@ first one:
    free agency and the draft, and it is why beat 1 comes first.
 2. **Money is enforced by the cap-compliance date — beat 2.** Cuts happen when the cap binds. A
    team at 48 players and over the cap still cuts; a team at 53 and comfortably under does not.
+
+**Free agency reserves the draft's seats — measured 2026-08-20.** Beat 1 frees headcount "for free
+agency *and* the draft", and that conjunction is a rule rather than a description: free agency runs
+first, and if it signs to the active-roster limit there is no seat left when the draft opens. That is
+exactly what happened. `--pro-draft-stall-probe` reports the live scheduler's first pick throwing
+`activeRosterFull` at `roster=53/53` in every season, with `committedCap` at 170M of 272M — the
+draft was blocked on headcount while money was nowhere near binding, so beat 2 would not have
+unblocked it. An AI club therefore signs only up to `activeRosterLimit - draftRounds`, holding one
+seat per round it is entitled to pick in. Expiry frees about eleven a roster against seven rounds, so
+the reservation fits inside what beat 1 already produces and does not need cuts to make room. A club
+may still exceed that ceiling by other routes — a trade, a waiver claim, a promotion from the
+practice squad — because the reservation is a policy about what the AI *chooses* to sign, not a new
+roster bound; `activeRosterLimit` remains the only hard one.
 
 **Bootstrap issues contracts, with a staggered term spread.** Every bootstrapped professional gets
 a contract whose remaining years are drawn deterministically so that **roughly a fifth of each
@@ -393,6 +424,13 @@ since a mistake that already shipped a claim is not the same as one caught befor
 
 ## 6. Staff and scheme
 
+**Staff who lose their seat are pruned unless history names them — owner decision 2026-08-20.** A
+promotion displaces a whole coaching group and a separation displaces one coach, and every one of
+them keeps a career record forever, which is a collection that grows with career length and has no
+bound. A seatless coach is kept when the coaching tree names them — as a mentor with disciples, or
+as someone who came up under one — and dropped otherwise, so what survives is the history a screen
+can actually show. The played coach is never pruned, employed or not.
+
 - Four coordinators and a set of position coaches, each with ratings for development, recruiting,
   game-planning and scheme affinity.
 - **Scheme identity** is the spine: the player picks an offensive and defensive scheme, and the
@@ -478,6 +516,30 @@ record and recruiting record.
 
 Carried across: reputation, scheme identity, a subset of staff, the record book, the career line.
 Not carried: players, recruits, college currency.
+
+**The subset of staff is the four coordinators — owner decision 2026-08-20.** They follow the coach
+to the professional team unconditionally, displacing its incumbent coordinators the same way the
+coach displaces its head coach. Position coaches do not follow: the staff that carries is the one
+that carries *scheme identity*, which is the line above and the reason the subset exists at all.
+The seats the group vacates are backfilled at the college programme, because every organisation
+holds exactly one coach per role at all times (§11) and a vacancy is not a state the world is
+allowed to be in.
+
+This is a promotion rule, not a separation rule. A coach who resigns or is fired goes nowhere and
+takes nobody: the coordinators keep their jobs and the programme keeps its staff.
+
+**The career record is a per-season line on the coach — owner decision 2026-08-20.** "The record
+book" in the carried list above was a promise with nothing behind it: standings are rebuilt from the
+current schedule and hold only the current season, and a `SeasonArchive` keeps champions, final
+rankings, awards and league-wide totals but no per-programme win-loss. So a coach's record is not
+derivable from anything persisted, and it is recorded rather than computed.
+
+One line per season played: the season, the organisation, and wins-losses-ties. It is written for
+the played coach only — a record for all 166 organisations across every archived season is the
+expensive version of this and the save is already over its budget. The line is written at season
+end, from the standings of the tier the coach was employed in, and it carries across the promotion
+because it lives on the coach and not on the job. Bounded by the same per-coach limit as the
+assignments beside it.
 
 One-way by default, with a demotion path if the pro job ends badly. Tuned so the move is earned in
 4–12 college seasons at median play.
@@ -659,8 +721,37 @@ The attribute sets each emphasises live in the rules module with the schemes.
 | Leagues the legal tests sweep | 200 | Matches D6's falsifier sample, so one generation run serves both |
 
 **What the blocklist covers, and what it cannot.** Institution names, nicknames and mascots,
-conference names, stadium names, city names, and a maintained list of identifiable people. It is
+conference names, stadium and bowl names, rivalry-trophy names, league and governing-body names,
+broadcast and competitor-product marks, and a maintained list of identifiable people. It is
 refreshed per release (`docs/PRE-DEPLOYMENT-CHECKLIST.md`).
+
+**The near-miss rule — added 2026-08-13.** The list holds two different kinds of entry and they
+carry two different claims. Most entries are real marks. Some are **near-miss coinages that nobody
+registered**, and they are here because the name that gets a project sued is rarely the one nobody
+would reach for: it is the one a careful person reaches for *while trying to be safe*. The worked
+example is the IP note that prompted this subsection, which offered "safe alternatives" for four
+marks — and "Southeastern Conference" is the SEC's own name, "Atlantic Coast" is the ACC's, both
+already on this list as real names, while "National Collegiate Association" and "National Pro
+Football" are one word away from the bodies they stand in for. So:
+
+1. **A mark is refused in every form it is written in.** Acronym, numeral and spelled forms are
+   different strings and the normaliser keeps digits, so "Big Twelve" says nothing about "Big 12".
+   A test derives one form from the other over the whole list rather than over remembered examples.
+2. **The slice a limb is drawn from is the limb's real coverage boundary.** A nickname list built
+   from the top division is silent about every other division, and silence reads as green — which
+   is how seven real college nicknames came to sit in the generator's own pools with both legal
+   tests passing.
+3. **A pool word removed is not a mark blocked.** Removing "Southern" from the region pool stops
+   today's generator from spelling the Southern Conference; only a blocklist entry stops
+   tomorrow's.
+4. **The counterweight is a test too.** The game has to say "red zone", "signing day", "combine",
+   "playoff" and "transfer portal". Every entry covering a mark built from those words is longer
+   than the descriptive phrase on purpose, and a test asserts the ordinary vocabulary stays
+   sayable. A gate that blocks the sport's own language is a gate that gets weakened.
+
+**Trade dress covers both tiers.** The colour list is the pro league's pairs as well as the college
+ones. It was a college slice while the generator dressed both, which left every generated pro
+identity checked against the wrong sport's palette.
 
 It is a *denylist*, not a definition of compliance. `01` §7 already records the gap and it is
 restated here because P2 is where someone would otherwise assume the tests are the whole guardrail:

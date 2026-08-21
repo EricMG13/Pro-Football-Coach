@@ -976,7 +976,15 @@ func runPortalTransactionTests() {
                 finalRosterNIL: recordToChange.finalRosterNIL
             )
             var hostile = spring.state
-            hostile.history = DomainEventLedger()
+            hostile.college = CollegeState(
+                recruitingSeason: 2,
+                portal: CollegePortalState(targetSeason: 2),
+                phase: hostile.college.phase,
+                programmes: hostile.college.programmes,
+                prospectRecruitment: hostile.college.prospectRecruitment,
+                archivedProspects: hostile.college.archivedProspects,
+                redshirtPlans: hostile.college.redshirtPlans
+            )
             hostile.people = PeopleState(
                 playerLifecycle: Array(hostile.people.playerLifecycle.values),
                 playerCareers: hostile.people.playerCareers.map { playerID, career in
@@ -996,6 +1004,22 @@ func runPortalTransactionTests() {
                 departedPlayers: Array(hostile.people.departedPlayers.values)
             )
             expect(WorldIntegrity.check(hostile).issues.contains {
+                if case .invalidPortalCapacity(let targetSeason, let window) = $0 {
+                    return targetSeason == 1 && window == .postseason
+                }
+                return false
+            })
+
+            var partialHistory = DomainEventLedger()
+            let historicalOffer = postseason.state.history.recent.first {
+                if case .portalOfferMade = $0.payload { return true }
+                return false
+            }!
+            precondition(partialHistory.append(historicalOffer))
+            var partial = spring.state
+            partial.college = hostile.college
+            partial.history = partialHistory
+            expect(!WorldIntegrity.check(partial).issues.contains {
                 if case .invalidPortalCapacity(let targetSeason, let window) = $0 {
                     return targetSeason == 1 && window == .postseason
                 }
@@ -1287,6 +1311,115 @@ func runPortalTransactionTests() {
             )!
             expect(CollegePortalPolicyV1.commit(result) == nil)
             expectEqual(try JSONEncoder.stable().encode(corrupt), before)
+        }
+    }
+
+    suite("Portal-touched departed-player retention") {
+        test("portal window retention stays atomic across live references") {
+            let projected = projectedPostseasonTransition(fixture)
+            let entrantIDs = fixture.entrantIDs
+            let portalEvents = projected.state.history.recent.reduce(
+                into: [String: DomainEvent]()
+            ) { events, event in
+                let key: String?
+                switch event.payload {
+                case .portalEntered: key = "entry"
+                case .portalRetentionResolved: key = "retention"
+                case .portalOfferMade: key = "offer"
+                case .playerTransferred: key = "transfer"
+                case .portalWindowCompleted: key = "completion"
+                default: key = nil
+                }
+                if let key, events[key] == nil { events[key] = event }
+            }
+            expectEqual(Set(portalEvents.keys), [
+                "entry", "retention", "offer", "transfer", "completion"
+            ])
+
+            func fillerIdentity() -> DepartedPlayerIdentity {
+                DepartedPlayerIdentity(
+                    player: Player(
+                        firstName: "Filler",
+                        lastName: "Player",
+                        position: .quarterback,
+                        age: 25,
+                        attributes: Attributes(),
+                        potential: Rating(60)
+                    ),
+                    status: .graduated
+                )
+            }
+
+            func buildState(retainedEvent: DomainEvent?) -> GameState {
+                var state = projected.state
+                let fillerIdentities = (0..<PeopleRules.departedPlayerRetentionLimit).map { _ in
+                    fillerIdentity()
+                }
+                let fillerCareers = fillerIdentities.map {
+                    PlayerCareerRecord(
+                        playerID: $0.id,
+                        portalWindows: [],
+                        endedAt: CalendarState(season: 1, week: 1),
+                        endStatus: .graduated
+                    )
+                }
+                let realIdentities = entrantIDs.map { id -> DepartedPlayerIdentity in
+                    let player = state.players[id]!
+                    _ = state.players.remove(id)
+                    return DepartedPlayerIdentity(player: player, status: .graduated)
+                }
+                state.people = PeopleState(
+                    playerLifecycle: Array(state.people.playerLifecycle.values),
+                    playerCareers: Array(state.people.playerCareers.values) + fillerCareers,
+                    staffCareers: Array(state.people.staffCareers.values),
+                    departedPlayers: fillerIdentities + realIdentities
+                )
+                state.history = DomainEventLedger()
+                if let retainedEvent {
+                    var history = DomainEventLedger()
+                    precondition(history.append(retainedEvent))
+                    state.history = history
+                }
+                state.calendar = CalendarState(season: 1, week: SharedRules.inSeasonWeeks)
+                state.league.week = SharedRules.inSeasonWeeks
+                return state
+            }
+
+            for key in portalEvents.keys.sorted() {
+                let live = buildState(retainedEvent: portalEvents[key])
+                let transition = try SeasonLifecycleSystem.advance(
+                    after: live.calendar,
+                    in: live
+                )
+                expect(
+                    entrantIDs.allSatisfy { transition.people.departedPlayers[$0] != nil },
+                    "a portal entrant was evicted while the window's \(key) event was still live"
+                )
+                expectEqual(
+                    transition.people.departedPlayers.count,
+                    PeopleRules.departedPlayerRetentionLimit
+                )
+            }
+
+            // Simulates every event for the postseason window having aged out of the bounded hot
+            // journal after enough later seasons of unrelated activity.
+            let agedOutCompletion = buildState(retainedEvent: nil)
+            let agedOutTransition = try SeasonLifecycleSystem.advance(
+                after: agedOutCompletion.calendar,
+                in: agedOutCompletion
+            )
+            expect(
+                entrantIDs.allSatisfy { agedOutTransition.people.departedPlayers[$0] == nil },
+                "a portal entrant outlived every trace of its window once the completion event aged out"
+            )
+            expect(
+                entrantIDs.allSatisfy { agedOutTransition.people.playerCareers[$0] == nil },
+                "eviction dropped the departed identity but kept its paired career record"
+            )
+            expectEqual(
+                agedOutTransition.people.departedPlayers.count,
+                PeopleRules.departedPlayerRetentionLimit
+            )
         }
     }
 }

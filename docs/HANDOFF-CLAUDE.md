@@ -86,7 +86,15 @@ when the controlled professional team is on the clock (`02` §4.2, amended 2026-
    approved together as interactive native-size proofs at 31/40 or better against `04b`. A second
    session owns the design work.
 4. **FSC-013 dated roster-tenure history** — unblocks the professional tier.
-5. **M9** — where `docs/roadmap/06` puts final calibration, save migrations, performance and the long
+5. **L-01 — run the suite against the near-miss name list, and re-pin.** The blocklist work on
+   `claude/game-name-equivalents-qczn9r` (PR #9) was written with no toolchain and is unverified.
+   The nickname pools lost eight real college nicknames to one-for-one replacements, so
+   `ArchitectureTests`' `pinnedRootFingerprint` and `pinnedAdvancedRootFingerprint` should both move
+   and need re-pinning — **and a pin that does not move is the finding**, because it would mean the
+   fingerprint never covered generated names. `docs/05-IMPLEMENTATION-PLAN.md`'s 2026-08-13
+   amendments carry L-01 to L-06; L-02, the nickname morpheme grammar, is the only other one that is
+   build work rather than a counsel or review action.
+6. **M9** — where `docs/roadmap/06` puts final calibration, save migrations, performance and the long
    soak. **P4's match calibration is still failing at 5–6 of 24 bands**, and STATUS is explicit that
    the gap is model thinness — no per-drive accounting, a thin run game — not constants, so more
    search over the existing six will not move it.

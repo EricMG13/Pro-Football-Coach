@@ -134,35 +134,26 @@ func runSeasonRolloverTests() {
             }
             expectEqual(state.calendar.week, SharedRules.inSeasonWeeks)
             let teamID = state.proTeams.ids.first { $0 != controlledTeamID(in: state) }
-            guard let teamID, let team = state.proTeams[teamID],
-                  let playerID = team.rosterIDs.min(by: { $0.uuidString < $1.uuidString }),
-                  let position = state.players[playerID]?.position else {
-                expect(false, "no eligible non-controlled team with a rostered player")
+            guard let teamID, let team = state.proTeams[teamID] else {
+                expect(false, "no eligible non-controlled team")
                 return
             }
-            let reserveID = UUID(uuidString: "FFFFFFFF-FFFF-4FFF-8FFF-FFFFFFFF9706")!
-            let reserve = Player(
-                id: reserveID,
-                firstName: "Boundary",
-                lastName: "Reserve",
-                position: position,
-                age: 24,
-                attributes: Attributes([.speed: Rating(60)]),
-                potential: Rating(60)
-            )
-            state.players.insert(reserve)
-            state.people.insert(player: reserve)
-            state = try ProManagementSystem.acquire(
-                playerID: reserveID,
-                for: teamID,
-                kind: .freeAgency,
-                contract: Contract(
-                    years: 2,
-                    baseSalaryByYear: [1_000_000, 1_000_000],
-                    signingBonus: 0
-                ),
-                in: state
-            ).state
+            let positionCounts = Dictionary(
+                grouping: team.rosterIDs.compactMap { state.players[$0]?.position },
+                by: { $0 }
+            ).mapValues(\.count)
+            guard let playerID = team.rosterIDs.first(where: { playerID in
+                guard let position = state.players[playerID]?.position else { return false }
+                return positionCounts[position, default: 0]
+                    > (SharedRules.minimumPlayableRosterByPosition[position] ?? 0)
+            }) else {
+                expect(false, "no cap-release candidate above positional minimums")
+                return
+            }
+            _ = state.proTeams.update(teamID) {
+                $0.rosterIDs.removeAll { $0 == playerID }
+                $0.practiceSquadIDs.append(playerID)
+            }
             let capLimit = ProRules.salaryCap(seasonsAfterBase: state.calendar.season)
             state.players.update(playerID) {
                 $0.contract = Contract(
@@ -439,6 +430,86 @@ private func seasonPlacedRoot(seed: UInt64, season: Int) -> GameState {
     )
     state.competition = CompetitionReducer.rebuild(from: state)
     return state
+}
+
+func runStaffPruningTests() {
+    suite("Staff pruning") {
+        test("season rollover prunes only unreferenced seatless staff") {
+            let source = GameState.bootstrap(seed: 97_008)
+            let played = try CareerControlSystem.startCollegeCareer(
+                at: source.programmes.ids[0],
+                in: source
+            ).state
+            guard let programmeID = played.programmes.ids.first(where: {
+                $0 != played.career.college?.programmeID
+            }), let programme = played.programmes[programmeID] else {
+                expect(false, "no secondary programme for the pruning fixture")
+                return
+            }
+            guard let mentorID = programme.staffIDs.first(where: {
+                played.staff[$0]?.role == .headCoach
+            }), let discipleID = programme.staffIDs.first(where: {
+                played.staff[$0]?.role == .offensiveCoordinator
+            }), let discardedID = programme.staffIDs.first(where: {
+                played.staff[$0]?.role == .defensiveCoordinator
+            }), let historyID = programme.staffIDs.first(where: {
+                played.staff[$0]?.role == .positionCoach
+            }), let disciple = played.staff[discipleID] else {
+                expect(false, "secondary programme did not have the staff roles needed")
+                return
+            }
+
+            var state = played
+            _ = state.programmes.update(programmeID) {
+                $0.staffIDs.removeAll {
+                    [mentorID, discipleID, discardedID, historyID].contains($0)
+                }
+            }
+            _ = state.people.recordStaffAssignment(
+                StaffCareerAssignment(
+                    season: state.calendar.season + 1,
+                    organisationID: state.proTeams.ids[0],
+                    role: .headCoach
+                ),
+                for: disciple
+            )
+            let sequence = (state.history.lastSequence ?? -1) + 1
+            expect(state.history.append(DomainEvent(
+                id: DomainEvent.deterministicID(rootSeed: state.league.seed, sequence: sequence),
+                sequence: sequence,
+                occurredAt: state.calendar,
+                payload: .staffHired(
+                    staffID: historyID,
+                    organisationID: programmeID,
+                    role: .positionCoach
+                )
+            )))
+            state.calendar = CalendarState(season: 0, week: SharedRules.inSeasonWeeks)
+            state.league.week = SharedRules.inSeasonWeeks
+
+            let transition = try SeasonLifecycleSystem.advance(
+                after: state.calendar,
+                in: state
+            )
+            expect(transition.staff[mentorID] != nil,
+                   "a seatless mentor named by the coaching tree was pruned")
+            expect(transition.people.staffCareers[discipleID] != nil,
+                   "a seatless coaching-tree disciple was pruned")
+            expect(transition.staff[historyID] != nil,
+                   "a seatless coach named by retained history was pruned")
+            expect(transition.staff[discardedID] == nil,
+                   "a seatless coach with no history was retained")
+            expect(transition.people.staffCareers[discardedID] == nil,
+                   "a pruned coach left an orphaned career record")
+            expect(transition.staff[state.career.coachID!] != nil,
+                   "the played coach was pruned while unseated staff were cleaned")
+            expectEqual(
+                Set(transition.staff.ids),
+                Set(transition.people.staffCareers.keys),
+                "staff pruning left the staff and career stores out of sync"
+            )
+        }
+    }
 }
 
 private func controlledTeamID(in state: GameState) -> UUID? {

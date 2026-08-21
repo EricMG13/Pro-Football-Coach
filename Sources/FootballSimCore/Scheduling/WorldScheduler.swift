@@ -3,6 +3,10 @@ import Foundation
 public enum WorldStep: String, Codable, Sendable, CaseIterable, Hashable {
     case expiringInboundEvents
     case injuriesAndRecovery
+    /// Ordered after `injuriesAndRecovery` because `PeopleLifecycleSystem.processHealth` counts a
+    /// served suspension down on that tick. A new suspension drawn before it would be shortened by
+    /// the same week it was issued in.
+    case disciplineFile
     case practiceAndDevelopment
     case scoutingKnowledge
     case marketInteractions
@@ -75,6 +79,7 @@ public enum WorldSchedulerError: Error, Equatable {
     case scheduledGameMissing(UUID)
     case scheduledGameResultMissing(UUID)
     case scheduleResultRecordingFailed(ScheduleResultRecordingError)
+    case coachSeasonRecordingFailed
     case eventAppendFailed
     case aiRecruitingActionFailed(RecruitingActionError)
     case collegeCycleFailed
@@ -90,6 +95,34 @@ public enum WorldScheduler {
     public static let version = 1
     public static let steps: [WorldStep] = WorldStep.allCases
     private static let missingFixtureID = UUID(uuidString: "00000000-0000-4000-8000-000000000000")!
+
+    /// Test-only checkpoint after each committed transaction inside the weekly step loop, so an
+    /// invariant can be asserted **after every transaction** rather than only on the root the week
+    /// comes to rest on.
+    ///
+    /// `WorldIntegrity` runs once a week, at `.saveGrowthAndIntegrity`. Everything the season
+    /// boundary does — the people transition, scholarship reconciliation, the cycle rollover, both
+    /// portal windows, both walk-on windows — commits inside a single step, so a rule can be
+    /// breached and repaired between two consecutive transactions and the week still comes to rest
+    /// clean. That is not a hypothetical: `reconcileScholarships` exists precisely to repair one.
+    ///
+    /// `package`, so nothing outside this package can install one, and `nil` in every shipped
+    /// build: each checkpoint is then a null check.
+    package nonisolated(unsafe) static var transactionObserver: (
+        @Sendable (String, GameState) -> Void
+    )?
+
+    /// The label is autoclosed so a shipped build never builds one: the per-step call site
+    /// interpolates, and interpolating sixteen strings a week to hand them to a `nil` observer is
+    /// a test seam charging the game for its own existence.
+    @inline(__always)
+    private static func checkpoint(
+        _ label: @autoclosure () -> String,
+        _ state: @autoclosure () -> GameState
+    ) {
+        guard let transactionObserver else { return }
+        transactionObserver(label(), state())
+    }
 
     /// Installs a resumable controlled fixture before the weekly transaction can abstract it.
     /// Calling this repeatedly is idempotent: an existing checkpoint is returned unchanged.
@@ -374,6 +407,7 @@ public enum WorldScheduler {
         let next = completed.advancedWeek()
         var records: [WorldStepRecord] = []
         var events: [DomainEvent] = []
+        var pendingCoachSeason: (coachID: UUID, record: CoachSeasonRecord)?
 
         for step in steps {
             switch step {
@@ -405,6 +439,7 @@ public enum WorldScheduler {
                         state: &nextState,
                         emittedEvents: &events
                     )
+                    checkpoint("portalCommit.spring", nextState)
                     let walkOns = CollegeCycleSystem.addWalkOns(
                         for: .springRosterFill,
                         season: completed.season,
@@ -413,6 +448,7 @@ public enum WorldScheduler {
                     nextState.programmes = walkOns.programmes
                     nextState.players = walkOns.players
                     nextState.people = walkOns.people
+                    checkpoint("walkOns.springRosterFill", nextState)
                     try appendEvents(
                         payloads: walkOns.eventPayloads,
                         occurredAt: completed,
@@ -425,6 +461,7 @@ public enum WorldScheduler {
                     in: nextState
                 )
                 nextState.college = transition.college
+                checkpoint("recruitingMarket.weekly", nextState)
                 try appendEvents(
                     payloads: transition.eventPayloads,
                     occurredAt: completed,
@@ -445,6 +482,7 @@ public enum WorldScheduler {
                 }
                 nextState.college = transition.college
                 nextState.scouting = transition.scouting
+                checkpoint("recruitingAI", nextState)
                 try appendEvents(
                     payloads: transition.eventPayloads,
                     occurredAt: completed,
@@ -462,6 +500,7 @@ public enum WorldScheduler {
                 }
                 nextState.college = delegated.college
                 nextState.scouting = delegated.scouting
+                checkpoint("recruitingDelegation", nextState)
                 try appendEvents(
                     payloads: delegated.eventPayloads,
                     occurredAt: completed,
@@ -493,6 +532,17 @@ public enum WorldScheduler {
                     at: completed,
                     to: &nextState
                 )
+                try appendEvents(
+                    payloads: transition.eventPayloads,
+                    occurredAt: completed,
+                    to: &nextState,
+                    emittedEvents: &events
+                )
+                records.append(WorldStepRecord(step: step, status: .executed))
+
+            case .disciplineFile:
+                let transition = try DisciplineAISystem.process(at: completed, in: nextState)
+                nextState = transition.state
                 try appendEvents(
                     payloads: transition.eventPayloads,
                     occurredAt: completed,
@@ -623,16 +673,37 @@ public enum WorldScheduler {
 
             case .statisticsAndRecords:
                 nextState.competition = CompetitionReducer.rebuildStatistics(from: nextState)
+                let evaluatedCoachSeason = CareerControlSystem.pendingCoachSeason(
+                    after: completed,
+                    in: nextState
+                )
+                if completed.week == SharedRules.inSeasonWeeks {
+                    // Capture before the weekly or season-end evaluation can fire the coach and
+                    // clear the job that identifies the standings row to record.
+                    pendingCoachSeason = evaluatedCoachSeason
+                }
+                let coachWasEmployed = nextState.careerArc.status == .employed
                 CareerArcSystem.evaluateWeek(
                     after: completed,
                     in: nextState,
                     arc: &nextState.careerArc
                 )
                 if nextState.careerArc.status == .fired {
+                    if coachWasEmployed && completed.week != SharedRules.inSeasonWeeks {
+                        guard let evaluatedCoachSeason,
+                              nextState.people.recordCoachSeason(
+                                  evaluatedCoachSeason.record,
+                                  for: evaluatedCoachSeason.coachID
+                              ) else {
+                            throw WorldSchedulerError.coachSeasonRecordingFailed
+                        }
+                    }
                     // Firing revokes control in the same scheduler transaction. Leaving the
                     // college control record behind lets a fired coach keep advancing the old
-                    // team through the next screen.
+                    // team through the next screen, and leaving the chair behind leaves them
+                    // listed as the programme's head coach on every staff surface.
                     nextState.career.clearCollege()
+                    CareerControlSystem.vacateCurrentSeat(in: &nextState)
                 }
                 records.append(WorldStepRecord(step: step, status: .executed))
 
@@ -693,14 +764,16 @@ public enum WorldScheduler {
                             emittedEvents: &events
                         )
                     }
-                    // Resolve work performed after the ordinary pre-AI market before signing.
-                    // Appending immediately keeps commitment history causally ahead of the
-                    // resolution and join events emitted by the college cycle below.
+                }
+                if completed.week == CollegeRules.signingDayWeek - 1 {
+                    // Resolve the last open-week AI work before signing day. Appending immediately
+                    // keeps the reservation causally ahead of the signing-week rollover events.
                     let terminalMarket = CollegeRecruitingMarketSystem.process(
                         at: completed,
                         in: nextState
                     )
                     nextState.college = terminalMarket.college
+                    checkpoint("recruitingMarket.terminal", nextState)
                     try appendEvents(
                         payloads: terminalMarket.eventPayloads,
                         occurredAt: completed,
@@ -708,10 +781,6 @@ public enum WorldScheduler {
                         emittedEvents: &events
                     )
                 }
-                let peopleTransition = try SeasonLifecycleSystem.advance(
-                    after: completed,
-                    in: nextState
-                )
                 if completed.week == SharedRules.inSeasonWeeks {
                     CareerArcSystem.evaluateSeasonEnd(
                         after: completed,
@@ -719,8 +788,18 @@ public enum WorldScheduler {
                         arc: &nextState.careerArc
                     )
                     if nextState.careerArc.status == .fired {
+                        // Do this before the lifecycle snapshot so its replacement seat and
+                        // career record are carried forward instead of overwritten by the
+                        // transition's wholesale staff assignment.
                         nextState.career.clearCollege()
+                        CareerControlSystem.vacateCurrentSeat(in: &nextState)
                     }
+                }
+                let peopleTransition = try SeasonLifecycleSystem.advance(
+                    after: completed,
+                    in: nextState
+                )
+                if completed.week == SharedRules.inSeasonWeeks {
                     let completion = PostseasonSystem.completeSeason(
                         after: completed,
                         in: nextState
@@ -741,6 +820,16 @@ public enum WorldScheduler {
                 nextState.players = peopleTransition.players
                 nextState.staff = peopleTransition.staff
                 nextState.people = peopleTransition.people
+                if let pendingCoachSeason {
+                    guard nextState.people.recordCoachSeason(
+                        pendingCoachSeason.record,
+                        for: pendingCoachSeason.coachID
+                    ) else {
+                        throw WorldSchedulerError.coachSeasonRecordingFailed
+                    }
+                }
+                nextState.college = peopleTransition.college
+                checkpoint("seasonLifecycle", nextState)
                 if completed.week == SharedRules.inSeasonWeeks {
                     // Contracts expire here: after the people transition and the college cycle have
                     // been applied, and before anything projects the root into the new season. It
@@ -877,6 +966,7 @@ public enum WorldScheduler {
                         }
                     }
                     nextState.college.reconcileScholarships(with: nextState.programmes)
+                    checkpoint("reconcileScholarships", nextState)
                     let cycle: CollegeCycleTransition
                     do {
                         cycle = try CollegeCycleSystem.closeAndOpen(
@@ -892,6 +982,7 @@ public enum WorldScheduler {
                     nextState.prospects = cycle.prospects
                     nextState.college = cycle.college
                     nextState.scouting = cycle.scouting
+                    checkpoint("collegeCycle.closeAndOpen", nextState)
                     try appendEvents(
                         payloads: peopleTransition.eventPayloads + cycle.eventPayloads,
                         occurredAt: completed,
@@ -903,6 +994,7 @@ public enum WorldScheduler {
                         state: &nextState,
                         emittedEvents: &events
                     )
+                    checkpoint("portalCommit.postseason", nextState)
                     let walkOns = CollegeCycleSystem.addWalkOns(
                         for: .postseasonCoverage,
                         season: completed.season + 1,
@@ -911,6 +1003,7 @@ public enum WorldScheduler {
                     nextState.programmes = walkOns.programmes
                     nextState.players = walkOns.players
                     nextState.people = walkOns.people
+                    checkpoint("walkOns.postseasonCoverage", nextState)
                     try appendEvents(
                         payloads: walkOns.eventPayloads,
                         occurredAt: completed,
@@ -993,6 +1086,7 @@ public enum WorldScheduler {
             default:
                 records.append(WorldStepRecord(step: step, status: .inactive))
             }
+            checkpoint("step.\(step.rawValue)", nextState)
         }
 
         let snapshot = WeekSnapshot(

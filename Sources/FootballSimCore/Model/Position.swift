@@ -70,10 +70,16 @@ public enum Position: String, Codable, Sendable, CaseIterable, Hashable {
             return [.accuracyShort, .accuracyMid, .accuracyDeep, .armStrength, .decision, .poise]
         case .runningBack:
             return [.vision, .elusiveness, .power, .hands, .passBlock]
+        // Receivers rate vision and elusiveness because a receiver with the ball **is** a carrier,
+        // and 03 section 1.2's carrier-versus-pursuit row names both. Without them the yards-after-
+        // catch duel read the rating floor for every receiver in the league — a 40 against a real
+        // tackler — so receivers could not break a tackle and completions gained their air yards and
+        // nothing else: short passes averaged 4.7 yards against 5 air yards, and the explosive-pass
+        // rate was carried entirely by deep balls.
         case .wideReceiver:
-            return [.routeRunning, .release, .hands]
+            return [.routeRunning, .release, .hands, .vision, .elusiveness]
         case .tightEnd:
-            return [.routeRunning, .release, .hands, .runBlock, .passBlock]
+            return [.routeRunning, .release, .hands, .runBlock, .passBlock, .vision, .elusiveness]
         case .leftTackle, .guardPosition, .center, .rightTackle:
             return [.passBlock, .runBlock]
         // The defensive front rates blockLeverage because 03 section 1.2's Kick row names it as the

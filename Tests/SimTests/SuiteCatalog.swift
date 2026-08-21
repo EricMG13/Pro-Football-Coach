@@ -16,6 +16,7 @@ enum ReleaseGateID: String, CaseIterable, Sendable {
     case saveCoalescing = "SaveCoalescingTest"
     case saveWriteBudget = "SaveWriteBudgetTest"
     case saveOpenReadOnly = "SaveOpenIsReadOnlyTest"
+    case calibrationGate = "CalibrationGateTests"
     case m1Soak = "M1SoakTests"
     case m2Soak = "M2SoakTests"
     case legal = "LegalTests"
@@ -57,6 +58,10 @@ struct SuiteCatalog: Sendable {
              .accessibility: return "accessibility"
         case .determinism: return "determinism"
         case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly: return "persistence"
+        // Not "calibration": the lane column names the `verify.sh` lane that runs a gate, and no
+        // lane runs this one. `verify.sh --lane calibration` is the instrument suite. Labelling it
+        // "calibration" would read as a lane membership it does not have.
+        case .calibrationGate: return "manual"
         case .m1Soak, .m2Soak: return "soaks"
         case .legal: return "legal"
         }
@@ -78,6 +83,11 @@ struct SuiteCatalog: Sendable {
             return Runner(command: "--design-contracts", function: "runAccessibilityReflowTests")
         case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly:
             return Runner(command: "--save-document", function: "runSaveDocumentTests")
+        case .calibrationGate:
+            // Red today, and out of the default run for that reason. `verify.sh` runs no lane
+            // containing it. STATUS's P4 section carries the measurement; this command reproduces
+            // it.
+            return Runner(command: "--calibration-gate", function: "runCalibrationGateTests")
         case .m1Soak:
             return Runner(command: "--m1-soak", function: "runM1SoakTests")
         case .m2Soak:
