@@ -6,7 +6,7 @@ public enum CompetitionRules {
     }
 
     public static let collegeBaselinePoints = 27.0
-    public static let proBaselinePoints = 23.0
+    public static let proBaselinePoints = 22.5
     public static let collegeScoreDeviation = 10.0
     public static let proScoreDeviation = 8.0
     public static let strengthPointScale = 0.24
