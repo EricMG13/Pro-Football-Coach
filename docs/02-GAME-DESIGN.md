@@ -647,10 +647,24 @@ counter rather than each keeping their own.
 | In-season weeks | 21, the longer of the two tiers |
 | College active | weeks 1 to 17 |
 | Pro active | weeks 1 to 21 |
+| Maximum career seasons | 30 |
 
 A deliberate simplification: real college and pro calendars overlap with an offset, and this one has
 them start together. Nothing in §2 or §3 reads the offset, and one counter is what keeps a save's
 calendar unambiguous.
+
+**A career ends after thirty seasons — owner decision 2026-08-20.** Seasons 0 through 29 are played;
+the calendar may reach season 30 week 1 and rests there, and the week cannot be advanced past it.
+That resting position is the career's terminal state, not an error condition.
+
+The reason is save size, stated openly, and the precedent is in `01-RESEARCH.md` §2.2: Football
+Manager Mobile ends a career at thirty seasons for exactly this reason, while desktop FM — which has
+no device storage ceiling — has no cap. `01-RESEARCH.md` §8 already recorded that precedent as
+direct input to **D7**, but only the *idea* of bounding a career had been adopted; the mechanism had
+not, so history grew without a wall. **D7** carries the ruling and the arithmetic.
+
+This bounds the growth but does not by itself meet the 8 MB ceiling — see `docs/FUTURE-SIMULATION-CONTRACT.md`
+FSC-003, which stays open.
 
 ### 11.3.2 Decline ages
 
