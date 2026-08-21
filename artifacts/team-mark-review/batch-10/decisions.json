@@ -22,17 +22,6 @@
     ]
   },
   {
-    "assetName": "TeamLogo_4C6A9A21414A4D5E9DE291DD4198640B",
-    "decision": "replace",
-    "notes": "The nickname-matched a harrier, wings swept back and talons forward, drawn as a head-and-shoulders mark replaces the shipped off-brief mark and remains legible at 20 points.",
-    "changes": [
-      "silhouette",
-      "small-size clarity",
-      "nickname coherence",
-      "palette discipline"
-    ]
-  },
-  {
     "assetName": "TeamLogo_5E9D2C1C55DD44DD8EDA81B10532E0B0",
     "decision": "replace",
     "notes": "The nickname-matched a goshawk, head turned and brow low, drawn as a head-and-shoulders mark replaces the shipped off-brief mark and remains legible at 20 points.",
@@ -44,9 +33,9 @@
     ]
   },
   {
-    "assetName": "TeamLogo_7767AA6A6FA7440298D6B02EEA82AF5F",
+    "assetName": "TeamLogo_4C6A9A21414A4D5E9DE291DD4198640B",
     "decision": "replace",
-    "notes": "The nickname-matched a beacon brazier, drawn square-on replaces the shipped off-brief mark and remains legible at 20 points.",
+    "notes": "The nickname-matched a harrier, wings swept back and talons forward, drawn as a head-and-shoulders mark replaces the shipped off-brief mark and remains legible at 20 points.",
     "changes": [
       "silhouette",
       "small-size clarity",
@@ -66,9 +55,9 @@
     ]
   },
   {
-    "assetName": "TeamLogo_BC1EBE0F069B4BC9A33B23A887CA898C",
+    "assetName": "TeamLogo_7767AA6A6FA7440298D6B02EEA82AF5F",
     "decision": "replace",
-    "notes": "The nickname-matched a heron's head inside a diamond, filling the frame replaces the shipped off-brief mark and remains legible at 20 points.",
+    "notes": "The nickname-matched a beacon brazier, drawn square-on replaces the shipped off-brief mark and remains legible at 20 points.",
     "changes": [
       "silhouette",
       "small-size clarity",
@@ -80,6 +69,17 @@
     "assetName": "TeamLogo_ACEFC30576904402BEB83FB644C79A1E",
     "decision": "replace",
     "notes": "The nickname-matched a harrier's head inside a hexagon, filling the frame replaces the shipped off-brief mark and remains legible at 20 points.",
+    "changes": [
+      "silhouette",
+      "small-size clarity",
+      "nickname coherence",
+      "palette discipline"
+    ]
+  },
+  {
+    "assetName": "TeamLogo_BC1EBE0F069B4BC9A33B23A887CA898C",
+    "decision": "replace",
+    "notes": "The nickname-matched a heron's head inside a diamond, filling the frame replaces the shipped off-brief mark and remains legible at 20 points.",
     "changes": [
       "silhouette",
       "small-size clarity",
@@ -110,9 +110,9 @@
     ]
   },
   {
-    "assetName": "TeamLogo_A6E5417A9D724874AAC38CD372E646BB",
+    "assetName": "TeamLogo_A317A3D847BE478B96991FE2861C9E2C",
     "decision": "replace",
-    "notes": "The nickname-matched a lone watchtower on a ridge, reduced to flat geometric planes replaces the shipped off-brief mark and remains legible at 20 points.",
+    "notes": "The nickname-matched a milestone at a crossroads, reduced to flat geometric planes replaces the shipped off-brief mark and remains legible at 20 points.",
     "changes": [
       "silhouette",
       "small-size clarity",
@@ -121,9 +121,9 @@
     ]
   },
   {
-    "assetName": "TeamLogo_A317A3D847BE478B96991FE2861C9E2C",
+    "assetName": "TeamLogo_A6E5417A9D724874AAC38CD372E646BB",
     "decision": "replace",
-    "notes": "The nickname-matched a milestone at a crossroads, reduced to flat geometric planes replaces the shipped off-brief mark and remains legible at 20 points.",
+    "notes": "The nickname-matched a lone watchtower on a ridge, reduced to flat geometric planes replaces the shipped off-brief mark and remains legible at 20 points.",
     "changes": [
       "silhouette",
       "small-size clarity",

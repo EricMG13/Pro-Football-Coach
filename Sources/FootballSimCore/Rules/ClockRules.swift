@@ -64,12 +64,12 @@ public enum CollegeClockRules: ClockRules {
     public static let quarters = 4
     public static let quarterSeconds = 900
     public static let playClockSeconds = 40
-    public static let normalTempoSnapSeconds = 26
+    public static let normalTempoSnapSeconds = 30
     public static let hurryTempoSnapSeconds = 12
     public static let bleedTempoSnapSeconds = 36
     public static let inBoundsPlaySeconds = 6
     public static let stoppedPlaySeconds = 5
-    public static let readyForPlaySeconds = 18
+    public static let readyForPlaySeconds = 22
 
     /// The tier difference. The college clock stops on a first down to reset the chains, which is
     /// the single largest reason college games run more plays than pro ones — and modelling it here
@@ -89,7 +89,7 @@ public enum ProClockRules: ClockRules {
     public static let quarters = 4
     public static let quarterSeconds = 900
     public static let playClockSeconds = 40
-    public static let normalTempoSnapSeconds = 30
+    public static let normalTempoSnapSeconds = 32
     public static let hurryTempoSnapSeconds = 14
     public static let bleedTempoSnapSeconds = 38
     public static let inBoundsPlaySeconds = 6

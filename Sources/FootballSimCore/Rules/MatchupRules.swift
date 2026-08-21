@@ -107,12 +107,14 @@ public enum MatchupRules {
     public static let aggressionThrowBonus = 0.06
     /// Below this the throw is intercepted; below `completionThreshold` it falls incomplete.
     public static let interceptionThreshold = -0.94
-    public static let completionThreshold = -0.02
+    public static let completionThreshold = -0.30
     /// How much a low-decision passer is pulled toward progression order rather than the open man.
     public static let progressionPenalty = 0.25
 
     // MARK: - Run
 
+    /// Neutral blocking still creates ordinary forward progress; leverage moves the run around it.
+    public static let baselineRunYards = 3
     /// Yards per unit of lane leverage.
     public static let laneYardScale = 3.0
     /// Outside runs multiply the lane result, trading certainty for the edge.

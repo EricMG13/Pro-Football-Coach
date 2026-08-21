@@ -239,7 +239,8 @@ public enum SnapResolver {
         if let pursuitRecord { matchups.append(pursuitRecord) }
 
         let outside = offensiveCall.runGap.isOutside ? MatchupRules.outsideRunVariance : 1.0
-        let gained = Int((lane * MatchupRules.laneYardScale * outside).rounded()) + broken
+        let gained = MatchupRules.baselineRunYards
+            + Int((lane * MatchupRules.laneYardScale * outside).rounded()) + broken
         return finish(gained: gained, situation: situation,
                       elapsed: rules.inBoundsPlaySeconds, matchups: matchups,
                       brokenTackleAttempts: extraPursuitAttempts, carrier: carrier, passer: nil,

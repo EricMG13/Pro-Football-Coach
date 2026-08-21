@@ -44,17 +44,6 @@
     ]
   },
   {
-    "assetName": "TeamLogo_5F09D018DCA941F78ACD040A07230254",
-    "decision": "replace",
-    "notes": "The nickname-matched a beacon brazier, drawn square-on replaces the shipped off-brief mark and remains legible at 20 points.",
-    "changes": [
-      "silhouette",
-      "small-size clarity",
-      "nickname coherence",
-      "palette discipline"
-    ]
-  },
-  {
     "assetName": "TeamLogo_612FD3E74D0142E9A010EF4B485965F7",
     "decision": "replace",
     "notes": "The nickname-matched a shield boss, drawn square-on replaces the shipped off-brief mark and remains legible at 20 points.",
@@ -66,9 +55,9 @@
     ]
   },
   {
-    "assetName": "TeamLogo_9BBB69C94FBA4C26BFDF8BAEF98A8682",
+    "assetName": "TeamLogo_5F09D018DCA941F78ACD040A07230254",
     "decision": "replace",
-    "notes": "The nickname-matched a marten's head inside a roundel, filling the frame replaces the shipped off-brief mark and remains legible at 20 points.",
+    "notes": "The nickname-matched a beacon brazier, drawn square-on replaces the shipped off-brief mark and remains legible at 20 points.",
     "changes": [
       "silhouette",
       "small-size clarity",
@@ -80,6 +69,17 @@
     "assetName": "TeamLogo_A49BA96C86324844A9585A299EEB60A6",
     "decision": "replace",
     "notes": "The nickname-matched a curlew's head inside a pennant, filling the frame replaces the shipped off-brief mark and remains legible at 20 points.",
+    "changes": [
+      "silhouette",
+      "small-size clarity",
+      "nickname coherence",
+      "palette discipline"
+    ]
+  },
+  {
+    "assetName": "TeamLogo_9BBB69C94FBA4C26BFDF8BAEF98A8682",
+    "decision": "replace",
+    "notes": "The nickname-matched a marten's head inside a roundel, filling the frame replaces the shipped off-brief mark and remains legible at 20 points.",
     "changes": [
       "silhouette",
       "small-size clarity",

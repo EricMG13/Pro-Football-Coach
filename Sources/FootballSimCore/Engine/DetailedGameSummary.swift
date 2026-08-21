@@ -17,6 +17,9 @@ public enum DetailedGameSummaryBuilder {
         var rushing = 0
         var turnovers = 0
         var plays = 0
+        var passAttempts = 0
+        var passCompletions = 0
+        var sacks = 0
     }
 
     public static func make(
@@ -38,13 +41,24 @@ public enum DetailedGameSummaryBuilder {
         for play in record.plays {
             let side = play.situation.possession
             let yards = max(0, play.outcome.yards)
-            teams[side, default: TeamLine()].plays += 1
             if play.outcome.result.isTurnover {
                 teams[side, default: TeamLine()].turnovers += 1
             }
 
             switch play.offensiveCall.playType {
             case .pass:
+                teams[side, default: TeamLine()].plays += 1
+                switch play.outcome.result {
+                case .incompletion, .interception:
+                    teams[side, default: TeamLine()].passAttempts += 1
+                case .gain, .touchdown, .fumbleLost:
+                    teams[side, default: TeamLine()].passAttempts += 1
+                    teams[side, default: TeamLine()].passCompletions += 1
+                case .sack, .safety:
+                    teams[side, default: TeamLine()].sacks += 1
+                case .kneel, .fieldGoalGood, .fieldGoalMissed, .punt:
+                    break
+                }
                 teams[side, default: TeamLine()].yards += yards
                 teams[side, default: TeamLine()].passing += yards
                 update(play.outcome.passerID) { $0.passing += yards }
@@ -53,6 +67,7 @@ public enum DetailedGameSummaryBuilder {
                     update(play.outcome.targetID ?? play.outcome.passerID) { $0.touchdowns += 1 }
                 }
             case .run, .kneel:
+                teams[side, default: TeamLine()].plays += 1
                 teams[side, default: TeamLine()].yards += yards
                 teams[side, default: TeamLine()].rushing += yards
                 update(play.outcome.ballCarrierID) { $0.rushing += yards }
@@ -73,7 +88,10 @@ public enum DetailedGameSummaryBuilder {
                 passingYards: line.passing,
                 rushingYards: line.rushing,
                 turnovers: line.turnovers,
-                offensivePlays: line.plays
+                offensivePlays: line.plays,
+                passAttempts: line.passAttempts,
+                passCompletions: line.passCompletions,
+                sacks: line.sacks
             )
         }
 

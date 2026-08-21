@@ -4,6 +4,9 @@ import FootballSimCore
 private enum TwoTierConsistency {
     static let pointsPerGameMargin = 0.75
     static let yardsPerPlayMargin = 0.15
+    static let completionRateMargin = 1.5
+    static let sackRateMargin = 0.6
+    static let turnoverRateMargin = 0.4
     /// One hundred worlds provide 12,800 paired team observations per tier. Spreading the same
     /// total games across more worlds prevents a short contiguous seed block from deciding TOST.
     static let worldSeeds: [UInt64] = Array(390_210...390_309)
@@ -80,6 +83,48 @@ private func yardsPerPlay(_ summaries: [GameSummary]) -> [Double]? {
     return values
 }
 
+private func completionRates(_ summaries: [GameSummary]) -> [Double]? {
+    var values: [Double] = []
+    values.reserveCapacity(summaries.count * 2)
+    for summary in summaries {
+        for statistics in [summary.homeStatistics, summary.awayStatistics] {
+            let attempts = statistics.passAttempts
+            let completions = statistics.passCompletions
+            guard attempts > 0,
+                  (0...attempts).contains(completions) else { return nil }
+            values.append(Double(completions) / Double(attempts) * 100)
+        }
+    }
+    return values
+}
+
+private func sackRates(_ summaries: [GameSummary]) -> [Double]? {
+    var values: [Double] = []
+    values.reserveCapacity(summaries.count * 2)
+    for summary in summaries {
+        for statistics in [summary.homeStatistics, summary.awayStatistics] {
+            let sacks = statistics.sacks
+            guard sacks >= 0 else { return nil }
+            let dropbacks = statistics.passAttempts + sacks
+            guard dropbacks > 0 else { return nil }
+            values.append(Double(sacks) / Double(dropbacks) * 100)
+        }
+    }
+    return values
+}
+
+private func turnoverRates(_ summaries: [GameSummary]) -> [Double]? {
+    var values: [Double] = []
+    values.reserveCapacity(summaries.count * 2)
+    for summary in summaries {
+        for statistics in [summary.homeStatistics, summary.awayStatistics] {
+            guard statistics.offensivePlays > 0 else { return nil }
+            values.append(Double(statistics.turnovers) / Double(statistics.offensivePlays) * 100)
+        }
+    }
+    return values
+}
+
 private func pairedMeanDifference(_ first: [Double], _ second: [Double]) -> Estimate? {
     guard first.count == second.count,
           first.count > 1,
@@ -111,6 +156,19 @@ private func sampleShape(_ values: [Double]) -> String {
 
 func runTwoTierConsistencyTests() {
     suite("Two-tier consistency") {
+        test("legacy team statistics default new rate counters") {
+            let data = Data(
+                #"{"points":21,"offensiveYards":300,"passingYards":200,"rushingYards":100,"turnovers":1,"offensivePlays":64}"#.utf8
+            )
+            guard let statistics = try? JSONDecoder().decode(TeamGameStatistics.self, from: data) else {
+                expect(false, "legacy team statistics no longer decode")
+                return
+            }
+            expectEqual(statistics.passAttempts, 0)
+            expectEqual(statistics.passCompletions, 0)
+            expectEqual(statistics.sacks, 0)
+        }
+
         test("paired mean difference preserves pairing and rejects invalid samples") {
             let estimate = pairedMeanDifference([1, 3], [1, 1])
             expectClose(estimate?.value ?? .nan, 1, 1e-12)
@@ -171,6 +229,81 @@ func runTwoTierConsistencyTests() {
                     TwoTierConsistency.yardsPerPlayMargin,
                     estimator: .mean,
                     confidence: "03-MATCH-ENGINE section 4.1"
+                )
+                let result = band.test(difference)
+                let message = result.report
+                    + " | abstracted " + sampleShape(abstracted)
+                    + " | detailed " + sampleShape(detailed)
+                expect(result.passed, message)
+            }
+
+            test("completion rate agrees under TOST — \(tier.rawValue)") {
+                guard let abstracted = completionRates(sample.abstracted),
+                      let detailed = completionRates(sample.detailed) else {
+                    expect(false, "pass attempts or completions are missing or invalid")
+                    return
+                }
+                guard let difference = pairedMeanDifference(abstracted, detailed) else {
+                    expect(false, "completion-rate samples are empty, invalid, or misaligned")
+                    return
+                }
+                let band = Band(
+                    "completion rate agreement",
+                    tier: tier,
+                    -TwoTierConsistency.completionRateMargin,
+                    TwoTierConsistency.completionRateMargin,
+                    estimator: .mean,
+                    confidence: "03-MATCH-ENGINE section 5.1"
+                )
+                let result = band.test(difference)
+                let message = result.report
+                    + " | abstracted " + sampleShape(abstracted)
+                    + " | detailed " + sampleShape(detailed)
+                expect(result.passed, message)
+            }
+
+            test("sack rate agrees under TOST — \(tier.rawValue)") {
+                guard let abstracted = sackRates(sample.abstracted),
+                      let detailed = sackRates(sample.detailed) else {
+                    expect(false, "sacks are missing or pass dropbacks are invalid")
+                    return
+                }
+                guard let difference = pairedMeanDifference(abstracted, detailed) else {
+                    expect(false, "sack-rate samples are empty, invalid, or misaligned")
+                    return
+                }
+                let band = Band(
+                    "sack rate agreement",
+                    tier: tier,
+                    -TwoTierConsistency.sackRateMargin,
+                    TwoTierConsistency.sackRateMargin,
+                    estimator: .mean,
+                    confidence: "03-MATCH-ENGINE section 5.1"
+                )
+                let result = band.test(difference)
+                let message = result.report
+                    + " | abstracted " + sampleShape(abstracted)
+                    + " | detailed " + sampleShape(detailed)
+                expect(result.passed, message)
+            }
+
+            test("turnover rate agrees under TOST — \(tier.rawValue)") {
+                guard let abstracted = turnoverRates(sample.abstracted),
+                      let detailed = turnoverRates(sample.detailed) else {
+                    expect(false, "offensive plays are missing or invalid")
+                    return
+                }
+                guard let difference = pairedMeanDifference(abstracted, detailed) else {
+                    expect(false, "turnover-rate samples are empty, invalid, or misaligned")
+                    return
+                }
+                let band = Band(
+                    "turnover rate agreement",
+                    tier: tier,
+                    -TwoTierConsistency.turnoverRateMargin,
+                    TwoTierConsistency.turnoverRateMargin,
+                    estimator: .mean,
+                    confidence: "03-MATCH-ENGINE section 5.1"
                 )
                 let result = band.test(difference)
                 let message = result.report

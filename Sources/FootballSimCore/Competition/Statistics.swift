@@ -3,6 +3,7 @@ import Foundation
 public struct TeamGameStatistics: Codable, Sendable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case points, offensiveYards, passingYards, rushingYards, turnovers, offensivePlays
+        case passAttempts, passCompletions, sacks
     }
 
     public let points: Int
@@ -11,6 +12,9 @@ public struct TeamGameStatistics: Codable, Sendable, Equatable {
     public let rushingYards: Int
     public let turnovers: Int
     public let offensivePlays: Int
+    public let passAttempts: Int
+    public let passCompletions: Int
+    public let sacks: Int
 
     public init(
         points: Int,
@@ -18,7 +22,10 @@ public struct TeamGameStatistics: Codable, Sendable, Equatable {
         passingYards: Int,
         rushingYards: Int,
         turnovers: Int,
-        offensivePlays: Int = 0
+        offensivePlays: Int = 0,
+        passAttempts: Int = 0,
+        passCompletions: Int = 0,
+        sacks: Int = 0
     ) {
         self.points = max(0, points)
         self.offensiveYards = max(0, offensiveYards)
@@ -26,6 +33,9 @@ public struct TeamGameStatistics: Codable, Sendable, Equatable {
         self.rushingYards = max(0, rushingYards)
         self.turnovers = max(0, turnovers)
         self.offensivePlays = max(0, offensivePlays)
+        self.passAttempts = max(0, passAttempts)
+        self.passCompletions = min(self.passAttempts, max(0, passCompletions))
+        self.sacks = max(0, sacks)
     }
 
     public init(from decoder: any Decoder) throws {
@@ -36,7 +46,10 @@ public struct TeamGameStatistics: Codable, Sendable, Equatable {
             passingYards: try container.decode(Int.self, forKey: .passingYards),
             rushingYards: try container.decode(Int.self, forKey: .rushingYards),
             turnovers: try container.decode(Int.self, forKey: .turnovers),
-            offensivePlays: try container.decodeIfPresent(Int.self, forKey: .offensivePlays) ?? 0
+            offensivePlays: try container.decodeIfPresent(Int.self, forKey: .offensivePlays) ?? 0,
+            passAttempts: try container.decodeIfPresent(Int.self, forKey: .passAttempts) ?? 0,
+            passCompletions: try container.decodeIfPresent(Int.self, forKey: .passCompletions) ?? 0,
+            sacks: try container.decodeIfPresent(Int.self, forKey: .sacks) ?? 0
         )
     }
 }

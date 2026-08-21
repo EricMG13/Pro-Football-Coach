@@ -6,18 +6,20 @@ their material findings still describe the current tree.
 
 ## Boundary and verdict
 
-**Verdict: BLOCK.** Several 2026-08-20 findings are fixed, but the candidate still has confirmed
-football-rule defects, incomplete legal and calibration gates, unresolved retention conflicts,
-missing submission resources, and a large integration gap.
+**Verdict: BLOCK.** Several 2026-08-20 findings are fixed, but the candidate still has a red
+default-suite member, confirmed football-rule defects, incomplete legal and calibration gates,
+unresolved retention conflicts, missing submission resources, and a large integration gap.
 
 Evidence was frozen from the live tracked tree while HEAD was `f72f66a` in
 `/private/tmp/pfc-current-audit.JV8b3P`. The live workspace was being edited during the review; one
 direct build was discarded after Swift reported that an input file changed during compilation.
 All test results below came from the frozen snapshot. Some fixes in that snapshot are therefore
-uncommitted and are labelled as such.
+uncommitted and are labelled as such. While the review continued, those captured naming and proof
+changes were committed and HEAD advanced to `9ee56da`; newer uncommitted calibration and game-stat
+tuning is outside the tested snapshot.
 
 Remote `main` was independently confirmed at `4cf52164`. The reviewed branch is **241 commits
-behind and 57 ahead** of it. It also contains local tracked and untracked work, so this is not yet a
+behind and 60 ahead** of it. It also contains local tracked and untracked work, so this is not yet a
 reproducible release candidate.
 
 Status vocabulary:
@@ -33,6 +35,7 @@ Status vocabulary:
 | Prior IDs | Current status | Current evidence |
 |---|---|---|
 | X-1 / F1 / P0-10 — stale determinism pins | **Resolved** | `--architecture-only` passed in two separate snapshot processes: 26 tests, 228 checks each. |
+| Default career stalls at the postseason portal | **Open, changed failure** | The dedicated `--career-portal-decisions` regression now reaches and resolves the spring portal choices, but its final `advanceWeek` throws `missingWeeklyPreparation([gamePlan, practicePlan])`. The historical portal-delegation mechanism is no longer the observed failure, but default progression is not green. |
 | C-02 / F2 — 157–164 MB of 1024 px logos | **Resolved** | 166 packaged PNGs are all 256×256; the asset catalogue is 6.8 MB. The manifest suite's size budget passed. |
 | X-11 / F7 — Akron and Butler evade the legal list | **Resolved** | Both were substituted out without changing the 570-entry pool size; the exhaustive place check and `--legal-only` pass. |
 | C-07 — 66% of places start with A | **Fixed locally** | The frozen local pool has 570 entries across 25 initials: A=26 (4.6%), A/B=67 (11.8%). `NameGrammar.swift` is modified but uncommitted. |
@@ -45,9 +48,15 @@ Status vocabulary:
 
 ### 1. Integration and release boundary
 
-The branch is 241 commits behind current remote `main`, 57 ahead, and has a moving worktree. The
+The branch is 241 commits behind current remote `main`, 60 ahead, and has a moving worktree. The
 2026-08-20 recommendation to make gates real before integrating is not safe for this state: first
 freeze and integrate the candidate, then repair gates on the tree that will actually ship.
+
+The current `runCareerPortalDecisionTests` function is part of the default test list and is red in
+isolation: one test, six checks, one failed check. Its portal decisions resolve, but the final week
+advance encounters an unprepared scheduled game at the spring boundary. That may be a product-flow
+defect or a stale fixture expectation; either way, the release claim remains blocked until the
+default user path and its regression agree and pass.
 
 ### 2. The detailed match engine still violates core football rules
 
@@ -161,6 +170,7 @@ is known. Record the correct product answer rather than treating absence alone a
 |---|---|
 | `swift run SimTests --architecture-only`, process 1 | 26 tests, 228 checks, passed |
 | `swift run SimTests --architecture-only`, process 2 | 26 tests, 228 checks, passed |
+| `swift run SimTests --career-portal-decisions` | 1 test, 6 checks, failed: final advance requires game and practice plans |
 | `swift run SimTests --legal-only` | 24 tests, 145 checks, passed; coverage defects above remain |
 | `swift run SimTests --calibration` | 20 tests, 164 checks, passed; no real-band pass assertion |
 | `swift run SimTests --team-logo-manifest` | 9 tests, 17,882 checks, passed |
@@ -173,8 +183,9 @@ is known. Record the correct product answer rather than treating absence alone a
 ## Corrected execution order
 
 1. Freeze the worktree and integrate current remote `main`; produce one immutable candidate SHA.
-2. Make the gates real on that candidate: legal partition/coach/diacritic coverage, calibration
-   holdout assertions, performance thresholds, and CI routing including `--m3-soak` and app build.
+2. Reconcile the default career progression flow with its red portal-decision regression, then make
+   the remaining gates real: legal partition/coach/diacritic coverage, calibration holdout
+   assertions, performance thresholds, and CI routing including `--m3-soak` and app build.
 3. Fix the football cluster together: downs/clock precedence, halftime possession, overtime
    possession sequencing, walk-off rules, and drive-cap behavior.
 4. Fix the shared retention model, then rerun the full 20-season save and history read-model gates.

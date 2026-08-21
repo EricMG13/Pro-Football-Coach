@@ -66,17 +66,6 @@
     ]
   },
   {
-    "assetName": "TeamLogo_C07AC0D116CE4510B26283DB4CAD3E38",
-    "decision": "replace",
-    "notes": "The nickname-matched a marten's head inside a roundel, filling the frame replaces the shipped off-brief mark and remains legible at 20 points.",
-    "changes": [
-      "silhouette",
-      "small-size clarity",
-      "nickname coherence",
-      "palette discipline"
-    ]
-  },
-  {
     "assetName": "TeamLogo_BF72B12052D042A59152136626721018",
     "decision": "replace",
     "notes": "The nickname-matched a curlew's head inside a shield, filling the frame replaces the shipped off-brief mark and remains legible at 20 points.",
@@ -88,9 +77,9 @@
     ]
   },
   {
-    "assetName": "TeamLogo_3E7B89997AE846D691FA65C4712CBD1C",
+    "assetName": "TeamLogo_C07AC0D116CE4510B26283DB4CAD3E38",
     "decision": "replace",
-    "notes": "The nickname-matched a smelter behind a face shield, drawn as a head in profile replaces the shipped off-brief mark and remains legible at 20 points.",
+    "notes": "The nickname-matched a marten's head inside a roundel, filling the frame replaces the shipped off-brief mark and remains legible at 20 points.",
     "changes": [
       "silhouette",
       "small-size clarity",
@@ -102,6 +91,17 @@
     "assetName": "TeamLogo_4135CA8D38DC4CDEAC7CF4951BC6E52E",
     "decision": "replace",
     "notes": "The nickname-matched a wayfarer under a travelling hat, drawn as a head in profile replaces the shipped off-brief mark and remains legible at 20 points.",
+    "changes": [
+      "silhouette",
+      "small-size clarity",
+      "nickname coherence",
+      "palette discipline"
+    ]
+  },
+  {
+    "assetName": "TeamLogo_3E7B89997AE846D691FA65C4712CBD1C",
+    "decision": "replace",
+    "notes": "The nickname-matched a smelter behind a face shield, drawn as a head in profile replaces the shipped off-brief mark and remains legible at 20 points.",
     "changes": [
       "silhouette",
       "small-size clarity",

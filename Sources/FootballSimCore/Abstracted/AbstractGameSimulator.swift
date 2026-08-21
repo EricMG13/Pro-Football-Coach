@@ -91,6 +91,12 @@ public enum AbstractGameSimulator {
         seed: UInt64
     ) -> GameSummary {
         var rng = SeededRandom(seed: seed)
+        var homeRateRNG = SeededRandom(
+            seed: SeededRandom.derive(from: seed, scope: .game, ordinal: 1)
+        )
+        var awayRateRNG = SeededRandom(
+            seed: SeededRandom.derive(from: seed, scope: .game, ordinal: 2)
+        )
         let baseline = CompetitionRules.baselinePoints(for: tier)
         let deviation = CompetitionRules.scoreDeviation(for: tier)
         var homeScore = score(
@@ -130,7 +136,8 @@ public enum AbstractGameSimulator {
             opposingDefense: away.defense,
             scheme: home.scheme.offense,
             tacticalPlan: homePlan,
-            using: &rng
+            using: &rng,
+            rateRNG: &homeRateRNG
         )
         let awayStats = teamStatistics(
             tier: tier,
@@ -139,7 +146,8 @@ public enum AbstractGameSimulator {
             opposingDefense: home.defense,
             scheme: away.scheme.offense,
             tacticalPlan: awayPlan,
-            using: &rng
+            using: &rng,
+            rateRNG: &awayRateRNG
         )
         return GameSummary(
             homeScore: homeScore,
@@ -243,9 +251,10 @@ public enum AbstractGameSimulator {
         opposingDefense: Int,
         scheme: OffensiveScheme,
         tacticalPlan: TacticalPlan,
-        using rng: inout SeededRandom
+        using rng: inout SeededRandom,
+        rateRNG: inout SeededRandom
     ) -> TeamGameStatistics {
-        let expectedYards = CompetitionRules.baselineOffensiveYards
+        let expectedYards = CompetitionRules.baselineOffensiveYards(for: tier)
             + Double(offense - opposingDefense) * CompetitionRules.strengthYardScale
         let rawYards = Int(rng.gaussian(
             mean: expectedYards,
@@ -264,7 +273,9 @@ public enum AbstractGameSimulator {
             )
         )
         let passingYards = yards * passingShare / 100
-        let turnovers = rng.int(in: CompetitionRules.turnoverRange)
+        // Preserve the established stream position for yards and play counts while rate metrics
+        // use their own per-team stream.
+        _ = rng.int(in: CompetitionRules.turnoverRange)
         let plays = min(
             CompetitionRules.playCountRange.upperBound,
             max(CompetitionRules.playCountRange.lowerBound, Int(rng.gaussian(
@@ -272,13 +283,47 @@ public enum AbstractGameSimulator {
                 sd: CompetitionRules.playCountDeviation
             ).rounded()))
         )
+        let passDropbacks = max(1, plays * passingShare / 100)
+        let sackProbability = min(
+            0.20,
+            max(
+                0.01,
+                CompetitionRules.baselineSackProbability
+                    + Double(opposingDefense - offense) * CompetitionRules.strengthSackProbabilityScale
+            )
+        )
+        let sacks = (0..<passDropbacks).reduce(into: 0) { total, _ in
+            if rateRNG.chance(sackProbability) { total += 1 }
+        }
+        let passAttempts = max(1, passDropbacks - sacks)
+        let completionProbability = min(
+            0.85,
+            max(
+                0.40,
+                CompetitionRules.baselineCompletionProbability
+                    + Double(offense - opposingDefense)
+                        * CompetitionRules.strengthCompletionProbabilityScale
+            )
+        )
+        let passCompletions = (0..<passAttempts).reduce(into: 0) { total, _ in
+            if rateRNG.chance(completionProbability) { total += 1 }
+        }
+        let turnovers = min(
+            CompetitionRules.turnoverRange.upperBound,
+            (0..<plays).reduce(into: 0) { total, _ in
+                if rateRNG.chance(CompetitionRules.baselineTurnoverProbability) { total += 1 }
+            }
+        )
         return TeamGameStatistics(
             points: points,
             offensiveYards: yards,
             passingYards: passingYards,
             rushingYards: yards - passingYards,
             turnovers: turnovers,
-            offensivePlays: plays
+            offensivePlays: plays,
+            passAttempts: passAttempts,
+            passCompletions: passCompletions,
+            sacks: sacks
         )
     }
 
