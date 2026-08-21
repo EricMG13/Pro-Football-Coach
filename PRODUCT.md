@@ -94,6 +94,7 @@ grows a row that no test backs.
 | A save stays bounded across 20 seasons | `M1SoakTests` + `M2SoakTests` |
 | Same seed, same league, across app launches | `DeterminismTests` + source scan |
 | All identities fictional and original | `LegalTests` |
+| The simulation and the off-screen model agree | `TwoTierConsistencyTests` |
 
 ---
 
@@ -106,7 +107,6 @@ instruments exist and run in CI:
 |---|---|
 | A season is completable in 6–8 hours | AgencyBudgetTests is not implemented; owner measurement remains open |
 | Week advance under 2.0 s at shipping league size | The host timing probe is evidence only; the device gate remains open |
-| The simulation and the off-screen model agree | TwoTierConsistencyTests is not implemented; calibration coverage remains open |
 | A save survives 20 seasons under 8 MB | **Not met.** Measured 14.76 MB at season 20 on the soaks' own seed, against 3.67 MB at season 0. Departed-identity retention is now bounded — it was unbounded, and the save passed 8 MB at season 2 and reached about 26 MB at season 20 — and both soaks now assert a ceiling and a drift allowance rather than printing the sizes. Reaching 8 MB needs the portal and scouting duplication looked at, which is engine work and an owner call |
 
 ---

@@ -52,6 +52,10 @@ public struct TacticalPlan: Codable, Sendable, Equatable {
     public func passingShareAdjustment() -> Int {
         runPassBias.rawValue * 8
     }
+
+    public func playCountAdjustment() -> Double {
+        Double(tempo.rawValue) * 5
+    }
 }
 
 public struct OpponentScoutingSnapshot: Codable, Sendable, Equatable {

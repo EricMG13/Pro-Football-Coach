@@ -83,7 +83,9 @@ private struct NewsItemFingerprintDTO: Codable, Equatable {
 /// matched in the GitHub release runner and an independent local release process.
 private let pinnedRootFingerprint: UInt64 = 10_960_318_349_979_879_734
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 12_644_154_700_126_681_763
+/// Moved when abstracted summaries gained offensive-play counts and tier-specific calibration.
+/// Reproduced in two independent release processes before re-pinning.
+private let pinnedAdvancedRootFingerprint: UInt64 = 4_448_905_210_056_921_675
 
 /// The professional contract-negotiation ledger (`ProMarketState.contractNegotiations`) is part of
 /// the schema-13 root, but neither pin above ever exercises it: bootstrap starts with it empty, and
