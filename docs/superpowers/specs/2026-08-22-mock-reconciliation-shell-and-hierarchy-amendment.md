@@ -1,7 +1,7 @@
 # Mock Reconciliation: Shell and Hierarchy Amendment
 
 **Date:** 2026-08-22
-**Status:** Revised after design review; pending document approval
+**Status:** Approved
 **Applies to:** All 62 registered screen identities across the seven surface families
 
 ## Purpose
@@ -260,7 +260,7 @@ Implementation is complete only when:
 - all 62 registry identities remain covered by the existing accessibility reflow and reduce-motion matrices;
 - contrast is measured for representative team colors, teamless states, and the safe fallback;
 - every canonical destination receives a visual proof at 844 × 390 in default type and AX5;
-- each family receives representative proofs at 852 × 393 and 956 × 440, plus light appearance at the minimum width;
+- each family receives representative proofs at 852 × 393 and 956 × 440, plus Increase Contrast at the minimum width; Floodlit remains dark-only under `04` section 6.1a;
 - the existing design-contract, accessibility, app, and focused UI-test lanes pass, apart from separately documented pre-existing failures;
 - the omission ledger records unsupported or deliberately deferred reference features per canonical destination;
 - manual VoiceOver, Voice Control, Switch Control, sound/haptics, and physical-device checks remain clearly marked until actually performed.
