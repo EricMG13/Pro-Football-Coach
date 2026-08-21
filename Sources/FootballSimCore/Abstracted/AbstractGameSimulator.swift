@@ -97,6 +97,12 @@ public enum AbstractGameSimulator {
         var awayRateRNG = SeededRandom(
             seed: SeededRandom.derive(from: seed, scope: .game, ordinal: 2)
         )
+        var quarterRateRNG = SeededRandom(
+            seed: SeededRandom.derive(from: seed, scope: .game, ordinal: 3)
+        )
+        var driveOutcomeRNG = SeededRandom(
+            seed: SeededRandom.derive(from: seed, scope: .game, ordinal: 4)
+        )
         let baseline = CompetitionRules.baselinePoints(for: tier)
         let deviation = CompetitionRules.scoreDeviation(for: tier)
         let homeFieldPoints = CompetitionRules.homeFieldPoints(for: tier)
@@ -153,16 +159,48 @@ public enum AbstractGameSimulator {
             using: &rng,
             rateRNG: &awayRateRNG
         )
+        let fourthQuarterPoints = (0..<(homeScore + awayScore)).reduce(into: 0) { total, _ in
+            if quarterRateRNG.chance(
+                CompetitionRules.baselineFourthQuarterScoringShare(for: tier)
+            ) {
+                total += 1
+            }
+        }
+        let driveOutcomes = driveOutcomes(tier: tier, using: &driveOutcomeRNG)
         return GameSummary(
             homeScore: homeScore,
             awayScore: awayScore,
             homeStatistics: homeStats,
             awayStatistics: awayStats,
+            fourthQuarterPoints: fourthQuarterPoints,
+            driveOutcomes: driveOutcomes,
             homeParticipantIDs: home.roster.map(\.id),
             awayParticipantIDs: away.roster.map(\.id),
             playerStatistics: playerLines(roster: home.roster, statistics: homeStats)
                 + playerLines(roster: away.roster, statistics: awayStats)
         )
+    }
+
+    private static func driveOutcomes(
+        tier: Tier,
+        using rng: inout SeededRandom
+    ) -> DriveOutcomeStatistics {
+        var outcomes = DriveOutcomeStatistics()
+        for _ in 0..<CompetitionRules.baselineDriveCount(for: tier) {
+            let draw = rng.double01()
+            var cumulativeProbability = 0.0
+            let bucket = DriveOutcomeBucket.allCases.first { bucket in
+                cumulativeProbability += CompetitionRules.baselineDriveOutcomeProbability(
+                    for: tier,
+                    bucket: bucket
+                )
+                return draw < cumulativeProbability
+            } ?? .periodExpiry
+            outcomes.record(bucket)
+        }
+        // ponytail: outcome shape is independent of score; derive both from shared drives when
+        // the abstract simulation becomes possession-resolved.
+        return outcomes
     }
 
     private static func profile(

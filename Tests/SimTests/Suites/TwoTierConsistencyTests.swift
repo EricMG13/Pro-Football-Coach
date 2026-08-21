@@ -10,6 +10,8 @@ private enum TwoTierConsistency {
     static let explosivePlayRateMargin = 1.0
     static let fieldGoalAccuracyMargin = 3.0
     static let homeAdvantageMargin = 2.0
+    static let fourthQuarterScoringShareMargin = 2.0
+    static let driveOutcomeMargin = 2.0
     static let homeAdvantageSeasons = 1_000
     static let evenRatingGamesPerSeason = 6
     /// One hundred worlds provide 12,800 paired team observations per tier. Spreading the same
@@ -144,6 +146,32 @@ private func explosivePlayRates(_ summaries: [GameSummary]) -> [Double]? {
     return values
 }
 
+private func fourthQuarterScoringShares(_ summaries: [GameSummary]) -> [Double]? {
+    guard summaries.count.isMultiple(of: TwoTierConsistency.sampledGames) else { return nil }
+    return stride(from: 0, to: summaries.count, by: TwoTierConsistency.sampledGames).map { start in
+        let games = summaries[start..<(start + TwoTierConsistency.sampledGames)]
+        let totalPoints = games.reduce(0) { $0 + $1.homeScore + $1.awayScore }
+        let fourthQuarterPoints = games.reduce(0) { $0 + $1.fourthQuarterPoints }
+        guard totalPoints > 0,
+              (0...totalPoints).contains(fourthQuarterPoints) else { return .nan }
+        return Double(fourthQuarterPoints) / Double(totalPoints) * 100
+    }
+}
+
+private func driveOutcomeRates(
+    _ summaries: [GameSummary],
+    bucket: DriveOutcomeBucket
+) -> [Double]? {
+    guard summaries.count.isMultiple(of: TwoTierConsistency.sampledGames) else { return nil }
+    return stride(from: 0, to: summaries.count, by: TwoTierConsistency.sampledGames).map { start in
+        let games = summaries[start..<(start + TwoTierConsistency.sampledGames)]
+        let total = games.reduce(0) { $0 + $1.driveOutcomes.total }
+        let count = games.reduce(0) { $0 + $1.driveOutcomes.count(in: bucket) }
+        guard total > 0, (0...total).contains(count) else { return .nan }
+        return Double(count) / Double(total) * 100
+    }
+}
+
 private struct RateCount {
     var attempts = 0
     var made = 0
@@ -158,6 +186,16 @@ private func fieldGoalCount(
             count.attempts += statistics.fieldGoals.attempts(in: bucket)
             count.made += statistics.fieldGoals.made(in: bucket)
         }
+    }
+}
+
+private func driveOutcomeCount(
+    _ summaries: [GameSummary],
+    bucket: DriveOutcomeBucket
+) -> RateCount {
+    summaries.reduce(into: RateCount()) { count, summary in
+        count.attempts += summary.driveOutcomes.total
+        count.made += summary.driveOutcomes.count(in: bucket)
     }
 }
 
@@ -266,6 +304,107 @@ private func sampleShape(_ values: [Double]) -> String {
 
 func runTwoTierConsistencyTests() {
     suite("Two-tier consistency") {
+        test("game summaries default fourth-quarter scoring") {
+            let statistics = TeamGameStatistics(
+                points: 7,
+                offensiveYards: 75,
+                passingYards: 50,
+                rushingYards: 25,
+                turnovers: 0
+            )
+            let summary = GameSummary(
+                homeScore: 7,
+                awayScore: 0,
+                homeStatistics: statistics,
+                awayStatistics: TeamGameStatistics(
+                    points: 0,
+                    offensiveYards: 0,
+                    passingYards: 0,
+                    rushingYards: 0,
+                    turnovers: 0
+                ),
+                playerStatistics: []
+            )
+            expectEqual(summary.fourthQuarterPoints, 0)
+        }
+
+        test("game summaries default drive outcomes") {
+            let statistics = TeamGameStatistics(
+                points: 0,
+                offensiveYards: 0,
+                passingYards: 0,
+                rushingYards: 0,
+                turnovers: 0
+            )
+            let summary = GameSummary(
+                homeScore: 0,
+                awayScore: 0,
+                homeStatistics: statistics,
+                awayStatistics: statistics,
+                playerStatistics: []
+            )
+            expectEqual(summary.driveOutcomes.total, 0)
+            for bucket in DriveOutcomeBucket.allCases {
+                expectEqual(summary.driveOutcomes.count(in: bucket), 0, bucket.label)
+            }
+        }
+
+        test("detailed summaries preserve fourth-quarter scoring") {
+            let home = CalibrationRoster.team(skill: 72, seed: 41_001)
+            let away = CalibrationRoster.team(skill: 72, seed: 541_001)
+            var scoredGame: (record: GameRecord, points: Int)?
+            for seed in UInt64(1)...50 {
+                let record = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                let points = record.drives.reduce(into: 0) { total, drive in
+                    if drive.plays.last?.situation.quarter == 4 { total += drive.pointsScored }
+                }
+                if points > 0 {
+                    scoredGame = (record, points)
+                    break
+                }
+            }
+            guard let scoredGame else {
+                expect(false, "diagnostic seeds produced no fourth-quarter scoring")
+                return
+            }
+            let summary = DetailedGameSummaryBuilder.make(
+                record: scoredGame.record,
+                homeParticipantIDs: home.offense.map(\.id) + home.defense.map(\.id),
+                awayParticipantIDs: away.offense.map(\.id) + away.defense.map(\.id)
+            )
+            expectEqual(summary.fourthQuarterPoints, scoredGame.points)
+        }
+
+        test("detailed summaries classify terminal drive outcomes") {
+            let endings: [DriveEnding] = [
+                .touchdown, .fieldGoal, .missedFieldGoal, .punt,
+                .turnover, .downs, .safety, .endOfHalf, .endOfQuarter,
+            ]
+            let record = GameRecord(
+                homeScore: 0,
+                awayScore: 0,
+                drives: endings.map {
+                    DriveRecord(
+                        offense: .home,
+                        plays: [],
+                        ending: $0,
+                        pointsScored: 0,
+                        startYardLine: 25
+                    )
+                },
+                tier: .pro
+            )
+            let summary = DetailedGameSummaryBuilder.make(
+                record: record,
+                homeParticipantIDs: [],
+                awayParticipantIDs: []
+            )
+            for bucket in DriveOutcomeBucket.allCases {
+                expectEqual(summary.driveOutcomes.count(in: bucket), 1, bucket.label)
+            }
+            expectEqual(summary.driveOutcomes.total, DriveOutcomeBucket.allCases.count)
+        }
+
         test("legacy team statistics default new rate counters") {
             let data = Data(
                 #"{"points":21,"offensiveYards":300,"passingYards":200,"rushingYards":100,"turnovers":1,"offensivePlays":64}"#.utf8
@@ -506,6 +645,59 @@ func runTwoTierConsistencyTests() {
                     + " | abstracted " + rateShape(abstracted)
                     + " | detailed " + rateShape(detailed)
                 expect(result.passed, message)
+            }
+
+            test("fourth-quarter scoring share agrees under TOST — \(tier.rawValue)") {
+                guard let abstracted = fourthQuarterScoringShares(sample.abstracted),
+                      let detailed = fourthQuarterScoringShares(sample.detailed),
+                      let difference = pairedMeanDifference(abstracted, detailed) else {
+                    expect(false, "fourth-quarter scoring samples are empty, invalid, or misaligned")
+                    return
+                }
+                let band = Band(
+                    "fourth-quarter scoring share agreement",
+                    tier: tier,
+                    -TwoTierConsistency.fourthQuarterScoringShareMargin,
+                    TwoTierConsistency.fourthQuarterScoringShareMargin,
+                    estimator: .mean,
+                    confidence: "03-MATCH-ENGINE section 5.1; owner-approved aggregate/margin"
+                )
+                let result = band.test(difference)
+                let message = result.report
+                    + " | abstracted " + sampleShape(abstracted)
+                    + " | detailed " + sampleShape(detailed)
+                expect(result.passed, message)
+            }
+
+            for bucket in DriveOutcomeBucket.allCases {
+                test("drive outcomes agree under TOST — \(tier.rawValue), \(bucket.label)") {
+                    let abstractedCount = driveOutcomeCount(sample.abstracted, bucket: bucket)
+                    let detailedCount = driveOutcomeCount(sample.detailed, bucket: bucket)
+                    guard let abstracted = driveOutcomeRates(sample.abstracted, bucket: bucket),
+                          let detailed = driveOutcomeRates(sample.detailed, bucket: bucket),
+                          let difference = pairedMeanDifference(abstracted, detailed) else {
+                        expect(
+                            false,
+                            "drive-outcome samples are empty, invalid, or misaligned"
+                                + " | abstracted " + rateShape(abstractedCount)
+                                + " | detailed " + rateShape(detailedCount)
+                        )
+                        return
+                    }
+                    let band = Band(
+                        "drive-outcome agreement (\(bucket.label))",
+                        tier: tier,
+                        -TwoTierConsistency.driveOutcomeMargin,
+                        TwoTierConsistency.driveOutcomeMargin,
+                        estimator: .mean,
+                        confidence: "03-MATCH-ENGINE section 5.1; owner-approved buckets/margin"
+                    )
+                    let result = band.test(difference)
+                    let message = result.report
+                        + " | abstracted " + rateShape(abstractedCount)
+                        + " | detailed " + rateShape(detailedCount)
+                    expect(result.passed, message)
+                }
             }
         }
     }

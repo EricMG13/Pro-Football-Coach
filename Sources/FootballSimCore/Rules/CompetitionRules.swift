@@ -72,6 +72,24 @@ public enum CompetitionRules {
             : proBaselineExplosivePlayProbability
     }
 
+    public static func baselineFourthQuarterScoringShare(for tier: Tier) -> Double {
+        tier == .college ? 0.274 : 0.279
+    }
+
+    public static func baselineDriveCount(for tier: Tier) -> Int {
+        tier == .college ? 23 : 21
+    }
+
+    public static func baselineDriveOutcomeProbability(
+        for tier: Tier,
+        bucket: DriveOutcomeBucket
+    ) -> Double {
+        let probabilities = tier == .college
+            ? [0.3034, 0.0965, 0.0200, 0.2714, 0.2276, 0.0088, 0.0010, 0.0713]
+            : [0.2975, 0.0963, 0.0197, 0.2662, 0.2288, 0.0092, 0.0010, 0.0813]
+        return probabilities[bucket.rawValue]
+    }
+
     public static func baselineFieldGoalAccuracy(
         for bucket: FieldGoalDistanceBucket
     ) -> Double {

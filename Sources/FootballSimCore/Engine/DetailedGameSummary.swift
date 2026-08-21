@@ -120,6 +120,24 @@ public enum DetailedGameSummaryBuilder {
         }
 
         let participants = Set(homeParticipantIDs + awayParticipantIDs)
+        var fourthQuarterPoints = 0
+        var driveOutcomes = DriveOutcomeStatistics()
+        for drive in record.drives {
+            if drive.plays.last?.situation.quarter == 4 {
+                fourthQuarterPoints += drive.pointsScored
+            }
+            switch drive.ending {
+            case .touchdown: driveOutcomes.record(.touchdown)
+            case .fieldGoal: driveOutcomes.record(.fieldGoalMade)
+            case .missedFieldGoal: driveOutcomes.record(.fieldGoalMissed)
+            case .punt: driveOutcomes.record(.punt)
+            case .turnover: driveOutcomes.record(.turnover)
+            case .downs: driveOutcomes.record(.downs)
+            case .safety: driveOutcomes.record(.safety)
+            case .endOfHalf: driveOutcomes.record(.periodExpiry)
+            case .endOfQuarter: break
+            }
+        }
         let playerStatistics: [PlayerGameStatistics] = lines.keys
             .sorted { $0.uuidString < $1.uuidString }
             .compactMap { id in
@@ -138,6 +156,8 @@ public enum DetailedGameSummaryBuilder {
             awayScore: record.awayScore,
             homeStatistics: teamStatistics(.home),
             awayStatistics: teamStatistics(.away),
+            fourthQuarterPoints: fourthQuarterPoints,
+            driveOutcomes: driveOutcomes,
             homeParticipantIDs: homeParticipantIDs,
             awayParticipantIDs: awayParticipantIDs,
             playerStatistics: playerStatistics,

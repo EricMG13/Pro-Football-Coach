@@ -1,5 +1,64 @@
 import Foundation
 
+public enum DriveOutcomeBucket: Int, Codable, Sendable, CaseIterable {
+    case touchdown
+    case fieldGoalMade
+    case fieldGoalMissed
+    case punt
+    case turnover
+    case downs
+    case safety
+    case periodExpiry
+
+    public var label: String {
+        switch self {
+        case .touchdown: return "touchdown"
+        case .fieldGoalMade: return "made field goal"
+        case .fieldGoalMissed: return "missed field goal"
+        case .punt: return "punt"
+        case .turnover: return "turnover"
+        case .downs: return "downs"
+        case .safety: return "safety"
+        case .periodExpiry: return "half/game expiry"
+        }
+    }
+}
+
+public struct DriveOutcomeStatistics: Codable, Sendable, Equatable {
+    private enum CodingKeys: String, CodingKey { case counts }
+
+    private var counts: [Int]
+
+    public init() {
+        counts = Array(repeating: 0, count: DriveOutcomeBucket.allCases.count)
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let decoded = try container.decodeIfPresent([Int].self, forKey: .counts) ?? []
+        var remaining = MatchupRules.maximumDrivesPerGame
+        counts = DriveOutcomeBucket.allCases.map { bucket in
+            let count = min(
+                remaining,
+                max(0, decoded.indices.contains(bucket.rawValue) ? decoded[bucket.rawValue] : 0)
+            )
+            remaining -= count
+            return count
+        }
+    }
+
+    mutating func record(_ bucket: DriveOutcomeBucket) {
+        guard total < MatchupRules.maximumDrivesPerGame else { return }
+        counts[bucket.rawValue] += 1
+    }
+
+    public func count(in bucket: DriveOutcomeBucket) -> Int {
+        counts[bucket.rawValue]
+    }
+
+    public var total: Int { counts.reduce(0, +) }
+}
+
 public enum FieldGoalDistanceBucket: Int, Codable, Sendable, CaseIterable {
     case under30
     case from30To39
