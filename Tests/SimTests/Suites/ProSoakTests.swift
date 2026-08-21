@@ -263,6 +263,7 @@ func runProDraftProbeTests() {
             let rollover = CalendarState(season: 0, week: SharedRules.inSeasonWeeks)
             state.calendar = rollover
             state.league.week = rollover.week
+            state.college.phase = CollegeRules.recruitingCyclePhase(inWeek: rollover.week)
             state = try ProMarketSystem.expireContracts(at: rollover, in: state).state
             state = try ProMarketSystem.openOffseason(in: state)
             state = try ProMarketSystem.beginDraft(in: state)
