@@ -21,7 +21,7 @@ consequence are present; and no fixture/debug label appears in the production fr
 | Decision and control | 4 | Inspect, select, commit, delegate, prepare and advance are distinct; cost, deadline, evidence and refusal state are visible. |
 | Accessibility and readability | 3 | AX5 branch, 44 pt controls and deterministic sort priorities exist; generated matrix is complete, but rendered and physical-device cells remain unverified. |
 | Truthfulness | 4 | Every production fact below has a named source; absent engine facts are omitted or labelled unavailable. |
-| Craft and resilience | 3 | Normal, empty, disabled and AX5 source states are composed; stored proof images predate the dark-only/week-granular production screen. |
+| Craft and resilience | 3 | Current production-read-model default and AX5 frames render cleanly at one landscape viewport, but the exact three-frame/applicable-state matrix is incomplete. |
 
 ## Displayed-fact map
 
@@ -56,6 +56,15 @@ button's injected intent. Every changing fact maps as follows.
 
 ## Findings
 
+### P0 proof-tooling defect fixed immediately
+
+The DEBUG proof career originally used the interactive new-career path including its autosave.
+Two proof launches rotated both the simulator's primary and single backup, overwriting the existing
+Match Day career. No surviving copy was present in the app container or local snapshots. The proof
+call now opts out of persistence while the interactive call retains the default persistent path. A
+source contract and a current-build runtime check cover the invariant: primary, backup and metadata
+hashes, sizes and modification times were identical before and after a completed proof launch.
+
 ### P1 fixed before lower-severity work
 
 1. **Invented staff authority and percentage.** The provider selected the highest-rated coordinator,
@@ -78,9 +87,9 @@ button's injected intent. Every changing fact maps as follows.
 
 - The accessibility manifest covers 62 families and 7,936 combinations but remains `not-run` for
   automated rendering and `manual-required` for spoken/motor/audio/haptic evidence.
-- `docs/proofs/coaching-hq-*.png` shows the retired light/sample Monday–Sunday screen, not the current
-  dark-only, week-granular production surface. It cannot support a score of 4 for accessibility or
-  craft.
+- Current Coaching HQ default and AX5 production-read-model frames now exist, but they cover only
+  two visual combinations for this family. IDB was unavailable, so semantic-tree automation is not
+  claimed; physical VoiceOver, Voice Control, Switch Control, sound and haptic checks remain manual.
 
 ## Verification
 
@@ -88,10 +97,24 @@ button's injected intent. Every changing fact maps as follows.
   families, registry match; automated evidence not run, manual evidence required.
 - `swift run SimTests --screen-read-models`: 69 tests, 9,704 checks, all passed.
 - `swift run SimTests --history-read-model`: 4 tests, 24 checks, all passed.
-- `swift run SimTests --core-contracts`: 225 tests, 3,147 checks, all passed.
+- `swift run SimTests --core-contracts`: 225 tests, 3,148 checks, all passed.
+- `xcodebuild -project App/ProFootballCoach.xcodeproj -scheme ProFootballCoach -configuration Debug
+  -destination id=7082DFE5-3BFB-4073-859B-83E95B35531B -derivedDataPath
+  /private/tmp/pfc-hq-proof-20260821 build`: succeeded against current source.
+- Production read-model captures: `docs/proofs/coaching-hq-production-dark-default-iphone17e-2026-08-21.png`
+  and `docs/proofs/coaching-hq-production-dark-ax5-iphone17e-2026-08-21.png`.
+- Simulator readback: appearance `dark`; AX5 content size
+  `accessibility-extra-extra-extra-large`. Semantic-tree inspection was unavailable because IDB is
+  not installed; no manual-only result is inferred from the screenshots.
+- Proof-save invariant on the fixed installed build: `career.pfcsave`, its backup and metadata kept
+  identical SHA-256 hashes, byte sizes and mtimes after `PROOF_NEW_CAREER=424242` finished. The
+  simulator was then restarted normally without proof environment variables.
 - GitNexus `detect_changes(scope: unstaged)`: expected HQ provider/view/test paths detected; HIGH
   because `coachingHQ` feeds Inbox and `weekPlan` crosses tactical/practice flows. The broader
   `main` comparison is CRITICAL due to unrelated pre-existing branch/worktree changes.
+- Post-fix GitNexus recheck: targeted `startNewCareer` impact is LOW (one direct owner, three
+  impacted symbols, no execution process); `detect_changes(scope: all)` reports LOW with no
+  affected process for the current five-file text diff.
 
 ## Confidence review
 
@@ -106,10 +129,15 @@ Least confident about, ranked:
    returns `Record unavailable` and no rank.
 4. Staff attribution and uncertainty: verified fine — production returns no staff recommendation,
    and every choice omits the unowned consequence.
-5. Current visual/accessibility evidence: open P2 — stored HQ proofs predate the current production
-   composition and the generated accessibility matrix has no rendered or physical evidence. This is
-   why accessibility and craft remain capped at 3.
+5. Current visual/accessibility evidence: partially resolved — current default and AX5 production
+   frames were captured and inspected. The exact three-frame/applicable-state matrix, semantic-tree
+   automation and physical evidence remain open P2, so accessibility and craft stay capped at 3.
+6. Proof-save isolation: confirmed P0 in the evidence harness — the proof route persisted a fresh
+   career and rotated the only backup. Patched at the shared new-career boundary with a DEBUG-call
+   opt-out; verified by unchanged hashes, sizes and mtimes across a completed proof launch. The
+   overwritten simulator Match Day career could not be recovered from the container or snapshots.
 
-Fixed: choice cost truth. Verified fine: bye progression, absent competition rows, staff omission,
-and exact intent receipts. By design: local unsaved-choice state is labelled unsaved. Still open:
-current rendered and physical accessibility proof.
+Fixed: choice cost truth and proof-save isolation. Verified fine: interactive persistence, proof
+non-persistence, bye progression, absent competition rows, staff omission, and exact intent
+receipts. By design: local unsaved-choice state is labelled unsaved. Still open: semantic-tree
+automation and physical-device accessibility proof.

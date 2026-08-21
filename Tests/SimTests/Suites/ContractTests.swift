@@ -1337,6 +1337,8 @@ func runContractTests() {
             expect(appEntryPoint.contains("--redesigned-job-board")
                        && appEntryPoint.contains("RootView()"),
                    "the app entrypoint must route the argument selector into the debug proof root")
+            expect(appRoot.contains("persistCareer: false"),
+                   "a DEBUG proof career must not replace the simulator's persisted career")
             expect(redesignProof.contains("Button(")
                        && redesignProof.contains(".alert(\"Accept this offer?\"")
                        && redesignProof.contains("@AccessibilityFocusState"),
