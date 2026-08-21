@@ -124,6 +124,7 @@ public enum AbstractGameSimulator {
         }
 
         let homeStats = teamStatistics(
+            tier: tier,
             points: homeScore,
             offense: home.offense,
             opposingDefense: away.defense,
@@ -132,6 +133,7 @@ public enum AbstractGameSimulator {
             using: &rng
         )
         let awayStats = teamStatistics(
+            tier: tier,
             points: awayScore,
             offense: away.offense,
             opposingDefense: home.defense,
@@ -235,6 +237,7 @@ public enum AbstractGameSimulator {
     }
 
     private static func teamStatistics(
+        tier: Tier,
         points: Int,
         offense: Int,
         opposingDefense: Int,
@@ -242,6 +245,13 @@ public enum AbstractGameSimulator {
         tacticalPlan: TacticalPlan,
         using rng: inout SeededRandom
     ) -> TeamGameStatistics {
+        let plays = min(
+            CompetitionRules.playCountRange.upperBound,
+            max(CompetitionRules.playCountRange.lowerBound, Int(rng.gaussian(
+                mean: CompetitionRules.baselinePlays(for: tier),
+                sd: CompetitionRules.playCountDeviation
+            ).rounded()))
+        )
         let expectedYards = CompetitionRules.baselineOffensiveYards
             + Double(offense - opposingDefense) * CompetitionRules.strengthYardScale
         let rawYards = Int(rng.gaussian(
@@ -266,7 +276,8 @@ public enum AbstractGameSimulator {
             offensiveYards: yards,
             passingYards: passingYards,
             rushingYards: yards - passingYards,
-            turnovers: rng.int(in: CompetitionRules.turnoverRange)
+            turnovers: rng.int(in: CompetitionRules.turnoverRange),
+            offensivePlays: plays
         )
     }
 

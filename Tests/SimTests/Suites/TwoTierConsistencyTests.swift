@@ -67,18 +67,13 @@ private func teamValues(
     summaries.flatMap { [value($0.homeStatistics), value($0.awayStatistics)] }
 }
 
-private func offensivePlays(_ statistics: TeamGameStatistics) -> Int? {
-    Mirror(reflecting: statistics).children.first {
-        $0.label == "offensivePlays"
-    }?.value as? Int
-}
-
 private func yardsPerPlay(_ summaries: [GameSummary]) -> [Double]? {
     var values: [Double] = []
     values.reserveCapacity(summaries.count * 2)
     for summary in summaries {
         for statistics in [summary.homeStatistics, summary.awayStatistics] {
-            guard let plays = offensivePlays(statistics), plays > 0 else { return nil }
+            let plays = statistics.offensivePlays
+            guard plays > 0 else { return nil }
             values.append(Double(statistics.offensiveYards) / Double(plays))
         }
     }

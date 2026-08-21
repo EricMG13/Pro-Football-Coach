@@ -26,6 +26,11 @@ public enum CompetitionRules {
     public static let overtimeFieldGoalProbability = 0.72
     public static let overtimeHomeWinProbability = 0.52
 
+    public static let proBaselinePlays = 64.0
+    public static let collegeBaselinePlays = 71.0
+    public static let playCountDeviation = 8.0
+    public static let playCountRange: ClosedRange<Int> = 40...105
+
     public static let baselineOffensiveYards = 350.0
     public static let strengthYardScale = 4.0
     public static let offensiveYardDeviation = 70.0
@@ -40,6 +45,10 @@ public enum CompetitionRules {
 
     public static func scoreDeviation(for tier: Tier) -> Double {
         tier == .college ? collegeScoreDeviation : proScoreDeviation
+    }
+
+    public static func baselinePlays(for tier: Tier) -> Double {
+        tier == .college ? collegeBaselinePlays : proBaselinePlays
     }
 
     public static func passingSharePercent(for scheme: OffensiveScheme) -> Int {
