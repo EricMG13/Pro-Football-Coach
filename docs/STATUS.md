@@ -1106,6 +1106,18 @@ details are in `docs/plans/2026-08-10-m1-playable-world.md`.
 
 ### M2 — people lifecycle — **implemented; its soak is red as of 2026-08-20**
 
+> **2026-08-21 owner-head rerun.** The exact 20-season `--m2-soak` completed in **3,761.021
+> seconds** with **1 test / 812 checks and 20 failures**. The lifecycle walk itself remained live,
+> but the added long-horizon rating and age assertions exposed real drift: tier gap **12.35…13.44**
+> in seasons 4–20 against **1.0…12.0**, and professional past-decline share **0.045** in season 5
+> and **0.076** in season 7 against **0.08…0.30**. No decline-age or trait constant was changed.
+> The final population failure is an invariant mismatch, not a missing player: `filledState.players`
+> retained **18,368** identities against an old exact target of **15,766**, while legal free agents and
+> retained history make the store intentionally larger than the active roster target. Checkpoints were
+> **6,629,623 bytes** (season 1), **8,739,873** (season 5), and **11,169,478** (season 20). The store
+> assertion needs to be rewritten to its retention contract; the rating gap and veteran-tail failures
+> need an intake/roster-age model decision before the soak can be called green.
+
 > **The soak below is stale.** `--m2-soak` fails at current `main` with 61 of 326 checks red, all
 > of them the same assertion: `PeopleLifecycleTests.swift:591` wants 15,766 active players at week 1
 > of each season (134 x 105 college plus 32 x 53 professional) and finds about 14,200. College
