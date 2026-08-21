@@ -15,11 +15,14 @@ ledger, not a roadmap.
 `Personnel` frames `2b` and `2c` are alternatives and remain parked. The broad HTML canvases are
 not product input and their generated code is not copied.
 
+The mocks' silence about logos is neutral: it does not authorize removing production logos.
+
 ## Contract matrix
 
 | Screen / mock region | UX purpose | Current source | Disposition | Production treatment | Accessibility |
 |---|---|---|---|---|---|
 | HQ / shared chrome | Establish team, world, and routes | `This Week.dc.html` 6a; `CoachingHQView.worldStrip` / `worldMenu` | Keep | Use `FloodlitChromeReadModel` when supplied and real `onNavigate` routes | Route buttons and menu remain named controls; shared identity is read as one element |
+| HQ → Roster → Profile / existing team/program logo identity | Preserve established game identity across the three-screen slice | Existing shared chrome or screen component logo rendering; current read models/assets | Keep | Preserve logos already rendered by shared chrome or an existing screen component when current read models/assets provide them; do not invent logo data, duplicate a shared-chrome logo inside a screen, add logo assets, or create speculative placements solely because the mocks omit them | Preserve the existing logo component's accessibility semantics; decorative marks must not create duplicate announcements |
 | HQ / current week facts | Orient the coach to the actual current week | `CoachingHQReadModel.WeekContext` and `weekAgendaColumn` | Keep | Show truthful `weekLabel`, `currentDay`, and open-obligation count from the read model | Week facts are exposed as text, with dynamic type layout |
 | HQ / weekly/open-work heading | Name the work window without asserting a fixed deadline | Mock `BEFORE SATURDAY`; `weekAgendaColumn` | Adapt | Replace `BEFORE SATURDAY` with a truthful weekly/open-work heading; do not imply a fixed Saturday deadline | Heading is exposed as text and remains readable at large type |
 | HQ / obligations and work rows | Show work that can change the week | Mock work list; `CoachingHQReadModel.obligations` | Keep | Render actual obligation titles, due text, consequences, and mandatory state | Rows expose title, due, consequence, and state; no decorative-only completion claim |
