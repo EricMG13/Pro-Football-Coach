@@ -358,10 +358,11 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
             routeBar
             identityColumn
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(identityAccessibilityLabel)
             routePanel
         }
         .padding(.vertical, CoachWorldTokens.Pad.panel.v)
-        .accessibilityLabel(identityAccessibilityLabel)
     }
 
     private var identityAccessibilityLabel: String {
