@@ -40,6 +40,8 @@ func runCareerArcTests() {
                 at: programmeID,
                 in: source
             ).state
+            let coachID = controlled.career.coachID!
+            let careerRecord = controlled.people.staffCareers[coachID]!
             let proTeam = controlled.proTeams.values[0]
             var arc = CareerArcState(
                 currentJob: CareerJob(
@@ -83,6 +85,11 @@ func runCareerArcTests() {
             )
             expect(promoted.state.career.college == nil)
             expectEqual(promoted.state.careerArc.currentJob?.tier, .professional)
+            expectEqual(
+                promoted.state.people.staffCareers[coachID],
+                careerRecord,
+                "promotion changed or dropped the coach's career record"
+            )
 
             var resigning = controlled
             resigning.careerArc = CareerArcState(

@@ -982,6 +982,7 @@ func assertScheduleShape(
     gamesPerTeam: Int,
     regularSeasonWeeks: Int
 ) {
+    expectEqual(games.count, memberIDs.count * gamesPerTeam / 2)
     for memberID in memberIDs {
         let memberGames = games.filter { $0.homeID == memberID || $0.awayID == memberID }
         expectEqual(memberGames.count, gamesPerTeam)

@@ -1395,24 +1395,31 @@ func runContractTests() {
                    "Pro Offseason must be reachable from the shipped app root")
             expect(hq.contains("proOffseason") && appStore.contains("actOnProMarket"),
                    "professional offseason must be reachable only through the market seam")
-            for family in [
-                ("DraftBoardView.swift", "DraftBoardView", "draftBoard"),
-                ("DraftRoomView.swift", "DraftRoomView", "draftRoom"),
-                ("FreeAgencyView.swift", "FreeAgencyView", "freeAgency"),
-                ("ProScoutingBoardView.swift", "ProScoutingBoardView", "proScoutingBoard")
-            ] {
-                let view = uiFiles.first { $0.path.hasSuffix("/\(family.0)") }?.text ?? ""
-                expect(view.contains("public struct \(family.1)")
-                           && view.contains("ProOffseasonView(")
-                           && view.contains("focus: .\(family.2)")
-                           && view.contains("dynamicTypeSize.isAccessibilitySize"),
-                       "\(family.1) must reuse the authoritative pro market surface")
-                expect(hq.contains("Button(\"Pro offseason\")")
-                           && !hq.contains("Button(\"Draft board\")")
-                           && !hq.contains("Button(\"Free agency\")")
-                           && !hq.contains("Button(\"Pro scouting board\")"),
-                       "legacy professional aliases must use the canonical Pro Offseason surface")
+            let proAliases = CoachWorldScreenID.allCases.filter {
+                $0 != .proOffseason && $0.canonicalDestination == .proOffseason
             }
+            expect(!proAliases.isEmpty,
+                   "the screen registry names no Pro Offseason aliases")
+            let landedViews = landedFamilies().landed
+            for screen in proAliases + [.draftRoom] {
+                guard let family = landedViews.first(where: { $0.screen == screen }) else {
+                    expect(false, "\(screen.canonicalName) has no production view source")
+                    continue
+                }
+                let viewType = String(family.path.split(separator: "/").last ?? "")
+                    .replacingOccurrences(of: ".swift", with: "")
+                let screenName = String(describing: screen)
+                expect(family.text.contains("public struct \(viewType)")
+                           && family.text.contains("ProOffseasonView(")
+                           && family.text.contains("focus: .\(screenName)")
+                           && family.text.contains("dynamicTypeSize.isAccessibilitySize"),
+                       "\(viewType) must reuse the authoritative pro market surface")
+            }
+            expect(hq.contains("Button(\"Pro offseason\")")
+                       && !hq.contains("Button(\"Draft board\")")
+                       && !hq.contains("Button(\"Free agency\")")
+                       && !hq.contains("Button(\"Pro scouting board\")"),
+                   "legacy professional aliases must use the canonical Pro Offseason surface")
             expect(appRoot.contains("case .proOffseason, .draftRoom:")
                        && appRoot.contains("let focus = screen == .draftRoom ? .draftRoom : proFocus")
                        && appRoot.contains("focus: focus"),
@@ -1420,7 +1427,6 @@ func runContractTests() {
             let careerAliases = CoachWorldScreenID.allCases.filter {
                 $0 != .careerHub && $0.canonicalDestination == .careerHub
             }
-            let landedViews = landedFamilies().landed
             expect(!careerAliases.isEmpty, "the screen registry names no Career Hub aliases")
             for screen in careerAliases {
                 guard let family = landedViews.first(where: { $0.screen == screen }) else {
