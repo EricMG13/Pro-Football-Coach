@@ -90,18 +90,68 @@ not a roadmap: an item is reconsidered only when the stated capability and trigg
 
 ## Proof checklist
 
-- [ ] Verify real-career reachability into Coaching HQ.
-- [ ] Reach Roster from a real route and Player Profile from the real roster selection/dossier route.
-- [ ] Verify all displayed values come from real read-model data, not mock-only literals.
-- [ ] Verify every presented action has a supported callback and reachable result.
-- [ ] Verify populated, empty, unavailable, and error states for each surface.
-- [ ] Verify landscape widths of 844, 852, and 956 points.
-- [ ] Verify default type size and AX5 accessibility type size.
-- [ ] Verify VoiceOver order, labels, selected/current states, and action hints.
-- [ ] Verify Reduce Motion behavior.
-- [ ] Verify Reduce Transparency behavior.
-- [ ] Verify Increase Contrast behavior.
-- [ ] Verify Differentiate Without Color behavior.
-- [ ] Verify all interactive targets are at least 44 points.
-- [ ] Run the focused contract and vertical-route tests.
-- [ ] Run final repository gates, including the expected test/build checks and GitNexus change detection.
+The durable image set below uses the production DEBUG root, the existing
+`PROOF_NEW_CAREER=424242` / `PROOF_SCREEN_NUMBER` seam, dark appearance, landscape, and real
+generated-career read models. The images were inspected after capture; they were not treated as
+proof merely because the simulator produced a file.
+
+| Surface | 844×390 — iPhone 17e | 852×393 — iPhone 15 Pro | 956×440 — iPhone 17 Pro Max |
+|---|---|---|---|
+| Coaching HQ | [default](../proofs/mock-reconciliation-vertical-slice/hq-844-default.png) · [AX5](../proofs/mock-reconciliation-vertical-slice/hq-844-ax5.png) | [default](../proofs/mock-reconciliation-vertical-slice/hq-852-default.png) · [AX5](../proofs/mock-reconciliation-vertical-slice/hq-852-ax5.png) | [default](../proofs/mock-reconciliation-vertical-slice/hq-956-default.png) · [AX5](../proofs/mock-reconciliation-vertical-slice/hq-956-ax5.png) |
+| Roster | [default](../proofs/mock-reconciliation-vertical-slice/roster-844-default.png) · [AX5](../proofs/mock-reconciliation-vertical-slice/roster-844-ax5.png) | [default](../proofs/mock-reconciliation-vertical-slice/roster-852-default.png) · [AX5](../proofs/mock-reconciliation-vertical-slice/roster-852-ax5.png) | [default](../proofs/mock-reconciliation-vertical-slice/roster-956-default.png) · [AX5](../proofs/mock-reconciliation-vertical-slice/roster-956-ax5.png) |
+| Player Profile | [default](../proofs/mock-reconciliation-vertical-slice/player-844-default.png) · [AX5](../proofs/mock-reconciliation-vertical-slice/player-844-ax5.png) | [default](../proofs/mock-reconciliation-vertical-slice/player-852-default.png) · [AX5](../proofs/mock-reconciliation-vertical-slice/player-852-ax5.png) | [default](../proofs/mock-reconciliation-vertical-slice/player-956-default.png) · [AX5](../proofs/mock-reconciliation-vertical-slice/player-956-ax5.png) |
+
+Increase Contrast was also enabled through `simctl`, read back as `enabled`, and inspected at the
+narrowest width for [Coaching HQ](../proofs/mock-reconciliation-vertical-slice/hq-844-increased-contrast.png),
+[Roster](../proofs/mock-reconciliation-vertical-slice/roster-844-increased-contrast.png), and
+[Player Profile](../proofs/mock-reconciliation-vertical-slice/player-844-increased-contrast.png).
+Each Increase Contrast capture is byte-identical to that surface's default 844 capture: the
+explicit dark palette does not change, and inspection found no lost content or state distinction.
+Existing shared-chrome team/program logos remain visible once per surface in the captures. No local
+logo rendering or logo data was added. Pixel inspection and source scope support the no-duplicate
+visual claim; duplicate *spoken* announcements remain a physical-device/manual item.
+
+- [x] Verify real-career reachability into Coaching HQ.
+- [x] Reach Roster from a real route and Player Profile from the real roster selection/dossier route.
+- [x] Verify all displayed values come from real read-model data, not mock-only literals. The
+  accessibility lane's read-model suite passed 69 tests and 9,704 checks against the production
+  providers, and the captures use the generated career rather than mock state.
+- [ ] Verify every presented action has a supported callback and reachable result. Static contracts
+  verify supported callbacks and the focused test proves the slice route, but every HQ action result
+  was not activated during this audit.
+- [ ] Verify populated, empty, unavailable, and error states for each surface. The real populated
+  route was exercised. This slice supplies no mock or production seam for the other three states;
+  inventing them solely to complete a matrix is outside the contract.
+- [x] Verify landscape widths of 844, 852, and 956 points.
+- [x] Verify default type size and AX5 accessibility type size.
+- [ ] Verify VoiceOver order, labels, selected/current states, and action hints. Automated XCTest
+  accessibility-tree lookup proves distinct route/control labels in default and AX5 and static
+  contracts cover current/selected semantics; spoken order, clarity, and hints remain
+  manual-required.
+- [ ] Verify Reduce Motion behavior. The automated source contract passed 5 tests / 10 checks (one
+  declared animating family, 61 still families); actual assistive-setting behavior remains
+  manual-required.
+- [ ] Verify Reduce Transparency behavior. The available simulator control does not expose this
+  setting; manual-required.
+- [x] Verify Increase Contrast behavior at the supported narrow width; see durable captures above.
+- [ ] Verify Differentiate Without Color behavior. The available simulator control does not expose
+  this setting; manual-required.
+- [x] Verify all interactive targets are at least 44 points through the design-contract gate.
+- [x] Run the focused contract and vertical-route tests. The real HQ → Roster → Player Profile →
+  Roster route passed at default and AX5 after the test selector and profile accessibility grouping
+  were corrected.
+- [ ] Run final repository gates, including the expected test/build checks and GitNexus change
+  detection. Design contracts, accessibility, app build, focused default/AX5 routes, and GitNexus
+  change detection pass. The full lane remains blocked by the deterministic pre-existing
+  `Controlled college portal decisions / spring retention choices pause a user-owned portal
+  responsibility` test: its final week advance throws
+  `missingWeeklyPreparation([.gamePlan, .practicePlan])`. The full run completed 992 tests and
+  795,451 checks with exactly this one failure; the focused `--career-portal-decisions` run
+  reproduced it (1 test, 6 checks, 1 failure). This branch does not modify
+  `CareerControlTests.swift` or `FootballSimCore`, and this unrelated test is not patched by the
+  vertical-slice task.
+
+Manual-required items are not waived: VoiceOver spoken clarity/order, Voice Control naming,
+Switch Control reachability, sound equivalents, haptics, physical-device behavior, Reduce
+Transparency, Differentiate Without Color, and the runtime Reduce Motion experience still need a
+named tester, device, OS, and result. Simulator captures do not prove any of them.
