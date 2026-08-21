@@ -124,7 +124,7 @@ func runTeamLogoManifestTests() {
             let worldIDs = Set(world.programmes.ids).union(world.proTeams.ids).map(\.uuidString)
             let worldNames = Dictionary(uniqueKeysWithValues:
                 world.programmes.values.map { ($0.id.uuidString, $0.name) }
-                + world.proTeams.values.map { ($0.id.uuidString, "\($0.cityName) \($0.nickname)") }
+                + world.proTeams.values.map { ($0.id.uuidString, $0.displayName) }
             )
             expectEqual(manifest.schemaVersion, 1)
             expectEqual(manifest.worldSeed, 20_260_812)
@@ -276,6 +276,32 @@ func runTeamLogoManifestTests() {
             expect(catalogueBytes <= teamLogoCatalogueByteBudget,
                    "packaged marks total \(catalogueBytes) bytes, over "
                        + "\(teamLogoCatalogueByteBudget)")
+        }
+        test("every mark brief depicts the team it belongs to") {
+            // The set this replaced had the Silver Kestrels carrying a compass roundel: the brief
+            // was written from the programme's region and never looked at the nickname, so a third
+            // of the league wore a mark for a thing it is not named after. Checked against the
+            // public name rather than a stored field, because the public name is what a player
+            // reads next to the mark.
+            for team in try loadTeamLogoManifest().teams {
+                guard let noun = team.name.split(separator: " ").last.map(String.init),
+                      noun.count > 2 else {
+                    expect(false, "\(team.name) has no nickname to draw")
+                    continue
+                }
+                expect(team.prompt.localizedCaseInsensitiveContains(noun),
+                       "\(team.name) has a brief that never names its \(noun)")
+                expect(team.concept.localizedCaseInsensitiveContains("flat")
+                        || team.concept.count > 12,
+                       "\(team.name) has an empty-looking concept")
+                // The old concepts asked for a place -- "shaped by the Heath landscape of Altus"
+                // -- and an image model drew one. Checked on the concept, not the prompt: the
+                // prompt names these words on purpose, in the list of things not to draw.
+                for scenery in ["landscape", "scenery", "horizon", "backdrop", "shaped by"] {
+                    expect(!team.concept.localizedCaseInsensitiveContains(scenery),
+                           "\(team.name) still asks for \(scenery) behind the mark")
+                }
+            }
         }
         test("motif families are balanced") {
             let teams = try loadTeamLogoManifest().teams

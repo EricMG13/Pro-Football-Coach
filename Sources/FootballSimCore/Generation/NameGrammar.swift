@@ -40,14 +40,51 @@ public enum NameGrammar {
     /// How many distinct place names exist. Callers check they are not asking for more.
     public static var distinctPlaceNameCount: Int { realAmericanPlaces.count }
 
-    /// A college-style institution name: a real place plus a generic descriptor used by real
-    /// American college naming patterns. The first draw stays a four-way branch so changing the
-    /// vocabulary does not add or remove random draws from world generation.
+    /// The city a place name is qualified by, with the state dropped.
+    ///
+    /// The stored place stays state-qualified because two members can sit in same-named towns in
+    /// different states, and the map needs to tell them apart. A team's *public* name does not
+    /// carry a state — no league writes one — so the school and club forms below take this.
+    public static func cityWithoutState(_ place: String) -> String {
+        let city = place.split(separator: ",").first.map {
+            $0.trimmingCharacters(in: .whitespaces)
+        } ?? place
+        // A handful of Census entries disambiguate with a parenthetical -- "Bath (Berkeley
+        // Springs)". That belongs in a gazetteer, not on a scoreboard.
+        guard let bracket = city.firstIndex(of: "(") else { return city }
+        return String(city[city.startIndex..<bracket]).trimmingCharacters(in: .whitespaces)
+    }
+
+    /// The school half of a college team's public name: a real place and, three times in four, a
+    /// generic academic qualifier.
+    ///
+    /// Sports usage drops the head noun. A programme is "Kent State", not "Kent State University",
+    /// and the shortened form is what a scoreboard, a bracket and a standings row all carry, so
+    /// that is what this emits. The first draw stays a four-way branch and the second stays a
+    /// single pick, so changing the vocabulary adds and removes no random draws and stable IDs do
+    /// not move.
     public static func institutionName(place: String, using rng: inout SeededRandom) -> String {
         switch rng.int(in: 0...3) {
-        case 0: return "\(place) University"
-        default: return "\(place) \(rng.pick(institutionWords))"
+        case 0: return place
+        default:
+            let index = rng.int(in: 0...(institutionWords.count - 1))
+            return "\(place) \(clearedDescriptor(for: place, startingAt: index))"
         }
+    }
+
+    /// The first descriptor from `index` onwards that does not make a blocked name of this place.
+    ///
+    /// Stepping, not redrawing. A reject-and-redraw loop consumes a data-dependent number of draws,
+    /// which is exactly the stream coupling `distinctPlaceNames` above was rewritten to remove;
+    /// stepping costs none. Nothing collides today — the whole cross product of places, descriptors,
+    /// adjectives and nouns was swept clear — but the blocklist is refreshed per release, and
+    /// without this a new entry would turn a legal-list update into a silently different world.
+    private static func clearedDescriptor(for place: String, startingAt index: Int) -> String {
+        for offset in 0..<institutionWords.count {
+            let word = institutionWords[(index + offset) % institutionWords.count]
+            if !Blocklist.blocks("\(place) \(word)") { return word }
+        }
+        return institutionWords[index]
     }
 
     /// A bowl-game title that uses a real host place and a generic event descriptor.
@@ -59,8 +96,17 @@ public enum NameGrammar {
     }
 
     /// A team nickname: an adjective and a noun, both from invented or generic pools.
+    ///
+    /// Two draws, as before. The noun steps rather than redraws for the same reason a descriptor
+    /// does, so a future blocklist entry cannot move the stream.
     public static func nickname(using rng: inout SeededRandom) -> String {
-        "\(rng.pick(nicknameAdjectives)) \(rng.pick(nicknameNouns))"
+        let adjective = rng.pick(nicknameAdjectives)
+        let index = rng.int(in: 0...(nicknameNouns.count - 1))
+        for offset in 0..<nicknameNouns.count {
+            let noun = nicknameNouns[(index + offset) % nicknameNouns.count]
+            if !Blocklist.blocks("\(adjective) \(noun)") { return "\(adjective) \(noun)" }
+        }
+        return "\(adjective) \(nicknameNouns[index])"
     }
 
     /// A conference name: a regional word and a conference word.
@@ -716,12 +762,11 @@ public enum NameGrammar {
     private static let compassWords = [
         "North", "South", "East", "West", "Upper", "Lower", "Central", "Coastal", "Inland",
     ]
+    // The short forms a college team is actually called by. "Normal", "Research" and "Institute of
+    // Technology" were here and are how a registrar writes a school, not how a scoreboard does.
     private static let institutionWords = [
-        "State University", "A&M University", "Technical University", "Polytechnic University", "Regional University",
-        "Research University", "Agricultural University", "Institute of Technology",
-        "Technical Institute", "Polytechnic Institute", "Regional Institute", "Research Institute",
-        "Agricultural Institute", "Maritime Institute", "Maritime College", "Normal University",
-        "Technical College", "Regional College", "City College", "State College",
+        "State", "A&M", "Tech", "Poly", "Valley", "Coastal", "Maritime", "Agricultural",
+        "Regional", "Central",
     ]
     private static let bowlDescriptors = [
         "Classic", "Showcase", "Championship", "Football Classic",
@@ -757,6 +802,11 @@ public enum NameGrammar {
     private static let nicknameAdjectives = [
         "Iron", "Amber", "Granite", "Silver", "Copper", "Slate", "Storm", "Frost", "Ember",
         "Thunder", "River", "Harbor", "Timber", "Cinder", "Verdant", "Sable", "Kindled", "Hollow",
+        // Added 2026-08-21 with the nouns below. Every member showed a nickname from that date --
+        // college programmes had one all along and never displayed it -- so 18 by 22 was suddenly
+        // 166 members drawing from 396 pairs, and the duplicates were on the glass.
+        "Basalt", "Flint", "Cobalt", "Tidal", "Bramble", "Cedar", "Gale", "Anvil", "Hearth",
+        "Kiln", "Meridian", "Marsh", "Peat", "Shale",
     ]
     // Miners, Lancers, Stags and Pioneers were here and are real Division I nicknames (UTEP,
     // Longwood, Fairfield, Denver). They are replaced one-for-one rather than deleted: the pool is
@@ -766,6 +816,13 @@ public enum NameGrammar {
         "Wardens", "Drovers", "Delvers", "Sentinels", "Bulwarks", "Foresters", "Marauders",
         "Prospectors", "Voyagers", "Reapers", "Anchors", "Wayfarers", "Wreckers", "Harriers",
         "Stalkers", "Herons", "Colliers", "Otters", "Ironsides", "Quarrymen", "Beacons", "Kestrels",
+        // Trades, defences and less-claimed wildlife, on the same principle as the originals: a
+        // nickname a real programme already owns is refused however good it sounds. The full cross
+        // product of 570 places, 11 school forms, 32 adjectives and 40 nouns -- 8,025,600 public
+        // names -- was swept against the blocklist before these landed, and none is blocked.
+        "Tanners", "Coopers", "Sawyers", "Riggers", "Ferrymen", "Smelters", "Chandlers",
+        "Fletchers", "Bastions", "Ramparts", "Palisades", "Cairns", "Lodestars", "Shrikes",
+        "Curlews", "Goshawks", "Martens", "Wyverns",
     ]
 
     /// Every **word** this grammar can put into a generated name.

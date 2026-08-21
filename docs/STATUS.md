@@ -19,6 +19,46 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-21 — every team now has a name a league would write, and a mark briefed to match it.**
+> 134 of the 166 public names were school directory entries — "Aberdeen, MS Agricultural
+> University" — with no team in them at all. `Programme` had carried a `nickname` since the
+> beginning and never displayed it. The public name is now `place + short qualifier + nickname`
+> for a programme and `place + nickname` for a club, with the state abbreviation and the
+> registrar's head noun dropped: **"Aberdeen Maritime Flint Voyagers"**, **"Achille A&M Sable
+> Wreckers"**, **"Aberdeen Sable Anchors"**. `cityName` stays state-qualified, because the map
+> still needs to tell same-named towns apart.
+>
+> The nickname pools grew from 18 x 22 to 32 x 40 in the same pass: a nickname visible on 32
+> members became visible on all 166, and 396 pairs was not enough to go round. All 166 public names
+> are distinct, the longest is 43 characters against the old 42, and the mean is **shorter** than
+> before, so no surface gets wider.
+>
+> **The mark brief is now written from the nickname.** It was written from the programme's region
+> and never looked at the nickname, which is why the Silver Kestrels carried a compass roundel. Each
+> of the 40 nouns has a table of the shapes it can legitimately become — a creature, a figure, a
+> tool, a landform, a crest device — and the motif family is assigned from that table with the
+> 27/28 balance preserved. `TeamLogoTests` asserts every brief names its own team's nickname, so a
+> mark that drifts off its team fails the suite.
+>
+> **What is verified.** All 166 stable IDs are byte-identical before and after, so the logo
+> catalogue did not de-key. Draw counts are unchanged — the four-way branch and the single pick are
+> both still there — and the determinism digest was re-pinned deliberately. The whole cross product
+> of 570 places, 11 school forms, 32 adjectives and 40 nouns — **8,025,600 public names** — was
+> swept against `Blocklist` with no collisions, on top of the green 200-world legal sweep.
+> `--generation-only` (35/39,750), `--legal-only` (23/144), `--core-contracts` (223/3,065),
+> `--design-contracts` (45/773) and all seven logo lanes pass.
+>
+> **What is not true yet.** The packaged artwork still shows the 2026-08-20 concepts, so the marks
+> do **not** match the new names on screen. The briefs are written and reviewable in
+> `exports/team-names-and-briefs-2026-08-21/`; the regeneration run is an owner action, and
+> `reviewNotes` says so on every record.
+>
+> **A gap the sweep does not cover.** Two real programmes, Akron and Butler, are in the place list
+> and absent from `Blocklist.institutions`. That predates this change and is unaffected by it, but
+> the per-release list refresh should pick them up. The generator now steps to the next pool entry
+> rather than redrawing when a pairing is blocked, which is what makes adding them safe.
+
+
 > **2026-08-21 — P0-1 of the SwiftUI performance audit is closed. The artwork is unchanged.**
 > The catalogue shipped 166 marks at 1024 x 1024, 157 MB, for a chip the app never draws larger
 > than 44 points — 132 device pixels at 3x. `Tools/TeamLogos/downsample.swift` is the resize step
