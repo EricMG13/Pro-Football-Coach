@@ -15,16 +15,19 @@ public enum AbstractGameSimulator {
 
     /// Plays a controlled fixture for the two-tier equivalence harness. Both models receive the
     /// same personnel and seed; this keeps the gate about model behavior rather than generated
-    /// schedule composition.
+    /// schedule composition. Returns nil when a participant appears for both teams.
     public static func play(
         tier: Tier,
         stage: CompetitionStage = .regularSeason,
         home: SnapPersonnel,
         away: SnapPersonnel,
         seed: UInt64
-    ) -> GameSummary {
+    ) -> GameSummary? {
         let homeRoster = home.offense + home.defense
         let awayRoster = away.offense + away.defense
+        guard Set(homeRoster.map(\.id)).isDisjoint(with: Set(awayRoster.map(\.id))) else {
+            return nil
+        }
         return play(
             tier: tier,
             stage: stage,
@@ -42,6 +45,8 @@ public enum AbstractGameSimulator {
                 offense: controlledStrength(away.offense),
                 defense: controlledStrength(away.defense)
             ),
+            homePlan: .balanced,
+            awayPlan: .balanced,
             seed: seed
         )
     }
@@ -58,70 +63,18 @@ public enum AbstractGameSimulator {
                            personnelPlan: personnelPlans[game.awayID])
         let homePlan = tacticalPlans[game.homeID] ?? .balanced
         let awayPlan = tacticalPlans[game.awayID] ?? .balanced
-        var rng = SeededRandom(seed: SeededRandom.derive(
-            from: state.league.seed,
-            scope: .game,
-            identifier: game.id
-        ))
-        let baseline = CompetitionRules.baselinePoints(for: game.tier)
-        let deviation = CompetitionRules.scoreDeviation(for: game.tier)
-        var homeScore = score(
-            expectation: baseline
-                + Double(home.offense - away.defense) * CompetitionRules.strengthPointScale
-                + CompetitionRules.homeFieldPoints(for: game.tier)
-                + homePlan.pointAdjustment(against: awayPlan),
-            deviation: deviation + homePlan.scoreDeviationAdjustment(),
-            using: &rng
-        )
-        var awayScore = score(
-            expectation: baseline
-                + Double(away.offense - home.defense) * CompetitionRules.strengthPointScale
-                + awayPlan.pointAdjustment(against: homePlan),
-            deviation: deviation + awayPlan.scoreDeviationAdjustment(),
-            using: &rng
-        )
-        // Professional regular-season ties are an allowed outcome. College and every
-        // postseason stage continue through bounded overtime so their summaries always
-        // identify a winner.
-        if homeScore == awayScore,
-           game.tier == .college || game.stage != .regularSeason {
-            let overtimePoints = rng.chance(CompetitionRules.overtimeFieldGoalProbability)
-                ? CompetitionRules.overtimeFieldGoalPoints
-                : CompetitionRules.overtimeTouchdownPoints
-            if rng.chance(CompetitionRules.overtimeHomeWinProbability) {
-                homeScore += overtimePoints
-            } else {
-                awayScore += overtimePoints
-            }
-        }
-
-        let homeStats = teamStatistics(
+        return play(
             tier: game.tier,
-            points: homeScore,
-            offense: home.offense,
-            opposingDefense: away.defense,
-            scheme: home.scheme.offense,
-            tacticalPlan: homePlan,
-            using: &rng
-        )
-        let awayStats = teamStatistics(
-            tier: game.tier,
-            points: awayScore,
-            offense: away.offense,
-            opposingDefense: home.defense,
-            scheme: away.scheme.offense,
-            tacticalPlan: awayPlan,
-            using: &rng
-        )
-        return GameSummary(
-            homeScore: homeScore,
-            awayScore: awayScore,
-            homeStatistics: homeStats,
-            awayStatistics: awayStats,
-            homeParticipantIDs: home.roster.map(\.id),
-            awayParticipantIDs: away.roster.map(\.id),
-            playerStatistics: playerLines(roster: home.roster, statistics: homeStats)
-                + playerLines(roster: away.roster, statistics: awayStats)
+            stage: game.stage,
+            home: home,
+            away: away,
+            homePlan: homePlan,
+            awayPlan: awayPlan,
+            seed: SeededRandom.derive(
+                from: state.league.seed,
+                scope: .game,
+                identifier: game.id
+            )
         )
     }
 
@@ -192,6 +145,8 @@ public enum AbstractGameSimulator {
         stage: CompetitionStage,
         home: TeamProfile,
         away: TeamProfile,
+        homePlan: TacticalPlan,
+        awayPlan: TacticalPlan,
         seed: UInt64
     ) -> GameSummary {
         var rng = SeededRandom(seed: seed)
@@ -200,14 +155,16 @@ public enum AbstractGameSimulator {
         var homeScore = score(
             expectation: baseline
                 + Double(home.offense - away.defense) * CompetitionRules.strengthPointScale
-                + CompetitionRules.homeFieldPoints(for: tier),
-            deviation: deviation,
+                + CompetitionRules.homeFieldPoints(for: tier)
+                + homePlan.pointAdjustment(against: awayPlan),
+            deviation: deviation + homePlan.scoreDeviationAdjustment(),
             using: &rng
         )
         var awayScore = score(
             expectation: baseline
-                + Double(away.offense - home.defense) * CompetitionRules.strengthPointScale,
-            deviation: deviation,
+                + Double(away.offense - home.defense) * CompetitionRules.strengthPointScale
+                + awayPlan.pointAdjustment(against: homePlan),
+            deviation: deviation + awayPlan.scoreDeviationAdjustment(),
             using: &rng
         )
         if homeScore == awayScore,
@@ -228,7 +185,7 @@ public enum AbstractGameSimulator {
             offense: home.offense,
             opposingDefense: away.defense,
             scheme: home.scheme.offense,
-            tacticalPlan: .balanced,
+            tacticalPlan: homePlan,
             using: &rng
         )
         let awayStats = teamStatistics(
@@ -237,7 +194,7 @@ public enum AbstractGameSimulator {
             offense: away.offense,
             opposingDefense: home.defense,
             scheme: away.scheme.offense,
-            tacticalPlan: .balanced,
+            tacticalPlan: awayPlan,
             using: &rng
         )
         return GameSummary(
@@ -296,7 +253,7 @@ public enum AbstractGameSimulator {
                 sd: CompetitionRules.playCountDeviation
             ).rounded()))
         )
-        let expectedYards = CompetitionRules.baselineOffensiveYards
+        let expectedYards = CompetitionRules.baselineOffensiveYards(for: tier)
             + Double(offense - opposingDefense) * CompetitionRules.strengthYardScale
         let rawYards = Int(rng.gaussian(
             mean: expectedYards,

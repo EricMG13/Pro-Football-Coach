@@ -106,7 +106,7 @@ instruments exist and run in CI:
 |---|---|
 | A season is completable in 6–8 hours | AgencyBudgetTests is not implemented; owner measurement remains open |
 | Week advance under 2.0 s at shipping league size | The host timing probe is evidence only; the device gate remains open |
-| The simulation and the off-screen model agree | `TwoTierConsistencyTests` passes its controlled four-world gate: 9 tests and 19 checks, covering points, plays, yards per play and home advantage in both tiers. Both models receive the same `SnapPersonnel` and seed per calibration matchup; generated-schedule roster composition remains a separate calibration question |
+| The simulation and the off-screen model agree | `TwoTierConsistencyTests` uses eight tuning worlds and twelve disjoint holdout worlds. The holdout covers points, scrimmage plays and home advantage in both tiers, plus yards per play professionally; college yards per play remains a named canon gap. Both models receive the same `SnapPersonnel` and seed and the controlled abstracted fixture uses the scheduled model's scoring core; generated-schedule roster composition remains a separate calibration question |
 | A save survives 20 seasons under 8 MB | **Not met.** Measured 14.76 MB at season 20 on the soaks' own seed, against 3.67 MB at season 0. Departed-identity retention is now bounded — it was unbounded, and the save passed 8 MB at season 2 and reached about 26 MB at season 20 — and both soaks now assert a ceiling and a drift allowance rather than printing the sizes. Reaching 8 MB needs the portal and scouting duplication looked at, which is engine work and an owner call |
 
 ---

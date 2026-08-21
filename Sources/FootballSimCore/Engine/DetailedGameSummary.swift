@@ -37,17 +37,14 @@ public enum DetailedGameSummaryBuilder {
 
         for play in record.plays {
             let side = play.situation.possession
-            let yards = max(0, play.outcome.yards)
-            // Every snap the side took, kicks included. `CalibrationHarness` counts the same way,
-            // and the plays band was measured against that count: two definitions of "a play"
-            // would make the two-tier gate and the calibration gate disagree about the same model.
-            teams[side, default: TeamLine()].plays += 1
+            let yards = play.outcome.yards
             if play.outcome.result.isTurnover {
                 teams[side, default: TeamLine()].turnovers += 1
             }
 
             switch play.offensiveCall.playType {
             case .pass:
+                teams[side, default: TeamLine()].plays += 1
                 teams[side, default: TeamLine()].yards += yards
                 teams[side, default: TeamLine()].passing += yards
                 update(play.outcome.passerID) { $0.passing += yards }
@@ -56,6 +53,7 @@ public enum DetailedGameSummaryBuilder {
                     update(play.outcome.targetID ?? play.outcome.passerID) { $0.touchdowns += 1 }
                 }
             case .run, .kneel:
+                teams[side, default: TeamLine()].plays += 1
                 teams[side, default: TeamLine()].yards += yards
                 teams[side, default: TeamLine()].rushing += yards
                 update(play.outcome.ballCarrierID) { $0.rushing += yards }

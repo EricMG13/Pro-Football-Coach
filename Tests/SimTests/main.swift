@@ -84,6 +84,8 @@ if CommandLine.arguments.contains("--catalog") {
     runM3RecruitingCalibrationTests()
 } else if CommandLine.arguments.contains("--calibration") {
     runCalibrationTests()
+} else if CommandLine.arguments.contains("--two-tier-tuning-report") {
+    runTwoTierConsistencyTuningReport()
 } else if CommandLine.arguments.contains("--two-tier-consistency") {
     runTwoTierConsistencyTests()
 } else if CommandLine.arguments.contains("--score-variance-probe") {

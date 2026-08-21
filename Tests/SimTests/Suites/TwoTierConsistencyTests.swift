@@ -67,22 +67,30 @@ enum TwoTierConsistency {
          "the abstracted model splits yardage evenly across a prefix of the depth chart"),
     ]
 
-    /// The controlled worlds each tier is sampled from. Fixed literals, so a failure is reproducible
-    /// and a pass is not a lucky draw. Each world replays the calibration talent ladder with the
-    /// same `SnapPersonnel` in both models.
+    /// The controlled worlds used to tune constants and the disjoint worlds used by the committed
+    /// gate. A holdout that is also a tuning input only proves the constants can fit their inputs.
+    /// Fixed literals keep both phases reproducible.
     ///
-    /// **Four rather than one because of a rate, not a preference.** A per-team-game mean like
+    /// **Multiple worlds because of a rate, not a preference.** A per-team-game mean like
     /// points reaches its margin in a few hundred team-games, but a win rate does not: at p near
     /// 0.55 and a margin of 0.04, the pooled 90 percent interval only fits inside the margin past
     /// roughly 840 paired games, and one professional slate is 272. A suite that asserted home
     /// advantage on one world would fail on the width of its own interval and read as a model
     /// divergence — the "both edges" failure `Band.test` names precisely so that this is not
     /// mistaken for the model being off in a direction.
-    static let worldSeeds: [UInt64] = [90_210, 90_211, 90_212, 90_213]
+    static let tuningWorldSeeds: [UInt64] = [
+        90_210, 90_211, 90_212, 90_213,
+        91_210, 91_211, 91_212, 91_213,
+    ]
+    static let holdoutWorldSeeds: [UInt64] = [
+        190_210, 190_211, 190_212, 190_213,
+        191_210, 191_211, 191_212, 191_213,
+        192_210, 192_211, 192_212, 192_213,
+    ]
 
-    /// Games sampled per world and tier. Four worlds produce 1,280 paired games, or 2,560
-    /// team-games, so the interval is narrower than the margin without relying on a generated
-    /// schedule's roster or mismatch composition.
+    /// Games sampled per world and tier. The twelve-world holdout produces 3,840 paired games, or
+    /// 7,680 team-games, so the rate and yards-per-play intervals fit inside their margins without
+    /// relying on a generated schedule's roster or mismatch composition.
     static let sampledGames = 320
 }
 
@@ -108,9 +116,9 @@ private struct TwoTierSample {
     var detailed: [GameSummary] = []
 }
 
-private func collectTwoTierSample(tier: Tier) -> TwoTierSample {
+private func collectTwoTierSample(tier: Tier, worldSeeds: [UInt64]) -> TwoTierSample {
     var sample = TwoTierSample()
-    for worldSeed in TwoTierConsistency.worldSeeds {
+    for worldSeed in worldSeeds {
         collect(tier: tier, worldSeed: worldSeed, into: &sample)
     }
     return sample
@@ -132,12 +140,15 @@ private func collect(tier: Tier, worldSeed: UInt64, into sample: inout TwoTierSa
             scope: .game,
             ordinal: fixture
         )
-        let abstracted = AbstractGameSimulator.play(
+        guard let abstracted = AbstractGameSimulator.play(
             tier: tier,
             home: home,
             away: away,
             seed: gameSeed
-        )
+        ) else {
+            expect(false, "controlled fixture reused a participant across teams")
+            return
+        }
         sample.abstracted.append(abstracted)
 
         let record = GameEngine.play(
@@ -158,12 +169,12 @@ private func collect(tier: Tier, worldSeed: UInt64, into sample: inout TwoTierSa
 ///
 /// A per-team-game mean rather than a ratio of totals, so the existing mean estimator's standard
 /// error is the right one and a lopsided game weighs the same as any other. A side that took no
-/// snaps contributes nothing rather than a division by zero.
+/// snaps contributes NaN so the gate fails without shifting the remaining paired observations.
 private func yardsPerPlay(_ summaries: [GameSummary]) -> [Double] {
-    teamValues(summaries) { $0.offensivePlays > 0
-        ? Double($0.offensiveYards) / Double($0.offensivePlays)
-        : -1
-    }.filter { $0 >= 0 }
+    teamValues(summaries) {
+        guard $0.offensivePlays > 0 else { return .nan }
+        return Double($0.offensiveYards) / Double($0.offensivePlays)
+    }
 }
 
 /// One value per team-game, so a per-team mean has the sample size it claims.
@@ -204,7 +215,10 @@ private func meanEstimate(_ values: [Double]) -> Estimate {
 }
 
 private func pairedMeanDifference(_ abstracted: [Double], _ detailed: [Double]) -> Estimate? {
-    guard abstracted.count == detailed.count, abstracted.count > 1 else { return nil }
+    guard abstracted.count == detailed.count,
+          abstracted.count > 1,
+          abstracted.allSatisfy(\.isFinite),
+          detailed.allSatisfy(\.isFinite) else { return nil }
     return meanEstimate(zip(abstracted, detailed).map { $0.0 - $0.1 })
 }
 
@@ -403,31 +417,53 @@ private func assertTwoTierMetrics(tier: Tier, sample: TwoTierSample) {
         )
     }
 
-    test("yards per play agrees between the models — \(tierName)") {
-        guard let margin = composedYardsPerPlayMargin(tier: tier) else {
-            // Not a pass and not a failure: `01` §6.5 states no college yardage rows, so there is
-            // nothing honest to test against until canon says what the range is.
+    if let margin = composedYardsPerPlayMargin(tier: tier) {
+        test("yards per play agrees between the models — \(tierName)") {
+            expectAgreement(
+                metric: "yards per play",
+                margin: margin,
+                tier: tier,
+                abstracted: yardsPerPlay(sample.abstracted),
+                detailed: yardsPerPlay(sample.detailed)
+            )
+        }
+    } else {
+        test("yards per play equivalence gap is documented — \(tierName)") {
             let named = TwoTierConsistency.canonGaps.contains {
                 $0.metric == "yards per play" && $0.tier == tier
             }
             let message = "yards per play cannot be measured for \(tierName) and the gap is not "
                 + "named in canonGaps"
             expect(named, message)
-            return
         }
-        expectAgreement(
-            metric: "yards per play",
-            margin: margin,
-            tier: tier,
-            abstracted: yardsPerPlay(sample.abstracted),
-            detailed: yardsPerPlay(sample.detailed)
-        )
     }
 }
 
 /// The coverage accounting: every metric `03` §5.1 names is asserted, named as uncovered, or named
 /// as a tier gap. Nothing falls between.
 private func assertMetricAccounting() {
+    test("tuning and holdout worlds are disjoint") {
+        let overlap = Set(TwoTierConsistency.tuningWorldSeeds)
+            .intersection(TwoTierConsistency.holdoutWorldSeeds)
+        expect(overlap.isEmpty, "tuning and holdout share \(overlap.count) world seeds")
+    }
+
+    test("controlled fixtures reject a participant assigned to both teams") {
+        let personnel = CalibrationRoster.team(skill: 72, seed: 72_001)
+        let summary = AbstractGameSimulator.play(
+            tier: .pro,
+            home: personnel,
+            away: personnel,
+            seed: 1
+        )
+        expect(summary == nil, "a participant was accepted on both teams")
+    }
+
+    test("paired means reject non-finite observations") {
+        let estimate = pairedMeanDifference([.nan, 1], [1, 1])
+        expect(estimate == nil, "a non-finite paired observation reached TOST")
+    }
+
     test("every metric 03 section 5.1 names is either asserted or named as uncovered") {
         let accounted = Set(TwoTierConsistency.coveredMetrics)
             .union(TwoTierConsistency.uncoveredMetrics.map(\.metric))
@@ -454,7 +490,39 @@ func runTwoTierConsistencyTests() {
         for tier in Tier.allCases {
             // One world set per tier, played once by each model. Both metric tests read the same
             // sample, because bootstrapping and replaying seasons is the expensive part.
-            assertTwoTierMetrics(tier: tier, sample: collectTwoTierSample(tier: tier))
+            assertTwoTierMetrics(
+                tier: tier,
+                sample: collectTwoTierSample(
+                    tier: tier,
+                    worldSeeds: TwoTierConsistency.holdoutWorldSeeds
+                )
+            )
         }
+    }
+}
+
+func runTwoTierConsistencyTuningReport() {
+    for tier in Tier.allCases {
+        let sample = collectTwoTierSample(
+            tier: tier,
+            worldSeeds: TwoTierConsistency.tuningWorldSeeds
+        )
+        func mean(_ values: [Double]) -> Double { meanEstimate(values).value }
+        func homeRate(_ summaries: [GameSummary]) -> Double {
+            let outcomes = summaries.compactMap(homeWon)
+            return Double(outcomes.filter { $0 }.count) / Double(outcomes.count)
+        }
+        print(String(
+            format: "%@: points %.3f / %.3f; plays %.3f / %.3f; ypp %.3f / %.3f; home %.4f / %.4f",
+            tier.rawValue,
+            mean(teamValues(sample.abstracted) { Double($0.points) }),
+            mean(teamValues(sample.detailed) { Double($0.points) }),
+            mean(teamValues(sample.abstracted) { Double($0.offensivePlays) }),
+            mean(teamValues(sample.detailed) { Double($0.offensivePlays) }),
+            mean(yardsPerPlay(sample.abstracted)),
+            mean(yardsPerPlay(sample.detailed)),
+            homeRate(sample.abstracted),
+            homeRate(sample.detailed)
+        ))
     }
 }

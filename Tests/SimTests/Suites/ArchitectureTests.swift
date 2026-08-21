@@ -64,10 +64,10 @@ private struct NewsItemFingerprintDTO: Codable, Equatable {
 /// written here.
 private let pinnedRootFingerprint: UInt64 = 13_271_746_992_715_500_232
 
-/// Re-pinned after the abstracted controlled-fixture score baseline and professional home-field
-/// calibration changed the scheduled-game result stream. Reproduced twice with
+/// Re-pinned after corrected scrimmage accounting moved the abstracted play and yardage baselines
+/// and the two-tier tuning worlds moved home field. Reproduced twice with
 /// `--architecture-fingerprints`.
-private let pinnedAdvancedRootFingerprint: UInt64 = 2_725_237_078_288_847_263
+private let pinnedAdvancedRootFingerprint: UInt64 = 2_493_110_815_599_229_477
 
 /// The professional contract-negotiation ledger (`ProMarketState.contractNegotiations`) is part of
 /// the schema-13 root, but neither pin above ever exercises it: bootstrap starts with it empty, and

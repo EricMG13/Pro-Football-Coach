@@ -2159,21 +2159,24 @@ next attempt should widen the *model*, not the grid.
 attempts have happened; three were instrument repair and one was a search rather than a hand pass.
 An instrument repair is not a failed tuning attempt.
 
-**`TwoTierConsistencyTests` is registered, dispatched, and green — updated 2026-08-20.** The gate
-backs the `PRODUCT.md` commitment for a controlled fixture: four fixed worlds × 320 calibration
-matchups provide 1,280 paired fixtures per tier and 2,560 team-games. Both models receive the same
-`SnapPersonnel` and game seed, so the paired 90 percent interval measures model behavior rather
-than generated-schedule roster composition.
+**`TwoTierConsistencyTests` is registered, dispatched and green — updated 2026-08-21.** Constants
+are fitted on eight fixed tuning worlds and accepted on twelve disjoint holdout worlds. Each phase
+uses 320 calibration matchups per world. Both models receive the same `SnapPersonnel` and game seed,
+and the controlled abstracted fixture enters the same scoring core as scheduled games. The final
+holdout reported **12 tests / 22 checks, all passed**.
 
-The final isolated run reported **9 tests, 19 checks, all passed**. It covers points per team-game,
-offensive plays per team-game, yards per play, and home advantage in both tiers. College yards per
-play remains an explicit canon gap for a calibration-band margin; the equivalence assertion still
-uses the metric because both models expose it and the gate's derived margin is available.
+The holdout covers points per team-game, scrimmage plays per team-game and home advantage in both
+tiers. Yards per play is asserted professionally. College yards per play remains an explicit canon
+gap because no college yardage band exists from which to derive an equivalence margin.
 
-The abstracted score baseline is now 23.5 college / 20.5 pro, back-solved from the controlled
-detailed means; professional abstracted home-field points are 0.0 to match the detailed reducer's
-0.005 leverage default, while college remains 5.5. The detailed model was not changed to fit the
-abstracted one.
+Correcting the counting convention also made the independent detailed-model tempo debt visible:
+the calibration holdout reports 66.93 college and 55.74 professional scrimmage plays per team-game.
+College's interval crosses the 67-play floor and pro remains below its provisional 60-play floor.
+That is a detailed clock/drive calibration item, not a reason to count punts as offensive plays.
+
+The abstracted score baseline is 23.5 college / 20.5 pro. Corrected scrimmage accounting moved its
+play baselines to 67 college / 56 pro, professional offensive yards to 300, and home-field points to
+6.25 college / 0.5 pro. Those values were selected on the tuning worlds before the final holdout.
 
 The generated-schedule aggregate is deliberately not folded into this claim. Its roster and
 mismatch population differ between the models, so a broader schedule-conditioned contract still

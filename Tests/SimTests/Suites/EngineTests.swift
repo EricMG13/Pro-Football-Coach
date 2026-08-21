@@ -6,9 +6,8 @@ import FootballSimCore
 /// had no baseline gain and no spread, an average passer was modelled as a heavy underdog at every
 /// depth but short, poise made a passer *easier* to sack, pressure was the average protection duel
 /// rather than the second-worst, air yards were a constant per depth, and the game clock burned
-/// only 30 seconds between snaps. Re-pinned after the abstracted controlled-fixture score baseline
-/// and professional home-field calibration changed the seeded abstracted summary. Both values were
-/// reproduced in two independent invocations of `--game-fingerprints` before being written here.
+/// only 30 seconds between snaps. Both values were reproduced in two independent invocations of
+/// `--game-fingerprints` before being written here; abstracted-model calibration does not move them.
 private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 5_407_731_616_643_886_402
 private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 5_718_341_655_616_431_483
 
@@ -713,6 +712,53 @@ func runGameLoopTests() {
     let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
 
     suite("Game loop") {
+        test("detailed summaries use scrimmage plays and preserve losses") {
+            func play(_ type: OffensivePlayType, result: SnapResult, yards: Int) -> PlayRecord {
+                PlayRecord(
+                    situation: Situation(),
+                    offensiveCall: OffensiveCall(playType: type),
+                    defensiveCall: DefensiveCall(coverage: .man),
+                    outcome: SnapOutcome(
+                        result: result,
+                        yards: yards,
+                        secondsElapsed: 1,
+                        matchups: []
+                    ),
+                    callInTriggers: []
+                )
+            }
+            let plays = [
+                play(.run, result: .gain, yards: 8),
+                play(.run, result: .gain, yards: -3),
+                play(.pass, result: .gain, yards: 12),
+                play(.kneel, result: .kneel, yards: -1),
+                play(.punt, result: .punt, yards: 40),
+                play(.fieldGoal, result: .fieldGoalGood, yards: 0),
+            ]
+            let record = GameRecord(
+                homeScore: 3,
+                awayScore: 0,
+                drives: [DriveRecord(
+                    offense: .home,
+                    plays: plays,
+                    ending: .fieldGoal,
+                    pointsScored: 3,
+                    startYardLine: 25
+                )],
+                tier: .pro
+            )
+
+            let summary = DetailedGameSummaryBuilder.make(
+                record: record,
+                homeParticipantIDs: [],
+                awayParticipantIDs: []
+            )
+            expectEqual(summary.homeStatistics.offensivePlays, 4)
+            expectEqual(summary.homeStatistics.offensiveYards, 16)
+            expectEqual(summary.homeStatistics.rushingYards, 4)
+            expectEqual(summary.homeStatistics.passingYards, 12)
+        }
+
         test("the same seed replays a game exactly, by hash of the full play-by-play") {
             // 03 section 3's test, verbatim: "same seed across two separate process invocations,
             // compared by hash of the full play-by-play". The in-process half is here; the

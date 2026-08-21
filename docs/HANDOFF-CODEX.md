@@ -178,34 +178,39 @@ The fixed-roster probe is now complete (`--score-variance-probe`, 400 games per 
 | 78 / 69 | 30.13 / 9.38 / 45 / 59 | 5.39 / 4.56 / 14 / 24 |
 
 That rules out the earlier hypothesis that independent per-duel draws alone create SD≈30: the
-fixed-roster engine is in the 7.5–9.4 range. The authoritative controlled gate now passes **9
-tests and 19 checks**. It replays the same calibration talent ladder and `SnapPersonnel` through
-both models, so it measures model behavior rather than generated-schedule roster composition.
+fixed-roster engine is in the 7.5–9.4 range. The controlled gate replays the same calibration talent
+ladder and `SnapPersonnel` through both models. Constants are fitted on eight tuning worlds and
+accepted only on twelve disjoint holdout worlds, so the gate does not grade its own tuning inputs.
 
-The final controlled run uses abstracted means of 26.1 (college) and 21.2 (pro) points per
-team-game, with pro home-field points set to 0.0 to match the detailed reducer's 0.005 leverage
-default. All four covered metrics — points, plays, yards per play and home advantage — pass paired
-TOST in both tiers. The detailed model was not changed to fit the abstracted model.
+The final holdout reports **12 tests / 22 checks, all passed**. Points, scrimmage plays and home
+advantage are asserted in both tiers; yards per play is asserted professionally. College yards per
+play remains a named canon gap because `01-RESEARCH.md` has no college yardage band from which to
+derive an equivalence margin.
 
 The generated-schedule aggregate remains a separate calibration question because its roster and
 mismatch population differs between the models. It is not silently folded into the equivalence
 claim; if that broader contract is required, choose a schedule-population or model-design change
 before widening the gate.
 
+The corrected convention exposes a separate detailed tempo gap in `--calibration-report`: 66.93
+college and 55.74 professional scrimmage plays per team-game on the holdout. College's interval
+crosses its 67-play floor and pro is below its provisional 60-play floor. Do not restore kicks to
+the denominator to make those rows green; the detailed clock/drive model owns that calibration.
+
 ### Where things are, precisely
 
-- `Tests/SimTests/Suites/TwoTierConsistencyTests.swift` — the gate itself. Four metrics asserted
-  (points, plays, yards per play, home advantage), six named as uncovered with what each is
+- `Tests/SimTests/Suites/TwoTierConsistencyTests.swift` — the gate itself. Points, plays and home
+  advantage are asserted in both tiers; yards per play is asserted professionally. Six metrics are
+  named as uncovered with what each is
   blocked on (`TwoTierConsistency.uncoveredMetrics`), one canon gap named explicitly
   (`TwoTierConsistency.canonGaps` — college yards per play has no `01-RESEARCH.md` §6.5 row to
   compose a margin from; that's a doc-first amendment to `01`, not a number to invent here).
   The fixtures are controlled: both models receive the same `SnapPersonnel` and seed for each
-  ladder matchup. `Estimate.difference`/`pairedMeanDifference`/`pairedRateDifference` (in `Band.swift` and this
-  file) implement paired TOST — the difference is tested against a derived margin, never a level
-  against a range. If you're wondering why this file has two different-looking difference
-  estimators, it's because two sessions converged on the same test independently mid-session and
-  the paired one (retains fixture covariance) is strictly better; that's already resolved, not an
-  open question.
+  ladder matchup. `pairedMeanDifference`/`pairedRateDifference` implement paired TOST — the
+  difference is tested against a derived margin, never a level against a range.
+  `Estimate.difference` remains the independently sampled estimator used by the
+  calibration unit tests; the two-tier gate uses paired estimators because both models replay each
+  fixture.
 - `Tests/SimTests/Suites/CalibrationReportProbe.swift` — `--calibration-report`, prints both
   tiers' full band tables from `CalibrationHarness`. Use this, not `--calibration` (which only
   tests the TOST instrument itself and never runs the engine).

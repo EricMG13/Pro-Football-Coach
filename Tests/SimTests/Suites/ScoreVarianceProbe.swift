@@ -62,7 +62,7 @@ func runScoreVarianceProbe() {
     measure(
         "even 72 / 72",
         home: CalibrationRoster.team(skill: 72, seed: 72_001),
-        away: CalibrationRoster.team(skill: 72, seed: 72_001),
+        away: CalibrationRoster.team(skill: 72, seed: 72_002),
         seeds: 100_000..<100_400
     )
     measure(
