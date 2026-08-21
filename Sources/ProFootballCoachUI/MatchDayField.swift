@@ -843,8 +843,8 @@ private enum Paint {
 
 private enum EndZone {
     static let deepGround = CoachWorldTokens.ColorValue(hex: 0x072616)
-    static let oursInk = Color(red: 247 / 255, green: 251 / 255, blue: 255 / 255).opacity(0.93)
-    static let theirsInk = Color(red: 240 / 255, green: 247 / 255, blue: 255 / 255).opacity(0.90)
+    static let oursInk = CoachWorldTokens.Floodlit.clubInk.color.opacity(0.93)
+    static let theirsInk = CoachWorldTokens.Floodlit.opponentInk.color.opacity(0.90)
     static let oursSize: CGFloat = 38
     static let theirsSize: CGFloat = 36
     static let oursTracking: CGFloat = 0.11

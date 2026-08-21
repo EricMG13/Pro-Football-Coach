@@ -1640,6 +1640,16 @@ public struct CollegePortalState: Codable, Sendable, Equatable {
         try container.encode(summaries, forKey: .summaries)
     }
 
+    package var isTransactionallyValid: Bool {
+        Self.isValid(
+            targetSeason: targetSeason,
+            phase: phase,
+            entries: entries,
+            summaries: summaries,
+            requiresStablePhase: false
+        )
+    }
+
     private static func isValid(
         targetSeason: Int,
         phase: CollegePortalPhase,

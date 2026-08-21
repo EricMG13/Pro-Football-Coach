@@ -282,6 +282,9 @@ private func argumentSpan(of line: String, from start: String.Index, balanced: B
 /// with `Array(repeating:count:)`, `prefix(count:)` and `ForEach(0..<count)`; `.repeatCount(` and
 /// `.speed(` (the call forms) are unambiguous and carry the same intent.
 private func containsDesignTokenLiteral(_ line: String) -> Bool {
+    let compact = line.filter { !$0.isWhitespace }
+    if compact.contains("Color(\"\")") || compact.contains("Color(hex:\"\")") { return true }
+
     let callMarkers = [
         ".padding(", ".cornerRadius(", ".delay(", ".speed(", ".repeatCount(", "Color("
     ]
@@ -930,6 +933,14 @@ func runContractTests() {
             expect(caught("Color(red: 1, green: 0.95, blue: 0.78)\n",
                           by: containsDesignTokenLiteral),
                    "a planted literal RGB colour was not caught")
+            expect(caught("Color(\"Rogue\")\n", by: containsDesignTokenLiteral),
+                   "a planted named colour asset was not caught")
+            expect(caught("Color( \"Rogue\")\n", by: containsDesignTokenLiteral),
+                   "a named colour asset with legal whitespace was not caught")
+            expect(caught("Color(hex: \"#ABCDEF\")\n", by: containsDesignTokenLiteral),
+                   "a planted literal hex colour was not caught")
+            expect(caught("Color(hex:\"#ABCDEF\")\n", by: containsDesignTokenLiteral),
+                   "a literal hex colour without label whitespace was not caught")
 
             // The timing and easing markers `04` section 6.7 added.
             expect(caught("withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true))",

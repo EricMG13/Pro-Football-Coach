@@ -592,7 +592,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                                    minHeight: CoachWorldTokens.Shape.minimumTarget)
                             .background(day.isCurrent ? palette.actionPrimary.color : Color.clear)
                             .foregroundStyle(
-                                day.isCurrent ? Color(red: 0.08, green: 0.06, blue: 0.01)
+                                day.isCurrent ? CoachWorldTokens.Floodlit.goldInk.color
                                     : palette.contentPrimary.color
                             )
                             .accessibilityLabel("\(day.dayLabel), \(day.assignment)")

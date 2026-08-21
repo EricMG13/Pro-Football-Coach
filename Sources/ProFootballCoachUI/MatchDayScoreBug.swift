@@ -213,10 +213,7 @@ struct ScoreBug: View {
     }
 
     private var ground: Color {
-        switch kind {
-        case .bowl: Color(red: 14 / 255, green: 10 / 255, blue: 6 / 255)
-        default: CoachWorldTokens.Floodlit.roomDeep.color
-        }
+        CoachWorldTokens.Floodlit.roomDeep.color
     }
 
     private var border: Color {
@@ -253,7 +250,7 @@ private enum Bug {
     static let shadowRadius: CGFloat = 20
     static let hairline: CGFloat = 1
     static let possessionSize: CGFloat = 7
-    static let goldRule = Color(red: 216 / 255, green: 151 / 255, blue: 19 / 255).opacity(0.35)
+    static let goldRule = CoachWorldTokens.Floodlit.goldDeep.color.opacity(0.35)
     /// The committing action's own glow — `glow-gold` from the token table, `04` section 6.1b.
     static let actionGlowRadius: CGFloat = 26
     static let actionGlowYOffset: CGFloat = 2

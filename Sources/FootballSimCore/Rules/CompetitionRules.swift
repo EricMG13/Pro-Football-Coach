@@ -5,7 +5,7 @@ public enum CompetitionRules {
         max(CollegeRules.rosterLimit, ProRules.activeRosterLimit)
     }
 
-    public static let collegeBaselinePoints = 27.0
+    public static let collegeBaselinePoints = 26.8
     public static let proBaselinePoints = 22.5
     public static let collegeScoreDeviation = 10.0
     public static let proScoreDeviation = 8.0

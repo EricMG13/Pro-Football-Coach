@@ -647,13 +647,17 @@ func runPeopleLifecycleTests() {
     }
 }
 
-// **Mean age 25.0...27.5 and share at/past decline 0.08...0.30, derived [P] from the model.**
-// Professional intake starts at 22. `SeasonLifecycleSystem.retires` applies an escalating 0.14,
-// 0.28, ... annual hazard after each position's stated decline age, with a hard stop after eight
-// years. At the playable-roster-weighted decline age near 30.4, the survival ladder contributes
-// about 3.04 post-decline seasons against 8.4 pre-decline seasons: a 0.27 veteran-tail ceiling and
-// mean near 27.3. The bands leave room for expiry and roster construction while rejecting a league
-// with no veteran tail or one dominated by declining players.
+// **Mean age 25.0...27.5, external [C].** NFL Kickoff Weekend's 2023 roster table reported an
+// all-league average of 26.08; 2024 team rosters ranged from roughly 25.6 to 27.5. Sources:
+// https://crescentcitysports.com/a-look-at-2023-nfl-kickoff-weekend-rosters/
+// https://www.chargers.com/news/average-age-nfl-roster-2024
+//
+// **Share at/past decline 0.08...0.30, derived [P] from the model.** Professional intake starts at
+// 22. `SeasonLifecycleSystem.retires` applies an escalating 0.14, 0.28, ... annual hazard after each
+// position's stated decline age, with a hard stop after eight years. At the playable-roster-weighted
+// decline age of 30.4, the survival ladder contributes 3.05 post-decline seasons against 8.4
+// pre-decline seasons: a 0.266 veteran-tail ceiling. The wider band rejects a league with no veteran
+// tail or one dominated by declining players while leaving room for expiry and roster construction.
 
 private let proMeanAgeBand: ClosedRange<Double> = 25.0...27.5
 private let proPastDeclineShareBand: ClosedRange<Double> = 0.08...0.30

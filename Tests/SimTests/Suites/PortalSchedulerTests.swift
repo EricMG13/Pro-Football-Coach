@@ -7,20 +7,29 @@ private final class ScholarshipTransactionRecorder: @unchecked Sendable {
     private(set) var breaches: [(String, [UUID])] = []
     private(set) var eligibilityBreaches: [(String, [UUID])] = []
     private(set) var eligibilityPopulation = 0
+    private(set) var portalBreaches: [(String, [String])] = []
+    private(set) var portalPopulation = 0
 
     func observe(_ checkpoint: String, state: GameState) {
         let violations = WorldIntegrity.collegeScholarshipViolations(in: state)
         let eligibilityViolations = WorldIntegrity.collegeEligibilityViolations(in: state)
+        let portalViolations = WorldIntegrity.collegePortalWindowViolations(in: state)
         let collegeRosterCount = Set(state.programmes.values.flatMap(\.rosterIDs)).count
+        let portalCount = state.college.portal.entries.count
+            + state.college.portal.summaries.count
         lock.lock()
         defer { lock.unlock() }
         checkpoints.insert(checkpoint)
         eligibilityPopulation = max(eligibilityPopulation, collegeRosterCount)
+        portalPopulation = max(portalPopulation, portalCount)
         if !violations.isEmpty {
             breaches.append((checkpoint, violations))
         }
         if !eligibilityViolations.isEmpty {
             eligibilityBreaches.append((checkpoint, eligibilityViolations))
+        }
+        if !portalViolations.isEmpty {
+            portalBreaches.append((checkpoint, portalViolations))
         }
     }
 }
@@ -53,6 +62,26 @@ func runPortalSchedulerTests() {
             expectEqual(
                 Set(WorldIntegrity.collegeEligibilityViolations(in: state)),
                 [collegePlayerID, proPlayerID]
+            )
+        }
+
+        test("an open portal phase is illegal at a transaction boundary") {
+            var state = finalWeek
+            state.college = CollegeState(
+                recruitingSeason: state.college.recruitingSeason,
+                portal: CollegePortalState(
+                    targetSeason: state.college.recruitingSeason,
+                    phase: .postseasonOpen
+                ),
+                phase: state.college.phase,
+                programmes: state.college.programmes,
+                prospectRecruitment: state.college.prospectRecruitment,
+                archivedProspects: state.college.archivedProspects,
+                redshirtPlans: state.college.redshirtPlans
+            )
+            expect(
+                WorldIntegrity.collegePortalWindowViolations(in: state)
+                    .contains("unstablePhase")
             )
         }
 
@@ -150,6 +179,11 @@ func runPortalSchedulerTests() {
                 expect(false, "eligibility broke after \(breach.0): \(breach.1)")
             }
             expectEqual(recorder.eligibilityBreaches.count, 0)
+            expect(recorder.portalPopulation > 0, "portal rule swept no entries or summaries")
+            for breach in recorder.portalBreaches.prefix(8) {
+                expect(false, "portal window broke after \(breach.0): \(breach.1)")
+            }
+            expectEqual(recorder.portalBreaches.count, 0)
         }
 
         test("final-week rollover commits postseason portal before minimum walk-on coverage") {

@@ -4,8 +4,8 @@ import FootballSimCore
 private enum TwoTierConsistency {
     static let pointsPerGameMargin = 0.75
     /// Twenty worlds provide 12,800 paired team observations per tier. These are disjoint from the
-    /// 190_210...190_229 tuning worlds used to calibrate the abstracted pro scoring baseline.
-    static let worldSeeds: [UInt64] = Array(290_210...290_229)
+    /// 190- and 290-series tuning worlds used to calibrate the abstracted scoring baselines.
+    static let worldSeeds: [UInt64] = Array(390_210...390_229)
     static let sampledGames = 320
 }
 

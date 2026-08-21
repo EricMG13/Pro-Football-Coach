@@ -1031,6 +1031,32 @@ public enum WorldIntegrity {
             .sorted(by: uuidLessThan)
     }
 
+    package static func collegePortalWindowViolations(in state: GameState) -> [String] {
+        let portal = state.college.portal
+        var violations: [String] = []
+        if !portal.isTransactionallyValid { violations.append("unsupportedState") }
+        if !portal.phase.isStableBoundary { violations.append("unstablePhase") }
+        if portal.targetSeason != state.college.recruitingSeason {
+            violations.append("targetSeasonDisagreement")
+        }
+        if portal.entries.count > CollegeRules.portalPoolLimit {
+            violations.append("poolLimitExceeded")
+        }
+        if portal.summaries.count > CollegeRules.portalWindowCount {
+            violations.append("windowCountExceeded")
+        }
+        let programmeIDs = Set(state.programmes.ids)
+        for (playerID, record) in portal.entries {
+            if record.offers.count > CollegeRules.maximumPortalOffersPerEntrant {
+                violations.append("offerLimitExceeded:\(playerID)")
+            }
+            if !programmeIDs.contains(record.sourceProgrammeID) {
+                violations.append("unknownSourceProgramme:\(playerID)")
+            }
+        }
+        return violations.sorted()
+    }
+
     private static func checkCollegeState(
         _ state: GameState,
         issues: inout [IntegrityIssue]

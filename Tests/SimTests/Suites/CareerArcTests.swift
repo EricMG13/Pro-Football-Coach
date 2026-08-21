@@ -67,6 +67,20 @@ func runCareerArcTests() {
             expectEqual(arc.jobHistory.last?.reason, .promoted)
 
             var promoting = controlled
+            promoting.history = DomainEventLedger(retentionLimit: 1)
+            expect(promoting.history.append(contentsOf: (0...1).map { sequence in
+                DomainEvent(
+                    id: DomainEvent.deterministicID(
+                        rootSeed: controlled.league.seed,
+                        sequence: sequence
+                    ),
+                    sequence: sequence,
+                    occurredAt: controlled.calendar,
+                    payload: .integrityChecked(issueCount: 0)
+                )
+            }))
+            let archivedSeasons = promoting.history.archive
+            expect(!archivedSeasons.isEmpty, "the promotion fixture has no archived season")
             promoting.careerArc = CareerArcState(
                 currentJob: CareerJob(
                     organisationID: programmeID,
@@ -89,6 +103,11 @@ func runCareerArcTests() {
                 promoted.state.people.staffCareers[coachID],
                 careerRecord,
                 "promotion changed or dropped the coach's career record"
+            )
+            expectEqual(
+                promoted.state.history.archive,
+                archivedSeasons,
+                "promotion changed, dropped, or duplicated an archived season"
             )
 
             var resigning = controlled
