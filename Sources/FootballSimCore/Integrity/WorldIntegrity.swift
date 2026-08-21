@@ -831,6 +831,19 @@ public enum WorldIntegrity {
         }
     }
 
+    package static func collegeEligibilityViolations(in state: GameState) -> [UUID] {
+        let collegeRosterIDs = Set(state.programmes.values.flatMap(\.rosterIDs))
+        let proRosterIDs = Set(state.proTeams.values.flatMap {
+            $0.rosterIDs + $0.practiceSquadIDs
+        })
+        var violations = Set(collegeRosterIDs.filter { id in
+            guard let eligibility = state.players[id]?.eligibility else { return true }
+            return eligibility.isExhausted || !eligibility.isValidForActiveCollegeRoot
+        })
+        violations.formUnion(proRosterIDs.filter { state.players[$0]?.eligibility != nil })
+        return violations.sorted(by: uuidLessThan)
+    }
+
     private static func checkPeopleState(
         _ state: GameState,
         issues: inout [IntegrityIssue]
@@ -871,6 +884,7 @@ public enum WorldIntegrity {
         let proRosterIDs = Set(state.proTeams.values.flatMap {
             $0.rosterIDs + $0.practiceSquadIDs
         })
+        let eligibilityViolationIDs = Set(collegeEligibilityViolations(in: state))
         let careerHistoryIsValid: (PlayerCareerRecord) -> Bool = { career in
             let seasonsAreChronological = zip(career.seasons, career.seasons.dropFirst())
                 .allSatisfy { pair in pair.0.season < pair.1.season }
@@ -921,12 +935,11 @@ public enum WorldIntegrity {
                   let career = state.people.playerCareers[id] else { continue }
             let ageShapeIsValid = PeopleRules.playerAgeRange.contains(player.age)
             let collegeShapeIsValid = !collegeRosterIDs.contains(id)
-                || (player.eligibility?.isExhausted == false
-                    && player.eligibility?.isValidForActiveCollegeRoot == true
+                || (!eligibilityViolationIDs.contains(id)
                     && player.contract == nil
                     && lifecycle.status == .active)
             let proShapeIsValid = !proRosterIDs.contains(id)
-                || (player.eligibility == nil && lifecycle.status == .active)
+                || (!eligibilityViolationIDs.contains(id) && lifecycle.status == .active)
             let departureShapeIsValid = lifecycle.status == .active
                 ? career.endedAt == nil && career.endStatus == nil
                 : career.endedAt != nil

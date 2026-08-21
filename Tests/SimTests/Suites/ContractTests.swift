@@ -926,6 +926,10 @@ func runContractTests() {
             expect(!caught("Text(\"hi\").padding(Token.gutter2)\n", by: containsDesignTokenLiteral),
                    "a digit inside a token's name was mistaken for a literal")
 
+            expect(caught("Color(red: 1, green: 0.95, blue: 0.78)\n",
+                          by: containsDesignTokenLiteral),
+                   "a planted literal RGB colour was not caught")
+
             // The timing and easing markers `04` section 6.7 added.
             expect(caught("withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true))",
                           by: containsDesignTokenLiteral),

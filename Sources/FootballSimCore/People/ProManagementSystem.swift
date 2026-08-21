@@ -176,9 +176,12 @@ public enum ProManagementSystem {
         guard Self.isValid(contract) else { throw ProManagementError.invalidContract }
         guard let player = state.players[playerID] else { throw ProManagementError.missingPlayer }
         guard let team = state.proTeams[teamID] else { throw ProManagementError.missingTeam }
-        let ownedIDs = Set(state.programmes.values.flatMap(\.rosterIDs))
-            .union(state.proTeams.values.flatMap { $0.rosterIDs + $0.practiceSquadIDs })
-        guard !ownedIDs.contains(playerID), player.eligibility == nil, player.contract == nil else {
+        guard !state.programmes.values.contains(where: { $0.rosterIDs.contains(playerID) }),
+              !state.proTeams.values.contains(where: {
+                  $0.rosterIDs.contains(playerID) || $0.practiceSquadIDs.contains(playerID)
+              }),
+              player.eligibility == nil,
+              player.contract == nil else {
             throw ProManagementError.playerIsNotProfessionalFreeAgent
         }
         guard team.rosterIDs.count < ProRules.activeRosterLimit else {
@@ -421,33 +424,47 @@ public enum ProManagementSystem {
                 guard let team = next.proTeams[teamID] else {
                     throw ProManagementError.missingTeam
                 }
-                let rosterIDSet = Set(team.rosterIDs)
                 var rosterByPosition: [Position: Int] = [:]
                 for playerID in team.rosterIDs {
                     guard let position = next.players[playerID]?.position else { continue }
                     rosterByPosition[position, default: 0] += 1
                 }
-                let candidates = (team.rosterIDs + team.practiceSquadIDs).compactMap {
-                    playerID -> (UUID, Int)? in
+
+                var selected: (playerID: UUID, deadMoneyAdded: Int)?
+                func consider(_ playerID: UUID, isActive: Bool) {
                     guard let player = next.players[playerID],
-                          let contract = player.contract else { return nil }
-                    if rosterIDSet.contains(playerID) {
+                          let contract = player.contract else { return }
+                    if isActive {
                         let minimum = SharedRules.minimumPlayableRosterByPosition[player.position] ?? 0
                         guard rosterByPosition[player.position, default: 0] > minimum else {
-                            return nil
+                            return
                         }
                     }
                     let deadMoneyAdded = contract.deadMoney(ifReleasedAtSeason: calendar.season)
                     guard deadMoneyAdded < contract.capHit(atSeason: calendar.season) else {
-                        return nil
+                        return
                     }
-                    return (playerID, deadMoneyAdded)
+
+                    guard let current = selected else {
+                        selected = (playerID, deadMoneyAdded)
+                        return
+                    }
+                    if deadMoneyAdded < current.deadMoneyAdded
+                        || (deadMoneyAdded == current.deadMoneyAdded
+                            && playerID.uuidString < current.playerID.uuidString) {
+                        selected = (playerID, deadMoneyAdded)
+                    }
+                }
+
+                for playerID in team.rosterIDs {
+                    consider(playerID, isActive: true)
+                }
+                for playerID in team.practiceSquadIDs {
+                    consider(playerID, isActive: team.rosterIDs.contains(playerID))
                 }
                 // Ties broken by identifier, the same rule every other deterministic ordering in
                 // this project uses, so two processes given the same root release the same player.
-                guard let (playerID, deadMoneyAdded) = candidates.min(by: { lhs, rhs in
-                    lhs.1 == rhs.1 ? lhs.0.uuidString < rhs.0.uuidString : lhs.1 < rhs.1
-                }) else {
+                guard let (playerID, deadMoneyAdded) = selected else {
                     // No remaining release strictly sheds cap, so no sequence reaches legality.
                     throw ProManagementError.capExceeded
                 }

@@ -5,14 +5,22 @@ private final class ScholarshipTransactionRecorder: @unchecked Sendable {
     private let lock = NSLock()
     private(set) var checkpoints: Set<String> = []
     private(set) var breaches: [(String, [UUID])] = []
+    private(set) var eligibilityBreaches: [(String, [UUID])] = []
+    private(set) var eligibilityPopulation = 0
 
     func observe(_ checkpoint: String, state: GameState) {
         let violations = WorldIntegrity.collegeScholarshipViolations(in: state)
+        let eligibilityViolations = WorldIntegrity.collegeEligibilityViolations(in: state)
+        let collegeRosterCount = Set(state.programmes.values.flatMap(\.rosterIDs)).count
         lock.lock()
         defer { lock.unlock() }
         checkpoints.insert(checkpoint)
+        eligibilityPopulation = max(eligibilityPopulation, collegeRosterCount)
         if !violations.isEmpty {
             breaches.append((checkpoint, violations))
+        }
+        if !eligibilityViolations.isEmpty {
+            eligibilityBreaches.append((checkpoint, eligibilityViolations))
         }
     }
 }
@@ -35,6 +43,19 @@ func runPortalSchedulerTests() {
     let spring = try! WorldScheduler.advanceWeek(postseason.state)
 
     suite("College portal scheduler lifecycle") {
+        test("eligibility clock violations are independently observable") {
+            var state = finalWeek
+            let collegePlayerID = state.programmes.values.first!.rosterIDs[0]
+            let proPlayerID = state.proTeams.values.first!.rosterIDs[0]
+            state.players.update(collegePlayerID) { $0.eligibility = nil }
+            state.players.update(proPlayerID) { $0.eligibility = Eligibility() }
+
+            expectEqual(
+                Set(WorldIntegrity.collegeEligibilityViolations(in: state)),
+                [collegePlayerID, proPlayerID]
+            )
+        }
+
         test("scholarships remain valid immediately after the season lifecycle transaction") {
             var state = finalWeek
             let programmeID = state.programmes.ids[0]
@@ -124,6 +145,11 @@ func runPortalSchedulerTests() {
                 expect(false, "scholarships broke after \(breach.0): \(breach.1)")
             }
             expectEqual(recorder.breaches.count, 0)
+            expect(recorder.eligibilityPopulation > 0, "eligibility rule swept no players")
+            for breach in recorder.eligibilityBreaches.prefix(8) {
+                expect(false, "eligibility broke after \(breach.0): \(breach.1)")
+            }
+            expectEqual(recorder.eligibilityBreaches.count, 0)
         }
 
         test("final-week rollover commits postseason portal before minimum walk-on coverage") {
