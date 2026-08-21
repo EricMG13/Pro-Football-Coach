@@ -1,5 +1,8 @@
 # Canonical AI-Generated Team Logo Set
 
+**Amended 2026-08-21.** The set is now drawn as flat vector artwork by `Tools/TeamLogos/generate_logos.swift` at 256 x 256, the size a 44 pt chip needs at 3x. The 1024 x 1024 requirement below is superseded: it shipped 157 MB of source art for a 132 device-pixel draw. `TeamLogoTests` now walks the imageset directory and bounds both the pixel side and the byte count.
+
+
 **Date:** 2026-08-20
 
 **Status:** Approved design
@@ -61,7 +64,7 @@ A checked-in manifest is the source of truth for the set. It contains exactly on
 
 The canonical world is exported once from seed `20_260_812` to populate the identity fields. Generation then proceeds one logo at a time so each output is independently replaceable. The shared prompt establishes the sports-logo finish, transparent background, small-size clarity, palette, text prohibition, and originality constraints. The team-specific prompt supplies the motif and regional story.
 
-Each source image is a 1024 x 1024 transparent PNG. A generated image is accepted only after automated file checks and human visual review. Failed images are regenerated or edited individually; an accepted logo is never silently replaced by a later bulk run.
+Each source image is a 256 x 256 transparent PNG (amended 2026-08-21 from 1024 x 1024, which was 7.8x linear over the largest draw the app makes). A generated image is accepted only after automated file checks and human visual review. Failed images are regenerated or edited individually; an accepted logo is never silently replaced by a later bulk run.
 
 Human review covers:
 
@@ -127,7 +130,7 @@ Existing product rules about team-colour restraint still apply. Adding a logo do
 ### Asset checks
 
 - Decode every PNG.
-- Assert 1024 x 1024 dimensions and a usable alpha channel with transparent edge pixels.
+- Assert 256 x 256 dimensions, a byte budget per file and across the catalogue, and a usable alpha channel with transparent edge pixels.
 - Produce a specimen grid showing all 166 marks at compact, medium, and large sizes on both light and dark surfaces.
 - Compare files perceptually to flag exact or near duplicates for human review.
 

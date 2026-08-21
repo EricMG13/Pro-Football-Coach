@@ -224,6 +224,59 @@ func runTeamLogoManifestTests() {
                 }
             }
         }
+        test("every packaged mark stays inside the drawn-size budget") {
+            let imagesets = try FileManager.default.contentsOfDirectory(
+                at: teamLogoAssetsURL,
+                includingPropertiesForKeys: nil
+            ).filter { $0.pathExtension == "imageset" }
+            expect(!imagesets.isEmpty, "no imagesets under \(teamLogoAssetsURL.path)")
+
+            // The chip never draws larger than its own largest case, so the source only has to
+            // cover that many points at 3x. Reading the case back from the renderer means growing
+            // the chip fails here rather than shipping a blurred mark.
+            let largestDraw = try largestDrawnLogoPointSize()
+            expect(largestDraw > 0, "could not read a size case from the renderer")
+            expect(teamLogoSourceSide >= largestDraw * 3,
+                   "\(teamLogoSourceSide)px source cannot cover a \(largestDraw)pt draw at 3x")
+
+            var catalogueBytes = 0
+            for imageset in imagesets.sorted(by: { $0.path < $1.path }) {
+                let files = try FileManager.default.contentsOfDirectory(
+                    at: imageset,
+                    includingPropertiesForKeys: nil
+                )
+                let pngs = files.filter { $0.pathExtension == "png" }
+                expectEqual(pngs.count, 1,
+                            "\(imageset.lastPathComponent) packages \(pngs.count) PNGs")
+                let contents = try String(
+                    contentsOf: imageset.appendingPathComponent("Contents.json"),
+                    encoding: .utf8
+                )
+                expectEqual(contents.components(separatedBy: "\"scale\"").count - 1, 1,
+                            "\(imageset.lastPathComponent) declares more than one scale")
+                for png in pngs {
+                    let bytes = try Data(contentsOf: png).count
+                    catalogueBytes += bytes
+                    expect(bytes <= teamLogoByteBudget,
+                           "\(png.lastPathComponent) is \(bytes) bytes, over "
+                               + "\(teamLogoByteBudget)")
+                    guard let source = CGImageSourceCreateWithURL(png as CFURL, nil),
+                          let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)
+                            as? [CFString: Any],
+                          let width = properties[kCGImagePropertyPixelWidth] as? Int,
+                          let height = properties[kCGImagePropertyPixelHeight] as? Int else {
+                        expect(false, "invalid PNG \(png.lastPathComponent)")
+                        continue
+                    }
+                    expect(width <= teamLogoSourceSide && height <= teamLogoSourceSide,
+                           "\(png.lastPathComponent) is \(width)x\(height), over "
+                               + "\(teamLogoSourceSide)")
+                }
+            }
+            expect(catalogueBytes <= teamLogoCatalogueByteBudget,
+                   "packaged marks total \(catalogueBytes) bytes, over "
+                       + "\(teamLogoCatalogueByteBudget)")
+        }
         test("motif families are balanced") {
             let teams = try loadTeamLogoManifest().teams
             for family in TeamLogoFamily.allCases {
@@ -234,9 +287,28 @@ func runTeamLogoManifestTests() {
     }
 }
 
+// A 44pt chip at 3x is 132 device pixels, so 256 is the drawn size with headroom to spare.
+// The prior 1024px set was 7.8x linear and 60x by area over the largest draw the app ever makes.
+let teamLogoSourceSide = 256
+let teamLogoByteBudget = 96 * 1024
+let teamLogoCatalogueByteBudget = 8 * 1024 * 1024
+
 private let teamLogoAssetsURL = URL(
     fileURLWithPath: "Sources/ProFootballCoachUI/Resources/TeamLogos.xcassets"
 )
+
+private let teamLogoRendererURL = URL(
+    fileURLWithPath: "Sources/ProFootballCoachUI/CoachWorldTeamLogo.swift"
+)
+
+private func largestDrawnLogoPointSize() throws -> Int {
+    let source = try String(contentsOf: teamLogoRendererURL, encoding: .utf8)
+    let regex = try NSRegularExpression(pattern: #"case\s+\w+\s*=\s*(\d+)"#)
+    let range = NSRange(source.startIndex..., in: source)
+    return regex.matches(in: source, range: range).compactMap { match in
+        Range(match.range(at: 1), in: source).flatMap { Int(source[$0]) }
+    }.max() ?? 0
+}
 
 private let teamLogoCatalogURL = URL(
     fileURLWithPath: "Sources/ProFootballCoachUI/TeamLogoCatalog.generated.swift"
@@ -368,8 +440,10 @@ func runTeamLogoAssetTests(family rawValue: String) {
                 }
                 expectEqual(sourceType as String, UTType.png.identifier,
                        "non-PNG source in \(record.filename)")
-                expectEqual(properties[kCGImagePropertyPixelWidth] as? Int, Optional(1024))
-                expectEqual(properties[kCGImagePropertyPixelHeight] as? Int, Optional(1024))
+                expectEqual(properties[kCGImagePropertyPixelWidth] as? Int,
+                            Optional(teamLogoSourceSide))
+                expectEqual(properties[kCGImagePropertyPixelHeight] as? Int,
+                            Optional(teamLogoSourceSide))
                 expectEqual(properties[kCGImagePropertyHasAlpha] as? Bool, Optional(true))
                 expect(hasTransparentEdgePixel(image), "opaque edge in \(record.filename)")
             }

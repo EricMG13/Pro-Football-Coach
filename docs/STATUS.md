@@ -19,6 +19,39 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-21 — the 166 team marks were redrawn, and P0-1 of the SwiftUI performance audit is
+> closed.** The set was 166 AI-illustrated PNGs at 1024 x 1024, 157 MB, drawn through a chip that is
+> never larger than 44 pt. Two defects in one: the payload, and marks whose detail turned to mush at
+> the 20 pt size the app uses most.
+>
+> The set is now drawn by `Tools/TeamLogos/generate_logos.swift` — flat vector artwork in the house
+> style athletics marks share: one dominant silhouette, flat fills in the team's own two colours, a
+> keyline and a halo. 42 hand-authored silhouettes across the six motif families, each placed plain
+> or in one of six frames, with a deterministic separation ladder that nudges a mark until its
+> coarse signature stands clear of every mark already drawn (90 of 166 needed one).
+>
+> **What is verified.** `swift build --product SimTests` is green. `--team-logo-manifest`
+> (8 tests / 16,720 checks) and all six `--team-logo-assets <family>` lanes pass. Regenerating twice
+> produces byte-identical PNGs. The catalogue is **157 MB → 5.1 MB**, largest file 50 KB.
+>
+> **What is not verified.** No device capture, so the memory and World Search stall the audit
+> predicts are still predictions. Colours, names, stable IDs and the generated catalogue are
+> untouched, so the two legal tests cover exactly what they covered before — but **the owner has not
+> re-approved the artwork**. `humanApproved` in the manifest still reads `true` from the 2026-08-20
+> review of the old set; `reviewNotes` says so on every record. Review previews are in
+> `exports/team-logo-remake-2026-08-21/`.
+>
+> `TeamLogoTests` now walks the imageset directory by construction and bounds the pixel side, the
+> per-file bytes and the catalogue total; it also reads the largest size case back out of
+> `CoachWorldTeamLogo.swift`, so growing the chip past what a 256 px source covers fails the suite
+> rather than shipping a blurred mark. The plan and spec that mandated 1024 x 1024 carry an
+> amendment note.
+>
+> The rest of the audit is untouched. **P0-2 still stands: this branch is 138 commits behind `main`
+> and predates every app-layer performance fix there.** Nothing else in that report should be
+> actioned before the merge.
+
+
 > **2026-08-18 — Floodlit design handoff, all three milestones implemented.** The owner-supplied
 > handoff `design_handoff_floodlit_surfaces_and_match_day/` is built end to end:
 >
@@ -72,6 +105,40 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > ours is a geographic map — the handoff's own text and its rendering disagree, and replacing it
 > discards a working surface); and **F-01** for the remaining ~59 surfaces, which are still
 > chrome-only.
+
+> **2026-08-18, later still — exhaustive design critique on a real career at the install floor.**
+> `docs/reviews/2026-08-18-floodlit-exhaustive-design-critique.md` records **80 findings across 21
+> surfaces**, driven on an iPhone 17e simulator (844 × 390, the install floor) through a real
+> career rather than the proof harness. Captures:
+> `docs/proofs/2026-08-18-exhaustive-critique/`. The Debug app build was green; **the suites were
+> not run**, and this is a review, not a verification pass.
+>
+> Verdict **reject**: median 18/40 against `04b`, nothing near the 31/40 gate. Four failures are
+> systemic rather than per-surface, and they supersede the earlier "four of six families confirmed
+> on a simulator" line above:
+>
+> - **G-01 (P0)** — 32 of 62 surfaces have no route in a live career. Recruiting (11), pro
+>   management (8) and career (13) are unreachable: every route into them lives in a `worldStrip`
+>   guarded by `if chrome == nil`, and chrome is always supplied. That includes the Recruiting
+>   Board, one of the three `04b` §7 proof screens.
+> - **G-05 (P0)** — `ADVANCE` refuses when the weekly plans are unset and says nothing: the
+>   Floodlit hub never renders `statusMessage`, and its empty state claims the week advances once
+>   obligations are cleared while they are. Reproduced, then unblocked by setting both plans.
+> - **G-02 (P1)** — Settings & accessibility is unreachable once a career starts.
+> - **G-35/G-36 (P1)** — rail labels are 7.5 pt (5.25 pt after `minimumScaleFactor`) and the header
+>   family label 8.5 pt, below `04` §6.2's floor and §6.1b's 9 pt exemption; the `04b` §8 check
+>   that should catch it asserts `authoredFloor >= 12` — a constant, not a call site.
+>
+> Also recorded: real generated names break the personnel table, the depth chart and the Match Day
+> field (all three truncate or clip the thing they exist to show); Rankings and Bracket are the same
+> view; 28 of 62 registry entries are ten host views under different titles; and no college
+> programme in 20 sampled has a nickname.
+>
+> **Closed 2026-08-19:** G-01, G-02, G-05, G-35 and G-36 no longer describe the current app.
+> Canonical career routes now expose all 62 registered surfaces including Settings, blocked advance
+> attempts render the outstanding work, and rail/header typography respects the authored floor.
+> `--design-contracts` verifies 62 landed and zero pending surfaces. The remaining per-surface
+> critique stays historical evidence; it is not the current release verdict.
 
 
 > **2026-08-10 master-plan rebaseline:** the attached Master Build Documentation is now the primary
