@@ -5,6 +5,22 @@ final class ProFootballCoachUITests: XCTestCase {
         XCTAssertTrue(true)
     }
 
+    func testCoachingHQRosterPlayerProfileVerticalSlice() {
+        let app = XCUIApplication()
+        app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
+        app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "8"
+        app.launch()
+
+        XCTAssertTrue(app.otherElements["coaching-hq-screen"].waitForExistence(timeout: 20))
+        app.buttons.matching(NSPredicate(format: "label == %@", "Sections")).element(boundBy: 6).tap()
+        app.buttons["Roster"].tap()
+        XCTAssertTrue(app.otherElements["roster-screen"].waitForExistence(timeout: 10))
+        app.buttons["roster-open-dossier"].tap()
+        XCTAssertTrue(app.otherElements["player-profile-screen"].waitForExistence(timeout: 10))
+        app.buttons["Back to the roster"].tap()
+        XCTAssertTrue(app.otherElements["roster-screen"].waitForExistence(timeout: 10))
+    }
+
     func testRedesignedJobBoardProofFlow() {
         let app = XCUIApplication()
         app.launchArguments = ["--redesigned-job-board"]

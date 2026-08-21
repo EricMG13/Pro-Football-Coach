@@ -114,6 +114,33 @@ private func rawAssetLoaders(in source: String) -> [String] {
 func runDesignContractTests() {
     let canon = canonText()
 
+    suite("Mock reconciliation vertical slice") {
+        test("selected production surfaces use truthful supported copy") {
+            let root = packageRoot().appendingPathComponent("Sources/ProFootballCoachUI")
+            let paths = ["CoachingHQView.swift", "RosterView.swift", "PlayerProfileView.swift"]
+            let source = paths.compactMap {
+                try? String(contentsOf: root.appendingPathComponent($0), encoding: .utf8)
+            }.joined(separator: "\n")
+
+            for required in [
+                "Before kickoff",
+                "Open full dossier",
+                "Back to the roster",
+                "Open development evidence"
+            ] {
+                expect(source.contains(required), "vertical slice is missing truthful copy: \(required)")
+            }
+
+            for unsupported in [
+                "4 of 7 done", "3d 06h", "Thin at EDGE", "6 games on record",
+                "Into the development plan"
+            ] {
+                expect(!source.localizedCaseInsensitiveContains(unsupported),
+                       "vertical slice copied unsupported mock claim: \(unsupported)")
+            }
+        }
+    }
+
     suite("Orientation policy") {
         // CLAUDE.md has claimed since 2026-08-10 that landscape-only is "declared in App/project.yml
         // and asserted by OrientationPolicyTest". The declaration was real; the test was not, and
