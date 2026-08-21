@@ -6,13 +6,14 @@ Scope: the 62 registered screen identities, resolved to 47 canonical presentatio
 ## Authority and guardrails
 
 This ledger freezes the presentation contract for the all-screen migration. Existing Swift views,
-read models, assets, and callbacks are authoritative. Reference HTML and reference-package prose
-may inform presentation, but do not authorize new facts, state, routes, actions, schema, or behavior.
-“Existing model/callbacks” means no schema or behavior expansion is authorized.
+read models, assets, and callbacks are authoritative. Existing state transitions, persistence, and
+simulation behavior must be preserved exactly. The supplied HTML/reference package is a visual
+shell and hierarchy prompt only; it creates no facts or executable requirements. “Existing
+model/callbacks” means no schema or behavior expansion is authorized.
 
 Every production team or opponent logo supplied by current data and assets remains visible exactly
-once on its destination. “No invented logos” prohibits unsupported logo content; it does not
-authorize removing an existing supplied logo.
+once on its destination. Do not add or duplicate logo assets. “No invented logos” prohibits
+unsupported logo content; it does not authorize removing an existing supplied logo.
 
 `onNavigateChrome` below is the existing optional shared-chrome callback accepted by conforming
 presentation roots. It does not authorize a second local navigation surface.
