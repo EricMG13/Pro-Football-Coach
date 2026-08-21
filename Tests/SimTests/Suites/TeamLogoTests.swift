@@ -204,13 +204,13 @@ func runTeamLogoManifestTests() {
         }
         test("no approved PNG is visually near-duplicated") {
             let approved = try loadTeamLogoManifest().teams.filter(\.humanApproved)
-            let hashes = approved.compactMap { record -> (TeamLogoRecord, UInt64)? in
+            let hashes = approved.compactMap { record -> (TeamLogoRecord, [UInt64])? in
                 guard let source = CGImageSourceCreateWithURL(pngURL(for: record) as CFURL, nil),
                       let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
                     expect(false, "invalid PNG \(record.filename)")
                     return nil
                 }
-                return (record, averageHash(image))
+                return (record, colourGradientHash(image))
             }
             expectEqual(hashes.count, approved.count)
             for lhsIndex in hashes.indices {
@@ -218,7 +218,7 @@ func runTeamLogoManifestTests() {
                     let lhs = hashes[lhsIndex]
                     let rhs = hashes[rhsIndex]
                     expect(
-                        hammingDistance(lhs.1, rhs.1) > 4,
+                        hashDistance(lhs.1, rhs.1) > teamLogoDuplicateThreshold,
                         "near-duplicate marks: \(lhs.0.name) and \(rhs.0.name)"
                     )
                 }
@@ -288,10 +288,13 @@ func runTeamLogoManifestTests() {
 }
 
 // A 44pt chip at 3x is 132 device pixels, so 256 is the drawn size with headroom to spare.
-// The prior 1024px set was 7.8x linear and 60x by area over the largest draw the app ever makes.
+// The prior 1024px set was 7.8x linear and 60x by area over the largest draw the app ever makes:
+// 157 MB packaged and 664 MiB if every mark were decoded at once, against 14 MB and 41 MiB now.
+// The budgets sit roughly 40 per cent above the shipped set, which is room for a denser mark
+// without being room for a second 1024px catalogue.
 let teamLogoSourceSide = 256
-let teamLogoByteBudget = 96 * 1024
-let teamLogoCatalogueByteBudget = 8 * 1024 * 1024
+let teamLogoByteBudget = 192 * 1024
+let teamLogoCatalogueByteBudget = 20 * 1024 * 1024
 
 private let teamLogoAssetsURL = URL(
     fileURLWithPath: "Sources/ProFootballCoachUI/Resources/TeamLogos.xcassets"
@@ -349,27 +352,61 @@ private func hasTransparentEdgePixel(_ image: CGImage) -> Bool {
     return false
 }
 
-private func averageHash(_ image: CGImage) -> UInt64 {
-    var pixels = [UInt8](repeating: 0, count: 64)
-    let context = CGContext(
+// This replaced an 8x8 grayscale average hash on 2026-08-21. That hash thresholded brightness
+// against the image's own mean after a `.low` draw, which on a large reduction is closer to point
+// sampling than to averaging -- so what separated two marks was high-frequency detail noise, not
+// how alike they look. Two consequences, both measured on the shipped set: resample the same art
+// to a smaller source and pairs that were far apart collapse together, and replace the `.low` draw
+// with a true area average and 117 pairs land within four bits of each other, several of them
+// identical. A test that green-lights a set it cannot actually tell apart is not a guard.
+//
+// A per-channel difference hash compares neighbouring cells instead of an absolute threshold, so
+// it reads structure rather than brightness, it does not move when the source resolution changes,
+// and it sees colour -- which for a team mark is half the identity. Across the 166 shipped marks
+// the closest pair measures 10 of 192 bits, so the threshold below leaves a couple of bits of
+// margin while still firing on a mark that is a recolour or a light edit of another, which lands
+// far nearer to zero.
+let teamLogoDuplicateThreshold = 8
+
+private func colourGradientHash(_ image: CGImage) -> [UInt64] {
+    let width = 9
+    let height = 8
+    var pixels = [UInt8](repeating: 0, count: width * height * 4)
+    guard let context = CGContext(
         data: &pixels,
-        width: 8,
-        height: 8,
+        width: width,
+        height: height,
         bitsPerComponent: 8,
-        bytesPerRow: 8,
-        space: CGColorSpaceCreateDeviceGray(),
-        bitmapInfo: CGImageAlphaInfo.none.rawValue
-    )!
-    context.interpolationQuality = .low
-    context.draw(image, in: CGRect(x: 0, y: 0, width: 8, height: 8))
-    let average = pixels.reduce(0) { $0 + Int($1) } / pixels.count
-    return pixels.enumerated().reduce(into: UInt64.zero) { result, entry in
-        if Int(entry.element) >= average { result |= UInt64(1) << UInt64(entry.offset) }
+        bytesPerRow: width * 4,
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+    ) else {
+        expect(false, "cannot build a hashing context")
+        return [0, 0, 0]
+    }
+    // Transparent artwork has to land on a known ground, or the alpha reads as whatever the
+    // buffer happened to hold.
+    context.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+    context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+    context.interpolationQuality = .high
+    context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+    return (0..<3).map { channel in
+        var bits = UInt64.zero
+        var offset = 0
+        for y in 0..<height {
+            for x in 0..<(width - 1) {
+                let left = pixels[(y * width + x) * 4 + channel]
+                let right = pixels[(y * width + x + 1) * 4 + channel]
+                if left < right { bits |= UInt64(1) << UInt64(offset) }
+                offset += 1
+            }
+        }
+        return bits
     }
 }
 
-private func hammingDistance(_ lhs: UInt64, _ rhs: UInt64) -> Int {
-    (lhs ^ rhs).nonzeroBitCount
+private func hashDistance(_ lhs: [UInt64], _ rhs: [UInt64]) -> Int {
+    zip(lhs, rhs).reduce(0) { $0 + ($1.0 ^ $1.1).nonzeroBitCount }
 }
 
 func runTeamLogoAssetTests(family rawValue: String) {

@@ -1,13 +1,4 @@
 {
-  "images" : [
-    {
-      "filename" : "TeamLogo_8D6C1461E8BA4C20A25E5DCD872A2A94.png",
-      "idiom" : "universal",
-      "scale" : "1x"
-    }
-  ],
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
-  }
+  "images" : [{ "filename" : "TeamLogo_8D6C1461E8BA4C20A25E5DCD872A2A94.png", "idiom" : "universal", "scale" : "1x" }],
+  "info" : { "author" : "xcode", "version" : 1 }
 }

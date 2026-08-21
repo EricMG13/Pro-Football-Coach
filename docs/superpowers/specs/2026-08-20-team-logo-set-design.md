@@ -1,6 +1,6 @@
 # Canonical AI-Generated Team Logo Set
 
-**Amended 2026-08-21.** The set is now drawn as flat vector artwork by `Tools/TeamLogos/generate_logos.swift` at 256 x 256, the size a 44 pt chip needs at 3x. The 1024 x 1024 requirement below is superseded: it shipped 157 MB of source art for a 132 device-pixel draw. `TeamLogoTests` now walks the imageset directory and bounds both the pixel side and the byte count.
+**Amended 2026-08-21.** Source art is 256 x 256, the size a 44 pt chip needs at 3x. The 1024 x 1024 requirement below is superseded: it shipped 157 MB of source art for a 132 device-pixel draw, and the pipeline had no resize step. `Tools/TeamLogos/downsample.swift` is that step; `TeamLogoTests` walks the imageset directory and bounds the pixel side, the per-file bytes and the catalogue total.
 
 
 **Date:** 2026-08-20

@@ -19,33 +19,40 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
-> **2026-08-21 — the 166 team marks were redrawn, and P0-1 of the SwiftUI performance audit is
-> closed.** The set was 166 AI-illustrated PNGs at 1024 x 1024, 157 MB, drawn through a chip that is
-> never larger than 44 pt. Two defects in one: the payload, and marks whose detail turned to mush at
-> the 20 pt size the app uses most.
+> **2026-08-21 — P0-1 of the SwiftUI performance audit is closed. The artwork is unchanged.**
+> The catalogue shipped 166 marks at 1024 x 1024, 157 MB, for a chip the app never draws larger
+> than 44 points — 132 device pixels at 3x. `Tools/TeamLogos/downsample.swift` is the resize step
+> the generation pipeline never had: **157 MB to 14 MB packaged, and 664 MiB to 41 MiB if every
+> mark were decoded at once.** It is idempotent, so a second run leaves the artwork alone.
 >
-> The set is now drawn by `Tools/TeamLogos/generate_logos.swift` — flat vector artwork in the house
-> style athletics marks share: one dominant silhouette, flat fills in the team's own two colours, a
-> keyline and a halo. 42 hand-authored silhouettes across the six motif families, each placed plain
-> or in one of six frames, with a deterministic separation ladder that nudges a mark until its
-> coarse signature stands clear of every mark already drawn (90 of 166 needed one).
+> A side-by-side at 20, 32 and 44 points shows no visible difference from the 1024 px source — the
+> renderer was already resampling far harder than this on every draw.
 >
-> **What is verified.** `swift build --product SimTests` is green. `--team-logo-manifest`
-> (8 tests / 16,720 checks) and all six `--team-logo-assets <family>` lanes pass. Regenerating twice
-> produces byte-identical PNGs. The catalogue is **157 MB → 5.1 MB**, largest file 50 KB.
+> **An attempt to redraw the set as flat vector marks was reverted the same day.** It read better
+> at 20 points and packaged to 5 MB, but as artwork it was plainly cruder than the marks it
+> replaced, and the owner said so. It is in `b6a5219` if the geometry is ever wanted.
 >
-> **What is not verified.** No device capture, so the memory and World Search stall the audit
-> predicts are still predictions. Colours, names, stable IDs and the generated catalogue are
-> untouched, so the two legal tests cover exactly what they covered before — but **the owner has not
-> re-approved the artwork**. `humanApproved` in the manifest still reads `true` from the 2026-08-20
-> review of the old set; `reviewNotes` says so on every record. Review previews are in
-> `exports/team-logo-remake-2026-08-21/`.
+> **What is verified.** `--team-logo-manifest` (8 tests / 16,720 checks) and all six
+> `--team-logo-assets <family>` lanes pass. `TeamLogoTests` now walks the imageset directory by
+> construction rather than a hand-written list, and bounds the pixel side, the per-file bytes and
+> the catalogue total. It also reads the largest size case back out of `CoachWorldTeamLogo.swift`,
+> so growing the chip past what a 256 px source covers fails the suite rather than shipping a
+> blurred mark. Names, colours, stable IDs, families and the generated catalogue are untouched, so
+> the two legal tests cover exactly what they covered before.
 >
-> `TeamLogoTests` now walks the imageset directory by construction and bounds the pixel side, the
-> per-file bytes and the catalogue total; it also reads the largest size case back out of
-> `CoachWorldTeamLogo.swift`, so growing the chip past what a 256 px source covers fails the suite
-> rather than shipping a blurred mark. The plan and spec that mandated 1024 x 1024 carry an
-> amendment note.
+> **A defective test was replaced, and what it was hiding is worth recording.** The near-duplicate
+> guard hashed each mark to 8x8 grayscale and thresholded against the image's own mean, drawn at
+> `.low` interpolation. On a reduction that large `.low` is closer to point sampling than to
+> averaging, so what separated two marks was high-frequency detail noise rather than how alike they
+> look. Resampling the same art to a smaller source was enough to collapse pairs that had been far
+> apart. Redo the reduction as a true area average and **117 of the 13,695 pairs land within four
+> bits of each other, several of them identical** — the guard could not tell the shipped set apart
+> and passed anyway. It is now a per-channel difference hash over a properly averaged 9x8: it reads
+> structure rather than brightness, does not move with source resolution, and sees colour. The
+> closest pair in the shipped set measures 10 of 192 bits against a threshold of 8.
+>
+> **What is not verified.** No device capture, so the memory spike and the World Search stall the
+> audit predicts are still predictions.
 >
 > The rest of the audit is untouched. **P0-2 still stands: this branch is 138 commits behind `main`
 > and predates every app-layer performance fix there.** Nothing else in that report should be
