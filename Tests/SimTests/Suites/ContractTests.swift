@@ -271,9 +271,8 @@ private func argumentSpan(of line: String, from start: String.Index, balanced: B
 /// `"spacing: "` with a trailing space, so `VStack(spacing:12)` was invisible.
 ///
 /// ponytail: still the small pattern set the plan scopes to P0 — the ones AUDIT.md actually counted,
-/// plus the label spellings of the same properties. Literal colours are 03b's fourth token class and
-/// are NOT covered here; P11 owns extending this set as the component registry makes the class
-/// enumerable by construction. Recorded in docs/STATUS.md rather than left implicit.
+/// plus the label spellings of the same properties. `Color(…)` joins that set because a numeric
+/// colour constructor is the fourth literal class 03b names; dynamic component values remain valid.
 ///
 /// **Timing and easing markers, added with `04` section 6.7.** `duration:`/`response:`/
 /// `dampingFraction:`/`minimumInterval:` and `.delay(`/`.speed(`/`.repeatCount(` are motion's own
@@ -283,7 +282,9 @@ private func argumentSpan(of line: String, from start: String.Index, balanced: B
 /// with `Array(repeating:count:)`, `prefix(count:)` and `ForEach(0..<count)`; `.repeatCount(` and
 /// `.speed(` (the call forms) are unambiguous and carry the same intent.
 private func containsDesignTokenLiteral(_ line: String) -> Bool {
-    let callMarkers = [".padding(", ".cornerRadius(", ".delay(", ".speed(", ".repeatCount("]
+    let callMarkers = [
+        ".padding(", ".cornerRadius(", ".delay(", ".speed(", ".repeatCount(", "Color("
+    ]
     let labelMarkers = [
         "spacing:", "cornerRadius:", "size:", "radius:", "lineWidth:",
         "duration:", "response:", "dampingFraction:", "minimumInterval:"
