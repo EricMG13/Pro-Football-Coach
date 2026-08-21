@@ -258,10 +258,6 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentPrimary.color)
                 .lineLimit(1)
                 .minimumScaleFactor(HQMetric.heroScaleFloor)
-            // Nothing here is cleared: every row is a decision the week still owes an answer to.
-            Text("0 of \(model.obligations.count) cleared")
-                .font(CoachWorldTokens.TypeRole.caption)
-                .foregroundStyle(palette.contentSecondary.color)
             VStack(spacing: CoachWorldTokens.Gap.hair) {
                 ForEach(model.obligations, id: \.stableID) { obligation in
                     FloodlitRow(palette: palette) {
@@ -752,9 +748,11 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                         Spacer()
                         Text(choice.cost).font(.caption.weight(.bold))
                     }
-                    Text(choice.consequence)
-                        .font(CoachWorldTokens.TypeRole.callout)
-                        .foregroundStyle(palette.contentSecondary.color)
+                    if !choice.consequence.isEmpty {
+                        Text(choice.consequence)
+                            .font(CoachWorldTokens.TypeRole.callout)
+                            .foregroundStyle(palette.contentSecondary.color)
+                    }
                 }
             }
             .padding(.horizontal, CoachWorldTokens.Space.xs)
@@ -777,7 +775,10 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
         }
         .buttonStyle(.plain)
         .disabled(!choice.isAvailable)
-        .accessibilityLabel("\(choice.title). Cost: \(choice.cost). Consequence: \(choice.consequence)")
+        .accessibilityLabel(
+            "\(choice.title). Cost: \(choice.cost)"
+                + (choice.consequence.isEmpty ? "" : ". Consequence: \(choice.consequence)")
+        )
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
@@ -814,7 +815,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
 
             if let opponent = model.opponent {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-                    Text("SATURDAY · OPPONENT").font(.caption.weight(.heavy))
+                    Text("NEXT FIXTURE · OPPONENT").font(.caption.weight(.heavy))
                     Text(opponent.name).font(.headline)
                     Text(model.venue?.name ?? "Venue not set")
                         .font(.caption)

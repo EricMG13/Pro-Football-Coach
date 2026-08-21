@@ -245,13 +245,6 @@ public enum AbstractGameSimulator {
         tacticalPlan: TacticalPlan,
         using rng: inout SeededRandom
     ) -> TeamGameStatistics {
-        let plays = min(
-            CompetitionRules.playCountRange.upperBound,
-            max(CompetitionRules.playCountRange.lowerBound, Int(rng.gaussian(
-                mean: CompetitionRules.baselinePlays(for: tier),
-                sd: CompetitionRules.playCountDeviation
-            ).rounded()))
-        )
         let expectedYards = CompetitionRules.baselineOffensiveYards
             + Double(offense - opposingDefense) * CompetitionRules.strengthYardScale
         let rawYards = Int(rng.gaussian(
@@ -271,12 +264,20 @@ public enum AbstractGameSimulator {
             )
         )
         let passingYards = yards * passingShare / 100
+        let turnovers = rng.int(in: CompetitionRules.turnoverRange)
+        let plays = min(
+            CompetitionRules.playCountRange.upperBound,
+            max(CompetitionRules.playCountRange.lowerBound, Int(rng.gaussian(
+                mean: CompetitionRules.baselinePlays(for: tier),
+                sd: CompetitionRules.playCountDeviation
+            ).rounded()))
+        )
         return TeamGameStatistics(
             points: points,
             offensiveYards: yards,
             passingYards: passingYards,
             rushingYards: yards - passingYards,
-            turnovers: rng.int(in: CompetitionRules.turnoverRange),
+            turnovers: turnovers,
             offensivePlays: plays
         )
     }
