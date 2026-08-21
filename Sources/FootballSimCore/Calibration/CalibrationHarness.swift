@@ -167,7 +167,12 @@ public enum CalibrationHarness {
             for play in game.plays {
                 let side = play.situation.possession
                 var tally = perSide[side]!
-                tally.plays += 1
+                switch play.offensiveCall.playType {
+                case .pass, .run, .kneel:
+                    tally.plays += 1
+                case .punt, .fieldGoal:
+                    break
+                }
                 switch play.outcome.result {
                 case .incompletion:
                     passAttempts += 1; passPlays += 1

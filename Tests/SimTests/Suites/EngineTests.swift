@@ -631,6 +631,53 @@ func runGameLoopTests() {
     let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
 
     suite("Game loop") {
+        test("detailed summaries use scrimmage plays and preserve losses") {
+            func play(_ type: OffensivePlayType, result: SnapResult, yards: Int) -> PlayRecord {
+                PlayRecord(
+                    situation: Situation(),
+                    offensiveCall: OffensiveCall(playType: type),
+                    defensiveCall: DefensiveCall(coverage: .man),
+                    outcome: SnapOutcome(
+                        result: result,
+                        yards: yards,
+                        secondsElapsed: 1,
+                        matchups: []
+                    ),
+                    callInTriggers: []
+                )
+            }
+            let plays = [
+                play(.run, result: .gain, yards: 8),
+                play(.run, result: .gain, yards: -3),
+                play(.pass, result: .gain, yards: 12),
+                play(.kneel, result: .kneel, yards: -1),
+                play(.punt, result: .punt, yards: 40),
+                play(.fieldGoal, result: .fieldGoalGood, yards: 0),
+            ]
+            let record = GameRecord(
+                homeScore: 3,
+                awayScore: 0,
+                drives: [DriveRecord(
+                    offense: .home,
+                    plays: plays,
+                    ending: .fieldGoal,
+                    pointsScored: 3,
+                    startYardLine: 25
+                )],
+                tier: .pro
+            )
+
+            let summary = DetailedGameSummaryBuilder.make(
+                record: record,
+                homeParticipantIDs: [],
+                awayParticipantIDs: []
+            )
+            expectEqual(summary.homeStatistics.offensivePlays, 4)
+            expectEqual(summary.homeStatistics.offensiveYards, 16)
+            expectEqual(summary.homeStatistics.rushingYards, 4)
+            expectEqual(summary.homeStatistics.passingYards, 12)
+        }
+
         test("the same seed replays a game exactly, by hash of the full play-by-play") {
             // 03 section 3's test, verbatim: "same seed across two separate process invocations,
             // compared by hash of the full play-by-play". The in-process half is here; the

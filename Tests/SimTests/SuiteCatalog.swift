@@ -17,6 +17,7 @@ enum ReleaseGateID: String, CaseIterable, Sendable {
     case saveWriteBudget = "SaveWriteBudgetTest"
     case saveOpenReadOnly = "SaveOpenIsReadOnlyTest"
     case calibrationGate = "CalibrationGateTests"
+    case twoTierConsistency = "TwoTierConsistencyTests"
     case m1Soak = "M1SoakTests"
     case m2Soak = "M2SoakTests"
     case legal = "LegalTests"
@@ -61,7 +62,7 @@ struct SuiteCatalog: Sendable {
         // Not "calibration": the lane column names the `verify.sh` lane that runs a gate, and no
         // lane runs this one. `verify.sh --lane calibration` is the instrument suite. Labelling it
         // "calibration" would read as a lane membership it does not have.
-        case .calibrationGate: return "manual"
+        case .calibrationGate, .twoTierConsistency: return "manual"
         case .m1Soak, .m2Soak: return "soaks"
         case .legal: return "legal"
         }
@@ -88,6 +89,8 @@ struct SuiteCatalog: Sendable {
             // containing it. STATUS's P4 section carries the measurement; this command reproduces
             // it.
             return Runner(command: "--calibration-gate", function: "runCalibrationGateTests")
+        case .twoTierConsistency:
+            return Runner(command: "--two-tier-consistency", function: "runTwoTierConsistencyTests")
         case .m1Soak:
             return Runner(command: "--m1-soak", function: "runM1SoakTests")
         case .m2Soak:

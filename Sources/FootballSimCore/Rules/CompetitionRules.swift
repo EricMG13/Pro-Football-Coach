@@ -5,12 +5,32 @@ public enum CompetitionRules {
         max(CollegeRules.rosterLimit, ProRules.activeRosterLimit)
     }
 
-    public static let collegeBaselinePoints = 27.0
-    public static let proBaselinePoints = 23.0
+    /// Back-solved against the detailed reducer's controlled-fixture tuning worlds rather than the
+    /// disjoint holdout or generated-schedule aggregate, which includes a separate
+    /// roster-composition effect.
+    public static let collegeBaselinePoints = 27.5
+    public static let proBaselinePoints = 24.9
     public static let collegeScoreDeviation = 10.0
     public static let proScoreDeviation = 8.0
     public static let strengthPointScale = 0.24
-    public static let homeFieldPoints = 2.4
+    /// Home advantage, in points, per tier.
+    ///
+    /// **One shared constant could not hold both bands.** `01-RESEARCH.md` §6.5 asks for a home win
+    /// rate of 0.50-0.58 professionally and 0.60-0.68 in college, and a single number produced
+    /// 0.575 and 0.562 — inside the professional band and below the college one. The tiers disagree
+    /// in canon, so the constant has to.
+    ///
+    /// Both values are back-solved from the controlled tuning worlds rather than the final holdout.
+    /// The detailed reducer's home rates are 0.539 professionally and 0.655 in college there.
+    ///
+    /// **Caveat worth carrying to the owner.** 6.25 points is roughly double what college home-field
+    /// is worth on a real spread. §6.5's college band is high partly because real college home
+    /// teams are systematically stronger — the bought non-conference game — and a generated
+    /// schedule has no such bias, so this one constant absorbs both effects. If §6.5 ever splits
+    /// true home advantage from home *scheduling* advantage, this number comes down and the
+    /// schedule generator takes the rest.
+    public static let proHomeFieldPoints = 1.5
+    public static let collegeHomeFieldPoints = 6.25
     public static let maximumTeamScore = 70
     public static let overtimeFieldGoalPoints = 3
     public static let overtimeTouchdownPoints = 6
@@ -26,7 +46,24 @@ public enum CompetitionRules {
     public static let overtimeFieldGoalProbability = 0.72
     public static let overtimeHomeWinProbability = 0.52
 
-    public static let baselineOffensiveYards = 350.0
+    /// Controlled-fixture scrimmage-play means, measured on the tuning worlds after punts and field
+    /// goals were removed from the detailed summary's denominator.
+    public static let proBaselinePlays = 63.3
+    public static let collegeBaselinePlays = 73.0
+
+    /// **[ASSUMPTION]** `01` §6.5 bands the *mean* plays per team-game and says nothing about the
+    /// spread, so this is not transcribed. It is set near a real per-team-game standard deviation
+    /// so that the shape is plausible rather than flat; `01` §6.3's point is that a model with the
+    /// right mean and no variance is a failure that means alone cannot see. Replace it the moment
+    /// §6.5 grows a spread row.
+    public static let playCountDeviation = 8.0
+
+    /// Bounds a drawn play count to something a game can actually contain. A tail beyond this is
+    /// the gaussian's, not football's.
+    public static let playCountRange: ClosedRange<Int> = 40...105
+
+    public static let proBaselineOffensiveYards = 300.0
+    public static let collegeBaselineOffensiveYards = 350.0
     public static let strengthYardScale = 4.0
     public static let offensiveYardDeviation = 70.0
     public static let offensiveYardRange: ClosedRange<Int> = 120...750
@@ -40,6 +77,18 @@ public enum CompetitionRules {
 
     public static func scoreDeviation(for tier: Tier) -> Double {
         tier == .college ? collegeScoreDeviation : proScoreDeviation
+    }
+
+    public static func baselinePlays(for tier: Tier) -> Double {
+        tier == .college ? collegeBaselinePlays : proBaselinePlays
+    }
+
+    public static func baselineOffensiveYards(for tier: Tier) -> Double {
+        tier == .college ? collegeBaselineOffensiveYards : proBaselineOffensiveYards
+    }
+
+    public static func homeFieldPoints(for tier: Tier) -> Double {
+        tier == .college ? collegeHomeFieldPoints : proHomeFieldPoints
     }
 
     public static func passingSharePercent(for scheme: OffensiveScheme) -> Int {

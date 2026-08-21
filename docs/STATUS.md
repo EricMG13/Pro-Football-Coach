@@ -2488,6 +2488,20 @@ next attempt should widen the *model*, not the grid.
 attempts have happened; three were instrument repair and one was a search rather than a hand pass.
 An instrument repair is not a failed tuning attempt.
 
+**2026-08-21 — `TwoTierConsistencyTests` is registered, dispatched and green on current main.**
+The gate compares controlled fixtures under TOST, with the same `SnapPersonnel` and seed sent to
+both models. Twenty fixed worlds are tuning inputs. The first candidate holdout was moved into that
+set after its professional home-advantage result informed the constant; the final twelve-world
+holdout uses a fresh disjoint seed range. It passed **12 tests / 22 checks**.
+
+The holdout asserts points, scrimmage plays and home advantage in both tiers, plus professional
+yards per play. College yards per play remains a named canon gap because §6.5 provides no college
+yardage band from which to derive an equivalence margin. The abstracted baselines are 27.5 college
+/ 24.9 pro points, 73.0 / 63.3 scrimmage plays and 6.25 / 1.5 home-field points. On the combined
+tuning worlds, abstracted versus detailed means were 30.563 / 30.707 college points, 73.029 /
+72.836 college plays, 25.557 / 25.187 pro points, 63.342 / 63.280 pro plays, and 0.5385 / 0.5394
+professional home-win rate.
+
 **Sixteen of §6.5's rows are not measured at all**, listed in `CalibrationBands.unimplementedMetrics`
 with what each waits on: per-drive accounting, target shares (which need per-player stat lines the
 engine does not produce), overtime and schedule context (P6). §6.6 clause 3 wants every scalar band

@@ -12,6 +12,7 @@ public enum DetailedGameSummaryBuilder {
     }
 
     private struct TeamLine {
+        var plays = 0
         var yards = 0
         var passing = 0
         var rushing = 0
@@ -36,13 +37,14 @@ public enum DetailedGameSummaryBuilder {
 
         for play in record.plays {
             let side = play.situation.possession
-            let yards = max(0, play.outcome.yards)
+            let yards = play.outcome.yards
             if play.outcome.result.isTurnover {
                 teams[side, default: TeamLine()].turnovers += 1
             }
 
             switch play.offensiveCall.playType {
             case .pass:
+                teams[side, default: TeamLine()].plays += 1
                 teams[side, default: TeamLine()].yards += yards
                 teams[side, default: TeamLine()].passing += yards
                 update(play.outcome.passerID) { $0.passing += yards }
@@ -51,6 +53,7 @@ public enum DetailedGameSummaryBuilder {
                     update(play.outcome.targetID ?? play.outcome.passerID) { $0.touchdowns += 1 }
                 }
             case .run, .kneel:
+                teams[side, default: TeamLine()].plays += 1
                 teams[side, default: TeamLine()].yards += yards
                 teams[side, default: TeamLine()].rushing += yards
                 update(play.outcome.ballCarrierID) { $0.rushing += yards }
@@ -70,7 +73,8 @@ public enum DetailedGameSummaryBuilder {
                 offensiveYards: line.yards,
                 passingYards: line.passing,
                 rushingYards: line.rushing,
-                turnovers: line.turnovers
+                turnovers: line.turnovers,
+                offensivePlays: line.plays
             )
         }
 
