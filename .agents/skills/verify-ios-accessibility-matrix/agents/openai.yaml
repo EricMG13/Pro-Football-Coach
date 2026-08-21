@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verify iOS Accessibility Matrix"
+  short_description: "Audit every registered iPhone game surface"
+  default_prompt: "Use $verify-ios-accessibility-matrix to verify the current production UI accessibility matrix and report automated versus manual evidence."

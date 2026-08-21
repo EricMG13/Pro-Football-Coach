@@ -1,0 +1,74 @@
+[
+  {
+    "assetName": "TeamLogo_728B69076F6A4A50AFB2BBA9188FD49C",
+    "decision": "replace",
+    "notes": "The crossed hook-and-blade silhouette replaces an unrelated windmill-like mark and remains legible at 20 points.",
+    "changes": ["silhouette", "small-size clarity", "nickname coherence"]
+  },
+  {
+    "assetName": "TeamLogo_837E01370ECF4655AA236668ED84AA03",
+    "decision": "replace",
+    "notes": "Three broad moving arrows identify the Fletchers more directly than the shipped abstract swirl.",
+    "changes": ["silhouette", "small-size clarity", "nickname coherence"]
+  },
+  {
+    "assetName": "TeamLogo_0213C958E1554E938E36AA606F8A670A",
+    "decision": "replace",
+    "notes": "A compact rounded otter head replaces the shipped boat scene and keeps the nickname readable at 20 points.",
+    "changes": ["silhouette", "small-size clarity", "nickname coherence"]
+  },
+  {
+    "assetName": "TeamLogo_05293748863A41259807C9C4C35E4C11",
+    "decision": "replace",
+    "notes": "The diving harrier silhouette replaces an unrelated nautical roundel with a direct animal mark.",
+    "changes": ["silhouette", "small-size clarity", "nickname coherence"]
+  },
+  {
+    "assetName": "TeamLogo_0017F958E7D04FFC9EA801A252B40FD6",
+    "decision": "replace",
+    "notes": "A four-plane compass star replaces the unrelated bird and reads cleanly on both light and dark surfaces.",
+    "changes": ["silhouette", "small-size clarity", "nickname coherence", "palette discipline"]
+  },
+  {
+    "assetName": "TeamLogo_1046C3255F27488E8D1FEFF7F0D1AD41",
+    "decision": "replace",
+    "notes": "The square-on shield boss replaces an unrelated bear while preserving a strong circular defensive silhouette.",
+    "changes": ["silhouette", "small-size clarity", "nickname coherence"]
+  },
+  {
+    "assetName": "TeamLogo_25EDC7BB3D5F46E4B8C0B1B22D5D190C",
+    "decision": "replace",
+    "notes": "Three driven stakes in a shield replace an unrelated bird and give the Palisades a direct defensive device.",
+    "changes": ["silhouette", "small-size clarity", "nickname coherence"]
+  },
+  {
+    "assetName": "TeamLogo_633D4024B8D748B6A7CC4D7682EDD614",
+    "decision": "replace",
+    "notes": "The hide-and-crescent-knife shield replaces an architectural scene with a compact tanning device.",
+    "changes": ["silhouette", "small-size clarity", "nickname coherence"]
+  },
+  {
+    "assetName": "TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
+    "decision": "replace",
+    "notes": "The face-plate profile replaces an ornate crest with a direct Ironsides character silhouette.",
+    "changes": ["silhouette", "small-size clarity", "nickname coherence"]
+  },
+  {
+    "assetName": "TeamLogo_04EF984B6B834A848F5EA9628DED2CFA",
+    "decision": "replace",
+    "notes": "The hooded ferryman profile replaces an indistinct scenic figure with a single readable character.",
+    "changes": ["silhouette", "small-size clarity", "nickname coherence"]
+  },
+  {
+    "assetName": "TeamLogo_6CAF0BE740EB49459E4BDB5ABDD40D8A",
+    "decision": "replace",
+    "notes": "Three fused pines replace an abstract flame-like mark and identify the Foresters immediately.",
+    "changes": ["silhouette", "small-size clarity", "nickname coherence"]
+  },
+  {
+    "assetName": "TeamLogo_73490D9265A64A96BAFF0C67F093918F",
+    "decision": "replace",
+    "notes": "A two-furrow cut ridge replaces an unrelated camera-like object with a compact Reapers landform.",
+    "changes": ["silhouette", "small-size clarity", "nickname coherence"]
+  }
+]

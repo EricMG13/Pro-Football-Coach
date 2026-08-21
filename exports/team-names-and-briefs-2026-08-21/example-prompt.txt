@@ -1,0 +1,13 @@
+Draw one original athletics team mark as flat vector artwork.
+
+Subject: a compass rose, cut down to its sharpest angles and swept into motion. The mark depicts the team's nickname, the Voyagers, and nothing else.
+
+Style: a single subject filling the frame. Two or three flat colours only. No gradient, no shading, no texture, no depth, no lighting, no outline sketch. Every shape has a hard edge and one heavy dark keyline of even weight. Bold geometric simplification: few large shapes, wide negative space, angular cuts, sharp points. Detail that would vanish at 20 points is left out. Centred in a square canvas on a transparent background.
+
+Not: a scene, a landscape, a horizon, scenery behind the subject, a photograph, a 3D render, an emblem crowded with small parts, watercolour, airbrush, drop shadow, bevel, glow, halftone, or a mock-up on a shirt or a helmet.
+
+Colours: #E29E97 and #6A0B93 as the two dominant flats. Black or white only where a keyline or a separation needs it.
+
+No words, letters, initials, numerals, dates, slogans, competition marks, uniforms or watermarks. Do not reference or resemble any real school, club, conference, trophy or event identity, and do not reproduce any real team's combination of colour and shape.
+
+Output one isolated 256 x 256 PNG with transparency around the mark.

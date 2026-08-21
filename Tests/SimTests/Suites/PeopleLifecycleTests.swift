@@ -92,6 +92,65 @@ func runPeopleLifecycleTests() {
             expectEqual(restored.people, state.people)
         }
 
+        test("compaction keeps active and recent people while discarding stale records") {
+            let state = GameState.bootstrap(seed: 80_003)
+            let activeID = state.players.ids[0]
+            let recentDepartureID = state.players.ids[1]
+            let staleDepartureID = state.players.ids[2]
+            let retainedStaffID = state.staff.ids[0]
+            let staleStaffID = state.staff.ids[1]
+            var people = state.people
+            people.archive(player: state.players[recentDepartureID]!, status: .graduated)
+            people.archive(player: state.players[staleDepartureID]!, status: .graduated)
+
+            let compacted = people.compacted(
+                retainingPlayerIDs: [recentDepartureID],
+                staffIDs: [retainedStaffID]
+            )
+
+            expect(compacted.playerLifecycle[activeID] != nil)
+            expect(compacted.playerCareers[activeID] != nil)
+            expect(compacted.departedPlayers[recentDepartureID] != nil)
+            expect(compacted.playerCareers[recentDepartureID] != nil)
+            expect(compacted.departedPlayers[staleDepartureID] == nil)
+            expect(compacted.playerCareers[staleDepartureID] == nil)
+            expect(compacted.staffCareers[retainedStaffID] != nil)
+            expect(compacted.staffCareers[staleStaffID] == nil)
+        }
+
+        test("compaction preserves durable portal history for departed players") {
+            var state = GameState.bootstrap(seed: 80_004)
+            let programmeID = state.programmes.ids[0]
+            let player = state.players.values[0]
+            expect(state.people.updatePlayerCareer(player.id) { career in
+                expect(career.append(PlayerCareerSeason(
+                    season: 0,
+                    organisationID: programmeID,
+                    tier: .college,
+                    games: 8,
+                    starts: 5,
+                    overallAtEnd: player.overall
+                )))
+                expect(career.append(portalWindowRecord(
+                    playerID: player.id,
+                    sourceProgrammeID: programmeID,
+                    targetSeason: 1,
+                    window: .postseason
+                )))
+                career.end(at: CalendarState(season: 1, week: 1), status: .graduated)
+            })
+            state.people.archive(player: player, status: .graduated)
+
+            let compacted = state.people.compacted(
+                retainingPlayerIDs: [],
+                staffIDs: []
+            )
+
+            expectEqual(compacted.playerCareers[player.id], state.people.playerCareers[player.id])
+            expectEqual(compacted.playerCareers[player.id]?.portalWindows.count, 1)
+            expect(compacted.departedPlayers[player.id] != nil)
+        }
+
         test("attribute history is causal, bounded, and legacy-defaulted") {
             let playerID = UUID(uuidString: "00000000-0000-4000-8000-000000008010")!
             var lifecycle = PlayerLifecycleState(playerID: playerID)
@@ -590,6 +649,8 @@ func runM2SoakTests(seasons: Int) {
                     + state.proTeams.values.flatMap(\.rosterIDs)
                 expectEqual(activePlayerIDs.count, activePlayerTarget)
                 expectEqual(Set(activePlayerIDs).count, activePlayerTarget)
+                expect(state.programmes.values.allSatisfy { $0.rosterLegality.isLegal })
+                expect(state.proTeams.values.allSatisfy { $0.rosterLegality.isLegal })
                 expect(activePlayerIDs.allSatisfy {
                     state.people.playerLifecycle[$0]?.status == .active
                 })

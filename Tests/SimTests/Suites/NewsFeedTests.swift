@@ -134,6 +134,61 @@ func runNewsFeedTests() {
             expect(items.contains { $0.weight == 100 },
                    "an archived champion did not reach the feed, so the archive buys nothing")
         }
+
+        test("archived departures keep their names after people compaction") {
+            var state = GameState.bootstrap(seed: 97_007)
+            let playerID = state.players.ids[0]
+            let programmeID = state.programmes.ids[0]
+            let player = state.players[playerID]!
+            state.people.archive(player: player, status: .graduated)
+            state.players.remove(playerID)
+
+            var ledger = DomainEventLedger(retentionLimit: 1)
+            expect(ledger.append(contentsOf: [
+                newsEvent(sequence: 310, season: 7, payload: .playerDeparted(
+                    playerID: playerID,
+                    organisationID: programmeID,
+                    reason: .graduated
+                )),
+                newsEvent(sequence: 311, season: 7, payload: .integrityChecked(issueCount: 0)),
+            ]))
+            state.history = ledger
+            let referencedIDs = Set(state.history.archive.flatMap {
+                $0.notableEvents.flatMap { $0.payload.referencedEntityIDs }
+            })
+            state.people = state.people.compacted(
+                retainingPlayerIDs: referencedIDs,
+                staffIDs: []
+            )
+
+            let headline = try requireNews(NewsFeedReadModel.build(from: state).items.first?.headline)
+            expect(headline.contains(player.fullName),
+                   "an archived departure lost its player identity: (headline)")
+        }
+
+        test("archived recruiting stories keep prospect names after pruning") {
+            var state = GameState.bootstrap(seed: 97_008)
+            let prospect = state.prospects.values[0]
+            let programmeID = state.programmes.ids[0]
+
+            var ledger = DomainEventLedger(retentionLimit: 1)
+            expect(ledger.append(contentsOf: [
+                newsEvent(sequence: 320, season: 7, payload: .commitmentResolved(
+                    prospectID: prospect.id,
+                    programmeID: programmeID,
+                    outcome: .released(reason: .scholarshipCapacityChanged)
+                )),
+                newsEvent(sequence: 321, season: 7, payload: .integrityChecked(issueCount: 0)),
+            ]))
+            state.history = ledger
+            let cycle = try CollegeCycleSystem.closeAndOpen(nextSeason: 1, in: state)
+            state.prospects = cycle.prospects
+            state.college = cycle.college
+
+            let headline = try requireNews(NewsFeedReadModel.build(from: state).items.first?.headline)
+            expect(headline.contains("\(prospect.firstName) \(prospect.lastName)"),
+                   "an archived recruiting story lost its prospect identity: (headline)")
+        }
     }
 }
 

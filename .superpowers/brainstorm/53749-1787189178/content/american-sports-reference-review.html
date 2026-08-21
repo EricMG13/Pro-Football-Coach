@@ -1,0 +1,71 @@
+<style>
+  .league-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:24px 0; }
+  .league { overflow:hidden; border:1px solid rgba(255,255,255,.14); border-radius:16px; background:#111827; }
+  .league img { display:block; width:100%; height:210px; object-fit:contain; background:#f4f6f8; }
+  .league-body { padding:15px 17px 18px; }
+  .league h3 { margin:0 0 6px; font-size:17px; }
+  .league p { margin:0; color:#b9c2d0; line-height:1.45; font-size:14px; }
+  .takeaway { border-left:3px solid #f0bf58; padding:14px 17px; background:rgba(240,191,88,.08); margin:18px 0 26px; }
+  .direction-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; }
+  .direction { cursor:pointer; border:1px solid rgba(255,255,255,.15); border-radius:15px; padding:18px; background:#111827; transition:.18s ease; }
+  .direction:hover { transform:translateY(-2px); border-color:#f0bf58; }
+  .direction .mix { display:flex; height:70px; gap:4px; margin:12px 0 15px; align-items:flex-end; }
+  .direction .bar { flex:1; border-radius:5px 5px 2px 2px; background:#4c7da5; }
+  .direction .bar:nth-child(2) { background:#d35f58; }
+  .direction .bar:nth-child(3) { background:#e8bd59; }
+  .direction .bar:nth-child(4) { background:#705a98; }
+  .direction .bar:nth-child(5) { background:#3e9a87; }
+  .direction h3 { margin:0; font-size:17px; }
+  .direction p { margin:0; color:#b9c2d0; line-height:1.42; font-size:14px; }
+  .recommended { color:#f0bf58; }
+  .source-line { margin-top:20px; color:#8e99aa; font-size:12px; line-height:1.6; }
+  .source-line a { color:#a9c9e8; }
+  @media(max-width:860px){ .league-grid,.direction-grid{grid-template-columns:1fr;} .league img{height:180px;} }
+</style>
+
+<h2>What real American sports logos teach us</h2>
+<p class="subtitle">Reference review only. None of this artwork, lettering, trade dress, or team-specific composition enters the game.</p>
+
+<div class="league-grid">
+  <div class="league">
+    <img src="https://www.gannett-cdn.com/presto/2022/09/28/USAT/47bd2a97-2cf9-4ce3-a5c2-77caac35c69c-NFL_logos.jpg" alt="Grid of NFL team logos used for visual reference">
+    <div class="league-body"><h3>NFL — silhouette first</h3><p>Animal heads, regional objects, motion marks, and a few letterforms. Most identities remain recognizable without a containing shield or circle. This should be the leading grammar for the professional tier.</p></div>
+  </div>
+  <div class="league">
+    <img src="https://ewnqp79wvj7.exactdn.com/wp-content/uploads/2025/06/logos_equipes_nhl_32_2025.jpg?strip=all" alt="Grid of NHL team logos used for visual reference">
+    <div class="league-body"><h3>NHL — crest variety</h3><p>Freeform characters, equipment, fauna, letters, and heraldic structures coexist. Strongest lesson: a league can feel coherent through finish and palette discipline without forcing every logo into one outline.</p></div>
+  </div>
+  <div class="league">
+    <img src="https://nyc3.digitaloceanspaces.com/m1.pb365/events.fivetool.org/636f4bc6-79ab-44eb-89f2-c947f8abf77f/files/wyswyg/files/mlb-teams.jpg" alt="Grid of MLB team logos used for visual reference">
+    <div class="league-body"><h3>MLB and college — compact monograms</h3><p>Cap-scale initials and interlocking letterforms are extremely efficient. They belong in the mix, but AI lettering needs manual correction and too many monograms would make fictional teams feel interchangeable.</p></div>
+  </div>
+  <div class="league">
+    <img src="https://basketballjerseyarchive.com/static/news/2025/12/25/EfXD0IHQJR6r29V/the-roundel-revolution-analyzing-the-nba-s-systematic-shift-toward-brand-uniformity.jpg" alt="Comparison grid of NBA logo systems used for visual reference">
+    <div class="league-body"><h3>NBA — scalable enclosures</h3><p>Roundels package names and symbols neatly for digital use, but repeated circles flatten league personality. Use roundels and shields as families, not as the universal template.</p></div>
+  </div>
+</div>
+
+<div class="takeaway"><strong>Most useful reference: Minor League Baseball.</strong> Its identities start with local geography, food, wildlife, industry, history, and jokes—then turn that story into a sports mark. For our fictional world, the team’s generated city and nickname should drive the subject; the shared prompt and rendering rules should drive cohesion.</div>
+
+<h2>Choose the balance for the 166-logo set</h2>
+<p class="subtitle">All three keep the athletic-emblem finish and allow unrestricted silhouettes.</p>
+
+<div class="direction-grid">
+  <div class="direction" data-choice="diverse-american-mix" onclick="toggleSelect(this)">
+    <h3>A. Diverse American mix <span class="recommended">Recommended</span></h3>
+    <div class="mix" aria-hidden="true"><div class="bar" style="height:68px"></div><div class="bar" style="height:52px"></div><div class="bar" style="height:38px"></div><div class="bar" style="height:31px"></div><div class="bar" style="height:23px"></div></div>
+    <p>Mascots and regional symbols lead; monograms, shields, roundels, characters, and abstract marks provide controlled variety.</p>
+  </div>
+  <div class="direction" data-choice="nfl-heavy" onclick="toggleSelect(this)">
+    <h3>B. NFL-heavy</h3>
+    <div class="mix" aria-hidden="true"><div class="bar" style="height:70px"></div><div class="bar" style="height:68px"></div><div class="bar" style="height:22px"></div><div class="bar" style="height:15px"></div><div class="bar" style="height:12px"></div></div>
+    <p>Most teams use aggressive mascot heads or action silhouettes. Immediately football-like, but risks repetitive AI snarls and profile angles.</p>
+  </div>
+  <div class="direction" data-choice="college-heavy" onclick="toggleSelect(this)">
+    <h3>C. College-heavy</h3>
+    <div class="mix" aria-hidden="true"><div class="bar" style="height:27px"></div><div class="bar" style="height:22px"></div><div class="bar" style="height:70px"></div><div class="bar" style="height:50px"></div><div class="bar" style="height:34px"></div></div>
+    <p>Monograms, seals, shields, and heritage marks dominate. Strong campus character, but it creates the largest lettering cleanup burden.</p>
+  </div>
+</div>
+
+<p class="source-line">Sources reviewed: <a href="https://www.nfl.com/teams/">NFL teams</a> · <a href="https://www.nba.com/teams">NBA teams</a> · <a href="https://www.mlb.com/team">MLB teams</a> · <a href="https://www.nhl.com/info/teams/">NHL teams</a> · <a href="https://www.mlb.com/news/new-minor-league-team-names-and-logos-for-2026">2026 MiLB identities</a> · <a href="https://www.mlb.com/news/minor-league-teams-new-logos-for-2025">2025 MiLB identities</a>.</p>
