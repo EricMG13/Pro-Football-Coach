@@ -584,12 +584,12 @@ func runContractTests() {
                    "found \(views.count) UI-importing sources — the scan would pass vacuously")
             // The enumeration itself is asserted, because a scan that silently stops finding the
             // views is indistinguishable from a scan that finds them clean.
-            for known in [
-                "CoachingHQView", "RosterView", "MatchDayView", "PlayerProfileView",
-                "RecruitingBoardView", "RootView", "CoachWorldAppRootView", "ProFootballCoachApp",
-            ] {
-                expect(views.contains { $0.path.hasSuffix("/\(known).swift") },
-                       "\(known).swift is not in the UI-importing enumeration")
+            for screen in CoachWorldScreenID.allCases {
+                let caseName = String(describing: screen)
+                let expectedView = caseName.prefix(1).uppercased() + caseName.dropFirst()
+                    + "View.swift"
+                expect(views.contains { $0.path.hasSuffix("/\(expectedView)") },
+                       "\(expectedView) is not in the UI-importing enumeration")
             }
             let offenders = offendingLines(in: views, where: referencesAuthoritativeRoot)
             expect(

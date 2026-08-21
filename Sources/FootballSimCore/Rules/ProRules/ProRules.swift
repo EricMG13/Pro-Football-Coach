@@ -128,4 +128,16 @@ public enum ProRules {
     public static var draftPicksPerRound: Int { teamCount }
 
     public static var draftPickCount: Int { draftRounds * draftPicksPerRound }
+
+    /// Whether every draft round is a permutation of the professional teams (`02` §11.2).
+    public static func isLegalDraftOrder(_ order: [UUID], teamIDs: Set<UUID>? = nil) -> Bool {
+        guard draftPicksPerRound > 0, order.count == draftPickCount else { return false }
+        let rounds = stride(from: 0, to: order.count, by: draftPicksPerRound).map { start in
+            Set(order[start..<(start + draftPicksPerRound)])
+        }
+        guard let firstRound = rounds.first,
+              firstRound.count == draftPicksPerRound,
+              teamIDs == nil || teamIDs == firstRound else { return false }
+        return rounds.allSatisfy { $0 == firstRound }
+    }
 }

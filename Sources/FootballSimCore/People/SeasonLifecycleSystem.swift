@@ -37,6 +37,7 @@ public struct PeopleSeasonTransition: Sendable, Equatable {
     public let players: EntityStore<Player>
     public let staff: EntityStore<Staff>
     public let people: PeopleState
+    public let college: CollegeState
     public let eventPayloads: [DomainEventPayload]
 
     public init(
@@ -45,6 +46,7 @@ public struct PeopleSeasonTransition: Sendable, Equatable {
         players: EntityStore<Player>,
         staff: EntityStore<Staff>,
         people: PeopleState,
+        college: CollegeState,
         eventPayloads: [DomainEventPayload]
     ) {
         self.programmes = programmes
@@ -52,6 +54,7 @@ public struct PeopleSeasonTransition: Sendable, Equatable {
         self.players = players
         self.staff = staff
         self.people = people
+        self.college = college
         self.eventPayloads = eventPayloads
     }
 }
@@ -86,6 +89,7 @@ public enum SeasonLifecycleSystem {
         var players = state.players
         var staff = state.staff
         var people = state.people
+        var college = state.college
         var payloads: [DomainEventPayload] = []
         var careerOwnedStaffIDs: Set<UUID> = []
         if let control = state.career.college {
@@ -104,6 +108,7 @@ public enum SeasonLifecycleSystem {
                 programmes: &programmes,
                 players: &players,
                 people: &people,
+                college: &college,
                 payloads: &payloads
             )
             advanceProPlayers(
@@ -137,6 +142,7 @@ public enum SeasonLifecycleSystem {
             players: players,
             staff: staff,
             people: people,
+            college: college,
             eventPayloads: payloads
         )
     }
@@ -147,6 +153,7 @@ public enum SeasonLifecycleSystem {
         programmes: inout EntityStore<Programme>,
         players: inout EntityStore<Player>,
         people: inout PeopleState,
+        college: inout CollegeState,
         payloads: inout [DomainEventPayload]
     ) {
         for programme in state.programmes.values {
@@ -208,8 +215,17 @@ public enum SeasonLifecycleSystem {
                 }
             }
             let retainedIDSet = Set(retained)
-            let retainedScholarships = state.college.programmes[programme.id]?
-                .scholarshipPlayerIDs.filter(retainedIDSet.contains).count ?? 0
+            _ = college.updateProgramme(programme.id) { recruiting in
+                let retainedScholarships = recruiting.scholarshipPlayerIDs
+                    .filter(retainedIDSet.contains).count
+                recruiting.reconcileScholarships(
+                    with: retained,
+                    targetCount: retainedScholarships
+                )
+                recruiting.reconcileNILRosterAllocations(with: retained)
+            }
+            let retainedScholarships = college.programmes[programme.id]?
+                .scholarshipPlayerIDs.count ?? 0
             programmes.update(programme.id) {
                 $0.rosterIDs = retained
                 $0.scholarshipCount = retainedScholarships

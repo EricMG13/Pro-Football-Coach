@@ -194,6 +194,11 @@ lesson applies here that applied to expiry itself: a hand-built fixture that put
 cap and skipped this step surfaced as `portalCommitFailed(.postseason)`, not as a cap error, until
 compliance was wired at the right point.
 
+**Dead money is a single-season charge — D16, owner decision 2026-08-20.** The whole unamortised
+bonus accelerates into the release season, so that charge clears at the season boundary between
+expiry and cap compliance. Each season therefore carries only its own releases; dead money cannot
+accumulate for the life of the save.
+
 **The controlled team's own cap choice is deliberately not built here.** Every other consequential
 choice in this game — a redshirt, a portal decision, an NIL allocation, a recruiting action — is the
 player's to make through a mandatory decision, never automated out from under them. Forcing releases
@@ -484,6 +489,7 @@ the legal tests.
 | Practice squad | 16 | P8's cap-laundering defences apply here specifically |
 | Salary cap | 255,000,000 integer dollars, growing 7 percent a year | Integer dollars, never floating point |
 | Signing-bonus proration | over the contract's length, capped at 5 years | The mechanism dead money comes from |
+| Dead money discharge | a single-season charge, cleared at the season boundary | D16, owner decision 2026-08-20 |
 | Contract length | 1 to 7 years | An upper bound so a corrupt save cannot ask for an unbounded allocation. A contract of zero years carries no signing bonus |
 | Draft | 7 rounds of 32 picks, 224 total | |
 

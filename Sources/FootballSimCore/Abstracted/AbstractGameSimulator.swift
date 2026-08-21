@@ -13,6 +13,42 @@ public enum AbstractGameSimulator {
         play(game, in: state, tacticalPlans: [:])
     }
 
+    /// Plays the same controlled personnel and seed as the detailed consistency harness.
+    public static func play(
+        tier: Tier,
+        stage: CompetitionStage = .regularSeason,
+        home: SnapPersonnel,
+        away: SnapPersonnel,
+        seed: UInt64
+    ) -> GameSummary? {
+        let homeRoster = home.offense + home.defense
+        let awayRoster = away.offense + away.defense
+        guard Set(homeRoster.map(\.id)).isDisjoint(with: Set(awayRoster.map(\.id))) else {
+            return nil
+        }
+        return play(
+            tier: tier,
+            stage: stage,
+            home: TeamProfile(
+                roster: homeRoster,
+                prestige: Rating(SharedRules.ratingRange.lowerBound),
+                scheme: SchemeIdentity(offense: .proStyle, defense: .fourThree),
+                offense: controlledStrength(home.offense),
+                defense: controlledStrength(home.defense)
+            ),
+            away: TeamProfile(
+                roster: awayRoster,
+                prestige: Rating(SharedRules.ratingRange.lowerBound),
+                scheme: SchemeIdentity(offense: .proStyle, defense: .fourThree),
+                offense: controlledStrength(away.offense),
+                defense: controlledStrength(away.defense)
+            ),
+            homePlan: .balanced,
+            awayPlan: .balanced,
+            seed: seed
+        )
+    }
+
     public static func play(
         _ game: ScheduledGame,
         in state: GameState,
@@ -25,13 +61,38 @@ public enum AbstractGameSimulator {
                            personnelPlan: personnelPlans[game.awayID])
         let homePlan = tacticalPlans[game.homeID] ?? .balanced
         let awayPlan = tacticalPlans[game.awayID] ?? .balanced
-        var rng = SeededRandom(seed: SeededRandom.derive(
-            from: state.league.seed,
-            scope: .game,
-            identifier: game.id
-        ))
-        let baseline = CompetitionRules.baselinePoints(for: game.tier)
-        let deviation = CompetitionRules.scoreDeviation(for: game.tier)
+        return play(
+            tier: game.tier,
+            stage: game.stage,
+            home: home,
+            away: away,
+            homePlan: homePlan,
+            awayPlan: awayPlan,
+            seed: SeededRandom.derive(
+                from: state.league.seed,
+                scope: .game,
+                identifier: game.id
+            )
+        )
+    }
+
+    private static func controlledStrength(_ players: [Player]) -> Int {
+        guard !players.isEmpty else { return SharedRules.ratingRange.lowerBound }
+        return players.reduce(0) { $0 + $1.overall.value } / players.count
+    }
+
+    private static func play(
+        tier: Tier,
+        stage: CompetitionStage,
+        home: TeamProfile,
+        away: TeamProfile,
+        homePlan: TacticalPlan,
+        awayPlan: TacticalPlan,
+        seed: UInt64
+    ) -> GameSummary {
+        var rng = SeededRandom(seed: seed)
+        let baseline = CompetitionRules.baselinePoints(for: tier)
+        let deviation = CompetitionRules.scoreDeviation(for: tier)
         var homeScore = score(
             expectation: baseline
                 + Double(home.offense - away.defense) * CompetitionRules.strengthPointScale
@@ -51,7 +112,7 @@ public enum AbstractGameSimulator {
         // postseason stage continue through bounded overtime so their summaries always
         // identify a winner.
         if homeScore == awayScore,
-           game.tier == .college || game.stage != .regularSeason {
+           tier == .college || stage != .regularSeason {
             let overtimePoints = rng.chance(CompetitionRules.overtimeFieldGoalProbability)
                 ? CompetitionRules.overtimeFieldGoalPoints
                 : CompetitionRules.overtimeTouchdownPoints

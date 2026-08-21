@@ -28,6 +28,8 @@ assumptions, cheap to change. `ESCALATED` — blocking owner question, do not bu
 | D12 | Accessibility contract | DECIDED (REVERSIBLE) |
 | D13 | Content volume | DECIDED |
 | D14 | Build order and league size | DECIDED (REVERSIBLE) — added in v4 execution |
+| D15 | Device floor, support promise and the design window | DECIDED 2026-08-12 — option (b) |
+| D16 | Dead money discharge | **DECIDED 2026-08-20** — single-season charge |
 
 ---
 
@@ -640,3 +642,11 @@ the 17e remain unsourced and are recorded as gaps, not guessed.
 **Cost of reversal: low before the `04` §7 window is rewritten and the proof matrix re-rendered;
 medium after.** The churn is proof captures, the two-tier layout test, D4's baseline sentence and
 the `docs/STATUS.md` platform note. No save, engine or schema cost in any direction.
+
+## D16 — Dead money discharge
+
+**DECIDED 2026-08-20 — owner.** Dead money is a single-season charge, discharged at the season
+boundary between expiry and cap compliance. `Contract.deadMoney` accelerates the entire
+unamortised bonus into the release season; carrying that charge forever made the documented
+"bounded overage" unbounded and could eventually leave no legal release path. An amortised schedule
+remains a deliberate later option because it requires a save-schema change.

@@ -976,7 +976,7 @@ func runM1SoakTests(seasons: Int) {
     }
 }
 
-private func assertScheduleShape(
+func assertScheduleShape(
     games: [ScheduledGame],
     memberIDs: [UUID],
     gamesPerTeam: Int,

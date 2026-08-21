@@ -626,6 +626,91 @@ func runPeopleLifecycleTests() {
             })
         }
     }
+
+    suite("Lifecycle distributions hold their bands") {
+        test("the injured share and professional age curve hold their bands across a long run") {
+            var state = GameState.bootstrap(seed: 84_010)
+            let measured = [1, 3, 6, 10]
+            checkProAgeCurve(state, season: 0)
+            for season in 1...(measured.max() ?? 1) {
+                for _ in 0..<SharedRules.inSeasonWeeks {
+                    state = try WorldScheduler.advanceWeek(state).state
+                    if measured.contains(season), state.calendar.week == injurySampleWeek {
+                        checkInjuredShare(state, season: season)
+                    }
+                }
+                if measured.contains(season) {
+                    checkProAgeCurve(state, season: season)
+                }
+            }
+        }
+    }
+}
+
+// **Mean age 25.0...27.5 and share at/past decline 0.08...0.30, derived [P] from the model.**
+// Professional intake starts at 22. `SeasonLifecycleSystem.retires` applies an escalating 0.14,
+// 0.28, ... annual hazard after each position's stated decline age, with a hard stop after eight
+// years. At the playable-roster-weighted decline age near 30.4, the survival ladder contributes
+// about 3.04 post-decline seasons against 8.4 pre-decline seasons: a 0.27 veteran-tail ceiling and
+// mean near 27.3. The bands leave room for expiry and roster construction while rejecting a league
+// with no veteran tail or one dominated by declining players.
+
+private let proMeanAgeBand: ClosedRange<Double> = 25.0...27.5
+private let proPastDeclineShareBand: ClosedRange<Double> = 0.08...0.30
+
+private func checkProAgeCurve(_ state: GameState, season: Int) {
+    let players = state.proTeams.values.flatMap(\.rosterIDs).compactMap { state.players[$0] }
+    guard !players.isEmpty else {
+        expect(false, "season \(season): no professional players to measure an age curve over")
+        return
+    }
+    let mean = Double(players.reduce(0) { $0 + $1.age }) / Double(players.count)
+    let pastDeclineShare = Double(players.filter(\.isDeclining).count) / Double(players.count)
+    print(String(
+        format: "pro age curve: season %d, n %d, mean %.2f, past-decline share %.3f",
+        season, players.count, mean, pastDeclineShare
+    ))
+    expect(proMeanAgeBand.contains(mean), String(
+        format: "season %d: professional mean age %.2f is outside the band %.1f...%.1f",
+        season, mean, proMeanAgeBand.lowerBound, proMeanAgeBand.upperBound
+    ))
+    expect(proPastDeclineShareBand.contains(pastDeclineShare), String(
+        format: "season %d: past-decline share %.3f is outside the band %.2f...%.2f",
+        season, pastDeclineShare,
+        proPastDeclineShareBand.lowerBound, proPastDeclineShareBand.upperBound
+    ))
+}
+
+// What share of active players is carrying an injury in a given week. The prior soak asserted only
+// `> 0` and `< 10%`, which detects reachability but does not describe the distribution.
+//
+// **Band 0.015...0.055, derived [P] from the model's stated rules.**
+// `PeopleRules.injuryProbability` gives the week-12 playing population a roughly 0.008...0.014
+// weekly risk. `PeopleRules.injurySeverity` gives mean absence of
+// `0.72 * 1.5 + 0.23 * 4.5 + 0.05 * 10.5 = 2.64` weeks. Probability times duration therefore
+// predicts a steady injured share near 0.021...0.037; the wider band allows fatigue dispersion,
+// byes, and the shrinking postseason field without weakening the existing 10% safety ceiling.
+
+private let injurySampleWeek = 12
+private let injuredShareBand: ClosedRange<Double> = 0.015...0.055
+
+private func checkInjuredShare(_ state: GameState, season: Int) {
+    let activeIDs = state.programmes.values.flatMap(\.rosterIDs)
+        + state.proTeams.values.flatMap(\.rosterIDs)
+    guard !activeIDs.isEmpty else {
+        expect(false, "season \(season): no active players to measure an injured share over")
+        return
+    }
+    let injured = activeIDs.filter { state.people.playerLifecycle[$0]?.injury != nil }.count
+    let share = Double(injured) / Double(activeIDs.count)
+    print(String(
+        format: "injured share: season %d week %d, n %d, injured %d, share %.4f",
+        season, injurySampleWeek, activeIDs.count, injured, share
+    ))
+    expect(injuredShareBand.contains(share), String(
+        format: "season %d week %d: injured share %.4f is outside the band %.3f...%.3f",
+        season, injurySampleWeek, share, injuredShareBand.lowerBound, injuredShareBand.upperBound
+    ))
 }
 
 func runM2SoakTests(seasons: Int) {

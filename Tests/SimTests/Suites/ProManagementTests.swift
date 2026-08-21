@@ -21,7 +21,10 @@ func runProManagementTests() {
             )
             expectEqual(receipt.capAfter.committedCap - receipt.capBefore.committedCap, contract.capHit(inYear: 0))
             expect(receipt.state.proTeams[teamID]?.rosterIDs.contains(player.id) == true)
-            expectEqual(receipt.state.players[player.id]?.contract, contract)
+            expectEqual(
+                receipt.state.players[player.id]?.contract,
+                contract.withSignedSeason(state.proMarket.season)
+            )
             let encoded = try SaveEnvelope.encode(receipt.state)
             let restored = try SaveEnvelope.decode(GameState.self, from: encoded)
             expectEqual(restored, receipt.state)
@@ -228,6 +231,80 @@ func runProManagementTests() {
                 return false
             }, "an over-cap team passed root integrity")
         }
+
+        test("an acquired contract always carries the market season") {
+            var state = GameState.bootstrap(seed: 60_020)
+            let teamID = state.proTeams.ids[0]
+            makeRosterOpening(teamID: teamID, in: &state)
+            let player = unattachedPlayer(
+                id: UUID(uuidString: "00000000-0000-4000-8000-000000006020")!
+            )
+            state.players.insert(player)
+            state.people.insert(player: player)
+
+            let receipt = try ProManagementSystem.acquire(
+                playerID: player.id,
+                for: teamID,
+                kind: .freeAgency,
+                contract: Contract(
+                    years: 2,
+                    baseSalaryByYear: [1_000_000, 1_000_000],
+                    signingBonus: 0
+                ),
+                in: state
+            )
+            expectEqual(
+                receipt.state.players[player.id]?.contract?.signedSeason,
+                state.proMarket.season,
+                "the shared acquisition primitive left signedSeason unstamped"
+            )
+
+            state.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: teamID,
+                    tier: .professional,
+                    startedAt: state.calendar
+                ),
+                status: .employed
+            )
+            makeRosterOpening(teamID: teamID, in: &state)
+            let intentPlayer = unattachedPlayer(
+                id: UUID(uuidString: "00000000-0000-4000-8000-000000006021")!
+            )
+            state.players.insert(intentPlayer)
+            state.people.insert(player: intentPlayer)
+            let request = ProManagementRequest(
+                calendar: state.calendar,
+                action: .acquire(
+                    playerID: intentPlayer.id,
+                    teamID: teamID,
+                    kind: .freeAgency,
+                    contract: Contract(
+                        years: 2,
+                        baseSalaryByYear: [1_000_000, 1_000_000],
+                        signingBonus: 0
+                    )
+                )
+            )
+            let resolved = try IntentResolver.resolve(.proManagement(request), in: state)
+            expectEqual(
+                resolved.state.players[intentPlayer.id]?.contract?.signedSeason,
+                state.proMarket.season,
+                "the controlled acquire intent left signedSeason unstamped"
+            )
+        }
+
+        test("root integrity rejects a professional contract no team owns") {
+            var state = GameState.bootstrap(seed: 60_008)
+            let teamID = state.proTeams.ids[0]
+            let playerID = state.proTeams[teamID]!.rosterIDs[0]
+            state.proTeams.update(teamID) {
+                $0.rosterIDs.removeAll { $0 == playerID }
+            }
+            expect(WorldIntegrity.check(state).issues.contains(
+                .unownedProfessionalContract(playerID: playerID)
+            ), "an unowned professional contract passed root integrity")
+        }
     }
 }
 
@@ -251,4 +328,5 @@ private func makeRosterOpening(teamID: UUID, in state: inout GameState) {
     _ = state.proTeams.update(teamID) { team in
         team.rosterIDs.removeAll { $0 == removableID }
     }
+    state.players.update(removableID) { $0.contract = nil }
 }

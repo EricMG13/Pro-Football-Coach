@@ -206,7 +206,7 @@ public struct ProMarketState: Codable, Sendable, Equatable {
               draftClass.count <= Self.maximumDraftClassSize,
               Set(draftClass.map(\.id)).count == draftClass.count,
               draftClass.allSatisfy({ $0.draftSeason == season }),
-              draftOrder.count == ProRules.draftPickCount || phase == .closed,
+              ProRules.isLegalDraftOrder(draftOrder) || phase == .closed,
               (0...draftClass.count).contains(nextPick),
               draftedProspectIDs.count == nextPick,
               Set(draftedProspectIDs).count == draftedProspectIDs.count,
@@ -266,7 +266,7 @@ public struct ProMarketState: Codable, Sendable, Equatable {
               draftClass.count == ProRules.draftPickCount,
               draftClass.allSatisfy({ $0.draftSeason == season }),
               Set(draftClass.map(\.id)).count == draftClass.count,
-              draftOrder.count == ProRules.draftPickCount,
+              ProRules.isLegalDraftOrder(draftOrder),
               freeAgentIDs.count <= Self.maximumFreeAgentIDs,
               Set(freeAgentIDs).count == freeAgentIDs.count else { return false }
         self.season = season

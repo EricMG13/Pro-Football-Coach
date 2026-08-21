@@ -64,6 +64,23 @@ func runDepthChartTests() {
                    "the offence took the field with nobody who can kick")
         }
 
+        test("every professional team fields a complete lineup from its own roster") {
+            let state = GameState.bootstrap(seed: 87_006)
+            for teamID in state.proTeams.ids.sorted(by: { $0.uuidString < $1.uuidString }) {
+                guard let team = state.proTeams[teamID] else { continue }
+                let roster = team.rosterIDs.compactMap { state.players[$0] }
+                let personnel = DepthChart.personnel(offense: roster, defense: roster)
+                expectEqual(personnel.offense.count, DepthChart.offensiveTemplate.count,
+                            "\(teamID) could not field a complete offence")
+                expectEqual(personnel.defense.count, DepthChart.defensiveTemplate.count,
+                            "\(teamID) could not field a complete defence")
+                expectEqual(Set(personnel.offense.map(\.id)).count, personnel.offense.count,
+                            "\(teamID) lined a player up twice on offence")
+                expectEqual(Set(personnel.defense.map(\.id)).count, personnel.defense.count,
+                            "\(teamID) lined a player up twice on defence")
+            }
+        }
+
         test("a roster hole still fields a full unit") {
             // Eleven players is a rule of the sport. A formation that shipped ten because a roster
             // had no third receiver would change the game the resolver plays.

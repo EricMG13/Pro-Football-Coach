@@ -346,7 +346,7 @@ func runSnapAnchorTests() {
                     result: .safety, yards: -1, secondsElapsed: 5, matchups: [],
                     ballCarrierID: quarterback.id, passerID: quarterback.id
                 ),
-                callInTriggers: []
+                callInTriggers: [.thirdAndLong]
             )
 
             let set = SnapAnchors.choreograph(

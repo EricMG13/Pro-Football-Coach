@@ -89,6 +89,7 @@ public enum IntegrityIssue: Sendable, Equatable, Hashable, CustomStringConvertib
     case invalidCareerControl
     case invalidCareerArc
     case invalidProfessionalCap(teamID: UUID)
+    case unownedProfessionalContract(playerID: UUID)
     case invalidProfessionalMarket
     case invalidMandatoryDecision(decisionID: UUID)
     case invalidTacticalState
@@ -210,6 +211,8 @@ public enum IntegrityIssue: Sendable, Equatable, Hashable, CustomStringConvertib
             return "The coaching career arc has invalid employment, support, or opportunity history."
         case let .invalidProfessionalCap(teamID):
             return "Pro team \(teamID) exceeds its salary cap or has malformed contracts."
+        case let .unownedProfessionalContract(playerID):
+            return "Player \(playerID) holds a contract no professional team owns."
         case .invalidProfessionalMarket:
             return "The professional free-agency or draft market is malformed or out of phase."
         case let .invalidMandatoryDecision(decisionID):
@@ -1000,6 +1003,21 @@ public enum WorldIntegrity {
         }
     }
 
+    package static func collegeScholarshipViolations(in state: GameState) -> [UUID] {
+        Set(state.programmes.ids).union(state.college.programmes.keys)
+            .filter { id in
+                guard let programme = state.programmes[id],
+                      let recruiting = state.college.programmes[id] else { return true }
+                let holders = recruiting.scholarshipPlayerIDs
+                let holderSet = Set(holders)
+                return holders.count > CollegeRules.scholarshipLimit
+                    || holderSet.count != holders.count
+                    || !holderSet.isSubset(of: Set(programme.rosterIDs))
+                    || holders.count != programme.scholarshipCount
+            }
+            .sorted(by: uuidLessThan)
+    }
+
     private static func checkCollegeState(
         _ state: GameState,
         issues: inout [IntegrityIssue]
@@ -1016,6 +1034,7 @@ public enum WorldIntegrity {
             .subtracting(playerIdentityIDs)
         let recruitmentIDs = Set(state.college.prospectRecruitment.keys)
         let cityIDs = Set(state.map.cities.map(\.id))
+        let scholarshipViolationIDs = Set(collegeScholarshipViolations(in: state))
 
         for playerID in state.college.redshirtPlans.keys.sorted(by: uuidLessThan) {
             guard let plan = state.college.redshirtPlans[playerID] else { continue }
@@ -1053,7 +1072,6 @@ public enum WorldIntegrity {
                   let recruiting = state.college.programmes[id] else { continue }
             let boardSet = Set(recruiting.boardIDs)
             let relationshipIDs = Set(recruiting.relationships.keys)
-            let scholarshipSet = Set(recruiting.scholarshipPlayerIDs)
             let rosterNILIDs = Set(recruiting.nilState.rosterAllocations.keys)
             let recruitingNILIDs = Set(recruiting.nilState.recruitingReservations.keys)
             let committedNIL = recruiting.nilState.rosterAllocations.values.reduce(0, +)
@@ -1078,10 +1096,7 @@ public enum WorldIntegrity {
                 || recruiting.boardIDs.count > CollegeRules.recruitingBoardLimit
                 || boardSet.count != recruiting.boardIDs.count
                 || relationshipIDs != boardSet
-                || recruiting.scholarshipPlayerIDs.count > CollegeRules.scholarshipLimit
-                || scholarshipSet.count != recruiting.scholarshipPlayerIDs.count
-                || !scholarshipSet.isSubset(of: Set(programme.rosterIDs))
-                || recruiting.scholarshipPlayerIDs.count != programme.scholarshipCount
+                || scholarshipViolationIDs.contains(id)
                 || !(0...CollegeRules.weeklyRecruitingContactPoints).contains(
                     recruiting.contactPointsRemaining
                 )
@@ -1854,6 +1869,12 @@ public enum WorldIntegrity {
         _ state: GameState,
         issues: inout [IntegrityIssue]
     ) {
+        let ownedIDs = Set(state.proTeams.values.flatMap { $0.rosterIDs + $0.practiceSquadIDs })
+        for player in state.players.values.sorted(by: { $0.id.uuidString < $1.id.uuidString })
+        where player.contract != nil && !ownedIDs.contains(player.id) {
+            issues.append(.unownedProfessionalContract(playerID: player.id))
+        }
+
         for team in state.proTeams.values {
             let hasCapData = team.deadMoney != 0
                 || (team.rosterIDs + team.practiceSquadIDs).contains {
@@ -1903,8 +1924,7 @@ public enum WorldIntegrity {
             .union(state.proTeams.values.flatMap { $0.rosterIDs + $0.practiceSquadIDs })
         let draftOrderIsValid = market.phase == .closed
             ? market.draftOrder.isEmpty
-            : market.draftOrder.count == ProRules.draftPickCount
-                && market.draftOrder.allSatisfy(proTeamIDs.contains)
+            : ProRules.isLegalDraftOrder(market.draftOrder, teamIDs: proTeamIDs)
         let draftClassIsValid = market.phase == .closed
             ? market.draftClass.isEmpty
             : market.draftClass.count == ProRules.draftPickCount

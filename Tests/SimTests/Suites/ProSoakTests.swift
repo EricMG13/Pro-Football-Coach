@@ -66,6 +66,12 @@ func runProSoakTests() {
                             "s\(targetSeason) \(team.name): \(cap.practiceSquadCount) practice squad"
                         )
                     }
+                    if cap.deadMoney > cap.capLimit {
+                        capBreaches.append(
+                            "s\(targetSeason) \(team.name): dead money \(cap.deadMoney) "
+                                + "exceeds the cap \(cap.capLimit)"
+                        )
+                    }
                 }
 
                 // A contracted professional must be owned by exactly one team, and an owned
@@ -225,6 +231,40 @@ func runProDraftProbeTests() {
                 """)
                 expect(false, "the first draft pick of a fresh world cannot be made: \(error)")
             }
+        }
+
+        test("a full round of picks all carry a properly stamped, cap-legal contract") {
+            var state = GameState.bootstrap(seed: 96_005)
+            let rollover = CalendarState(season: 0, week: SharedRules.inSeasonWeeks)
+            state.calendar = rollover
+            state.league.week = rollover.week
+            state = try ProMarketSystem.expireContracts(at: rollover, in: state).state
+            state = try ProMarketSystem.openOffseason(in: state)
+            state = try ProMarketSystem.beginDraft(in: state)
+            let marketSeason = state.proMarket.season
+
+            for _ in 0..<ProRules.draftPicksPerRound {
+                guard let teamID = state.proMarket.currentPickTeamID,
+                      let prospect = state.proMarket.draftClass.first(where: {
+                          !state.proMarket.draftedProspectIDs.contains($0.id)
+                      }) else {
+                    expect(false, "a full draft round ran out of a team or prospect")
+                    return
+                }
+
+                state = try ProMarketSystem.draft(prospectID: prospect.id, for: teamID, in: state)
+                guard let contract = state.players[prospect.id]?.contract else {
+                    expect(false, "drafted player \(prospect.id) has no contract")
+                    return
+                }
+                expectEqual(contract.signedSeason, marketSeason)
+                expect(try ProManagementSystem.capSnapshot(teamID: teamID, in: state).isWithinCap,
+                       "team \(teamID) exceeded the cap immediately after its pick")
+            }
+
+            expectEqual(state.proMarket.nextPick, ProRules.draftPicksPerRound)
+            expect(WorldIntegrity.check(state).isValid,
+                   "a complete draft round left an invalid root")
         }
     }
 }

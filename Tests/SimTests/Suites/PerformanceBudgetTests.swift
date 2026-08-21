@@ -1,9 +1,9 @@
 import Foundation
 import FootballSimCore
 
-/// Host-only evidence for the two D4 operations. Device release gates live outside this probe.
-func runPerformanceBudgetProbe() {
-    suite("Performance evidence probe — no host threshold") {
+/// Host-only evidence for the two D4 operations. Device release gates live outside this suite.
+func runPerformanceBudgetTests() {
+    suite("Performance budgets — host evidence") {
         let state = GameState.bootstrap(seed: 20_260_820)
 
         test("uses the shipping college league size") {
@@ -24,11 +24,14 @@ func runPerformanceBudgetProbe() {
                 print(String(
                     format: "PERFORMANCE EVIDENCE ONLY: shipping college %d programmes; "
                         + "recruiting AI %.3f s; "
-                        + "week advance %.3f s; target 1.200 s; hard ceiling 2.000 s "
+                        + "week advance %.3f s; target 1.200 s (%+.3f s); "
+                        + "hard ceiling 2.000 s (%+.3f s) "
                         + "(host measurement; no pass/fail threshold)",
                     state.programmes.count,
                     recruitingSeconds,
-                    weekSeconds
+                    weekSeconds,
+                    weekSeconds - 1.2,
+                    weekSeconds - 2.0
                 ))
             } catch {
                 expect(false, "performance fixture threw: \(error)")

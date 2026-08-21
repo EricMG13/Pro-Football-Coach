@@ -1,6 +1,22 @@
 import Foundation
 import FootballSimCore
 
+private final class ScholarshipTransactionRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private(set) var checkpoints: Set<String> = []
+    private(set) var breaches: [(String, [UUID])] = []
+
+    func observe(_ checkpoint: String, state: GameState) {
+        let violations = WorldIntegrity.collegeScholarshipViolations(in: state)
+        lock.lock()
+        defer { lock.unlock() }
+        checkpoints.insert(checkpoint)
+        if !violations.isEmpty {
+            breaches.append((checkpoint, violations))
+        }
+    }
+}
+
 private func portalSchedulerFinalWeekFixture(seed: UInt64) throws -> GameState {
     var state = GameState.bootstrap(seed: seed)
     while state.calendar.week < SharedRules.inSeasonWeeks {
@@ -19,6 +35,97 @@ func runPortalSchedulerTests() {
     let spring = try! WorldScheduler.advanceWeek(postseason.state)
 
     suite("College portal scheduler lifecycle") {
+        test("scholarships remain valid immediately after the season lifecycle transaction") {
+            var state = finalWeek
+            let programmeID = state.programmes.ids[0]
+            let playerID = state.college.programmes[programmeID]!.scholarshipPlayerIDs[0]
+            state.players.update(playerID) {
+                $0.eligibility = Eligibility(seasonsRemaining: 1, yearsRemaining: 1)
+            }
+            var programmeStates = state.college.programmes
+            let recruiting = programmeStates[programmeID]!
+            var nilState = recruiting.nilState
+            expect(nilState.setRosterAllocation(1, for: playerID))
+            programmeStates[programmeID] = ProgrammeRecruitingState(
+                programmeID: programmeID,
+                boardIDs: recruiting.boardIDs,
+                relationships: recruiting.relationships,
+                scholarshipPlayerIDs: recruiting.scholarshipPlayerIDs,
+                contactPointsRemaining: recruiting.contactPointsRemaining,
+                nilState: nilState
+            )
+            state.college = CollegeState(
+                recruitingSeason: state.college.recruitingSeason,
+                portal: state.college.portal,
+                phase: state.college.phase,
+                programmes: programmeStates,
+                prospectRecruitment: state.college.prospectRecruitment,
+                archivedProspects: state.college.archivedProspects,
+                redshirtPlans: state.college.redshirtPlans
+            )
+
+            let transition = try SeasonLifecycleSystem.advance(
+                after: state.calendar,
+                in: state
+            )
+            var afterTransaction = state
+            afterTransaction.programmes = transition.programmes
+            afterTransaction.proTeams = transition.proTeams
+            afterTransaction.players = transition.players
+            afterTransaction.staff = transition.staff
+            afterTransaction.people = transition.people
+            afterTransaction.college = transition.college
+
+            expect(WorldIntegrity.collegeScholarshipViolations(in: afterTransaction).isEmpty)
+            expectEqual(
+                afterTransaction.college.programmes[programmeID]?
+                    .nilState.rosterAllocations[playerID],
+                nil
+            )
+        }
+
+        test("scholarships remain valid after every scheduler transaction") {
+            let recorder = ScholarshipTransactionRecorder()
+            WorldScheduler.transactionObserver = { checkpoint, state in
+                recorder.observe(checkpoint, state: state)
+            }
+            defer { WorldScheduler.transactionObserver = nil }
+
+            var state = finalWeek
+            state = try WorldScheduler.advanceWeek(state).state
+            state = try WorldScheduler.advanceWeek(state).state
+            expectEqual(state.calendar, CalendarState(season: 1, week: 2))
+
+            for checkpoint in [
+                "seasonLifecycle",
+                "reconcileScholarships",
+                "collegeCycle.closeAndOpen",
+                "portalCommit.postseason",
+                "walkOns.postseasonCoverage",
+                "portalCommit.spring",
+                "walkOns.springRosterFill",
+                "recruitingMarket.weekly",
+                "recruitingMarket.terminal",
+                "recruitingAI",
+                "recruitingDelegation",
+            ] {
+                expect(
+                    recorder.checkpoints.contains(checkpoint),
+                    "transaction checkpoint \(checkpoint) never ran"
+                )
+            }
+            for step in WorldScheduler.steps {
+                expect(
+                    recorder.checkpoints.contains("step.\(step.rawValue)"),
+                    "scheduler step \(step.rawValue) was not checked"
+                )
+            }
+            for breach in recorder.breaches.prefix(8) {
+                expect(false, "scholarships broke after \(breach.0): \(breach.1)")
+            }
+            expectEqual(recorder.breaches.count, 0)
+        }
+
         test("final-week rollover commits postseason portal before minimum walk-on coverage") {
             let transition = postseason
             expectEqual(transition.state.calendar, CalendarState(season: 1, week: 1))

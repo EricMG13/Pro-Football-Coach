@@ -21,6 +21,34 @@ func runProMarketTests() {
             expect(WorldIntegrity.check(closed).isValid)
         }
 
+        test("a draft order that hands one team two picks in a round is refused") {
+            let opened = try ProMarketSystem.openOffseason(in: GameState.bootstrap(seed: 60_130))
+            var market = opened.proMarket
+            let season = market.season
+            let draftClass = market.draftClass
+            let order = market.draftOrder
+            expect(ProRules.isLegalDraftOrder(order, teamIDs: Set(opened.proTeams.ids)),
+                   "the market built an illegal draft order")
+            expect(market.close())
+
+            var hoarded = order
+            hoarded[1] = hoarded[0]
+            expectEqual(hoarded.count, order.count)
+            expect(Set(hoarded).isSubset(of: Set(opened.proTeams.ids)))
+            expect(!market.open(
+                season: season,
+                draftClass: draftClass,
+                draftOrder: hoarded,
+                freeAgentIDs: []
+            ), "a round with a team holding two picks was installed")
+            expect(market.open(
+                season: season,
+                draftClass: draftClass,
+                draftOrder: order,
+                freeAgentIDs: []
+            ), "the legal order the market itself built was refused")
+        }
+
         test("scouting is observer-specific and round trips") {
             let opened = try ProMarketSystem.openOffseason(in: GameState.bootstrap(seed: 60_102))
             let prospectID = try require(opened.proMarket.draftClass.first?.id)

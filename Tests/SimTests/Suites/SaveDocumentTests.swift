@@ -62,6 +62,38 @@ private func assertInvalidCalendarRefusedBeforeOpen(_ envelope: Data) async {
     expect(FileManager.default.fileExists(atPath: storage.quarantineDirectory.path))
 }
 
+private func assertEnvelopeRefusedBeforeOpen(
+    _ envelope: Data,
+    expectedError: SaveEnvelopeError,
+    expectedMessage: String,
+    quarantined: Bool
+) async {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("pfc-hostile-envelope-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let storage = CoachWorldSaveStore(directory: directory)
+    try! storage.write(envelope)
+    var openedDocument: CoachWorldSaveDocument?
+
+    do {
+        if case let .loaded(document, _) = try await SaveCoordinator(storage: storage).load() {
+            openedDocument = document
+        }
+        expect(false, "a hostile envelope opened a document")
+    } catch let error as SaveEnvelopeError {
+        expectEqual(error, expectedError)
+        expectEqual(CoachWorldAppRootView.saveErrorMessage(error), expectedMessage)
+    } catch {
+        expect(false, "hostile envelope returned the wrong error: \(error)")
+    }
+
+    expectEqual(openedDocument, nil, "hostile input partially opened a career")
+    expectEqual(
+        FileManager.default.fileExists(atPath: storage.quarantineDirectory.path),
+        quarantined
+    )
+}
+
 func runSaveDocumentTests() {
     suite("Save document migration") {
         test("schema 11 bare root wraps and normalises to the current root") {
@@ -205,6 +237,32 @@ func runSaveDocumentTests() {
             } catch {
                 expect(false, "future document returned the wrong error: \(error)")
             }
+        }
+
+        testAsync("a newer envelope is refused with a plain message and no partial open") {
+            var envelope = Data(Array("PFC1".utf8))
+            var version = (SaveEnvelope.currentSchemaVersion + 1).littleEndian
+            withUnsafeBytes(of: &version) { envelope.append(contentsOf: $0) }
+            envelope.append(contentsOf: Array(repeating: UInt8(0), count: 8))
+
+            await assertEnvelopeRefusedBeforeOpen(
+                envelope,
+                expectedError: .futureVersion(
+                    found: SaveEnvelope.currentSchemaVersion + 1,
+                    supported: SaveEnvelope.currentSchemaVersion
+                ),
+                expectedMessage: "This save was made by a newer version of Pro Football Coach.",
+                quarantined: false
+            )
+        }
+
+        testAsync("a truncated envelope is refused with a plain message and no partial open") {
+            await assertEnvelopeRefusedBeforeOpen(
+                Data(Array("PFC1".utf8) + [0x01, 0x00, 0x00]),
+                expectedError: .truncatedHeader,
+                expectedMessage: "That save could not be opened. Retry, use the backup, or explicitly replace it.",
+                quarantined: true
+            )
         }
     }
 

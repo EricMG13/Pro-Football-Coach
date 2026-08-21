@@ -188,9 +188,15 @@ public enum ProManagementSystem {
         guard before.committedCap <= before.capLimit - contract.capHit(inYear: 0) else {
             throw ProManagementError.capExceeded
         }
+        guard contract.signedSeason == nil || contract.signedSeason == state.proMarket.season else {
+            throw ProManagementError.invalidContract
+        }
+        let stampedContract = contract.signedSeason == nil
+            ? contract.withSignedSeason(state.proMarket.season)
+            : contract
 
         var next = state
-        next.players.update(playerID) { $0.contract = contract }
+        next.players.update(playerID) { $0.contract = stampedContract }
         next.proTeams.update(teamID) { $0.rosterIDs.append(playerID) }
         if validateIntegrity {
             guard WorldIntegrity.check(next).isValid else { throw ProManagementError.invalidRoot }
@@ -415,18 +421,34 @@ public enum ProManagementSystem {
                 guard let team = next.proTeams[teamID] else {
                     throw ProManagementError.missingTeam
                 }
+                let rosterIDSet = Set(team.rosterIDs)
+                var rosterByPosition: [Position: Int] = [:]
+                for playerID in team.rosterIDs {
+                    guard let position = next.players[playerID]?.position else { continue }
+                    rosterByPosition[position, default: 0] += 1
+                }
                 let candidates = (team.rosterIDs + team.practiceSquadIDs).compactMap {
                     playerID -> (UUID, Int)? in
-                    guard let contract = next.players[playerID]?.contract else { return nil }
-                    return (playerID, contract.deadMoney(ifReleasedAtSeason: calendar.season))
+                    guard let player = next.players[playerID],
+                          let contract = player.contract else { return nil }
+                    if rosterIDSet.contains(playerID) {
+                        let minimum = SharedRules.minimumPlayableRosterByPosition[player.position] ?? 0
+                        guard rosterByPosition[player.position, default: 0] > minimum else {
+                            return nil
+                        }
+                    }
+                    let deadMoneyAdded = contract.deadMoney(ifReleasedAtSeason: calendar.season)
+                    guard deadMoneyAdded < contract.capHit(atSeason: calendar.season) else {
+                        return nil
+                    }
+                    return (playerID, deadMoneyAdded)
                 }
                 // Ties broken by identifier, the same rule every other deterministic ordering in
                 // this project uses, so two processes given the same root release the same player.
                 guard let (playerID, deadMoneyAdded) = candidates.min(by: { lhs, rhs in
                     lhs.1 == rhs.1 ? lhs.0.uuidString < rhs.0.uuidString : lhs.1 < rhs.1
                 }) else {
-                    // No contracted player remains and the team is still over cap: dead money
-                    // alone exceeds the limit. Nothing left to release makes it legal.
+                    // No remaining release strictly sheds cap, so no sequence reaches legality.
                     throw ProManagementError.capExceeded
                 }
                 guard team.deadMoney <= Int.max - deadMoneyAdded else {
@@ -454,6 +476,15 @@ public enum ProManagementSystem {
         let introduced = WorldIntegrity.check(next).issues.filter { !inherited.contains($0) }
         guard introduced.isEmpty else { throw ProManagementError.invalidRoot }
         return ProCapComplianceReceipt(state: next, releases: releases)
+    }
+
+    /// D16 (`02` §4.2a): dead money is a single-season charge.
+    public static func dischargeDeadMoney(in state: GameState) -> GameState {
+        var next = state
+        for teamID in state.proTeams.ids {
+            next.proTeams.update(teamID) { $0.deadMoney = 0 }
+        }
+        return next
     }
 
     /// Losers draft first from the most recently archived professional ranking; before the first

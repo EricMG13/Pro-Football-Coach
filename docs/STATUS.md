@@ -19,6 +19,15 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-21 — the determinism gate now constructs and pins a non-empty history archive.**
+> The root and one-week fingerprints exercise `DomainEventLedger.archive` only while it is empty.
+> `--architecture-only` now builds a retention-one ledger with deterministic events spanning two
+> seasons, proves that both season digests exist, and pins the archive's canonical JSON fingerprint
+> at **12,709,969,372,690,370,694**. The RED run produced that value against the provisional zero;
+> two separate release-process invocations then passed at **26 tests / 228 checks**, with identical
+> **35 / 6,585** competition results and **2 passed / 0 failed** lane totals. Neither existing root
+> fingerprint literal moved, and no engine change was needed.
+
 > **2026-08-21 — every team now has a name a league would write, and a mark briefed to match it.**
 > 134 of the 166 public names were school directory entries — "Aberdeen, MS Agricultural
 > University" — with no team in them at all. `Programme` had carried a `nickname` since the

@@ -201,6 +201,47 @@ func runRulesTests() {
                    "more players dress than are on the roster")
         }
 
+        test("the minimum playable roster covers the formation the engine actually fields") {
+            for position in Position.allCases {
+                let fielded = max(
+                    DepthChart.offensiveTemplate.filter { $0 == position }.count,
+                    DepthChart.defensiveTemplate.filter { $0 == position }.count
+                )
+                let minimum = SharedRules.minimumPlayableRosterByPosition[position] ?? 0
+                expect(minimum >= fielded,
+                       "\(position) is fielded \(fielded) at a time but the minimum playable "
+                           + "roster guarantees only \(minimum)")
+            }
+        }
+
+        test("a draft order is seven rounds, each a permutation of every team") {
+            let teams = (0..<ProRules.draftPicksPerRound).map { index in
+                UUID(uuidString: String(format: "00000000-0000-4000-8000-%012d", index))!
+            }
+            let teamIDs = Set(teams)
+            let straight = (0..<ProRules.draftRounds).flatMap { _ in teams }
+            let snake = (0..<ProRules.draftRounds).flatMap { round in
+                round.isMultiple(of: 2) ? teams : teams.reversed()
+            }
+            expectEqual(straight.count, ProRules.draftPickCount)
+            expect(ProRules.isLegalDraftOrder(straight, teamIDs: teamIDs))
+            expect(ProRules.isLegalDraftOrder(snake, teamIDs: teamIDs),
+                   "the snake the market actually builds was refused")
+
+            var hoarded = straight
+            hoarded[1] = teams[0]
+            expect(!ProRules.isLegalDraftOrder(hoarded, teamIDs: teamIDs),
+                   "a team holding two picks in one round was accepted")
+            expect(!ProRules.isLegalDraftOrder(Array(straight.dropLast()), teamIDs: teamIDs),
+                   "a short order was accepted")
+            expect(!ProRules.isLegalDraftOrder(straight + [teams[0]], teamIDs: teamIDs),
+                   "a long order was accepted")
+            expect(!ProRules.isLegalDraftOrder(straight, teamIDs: Set(teams.dropLast())),
+                   "an order naming a team the league does not have was accepted")
+            expect(ProRules.isLegalDraftOrder(straight))
+            expect(!ProRules.isLegalDraftOrder(hoarded))
+        }
+
         test("the cap is integer dollars and grows") {
             expectEqual(ProRules.baseSalaryCap, 255_000_000)
             expectEqual(ProRules.capGrowthPercentPerYear, 7)

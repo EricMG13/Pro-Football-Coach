@@ -50,7 +50,7 @@ if CommandLine.arguments.contains("--catalog") {
 } else if CommandLine.arguments.contains("--week-advance-timing") {
     runWeekAdvanceTimingProbe()
 } else if CommandLine.arguments.contains("--performance-budget") {
-    runPerformanceBudgetProbe()
+    runPerformanceBudgetTests()
 } else if CommandLine.arguments.contains("--pro-market-root-probe") {
     runProMarketRootProbe()
 } else if CommandLine.arguments.contains("--export-team-logo-manifest") {
@@ -94,6 +94,8 @@ if CommandLine.arguments.contains("--catalog") {
     runM3RecruitingCalibrationTests()
 } else if CommandLine.arguments.contains("--calibration") {
     runCalibrationTests()
+} else if CommandLine.arguments.contains("--two-tier-consistency") {
+    runTwoTierConsistencyTests()
 } else if CommandLine.arguments.contains("--redshirt-only") {
     runCollegeRedshirtTests()
 } else if CommandLine.arguments.contains("--college-commitments") {

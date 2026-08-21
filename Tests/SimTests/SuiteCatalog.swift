@@ -9,6 +9,8 @@ enum ReleaseGateID: String, CaseIterable, Sendable {
     case voiceOver = "VoiceOverLabelTest"
     case touchTarget = "TouchTargetTest"
     case determinism = "DeterminismTests"
+    case performanceBudget = "PerformanceBudgetTests"
+    case twoTierConsistency = "TwoTierConsistencyTests"
     case reachability = "ReachabilityTest"
     case errorSurface = "ErrorSurfaceTest"
     case accessibility = "AccessibilityContractTests"
@@ -56,6 +58,8 @@ struct SuiteCatalog: Sendable {
              .voiceOver, .touchTarget, .reachability, .errorSurface,
              .accessibility: return "accessibility"
         case .determinism: return "determinism"
+        case .performanceBudget: return "performance"
+        case .twoTierConsistency: return "calibration"
         case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly: return "persistence"
         case .m1Soak, .m2Soak: return "soaks"
         case .legal: return "legal"
@@ -74,6 +78,10 @@ struct SuiteCatalog: Sendable {
             return Runner(command: "--reduce-motion", function: "runReduceMotionContractTests")
         case .determinism:
             return Runner(command: "--architecture-only", function: "runArchitectureTests")
+        case .performanceBudget:
+            return Runner(command: "--performance-budget", function: "runPerformanceBudgetTests")
+        case .twoTierConsistency:
+            return Runner(command: "--two-tier-consistency", function: "runTwoTierConsistencyTests")
         case .accessibility:
             return Runner(command: "--design-contracts", function: "runAccessibilityReflowTests")
         case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly:
@@ -97,6 +105,31 @@ struct SuiteCatalog: Sendable {
 
 func runCommitmentCoverageTest() {
     suite("Commitment coverage") {
+        test("TwoTierConsistencyTests has a dispatched runner") {
+            let entry = SuiteCatalog.entries.first {
+                $0.gate.rawValue == "TwoTierConsistencyTests"
+            }
+            expectEqual(
+                entry?.runner,
+                SuiteCatalog.Runner(
+                    command: "--two-tier-consistency",
+                    function: "runTwoTierConsistencyTests"
+                )
+            )
+            let main = try? String(
+                contentsOf: URL(fileURLWithPath: "Tests/SimTests/main.swift"),
+                encoding: .utf8
+            )
+            expect(
+                main?.contains("CommandLine.arguments.contains(\"--two-tier-consistency\")") == true,
+                "--two-tier-consistency is not dispatched"
+            )
+            expect(
+                main?.contains("runTwoTierConsistencyTests()") == true,
+                "runTwoTierConsistencyTests is not dispatched"
+            )
+        }
+
         test("every PRODUCT commitment names a runnable gate") {
             let productURL = URL(fileURLWithPath: "PRODUCT.md")
             guard let product = try? String(contentsOf: productURL, encoding: .utf8) else {
@@ -138,8 +171,14 @@ func runCommitmentCoverageTest() {
             }
         }
 
-        test("unverified targets are not release gates") {
-            expect(!SuiteCatalog.entries.contains { $0.gate.rawValue == "PerformanceBudgetTests" })
+        test("PerformanceBudgetTests has a dispatched runner") {
+            expectEqual(
+                SuiteCatalog.runner(for: .performanceBudget),
+                SuiteCatalog.Runner(
+                    command: "--performance-budget",
+                    function: "runPerformanceBudgetTests"
+                )
+            )
         }
     }
 }

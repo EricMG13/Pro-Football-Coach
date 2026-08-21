@@ -17,6 +17,17 @@ func runCapComplianceTests() {
     }
 
     suite("Cap compliance: enforcement") {
+        test("season-boundary discharge clears every team's dead money") {
+            var state = GameState.bootstrap(seed: 62_007)
+            let teamIDs = Array(state.proTeams.ids.prefix(2))
+            state.proTeams.update(teamIDs[0]) { $0.deadMoney = 1 }
+            state.proTeams.update(teamIDs[1]) { $0.deadMoney = 25_000_000 }
+
+            let discharged = ProManagementSystem.dischargeDeadMoney(in: state)
+            expect(discharged.proTeams.values.allSatisfy { $0.deadMoney == 0 },
+                   "season-boundary discharge left dead money on the books")
+        }
+
         test("compliance releases the cheapest dead money first, and stops once legal") {
             var state = GameState.bootstrap(seed: 62_001)
             let teamID = state.proTeams.ids[0]
@@ -73,6 +84,102 @@ func runCapComplianceTests() {
             expect(receipt.state.proTeams[teamID]?.rosterIDs.contains(cheapID) != true)
             expect(receipt.state.proMarket.freeAgentIDs.contains(cheapID))
             expectEqual(receipt.state.proTeams[teamID]?.deadMoney, 500)
+            expect(WorldIntegrity.check(receipt.state).isValid)
+        }
+
+        test("compliance never releases a deal whose release costs more cap than it sheds") {
+            var state = GameState.bootstrap(seed: 62_005)
+            let teamID = state.proTeams.ids[0]
+            guard let team = state.proTeams[teamID], team.rosterIDs.count >= 2 else {
+                expect(false, "the fixture team has fewer than two rostered players")
+                return
+            }
+            for playerID in team.rosterIDs + team.practiceSquadIDs {
+                state.players.update(playerID) { $0.contract = nil }
+            }
+            state.proTeams.update(teamID) { $0.deadMoney = 0 }
+
+            let capLimit = ProRules.salaryCap(seasonsAfterBase: state.calendar.season)
+            let trapID = team.rosterIDs[0]
+            let payerID = team.rosterIDs[1]
+            state.players.update(trapID) {
+                $0.contract = Contract(
+                    years: 5,
+                    baseSalaryByYear: Array(repeating: 0, count: 5),
+                    signingBonus: 5,
+                    signedSeason: state.calendar.season
+                )
+            }
+            state.players.update(payerID) {
+                $0.contract = Contract(
+                    years: 5,
+                    baseSalaryByYear: [capLimit] + Array(repeating: 0, count: 4),
+                    signingBonus: 5_000_000,
+                    signedSeason: state.calendar.season
+                )
+            }
+
+            let before = try ProManagementSystem.capSnapshot(teamID: teamID, in: state)
+            expectEqual(before.committedCap, capLimit + 1_000_001)
+            expect(!before.isWithinCap, "the fixture is not actually over cap")
+
+            let receipt = try ProManagementSystem.enforceCapCompliance(
+                at: state.calendar,
+                in: state
+            )
+            expectEqual(receipt.releases.map(\.playerID), [payerID])
+            expect(receipt.state.players[trapID]?.contract != nil,
+                   "the trap deal was released even though releasing it raised the cap")
+            let after = try ProManagementSystem.capSnapshot(teamID: teamID, in: receipt.state)
+            expect(after.isWithinCap, "the team is still over cap after compliance")
+            expect(after.committedCap < before.committedCap,
+                   "compliance did not reduce committed cap")
+            expect(WorldIntegrity.check(receipt.state).isValid)
+        }
+
+        test("compliance preserves the last playable body at every position") {
+            var state = GameState.bootstrap(seed: 62_006)
+            let teamID = state.proTeams.ids[0]
+            guard let team = state.proTeams[teamID],
+                  let kickerID = team.rosterIDs.first(where: {
+                      state.players[$0]?.position == .kicker
+                  }),
+                  let payerID = team.rosterIDs.first(where: {
+                      state.players[$0]?.position == .wideReceiver
+                  }) else {
+                expect(false, "the fixture team lacks a kicker or receiver")
+                return
+            }
+            for playerID in team.rosterIDs + team.practiceSquadIDs {
+                state.players.update(playerID) { $0.contract = nil }
+            }
+            state.proTeams.update(teamID) { $0.deadMoney = 0 }
+
+            let capLimit = ProRules.salaryCap(seasonsAfterBase: state.calendar.season)
+            state.players.update(kickerID) {
+                $0.contract = Contract(
+                    years: 1,
+                    baseSalaryByYear: [1],
+                    signingBonus: 0,
+                    signedSeason: state.calendar.season
+                )
+            }
+            state.players.update(payerID) {
+                $0.contract = Contract(
+                    years: 5,
+                    baseSalaryByYear: [capLimit - 1] + Array(repeating: 0, count: 4),
+                    signingBonus: 5,
+                    signedSeason: state.calendar.season
+                )
+            }
+
+            let receipt = try ProManagementSystem.enforceCapCompliance(
+                at: state.calendar,
+                in: state
+            )
+            expectEqual(receipt.releases.map(\.playerID), [payerID])
+            expect(receipt.state.proTeams[teamID]?.rosterIDs.contains(kickerID) == true,
+                   "compliance released the team's last kicker")
             expect(WorldIntegrity.check(receipt.state).isValid)
         }
 

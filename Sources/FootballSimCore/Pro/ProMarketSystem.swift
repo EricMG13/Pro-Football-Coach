@@ -72,7 +72,7 @@ public enum ProMarketSystem {
         }
         let targetSeason = state.calendar.season + 1
         let order = draftOrder(for: state)
-        guard order.count == ProRules.draftPickCount else {
+        guard ProRules.isLegalDraftOrder(order, teamIDs: Set(state.proTeams.ids)) else {
             throw ProMarketError.invalidRoot
         }
         let draftClass = makeDraftClass(
