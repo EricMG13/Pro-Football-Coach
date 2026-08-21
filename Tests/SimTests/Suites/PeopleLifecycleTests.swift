@@ -1234,10 +1234,12 @@ func runM2SoakTests(seasons: Int) {
 
             // A professional whose contract expires (ProMarketSystem.expireContracts) is never
             // removed from the player store, only unrostered into proMarket.freeAgentIDs — the
-            // store holds the league's whole identity pool, not just who is rostered this week,
-            // so activePlayerTarget is still the right size for it even though a professional
-            // roster itself is only bounded, not exact, at this checkpoint (see the note above).
-            expectEqual(filledState.players.count, activePlayerTarget)
+            // store holds the league's whole identity pool, not just who is rostered this week.
+            // Retirement replacements preserve headcount and filledState has full college rosters,
+            // so the bootstrap target is a lower bound rather than an exact store size.
+            expect(filledState.players.count >= activePlayerTarget,
+                   "player store fell below the retained-population floor: "
+                       + "\(filledState.players.count) < \(activePlayerTarget)")
             expect(!state.people.departedPlayers.isEmpty,
                    "departed player identities did not persist")
             expect(state.staff.count >= employedStaffTarget,
