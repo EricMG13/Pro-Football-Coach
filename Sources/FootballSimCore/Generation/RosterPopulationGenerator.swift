@@ -75,12 +75,16 @@ public enum RosterPopulationGenerator {
         }
         let id = rng.uuid()
         let potential = Rating(base + rng.int(in: 4...18))
+        // A replacement was always 22, which made every draft and retirement intake one cohort.
+        // Alternate the two legal rookie-entry ages without consuming RNG draws, so identity
+        // generation stays stable while the long-run roster retains an age spread.
+        let age = tier == .college ? 18 : 22 + ordinal % 2
         return Player(
             id: id,
             firstName: name.given,
             lastName: name.family,
             position: position,
-            age: tier == .college ? 18 : 22,
+            age: age,
             attributes: attributes,
             potential: potential,
             traits: TraitPopulationGenerator.traits(for: id),
