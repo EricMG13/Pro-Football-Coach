@@ -23,8 +23,19 @@ the long release run completed 21 tests and 520,251 checks, including season ind
 injury evidence (1/34), and programme evolution (7/275). The owner change is published as PR
 [#61](https://github.com/EricMG13/Pro-Football-Coach/pull/61).
 
-The separate 20-season M2 soak is still the slow lane. Its existing roster-retention failure and the
-tactical-state failure are recorded below rather than being hidden by the green lifecycle-band run.
+The separate 20-season M2 soak completed on the same owner release tree in 3,761 seconds (about
+62.7 minutes): 1 test, 812 checks, with 20 failures. The failures are calibration evidence, not a
+crash: the tier gap is 12.35…13.44 in seasons 4–20 against the stated 1.0…12.0 band, and the
+professional past-decline share is 0.045 in season 5 and 0.076 in season 7 against 0.08…0.30.
+The remaining failure is an invariant bug: `filledState.players.count` is 18,368 against the old
+15,766 exact active-roster target, even though the player store intentionally retains legal
+unrostered professionals and history. Save checkpoints were 6,629,623 bytes (season 1), 8,739,873
+(season 5), and 11,169,478 (season 20).
+
+The rating-gap and veteran-tail failures remain open model decisions. They need an intake/roster-age
+root-cause fix or an explicitly approved recalibration; this pass did not change a decline-age or
+trait constant. The exact population assertion should be corrected to test the store's real retention
+contract before the soak is called fully green. The tactical-state baseline failure remains separate.
 
 **What this fixed, in order of size:**
 
