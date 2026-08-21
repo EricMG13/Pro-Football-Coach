@@ -35,6 +35,7 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
                 workspace
             }
         }
+        .accessibilityIdentifier("player-profile-screen")
     }
 
     private var palette: CoachWorldTokens.Palette {
@@ -178,10 +179,13 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
                 if activeRoute == .overview || activeRoute == .development {
                     HStack {
                         Spacer(minLength: .zero)
-                        FloodlitCommittingAction("Into the development plan") {
+                        Button("Open development evidence") {
                             activeRoute = .development
                             onInspectDevelopment(model.stableID)
                         }
+                        .buttonStyle(
+                            CoachWorldActionButtonStyle(role: .primary, palette: palette)
+                        )
                     }
                 }
             }
