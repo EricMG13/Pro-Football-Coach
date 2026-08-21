@@ -202,8 +202,8 @@ public enum SeasonLifecycleSystem {
     /// its generic entity references and its typed prospect references, which validate recruiting
     /// history), archived award winners, everyone still on a roster, and everyone whose portal
     /// window is still named by any live portal event — the last because `WorldIntegrity`
-    /// cross-checks live-window event counts and current-target capacity/scouting knowledge against
-    /// career records, and dropping one half of that pair would report as corruption.
+    /// cross-checks live-window event counts, retained capacity snapshots, and scouting knowledge
+    /// against career records, and dropping one half of that pair would report as corruption.
     private static func retainedIdentityIDs(in state: GameState) -> Set<UUID> {
         var protectedIDs = Set(state.players.ids)
         var survivingPortalWindows = Set<PortalWindowKey>()
@@ -211,20 +211,13 @@ public enum SeasonLifecycleSystem {
             let payload = event.payload
             protectedIDs.formUnion(payload.referencedEntityIDs)
             protectedIDs.formUnion(payload.referencedProspectIDs)
-            switch payload {
-            case let .portalEntered(_, _, targetSeason, window, _),
-                 let .portalRetentionResolved(_, _, targetSeason, window, _),
-                 let .portalOfferMade(_, _, targetSeason, window, _),
-                 let .playerTransferred(_, _, _, targetSeason, window, _, _):
+            if let portalWindow = payload.portalWindowReference {
                 survivingPortalWindows.insert(
-                    PortalWindowKey(targetSeason: targetSeason, window: window)
+                    PortalWindowKey(
+                        targetSeason: portalWindow.targetSeason,
+                        window: portalWindow.window
+                    )
                 )
-            case let .portalWindowCompleted(summary):
-                survivingPortalWindows.insert(
-                    PortalWindowKey(targetSeason: summary.targetSeason, window: summary.window)
-                )
-            default:
-                break
             }
         }
         for archive in state.competition.archives {
@@ -236,11 +229,11 @@ public enum SeasonLifecycleSystem {
         // names — not any career that ever touched the portal.
         //
         // `WorldIntegrity` recomputes a live window's entrant and offer counts from career records,
-        // and recomputes current-target destination capacity from its offers. Protecting only the
-        // player named by a surviving event can therefore leave a partial live window whose
-        // aggregate no longer reconciles. This reads the same bounded journal as the integrity
-        // checks, so a window falls out of portal protection only once every portal event for it
-        // can no longer be consulted.
+        // checks every retained offer's captured capacity, and checks exact NIL terms when a
+        // completion summary proves every offer is present. Protecting only the player named by a
+        // surviving event can therefore leave a partial live window whose aggregate no longer
+        // reconciles. This reads the same bounded journal as the integrity checks, so a window falls
+        // out of portal protection only once every portal event for it can no longer be consulted.
         if !survivingPortalWindows.isEmpty {
             for (playerID, career) in state.people.playerCareers {
                 let matchesSurvivingWindow = career.portalWindows.contains {
