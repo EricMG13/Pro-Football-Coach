@@ -831,17 +831,34 @@ public enum WorldIntegrity {
         }
     }
 
-    package static func collegeEligibilityViolations(in state: GameState) -> [UUID] {
-        let collegeRosterIDs = Set(state.programmes.values.flatMap(\.rosterIDs))
-        let proRosterIDs = Set(state.proTeams.values.flatMap {
-            $0.rosterIDs + $0.practiceSquadIDs
-        })
+    private static func collegeEligibilityViolationIDs(
+        in state: GameState,
+        collegeRosterIDs: Set<UUID>,
+        proRosterIDs: Set<UUID>
+    ) -> Set<UUID> {
         var violations = Set(collegeRosterIDs.filter { id in
             guard let eligibility = state.players[id]?.eligibility else { return true }
             return eligibility.isExhausted || !eligibility.isValidForActiveCollegeRoot
         })
         violations.formUnion(proRosterIDs.filter { state.players[$0]?.eligibility != nil })
-        return violations.sorted(by: uuidLessThan)
+        return violations
+    }
+
+    package static func collegeEligibilityViolations(in state: GameState) -> [UUID] {
+        var collegeRosterIDs: Set<UUID> = []
+        for programme in state.programmes.values {
+            collegeRosterIDs.formUnion(programme.rosterIDs)
+        }
+        var proRosterIDs: Set<UUID> = []
+        for team in state.proTeams.values {
+            proRosterIDs.formUnion(team.rosterIDs)
+            proRosterIDs.formUnion(team.practiceSquadIDs)
+        }
+        return collegeEligibilityViolationIDs(
+            in: state,
+            collegeRosterIDs: collegeRosterIDs,
+            proRosterIDs: proRosterIDs
+        ).sorted(by: uuidLessThan)
     }
 
     private static func checkPeopleState(
@@ -884,7 +901,11 @@ public enum WorldIntegrity {
         let proRosterIDs = Set(state.proTeams.values.flatMap {
             $0.rosterIDs + $0.practiceSquadIDs
         })
-        let eligibilityViolationIDs = Set(collegeEligibilityViolations(in: state))
+        let eligibilityViolationIDs = collegeEligibilityViolationIDs(
+            in: state,
+            collegeRosterIDs: collegeRosterIDs,
+            proRosterIDs: proRosterIDs
+        )
         let careerHistoryIsValid: (PlayerCareerRecord) -> Bool = { career in
             let seasonsAreChronological = zip(career.seasons, career.seasons.dropFirst())
                 .allSatisfy { pair in pair.0.season < pair.1.season }
@@ -1045,12 +1066,11 @@ public enum WorldIntegrity {
         if portal.summaries.count > CollegeRules.portalWindowCount {
             violations.append("windowCountExceeded")
         }
-        let programmeIDs = Set(state.programmes.ids)
         for (playerID, record) in portal.entries {
             if record.offers.count > CollegeRules.maximumPortalOffersPerEntrant {
                 violations.append("offerLimitExceeded:\(playerID)")
             }
-            if !programmeIDs.contains(record.sourceProgrammeID) {
+            if state.programmes[record.sourceProgrammeID] == nil {
                 violations.append("unknownSourceProgramme:\(playerID)")
             }
         }

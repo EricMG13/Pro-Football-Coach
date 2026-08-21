@@ -3,19 +3,20 @@ import FootballSimCore
 
 private enum TwoTierConsistency {
     static let pointsPerGameMargin = 0.75
-    /// Twenty worlds provide 12,800 paired team observations per tier. These are disjoint from the
-    /// 190- and 290-series tuning worlds used to calibrate the abstracted scoring baselines.
-    static let worldSeeds: [UInt64] = Array(390_210...390_229)
-    static let sampledGames = 320
+    static let yardsPerPlayMargin = 0.15
+    /// One hundred worlds provide 12,800 paired team observations per tier. Spreading the same
+    /// total games across more worlds prevents a short contiguous seed block from deciding TOST.
+    static let worldSeeds: [UInt64] = Array(390_210...390_309)
+    static let sampledGames = 64
 }
 
-private struct TwoTierPointsSample {
-    var abstracted: [Double] = []
-    var detailed: [Double] = []
+private struct TwoTierSample {
+    var abstracted: [GameSummary] = []
+    var detailed: [GameSummary] = []
 }
 
-private func collectTwoTierPoints(tier: Tier) -> TwoTierPointsSample {
-    var sample = TwoTierPointsSample()
+private func collectTwoTierSample(tier: Tier) -> TwoTierSample {
+    var sample = TwoTierSample()
     for worldSeed in TwoTierConsistency.worldSeeds {
         for fixture in 0..<TwoTierConsistency.sampledGames {
             let ladder = CalibrationHarness.talentLadder(matchup: fixture)
@@ -41,7 +42,7 @@ private func collectTwoTierPoints(tier: Tier) -> TwoTierPointsSample {
                 expect(false, "controlled fixture reused a participant across teams")
                 return sample
             }
-            sample.abstracted += [Double(abstracted.homeScore), Double(abstracted.awayScore)]
+            sample.abstracted.append(abstracted)
 
             let detailed = GameEngine.play(
                 tier: tier,
@@ -49,10 +50,39 @@ private func collectTwoTierPoints(tier: Tier) -> TwoTierPointsSample {
                 away: away,
                 seed: gameSeed
             )
-            sample.detailed += [Double(detailed.homeScore), Double(detailed.awayScore)]
+            sample.detailed.append(DetailedGameSummaryBuilder.make(
+                record: detailed,
+                homeParticipantIDs: abstracted.homeParticipantIDs,
+                awayParticipantIDs: abstracted.awayParticipantIDs
+            ))
         }
     }
     return sample
+}
+
+private func teamValues(
+    _ summaries: [GameSummary],
+    _ value: (TeamGameStatistics) -> Double
+) -> [Double] {
+    summaries.flatMap { [value($0.homeStatistics), value($0.awayStatistics)] }
+}
+
+private func offensivePlays(_ statistics: TeamGameStatistics) -> Int? {
+    Mirror(reflecting: statistics).children.first {
+        $0.label == "offensivePlays"
+    }?.value as? Int
+}
+
+private func yardsPerPlay(_ summaries: [GameSummary]) -> [Double]? {
+    var values: [Double] = []
+    values.reserveCapacity(summaries.count * 2)
+    for summary in summaries {
+        for statistics in [summary.homeStatistics, summary.awayStatistics] {
+            guard let plays = offensivePlays(statistics), plays > 0 else { return nil }
+            values.append(Double(statistics.offensiveYards) / Double(plays))
+        }
+    }
+    return values
 }
 
 private func pairedMeanDifference(_ first: [Double], _ second: [Double]) -> Estimate? {
@@ -105,9 +135,12 @@ func runTwoTierConsistencyTests() {
         }
 
         for tier in Tier.allCases {
+            let sample = collectTwoTierSample(tier: tier)
+
             test("points per game agrees under TOST — \(tier.rawValue)") {
-                let sample = collectTwoTierPoints(tier: tier)
-                guard let difference = pairedMeanDifference(sample.abstracted, sample.detailed) else {
+                let abstracted = teamValues(sample.abstracted) { Double($0.points) }
+                let detailed = teamValues(sample.detailed) { Double($0.points) }
+                guard let difference = pairedMeanDifference(abstracted, detailed) else {
                     expect(false, "points samples are empty, invalid, or misaligned")
                     return
                 }
@@ -121,8 +154,33 @@ func runTwoTierConsistencyTests() {
                 )
                 let result = band.test(difference)
                 let message = result.report
-                    + " | abstracted " + sampleShape(sample.abstracted)
-                    + " | detailed " + sampleShape(sample.detailed)
+                    + " | abstracted " + sampleShape(abstracted)
+                    + " | detailed " + sampleShape(detailed)
+                expect(result.passed, message)
+            }
+
+            test("yards per play agrees under TOST — \(tier.rawValue)") {
+                guard let abstracted = yardsPerPlay(sample.abstracted),
+                      let detailed = yardsPerPlay(sample.detailed) else {
+                    expect(false, "offensive play counts are missing or zero")
+                    return
+                }
+                guard let difference = pairedMeanDifference(abstracted, detailed) else {
+                    expect(false, "yards-per-play samples are empty, invalid, or misaligned")
+                    return
+                }
+                let band = Band(
+                    "yards per play agreement",
+                    tier: tier,
+                    -TwoTierConsistency.yardsPerPlayMargin,
+                    TwoTierConsistency.yardsPerPlayMargin,
+                    estimator: .mean,
+                    confidence: "03-MATCH-ENGINE section 4.1"
+                )
+                let result = band.test(difference)
+                let message = result.report
+                    + " | abstracted " + sampleShape(abstracted)
+                    + " | detailed " + sampleShape(detailed)
                 expect(result.passed, message)
             }
         }

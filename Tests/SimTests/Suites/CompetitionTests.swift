@@ -497,7 +497,7 @@ func runCompetitionTests() {
             state.competition = CompetitionReducer.rebuild(from: state)
 
             let rows = state.competition.standings.values.flatMap { $0 }
-            expectEqual(rows.reduce(0) { $0 + $1.wins + $1.losses }, selected.count * 2)
+            expectEqual(rows.reduce(0) { $0 + $1.wins + $1.losses + $1.ties }, selected.count * 2)
             expectEqual(rows.reduce(0) { $0 + $1.pointsFor },
                         selected.reduce(0) { total, game in
                             guard let result = state.competition.currentSchedule.games
