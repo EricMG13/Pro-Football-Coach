@@ -273,6 +273,19 @@ func runGenerationTests() {
             expectEqual(college.reduce(0) { $0 + $1.memberIDs.count }, CollegeRules.programmeCount)
         }
 
+        test("every swept world has ten legal college conferences summing to 134") {
+            for (seed, sweptWorld) in sweptWorlds.enumerated() {
+                let conferences = sweptWorld.league.conferences(in: .college)
+                expectEqual(conferences.count, CollegeRules.conferenceCount, "seed \(seed)")
+                expect(conferences.allSatisfy {
+                    CollegeRules.conferenceSizeRange.contains($0.memberIDs.count)
+                }, "seed \(seed) has a conference outside 12...16")
+                expectEqual(conferences.flatMap(\.memberIDs).count,
+                            CollegeRules.programmeCount,
+                            "seed \(seed) does not assign 134 conference memberships")
+            }
+        }
+
         test("conference sizes vary between seeds rather than being an even split") {
             // 02 section 11.4 leaves composition to generation deliberately, so that every save's
             // map is not the same map. An even split would satisfy the size range and defeat the
@@ -296,6 +309,25 @@ func runGenerationTests() {
             for conference in world.league.conferences(in: .pro) {
                 expectEqual(conference.memberIDs.count,
                             ProRules.divisionsPerConference * ProRules.teamsPerDivision)
+            }
+        }
+
+        test("every swept world has two conferences of four four-team divisions") {
+            for (seed, sweptWorld) in sweptWorlds.enumerated() {
+                let conferences = sweptWorld.league.conferences(in: .pro)
+                expectEqual(conferences.count, ProRules.conferenceCount, "seed \(seed)")
+                for conference in conferences {
+                    let divisions = sweptWorld.league.divisions.filter {
+                        $0.conferenceID == conference.id
+                    }
+                    expectEqual(divisions.count, ProRules.divisionsPerConference, "seed \(seed)")
+                    expect(divisions.allSatisfy {
+                        $0.memberIDs.count == ProRules.teamsPerDivision
+                    }, "seed \(seed) has a division outside the four-team shape")
+                    expectEqual(Set(divisions.flatMap(\.memberIDs)),
+                                Set(conference.memberIDs),
+                                "seed \(seed) has division members outside their conference")
+                }
             }
         }
 

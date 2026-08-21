@@ -33,6 +33,8 @@ private let pinnedRootFingerprint: UInt64 = 7_541_343_443_324_930_489
 
 private let pinnedAdvancedRootFingerprint: UInt64 = 16_869_125_197_676_973_242
 
+private let pinnedArchivedLedgerFingerprint: UInt64 = 12_709_969_372_690_370_694
+
 /// Hashes the canonical JSON body, not the save envelope.
 ///
 /// It hashed the envelope until 2026-08-12, when the body became zlib-compressed. That would have
@@ -165,6 +167,41 @@ func runArchitectureTests() {
     }
 
     suite("Domain event ledger") {
+        test("a constructed non-empty archive is pinned across processes") {
+            let championIDs = (
+                UUID(uuidString: "00000000-0000-4000-8000-00000000000A")!,
+                UUID(uuidString: "00000000-0000-4000-8000-00000000000B")!
+            )
+            let payloads: [DomainEventPayload] = [
+                .worldCreated(programmes: 130, proTeams: 32),
+                .integrityChecked(issueCount: 0),
+                .seasonCompleted(
+                    season: 1,
+                    collegeChampionID: championIDs.0,
+                    proChampionID: championIDs.1
+                ),
+                .weekAdvanced(
+                    completed: CalendarState(season: 1, week: 1),
+                    next: CalendarState(season: 1, week: 2)
+                ),
+            ]
+            var ledger = DomainEventLedger(retentionLimit: 1)
+            for (sequence, payload) in payloads.enumerated() {
+                expect(ledger.append(DomainEvent(
+                    id: DomainEvent.deterministicID(rootSeed: 20_260_821, sequence: sequence),
+                    sequence: sequence,
+                    occurredAt: CalendarState(season: sequence / 2, week: 1),
+                    payload: payload
+                )))
+            }
+
+            expectEqual(ledger.archive.map(\.season), [0, 1])
+            expectEqual(
+                try architectureFingerprint(ledger.archive),
+                pinnedArchivedLedgerFingerprint
+            )
+        }
+
         test("bootstrap emits structured world-created history") {
             let state = GameState.bootstrap(seed: 11)
             expectEqual(state.history.recent.count, 1)
