@@ -85,6 +85,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                 }
             }
         }
+        .accessibilityIdentifier("coaching-hq-screen")
     }
 
     private var worldStrip: some View {
@@ -232,51 +233,82 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
         )
     }
 
-    /// The week hub as the Floodlit reference draws it: the week's open agenda on the left, the
-    /// one decision in the middle, availability and standing on the right, and the single
-    /// committing action bottom-right.
-    ///
-    /// The columns are the reference's named widths, not fluid — `04` section 6.1c states that
-    /// content columns are deliberate.
     private var standardLayout: some View {
         HStack(alignment: .top, spacing: CoachWorldTokens.Gap.smPlus) {
-            weekAgendaColumn.frame(width: HQMetric.agendaColumn)
-            decisionColumn.frame(maxWidth: .infinity, alignment: .topLeading)
-            supportColumn.frame(width: HQMetric.supportColumn)
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
+                FloodlitLabel3("Before kickoff", palette: palette)
+                weekAgendaColumn
+                decisionColumn
+            }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
+                kickoffCard
+                supportColumn
+            }
+            .frame(width: HQMetric.supportColumn)
+        }
+    }
+
+    @ViewBuilder
+    private var kickoffCard: some View {
+        if let opponent = model.opponent {
+            FloodlitCard(palette: palette, depth: .deep) {
+                VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
+                    FloodlitLabel3("Kickoff", palette: palette)
+                    Text(opponent.name)
+                        .font(CoachWorldTokens.TypeRole.headline.weight(.black))
+                    if let venue = model.venue {
+                        Text(venue.name)
+                            .font(CoachWorldTokens.TypeRole.caption)
+                            .foregroundStyle(palette.contentSecondary.color)
+                    }
+                    Text(model.week.nextDeadline)
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.contentSecondary.color)
+                }
+                .accessibilityElement(children: .combine)
+            }
         }
     }
 
     // MARK: The week's agenda
 
     private var weekAgendaColumn: some View {
-        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
-            FloodlitLabel3(
-                "\(model.week.weekLabel) \u{00B7} \(model.week.currentDay)", palette: palette
-            )
-            Text("\(model.obligations.count) OPEN")
-                .coachWorldDisplay(HQMetric.heroSize, weight: .heavy)
-                .foregroundStyle(palette.contentPrimary.color)
-                .lineLimit(1)
-                .minimumScaleFactor(HQMetric.heroScaleFloor)
-            VStack(spacing: CoachWorldTokens.Gap.hair) {
-                ForEach(model.obligations, id: \.stableID) { obligation in
-                    FloodlitRow(palette: palette) {
-                        HStack(spacing: CoachWorldTokens.Gap.xs) {
-                            Text(obligation.title.uppercased())
-                                .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
-                                .lineLimit(1)
-                                .minimumScaleFactor(HQMetric.rowScaleFloor)
-                            Spacer(minLength: CoachWorldTokens.Gap.xxs)
-                            FloodlitLabel3(
-                                obligation.isMandatory ? "Must" : "Open",
-                                palette: palette,
-                                tint: palette.actionPrimary.color
-                            )
+        HStack(alignment: .center, spacing: CoachWorldTokens.Gap.xs) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                FloodlitLabel3(
+                    "\(model.week.weekLabel) \u{00B7} \(model.week.currentDay)", palette: palette
+                )
+                Text("\(model.obligations.count) OPEN")
+                    .coachWorldDisplay(HQMetric.heroSize, weight: .heavy)
+                    .foregroundStyle(palette.contentPrimary.color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(HQMetric.heroScaleFloor)
+            }
+            .fixedSize(horizontal: true, vertical: false)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: CoachWorldTokens.Gap.hair) {
+                    ForEach(model.obligations, id: \.stableID) { obligation in
+                        FloodlitRow(palette: palette) {
+                            HStack(spacing: CoachWorldTokens.Gap.xs) {
+                                Text(obligation.title.uppercased())
+                                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(HQMetric.rowScaleFloor)
+                                Spacer(minLength: CoachWorldTokens.Gap.xxs)
+                                FloodlitLabel3(
+                                    obligation.isMandatory ? "Must" : "Open",
+                                    palette: palette,
+                                    tint: palette.actionPrimary.color
+                                )
+                            }
                         }
+                        .frame(width: HQMetric.agendaColumn)
                     }
                 }
             }
-            Spacer(minLength: .zero)
         }
         .accessibilitySortPriority(70)
     }
