@@ -135,11 +135,14 @@ The offseason carries ~90 minutes of the season budget and is where the two tier
 **Portal history is retained by complete window, not by player or by season.** While any hot
 `DomainEvent` for a `(target season, window)` remains in the bounded event journal — entry,
 retention resolution, offer, transfer, or completion — every career record for that window remains
-available. `WorldIntegrity` cross-checks live-window event counts, while current-target capacity and
-scouting knowledge are checked against the matching career records; evicting only the players named
-by a surviving event would leave a partial window whose NIL totals no longer reconcile. Historical
-career records are not a live capacity ledger, so capacity validation does not let an old partial
-window block a later portal commit. A window is evictable once no hot portal event names it;
+available. `WorldIntegrity` cross-checks live-window event counts, retained capacity snapshots, and
+scouting knowledge against the matching career records; evicting only the players named by a
+surviving event would leave a partial window whose NIL totals no longer reconcile. Every retained
+offer must agree with the fixed capacity snapshot captured for its destination. The exact per-offer
+NIL split is re-derived only when a retained completion summary proves that every offer in the
+window remains present; a partial historical window still enforces aggregate budget, offer-count,
+and accepted-position capacity without pretending its missing offers still exist. A window is
+evictable once no hot portal event names it;
 unrelated identity references remain governed by the general event, award, and roster retention
 rules. This deliberately follows journal retention rather than inventing a fixed season count, so
 the bounded history remains the portal system's retention authority.

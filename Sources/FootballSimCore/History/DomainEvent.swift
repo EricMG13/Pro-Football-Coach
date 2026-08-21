@@ -176,6 +176,57 @@ public enum DomainEventPayload: Codable, Sendable, Equatable {
     case proWaiversResolved(count: Int)
     case proMarketClosed(season: Int)
 
+    /// The portal window this event keeps queryable, if any.
+    ///
+    /// Exhaustive so adding a portal event cannot silently omit its window from departed-player
+    /// retention. A new payload must be classified here before it compiles.
+    var portalWindowReference: (targetSeason: Int, window: CollegePortalWindow)? {
+        switch self {
+        case let .portalEntered(_, _, targetSeason, window, _),
+             let .portalRetentionResolved(_, _, targetSeason, window, _),
+             let .portalOfferMade(_, _, targetSeason, window, _),
+             let .playerTransferred(_, _, _, targetSeason, window, _, _):
+            return (targetSeason, window)
+        case let .portalWindowCompleted(summary):
+            return (summary.targetSeason, summary.window)
+        case .worldCreated,
+             .integrityChecked,
+             .weekAdvanced,
+             .gameCompleted,
+             .postseasonScheduled,
+             .seasonCompleted,
+             .realignment,
+             .playerInjured,
+             .playerRecovered,
+             .playerSuspended,
+             .playerReinstated,
+             .playerDeveloped,
+             .redshirtResolved,
+             .playerDeparted,
+             .playerJoined,
+             .staffHired,
+             .prospectEvaluated,
+             .recruitingInteraction,
+             .prospectCommitted,
+             .commitmentResolved,
+             .proMarketOpened,
+             .proDraftScouted,
+             .proDraftStarted,
+             .proPlayerSigned,
+             .proContractExpired,
+             .proCapComplianceRelease,
+             .proDraftPick,
+             .proPracticeSquadMoved,
+             .proTradeCompleted,
+             .proWaiverPlaced,
+             .proWaiverClaimed,
+             .proWaiverExpired,
+             .proWaiversResolved,
+             .proMarketClosed:
+            return nil
+        }
+    }
+
     /// How much this event's body is worth keeping once it leaves the bounded hot journal. Zero is
     /// "never keep".
     ///

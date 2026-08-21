@@ -1262,17 +1262,8 @@ public enum WorldIntegrity {
         let hasPortalCareerHistory = state.people.playerCareers.values.contains {
             !$0.portalWindows.isEmpty
         }
-        let hasPortalEvents = state.history.recent.contains { event in
-            switch event.payload {
-            case .portalEntered,
-                 .portalRetentionResolved,
-                 .portalOfferMade,
-                 .playerTransferred,
-                 .portalWindowCompleted:
-                return true
-            default:
-                return false
-            }
+        let hasPortalEvents = state.history.recent.contains {
+            $0.payload.portalWindowReference != nil
         }
         if portal.entries.isEmpty,
            portal.summaries.isEmpty,
@@ -1453,7 +1444,42 @@ public enum WorldIntegrity {
         for playerID in repeatedTransferPlayerIDs {
             issues.append(.invalidPortalCareer(playerID: playerID))
         }
-        checkPortalCapacity(currentTargetRecords, issues: &issues)
+        var completedOfferCountsByWindow: [String: Set<Int>] = [:]
+        for summary in portal.summaries {
+            completedOfferCountsByWindow[portalWindowKey(
+                targetSeason: summary.targetSeason,
+                window: summary.window
+            ), default: []].insert(summary.offerCount)
+        }
+        for event in state.history.recent {
+            guard case let .portalWindowCompleted(summary) = event.payload else { continue }
+            completedOfferCountsByWindow[portalWindowKey(
+                targetSeason: summary.targetSeason,
+                window: summary.window
+            ), default: []].insert(summary.offerCount)
+        }
+        for archive in state.history.archive {
+            for event in archive.notableEvents {
+                guard case let .portalWindowCompleted(summary) = event.payload else { continue }
+                completedOfferCountsByWindow[portalWindowKey(
+                    targetSeason: summary.targetSeason,
+                    window: summary.window
+                ), default: []].insert(summary.offerCount)
+            }
+        }
+        var offerCompleteWindowKeys: Set<String> = []
+        for (key, records) in recordsByWindow {
+            let retainedOfferCount = records.reduce(0) { $0 + $1.offers.count }
+            guard let completedCounts = completedOfferCountsByWindow[key],
+                  completedCounts.count == 1,
+                  completedCounts.contains(retainedOfferCount) else { continue }
+            offerCompleteWindowKeys.insert(key)
+        }
+        checkPortalCapacity(
+            allCareerRecords,
+            offerCompleteWindowKeys: offerCompleteWindowKeys,
+            issues: &issues
+        )
         checkPortalEvents(
             state.history.recent,
             recordsByKey: recordsByKey,
@@ -1477,6 +1503,7 @@ public enum WorldIntegrity {
 
     private static func checkPortalCapacity(
         _ records: [CollegePortalWindowRecord],
+        offerCompleteWindowKeys: Set<String>,
         issues: inout [IntegrityIssue]
     ) {
         var offersByCapacity: [String: [CollegePortalOffer]] = [:]
@@ -1519,11 +1546,18 @@ public enum WorldIntegrity {
                 CollegePortalPolicyV1.maximumOfferNIL,
                 capacity.nilRemaining / offers.count / 100 * 100
             )
+            let allOffersArePresent = offerCompleteWindowKeys.contains(portalWindowKey(
+                targetSeason: context.targetSeason,
+                window: context.window
+            ))
+            let reservationTermsMatch = !allOffersArePresent
+                || offers.allSatisfy { $0.nilReservation == exactTerm }
             let reservationTotal = offers.reduce(0) { $0 + $1.nilReservation }
             let acceptedPositions = acceptedPositionsByCapacity[key] ?? []
             if !offers.allSatisfy({
-                $0.fixedCapacity == capacity && $0.nilReservation == exactTerm
-            }) || reservationTotal > capacity.nilRemaining
+                $0.fixedCapacity == capacity
+            }) || !reservationTermsMatch
+                || reservationTotal > capacity.nilRemaining
                 || offers.count > min(
                     capacity.rosterOpenings,
                     capacity.scholarshipOpenings
