@@ -959,7 +959,10 @@ func runReadModelProviderTests() {
             ).state
             let model = CoachWorldReadModelProvider.coachingHQ(from: promoted)
             expectEqual(model?.team.stableID, team.id.uuidString)
-            expectEqual(model?.team.name, "\(team.cityName) \(team.nickname)")
+            // Read the public name, do not rebuild it. cityName stays state-qualified for the
+            // map; the public name does not carry a state, and recomposing here was asserting the
+            // old rule against the new world.
+            expectEqual(model?.team.name, team.displayName)
             expectEqual(model?.provenance, .simulationSnapshot)
         }
 

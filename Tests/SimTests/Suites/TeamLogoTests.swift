@@ -56,7 +56,7 @@ func runTeamLogoManifestExport(
     let families = TeamLogoFamily.allCases
     let records = ids.sorted { $0.uuidString < $1.uuidString }.enumerated().map { index, id in
         let name = state.programmes[id]?.name
-            ?? state.proTeams[id].map { "\($0.cityName) \($0.nickname)" }
+            ?? state.proTeams[id]?.displayName
             ?? "Unknown team"
         let letters = name.filter(\.isLetter)
         let assetName = "TeamLogo_" + id.uuidString.replacingOccurrences(of: "-", with: "")
