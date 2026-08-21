@@ -71,6 +71,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
                 }
             }
         }
+        .accessibilityIdentifier("roster-screen")
         .onChange(of: model.players.map(\.stableID), initial: true) { _, stableIDs in
             if !stableIDs.contains(selectedPlayerID) {
                 selectedPlayerID = stableIDs.first ?? ""
@@ -325,7 +326,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
     }
 
     private var tableHeader: some View {
-        // The reference's column order: POS, NO., PLAYER, YR, RATING, FIT, FRESH, ST.
+        // The reference's column order: POS, NO., PLAYER, YR, RATING, FIT, FRESH, AVAILABLE.
         HStack(spacing: CoachWorldTokens.Space.xxs) {
             sortButton("POS", accessibilityName: "Position", field: .position,
                        width: RosterMetric.positionWidth)
@@ -340,7 +341,7 @@ public struct RosterView: View, CoachWorldChromedSurface {
             tableHeading("FIT", width: RosterMetric.fitWidth)
             sortButton("FRESH", accessibilityName: "Freshness", field: .condition,
                        width: RosterMetric.freshWidth)
-            tableHeading("ST", width: RosterMetric.statusWidth)
+            tableHeading("AVAILABLE", width: RosterMetric.statusWidth)
         }
         .padding(.horizontal, CoachWorldTokens.Space.xs)
         .frame(minHeight: RosterMetric.headerHeight)
@@ -386,6 +387,8 @@ public struct RosterView: View, CoachWorldChromedSurface {
         Text(title)
             .font(CoachWorldTokens.TypeRole.caption.weight(.heavy))
             .foregroundStyle(palette.contentSecondary.color)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
             .frame(width: width, alignment: alignment)
     }
 
@@ -530,13 +533,14 @@ public struct RosterView: View, CoachWorldChromedSurface {
                 "\(selected.availability) · Condition \(selected.condition)"
             )
 
-            Button("Open dossier") {
+            Button("Open full dossier") {
                 if let onOpenProfile {
                     onOpenProfile(selected.stableID)
                 } else {
                     presentedProfile = selected.profile
                 }
             }
+            .accessibilityIdentifier("roster-open-dossier")
             .buttonStyle(CoachWorldActionButtonStyle(role: .primary, palette: palette))
             .padding(CoachWorldTokens.Space.sm)
         }
