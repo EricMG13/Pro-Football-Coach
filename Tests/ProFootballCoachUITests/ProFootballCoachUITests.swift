@@ -24,6 +24,16 @@ final class ProFootballCoachUITests: XCTestCase {
         XCTAssertTrue(app.otherElements["roster-screen"].waitForExistence(timeout: 10))
         app.buttons["roster-open-dossier"].tap()
         XCTAssertTrue(app.otherElements["player-profile-screen"].waitForExistence(timeout: 10))
+        XCTAssertTrue(
+            app.otherElements
+                .matching(NSPredicate(format: "label ENDSWITH %@", "out of 99"))
+                .firstMatch.exists
+        )
+        XCTAssertTrue(
+            app.staticTexts
+                .matching(NSPredicate(format: "label MATCHES %@", ".*, [0-9]+, Known"))
+                .firstMatch.exists
+        )
         app.buttons["Back to the roster"].tap()
         XCTAssertTrue(app.otherElements["roster-screen"].waitForExistence(timeout: 10))
     }

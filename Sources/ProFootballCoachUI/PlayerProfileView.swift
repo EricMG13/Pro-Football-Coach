@@ -342,17 +342,9 @@ public struct PlayerProfileView: View, CoachWorldChromedSurface {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
             routeBar
             identityColumn
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(identityAccessibilityLabel)
             routePanel
         }
         .padding(.vertical, CoachWorldTokens.Pad.panel.v)
-    }
-
-    private var identityAccessibilityLabel: String {
-        "Number \(model.number), \(model.person.name), \(model.position), "
-            + "\(model.academicYear), role \(model.rosterRole), "
-            + "\(model.availability), condition \(model.condition)"
     }
 
     private var seam: some View {

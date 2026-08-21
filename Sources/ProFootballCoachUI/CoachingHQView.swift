@@ -236,7 +236,10 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
     private var standardLayout: some View {
         HStack(alignment: .top, spacing: CoachWorldTokens.Gap.smPlus) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
-                FloodlitLabel3("Before kickoff", palette: palette)
+                FloodlitLabel3(
+                    model.opponent == nil ? "No game scheduled" : "Before kickoff",
+                    palette: palette
+                )
                 weekAgendaColumn
                 decisionColumn
             }
