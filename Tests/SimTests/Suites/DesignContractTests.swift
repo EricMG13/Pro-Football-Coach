@@ -139,6 +139,19 @@ func runDesignContractTests() {
                        "vertical slice copied unsupported mock claim: \(unsupported)")
             }
         }
+
+        test("HQ names the no-opponent state honestly") {
+            let path = packageRoot()
+                .appendingPathComponent("Sources/ProFootballCoachUI/CoachingHQView.swift")
+            let source = (try? String(contentsOf: path, encoding: .utf8)) ?? ""
+
+            expect(
+                source.contains(
+                    "model.opponent == nil ? \"No game scheduled\" : \"Before kickoff\""
+                ),
+                "HQ must reserve Before kickoff for a scheduled opponent"
+            )
+        }
     }
 
     suite("Orientation policy") {
