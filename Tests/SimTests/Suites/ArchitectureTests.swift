@@ -31,7 +31,7 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
 /// result after reload.
 private let pinnedRootFingerprint: UInt64 = 12_741_583_388_755_685_037
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 16_595_670_578_849_220_439
+private let pinnedAdvancedRootFingerprint: UInt64 = 2_769_997_223_918_072_422
 
 private let pinnedArchivedLedgerFingerprint: UInt64 = 12_709_969_372_690_370_694
 

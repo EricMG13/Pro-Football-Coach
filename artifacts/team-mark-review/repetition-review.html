@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Team Mark Repetition Audit</title>
+  <style>
+    :root { color-scheme: dark; --ink:#f2f4f8; --muted:#abb5c7; --bg:#10131b; --panel:#191f2b; --line:#384256; --accent:#c9ed61; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.4 Avenir Next, Avenir, sans-serif; }
+    header { position:sticky; top:0; z-index:2; padding:20px clamp(16px,3vw,40px); border-bottom:1px solid var(--line); background:#10131bf5; }
+    h1,h2,h3,p { margin:0; } h1 { font-size:clamp(26px,4vw,42px); text-transform:uppercase; letter-spacing:.03em; }
+    .lede { max-width:800px; margin-top:8px; color:var(--muted); }
+    .controls { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+    button { min-height:38px; padding:0 13px; color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:7px; cursor:pointer; }
+    button[aria-pressed="true"] { color:#1c2510; background:var(--accent); border-color:var(--accent); }
+    main { padding:28px clamp(16px,3vw,40px) 56px; }
+    .summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-bottom:32px; }
+    .stat { padding:13px; background:var(--panel); border:1px solid var(--line); border-radius:8px; } .stat b { display:block; font-size:25px; color:var(--accent); }
+    section { margin:34px 0; } h2 { font-size:24px; } .description { margin:5px 0 14px; color:var(--muted); }
+    .motif { margin:18px 0 8px; padding-top:12px; border-top:1px solid var(--line); font-size:16px; }
+    .motif small { color:var(--accent); font-weight:700; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(142px,1fr)); gap:10px; }
+    article { min-width:0; padding:8px; background:var(--panel); border:1px solid var(--line); border-radius:8px; }
+    .mark { display:grid; place-items:center; min-height:112px; background:linear-gradient(90deg,#f3f0e8 0 50%,#10151e 50%); border-radius:5px; }
+    img { width:102px; height:102px; object-fit:contain; }
+    .name { margin-top:7px; font-weight:600; font-size:12px; line-height:1.25; } .concept { margin-top:3px; color:var(--muted); font-size:11px; line-height:1.25; }
+    .empty { color:var(--muted); padding:24px 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mark repetition audit</h1>
+    <p class="lede">Grouped by what the mark depicts, not its current production family. Within each section, exact recurring motifs are placed together so visual duplication is immediately visible.</p>
+    <div class="controls"><button id="all" aria-pressed="true">All marks</button><button id="repeats" aria-pressed="false">Repeated motifs only</button></div>
+  </header>
+  <main id="app"><p class="empty">Loading logo inventory…</p></main>
+  <script>
+    const root = document.querySelector('#app');
+    const state = { repeatsOnly: false };
+    const categories = [
+      ['Human heads', /head in profile|head in a profile/, 'Characters depicted primarily as a face or bust.'],
+      ['Birds', /harrier|kestrel|heron|shrike|goshawk|curlew/, 'Bird heads and winged bird marks.'],
+      ['Mammals', /otter|marten|stalking cat/, 'Mammal heads or body marks.'],
+      ['Mythic creatures', /wyvern/, 'Fantasy-creature marks.'],
+      ['Defence & ship structures', /palisade|shield boss|gun port|riveted hull|riveted plate|ironclad prow/, 'Fortifications, armour, ports, plates and prows.'],
+      ['Navigation & signals', /lodestone compass|compass rose|beacon brazier|anchor|headland light/, 'Navigation, signalling and anchoring symbols.'],
+      ['Tools & trade implements', /hook|blade|arrow|knife|crucible|miner\'s lamp|barrel hoop|adze|sledge|chisel|pick|scythe|sheaf|block and tackle|crook|yoke|lantern/, 'Hand tools, trade equipment and occupational implements.'],
+      ['Landscape & local markers', /pines|field ridge|broken spars|cut timber|boundary post|milestone|ferry slip|drove-road gate|watchtower|furnace stack|stone cairn/, 'Landscape, infrastructure and place-based forms.']
+    ];
+    const clean = text => text.replace(/^A |^An |, drawn.*$|, reduced.*$|, cut down.*$| inside a .*$/g, '').replace(/\.$/, '');
+    const categoryFor = concept => categories.find(([, rule]) => rule.test(concept)) || ['Other', /./, 'Uncommon subjects not shared with the main groups.'];
+    const motifFor = concept => clean(concept).replace(/^(three fletched arrows).*$/i, '$1').replace(/^(a palisade line).*$/i, '$1').replace(/^(a stalking cat).*$/i, '$1').replace(/^(a [^,]+),.*$/i, '$1');
+    const imagePath = team => `../../Sources/ProFootballCoachUI/Resources/TeamLogos.xcassets/${team.assetName}.imageset/${team.filename}`;
+    const escape = value => value.replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    function render(teams) {
+      const groups = new Map(categories.map(([name, , description]) => [name, { description, marks: [] }]));
+      groups.set('Other', { description: 'Other subjects.', marks: [] });
+      const motifCounts = new Map();
+      for (const team of teams) {
+        const motif = motifFor(team.concept);
+        const [category] = categoryFor(team.concept);
+        groups.get(category).marks.push({ ...team, motif });
+        motifCounts.set(motif, (motifCounts.get(motif) || 0) + 1);
+      }
+      let repeatedMarks = 0;
+      let recurringMotifs = 0;
+      for (const count of motifCounts.values()) {
+        if (count > 1) { repeatedMarks += count; recurringMotifs += 1; }
+      }
+      const sections = [];
+      for (const [category, { description, marks }] of groups) {
+        const motifs = new Map();
+        let visibleCount = 0;
+        for (const team of marks) {
+          if (state.repeatsOnly && motifCounts.get(team.motif) === 1) continue;
+          if (!motifs.has(team.motif)) motifs.set(team.motif, []);
+          motifs.get(team.motif).push(team);
+          visibleCount += 1;
+        }
+        if (!visibleCount) continue;
+        const motifHTML = [...motifs].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0])).map(([motif, set]) => {
+          const cards = set.map(team => `<article><div class="mark"><img loading="lazy" src="${escape(imagePath(team))}" alt="${escape(team.name)}"></div><p class="name">${escape(team.name)}</p><p class="concept">${escape(team.concept)}</p></article>`).join('');
+          return `<h3 class="motif">${escape(motif)} <small>×${set.length}</small></h3><div class="grid">${cards}</div>`;
+        }).join('');
+        sections.push(`<section><h2>${escape(category)} · ${visibleCount}</h2><p class="description">${escape(description)}</p>${motifHTML}</section>`);
+      }
+      const summary = `<div class="summary"><div class="stat"><b>${teams.length}</b>total marks</div><div class="stat"><b>${repeatedMarks}</b>marks in repeated motifs</div><div class="stat"><b>${recurringMotifs}</b>recurring motifs</div></div>`;
+      root.innerHTML = summary + (sections.join('') || '<p class="empty">No marks match the current filter.</p>');
+    }
+    fetch('../../Tools/TeamLogos/manifest.json').then(response => response.json()).then(data => { window.teams = data.teams; render(window.teams); }).catch(() => { root.innerHTML = '<p class="empty">The manifest could not be loaded. Serve this repository over HTTP, then reload.</p>'; });
+    document.querySelector('#all').onclick = () => { state.repeatsOnly = false; document.querySelector('#all').setAttribute('aria-pressed', 'true'); document.querySelector('#repeats').setAttribute('aria-pressed', 'false'); render(window.teams); };
+    document.querySelector('#repeats').onclick = () => { state.repeatsOnly = true; document.querySelector('#all').setAttribute('aria-pressed', 'false'); document.querySelector('#repeats').setAttribute('aria-pressed', 'true'); render(window.teams); };
+  </script>
+</body>
+</html>

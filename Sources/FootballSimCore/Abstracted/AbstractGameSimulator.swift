@@ -99,10 +99,12 @@ public enum AbstractGameSimulator {
         )
         let baseline = CompetitionRules.baselinePoints(for: tier)
         let deviation = CompetitionRules.scoreDeviation(for: tier)
+        let homeFieldPoints = CompetitionRules.homeFieldPoints(for: tier)
         var homeScore = score(
             expectation: baseline
                 + Double(home.offense - away.defense) * CompetitionRules.strengthPointScale
-                + CompetitionRules.homeFieldPoints
+                + CompetitionRules.homeFieldScoringOffset
+                + homeFieldPoints / 2
                 + homePlan.pointAdjustment(against: awayPlan),
             deviation: deviation + homePlan.scoreDeviationAdjustment(),
             using: &rng
@@ -110,6 +112,8 @@ public enum AbstractGameSimulator {
         var awayScore = score(
             expectation: baseline
                 + Double(away.offense - home.defense) * CompetitionRules.strengthPointScale
+                + CompetitionRules.homeFieldScoringOffset
+                - homeFieldPoints / 2
                 + awayPlan.pointAdjustment(against: homePlan),
             deviation: deviation + awayPlan.scoreDeviationAdjustment(),
             using: &rng
@@ -314,6 +318,20 @@ public enum AbstractGameSimulator {
                 if rateRNG.chance(CompetitionRules.baselineTurnoverProbability) { total += 1 }
             }
         )
+        let explosivePlays = (0..<plays).reduce(into: 0) { total, _ in
+            if rateRNG.chance(CompetitionRules.baselineExplosivePlayProbability(for: tier)) {
+                total += 1
+            }
+        }
+        var fieldGoals = FieldGoalStatistics()
+        for bucket in FieldGoalDistanceBucket.allCases {
+            for _ in 0..<rateRNG.int(in: 0...1) {
+                fieldGoals.record(
+                    bucket,
+                    made: rateRNG.chance(CompetitionRules.baselineFieldGoalAccuracy(for: bucket))
+                )
+            }
+        }
         return TeamGameStatistics(
             points: points,
             offensiveYards: yards,
@@ -323,7 +341,9 @@ public enum AbstractGameSimulator {
             offensivePlays: plays,
             passAttempts: passAttempts,
             passCompletions: passCompletions,
-            sacks: sacks
+            sacks: sacks,
+            explosivePlays: explosivePlays,
+            fieldGoals: fieldGoals
         )
     }
 

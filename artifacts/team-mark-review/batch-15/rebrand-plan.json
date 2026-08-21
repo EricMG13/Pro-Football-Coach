@@ -1,0 +1,356 @@
+{
+  "schemaVersion": 1,
+  "status": "candidate",
+  "families": {
+    "aquaticLife": "A full-body aquatic subject in lateral or turning motion. Fins, tail, and body form one silhouette; never a head-only mascot or an underwater scene.",
+    "botanicalLife": "One plant, flower, seed, or fungus built as a radial or rising silhouette. No shield, landscape, pot, or decorative wreath.",
+    "atmosphericPhenomenon": "One environmental force built from a cloud mass, pressure arc, or wind band. No horizon, scenery, weather map, or literal landscape.",
+    "celestialPhenomenon": "One astronomical event built from orbital, occultation, or trail geometry. No generic star badge, telescope, or night-sky scene.",
+    "invertebrateLife": "A full-body or top-down arthropod/insect subject. Wings, claws, and segments are simplified into a single readable silhouette; never a mascot head.",
+    "geologicalForm": "One isolated formation shown as a monolith, cutaway, or cross-section. No landscape, horizon, mountain panorama, or scenic background."
+  },
+  "teams": [
+    {
+      "assetName": "TeamLogo_0D81D2F903834BD5A74176604D277691",
+      "originalName": "Rexburg A&M Cedar Ironsides",
+      "proposedName": "Rexburg A&M Cedar Sturgeons",
+      "family": "aquaticLife",
+      "subject": "a lake sturgeon in a powerful lateral turn, long body and scutes forming one wedge",
+      "primaryColorHex": "#123B5D",
+      "secondaryColorHex": "#58C9D4"
+    },
+    {
+      "assetName": "TeamLogo_1032E7BD52E64C0285D44DC399B13B7A",
+      "originalName": "Hood River Maritime Iron Coopers",
+      "proposedName": "Hood River Maritime Iron Bristlecones",
+      "family": "botanicalLife",
+      "subject": "a wind-bent bristlecone crown rising from one twisted trunk",
+      "primaryColorHex": "#273A2D",
+      "secondaryColorHex": "#C68F4A"
+    },
+    {
+      "assetName": "TeamLogo_19AD9AAA1590417499DB2C132776E7EA",
+      "originalName": "Pinedale Central Cobalt Herons",
+      "proposedName": "Pinedale Central Cobalt Mantas",
+      "family": "aquaticLife",
+      "subject": "a manta ray banking upward, broad wings and forked head forming a clean diamond",
+      "primaryColorHex": "#1C3557",
+      "secondaryColorHex": "#E6B84A"
+    },
+    {
+      "assetName": "TeamLogo_2DBDBC5E18D2417BBC73C6596576F72B",
+      "originalName": "Shelbyville Poly Cinder Tanners",
+      "proposedName": "Shelbyville Poly Cinder Sundews",
+      "family": "botanicalLife",
+      "subject": "a roundleaf sundew seen from above, seven hooked leaves radiating from one core",
+      "primaryColorHex": "#4A1D36",
+      "secondaryColorHex": "#E85F74"
+    },
+    {
+      "assetName": "TeamLogo_33D771AF7E1C4C4CBD961BC8AEA568EC",
+      "originalName": "Ocean City Agricultural Thunder Sawyers",
+      "proposedName": "Ocean City Agricultural Thunder Squalls",
+      "family": "atmosphericPhenomenon",
+      "subject": "a compact squall front curling into one hard-edged wind hook",
+      "primaryColorHex": "#34265C",
+      "secondaryColorHex": "#8FC7F2"
+    },
+    {
+      "assetName": "TeamLogo_34CD7F4894904F32B21A97F2E351FACD",
+      "originalName": "Aberdeen Central Ember Anchors",
+      "proposedName": "Aberdeen Central Ember Sawfish",
+      "family": "aquaticLife",
+      "subject": "a sawfish accelerating in profile, its long toothed rostrum leading the silhouette",
+      "primaryColorHex": "#4C1D32",
+      "secondaryColorHex": "#F28C45"
+    },
+    {
+      "assetName": "TeamLogo_35A88873B49C4A9CB99A47F75AD6D35F",
+      "originalName": "Buckeye Poly Tidal Tanners",
+      "proposedName": "Buckeye Poly Tidal Eclipses",
+      "family": "celestialPhenomenon",
+      "subject": "a total eclipse with one broken corona and a single offset flare",
+      "primaryColorHex": "#191A3D",
+      "secondaryColorHex": "#E0CF55"
+    },
+    {
+      "assetName": "TeamLogo_382E7342881F4EF29D3A47F0A984658D",
+      "originalName": "Wahpeton Valley Timber Riggers",
+      "proposedName": "Wahpeton Valley Timber Downbursts",
+      "family": "atmosphericPhenomenon",
+      "subject": "a downburst striking and splitting into two outward wind bands",
+      "primaryColorHex": "#223A37",
+      "secondaryColorHex": "#D3C06A"
+    },
+    {
+      "assetName": "TeamLogo_3CA5936BE1F44851995B3879C39DE729",
+      "originalName": "Danbury Coastal Granite Herons",
+      "proposedName": "Danbury Coastal Granite Horseshoe Crabs",
+      "family": "invertebrateLife",
+      "subject": "a horseshoe crab seen from above, shield shell and tail forming one spearhead",
+      "primaryColorHex": "#233842",
+      "secondaryColorHex": "#D89A3D"
+    },
+    {
+      "assetName": "TeamLogo_3D177C44C4CB4FEDBD0EFA4B5B8F71D6",
+      "originalName": "Janesville Harbor Wardens",
+      "proposedName": "Janesville Harbor Pulsars",
+      "family": "celestialPhenomenon",
+      "subject": "a dense pulsar core crossed by two narrow opposing energy beams",
+      "primaryColorHex": "#251D4E",
+      "secondaryColorHex": "#ED6E9D"
+    },
+    {
+      "assetName": "TeamLogo_46D018BB3BD9422A91A91971012E8834",
+      "originalName": "Emporia Timber Bulwarks",
+      "proposedName": "Emporia Timber Geysers",
+      "family": "geologicalForm",
+      "subject": "a geyser vent in cutaway, one stone throat driving a single angular plume",
+      "primaryColorHex": "#283A3B",
+      "secondaryColorHex": "#E07A45"
+    },
+    {
+      "assetName": "TeamLogo_48C82AECD9914D9B94201CF73B52E9C5",
+      "originalName": "Oneonta Hollow Kestrels",
+      "proposedName": "Oneonta Hollow Luna Moths",
+      "family": "invertebrateLife",
+      "subject": "a luna moth from above, broad wings and twin tails forming one tapered silhouette",
+      "primaryColorHex": "#322642",
+      "secondaryColorHex": "#BBD56B"
+    },
+    {
+      "assetName": "TeamLogo_4D2BD12BF3B746FE8863CD6973A66EB1",
+      "originalName": "Red Wing State Cobalt Bulwarks",
+      "proposedName": "Red Wing State Cobalt Comets",
+      "family": "celestialPhenomenon",
+      "subject": "a compact comet nucleus driving one broad split tail on a steep diagonal",
+      "primaryColorHex": "#173A62",
+      "secondaryColorHex": "#F26B4B"
+    },
+    {
+      "assetName": "TeamLogo_4F7B667410DE489087A97ECA11DDFBC3",
+      "originalName": "Savanna Frost Anchors",
+      "proposedName": "Savanna Frost Lanternfish",
+      "family": "aquaticLife",
+      "subject": "a lanternfish in profile, deep body and one luminous lure defining the silhouette",
+      "primaryColorHex": "#172E3A",
+      "secondaryColorHex": "#A7E8D1"
+    },
+    {
+      "assetName": "TeamLogo_5318644DEB7C460194AB8E44598540FF",
+      "originalName": "Houlton Tech Kindled Coopers",
+      "proposedName": "Houlton Tech Kindled Fireweed",
+      "family": "botanicalLife",
+      "subject": "a fireweed stalk with four large alternating blooms rising as one flame-shaped mass",
+      "primaryColorHex": "#3A2B1F",
+      "secondaryColorHex": "#E36D3D"
+    },
+    {
+      "assetName": "TeamLogo_5413AE6860094F809CAAAF6859C4171F",
+      "originalName": "Wapakoneta Bramble Coopers",
+      "proposedName": "Wapakoneta Bramble Thistles",
+      "family": "botanicalLife",
+      "subject": "a single thistle bloom with three barbed leaves forming a compact crown",
+      "primaryColorHex": "#31402E",
+      "secondaryColorHex": "#C7D85B"
+    },
+    {
+      "assetName": "TeamLogo_57E1B055AFBA4F86931D51D9B1769E46",
+      "originalName": "Glenwood Springs Valley Thunder Lodestars",
+      "proposedName": "Glenwood Springs Valley Thunder Ice Halos",
+      "family": "atmosphericPhenomenon",
+      "subject": "an ice halo broken by two angular light pillars around a dark core",
+      "primaryColorHex": "#21364A",
+      "secondaryColorHex": "#E5C76B"
+    },
+    {
+      "assetName": "TeamLogo_5C4CE91F969D4A748E1A7E672C9631AB",
+      "originalName": "Springville Coastal River Ironsides",
+      "proposedName": "Springville Coastal River Dragonflies",
+      "family": "invertebrateLife",
+      "subject": "a dragonfly from above with four broad blade-like wings and a heavy segmented body",
+      "primaryColorHex": "#17414A",
+      "secondaryColorHex": "#E7A64A"
+    },
+    {
+      "assetName": "TeamLogo_5E8574FC01C24A4686F96B7D135139C5",
+      "originalName": "Saranac Lake Central Verdant Wreckers",
+      "proposedName": "Saranac Lake Central Verdant Pitcherplants",
+      "family": "botanicalLife",
+      "subject": "three fused pitcher-plant cups rising from one low leaf base",
+      "primaryColorHex": "#1F4335",
+      "secondaryColorHex": "#E2A84B"
+    },
+    {
+      "assetName": "TeamLogo_5EB19F56878143B29200BB201482D59D",
+      "originalName": "Essex Junction Maritime Granite Beacons",
+      "proposedName": "Essex Junction Maritime Granite Needlefish",
+      "family": "aquaticLife",
+      "subject": "a needlefish in profile, long beak and narrow body bending into a fast crescent",
+      "primaryColorHex": "#263B4A",
+      "secondaryColorHex": "#D6C56B"
+    },
+    {
+      "assetName": "TeamLogo_5EBFD5563D164AD8B0A96D19F8E15FCC",
+      "originalName": "Sulphur Springs A&M Tidal Ironsides",
+      "proposedName": "Sulphur Springs A&M Tidal Sun Dogs",
+      "family": "atmosphericPhenomenon",
+      "subject": "two hard-edged sun-dog flares bracketing one dark solar disc",
+      "primaryColorHex": "#17384D",
+      "secondaryColorHex": "#E57C5A"
+    },
+    {
+      "assetName": "TeamLogo_5F09D018DCA941F78ACD040A07230254",
+      "originalName": "Yreka Agricultural Granite Beacons",
+      "proposedName": "Yreka Agricultural Granite Meteors",
+      "family": "celestialPhenomenon",
+      "subject": "three joined meteor fragments with one broad descending trail",
+      "primaryColorHex": "#33264E",
+      "secondaryColorHex": "#F0A64B"
+    },
+    {
+      "assetName": "TeamLogo_612FD3E74D0142E9A010EF4B485965F7",
+      "originalName": "Holdrege Tidal Bulwarks",
+      "proposedName": "Holdrege Tidal Perihelions",
+      "family": "celestialPhenomenon",
+      "subject": "a small body whipping around a dark sun on one sharply tightening orbit",
+      "primaryColorHex": "#27324A",
+      "secondaryColorHex": "#E4C469"
+    },
+    {
+      "assetName": "TeamLogo_7767AA6A6FA7440298D6B02EEA82AF5F",
+      "originalName": "Ripon Regional Meridian Beacons",
+      "proposedName": "Ripon Regional Meridian Aurora",
+      "family": "atmosphericPhenomenon",
+      "subject": "three broad aurora ribbons folding into one angular crown",
+      "primaryColorHex": "#202C52",
+      "secondaryColorHex": "#59D8B5"
+    },
+    {
+      "assetName": "TeamLogo_90369DB3A0EA40F68A405DEF59CFE630",
+      "originalName": "Somerset A&M Gale Sawyers",
+      "proposedName": "Somerset A&M Gale Mantises",
+      "family": "invertebrateLife",
+      "subject": "a praying mantis in three-quarter full-body stance, forelegs forming two large hooks",
+      "primaryColorHex": "#2F3C27",
+      "secondaryColorHex": "#E87358"
+    },
+    {
+      "assetName": "TeamLogo_911BB08E62454715A15EA6851AD2F303",
+      "originalName": "Olney Bramble Bulwarks",
+      "proposedName": "Olney Bramble Morels",
+      "family": "botanicalLife",
+      "subject": "three morel caps fused into one triangular rising silhouette",
+      "primaryColorHex": "#3C2B40",
+      "secondaryColorHex": "#D8B65B"
+    },
+    {
+      "assetName": "TeamLogo_96CC1AF0107D42CAA9CE24F829E6018E",
+      "originalName": "Siloam Springs Poly Meridian Ironsides",
+      "proposedName": "Siloam Springs Poly Meridian Geodes",
+      "family": "geologicalForm",
+      "subject": "a split geode cross-section with three oversized crystal teeth around a dark core",
+      "primaryColorHex": "#30304A",
+      "secondaryColorHex": "#63C7B2"
+    },
+    {
+      "assetName": "TeamLogo_9F0787A83784407FBCDA8A2CDEB855FC",
+      "originalName": "Cohoes Coastal Flint Ironsides",
+      "proposedName": "Cohoes Coastal Flint Columns",
+      "family": "geologicalForm",
+      "subject": "five basalt columns fused into one stepped monolith",
+      "primaryColorHex": "#2B3240",
+      "secondaryColorHex": "#E0A24C"
+    },
+    {
+      "assetName": "TeamLogo_A0D5378A462C4791AE53952A79FCCD62",
+      "originalName": "Gillette State Bramble Smelters",
+      "proposedName": "Gillette State Bramble Stag Beetles",
+      "family": "invertebrateLife",
+      "subject": "a stag beetle from above, oversized mandibles and wing case forming one armored silhouette",
+      "primaryColorHex": "#3B2638",
+      "secondaryColorHex": "#D8B451"
+    },
+    {
+      "assetName": "TeamLogo_A6B3C25FD8C2410D99818F260720A790",
+      "originalName": "Millinocket Coastal Flint Beacons",
+      "proposedName": "Millinocket Coastal Flint Gar",
+      "family": "aquaticLife",
+      "subject": "an alligator gar in profile, long armored body curving around a heavy snout",
+      "primaryColorHex": "#143C47",
+      "secondaryColorHex": "#E67D52"
+    },
+    {
+      "assetName": "TeamLogo_AC5D9C7510594B7C9C988B557A5EAE3D",
+      "originalName": "Cranston Timber Drovers",
+      "proposedName": "Cranston Timber Calderas",
+      "family": "geologicalForm",
+      "subject": "a caldera cutaway with one broken rim and a bright central vent",
+      "primaryColorHex": "#4A2F2A",
+      "secondaryColorHex": "#E16B47"
+    },
+    {
+      "assetName": "TeamLogo_B345E29D2F42497AABAB7385E6326173",
+      "originalName": "Barre Valley Harbor Drovers",
+      "proposedName": "Barre Valley Harbor Glaciers",
+      "family": "geologicalForm",
+      "subject": "a single glacier face in cutaway, one deep central crevasse splitting the mass",
+      "primaryColorHex": "#244153",
+      "secondaryColorHex": "#9FD7E8"
+    },
+    {
+      "assetName": "TeamLogo_B6783970BA3D485C815D9A62F25005C9",
+      "originalName": "Sandpoint A&M Gale Smelters",
+      "proposedName": "Sandpoint A&M Gale Tempests",
+      "family": "atmosphericPhenomenon",
+      "subject": "a rotating tempest eye built from three broad interlocking wind blades",
+      "primaryColorHex": "#234653",
+      "secondaryColorHex": "#F2B84B"
+    },
+    {
+      "assetName": "TeamLogo_C9129F1DC49F4FAC8C36CEAAAA0D958F",
+      "originalName": "Williamsport Thunder Wardens",
+      "proposedName": "Williamsport Thunder Caverns",
+      "family": "geologicalForm",
+      "subject": "a cavern mouth cutaway with two massive interlocking stalactite teeth",
+      "primaryColorHex": "#2E2B43",
+      "secondaryColorHex": "#C18A5B"
+    },
+    {
+      "assetName": "TeamLogo_CBDF8F99B7C64B27B545E5FDC61EB999",
+      "originalName": "Delaware City Anvil Beacons",
+      "proposedName": "Delaware City Anvil Nebulae",
+      "family": "celestialPhenomenon",
+      "subject": "a compact nebula knot wrapped by one broken orbital ribbon",
+      "primaryColorHex": "#212342",
+      "secondaryColorHex": "#9E79E6"
+    },
+    {
+      "assetName": "TeamLogo_D4F46917036A4BBC9FA198D66B8F1819",
+      "originalName": "Ada Harbor Colliers",
+      "proposedName": "Ada Harbor Cicadas",
+      "family": "invertebrateLife",
+      "subject": "a cicada from above, broad transparent wing shapes and heavy body forming one compact mark",
+      "primaryColorHex": "#27384B",
+      "secondaryColorHex": "#E8734A"
+    },
+    {
+      "assetName": "TeamLogo_DBF4A6963DED4B4DAF876FF2FBDE994E",
+      "originalName": "Sedalia Valley Amber Riggers",
+      "proposedName": "Sedalia Valley Amber Thunderheads",
+      "family": "atmosphericPhenomenon",
+      "subject": "one towering thunderhead mass with a single hard-edged lightning notch",
+      "primaryColorHex": "#3C2B44",
+      "secondaryColorHex": "#F0A34E"
+    },
+    {
+      "assetName": "TeamLogo_F546F1FAFFE746E8ABA4CE7943DE80C1",
+      "originalName": "New Ulm Maritime Slate Ironsides",
+      "proposedName": "New Ulm Maritime Slate Sailfins",
+      "family": "aquaticLife",
+      "subject": "a sailfin fish in profile, one towering dorsal fin and forked tail defining the silhouette",
+      "primaryColorHex": "#252B4A",
+      "secondaryColorHex": "#56B7A8"
+    }
+  ]
+}
