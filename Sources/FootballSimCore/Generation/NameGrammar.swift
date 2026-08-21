@@ -40,6 +40,9 @@ public enum NameGrammar {
     /// How many distinct place names exist. Callers check they are not asking for more.
     public static var distinctPlaceNameCount: Int { realAmericanPlaces.count }
 
+    /// Every place, for the legal sweep to enumerate rather than sample.
+    public static var everyPlace: [String] { realAmericanPlaces }
+
     /// The city a place name is qualified by, with the state dropped.
     ///
     /// The stored place stays state-qualified because two members can sit in same-named towns in
@@ -187,6 +190,14 @@ public enum NameGrammar {
 
     // Real incorporated U.S. cities and towns, selected from the 2024 Census Gazetteer. State
     // abbreviations keep duplicate place names distinct without inventing a fictional settlement.
+    /// Every place a member can be sited in.
+    ///
+    /// A public name now begins with its city, so a city that is also a real programme would head a
+    /// blocked institution name. Five Akrons and a Butler were **substituted** out on 2026-08-21
+    /// rather than removed: `distinctPlaceNames` shuffles this array, a shuffle costs one draw per
+    /// element, and dropping two elements would have moved every id generated after it and de-keyed
+    /// the whole logo catalogue. `LegalTests` asserts the property by construction, so the next
+    /// blocklist refresh cannot quietly reintroduce one.
     private static let realAmericanPlaces = [
         "Adak, AK",
         "Abbeville, AL",
@@ -221,7 +232,7 @@ public enum NameGrammar {
         "Alamogordo, NM",
         "Boulder City, NV",
         "Albany, NY",
-        "Akron, OH",
+        "Ogallala, NE",
         "Achille, OK",
         "Adair Village, OR",
         "Aliquippa, PA",
@@ -242,7 +253,7 @@ public enum NameGrammar {
         "Alexander, AR",
         "Avondale, AZ",
         "Agoura Hills, CA",
-        "Akron, CO",
+        "Petoskey, MI",
         "Bridgeport, CT",
         "Bethany Beach, DE",
         "Alford, FL",
@@ -250,7 +261,7 @@ public enum NameGrammar {
         "Ackworth, IA",
         "Acequia, ID",
         "Albion, IL",
-        "Akron, IN",
+        "Tillamook, OR",
         "Abilene, KS",
         "Albany, KY",
         "Abita Springs, LA",
@@ -336,7 +347,7 @@ public enum NameGrammar {
         "Alderson, WV",
         "Alpine, WY",
         "Akutan, AK",
-        "Akron, AL",
+        "Wahpeton, ND",
         "Allport, AR",
         "Bisbee, AZ",
         "Albany, CA",
@@ -541,7 +552,7 @@ public enum NameGrammar {
         "Cheswold, DE",
         "Arcadia, FL",
         "Alapaha, GA",
-        "Akron, IA",
+        "Yreka, CA",
         "Ashton, ID",
         "Annawan, IL",
         "Alton, IN",
@@ -616,7 +627,7 @@ public enum NameGrammar {
         "Avon Lake, OH",
         "Alex, OK",
         "Astoria, OR",
-        "Butler, PA",
+        "Sturgis, SD",
         "Aynor, SC",
         "Andover, SD",
         "Ardmore, TN",

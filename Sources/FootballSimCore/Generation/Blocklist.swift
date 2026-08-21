@@ -129,6 +129,7 @@ public enum Blocklist {
         "Delta State", "Duke", "East Carolina",
         "Florida", "Florida State", "Fresno State", "Georgia", "Georgia Tech", "Gonzaga",
         "Harvard", "Hawaii", "Houston", "Illinois", "Indiana", "Iowa", "Iowa State",
+        "Akron", "Butler",
         "Kansas", "Kansas State", "Kent State", "Kentucky",
         "Liberty", "Louisville", "Louisiana State", "Marshall", "Maryland", "Memphis", "Miami",
         "Michigan", "Michigan State", "Minnesota", "Mississippi", "Mississippi State", "Missouri",

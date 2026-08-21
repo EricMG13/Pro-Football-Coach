@@ -12,8 +12,8 @@ import FootballSimCore
 ///
 /// See "the encoded world matches a pinned digest" below for why these exist and when to change
 /// them.
-private let PINNED_WORLD_BYTES = 825_782
-private let PINNED_WORLD_DIGEST: UInt64 = 10_901_804_021_727_549_953
+private let PINNED_WORLD_BYTES = 825_785
+private let PINNED_WORLD_DIGEST: UInt64 = 13_190_704_639_147_150_950
 
 /// FNV-1a over the bytes, order-sensitive.
 ///
