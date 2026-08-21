@@ -93,12 +93,20 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 >    rejected experiment of mine that had been swept into the tree and would have been mistaken for
 >    the generator.
 >
-> **A separate defect the artwork inherits.** `realAmericanPlaces` is alphabetically truncated:
-> 375 of its 570 entries begin with A and 109 with B, so **85 per cent of the pool is A or B** and
-> six letters are absent entirely. The selection is faithful — the 166 chosen teams reproduce that
-> distribution exactly — so this is the source list, not the sampling. It is the most visible
-> generated-looking tell in the product. Fixable by substituting entries in place while holding the
-> array at exactly 570, which is what keeps the stable IDs and the logo catalogue keyed.
+> **The place list was alphabetically truncated, and is rebuilt.** `realAmericanPlaces` had been
+> read out of a gazetteer in alphabetical order and cut at 570: **375 entries began with A and 109
+> with B**, so 85 per cent of the pool was A or B and six letters were absent outright. The sampling
+> was faithful, which was the problem — the 166 members reproduced that distribution exactly, and a
+> league where two thirds of the teams are named after A-towns reads as generated on sight.
+>
+> The pool is now 570 real places spread across 25 initials, weighted toward real US place-name
+> frequency rather than dealt flat. **A+B falls from 85 per cent of the pool to 12, and from 85 per
+> cent of a world's teams to 8.** The count is held at exactly 570 because `distinctPlaceNames`
+> shuffles the array and a shuffle costs one draw per element: substituting entries keeps the random
+> stream where it was, and **all 166 stable IDs and all 166 nicknames are identical before and
+> after**, so the logo catalogue stayed keyed and every mark still matches its team. The whole cross
+> product — 8,025,600 public names — was swept against `Blocklist` with no collisions, and the check
+> caught four candidates on the way in whose city names contain a real programme.
 >
 > **A gap the sweep does not cover.** Two real programmes, Akron and Butler, are in the place list
 > and absent from `Blocklist.institutions`. That predates this change and is unaffected by it, but

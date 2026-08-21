@@ -29,9 +29,9 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
 /// The advanced pin moved again when completed summaries gained an explicit abstracted/detailed
 /// source discriminator, so the new controlled detailed path cannot be mistaken for an abstract
 /// result after reload.
-private let pinnedRootFingerprint: UInt64 = 7_541_343_443_324_930_489
+private let pinnedRootFingerprint: UInt64 = 12_741_583_388_755_685_037
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 16_869_125_197_676_973_242
+private let pinnedAdvancedRootFingerprint: UInt64 = 16_595_670_578_849_220_439
 
 private let pinnedArchivedLedgerFingerprint: UInt64 = 12_709_969_372_690_370_694
 
