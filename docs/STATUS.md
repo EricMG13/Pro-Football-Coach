@@ -19,6 +19,18 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **Current-tree verification boundary — 2026-08-21.** On the working tree at `a547404`, the
+> canonical release-mode `--catalog` command lists **19 registered gates, 19 runnable commands,
+> and zero `MISSING RUNNER` entries**. `--commitment-coverage` passes at **4 tests / 20 checks**.
+> These two runs verify registration and dispatch coverage only; they do not verify that every
+> registered gate passes.
+>
+> This working tree also contains uncommitted changes to `AbstractGameSimulator.swift`, packaged
+> team-logo assets, and team-mark review artefacts outside this status pass. No full suite,
+> determinism lane, logo lane, or device run was run in this pass against that combined tree. The
+> dated results below remain evidence for the revisions on which they were recorded, not a green
+> claim for the current working tree.
+
 > **2026-08-21 — the determinism gate now constructs and pins a non-empty history archive.**
 > The root and one-week fingerprints exercise `DomainEventLedger.archive` only while it is empty.
 > `--architecture-only` now builds a retention-one ledger with deterministic events spanning two
@@ -57,10 +69,36 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > `--generation-only` (35/39,750), `--legal-only` (23/144), `--core-contracts` (223/3,065),
 > `--design-contracts` (45/773) and all seven logo lanes pass.
 >
-> **What is not true yet.** The packaged artwork still shows the 2026-08-20 concepts, so the marks
-> do **not** match the new names on screen. The briefs are written and reviewable in
-> `exports/team-names-and-briefs-2026-08-21/`; the regeneration run is an owner action, and
-> `reviewNotes` says so on every record.
+> **What is true as of 2026-08-21.** Codex generated and committed a replacement set, and the
+> owner adopted it. The shipped marks now depict the team they belong to: 166 flat two-colour PNGs
+> at 256 px, 3.3 MB, mean 14.6 KB. Verified independently before adoption — exactly two opaque
+> colours per mark with no gradient or shading anywhere, one coherent silhouette at the 20 pt draw
+> in five of the six families, zero safe-area violations, zero palette misses, and no lettering.
+> All nine manifest tests and all six per-family asset lanes pass.
+>
+> **Three defects were accepted with it, and none is fixed.**
+>
+> 1. **64 of 166 lose their silhouette on the dark surface.** The set carries no keyline and no
+>    halo; the darker team colour does keyline duty, so where it forms the outer contour it
+>    disappears against `#07111F`. The worst measure 1.03 contrast, which is invisible. The app's
+>    primary register is dark. Each affected record names its own measurement in `reviewNotes`.
+> 2. **Style drifts by generation batch.** The marks were written in fourteen batches of twelve
+>    over 146 minutes, recoverable from file mtimes. Internal edge density is 0.068 in batch 1 and
+>    runs 0.106 to 0.138 across batches 4 to 13 — roughly double — from thin internal strokes and
+>    extra contour detail. Batch 14 recovers only to 0.087. Batch 1 is the cleanest reference.
+> 3. **There is no generator.** The 166 PNGs were committed without the source that drew them.
+>    Nothing under `Tools/` produces them, and a sweep of every ref, all 31 worktrees and the agent
+>    scratch directories found nothing. The set cannot be regenerated, so neither defect above can
+>    be fixed at source — only by redrawing or by post-processing rasters. `a547404` removed a
+>    rejected experiment of mine that had been swept into the tree and would have been mistaken for
+>    the generator.
+>
+> **A separate defect the artwork inherits.** `realAmericanPlaces` is alphabetically truncated:
+> 375 of its 570 entries begin with A and 109 with B, so **85 per cent of the pool is A or B** and
+> six letters are absent entirely. The selection is faithful — the 166 chosen teams reproduce that
+> distribution exactly — so this is the source list, not the sampling. It is the most visible
+> generated-looking tell in the product. Fixable by substituting entries in place while holding the
+> array at exactly 570, which is what keeps the stable IDs and the logo catalogue keyed.
 >
 > **A gap the sweep does not cover.** Two real programmes, Akron and Butler, are in the place list
 > and absent from `Blocklist.institutions`. That predates this change and is unaffected by it, but
