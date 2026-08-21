@@ -27,6 +27,14 @@ The logos are recognition marks. Team names, abbreviations, scores, status, and 
 
 ## 3. Visual Direction
 
+> **Amended 2026-08-21.** This section grants permissions and sets no constraint a mark can be
+> measured against, which is how two sets shipped that were illegible at 20 points and, on an honest
+> perceptual hash, largely indistinguishable from each other. How a mark is *built* — safe area,
+> minimum feature size, keyline weight, filled-region count, colour roles, distinctness floor — is
+> now governed by `2026-08-21-team-mark-construction-system.md`. That document constrains treatment
+> only; the permissions below still hold for what a mark may depict.
+
+
 The set uses a **diverse American sports mix**, informed by official NFL, NBA, MLB, NHL, and Minor League Baseball identity galleries. The reference lesson is breadth rather than imitation: recognizable silhouettes, regional storytelling, mascots, objects, characters, framed crests, and abstract motion marks can coexist within one league world.
 
 Each team receives one motif family chosen to keep neighboring and similarly named teams visually distinct:

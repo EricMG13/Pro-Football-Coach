@@ -34,6 +34,12 @@ and a test in the repo fails if one drifts off.
 
 ## House style — applies to all 166
 
+The numbers behind these rules live in `docs/superpowers/specs/2026-08-21-team-mark-construction-system.md`:
+safe area 4 per cent, no feature or gap under 5 per cent of the canvas, one keyline at 2 to 2.5 per
+cent, at most six filled regions, darker team colour carries the silhouette. **20 pt is the design
+size, not the smallest size.**
+
+
 A single subject filling the frame. Two or three flat colours only. No gradient, no shading, no
 texture, no depth, no lighting, no outline sketch. Every shape has a hard edge and one heavy dark
 keyline of even weight. Bold geometric simplification: few large shapes, wide negative space,
