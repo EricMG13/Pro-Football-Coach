@@ -37,7 +37,15 @@ final class ProFootballCoachUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(currentSibling.frame.height, 44)
         XCTAssertGreaterThanOrEqual(currentSibling.frame.minX, family.frame.maxX)
         family.tap()
-        app.buttons["Roster"].tap()
+        // The task index lists every available surface, so Roster sits below the fold when it
+        // opens. Tapping without scrolling synthesizes the tap at an off-screen point and the
+        // route never runs.
+        let registry = app.scrollViews["surface-registry"].firstMatch
+        XCTAssertTrue(registry.waitForExistence(timeout: 10))
+        let roster = app.buttons["Roster"].firstMatch
+        XCTAssertTrue(roster.waitForExistence(timeout: 10))
+        XCTAssertTrue(scroll(registry, toReveal: roster))
+        roster.tap()
         XCTAssertTrue(app.otherElements["roster-screen"].waitForExistence(timeout: 10))
         app.buttons["roster-open-dossier"].tap()
         XCTAssertTrue(app.otherElements["player-profile-screen"].waitForExistence(timeout: 10))
@@ -256,6 +264,24 @@ final class ProFootballCoachUITests: XCTestCase {
                 XCTAssertTrue(choice.exists)
                 assert(choice, staysInside: viewport)
             }
+            // `04` section 7: "The initial viewport contains the dominant object and any decision
+            // due now", and only AX5 "may scroll vertically" for it. The committing action is the
+            // decision, so at default size it has to be in frame without scrolling. Enumerated by
+            // identifier rather than by label, so a screen that gains a committing action is
+            // covered the day it is added -- and vertically, which nothing else here checks.
+            if !usesAX5 {
+                let committing = app.descendants(matching: .any)
+                    .matching(identifier: "committing-action")
+                for index in 0..<committing.count {
+                    let action = committing.element(boundBy: index)
+                    XCTAssertGreaterThanOrEqual(action.frame.minY, viewport.frame.minY)
+                    XCTAssertLessThanOrEqual(
+                        action.frame.maxY,
+                        viewport.frame.maxY,
+                        "Screen \(fixture.screenID) committing action falls below the viewport"
+                    )
+                }
+            }
             if fixture.screenID == 9 {
                 let lastVisibleItem = app.buttons.matching(
                     NSPredicate(format: "label BEGINSWITH[c] %@", "Game plan required")
@@ -263,9 +289,18 @@ final class ProFootballCoachUITests: XCTestCase {
                 let footer = app.buttons.matching(
                     NSPredicate(format: "label BEGINSWITH[c] %@", "Advance week")
                 ).firstMatch
+                let messages = app.scrollViews.matching(
+                    NSPredicate(format: "identifier != %@", "top-navigator")
+                ).firstMatch
                 XCTAssertTrue(lastVisibleItem.exists)
                 XCTAssertTrue(footer.exists)
-                XCTAssertFalse(lastVisibleItem.frame.intersects(footer.frame))
+                XCTAssertTrue(messages.exists)
+                // Against the *visible* part of the row. XCUITest reports scroll content
+                // unclipped, so a row scrolled out of sight still reports a frame in the band the
+                // footer occupies, and comparing raw frames reads that as the footer covering it.
+                XCTAssertFalse(
+                    lastVisibleItem.frame.intersection(messages.frame).intersects(footer.frame)
+                )
             }
             app.terminate()
         }
@@ -331,7 +366,9 @@ final class ProFootballCoachUITests: XCTestCase {
             }
             XCTAssertFalse(consequence.frame.intersects(commit.frame))
             commit.tap()
-            XCTAssertFalse(commit.exists)
+            // Committing closes the screen, but the close is animated -- screen 11 takes about a
+            // second to unmount -- so this waits for the condition instead of sampling it once.
+            XCTAssertTrue(commit.waitForNonExistence(timeout: 10))
             app.terminate()
         }
     }

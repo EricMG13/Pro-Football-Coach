@@ -87,14 +87,7 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
                             .font(CoachWorldTokens.TypeRole.caption)
                             .foregroundStyle(palette.contentSecondary.color)
                     }
-                    session("Install", minutes: plan.installMinutes)
-                    session("Conditioning", minutes: plan.conditioningMinutes)
-                    session("Recovery", minutes: plan.recoveryMinutes)
-                    session(
-                        plan.positionFocus.map { "Focus \u{00B7} \(label($0))" }
-                            ?? "Position focus",
-                        minutes: plan.positionFocusMinutes
-                    )
+                    sessions(of: plan)
                 }
             }
         } else {
@@ -112,6 +105,62 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
     /// the commit action sends. A stored plan is only the fallback when no option can be selected.
     private var allocatedPlan: TacticalPracticePlan? {
         selectedOption?.plan ?? model.currentPlan
+    }
+
+    /// The four sessions sharing the week's stated total.
+    ///
+    /// The reference draws them as columns, and that is also what keeps the committing action
+    /// inside the initial viewport: stacked, the four rows cost about 155 points of a 291-point
+    /// scroll viewport and push the commit off the bottom edge, which `04` section 7 allows only at
+    /// AX5. So AX5 keeps the stack -- four columns cannot hold their labels at accessibility sizes,
+    /// and AX5 is exactly where scrolling is permitted.
+    @ViewBuilder
+    private func sessions(of plan: TacticalPracticePlan) -> some View {
+        let focus = plan.positionFocus.map { "Focus \u{00B7} \(label($0))" } ?? "Position focus"
+        if dynamicTypeSize.isAccessibilitySize {
+            session("Install", minutes: plan.installMinutes)
+            session("Conditioning", minutes: plan.conditioningMinutes)
+            session("Recovery", minutes: plan.recoveryMinutes)
+            session(focus, minutes: plan.positionFocusMinutes)
+        } else {
+            HStack(alignment: .top, spacing: CoachWorldTokens.Gap.xs) {
+                sessionColumn("Install", minutes: plan.installMinutes)
+                sessionColumn("Conditioning", minutes: plan.conditioningMinutes)
+                sessionColumn("Recovery", minutes: plan.recoveryMinutes)
+                sessionColumn(focus, minutes: plan.positionFocusMinutes)
+            }
+        }
+    }
+
+    private func sessionColumn(_ name: String, minutes: Int) -> some View {
+        FloodlitRow(palette: palette) {
+            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
+                // Deliberately no `minimumScaleFactor`. This is 12-point type and
+                // `TypeRole.authoredFloor` is 12, so any shrink at all drops authored text under
+                // the floor -- a long focus name such as "FOCUS - OFFENSIVE LINE" would render
+                // near 9 points. It truncates instead, and the accessibility label below still
+                // carries the whole name.
+                Text(name.uppercased())
+                    .font(
+                        CoachWorldTokens.display(
+                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                        )
+                    )
+                    .lineLimit(1)
+                FloodlitShareBar(
+                    proportion: Double(minutes) / Double(TacticalPracticePlan.weeklyMinutes),
+                    palette: palette
+                )
+                Text("\(minutes)\u{2032}")
+                    .font(
+                        CoachWorldTokens.figure(
+                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                        )
+                    )
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(name), \(minutes) minutes of \(TacticalPracticePlan.weeklyMinutes)")
     }
 
     private func session(_ name: String, minutes: Int) -> some View {

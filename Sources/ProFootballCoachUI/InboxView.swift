@@ -43,41 +43,54 @@ public struct InboxView: View, CoachWorldChromedSurface {
         .accessibilitySortPriority(100)
     }
 
+    /// The messages scroll; the committing action does not.
+    ///
+    /// Six messages beside a 313-point reading pane are taller than the 291-point viewport, so a
+    /// commit band at the end of the scrolling stack lands about 68 points below the bottom edge,
+    /// and `04` section 7 keeps the decision due now inside the initial viewport. The band sits
+    /// outside the `ScrollView` rather than pinned over it, so the scroll view's own frame shrinks
+    /// by the band instead of the last message sliding underneath it.
     private var scrollContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.md) {
-                header
-                if let statusMessage {
-                    Text(statusMessage)
-                        .font(CoachWorldTokens.TypeRole.callout)
-                        .foregroundStyle(palette.stateWarning.color)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if model.items.isEmpty {
-                    CoachWorldSystemState(
-                        .empty(
-                            "Inbox is clear. No decisions or current-week stories "
-                                + "are recorded."
-                        ),
-                        palette: palette
-                    )
-                    .accessibilityIdentifier("weekly-command-dominant")
-                } else if dynamicTypeSize.isAccessibilitySize {
-                    // At AX sizes the two columns stack: the reading pane cannot hold a message
-                    // beside a list of six at 310 points wide, and cutting the message is worse
-                    // than scrolling to it.
+        VStack(spacing: .zero) {
+            ScrollView {
+                messages
+                    .padding(.vertical, CoachWorldTokens.Pad.panel.v)
+            }
+            commitBar
+        }
+    }
+
+    private var messages: some View {
+        VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.md) {
+            header
+            if let statusMessage {
+                Text(statusMessage)
+                    .font(CoachWorldTokens.TypeRole.callout)
+                    .foregroundStyle(palette.stateWarning.color)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if model.items.isEmpty {
+                CoachWorldSystemState(
+                    .empty(
+                        "Inbox is clear. No decisions or current-week stories "
+                            + "are recorded."
+                    ),
+                    palette: palette
+                )
+                .accessibilityIdentifier("weekly-command-dominant")
+            } else if dynamicTypeSize.isAccessibilitySize {
+                // At AX sizes the two columns stack: the reading pane cannot hold a message
+                // beside a list of six at 310 points wide, and cutting the message is worse
+                // than scrolling to it.
+                readingPane
+                messageList
+            } else {
+                HStack(alignment: .top, spacing: CoachWorldTokens.Gap.lg) {
                     readingPane
                     messageList
-                } else {
-                    HStack(alignment: .top, spacing: CoachWorldTokens.Gap.lg) {
-                        readingPane
-                        messageList
-                            .frame(width: InboxMetric.listWidth)
-                    }
+                        .frame(width: InboxMetric.listWidth)
                 }
-                commitBar
             }
-            .padding(.vertical, CoachWorldTokens.Pad.panel.v)
         }
     }
 

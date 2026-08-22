@@ -16,8 +16,9 @@ Two things keep the task open. The owner reversed the earlier skip instruction a
 ID 14 is required**, as an exact visual reproduction of `Match Day.dc.html` proven on a real
 production route; the Match Day evidence caveats recorded below are retained as historical context
 and do not close ID 14. And the review-fix pass found two pre-existing red UI tests on Task 4
-surfaces, recorded under "Review fix (2026-08-22)". The progress ledger still reads
-`All-screen Task 4: pending`.
+surfaces; both are now fixed, and a third -- `testTeamLogoAssetAndFallbackProof` -- was found and
+is still red. See "Review fix (2026-08-22)" and "Two pre-existing reds fixed (2026-08-22)". The
+progress ledger still reads `All-screen Task 4: pending`.
 
 ## Contract reconciliation
 
@@ -434,3 +435,95 @@ reported DONE.
 
 These block marking all-screen Task 4 complete. They are recorded here rather than fixed in the
 review-fix commit because they are outside its diff and need their own change and review.
+
+## Two pre-existing reds fixed (2026-08-22)
+
+Both failures recorded above are fixed, and the first was a production defect rather than a test
+artefact.
+
+### Screen 12 committing action fell off the bottom edge
+
+`testWeeklyPlanReceiptDoesNotCoverChoicesAtDefault` failed on `XCTAssertFalse(commit.exists)` after
+committing, and the cause was not the assertion. The Practice Plan committing action sat at
+`{{560, 384.7}, {157, 44}}` in an 844x390 window, with the content scroll viewport at
+`{{63, 54}, {667, 291}}` and the content 397.7 points tall -- 106.7 points of overflow. The action
+was entirely below the visible area, XCUITest synthesized the tap off-screen, nothing was
+committed, and the screen never closed. Measured, not inferred: screen 11's commit button cleared
+in 1.09s while screen 12's was still present after 10.3s, and the hierarchy at that point still
+showed `weekly-command-screen-12` with the navigator's Practice Plan row selected.
+
+`04` section 7 states "The initial viewport contains the dominant object and any decision due now"
+and permits vertical scrolling only at AX5, so this is a defect against canon on the target device
+at default type.
+
+The fix follows the reference, whose own caption for 6e is "Four days as columns. Freshness is
+spent left to right and totalled below": at non-accessibility sizes the four sessions are laid out
+as columns instead of stacked rows, which reclaims about 107 points. AX5 keeps the stack, because
+four columns cannot hold their labels at accessibility sizes and AX5 is exactly where scrolling is
+permitted. The screen now fits with no scrolling at default, confirmed on the simulator.
+
+The column labels deliberately carry no `minimumScaleFactor`. `DisplaySize.actionSmall` is 12 and
+`TypeRole.authoredFloor` is 12, so any shrink puts authored text under the floor -- a long focus
+name such as "FOCUS - OFFENSIVE LINE" would have rendered near 9 points. They truncate instead, and
+the accessibility label still carries the whole name. Note that `optionRow` in this file and
+`installRow` in `GamePlanView` both apply a 0.7 scale floor to 13-point `DisplaySize.row`, which
+reaches about 9.1 points; that is pre-existing, is not covered by any assertion, and is left for a
+separate decision because it is a token question.
+
+### Screen 9 committing action fell off the bottom edge
+
+The same by-construction check caught the Inbox, which nothing had suspected: its committing action
+sat at maxY 457 against a 390-point window. Six messages beside a 313-point reading pane are taller
+than the 291-point viewport on their own, so no arrangement of a trailing band fits. The band now
+sits outside the `ScrollView` in a `VStack`, so the scroll view's own frame shrinks by the band
+(measured: 291 to 241) and the action lands at maxY 345.
+
+A first attempt pinned it with `safeAreaInset(edge: .bottom)`, matching the depth chart. That was
+rejected: `safeAreaInset` leaves the scroll view's frame intact and only adds content inset, so at
+rest the last message sits behind the band -- which is what the existing "content must clear the
+footer" assertion exists to prevent. The `VStack` keeps both properties.
+
+### The coverage gap that hid both
+
+`assertWeeklyCommandContentStaysInsideTheViewport` hand-listed the labels it checked and its
+`assert(_:staysInside:)` helper compared **minX and maxX only**. Nothing in the suite had ever
+checked vertical containment, so a control 39 points below the bottom edge passed every gate. The
+check now enumerates committing actions by their `committing-action` identifier -- added to
+`FloodlitCommittingAction`, so all fifteen screens that carry one are covered the day they are
+added -- and asserts vertical containment at default size, where canon forbids scrolling for it.
+
+### Screen 8 route out of the task index
+
+`testCoachingHQRosterPlayerProfileVerticalSlice` was a test defect, not a product one. The task
+index lists every available surface (34 here), so Roster is below the fold when it opens; the test
+tapped without scrolling and the tap was synthesized off-screen, so the route never ran. Confirmed
+by hand: scrolling the index and tapping Roster opens the roster screen with its dossier action.
+The overlay's list is now named `surface-registry` so the proof can address it, and the test scrolls
+it into view first using the same helper as the weekly plan proof.
+
+`XCTAssertFalse(commit.exists)` immediately after a tap is also replaced by
+`waitForNonExistence`, because the close is animated and screen 11 legitimately takes about a
+second.
+
+### Evidence
+
+| Gate | Result |
+|---|---|
+| `swift build` | PASS |
+| `swift run SimTests --design-contracts` | PASS, 58 tests / 857 checks |
+| `swift run SimTests --core-contracts` | PASS, 238 tests / 3,243 checks |
+| `swift run SimTests --tactical-management` | PASS, 8 tests / 81 checks |
+| `swift run SimTests --screen-read-models` | PASS, 69 tests / 9,704 checks |
+| Default UI batch (6 tests, `large`) | PASS, 0 failures |
+| AX5 UI batch (6 tests, genuine AX5) | PASS, 0 failures |
+| Remaining UI tests (7, `large`) | 6 pass; `testTeamLogoAssetAndFallbackProof` fails |
+
+`testTeamLogoAssetAndFallbackProof` fails on `team-logo-fallback-proof` not existing. It was
+re-run at `83cf76f` in a throwaway worktree and **fails there identically**, so it is a third
+pre-existing red unrelated to this change; it touches the logo proof screen, which none of these
+edits reach. It is not fixed here and still blocks Task 4.
+
+Exact-worktree `detect_changes(scope: all)`: medium risk, 16 symbols across 6 files, 2 affected
+processes -- both `ProspectRow` flows via `FloodlitCostLine`, which this change does not touch. The
+only edit in that file is four lines inside `FloodlitCommittingAction.body`, which shifted
+`FloodlitCostLine`'s line range; the attribution is a line-range artefact, not real impact.

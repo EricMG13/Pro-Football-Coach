@@ -485,6 +485,10 @@ struct FloodlitCommittingAction: View {
         CommittingAction(title: title, action: action)
             .disabled(!isEnabled)
             .opacity(isEnabled ? 1 : CoachWorldTokens.Motion.disabledOpacity)
+            // There is one of these per screen (`04` section 6.5), and `04` section 7 requires it
+            // to be in the initial viewport. Naming it here is what lets the proof enumerate the
+            // class by construction instead of listing labels screen by screen.
+            .accessibilityIdentifier("committing-action")
     }
 }
 
