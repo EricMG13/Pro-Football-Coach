@@ -59,6 +59,9 @@ public struct SnapAssignment: Sendable, Equatable {
     public let passer: Player?
     public let carrier: Player?
     /// The pursuit the carrier has to beat, best defender first.
+    ///
+    /// "Best defender first" is a known defect, not a design: see the note at the assignment site
+    /// in `Assignment.assign`. It makes the same man the recorded tackler on every snap of a game.
     public let pursuit: [Player]
 
     public init(
@@ -146,6 +149,19 @@ public enum Assignment {
             carrier: offensiveCall.playType == .run
                 ? personnel.offensive(group: .runningBacks).first
                 : nil,
+            // KNOWN DEFECT, escalated to the owner 2026-08-22, deliberately not fixed here.
+            //
+            // Ranked best-first and blind to the play, so `pursuit.first` is the highest-rated
+            // defender on the field on every snap of a game -- and `yardsAfterContact` always
+            // starts its chain at index zero. Measured over 200 resolved snaps, all 200 recorded
+            // tackles went to the same position. A cornerback is not the first man to a run up the
+            // middle and a nose tackle is not the first to a deep completion; ordering this by the
+            // run gap, the coverage and the target is what football says it should be.
+            //
+            // Not fixed alongside the template-motion change because it is not a labelling bug:
+            // whoever is first here is whose `tackling` the leverage reads, so any reordering moves
+            // the yardage distribution and therefore the calibration bands. That is its own task
+            // with its own gate, not a rider on an animation fix.
             pursuit: SnapPersonnel.ranked(personnel.defense)
         )
     }

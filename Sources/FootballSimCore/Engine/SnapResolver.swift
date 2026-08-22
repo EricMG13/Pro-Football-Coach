@@ -314,7 +314,7 @@ public enum SnapResolver {
         threshold: Double,
         rng: inout SeededRandom
     ) -> (yards: Int, record: MatchupRecord?, extraAttempts: [MatchupRecord]) {
-        guard let tackler = pursuit.first else { return (0, nil, []) }
+        guard !pursuit.isEmpty else { return (0, nil, []) }
         var yards = 0
         var record: MatchupRecord?
         // Attempts beyond the first, kept out of `record` for the same reason `record` alone used
@@ -337,8 +337,12 @@ public enum SnapResolver {
                 rng: &rng
             )
             if record == nil {
+                // `defender`, not a separately-captured `pursuit.first`. The two are the same
+                // man on attempt zero and always were, so this changes no behaviour and moves no
+                // fingerprint -- but the alias made the record's identity look independent of the
+                // loop when it never was, which is a trap for whoever changes the chain next.
                 record = MatchupRecord(kind: .carrierVersusPursuit, attackerID: carrier.id,
-                                       defenderID: tackler.id, leverage: leverage)
+                                       defenderID: defender.id, leverage: leverage)
             } else {
                 extraAttempts.append(MatchupRecord(kind: .carrierVersusPursuit, attackerID: carrier.id,
                                                    defenderID: defender.id, leverage: leverage))
