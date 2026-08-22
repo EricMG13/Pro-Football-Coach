@@ -52,6 +52,28 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **2026-08-22 — the merge re-keyed the world, and 52 of the 166 marks now need a re-brief.**
+> Merging `origin/main` into `agent/floodlit-injury-evidence` changed what
+> `GameState.bootstrap(seed: 20_260_812)` generates: **94 of the 166 team identifiers moved**, and
+> of the 72 that survived only 34 kept their name. The logo manifest is keyed by that identifier,
+> so it described a world that no longer exists — including six names the legal sweep refuses,
+> which is how it was found: `LegalTests` failed on shipped copy carrying "Slate Foresters",
+> "Thunder Otters", "Iron Marauders", "Cinder Harriers" and two "Storm" names.
+>
+> The manifest is re-keyed onto the merged world, **matching each team to a mark briefed for the
+> nickname it actually carries** rather than by position: 114 teams hold a mark whose brief names
+> their own nickname, against 34 under a positional re-key. The remaining **52 carry a mark
+> briefed for a different team and are named, one per failing check, by "every mark brief depicts
+> the team it belongs to" in `--team-logo-manifest`.** That gate is red on purpose and the red is
+> the work list; each of those records carries a `reviewNotes` line saying which team its mark was
+> briefed for. Forty of the 52 are the seven nicknames this merge introduced — Wainwrights,
+> Wheelwrights, Millwrights, Bargemen, Lamplighters, Draymen, Bitterns — which replaced seven real
+> programme nicknames and so have no artwork at all yet.
+>
+> `--legal-only` passes at 30 tests / 193 checks. No PNG was added, removed or re-rendered: every
+> one of the 166 packaged marks is still shipped and still owner-approved as artwork; what is
+> outstanding is which team each one belongs to.
+
 > **Current-tree verification boundary — 2026-08-21.** On the working tree at `a547404`, the
 > canonical release-mode `--catalog` command lists **19 registered gates, 19 runnable commands,
 > and zero `MISSING RUNNER` entries**. `--commitment-coverage` passes at **4 tests / 20 checks**.

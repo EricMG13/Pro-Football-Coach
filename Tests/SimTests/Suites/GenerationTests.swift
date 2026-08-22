@@ -14,12 +14,19 @@ import FootballSimCore
 /// See "the encoded world matches a pinned digest" below for why these exist and when to change
 /// them.
 ///
+/// Moved on 2026-08-22 merging origin/main into `agent/floodlit-injury-evidence`: the two
+/// nickname pools were reconciled, and seven nouns that are real programme names were replaced in
+/// place. The pool counts are unchanged, so the draw stream and every identifier keyed off it stay
+/// where they were; what moved is the name each member carries, which is why the encoded world
+/// grew by 1,665 bytes rather than changing shape. Reproduced in four independent release
+/// processes in this worktree.
+///
 /// Moved on 2026-08-20 when PR #9 added the 30 real NFL colour pairs to the trade-dress blocklist.
 /// The new collision retries consume a different deterministic RNG path, so this is a deliberate
 /// generation change, not a per-launch instability. Values came from the merged PR #9/current-main
 /// release run.
-private let PINNED_WORLD_BYTES = 824_394
-private let PINNED_WORLD_DIGEST: UInt64 = 9_378_100_870_041_314_437
+private let PINNED_WORLD_BYTES = 826_059
+private let PINNED_WORLD_DIGEST: UInt64 = 10_373_349_438_969_392_505
 
 /// FNV-1a over the bytes, order-sensitive.
 ///

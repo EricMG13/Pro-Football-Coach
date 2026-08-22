@@ -103,6 +103,9 @@ public enum AbstractGameSimulator {
         var driveOutcomeRNG = SeededRandom(
             seed: SeededRandom.derive(from: seed, scope: .game, ordinal: 4)
         )
+        var usageRNG = SeededRandom(
+            seed: SeededRandom.derive(from: seed, scope: .game, ordinal: 5)
+        )
         let baseline = CompetitionRules.baselinePoints(for: tier)
         let deviation = CompetitionRules.scoreDeviation(for: tier)
         var homeScore = score(
@@ -120,6 +123,7 @@ public enum AbstractGameSimulator {
             deviation: deviation + awayPlan.scoreDeviationAdjustment(),
             using: &rng
         )
+        let regulationPoints = homeScore + awayScore
         // Professional regular-season ties are an allowed outcome. College and every
         // postseason stage continue through bounded overtime so their summaries always
         // identify a winner.
@@ -155,7 +159,7 @@ public enum AbstractGameSimulator {
             using: &rng,
             rateRNG: &awayRateRNG
         )
-        let fourthQuarterPoints = (0..<(homeScore + awayScore)).reduce(into: 0) { total, _ in
+        let fourthQuarterPoints = (0..<regulationPoints).reduce(into: 0) { total, _ in
             if quarterRateRNG.chance(
                 CompetitionRules.baselineFourthQuarterScoringShare(for: tier)
             ) {
@@ -169,11 +173,19 @@ public enum AbstractGameSimulator {
             homeStatistics: homeStats,
             awayStatistics: awayStats,
             fourthQuarterPoints: fourthQuarterPoints,
+            regulationPoints: regulationPoints,
             driveOutcomes: driveOutcomes,
             homeParticipantIDs: home.roster.map(\.id),
             awayParticipantIDs: away.roster.map(\.id),
-            playerStatistics: playerLines(roster: home.roster, statistics: homeStats)
-                + playerLines(roster: away.roster, statistics: awayStats)
+            playerStatistics: playerLines(
+                roster: home.roster,
+                statistics: homeStats,
+                using: &usageRNG
+            ) + playerLines(
+                roster: away.roster,
+                statistics: awayStats,
+                using: &usageRNG
+            )
         )
     }
 
@@ -327,7 +339,7 @@ public enum AbstractGameSimulator {
             0.20,
             max(
                 0.01,
-                CompetitionRules.baselineSackProbability
+                CompetitionRules.baselineSackProbability(for: tier)
                     + Double(opposingDefense - offense) * CompetitionRules.strengthSackProbabilityScale
             )
         )
@@ -339,7 +351,7 @@ public enum AbstractGameSimulator {
             0.85,
             max(
                 0.40,
-                CompetitionRules.baselineCompletionProbability
+                CompetitionRules.baselineCompletionProbability(for: tier)
                     + Double(offense - opposingDefense)
                         * CompetitionRules.strengthCompletionProbabilityScale
             )
@@ -350,21 +362,32 @@ public enum AbstractGameSimulator {
         let turnovers = min(
             CompetitionRules.turnoverRange.upperBound,
             (0..<plays).reduce(into: 0) { total, _ in
-                if rateRNG.chance(CompetitionRules.baselineTurnoverProbability) { total += 1 }
+                if rateRNG.chance(CompetitionRules.baselineTurnoverProbability(for: tier)) {
+                    total += 1
+                }
             }
         )
-        let explosivePlays = (0..<plays).reduce(into: 0) { total, _ in
-            if rateRNG.chance(CompetitionRules.baselineExplosivePlayProbability(for: tier)) {
-                total += 1
-            }
-        }
         var fieldGoals = FieldGoalStatistics()
         for bucket in FieldGoalDistanceBucket.allCases {
             for _ in 0..<rateRNG.int(in: 0...1) {
                 fieldGoals.record(
                     bucket,
-                    made: rateRNG.chance(CompetitionRules.baselineFieldGoalAccuracy(for: bucket))
+                    made: rateRNG.chance(CompetitionRules.baselineFieldGoalAccuracy(
+                        for: bucket,
+                        tier: tier
+                    ))
                 )
+            }
+        }
+        let runPlays = max(0, plays - passAttempts - sacks)
+        let explosiveRuns = (0..<runPlays).reduce(into: 0) { total, _ in
+            if rateRNG.chance(CompetitionRules.baselineExplosiveRunProbability(for: tier)) {
+                total += 1
+            }
+        }
+        let explosivePasses = (0..<passAttempts).reduce(into: 0) { total, _ in
+            if rateRNG.chance(CompetitionRules.baselineExplosivePassProbability(for: tier)) {
+                total += 1
             }
         }
         return TeamGameStatistics(
@@ -377,14 +400,17 @@ public enum AbstractGameSimulator {
             passAttempts: passAttempts,
             passCompletions: passCompletions,
             sacks: sacks,
-            explosivePlays: explosivePlays,
+            explosivePlays: explosiveRuns + explosivePasses,
+            explosiveRuns: explosiveRuns,
+            explosivePasses: explosivePasses,
             fieldGoals: fieldGoals
         )
     }
 
     private static func playerLines(
         roster: [Player],
-        statistics: TeamGameStatistics
+        statistics: TeamGameStatistics,
+        using rng: inout SeededRandom
     ) -> [PlayerGameStatistics] {
         var lines: [PlayerGameStatistics] = []
         let ranked = roster.sorted {
@@ -392,28 +418,93 @@ public enum AbstractGameSimulator {
                 ? $0.id.uuidString < $1.id.uuidString
                 : $0.overall > $1.overall
         }
-        if let quarterback = ranked.first(where: { $0.position == .quarterback }) {
-            lines.append(PlayerGameStatistics(
-                playerID: quarterback.id,
-                passingYards: statistics.passingYards,
-                touchdowns: max(0, statistics.points / CompetitionRules.touchdownPointEstimate)
-            ))
-        }
+        let quarterback = ranked.first(where: { $0.position == .quarterback })
         let runners = Array(ranked.filter { $0.position == .runningBack }.prefix(2))
-        lines.append(contentsOf: distributedLines(
-            players: runners,
-            total: statistics.rushingYards,
-            keyPath: .rushing
-        ))
         let receivers = Array(ranked.filter {
             $0.position == .wideReceiver || $0.position == .tightEnd
         }.prefix(4))
+        let wideReceivers = receivers.filter { $0.position == .wideReceiver }
+        let tightEnds = receivers.filter { $0.position == .tightEnd }
+        var targetWeights: [(Player, Double)] = []
+        if let wr1 = wideReceivers.first {
+            targetWeights.append((wr1, CompetitionRules.wr1TargetShare))
+        }
+        if wideReceivers.count > 1 {
+            targetWeights.append((wideReceivers[1], CompetitionRules.wr2TargetShare))
+        }
+        if wideReceivers.count > 2 {
+            let share = CompetitionRules.wr3PlusTargetShare / Double(wideReceivers.count - 2)
+            targetWeights += wideReceivers.dropFirst(2).map { ($0, share) }
+        }
+        if !tightEnds.isEmpty {
+            let share = CompetitionRules.tightEndTargetShare / Double(tightEnds.count)
+            targetWeights += tightEnds.map { ($0, share) }
+        }
+        if !runners.isEmpty {
+            let share = CompetitionRules.runningBackTargetShare / Double(runners.count)
+            targetWeights += runners.map { ($0, share) }
+        }
+        var carryWeights = runners.enumerated().map { index, runner in
+            (runner, index == 0
+                ? CompetitionRules.primaryBackCarryShare
+                : CompetitionRules.reserveBackCarryShare / Double(max(1, runners.count - 1)))
+        }
+        if let quarterback {
+            carryWeights.append((quarterback, CompetitionRules.quarterbackCarryShare))
+        }
+        let targets = distributedCounts(
+            total: statistics.passAttempts,
+            weights: targetWeights,
+            using: &rng
+        )
+        let carries = distributedCounts(
+            total: max(0, statistics.offensivePlays - statistics.passAttempts - statistics.sacks),
+            weights: carryWeights,
+            using: &rng
+        )
+        if let quarterback {
+            lines.append(PlayerGameStatistics(
+                playerID: quarterback.id,
+                passingYards: statistics.passingYards,
+                touchdowns: max(0, statistics.points / CompetitionRules.touchdownPointEstimate),
+                carries: carries[quarterback.id, default: 0]
+            ))
+        }
+        lines.append(contentsOf: distributedLines(
+            players: runners,
+            total: statistics.rushingYards,
+            keyPath: .rushing,
+            targets: targets,
+            carries: carries
+        ))
         lines.append(contentsOf: distributedLines(
             players: receivers,
             total: statistics.passingYards,
-            keyPath: .receiving
+            keyPath: .receiving,
+            targets: targets,
+            carries: carries
         ))
         return lines
+    }
+
+    private static func distributedCounts(
+        total: Int,
+        weights: [(Player, Double)],
+        using rng: inout SeededRandom
+    ) -> [UUID: Int] {
+        let totalWeight = weights.reduce(0) { $0 + max(0, $1.1) }
+        guard total > 0, totalWeight > 0 else { return [:] }
+        var counts: [UUID: Int] = [:]
+        for _ in 0..<total {
+            let draw = rng.double01() * totalWeight
+            var cumulative = 0.0
+            let player = weights.first {
+                cumulative += max(0, $0.1)
+                return draw < cumulative
+            }?.0 ?? weights[weights.count - 1].0
+            counts[player.id, default: 0] += 1
+        }
+        return counts
     }
 
     private enum YardageKind { case rushing, receiving }
@@ -421,7 +512,9 @@ public enum AbstractGameSimulator {
     private static func distributedLines(
         players: [Player],
         total: Int,
-        keyPath: YardageKind
+        keyPath: YardageKind,
+        targets: [UUID: Int],
+        carries: [UUID: Int]
     ) -> [PlayerGameStatistics] {
         guard !players.isEmpty else { return [] }
         let share = total / players.count
@@ -430,9 +523,19 @@ public enum AbstractGameSimulator {
             let yards = share + (index < remainder ? 1 : 0)
             switch keyPath {
             case .rushing:
-                return PlayerGameStatistics(playerID: player.id, rushingYards: yards)
+                return PlayerGameStatistics(
+                    playerID: player.id,
+                    rushingYards: yards,
+                    targets: targets[player.id, default: 0],
+                    carries: carries[player.id, default: 0]
+                )
             case .receiving:
-                return PlayerGameStatistics(playerID: player.id, receivingYards: yards)
+                return PlayerGameStatistics(
+                    playerID: player.id,
+                    receivingYards: yards,
+                    targets: targets[player.id, default: 0],
+                    carries: carries[player.id, default: 0]
+                )
             }
         }
     }

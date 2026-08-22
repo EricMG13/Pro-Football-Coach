@@ -121,8 +121,13 @@ func runSnapAnchorTests() {
             // already in outcome.matchups, keyed on the blocker as attacker -- this is derivation,
             // not recording.
             let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
-            let leftTackle = personnel.offense[6]
-            let center = personnel.offense[8]
+            // By group and fixture order (leftTackle, guardPosition, center, rightTackle) rather
+            // than a raw array index: `testPersonnel` gained a second running back after this test
+            // was written, which shifted every offensive-line index by one and broke it silently
+            // -- the assertions still ran, they just checked the wrong two players.
+            let offensiveLine = personnel.offensive(group: .offensiveLine)
+            let leftTackle = offensiveLine[0]
+            let center = offensiveLine[2]
             let rusher = personnel.defense[0]
             let interior = personnel.defense[2]
             let play = PlayRecord(
