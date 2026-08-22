@@ -20,12 +20,12 @@ Canon amended first (`03` §9.6-§9.8, `04` §9) in 928105b. This is the build p
 
 Two further defects found in the same pass:
 
-- **T1 — every tackle in a game is made by the same man.** `SnapResolver.yardsAfterContact` records
-  `defenderID: tackler.id` where `tackler = pursuit.first`, regardless of which defender in the
-  break-tackle chain actually made the attempt; `assignment.pursuit` is `ranked(personnel.defense)`,
-  best-overall-first. So the highest-rated defender on the field is the recorded tackler on every
-  snap, and therefore the only defender the animation ever moves. **Fixing this moves
-  `playByPlayFingerprint` and requires a determinism re-pin.**
+- **T1 — every tackle in a game is made by the same man.** `assignment.pursuit` is
+  `ranked(personnel.defense)`, best-overall-first and blind to the play, and
+  `SnapResolver.yardsAfterContact` always starts its break-tackle chain at index zero. So the
+  highest-rated defender on the field is the recorded tackler on every snap, and therefore the only
+  defender the animation ever moves. (This bullet first named `yardsAfterContact`'s `tackler.id` as
+  the cause; that was wrong — see task 3 below, which is escalated rather than fixed.)
 - **T2 — tokens are labelled with role codes**, not position shorthand. `roleLabel` in
   `CoachWorldMatchProvider` emits `B R CV FIT RR D P`; `MatchDayView.actorToken`'s own doc comment,
   MATCH-DAY.md §4 and `04` §6.5 #18 all specify `LT LG C RG RT QB RB X H Z TE` /
@@ -35,8 +35,8 @@ Two presentation observations, no canon question attached:
 
 - The offensive line sits at the LOS and the defensive front 1 yard beyond it (~7 pt at the install
   floor), so the two lines interleave into one column of chips rather than reading as two lines.
-- Playback runs ~1.6 s (everything clamps to `minimumPlaybackSeconds`) then holds a completely
-  static field for ~2.9 s. Roughly a third live, two thirds frozen.
+- ~~Playback runs ~1.6 s then holds a static field for ~2.9 s.~~ **Withdrawn — measured wrong.** It
+  is ~3.4 s live and ~1 s held, which is what the engine arithmetic says it should be. See task 6.
 
 ## Tasks
 
@@ -50,8 +50,13 @@ One rules constant and one pure function, applied to the *global* playback fract
 than per-leg so an actor and the ball he carries warp identically and cannot desynchronise — the
 property §9.6 constraint 3 asks for.
 
-Test: `ease` is monotonic, fixes 0 and 1, and is strictly slower than linear in the final fifth
-(deceleration into contact) and faster than linear off the snap.
+Test: `ease` is monotonic, fixes 0 and 1, and its *velocity* — not its position — is below the mean
+at both ends with the peak between them. (The first draft of this line asserted position rather than
+velocity, which is false: a decelerating profile is *ahead* of linear near the end.)
+
+Landed as `AnchorRules.pathFraction(atPlayback:)`, and applied only at `MatchDayView.progress`, not
+inside `SnapAnchors.position` — see the commit for why warping the engine's own path fractions would
+have broken the ball-and-carrier invariant.
 
 ### 2. Everybody moves — `SnapAnchors.movement`
 
@@ -76,13 +81,23 @@ Tests: no actor is still on a snap that had a carrier; no actor other than the r
 within `pursuitStandoffYards` of the end spot; the recorded tackler still ends exactly on it; a
 carrier who won his duel still has nobody reach him.
 
-### 3. T1 — the recorded tackler is the man who made the attempt
+### 3. T1 — ESCALATED, NOT FIXED
 
-`yardsAfterContact` records `defender.id`, not `tackler.id`. Re-pin `playByPlayFingerprint` fixtures
-and any calibration band that moves. **If a calibration band moves outside its stated tolerance,
-stop and escalate — do not retune the band to fit.**
+The mechanism stated here was wrong. `tackler` is `pursuit.first` and `defender` is
+`pursuit[min(attempt, count - 1)]`, which on attempt zero are the same man, so swapping them is a
+no-op and shipping it as the fix would have claimed a repair that had not happened.
 
-Test: over N snaps with a mixed-rating defense, recorded tacklers span more than one position group.
+The defect is one level up, in `Assignment.assign`: `pursuit` is `ranked(defense)` — best-first, and
+blind to the play — so the highest-rated defender on the field is first in the chain on every snap
+of a game.
+
+**Not fixed, and this is the owner's call.** Whoever is first in that list is whose `tackling` the
+leverage reads, so any reordering moves the yardage distribution and the calibration bands with it.
+Modelling pursuit by run gap, coverage and target is real engine work with its own gate; riding it
+in on an animation fix would bury a calibration move in a commit nobody would think to look in.
+
+Done instead: the misleading `tackler` alias removed, and the defect written down at the line that
+causes it with what it would take to fix it (`825a959`).
 
 ### 4. T2 — position shorthand on the tokens
 
@@ -98,12 +113,31 @@ Widen the gap between the offensive line and the defensive front so they stop in
 `SnapAnchorTests` assertions ("the offensive line stands on the line and the defence stands beyond
 it") must stay green.
 
-### 6. Playback timing
+### 6. Playback timing — MEASURED, AND NOT DONE
 
-Raise `minimumPlaybackSeconds` so plays stop clamping to the floor, and cut
-`MatchMetric.autoAdvanceDwellSeconds`. **Measure the real inter-snap gap on device first** — the
-~2.9 s observed includes app latency that is not the 1.2 s dwell, and changing the dwell without
-measuring would be a guess-fix.
+The premise did not survive the measurement, which is why the task said to measure first.
+
+The "~1.6 s live, ~2.9 s frozen" figure in the review above was read off a 5 fps contact sheet by
+counting frames labelled `SNAP - IN PLAY` against frames labelled `RESULT`, and that label persists
+into the next snap's setup, so it over-counted the frozen span badly. Measuring properly — mean
+absolute frame-to-frame difference over the field band, at 10 fps, on the device captures — gives:
+
+| | live burst | still gap between snaps |
+|---|---|---|
+| before | ~3.4 s | ~0.7-1.2 s |
+| after | ~3.4 s | ~0.7-1.2 s |
+
+which matches the engine arithmetic exactly: `durationSeconds` is `secondsElapsed x 0.55` clamped to
+1.6-6.0, and a snap that burns 5-7 seconds of clock animates for 2.8-3.9 s. The 1.6 s floor almost
+never binds, and the ~1 s hold is the 1.2 s `autoAdvanceDwellSeconds` doing exactly what it says
+with no hidden app latency behind it.
+
+So there is nothing here to fix, and changing either constant would be a guess-fix against a premise
+the measurement refutes. **Not done, deliberately.**
+
+The same measurement does carry the after-number that matters: mean motion magnitude per frame while
+the field is live went from 0.68 to 1.24, so the dots travel about twice as far per frame as they
+did.
 
 ## Gates
 
