@@ -605,7 +605,48 @@ changing how the field paints and places actors. No simulation, persistence, or 
 scope. Several listed symbols (`Paint.arrowSize`, `pylonWidth`, `legs`, `local`, `position`) are
 line-shift artefacts of edits elsewhere in the same files.
 
+### The outstanding 1a items, now closed
+
+**One top-right plate.** `CallInBudgetBug` and `ControlDepthSelector` are gone; `MatchDayTopRightPlate`
+is a single 172-point surface carrying 1a's structure in order -- CALL-INS with its three marks and
+`used/total`, the model's own rate line, a seam, the three-segment depth strip with 1a's
+title-over-subtitle form, a seam, and the plan-edit row. The plan-edit row previously drew its own
+card inside the plate: clearing the panel's colours was not enough, because the modifier still drew
+its shape and shadow, so a `FurniturePanel` modifier now omits it entirely for in-plate rows.
+
+**Two rows deliberately miss 1a's height.** Its depth segments are 32 points and its plan-edit row
+24. Both are tappable and `CLAUDE.md` keeps the stricter HIG 44-point floor, so both take
+`Shape.minimumTarget` and the plate is taller than the mock. The touch floor wins.
+
+**Plate-ground ramp.** 1a runs .90 / .88 / .86 across scorebug, top-right plate and lower third,
+where this build used one 0.88 and a 0.80. All three now match.
+
+**Trailing inset 16.** Adopted for Match Day furniture only, via `MatchMetric.trailingInset`. The
+trailing edge carries no sensor housing and `04` section 7 records the 17e insets as "unsourced --
+measure before relying on either", so no measured value is contradicted. The shared `Frame.gutter`
+still governs every management surface.
+
+**Bottom inset stays 25, and this is not an oversight.** 1a draws `bottom: 16`; 25 is the landscape
+home indicator (21) plus 4 points of clearance. The mock has no home indicator, the device has one,
+and the bottom-right cluster is where the committing action lives. Moving it to 16 would put the
+primary action of the screen under the system gesture area. `04` section 7 owns safe areas at
+physical edges, and this is the one place the reference and the device genuinely disagree.
+
+Two further reconciliations, where 1a's words are mock content rather than facts:
+
+- the plate's second line prints `budget.rateNote`, the model's own string, in 1a's slot and type.
+  1a prints "2 LEFT THIS DRIVE" there; the presentation contract says the reference creates no
+  facts;
+- the plan-edit row keeps "HALFTIME · PLAN EDIT" rather than 1a's "EDIT THE PLAN / opens at half",
+  because "opens at half" asserts a rule about when the control becomes available that no read-model
+  field carries.
+
+The depth strip also keeps `MatchControlDepth.allCases` order (every snap, coordinator, leverage),
+which is the depth ladder from most control to least. 1a prints COORD first, which is also the
+selected segment in that frame; reordering a control strip on one sample would break the ladder.
+
 ### Still outstanding for ID 14
 
-The single top-right plate, the plate-ground alpha ramp, and the two inset questions above. ID 14 is
-**not** complete and is not marked so.
+Nothing from the 1a reconciliation. What remains is proof breadth, not composition: the full
+manual/device/assistive-technology matrix, and a real retained-game Match Day capture inside the
+production navigator rather than the `PROOF_SCREEN=match` fixture. ID 14 is **not** marked complete.
