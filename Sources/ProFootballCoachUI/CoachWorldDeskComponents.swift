@@ -300,7 +300,7 @@ struct CoachWorldActionButtonStyle: ButtonStyle {
                 minHeight: CoachWorldTokens.Shape.minimumTarget
             )
             .foregroundStyle(appearance.foreground)
-            .background { roleFill.opacity(configuration.isPressed ? 0.76 : 1) }
+            .background { roleFill }
             .overlay {
                 controlShape.stroke(
                     appearance.border,
@@ -308,6 +308,9 @@ struct CoachWorldActionButtonStyle: ButtonStyle {
                 )
             }
             .clipShape(controlShape)
+            .offset(
+                y: configuration.isPressed ? CoachWorldTokens.Shape.hairline : 0
+            )
             .opacity(isEnabled ? 1 : 0.45)
     }
 
@@ -378,8 +381,8 @@ struct CoachWorldRouteButton: View {
     let title: String
     let isCurrent: Bool
     let palette: CoachWorldTokens.Palette
-    /// Selection furniture speaks in the programme's colour when a screen has one. Defaulting to
-    /// the tier token keeps every screen that has not been given an identity unchanged.
+    /// Selection furniture speaks in the programme's colour when a screen has one. The optional
+    /// override remains for existing callers; otherwise the shared safe action token is used.
     var selection: CoachWorldTokens.ColorValue?
     let action: () -> Void
 
