@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Logo Tournament Selector</title>
+  <style>
+    :root { color-scheme: dark; --ink:#f1f2f6; --muted:#a6adbb; --desk:#10131b; --panel:#181c27; --panel-strong:#202536; --line:#343a4c; --violet:#7656a8; --violet-soft:#a98bd2; --now:#c9ed61; --danger:#ff9a8b; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-width:320px; background:var(--desk); color:var(--ink); font-family:"Avenir Next",Avenir,sans-serif; }
+    button,input,select { font:inherit; }
+    button,input,select { min-height:44px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--ink); }
+    button { padding:0 14px; cursor:pointer; } button:hover { border-color:var(--violet-soft); } button:disabled { cursor:not-allowed; opacity:.45; }
+    button:focus-visible,input:focus-visible,select:focus-visible,.card:has(input:focus-visible) { outline:3px solid var(--now); outline-offset:2px; }
+    .topbar { position:sticky; top:0; z-index:10; display:grid; gap:12px; padding:18px clamp(16px,3vw,40px); border-bottom:1px solid var(--line); background:rgba(16,19,27,.97); }
+    .title-row,.controls,.actions,.readouts { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .title-row { justify-content:space-between; } h1,h2 { margin:0; font-family:"Avenir Next Condensed","Avenir Next",sans-serif; text-transform:uppercase; letter-spacing:.03em; } h1 { font-size:clamp(25px,3vw,38px); } h2 { font-size:22px; }
+    .lede,.muted,.card-meta,summary { color:var(--muted); } .lede { margin:4px 0 0; font-size:14px; } input[type="search"] { width:min(360px,100%); padding:0 14px; } select { padding:0 28px 0 10px; }
+    .primary { border-color:var(--now); background:var(--now); color:#17200b; font-weight:800; } .warning { border-color:var(--danger); color:var(--danger); }
+    main { display:grid; grid-template-columns:minmax(0,1fr) 300px; align-items:start; gap:24px; padding:24px clamp(16px,3vw,40px) 52px; } .catalog { min-width:0; }
+    .catalog-head { display:flex; justify-content:space-between; gap:12px; align-items:baseline; margin-bottom:12px; } .logo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(175px,1fr)); gap:12px; }
+    .card { position:relative; display:grid; grid-template-rows:126px auto; overflow:hidden; min-height:196px; border:1px solid var(--line); border-radius:8px; background:var(--panel); cursor:pointer; transition:border-color 120ms ease,transform 120ms ease; } .card:hover { border-color:var(--violet-soft); transform:translateY(-1px); } .card.selected { border-color:var(--now); box-shadow:inset 0 0 0 2px var(--now); }
+    .card input { position:absolute; z-index:2; top:10px; left:10px; width:22px; height:22px; accent-color:var(--now); } .preview { display:grid; min-height:0; overflow:hidden; place-items:center; padding:16px; background:linear-gradient(135deg,#252043,#151b2c); } .preview img { width:100%; height:100%; min-height:0; object-fit:contain; }
+    .card-body { display:grid; gap:4px; padding:10px 12px 12px; } .card-title { font-size:13px; font-weight:750; line-height:1.25; } .card-meta { font-size:12px; line-height:1.3; }
+    aside,.audit { border:1px solid var(--line); border-radius:10px; background:var(--panel); } aside { position:sticky; top:182px; display:grid; gap:14px; padding:16px; } .status { color:var(--now); font-weight:750; } .readouts { font-size:13px; color:var(--muted); } .readouts strong { color:var(--ink); }
+    .audit { grid-column:1 / -1; padding:16px; } details + details { margin-top:12px; border-top:1px solid var(--line); padding-top:12px; } summary { cursor:pointer; font-weight:700; } .audit-grid { margin-top:14px; } .excluded-list { display:grid; gap:8px; margin:12px 0 0; padding-left:20px; font-size:13px; color:var(--muted); }
+    .empty,.error { margin:0; padding:28px; border:1px dashed var(--line); border-radius:8px; color:var(--muted); text-align:center; } .error { color:var(--danger); border-color:var(--danger); }
+    .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+    @media (max-width:900px) { main { grid-template-columns:1fr; } aside { position:static; grid-row:1; } } @media (max-width:560px) { .topbar { padding:14px; } main { padding:16px 14px 36px; } .logo-grid { grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="title-row"><div><h1>Logo Tournament</h1><p class="lede">Check candidates forward through rounds. Final export unlocks only at one selected version for every team.</p></div><span id="catalog-count" class="muted"></span></div>
+    <div class="controls" aria-label="Candidate filters">
+      <label class="sr-only" for="search">Search candidates</label><input id="search" type="search" placeholder="Search team, hash, or source">
+      <label class="sr-only" for="family">Family</label><select id="family"><option value="">All families</option></select>
+      <label class="sr-only" for="stage">Stage</label><select id="stage"><option value="">All stages</option></select>
+      <label class="sr-only" for="source">Source</label><select id="source"><option value="">All sources</option><option value="worktree">Worktrees</option><option value="history">Git history</option></select>
+      <label class="sr-only" for="state">Selection state</label><select id="state"><option value="">All current candidates</option><option value="selected">Checked</option><option value="unselected">Unchecked</option></select>
+    </div>
+  </header>
+  <main>
+    <section class="catalog" aria-labelledby="catalog-heading"><div class="catalog-head"><h2 id="catalog-heading">Current round</h2><span id="visible-count" class="muted"></span></div><div id="grid" class="logo-grid"></div></section>
+    <aside aria-label="Tournament progress"><h2>Progress</h2><p id="round-readout" class="status" aria-live="polite"></p><div id="selection-readout" class="readouts"></div><div class="actions"><button id="rewind">Return one round</button><button id="advance" class="primary">Advance checked</button></div><button id="download-final" class="primary" disabled>Download final 166</button><button id="download-audit">Download audit</button></aside>
+    <section class="audit" aria-labelledby="audit-heading"><h2 id="audit-heading">Full inventory audit</h2><p class="lede">Every discovered individual file is catalogued. Versions that cannot be safely tied to today’s teams stay visible here instead of being guessed into the tournament.</p>
+      <details id="unassigned-details"><summary id="unassigned-summary"></summary><div id="unassigned-grid" class="logo-grid audit-grid"></div></details>
+      <details><summary id="excluded-summary"></summary><ul id="excluded-list" class="excluded-list"></ul></details>
+    </section>
+  </main>
+  <script type="module">
+    import { advanceRound, currentRound, finalizationStatus, newSession, restoreSession, rewindRound, setSelected } from "./tournament-state.js";
+
+    const $ = (selector) => document.querySelector(selector);
+    const esc = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[char]);
+    const download = (name, content, type) => { const url = URL.createObjectURL(new Blob([content], { type })); const link = Object.assign(document.createElement("a"), { href:url, download:name }); link.click(); setTimeout(() => URL.revokeObjectURL(url), 0); };
+    let catalog; let session; let auditRendered = false;
+
+    const filters = () => ({ search: $("#search").value.trim().toLowerCase(), family: $("#family").value, stage: $("#stage").value, source: $("#source").value, state: $("#state").value });
+    const storageKey = () => `pro-football-coach.logo-tournament.${catalog.fingerprint}`;
+    const teamByID = () => new Map(catalog.teams.map((team) => [team.stableID, team]));
+    const candidateByID = () => new Map(catalog.candidates.map((candidate) => [candidate.id, candidate]));
+    const save = () => localStorage.setItem(storageKey(), JSON.stringify(session));
+
+    function card(candidate, selectable) {
+      const team = teamByID().get(candidate.teamStableID);
+      const selected = currentRound(session).selectedIDs.includes(candidate.id);
+      const title = team ? team.name : "Unassigned historical variant";
+      const stage = candidate.stages.join(" · ");
+      const quality = candidate.qualityStatus === "held" ? "quality hold" : candidate.qualityStatus === "unassigned" ? "unassigned" : "reviewed replacement";
+      return `<label class="card ${selected ? "selected" : ""}">${selectable ? `<input type="checkbox" data-id="${candidate.id}" ${selected ? "checked" : ""} aria-label="Advance ${esc(title)}">` : ""}<span class="preview"><img src="${esc(candidate.imagePath)}" loading="lazy" alt="${esc(title)}"></span><span class="card-body"><span class="card-title">${esc(title)}</span><span class="card-meta">${esc(quality)} · ${esc(stage)}</span><span class="card-meta">${candidate.origins.length} source${candidate.origins.length === 1 ? "" : "s"} · ${candidate.sha256.slice(0, 12)}</span></span></label>`;
+    }
+
+    function matches(candidate, selected, filter) {
+      const team = teamByID().get(candidate.teamStableID);
+      const haystack = [team?.name, team?.abbreviation, candidate.sha256, candidate.stages.join(" "), ...candidate.origins.map((origin) => origin.path)].join(" ").toLowerCase();
+      return (!filter.search || haystack.includes(filter.search)) && (!filter.family || team?.family === filter.family) && (!filter.stage || candidate.stages.includes(filter.stage)) && (!filter.source || candidate.origins.some((origin) => origin.kind === filter.source)) && (!filter.state || (filter.state === "selected") === selected);
+    }
+
+    function render() {
+      const round = currentRound(session); const selected = new Set(round.selectedIDs); const filter = filters(); const candidates = round.candidateIDs.map((id) => candidateByID().get(id)).filter(Boolean); const visible = candidates.filter((candidate) => matches(candidate, selected.has(candidate.id), filter)); const status = finalizationStatus(session, catalog);
+      $("#grid").innerHTML = visible.length ? visible.map((candidate) => card(candidate, true)).join("") : `<p class="empty">No candidates match these filters.</p>`;
+      $("#visible-count").textContent = `${visible.length} of ${candidates.length} shown`;
+      $("#round-readout").textContent = `Round ${session.rounds.length} · ${round.selectedIDs.length} checked`;
+      const missing = status.missingTeamIDs.length; const duplicates = status.duplicateTeamIDs.length;
+      $("#selection-readout").innerHTML = status.ready ? `<strong>166 of 166 teams represented.</strong> Final export is ready.` : `<strong>${166 - missing} of 166 teams represented.</strong> ${missing ? `${missing} missing.` : ""} ${duplicates ? `${duplicates} team${duplicates === 1 ? "" : "s"} have multiple choices.` : ""}`;
+      $("#advance").disabled = !round.selectedIDs.length; $("#rewind").disabled = session.rounds.length === 1; $("#download-final").disabled = !status.ready;
+    }
+
+    function renderAudit() {
+      if (auditRendered) return; auditRendered = true;
+      const held = catalog.heldCandidateIDs.map((id) => candidateByID().get(id)).filter(Boolean);
+      $("#unassigned-grid").innerHTML = held.map((candidate) => card(candidate, false)).join("") || `<p class="empty">No held individual variants.</p>`;
+    }
+
+    function finalExport() {
+      const teams = teamByID(); const status = finalizationStatus(session, catalog);
+      const selections = status.chosen.map((candidate) => ({ stableID:candidate.teamStableID, teamName:teams.get(candidate.teamStableID).name, assetName:candidate.assetName, chosenSHA256:candidate.sha256, archivedImagePath:candidate.imagePath, stage:candidate.stage, origins:candidate.origins }));
+      download("final-team-logo-selections.json", JSON.stringify({ schemaVersion:1, catalogFingerprint:catalog.fingerprint, selections }, null, 2) + "\n", "application/json");
+    }
+
+    function auditExport() {
+      const unavailable = catalog.worktrees.filter((entry) => entry.available !== "true").map((entry) => entry.path);
+      const held = catalog.heldCandidateIDs.map((id) => candidateByID().get(id));
+      const text = ["Logo tournament audit", `Fingerprint: ${catalog.fingerprint}`, `Worktrees: ${catalog.worktrees.length}`, `Unavailable worktrees: ${unavailable.join(", ") || "none"}`, `Candidates: ${catalog.candidates.length}`, `Held individual variants: ${held.length}`, `Excluded composites: ${catalog.excluded.length}`, "", "HELD VARIANTS", ...held.map((candidate) => `${candidate.qualityStatus}\t${candidate.sha256}\t${candidate.stages.join(",")}\t${candidate.origins.map((origin) => origin.path).join(" | ")}`), "", "EXCLUDED COMPOSITES", ...catalog.excluded.map((entry) => `${entry.path}\t${entry.reason}`)].join("\n");
+      download("logo-tournament-audit.txt", text + "\n", "text/plain");
+    }
+
+    async function start() {
+      try {
+        const response = await fetch("./tournament-catalog.json", { cache:"no-store" }); if (!response.ok) throw new Error(`catalog request returned ${response.status}`);
+        catalog = await response.json(); if (!Array.isArray(catalog.teams) || catalog.teams.length !== 166 || !Array.isArray(catalog.candidates)) throw new Error("catalog is invalid or does not contain 166 teams");
+        session = restoreSession(localStorage.getItem(`pro-football-coach.logo-tournament.${catalog.fingerprint}`), catalog) || newSession(catalog);
+        $("#catalog-count").textContent = `${catalog.candidates.filter((candidate) => candidate.selectionEligible).length.toLocaleString()} reviewed choices · ${catalog.candidates.length.toLocaleString()} versions audited`;
+        for (const family of [...new Set(catalog.teams.map((team) => team.family))].sort()) $("#family").insertAdjacentHTML("beforeend", `<option value="${esc(family)}">${esc(family)}</option>`);
+        for (const stage of [...new Set(catalog.candidates.flatMap((candidate) => candidate.stages))].sort()) $("#stage").insertAdjacentHTML("beforeend", `<option value="${esc(stage)}">${esc(stage)}</option>`);
+        $("#unassigned-summary").textContent = `${catalog.heldCandidateIDs.length.toLocaleString()} low-quality, unreviewed, or unassigned variants held from the tournament (open to view)`;
+        $("#excluded-summary").textContent = `${catalog.excluded.length.toLocaleString()} excluded composite contact sheets and previews (open to inspect)`;
+        $("#excluded-list").innerHTML = catalog.excluded.map((entry) => `<li>${esc(entry.path)} — ${esc(entry.reason)}</li>`).join("");
+        $("#search").addEventListener("input", render);
+        document.querySelectorAll("#family, #stage, #source, #state").forEach((control) => control.addEventListener("change", render));
+        $("#grid").addEventListener("change", (event) => { const input = event.target.closest("input[data-id]"); if (!input) return; session = setSelected(session, input.dataset.id, input.checked); save(); render(); });
+        $("#advance").addEventListener("click", () => { session = advanceRound(session); save(); render(); });
+        $("#rewind").addEventListener("click", () => { session = rewindRound(session); save(); render(); });
+        $("#download-final").addEventListener("click", finalExport); $("#download-audit").addEventListener("click", auditExport); $("#unassigned-details").addEventListener("toggle", (event) => { if (event.target.open) renderAudit(); });
+        render();
+      } catch (error) { document.querySelector("main").innerHTML = `<p class="error">Unable to load the local tournament catalog: ${esc(error.message)}. Run <code>python3 Tools/TeamLogos/build_tournament_catalog.py</code> from the repository root.</p>`; }
+    }
+    start();
+  </script>
+</body>
+</html>
