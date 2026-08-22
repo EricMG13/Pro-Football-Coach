@@ -1,13 +1,12 @@
 import SwiftUI
 
-// The shared management stage: world backdrop, identity header, icon rail, content, grain
+// The shared management stage: world backdrop, identity navigator, content, grain
 // (`04` section 6.1c, `FLOODLIT-SURFACES.md` section 1).
 //
 // Every management surface renders inside `CoachWorldFloodlitSurface`. Match Day does not — it is
 // the broadcast register and owns its whole frame (section 6.1b).
 //
-// Navigation lives in the identity header rather than in a rail or a tab bar: the family on the
-// left, jump-to on the right. The icon rail names kinds of thing, not routes within a family.
+// Navigation lives in the identity header rather than in a rail or a tab bar.
 
 // MARK: - Read model
 
@@ -20,29 +19,6 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
         case facility
         /// The one place the light goes cold: a projector beam, and glass without the warm sheen.
         case film
-    }
-
-    /// One entry in the icon rail. `symbol` is an SF Symbol from `04` section 6.6's control
-    /// furniture — a marked control read from its label, never a symbol to be learned.
-    public struct RailEntry: Sendable, Equatable, Identifiable {
-        public var id: CoachWorldScreenID { screen }
-        public let screen: CoachWorldScreenID
-        public let symbol: String
-        /// Written sentence case; the rail uppercases on render.
-        public let label: String
-        public let intentID: CoachWorldIntentID
-
-        public init(
-            screen: CoachWorldScreenID,
-            symbol: String,
-            label: String,
-            intentID: CoachWorldIntentID
-        ) {
-            self.screen = screen
-            self.symbol = symbol
-            self.label = label
-            self.intentID = intentID
-        }
     }
 
     /// A sibling surface in the current family — the header's second-row links.
@@ -77,15 +53,12 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
     /// The right-hand context chip: `Sat · Halloran Tech`.
     public let context: String?
     public let contextOpponent: CoachWorldTeamReference?
-    public let rail: [RailEntry]
     public let siblings: [Sibling]
     /// Canonical tasks whose read models are retained for this career. Legacy aliases are never
     /// included here; they remain decode inputs only.
     public let availableScreens: [CoachWorldScreenID]
 
     public var family: CoachWorldSurfaceFamily { screen.family }
-    public var showsIconRail: Bool { screen.showsIconRail }
-
     public init(
         screen: CoachWorldScreenID,
         world: World,
@@ -95,7 +68,6 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
         conference: String? = nil,
         context: String? = nil,
         contextOpponent: CoachWorldTeamReference? = nil,
-        rail: [RailEntry] = [],
         siblings: [Sibling] = [],
         availableScreens: [CoachWorldScreenID] = CoachWorldScreenID.allCases
     ) {
@@ -107,7 +79,6 @@ public struct FloodlitChromeReadModel: Sendable, Equatable {
         self.conference = conference
         self.context = context
         self.contextOpponent = contextOpponent
-        self.rail = rail
         self.siblings = siblings
         self.availableScreens = availableScreens
     }
@@ -289,11 +260,12 @@ struct CoachWorldWorldBackdrop: View {
 
 // MARK: - Identity header
 
-/// Two rows: who we are and how we are doing, then where in the family we are.
+/// One row: identity, task family, sibling routes and current context.
 struct FloodlitIdentityHeader: View {
     let model: FloodlitChromeReadModel
     let palette: CoachWorldTokens.Palette
     let onNavigate: (CoachWorldIntentID) -> Void
+    let onOpenRegistry: () -> Void
 
     private var identity: CoachWorldTeamIdentity? {
         CoachWorldTeamIdentity(
@@ -308,39 +280,49 @@ struct FloodlitIdentityHeader: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: .zero) {
-            primaryRow
-            Rectangle()
-                .fill(CoachWorldTokens.dark.actionPrimary.color.opacity(Chrome.headerSeamAlpha))
-                .frame(height: CoachWorldTokens.Shape.hairline)
-            secondaryRow
+        HStack(spacing: CoachWorldTokens.Gap.smPlus) {
+            identitySection
+                .layoutPriority(2)
+            Button {
+                onOpenRegistry()
+            } label: {
+                Label(
+                    model.family.canonicalName.uppercased(),
+                    systemImage: Chrome.familyDisclosureSymbol
+                )
+                    .font(CoachWorldTokens.display(10, weight: .bold))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(
+                        minWidth: CoachWorldTokens.Shape.minimumTarget,
+                        minHeight: CoachWorldTokens.Shape.minimumTarget
+                    )
+            }
+            .buttonStyle(.plain)
+            .contentShape(Rectangle())
+            .accessibilityLabel("Open all tasks, \(model.family.canonicalName)")
+            .layoutPriority(4)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: CoachWorldTokens.Gap.md) {
+                    ForEach(model.siblings) { sibling in siblingLink(sibling) }
+                }
+            }
+            .layoutPriority(1)
+
+            Spacer(minLength: CoachWorldTokens.Gap.xs)
+            contextSection
+                .layoutPriority(0)
         }
-        .background {
-            LinearGradient(
-                stops: [
-                    .init(color: clubField.opacity(0.92), location: 0),
-                    .init(color: clubField.opacity(0.54), location: 0.5),
-                    .init(color: clubField.opacity(0.16), location: 1),
-                ],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-        }
-        .overlay(alignment: .leading) {
-            Rectangle()
-                .fill(CoachWorldTokens.dark.actionPrimary.color)
-                .frame(width: Chrome.headerRail)
-        }
-        .overlay {
-            CoachWorldCutCorner.headerBand.stroke(
-                CoachWorldTokens.dark.actionPrimary.color.opacity(Chrome.headerRingAlpha),
-                lineWidth: CoachWorldTokens.Shape.hairline
-            )
-        }
+        .padding(.horizontal, CoachWorldTokens.Gap.md)
+        .frame(height: CoachWorldTokens.Stage.headerHeight)
+        .background(headerMaterial)
         .clipShape(CoachWorldCutCorner.headerBand)
+        .accessibilityIdentifier("top-navigator")
+        .accessibilityElement(children: .contain)
     }
 
-    private var primaryRow: some View {
+    private var identitySection: some View {
         HStack(spacing: CoachWorldTokens.Gap.smPlus) {
             CoachWorldTeamLogo(
                 team: model.club,
@@ -366,26 +348,38 @@ struct FloodlitIdentityHeader: View {
                     .foregroundStyle(CoachWorldTokens.Floodlit.clubInk.color.opacity(0.70))
                     .lineLimit(1)
             }
-            Spacer(minLength: CoachWorldTokens.Gap.smPlus)
-            if let context = model.context {
-                contextChip(context)
-            }
         }
-        .padding(.horizontal, CoachWorldTokens.Gap.md)
-        .frame(minHeight: CoachWorldTokens.Stage.headerPrimaryRow)
+        .foregroundStyle(CoachWorldTokens.Floodlit.clubInk.color)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(primaryRowLabel)
+        .accessibilityLabel(identityLabel)
     }
-
 
     /// Assembled in steps rather than as one chained expression — the chained form defeated the
     /// type checker outright.
-    private var primaryRowLabel: String {
+    private var identityLabel: String {
         var parts: [String] = ["\(model.club.name), \(model.record)"]
         if let ranking = model.ranking { parts.append("ranked \(ranking)") }
         if let conference = model.conference { parts.append(conference) }
-        if let context = model.context { parts.append("Next: \(context)") }
         return parts.joined(separator: ", ")
+    }
+
+    @ViewBuilder
+    private var contextSection: some View {
+        if let context = model.context {
+            contextChip(context)
+        }
+    }
+
+    private var headerMaterial: LinearGradient {
+        LinearGradient(
+            stops: [
+                .init(color: clubField.opacity(0.92), location: 0),
+                .init(color: clubField.opacity(0.54), location: 0.5),
+                .init(color: clubField.opacity(0.16), location: 1),
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
     }
 
     private func contextChip(_ context: String) -> some View {
@@ -415,27 +409,16 @@ struct FloodlitIdentityHeader: View {
         }
     }
 
-    private var secondaryRow: some View {
-        HStack(spacing: CoachWorldTokens.Gap.md) {
-            Text(model.family.canonicalName.uppercased())
-                .coachWorldDisplay(Chrome.familySize, weight: .bold)
-                .tracking(CoachWorldTokens.DisplaySize.tracking(0.2, at: Chrome.familySize))
-                .foregroundStyle(CoachWorldTokens.dark.actionPrimary.color)
-            ForEach(model.siblings) { sibling in
-                siblingLink(sibling)
-            }
-            Spacer(minLength: CoachWorldTokens.Gap.xs)
-        }
-        .padding(.horizontal, CoachWorldTokens.Gap.md)
-        .frame(minHeight: CoachWorldTokens.Stage.headerSecondaryRow)
-    }
-
     private func siblingLink(_ sibling: FloodlitChromeReadModel.Sibling) -> some View {
         let isCurrent = sibling.screen == model.screen
         return Button { onNavigate(sibling.intentID) } label: {
             Text(sibling.title.uppercased())
                 .coachWorldDisplay(Chrome.siblingSize, weight: .semibold)
                 .tracking(CoachWorldTokens.DisplaySize.tracking(0.09, at: Chrome.siblingSize))
+                .frame(
+                    minWidth: CoachWorldTokens.Shape.minimumTarget,
+                    minHeight: CoachWorldTokens.Shape.minimumTarget
+                )
                 .foregroundStyle(
                     CoachWorldTokens.Floodlit.clubInk.color.opacity(isCurrent ? 1 : 0.66)
                 )
@@ -448,98 +431,10 @@ struct FloodlitIdentityHeader: View {
                             .offset(y: Chrome.siblingUnderlineOffset)
                     }
                 }
-                // Visible size and tappable size are allowed to differ; tappable size is not
-                // allowed to drop below 44 (`04` section 6.1c). Padding out to the target and then
-                // cancelling the same amount keeps the hit area at 44 while the row stays 16 —
-                // a plain `.frame(minHeight: 44)` grew the header instead and pushed it under the
-                // content column.
-                .padding(.vertical, Chrome.siblingTargetPad)
                 .contentShape(Rectangle())
-                .padding(.vertical, -Chrome.siblingTargetPad)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(sibling.accessibleTitle)
-        .accessibilityAddTraits(isCurrent ? .isSelected : [])
-    }
-}
-
-// MARK: - Icon rail
-
-/// Seven entries, each a 44 pt stack of a symbol over a tracked label. Icons name a kind of thing;
-/// every one carries its label, so none is a symbol the player has to learn (`04` section 6.6).
-struct FloodlitIconRail: View {
-    let entries: [FloodlitChromeReadModel.RailEntry]
-    let current: CoachWorldScreenID
-    let palette: CoachWorldTokens.Palette
-    let onNavigate: (CoachWorldIntentID) -> Void
-    let onOpenRegistry: () -> Void
-    var axis: Axis = .vertical
-
-    var body: some View {
-        Group {
-            if axis == .vertical {
-                VStack(spacing: CoachWorldTokens.Stage.railGap) {
-                    ForEach(entries) { entry in railButton(entry) }
-                }
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: CoachWorldTokens.Stage.railGap) {
-                        ForEach(entries) { entry in railButton(entry) }
-                    }
-                }
-            }
-        }
-        .accessibilityLabel("Sections")
-    }
-
-    private func railButton(_ entry: FloodlitChromeReadModel.RailEntry) -> some View {
-        let isCurrent = entry.screen == current
-        return Button {
-            if entry.screen == .worldSearch {
-                onOpenRegistry()
-            } else {
-                onNavigate(entry.intentID)
-            }
-        } label: {
-            VStack(spacing: CoachWorldTokens.Gap.hair) {
-                Image(systemName: entry.symbol)
-                    .coachWorldIcon(Chrome.railSymbol, weight: .semibold)
-                    .accessibilityHidden(true)
-                // Deferred (S-0 Phase 3, 2026-08-19): fixed in both dimensions (width:
-                // CoachWorldTokens.Stage.railWidth, height: CoachWorldTokens.Shape.minimumTarget,
-                // below), same class as FloodlitArcGauge/FloodlitAttributeDial/FloodlitStaffVoice's
-                // three deferred sites in FloodlitPatterns.swift. minimumScaleFactor(railLabelFloor)
-                // is already a no-op at 1.0 (S-3/no-clip finding), so scaling the base size here
-                // would grow text with no shrink-back and no room to wrap, inside a 44 pt tap target
-                // stacked directly under the icon above it. Needs a considered geometry fix, not a
-                // token swap.
-                Text(entry.label.uppercased())
-                    .font(CoachWorldTokens.display(Chrome.railLabel, weight: .bold))
-                    .tracking(CoachWorldTokens.DisplaySize.tracking(0.1, at: Chrome.railLabel))
-                    .lineLimit(1)
-                    .minimumScaleFactor(Chrome.railLabelFloor)
-            }
-            .frame(
-                width: CoachWorldTokens.Stage.railWidth,
-                height: CoachWorldTokens.Shape.minimumTarget
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(isCurrent ? palette.actionPrimary.color : palette.contentSecondary.color)
-        .background {
-            if isCurrent {
-                CoachWorldCutCorner.row.fill(palette.actionPrimary.color.opacity(0.14))
-            }
-        }
-        .overlay {
-            if isCurrent {
-                CoachWorldCutCorner.row.stroke(
-                    palette.actionPrimary.color, lineWidth: CoachWorldTokens.Shape.hairline
-                )
-            }
-        }
-        .accessibilityLabel(entry.label)
         .accessibilityAddTraits(isCurrent ? .isSelected : [])
     }
 }
@@ -608,28 +503,19 @@ enum Chrome {
         .init(x: 0.41, y: 0.78, r: 2.4, alpha: 0.05),
     ]
 
-    static let headerRail: CGFloat = 3
-    static let headerSeamAlpha = 0.14
-    static let headerRingAlpha = 0.13
     static let clubTracking: CGFloat = 0.5
     static let recordSize: CGFloat = 11
     static let contextSize: CGFloat = 11
     static let contextChipMaxWidth: CGFloat = 210
     static let familySize: CGFloat = 9
+    /// Control furniture registered as `chevron.*` in `04` section 6.6.
+    static let familyDisclosureSymbol = "chevron.down"
     static let siblingSize: CGFloat = 9.5
     static let siblingUnderline: CGFloat = 2
     static let siblingUnderlineOffset: CGFloat = 3
-    /// Half the difference between the 16 pt row and the 44 pt minimum target, applied as padding
-    /// and then cancelled so the hit area grows without the layout following it.
-    static let siblingTargetPad: CGFloat = 14
-
     static let pennantWidth: CGFloat = 11
     static let pennantHeight: CGFloat = 14
     static let pennantDot: CGFloat = 3
-
-    static let railSymbol: CGFloat = 16
-    static let railLabel: CGFloat = 9
-    static let railLabelFloor: CGFloat = 1.0
 
     static let notBuiltWidth: CGFloat = 330
     static let notBuiltPadH: CGFloat = 22

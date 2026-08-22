@@ -117,12 +117,12 @@ public struct CoachWorldFloodlitStage<Content: View>: View {
 
     let palette: CoachWorldTokens.Palette
     let register: CoachWorldRegister
-    /// The shared management chrome (`04` section 6.1c): world, identity header and icon rail.
+    /// The shared management chrome (`04` section 6.1c): world and one-band top navigator.
     ///
     /// Supplying it is what converts a surface. The chrome carries its own world, which replaces
     /// the desk backdrop — the management stage varies its world per screen, where the desk
-    /// register has only ever had one. Nil keeps the historical behaviour exactly, which is what
-    /// Match Day and the entry surfaces still want.
+    /// register has only ever had one. Nil keeps the historical behaviour exactly for entry
+    /// surfaces that have not joined the shared navigation model.
     let chrome: FloodlitChromeReadModel?
     let onNavigate: ((CoachWorldIntentID) -> Void)?
     @ViewBuilder let content: () -> Content
@@ -155,12 +155,19 @@ public struct CoachWorldFloodlitStage<Content: View>: View {
             }
 
             if let chrome {
-                CoachWorldFloodlitComposition(
-                    model: chrome,
-                    palette: palette,
-                    onNavigate: onNavigate ?? { _ in },
-                    content: content
-                )
+                GeometryReader { geometry in
+                    CoachWorldFloodlitComposition(
+                        model: chrome,
+                        palette: palette,
+                        onNavigate: onNavigate ?? { _ in },
+                        content: content
+                    )
+                    .frame(
+                        width: geometry.size.width,
+                        height: geometry.size.height,
+                        alignment: .topLeading
+                    )
+                }
             } else {
                 content()
             }

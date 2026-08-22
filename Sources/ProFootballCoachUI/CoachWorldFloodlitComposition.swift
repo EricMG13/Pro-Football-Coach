@@ -35,21 +35,19 @@ struct CoachWorldFloodlitComposition<Content: View>: View {
         self.content = content
     }
 
-    private var leadingInset: CGFloat {
-        model.showsIconRail
-            ? CoachWorldTokens.Stage.contentLeading
-            : CoachWorldTokens.Stage.railFreeLeading
-    }
-
     var body: some View {
         ZStack {
             Group {
                 if dynamicTypeSize.isAccessibilitySize {
-                    // AX5 keeps the same information and drops the absolute composition: the header
-                    // becomes a stacked block and the rail becomes a scrollable row. `04` section 7.
+                    // AX5 keeps the same information and drops the absolute composition.
                     accessibleLayout
                 } else {
                     standardLayout
+                        // Stage tokens are absolute full-frame coordinates that already clear the
+                        // sensor housing. Keep vertical safe-area ownership with the app window:
+                        // expanding through the home-indicator inset recentres this absolute
+                        // composition upward and moves the 12 pt header partly off screen.
+                        .ignoresSafeArea(edges: .horizontal)
                 }
             }
             if showingSurfaceRegistry {
@@ -80,24 +78,18 @@ struct CoachWorldFloodlitComposition<Content: View>: View {
         ZStack(alignment: .topLeading) {
             content()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .padding(.leading, leadingInset)
+                .padding(.leading, CoachWorldTokens.Stage.contentLeading)
                 .padding(.trailing, CoachWorldTokens.Frame.gutter)
                 .padding(.top, CoachWorldTokens.Stage.contentTop)
                 .padding(.bottom, CoachWorldTokens.Frame.bottomInset)
                 .accessibilitySortPriority(80)
 
-            if model.showsIconRail {
-                FloodlitIconRail(
-                    entries: model.rail, current: model.screen, palette: palette,
-                    onNavigate: onNavigate, onOpenRegistry: registryOpener
-                )
-                .frame(width: CoachWorldTokens.Stage.railWidth)
-                .padding(.leading, CoachWorldTokens.Stage.railLeading)
-                .padding(.top, CoachWorldTokens.Stage.railTop)
-                .accessibilitySortPriority(40)
-            }
-
-            FloodlitIdentityHeader(model: model, palette: palette, onNavigate: onNavigate)
+            FloodlitIdentityHeader(
+                model: model,
+                palette: palette,
+                onNavigate: onNavigate,
+                onOpenRegistry: registryOpener
+            )
                 .frame(width: CoachWorldTokens.Stage.contentWidth, alignment: .leading)
                 .padding(.leading, CoachWorldTokens.Stage.contentLeading)
                 .padding(.top, CoachWorldTokens.Stage.headerTop)
@@ -110,22 +102,19 @@ struct CoachWorldFloodlitComposition<Content: View>: View {
     ///
     /// Deliberately **not** a `ScrollView`. Every converted surface already scrolls its own
     /// accessible layout, and wrapping that in a second scroll view nests two vertical scrollers —
-    /// the inner one swallows the drag and the header above it becomes unreachable. The header and
-    /// the rail are fixed here and the content scrolls itself.
+    /// the inner one swallows the drag and the header above it becomes unreachable.
     private var accessibleLayout: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.lg) {
-            FloodlitIdentityHeader(model: model, palette: palette, onNavigate: onNavigate)
+            FloodlitIdentityHeader(
+                model: model,
+                palette: palette,
+                onNavigate: onNavigate,
+                onOpenRegistry: registryOpener
+            )
                 .accessibilitySortPriority(100)
             content()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .accessibilitySortPriority(80)
-            if model.showsIconRail {
-                FloodlitIconRail(
-                    entries: model.rail, current: model.screen, palette: palette,
-                    onNavigate: onNavigate, onOpenRegistry: registryOpener, axis: .horizontal
-                )
-                .accessibilitySortPriority(40)
-            }
         }
         .padding(.horizontal, CoachWorldTokens.Pad.panel.h)
         .padding(.vertical, CoachWorldTokens.Pad.panel.v)

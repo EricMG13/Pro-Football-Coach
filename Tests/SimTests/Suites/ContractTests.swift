@@ -1031,12 +1031,11 @@ func runContractTests() {
             // owner, not resolved by this test).
             expect(Chrome.familySize > 0 && Chrome.familySize < 20,
                    "family label size drifted to a value that cannot be a micro-label")
-            expect(Chrome.railLabel > 0 && Chrome.railLabel < 20,
-                   "rail label size drifted to a value that cannot be a micro-label")
             expect(Chrome.siblingSize > 0 && Chrome.siblingSize < 20,
                    "sibling link size drifted to a value that cannot be a micro-label")
-            expect(Chrome.railLabelFloor > 0 && Chrome.railLabelFloor <= 1,
-                   "railLabelFloor must be a valid minimumScaleFactor")
+            expect(chrome.contains("ScrollView(.horizontal, showsIndicators: false)")
+                       && !chrome.contains("FloodlitIconRail"),
+                   "the top navigator must scroll and replace the retired icon rail")
             expect(composition.contains("SurfaceRegistryOverlay")
                        && composition.contains("onOpenRegistry")
                        && composition.contains("ALL TASKS")

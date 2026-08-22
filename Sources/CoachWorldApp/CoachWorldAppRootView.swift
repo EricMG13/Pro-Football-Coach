@@ -390,6 +390,10 @@ public struct CoachWorldAppRootView: View {
                         // screen at all — every other surface here already takes an `onClose`.
                         onExit: { navigate(.coachingHQ, in: store) }
                     )
+                    .floodlitChrome(
+                        chrome(for: .matchDay, in: store),
+                        onNavigate: { navigateChrome($0, in: store) }
+                    )
                 }
             case .gamePlan:
                 surface(store.gamePlan, screen: .gamePlan) { model in
@@ -869,18 +873,28 @@ public struct CoachWorldAppRootView: View {
         if let model {
             content(model)
         } else {
-            VStack(spacing: CoachWorldTokens.Space.md) {
-                CoachWorldSystemState(
-                    .empty(
-                        "\(screen.canonicalName) unavailable. No retained career evidence is "
-                            + "available for this surface."
-                    ),
-                    palette: CoachWorldTokens.dark
-                )
-                if let store {
-                    Button("Back to HQ") { navigate(.coachingHQ, in: store) }
-                        .buttonStyle(.bordered)
-                        .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+            CoachWorldFloodlitStage(
+                palette: CoachWorldTokens.dark,
+                chrome: store.flatMap {
+                    chrome(for: screen.canonicalDestination, in: $0)
+                },
+                onNavigate: { intentID in
+                    if let store { navigateChrome(intentID, in: store) }
+                }
+            ) {
+                VStack(spacing: CoachWorldTokens.Space.md) {
+                    CoachWorldSystemState(
+                        .empty(
+                            "\(screen.canonicalName) unavailable. No retained career evidence is "
+                                + "available for this surface."
+                        ),
+                        palette: CoachWorldTokens.dark
+                    )
+                    if let store {
+                        Button("Back to HQ") { navigate(.coachingHQ, in: store) }
+                            .buttonStyle(.bordered)
+                            .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
+                    }
                 }
             }
         }
