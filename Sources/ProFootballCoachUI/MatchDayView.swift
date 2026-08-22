@@ -1,3 +1,4 @@
+import FootballSimCore
 import SwiftUI
 
 /// Reports `topRightStack`'s rendered height, so the staff call-in panel can start below it
@@ -88,12 +89,19 @@ public struct MatchDayView: View {
     /// current one — if `pausedSince` is set — has elapsed by `date`. Without the second term,
     /// checking progress *while still paused* would keep advancing with real time regardless, which
     /// is exactly the freeze this whole calculation exists to produce.
+    /// The value it returns is **path** progress, not elapsed progress: elapsed time goes through
+    /// `AnchorRules.pathFraction`, the `03` §9.6 stride profile, so a dot leaves its stance and is
+    /// stopped rather than sliding at one speed from whistle to whistle. This is the only place
+    /// that warp is applied, and every consumer below — the actor tracks, the ball's legs, and the
+    /// loop that decides the snap is over — reads it from here, which is what makes it impossible
+    /// for a man and the ball he is carrying to come apart. The profile is monotonic and fixes 1,
+    /// so the completion loop still terminates on exactly the same frame it used to.
     private func progress(at date: Date, duration: Double) -> Double {
         guard let playbackStart, duration > 0 else { return 1 }
         let ongoingPause = pausedSince.map { date.timeIntervalSince($0) } ?? 0
         let elapsed = (date.timeIntervalSince(playbackStart) - pausedAccumulated - ongoingPause)
             * speedMultiplier
-        return Swift.min(1, Swift.max(0, elapsed / duration))
+        return AnchorRules.pathFraction(atPlayback: elapsed / duration)
     }
 
     /// PRE-SNAP / SNAP / RESULT, `04` section 9's three frames — derived from presentation state

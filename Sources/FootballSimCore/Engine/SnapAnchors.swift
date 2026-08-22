@@ -172,6 +172,51 @@ public enum AnchorRules {
     /// A pass is in the air until this point of the playback.
     public static let releaseFraction = 0.55
 
+    // MARK: The stride profile
+
+    /// Share of the playback spent leaving a stance, and share spent being stopped.
+    ///
+    /// `03` §9.6: a straight line at constant velocity for the whole playback is not a neutral
+    /// default, it is a claim that players do not accelerate — which is false, and reads as false.
+    /// Both are tunable, because what looks right at roughly seven points per yard is a judgement
+    /// about how a 15 pt disc reads in motion and not a number anything can derive.
+    public static let strideAccelerate = 0.18
+    public static let strideDecelerate = 0.22
+
+    /// Wall-clock playback progress to progress along the authored path, under a trapezoidal
+    /// velocity profile: ramp up over `strideAccelerate`, cruise, ramp down over
+    /// `strideDecelerate`.
+    ///
+    /// Deliberately *not* applied inside `position(of:at:)`. That function works in path fractions,
+    /// and the anchor set's own fractions are path fractions too — a waypoint at `handoffFraction`
+    /// means "when the handoff happens", which is a fact about the play and not about the wall
+    /// clock. Warping inside it would silently redefine every authored fraction and break the one
+    /// invariant that matters most: that a man and the ball he is carrying are in the same place at
+    /// the same moment.
+    ///
+    /// So this is applied once, at the single point wall time becomes a fraction, and everything
+    /// downstream — every actor, every ball leg, and the loop that decides the snap is over —
+    /// inherits the same warped value. That is what makes desynchronisation impossible rather than
+    /// merely unlikely (§9.6 constraint 3).
+    public static func pathFraction(atPlayback fraction: Double) -> Double {
+        let t = Swift.min(1, Swift.max(0, fraction))
+        let cruiseEnd = 1 - strideDecelerate
+        // Area under the trapezoid. Dividing by it is what makes the profile land on exactly 1
+        // rather than needing a clamp to get there.
+        let total = 1 - strideAccelerate / 2 - strideDecelerate / 2
+        let travelled: Double
+        if t < strideAccelerate {
+            travelled = t * t / (2 * strideAccelerate)
+        } else if t <= cruiseEnd {
+            travelled = strideAccelerate / 2 + (t - strideAccelerate)
+        } else {
+            let remaining = 1 - t
+            travelled = strideAccelerate / 2 + (cruiseEnd - strideAccelerate)
+                + strideDecelerate / 2 - remaining * remaining / (2 * strideDecelerate)
+        }
+        return Swift.min(1, Swift.max(0, travelled / total))
+    }
+
     // MARK: Alignment, offense
 
     public static let lineLaterals: [Double] = [0.38, 0.44, 0.50, 0.56, 0.62]

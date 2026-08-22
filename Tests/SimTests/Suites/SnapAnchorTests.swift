@@ -23,6 +23,45 @@ func runSnapAnchorTests() {
                    "playback may compress clock time but never stretch it")
         }
 
+        test("the stride profile accelerates off the snap and decelerates into contact") {
+            // 03 section 9.6: "a straight line at constant velocity for the full playback is not a
+            // neutral default; it is a claim that players do not accelerate, which is false and
+            // reads as false." This is that claim, as an assertion.
+            expect(AnchorRules.strideAccelerate > 0 && AnchorRules.strideDecelerate > 0,
+                   "a profile with no ramp is the constant velocity this replaced")
+            expect(AnchorRules.strideAccelerate + AnchorRules.strideDecelerate < 1,
+                   "the ramps must leave a cruise between them, or the arithmetic has no middle")
+
+            expectClose(AnchorRules.pathFraction(atPlayback: 0), 0, 1e-9,
+                        "the profile must start where the path starts")
+            expectClose(AnchorRules.pathFraction(atPlayback: 1), 1, 1e-9,
+                        "the profile must finish where the path finishes, with no clamp doing it")
+
+            // Strictly increasing: a dot that stalls or reverses mid-play is worse than a glide.
+            var previous = -1.0
+            var samples: [Double] = []
+            for step in 0...200 {
+                let value = AnchorRules.pathFraction(atPlayback: Double(step) / 200)
+                expect(value > previous, "the profile went backwards at \(step)/200")
+                previous = value
+                samples.append(value)
+            }
+
+            // Velocity, as the finite difference. Slow at both ends, quickest in the middle -- the
+            // shape of a man leaving a stance and being stopped, rather than a chip sliding.
+            let speeds = zip(samples.dropFirst(), samples).map { $0 - $1 }
+            let mean = speeds.reduce(0, +) / Double(speeds.count)
+            expect(speeds.first! < mean, "the profile does not accelerate off the snap")
+            expect(speeds.last! < mean, "the profile does not decelerate into contact")
+            let quickest = speeds.firstIndex(of: speeds.max()!)!
+            expectIn(Double(quickest) / Double(speeds.count), 0.2...0.8,
+                     "top speed must fall between the ramps, not at an end")
+
+            // Clamped, because a paused or over-run timeline can hand it either.
+            expectClose(AnchorRules.pathFraction(atPlayback: -3), 0, 1e-9, "negative time unclamped")
+            expectClose(AnchorRules.pathFraction(atPlayback: 9), 1, 1e-9, "over-run time unclamped")
+        }
+
         test("every position aligns somewhere on the field") {
             // Enumerated from Position.allCases by construction, so a position added tomorrow fails
             // this the day it is added rather than the day someone remembers it.
