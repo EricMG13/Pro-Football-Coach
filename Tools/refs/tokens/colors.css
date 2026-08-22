@@ -1,0 +1,141 @@
+/* Colour — 04 section 6.1a (Floodlit, 2026-08-16) and 6.1b (Match Day, 2026-08-18).
+   Dark only. There is no production light palette, no derived light register,
+   and no user-facing appearance switch.
+
+   Base values are the shipped hexes from
+   Sources/ProFootballCoachUI/DesignTokens.swift. Role aliases carry the names
+   every view actually reads (`palette.actionPrimary`, `palette.stateWarning`).
+   Tokens name purpose, never hue. */
+
+:root {
+  /* ---- Grounds ---------------------------------------------------------- */
+  --fl-page: #060A12;
+  --fl-work: #100E16;
+  --fl-raised: #12203A;
+  --fl-room-deep: #07060B;
+
+  /* ---- Ink -------------------------------------------------------------- */
+  --fl-ink-1: #F6FAFF;
+  --fl-ink-2: #A9BACE;
+  --fl-ink-3: #7A8A9E;
+
+  /* ---- Gold: the committing action, and nothing else --------------------- */
+  --fl-gold: #FFC53D;
+  --fl-gold-light: #FFE196;
+  --fl-gold-deep: #D89713;
+  --fl-gold-ink: #150F02;
+  --fl-lamp: #FFF2CE;
+
+  /* ---- State ------------------------------------------------------------ */
+  --fl-live: #37E08A;
+  --fl-positive: #4FD08C;
+  --fl-warning: #FFB03A;
+  --fl-negative: #FF3B54;
+  --fl-info: #6FA8DC;
+
+  /* ---- Tier ------------------------------------------------------------- */
+  --fl-college: #B07BD6;
+  --fl-pro: #6FA8DC;
+
+  /* ---- Field ------------------------------------------------------------ */
+  --fl-field-turf: #072616;
+  --fl-field-line: #F6FAFF;
+  --fl-field-annotation: #FFCE6A;
+  --fl-field-live: #4FD08C;
+
+  /* ---- Broadcast turf ramp (6.1b) --------------------------------------- */
+  --fl-turf: #1C6E42;
+  --fl-turf-hot: #37A868;
+  --fl-turf-crown: #2A8850;
+  --fl-turf-mid: #124E2E;
+  --fl-turf-shade: #0A311D;
+  --fl-turf-night: #05150D;
+  --fl-endzone-opponent: #1B2431;
+
+  /* ---- Broadcast ink ---------------------------------------------------- */
+  --fl-live-ink: #FF8E9C;
+  --fl-go-ink: #7DF0B6;
+  --fl-cool-ink: #9CC8EE;
+  --fl-bowl-ink: #C9A968;
+
+  /* ---- Per-match identity grounds --------------------------------------- */
+  --fl-club-field: #0F5637;
+  --fl-club-ink: #EAF3EE;
+  --fl-opponent-field: #123A5E;
+  --fl-opponent-accent: #9CC5E8;
+  --fl-opponent-ink: #C7DEF3;
+
+  /* ---- Ball ------------------------------------------------------------- */
+  --fl-ball-highlight: #A6572A;
+  --fl-ball-mid: #7A3E1C;
+  --fl-ball-shade: #46220F;
+
+  /* ---- Flattened glass (6.1c) ------------------------------------------- */
+  --fl-glass-flat: #11141E;
+  --fl-glass-flat-deep: #0B0D14;
+  --fl-overlay-scrim: #04070C;
+
+  /* ======================================================================
+     ROLE ALIASES — what views read. Use these, not the base values above.
+     ====================================================================== */
+  --world-page: var(--fl-page);
+  --world-work: var(--fl-work);
+  --world-raised: var(--fl-raised);
+
+  --content-primary: var(--fl-ink-1);
+  --content-secondary: var(--fl-ink-2);
+  --content-quiet: var(--fl-ink-3);
+
+  --action-primary: var(--fl-gold);
+  --action-secondary: var(--fl-ink-2);
+  --action-destructive: var(--fl-negative);
+
+  --state-live: var(--fl-live);
+  --state-positive: var(--fl-positive);
+  --state-warning: var(--fl-warning);
+  --state-negative: var(--fl-negative);
+  --state-info: var(--fl-info);
+
+  --college-identity: var(--fl-college);
+  --pro-identity: var(--fl-pro);
+
+  --field-turf: var(--fl-field-turf);
+  --field-line: var(--fl-field-line);
+  --field-annotation: var(--fl-field-annotation);
+  --field-live: var(--fl-field-live);
+
+  /* Surfaces */
+  --surface-panel: var(--fl-glass-flat);
+  --surface-panel-deep: var(--fl-glass-flat-deep);
+  --surface-scrim: var(--fl-overlay-scrim);
+
+  /* Ink on a filled control is always the ground, never white.
+     Measured: on gold 12.55, live 11.50, positive 10.13, warning 10.87,
+     info 7.84, negative 5.67. No separate ink token exists. */
+  --ink-on-fill: var(--fl-page);
+  --ink-on-gold: var(--fl-gold-ink);
+
+  /* Hairlines. Two jobs, two values (6.1a).
+     Structural rule groups and is near-invisible; a legible seam is meant to be
+     seen. Neither carries meaning alone. */
+  --rule-structural: rgba(122, 138, 158, 0.20);
+  --rule-legible: rgba(122, 138, 158, 0.38);
+  --rule-glass: rgba(255, 255, 255, 0.13);
+  --rule-row: rgba(255, 255, 255, 0.14);
+
+  /* The 40–99 heat scale. Always a SECOND reading of a printed figure.
+     red < 70, amber 70–84, green 85+ */
+  --heat-strong: var(--state-positive);
+  --heat-steady: var(--state-warning);
+  --heat-weak: var(--state-negative);
+
+  /* The committing action's fill, and the only gradient that means
+     "this moves the game forward". Gold never means "this is good". */
+  --gold-field: linear-gradient(135deg, var(--fl-gold-light), var(--fl-gold) 52%, var(--fl-gold-deep));
+  --glow-gold: 0 2px 24px rgba(255, 197, 61, 0.42);
+}
+
+/* Refused: the handoff's `ink-3` #65788F. It measures 4.37 / 4.23 / 3.58 on
+   page / work / raised and fails 4.5:1 on every ground it is drawn on.
+   --content-quiet (#7A8A9E, 5.62 / 5.43 / 4.61) is the same role and ships
+   in its place. Do not reintroduce it. */

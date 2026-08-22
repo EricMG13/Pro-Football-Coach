@@ -1,0 +1,43 @@
+/* Geometry — 04 sections 6.1a and 6.1b.
+
+   The house shape is an ASYMMETRIC four-corner cut (CutCorner in Swift; a
+   RoundedRectangle cannot express it). CSS order matches Swift's:
+   topLeading / topTrailing / bottomTrailing / bottomLeading. */
+
+:root {
+  --radius-panel: 4px 22px 4px 22px;        /* glass panels, cards */
+  --radius-row: 3px 14px 3px 14px;          /* rows and chips */
+  --radius-action: 22px 22px 22px 5px;      /* committing controls */
+
+  /* Match Day's six additions (6.1b) */
+  --radius-card: 4px 18px 4px 18px;         /* scorebug, budget bug, call-in */
+  --radius-alert: 4px 24px 4px 24px;
+  --radius-block: 4px 20px 4px 20px;
+  --radius-wide: 3px 18px 3px 18px;         /* halftime plan slot rows */
+  --radius-action-small: 18px 18px 18px 4px;
+  --radius-play-card: 14px 14px 6px 6px;    /* call-in options */
+
+  /* BROADCAST geometry outside Match Day is square. */
+  --radius-broadcast: 0;
+
+  --hairline: 1px;
+  --min-target: 44px;
+
+  /* Arc family — one idea at four scales. An arc is permitted ONLY where the
+     datum is a proportion. An arc that encodes a rank or a count is a lie about
+     the shape of the number. */
+  --ring-diameter: 26px;
+  --ring-stroke-ratio: 0.12;
+  --ring-stroke-min: 2px;
+  --ring-text-ratio: 0.42;
+  --arc-diameter: 64px;
+  --arc-stroke: 11px;
+  --arc-start: 150deg;
+  --arc-sweep: 240deg;
+  --dial-diameter: 212px;
+  --dial-stroke: 7px;
+  --share-bar-height: 4px;
+
+  --monogram: 26px;           /* staff-voice avatar */
+  --system-state-mark: 28px;
+}

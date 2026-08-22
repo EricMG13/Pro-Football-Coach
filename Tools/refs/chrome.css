@@ -1,0 +1,244 @@
+/* Reference-frame chrome and primitives.
+
+   Every colour, length and face here is a var() into tokens/. No literal hex, rgb()
+   or rgba() appears below -- check 10 asserts that, so a value that wants to live
+   here has to earn a token first. */
+
+.fl-frame {
+  position: relative;
+  width: var(--floor-width);
+  height: var(--floor-height);
+  background: var(--world-page);
+  color: var(--content-secondary);
+  font: var(--type-callout);
+  overflow: hidden;
+  flex: none;
+}
+
+.fl-frame__grain {
+  position: absolute;
+  inset: 0;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* ---- Identity header ---------------------------------------------------- */
+
+.fl-header {
+  position: absolute;
+  top: var(--header-top);
+  left: var(--leading-inset);
+  right: var(--gutter);
+  height: calc(var(--header-primary-row) + var(--header-secondary-row));
+}
+
+.fl-header__primary {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm-plus);
+  height: var(--header-primary-row);
+}
+
+.fl-header__mark { height: 19px; width: 19px; object-fit: contain; }
+
+.fl-header__club {
+  font: var(--weight-bold) var(--size-panel) / 1.1 var(--font-display);
+  color: var(--content-primary);
+}
+
+.fl-header__tier {
+  font: var(--weight-bold) var(--size-flag) / 1.1 var(--font-display);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+
+.fl-header__tier--college { color: var(--college-identity); }
+.fl-header__tier--pro { color: var(--pro-identity); }
+
+.fl-header__secondary {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+  height: var(--header-secondary-row);
+  overflow: hidden;
+}
+
+.fl-tab {
+  font: var(--weight-semibold) var(--size-pill) / 1.1 var(--font-display);
+  letter-spacing: var(--track-micro);
+  color: var(--content-quiet);
+  white-space: nowrap;
+}
+
+.fl-tab--here { color: var(--content-primary); }
+
+/* ---- Icon rail ---------------------------------------------------------- */
+
+.fl-rail {
+  position: absolute;
+  left: var(--rail-leading);
+  top: var(--rail-top);
+  width: var(--rail-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--rail-gap);
+}
+
+.fl-rail__button {
+  height: var(--min-target);
+  border-radius: var(--radius-row);
+  background: var(--surface-panel);
+  display: grid;
+  place-items: center;
+  font: var(--weight-bold) var(--size-flag) / 1 var(--font-display);
+  letter-spacing: var(--track-flag);
+  color: var(--content-quiet);
+  text-transform: uppercase;
+}
+
+.fl-rail__button--here {
+  background: var(--world-raised);
+  color: var(--content-primary);
+}
+
+/* ---- Content plate ------------------------------------------------------ */
+
+.fl-plate {
+  position: absolute;
+  left: var(--content-leading);
+  top: var(--content-top);
+  width: var(--content-width);
+  overflow: hidden;
+}
+
+.fl-commit {
+  position: absolute;
+  left: var(--content-leading);
+  width: var(--content-width);
+  bottom: var(--bottom-inset);
+  height: var(--min-target);
+  border-radius: var(--radius-action);
+  background: var(--gold-field);
+  box-shadow: var(--glow-gold);
+  color: var(--ink-on-gold);
+  display: grid;
+  place-items: center;
+  font: var(--weight-bold) var(--size-action) / 1 var(--font-display);
+  letter-spacing: var(--track-micro);
+}
+
+/* ---- Primitives --------------------------------------------------------- */
+
+.fl-stack { display: flex; gap: var(--gap-md); }
+.fl-stack--column { flex-direction: column; }
+.fl-stack--row { flex-direction: row; align-items: flex-start; }
+.fl-stack--row > * { flex: 1 1 0; min-width: 0; }
+
+.fl-panel {
+  position: relative;
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-panel), var(--inset-panel);
+  overflow: hidden;
+}
+
+.fl-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-sm-plus);
+  min-height: 24px;
+  padding: 0 var(--gap-lg);
+  background: var(--world-raised);
+  border-bottom: var(--hairline) solid var(--rule-structural);
+}
+
+.fl-panel__body { padding: var(--pad-panel); }
+.fl-panel__meta { color: var(--content-quiet); }
+
+.fl-table { display: grid; row-gap: var(--gap-hair); }
+.fl-th, .fl-tr {
+  display: grid;
+  grid-template-columns: var(--fl-track);
+  column-gap: var(--gap-md);
+  align-items: center;
+}
+.fl-th { padding-bottom: var(--gap-xxs); }
+.fl-table--dense .fl-tr { min-height: var(--track-row-dense); }
+.fl-table--comfortable .fl-tr { min-height: var(--min-target); }
+.fl-tr + .fl-tr { border-top: var(--hairline) solid var(--rule-row); }
+
+.col-left { text-align: left; }
+.col-right { text-align: right; }
+.col-center { text-align: center; }
+
+.fl-rows { display: flex; flex-direction: column; gap: var(--gap-hair); }
+.fl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-lg);
+  padding: var(--pad-row);
+  border-radius: var(--radius-row);
+  background: var(--surface-panel-deep);
+}
+.fl-row--readout { min-height: var(--row-min-height); }
+.fl-row--tappable { min-height: var(--min-target); }
+.fl-row__lead { min-width: 0; }
+.fl-row__meta { font: var(--type-caption); color: var(--content-quiet); }
+.fl-row__values { display: flex; gap: var(--gap-lg); flex: none; }
+
+.fl-chips { display: flex; flex-wrap: wrap; gap: var(--gap-xs); }
+.fl-chip {
+  padding: var(--gap-tight) var(--gap-sm-plus);
+  border-radius: var(--radius-row);
+  background: var(--surface-panel);
+  font: var(--weight-semibold) var(--size-pill) / 1.2 var(--font-display);
+  letter-spacing: var(--track-micro);
+}
+.fl-chip--gold { background: var(--gold-field); }
+
+.fl-split { display: flex; flex-direction: column; }
+.fl-seam { height: 2px; background: var(--action-primary); flex: none; }
+.fl-split__top, .fl-split__bottom { min-height: 0; }
+.fl-split__bottom { padding-top: var(--gap-lg); }
+
+.fl-hero { display: flex; align-items: center; gap: var(--gap-xl); }
+.fl-hero__text { display: flex; flex-direction: column; gap: var(--gap-sm); min-width: 0; }
+.fl-hero__mark { height: 96px; width: 96px; object-fit: contain; flex: none; }
+.fl-hero__headline { font: var(--type-display); }
+.fl-hero__numeral { font: var(--weight-bold) var(--size-figure) / 1 var(--font-figure); }
+.fl-hero__points { margin: 0; padding-left: var(--gap-lg); font: var(--type-caption); }
+
+.fl-field { position: relative; height: 200px; border-radius: var(--radius-card); overflow: hidden; }
+.fl-field__turf {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 100% at 50% 56%, var(--fl-turf-crown), transparent 70%),
+    linear-gradient(180deg, var(--fl-turf-hot), var(--fl-turf-mid) 55%, var(--fl-turf-night));
+}
+.fl-field__mark { position: absolute; top: 50%; height: 72px; opacity: 0.42; transform: translateY(-50%); }
+.fl-field__mark--home { left: var(--gap-xl); }
+.fl-field__mark--away { right: var(--gap-xl); }
+.fl-field__overlays {
+  position: absolute;
+  inset: auto var(--gap-lg) var(--gap-lg) var(--gap-lg);
+  display: flex;
+  gap: var(--gap-sm-plus);
+  flex-wrap: wrap;
+}
+.fl-field__overlay {
+  font: var(--weight-bold) var(--size-pill) / 1.2 var(--font-display);
+  letter-spacing: var(--track-micro);
+}
+
+.fl-figure { font-family: var(--font-figure); font-variant-numeric: tabular-nums lining-nums; }
+
+.fl-label3 {
+  font: var(--weight-bold) var(--size-flag) / 1.1 var(--font-display);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--content-quiet);
+}
