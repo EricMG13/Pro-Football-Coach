@@ -5,9 +5,13 @@ import FootballSimCore
 /// Moved on 2026-08-22 merging origin/main into `agent/floodlit-injury-evidence`. The clock
 /// constants this branch tuned -- `normalTempoSnapSeconds` and `readyForPlaySeconds` -- landed on
 /// top of origin/main's resolver rework, so the same seed now runs a different number of snaps.
-/// Reproduced in four independent release processes in this worktree.
-private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 11_206_707_792_088_495_442
-private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 15_235_203_604_702_228_493
+///
+/// Re-measured a second time the same day: the first value was taken in a working tree that also
+/// held a second contributor's uncommitted `DepthChart.offensiveTemplate` change (a reserve
+/// running back), which the engine resolves against. The values below are from a clean worktree
+/// at this branch's own commit, reproduced in three independent release processes.
+private let PINNED_PRO_GAME_FINGERPRINT: UInt64 = 9_120_538_774_305_745_592
+private let PINNED_COLLEGE_GAME_FINGERPRINT: UInt64 = 1_997_190_051_787_914_160
 
 func runEngineTests() {
     suite("Leverage") {
@@ -267,7 +271,7 @@ func testPersonnel(offenseSkill: Int, defenseSkill: Int) -> SnapPersonnel {
     }
     var offense: [Player] = []
     var index = 0
-    for position in [Position.quarterback, .runningBack, .runningBack, .wideReceiver, .wideReceiver,
+    for position in [Position.quarterback, .runningBack, .wideReceiver, .wideReceiver,
                      .wideReceiver, .tightEnd, .leftTackle, .guardPosition, .center,
                      .rightTackle, .kicker, .punter] {
         offense.append(player(position, index, offenseSkill)); index += 1
@@ -300,17 +304,32 @@ func runSnapResolverTests() {
         }
 
         test("designed runs reach the primary back, reserve back, and quarterback") {
-            let backs = even.offensive(group: .runningBacks)
-            let primaryID = backs[0].id
-            let reserveID = backs[1].id
-            let quarterbackID = even.offensive(group: .quarterbacks)[0].id
+            var attributes = Attributes()
+            for attribute in Position.runningBack.ratedAttributes {
+                attributes[attribute] = Rating(69)
+            }
+            let reserve = Player(
+                id: UUID(uuidString: "00000000-0000-4000-8000-00000000B002")!,
+                firstName: "T",
+                lastName: "RB2",
+                position: .runningBack,
+                age: 24,
+                attributes: attributes,
+                potential: Rating(80)
+            )
+            let personnel = SnapPersonnel(
+                offense: even.offense + [reserve],
+                defense: even.defense
+            )
+            let primaryID = personnel.offensive(group: .runningBacks)[0].id
+            let quarterbackID = personnel.offensive(group: .quarterbacks)[0].id
             var carriers: Set<UUID> = []
             for seed in UInt64(0)..<500 {
                 var rng = SeededRandom(seed: seed)
                 let outcome = SnapResolver.resolve(
                     offensiveCall: OffensiveCall(playType: .run),
                     defensiveCall: DefensiveCall(coverage: .man),
-                    personnel: even,
+                    personnel: personnel,
                     situation: Situation(),
                     rules: rules,
                     rng: &rng
@@ -318,13 +337,8 @@ func runSnapResolverTests() {
                 if let carrierID = outcome.ballCarrierID { carriers.insert(carrierID) }
             }
             expect(carriers.contains(primaryID), "RB1 received no designed carries")
-            expect(carriers.contains(reserveID), "RB2 received no designed carries")
+            expect(carriers.contains(reserve.id), "RB2 received no designed carries")
             expect(carriers.contains(quarterbackID), "the quarterback received no designed carries")
-        }
-
-        test("controlled personnel includes a reserve running back") {
-            let personnel = CalibrationRoster.team(skill: 70, seed: 17)
-            expectEqual(personnel.offensive(group: .runningBacks).count, 2)
         }
 
         test("the same seed and state resolve to the same snap") {
@@ -676,61 +690,6 @@ func runGameLoopTests() {
     let away = testPersonnel(offenseSkill: 68, defenseSkill: 70)
 
     suite("Game loop") {
-        test("player summaries expose targets and carries") {
-            let statistics = PlayerGameStatistics(playerID: UUID())
-            let fields = Set(Mirror(reflecting: statistics).children.compactMap(\.label))
-            expect(fields.contains("targets"), "player summaries drop pass targets")
-            expect(fields.contains("carries"), "player summaries drop designed carries")
-        }
-
-        test("detailed summaries count recorded targets and carries") {
-            let targetID = UUID(uuidString: "00000000-0000-4000-8000-00000000A001")!
-            let carrierID = UUID(uuidString: "00000000-0000-4000-8000-00000000A002")!
-            func play(_ type: OffensivePlayType, outcome: SnapOutcome) -> PlayRecord {
-                PlayRecord(
-                    situation: Situation(),
-                    offensiveCall: OffensiveCall(playType: type),
-                    defensiveCall: DefensiveCall(coverage: .man),
-                    outcome: outcome,
-                    callInTriggers: []
-                )
-            }
-            let record = GameRecord(
-                homeScore: 0,
-                awayScore: 0,
-                drives: [DriveRecord(
-                    offense: .home,
-                    plays: [
-                        play(.pass, outcome: SnapOutcome(
-                            result: .incompletion,
-                            yards: 0,
-                            secondsElapsed: 1,
-                            matchups: [],
-                            targetID: targetID
-                        )),
-                        play(.run, outcome: SnapOutcome(
-                            result: .gain,
-                            yards: 4,
-                            secondsElapsed: 1,
-                            matchups: [],
-                            ballCarrierID: carrierID
-                        )),
-                    ],
-                    ending: .punt,
-                    pointsScored: 0,
-                    startYardLine: 25
-                )],
-                tier: .pro
-            )
-            let summary = DetailedGameSummaryBuilder.make(
-                record: record,
-                homeParticipantIDs: [targetID, carrierID],
-                awayParticipantIDs: []
-            )
-            expectEqual(summary.playerStatistics.first { $0.playerID == targetID }?.targets, 1)
-            expectEqual(summary.playerStatistics.first { $0.playerID == carrierID }?.carries, 1)
-        }
-
         test("detailed summaries use scrimmage plays and preserve losses") {
             func play(_ type: OffensivePlayType, result: SnapResult, yards: Int) -> PlayRecord {
                 PlayRecord(

@@ -9,8 +9,6 @@ public enum DetailedGameSummaryBuilder {
         var rushing = 0
         var receiving = 0
         var touchdowns = 0
-        var targets = 0
-        var carries = 0
     }
 
     private struct TeamLine {
@@ -51,7 +49,6 @@ public enum DetailedGameSummaryBuilder {
 
             switch play.offensiveCall.playType {
             case .pass:
-                update(play.outcome.targetID) { $0.targets += 1 }
                 teams[side, default: TeamLine()].plays += 1
                 switch play.outcome.result {
                 case .incompletion, .interception:
@@ -79,9 +76,6 @@ public enum DetailedGameSummaryBuilder {
                 if play.offensiveCall.playType == .run,
                    yards >= MatchupRules.explosiveRunYards {
                     teams[side, default: TeamLine()].explosivePlays += 1
-                }
-                if play.offensiveCall.playType == .run {
-                    update(play.outcome.ballCarrierID) { $0.carries += 1 }
                 }
                 teams[side, default: TeamLine()].yards += yards
                 teams[side, default: TeamLine()].rushing += yards
@@ -154,9 +148,7 @@ public enum DetailedGameSummaryBuilder {
                     passingYards: line.passing,
                     rushingYards: line.rushing,
                     receivingYards: line.receiving,
-                    touchdowns: line.touchdowns,
-                    targets: line.targets,
-                    carries: line.carries
+                    touchdowns: line.touchdowns
                 )
             }
         return GameSummary(
