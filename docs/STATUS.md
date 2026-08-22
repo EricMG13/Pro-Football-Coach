@@ -36,6 +36,30 @@ The honest picture: what exists, what is verified, what is not.
 > the roster-legality half and is already red for it. **This needs an owner decision — fill the
 > rosters or restate the band as a steady-state property — and it is not a calibration constant
 > search.**
+>
+> `--pro-movement-probe`, the instrument already built for this question, says where the players go.
+> It is a probe and exits 0; the numbers are the point:
+>
+> ```text
+> PROBE: bootstrap rosters=1696 freeAgents=0
+> PROBE season 1: expired=293 returned=0 relocated=0 noPriorClub=0 toPracticeSquad=0
+> PROBE season 1: rosters=1403 unaccounted=477 poolLeft=293 freeAgency free agency never ran
+> PROBE season 2: expired=257 returned=2 relocated=68
+> PROBE season 2: rosters=1436 unaccounted=829 poolLeft=480 freeAgency weeks=5 depth min=223 max=293
+> PROBE season 3: expired=199 returned=3 relocated=37
+> PROBE season 3: rosters=1474 unaccounted=1111 poolLeft=512 freeAgency weeks=4 depth min=440 max=480
+> ```
+>
+> Two things stand out and neither is model thinness. **Free agency never ran at all in the first
+> offseason** — 293 contracts expired, nobody returned, nobody relocated, and the league went from
+> 1,696 to 1,403 in one step it never recovered from. `ProRosterAISystem.signFreeAgents` skips a
+> team while `rosterIDs.count >= 53 - remainingPicks`, and a pass that signs nobody calls
+> `beginDraft`, so if the first pass sees rosters that have not yet been emptied, free agency ends
+> before it begins. And **`poolLeft` reaches 512 by season 3, which is `ProMarketState.maximumFreeAgentIDs`
+> exactly**: the pool is saturated, and `addFreeAgent`'s `guard freeAgentIDs.count < maximumFreeAgentIDs`
+> then refuses every further release, which is where `unaccounted` — 477, 829, 1,111 — comes from.
+> These are the two threads to pull; neither was pulled in this pass, because both sit inside the
+> professional turnover FSC-013 defers and both would move roster composition league-wide.
 
 > **2026-08-20 — Calibration continuation:** the fresh isolated
 > `./scripts/verify.sh --lane calibration` lane is green: calibration **21 tests / 169 checks**

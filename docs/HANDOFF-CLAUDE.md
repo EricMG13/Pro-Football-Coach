@@ -28,10 +28,21 @@ measurement of two things at once: active professional rosters hold 1,411…1,53
 veteran tail retires out before the drafted cohorts reach decline. `--pro-soak` already asserts the
 roster-legality half and is already red for it.
 
-**Do not widen the band.** The decision the owner owns is whether the professional roster policy
-fills to 53 — `ProRosterAISystem` signs at most one free agent per team per week and does nothing at
-all in `.rosterBuild` — or whether the band is restated as a steady-state property that a run from
-a bootstrapped population is not entitled to satisfy at season 6.
+**Do not widen the band.** `--pro-movement-probe` already names two threads, and they are defects
+rather than design questions:
+
+1. **Free agency never runs in the first offseason.** The probe prints it in those words: season 1
+   expires 293 contracts, returns nobody, relocates nobody, and the league drops 1,696 → 1,403 in
+   one step. `signFreeAgents` skips a team while `rosterIDs.count >= 53 - remainingPicks`, and a
+   pass that signs nobody calls `beginDraft` — so a first pass that sees rosters not yet emptied
+   ends free agency before it begins.
+2. **The free-agent pool saturates.** `poolLeft` reaches 512 by season 3, which is
+   `ProMarketState.maximumFreeAgentIDs` exactly. Past that, `addFreeAgent`'s bound refuses every
+   further release, and the probe's `unaccounted` count — 477, 829, 1,111 — is the players that
+   leaves nowhere.
+
+Neither was pulled in this pass: both sit inside the professional turnover FSC-013 defers, and both
+move roster composition league-wide. Start here rather than at the band.
 
 ---
 
