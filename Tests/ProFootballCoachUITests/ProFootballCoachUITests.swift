@@ -646,6 +646,19 @@ final class ProFootballCoachUITests: XCTestCase {
 
         XCTAssertTrue(app.otherElements["team-logo-asset-proof"].waitForExistence(timeout: 20))
         XCTAssertTrue(app.otherElements["team-logo-fallback-proof"].exists)
+        // The names are what make these identifiers resolvable: the logos are decorative and hide
+        // themselves, so a proof row holding only logos cannot be queried at all -- which is how
+        // the fallback row was failing. Verified by deleting the labels, which turns both of these
+        // red. Asserting the property rather than a team name keeps it off the generated
+        // catalogue, which has been re-keyed before.
+        XCTAssertGreaterThan(
+            app.otherElements["team-logo-asset-proof"].staticTexts.count, 0,
+            "the asset proof must still expose its team names as children"
+        )
+        XCTAssertGreaterThan(
+            app.otherElements["team-logo-fallback-proof"].staticTexts.count, 0,
+            "the fallback proof must still expose its name as a child"
+        )
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Team logos — packaged and fallback"
         attachment.lifetime = .keepAlways

@@ -672,6 +672,14 @@ container. Both tests pass, and eight of eight in the batch that previously carr
 This is a proof-view defect, not a product one: the decorative default is right, and real surfaces
 that need a spoken logo already opt out.
 
-Left alone deliberately: the asset grid's identifier is still incidental on its `Text` children
-rather than an explicit container. It works, and making it explicit would change how a DEBUG proof
-screen exposes its children for no gain.
+The asset grid now carries the same explicit container marking -- and the interesting part is what
+that turned out **not** to do. A first attempt asserted the containers keep their children queryable
+and was RED-checked by swapping the grid's `.contain` for `.ignore`: the test stayed green, so the
+assertion did not test the property claimed for it. Mutating the thing that actually matters --
+deleting the team-name `Text` -- turns it red, at `ProFootballCoachUITests.swift:653`.
+
+So the marking is intent, not mechanism: on this grid `.contain` and `.ignore` are indistinguishable
+to a query. What makes either identifier resolvable is the presence of unhidden name labels, because
+the logos are decorative and hide themselves. Both the comments and the proof now say that, and the
+proof asserts the names rather than the marking. It asserts the property, not a team name, so it
+stays off the generated catalogue, which has been re-keyed before.

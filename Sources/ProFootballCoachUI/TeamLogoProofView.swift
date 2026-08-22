@@ -24,11 +24,16 @@ struct TeamLogoProofView: View {
                     }
                 }
             }
+            // States the container intent, like the fallback below. It is intent only: swapping
+            // this for `.ignore` changes nothing a query can see, so it is not what makes the
+            // identifier resolve. What makes it resolve is the team names -- `CoachWorldTeamLogo`
+            // is decorative by default and hides itself, so a container holding only logos has
+            // nothing to attach an identifier to, which is exactly how the fallback row below
+            // failed. The proof asserts those names, so the real guarantee is checked rather than
+            // assumed.
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("team-logo-asset-proof")
-            // Named, like every asset row above it. `CoachWorldTeamLogo` is decorative by default
-            // and hides itself from accessibility, so an unlabelled row holds nothing but hidden
-            // elements -- the identifier had no element to attach to and the proof could not be
-            // queried at all. The grid above resolves only because it also carries team names.
+            // Named, like every asset row above it, for the same reason.
             VStack(alignment: .leading) {
                 Text(unknown.name)
                 logoRow(unknown, surface: palette.raised)
