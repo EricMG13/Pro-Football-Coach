@@ -6,9 +6,7 @@ struct TeamLogoProofView: View {
     private let unknown = CoachWorldTeamReference(
         stableID: "00000000-0000-0000-0000-000000000000",
         name: "Fallback Team",
-        abbreviation: "FBK",
-        primaryColorHex: "#315C8C",
-        secondaryColorHex: "#E8B84A"
+        abbreviation: "FBK"
     )
 
     var body: some View {

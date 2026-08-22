@@ -202,8 +202,8 @@ func runDesignContractTests() {
         // one of these three files, still fails.
         test("no view constructs a raw colour outside the token layer, beyond the named exceptions") {
             let pendingCanonAmendment: [String: Int] = [
-                "CoachWorldDeskComponents.swift": 1,  // RadialGradient warm highlight, ~#FFF2C7
-                "MatchDayField.swift": 2,             // end-zone lettering ink, oursInk/theirsInk
+                "CoachWorldDeskComponents.swift": 0,
+                "MatchDayField.swift": 0,
                 "MatchDayScoreBug.swift": 1,           // .bowl kind's alternate ground, ~#0E0A06
             ]
             for file in swiftFiles(under: "Sources/ProFootballCoachUI")
