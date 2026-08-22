@@ -208,6 +208,82 @@ func runDesignContractTests() {
         }
     }
 
+    suite("All-screen Floodlit system") {
+        test("the approved all-screen type scale is canonical") {
+            expectEqual(CoachWorldTokens.DisplaySize.hero, 32)
+            expectEqual(CoachWorldTokens.DisplaySize.name, 26)
+            expectEqual(CoachWorldTokens.DisplaySize.score, 32)
+            expectEqual(CoachWorldTokens.DisplaySize.situation, 26)
+            expectEqual(CoachWorldTokens.DisplaySize.scoreLive, 32)
+            expectEqual(CoachWorldTokens.DisplaySize.figure, 32)
+            expectEqual(CoachWorldTokens.DisplaySize.screen, 16)
+            expectEqual(CoachWorldTokens.DisplaySize.title, 16)
+            expectEqual(CoachWorldTokens.DisplaySize.subject, 16)
+            expectEqual(CoachWorldTokens.DisplaySize.clock, 17)
+            expectEqual(CoachWorldTokens.DisplaySize.lead, 15)
+            expectEqual(CoachWorldTokens.DisplaySize.panel, 16)
+            expectEqual(CoachWorldTokens.DisplaySize.row, 13)
+            expectEqual(CoachWorldTokens.DisplaySize.action, 14)
+            expectEqual(CoachWorldTokens.DisplaySize.actionSmall, 12)
+            expectEqual(CoachWorldTokens.DisplaySize.pill, 10.5)
+            expectEqual(CoachWorldTokens.DisplaySize.flag, 9)
+        }
+
+        test("team identity enters once and shared actions and selections consume it") {
+            let root = packageRoot().appendingPathComponent("Sources/ProFootballCoachUI")
+            let teamIdentity = (try? String(
+                contentsOf: root.appendingPathComponent("TeamIdentity.swift"), encoding: .utf8
+            )) ?? ""
+            let desk = strippingLineComments((try? String(
+                contentsOf: root.appendingPathComponent("CoachWorldDeskComponents.swift"),
+                encoding: .utf8
+            )) ?? "")
+            let patterns = strippingLineComments((try? String(
+                contentsOf: root.appendingPathComponent("FloodlitPatterns.swift"), encoding: .utf8
+            )) ?? "")
+
+            expect(teamIdentity.contains("CoachWorldTeamIdentityEnvironmentKey"))
+            expect(teamIdentity.contains("var coachWorldTeamIdentity: CoachWorldTeamIdentity?"))
+            expectEqual(
+                desk.components(separatedBy: ".environment(\\.coachWorldTeamIdentity").count - 1,
+                1,
+                "team identity must enter the shared stage once"
+            )
+            expect(desk.contains("guard let club = chrome?.club else { return nil }"))
+            expect(desk.contains("behind: palette.work"))
+            expect(desk.contains("@Environment(\\.coachWorldTeamIdentity)"))
+            expect(patterns.contains("@Environment(\\.coachWorldTeamIdentity)"))
+            expect(desk.contains("primaryDepthField") && desk.contains("LinearGradient("))
+            expect(desk.contains("configuration.isPressed ? 0.76 : 1"))
+            expect(desk.contains(".opacity(isEnabled ? 1 : 0.45)"))
+            expect(desk.contains("minWidth: CoachWorldTokens.Shape.minimumTarget"))
+            expect(desk.contains("case .secondary:\n            palette.raised.color"))
+            expect(desk.contains("case .live:\n            palette.stateLive.color"))
+            expect(desk.contains("case .destructive:\n            Color.clear"))
+            expect(patterns.contains("rowSelectionRule") && patterns.contains(".opacity(0.10)"))
+            expect(patterns.contains(".accessibilityAddTraits(isSelected ? .isSelected : [])"))
+        }
+
+        test("shared panel depth adds one depth-dependent shadow") {
+            let path = packageRoot()
+                .appendingPathComponent("Sources/ProFootballCoachUI/CoachWorldDeskComponents.swift")
+            let source = strippingLineComments(
+                (try? String(contentsOf: path, encoding: .utf8)) ?? ""
+            )
+
+            expectEqual(source.components(separatedBy: ".shadow(").count - 1, 1)
+            expectEqual(CoachWorldTokens.Depth.glassShadow.alpha, 0.28)
+            expectEqual(CoachWorldTokens.Depth.glassShadow.blur, 8)
+            expectEqual(CoachWorldTokens.Depth.glassShadow.offsetY, 4)
+            expectEqual(CoachWorldTokens.Depth.deepShadow.alpha, 0.55)
+            expectEqual(CoachWorldTokens.Depth.deepShadow.blur, 18)
+            expectEqual(CoachWorldTokens.Depth.deepShadow.offsetY, 10)
+            expect(source.contains("if reduceTransparency"))
+            expect(source.contains("shape.fill(fill)"))
+            expect(source.contains(".fill(.ultraThinMaterial)"))
+        }
+    }
+
     suite("Orientation policy") {
         // CLAUDE.md has claimed since 2026-08-10 that landscape-only is "declared in App/project.yml
         // and asserted by OrientationPolicyTest". The declaration was real; the test was not, and

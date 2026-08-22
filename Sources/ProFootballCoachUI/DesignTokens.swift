@@ -112,20 +112,20 @@ public enum CoachWorldTokens {
     /// are permitted for tracked uppercase micro-labels only — never for prose, where section 6.2's
     /// 12 pt authored floor is unchanged.
     public enum DisplaySize {
-        public static let hero: CGFloat = 66
-        public static let name: CGFloat = 60
-        public static let score: CGFloat = 54
-        public static let situation: CGFloat = 52
-        public static let scoreLive: CGFloat = 40
-        public static let figure: CGFloat = 34
-        public static let screen: CGFloat = 25
-        public static let title: CGFloat = 20
+        public static let hero: CGFloat = 32
+        public static let name: CGFloat = 26
+        public static let score: CGFloat = 32
+        public static let situation: CGFloat = 26
+        public static let scoreLive: CGFloat = 32
+        public static let figure: CGFloat = 32
+        public static let screen: CGFloat = 16
+        public static let title: CGFloat = 16
         /// The subject line of an opened message: the handoff's inbox reading pane.
-        public static let subject: CGFloat = 22
-        public static let clock: CGFloat = 19
-        public static let lead: CGFloat = 17
+        public static let subject: CGFloat = 16
+        public static let clock: CGFloat = 17
+        public static let lead: CGFloat = 15
         public static let panel: CGFloat = 16
-        public static let row: CGFloat = 15
+        public static let row: CGFloat = 13
         public static let action: CGFloat = 14
         public static let actionSmall: CGFloat = 12
         public static let pill: CGFloat = 10.5
@@ -180,6 +180,12 @@ public enum CoachWorldTokens {
     public enum Depth {
         public static let glassPanelOpacity = 0.56
         public static let deepPanelOpacity = 0.82
+        public static let glassShadow = (
+            alpha: Double(0.28), blur: CGFloat(8), offsetY: CGFloat(4)
+        )
+        public static let deepShadow = (
+            alpha: Double(0.55), blur: CGFloat(18), offsetY: CGFloat(10)
+        )
         /// The `content.quiet` panel-border opacity: legible as a seam without reading as a rule.
         public static let panelBorderOpacity = 0.38
     }
