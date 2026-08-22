@@ -13,9 +13,7 @@ public enum AbstractGameSimulator {
         play(game, in: state, tacticalPlans: [:])
     }
 
-    /// Plays a controlled fixture for the two-tier equivalence harness. Both models receive the
-    /// same personnel and seed; this keeps the gate about model behavior rather than generated
-    /// schedule composition. Returns nil when a participant appears for both teams.
+    /// Plays the same controlled personnel and seed as the detailed consistency harness.
     public static func play(
         tier: Tier,
         stage: CompetitionStage = .regularSeason,
@@ -50,6 +48,7 @@ public enum AbstractGameSimulator {
             seed: seed
         )
     }
+
     public static func play(
         _ game: ScheduledGame,
         in state: GameState,
@@ -75,6 +74,129 @@ public enum AbstractGameSimulator {
                 identifier: game.id
             )
         )
+    }
+
+    private static func controlledStrength(_ players: [Player]) -> Int {
+        guard !players.isEmpty else { return SharedRules.ratingRange.lowerBound }
+        return players.reduce(0) { $0 + $1.overall.value } / players.count
+    }
+
+    private static func play(
+        tier: Tier,
+        stage: CompetitionStage,
+        home: TeamProfile,
+        away: TeamProfile,
+        homePlan: TacticalPlan,
+        awayPlan: TacticalPlan,
+        seed: UInt64
+    ) -> GameSummary {
+        var rng = SeededRandom(seed: seed)
+        var homeRateRNG = SeededRandom(
+            seed: SeededRandom.derive(from: seed, scope: .game, ordinal: 1)
+        )
+        var awayRateRNG = SeededRandom(
+            seed: SeededRandom.derive(from: seed, scope: .game, ordinal: 2)
+        )
+        var quarterRateRNG = SeededRandom(
+            seed: SeededRandom.derive(from: seed, scope: .game, ordinal: 3)
+        )
+        var driveOutcomeRNG = SeededRandom(
+            seed: SeededRandom.derive(from: seed, scope: .game, ordinal: 4)
+        )
+        let baseline = CompetitionRules.baselinePoints(for: tier)
+        let deviation = CompetitionRules.scoreDeviation(for: tier)
+        var homeScore = score(
+            expectation: baseline
+                + Double(home.offense - away.defense) * CompetitionRules.strengthPointScale
+                + CompetitionRules.homeFieldPoints(for: tier)
+                + homePlan.pointAdjustment(against: awayPlan),
+            deviation: deviation + homePlan.scoreDeviationAdjustment(),
+            using: &rng
+        )
+        var awayScore = score(
+            expectation: baseline
+                + Double(away.offense - home.defense) * CompetitionRules.strengthPointScale
+                + awayPlan.pointAdjustment(against: homePlan),
+            deviation: deviation + awayPlan.scoreDeviationAdjustment(),
+            using: &rng
+        )
+        // Professional regular-season ties are an allowed outcome. College and every
+        // postseason stage continue through bounded overtime so their summaries always
+        // identify a winner.
+        if homeScore == awayScore,
+           tier == .college || stage != .regularSeason {
+            let overtimePoints = rng.chance(CompetitionRules.overtimeFieldGoalProbability)
+                ? CompetitionRules.overtimeFieldGoalPoints
+                : CompetitionRules.overtimeTouchdownPoints
+            if rng.chance(CompetitionRules.overtimeHomeWinProbability) {
+                homeScore += overtimePoints
+            } else {
+                awayScore += overtimePoints
+            }
+        }
+
+        let homeStats = teamStatistics(
+            tier: tier,
+            points: homeScore,
+            offense: home.offense,
+            opposingDefense: away.defense,
+            scheme: home.scheme.offense,
+            tacticalPlan: homePlan,
+            using: &rng,
+            rateRNG: &homeRateRNG
+        )
+        let awayStats = teamStatistics(
+            tier: tier,
+            points: awayScore,
+            offense: away.offense,
+            opposingDefense: home.defense,
+            scheme: away.scheme.offense,
+            tacticalPlan: awayPlan,
+            using: &rng,
+            rateRNG: &awayRateRNG
+        )
+        let fourthQuarterPoints = (0..<(homeScore + awayScore)).reduce(into: 0) { total, _ in
+            if quarterRateRNG.chance(
+                CompetitionRules.baselineFourthQuarterScoringShare(for: tier)
+            ) {
+                total += 1
+            }
+        }
+        let driveOutcomes = driveOutcomes(tier: tier, using: &driveOutcomeRNG)
+        return GameSummary(
+            homeScore: homeScore,
+            awayScore: awayScore,
+            homeStatistics: homeStats,
+            awayStatistics: awayStats,
+            fourthQuarterPoints: fourthQuarterPoints,
+            driveOutcomes: driveOutcomes,
+            homeParticipantIDs: home.roster.map(\.id),
+            awayParticipantIDs: away.roster.map(\.id),
+            playerStatistics: playerLines(roster: home.roster, statistics: homeStats)
+                + playerLines(roster: away.roster, statistics: awayStats)
+        )
+    }
+
+    private static func driveOutcomes(
+        tier: Tier,
+        using rng: inout SeededRandom
+    ) -> DriveOutcomeStatistics {
+        var outcomes = DriveOutcomeStatistics()
+        for _ in 0..<CompetitionRules.baselineDriveCount(for: tier) {
+            let draw = rng.double01()
+            var cumulativeProbability = 0.0
+            let bucket = DriveOutcomeBucket.allCases.first { bucket in
+                cumulativeProbability += CompetitionRules.baselineDriveOutcomeProbability(
+                    for: tier,
+                    bucket: bucket
+                )
+                return draw < cumulativeProbability
+            } ?? .periodExpiry
+            outcomes.record(bucket)
+        }
+        // ponytail: outcome shape is independent of score; derive both from shared drives when
+        // the abstract simulation becomes possession-resolved.
+        return outcomes
     }
 
     private static func profile(
@@ -133,80 +255,6 @@ public enum AbstractGameSimulator {
         )
     }
 
-    private static func controlledStrength(_ players: [Player]) -> Int {
-        guard !players.isEmpty else { return SharedRules.ratingRange.lowerBound }
-        return players.reduce(0) { $0 + $1.overall.value } / players.count
-    }
-
-    private static func play(
-        tier: Tier,
-        stage: CompetitionStage,
-        home: TeamProfile,
-        away: TeamProfile,
-        homePlan: TacticalPlan,
-        awayPlan: TacticalPlan,
-        seed: UInt64
-    ) -> GameSummary {
-        var rng = SeededRandom(seed: seed)
-        let baseline = CompetitionRules.baselinePoints(for: tier)
-        let deviation = CompetitionRules.scoreDeviation(for: tier)
-        var homeScore = score(
-            expectation: baseline
-                + Double(home.offense - away.defense) * CompetitionRules.strengthPointScale
-                + CompetitionRules.homeFieldPoints(for: tier)
-                + homePlan.pointAdjustment(against: awayPlan),
-            deviation: deviation + homePlan.scoreDeviationAdjustment(),
-            using: &rng
-        )
-        var awayScore = score(
-            expectation: baseline
-                + Double(away.offense - home.defense) * CompetitionRules.strengthPointScale
-                + awayPlan.pointAdjustment(against: homePlan),
-            deviation: deviation + awayPlan.scoreDeviationAdjustment(),
-            using: &rng
-        )
-        if homeScore == awayScore,
-           tier == .college || stage != .regularSeason {
-            let overtimePoints = rng.chance(CompetitionRules.overtimeFieldGoalProbability)
-                ? CompetitionRules.overtimeFieldGoalPoints
-                : CompetitionRules.overtimeTouchdownPoints
-            if rng.chance(CompetitionRules.overtimeHomeWinProbability) {
-                homeScore += overtimePoints
-            } else {
-                awayScore += overtimePoints
-            }
-        }
-
-        let homeStats = teamStatistics(
-            tier: tier,
-            points: homeScore,
-            offense: home.offense,
-            opposingDefense: away.defense,
-            scheme: home.scheme.offense,
-            tacticalPlan: homePlan,
-            using: &rng
-        )
-        let awayStats = teamStatistics(
-            tier: tier,
-            points: awayScore,
-            offense: away.offense,
-            opposingDefense: home.defense,
-            scheme: away.scheme.offense,
-            tacticalPlan: awayPlan,
-            using: &rng
-        )
-        return GameSummary(
-            homeScore: homeScore,
-            awayScore: awayScore,
-            homeStatistics: homeStats,
-            awayStatistics: awayStats,
-            homeParticipantIDs: home.roster.map(\.id),
-            awayParticipantIDs: away.roster.map(\.id),
-            playerStatistics: playerLines(roster: home.roster, statistics: homeStats)
-                + playerLines(roster: away.roster, statistics: awayStats)
-        )
-    }
-
     private static func strength(
         of players: [Player],
         prestige: Rating,
@@ -241,16 +289,9 @@ public enum AbstractGameSimulator {
         opposingDefense: Int,
         scheme: OffensiveScheme,
         tacticalPlan: TacticalPlan,
-        using rng: inout SeededRandom
+        using rng: inout SeededRandom,
+        rateRNG: inout SeededRandom
     ) -> TeamGameStatistics {
-        let plays = min(
-            CompetitionRules.playCountRange.upperBound,
-            max(CompetitionRules.playCountRange.lowerBound, Int(rng.gaussian(
-                mean: CompetitionRules.baselinePlays(for: tier)
-                    + tacticalPlan.playCountAdjustment(),
-                sd: CompetitionRules.playCountDeviation
-            ).rounded()))
-        )
         let expectedYards = CompetitionRules.baselineOffensiveYards(for: tier)
             + Double(offense - opposingDefense) * CompetitionRules.strengthYardScale
         let rawYards = Int(rng.gaussian(
@@ -270,13 +311,74 @@ public enum AbstractGameSimulator {
             )
         )
         let passingYards = yards * passingShare / 100
+        // Preserve the established stream position for yards and play counts while rate metrics
+        // use their own per-team stream.
+        _ = rng.int(in: CompetitionRules.turnoverRange)
+        let plays = min(
+            CompetitionRules.playCountRange.upperBound,
+            max(CompetitionRules.playCountRange.lowerBound, Int(rng.gaussian(
+                mean: CompetitionRules.baselinePlays(for: tier)
+                    + tacticalPlan.playCountAdjustment(),
+                sd: CompetitionRules.playCountDeviation
+            ).rounded()))
+        )
+        let passDropbacks = max(1, plays * passingShare / 100)
+        let sackProbability = min(
+            0.20,
+            max(
+                0.01,
+                CompetitionRules.baselineSackProbability
+                    + Double(opposingDefense - offense) * CompetitionRules.strengthSackProbabilityScale
+            )
+        )
+        let sacks = (0..<passDropbacks).reduce(into: 0) { total, _ in
+            if rateRNG.chance(sackProbability) { total += 1 }
+        }
+        let passAttempts = max(1, passDropbacks - sacks)
+        let completionProbability = min(
+            0.85,
+            max(
+                0.40,
+                CompetitionRules.baselineCompletionProbability
+                    + Double(offense - opposingDefense)
+                        * CompetitionRules.strengthCompletionProbabilityScale
+            )
+        )
+        let passCompletions = (0..<passAttempts).reduce(into: 0) { total, _ in
+            if rateRNG.chance(completionProbability) { total += 1 }
+        }
+        let turnovers = min(
+            CompetitionRules.turnoverRange.upperBound,
+            (0..<plays).reduce(into: 0) { total, _ in
+                if rateRNG.chance(CompetitionRules.baselineTurnoverProbability) { total += 1 }
+            }
+        )
+        let explosivePlays = (0..<plays).reduce(into: 0) { total, _ in
+            if rateRNG.chance(CompetitionRules.baselineExplosivePlayProbability(for: tier)) {
+                total += 1
+            }
+        }
+        var fieldGoals = FieldGoalStatistics()
+        for bucket in FieldGoalDistanceBucket.allCases {
+            for _ in 0..<rateRNG.int(in: 0...1) {
+                fieldGoals.record(
+                    bucket,
+                    made: rateRNG.chance(CompetitionRules.baselineFieldGoalAccuracy(for: bucket))
+                )
+            }
+        }
         return TeamGameStatistics(
             points: points,
             offensiveYards: yards,
             passingYards: passingYards,
             rushingYards: yards - passingYards,
-            turnovers: rng.int(in: CompetitionRules.turnoverRange),
-            offensivePlays: plays
+            turnovers: turnovers,
+            offensivePlays: plays,
+            passAttempts: passAttempts,
+            passCompletions: passCompletions,
+            sacks: sacks,
+            explosivePlays: explosivePlays,
+            fieldGoals: fieldGoals
         )
     }
 

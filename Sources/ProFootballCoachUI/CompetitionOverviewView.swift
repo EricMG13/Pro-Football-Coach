@@ -131,13 +131,21 @@ public struct CompetitionOverviewView: View, CoachWorldChromedSurface {
                         row.isControlled ? palette.actionPrimary.color : palette.contentQuiet.color
                     )
                     .frame(width: CompetitionMetric.rankColumn, alignment: .leading)
-                Text(row.team.name.uppercased())
-                    .coachWorldDisplay(
-                        CoachWorldTokens.DisplaySize.actionSmall,
-                        weight: row.isControlled ? .heavy : .bold
+                HStack(spacing: CoachWorldTokens.Gap.xs) {
+                    CoachWorldTeamLogo(
+                        team: row.team,
+                        size: .compact,
+                        surface: palette.work,
+                        palette: palette
                     )
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(row.team.name.uppercased())
+                        .coachWorldDisplay(
+                            CoachWorldTokens.DisplaySize.actionSmall,
+                            weight: row.isControlled ? .heavy : .bold
+                        )
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 if let seed = row.seed {
                     FloodlitFlag("SEED \(seed)", tint: palette.stateLive.color, palette: palette)
                 }

@@ -687,14 +687,24 @@ func runCareerPortalDecisionTests() {
                     optionID: release.id
                 ))
             }
-            _ = try await session.resolve(.advanceWeek)
+            let resolved = await session.snapshot()
+            let releaseResolution = resolved.career.mandatoryDecisionResolutions.first {
+                $0.subject == .portalRetention(
+                    playerID: retainedIntent.playerID,
+                    window: .spring
+                )
+            }
+            expect(releaseResolution != nil)
+            expect(releaseResolution?.action == .portalRelease)
             let saved = try await session.saveData()
             let restored = try SaveEnvelope.decode(GameState.self, from: saved)
-            let record = restored.people.playerCareers[retainedIntent.playerID]?.portalWindows.first {
-                $0.targetSeason == restored.calendar.season && $0.window == .spring
+            let persistedResolution = restored.career.mandatoryDecisionResolutions.first {
+                $0.subject == .portalRetention(
+                    playerID: retainedIntent.playerID,
+                    window: .spring
+                )
             }
-            expect(record != nil)
-            expect(record?.outcome != .retainedBySource)
+            expectEqual(persistedResolution?.action, .portalRelease)
         }
     }
 }

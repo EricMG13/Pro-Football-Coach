@@ -1,6 +1,6 @@
 import Foundation
 import FootballSimCore
-import CoachWorldApp
+@testable import CoachWorldApp
 
 private func legacyEnvelope(
     for state: GameState,
@@ -19,6 +19,10 @@ private func legacyEnvelope(
         object["career"] = career
     }
     let body = try JSONSerialization.data(withJSONObject: object)
+    return try compressedEnvelope(for: body)
+}
+
+private func compressedEnvelope(for body: Data) throws -> Data {
     var envelope = Data(Array("PFC1".utf8))
     var version = SaveEnvelope.currentSchemaVersion.littleEndian
     withUnsafeBytes(of: &version) { envelope.append(contentsOf: $0) }
@@ -26,6 +30,68 @@ private func legacyEnvelope(
     envelope.append(contentsOf: Array(repeating: UInt8(0), count: 7))
     envelope.append(try (body as NSData).compressed(using: .zlib) as Data)
     return envelope
+}
+
+private func assertInvalidCalendarRefusedBeforeOpen(_ envelope: Data) async {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("pfc-invalid-calendar-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let storage = CoachWorldSaveStore(directory: directory)
+    try! storage.write(envelope)
+    var openedDocument: CoachWorldSaveDocument?
+
+    do {
+        if case let .loaded(document, _) = try await SaveCoordinator(storage: storage).load() {
+            openedDocument = document
+        }
+        expect(false, "an invalid calendar opened a document")
+    } catch let DecodingError.dataCorrupted(context) {
+        expectEqual(
+            context.debugDescription,
+            "The world calendar is outside the supported season bounds."
+        )
+        expectEqual(
+            CoachWorldAppRootView.saveErrorMessage(DecodingError.dataCorrupted(context)),
+            "That save could not be opened. Retry, use the backup, or explicitly replace it."
+        )
+    } catch {
+        expect(false, "invalid calendar returned the wrong error: \(error)")
+    }
+
+    expectEqual(openedDocument, nil, "invalid input partially opened a career")
+    expect(FileManager.default.fileExists(atPath: storage.quarantineDirectory.path))
+}
+
+private func assertEnvelopeRefusedBeforeOpen(
+    _ envelope: Data,
+    expectedError: SaveEnvelopeError,
+    expectedMessage: String,
+    quarantined: Bool
+) async {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("pfc-hostile-envelope-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let storage = CoachWorldSaveStore(directory: directory)
+    try! storage.write(envelope)
+    var openedDocument: CoachWorldSaveDocument?
+
+    do {
+        if case let .loaded(document, _) = try await SaveCoordinator(storage: storage).load() {
+            openedDocument = document
+        }
+        expect(false, "a hostile envelope opened a document")
+    } catch let error as SaveEnvelopeError {
+        expectEqual(error, expectedError)
+        expectEqual(CoachWorldAppRootView.saveErrorMessage(error), expectedMessage)
+    } catch {
+        expect(false, "hostile envelope returned the wrong error: \(error)")
+    }
+
+    expectEqual(openedDocument, nil, "hostile input partially opened a career")
+    expectEqual(
+        FileManager.default.fileExists(atPath: storage.quarantineDirectory.path),
+        quarantined
+    )
 }
 
 func runSaveDocumentTests() {
@@ -102,6 +168,36 @@ func runSaveDocumentTests() {
             expectEqual(decoded.presentation.selectedSubjectID, selectedSubjectID)
         }
 
+        testAsync("a current document with an invalid calendar is refused before opening") {
+            let document = CoachWorldSaveDocument(
+                gameState: GameState.bootstrap(seed: 20_260_824)
+            )
+            var object = try! JSONSerialization.jsonObject(
+                with: JSONEncoder.stable().encode(document)
+            ) as! [String: Any]
+            var gameState = object["gameState"] as! [String: Any]
+            var calendar = gameState["calendar"] as! [String: Any]
+            calendar["week"] = SharedRules.inSeasonWeeks + 1
+            gameState["calendar"] = calendar
+            object["gameState"] = gameState
+            let body = try! JSONSerialization.data(withJSONObject: object)
+
+            await assertInvalidCalendarRefusedBeforeOpen(try! compressedEnvelope(for: body))
+        }
+
+        testAsync("a legacy root with an invalid calendar is refused instead of migrating") {
+            var object = try! JSONSerialization.jsonObject(
+                with: JSONEncoder.stable().encode(GameState.bootstrap(seed: 20_260_825))
+            ) as! [String: Any]
+            object["version"] = GameState.legacySchemaVersion
+            var calendar = object["calendar"] as! [String: Any]
+            calendar["season"] = -1
+            object["calendar"] = calendar
+            let body = try! JSONSerialization.data(withJSONObject: object)
+
+            await assertInvalidCalendarRefusedBeforeOpen(try! compressedEnvelope(for: body))
+        }
+
         test("current document without inbox receipts remains readable") {
             let state = GameState.bootstrap(seed: 20_260_819)
             let document = CoachWorldSaveDocument(gameState: state)
@@ -141,6 +237,32 @@ func runSaveDocumentTests() {
             } catch {
                 expect(false, "future document returned the wrong error: \(error)")
             }
+        }
+
+        testAsync("a newer envelope is refused with a plain message and no partial open") {
+            var envelope = Data(Array("PFC1".utf8))
+            var version = (SaveEnvelope.currentSchemaVersion + 1).littleEndian
+            withUnsafeBytes(of: &version) { envelope.append(contentsOf: $0) }
+            envelope.append(contentsOf: Array(repeating: UInt8(0), count: 8))
+
+            await assertEnvelopeRefusedBeforeOpen(
+                envelope,
+                expectedError: .futureVersion(
+                    found: SaveEnvelope.currentSchemaVersion + 1,
+                    supported: SaveEnvelope.currentSchemaVersion
+                ),
+                expectedMessage: "This save was made by a newer version of Pro Football Coach.",
+                quarantined: false
+            )
+        }
+
+        testAsync("a truncated envelope is refused with a plain message and no partial open") {
+            await assertEnvelopeRefusedBeforeOpen(
+                Data(Array("PFC1".utf8) + [0x01, 0x00, 0x00]),
+                expectedError: .truncatedHeader,
+                expectedMessage: "That save could not be opened. Retry, use the backup, or explicitly replace it.",
+                quarantined: true
+            )
         }
     }
 

@@ -1,0 +1,44 @@
+﻿Generic football rules, mechanics, and penalties cannot be copyrighted or trademarked. However, commercial branding, league names, specific trophy/award titles, and official event names are strictly protected trademarks.
+Safe to Use (Generic Rules & Terminology)
+Standard on-field rules, game mechanics, and generic off-season systems belong to the public domain of the sport:
+* Penalties & Violations: Offside, False Start, Holding, Pass Interference, Facemask, Roughing the Passer, Intentional Grounding, Delay of Game, Ineligible Receiver Downfield, Neutral Zone Infraction, Illegal Shift/Motion.
+* College-Specific Rules: Targeting, the 1-foot in-bounds catch rule, clock stoppage on first downs (or inside 2 minutes), 2-point conversions from 3rd OT onward.
+* Gameplay Mechanics: Touchdown, Field Goal, Safety, Touchback, Fair Catch, Onside Kick, Two-Minute Warning (or Two-Minute Timeout), Spike, Kneeldown, RPO (Run-Pass Option), Play-Action, Zone Coverage, Man Coverage.
+* Off-Field Concepts: Draft, Free Agency, Salary Cap, Franchise Tag, Waiver Wire, Transfer Portal, NIL (Name, Image, and Likeness), Redshirting, Walk-on, Signing Day.
+Protected Trademarks to Avoid
+1. Professional Football (NFL & Related Properties)
+The NFL aggressively defends its terminology and visual identity:
+Protected Trademark
+	Safe Generic Alternative
+	Super Bowl, The Big Game (commercial context)
+	World Championship, Pro Championship, The Title Game
+	Pro Bowl / Pro Bowl Games
+	All-Star Game, Pro Showcase
+	Lombardi Trophy
+	Championship Trophy, The Gold Cup
+	NFL, AFC, NFC
+	Pro Football League, American Conference, National Conference
+	NFL Draft, NFL Combine
+	Pro Scouting Combine, Annual Rookie Draft
+	Team Names & Nicknames (Chiefs, Packers, America's Team)
+	Kansas City, Green Bay, or custom fictional mascots
+	Official Logos & Color Schemes
+	Custom palettes and generic vector logos
+	2. College Football (NCAA, Conferences, & Bowl Committees)
+College football IP is fragmented across several licensing bodies (NCAA, individual universities, conference offices, and independent bowl committees):
+Protected Trademark
+	Safe Generic Alternative
+	NCAA, FBS, FCS, CFP (College Football Playoff)
+	National Collegiate Association, Major College Division, College Championship Series
+	Specific Bowls (Rose Bowl, Sugar Bowl, Fiesta Bowl, Orange Bowl)
+	Pasadena Bowl, New Orleans Classic, Desert Bowl, Sunshine Classic
+	Heisman Trophy, Biletnikoff, Doak Walker
+	Player of the Year, Best Receiver Award, Top Running Back
+	Conference Names (SEC, Big Ten, ACC, Big 12, Pac-12)
+	Southeastern Division, Northern Ten, Atlantic Coastal League
+	Specific Universities & Mascots (Crimson Tide, Buckeyes, Longhorns)
+	Fictional school names, city/state designations (e.g., Tuscaloosa, Columbus, Austin), or editable school databases
+	Player Likeness & Names (Right of Publicity)
+* Pro Players: Represented by the NFLPA (NFL Players Association). You cannot use real player names, jersey numbers matched with team locations, or identifiable facial likenesses without a group licensing agreement.
+* College Players: College athletes own their individual NIL rights. Using real college rosters requires individual NIL agreements or group licensing (e.g., via The Brandr Group or OneTeam Partners).
+* Simulator Standard: Most indie football simulators use procedurally generated rosters (random names, randomized stats) and provide an in-game roster editor / CSV import feature so users can customize teams and players locally on their own devices.

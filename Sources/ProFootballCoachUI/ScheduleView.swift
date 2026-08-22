@@ -126,13 +126,31 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
                     .lineLimit(1)
                     .frame(width: ScheduleMetric.weekColumn, alignment: .leading)
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
-                    Text(game.away.name.uppercased())
-                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
-                        .lineLimit(1)
-                    Text("at \(game.home.name)".uppercased())
-                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
-                        .foregroundStyle(palette.contentQuiet.color)
-                        .lineLimit(1)
+                    HStack(spacing: CoachWorldTokens.Gap.xs) {
+                        CoachWorldTeamLogo(
+                            team: game.away,
+                            size: .compact,
+                            surface: palette.work,
+                            palette: palette
+                        )
+                        Text(game.away.name.uppercased())
+                            .coachWorldDisplay(
+                                CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
+                            )
+                            .lineLimit(1)
+                    }
+                    HStack(spacing: CoachWorldTokens.Gap.xs) {
+                        CoachWorldTeamLogo(
+                            team: game.home,
+                            size: .compact,
+                            surface: palette.work,
+                            palette: palette
+                        )
+                        Text("at \(game.home.name)".uppercased())
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
+                            .foregroundStyle(palette.contentQuiet.color)
+                            .lineLimit(1)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Group {

@@ -1161,7 +1161,8 @@ public struct CoachWorldAppRootView: View {
     /// The one exception is the proof entry point, which follows the convention `RootView` already
     /// established for the screen proofs: an environment variable names what to walk into, so a
     /// screen can be reached and photographed without a hand on the device. It starts the same
-    /// career the button starts, with the same seed and through the same code path.
+    /// career the button starts, with the same seed and through the same code path. It deliberately
+    /// skips persistence so a proof launch cannot replace the simulator's existing career.
     private func restoreExistingCareer() async {
         guard !hasAttemptedRestore else { return }
         hasAttemptedRestore = true
@@ -1222,13 +1223,14 @@ public struct CoachWorldAppRootView: View {
     /// career with no hand on the device. Synthetic identity, chosen to read unmistakably as
     /// non-real. Gated `#if DEBUG` so this seam never reaches a release build regardless.
     private func beginProofCareer(seed: UInt64) async {
-        let jobs = await CoachWorldStore.startingJobs(seed: seed)
-        guard let first = jobs.first else { return }
+        let startingJobs = await CoachWorldStore.startingJobs(seed: seed)
+        guard let firstJob = startingJobs.first else { return }
         await startNewCareer(
             firstName: "Proof",
             lastName: "Coach",
             seed: seed,
-            programmeID: first.id
+            programmeID: firstJob.id,
+            persistCareer: false
         )
         // startNewCareer never throws out of this call — it catches its own failures and leaves
         // `store` nil, setting `setupError` instead. Applying the override on that outcome would
@@ -1276,7 +1278,7 @@ public struct CoachWorldAppRootView: View {
         }
     }
 
-    private static func saveErrorMessage(_ error: Error) -> String {
+    nonisolated static func saveErrorMessage(_ error: Error) -> String {
         if let envelope = error as? SaveEnvelopeError,
            case .futureVersion = envelope {
             return "This save was made by a newer version of Pro Football Coach."
@@ -1342,35 +1344,35 @@ public struct CoachWorldAppRootView: View {
         firstName: String,
         lastName: String,
         seed: UInt64,
-        programmeID: String
+        programmeID: String,
+        persistCareer: Bool = true
     ) async {
         guard !isStarting else { return }
         isStarting = true
         defer { isStarting = false }
         do {
-            guard let selectedID = UUID(uuidString: programmeID) else {
+            guard let selectedProgrammeID = UUID(uuidString: programmeID) else {
                 setupError = "That starting job is no longer available."
                 return
             }
-            let started = try await CoachWorldStore.newCareer(
+            let newStore = try await CoachWorldStore.newCareer(
                 seed: seed,
                 firstName: firstName,
                 lastName: lastName,
-                programmeID: selectedID
+                programmeID: selectedProgrammeID
             )
-            try await persist(started)
-            store = started
+            if persistCareer {
+                try await persist(newStore)
+            }
+            store = newStore
             careerConfirmed = true
             showingNewCareerSetup = false
             setupError = nil
             failure = nil
+        } catch CoachWorldStore.StartError.programmeUnavailable(_) {
+            setupError = "Refresh the jobs for this seed, then select one before starting."
         } catch {
-            if let startError = error as? CoachWorldStore.StartError,
-               case .programmeUnavailable = startError {
-                setupError = "Refresh the jobs for this seed, then select one before starting."
-            } else {
-                setupError = "The world could not be built: \(error)"
-            }
+            setupError = "The world could not be built: \(error)"
         }
     }
 

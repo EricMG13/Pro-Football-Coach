@@ -164,6 +164,17 @@ func swiftFilesImportingUIFramework() -> [(path: String, text: String)] {
     uiFrameworkFilesCache
 }
 
+/// A committing "Back" action, found however the call is wrapped.
+///
+/// The literal substring this replaced could not see a call broken across lines, which is the
+/// formatting a long label gets — so the scan's coverage boundary sat below the rule's.
+private func usesCommittingBackAction(_ text: String) -> Bool {
+    text.range(
+        of: #"FloodlitCommittingAction\s*\(\s*"Back"#,
+        options: .regularExpression
+    ) != nil
+}
+
 private func referencesAuthoritativeRoot(_ line: String) -> Bool {
     line.split { character in
         !(character.isLetter || character.isNumber || character == "_")
@@ -531,6 +542,14 @@ func runContractTests() {
                    "a legitimate import was reported as an offender")
             expect(!caught("import SwiftUIX\n", by: importsUIFramework),
                    "the scan matched a module whose name merely starts with SwiftUI")
+        }
+
+        test("the committing-back scan accepts multiline formatting") {
+            expect(usesCommittingBackAction(#"FloodlitCommittingAction("Back", action: close)"#))
+            expect(usesCommittingBackAction(
+                "FloodlitCommittingAction(\n    \"Back to HQ\",\n    action: close\n)"
+            ))
+            expect(!usesCommittingBackAction(#"FloodlitCommittingAction("Advance", action: next)"#))
         }
 
         test("SnapAnchors.swift never draws a random value") {
@@ -1078,7 +1097,7 @@ func runContractTests() {
                        && store.contains("competitionOverview(tier: CoachWorldReadModelProvider.controlledCompetitionTier(from: $0)"),
                    "the store must forward the controlled competition tier to every surface")
             expect(readOnlyBacks.count == 5
-                       && readOnlyBacks.allSatisfy { !$0.contains("FloodlitCommittingAction(\"Back") },
+                       && readOnlyBacks.allSatisfy { !usesCommittingBackAction($0) },
                    "read-only returns must not use the gold committing action")
             expect(roster.contains(".frame(maxWidth: .infinity, alignment: .leading)")
                        && !roster.contains(".fixedSize(horizontal: true, vertical: false)"),

@@ -28,7 +28,8 @@ assumptions, cheap to change. `ESCALATED` — blocking owner question, do not bu
 | D12 | Accessibility contract | DECIDED (REVERSIBLE) |
 | D13 | Content volume | DECIDED |
 | D14 | Build order and league size | DECIDED (REVERSIBLE) — added in v4 execution |
-| D15 | Dead money discharge | **DECIDED 2026-08-20** — option (a), single-season charge |
+| D15 | Device floor, support promise and the design window | DECIDED 2026-08-12 — option (b) |
+| D16 | Dead money discharge | **DECIDED 2026-08-20** — option (a), single-season charge |
 
 ---
 
@@ -668,7 +669,7 @@ the `docs/STATUS.md` platform note. No save, engine or schema cost in any direct
 
 ---
 
-## D15 — Dead money discharge
+## D16 — Dead money discharge
 
 **DECIDED 2026-08-20 — option (a), owner.** Dead money is a single-season charge, discharged at the
 season boundary between beat 1 and beat 2, so each season's dead money is exactly that season's

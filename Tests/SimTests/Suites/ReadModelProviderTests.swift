@@ -69,6 +69,22 @@ func runReadModelProviderTests() {
             expectEqual(CoachWorldReadModelProvider.startingJobs(from: firstState, limit: 0), [])
         }
 
+        test("canonical teams receive their stable logo references") {
+            let world = GameState.bootstrap(seed: 20_260_812)
+            let results = CoachWorldReadModelProvider.worldSearch(from: world).results
+            expectEqual(results.count, 166)
+            expect(results.allSatisfy { result in
+                result.team.mark?.stableID == result.team.stableID
+                    && result.team.mark?.assetName.hasPrefix("TeamLogo_") == true
+            })
+        }
+
+        test("alternate seeds do not borrow canonical logos") {
+            let world = GameState.bootstrap(seed: 20_260_813)
+            let results = CoachWorldReadModelProvider.worldSearch(from: world).results
+            expect(results.allSatisfy { $0.team.mark == nil })
+        }
+
         test("no controlled career produces no coaching HQ") {
             expectEqual(
                 CoachWorldReadModelProvider.coachingHQ(from: GameState.bootstrap(seed: 4_001)),
@@ -462,7 +478,11 @@ func runReadModelProviderTests() {
             let row = state.competition.standings.values
                 .flatMap { $0 }
                 .first { $0.id == programme.id }
-            expectEqual(model.recordLabel, "\(row?.wins ?? 0)-\(row?.losses ?? 0)")
+            guard let row else {
+                expect(false, "a started career had no standings row")
+                return
+            }
+            expectEqual(model.recordLabel, "\(row.wins)-\(row.losses)")
             expectEqual(model.week.weekLabel, "Week \(state.calendar.week)")
             expectEqual(model.week.seasonLabel, "Season \(state.calendar.season + 1)")
             let ranked = state.competition.rankings.values
@@ -943,7 +963,10 @@ func runReadModelProviderTests() {
             ).state
             let model = CoachWorldReadModelProvider.coachingHQ(from: promoted)
             expectEqual(model?.team.stableID, team.id.uuidString)
-            expectEqual(model?.team.name, "\(team.cityName) \(team.nickname)")
+            // Read the public name, do not rebuild it. cityName stays state-qualified for the
+            // map; the public name does not carry a state, and recomposing here was asserting the
+            // old rule against the new world.
+            expectEqual(model?.team.name, team.displayName)
             expectEqual(model?.provenance, .simulationSnapshot)
         }
 
@@ -1191,6 +1214,23 @@ func runReadModelProviderTests() {
             expectEqual(plan.map(\.dayLabel), ["Inbox", "Game plan", "Practice", "Recruiting"])
         }
 
+        test("a bye week does not invent preparation that the engine refuses") {
+            var state = try startedCareer(seed: 4_010).0
+            let programmeID = state.career.college!.programmeID
+            state.competition.currentSchedule = SeasonSchedule(
+                season: state.competition.currentSchedule.season,
+                games: state.competition.currentSchedule.games.filter {
+                    !($0.season == state.calendar.season
+                        && $0.week == state.calendar.week
+                        && ($0.homeID == programmeID || $0.awayID == programmeID))
+                }
+            )
+            let model = CoachWorldReadModelProvider.coachingHQ(from: state)
+            expectEqual(model?.opponent, nil)
+            expect(model?.weekPlan.allSatisfy { !$0.isCurrent } == true)
+            _ = try IntentResolver.resolve(.advanceWeek, in: state)
+        }
+
         test("correspondence is empty because no inbox system exists") {
             let (state, _) = try startedCareer(seed: 4_011)
             expectEqual(CoachWorldReadModelProvider.coachingHQ(from: state)?.correspondence.count, 0)
@@ -1202,7 +1242,7 @@ func runReadModelProviderTests() {
             )
         }
 
-        test("staff recommendation cites named coordinator and recorded reasons") {
+        test("HQ does not invent a staff author or confidence for a system recommendation") {
             var state = try startedCareer(seed: 4_012).0
             guard let control = state.career.college,
                   let prospectID = state.prospects.ids.first else {
@@ -1231,22 +1271,19 @@ func runReadModelProviderTests() {
                 recommendedOptionID: recommendedID,
                 reasons: [MandatoryDecisionReason(code: .rosterNeed, value: 3)]
             ))
-            guard let recommendation = CoachWorldReadModelProvider
-                .coachingHQ(from: state)?.staffRecommendation else {
-                expect(false, "a rooted mandatory decision produced no staff verdict")
-                return
-            }
-            expect(state.programmes[control.programmeID]?.staffIDs.contains {
-                $0.uuidString == recommendation.staff.stableID
-            } == true)
-            expectEqual(recommendation.verdict, "Recommend Offer scholarship")
-            expectEqual(recommendation.reason, "Roster need: 3")
+            let model = CoachWorldReadModelProvider.coachingHQ(from: state)
+            expectEqual(model?.staffRecommendation, nil)
+            expect(model?.decision?.choices.allSatisfy { $0.cost == "No recorded cost" } == true)
+            expect(model?.decision?.choices.allSatisfy(\.consequence.isEmpty) == true)
         }
 
-        test("an unranked programme carries no rank rather than a placeholder") {
+        test("missing competition rows carry no invented rank or record") {
             var state = try startedCareer(seed: 4_013).0
             state.competition.rankings = [:]
-            expectEqual(CoachWorldReadModelProvider.coachingHQ(from: state)?.rankLabel, nil)
+            state.competition.standings = [:]
+            let model = CoachWorldReadModelProvider.coachingHQ(from: state)
+            expectEqual(model?.rankLabel, nil)
+            expectEqual(model?.recordLabel, "Record unavailable")
         }
     }
 

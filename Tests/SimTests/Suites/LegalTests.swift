@@ -134,6 +134,21 @@ func runLegalTests() {
                        + offenders.prefix(10).joined(separator: ", "))
         }
 
+        test("no place a member can be sited in heads a blocked institution name") {
+            // A public name begins with its city, so a city that is also a real programme is a
+            // blocked school name the moment a member is put there. Enumerated over the whole
+            // pool rather than over swept worlds: 570 places against 166 members means a sample
+            // of 200 leagues leaves most of the list untouched, and the one it misses ships.
+            var offenders: [String] = []
+            for place in NameGrammar.everyPlace {
+                let city = NameGrammar.cityWithoutState(place)
+                if Blocklist.blocks(city) { offenders.append(place) }
+            }
+            expect(offenders.isEmpty,
+                   "\(offenders.count) places are blocked as institution names: "
+                       + offenders.prefix(5).joined(separator: ", "))
+        }
+
         test("no generated place name is a real venue mark or a real person") {
             var offenders: [String] = []
             for (index, world) in sweptWorlds.enumerated() {
@@ -188,6 +203,19 @@ func runLegalTests() {
                 expect(Blocklist.blocksPlaceName(mark),
                        "\(mark) is a mark or a person, not a location")
             }
+        }
+
+        test("generated places and bowl titles use generic naming") {
+            var rng = SeededRandom(seed: 20_260_820)
+            let places = NameGrammar.distinctPlaceNames(using: &rng)
+            expectEqual(places.count, 570)
+            expect(places.allSatisfy { $0.contains(", ") },
+                   "a generated place is missing its state qualification")
+            let bowls = places.prefix(32).map {
+                NameGrammar.bowlName(place: $0, using: &rng)
+            }
+            expect(bowls.allSatisfy { !Blocklist.blocks($0) },
+                   "a generic bowl title collided with the protected-name screen")
         }
 
         test("the sweep actually looks at every kind of generated name") {

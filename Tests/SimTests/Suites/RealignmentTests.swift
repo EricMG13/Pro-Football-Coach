@@ -156,7 +156,7 @@ private func pairingKeys(_ games: [ScheduledGame]) -> Set<String> {
     })
 }
 
-private func conferenceSizes(in state: GameState) -> [Int] {
+func conferenceSizes(in state: GameState) -> [Int] {
     state.league.conferences(in: .college)
         .sorted { $0.id.uuidString < $1.id.uuidString }
         .map(\.memberIDs.count)

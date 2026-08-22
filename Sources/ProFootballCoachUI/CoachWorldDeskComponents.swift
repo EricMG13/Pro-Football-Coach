@@ -188,7 +188,7 @@ private struct CoachWorldFloodlitBackdrop: View {
                 )
 
                 RadialGradient(
-                    colors: [Color(red: 1, green: 0.95, blue: 0.78).opacity(0.22), .clear],
+                    colors: [CoachWorldTokens.Floodlit.lamp.color.opacity(0.22), .clear],
                     center: UnitPoint(x: 0.78, y: 0.02),
                     startRadius: 0,
                     endRadius: geometry.size.width * 0.52

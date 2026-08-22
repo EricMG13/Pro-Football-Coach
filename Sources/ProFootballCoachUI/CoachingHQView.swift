@@ -258,9 +258,6 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentPrimary.color)
                 .lineLimit(1)
                 .minimumScaleFactor(HQMetric.heroScaleFloor)
-            Text("\(model.obligations.count) still open")
-                .font(CoachWorldTokens.TypeRole.caption)
-                .foregroundStyle(palette.contentSecondary.color)
             VStack(spacing: CoachWorldTokens.Gap.hair) {
                 ForEach(model.obligations, id: \.stableID) { obligation in
                     FloodlitRow(palette: palette) {
@@ -746,9 +743,11 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                         Spacer()
                         Text(choice.cost).font(.caption.weight(.bold))
                     }
-                    Text(choice.consequence)
-                        .font(CoachWorldTokens.TypeRole.callout)
-                        .foregroundStyle(palette.contentSecondary.color)
+                    if !choice.consequence.isEmpty {
+                        Text(choice.consequence)
+                            .font(CoachWorldTokens.TypeRole.callout)
+                            .foregroundStyle(palette.contentSecondary.color)
+                    }
                 }
             }
             .padding(.horizontal, CoachWorldTokens.Space.xs)
@@ -771,7 +770,10 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
         }
         .buttonStyle(.plain)
         .disabled(!choice.isAvailable)
-        .accessibilityLabel("\(choice.title). Cost: \(choice.cost). Consequence: \(choice.consequence)")
+        .accessibilityLabel(
+            "\(choice.title). Cost: \(choice.cost)"
+                + (choice.consequence.isEmpty ? "" : ". Consequence: \(choice.consequence)")
+        )
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 

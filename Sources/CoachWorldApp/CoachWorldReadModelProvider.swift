@@ -55,7 +55,8 @@ public enum CoachWorldReadModelProvider {
                 name: coach.fullName,
                 role: label(coach.role)
             ),
-            recordLabel: recordLabel(organisationID, in: state),
+            recordLabel: standingRow(organisationID, in: state)
+                .map { "\($0.wins)-\($0.losses)" } ?? "Record unavailable",
             rankLabel: rankLabel(organisationID, in: state),
             // The venue is wherever this week's game is played, which is a fact the schedule holds.
             venue: nextGame.map { venueReference($0.homeID, in: state) },
@@ -80,11 +81,9 @@ public enum CoachWorldReadModelProvider {
             obligations: decisions.map { obligation($0, in: state) },
             decision: decisions.first { $0.owner == .user }
                 .flatMap { decision($0, in: state) },
-            staffRecommendation: staffRecommendation(
-                for: decisions.first,
-                organisationID: organisationID,
-                in: state
-            ),
+            // The root records a recommended option, but no staff author or confidence.
+            // Omit the verdict until the engine owns those facts.
+            staffRecommendation: nil,
             // No inbound-event or correspondence system exists — `WorldScheduler`'s
             // `expiringInboundEvents` step is inactive for exactly this reason.
             correspondence: [],
@@ -363,44 +362,6 @@ public enum CoachWorldReadModelProvider {
         }
     }
 
-    /// Produces a bounded staff verdict only when the root carries both a named staff member and
-    /// a mandatory decision's reason codes. The confidence is a deterministic presentation of
-    /// the coordinator's stored game-planning rating plus the number of independent reasons; it
-    /// never claims a staff opinion that the simulation did not record.
-    static func staffRecommendation(
-        for decision: MandatoryDecision?,
-        organisationID: UUID,
-        in state: GameState
-    ) -> CoachingHQReadModel.StaffRecommendation? {
-        guard let decision,
-              let programme = state.programmes[organisationID] else { return nil }
-        let candidates = programme.staffIDs.compactMap { state.staff[$0] }
-        guard let staff = candidates
-            .filter({ StaffRole.coordinators.contains($0.role) })
-            .max(by: {
-                let lhs = ($0.rating(.gamePlanning).value, $0.id.uuidString)
-                let rhs = ($1.rating(.gamePlanning).value, $1.id.uuidString)
-                return lhs < rhs
-            }) else { return nil }
-        let recommended = decision.options.first { $0.id == decision.recommendedOptionID }
-        let action = recommended.map { label($0.action) } ?? "the balanced option"
-        let reason = decision.reasons.prefix(2).map(evidence).joined(separator: " · ")
-        let confidence = min(
-            95,
-            max(25, staff.rating(.gamePlanning).value / 2 + decision.reasons.count * 8)
-        )
-        return CoachingHQReadModel.StaffRecommendation(
-            staff: CoachWorldPersonReference(
-                stableID: staff.id.uuidString,
-                name: staff.fullName,
-                role: label(staff.role)
-            ),
-            verdict: "Recommend \(action)",
-            reason: reason.isEmpty ? "No recorded reason" : reason,
-            confidence: "\(confidence)%"
-        )
-    }
-
     // MARK: - Shared references
 
     /// A compact weekly agenda derived only from state that already exists. It deliberately uses
@@ -412,41 +373,49 @@ public enum CoachWorldReadModelProvider {
         nextGame: ScheduledGame?,
         in state: GameState
     ) -> [CoachingHQReadModel.DayPlan] {
-        let plan = state.tactical.plan(for: programmeID, at: state.calendar)
+        let calendar = state.calendar
+        let hasPendingDecisions = !decisions.isEmpty
+        let hasFixture = nextGame != nil
+        let preparationCanBeCurrent = !hasPendingDecisions && hasFixture
+        let gamePlanIsMissing =
+            hasFixture && state.tactical.plan(for: programmeID, at: calendar) == nil
         let practiceMinutes = unallocatedPracticeMinutes(programmeID, in: state)
-        let recruiting = state.college.programmes[programmeID]
-        let recruitingStatus = recruiting.map {
-            "\($0.boardIDs.count) prospects · \($0.contactPointsRemaining) pts"
+        let recruitingStatus = state.college.programmes[programmeID].map { programme in
+            "\(programme.boardIDs.count) prospects · \(programme.contactPointsRemaining) pts"
         } ?? "Not available"
+
         let gameStatus: String
-        if let nextGame {
-            let opponentID = nextGame.homeID == programmeID ? nextGame.awayID : nextGame.homeID
+        if let game = nextGame {
+            let opponentID = game.homeID == programmeID ? game.awayID : game.homeID
             let opponent = teamReference(opponentID, in: state).name
-            gameStatus = plan == nil ? "Needs plan · vs \(opponent)" : "Plan set · vs \(opponent)"
+            gameStatus = gamePlanIsMissing
+                ? "Needs plan · vs \(opponent)"
+                : "Plan set · vs \(opponent)"
         } else {
             gameStatus = "No game scheduled"
         }
+
         return [
             CoachingHQReadModel.DayPlan(
-                stableID: "\(programmeID)-inbox-\(state.calendar.season)-\(state.calendar.week)",
+                stableID: "\(programmeID)-inbox-\(calendar.season)-\(calendar.week)",
                 dayLabel: "Inbox",
-                assignment: decisions.isEmpty ? "Clear" : "\(decisions.count) due",
-                isCurrent: !decisions.isEmpty
+                assignment: hasPendingDecisions ? "\(decisions.count) due" : "Clear",
+                isCurrent: hasPendingDecisions
             ),
             CoachingHQReadModel.DayPlan(
-                stableID: "\(programmeID)-game-plan-\(state.calendar.season)-\(state.calendar.week)",
+                stableID: "\(programmeID)-game-plan-\(calendar.season)-\(calendar.week)",
                 dayLabel: "Game plan",
                 assignment: gameStatus,
-                isCurrent: decisions.isEmpty && nextGame != nil && plan == nil
+                isCurrent: preparationCanBeCurrent && gamePlanIsMissing
             ),
             CoachingHQReadModel.DayPlan(
-                stableID: "\(programmeID)-practice-\(state.calendar.season)-\(state.calendar.week)",
+                stableID: "\(programmeID)-practice-\(calendar.season)-\(calendar.week)",
                 dayLabel: "Practice",
                 assignment: practiceMinutes == 0 ? "Planned" : "\(practiceMinutes) min open",
-                isCurrent: decisions.isEmpty && practiceMinutes > 0
+                isCurrent: preparationCanBeCurrent && practiceMinutes > 0
             ),
             CoachingHQReadModel.DayPlan(
-                stableID: "\(programmeID)-recruiting-\(state.calendar.season)-\(state.calendar.week)",
+                stableID: "\(programmeID)-recruiting-\(calendar.season)-\(calendar.week)",
                 dayLabel: "Recruiting",
                 assignment: recruitingStatus,
                 isCurrent: false
@@ -462,12 +431,13 @@ public enum CoachWorldReadModelProvider {
     static func teamReference(_ id: UUID, in state: GameState) -> CoachWorldTeamReference {
         let colours = state.identities[id]?.colours
         let name = state.programmes[id]?.name
-            ?? state.proTeams[id].map { "\($0.cityName) \($0.nickname)" }
+            ?? state.proTeams[id]?.displayName
             ?? "Unknown team"
         return CoachWorldTeamReference(
             stableID: id.uuidString,
             name: name,
             abbreviation: abbreviation(name),
+            mark: CoachWorldTeamLogoCatalog.mark(forStableID: id.uuidString),
             primaryColorHex: colours?.primary.hex,
             secondaryColorHex: colours?.secondary.hex
         )
@@ -576,13 +546,12 @@ public enum CoachWorldReadModelProvider {
                 CoachWorldActionChoice(
                     intentID: CoachWorldIntentID(rawValue: option.id.uuidString),
                     title: label(option.action),
-                    // The root prices no option, and a cost is a fact. `02` §4 owns what a
-                    // recruiting action spends; until a read model can quote it, this states the
-                    // decision's own currency rather than a number nothing computed.
-                    cost: "This week",
-                    consequence: option.id == decision.recommendedOptionID
-                        ? "The staff recommendation"
-                        : ""
+                    // A mandatory-decision option records no price. State that absence rather
+                    // than turning its deadline into a cost or inventing a number.
+                    cost: "No recorded cost",
+                    // The root records which option is recommended, but not a staff author.
+                    // A generated verdict without an owner and uncertainty is not display truth.
+                    consequence: ""
                 )
             }
         )

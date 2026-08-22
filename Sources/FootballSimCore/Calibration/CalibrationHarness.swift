@@ -182,6 +182,9 @@ public enum CalibrationHarness {
                     tally.sacks += 1
                 case .safety:
                     tally.safeties += 1
+                    // A safety on a dropback is a sack that finished in the end zone; the sack
+                    // band counts it, and `SnapResolver` reports the two results exclusively.
+                    if play.offensiveCall.playType == .pass { tally.sacks += 1 }
                 case .fieldGoalGood:
                     kickAttempts += 1; kicksMade += 1
                 case .fieldGoalMissed:

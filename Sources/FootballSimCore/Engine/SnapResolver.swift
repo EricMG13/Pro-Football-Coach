@@ -36,7 +36,7 @@ public enum SnapResolver {
                                secondsElapsed: rules.inBoundsPlaySeconds,
                                matchups: [])
         case .run:
-            return resolveRun(offensiveCall, defensiveCall, assignment, situation, rules,
+            return resolveRun(offensiveCall, defensiveCall, assignment, personnel, situation, rules,
                               homeFieldAdvantage, &rng)
         case .pass:
             return resolvePass(offensiveCall, defensiveCall, assignment, situation, rules,
@@ -224,6 +224,7 @@ public enum SnapResolver {
         _ offensiveCall: OffensiveCall,
         _ defensiveCall: DefensiveCall,
         _ assignment: SnapAssignment,
+        _ personnel: SnapPersonnel,
         _ situation: Situation,
         _ rules: any ClockRules.Type,
         _ homeFieldAdvantage: Double,
@@ -245,7 +246,19 @@ public enum SnapResolver {
         }
         let lane = assignment.runLane.isEmpty ? 0 : laneLeverage / Double(assignment.runLane.count)
 
-        guard let carrier = assignment.carrier else {
+        let draw = rng.double01()
+        let backs = personnel.offensive(group: .runningBacks)
+        let quarterback = personnel.offensive(group: .quarterbacks).first
+        let carrier: Player? = if draw < MatchupRules.quarterbackDesignedRunProbability {
+            quarterback ?? backs.first
+        } else if draw < MatchupRules.quarterbackDesignedRunProbability
+            + MatchupRules.reserveBackDesignedRunProbability,
+            backs.count > 1 {
+            backs[1]
+        } else {
+            backs.first ?? quarterback
+        }
+        guard let carrier else {
             return SnapOutcome(result: .gain, yards: 0,
                                secondsElapsed: rules.inBoundsPlaySeconds,
                                matchups: matchups)

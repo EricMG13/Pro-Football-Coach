@@ -74,17 +74,20 @@ public enum CollegeClockRules: ClockRules {
     public static let quarters = 4
     public static let quarterSeconds = 900
     public static let playClockSeconds = 40
-    public static let normalTempoSnapSeconds = 26
+    public static let normalTempoSnapSeconds = 30
     public static let hurryTempoSnapSeconds = 12
     public static let bleedTempoSnapSeconds = 36
     public static let inBoundsPlaySeconds = 6
     public static let stoppedPlaySeconds = 5
     /// **Not a full pre-snap reset.** The college clock stops at the whistle and restarts when the
     /// ball is spotted, so what the offence saves against a running clock is the few seconds it
-    /// takes to spot it — not the whole 26-second pre-snap. At 18 the saving was eight seconds on
-    /// every first down, roughly forty a game, which is about twelve extra plays and most of why
-    /// this tier read 78.4 offensive snaps a team-game against a band of 67 to 75.
-    public static let readyForPlaySeconds = 24
+    /// takes to spot it — not the whole pre-snap. At 18 the saving was eight seconds on every
+    /// first down, roughly forty a game, which is about twelve extra plays and most of why this
+    /// tier read 78.4 offensive snaps a team-game against a band of 67 to 75.
+    ///
+    /// 22 rather than 24 because `normalTempoSnapSeconds` rose to 30 in the same pass; the two
+    /// together carry the snap count, and neither number means anything without the other.
+    public static let readyForPlaySeconds = 22
 
     /// The tier difference. The college clock stops on a first down to reset the chains, which is
     /// the single largest reason college games run more plays than pro ones — and modelling it here
@@ -105,7 +108,7 @@ public enum ProClockRules: ClockRules {
     public static let quarters = 4
     public static let quarterSeconds = 900
     public static let playClockSeconds = 40
-    public static let normalTempoSnapSeconds = 30
+    public static let normalTempoSnapSeconds = 32
     public static let hurryTempoSnapSeconds = 14
     public static let bleedTempoSnapSeconds = 38
     public static let inBoundsPlaySeconds = 6

@@ -871,7 +871,7 @@ public enum WorldScheduler {
                     } catch let error as ProMarketError {
                         throw WorldSchedulerError.professionalMarketFailed(error)
                     }
-                    // D15 (`02` §4.2a): dead money is a single-season charge, so the season now
+                    // D16 (`02` §4.2a): dead money is a single-season charge, so the season now
                     // ending is discharged here -- after beat 1, before beat 2. The compliance
                     // pass below then charges the season about to start, which makes each season's
                     // dead money exactly that season's releases rather than every release the save

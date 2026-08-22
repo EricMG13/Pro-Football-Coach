@@ -282,6 +282,57 @@ func runSnapResolverTests() {
     let even = testPersonnel(offenseSkill: 70, defenseSkill: 70)
 
     suite("Snap resolution") {
+        test("running backs are eligible pass targets") {
+            let assignment = Assignment.assign(
+                offensiveCall: OffensiveCall(playType: .pass),
+                defensiveCall: DefensiveCall(coverage: .man),
+                personnel: even
+            )
+            let runningBackIDs = Set(even.offensive(.runningBack).map(\.id))
+            expect(
+                assignment.routes.contains { runningBackIDs.contains($0.receiver.id) },
+                "pass assignment excluded every running back from the route progression"
+            )
+        }
+
+        test("designed runs reach the primary back, reserve back, and quarterback") {
+            var attributes = Attributes()
+            for attribute in Position.runningBack.ratedAttributes {
+                attributes[attribute] = Rating(69)
+            }
+            let reserve = Player(
+                id: UUID(uuidString: "00000000-0000-4000-8000-00000000B002")!,
+                firstName: "T",
+                lastName: "RB2",
+                position: .runningBack,
+                age: 24,
+                attributes: attributes,
+                potential: Rating(80)
+            )
+            let personnel = SnapPersonnel(
+                offense: even.offense + [reserve],
+                defense: even.defense
+            )
+            let primaryID = personnel.offensive(group: .runningBacks)[0].id
+            let quarterbackID = personnel.offensive(group: .quarterbacks)[0].id
+            var carriers: Set<UUID> = []
+            for seed in UInt64(0)..<500 {
+                var rng = SeededRandom(seed: seed)
+                let outcome = SnapResolver.resolve(
+                    offensiveCall: OffensiveCall(playType: .run),
+                    defensiveCall: DefensiveCall(coverage: .man),
+                    personnel: personnel,
+                    situation: Situation(),
+                    rules: rules,
+                    rng: &rng
+                )
+                if let carrierID = outcome.ballCarrierID { carriers.insert(carrierID) }
+            }
+            expect(carriers.contains(primaryID), "RB1 received no designed carries")
+            expect(carriers.contains(reserve.id), "RB2 received no designed carries")
+            expect(carriers.contains(quarterbackID), "the quarterback received no designed carries")
+        }
+
         test("the same seed and state resolve to the same snap") {
             func once() -> SnapOutcome {
                 var rng = SeededRandom(seed: 555)

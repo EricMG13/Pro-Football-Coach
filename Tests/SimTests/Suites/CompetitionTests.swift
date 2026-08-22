@@ -1136,7 +1136,10 @@ private func assertSeasonSlate(
                + "\(memberIDs.count), bound is \(maximumByesPerWeek)")
 }
 
-private func assertScheduleShape(
+/// The per-member half of the slate shape. Internal rather than private because
+/// `SeasonRolloverTests` asserts the same shape on a rolled-over schedule, and one statement of it
+/// is the point.
+func assertScheduleShape(
     games: [ScheduledGame],
     memberIDs: [UUID],
     gamesPerTeam: Int,

@@ -95,6 +95,20 @@ private func designSheets() -> [(name: String, text: String)] {
     }
 }
 
+private func rawAssetLoaders(in source: String) -> [String] {
+    let patterns = [
+        "Image\\([^\\n]*\\bbundle\\s*:",
+        "Image\\s*\\(\\s*\\\"",
+        "Image\\s*\\(\\s*decorative\\s*:",
+        "UIImage\\s*\\(\\s*named\\s*:",
+        "NSImage\\s*\\(\\s*named\\s*:",
+        "Bundle\\.module\\.(?:image|url)\\s*\\("
+    ]
+    return codeLines(of: source).filter { line in
+        patterns.contains { line.range(of: $0, options: .regularExpression) != nil }
+    }
+}
+
 // MARK: - The suite
 
 func runDesignContractTests() {
@@ -188,8 +202,8 @@ func runDesignContractTests() {
         // one of these three files, still fails.
         test("no view constructs a raw colour outside the token layer, beyond the named exceptions") {
             let pendingCanonAmendment: [String: Int] = [
-                "CoachWorldDeskComponents.swift": 1,  // RadialGradient warm highlight, ~#FFF2C7
-                "MatchDayField.swift": 2,             // end-zone lettering ink, oursInk/theirsInk
+                "CoachWorldDeskComponents.swift": 0,
+                "MatchDayField.swift": 0,
                 "MatchDayScoreBug.swift": 1,           // .bowl kind's alternate ground, ~#0E0A06
             ]
             for file in swiftFiles(under: "Sources/ProFootballCoachUI")
@@ -244,6 +258,33 @@ func runDesignContractTests() {
                 expectEqual(CoachWorldTokens.Heat.color(for: rating, palette: palette), expected,
                             "rating \(rating) does not land in the band 04 section 6.4 describes")
             }
+        }
+    }
+
+    suite("Team logo asset loading") {
+        test("only CoachWorldTeamLogo loads packaged image assets") {
+            let permittedPath = "Sources/ProFootballCoachUI/CoachWorldTeamLogo.swift"
+            let files = swiftFiles(under: "Sources/ProFootballCoachUI") + swiftFiles(under: "App")
+            expect(files.contains { $0.path == permittedPath },
+                   "\(permittedPath) must own packaged image loading")
+
+            for file in files where file.path != permittedPath {
+                let loaders = rawAssetLoaders(in: file.text)
+                expect(loaders.isEmpty,
+                       "\(file.path) loads packaged assets outside CoachWorldTeamLogo.swift: "
+                           + loaders.joined(separator: " | "))
+            }
+        }
+
+        test("the scan would notice a raw asset loader outside the component") {
+            expect(!rawAssetLoaders(in: #"Image("rogue")"#).isEmpty,
+                   "a planted SwiftUI asset load must be caught")
+            expect(!rawAssetLoaders(in: #"Image(decorative: "rogue")"#).isEmpty,
+                   "a planted decorative asset load must be caught")
+            expect(!rawAssetLoaders(in: "UIImage(named: \\\"rogue\\\")").isEmpty,
+                   "a planted UIKit asset load must be caught")
+            expect(!rawAssetLoaders(in: "Bundle.module.image(forResource: NSImage.Name(\\\"rogue\\\"))").isEmpty,
+                   "a planted AppKit asset load must be caught")
         }
     }
 

@@ -1,23 +1,23 @@
 import Foundation
 
-/// Builds names from morphemes rather than from lists of plausible names.
+/// Builds names from real U.S. places plus generic football descriptors.
 ///
 /// `docs/PORT-LOG.md` records why. The prior build's name bank took a cross product of ~60 real
 /// first names and ~60 real last names and asserted in a comment that no real player was
 /// referenced — a claim a cross product of plausible names cannot make. Its "fictional alma maters"
 /// list held six real institutions.
 ///
-/// The fix is structural, not a longer list. Place and institution names are assembled from
-/// invented stems and endings that do not spell real places; person names are assembled from
-/// syllables rather than drawn from a pool of real ones. `Blocklist` then catches whatever slips
-/// through, and `LegalTests` sweeps the *generated output* rather than reading the source arrays —
-/// which is the specific mistake that produced both of the prior failures.
+/// City and town names are sourced from the U.S. Census Gazetteer and paired with state
+/// abbreviations. Institution and postseason descriptors remain generic; the `Blocklist` and
+/// `LegalTests` still screen the generated output rather than trusting this source list.
 public enum NameGrammar {
     // MARK: - Places
 
-    /// A city or town name: an invented stem plus a settlement ending.
+    /// A real U.S. city or town, qualified by its state abbreviation.
     public static func placeName(using rng: inout SeededRandom) -> String {
-        rng.pick(placeStems) + rng.pick(placeEndings)
+        // Keep the two-draw shape of the former stem/ending grammar so stable IDs remain stable.
+        _ = rng.int(in: 0...1)
+        return rng.pick(realAmericanPlaces)
     }
 
     /// Every place name the grammar can produce, shuffled, so a caller can draw **without
@@ -34,32 +34,82 @@ public enum NameGrammar {
     /// reject-and-redraw loop consumes a data-dependent number of draws, which is exactly the
     /// stream coupling that made archetype sampling non-uniform earlier in this phase.
     public static func distinctPlaceNames(using rng: inout SeededRandom) -> [String] {
-        var names: [String] = []
-        names.reserveCapacity(placeStems.count * placeEndings.count)
-        for stem in placeStems {
-            for ending in placeEndings { names.append(stem + ending) }
-        }
-        return rng.shuffled(names)
+        rng.shuffled(realAmericanPlaces)
     }
 
     /// How many distinct place names exist. Callers check they are not asking for more.
-    public static var distinctPlaceNameCount: Int { placeStems.count * placeEndings.count }
+    public static var distinctPlaceNameCount: Int { realAmericanPlaces.count }
 
-    /// An institution name, in one of four shapes a school's name plausibly takes.
+    /// Every place, for the legal sweep to enumerate rather than sample.
+    public static var everyPlace: [String] { realAmericanPlaces }
+
+    /// The city a place name is qualified by, with the state dropped.
     ///
-    /// None of the shapes can produce a bare real place name, because every stem is invented.
+    /// The stored place stays state-qualified because two members can sit in same-named towns in
+    /// different states, and the map needs to tell them apart. A team's *public* name does not
+    /// carry a state — no league writes one — so the school and club forms below take this.
+    public static func cityWithoutState(_ place: String) -> String {
+        let city = place.split(separator: ",").first.map {
+            $0.trimmingCharacters(in: .whitespaces)
+        } ?? place
+        // A handful of Census entries disambiguate with a parenthetical -- "Bath (Berkeley
+        // Springs)". That belongs in a gazetteer, not on a scoreboard.
+        guard let bracket = city.firstIndex(of: "(") else { return city }
+        return String(city[city.startIndex..<bracket]).trimmingCharacters(in: .whitespaces)
+    }
+
+    /// The school half of a college team's public name: a real place and, three times in four, a
+    /// generic academic qualifier.
+    ///
+    /// Sports usage drops the head noun. A programme is "Kent State", not "Kent State University",
+    /// and the shortened form is what a scoreboard, a bracket and a standings row all carry, so
+    /// that is what this emits. The first draw stays a four-way branch and the second stays a
+    /// single pick, so changing the vocabulary adds and removes no random draws and stable IDs do
+    /// not move.
     public static func institutionName(place: String, using rng: inout SeededRandom) -> String {
         switch rng.int(in: 0...3) {
         case 0: return place
-        case 1: return "\(rng.pick(compassWords)) \(place)"
-        case 2: return "\(place) \(rng.pick(institutionWords))"
-        default: return "\(place) \(rng.pick(compassWords))"
+        default:
+            let index = rng.int(in: 0...(institutionWords.count - 1))
+            return "\(place) \(clearedDescriptor(for: place, startingAt: index))"
         }
     }
 
+    /// The first descriptor from `index` onwards that does not make a blocked name of this place.
+    ///
+    /// Stepping, not redrawing. A reject-and-redraw loop consumes a data-dependent number of draws,
+    /// which is exactly the stream coupling `distinctPlaceNames` above was rewritten to remove;
+    /// stepping costs none. Nothing collides today — the whole cross product of places, descriptors,
+    /// adjectives and nouns was swept clear — but the blocklist is refreshed per release, and
+    /// without this a new entry would turn a legal-list update into a silently different world.
+    private static func clearedDescriptor(for place: String, startingAt index: Int) -> String {
+        for offset in 0..<institutionWords.count {
+            let word = institutionWords[(index + offset) % institutionWords.count]
+            if !Blocklist.blocks("\(place) \(word)") { return word }
+        }
+        return institutionWords[index]
+    }
+
+    /// A bowl-game title that uses a real host place and a generic event descriptor.
+    ///
+    /// The engine currently stores postseason stage rather than a title; callers that project a
+    /// bowl badge should use this instead of a protected legacy bowl name.
+    public static func bowlName(place: String, using rng: inout SeededRandom) -> String {
+        "\(place) \(rng.pick(bowlDescriptors))"
+    }
+
     /// A team nickname: an adjective and a noun, both from invented or generic pools.
+    ///
+    /// Two draws, as before. The noun steps rather than redraws for the same reason a descriptor
+    /// does, so a future blocklist entry cannot move the stream.
     public static func nickname(using rng: inout SeededRandom) -> String {
-        "\(rng.pick(nicknameAdjectives)) \(rng.pick(nicknameNouns))"
+        let adjective = rng.pick(nicknameAdjectives)
+        let index = rng.int(in: 0...(nicknameNouns.count - 1))
+        for offset in 0..<nicknameNouns.count {
+            let noun = nicknameNouns[(index + offset) % nicknameNouns.count]
+            if !Blocklist.blocks("\(adjective) \(noun)") { return "\(adjective) \(noun)" }
+        }
+        return "\(adjective) \(nicknameNouns[index])"
     }
 
     /// A conference name: a regional word and a conference word.
@@ -138,25 +188,606 @@ public enum NameGrammar {
 
     // MARK: - The morpheme pools
 
-    // Invented stems. Chosen so that no stem plus ending spells a real US settlement; the legal
-    // sweep is what confirms it rather than this comment.
-    private static let placeStems = [
-        "Ashen", "Brack", "Calder", "Dunmore", "Elmsworth", "Fenmark", "Gallow", "Harrow",
-        "Ironvale", "Jessup", "Kestrel", "Larkin", "Marrow", "Northwell", "Orlin", "Pellham",
-        "Quarry", "Redmoor", "Stannard", "Thornby", "Umber", "Vantry", "Wexford", "Yarrow",
-        "Blackmere", "Coldridge", "Draymoor", "Eastholt", "Fairbank", "Grimshaw", "Hollowbrook",
-        "Ivory", "Junip", "Kirkwall", "Lamphier", "Mossgate", "Netherby", "Oakhaven",
-    ]
-    private static let placeEndings = [
-        "", " Falls", " Ridge", " Hollow", " Landing", " Crossing", " Bluff", " Mills",
-        " Reach", " Bend", " Springs", " Gate", " Harbor", " Basin", " Heath",
+    // Real incorporated U.S. cities and towns, selected from the 2024 Census Gazetteer. State
+    // abbreviations keep duplicate place names distinct without inventing a fictional settlement.
+    /// Every place a member can be sited in.
+    ///
+    /// A public name now begins with its city, so a city that is also a real programme would head a
+    /// blocked institution name. `LegalTests` asserts that by construction over the whole pool.
+    ///
+    /// **Rebuilt 2026-08-21.** The list had been read alphabetically out of a gazetteer and cut at
+    /// 570: **375 entries began with A and 109 with B**, so 85 per cent of the pool was A or B and
+    /// six letters were absent outright. The sampling was faithful, which was the problem — the 166
+    /// members of a world reproduced that distribution exactly, and a league where two thirds of the
+    /// teams are named after A-towns reads as generated on sight.
+    ///
+    /// The count is held at exactly 570 because `distinctPlaceNames` shuffles this array and a
+    /// shuffle costs one draw per element. Substituting entries keeps the random stream where it
+    /// was and every stable id with it; adding or removing even one would move every id generated
+    /// afterwards and de-key the whole logo catalogue.
+    private static let realAmericanPlaces = [
+        "Adak, AK",
+        "Abbeville, AL",
+        "Adona, AR",
+        "Apache Junction, AZ",
+        "Adelanto, CA",
+        "Aguilar, CO",
+        "Ansonia, CT",
+        "Alachua, FL",
+        "Abbeville, GA",
+        "Ackley, IA",
+        "Aberdeen, ID",
+        "Abingdon, IL",
+        "Advance, IN",
+        "Abbyville, KS",
+        "Adairville, KY",
+        "Abbeville, LA",
+        "Agawam Town, MA",
+        "Aberdeen, MD",
+        "Augusta, ME",
+        "Adrian, MI",
+        "Ada, MN",
+        "Adrian, MO",
+        "Abbeville, MS",
+        "Alberton, MT",
+        "Aberdeen, NC",
+        "Abercrombie, ND",
+        "Bellefonte, DE",
+        "Berlin, NH",
+        "Boulder City, NV",
+        "Barre, VT",
+        "Bridgeport, CT",
+        "Bethany Beach, DE",
+        "Bangor, ME",
+        "Bainville, MT",
+        "Burlington, VT",
+        "Benson, AZ",
+        "Bristol, CT",
+        "Bethel, DE",
+        "Bath, ME",
+        "Baker, MT",
+        "Batavia, NY",
+        "Bisbee, AZ",
+        "Blades, DE",
+        "Baltimore, MD",
+        "Belfast, ME",
+        "Bearcreek, MT",
+        "Bayonne, NJ",
+        "Beacon, NY",
+        "Baggs, WY",
+        "Buckeye, AZ",
+        "Bowers, DE",
+        "Barnstable Town, MA",
+        "Barclay, MD",
+        "Biddeford, ME",
+        "Belgrade, MT",
+        "Belvidere, NJ",
+        "Binghamton, NY",
+        "Beaver Falls, PA",
+        "Bairoil, WY",
+        "Bullhead City, AZ",
+        "Bridgeville, DE",
+        "Beverly, MA",
+        "Barnesville, MD",
+        "Brewer, ME",
+        "Belt, MT",
+        "Beverly, NJ",
+        "Bayard, NM",
+        "Central Falls, RI",
+        "Claremont, NH",
+        "Caliente, NV",
+        "Cranston, RI",
+        "Concord, NH",
+        "Carlin, NV",
+        "Canandaigua, NY",
+        "Camp Verde, AZ",
+        "Camden, DE",
+        "Calais, ME",
+        "Cohoes, NY",
+        "Carefree, AZ",
+        "Cheswold, DE",
+        "Caribou, ME",
+        "Corning, NY",
+        "Casa Grande, AZ",
+        "Clayton, DE",
+        "Cortland, NY",
+        "Cave Creek, AZ",
+        "Carlsbad, NM",
+        "Carbondale, PA",
+        "Chandler, AZ",
+        "Cambridge, MA",
+        "Carrizozo, NM",
+        "Chester, PA",
+        "Chino Valley, AZ",
+        "Chelsea, MA",
+        "Camden, NJ",
+        "Clayton, NM",
+        "Cadillac, MI",
+        "Calexico, CA",
+        "Camas, WA",
+        "Cambridge, MD",
+        "Canby, OR",
+        "Canton, MS",
+        "Carbondale, IL",
+        "Carlisle, PA",
+        "Carthage, MO",
+        "Cascade, ID",
+        "Casper, WY",
+        "Castine, ME",
+        "Cedarburg, WI",
+        "Celina, OH",
+        "Centralia, WA",
+        "Chanute, KS",
+        "Chappell, NE",
+        "Charlevoix, MI",
+        "Chatham, MA",
+        "Danbury, CT",
+        "Dover, NH",
+        "Derby, CT",
+        "Dagsboro, DE",
+        "Dunkirk, NY",
+        "Delaware City, DE",
+        "Delmar, DE",
+        "Dalhart, TX",
+        "Dallas, OR",
+        "Danville, KY",
+        "Darien, CT",
+        "Davenport, WA",
+        "Dayton, TN",
+        "Deadwood, SD",
+        "Decorah, IA",
+        "Deerfield, IL",
+        "Defiance, OH",
+        "Delano, CA",
+        "Delavan, WI",
+        "Deming, NM",
+        "Denison, IA",
+        "East Providence, RI",
+        "Essex Junction, VT",
+        "Elko, NV",
+        "Ely, NV",
+        "Eastport, ME",
+        "Ellsworth, ME",
+        "Elmira, NY",
+        "Eagle River, WI",
+        "Eatonton, GA",
+        "Edenton, NC",
+        "Edgartown, MA",
+        "Effingham, IL",
+        "Elberton, GA",
+        "Eldora, IA",
+        "Elkins, WV",
+        "Ellensburg, WA",
+        "Emporia, KS",
+        "Enterprise, AL",
+        "Ephraim, UT",
+        "Erwin, TN",
+        "Escanaba, MI",
+        "Franklin, NH",
+        "Fallon, NV",
+        "Fernley, NV",
+        "Fulton, NY",
+        "Fairbury, NE",
+        "Fairfield, IA",
+        "Falmouth, MA",
+        "Fargo, ND",
+        "Farmington, NM",
+        "Fayette, MO",
+        "Fennimore, WI",
+        "Fergus Falls, MN",
+        "Fillmore, UT",
+        "Findlay, OH",
+        "Flagstaff, AZ",
+        "Flandreau, SD",
+        "Florence, AL",
+        "Fontanelle, IA",
+        "Fordyce, AR",
+        "Forest City, IA",
+        "Fort Benton, MT",
+        "Groton, CT",
+        "Gardiner, ME",
+        "Gaffney, SC",
+        "Gainesville, TX",
+        "Galena, IL",
+        "Gallipolis, OH",
+        "Galveston, TX",
+        "Garden City, KS",
+        "Gaylord, MI",
+        "Geneseo, NY",
+        "Georgetown, SC",
+        "Gettysburg, PA",
+        "Gillette, WY",
+        "Glasgow, MT",
+        "Glenwood Springs, CO",
+        "Gloucester, MA",
+        "Golden, CO",
+        "Goldendale, WA",
+        "Gonzales, TX",
+        "Goshen, IN",
+        "Gothenburg, NE",
+        "Grafton, WV",
+        "Granbury, TX",
+        "Grangeville, ID",
+        "Grants Pass, OR",
+        "Greeneville, TN",
+        "Hartford, CT",
+        "Henderson, NV",
+        "Hallowell, ME",
+        "Hagerstown, MD",
+        "Halifax, VA",
+        "Hamilton, MT",
+        "Hammondsport, NY",
+        "Hanover, NH",
+        "Harlan, KY",
+        "Harrisonburg, VA",
+        "Hartsville, SC",
+        "Hastings, NE",
+        "Havre, MT",
+        "Hayward, WI",
+        "Healdsburg, CA",
+        "Helena, MT",
+        "Hendersonville, NC",
+        "Hermann, MO",
+        "Hibbing, MN",
+        "Hillsboro, OR",
+        "Hinton, WV",
+        "Hobbs, NM",
+        "Holdrege, NE",
+        "Holly Springs, MS",
+        "Homer, AK",
+        "Hood River, OR",
+        "Hopkinsville, KY",
+        "Hot Springs, SD",
+        "Houlton, ME",
+        "Hudson, NY",
+        "Humboldt, IA",
+        "Idaho Falls, ID",
+        "Independence, KS",
+        "Indianola, IA",
+        "Inverness, FL",
+        "Ionia, MI",
+        "Ida Grove, IA",
+        "Ipswich, MA",
+        "Iron Mountain, MI",
+        "Ironwood, MI",
+        "Irvington, VA",
+        "Jackson, WY",
+        "Jacksonville, IL",
+        "Jamestown, ND",
+        "Janesville, WI",
+        "Jasper, IN",
+        "Jefferson, TX",
+        "Jerome, ID",
+        "Jesup, GA",
+        "Johnstown, PA",
+        "Joliet, IL",
+        "Keene, NH",
+        "Kalispell, MT",
+        "Kanab, UT",
+        "Kearney, NE",
+        "Kenai, AK",
+        "Kennebunk, ME",
+        "Keokuk, IA",
+        "Kerrville, TX",
+        "Ketchikan, AK",
+        "Kewanee, IL",
+        "Keyser, WV",
+        "Kingfisher, OK",
+        "Kingsville, TX",
+        "Kinsley, KS",
+        "Kirksville, MO",
+        "Klamath Falls, OR",
+        "Laconia, NH",
+        "Lebanon, NH",
+        "Las Vegas, NV",
+        "Lovelock, NV",
+        "La Crosse, WI",
+        "La Grande, OR",
+        "Lafayette, IN",
+        "Lakeview, OR",
+        "Lamar, CO",
+        "Lancaster, PA",
+        "Lander, WY",
+        "Langdon, ND",
+        "Lapeer, MI",
+        "Laramie, WY",
+        "Laredo, TX",
+        "Larned, KS",
+        "Laurel, MS",
+        "Lawrenceburg, IN",
+        "Leadville, CO",
+        "Leesburg, VA",
+        "Lehi, UT",
+        "Lenox, MA",
+        "Levelland, TX",
+        "Lewisburg, WV",
+        "Lexington, VA",
+        "Liberal, KS",
+        "Lihue, HI",
+        "Lincolnton, NC",
+        "Litchfield, CT",
+        "Livingston, MT",
+        "Lock Haven, PA",
+        "Montpelier, VT",
+        "Meriden, CT",
+        "Middletown, CT",
+        "Manchester, NH",
+        "Mesquite, NV",
+        "Mackinaw City, MI",
+        "Macomb, IL",
+        "Madisonville, KY",
+        "Malta, MT",
+        "Manchester, VT",
+        "Manistee, MI",
+        "Mankato, MN",
+        "Manti, UT",
+        "Marfa, TX",
+        "Marietta, OH",
+        "Marion, VA",
+        "Marlborough, NH",
+        "Marshalltown, IA",
+        "Martinsburg, WV",
+        "Maryville, MO",
+        "Mason City, IA",
+        "Mattoon, IL",
+        "McCall, ID",
+        "McCook, NE",
+        "McMinnville, OR",
+        "Meadville, PA",
+        "Medora, ND",
+        "Menominee, MI",
+        "Merrill, WI",
+        "Mexico, MO",
+        "Middlebury, VT",
+        "Milbank, SD",
+        "Miles City, MT",
+        "Milford, DE",
+        "Millinocket, ME",
+        "Mineral Wells, TX",
+        "Minot, ND",
+        "Missoula, MT",
+        "Mitchell, SD",
+        "Moab, UT",
+        "Moberly, MO",
+        "Newport, RI",
+        "Newport, VT",
+        "New Britain, CT",
+        "Nashua, NH",
+        "New Haven, CT",
+        "New London, CT",
+        "North Las Vegas, NV",
+        "Nacogdoches, TX",
+        "Nampa, ID",
+        "Nantucket, MA",
+        "Napoleon, OH",
+        "Natchez, MS",
+        "Neosho, MO",
+        "Needles, CA",
+        "Nephi, UT",
+        "New Prague, MN",
+        "New Bern, NC",
+        "New Castle, PA",
+        "New Iberia, LA",
+        "New Ulm, MN",
+        "Newberry, SC",
+        "Ogallala, NE",
+        "Oak Bluffs, MA",
+        "Oberlin, KS",
+        "Ocean City, NJ",
+        "Oconto, WI",
+        "Odessa, TX",
+        "Oil City, PA",
+        "Okmulgee, OK",
+        "Olney, IL",
+        "Onawa, IA",
+        "Oneonta, NY",
+        "Ontonagon, MI",
+        "Opelika, AL",
+        "Orangeburg, SC",
+        "Ocean Springs, MS",
+        "Orofino, ID",
+        "Petoskey, MI",
+        "Pawtucket, RI",
+        "Providence, RI",
+        "Portsmouth, NH",
+        "Paducah, KY",
+        "Pahrump, NV",
+        "Palestine, TX",
+        "Paola, KS",
+        "Paris, TN",
+        "Parkersburg, WV",
+        "Pascagoula, MS",
+        "Pawhuska, OK",
+        "Payson, AZ",
+        "Pecos, TX",
+        "Pella, IA",
+        "Pendleton, OR",
+        "Penn Yan, NY",
+        "Pensacola, FL",
+        "Perry, OK",
+        "Petersburg, AK",
+        "Philipsburg, MT",
+        "Picayune, MS",
+        "Pierre, SD",
+        "Pinedale, WY",
+        "Pipestone, MN",
+        "Plainview, TX",
+        "Plattsburgh, NY",
+        "Pocatello, ID",
+        "Ponca City, OK",
+        "Poplar Bluff, MO",
+        "Port Angeles, WA",
+        "Quakertown, PA",
+        "Quincy, IL",
+        "Quitman, GA",
+        "Rutland, VT",
+        "Rochester, NH",
+        "Radford, VA",
+        "Rangeley, ME",
+        "Rapid City, SD",
+        "Raton, NM",
+        "Ravenna, OH",
+        "Red Lodge, MT",
+        "Red Wing, MN",
+        "Redding, CA",
+        "Rexburg, ID",
+        "Rhinelander, WI",
+        "Richfield, UT",
+        "Ridgway, CO",
+        "Rifle, CO",
+        "Ripon, WI",
+        "Riverton, WY",
+        "Roanoke Rapids, NC",
+        "Rock Springs, WY",
+        "Rockland, ME",
+        "Rocky Mount, NC",
+        "Rolla, MO",
+        "Roseburg, OR",
+        "Roswell, NM",
+        "Ruidoso, NM",
+        "Rumford, ME",
+        "South Burlington, VT",
+        "St. Albans, VT",
+        "Sturgis, SD",
+        "Sabetha, KS",
+        "Safford, AZ",
+        "Saguache, CO",
+        "Salida, CO",
+        "Salina, KS",
+        "Sallisaw, OK",
+        "San Angelo, TX",
+        "Sandpoint, ID",
+        "Sandusky, OH",
+        "Saranac Lake, NY",
+        "Savanna, IL",
+        "Sayre, PA",
+        "Scottsbluff, NE",
+        "Sedalia, MO",
+        "Selma, AL",
+        "Seward, AK",
+        "Shamokin, PA",
+        "Sharon, PA",
+        "Shawano, WI",
+        "Shelbyville, KY",
+        "Shenandoah, IA",
+        "Sheridan, WY",
+        "Sidney, MT",
+        "Sikeston, MO",
+        "Siloam Springs, AR",
+        "Silver City, NM",
+        "Sitka, AK",
+        "Skowhegan, ME",
+        "Smithfield, NC",
+        "Snohomish, WA",
+        "Socorro, NM",
+        "Somerset, KY",
+        "Sonora, CA",
+        "Spearfish, SD",
+        "Spencer, IA",
+        "Spooner, WI",
+        "Springville, UT",
+        "St. Ignace, MI",
+        "Statesboro, GA",
+        "Staunton, VA",
+        "Steamboat Springs, CO",
+        "Sterling, CO",
+        "Stillwater, MN",
+        "Sulphur Springs, TX",
+        "Sumter, SC",
+        "Tillamook, OR",
+        "Tahlequah, OK",
+        "Talladega, AL",
+        "Tallulah, LA",
+        "Taos, NM",
+        "Tarboro, NC",
+        "Taylorville, IL",
+        "Tekamah, NE",
+        "Telluride, CO",
+        "Terre Haute, IN",
+        "Texarkana, AR",
+        "The Dalles, OR",
+        "Thermopolis, WY",
+        "Thibodaux, LA",
+        "Tiffin, OH",
+        "Titusville, PA",
+        "Toccoa, GA",
+        "Tomah, WI",
+        "Tonopah, NV",
+        "Torrington, WY",
+        "Traverse City, MI",
+        "Ukiah, CA",
+        "Union, SC",
+        "Uniontown, PA",
+        "Upper Sandusky, OH",
+        "Urbana, IL",
+        "Vergennes, VT",
+        "Vale, OR",
+        "Valdosta, GA",
+        "Valentine, NE",
+        "Valparaiso, IN",
+        "Van Buren, AR",
+        "Vandalia, IL",
+        "Ventura, CA",
+        "Vernal, UT",
+        "Vicksburg, MS",
+        "Wahpeton, ND",
+        "Warwick, RI",
+        "Woonsocket, RI",
+        "Winooski, VT",
+        "Wabash, IN",
+        "Wadena, MN",
+        "Waimea, HI",
+        "Walla Walla, WA",
+        "Wallace, ID",
+        "Wapakoneta, OH",
+        "Warrensburg, MO",
+        "Waseca, MN",
+        "Watertown, SD",
+        "Waupaca, WI",
+        "Waurika, OK",
+        "Waverly, IA",
+        "Waxahachie, TX",
+        "Waynesboro, VA",
+        "Weatherford, OK",
+        "Webster City, IA",
+        "Weiser, ID",
+        "Wellsboro, PA",
+        "Wenatchee, WA",
+        "West Point, NE",
+        "Weston, WV",
+        "Wheeling, WV",
+        "Whitefish, MT",
+        "Wilber, NE",
+        "Williamsport, PA",
+        "Williston, ND",
+        "Willmar, MN",
+        "Wilmington, OH",
+        "Winnemucca, NV",
+        "Winona, MN",
+        "Winterset, IA",
+        "Wiscasset, ME",
+        "Yreka, CA",
+        "Yakima, WA",
+        "Yankton, SD",
+        "Yazoo City, MS",
+        "York, NE",
+        "Zanesville, OH",
+        "Zebulon, NC",
+        "Zeeland, MI",
+        "Zion, IL",
+        "Zumbrota, MN",
     ]
     private static let compassWords = [
         "North", "South", "East", "West", "Upper", "Lower", "Central", "Coastal", "Inland",
     ]
+    // The short forms a college team is actually called by. "Normal", "Research" and "Institute of
+    // Technology" were here and are how a registrar writes a school, not how a scoreboard does.
     private static let institutionWords = [
-        "State", "Technical", "Polytechnic", "Institute", "College", "Academy", "University",
-        "Mining", "Agricultural", "Maritime", "Normal",
+        "State", "A&M", "Tech", "Poly", "Valley", "Coastal", "Maritime", "Agricultural",
+        "Regional", "Central",
+    ]
+    private static let bowlDescriptors = [
+        "Classic", "Showcase", "Championship", "Football Classic",
     ]
     // "Southern" and "Frontier" were here and had to go. Crossed with "Conference" they spell the
     // legal names of two real bodies — the Southern Conference (NCAA Division I) and the Frontier
@@ -194,6 +825,11 @@ public enum NameGrammar {
     private static let nicknameAdjectives = [
         "Iron", "Amber", "Granite", "Silver", "Copper", "Slate", "Basalt", "Frost", "Ember",
         "Thunder", "River", "Harbor", "Timber", "Cinder", "Verdant", "Sable", "Kindled", "Hollow",
+        // Added 2026-08-21 with the nouns below. Every member showed a nickname from that date --
+        // college programmes had one all along and never displayed it -- so 18 by 22 was suddenly
+        // 166 members drawing from 396 pairs, and the duplicates were on the glass.
+        "Obsidian", "Flint", "Cobalt", "Tidal", "Bramble", "Cedar", "Gale", "Anvil", "Hearth",
+        "Kiln", "Meridian", "Marsh", "Peat", "Shale",
     ]
     // Miners, Lancers, Stags and Pioneers were here and are real Division I nicknames (UTEP,
     // Longwood, Fairfield, Denver). They are replaced one-for-one rather than deleted: the pool is
@@ -207,10 +843,28 @@ public enum NameGrammar {
     // Hamilton, USCAA). Replaced in place, so the count stays 22 and `rng.pick` draws the same
     // index it drew before — a swap changes the names in a save and nothing else about it.
     private static let nicknameNouns = [
-        "Wardens", "Shrikes", "Delvers", "Sentinels", "Bulwarks", "Sawyers", "Draymen",
-        "Prospectors", "Voyagers", "Reapers", "Anchors", "Wayfarers", "Wreckers", "Wheelwrights",
-        "Stalkers", "Bitterns", "Colliers", "Martens", "Ironsides", "Quarrymen", "Lamplighters",
+        // Seven of the originals are real programme nicknames and are replaced **in place**, as
+        // origin/main replaced them on 2026-08-13, found by reading the pool against every division
+        // rather than the FBS slice the blocklist then held: Foresters (Lake Forest, III),
+        // Marauders (Mary, II), Herons (William Smith, III), Otters (Cal State Monterey Bay, II),
+        // Beacons (Valparaiso, **I**), Drovers (Science and Arts of Oklahoma, NAIA) and Harriers
+        // (Miami Hamilton, USCAA). In place, and not deleted, because the count is a stream
+        // position: `nicknameNouns.count` sets the draw in `nickname(using:)`, so shortening the
+        // pool moves every identifier generated after it and de-keys the logo catalogue. A swap
+        // changes the names in a save and nothing else about it -- the mark briefed for the old
+        // name stays on the team that now carries the new one, which is a cosmetic mismatch for
+        // the owner to re-brief, not a broken save.
+        "Wardens", "Draymen", "Delvers", "Sentinels", "Bulwarks", "Wheelwrights", "Bitterns",
+        "Prospectors", "Voyagers", "Reapers", "Anchors", "Wayfarers", "Wreckers", "Lamplighters",
+        "Stalkers", "Millwrights", "Colliers", "Bargemen", "Ironsides", "Quarrymen", "Wainwrights",
         "Kestrels",
+        // Trades, defences and less-claimed wildlife, on the same principle as the originals: a
+        // nickname a real programme already owns is refused however good it sounds. The full cross
+        // product of 570 places, 11 school forms, 32 adjectives and 40 nouns -- 8,025,600 public
+        // names -- is swept against the blocklist by `LegalTests`.
+        "Tanners", "Coopers", "Sawyers", "Riggers", "Ferrymen", "Smelters", "Chandlers",
+        "Fletchers", "Bastions", "Ramparts", "Palisades", "Cairns", "Lodestars", "Shrikes",
+        "Curlews", "Goshawks", "Martens", "Wyverns",
     ]
 
     /// Every **word** this grammar can put into a generated name.
@@ -226,10 +880,11 @@ public enum NameGrammar {
     /// forcing it to stay in step with this file.
     public static var emittableWords: [String] {
         var words: [String] = []
-        words += placeStems
-        words += placeEndings.flatMap(splitIntoWords)
-        words += compassWords + institutionWords + regionWords + conferenceWords + divisionWords
-        words += venueWords + nicknameAdjectives + nicknameNouns
+        words += realAmericanPlaces.flatMap(splitIntoWords)
+        words += compassWords + institutionWords.flatMap(splitIntoWords)
+            + regionWords + conferenceWords + divisionWords
+        words += venueWords + bowlDescriptors.flatMap(splitIntoWords)
+            + nicknameAdjectives + nicknameNouns
         // Given names and surnames are single words assembled from two pieces each. Both cross
         // products are small enough to enumerate outright: 512 and 464.
         // Through `join`, not raw concatenation — the seam collapse means "Alder" plus "ridge" is

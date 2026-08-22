@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Team Mark Selector</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f1f2f6;
+      --muted: #a6adbb;
+      --desk: #10131b;
+      --panel: #181c27;
+      --panel-strong: #202536;
+      --line: #343a4c;
+      --violet: #7656a8;
+      --violet-soft: #a98bd2;
+      --now: #c9ed61;
+      --light-surface: #f3f0e8;
+      --dark-surface: #11151c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--desk);
+      color: var(--ink);
+      font-family: "Avenir Next", Avenir, sans-serif;
+    }
+
+    button, input, select { font: inherit; }
+
+    button, select, input[type="search"] {
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--ink);
+    }
+
+    button {
+      padding: 0 14px;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: var(--violet-soft); }
+    button:disabled { cursor: not-allowed; opacity: .45; }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    .mark-card:has(input:focus-visible) {
+      outline: 3px solid var(--now);
+      outline-offset: 2px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: grid;
+      gap: 12px;
+      padding: 20px clamp(16px, 3vw, 40px) 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(16, 19, 27, .97);
+    }
+
+    .title-row,
+    .controls,
+    .surface-switch,
+    .selection-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .title-row { justify-content: space-between; }
+
+    h1 {
+      margin: 0;
+      font-family: "Avenir Next Condensed", "Avenir Next", sans-serif;
+      font-size: clamp(26px, 3vw, 38px);
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+
+    .lede, .count-readout, .selection-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .controls input[type="search"] {
+      width: min(360px, 100%);
+      padding: 0 14px;
+    }
+
+    select { padding: 0 34px 0 12px; }
+
+    .toggle-button[aria-pressed="true"] {
+      border-color: var(--violet-soft);
+      background: var(--violet);
+    }
+
+    .primary {
+      border-color: var(--now);
+      background: var(--now);
+      color: #17200b;
+      font-weight: 700;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      align-items: start;
+      gap: 24px;
+      padding: 24px clamp(16px, 3vw, 40px) 48px;
+    }
+
+    .catalog { min-width: 0; }
+
+    .catalog-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .catalog-head h2, .selection-panel h2 {
+      margin: 0;
+      font-family: "Avenir Next Condensed", "Avenir Next", sans-serif;
+      font-size: 22px;
+      text-transform: uppercase;
+      letter-spacing: .025em;
+    }
+
+    .logo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(174px, 1fr));
+      gap: 12px;
+    }
+
+    .mark-card {
+      position: relative;
+      display: grid;
+      grid-template-rows: 116px auto;
+      min-height: 176px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      cursor: pointer;
+      transition: border-color 120ms ease, transform 120ms ease;
+    }
+
+    .mark-card:hover {
+      border-color: var(--violet-soft);
+      transform: translateY(-1px);
+    }
+
+    .mark-card.selected {
+      border-color: var(--now);
+      box-shadow: inset 0 0 0 2px var(--now);
+    }
+
+    .mark-card input {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 3;
+      width: 22px;
+      height: 22px;
+      accent-color: var(--now);
+    }
+
+    .preview {
+      position: relative;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .surface {
+      position: absolute;
+      inset: 0;
+      background: var(--light-surface);
+    }
+
+    .surface.dark { display: none; background: var(--dark-surface); }
+    .logo-grid[data-surface="dark"] .surface.light { display: none; }
+    .logo-grid[data-surface="dark"] .surface.dark { display: block; }
+    .logo-grid[data-surface="split"] .surface.light { right: 50%; }
+    .logo-grid[data-surface="split"] .surface.dark { display: block; left: 50%; }
+
+    .preview img {
+      position: relative;
+      z-index: 1;
+      width: 92px;
+      height: 92px;
+      object-fit: contain;
+    }
+
+    .mark-meta {
+      display: grid;
+      align-content: start;
+      gap: 4px;
+      padding: 10px 12px 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .team-name {
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.25;
+    }
+
+    .family-name {
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .selection-panel {
+      position: sticky;
+      top: 174px;
+      display: grid;
+      gap: 14px;
+      max-height: calc(100vh - 198px);
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel);
+    }
+
+    .selection-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .selection-count {
+      color: var(--now);
+      font-family: "Avenir Next Condensed", "Avenir Next", sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .selected-list {
+      display: grid;
+      gap: 6px;
+      min-height: 80px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .selected-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 44px;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
+      padding-left: 10px;
+      border-left: 3px solid var(--violet);
+      background: var(--panel-strong);
+      font-size: 13px;
+    }
+
+    .selected-item button {
+      min-width: 44px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 20px;
+    }
+
+    .empty-state {
+      align-self: center;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .selection-actions { align-items: stretch; }
+    .selection-actions button { flex: 1 1 130px; }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 980px) {
+      .workspace { grid-template-columns: 1fr; }
+      .selection-panel { position: static; max-height: none; grid-row: 1; }
+      .selected-list { max-height: 220px; }
+    }
+
+    @media (max-width: 560px) {
+      .topbar { position: static; }
+      .controls > * { flex: 1 1 100%; }
+      .surface-switch button { flex: 1; }
+      .logo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .preview img { width: 80px; height: 80px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .mark-card { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="title-row">
+      <div>
+        <h1>Select marks to remake</h1>
+        <p class="lede">Selections persist in this browser. Click a mark or its checkbox.</p>
+      </div>
+      <p class="count-readout" id="visibleCount" aria-live="polite"></p>
+    </div>
+    <div class="controls" aria-label="Catalog controls">
+      <label class="visually-hidden" for="search">Search teams</label>
+      <input id="search" type="search" placeholder="Search team name…" autocomplete="off">
+      <label class="visually-hidden" for="family">Filter by family</label>
+      <select id="family">
+        <option value="all">All families</option>
+      </select>
+      <button id="selectedOnly" class="toggle-button" type="button" aria-pressed="false">Selected only</button>
+      <button id="selectVisible" type="button">Select visible</button>
+      <div class="surface-switch" role="group" aria-label="Preview surface">
+        <button class="toggle-button" type="button" data-surface="light" aria-pressed="false">Light</button>
+        <button class="toggle-button" type="button" data-surface="split" aria-pressed="true">Split</button>
+        <button class="toggle-button" type="button" data-surface="dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="catalog" aria-labelledby="catalogTitle">
+      <div class="catalog-head">
+        <h2 id="catalogTitle">Shipped catalog</h2>
+        <span class="count-readout">166 marks</span>
+      </div>
+      <div id="logoGrid" class="logo-grid" data-surface="split"></div>
+    </section>
+
+    <aside class="selection-panel" aria-labelledby="selectionTitle">
+      <div class="selection-heading">
+        <h2 id="selectionTitle">Remake list</h2>
+        <span class="selection-count" id="selectionCount">0</span>
+      </div>
+      <p class="selection-note">Copy the request and paste it into this task when ready.</p>
+      <div id="selectedList" class="selected-list" aria-live="polite"></div>
+      <div class="selection-actions">
+        <button id="copySelection" class="primary" type="button" disabled>Copy remake request</button>
+        <button id="downloadSelection" type="button" disabled>Download JSON</button>
+        <button id="clearSelection" type="button" disabled>Clear</button>
+      </div>
+    </aside>
+  </main>
+
+  <script src="./logo-selector-data.js"></script>
+  <script>
+    (() => {
+      const teams = window.LOGO_TEAMS || [];
+      const storageKey = 'pro-football-coach.logo-remakes.v1';
+      const familyLabels = {
+        originalCharacter: 'Original character',
+        animalCreature: 'Animal & creature',
+        equipmentVehicle: 'Equipment & object',
+        regionalSymbol: 'Regional symbol',
+        framedEmblem: 'Framed emblem',
+        abstractMotion: 'Abstract motion'
+      };
+      const familyOrder = Object.keys(familyLabels);
+      const byId = new Map(teams.map(team => [team.stableID, team]));
+      const stored = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const selected = new Set(stored.filter(id => byId.has(id)));
+
+      const grid = document.querySelector('#logoGrid');
+      const search = document.querySelector('#search');
+      const family = document.querySelector('#family');
+      const selectedOnly = document.querySelector('#selectedOnly');
+      const visibleCount = document.querySelector('#visibleCount');
+      const selectionCount = document.querySelector('#selectionCount');
+      const selectedList = document.querySelector('#selectedList');
+      const copySelection = document.querySelector('#copySelection');
+      const downloadSelection = document.querySelector('#downloadSelection');
+      const clearSelection = document.querySelector('#clearSelection');
+      const selectVisible = document.querySelector('#selectVisible');
+
+      familyOrder.forEach(value => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = familyLabels[value];
+        family.append(option);
+      });
+
+      function persist() {
+        localStorage.setItem(storageKey, JSON.stringify([...selected]));
+      }
+
+      function visibleTeams() {
+        const query = search.value.trim().toLocaleLowerCase();
+        return teams.filter(team => {
+          if (family.value !== 'all' && team.family !== family.value) return false;
+          if (selectedOnly.getAttribute('aria-pressed') === 'true' && !selected.has(team.stableID)) return false;
+          return !query || `${team.name} ${team.abbreviation}`.toLocaleLowerCase().includes(query);
+        });
+      }
+
+      function imagePath(team) {
+        return `../../Sources/ProFootballCoachUI/Resources/TeamLogos.xcassets/${team.assetName}.imageset/${team.filename}`;
+      }
+
+      function makeCard(team) {
+        const card = document.createElement('label');
+        card.className = `mark-card${selected.has(team.stableID) ? ' selected' : ''}`;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = selected.has(team.stableID);
+        checkbox.setAttribute('aria-label', `Select ${team.name} for remake`);
+        checkbox.addEventListener('change', () => {
+          checkbox.checked ? selected.add(team.stableID) : selected.delete(team.stableID);
+          persist();
+          render();
+        });
+
+        const preview = document.createElement('span');
+        preview.className = 'preview';
+        const light = document.createElement('span');
+        light.className = 'surface light';
+        const dark = document.createElement('span');
+        dark.className = 'surface dark';
+        const image = document.createElement('img');
+        image.src = imagePath(team);
+        image.alt = `${team.name} team mark`;
+        image.loading = 'lazy';
+        preview.append(light, dark, image);
+
+        const meta = document.createElement('span');
+        meta.className = 'mark-meta';
+        const name = document.createElement('span');
+        name.className = 'team-name';
+        name.textContent = team.name;
+        const familyName = document.createElement('span');
+        familyName.className = 'family-name';
+        familyName.textContent = familyLabels[team.family];
+        meta.append(name, familyName);
+
+        card.append(checkbox, preview, meta);
+        return card;
+      }
+
+      function renderSelection() {
+        const chosen = teams.filter(team => selected.has(team.stableID));
+        selectionCount.textContent = String(chosen.length);
+        selectedList.replaceChildren();
+
+        if (!chosen.length) {
+          const empty = document.createElement('p');
+          empty.className = 'empty-state';
+          empty.textContent = 'No marks selected. Choose any logo that should be remade.';
+          selectedList.append(empty);
+        } else {
+          chosen.forEach(team => {
+            const row = document.createElement('div');
+            row.className = 'selected-item';
+            const name = document.createElement('span');
+            name.textContent = team.name;
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.textContent = '×';
+            remove.setAttribute('aria-label', `Remove ${team.name}`);
+            remove.addEventListener('click', () => {
+              selected.delete(team.stableID);
+              persist();
+              render();
+            });
+            row.append(name, remove);
+            selectedList.append(row);
+          });
+        }
+
+        [copySelection, downloadSelection, clearSelection].forEach(button => {
+          button.disabled = chosen.length === 0;
+        });
+      }
+
+      function render() {
+        const visible = visibleTeams();
+        grid.replaceChildren(...visible.map(makeCard));
+        visibleCount.textContent = `${visible.length} shown · ${selected.size} selected`;
+        selectVisible.disabled = visible.length === 0;
+        renderSelection();
+      }
+
+      function selectedTeams() {
+        return teams.filter(team => selected.has(team.stableID));
+      }
+
+      function requestText() {
+        const lines = selectedTeams().map(team => `- ${team.name} [${team.assetName}]`);
+        return `Please remake these ${lines.length} team logos:\n${lines.join('\n')}`;
+      }
+
+      async function copyText(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return;
+        }
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.append(area);
+        area.select();
+        document.execCommand('copy');
+        area.remove();
+      }
+
+      search.addEventListener('input', render);
+      family.addEventListener('change', render);
+      selectedOnly.addEventListener('click', () => {
+        const next = selectedOnly.getAttribute('aria-pressed') !== 'true';
+        selectedOnly.setAttribute('aria-pressed', String(next));
+        render();
+      });
+      selectVisible.addEventListener('click', () => {
+        visibleTeams().forEach(team => selected.add(team.stableID));
+        persist();
+        render();
+      });
+      clearSelection.addEventListener('click', () => {
+        selected.clear();
+        persist();
+        render();
+      });
+      copySelection.addEventListener('click', async () => {
+        await copyText(requestText());
+        const original = copySelection.textContent;
+        copySelection.textContent = 'Copied';
+        setTimeout(() => { copySelection.textContent = original; }, 1200);
+      });
+      downloadSelection.addEventListener('click', () => {
+        const payload = selectedTeams().map(({ stableID, name, abbreviation, assetName, filename, family }) => ({
+          stableID, name, abbreviation, assetName, filename, family
+        }));
+        const blob = new Blob([JSON.stringify(payload, null, 2) + '\n'], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'team-logo-remakes.json';
+        link.click();
+        URL.revokeObjectURL(link.href);
+      });
+      document.querySelectorAll('[data-surface]').forEach(button => {
+        button.addEventListener('click', () => {
+          grid.dataset.surface = button.dataset.surface;
+          document.querySelectorAll('[data-surface]').forEach(candidate => {
+            candidate.setAttribute('aria-pressed', String(candidate === button));
+          });
+        });
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

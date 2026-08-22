@@ -12,11 +12,16 @@ public enum DetailedGameSummaryBuilder {
     }
 
     private struct TeamLine {
-        var plays = 0
         var yards = 0
         var passing = 0
         var rushing = 0
         var turnovers = 0
+        var plays = 0
+        var passAttempts = 0
+        var passCompletions = 0
+        var sacks = 0
+        var explosivePlays = 0
+        var fieldGoals = FieldGoalStatistics()
     }
 
     public static func make(
@@ -37,7 +42,7 @@ public enum DetailedGameSummaryBuilder {
 
         for play in record.plays {
             let side = play.situation.possession
-            let yards = play.outcome.yards
+            let yards = max(0, play.outcome.yards)
             if play.outcome.result.isTurnover {
                 teams[side, default: TeamLine()].turnovers += 1
             }
@@ -45,6 +50,20 @@ public enum DetailedGameSummaryBuilder {
             switch play.offensiveCall.playType {
             case .pass:
                 teams[side, default: TeamLine()].plays += 1
+                switch play.outcome.result {
+                case .incompletion, .interception:
+                    teams[side, default: TeamLine()].passAttempts += 1
+                case .gain, .touchdown, .fumbleLost:
+                    teams[side, default: TeamLine()].passAttempts += 1
+                    teams[side, default: TeamLine()].passCompletions += 1
+                    if yards >= MatchupRules.explosivePassYards {
+                        teams[side, default: TeamLine()].explosivePlays += 1
+                    }
+                case .sack, .safety:
+                    teams[side, default: TeamLine()].sacks += 1
+                case .kneel, .fieldGoalGood, .fieldGoalMissed, .punt:
+                    break
+                }
                 teams[side, default: TeamLine()].yards += yards
                 teams[side, default: TeamLine()].passing += yards
                 update(play.outcome.passerID) { $0.passing += yards }
@@ -54,14 +73,31 @@ public enum DetailedGameSummaryBuilder {
                 }
             case .run, .kneel:
                 teams[side, default: TeamLine()].plays += 1
+                if play.offensiveCall.playType == .run,
+                   yards >= MatchupRules.explosiveRunYards {
+                    teams[side, default: TeamLine()].explosivePlays += 1
+                }
                 teams[side, default: TeamLine()].yards += yards
                 teams[side, default: TeamLine()].rushing += yards
                 update(play.outcome.ballCarrierID) { $0.rushing += yards }
                 if play.outcome.result == .touchdown {
                     update(play.outcome.ballCarrierID) { $0.touchdowns += 1 }
                 }
-            case .punt, .fieldGoal:
+            case .punt:
                 break
+            case .fieldGoal:
+                let bucket = FieldGoalDistanceBucket(
+                    distanceYards: play.situation.yardsToGoal
+                        + MatchupRules.fieldGoalSnapDistance
+                )
+                switch play.outcome.result {
+                case .fieldGoalGood:
+                    teams[side, default: TeamLine()].fieldGoals.record(bucket, made: true)
+                case .fieldGoalMissed:
+                    teams[side, default: TeamLine()].fieldGoals.record(bucket, made: false)
+                default:
+                    break
+                }
             }
         }
 
@@ -74,11 +110,34 @@ public enum DetailedGameSummaryBuilder {
                 passingYards: line.passing,
                 rushingYards: line.rushing,
                 turnovers: line.turnovers,
-                offensivePlays: line.plays
+                offensivePlays: line.plays,
+                passAttempts: line.passAttempts,
+                passCompletions: line.passCompletions,
+                sacks: line.sacks,
+                explosivePlays: line.explosivePlays,
+                fieldGoals: line.fieldGoals
             )
         }
 
         let participants = Set(homeParticipantIDs + awayParticipantIDs)
+        var fourthQuarterPoints = 0
+        var driveOutcomes = DriveOutcomeStatistics()
+        for drive in record.drives {
+            if drive.plays.last?.situation.quarter == 4 {
+                fourthQuarterPoints += drive.pointsScored
+            }
+            switch drive.ending {
+            case .touchdown: driveOutcomes.record(.touchdown)
+            case .fieldGoal: driveOutcomes.record(.fieldGoalMade)
+            case .missedFieldGoal: driveOutcomes.record(.fieldGoalMissed)
+            case .punt: driveOutcomes.record(.punt)
+            case .turnover: driveOutcomes.record(.turnover)
+            case .downs: driveOutcomes.record(.downs)
+            case .safety: driveOutcomes.record(.safety)
+            case .endOfHalf: driveOutcomes.record(.periodExpiry)
+            case .endOfQuarter: break
+            }
+        }
         let playerStatistics: [PlayerGameStatistics] = lines.keys
             .sorted { $0.uuidString < $1.uuidString }
             .compactMap { id in
@@ -97,6 +156,8 @@ public enum DetailedGameSummaryBuilder {
             awayScore: record.awayScore,
             homeStatistics: teamStatistics(.home),
             awayStatistics: teamStatistics(.away),
+            fourthQuarterPoints: fourthQuarterPoints,
+            driveOutcomes: driveOutcomes,
             homeParticipantIDs: homeParticipantIDs,
             awayParticipantIDs: awayParticipantIDs,
             playerStatistics: playerStatistics,

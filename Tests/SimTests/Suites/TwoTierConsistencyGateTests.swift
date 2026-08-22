@@ -502,4 +502,125 @@ func runTwoTierConsistencyTests() {
             )
         }
     }
+
+    suite("abstracted summary statistics") {
+        test("detailed summaries classify terminal drive outcomes") {
+            let endings: [DriveEnding] = [
+                .touchdown, .fieldGoal, .missedFieldGoal, .punt,
+                .turnover, .downs, .safety, .endOfHalf, .endOfQuarter,
+            ]
+            let record = GameRecord(
+                homeScore: 0,
+                awayScore: 0,
+                drives: endings.map {
+                    DriveRecord(
+                        offense: .home,
+                        plays: [],
+                        ending: $0,
+                        pointsScored: 0,
+                        startYardLine: 25
+                    )
+                },
+                tier: .pro
+            )
+            let summary = DetailedGameSummaryBuilder.make(
+                record: record,
+                homeParticipantIDs: [],
+                awayParticipantIDs: []
+            )
+            for bucket in DriveOutcomeBucket.allCases {
+                expectEqual(summary.driveOutcomes.count(in: bucket), 1, bucket.label)
+            }
+            expectEqual(summary.driveOutcomes.total, DriveOutcomeBucket.allCases.count)
+        }
+
+        test("detailed summaries preserve fourth-quarter scoring") {
+            let home = CalibrationRoster.team(skill: 72, seed: 41_001)
+            let away = CalibrationRoster.team(skill: 72, seed: 541_001)
+            var scoredGame: (record: GameRecord, points: Int)?
+            for seed in UInt64(1)...50 {
+                let record = GameEngine.play(tier: .pro, home: home, away: away, seed: seed)
+                let points = record.drives.reduce(into: 0) { total, drive in
+                    if drive.plays.last?.situation.quarter == 4 { total += drive.pointsScored }
+                }
+                if points > 0 {
+                    scoredGame = (record, points)
+                    break
+                }
+            }
+            guard let scoredGame else {
+                expect(false, "diagnostic seeds produced no fourth-quarter scoring")
+                return
+            }
+            let summary = DetailedGameSummaryBuilder.make(
+                record: scoredGame.record,
+                homeParticipantIDs: home.offense.map(\.id) + home.defense.map(\.id),
+                awayParticipantIDs: away.offense.map(\.id) + away.defense.map(\.id)
+            )
+            expectEqual(summary.fourthQuarterPoints, scoredGame.points)
+        }
+
+        test("game summaries default drive outcomes") {
+            let statistics = TeamGameStatistics(
+                points: 0,
+                offensiveYards: 0,
+                passingYards: 0,
+                rushingYards: 0,
+                turnovers: 0
+            )
+            let summary = GameSummary(
+                homeScore: 0,
+                awayScore: 0,
+                homeStatistics: statistics,
+                awayStatistics: statistics,
+                playerStatistics: []
+            )
+            expectEqual(summary.driveOutcomes.total, 0)
+            for bucket in DriveOutcomeBucket.allCases {
+                expectEqual(summary.driveOutcomes.count(in: bucket), 0, bucket.label)
+            }
+        }
+
+        test("game summaries default fourth-quarter scoring") {
+            let statistics = TeamGameStatistics(
+                points: 7,
+                offensiveYards: 75,
+                passingYards: 50,
+                rushingYards: 25,
+                turnovers: 0
+            )
+            let summary = GameSummary(
+                homeScore: 7,
+                awayScore: 0,
+                homeStatistics: statistics,
+                awayStatistics: TeamGameStatistics(
+                    points: 0,
+                    offensiveYards: 0,
+                    passingYards: 0,
+                    rushingYards: 0,
+                    turnovers: 0
+                ),
+                playerStatistics: []
+            )
+            expectEqual(summary.fourthQuarterPoints, 0)
+        }
+
+        test("legacy team statistics default new rate counters") {
+            let data = Data(
+                #"{"points":21,"offensiveYards":300,"passingYards":200,"rushingYards":100,"turnovers":1,"offensivePlays":64}"#.utf8
+            )
+            guard let statistics = try? JSONDecoder().decode(TeamGameStatistics.self, from: data) else {
+                expect(false, "legacy team statistics no longer decode")
+                return
+            }
+            expectEqual(statistics.passAttempts, 0)
+            expectEqual(statistics.passCompletions, 0)
+            expectEqual(statistics.sacks, 0)
+            expectEqual(statistics.explosivePlays, 0)
+            for bucket in FieldGoalDistanceBucket.allCases {
+                expectEqual(statistics.fieldGoals.attempts(in: bucket), 0)
+                expectEqual(statistics.fieldGoals.made(in: bucket), 0)
+            }
+        }
+    }
 }

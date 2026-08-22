@@ -85,7 +85,7 @@ public struct WorldHistoryReadModel: Sendable, Equatable {
                 id: "pro-team:\(team.id.uuidString)",
                 entityID: team.id,
                 kind: .proTeam,
-                title: team.name,
+                title: team.displayName,
                 detail: "Professional team · \(team.cityName)",
                 season: nil
             )
@@ -206,7 +206,7 @@ public struct WorldHistoryReadModel: Sendable, Equatable {
     private static func names(in state: GameState) -> [UUID: String] {
         var result: [UUID: String] = [:]
         for programme in state.programmes.values { result[programme.id] = programme.name }
-        for team in state.proTeams.values { result[team.id] = team.name }
+        for team in state.proTeams.values { result[team.id] = team.displayName }
         for player in state.players.values { result[player.id] = player.fullName }
         for staff in state.staff.values { result[staff.id] = staff.fullName }
         for departed in state.people.departedPlayers.values { result[departed.id] = departed.fullName }

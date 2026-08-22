@@ -306,6 +306,64 @@ func runSnapAnchorTests() {
             }
         }
 
+        test("a touchdown from the one produces a legal upper-bound anchor set") {
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let play = PlayRecord(
+                situation: Situation(down: 1, distance: 1, yardLine: 99),
+                offensiveCall: OffensiveCall(playType: .run),
+                defensiveCall: DefensiveCall(coverage: .man),
+                outcome: SnapOutcome(
+                    result: .touchdown, yards: 1, secondsElapsed: 4, matchups: [],
+                    ballCarrierID: personnel.offense[1].id
+                ),
+                callInTriggers: [.redZone]
+            )
+
+            let set = SnapAnchors.choreograph(
+                play: play,
+                offense: Array(personnel.offense.prefix(11)),
+                defense: Array(personnel.defense.prefix(11))
+            )
+
+            expectEqual(set.lineOfScrimmage, 99)
+            expectEqual(set.firstDownLine, 100)
+            expectEqual(set.endSpot, 100)
+            for point in set.actors.flatMap({ [$0.start, $0.end] })
+                + set.ball.flatMap({ [$0.from, $0.to] }) {
+                expectIn(point.yard, 0...100, "a goal-line touchdown left the field")
+                expectIn(point.lateral, 0...1, "a goal-line touchdown left the sidelines")
+            }
+        }
+
+        test("a safety from the one produces a legal lower-bound anchor set") {
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            let quarterback = personnel.offense[0]
+            let play = PlayRecord(
+                situation: Situation(down: 3, distance: 8, yardLine: 1),
+                offensiveCall: OffensiveCall(playType: .pass),
+                defensiveCall: DefensiveCall(coverage: .man),
+                outcome: SnapOutcome(
+                    result: .safety, yards: -1, secondsElapsed: 5, matchups: [],
+                    ballCarrierID: quarterback.id, passerID: quarterback.id
+                ),
+                callInTriggers: [.thirdAndLong]
+            )
+
+            let set = SnapAnchors.choreograph(
+                play: play,
+                offense: Array(personnel.offense.prefix(11)),
+                defense: Array(personnel.defense.prefix(11))
+            )
+
+            expectEqual(set.lineOfScrimmage, 1)
+            expectEqual(set.endSpot, 0)
+            for point in set.actors.flatMap({ [$0.start, $0.end] })
+                + set.ball.flatMap({ [$0.from, $0.to] }) {
+                expectIn(point.yard, 0...100, "a safety left the field")
+                expectIn(point.lateral, 0...1, "a safety left the sidelines")
+            }
+        }
+
         test("the same record encodes byte-identically twice") {
             // 03 section 9.3 clause 1. The determinism the gap register asks for by name.
             let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)

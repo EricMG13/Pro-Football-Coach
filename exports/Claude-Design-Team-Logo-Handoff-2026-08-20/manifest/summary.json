@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "66b95f3",
+  "worldSeed": 20260812,
+  "schemaVersion": 1,
+  "recordCount": 166,
+  "approvedCount": 166,
+  "families": {
+    "abstractMotion": 27,
+    "animalCreature": 28,
+    "equipmentVehicle": 28,
+    "framedEmblem": 27,
+    "originalCharacter": 28,
+    "regionalSymbol": 28
+  },
+  "assetCount": 166
+}

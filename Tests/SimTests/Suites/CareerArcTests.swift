@@ -62,6 +62,8 @@ func runCareerArcTests() {
                 at: programmeID,
                 in: source
             ).state
+            let coachID = controlled.career.coachID!
+            let careerRecord = controlled.people.staffCareers[coachID]!
             let proTeam = controlled.proTeams.values[0]
             var arc = CareerArcState(
                 currentJob: CareerJob(
@@ -87,6 +89,20 @@ func runCareerArcTests() {
             expectEqual(arc.jobHistory.last?.reason, .promoted)
 
             var promoting = controlled
+            promoting.history = DomainEventLedger(retentionLimit: 1)
+            expect(promoting.history.append(contentsOf: (0...1).map { sequence in
+                DomainEvent(
+                    id: DomainEvent.deterministicID(
+                        rootSeed: controlled.league.seed,
+                        sequence: sequence
+                    ),
+                    sequence: sequence,
+                    occurredAt: controlled.calendar,
+                    payload: .integrityChecked(issueCount: 0)
+                )
+            }))
+            let archivedSeasons = promoting.history.archive
+            expect(!archivedSeasons.isEmpty, "the promotion fixture has no archived season")
             promoting.careerArc = CareerArcState(
                 currentJob: CareerJob(
                     organisationID: programmeID,
@@ -105,6 +121,16 @@ func runCareerArcTests() {
             )
             expect(promoted.state.career.college == nil)
             expectEqual(promoted.state.careerArc.currentJob?.tier, .professional)
+            expectEqual(
+                promoted.state.people.staffCareers[coachID],
+                careerRecord,
+                "promotion changed or dropped the coach's career record"
+            )
+            expectEqual(
+                promoted.state.history.archive,
+                archivedSeasons,
+                "promotion changed, dropped, or duplicated an archived season"
+            )
 
             var resigning = controlled
             resigning.careerArc = CareerArcState(

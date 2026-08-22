@@ -169,6 +169,12 @@ public struct WorldSearchView: View, CoachWorldChromedSurface {
             if let teamID { onSelectTeam(teamID) }
         } label: {
             HStack(spacing: CoachWorldTokens.Gap.md) {
+                CoachWorldTeamLogo(
+                    team: result.team,
+                    size: .medium,
+                    surface: palette.work,
+                    palette: palette
+                )
                 Text(result.team.name.uppercased())
                     .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     .lineLimit(1)

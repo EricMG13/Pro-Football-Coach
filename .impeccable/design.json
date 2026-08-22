@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-10T17:45:00Z",
+  "title": "Design System: Pro Football Coach",
+  "extensions": {
+    "colorMeta": {
+      "surface-page": { "role": "neutral-bg", "displayName": "Page Surface", "canonical": "#0A0D14" },
+      "surface-card": { "role": "neutral-card", "displayName": "Card Surface", "canonical": "#121724" },
+      "surface-raised": { "role": "neutral-raised", "displayName": "Raised Surface", "canonical": "#1B2130" },
+      "accent": { "role": "primary-accent", "displayName": "Interactive Accent", "canonical": "#5B9DFF" },
+      "live": { "role": "live-accent", "displayName": "Live Chartreuse", "canonical": "#C6F24E" },
+      "college-accent": { "role": "house-college", "displayName": "College Bronze", "canonical": "#D9A441" },
+      "pro-accent": { "role": "house-pro", "displayName": "Pro Steel", "canonical": "#7FB2E5" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display Hero", "purpose": "Title and career milestones." },
+      "title": { "displayName": "Section Title", "purpose": "Pane headers." },
+      "body": { "displayName": "Body Prose", "purpose": "Standard descriptions." },
+      "numeral": { "displayName": "Tabular Numeral", "purpose": "Scores, clocks, ratings." }
+    },
+    "shadows": [
+      { "name": "elev-1", "value": "0 1px 2px rgba(0,0,0,0.06)", "purpose": "Card at rest" },
+      { "name": "elev-2", "value": "0 4px 12px rgba(0,0,0,0.10)", "purpose": "CallInCard over field" },
+      { "name": "elev-3", "value": "0 12px 28px rgba(0,0,0,0.16)", "purpose": "Confirmation sheet with scrim" }
+    ],
+    "breakpoints": [
+      { "name": "floor-landscape", "value": "844x390" },
+      { "name": "ceiling-landscape", "value": "932x430" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Standard 44pt touch floor action button.",
+      "html": "<button class=\"ds-btn-primary\">ACCEPT APPOINTMENT</button>",
+      "css": ".ds-btn-primary { background: #5B9DFF; color: #0A0D14; min-height: 44px; padding: 0 24px; font-weight: 600; font-size: 17px; border: none; border-radius: 8px; cursor: pointer; } .ds-btn-primary:hover { background: #4A8CEE; }"
+    },
+    {
+      "name": "ScoreBug",
+      "kind": "custom",
+      "refersTo": "score-bug",
+      "description": "Broadcast register score header.",
+      "html": "<div class=\"ds-score-bug\"><span class=\"ds-team-home\">ASH</span><span class=\"ds-score\">17 - 20</span><span class=\"ds-team-away\">WEX</span></div>",
+      "css": ".ds-score-bug { display: flex; align-items: center; background: #000; color: #F5F7FA; height: 44px; font-family: 'SF Compact', sans-serif; font-weight: 700; border-radius: 0; padding: 0 16px; } .ds-score { margin: 0 12px; font-size: 20px; color: #C6F24E; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Tactical Command Console",
+    "overview": "Pro Football Coach is a high-density, commute-aware college-to-pro coaching simulator designed exclusively for landscape iPhone. It balances deep management mechanics with clean, two-handed landscape ergonomics.",
+    "keyCharacteristics": [
+      "Landscape-Only Chassis (844 × 390 pt floor)",
+      "Dual Visual Registers (DESK vs BROADCAST)",
+      "Consequence-Driven Decision Design",
+      "Commute-Aware Continuity"
+    ],
+    "rules": [
+      { "name": "The Live-Is-Now Rule", "body": "The live chartreuse token (#C6F24E) is reserved strictly for active clocks and live call-in states.", "section": "colors" },
+      { "name": "The 12pt Floor Rule", "body": "No text element in any component or screen may land below 12pt.", "section": "typography" },
+      { "name": "The Surface-Borne Depth Rule", "body": "Dark mode conveys elevation by stepping surface lightness (#0A0D14 -> #121724 -> #1B2130).", "section": "elevation" }
+    ],
+    "dos": [
+      "Do maintain a strict 44x44pt touch target region for all interactive controls.",
+      "Do fall back to single-column scrolling layout at AX5 Dynamic Type scale.",
+      "Do state engine-generated verdicts at the top of every READOUT screen."
+    ],
+    "donts": [
+      "Don't use decorative colored side-tab borders (border-left: 3px solid).",
+      "Don't use text clipping with gradient backgrounds.",
+      "Don't use numbered section markers (01 / 02 / 03) as default section headers.",
+      "Don't allow raw text elements below 12pt."
+    ]
+  }
+}

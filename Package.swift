@@ -23,7 +23,8 @@ let package = Package(
         .target(
             name: "ProFootballCoachUI",
             dependencies: ["FootballSimCore"],
-            path: "Sources/ProFootballCoachUI"
+            path: "Sources/ProFootballCoachUI",
+            resources: [.process("Resources")]
         ),
         // The composition layer. It is the only place allowed to see both the authoritative root
         // and the screen read models, because mapping one to the other is what it exists to do:

@@ -57,12 +57,12 @@ public struct CollegeWalkOnTransition: Sendable, Equatable {
 
 public enum CollegeCycleSystem {
     static func hotProspectIDs(in history: DomainEventLedger) -> Set<UUID> {
-        Set(history.recent.flatMap { $0.payload.referencedProspectIDs })
+        Set((history.recent + history.archive.flatMap(\.notableEvents))
+            .flatMap { $0.payload.referencedProspectIDs })
     }
 
-    /// Removes compact former-prospect identities as soon as their final retained event body is
-    /// evicted. Rollover owns creation because it still has the outgoing full prospect identity;
-    /// this operation only reconciles the bounded hot-history retention set.
+    /// Removes compact former-prospect identities once no retained event body references them.
+    /// Rollover owns creation because it still has the outgoing full prospect identity.
     static func pruningArchivedProspects(in state: GameState) -> CollegeState {
         let referencedIDs = hotProspectIDs(in: state.history)
         let retainedArchive = state.college.archivedProspects.filter {

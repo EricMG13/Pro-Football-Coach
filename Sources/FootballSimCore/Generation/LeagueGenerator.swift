@@ -60,7 +60,7 @@ public struct GeneratedWorld: Codable, Sendable, Equatable {
             names.append(programme.nickname)
         }
         for team in proTeams {
-            names.append(team.name)
+            names.append(team.displayName)
             names.append(team.nickname)
         }
         // Looked up through the ordered member arrays rather than by iterating `identities.values`,
@@ -143,10 +143,18 @@ public enum LeagueGenerator {
                 cityCursor += 1
                 let archetype = Archetype.with(id: archetypeAllocation.removeLast())
                 let programmeID = rng.uuid()
+                // Draw order is load-bearing: the school half first, the nickname second, exactly
+                // as before. The public name is now the two joined, which is how a college team is
+                // named everywhere it appears -- the nickname was always generated and never shown.
+                let school = NameGrammar.institutionName(
+                    place: NameGrammar.cityWithoutState(city.name),
+                    using: &rng
+                )
+                let programmeNickname = NameGrammar.nickname(using: &rng)
                 programmes.append(Programme(
                     id: programmeID,
-                    name: NameGrammar.institutionName(place: city.name, using: &rng),
-                    nickname: NameGrammar.nickname(using: &rng),
+                    name: "\(school) \(programmeNickname)",
+                    nickname: programmeNickname,
                     cityName: city.name,
                     conferenceID: conferenceID,
                     archetypeID: archetype.id,
@@ -189,10 +197,11 @@ public enum LeagueGenerator {
                     let city = map.cities[cityCursor]
                     cityCursor += 1
                     let teamID = rng.uuid()
+                    let nickname = NameGrammar.nickname(using: &rng)
                     proTeams.append(ProTeam(
                         id: teamID,
-                        name: city.name,
-                        nickname: NameGrammar.nickname(using: &rng),
+                        name: "\(NameGrammar.cityWithoutState(city.name)) \(nickname)",
+                        nickname: nickname,
                         cityName: city.name,
                         conferenceID: conferenceID,
                         divisionID: divisionID,

@@ -3,6 +3,12 @@ import Foundation
 public enum PeopleRules {
     public static let fatigueRange: ClosedRange<Int> = 0...100
     public static let careerSeasonHistoryLimit = 40
+    /// Recent departed profiles retained beside the bounded history and awards archives.
+    ///
+    /// Bounds the *recently ended* list `compacted(retainingPlayerIDs:staffIDs:)` rebuilds, which
+    /// is not the same collection as `departedPlayerRetentionLimit`'s.
+    public static let maximumRetainedDepartedPlayers = 4_096
+
     /// The stated bound on retained departed-player identities (`CLAUDE.md` conventions).
     ///
     /// Departure was the only unbounded inflow into `PeopleState`: a college roster turns over

@@ -22,7 +22,7 @@ func runProManagementTests() {
             expectEqual(receipt.capAfter.committedCap - receipt.capBefore.committedCap, contract.capHit(inYear: 0))
             expect(receipt.state.proTeams[teamID]?.rosterIDs.contains(player.id) == true)
             // `acquire` stamps an unsigned contract with the market's season (`02` section 4.2a
-            // adjacent, closing the same "contract nothing can clear" gap D15 fixed for dead
+            // adjacent, closing the same "contract nothing can clear" gap D16 fixed for dead
             // money), so the stored deal carries `signedSeason` even though the one passed in did
             // not.
             expectEqual(

@@ -52,6 +52,141 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 
 ## Where the project actually is
 
+> **Current-tree verification boundary — 2026-08-21.** On the working tree at `a547404`, the
+> canonical release-mode `--catalog` command lists **19 registered gates, 19 runnable commands,
+> and zero `MISSING RUNNER` entries**. `--commitment-coverage` passes at **4 tests / 20 checks**.
+> These two runs verify registration and dispatch coverage only; they do not verify that every
+> registered gate passes.
+>
+> This working tree also contains uncommitted changes to `AbstractGameSimulator.swift`, packaged
+> team-logo assets, and team-mark review artefacts outside this status pass. No full suite,
+> determinism lane, logo lane, or device run was run in this pass against that combined tree. The
+> dated results below remain evidence for the revisions on which they were recorded, not a green
+> claim for the current working tree.
+
+> **2026-08-21 — the determinism gate now constructs and pins a non-empty history archive.**
+> The root and one-week fingerprints exercise `DomainEventLedger.archive` only while it is empty.
+> `--architecture-only` now builds a retention-one ledger with deterministic events spanning two
+> seasons, proves that both season digests exist, and pins the archive's canonical JSON fingerprint
+> at **12,709,969,372,690,370,694**. The RED run produced that value against the provisional zero;
+> two separate release-process invocations then passed at **26 tests / 228 checks**, with identical
+> **35 / 6,585** competition results and **2 passed / 0 failed** lane totals. Neither existing root
+> fingerprint literal moved, and no engine change was needed.
+
+> **2026-08-21 — every team now has a name a league would write, and a mark briefed to match it.**
+> 134 of the 166 public names were school directory entries — "Aberdeen, MS Agricultural
+> University" — with no team in them at all. `Programme` had carried a `nickname` since the
+> beginning and never displayed it. The public name is now `place + short qualifier + nickname`
+> for a programme and `place + nickname` for a club, with the state abbreviation and the
+> registrar's head noun dropped: **"Aberdeen Maritime Flint Voyagers"**, **"Achille A&M Sable
+> Wreckers"**, **"Aberdeen Sable Anchors"**. `cityName` stays state-qualified, because the map
+> still needs to tell same-named towns apart.
+>
+> The nickname pools grew from 18 x 22 to 32 x 40 in the same pass: a nickname visible on 32
+> members became visible on all 166, and 396 pairs was not enough to go round. All 166 public names
+> are distinct, the longest is 43 characters against the old 42, and the mean is **shorter** than
+> before, so no surface gets wider.
+>
+> **The mark brief is now written from the nickname.** It was written from the programme's region
+> and never looked at the nickname, which is why the Silver Kestrels carried a compass roundel. Each
+> of the 40 nouns has a table of the shapes it can legitimately become — a creature, a figure, a
+> tool, a landform, a crest device — and the motif family is assigned from that table with the
+> 27/28 balance preserved. `TeamLogoTests` asserts every brief names its own team's nickname, so a
+> mark that drifts off its team fails the suite.
+>
+> **What is verified.** All 166 stable IDs are byte-identical before and after, so the logo
+> catalogue did not de-key. Draw counts are unchanged — the four-way branch and the single pick are
+> both still there — and the determinism digest was re-pinned deliberately. The whole cross product
+> of 570 places, 11 school forms, 32 adjectives and 40 nouns — **8,025,600 public names** — was
+> swept against `Blocklist` with no collisions, on top of the green 200-world legal sweep.
+> `--generation-only` (35/39,750), `--legal-only` (23/144), `--core-contracts` (223/3,065),
+> `--design-contracts` (45/773) and all seven logo lanes pass.
+>
+> **What is true as of 2026-08-21.** Codex generated and committed a replacement set, and the
+> owner adopted it. The shipped marks now depict the team they belong to: 166 flat two-colour PNGs
+> at 256 px, 3.3 MB, mean 14.6 KB. Verified independently before adoption — exactly two opaque
+> colours per mark with no gradient or shading anywhere, one coherent silhouette at the 20 pt draw
+> in five of the six families, zero safe-area violations, zero palette misses, and no lettering.
+> All nine manifest tests and all six per-family asset lanes pass.
+>
+> **Three defects were accepted with it, and none is fixed.**
+>
+> 1. **64 of 166 lose their silhouette on the dark surface.** The set carries no keyline and no
+>    halo; the darker team colour does keyline duty, so where it forms the outer contour it
+>    disappears against `#07111F`. The worst measure 1.03 contrast, which is invisible. The app's
+>    primary register is dark. Each affected record names its own measurement in `reviewNotes`.
+> 2. **Style drifts by generation batch.** The marks were written in fourteen batches of twelve
+>    over 146 minutes, recoverable from file mtimes. Internal edge density is 0.068 in batch 1 and
+>    runs 0.106 to 0.138 across batches 4 to 13 — roughly double — from thin internal strokes and
+>    extra contour detail. Batch 14 recovers only to 0.087. Batch 1 is the cleanest reference.
+> 3. **There is no generator.** The 166 PNGs were committed without the source that drew them.
+>    Nothing under `Tools/` produces them, and a sweep of every ref, all 31 worktrees and the agent
+>    scratch directories found nothing. The set cannot be regenerated, so neither defect above can
+>    be fixed at source — only by redrawing or by post-processing rasters. `a547404` removed a
+>    rejected experiment of mine that had been swept into the tree and would have been mistaken for
+>    the generator.
+>
+> **The place list was alphabetically truncated, and is rebuilt.** `realAmericanPlaces` had been
+> read out of a gazetteer in alphabetical order and cut at 570: **375 entries began with A and 109
+> with B**, so 85 per cent of the pool was A or B and six letters were absent outright. The sampling
+> was faithful, which was the problem — the 166 members reproduced that distribution exactly, and a
+> league where two thirds of the teams are named after A-towns reads as generated on sight.
+>
+> The pool is now 570 real places spread across 25 initials, weighted toward real US place-name
+> frequency rather than dealt flat. **A+B falls from 85 per cent of the pool to 12, and from 85 per
+> cent of a world's teams to 8.** The count is held at exactly 570 because `distinctPlaceNames`
+> shuffles the array and a shuffle costs one draw per element: substituting entries keeps the random
+> stream where it was, and **all 166 stable IDs and all 166 nicknames are identical before and
+> after**, so the logo catalogue stayed keyed and every mark still matches its team. The whole cross
+> product — 8,025,600 public names — was swept against `Blocklist` with no collisions, and the check
+> caught four candidates on the way in whose city names contain a real programme.
+>
+> **A gap the sweep does not cover.** Two real programmes, Akron and Butler, are in the place list
+> and absent from `Blocklist.institutions`. That predates this change and is unaffected by it, but
+> the per-release list refresh should pick them up. The generator now steps to the next pool entry
+> rather than redrawing when a pairing is blocked, which is what makes adding them safe.
+
+
+> **2026-08-21 — P0-1 of the SwiftUI performance audit is closed. The artwork is unchanged.**
+> The catalogue shipped 166 marks at 1024 x 1024, 157 MB, for a chip the app never draws larger
+> than 44 points — 132 device pixels at 3x. `Tools/TeamLogos/downsample.swift` is the resize step
+> the generation pipeline never had: **157 MB to 14 MB packaged, and 664 MiB to 41 MiB if every
+> mark were decoded at once.** It is idempotent, so a second run leaves the artwork alone.
+>
+> A side-by-side at 20, 32 and 44 points shows no visible difference from the 1024 px source — the
+> renderer was already resampling far harder than this on every draw.
+>
+> **An attempt to redraw the set as flat vector marks was reverted the same day.** It read better
+> at 20 points and packaged to 5 MB, but as artwork it was plainly cruder than the marks it
+> replaced, and the owner said so. It is in `b6a5219` if the geometry is ever wanted.
+>
+> **What is verified.** `--team-logo-manifest` (8 tests / 16,720 checks) and all six
+> `--team-logo-assets <family>` lanes pass. `TeamLogoTests` now walks the imageset directory by
+> construction rather than a hand-written list, and bounds the pixel side, the per-file bytes and
+> the catalogue total. It also reads the largest size case back out of `CoachWorldTeamLogo.swift`,
+> so growing the chip past what a 256 px source covers fails the suite rather than shipping a
+> blurred mark. Names, colours, stable IDs, families and the generated catalogue are untouched, so
+> the two legal tests cover exactly what they covered before.
+>
+> **A defective test was replaced, and what it was hiding is worth recording.** The near-duplicate
+> guard hashed each mark to 8x8 grayscale and thresholded against the image's own mean, drawn at
+> `.low` interpolation. On a reduction that large `.low` is closer to point sampling than to
+> averaging, so what separated two marks was high-frequency detail noise rather than how alike they
+> look. Resampling the same art to a smaller source was enough to collapse pairs that had been far
+> apart. Redo the reduction as a true area average and **117 of the 13,695 pairs land within four
+> bits of each other, several of them identical** — the guard could not tell the shipped set apart
+> and passed anyway. It is now a per-channel difference hash over a properly averaged 9x8: it reads
+> structure rather than brightness, does not move with source resolution, and sees colour. The
+> closest pair in the shipped set measures 10 of 192 bits against a threshold of 8.
+>
+> **What is not verified.** No device capture, so the memory spike and the World Search stall the
+> audit predicts are still predictions.
+>
+> The rest of the audit is untouched. **P0-2 still stands: this branch is 138 commits behind `main`
+> and predates every app-layer performance fix there.** Nothing else in that report should be
+> actioned before the merge.
+
+
 > **2026-08-20 — career transitions: the world half of a job change was never done.** The career
 > arc moved and the world did not. Three transitions end a coach's job, and all three cleared the
 > career control record and stopped there, leaving the coach standing in their old organisation's
@@ -1038,6 +1173,40 @@ Pre-iPhone-15 devices are outside the compatibility promise even when iOS 26 all
 > ours is a geographic map — the handoff's own text and its rendering disagree, and replacing it
 > discards a working surface); and **F-01** for the remaining ~59 surfaces, which are still
 > chrome-only.
+
+> **2026-08-18, later still — exhaustive design critique on a real career at the install floor.**
+> `docs/reviews/2026-08-18-floodlit-exhaustive-design-critique.md` records **80 findings across 21
+> surfaces**, driven on an iPhone 17e simulator (844 × 390, the install floor) through a real
+> career rather than the proof harness. Captures:
+> `docs/proofs/2026-08-18-exhaustive-critique/`. The Debug app build was green; **the suites were
+> not run**, and this is a review, not a verification pass.
+>
+> Verdict **reject**: median 18/40 against `04b`, nothing near the 31/40 gate. Four failures are
+> systemic rather than per-surface, and they supersede the earlier "four of six families confirmed
+> on a simulator" line above:
+>
+> - **G-01 (P0)** — 32 of 62 surfaces have no route in a live career. Recruiting (11), pro
+>   management (8) and career (13) are unreachable: every route into them lives in a `worldStrip`
+>   guarded by `if chrome == nil`, and chrome is always supplied. That includes the Recruiting
+>   Board, one of the three `04b` §7 proof screens.
+> - **G-05 (P0)** — `ADVANCE` refuses when the weekly plans are unset and says nothing: the
+>   Floodlit hub never renders `statusMessage`, and its empty state claims the week advances once
+>   obligations are cleared while they are. Reproduced, then unblocked by setting both plans.
+> - **G-02 (P1)** — Settings & accessibility is unreachable once a career starts.
+> - **G-35/G-36 (P1)** — rail labels are 7.5 pt (5.25 pt after `minimumScaleFactor`) and the header
+>   family label 8.5 pt, below `04` §6.2's floor and §6.1b's 9 pt exemption; the `04b` §8 check
+>   that should catch it asserts `authoredFloor >= 12` — a constant, not a call site.
+>
+> Also recorded: real generated names break the personnel table, the depth chart and the Match Day
+> field (all three truncate or clip the thing they exist to show); Rankings and Bracket are the same
+> view; 28 of 62 registry entries are ten host views under different titles; and no college
+> programme in 20 sampled has a nickname.
+>
+> **Closed 2026-08-19:** G-01, G-02, G-05, G-35 and G-36 no longer describe the current app.
+> Canonical career routes now expose all 62 registered surfaces including Settings, blocked advance
+> attempts render the outstanding work, and rail/header typography respects the authored floor.
+> `--design-contracts` verifies 62 landed and zero pending surfaces. The remaining per-surface
+> critique stays historical evidence; it is not the current release verdict.
 
 
 > **2026-08-10 master-plan rebaseline:** the attached Master Build Documentation is now the primary
@@ -3259,7 +3428,7 @@ in, hometowns) against the venue and person limbs only. `GeneratedWorld` exposes
 separately, and the suite asserts they **partition** every generated name — a name belonging to
 neither kind is a name nothing checks, which is the hole this shape exists to close.
 
-Legal coverage is **21 tests / 98 checks**.
+Legal coverage is **23 tests / 144 checks**.
 
 **What this decision does not resolve, stated rather than left implicit.** A fictional programme
 placed in a real city, wearing that city's real programme's colours, can jointly identify the real
@@ -3268,10 +3437,11 @@ fictional but jointly identifying" gap `Blocklist`'s own header calls a counsel 
 permitting real cities makes that gap easier to fall into. It is a review obligation, not a
 threshold, and nothing in the suite asserts it.
 
-**The generator is now permitted to use real place names and does not yet do so.** `NameGrammar`
-still draws cities from its invented stems and endings, so no generated world changed. Populating it
-with real geography is a separate design change that would touch D6's geography-driven rivalry
-seeding, and under the doc-first amendment rule it belongs in canon before it is built.
+**The generator now uses real place names.** `NameGrammar` draws 570 state-qualified U.S. cities
+and towns from the 2024 Census Gazetteer, while institution names and projected bowl titles use
+generic descriptors. Stable UUIDs remain unchanged because the replacement preserves the former
+random-draw shape. This does not clear any combined school/trade-dress identity for release; the
+screen remains a counsel and common-law search obligation.
 
 ### 2026-08-10 — the app is landscape, not portrait
 

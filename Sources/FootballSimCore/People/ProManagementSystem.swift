@@ -195,7 +195,7 @@ public enum ProManagementSystem {
         // rejected shape: `Contract.year(atSeason:)` reads `nil` as "always year 0", so the deal
         // would be charged at year 0 forever, and `expireContracts` explicitly skips a contract
         // with no `signedSeason` ("left untouched because their start date is unknowable") -- so
-        // the seat could never be reclaimed by the turnover D15 depends on. Stamped here, at the
+        // the seat could never be reclaimed by the turnover D16 depends on. Stamped here, at the
         // one primitive every acquisition path shares, rather than trusted to every caller.
         guard contract.signedSeason == nil || contract.signedSeason == state.proMarket.season else {
             throw ProManagementError.invalidContract
@@ -510,7 +510,7 @@ public enum ProManagementSystem {
         return ProCapComplianceReceipt(state: next, releases: releases)
     }
 
-    /// D15 (`02` section 4.2a): dead money is a single-season charge, discharged at the season
+    /// D16 (`02` section 4.2a): dead money is a single-season charge, discharged at the season
     /// boundary.
     ///
     /// `Contract.deadMoney` accelerates every unamortised bonus dollar into the season of release,

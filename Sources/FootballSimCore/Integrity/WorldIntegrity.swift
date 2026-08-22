@@ -831,6 +831,40 @@ public enum WorldIntegrity {
         }
     }
 
+    private static func collegeEligibilityViolationIDs(
+        in state: GameState,
+        collegeRosterIDs: Set<UUID>,
+        proRosterIDs: Set<UUID>
+    ) -> Set<UUID> {
+        // One statement of the rule: `CollegeEligibilityInvariant` owns it. This sweeps it once
+        // per root so the shape loops below can ask a set rather than re-run it per player.
+        var violations = Set(collegeRosterIDs.filter { id in
+            !CollegeEligibilityInvariant.collegeFindings(
+                playerID: id,
+                eligibility: state.players[id]?.eligibility
+            ).isEmpty
+        })
+        violations.formUnion(proRosterIDs.filter { state.players[$0]?.eligibility != nil })
+        return violations
+    }
+
+    package static func collegeEligibilityViolations(in state: GameState) -> [UUID] {
+        var collegeRosterIDs: Set<UUID> = []
+        for programme in state.programmes.values {
+            collegeRosterIDs.formUnion(programme.rosterIDs)
+        }
+        var proRosterIDs: Set<UUID> = []
+        for team in state.proTeams.values {
+            proRosterIDs.formUnion(team.rosterIDs)
+            proRosterIDs.formUnion(team.practiceSquadIDs)
+        }
+        return collegeEligibilityViolationIDs(
+            in: state,
+            collegeRosterIDs: collegeRosterIDs,
+            proRosterIDs: proRosterIDs
+        ).sorted(by: uuidLessThan)
+    }
+
     private static func checkPeopleState(
         _ state: GameState,
         issues: inout [IntegrityIssue]
@@ -871,6 +905,11 @@ public enum WorldIntegrity {
         let proRosterIDs = Set(state.proTeams.values.flatMap {
             $0.rosterIDs + $0.practiceSquadIDs
         })
+        let eligibilityViolationIDs = collegeEligibilityViolationIDs(
+            in: state,
+            collegeRosterIDs: collegeRosterIDs,
+            proRosterIDs: proRosterIDs
+        )
         let careerHistoryIsValid: (PlayerCareerRecord) -> Bool = { career in
             let seasonsAreChronological = zip(career.seasons, career.seasons.dropFirst())
                 .allSatisfy { pair in pair.0.season < pair.1.season }
@@ -921,14 +960,11 @@ public enum WorldIntegrity {
                   let career = state.people.playerCareers[id] else { continue }
             let ageShapeIsValid = PeopleRules.playerAgeRange.contains(player.age)
             let collegeShapeIsValid = !collegeRosterIDs.contains(id)
-                || (CollegeEligibilityInvariant.collegeFindings(
-                    playerID: id,
-                    eligibility: player.eligibility
-                ).isEmpty
+                || (!eligibilityViolationIDs.contains(id)
                     && player.contract == nil
                     && lifecycle.status == .active)
             let proShapeIsValid = !proRosterIDs.contains(id)
-                || (player.eligibility == nil && lifecycle.status == .active)
+                || (!eligibilityViolationIDs.contains(id) && lifecycle.status == .active)
             let departureShapeIsValid = lifecycle.status == .active
                 ? career.endedAt == nil && career.endStatus == nil
                 : career.endedAt != nil
@@ -1005,6 +1041,41 @@ public enum WorldIntegrity {
         }
     }
 
+    package static func collegeScholarshipViolations(in state: GameState) -> [UUID] {
+        // One statement of the rule: `CollegeScholarshipInvariant` owns it, including the
+        // missing-counterpart limb that a programme without recruiting state trips.
+        var seen = Set<UUID>()
+        return CollegeScholarshipInvariant.findings(in: state)
+            .map(\.programmeID)
+            .filter { seen.insert($0).inserted }
+            .sorted(by: uuidLessThan)
+    }
+
+    package static func collegePortalWindowViolations(in state: GameState) -> [String] {
+        let portal = state.college.portal
+        var violations: [String] = []
+        if !portal.isTransactionallyValid { violations.append("unsupportedState") }
+        if !portal.phase.isStableBoundary { violations.append("unstablePhase") }
+        if portal.targetSeason != state.college.recruitingSeason {
+            violations.append("targetSeasonDisagreement")
+        }
+        if portal.entries.count > CollegeRules.portalPoolLimit {
+            violations.append("poolLimitExceeded")
+        }
+        if portal.summaries.count > CollegeRules.portalWindowCount {
+            violations.append("windowCountExceeded")
+        }
+        for (playerID, record) in portal.entries {
+            if record.offers.count > CollegeRules.maximumPortalOffersPerEntrant {
+                violations.append("offerLimitExceeded:\(playerID)")
+            }
+            if state.programmes[record.sourceProgrammeID] == nil {
+                violations.append("unknownSourceProgramme:\(playerID)")
+            }
+        }
+        return violations.sorted()
+    }
+
     private static func checkCollegeState(
         _ state: GameState,
         issues: inout [IntegrityIssue]
@@ -1021,6 +1092,7 @@ public enum WorldIntegrity {
             .subtracting(playerIdentityIDs)
         let recruitmentIDs = Set(state.college.prospectRecruitment.keys)
         let cityIDs = Set(state.map.cities.map(\.id))
+        let scholarshipViolationIDs = Set(collegeScholarshipViolations(in: state))
 
         // The transaction-independent limbs live in `CollegeRedshirtInvariant`, which the college
         // acquisition suite asserts after every transaction. The two kept here are the ones only a
@@ -1086,11 +1158,7 @@ public enum WorldIntegrity {
                 || recruiting.boardIDs.count > CollegeRules.recruitingBoardLimit
                 || boardSet.count != recruiting.boardIDs.count
                 || relationshipIDs != boardSet
-                || !CollegeScholarshipInvariant.findings(
-                    programmeID: id,
-                    programme: programme,
-                    recruiting: recruiting
-                ).isEmpty
+                || scholarshipViolationIDs.contains(id)
                 || !(0...CollegeRules.weeklyRecruitingContactPoints).contains(
                     recruiting.contactPointsRemaining
                 )
@@ -1713,22 +1781,11 @@ public enum WorldIntegrity {
             }
         }
         // ScoutingState canonicalizes and validates each observer's slice at every mutation and
-        // decode. Partitioning by observer and sorting each bounded slice preserves the prior
-        // deterministic order without an O(n log n) global resort on every integrity check.
+        // decode. Sorting the observers preserves deterministic traversal without re-sorting each
+        // already-canonical slice on every integrity check.
         let storedSnapshots = state.scouting.portalKnowledgeByObserver.keys
             .sorted(by: uuidLessThan)
-            .flatMap { observerID in
-                (state.scouting.portalKnowledgeByObserver[observerID] ?? []).sorted { lhs, rhs in
-                    if lhs.targetSeason != rhs.targetSeason {
-                        return lhs.targetSeason < rhs.targetSeason
-                    }
-                    if lhs.window != rhs.window { return lhs.window.order < rhs.window.order }
-                    if lhs.playerID != rhs.playerID {
-                        return uuidLessThan(lhs.playerID, rhs.playerID)
-                    }
-                    return uuidLessThan(lhs.sourceProgrammeID, rhs.sourceProgrammeID)
-                }
-            }
+            .flatMap { state.scouting.portalKnowledgeByObserver[$0] ?? [] }
         for snapshot in storedSnapshots {
             let occursInFuture = occurs(state.calendar, before: snapshot.lastUpdated)
             let hasEntrantRecord = recordIdentities.contains(PortalRecordSourceKey(

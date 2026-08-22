@@ -258,7 +258,7 @@ lesson applies here that applied to expiry itself: a hand-built fixture that put
 cap and skipped this step surfaced as `portalCommitFailed(.postseason)`, not as a cap error, until
 compliance was wired at the right point.
 
-**Dead money is a single-season charge — D15, owner decision 2026-08-20.** `Contract.deadMoney`
+**Dead money is a single-season charge — D16, owner decision 2026-08-20.** `Contract.deadMoney`
 accelerates every unamortised bonus dollar into the season of release, which is a statement that the
 charge belongs to *that* season. So it is discharged at the season boundary, between beat 1 and beat
 2: the season now ending has been paid for, and the compliance pass immediately below charges the
@@ -271,7 +271,7 @@ before this: `ProTeam.deadMoney` had two write sites and both were `+=`, so a do
 season 3 was still charged in season 20. Because a release accelerates the whole remaining bonus,
 releasing can *raise* committed cap rather than lower it, so the cap-shedding options shrink as the
 charge grows; when no legal release reaches compliance, `enforceCapCompliance` throws and the week
-advance fails outright. D15 records the amortised schedule — the truer mechanic, and a save-schema
+advance fails outright. D16 records the amortised schedule — the truer mechanic, and a save-schema
 change under D7 — as a deliberate later choice rather than something to arrive at.
 
 **The controlled team's own cap choice is deliberately not built here.** Every other consequential
@@ -596,7 +596,7 @@ the legal tests.
 | Practice squad | 16 | P8's cap-laundering defences apply here specifically |
 | Salary cap | 255,000,000 integer dollars, growing 7 percent a year | Integer dollars, never floating point |
 | Signing-bonus proration | over the contract's length, capped at 5 years | The mechanism dead money comes from |
-| Dead money discharge | a single-season charge, cleared at the season boundary | **D15, owner decision 2026-08-20.** `Contract.deadMoney` accelerates the whole unamortised bonus into the season of release, so the charge belongs to that season. The amortised alternative is the truer mechanic and costs a save-schema change; D15 records it as the deliberate later choice |
+| Dead money discharge | a single-season charge, cleared at the season boundary | **D16, owner decision 2026-08-20.** `Contract.deadMoney` accelerates the whole unamortised bonus into the season of release, so the charge belongs to that season. The amortised alternative is the truer mechanic and costs a save-schema change; D16 records it as the deliberate later choice |
 | Contract length | 1 to 7 years | An upper bound so a corrupt save cannot ask for an unbounded allocation. A contract of zero years carries no signing bonus |
 | Draft | 7 rounds of 32 picks, 224 total | |
 

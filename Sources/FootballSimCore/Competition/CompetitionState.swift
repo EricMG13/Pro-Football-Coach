@@ -18,12 +18,15 @@ public struct GameSummary: Codable, Sendable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case homeScore, awayScore, homeStatistics, awayStatistics
         case homeParticipantIDs, awayParticipantIDs, playerStatistics, source, evidence
+        case fourthQuarterPoints, driveOutcomes
     }
 
     public let homeScore: Int
     public let awayScore: Int
     public let homeStatistics: TeamGameStatistics
     public let awayStatistics: TeamGameStatistics
+    public let fourthQuarterPoints: Int
+    public let driveOutcomes: DriveOutcomeStatistics
     public let homeParticipantIDs: [UUID]
     public let awayParticipantIDs: [UUID]
     public let playerStatistics: [PlayerGameStatistics]
@@ -37,6 +40,8 @@ public struct GameSummary: Codable, Sendable, Equatable {
         awayScore: Int,
         homeStatistics: TeamGameStatistics,
         awayStatistics: TeamGameStatistics,
+        fourthQuarterPoints: Int = 0,
+        driveOutcomes: DriveOutcomeStatistics = DriveOutcomeStatistics(),
         homeParticipantIDs: [UUID] = [],
         awayParticipantIDs: [UUID] = [],
         playerStatistics: [PlayerGameStatistics],
@@ -47,6 +52,11 @@ public struct GameSummary: Codable, Sendable, Equatable {
         self.awayScore = max(0, awayScore)
         self.homeStatistics = homeStatistics
         self.awayStatistics = awayStatistics
+        self.fourthQuarterPoints = min(
+            self.homeScore + self.awayScore,
+            max(0, fourthQuarterPoints)
+        )
+        self.driveOutcomes = driveOutcomes
         let canonicalHome = Self.canonicalParticipantIDs(homeParticipantIDs)
         let homeSet = Set(canonicalHome)
         self.homeParticipantIDs = canonicalHome
@@ -109,6 +119,14 @@ public struct GameSummary: Codable, Sendable, Equatable {
                 TeamGameStatistics.self,
                 forKey: .awayStatistics
             ),
+            fourthQuarterPoints: try container.decodeIfPresent(
+                Int.self,
+                forKey: .fourthQuarterPoints
+            ) ?? 0,
+            driveOutcomes: try container.decodeIfPresent(
+                DriveOutcomeStatistics.self,
+                forKey: .driveOutcomes
+            ) ?? DriveOutcomeStatistics(),
             homeParticipantIDs: decodedHomeParticipants,
             awayParticipantIDs: decodedAwayParticipants,
             playerStatistics: decodedPlayerStatistics,

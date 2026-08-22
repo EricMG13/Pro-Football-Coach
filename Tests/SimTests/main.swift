@@ -53,12 +53,26 @@ if CommandLine.arguments.contains("--catalog") {
     runDisciplineTests()
 } else if CommandLine.arguments.contains("--week-advance-timing") {
     runWeekAdvanceTimingProbe()
+} else if CommandLine.arguments.contains("--performance-budget") {
+    runPerformanceBudgetTests()
 } else if CommandLine.arguments.contains("--pro-movement-probe") {
     runProMovementProbe()
 } else if CommandLine.arguments.contains("--pro-draft-stall-probe") {
     runProDraftStallProbe()
 } else if CommandLine.arguments.contains("--pro-market-root-probe") {
     runProMarketRootProbe()
+} else if CommandLine.arguments.contains("--export-team-logo-manifest") {
+    try runTeamLogoManifestExport()
+} else if CommandLine.arguments.contains("--force-export-team-logo-manifest") {
+    try runTeamLogoManifestExport(force: true)
+} else if CommandLine.arguments.contains("--team-logo-manifest") {
+    runTeamLogoManifestTests()
+} else if let index = CommandLine.arguments.firstIndex(of: "--team-logo-assets"),
+          CommandLine.arguments.indices.contains(index + 1) {
+    runTeamLogoAssetTests(family: CommandLine.arguments[index + 1])
+} else if let index = CommandLine.arguments.firstIndex(of: "--team-logo-specimen"),
+          CommandLine.arguments.indices.contains(index + 1) {
+    try writeTeamLogoSpecimen(family: CommandLine.arguments[index + 1])
 } else if CommandLine.arguments.contains("--screen-read-models") {
     runReadModelProviderTests()
     runAvailabilityProviderTests()
@@ -217,6 +231,10 @@ if CommandLine.arguments.contains("--catalog") {
     runJerseyNumberTests()
     runDepthChartTests()
     runReadModelProviderTests()
+    runTeamLogoManifestTests()
+    for family in TeamLogoFamily.allCases {
+        runTeamLogoAssetTests(family: family.rawValue)
+    }
     runAvailabilityProviderTests()
     runCapComplianceTests()
     runSeasonRolloverTests()

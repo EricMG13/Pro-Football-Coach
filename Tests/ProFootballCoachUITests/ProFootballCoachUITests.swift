@@ -72,4 +72,34 @@ final class ProFootballCoachUITests: XCTestCase {
         XCTAssertTrue(unavailable.waitForExistence(timeout: 20))
         XCTAssertTrue(app.buttons["Back to HQ"].exists)
     }
+
+    func testTeamLogoAssetAndFallbackProof() {
+        let app = XCUIApplication()
+        app.launchEnvironment["PROOF_SCREEN"] = "team-logos"
+        app.launch()
+
+        XCTAssertTrue(app.otherElements["team-logo-asset-proof"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.otherElements["team-logo-fallback-proof"].exists)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Team logos — packaged and fallback"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    func testTeamLogoProofAtAccessibilityType() {
+        let app = XCUIApplication()
+        app.launchEnvironment["PROOF_SCREEN"] = "team-logos"
+        app.launchArguments += [
+            "-UIPreferredContentSizeCategoryName",
+            "UICTContentSizeCategoryAccessibilityExtraExtraExtraLarge"
+        ]
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Fallback Team"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.otherElements["team-logo-fallback-proof"].exists)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Team logos — accessibility type"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
 }

@@ -27,7 +27,7 @@ public extension CoachWorldReadModelProvider {
         let canAffordMinimum = cap.remainingCap >= minimumFreeAgentContract.capHit(inYear: 0)
         let canDraft = market.currentPickTeamID == team.id && canAddActivePlayer
         let currentPickLabel = market.currentPickTeamID.flatMap { id in
-            state.proTeams[id].map { "Pick \(market.nextPick + 1) · \($0.cityName) \($0.nickname)" }
+            state.proTeams[id].map { "Pick \(market.nextPick + 1) · \($0.displayName)" }
         }
 
         var actions: [ProOffseasonReadModel.ActionRow] = []

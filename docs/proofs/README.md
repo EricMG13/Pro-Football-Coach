@@ -30,6 +30,27 @@ not the full 62-family inventory, and not a ninth `*-v3.dc.html` sheet. `04` sti
 | Recruiting Board | `recruiting-board-light-standard.png` | `recruiting-board-dark-ax5.png` |
 | Match Day | `match-day-light-standard.png` | `match-day-dark-ax5.png` |
 
+## Coaching HQ production read-model proofs — iPhone 17e
+
+These dated captures replace the older Coaching HQ sample frames as production-render evidence:
+
+| State | Proof |
+|---|---|
+| Dark / default Dynamic Type | `coaching-hq-production-dark-default-iphone17e-2026-08-21.png` |
+| Dark / AX5 | `coaching-hq-production-dark-ax5-iphone17e-2026-08-21.png` |
+
+Both were captured from the DEBUG production root using `PROOF_NEW_CAREER=424242` and
+`PROOF_SCREEN_NUMBER=8`. That seam starts the same deterministic career and immutable simulation
+read models as the interactive new-career path; it does not route to `RootView` sample data and is
+intentionally non-persistent. The app was rebuilt from the current source and installed on an
+iPhone 17e simulator running iOS 26.5. The AX5 image is the top of the screen's scrolling
+accessibility composition.
+
+Simulator appearance and content-size readback confirmed `dark` and
+`accessibility-extra-extra-extra-large`. IDB was not installed, so no semantic accessibility-tree
+audit is claimed. Physical-device VoiceOver, Voice Control, Switch Control, sound and haptic checks
+remain `manual-required`.
+
 ## Personnel proofs — iPhone 17 Pro Max
 
 `personnel/` holds the Roster and Player Profile pair at the 956 x 440 landscape

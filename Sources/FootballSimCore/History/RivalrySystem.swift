@@ -103,7 +103,7 @@ public enum RivalrySystem {
     private static func organisationNames(in state: GameState) -> [UUID: String] {
         var names: [UUID: String] = [:]
         for programme in state.programmes.values { names[programme.id] = programme.name }
-        for team in state.proTeams.values { names[team.id] = team.name }
+        for team in state.proTeams.values { names[team.id] = team.displayName }
         return names
     }
 }

@@ -67,6 +67,12 @@ public struct TeamProgrammeProfileView: View, CoachWorldChromedSurface {
     /// then the facts a coach would ask about first.
     private var identityColumn: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
+            CoachWorldTeamLogo(
+                team: model.team,
+                size: .large,
+                surface: palette.raised,
+                palette: palette
+            )
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.tight) {
                 FloodlitLabel3(
                     "\(model.cityName) \u{00B7} \(model.regionName)", palette: palette
@@ -214,6 +220,12 @@ public struct TeamProgrammeProfileView: View, CoachWorldChromedSurface {
             action: rivalID.map { id in { onSelectTeam(id) } }
         ) {
             HStack(spacing: CoachWorldTokens.Gap.md) {
+                CoachWorldTeamLogo(
+                    team: rival.team,
+                    size: .medium,
+                    surface: palette.work,
+                    palette: palette
+                )
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                     Text(rival.team.name.uppercased())
                         .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)

@@ -16,6 +16,8 @@ func runSeasonRolloverTests() {
             // The reproduction, kept as a test rather than a probe. Seed 97_001 is the one
             // `PortalTransactionTests` walks, so this fails before that fixture aborts the process.
             var state = GameState.bootstrap(seed: 97_001)
+            let conferenceIDsBefore = conferenceIDs(in: state)
+            let conferenceSizesBefore = conferenceSizes(in: state)
             var weeks = 0
             while state.calendar.season == 0 {
                 state = try WorldScheduler.advanceWeek(state).state
@@ -24,6 +26,12 @@ func runSeasonRolloverTests() {
                        "the calendar did not roll over within one season of weeks")
             }
             expectEqual(state.calendar, CalendarState(season: 1, week: 1))
+            assertTransitionScheduleShape(state)
+            assertTransitionConferenceLegality(
+                state,
+                expectedIDs: conferenceIDsBefore,
+                expectedSizes: conferenceSizesBefore
+            )
             expect(WorldIntegrity.check(state).isValid,
                    "the rolled-over root is invalid: "
                        + WorldIntegrity.check(state).issues.prefix(3)
@@ -36,9 +44,17 @@ func runSeasonRolloverTests() {
             // current season is inside its term; one that has run out must have been expired or
             // re-signed, never left attached.
             var state = GameState.bootstrap(seed: 97_002)
+            let conferenceIDsBefore = conferenceIDs(in: state)
+            let conferenceSizesBefore = conferenceSizes(in: state)
             while state.calendar.season == 0 {
                 state = try WorldScheduler.advanceWeek(state).state
             }
+            assertTransitionScheduleShape(state)
+            assertTransitionConferenceLegality(
+                state,
+                expectedIDs: conferenceIDsBefore,
+                expectedSizes: conferenceSizesBefore
+            )
             var offenders: [String] = []
             for team in state.proTeams.values {
                 for playerID in team.rosterIDs + team.practiceSquadIDs {
@@ -60,9 +76,17 @@ func runSeasonRolloverTests() {
             // The reason the exemption exists at all. Re-signing must satisfy it as completely as
             // holding a dead deal did.
             var state = GameState.bootstrap(seed: 97_003)
+            let conferenceIDsBefore = conferenceIDs(in: state)
+            let conferenceSizesBefore = conferenceSizes(in: state)
             while state.calendar.season == 0 {
                 state = try WorldScheduler.advanceWeek(state).state
             }
+            assertTransitionScheduleShape(state)
+            assertTransitionConferenceLegality(
+                state,
+                expectedIDs: conferenceIDsBefore,
+                expectedSizes: conferenceSizesBefore
+            )
             var shortfalls: [String] = []
             for team in state.proTeams.values {
                 var counts: [Position: Int] = [:]
@@ -133,6 +157,8 @@ func runSeasonRolloverTests() {
                 state = try WorldScheduler.advanceWeek(state).state
             }
             expectEqual(state.calendar.week, SharedRules.inSeasonWeeks)
+            let conferenceIDsBefore = conferenceIDs(in: state)
+            let conferenceSizesBefore = conferenceSizes(in: state)
             let teamID = state.proTeams.ids.first { $0 != controlledTeamID(in: state) }
             guard let teamID, let team = state.proTeams[teamID] else {
                 expect(false, "no eligible non-controlled team")
@@ -164,6 +190,12 @@ func runSeasonRolloverTests() {
             }
 
             let transition = try WorldScheduler.advanceWeek(state)
+            assertTransitionScheduleShape(transition.state)
+            assertTransitionConferenceLegality(
+                transition.state,
+                expectedIDs: conferenceIDsBefore,
+                expectedSizes: conferenceSizesBefore
+            )
             let snapshot = try ProManagementSystem.capSnapshot(
                 teamID: teamID,
                 in: transition.state
@@ -510,6 +542,48 @@ func runStaffPruningTests() {
             )
         }
     }
+}
+
+private func assertTransitionScheduleShape(_ state: GameState) {
+    let games = state.competition.currentSchedule.games
+    assertScheduleShape(
+        games: games.filter { $0.tier == .college },
+        memberIDs: state.programmes.ids,
+        gamesPerTeam: CollegeRules.gamesPerRegularSeason,
+        regularSeasonWeeks: CollegeRules.regularSeasonWeeks
+    )
+    assertScheduleShape(
+        games: games.filter { $0.tier == .pro },
+        memberIDs: state.proTeams.ids,
+        gamesPerTeam: ProRules.gamesPerRegularSeason,
+        regularSeasonWeeks: ProRules.regularSeasonWeeks
+    )
+}
+
+private func assertTransitionConferenceLegality(
+    _ state: GameState,
+    expectedIDs: Set<UUID>,
+    expectedSizes: [Int]
+) {
+    let conferences = state.league.conferences(in: .college)
+    let memberIDs = conferences.flatMap(\.memberIDs)
+    expectEqual(Set(conferences.map(\.id)), expectedIDs,
+                "season transition replaced a conference identity")
+    expectEqual(conferenceSizes(in: state), expectedSizes,
+                "season transition changed conference cardinality")
+    expectEqual(memberIDs.count, state.programmes.ids.count,
+                "season transition duplicated or dropped conference membership")
+    expectEqual(Set(memberIDs), Set(state.programmes.ids),
+                "season transition left a programme outside the conference map")
+    for conference in conferences {
+        expect(conference.memberIDs.allSatisfy {
+            state.programmes[$0]?.conferenceID == conference.id
+        }, "season transition left programme and league conference IDs disagreeing")
+    }
+}
+
+private func conferenceIDs(in state: GameState) -> Set<UUID> {
+    Set(state.league.conferences(in: .college).map(\.id))
 }
 
 private func controlledTeamID(in state: GameState) -> UUID? {

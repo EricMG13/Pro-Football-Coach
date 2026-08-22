@@ -5,9 +5,6 @@ public enum CompetitionRules {
         max(CollegeRules.rosterLimit, ProRules.activeRosterLimit)
     }
 
-    /// Back-solved against the detailed reducer's controlled-fixture tuning worlds rather than the
-    /// disjoint holdout or generated-schedule aggregate, which includes a separate
-    /// roster-composition effect.
     public static let collegeBaselinePoints = 27.5
     public static let proBaselinePoints = 24.9
     public static let collegeScoreDeviation = 10.0
@@ -23,11 +20,11 @@ public enum CompetitionRules {
     /// Both values are back-solved from the controlled tuning worlds rather than the final holdout.
     /// The detailed reducer's home rates are 0.539 professionally and 0.655 in college there.
     ///
-    /// **Caveat worth carrying to the owner.** 6.25 points is roughly double what college home-field
-    /// is worth on a real spread. §6.5's college band is high partly because real college home
-    /// teams are systematically stronger — the bought non-conference game — and a generated
-    /// schedule has no such bias, so this one constant absorbs both effects. If §6.5 ever splits
-    /// true home advantage from home *scheduling* advantage, this number comes down and the
+    /// **Caveat worth carrying to the owner.** 6.25 points is roughly double what college
+    /// home-field is worth on a real spread. §6.5's college band is high partly because real
+    /// college home teams are systematically stronger — the bought non-conference game — and a
+    /// generated schedule has no such bias, so this one constant absorbs both effects. If §6.5 ever
+    /// splits true home advantage from home *scheduling* advantage, this number comes down and the
     /// schedule generator takes the rest.
     public static let proHomeFieldPoints = 1.5
     public static let collegeHomeFieldPoints = 6.25
@@ -46,8 +43,8 @@ public enum CompetitionRules {
     public static let overtimeFieldGoalProbability = 0.72
     public static let overtimeHomeWinProbability = 0.52
 
-    /// Controlled-fixture scrimmage-play means, measured on the tuning worlds after punts and field
-    /// goals were removed from the detailed summary's denominator.
+    /// Controlled-fixture scrimmage-play means, measured on the tuning worlds after punts and
+    /// field goals were removed from the detailed summary's denominator.
     public static let proBaselinePlays = 63.3
     public static let collegeBaselinePlays = 73.0
 
@@ -61,6 +58,13 @@ public enum CompetitionRules {
     /// Bounds a drawn play count to something a game can actually contain. A tail beyond this is
     /// the gaussian's, not football's.
     public static let playCountRange: ClosedRange<Int> = 40...105
+    public static let baselineCompletionProbability = 0.645
+    public static let strengthCompletionProbabilityScale = 0.003
+    public static let baselineSackProbability = 0.032
+    public static let strengthSackProbabilityScale = 0.001
+    public static let baselineTurnoverProbability = 0.05
+    public static let proBaselineExplosivePlayProbability = 0.074
+    public static let collegeBaselineExplosivePlayProbability = 0.072
 
     public static let proBaselineOffensiveYards = 300.0
     public static let collegeBaselineOffensiveYards = 350.0
@@ -89,6 +93,41 @@ public enum CompetitionRules {
 
     public static func homeFieldPoints(for tier: Tier) -> Double {
         tier == .college ? collegeHomeFieldPoints : proHomeFieldPoints
+    }
+
+    public static func baselineExplosivePlayProbability(for tier: Tier) -> Double {
+        tier == .college
+            ? collegeBaselineExplosivePlayProbability
+            : proBaselineExplosivePlayProbability
+    }
+
+    public static func baselineFourthQuarterScoringShare(for tier: Tier) -> Double {
+        tier == .college ? 0.274 : 0.279
+    }
+
+    public static func baselineDriveCount(for tier: Tier) -> Int {
+        tier == .college ? 23 : 21
+    }
+
+    public static func baselineDriveOutcomeProbability(
+        for tier: Tier,
+        bucket: DriveOutcomeBucket
+    ) -> Double {
+        let probabilities = tier == .college
+            ? [0.3034, 0.0965, 0.0200, 0.2714, 0.2276, 0.0088, 0.0010, 0.0713]
+            : [0.2975, 0.0963, 0.0197, 0.2662, 0.2288, 0.0092, 0.0010, 0.0813]
+        return probabilities[bucket.rawValue]
+    }
+
+    public static func baselineFieldGoalAccuracy(
+        for bucket: FieldGoalDistanceBucket
+    ) -> Double {
+        switch bucket {
+        case .under30: return 0.96
+        case .from30To39: return 0.90
+        case .from40To49: return 0.79
+        case .atLeast50: return 0.64
+        }
     }
 
     public static func passingSharePercent(for scheme: OffensiveScheme) -> Int {

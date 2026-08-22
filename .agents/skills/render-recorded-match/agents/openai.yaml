@@ -1,0 +1,4 @@
+interface:
+  display_name: "Render Recorded Match"
+  short_description: "Build truthful recorded-outcome match UI"
+  default_prompt: "Use $render-recorded-match to build a recorded-outcome Match Day screen."

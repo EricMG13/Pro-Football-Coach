@@ -9,6 +9,8 @@ enum ReleaseGateID: String, CaseIterable, Sendable {
     case voiceOver = "VoiceOverLabelTest"
     case touchTarget = "TouchTargetTest"
     case determinism = "DeterminismTests"
+    case performanceBudget = "PerformanceBudgetTests"
+    case twoTierConsistency = "TwoTierConsistencyTests"
     case reachability = "ReachabilityTest"
     case errorSurface = "ErrorSurfaceTest"
     case accessibility = "AccessibilityContractTests"
@@ -17,7 +19,6 @@ enum ReleaseGateID: String, CaseIterable, Sendable {
     case saveWriteBudget = "SaveWriteBudgetTest"
     case saveOpenReadOnly = "SaveOpenIsReadOnlyTest"
     case calibrationGate = "CalibrationGateTests"
-    case twoTierConsistency = "TwoTierConsistencyTests"
     case m1Soak = "M1SoakTests"
     case m2Soak = "M2SoakTests"
     case legal = "LegalTests"
@@ -58,6 +59,7 @@ struct SuiteCatalog: Sendable {
              .voiceOver, .touchTarget, .reachability, .errorSurface,
              .accessibility: return "accessibility"
         case .determinism: return "determinism"
+        case .performanceBudget: return "performance"
         case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly: return "persistence"
         // Not "calibration": the lane column names the `verify.sh` lane that runs a gate, and no
         // lane runs this one. `verify.sh --lane calibration` is the instrument suite. Labelling it
@@ -80,6 +82,10 @@ struct SuiteCatalog: Sendable {
             return Runner(command: "--reduce-motion", function: "runReduceMotionContractTests")
         case .determinism:
             return Runner(command: "--architecture-only", function: "runArchitectureTests")
+        case .performanceBudget:
+            return Runner(command: "--performance-budget", function: "runPerformanceBudgetTests")
+        case .twoTierConsistency:
+            return Runner(command: "--two-tier-consistency", function: "runTwoTierConsistencyTests")
         case .accessibility:
             return Runner(command: "--design-contracts", function: "runAccessibilityReflowTests")
         case .saveOffMainActor, .saveCoalescing, .saveWriteBudget, .saveOpenReadOnly:
@@ -89,8 +95,6 @@ struct SuiteCatalog: Sendable {
             // containing it. STATUS's P4 section carries the measurement; this command reproduces
             // it.
             return Runner(command: "--calibration-gate", function: "runCalibrationGateTests")
-        case .twoTierConsistency:
-            return Runner(command: "--two-tier-consistency", function: "runTwoTierConsistencyTests")
         case .m1Soak:
             return Runner(command: "--m1-soak", function: "runM1SoakTests")
         case .m2Soak:
@@ -110,13 +114,39 @@ struct SuiteCatalog: Sendable {
 
 func runCommitmentCoverageTest() {
     suite("Commitment coverage") {
+        test("TwoTierConsistencyTests has a dispatched runner") {
+            let entry = SuiteCatalog.entries.first {
+                $0.gate.rawValue == "TwoTierConsistencyTests"
+            }
+            expectEqual(
+                entry?.runner,
+                SuiteCatalog.Runner(
+                    command: "--two-tier-consistency",
+                    function: "runTwoTierConsistencyTests"
+                )
+            )
+            let main = try? String(
+                contentsOf: URL(fileURLWithPath: "Tests/SimTests/main.swift"),
+                encoding: .utf8
+            )
+            expect(
+                main?.contains("CommandLine.arguments.contains(\"--two-tier-consistency\")") == true,
+                "--two-tier-consistency is not dispatched"
+            )
+            expect(
+                main?.contains("runTwoTierConsistencyTests()") == true,
+                "runTwoTierConsistencyTests is not dispatched"
+            )
+        }
+
         test("every PRODUCT commitment names a runnable gate") {
             let productURL = URL(fileURLWithPath: "PRODUCT.md")
             guard let product = try? String(contentsOf: productURL, encoding: .utf8) else {
                 expect(false, "PRODUCT.md is unavailable")
                 return
             }
-            let identifiers = product
+            let commitments = product.components(separatedBy: "## Unverified product targets")[0]
+            let identifiers = commitments
                 .split(separator: "\n")
                 .flatMap { line -> [String] in
                     guard line.contains("|") else { return [] }
@@ -148,6 +178,16 @@ func runCommitmentCoverageTest() {
             for entry in SuiteCatalog.entries where entry.runner == nil {
                 expect(false, "\(entry.gate.rawValue) is registered without a runnable command")
             }
+        }
+
+        test("PerformanceBudgetTests has a dispatched runner") {
+            expectEqual(
+                SuiteCatalog.runner(for: .performanceBudget),
+                SuiteCatalog.Runner(
+                    command: "--performance-budget",
+                    function: "runPerformanceBudgetTests"
+                )
+            )
         }
     }
 }
