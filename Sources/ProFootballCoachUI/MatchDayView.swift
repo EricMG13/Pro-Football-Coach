@@ -171,7 +171,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                     model: model, phase: phase.label, isLive: phase.isLive,
                     headline: model.playback?.sentence, onExit: onExit
                 )
-                .frame(width: size.width * CoachWorldTokens.Frame.lowerThirdWidthRatio)
+                .frame(width: MatchMetric.lowerThirdWidth)
                 .padding(.leading, CoachWorldTokens.Frame.leadingInset)
                 .padding(.bottom, CoachWorldTokens.Frame.bottomInset)
                 .frame(maxHeight: size.height, alignment: .bottom)
@@ -252,8 +252,12 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                 onControl(model.controlDepthIntentID)
             }
             .frame(width: MatchMetric.controlDepthWidth)
-            furnitureControlButton(.tactics, wide: true)
+            furnitureControlButton(.tactics, wide: true, label: "HALFTIME · PLAN EDIT")
         }
+        // One column, at the reference's plate width. A `frame` does not clip in SwiftUI, so the
+        // depth selector's three segments were laying themselves out wider than the 140 they were
+        // given and running "LEVERAGE" off the trailing edge of the frame.
+        .frame(width: MatchMetric.topRightPlateWidth, alignment: .trailing)
         .accessibilitySortPriority(85)
     }
 
@@ -342,7 +346,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                 }
             }
             .frame(
-                minWidth: wide ? MatchMetric.controlDepthWidth : CoachWorldTokens.Shape.minimumTarget,
+                minWidth: wide ? MatchMetric.topRightPlateWidth : CoachWorldTokens.Shape.minimumTarget,
                 minHeight: CoachWorldTokens.Shape.minimumTarget
             )
         }
@@ -479,11 +483,17 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                     ) { timeline in
                         let t = progress(at: timeline.date, duration: playback.durationSeconds)
                         ZStack(alignment: .topLeading) {
-                            ForEach(playback.actors, id: \.stableID) { track in
-                                animatedMark(
-                                    track,
+                            // Every actor, not every track. A recorded snap carries tracks only
+                            // for the actors that moved, so iterating the tracks drew one dot and
+                            // emptied the other twenty-one off the field -- and out of VoiceOver,
+                            // because the animated marks are hidden from it. The formation is the
+                            // context that makes the moving dot legible.
+                            ForEach(model.actors, id: \.stableID) { actor in
+                                playbackMark(
+                                    actor,
+                                    track: playback.actors.first { $0.stableID == actor.stableID },
                                     at: t,
-                                    isForeground: playback.foregroundIDs.contains(track.stableID),
+                                    isForeground: playback.foregroundIDs.contains(actor.stableID),
                                     size: size,
                                     banded: bandedVertical
                                 )
@@ -578,25 +588,38 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
     /// playback's names the deciding matchup's two players and the carrier. Reading the model's here
     /// would highlight the wrong players and lose D2's whole point — the sack drawn as the
     /// protection duel that lost.
-    private func animatedMark(
-        _ track: MatchDayReadModel.Playback.ActorTrack,
+    /// One actor during playback: travelling if this snap recorded a track for it, holding at its
+    /// recorded pre-snap spot if it did not.
+    ///
+    /// Both cases stay a real accessibility element carrying the model actor's own sentence, so the
+    /// field reads the same to VoiceOver whether or not a given actor moved on this snap.
+    private func playbackMark(
+        _ actor: MatchDayReadModel.Actor,
+        track: MatchDayReadModel.Playback.ActorTrack?,
         at fraction: Double,
         isForeground: Bool,
         size: CGSize,
         banded: Bool
     ) -> some View {
-        let spot = Self.position(of: track, at: fraction)
+        let spot = track.map { Self.position(of: $0, at: fraction) }
+            ?? (x: actor.xYardsFromLeftGoalLine, y: actor.yFraction)
+        let offense = actor.side == model.situation.possession
         return actorToken(
-            // The track's role, not its number — same rule the static field follows below.
-            label: track.role,
-            isOurs: track.side == model.perspective,
+            // The track's role while it travels, the actor's position while it holds — both are
+            // the short printed label, and the spoken sentence below is unchanged either way.
+            label: track?.role ?? actor.position,
+            isOurs: actor.side == model.perspective,
             isForeground: isForeground
         )
         .position(
             x: size.width * CGFloat(spot.x / 120),
             y: screenY(spot.y, height: size.height, banded: banded)
         )
-        .accessibilityHidden(true)
+        .accessibilityElement()
+        .accessibilityLabel(
+            "\(offense ? "Offense" : "Defense"), \(actor.position) "
+                + "number \(actor.uniformNumber), at yard \(Int(spot.x))"
+        )
     }
 
     /// Where a dot is at a point of the playback.
@@ -1012,7 +1035,15 @@ private enum MatchMetric {
     /// stretching the field to whatever the container happens to be.
     static let frameAspect: CGFloat = CoachWorldTokens.Frame.floorWidth / CoachWorldTokens.Frame.floorHeight
     static let callInWidth: CGFloat = 244
-    static let controlDepthWidth: CGFloat = 140
+    /// 1a draws the lower third at `width: 244px`, the same column the call-in panel occupies on
+    /// the other edge. The comment above it in the reference still says "306 = 338/932 of the
+    /// frame", which is what this was built to; the drawn value is what the reference looks like,
+    /// and 306 made the lower third a quarter wider than the plate it balances.
+    static let lowerThirdWidth: CGFloat = 244
+    /// 1a's top-right plate is 172 wide. The reference folds the budget bug, the depth selector
+    /// and the plan-edit action into one plate with internal seams; this column adopts its width
+    /// and containment while those remain three cards.
+    static let topRightPlateWidth: CGFloat = 172
     static let speedPillWidth: CGFloat = 44
     static let losWidth: CGFloat = 2
     static let firstDownWidth: CGFloat = 2

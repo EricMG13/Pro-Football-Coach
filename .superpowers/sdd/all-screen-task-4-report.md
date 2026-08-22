@@ -527,3 +527,85 @@ Exact-worktree `detect_changes(scope: all)`: medium risk, 16 symbols across 6 fi
 processes -- both `ProspectRow` flows via `FloodlitCostLine`, which this change does not touch. The
 only edit in that file is four lines inside `FloodlitCommittingAction.body`, which shifted
 `FloodlitCostLine`'s line range; the attribution is a line-range artefact, not real impact.
+
+## Match Day / ID 14 against reference 1a (2026-08-22)
+
+Owner directive: Match Day is required and `Match Day.dc.html` is its exact visual target. The
+reference carries three variants; **1a "Floodlit Deep" is the one marked SELECTED**, and the owner
+confirmed 1a. The package ships renders for 1b and 1c only, so 1a's geometry was read from its
+markup.
+
+The existing implementation turned out to be an accurate 1a build already: `Paint` and `EndZone`
+match 1a's five-yard alpha .26 at 2px, tick .30 at 1.5px on a 7.033px pitch, sideline .40, goal .90
+at 3px, hash row 6, number size 23 at rows .20/.80, pylons 5x9 with a 7px glow at .35, end-zone
+wordmarks 38/36 at .11/.10 tracking, midfield rings 106/94 at .30/.15, and a 15pt token. The
+`Frame` tokens match 1a's `left: 63` and `top: 12`. Four deltas were real.
+
+### 1. All 22 actors were missing during playback
+
+`field` iterated `playback.actors` while a snap was replaying. A recorded snap carries tracks only
+for the actors that moved -- the proof fixture carries exactly one, and its own comment says "Every
+other actor holds ... a static formation around one moving carrier is representative" -- so the
+other twenty-one were drawn nowhere. Measured on the real route: **zero** elements labelled
+"Offense, ..." or "Defense, ...", not twenty-one. The animated marks were additionally
+`accessibilityHidden(true)`, so during playback VoiceOver had no actors at all.
+
+`playbackMark` now draws one mark per **model actor**, travelling if this snap recorded a track for
+it and holding at its recorded spot if not, and every mark is a real accessibility element carrying
+the model actor's sentence. The landmark proof now asserts 22 marks, 11 a side, by construction --
+it previously asserted the two field lines and the five controls and never counted actors, which is
+why this survived.
+
+### 2. Yard numbers were at the pre-repair contrast
+
+1a annotates them "CONTRAST REPAIR: .33 to .66 ink over a 2 pt black drop". The file was built
+against the earlier revision and still carried `number = 0.33` / `numberShadow = 0.45`. Now .66 and
+.55, which is the reference's own accessibility fix and the single most visible change on the field.
+
+### 3. Offense tokens were gold
+
+1a states the rule on the token layer itself -- "OURS = pale disc, THEIRS = navy disc. **No gold on
+the field but the first-down line**" -- and its design note says gold is "spent twice: the
+first-down line and the commit". Ours filled with `actionPrimary` gold and inked `goldInk`. They are
+now `contentPrimary` (#F6FAFF) with a `lamp` (#FFF2CE) hairline and `glassFlatDeep` (#0B0D14) ink,
+matching 1a exactly and using existing tokens, no literals. Twenty-two gold discs had stopped the
+one gold line reading as the thing that matters.
+
+### 4. The top-right column overflowed the frame
+
+`ControlDepthSelector`'s three segments each take `maxWidth: .infinity`, and a SwiftUI `frame` does
+not clip, so inside its 140pt frame the row laid itself out wider and ran "LEVERAGE" off the
+trailing edge of the 844pt frame. The column is now constrained to 1a's plate width of 172.
+
+### Deliberate deviations from 1a, with reasons
+
+- **Bottom inset stays 25, not 1a's `bottom: 16`.** 25 is the landscape home indicator (21) plus
+  4pt clearance. The mock has no home indicator; the device does, and `04` section 7 owns safe
+  areas at physical edges. Moving furniture to 16 would put the lower third and the committing
+  cluster under it.
+- **Trailing inset stays `Frame.gutter` 20, not 1a's `right: 16`.** There is no recorded safety
+  basis either way for this edge -- `04` section 7 says the 17e insets are "unsourced -- measure
+  before relying on either" -- so this is left as an owner question rather than silently moved 4pt.
+- **1a differentiates plate grounds at .90 / .88 / .86 alpha** for scorebug / top-right / lower
+  third; the implementation uses one 0.88. Sub-perceptual, not chased.
+- **1a folds the three top-right cards into one plate with internal seams.** This step adopts its
+  width and containment; they remain three cards. Outstanding.
+
+### Evidence
+
+Real production route `PROOF_SCREEN=match` on iPhone 17e, captured before and after each change.
+`testMatchDayExportsDistinctFieldLandmarksAtDefault` and
+`testUnchromedMatchProofKeepsBroadcastTopInset` pass at `large`; `...AtAX5` passes at genuine
+`accessibility-extra-extra-extra-large`; content size restored to `large`. design 58/857, core
+238/3243, screen read models 69/9704, `git diff --check` clean.
+
+Exact-worktree `detect_changes(scope: all)`: **high** risk, 16 symbols across 4 files, 8 affected
+processes -- all eight are the Match Day `field` rendering flow, which is the expected radius for
+changing how the field paints and places actors. No simulation, persistence, or route process is in
+scope. Several listed symbols (`Paint.arrowSize`, `pylonWidth`, `legs`, `local`, `position`) are
+line-shift artefacts of edits elsewhere in the same files.
+
+### Still outstanding for ID 14
+
+The single top-right plate, the plate-ground alpha ramp, and the two inset questions above. ID 14 is
+**not** complete and is not marked so.
