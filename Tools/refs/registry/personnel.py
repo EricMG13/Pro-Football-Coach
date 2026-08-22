@@ -7,8 +7,8 @@ than over it."""
 from __future__ import annotations
 
 from ._shared import (
-    BandLegend, Chip, Chips, Col, Heat, Hero, NOTHING_MISSING, Panel, Row, Rows,
-    Split, Stack, Status, Table, blocker, desk, dossier, gap,
+    AttributeDial, BandLegend, Chip, Chips, Col, Heat, Hero, NOTHING_MISSING, Panel,
+    Row, Rows, ShareBar, Split, Stack, Status, Table, blocker, desk, dossier, gap,
 )
 
 roster = desk(
@@ -71,15 +71,21 @@ player_profile = dossier(
             mark="TeamLogo_00EBE0C02B2B4988A450BB870D6D3881",
             headline="Amos Kerr",
             numeral="81",
-            points=("Senior wide receiver, doubtful",),
+            points=(),
             scale="dossier",
         ),
-        bottom=Stack((Table(
-            (Col("Attribute", 14, "left", False), Col("Now", 4, "right"),
-             Col("Ceiling", 8, "right"), Col("Season", 19, "left", False)),
-            (("Hands", Heat(86, "41 receptions"), "87", "41 receptions"),
-             ("Route running", Heat(83, "612 yards"), "85", "612 yards")),
-        ), BandLegend())),
+        bottom=Stack((
+            Stack((
+                AttributeDial(81, "Overall", 92),
+                Stack((
+                    ShareBar((86 - 40) / 59, "Hands", "86", "--heat-well-above"),
+                    ShareBar((83 - 40) / 59, "Route running", "83", "--heat-above"),
+                    ShareBar((78 - 40) / 59, "Separation", "78", "--heat-average"),
+                    ShareBar((61 - 40) / 59, "Blocking", "61", "--heat-below"),
+                )),
+            ), direction="row"),
+            BandLegend(),
+        )),
     ),
     gaps=(
         gap("ART", "The person plate is blank: no player likeness exists and none is planned."),

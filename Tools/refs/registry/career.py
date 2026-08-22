@@ -12,8 +12,8 @@ a registry that only models screens, and each one declares that as a gap."""
 from __future__ import annotations
 
 from ._shared import (
-    Chip, Chips, Col, Hero, Panel, Row, Rows, Split, Stack, Status, Surface, Table,
-    blocker, broadcast, desk, dossier, gap,
+    Chip, Chips, Col, FormLine, Hero, Panel, Row, Rows, Split, Stack, Status, Surface,
+    Table, blocker, broadcast, desk, dossier, gap,
 )
 from surface import Lean
 
@@ -124,12 +124,14 @@ record_book = desk(
 rivalries = desk(
     id="rivalries", number=58, name="Rivalries", family="career",
     status=Status.WRAPPER, parent="LegacyHistoryView", evidence=LEGACY,
-    body=Panel("Standing", Table(
-        (Col("Programme", 24, "left", False), Col("W-L", 7, "right"),
-         Col("Last", 10, "left", False), Col("Streak", 7, "right")),
-        (("Zumbrota Central Marsh", "3-2", "W 24-21", "W2"),
-         ("Edgartown Cedar", "2-1", "W 21-17", "W1"),
-         ("Pecos Bramble", "1-2", "L 17-28", "L1")),
+    body=Stack((
+        Panel("Zumbrota Central Marsh", FormLine((
+            ("L", "17-24", "ZUM"), ("W", "31-20", "ZUM"), ("L", "13-27", "ZUM"),
+            ("W", "21-17", "ZUM"), ("W", "24-21", "ZUM"),
+        ))),
+        Panel("Edgartown Cedar", FormLine((
+            ("W", "28-14", "EDG"), ("L", "10-24", "EDG"), ("W", "21-17", "EDG"),
+        ))),
     )),
     gaps=(
         blocker("DATA", "No rivalry record kind exists; this is derived from the schedule at read time."),

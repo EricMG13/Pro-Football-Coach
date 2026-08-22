@@ -272,3 +272,79 @@
   font-size: var(--size-pill);
   color: var(--content-quiet);
 }
+
+/* ---- The arc family (`04` 6.4; geometry.css bounds it to proportions) ---------- */
+
+.fl-arc { display: block; }
+.fl-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.fl-ring { position: relative; display: inline-grid; place-items: center; flex: none; }
+.fl-ring > b {
+  position: absolute;
+  font-size: var(--size-action-small);
+  font-weight: 600;
+  color: var(--content-primary);
+}
+
+.fl-dial { position: relative; display: grid; place-items: center; flex: none; }
+.fl-dial > b { position: absolute; font-weight: 700; line-height: 1; }
+.fl-dial > .fl-label3 { position: absolute; bottom: 6%; }
+
+.fl-share { display: flex; align-items: center; gap: var(--gap-sm-plus); }
+.fl-share__track {
+  flex: 1;
+  height: var(--share-bar-height);
+  border-radius: 2px;
+  background: var(--rule-structural);
+  overflow: hidden;
+}
+.fl-share__track i { display: block; height: 100%; }
+.fl-share > b { font-size: var(--size-action-small); color: var(--content-primary); flex: none; }
+
+.fl-meter, .fl-opposed { display: flex; align-items: center; gap: var(--gap-sm-plus); }
+.fl-meter > .fl-label3, .fl-opposed > .fl-label3 { flex: none; min-width: 92px; }
+.fl-meter__track, .fl-opposed__track {
+  flex: 1;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--rule-structural);
+  display: flex;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 var(--hairline) var(--rule-legible);
+}
+.fl-meter__track i { display: block; height: 100%; }
+/* Over capacity overruns its track rather than clamping -- a cap sheet that cannot show
+   itself breached is not a cap sheet. */
+.fl-meter__over { background: repeating-linear-gradient(45deg,
+  var(--state-negative) 0 3px, transparent 3px 6px); }
+.fl-opposed__home { background: var(--college-identity); }
+.fl-opposed__away { background: var(--pro-identity); }
+.fl-meter > b, .fl-opposed > b {
+  font-size: var(--size-action-small);
+  color: var(--content-primary);
+  flex: none;
+}
+
+.fl-form { display: flex; gap: var(--gap-xxs); align-items: flex-end; }
+.fl-form__result { display: grid; justify-items: center; gap: 2px; position: relative; }
+.fl-form__result b {
+  display: grid;
+  place-items: center;
+  width: 18px; height: 18px;
+  border-radius: 3px;
+  background: var(--tint);
+  color: var(--ink-on-fill);
+  font: var(--weight-bold) var(--size-pill) / 1 var(--font-display);
+}
+.fl-form__result em {
+  font-style: normal;
+  font-size: var(--size-flag);
+  color: var(--content-quiet);
+  letter-spacing: var(--track-micro);
+}

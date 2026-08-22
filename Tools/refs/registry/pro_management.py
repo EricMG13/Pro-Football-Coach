@@ -7,8 +7,8 @@ focus, and `ProManagementReadModel` has no transactions collection at all."""
 from __future__ import annotations
 
 from ._shared import (
-    Chip, Chips, Col, Hero, Panel, Row, Rows, Split, Stack, Status, Table,
-    blocker, broadcast, desk, dossier, gap,
+    Chip, Chips, Col, Hero, Meter, Panel, Row, Rows, ShareBar, Split, Stack, Status,
+    Table, blocker, broadcast, desk, dossier, gap,
 )
 
 FIXTURE = "pro"
@@ -18,17 +18,17 @@ cap_contracts = desk(
     status=Status.PARTIAL, parent="ProManagementView", fixture=FIXTURE,
     evidence="Sources/ProFootballCoachUI/ProManagementView.swift:90 -- title only, no focus",
     body=Stack((
-        Panel("Cap", Table(
-            (Col("Line", 20, "left", False), Col("Amount", 12, "right"), Col("Share", 7, "right")),
-            (("Active contracts", "$182,400,000", "81%"),
-             ("Dead money", "$14,100,000", "6%"),
-             ("Space", "$28,500,000", "13%")),
-        )),
+        Panel("Cap", Stack((
+            Meter(196.5, 225.0, "Committed", "m"),
+            ShareBar(0.81, "Active contracts", "$182.4m"),
+            ShareBar(0.06, "Dead money", "$14.1m", "--state-negative"),
+            ShareBar(0.13, "Space", "$28.5m", "--state-positive"),
+        ))),
         Panel("Largest", Table(
-            (Col("Player", 18, "left", False), Col("Cap hit", 12, "right"), Col("Years", 6, "right")),
+            (Col("Player", 18, "left", False), Col("Cap hit", 12, "right"),
+             Col("Years", 6, "right")),
             (("Dez Achterberg", "$31,000,000", "3"),
-             ("Lowell Pryce", "$22,400,000", "2"),
-             ("Kofi Ellwood", "$18,900,000", "4")),
+             ("Lowell Pryce", "$22,400,000", "2")),
         )),
     )),
     gaps=(

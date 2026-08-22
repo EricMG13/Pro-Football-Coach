@@ -5,8 +5,8 @@ what Saturday did."""
 from __future__ import annotations
 
 from ._shared import (
-    Chip, Chips, Col, Field, Hero, NOTHING_MISSING, Panel, Lean, Row, Rows,
-    Split, Stack, Status, Surface, Table, blocker, broadcast, desk, gap,
+    Chip, Chips, Col, Field, Hero, NOTHING_MISSING, OpposedBar, Panel, Lean, Row,
+    Rows, ShareBar, Split, Stack, Status, Surface, Table, blocker, broadcast, desk, gap,
 )
 
 coaching_hq = desk(
@@ -53,10 +53,10 @@ film_room = desk(
              ("Empty backfield", "3rd", "61%", "6.1"),
              ("Blitz off the slot", "3rd", "29%", "3.8")),
         )),
-        Rows((
-            Row("Slow safety rotation", ("High",), "Six explosives off it this season"),
-            Row("Late motion checks", ("Medium",), "Two sacks conceded"),
-        ), kind="readout"),
+        Stack((
+            OpposedBar("Yards per play", 5.4, 6.8, "Union Maritime", "Zumbrota Central"),
+            OpposedBar("Third down", 43, 63, "Union Maritime", "Zumbrota Central"),
+        )),
     )),
     gaps=(
         gap("DATA", "Tendencies are static; the engine records no per-opponent play log to derive them from."),
@@ -86,13 +86,11 @@ practice_plan = desk(
     id="practicePlan", number=12, name="Practice Plan", family="weeklyCommand",
     status=Status.BUILT, commit="Set the week",
     body=Stack((
-        Panel("Allocation", Table(
-            (Col("Block", 16, "left", False), Col("Mon", 5, "right"), Col("Tue", 5, "right"),
-             Col("Wed", 5, "right"), Col("Thu", 5, "right")),
-            (("Red zone", "30", "20", "20", "10"),
-             ("Situational", "10", "20", "20", "20"),
-             ("Recovery", "20", "10", "10", "30")),
-        )),
+        Panel("Allocation", Stack((
+            ShareBar(0.40, "Red zone", "80 min"),
+            ShareBar(0.35, "Situational", "70 min"),
+            ShareBar(0.25, "Recovery", "50 min"),
+        ))),
         Rows((
             Row("Fatigue", ("+6",), "Above the line; two full-pad sessions"),
         ), kind="readout"),

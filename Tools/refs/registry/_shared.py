@@ -4,13 +4,15 @@ that would otherwise be repeated 59 times."""
 from __future__ import annotations
 
 from primitives import (
-    BandLegend, Chip, Chips, Col, Custom, Field, Heat, Hero, Panel, Row, Rows,
-    Split, Stack, Table,
+    AttributeDial, BandLegend, Chip, Chips, Col, Custom, Field, FormLine, Heat,
+    Hero, Meter, OpposedBar, Panel, Row, Rows, ShareBar, Split, Stack, Table,
+    ValueRing,
 )
 from surface import Gap, GapKind, NOTHING_MISSING, Lean, Status, Surface
 
 __all__ = [
-    "BandLegend", "Heat",
+    "AttributeDial", "BandLegend", "FormLine", "Heat", "Meter", "OpposedBar",
+    "ShareBar", "ValueRing",
     "Chip", "Chips", "Col", "Custom", "Field", "Hero", "Panel", "Row", "Rows",
     "Split", "Stack", "Table", "Gap", "GapKind", "NOTHING_MISSING", "Lean",
     "Status", "Surface", "desk", "dossier", "broadcast", "gap", "blocker",

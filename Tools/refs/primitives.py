@@ -76,16 +76,40 @@ def _ink(text: str, ink: str, plate: str, cls: str = "") -> str:
 # --------------------------------------------------------------------------
 
 
+#: Character advance at 12 px (`--type-callout`), MEASURED in the two faces the table
+#: actually renders in. The distinction is not pedantry: a `ch` track resolves against the
+#: CONTAINER's font, and a figure cell renders in a different one, so `12ch` bought 66 px
+#: of Archivo Narrow for a value that needed 79 px of IBM Plex Mono and the money columns
+#: in Contract Negotiation collided. Tracks are now computed in px from the face the cell
+#: is drawn in.
+MONO_ADVANCE = 7.2 / 12.0        # IBM Plex Mono, per px of font size
+DISPLAY_ADVANCE = 5.472 / 12.0   # Archivo Narrow digits -- wider than its letters, so
+                                 # using it for a text column is the conservative bound
+CELL_FONT_PX = 12.0
+
+
 @dataclass(frozen=True)
 class Col:
-    """A table column. Width is in CHARACTERS, which is what makes the overflow
-    check possible without a browser: characters times the mono advance is a real
-    pixel width, whereas a declared px width tells you nothing about the content."""
+    """A table column, declared in CHARACTERS.
+
+    Characters are what makes the overflow check possible without a browser -- a declared
+    px width tells you nothing about the content. The px track is derived from the advance
+    of the face this column renders in, which `figure` selects."""
 
     label: str
     chars: int
     align: str = "left"
     figure: bool = True
+
+    @property
+    def advance(self) -> float:
+        return (MONO_ADVANCE if self.figure else DISPLAY_ADVANCE) * CELL_FONT_PX
+
+    @property
+    def width_px(self) -> float:
+        """Wide enough for `chars` of the face the cell is drawn in, and for its own
+        column head, which is Label3 at 9 px."""
+        return max(self.chars * self.advance, len(self.label) * 9.0 * DISPLAY_ADVANCE)
 
 
 @dataclass(frozen=True)
@@ -187,6 +211,320 @@ class BandLegend:
         return f'<div class="fl-bands">{cells}</div>'
 
 
+# --------------------------------------------------------------------------
+# The arc family. `04` 6.4 permits a compact gauge for stamina, roster fit,
+# development progress, portal interest or scouting confidence; geometry.css bounds it:
+#
+#   "An arc is permitted ONLY where the datum is a proportion. An arc that encodes a
+#    rank or a count is a lie about the shape of the number."
+#
+# Enforced by construction -- every one of these takes a proportion of a stated whole and
+# raises on anything outside 0-1, so a rank cannot be drawn as an arc even by mistake.
+# One idea at four scales: ShareBar 4 -> ValueRing 26 -> ArcGauge 64 -> AttributeDial 212.
+# --------------------------------------------------------------------------
+
+_RING_STROKE_RATIO = tokens.VALUES["--ring-stroke-ratio"]
+_ARC_START = 150.0
+_ARC_SWEEP = 240.0
+
+
+def _proportion(value: float, what: str) -> float:
+    if not 0.0 <= value <= 1.0:
+        raise ValueError(
+            f"{what} is {value}; an arc takes a proportion of a stated whole. "
+            "A rank or a count is not one -- print it."
+        )
+    return value
+
+
+def _arc(diameter: float, stroke: float, proportion: float, tint: str,
+         sweep: float = 360.0, start: float = -90.0) -> str:
+    """One SVG ring, used at every scale. A dash offset around a circle is the whole of
+    the arc family; three separate shapes would drift apart."""
+    r = (diameter - stroke) / 2
+    circumference = 2 * 3.141592653589793 * r
+    length = circumference * (sweep / 360.0)
+    return (
+        f'<svg class="fl-arc" width="{diameter:g}" height="{diameter:g}"'
+        f' viewBox="0 0 {diameter:g} {diameter:g}" aria-hidden="true">'
+        f'<circle cx="{diameter / 2:g}" cy="{diameter / 2:g}" r="{r:g}" fill="none"'
+        f' stroke="var(--rule-structural)" stroke-width="{stroke:g}"'
+        f' stroke-dasharray="{length:g} {circumference:g}"'
+        f' transform="rotate({start:g} {diameter / 2:g} {diameter / 2:g})"/>'
+        f'<circle cx="{diameter / 2:g}" cy="{diameter / 2:g}" r="{r:g}" fill="none"'
+        f' stroke="var({tint})" stroke-width="{stroke:g}" stroke-linecap="butt"'
+        f' stroke-dasharray="{length * proportion:g} {circumference:g}"'
+        f' transform="rotate({start:g} {diameter / 2:g} {diameter / 2:g})"/></svg>'
+    )
+
+
+@dataclass(frozen=True)
+class ValueRing:
+    """Arc family step 2 (26 pt). A proportion beside its printed figure."""
+
+    proportion: float
+    figure: str
+    label: str
+    diameter: float = 26.0
+    tint: str = "--action-secondary"
+
+    def __post_init__(self) -> None:
+        _proportion(self.proportion, f"ValueRing {self.label!r}")
+
+    def cells(self) -> int:
+        return 1
+
+    def readout_rows(self) -> int:
+        return 0
+
+    def tappable_rows(self) -> int:
+        return 0
+
+    def columns_count(self) -> int:
+        return 0
+
+    def golds(self) -> int:
+        return 0
+
+    def height(self) -> float:
+        return self.diameter
+
+    def render(self) -> str:
+        stroke = max(self.diameter * float(_RING_STROKE_RATIO), 2.0)
+        return (
+            f'<span class="fl-ring" style="width: {self.diameter:g}px">'
+            + _arc(self.diameter, stroke, self.proportion, self.tint)
+            + f'<b class="fl-figure">{escape(self.figure)}</b>'
+            f'<span class="fl-sr">{escape(self.label)}</span></span>'
+        )
+
+
+@dataclass(frozen=True)
+class AttributeDial:
+    """Arc family step 4 (212 pt hero), on the 40-99 scale.
+
+    The shipped component's own doc still says "red below 70, amber 70-84, green 85+" --
+    the three-band scale `04` 6.4 retired on 2026-08-22. This uses the five bands, so a
+    dial and a table cell never disagree about the same number."""
+
+    rating: int
+    title: str
+    diameter: float = 212.0
+
+    def __post_init__(self) -> None:
+        if not 40 <= self.rating <= 99:
+            raise ValueError(f"AttributeDial {self.title!r} is {self.rating}; the scale is 40-99")
+
+    @property
+    def proportion(self) -> float:
+        return (self.rating - 40) / 59
+
+    def cells(self) -> int:
+        return 1
+
+    def readout_rows(self) -> int:
+        return 0
+
+    def tappable_rows(self) -> int:
+        return 0
+
+    def columns_count(self) -> int:
+        return 0
+
+    def golds(self) -> int:
+        return 0
+
+    def height(self) -> float:
+        return self.diameter
+
+    def render(self) -> str:
+        stroke = tokens.px("--dial-stroke") * (self.diameter / 212.0)
+        band = heat_token(self.rating)
+        return (
+            f'<span class="fl-dial" style="width: {self.diameter:g}px;'
+            f' height: {self.diameter:g}px">'
+            + _arc(self.diameter, stroke, self.proportion, band, _ARC_SWEEP,
+                   _ARC_START - 90.0)
+            + f'<b class="fl-figure" data-ink="{band}" data-plate="--surface-panel"'
+            f' style="color: var({band}); font-size: {self.diameter * 0.30:g}px">'
+            f"{self.rating}</b>"
+            f'<span class="fl-label3">{escape(self.title)}</span></span>'
+        )
+
+
+@dataclass(frozen=True)
+class ShareBar:
+    """Arc family step 1 (4 pt). The same idea flattened into a table track."""
+
+    proportion: float
+    label: str
+    figure: str
+    tint: str = "--action-secondary"
+
+    def __post_init__(self) -> None:
+        _proportion(self.proportion, f"ShareBar {self.label!r}")
+
+    def cells(self) -> int:
+        return 1
+
+    def readout_rows(self) -> int:
+        return 0
+
+    def tappable_rows(self) -> int:
+        return 0
+
+    def columns_count(self) -> int:
+        return 0
+
+    def golds(self) -> int:
+        return 0
+
+    def height(self) -> float:
+        return 18.0
+
+    def render(self) -> str:
+        return (
+            '<span class="fl-share">'
+            f'{_ink(self.label, "--content-secondary", "--surface-panel")}'
+            f'<span class="fl-share__track"><i style="width: {self.proportion * 100:g}%;'
+            f' background: var({self.tint})"></i></span>'
+            f'<b class="fl-figure">{escape(self.figure)}</b></span>'
+        )
+
+
+@dataclass(frozen=True)
+class Meter:
+    """A capacity track with a defined over-capacity state.
+
+    Over capacity is the interesting case -- a cap sheet that cannot show itself breached
+    is not a cap sheet -- so the bar overruns its track rather than clamping."""
+
+    value: float
+    capacity: float
+    label: str
+    unit: str = ""
+
+    def cells(self) -> int:
+        return 2  # the value and the capacity are both printed
+
+    def readout_rows(self) -> int:
+        return 0
+
+    def tappable_rows(self) -> int:
+        return 0
+
+    def columns_count(self) -> int:
+        return 0
+
+    def golds(self) -> int:
+        return 0
+
+    def height(self) -> float:
+        return 30.0
+
+    @property
+    def over(self) -> bool:
+        return self.value > self.capacity
+
+    def render(self) -> str:
+        filled = min(self.value / self.capacity, 1.0) * 100 if self.capacity else 0
+        tint = "--state-negative" if self.over else "--action-secondary"
+        overrun = (
+            f'<i class="fl-meter__over" style="width: '
+            f'{min((self.value / self.capacity - 1) * 100, 40):g}%"></i>'
+            if self.over
+            else ""
+        )
+        return (
+            '<span class="fl-meter">'
+            f'<span class="fl-label3">{escape(self.label)}</span>'
+            f'<span class="fl-meter__track"><i style="width: {filled:g}%;'
+            f' background: var({tint})"></i>{overrun}</span>'
+            f'<b class="fl-figure">{escape(f"{self.value:g}{self.unit}")}'
+            f' / {escape(f"{self.capacity:g}{self.unit}")}</b></span>'
+        )
+
+
+@dataclass(frozen=True)
+class OpposedBar:
+    """Two teams on one shared track. Both fills carry the mandatory hairline."""
+
+    label: str
+    home: float
+    away: float
+    home_name: str
+    away_name: str
+
+    def cells(self) -> int:
+        return 2
+
+    def readout_rows(self) -> int:
+        return 0
+
+    def tappable_rows(self) -> int:
+        return 0
+
+    def columns_count(self) -> int:
+        return 0
+
+    def golds(self) -> int:
+        return 0
+
+    def height(self) -> float:
+        return 30.0
+
+    def render(self) -> str:
+        total = self.home + self.away
+        share = (self.home / total * 100) if total else 50
+        return (
+            '<span class="fl-opposed">'
+            f'<span class="fl-label3">{escape(self.label)}</span>'
+            '<span class="fl-opposed__track">'
+            f'<i class="fl-opposed__home" style="width: {share:g}%"></i>'
+            f'<i class="fl-opposed__away" style="width: {100 - share:g}%"></i></span>'
+            f'<b class="fl-figure">{escape(f"{self.home:g}")}'
+            f' &ndash; {escape(f"{self.away:g}")}</b>'
+            f'<span class="fl-sr">{escape(self.home_name)} against '
+            f"{escape(self.away_name)}</span></span>"
+        )
+
+
+@dataclass(frozen=True)
+class FormLine:
+    """Bounded last-N results. A shape for a sequence, which a column of letters is not."""
+
+    results: tuple[tuple[str, str, str], ...]  # (outcome W/L/D, score, opponent)
+
+    def cells(self) -> int:
+        return len(self.results)
+
+    def readout_rows(self) -> int:
+        return 0
+
+    def tappable_rows(self) -> int:
+        return 0
+
+    def columns_count(self) -> int:
+        return 0
+
+    def golds(self) -> int:
+        return 0
+
+    def height(self) -> float:
+        return 30.0
+
+    def render(self) -> str:
+        tint = {"W": "--state-positive", "L": "--state-negative", "D": "--content-quiet"}
+        cells = "".join(
+            f'<span class="fl-form__result" style="--tint: var({tint[outcome]})">'
+            f'<b>{escape(outcome)}</b>'
+            f'<span class="fl-sr">{escape(score)} against {escape(opponent)}</span>'
+            f'<em class="fl-figure">{escape(opponent)}</em></span>'
+            for outcome, score, opponent in self.results
+        )
+        return f'<span class="fl-form">{cells}</span>'
+
+
 @dataclass(frozen=True)
 class Chip:
     text: str
@@ -237,7 +575,7 @@ class Table:
         return _LABEL3 + n * track + max(n - 1, 0) * _GAP_HAIR
 
     def render(self) -> str:
-        track = " ".join(f"{c.chars}ch" for c in self.columns)
+        track = " ".join(f"{c.width_px:.1f}px" for c in self.columns)
         head = "".join(
             f'<div class="col-{c.align}">'
             f'{_ink(c.label, "--content-quiet", "--surface-panel", "fl-label3")}</div>'

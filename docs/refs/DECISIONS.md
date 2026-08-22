@@ -179,3 +179,44 @@ Swift, and says so at the top. **The app carries both gaps.**
   legend. Rule 19 makes a second owner for one class a build failure.
 - The standalone file carries no charset, so a plain file server mojibaked every multi-byte
   character while the artifact host rendered it correctly. Rule 20 requires ASCII output.
+
+### 19. The arc family, and why three defects and the density problem were one problem
+
+A review asked whether these read as a game or as software. Forty-one of fifty-nine
+contained nothing but tables, rows, panels and stacks, and **none** of the design system's
+ten graphical components were rendered. Every proportion in a sport made of proportions --
+snap share, allocation, cap, third-down splits -- was printed as text in a column.
+
+Six arcs added: `ShareBar` 4 pt, `ValueRing` 26, `AttributeDial` 212, plus `Meter`,
+`OpposedBar` and `FormLine`. `ArcGauge` (64) is not built -- it is `ValueRing` at another
+diameter and no surface needs it yet.
+
+`geometry.css` bounds them: *"An arc is permitted ONLY where the datum is a proportion. An
+arc that encodes a rank or a count is a lie about the shape of the number."* Enforced by
+construction -- every one takes a proportion of a stated whole and raises outside 0-1, so a
+rank cannot be drawn as an arc even by mistake. Rule 21 covers the back door: an arc with
+no printed figure beside it, which would make the shape the only reading.
+
+**`AttributeDial`'s shipped doc is stale.** It says "red below 70, amber 70-84, green 85+"
+-- the three-band scale `04` 6.4 retired. The dial uses the five bands, so a dial and a
+table cell never disagree about the same number.
+
+Adding them fixed the density defect rather than decorating around it: Player Profile
+carried **two** attribute rows because a table costs 116 pt for four. A dial plus four
+share bars carries five attributes in 92 pt, inside the same plate.
+
+### 20. The column track was measured in the wrong font
+
+`Col.chars` emitted a `ch` track. `ch` resolves against the CONTAINER's font -- Archivo
+Narrow, 5.472 px per digit at 12 px -- while a figure cell renders in IBM Plex Mono at
+7.2 px. So `12ch` bought 66 px for `$24,000,000`, which needs 79, and Contract
+Negotiation's money columns collided.
+
+Tracks are now computed in px from the advance of the face the column actually renders in,
+`figure` selecting between the two measured constants, and check 11 uses the same
+expression -- so the check and the render cannot disagree about a width again.
+
+### 21. Prospect Profile contradicted its own gap
+
+Its head printed `68-89` while the same surface declared that ranges are impossible until
+the scouting-confidence model lands. Now a point value, consistent with the declaration.

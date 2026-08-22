@@ -7,8 +7,8 @@ Retention Decisions, Portal Market and NIL Allocation all route there, and
 from __future__ import annotations
 
 from ._shared import (
-    BandLegend, Chip, Chips, Col, Heat, Hero, Panel, Row, Rows, Split, Stack,
-    Status, Table, blocker, broadcast, desk, dossier, gap,
+    BandLegend, Chip, Chips, Col, FormLine, Heat, Hero, Panel, Row, Rows, ShareBar,
+    Split, Stack, Status, Table, ValueRing, blocker, broadcast, desk, dossier, gap,
 )
 
 recruiting_board = desk(
@@ -38,8 +38,8 @@ prospect_profile = dossier(
     status=Status.BUILT,
     body=Split(
         top=Hero(mark="TeamLogo_0017F958E7D04FFC9EA801A252B40FD6",
-                 headline="Kalen Ruthers", numeral="68-89",
-                 points=("Quarterback, Pecos, 90 miles",),
+                 headline="Kalen Ruthers", numeral="86",
+                 points=("Quarterback, Pecos, 90 miles; projected ceiling",),
                  scale="dossier", side="opponent"),
         bottom=Stack((Table(
             (Col("Measure", 17, "left", False), Col("Value", 8, "right"),

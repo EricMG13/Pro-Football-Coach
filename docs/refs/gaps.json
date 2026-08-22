@@ -107,7 +107,7 @@
       "family": "weeklyCommand",
       "lean": "DESK",
       "status": "BUILT",
-      "cells": 17,
+      "cells": 5,
       "commit": "Set the week",
       "evidence": null,
       "gaps": [
@@ -286,7 +286,7 @@
       "family": "personnel",
       "lean": "DOSSIER",
       "status": "BUILT",
-      "cells": 10,
+      "cells": 6,
       "commit": null,
       "evidence": null,
       "gaps": [
@@ -544,7 +544,7 @@
       "family": "proManagement",
       "lean": "DESK",
       "status": "PARTIAL",
-      "cells": 18,
+      "cells": 11,
       "commit": null,
       "evidence": "Sources/ProFootballCoachUI/ProManagementView.swift:90 -- title only, no focus",
       "gaps": [
@@ -1033,7 +1033,7 @@
       "family": "career",
       "lean": "DESK",
       "status": "WRAPPER",
-      "cells": 12,
+      "cells": 8,
       "commit": null,
       "evidence": "Sources/ProFootballCoachUI/LegacyHistoryView.swift -- 175 lines, four concepts, two record kinds",
       "gaps": [

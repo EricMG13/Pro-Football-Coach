@@ -612,12 +612,14 @@ def check_overflow() -> list[str]:
                         f"{s.id}: column {col.label!r} is {col.chars} chars, "
                         f"longest cell is {longest}"
                     )
-            width = sum(c.chars for c in node.columns) * tokens.MONO_CHAR_PX
+            # Same expression the track is emitted from, so the check and the render can
+            # never disagree about how wide a column is.
+            width = sum(c.width_px for c in node.columns)
             gaps = tokens.px("--gap-md") * max(len(node.columns) - 1, 0)
             if width + gaps > tokens.CONTENT_W:
                 out.append(
-                    f"{s.id}: table is {width + gaps:.0f}px at "
-                    f"{tokens.MONO_SIZE_PX}px mono, plate is {tokens.CONTENT_W:g}px"
+                    f"{s.id}: table needs {width + gaps:.0f}px, plate is "
+                    f"{tokens.CONTENT_W:g}px"
                 )
     return out
 
@@ -725,17 +727,52 @@ def check_band_table() -> list[str]:
 
     Without it the player cannot answer "is 74 good?" without a live percentile, which a
     save with no league history cannot supply."""
-    from primitives import BandLegend, Heat, walk
+    from primitives import AttributeDial, BandLegend, Heat, ShareBar, walk
+
+    def is_banded(n) -> bool:
+        if isinstance(n, (Heat, AttributeDial)):
+            return True
+        # a share bar tinted with a heat token is reading the same scale
+        return isinstance(n, ShareBar) and n.tint.startswith("--heat-")
 
     out = []
     for s in REGISTRY:
         nodes = list(walk(s.body))
-        bands = any(isinstance(n, Heat) for n in nodes)
+        bands = any(is_banded(n) for n in nodes)
         legend = any(isinstance(n, BandLegend) for n in nodes)
         if bands and not legend:
             out.append(f"{s.id} bands a rating and prints no band table")
         if legend and not bands:
             out.append(f"{s.id} prints a band table and bands nothing")
+    return out
+
+
+@rule(21, "Arcs are proportions")
+def check_arcs() -> list[str]:
+    """geometry.css: "An arc is permitted ONLY where the datum is a proportion. An arc
+    that encodes a rank or a count is a lie about the shape of the number."
+
+    The primitives raise on a value outside 0-1, so this cannot fail through the front
+    door. What it catches is the back door: an arc drawn with no printed figure beside it,
+    which makes the shape the only reading of the number."""
+    from primitives import AttributeDial, FormLine, Meter, OpposedBar, ShareBar, ValueRing, walk
+
+    out = []
+    for s in REGISTRY:
+        for node in walk(s.body):
+            if isinstance(node, (ValueRing, ShareBar)):
+                if not str(node.figure).strip():
+                    out.append(f"{s.id}: {type(node).__name__} {node.label!r} prints no figure")
+                if not 0.0 <= node.proportion <= 1.0:
+                    out.append(f"{s.id}: {type(node).__name__} {node.label!r} is not a proportion")
+            if isinstance(node, AttributeDial) and not 40 <= node.rating <= 99:
+                out.append(f"{s.id}: dial {node.title!r} is off the 40-99 scale")
+            if isinstance(node, Meter) and node.capacity <= 0:
+                out.append(f"{s.id}: meter {node.label!r} has no capacity to be a proportion of")
+            if isinstance(node, OpposedBar) and node.home + node.away <= 0:
+                out.append(f"{s.id}: opposed bar {node.label!r} has no total")
+            if isinstance(node, FormLine) and not node.results:
+                out.append(f"{s.id}: form line is empty")
     return out
 
 
