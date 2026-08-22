@@ -60,6 +60,8 @@ func runDepthChartTests() {
                         "a player lined up twice on defence")
             expect(personnel.offensive(group: .quarterbacks).count >= 1,
                    "the offence took the field without a quarterback")
+            expect(personnel.offensive(group: .runningBacks).count >= 2,
+                   "the eligible personnel pool omitted the reserve back")
             expect(personnel.offensive(group: .specialists).count >= 1,
                    "the offence took the field with nobody who can kick")
         }

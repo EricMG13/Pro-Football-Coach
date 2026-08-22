@@ -191,24 +191,48 @@ public struct TeamGameStatistics: Codable, Sendable, Equatable {
 }
 
 public struct PlayerGameStatistics: Codable, Sendable, Equatable {
+    private enum CodingKeys: String, CodingKey {
+        case playerID, passingYards, rushingYards, receivingYards, touchdowns, targets, carries
+    }
+
     public let playerID: UUID
     public let passingYards: Int
     public let rushingYards: Int
     public let receivingYards: Int
     public let touchdowns: Int
+    public let targets: Int
+    public let carries: Int
 
     public init(
         playerID: UUID,
         passingYards: Int = 0,
         rushingYards: Int = 0,
         receivingYards: Int = 0,
-        touchdowns: Int = 0
+        touchdowns: Int = 0,
+        targets: Int = 0,
+        carries: Int = 0
     ) {
         self.playerID = playerID
         self.passingYards = max(0, passingYards)
         self.rushingYards = max(0, rushingYards)
         self.receivingYards = max(0, receivingYards)
         self.touchdowns = max(0, touchdowns)
+        let maximumPlays = MatchupRules.maximumDrivesPerGame * MatchupRules.maximumPlaysPerDrive
+        self.targets = min(maximumPlays, max(0, targets))
+        self.carries = min(maximumPlays, max(0, carries))
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            playerID: try container.decode(UUID.self, forKey: .playerID),
+            passingYards: try container.decode(Int.self, forKey: .passingYards),
+            rushingYards: try container.decode(Int.self, forKey: .rushingYards),
+            receivingYards: try container.decode(Int.self, forKey: .receivingYards),
+            touchdowns: try container.decode(Int.self, forKey: .touchdowns),
+            targets: try container.decodeIfPresent(Int.self, forKey: .targets) ?? 0,
+            carries: try container.decodeIfPresent(Int.self, forKey: .carries) ?? 0
+        )
     }
 }
 

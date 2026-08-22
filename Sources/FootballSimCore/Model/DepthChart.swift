@@ -212,10 +212,11 @@ public enum DepthChart {
         )
     }
 
-    /// The offensive formation, as positions. Two specialists ride along because a drive can end in
-    /// a kick and the resolver looks for them by position.
+    /// The offensive formation, plus the reserve back used by the resolver and two specialists
+    /// because a drive can end in a kick.
     public static let offensiveTemplate: [Position] = [
-        .quarterback, .runningBack, .wideReceiver, .wideReceiver, .wideReceiver, .tightEnd,
+        .quarterback, .runningBack, .runningBack,
+        .wideReceiver, .wideReceiver, .wideReceiver, .tightEnd,
         .leftTackle, .guardPosition, .guardPosition, .center, .rightTackle, .kicker, .punter,
     ]
 

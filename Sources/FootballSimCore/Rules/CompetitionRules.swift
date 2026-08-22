@@ -58,11 +58,14 @@ public enum CompetitionRules {
     /// Bounds a drawn play count to something a game can actually contain. A tail beyond this is
     /// the gaussian's, not football's.
     public static let playCountRange: ClosedRange<Int> = 40...105
-    public static let baselineCompletionProbability = 0.645
+    public static let baselineCompletionProbability = 0.618
+    public static let collegeBaselineCompletionProbability = 0.617
     public static let strengthCompletionProbabilityScale = 0.003
-    public static let baselineSackProbability = 0.032
+    public static let baselineSackProbability = 0.084
+    public static let collegeBaselineSackProbability = 0.0856
     public static let strengthSackProbabilityScale = 0.001
-    public static let baselineTurnoverProbability = 0.05
+    public static let baselineTurnoverProbability = 0.0333
+    public static let collegeBaselineTurnoverProbability = 0.036
     public static let proBaselineExplosivePlayProbability = 0.074
     public static let collegeBaselineExplosivePlayProbability = 0.072
 
@@ -74,6 +77,14 @@ public enum CompetitionRules {
     public static let turnoverRange: ClosedRange<Int> = 0...4
     public static let touchdownPointEstimate = 10
     public static let playerAwardTouchdownValue = 50
+    public static let wr1TargetShare = 0.48
+    public static let wr2TargetShare = 0.17
+    public static let wr3PlusTargetShare = 0.03
+    public static let tightEndTargetShare = 0.24
+    public static let runningBackTargetShare = 0.08
+    public static let primaryBackCarryShare = 0.70
+    public static let reserveBackCarryShare = 0.25
+    public static let quarterbackCarryShare = 0.05
 
     public static func baselinePoints(for tier: Tier) -> Double {
         tier == .college ? collegeBaselinePoints : proBaselinePoints
@@ -99,6 +110,18 @@ public enum CompetitionRules {
         tier == .college
             ? collegeBaselineExplosivePlayProbability
             : proBaselineExplosivePlayProbability
+    }
+
+    public static func baselineCompletionProbability(for tier: Tier) -> Double {
+        tier == .college ? collegeBaselineCompletionProbability : baselineCompletionProbability
+    }
+
+    public static func baselineSackProbability(for tier: Tier) -> Double {
+        tier == .college ? collegeBaselineSackProbability : baselineSackProbability
+    }
+
+    public static func baselineTurnoverProbability(for tier: Tier) -> Double {
+        tier == .college ? collegeBaselineTurnoverProbability : baselineTurnoverProbability
     }
 
     public static func baselineFourthQuarterScoringShare(for tier: Tier) -> Double {
