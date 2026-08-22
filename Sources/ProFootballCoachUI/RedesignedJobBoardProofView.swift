@@ -31,7 +31,7 @@ struct RedesignedJobBoardProofView: View {
                     standardLayout
                 }
             }
-            .padding(.horizontal, CoachWorldTokens.Stage.railFreeLeading)
+            .padding(.horizontal, CoachWorldTokens.Stage.contentLeading)
             .padding(.top, CoachWorldTokens.Frame.topInset)
             .padding(.bottom, CoachWorldTokens.Frame.bottomInset)
         }

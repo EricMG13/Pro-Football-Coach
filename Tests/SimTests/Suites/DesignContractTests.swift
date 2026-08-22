@@ -154,6 +154,30 @@ func runDesignContractTests() {
         }
     }
 
+    suite("One-band top navigator") {
+        test("the management frame is rail-free at the install floor") {
+            expectEqual(CoachWorldTokens.Stage.contentLeading, 63)
+            expectEqual(CoachWorldTokens.Stage.contentTop, 54)
+            expectEqual(CoachWorldTokens.Stage.headerTop, 12)
+            expectEqual(CoachWorldTokens.Stage.headerHeight, 34)
+            expectEqual(CoachWorldTokens.Stage.contentWidth, 761)
+        }
+
+        test("no production source retains rail presentation") {
+            let source = swiftFilesImportingUIFramework().map(\.text).joined(separator: "\n")
+            for retired in ["FloodlitIconRail", "RailEntry", "showsIconRail"] {
+                expect(!source.contains(retired), "retired rail source remains: \(retired)")
+            }
+        }
+
+        test("the header owns registry opening and a stable accessibility hook") {
+            let source = swiftFilesImportingUIFramework().map(\.text).joined(separator: "\n")
+            expect(source.contains("onOpenRegistry"))
+            expect(source.contains("top-navigator"))
+            expect(source.contains("Open all tasks,"))
+        }
+    }
+
     suite("Orientation policy") {
         // CLAUDE.md has claimed since 2026-08-10 that landscape-only is "declared in App/project.yml
         // and asserted by OrientationPolicyTest". The declaration was real; the test was not, and

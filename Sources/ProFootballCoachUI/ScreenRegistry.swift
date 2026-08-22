@@ -155,11 +155,10 @@ public enum CoachWorldScreenID: Int, CaseIterable, Sendable, Hashable {
 
     /// Which family a surface belongs to (`FLOODLIT-SURFACES.md` section 3).
     ///
-    /// The identity header's second row is the whole of this game's navigation: the family name,
-    /// then that family's siblings as links. So the grouping has to live somewhere both the header
-    /// and the icon rail can read, and the registry is the only thing that already knows every
-    /// surface. Derived from the screen rather than stored beside it, so a new case cannot be added
-    /// without the compiler asking which family it joins.
+    /// The identity header's one row carries the family name and that family's siblings as links.
+    /// So the grouping has to live somewhere the header can read, and the registry already knows
+    /// every surface. Derived from the screen rather than stored beside it, so a new case cannot
+    /// be added without the compiler asking which family it joins.
     public var family: CoachWorldSurfaceFamily {
         switch self {
         case .coachingHQ, .inbox, .opponentReportFilmRoom, .gamePlan, .practicePlan,
@@ -229,15 +228,6 @@ public enum CoachWorldScreenID: Int, CaseIterable, Sendable, Hashable {
         case .coachingCarousel: "Carousel"
         case .titleContinue: "Title"
         default: taskName
-        }
-    }
-
-    /// The three surfaces that sit outside the coaching week and so carry no icon rail
-    /// (`FLOODLIT-SURFACES.md` section 3). They start at the rail-free leading edge instead.
-    public var showsIconRail: Bool {
-        switch self {
-        case .titleContinue, .jobBoard, .offer: false
-        default: true
         }
     }
 

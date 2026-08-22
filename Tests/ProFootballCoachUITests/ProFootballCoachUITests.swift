@@ -12,14 +12,13 @@ final class ProFootballCoachUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.otherElements["coaching-hq-screen"].waitForExistence(timeout: 20))
-        let allTasks = app.buttons["All tasks"]
-        if allTasks.exists {
-            allTasks.tap()
-        } else {
-            app.buttons.matching(NSPredicate(format: "label == %@", "Sections"))
-                .element(boundBy: 6)
-                .tap()
-        }
+        XCTAssertTrue(app.otherElements["top-navigator"].waitForExistence(timeout: 20))
+        XCTAssertEqual(
+            app.descendants(matching: .any)
+                .matching(NSPredicate(format: "label == %@", "Sections")).count,
+            0
+        )
+        app.buttons["Open all tasks, This week"].tap()
         app.buttons["Roster"].tap()
         XCTAssertTrue(app.otherElements["roster-screen"].waitForExistence(timeout: 10))
         app.buttons["roster-open-dossier"].tap()

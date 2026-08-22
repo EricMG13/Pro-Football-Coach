@@ -1026,9 +1026,10 @@ func runContractTests() {
             let committingBacks = uiFiles.filter { usesCommittingBackAction($0.text) }
 
             expect(chrome.contains("static let familySize: CGFloat = 9")
-                       && chrome.contains("static let railLabel: CGFloat = 9")
-                       && chrome.contains("static let railLabelFloor: CGFloat = 1.0"),
-                   "the icon rail must not scale authored labels below the readable floor")
+                       && chrome.contains("static let siblingSize: CGFloat = 9.5")
+                       && chrome.contains("ScrollView(.horizontal, showsIndicators: false)")
+                       && !chrome.contains(".minimumScaleFactor"),
+                   "the top navigator must scroll rather than scale authored labels down")
             expect(composition.contains("SurfaceRegistryOverlay")
                        && composition.contains("onOpenRegistry")
                        && composition.contains("ALL TASKS")

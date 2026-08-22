@@ -1841,8 +1841,7 @@ public enum CoachWorldSampleData {
 
     /// The shared management chrome, for one surface (`04` section 6.1c).
     ///
-    /// The rail's seven entries are the seven kinds of thing a coaching week contains; the
-    /// siblings come off the registry rather than a second hand-written list, so a surface added
+    /// The siblings come off the registry rather than a second hand-written list, so a surface added
     /// to a family appears in its family's navigation the day it is added rather than the day
     /// someone remembers to add it here.
     public static func chrome(
@@ -1852,15 +1851,6 @@ public enum CoachWorldSampleData {
         /// back to the fixture.
         context: String? = nil
     ) -> FloodlitChromeReadModel {
-        let rail: [(CoachWorldScreenID, String, String)] = [
-            (.coachingHQ, "calendar", "Week"),
-            (.inbox, "tray.full", "Inbox"),
-            (.roster, "person.2", "Squad"),
-            (.gamePlan, "rectangle.3.group", "Plan"),
-            (.opponentReportFilmRoom, "film", "Film"),
-            (.teamHealth, "cross.case", "Health"),
-            (.worldSearch, "square.grid.3x3", "All tasks"),
-        ]
         return FloodlitChromeReadModel(
             screen: screen,
             world: world,
@@ -1870,14 +1860,6 @@ public enum CoachWorldSampleData {
             conference: "Meridian Valley",
             context: context ?? "Sat \u{00B7} Southern State",
             contextOpponent: context == nil ? awayTeam : nil,
-            rail: rail.map { entry in
-                .init(
-                    screen: entry.0,
-                    symbol: entry.1,
-                    label: entry.2,
-                    intentID: .init(rawValue: "sample-rail-\(entry.0.number)")
-                )
-            },
             siblings: screen.family.surfaces.prefix(5).map { sibling in
                 .init(
                     screen: sibling,

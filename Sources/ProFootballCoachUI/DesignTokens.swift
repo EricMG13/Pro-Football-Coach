@@ -24,24 +24,15 @@ public enum CoachWorldTokens {
     }
 
     /// The management stage's geometry, `04` section 6.1c. Absolute positions at the install
-    /// floor: the icon rail sits against the sensor housing, the content column is what is left
-    /// after the rail and the trailing gutter, and the header spans that same column.
+    /// floor: one navigator and one content column share the sensor-safe leading edge.
     public enum Stage {
-        public static let railLeading: CGFloat = 59
-        public static let railWidth: CGFloat = 44
-        public static let railTop: CGFloat = 46
-        public static let railGap: CGFloat = 2
-        public static let contentLeading: CGFloat = 115
-        public static let contentTop: CGFloat = 46
-        public static let headerTop: CGFloat = 3
-        public static let headerPrimaryRow: CGFloat = 22
-        public static let headerSecondaryRow: CGFloat = 16
-        /// `844 - 115 - 20`: the frame minus the rail column and the trailing gutter. Derived, not
-        /// chosen, so it stays right if the floor ever moves.
+        public static let contentLeading: CGFloat = Frame.leadingInset
+        public static let headerTop: CGFloat = Frame.topInset
+        public static let headerHeight: CGFloat = 34
+        public static let contentTop: CGFloat = headerTop + headerHeight + 8
+        /// `844 - 63 - 20`: the frame minus the sensor-safe leading edge and trailing gutter.
         public static let contentWidth: CGFloat =
             Frame.floorWidth - contentLeading - Frame.gutter
-        /// Title, Job Board and Offer carry no icon rail — they sit outside the coaching week.
-        public static let railFreeLeading: CGFloat = 63
         /// How far the world backdrop bleeds past the bottom edge.
         public static let worldBottomBleed: CGFloat = 0.55
     }
