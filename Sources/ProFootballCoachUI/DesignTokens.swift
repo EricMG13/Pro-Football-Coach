@@ -63,8 +63,8 @@ public enum CoachWorldTokens {
         public static let band = (v: CGFloat(14), h: CGFloat(16))
     }
 
-    /// The handoff's motion contract, canonical at `04` section 6.7. One easing curve, five
-    /// durations, and press is a dimming rather than a scale.
+    /// The handoff's motion contract, canonical at `04` section 6.7. One easing curve and five
+    /// durations; contrast-bearing actions keep their fill opaque while pressed.
     public enum Motion {
         public static let press: Double = 0.12
         public static let value: Double = 0.22
@@ -76,8 +76,8 @@ public enum CoachWorldTokens {
         /// `.repeatForever(autoreverses: true)` rather than used alone.
         public static let pulse: Double = 1.5
         public static let panelPushDistance: CGFloat = 14
-        /// Press dims rather than scales, so a committing action never shrinks under the thumb
-        /// that is committing with it.
+        /// Legacy dim amount for contrast-neutral furniture. Team actions keep their field opaque
+        /// and use a one-point positional cue so generated colours retain measured contrast.
         public static let pressDim: Double = 0.12
         public static let disabledOpacity: Double = 0.4
 
@@ -173,8 +173,8 @@ public enum CoachWorldTokens {
         public static let ringStrokeMinimum: CGFloat = 2
         /// `CoachWorldRatingRing`'s centred figure size as a proportion of its diameter.
         public static let ringTextRatio: CGFloat = 0.42
-        /// `CoachWorldSystemState`'s orienting mark — one step above the 20 pt Display floor
-        /// (04 section 6.2) because it stands alone above a whole composition, not beside text.
+        /// `CoachWorldSystemState`'s orienting mark sits above the 16 pt screen-title role because
+        /// it stands alone above a whole composition, not beside text.
         public static let systemStateMarkSize: CGFloat = 28
     }
 

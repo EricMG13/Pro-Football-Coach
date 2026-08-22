@@ -254,7 +254,13 @@ func runDesignContractTests() {
             expect(desk.contains("@Environment(\\.coachWorldTeamIdentity)"))
             expect(patterns.contains("@Environment(\\.coachWorldTeamIdentity)"))
             expect(desk.contains("primaryDepthField") && desk.contains("LinearGradient("))
-            expect(desk.contains("configuration.isPressed ? 0.76 : 1"))
+            expect(!desk.contains("roleFill.opacity"))
+            expect(!desk.contains(".opacity(configuration.isPressed"))
+            expect(
+                desk.contains(
+                    "y: configuration.isPressed ? CoachWorldTokens.Shape.hairline : 0"
+                )
+            )
             expect(desk.contains(".opacity(isEnabled ? 1 : 0.45)"))
             expect(desk.contains("minWidth: CoachWorldTokens.Shape.minimumTarget"))
             expect(desk.contains("case .secondary:\n            palette.raised.color"))

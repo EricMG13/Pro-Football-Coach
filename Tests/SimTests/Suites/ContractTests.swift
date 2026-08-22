@@ -1852,6 +1852,51 @@ func runContractTests() {
             expect(dark.contentQuiet.contrast(against: dark.raised)
                        >= CoachWorldTeamIdentity.nonTextFloor)
 
+            let manifestURL = packageRoot()
+                .appendingPathComponent("Tools/TeamLogos/manifest.json")
+            let manifest = try JSONDecoder().decode(
+                TeamLogoManifest.self,
+                from: Data(contentsOf: manifestURL)
+            )
+            expectEqual(manifest.teams.count, 166,
+                        "the pressed-action contrast sweep must cover the production team catalog")
+
+            let styleURL = packageRoot().appendingPathComponent(
+                "Sources/ProFootballCoachUI/CoachWorldDeskComponents.swift"
+            )
+            let styleSource = try String(contentsOf: styleURL, encoding: .utf8)
+            let pressedAlpha = matches(
+                of: "roleFill\\.opacity\\(configuration\\.isPressed \\? ([0-9.]+) : 1\\)",
+                in: strippingLineComments(styleSource)
+            ).first.flatMap(Double.init) ?? 1
+            let pressedFailures = manifest.teams.compactMap { record -> String? in
+                let team = CoachWorldTeamReference(
+                    stableID: record.stableID,
+                    name: record.name,
+                    abbreviation: record.abbreviation,
+                    primaryColorHex: record.primaryColorHex,
+                    secondaryColorHex: record.secondaryColorHex
+                )
+                guard let identity = CoachWorldTeamIdentity(
+                    team: team,
+                    behind: dark.work,
+                    inks: inks
+                ) else {
+                    return "\(record.name): unresolved"
+                }
+                let pressedField = dark.work.mixed(with: identity.field, amount: pressedAlpha)
+                let ratio = pressedField.contrast(against: identity.onField)
+                return ratio < CoachWorldTeamIdentity.bodyTextFloor
+                    ? "\(record.name) \(record.primaryColorHex): \(ratio)"
+                    : nil
+            }
+            expect(
+                pressedFailures.isEmpty,
+                "pressed primary fill drops below 4.5:1 for \(pressedFailures.count)/"
+                    + "\(manifest.teams.count) production teams: "
+                    + pressedFailures.prefix(5).joined(separator: ", ")
+            )
+
             // A field too close to the surface behind it is spoken by a boundary, never left to
             // colour alone. Both reference primaries are dark, so this fires in dark appearance.
             let home = CoachWorldTeamIdentity(
