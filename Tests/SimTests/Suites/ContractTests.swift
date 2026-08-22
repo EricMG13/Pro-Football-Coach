@@ -1804,30 +1804,58 @@ func runContractTests() {
 #if DEBUG
         test("generated team colour resolves to legible ink or refuses to paint") {
             let dark = CoachWorldTokens.dark
-            let inks = [dark.contentPrimary, dark.page]
+            let inks = [dark.contentPrimary, dark.page, CoachWorldTokens.Floodlit.clubInk]
 
             for team in [CoachWorldSampleData.homeTeam, CoachWorldSampleData.awayTeam] {
                 guard let identity = CoachWorldTeamIdentity(
-                    team: team, behind: dark.raised, inks: inks
+                    team: team, behind: dark.work, inks: inks
                 ) else {
                     expect(false, "\(team.name) carries a colour pair and must resolve")
                     continue
                 }
-                expect(identity.field.contrast(against: identity.onField)
+                let primaryField = identity.field
+                let primaryInk = identity.onField
+                let depthTarget = primaryInk.relativeLuminance > primaryField.relativeLuminance
+                    ? CoachWorldTokens.Floodlit.roomDeep
+                    : CoachWorldTokens.Floodlit.lamp
+                let primaryDepthField = primaryField.mixed(with: depthTarget, amount: 0.12)
+
+                expect(primaryField.contrast(against: primaryInk)
                            >= CoachWorldTeamIdentity.bodyTextFloor,
                        "\(team.name) ink measures below the body floor on its own field")
-                guard let rule = identity.selectionRule(on: dark.work) else {
-                    expect(false, "\(team.name) must offer a visible selection rule")
-                    continue
+                expect(primaryDepthField.contrast(against: primaryInk)
+                           >= CoachWorldTeamIdentity.bodyTextFloor,
+                       "\(team.name) depth stop measures below the body floor against action ink")
+                for (ground, role) in [(dark.work, "row"), (dark.raised, "secondary action")] {
+                    guard let rule = identity.selectionRule(on: ground) else {
+                        expect(false, "\(team.name) must offer a visible \(role) rule")
+                        continue
+                    }
+                    expect(rule.contrast(against: ground)
+                               >= CoachWorldTeamIdentity.nonTextFloor,
+                           "\(team.name) \(role) rule measures below the non-text floor")
                 }
-                expect(rule.contrast(against: dark.work) >= CoachWorldTeamIdentity.nonTextFloor,
-                       "\(team.name) selection rule measures below the non-text floor")
             }
+
+            let fallbackField = dark.actionPrimary
+            let fallbackInk = dark.page
+            let fallbackDepth = fallbackField.mixed(
+                with: CoachWorldTokens.Floodlit.roomDeep,
+                amount: 0.12
+            )
+            expect(fallbackField.contrast(against: fallbackInk)
+                       >= CoachWorldTeamIdentity.bodyTextFloor)
+            expect(fallbackDepth.contrast(against: fallbackInk)
+                       >= CoachWorldTeamIdentity.bodyTextFloor)
+            expect(dark.actionPrimary.contrast(against: dark.work)
+                       >= CoachWorldTeamIdentity.nonTextFloor)
+            expect(dark.contentQuiet.contrast(against: dark.raised)
+                       >= CoachWorldTeamIdentity.nonTextFloor)
 
             // A field too close to the surface behind it is spoken by a boundary, never left to
             // colour alone. Both reference primaries are dark, so this fires in dark appearance.
             let home = CoachWorldTeamIdentity(
-                team: CoachWorldSampleData.homeTeam, behind: dark.raised, inks: inks
+                team: CoachWorldSampleData.homeTeam, behind: dark.work, inks: inks
             )
             expectEqual(home?.needsBoundary, true,
                         "a dark generated field on a dark strip must carry a boundary")
@@ -1836,14 +1864,14 @@ func runContractTests() {
                 stableID: "malformed", name: "Malformed", abbreviation: "MAL",
                 primaryColorHex: "not-a-colour", secondaryColorHex: "#D9B23C"
             )
-            expect(CoachWorldTeamIdentity(team: malformed, behind: dark.raised, inks: inks) == nil,
+            expect(CoachWorldTeamIdentity(team: malformed, behind: dark.work, inks: inks) == nil,
                    "a malformed pair falls back to neutral furniture rather than guessing")
 
             let illegible = CoachWorldTeamReference(
                 stableID: "illegible", name: "Illegible", abbreviation: "ILL",
                 primaryColorHex: "#767676", secondaryColorHex: "#D9DDE4"
             )
-            expect(CoachWorldTeamIdentity(team: illegible, behind: dark.raised, inks: inks) == nil,
+            expect(CoachWorldTeamIdentity(team: illegible, behind: dark.work, inks: inks) == nil,
                    "a field no palette ink can reach 4.5:1 on must refuse to paint")
         }
 

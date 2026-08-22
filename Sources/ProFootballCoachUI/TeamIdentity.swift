@@ -58,6 +58,17 @@ public struct CoachWorldTeamIdentity: Sendable, Equatable {
     public static let nonTextFloor = 3.0
 }
 
+private struct CoachWorldTeamIdentityEnvironmentKey: EnvironmentKey {
+    static let defaultValue: CoachWorldTeamIdentity? = nil
+}
+
+extension EnvironmentValues {
+    var coachWorldTeamIdentity: CoachWorldTeamIdentity? {
+        get { self[CoachWorldTeamIdentityEnvironmentKey.self] }
+        set { self[CoachWorldTeamIdentityEnvironmentKey.self] = newValue }
+    }
+}
+
 public extension CoachWorldTokens.ColorValue {
     /// Parses `#RRGGBB` or `RRGGBB`. Anything else is not a colour and returns nil rather than
     /// guessing — a malformed identity must fall back to neutral furniture, not to black.

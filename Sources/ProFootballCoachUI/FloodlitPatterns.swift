@@ -54,9 +54,11 @@ struct FloodlitLabel3: View {
 
 // MARK: - 2. Row / chip
 
-/// Tables, lists and selectors. Selection is a gold border, never a fill — a filled row competes
-/// with the committing action, and there is only one of those per screen.
+/// Tables, lists and selectors. Selection is a low-opacity team tint plus a crisp visible rule;
+/// neither competes with the committing action or leaves colour as the only cue.
 struct FloodlitRow<Content: View>: View {
+    @Environment(\.coachWorldTeamIdentity) private var teamIdentity
+
     private let isSelected: Bool
     private let palette: CoachWorldTokens.Palette
     private let action: (() -> Void)?
@@ -84,6 +86,14 @@ struct FloodlitRow<Content: View>: View {
         }
     }
 
+    private var rowSelectionRule: CoachWorldTokens.ColorValue {
+        teamIdentity?.selectionRule(on: palette.work) ?? palette.actionPrimary
+    }
+
+    private var rowSelectionTint: CoachWorldTokens.ColorValue {
+        teamIdentity?.field ?? palette.actionPrimary
+    }
+
     private func body(for interactive: Bool) -> some View {
         content()
             .padding(.vertical, CoachWorldTokens.Pad.row.v)
@@ -97,11 +107,18 @@ struct FloodlitRow<Content: View>: View {
                     : Pattern.rowMinHeight,
                 alignment: .leading
             )
-            .background(CoachWorldCutCorner.row.fill(palette.work.color.opacity(Pattern.rowFill)))
+            .background {
+                ZStack {
+                    CoachWorldCutCorner.row.fill(palette.work.color.opacity(Pattern.rowFill))
+                    if isSelected {
+                        CoachWorldCutCorner.row.fill(rowSelectionTint.color.opacity(0.10))
+                    }
+                }
+            }
             .overlay {
                 CoachWorldCutCorner.row.stroke(
                     isSelected
-                        ? palette.actionPrimary.color
+                        ? rowSelectionRule.color
                         : Color.white.opacity(Pattern.rowHairline),
                     lineWidth: CoachWorldTokens.Shape.hairline
                 )

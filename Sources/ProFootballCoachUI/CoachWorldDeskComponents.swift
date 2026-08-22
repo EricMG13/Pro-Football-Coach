@@ -145,6 +145,15 @@ public struct CoachWorldFloodlitStage<Content: View>: View {
     /// its own and silently lose the world beneath it.
     private var drawsWorld: Bool { chrome != nil || register == .desk }
 
+    private var resolvedTeamIdentity: CoachWorldTeamIdentity? {
+        guard let club = chrome?.club else { return nil }
+        return CoachWorldTeamIdentity(
+            team: club,
+            behind: palette.work,
+            inks: [palette.contentPrimary, palette.page, CoachWorldTokens.Floodlit.clubInk]
+        )
+    }
+
     public var body: some View {
         ZStack {
             palette.page.color
@@ -178,6 +187,7 @@ public struct CoachWorldFloodlitStage<Content: View>: View {
         }
         .foregroundStyle(palette.contentPrimary.color)
         .preferredColorScheme(.dark)
+        .environment(\.coachWorldTeamIdentity, resolvedTeamIdentity)
         .accessibilityIdentifier("floodlit-stage")
     }
 }
@@ -271,6 +281,7 @@ enum CoachWorldActionRole {
 
 struct CoachWorldActionButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.coachWorldTeamIdentity) private var teamIdentity
 
     let role: CoachWorldActionRole
     let palette: CoachWorldTokens.Palette
@@ -289,11 +300,7 @@ struct CoachWorldActionButtonStyle: ButtonStyle {
                 minHeight: CoachWorldTokens.Shape.minimumTarget
             )
             .foregroundStyle(appearance.foreground)
-            .background(
-                configuration.isPressed
-                    ? appearance.fill.opacity(0.76)
-                    : appearance.fill
-            )
+            .background { roleFill.opacity(configuration.isPressed ? 0.76 : 1) }
             .overlay {
                 controlShape.stroke(
                     appearance.border,
@@ -304,25 +311,60 @@ struct CoachWorldActionButtonStyle: ButtonStyle {
             .opacity(isEnabled ? 1 : 0.45)
     }
 
-    private var appearance: (fill: Color, foreground: Color, border: Color) {
+    private var primaryField: CoachWorldTokens.ColorValue {
+        teamIdentity?.field ?? palette.actionPrimary
+    }
+
+    private var primaryInk: CoachWorldTokens.ColorValue {
+        teamIdentity?.onField ?? palette.page
+    }
+
+    private var primaryDepthField: CoachWorldTokens.ColorValue {
+        let target = primaryInk.relativeLuminance > primaryField.relativeLuminance
+            ? CoachWorldTokens.Floodlit.roomDeep
+            : CoachWorldTokens.Floodlit.lamp
+        return primaryField.mixed(with: target, amount: 0.12)
+    }
+
+    @ViewBuilder
+    private var roleFill: some View {
         switch role {
         case .primary:
-            let accent = palette.actionPrimary.color
-            return (accent, palette.page.color, accent)
+            LinearGradient(
+                colors: [
+                    primaryDepthField.color,
+                    primaryField.color,
+                    primaryDepthField.color,
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .secondary:
+            palette.raised.color
+        case .live:
+            palette.stateLive.color
+        case .destructive:
+            Color.clear
+        }
+    }
+
+    private var appearance: (foreground: Color, border: Color) {
+        switch role {
+        case .primary:
+            return (primaryInk.color, primaryField.color)
         case .secondary:
             return (
-                palette.raised.color,
                 palette.contentPrimary.color,
-                palette.contentQuiet.color
+                teamIdentity?.selectionRule(on: palette.raised)?.color
+                    ?? palette.contentQuiet.color
             )
         case .live:
             let accent = palette.stateLive.color
-            return (accent, palette.page.color, accent)
+            return (palette.page.color, accent)
         case .destructive:
             // Outlined, not filled: a destructive action must be reachable and unmistakable
             // without out-shouting the committing action it sits beside.
             return (
-                Color.clear,
                 palette.actionDestructive.color,
                 palette.actionDestructive.color
             )
@@ -331,6 +373,8 @@ struct CoachWorldActionButtonStyle: ButtonStyle {
 }
 
 struct CoachWorldRouteButton: View {
+    @Environment(\.coachWorldTeamIdentity) private var teamIdentity
+
     let title: String
     let isCurrent: Bool
     let palette: CoachWorldTokens.Palette
@@ -339,7 +383,15 @@ struct CoachWorldRouteButton: View {
     var selection: CoachWorldTokens.ColorValue?
     let action: () -> Void
 
-    private var selectionColour: CoachWorldTokens.ColorValue { selection ?? palette.collegeIdentity }
+    private var routeSelectionRule: CoachWorldTokens.ColorValue {
+        teamIdentity?.selectionRule(on: palette.work)
+            ?? selection
+            ?? palette.actionPrimary
+    }
+
+    private var routeSelectionTint: CoachWorldTokens.ColorValue {
+        teamIdentity?.field ?? selection ?? palette.actionPrimary
+    }
 
     var body: some View {
         Button(action: action) {
@@ -357,13 +409,13 @@ struct CoachWorldRouteButton: View {
         .background {
             if isCurrent {
                 CoachWorldCutCorner.row
-                    .fill(selectionColour.color.opacity(0.15))
+                    .fill(routeSelectionTint.color.opacity(0.15))
             }
         }
         .overlay(alignment: .bottom) {
             if isCurrent {
                 Rectangle()
-                    .fill(selectionColour.color)
+                    .fill(routeSelectionRule.color)
                     .frame(height: 3)
                     .accessibilityHidden(true)
             }
@@ -382,6 +434,10 @@ private struct CoachWorldFloodlitPanelModifier<S: Shape>: ViewModifier {
     let shape: S
 
     func body(content: Content) -> some View {
+        let shadow = depth == .deep
+            ? CoachWorldTokens.Depth.deepShadow
+            : CoachWorldTokens.Depth.glassShadow
+
         content
             .background {
                 if reduceTransparency {
@@ -404,6 +460,12 @@ private struct CoachWorldFloodlitPanelModifier<S: Shape>: ViewModifier {
                 shape.stroke(border, lineWidth: CoachWorldTokens.Shape.hairline)
             }
             .clipShape(shape)
+            .shadow(
+                color: .black.opacity(shadow.alpha),
+                radius: shadow.blur,
+                x: 0,
+                y: shadow.offsetY
+            )
     }
 }
 
