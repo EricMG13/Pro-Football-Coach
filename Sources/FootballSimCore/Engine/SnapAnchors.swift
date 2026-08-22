@@ -283,6 +283,15 @@ public enum AnchorRules {
     /// linebacker eight yards away is nearly on it. Both are chasing; only their arrears differ.
     public static let pursuitTrailFraction = 0.18
 
+    /// The closest an unnamed pursuer may get, as a share of the ground he started with.
+    ///
+    /// A flat standoff alone is not total: a defender who lines up *inside* it -- a linebacker the
+    /// ball is carried straight at -- either has to be frozen or has to back away from the play to
+    /// satisfy it, and both are worse than the thing being prevented. Capping the closing distance
+    /// as a fraction instead means every pursuer always moves, always moves toward the ball, and
+    /// still never arrives, however close he began.
+    public static let pursuitClosestFraction = 0.6
+
     /// How deep a quarterback finishes his drop, measured like `passerDepth` from the line. The
     /// alignment template already stands him at `passerDepth`, so this is the drop itself rather
     /// than where he starts -- and without it he was still 97% of the time, which no quarterback
@@ -890,7 +899,8 @@ public enum SnapAnchors {
         case .coverage, .runFit:
             return pursuit(
                 from: start, to: ballRestsAt, carried: outcome.ballCarrierID != nil,
-                carryBegins: carryBegins, lineOfScrimmage: lineOfScrimmage, role: role
+                carryBegins: carryBegins, lineOfScrimmage: lineOfScrimmage, role: role,
+                playType: call.playType
             )
 
         case .kicker, .blockLeverage:
@@ -907,18 +917,22 @@ public enum SnapAnchors {
     /// as filings on a magnet. Reaching the spot is a claim to have made the stop; the record names
     /// exactly one man who did, and `choreograph` overrides this for him.
     ///
-    /// On a snap nobody carried there is no spot and no claim to make, so he plays his coverage
-    /// instead: deeper if he was already deep, up if he was fitting the run.
+    /// On a snap nobody carried there is no spot and no claim to make, so he plays his assignment
+    /// instead: a man in coverage gets deeper, a run fit steps up on a run and drops on a pass.
     private static func pursuit(
         from start: FieldPoint,
         to restingSpot: FieldPoint,
         carried: Bool,
         carryBegins: Double,
         lineOfScrimmage: Double,
-        role: SnapRole
+        role: SnapRole,
+        playType: OffensivePlayType
     ) -> (end: FieldPoint, path: [ActorWaypoint]) {
         guard carried else {
-            let drop = role == .coverage
+            // A run fit steps up to the line on a run and drops into a hook on a pass. Sending him
+            // forward either way put a linebacker in the backfield on an incompletion, which is the
+            // opposite of what he was doing.
+            let drop = role == .coverage || playType != .run
                 ? start.yard + AnchorRules.coverageDropYards
                 : lineOfScrimmage + AnchorRules.runBlockYards
             let played = FieldPoint(yard: drop, lateral: start.lateral)
@@ -928,12 +942,14 @@ public enum SnapAnchors {
         let alongField = restingSpot.yard - start.yard
         let acrossField = (restingSpot.lateral - start.lateral) * AnchorRules.fieldWidthYards
         let distance = (alongField * alongField + acrossField * acrossField).squareRoot()
-        let standoff = AnchorRules.pursuitStandoffYards
-            + distance * AnchorRules.pursuitTrailFraction
-        // Already inside the standoff before he moves: he stays where he is rather than backing
-        // away from the ball to satisfy an arithmetic he was never outside of.
-        guard distance > standoff else { return (start, []) }
+        // Only when he is standing on the spot already, which is a division by zero rather than a
+        // pursuit. Everything else moves, including a man the ball is carried straight at.
+        guard distance > 0.01 else { return (start, []) }
 
+        let standoff = Swift.min(
+            AnchorRules.pursuitStandoffYards + distance * AnchorRules.pursuitTrailFraction,
+            distance * AnchorRules.pursuitClosestFraction
+        )
         let closed = (distance - standoff) / distance
         let end = FieldPoint(
             yard: start.yard + alongField * closed,
