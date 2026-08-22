@@ -63,6 +63,35 @@ Pre-edit impacts were those recorded in the task brief. One additional shared ow
 
 Final `detect_changes(scope: all, exact worktree)` reported MEDIUM risk: 52 changed symbols across 13 files, two affected persistence processes (`RestoreExistingCareer → CoachWorldScreenID` and `RecoverFromBackup → CoachWorldScreenID`). No enum case or persistence representation changed; the core/save contracts passed.
 
+## Review follow-up
+
+The review findings against `3758821` were resolved in the shared header and Match Day integration without changing routes, callbacks, read models, simulation, or persistence:
+
+- Moved the selected-sibling two-point rule six points into the standard 34-point material band, preserving the non-color `isSelected` trait.
+- Protected a 132-point right-context viewport. At 844 points its text remains present and visibly truncated while the family control stays fully rendered, the sibling viewport yields, and adjacent 44-point targets do not overlap.
+- Limited the 34-point fixed header height to standard Dynamic Type. Accessibility categories use intrinsic height; the full AX5 route passed.
+- Restored `Frame.topInset` for nil-chrome Match Day furniture while chromed Match Day uses `Stage.contentTop`. The `PROOF_SCREEN=match` score bug measured below 30 points and no blank navigator band was introduced.
+- Kept `top-navigator` on the real semantic header container. Removing child containment had already been proven to lose the stable container hook without improving activation, so the minor identifier-propagation suggestion was not adopted; family and sibling buttons remain independently reachable.
+
+Review TDD RED: `swift run SimTests --design-contracts` ran 52 tests / 798 checks and failed four new checks: no in-band selection inset, no protected context viewport, unconditional AX5 clipping, and no nil-chrome Match Day top branch. GREEN: the same command passed 52/798 after implementation. The first focused Match proof selector was repaired from nonexistent sample quarter `Q1` and an unexported `match-day-standard` wrapper to the real combined `Q3` score-bug accessibility label; this was a test-selector repair, not a production behavior change.
+
+Review verification:
+
+- Focused default HQ→registry→Roster→Profile→Roster route — PASS, including `0 < context text width < 132`, family/current-sibling heights of at least 44 points, and no target overlap.
+- Focused AX5 route — PASS with intrinsic header expansion and the same child reachability.
+- Focused unchromed Match proof — PASS; score-bug `minY < 30`.
+- Final 844-point screenshot — material remained `x=63, y=12, width=761, height=34`; the active amber rule is visibly inside the band and the opponent context is nonzero/truncated.
+- `swift run SimTests --core-contracts` — PASS, 232 tests / 3173 checks.
+- Linked-worktree `./scripts/verify.sh --lane app` — raw expected package-identity mismatch (`pro-football-coach` versus `mock-reconciliation-vertical-slice`). Exact-source canonical-name scratch lane `/private/tmp/pfc-task2-app.WxhXBV/pro-football-coach` — PASS, 2/2.
+- Post-tournament `swift run SimTests --design-contracts` — PASS, 52 tests / 798 checks.
+- `git diff --check` — PASS.
+
+Review rewrite tournament: the header incumbent won because alternatives weakened its measured context/AX5/selection contracts. The Match Day challenger found a real arithmetic defect: `TopRightStackHeightKey` is measured by a background after `furnitureTop` padding, so the chromed staff-call-in branch was adding `Stage.contentTop` twice. Restoring `topRightStackHeight + Gap.lg` preserves both nil-chrome and chromed placement through the measured height; the post-edit design lane passed.
+
+Review confidence audit ranked and investigated: 844-point context compression, in-band selection visibility, AX5 intrinsic height, nil/chromed Match Day top ownership, staff-call-in preference semantics, and semantic-container child reachability. The double-count above was the only confirmed defect and was patched. No other issue survived the focused routes, pixel measurement, source/VoiceOver checks, full design/core lanes, or canonical app lane.
+
+Review-fix `detect_changes(scope: all, exact worktree)` reported LOW risk: 22 changed symbols in four files and zero affected execution processes. This is narrower than the original Task 2 change set and introduces no new HIGH/CRITICAL owner.
+
 ## Concerns
 
 - The linked-worktree app lane remains blocked by the repository's known package-identity mismatch; the exact-source canonical-name scratch lane passed.

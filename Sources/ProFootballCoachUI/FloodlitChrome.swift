@@ -262,6 +262,8 @@ struct CoachWorldWorldBackdrop: View {
 
 /// One row: identity, task family, sibling routes and current context.
 struct FloodlitIdentityHeader: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let model: FloodlitChromeReadModel
     let palette: CoachWorldTokens.Palette
     let onNavigate: (CoachWorldIntentID) -> Void
@@ -315,7 +317,7 @@ struct FloodlitIdentityHeader: View {
                 .layoutPriority(0)
         }
         .padding(.horizontal, CoachWorldTokens.Gap.md)
-        .frame(height: CoachWorldTokens.Stage.headerHeight)
+        .frame(height: dynamicTypeSize.isAccessibilitySize ? nil : CoachWorldTokens.Stage.headerHeight)
         .background(headerMaterial)
         .clipShape(CoachWorldCutCorner.headerBand)
         .accessibilityIdentifier("top-navigator")
@@ -360,6 +362,8 @@ struct FloodlitIdentityHeader: View {
     private var contextSection: some View {
         if let context = model.context {
             contextChip(context)
+                .frame(width: Chrome.contextViewportWidth, alignment: .trailing)
+                .clipped()
         }
     }
 
@@ -421,7 +425,7 @@ struct FloodlitIdentityHeader: View {
                         Rectangle()
                             .fill(CoachWorldTokens.dark.actionPrimary.color)
                             .frame(height: Chrome.siblingUnderline)
-                            .offset(y: Chrome.siblingUnderlineOffset)
+                            .offset(y: -Chrome.siblingUnderlineInset)
                     }
                 }
                 .contentShape(Rectangle())
@@ -495,12 +499,13 @@ private enum Chrome {
     static let recordSize: CGFloat = 11
     static let contextSize: CGFloat = 11
     static let contextChipMaxWidth: CGFloat = 210
+    static let contextViewportWidth: CGFloat = 132
     static let familySize: CGFloat = 9
     /// Control furniture registered as `chevron.*` in `04` section 6.6.
     static let familyDisclosureSymbol = "chevron.down"
     static let siblingSize: CGFloat = 9.5
     static let siblingUnderline: CGFloat = 2
-    static let siblingUnderlineOffset: CGFloat = 3
+    static let siblingUnderlineInset: CGFloat = 6
     static let pennantWidth: CGFloat = 11
     static let pennantHeight: CGFloat = 14
     static let pennantDot: CGFloat = 3
