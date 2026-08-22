@@ -243,6 +243,12 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.smPlus) {
                 kickoffCard
                 supportColumn
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.stateWarning.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             .frame(width: HQMetric.supportColumn)
         }
@@ -362,12 +368,6 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                     Spacer(minLength: CoachWorldTokens.Gap.xs)
                     secondaryAction("Open film", action: onInspect)
                     secondaryAction("Delegate", action: onDelegate)
-                }
-                if let statusMessage {
-                    Text(statusMessage)
-                        .font(CoachWorldTokens.TypeRole.caption)
-                        .foregroundStyle(palette.stateWarning.color)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: .zero)
             }
@@ -505,6 +505,12 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                 weekAgendaColumn
                 kickoffCard
                 supportColumn
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(CoachWorldTokens.TypeRole.caption)
+                        .foregroundStyle(palette.stateWarning.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             .padding(CoachWorldTokens.Space.sm)
         }

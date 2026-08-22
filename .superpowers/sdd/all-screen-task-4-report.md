@@ -2,15 +2,22 @@
 
 ## Status
 
-DONE. This commit (`feat: reconcile all weekly command screens`) reconciles canonical IDs 8–15
-and 47 against their existing read models and callbacks. It changes presentation and focused proof
-only: no read-model field, route, callback, asset, simulation state, persistence, or engine behavior
-was added.
+IMPLEMENTATION DONE, TASK NOT COMPLETE. This commit (`feat: reconcile all weekly command screens`)
+reconciles canonical IDs 8–15 and 47 against their existing read models and callbacks. It changes
+presentation and focused proof only: no read-model field, route, callback, asset, simulation state,
+persistence, or engine behavior was added.
 
 Nine production views now present one dominant football task with `.deep` depth and supporting
 evidence/actions with `.glass` depth. The shared top navigator, Task 3 typography/team identity,
 team-coloured action rules, and one production team/opponent logo per supplied identity remain
 intact.
+
+Two things keep the task open. The owner reversed the earlier skip instruction and **Match Day /
+ID 14 is required**, as an exact visual reproduction of `Match Day.dc.html` proven on a real
+production route; the Match Day evidence caveats recorded below are retained as historical context
+and do not close ID 14. And the review-fix pass found two pre-existing red UI tests on Task 4
+surfaces, recorded under "Review fix (2026-08-22)". The progress ledger still reads
+`All-screen Task 4: pending`.
 
 ## Contract reconciliation
 
@@ -328,3 +335,102 @@ No open Task 4 code concern. The explicitly retained gaps are evidence work, not
 claims: full physical-device/assistive-tech matrix, broader appearance/viewport/sensor coverage,
 and one real retained-game Match Day capture inside the production navigator. The progress ledger
 was not edited.
+
+## Review fix (2026-08-22)
+
+Three Important findings from the fresh Task 4 review are fixed in a follow-up commit. No callback
+payload, persisted state, route, or simulation behavior changes.
+
+1. **Game Plan dominant described the wrong plan.** `dialGrid` read `model.currentPlan ??
+   selectedOption?.plan`, so after a real commit the dials kept describing the stored plan while a
+   different option was selected and its consequence and committing action were on screen. Now
+   `selectedOption?.plan ?? model.currentPlan`: the dominant describes what the commit would send,
+   and the stored plan is only the fallback for when nothing can be selected.
+2. **Practice showed the same mismatch.** The allocator title and the four session bars now follow
+   the selected option first (`selectedOption?.title ?? "Current plan"`, `selectedOption?.plan ??
+   model.currentPlan`). The `"Option preview"` / `"This week"` warning-tinted title is gone: it
+   labelled a state that no longer exists once the allocation always tracks the selection.
+3. **HQ put the blocker/receipt inside the dominant decision panel.** `statusMessage` moved out of
+   `decisionColumn` to the final support position in both `standardLayout` and `accessibleLayout`,
+   after obligations, kickoff, and health/stakeholders.
+
+### Review-fix contracts
+
+- `DesignContractTests`: new "HQ presents blocker or receipt after every weekly support region".
+  Both limbs were proven able to fail by mutating production and re-running:
+  a `statusMessage` block reintroduced inside `decisionColumn` fails
+  `DesignContractTests.swift:168`; moving `supportColumn` after the receipt in `accessibleLayout`
+  fails `DesignContractTests.swift:194`. Production was restored byte-for-byte after each check.
+- `ContractTests`: the practice clause pinned the literal `"Option preview"`, which finding 2
+  deliberately deleted, so `--core-contracts` was red on the working fix. That stale clause is
+  removed and replaced by a rule covering both screens: "weekly plan dominants must read the
+  selected option before the stored plan", asserting `selectedOption?.plan ?? model.currentPlan` in
+  `GamePlanView` and `PracticePlanView`. Proven able to fail by inverting the coalesce in
+  `PracticePlanView` (`ContractTests.swift:1113`); production restored.
+
+### Focused UI proof
+
+`testWeeklyPlanDominantEvidenceTracksSelectedCommit{AtDefault,AtAX5}` drives real production routes
+for screens 11 and 12: commit a Balanced plan, return to the route through the navigator, select a
+different option, and assert the dominant and its evidence describe the selected payload and that
+the committing action names it.
+
+The AX5 counterpart was red for the Practice fixture, and the cause was an XCUITest interaction
+defect, not production. XCUITest answers `isHittable == true` for a row that is inside the scroll
+*content* but below the visible bounds: at AX5 the option rows sit about 120pt below the fold, the
+hittability loop therefore broke without scrolling, and the tap was synthesized off-screen and
+landed on nothing. Captured at the failure: viewport `{{62, 67}, {720, 292}}`, the row at
+`{{62, 481.3}, {720, 44}}`, `isHittable true`. Replacing the loop with a swipe loop then oscillated,
+because a swipe moves most of a viewport at once and overshoots a row only 120pt out of frame. The
+committed helper `scroll(_:toReveal:)` drags by the measured remainder, clamped to 40% of the
+viewport so a drag cannot reach a screen edge and become a system gesture, and holds at the
+destination so the drag imparts no momentum. It converges in at most 3 of its 8 attempts on the
+worst route, and it tests the visible frame, which is the property the proof actually wants.
+
+Production selection at AX5 was separately confirmed by hand on the simulator before any test
+change: tapping "Install and sharpen" selected the row, updated the consequence, and renamed the
+committing action to "Set Install and Sharpen".
+
+### Review-fix gates
+
+Run on `7082DFE5-3BFB-4073-859B-83E95B35531B` (iPhone 17e, 844x390), content size set and read back
+by `xcrun simctl ui ... content_size` for every run and restored to `large` at the end.
+
+| Gate | Result |
+|---|---|
+| `swift build` | PASS |
+| `swift run SimTests --design-contracts` | PASS, 58 tests / 857 checks |
+| `swift run SimTests --core-contracts` | PASS, 238 tests / 3,243 checks |
+| `swift run SimTests --tactical-management` | PASS, 8 tests / 81 checks |
+| `swift run SimTests --screen-read-models` | PASS, 69 tests / 9,704 checks |
+| `git diff --check` | clean |
+| `testWeeklyPlanDominantEvidenceTracksSelectedCommitAtDefault` at `large` | PASS, 1 test / 0 failures |
+| `testWeeklyPlanDominantEvidenceTracksSelectedCommitAtAX5` at `accessibility-extra-extra-extra-large` | PASS, 1 test / 0 failures |
+| AX5 regression batch (dominant-surface, HQ-selects, receipt, viewport, team-health) | PASS, 5 tests / 0 failures |
+| Default regression batch (dominant-surface, HQ-selects, receipt, viewport, vertical slice) | 3 of 5 pass; 2 pre-existing failures, see below |
+
+Exact-worktree `detect_changes(scope: all)` after the fix: **low** risk, 16 symbols across the 7
+changed files, **0 affected processes** — HQ `standardLayout`/`identityRail`, GamePlan `dialGrid`,
+Practice `allocator`/`session`, `runContractTests`, `runDesignContractTests`, and the handoff doc.
+No route, callback, persistence, or simulation symbol is in scope. `detect_changes(scope: compare,
+base_ref: main)` again reports branch-wide CRITICAL (1,736 symbols, 611 files, 128 processes)
+because the branch carries Tasks 1–3 relative to `main`; it is not this commit's boundary.
+
+### Two pre-existing UI failures found, attributed, and NOT fixed here
+
+Running the wider default-size UI batch surfaced two red tests. Both were re-run at the Task 4
+implementation commit `83452c1` in a throwaway worktree and **fail there identically**, so neither
+is caused by the review fix — but both sit on Task 4 surfaces and were not run when Task 4 was
+reported DONE.
+
+1. `testCoachingHQRosterPlayerProfileVerticalSlice` — after "Open all tasks" then "Roster",
+   `app.otherElements["roster-screen"]` never appears within 10s, so the following
+   `roster-open-dossier` tap has no match. Screen 8 route out of the surface registry.
+2. `testWeeklyPlanReceiptDoesNotCoverChoicesAtDefault` — the Practice fixture only. After
+   `commit.tap()`, `XCTAssertFalse(commit.exists)` fails: "Set Balanced week" is still present
+   ~0.33s later. The Game Plan fixture passes the same assertion. Committing either screen raises
+   the same mandatory-decision interruption, so the interruption alone does not explain the
+   asymmetry; root cause is not yet established.
+
+These block marking all-screen Task 4 complete. They are recorded here rather than fixed in the
+review-fix commit because they are outside its diff and need their own change and review.

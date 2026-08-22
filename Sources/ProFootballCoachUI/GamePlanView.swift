@@ -84,7 +84,7 @@ public struct GamePlanView: View, CoachWorldChromedSurface {
     /// simulation does not have would be a control that changes nothing.
     private var dialGrid: some View {
         FloodlitCard(palette: palette, depth: .deep) {
-            if let plan = model.currentPlan ?? selectedOption?.plan {
+            if let plan = selectedOption?.plan ?? model.currentPlan {
                 LazyVGrid(
                     columns: [
                         GridItem(.flexible(), spacing: CoachWorldTokens.Gap.smPlus),
