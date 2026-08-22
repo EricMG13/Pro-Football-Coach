@@ -130,7 +130,7 @@ public struct FieldGoalStatistics: Codable, Sendable, Equatable {
 public struct TeamGameStatistics: Codable, Sendable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case points, offensiveYards, passingYards, rushingYards, turnovers, offensivePlays
-        case passAttempts, passCompletions, sacks, explosivePlays, fieldGoals
+        case passAttempts, passCompletions, sacks, explosivePlays, explosiveRuns, explosivePasses, fieldGoals
     }
 
     public let points: Int
@@ -143,6 +143,8 @@ public struct TeamGameStatistics: Codable, Sendable, Equatable {
     public let passCompletions: Int
     public let sacks: Int
     public let explosivePlays: Int
+    public let explosiveRuns: Int
+    public let explosivePasses: Int
     public let fieldGoals: FieldGoalStatistics
 
     public init(
@@ -156,6 +158,8 @@ public struct TeamGameStatistics: Codable, Sendable, Equatable {
         passCompletions: Int = 0,
         sacks: Int = 0,
         explosivePlays: Int = 0,
+        explosiveRuns: Int = 0,
+        explosivePasses: Int = 0,
         fieldGoals: FieldGoalStatistics = FieldGoalStatistics()
     ) {
         self.points = max(0, points)
@@ -168,6 +172,8 @@ public struct TeamGameStatistics: Codable, Sendable, Equatable {
         self.passCompletions = min(self.passAttempts, max(0, passCompletions))
         self.sacks = max(0, sacks)
         self.explosivePlays = min(self.offensivePlays, max(0, explosivePlays))
+        self.explosiveRuns = min(self.offensivePlays, max(0, explosiveRuns))
+        self.explosivePasses = min(self.offensivePlays, max(0, explosivePasses))
         self.fieldGoals = fieldGoals
     }
 
@@ -184,6 +190,8 @@ public struct TeamGameStatistics: Codable, Sendable, Equatable {
             passCompletions: try container.decodeIfPresent(Int.self, forKey: .passCompletions) ?? 0,
             sacks: try container.decodeIfPresent(Int.self, forKey: .sacks) ?? 0,
             explosivePlays: try container.decodeIfPresent(Int.self, forKey: .explosivePlays) ?? 0,
+            explosiveRuns: try container.decodeIfPresent(Int.self, forKey: .explosiveRuns) ?? 0,
+            explosivePasses: try container.decodeIfPresent(Int.self, forKey: .explosivePasses) ?? 0,
             fieldGoals: try container.decodeIfPresent(FieldGoalStatistics.self, forKey: .fieldGoals)
                 ?? FieldGoalStatistics()
         )
@@ -191,24 +199,48 @@ public struct TeamGameStatistics: Codable, Sendable, Equatable {
 }
 
 public struct PlayerGameStatistics: Codable, Sendable, Equatable {
+    private enum CodingKeys: String, CodingKey {
+        case playerID, passingYards, rushingYards, receivingYards, touchdowns, targets, carries
+    }
+
     public let playerID: UUID
     public let passingYards: Int
     public let rushingYards: Int
     public let receivingYards: Int
     public let touchdowns: Int
+    public let targets: Int
+    public let carries: Int
 
     public init(
         playerID: UUID,
         passingYards: Int = 0,
         rushingYards: Int = 0,
         receivingYards: Int = 0,
-        touchdowns: Int = 0
+        touchdowns: Int = 0,
+        targets: Int = 0,
+        carries: Int = 0
     ) {
         self.playerID = playerID
         self.passingYards = max(0, passingYards)
         self.rushingYards = max(0, rushingYards)
         self.receivingYards = max(0, receivingYards)
         self.touchdowns = max(0, touchdowns)
+        let maximumPlays = MatchupRules.maximumDrivesPerGame * MatchupRules.maximumPlaysPerDrive
+        self.targets = min(maximumPlays, max(0, targets))
+        self.carries = min(maximumPlays, max(0, carries))
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            playerID: try container.decode(UUID.self, forKey: .playerID),
+            passingYards: try container.decode(Int.self, forKey: .passingYards),
+            rushingYards: try container.decode(Int.self, forKey: .rushingYards),
+            receivingYards: try container.decode(Int.self, forKey: .receivingYards),
+            touchdowns: try container.decode(Int.self, forKey: .touchdowns),
+            targets: try container.decodeIfPresent(Int.self, forKey: .targets) ?? 0,
+            carries: try container.decodeIfPresent(Int.self, forKey: .carries) ?? 0
+        )
     }
 }
 

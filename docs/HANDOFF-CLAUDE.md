@@ -1,5 +1,65 @@
 # Claude build handoff
 
+## Latest handoff — two-tier consistency (2026-08-22)
+
+Continue the uncommitted two-tier consistency work in the current working tree; preserve all
+existing dirty changes, including unrelated `docs/ux/` edits. The requested scope is implemented:
+
+- `--two-tier-consistency` is dispatched from `Tests/SimTests/main.swift` and runs the suite
+  registered in `SuiteCatalog`.
+- `TwoTierConsistencyGateTests` covers every §5.1 metric. Scalars use paired TOST with 90% CIs;
+  FG and drive outcomes use the canonically specified TVD checks. `uncoveredMetrics` is empty.
+- `GameSummary.regulationPoints` is backward-compatible: omitted/legacy values default to total
+  score and explicit values clamp to `0...total score`. Detailed summaries derive it from drives
+  ending in Q1–Q4; abstract summaries capture it before overtime.
+- `01-RESEARCH.md` and `03-MATCH-ENGINE.md` record the canonical points, yards/play, FG,
+  drive-outcome, and Q4 definitions. The college Q4 source calculation is 2022–2024 FBS-vs-FBS
+  annual range 26.047110%...26.690304%, giving a ±0.321597 pp TOST margin.
+- Abstract-only calibration was adjusted for the new gates; do not alter detailed snap, drive,
+  kick, clock, or scoring mechanics to make this suite pass.
+
+### Verified release commands
+
+```bash
+swift build -c release -Xswiftc -enable-testing
+.build/arm64-apple-macosx/release/SimTests --two-tier-consistency-tuning
+.build/arm64-apple-macosx/release/SimTests --two-tier-consistency
+.build/arm64-apple-macosx/release/SimTests --save-document
+```
+
+Results:
+
+- tuning: 54 tests / 83 checks, all passed;
+- final disjoint 20-world holdout: 54 tests / 84 checks, all passed;
+- save document: 22 tests / 67 checks, all passed;
+- `git diff --check` passed;
+- GitNexus detected only the expected abstract `teamStatistics → SeededRandom` affected process.
+
+### Sole remaining blocker
+
+```bash
+.build/arm64-apple-macosx/release/SimTests --engine
+```
+
+fails its two pre-existing pinned play-by-play fingerprints:
+
+```text
+pro:     expected 9120538774305745592, got 11206707792088495442
+college: expected 1997190051787914160, got 15235203604702228493
+```
+
+Do **not** repin or change detailed mechanics without owner approval. Current task changes in
+`Sources/FootballSimCore/Engine/` are confined to `DetailedGameSummaryBuilder`, which runs after
+`GameEngine.play` has made the `GameRecord` and therefore cannot affect its fingerprint. The match,
+reducer, and drive-engine paths have no current diff. This is an unrelated stale-pin/detailed-engine
+decision, not a two-tier consistency failure.
+
+If approval arrives, first identify the deliberate detailed-engine change that moved the outputs;
+then update the two pins only if that change is accepted, rerun `--engine`, and complete the project
+policy reviews (`rewrite-tournament`, `confidence-review`, and GitNexus change detection).
+
+---
+
 Checkpoint: **M7 is complete except conference realignment.** Continue from here; do not redo the
 green gates below.
 

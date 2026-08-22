@@ -282,7 +282,8 @@ public enum CalibrationHarness {
 /// observation of whatever P7 and P8 happen to generate. Real roster construction is theirs.
 public enum CalibrationRoster {
     static let offensivePositions: [Position] = [
-        .quarterback, .runningBack, .wideReceiver, .wideReceiver, .wideReceiver, .tightEnd,
+        .quarterback, .runningBack, .runningBack,
+        .wideReceiver, .wideReceiver, .wideReceiver, .tightEnd,
         .leftTackle, .guardPosition, .center, .rightTackle, .kicker, .punter,
     ]
     static let defensivePositions: [Position] = [

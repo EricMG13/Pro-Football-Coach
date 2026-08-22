@@ -9,6 +9,8 @@ public enum DetailedGameSummaryBuilder {
         var rushing = 0
         var receiving = 0
         var touchdowns = 0
+        var targets = 0
+        var carries = 0
     }
 
     private struct TeamLine {
@@ -21,6 +23,8 @@ public enum DetailedGameSummaryBuilder {
         var passCompletions = 0
         var sacks = 0
         var explosivePlays = 0
+        var explosiveRuns = 0
+        var explosivePasses = 0
         var fieldGoals = FieldGoalStatistics()
     }
 
@@ -42,13 +46,14 @@ public enum DetailedGameSummaryBuilder {
 
         for play in record.plays {
             let side = play.situation.possession
-            let yards = max(0, play.outcome.yards)
+            let yards = play.outcome.yards
             if play.outcome.result.isTurnover {
                 teams[side, default: TeamLine()].turnovers += 1
             }
 
             switch play.offensiveCall.playType {
             case .pass:
+                update(play.outcome.targetID) { $0.targets += 1 }
                 teams[side, default: TeamLine()].plays += 1
                 switch play.outcome.result {
                 case .incompletion, .interception:
@@ -58,6 +63,7 @@ public enum DetailedGameSummaryBuilder {
                     teams[side, default: TeamLine()].passCompletions += 1
                     if yards >= MatchupRules.explosivePassYards {
                         teams[side, default: TeamLine()].explosivePlays += 1
+                        teams[side, default: TeamLine()].explosivePasses += 1
                     }
                 case .sack, .safety:
                     teams[side, default: TeamLine()].sacks += 1
@@ -76,6 +82,10 @@ public enum DetailedGameSummaryBuilder {
                 if play.offensiveCall.playType == .run,
                    yards >= MatchupRules.explosiveRunYards {
                     teams[side, default: TeamLine()].explosivePlays += 1
+                    teams[side, default: TeamLine()].explosiveRuns += 1
+                }
+                if play.offensiveCall.playType == .run {
+                    update(play.outcome.ballCarrierID) { $0.carries += 1 }
                 }
                 teams[side, default: TeamLine()].yards += yards
                 teams[side, default: TeamLine()].rushing += yards
@@ -115,16 +125,22 @@ public enum DetailedGameSummaryBuilder {
                 passCompletions: line.passCompletions,
                 sacks: line.sacks,
                 explosivePlays: line.explosivePlays,
+                explosiveRuns: line.explosiveRuns,
+                explosivePasses: line.explosivePasses,
                 fieldGoals: line.fieldGoals
             )
         }
 
         let participants = Set(homeParticipantIDs + awayParticipantIDs)
         var fourthQuarterPoints = 0
+        var regulationPoints = 0
         var driveOutcomes = DriveOutcomeStatistics()
         for drive in record.drives {
-            if drive.plays.last?.situation.quarter == 4 {
-                fourthQuarterPoints += drive.pointsScored
+            if let quarter = drive.plays.last?.situation.quarter, quarter <= 4 {
+                regulationPoints += drive.pointsScored
+                if quarter == 4 {
+                    fourthQuarterPoints += drive.pointsScored
+                }
             }
             switch drive.ending {
             case .touchdown: driveOutcomes.record(.touchdown)
@@ -148,7 +164,9 @@ public enum DetailedGameSummaryBuilder {
                     passingYards: line.passing,
                     rushingYards: line.rushing,
                     receivingYards: line.receiving,
-                    touchdowns: line.touchdowns
+                    touchdowns: line.touchdowns,
+                    targets: line.targets,
+                    carries: line.carries
                 )
             }
         return GameSummary(
@@ -157,6 +175,7 @@ public enum DetailedGameSummaryBuilder {
             homeStatistics: teamStatistics(.home),
             awayStatistics: teamStatistics(.away),
             fourthQuarterPoints: fourthQuarterPoints,
+            regulationPoints: regulationPoints,
             driveOutcomes: driveOutcomes,
             homeParticipantIDs: homeParticipantIDs,
             awayParticipantIDs: awayParticipantIDs,

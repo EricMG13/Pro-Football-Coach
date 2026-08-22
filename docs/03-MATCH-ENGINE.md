@@ -141,6 +141,9 @@ Binding, not an optimisation. Over a **1000-season Monte Carlo**, the two models
   turnover rate ±0.4 pp · win-rate-vs-rating-gap ±2 pp at every 5-point bucket.
 - **Shape check:** total variation distance between the models' points-per-game histograms ≤ 0.06.
 
+Scalar metrics use this TOST rule and its 90% confidence interval. Distributional metrics are the
+explicit exception: they use canonical TVD, never a scalar margin.
+
 **Range membership is explicitly rejected as the instrument.** A model whose true home-win rate is
 0.62 passes a `0.50…0.60` range check roughly **1 run in 6** at n = 600, because the check has no
 notion of sampling error and does not tighten as n grows. TOST puts the burden on the model.
@@ -169,6 +172,18 @@ rather than re-derived. College-tier bands are the genuine gap and are sourced i
 Metrics both tiers must hold: points per game, yards per play, completion rate, sack rate, turnover
 rate, explosive-play rate, field-goal accuracy by distance bucket, home advantage, fourth-quarter
 scoring share, drive-outcome distribution, and target/carry distribution across the depth chart.
+
+For two-tier consistency, points/game and yards/play use the explicit §4.1 margins in **both** tiers;
+they are not composed from public calibration bands. FG accuracy is pooled-attempt-weighted
+conditional TVD across `<30`, `30–39`, `40–49`, and `50+` yards (τ = 0.05). Drive outcomes use TVD
+≤ 0.05 over TD, FG attempt (made and missed combined), punt, turnover, downs, safety, and period
+expiry. Fourth-quarter share excludes overtime from both numerator and denominator.
+
+College Q4 share is `Q4 points / Q1–Q4 points`. The public band is **26.047110%…26.690304%**:
+2022, 2023, and 2024 FBS-vs-FBS play-by-play aggregates were 26.690304%, 26.047110%, and 26.281284%,
+respectively. The two-tier TOST margin is half that annual width, **±0.321597 pp**. Source and method:
+the downloadable [Sports Data Stuff CFB PBP dataset](https://www.sportsdatastuff.com/cfb_pbpdata),
+filter completed FBS-vs-FBS plays, sum `score_pts` in period 4 and periods 1–4 per season. **[Q]**
 
 College-specific: higher plays per game, wider scoring variance, and a **talent-dispersion band** —
 the win-rate-vs-rating-gap curve must be materially steeper than pro, because a top programme

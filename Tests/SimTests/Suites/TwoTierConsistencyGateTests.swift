@@ -11,10 +11,10 @@ import FootballSimCore
 // would pass whenever the two models happened to land near each other and would never tighten as
 // the sample grew.
 //
-// **The margin is derived, never chosen.** For a metric with a calibration band, the margin is half
-// that band's width — the two models must agree to within the tolerance the project already accepts
-// for the metric being recognisable football at all. Picking a margin freehand is `03` §5.2's
-// widening, one step earlier in the process.
+// **The margin is canonical, never chosen.** `03` §4.1 supplies explicit equivalence margins for
+// points, yards/play, completion, sacks and turnovers. Metrics without one use half their
+// calibration-band width.
+// Picking a margin freehand is `03` §5.2's widening, one step earlier in the process.
 
 /// `03` §5.1's list, transcribed. Every entry is either measured below or named in
 /// `uncoveredMetrics` with what it is blocked on: a suite that silently covers the two metrics both
@@ -33,39 +33,16 @@ enum TwoTierConsistency {
 
     /// Metrics this suite asserts today.
     static let coveredMetrics = [
-        "points per game", "offensive plays per game", "yards per play", "home advantage",
+        "points per game", "offensive plays per game", "yards per play", "completion rate",
+        "sack rate", "turnover rate", "explosive-play rate", "home advantage",
+        "field-goal accuracy by distance bucket", "fourth-quarter scoring share",
+        "drive-outcome distribution",
+        "target/carry distribution across the depth chart",
     ]
 
-    /// Tier-metric pairs this suite measures in one tier and cannot measure in the other, because
-    /// `01-RESEARCH.md` §6.5 has no row to compose a margin from.
-    ///
-    /// Named rather than skipped. A metric that is asserted for the professional tier and silently
-    /// absent for college would report green over half the game, which is the coverage boundary
-    /// becoming the quality boundary. The fix is a canon amendment, not a number chosen here:
-    /// `CLAUDE.md`'s doc-first rule says the gap gets answered in `01` first.
-    static let canonGaps: [(metric: String, tier: Tier, gap: String)] = [
-        ("yards per play", .college,
-         "01 section 6.5 states no college pass or rush yards per team-game rows, so no yards per "
-             + "play range can be composed; its section 4.9 records the same gap"),
-    ]
+    static let canonGaps: [(metric: String, tier: Tier, gap: String)] = []
 
-    /// The rest, with the reason each cannot be asserted yet.
-    ///
-    /// `GameSummary` is the interface both models publish, and it carries points, yards, a
-    /// pass/rush split, turnovers and per-player yardage lines. Every metric below needs something
-    /// the abstracted model does not produce at all — it never simulates a play, a drive or a kick —
-    /// so covering them is a change to that model, not a change to this suite.
-    static let uncoveredMetrics: [(metric: String, blockedOn: String)] = [
-        ("completion rate", "the abstracted model produces no pass attempts"),
-        ("sack rate", "the abstracted model produces no sacks"),
-        ("turnover rate", "the abstracted model draws turnovers from a flat range, unconditioned"),
-        ("explosive-play rate", "the abstracted model produces no per-play yardage"),
-        ("field-goal accuracy by distance bucket", "the abstracted model produces no kicks"),
-        ("fourth-quarter scoring share", "the abstracted model produces no clock"),
-        ("drive-outcome distribution", "the abstracted model produces no drives"),
-        ("target/carry distribution across the depth chart",
-         "the abstracted model splits yardage evenly across a prefix of the depth chart"),
-    ]
+    static let uncoveredMetrics: [(metric: String, blockedOn: String)] = []
 
     /// The controlled worlds used to tune constants and the disjoint worlds used by the committed
     /// gate. A holdout that is also a tuning input only proves the constants can fit their inputs.
@@ -89,12 +66,40 @@ enum TwoTierConsistency {
         290_210, 290_211, 290_212, 290_213,
         291_210, 291_211, 291_212, 291_213,
         292_210, 292_211, 292_212, 292_213,
+        293_210, 293_211, 293_212, 293_213,
+        294_210, 294_211, 294_212, 294_213,
     ]
 
-    /// Games sampled per world and tier. The twelve-world holdout produces 3,840 paired games, or
-    /// 7,680 team-games, so the rate and yards-per-play intervals fit inside their margins without
+    /// Games sampled per world and tier. The twenty-world holdout produces 6,400 paired games, or
+    /// 12,800 team-games, so the rate and yards-per-play intervals fit inside their margins without
     /// relying on a generated schedule's roster or mismatch composition.
     static let sampledGames = 320
+    static let pointsPerGameMargin = 0.75
+    static let yardsPerPlayMargin = 0.15
+    static let completionRateMargin = 1.5
+    static let sackRateMargin = 0.6
+    static let turnoverRateMargin = 0.4
+    static let depthChartUsageMargin = 0.02
+}
+
+private enum TargetUsageBucket: String, CaseIterable {
+    case wr1 = "WR1"
+    case wr2 = "WR2"
+    case wr3Plus = "WR3+"
+    case tightEnd = "TE"
+    case runningBack = "RB"
+    case other
+}
+
+private enum CarryUsageBucket: String, CaseIterable {
+    case rb1 = "RB1"
+    case rb2Plus = "RB2+"
+    case quarterback = "QB"
+    case other
+}
+
+private enum CanonicalDriveOutcome: CaseIterable {
+    case touchdown, fieldGoalAttempt, punt, turnover, downs, safety, periodExpiry
 }
 
 /// Whether a summary was a home win, an away win, or a tie.
@@ -117,6 +122,35 @@ private func homeWon(_ summary: GameSummary) -> Bool? {
 private struct TwoTierSample {
     var abstracted: [GameSummary] = []
     var detailed: [GameSummary] = []
+    var targetBuckets: [UUID: TargetUsageBucket] = [:]
+    var carryBuckets: [UUID: CarryUsageBucket] = [:]
+}
+
+private func registerUsageBuckets(_ personnel: SnapPersonnel, in sample: inout TwoTierSample) {
+    let ranked = { (players: [Player]) in
+        players.sorted {
+            $0.overall == $1.overall
+                ? $0.id.uuidString < $1.id.uuidString
+                : $0.overall > $1.overall
+        }
+    }
+    for player in personnel.offense {
+        sample.targetBuckets[player.id] = .other
+        sample.carryBuckets[player.id] = .other
+    }
+    for (index, player) in ranked(personnel.offensive(.wideReceiver)).enumerated() {
+        sample.targetBuckets[player.id] = index == 0 ? .wr1 : index == 1 ? .wr2 : .wr3Plus
+    }
+    for player in personnel.offensive(.tightEnd) {
+        sample.targetBuckets[player.id] = .tightEnd
+    }
+    for (index, player) in ranked(personnel.offensive(.runningBack)).enumerated() {
+        sample.targetBuckets[player.id] = .runningBack
+        sample.carryBuckets[player.id] = index == 0 ? .rb1 : .rb2Plus
+    }
+    for player in personnel.offensive(.quarterback) {
+        sample.carryBuckets[player.id] = .quarterback
+    }
 }
 
 private func collectTwoTierSample(tier: Tier, worldSeeds: [UInt64]) -> TwoTierSample {
@@ -138,6 +172,8 @@ private func collect(tier: Tier, worldSeed: UInt64, into sample: inout TwoTierSa
             skill: ladder.away,
             seed: worldSeed &+ UInt64(fixture) &+ 500_000
         )
+        registerUsageBuckets(home, in: &sample)
+        registerUsageBuckets(away, in: &sample)
         let gameSeed = SeededRandom.derive(
             from: worldSeed,
             scope: .game,
@@ -165,6 +201,22 @@ private func collect(tier: Tier, worldSeed: UInt64, into sample: inout TwoTierSa
             homeParticipantIDs: abstracted.homeParticipantIDs,
             awayParticipantIDs: abstracted.awayParticipantIDs
         ))
+    }
+}
+
+private func usageRates<Bucket: Hashable>(
+    _ summaries: [GameSummary],
+    buckets: [UUID: Bucket],
+    bucket: Bucket,
+    count: (PlayerGameStatistics) -> Int
+) -> [Double] {
+    summaries.map { summary in
+        let total = summary.playerStatistics.reduce(0) { $0 + count($1) }
+        guard total > 0 else { return .nan }
+        let selected = summary.playerStatistics.reduce(0) { partial, statistics in
+            partial + (buckets[statistics.playerID] == bucket ? count(statistics) : 0)
+        }
+        return Double(selected) / Double(total)
     }
 }
 
@@ -223,6 +275,138 @@ private func pairedMeanDifference(_ abstracted: [Double], _ detailed: [Double]) 
           abstracted.allSatisfy(\.isFinite),
           detailed.allSatisfy(\.isFinite) else { return nil }
     return meanEstimate(zip(abstracted, detailed).map { $0.0 - $0.1 })
+}
+
+private typealias RateCount = (hits: Int, trials: Int)
+
+private func pairedPercentageDifference(
+    _ abstracted: [RateCount],
+    _ detailed: [RateCount]
+) -> Estimate? {
+    guard abstracted.count == detailed.count, abstracted.count > 1,
+          (abstracted + detailed).allSatisfy({
+              $0.hits >= 0 && $0.trials >= $0.hits
+          }) else { return nil }
+
+    func totals(_ counts: [RateCount]) -> RateCount {
+        counts.reduce(into: (hits: 0, trials: 0)) {
+            $0.hits += $1.hits
+            $0.trials += $1.trials
+        }
+    }
+    func percentage(_ count: RateCount) -> Double? {
+        count.trials > 0 ? 100 * Double(count.hits) / Double(count.trials) : nil
+    }
+
+    let first = totals(abstracted)
+    let second = totals(detailed)
+    guard let firstPercentage = percentage(first),
+          let secondPercentage = percentage(second) else { return nil }
+
+    var leaveOneOut: [Double] = []
+    leaveOneOut.reserveCapacity(abstracted.count)
+    for index in abstracted.indices {
+        guard let firstLeaveOneOut = percentage((
+            first.hits - abstracted[index].hits,
+            first.trials - abstracted[index].trials
+        )), let secondLeaveOneOut = percentage((
+            second.hits - detailed[index].hits,
+            second.trials - detailed[index].trials
+        )) else { return nil }
+        leaveOneOut.append(firstLeaveOneOut - secondLeaveOneOut)
+    }
+
+    let jackknifeMean = leaveOneOut.reduce(0, +) / Double(leaveOneOut.count)
+    let squaredError = leaveOneOut.reduce(0) {
+        $0 + ($1 - jackknifeMean) * ($1 - jackknifeMean)
+    }
+    let standardError = (Double(leaveOneOut.count - 1)
+        / Double(leaveOneOut.count) * squaredError).squareRoot()
+    return Estimate(
+        value: firstPercentage - secondPercentage,
+        sampleSize: leaveOneOut.count,
+        standardDeviation: standardError * Double(leaveOneOut.count).squareRoot(),
+        estimator: .mean
+    )
+}
+
+private func aggregatePercentageDifference(
+    _ abstracted: [RateCount],
+    _ detailed: [RateCount]
+) -> Estimate? {
+    func total(_ counts: [RateCount]) -> RateCount {
+        counts.reduce(into: (hits: 0, trials: 0)) {
+            $0.hits += $1.hits
+            $0.trials += $1.trials
+        }
+    }
+    let first = total(abstracted)
+    let second = total(detailed)
+    guard first.hits >= 0, first.trials >= first.hits, first.trials > 0,
+          second.hits >= 0, second.trials >= second.hits, second.trials > 0 else { return nil }
+    let firstRate = Double(first.hits) / Double(first.trials)
+    let secondRate = Double(second.hits) / Double(second.trials)
+    let standardError = 100 * (
+        firstRate * (1 - firstRate) / Double(first.trials)
+            + secondRate * (1 - secondRate) / Double(second.trials)
+    ).squareRoot()
+    return Estimate(
+        value: 100 * (firstRate - secondRate),
+        sampleSize: 1,
+        standardDeviation: standardError,
+        estimator: .mean
+    )
+}
+
+private func weightedConditionalFieldGoalTVD(
+    _ abstracted: [RateCount],
+    _ detailed: [RateCount]
+) -> Double? {
+    guard abstracted.count == FieldGoalDistanceBucket.allCases.count,
+          detailed.count == FieldGoalDistanceBucket.allCases.count else { return nil }
+    let pooledAttempts = zip(abstracted, detailed).reduce(0) { $0 + $1.0.trials + $1.1.trials }
+    guard pooledAttempts > 0 else { return nil }
+    var distance = 0.0
+    for (abstractedBucket, detailedBucket) in zip(abstracted, detailed) {
+        let pooled = abstractedBucket.trials + detailedBucket.trials
+        guard abstractedBucket.hits >= 0, abstractedBucket.trials >= abstractedBucket.hits,
+              detailedBucket.hits >= 0, detailedBucket.trials >= detailedBucket.hits else { return nil }
+        guard pooled == 0 || (abstractedBucket.trials > 0 && detailedBucket.trials > 0) else {
+            return nil
+        }
+        guard pooled > 0 else { continue }
+        let abstractedRate = Double(abstractedBucket.hits) / Double(abstractedBucket.trials)
+        let detailedRate = Double(detailedBucket.hits) / Double(detailedBucket.trials)
+        distance += Double(pooled) / Double(pooledAttempts) * abs(abstractedRate - detailedRate)
+    }
+    return distance
+}
+
+private func totalVariationDistance(_ abstracted: [Int], _ detailed: [Int]) -> Double? {
+    guard abstracted.count == detailed.count,
+          abstracted.allSatisfy({ $0 >= 0 }), detailed.allSatisfy({ $0 >= 0 }) else { return nil }
+    let abstractedTotal = abstracted.reduce(0, +)
+    let detailedTotal = detailed.reduce(0, +)
+    guard abstractedTotal > 0, detailedTotal > 0 else { return nil }
+    return 0.5 * zip(abstracted, detailed).reduce(0.0) {
+        $0 + abs(Double($1.0) / Double(abstractedTotal) - Double($1.1) / Double(detailedTotal))
+    }
+}
+
+private func expectTVD(
+    metric: String,
+    tier: Tier,
+    abstracted: [Int],
+    detailed: [Int]
+) {
+    guard let distance = totalVariationDistance(abstracted, detailed) else {
+        expect(false, "\(metric) [\(tier.rawValue)] has no comparable observations")
+        return
+    }
+    expect(distance <= 0.05, String(
+        format: "%@ [%@]: TVD %.4f exceeds 0.0500 | abstracted %@ | detailed %@",
+        metric, tier.rawValue, distance, String(describing: abstracted), String(describing: detailed)
+    ))
 }
 
 /// Paired jackknife estimate for a difference between two conditional rates. Each model keeps the
@@ -284,22 +468,6 @@ private func equivalenceMargin(metric: String, tier: Tier) -> Double? {
     calibrationBand(metric, tier).map { ($0.upper - $0.lower) / 2 }
 }
 
-/// Yards per play has no row of its own in `01` §6.5, so its margin is *composed* from the rows
-/// that do exist rather than invented: the widest ratio the tier's yardage and plays bands jointly
-/// allow. Composing from canon is not the same as adding to it — `CLAUDE.md`'s doc-first rule
-/// forbids the second, and a number picked here would be exactly the freehand margin `03` §5.2
-/// warns about.
-///
-/// Returns nil for a tier whose yardage rows §6.5 does not state, which is why college appears in
-/// `canonGaps` rather than quietly passing.
-private func composedYardsPerPlayMargin(tier: Tier) -> Double? {
-    guard let plays = calibrationBand("offensive plays per team-game", tier),
-          let pass = calibrationBand("pass yards per team-game", tier),
-          let rush = calibrationBand("rush yards per team-game", tier),
-          plays.lower > 0, plays.upper > 0 else { return nil }
-    return ((pass.upper + rush.upper) / plays.lower - (pass.lower + rush.lower) / plays.upper) / 2
-}
-
 /// Asserts that the two models agree on one per-team-game mean, and reports enough on failure to
 /// say which model moved and whether it moved in the mean or in the tails.
 private func expectAgreement(
@@ -307,7 +475,8 @@ private func expectAgreement(
     margin: Double?,
     tier: Tier,
     abstracted: [Double],
-    detailed: [Double]
+    detailed: [Double],
+    confidence: String = "derived: half the 01 section 6.5 band width"
 ) {
     guard let margin else {
         let missing = "no band for \(metric) [\(tier.rawValue)] to derive a margin from"
@@ -315,9 +484,10 @@ private func expectAgreement(
         return
     }
     let band = Band("\(metric) agreement", tier: tier, -margin, margin, estimator: .mean,
-                    confidence: "derived: half the 01 section 6.5 band width")
+                    confidence: confidence)
     guard let difference = pairedMeanDifference(abstracted, detailed) else {
         let misaligned = "paired samples for \(metric) [\(tier.rawValue)] are empty or misaligned"
+            + " | detailed " + shape(detailed)
         expect(false, misaligned)
         return
     }
@@ -332,6 +502,60 @@ private func expectAgreement(
     let message = result.report
         + " | abstracted " + shape(abstracted)
         + " | detailed " + shape(detailed)
+    expect(result.passed, message)
+}
+
+private func expectPercentageAgreement(
+    metric: String,
+    margin: Double?,
+    tier: Tier,
+    abstracted: [RateCount],
+    detailed: [RateCount],
+    confidence: String = "03 section 4.1 explicit equivalence margin"
+) {
+    guard let margin else {
+        expect(false, "no band for \(metric) [\(tier.rawValue)] to derive a margin from")
+        return
+    }
+    let band = Band("\(metric) agreement", tier: tier, -margin, margin, estimator: .rate,
+                    confidence: confidence)
+    guard let difference = pairedPercentageDifference(abstracted, detailed) else {
+        expect(false, "paired counts for \(metric) [\(tier.rawValue)] are invalid or misaligned")
+        return
+    }
+    let result = band.test(difference)
+    func totals(_ counts: [RateCount]) -> RateCount {
+        counts.reduce(into: (hits: 0, trials: 0)) {
+            $0.hits += $1.hits
+            $0.trials += $1.trials
+        }
+    }
+    let first = totals(abstracted)
+    let second = totals(detailed)
+    let message = result.report + String(
+        format: " | abstracted %d/%d = %.2f%% | detailed %d/%d = %.2f%%",
+        first.hits, first.trials, 100 * Double(first.hits) / Double(first.trials),
+        second.hits, second.trials, 100 * Double(second.hits) / Double(second.trials)
+    )
+    expect(result.passed, message)
+}
+
+private func expectAggregatePercentageAgreement(
+    metric: String,
+    margin: Double,
+    tier: Tier,
+    abstracted: [RateCount],
+    detailed: [RateCount],
+    confidence: String
+) {
+    let band = Band("\(metric) agreement", tier: tier, -margin, margin, estimator: .mean,
+                    confidence: confidence)
+    guard let difference = aggregatePercentageDifference(abstracted, detailed) else {
+        expect(false, "aggregate counts for \(metric) [\(tier.rawValue)] are invalid")
+        return
+    }
+    let result = band.test(difference)
+    let message = result.report
     expect(result.passed, message)
 }
 
@@ -393,10 +617,11 @@ private func assertTwoTierMetrics(tier: Tier, sample: TwoTierSample) {
     test("points per team-game agrees between the models — \(tierName)") {
         expectAgreement(
             metric: "points per team-game",
-            margin: equivalenceMargin(metric: "points per team-game", tier: tier),
+            margin: TwoTierConsistency.pointsPerGameMargin,
             tier: tier,
             abstracted: teamValues(sample.abstracted) { Double($0.points) },
-            detailed: teamValues(sample.detailed) { Double($0.points) }
+            detailed: teamValues(sample.detailed) { Double($0.points) },
+            confidence: "03 section 4.1 explicit equivalence margin"
         )
     }
 
@@ -410,6 +635,102 @@ private func assertTwoTierMetrics(tier: Tier, sample: TwoTierSample) {
         )
     }
 
+    test("completion percentage agrees between the models — \(tierName)") {
+        func counts(_ summaries: [GameSummary]) -> [RateCount] {
+            summaries.map {
+                (
+                    $0.homeStatistics.passCompletions + $0.awayStatistics.passCompletions,
+                    $0.homeStatistics.passAttempts + $0.awayStatistics.passAttempts
+                )
+            }
+        }
+        expectPercentageAgreement(
+            metric: "completion percentage",
+            margin: TwoTierConsistency.completionRateMargin,
+            tier: tier,
+            abstracted: counts(sample.abstracted),
+            detailed: counts(sample.detailed)
+        )
+    }
+
+    test("sack rate agrees between the models — \(tierName)") {
+        func counts(_ summaries: [GameSummary]) -> [RateCount] {
+            summaries.map {
+                let sacks = $0.homeStatistics.sacks + $0.awayStatistics.sacks
+                return (
+                    sacks,
+                    sacks + $0.homeStatistics.passAttempts + $0.awayStatistics.passAttempts
+                )
+            }
+        }
+        expectPercentageAgreement(
+            metric: "sack rate",
+            margin: TwoTierConsistency.sackRateMargin,
+            tier: tier,
+            abstracted: counts(sample.abstracted),
+            detailed: counts(sample.detailed)
+        )
+    }
+
+    test("turnover rate agrees between the models — \(tierName)") {
+        func counts(_ summaries: [GameSummary]) -> [RateCount] {
+            summaries.map {
+                (
+                    $0.homeStatistics.turnovers + $0.awayStatistics.turnovers,
+                    $0.homeStatistics.offensivePlays + $0.awayStatistics.offensivePlays
+                )
+            }
+        }
+        expectPercentageAgreement(
+            metric: "turnover rate",
+            margin: TwoTierConsistency.turnoverRateMargin,
+            tier: tier,
+            abstracted: counts(sample.abstracted),
+            detailed: counts(sample.detailed)
+        )
+    }
+
+    test("explosive run rate agrees between the models — \(tierName)") {
+        func counts(_ summaries: [GameSummary]) -> [RateCount] {
+            summaries.map {
+                let home = $0.homeStatistics
+                let away = $0.awayStatistics
+                return (
+                    home.explosiveRuns + away.explosiveRuns,
+                    home.offensivePlays - home.passAttempts - home.sacks
+                        + away.offensivePlays - away.passAttempts - away.sacks
+                )
+            }
+        }
+        expectPercentageAgreement(
+            metric: "explosive run rate",
+            margin: equivalenceMargin(metric: "explosive run rate", tier: tier).map { 100 * $0 },
+            tier: tier,
+            abstracted: counts(sample.abstracted),
+            detailed: counts(sample.detailed),
+            confidence: "derived: half the 01 section 6.5 band width"
+        )
+    }
+
+    test("explosive pass rate agrees between the models — \(tierName)") {
+        func counts(_ summaries: [GameSummary]) -> [RateCount] {
+            summaries.map {
+                (
+                    $0.homeStatistics.explosivePasses + $0.awayStatistics.explosivePasses,
+                    $0.homeStatistics.passAttempts + $0.awayStatistics.passAttempts
+                )
+            }
+        }
+        expectPercentageAgreement(
+            metric: "explosive pass rate",
+            margin: equivalenceMargin(metric: "explosive pass rate", tier: tier).map { 100 * $0 },
+            tier: tier,
+            abstracted: counts(sample.abstracted),
+            detailed: counts(sample.detailed),
+            confidence: "derived: half the 01 section 6.5 band width"
+        )
+    }
+
     test("home advantage agrees between the models — \(tierName)") {
         expectRateAgreement(
             metric: "home win rate",
@@ -420,24 +741,121 @@ private func assertTwoTierMetrics(tier: Tier, sample: TwoTierSample) {
         )
     }
 
-    if let margin = composedYardsPerPlayMargin(tier: tier) {
-        test("yards per play agrees between the models — \(tierName)") {
+    test("yards per play agrees between the models — \(tierName)") {
+        expectAgreement(
+            metric: "yards per play",
+            margin: TwoTierConsistency.yardsPerPlayMargin,
+            tier: tier,
+            abstracted: yardsPerPlay(sample.abstracted),
+            detailed: yardsPerPlay(sample.detailed),
+            confidence: "03 section 4.1 explicit equivalence margin"
+        )
+    }
+
+    test("field-goal accuracy by distance agrees between the models — \(tierName)") {
+        func counts(_ summaries: [GameSummary]) -> [RateCount] {
+            FieldGoalDistanceBucket.allCases.map { bucket in
+                summaries.reduce(into: (hits: 0, trials: 0)) { total, summary in
+                    for statistics in [summary.homeStatistics, summary.awayStatistics] {
+                        total.hits += statistics.fieldGoals.made(in: bucket)
+                        total.trials += statistics.fieldGoals.attempts(in: bucket)
+                    }
+                }
+            }
+        }
+        guard let distance = weightedConditionalFieldGoalTVD(
+            counts(sample.abstracted), counts(sample.detailed)
+        ) else {
+            expect(false, "field-goal accuracy [\(tierName)] has no comparable attempts")
+            return
+        }
+        expect(distance <= 0.05, String(
+            format: "field-goal accuracy [%@]: weighted conditional TVD %.4f exceeds 0.0500 | abstracted %@ | detailed %@",
+            tierName, distance, String(describing: counts(sample.abstracted)), String(describing: counts(sample.detailed))
+        ))
+    }
+
+    test("fourth-quarter scoring share agrees between the models — \(tierName)") {
+        func counts(_ summaries: [GameSummary]) -> [RateCount] {
+            summaries.map { ($0.fourthQuarterPoints, $0.regulationPoints) }
+        }
+        expectAggregatePercentageAgreement(
+            metric: "fourth-quarter scoring share",
+            margin: 0.321_597,
+            tier: tier,
+            abstracted: counts(sample.abstracted),
+            detailed: counts(sample.detailed),
+            confidence: "01 section 6.5 2022–2024 FBS annual Q4-share half-width"
+        )
+    }
+
+    test("drive-outcome distribution agrees between the models — \(tierName)") {
+        func counts(_ summaries: [GameSummary]) -> [Int] {
+            CanonicalDriveOutcome.allCases.map { bucket in
+                summaries.reduce(into: 0) { total, summary in
+                    let outcomes = summary.driveOutcomes
+                    switch bucket {
+                    case .touchdown: total += outcomes.count(in: .touchdown)
+                    case .fieldGoalAttempt:
+                        total += outcomes.count(in: .fieldGoalMade) + outcomes.count(in: .fieldGoalMissed)
+                    case .punt: total += outcomes.count(in: .punt)
+                    case .turnover: total += outcomes.count(in: .turnover)
+                    case .downs: total += outcomes.count(in: .downs)
+                    case .safety: total += outcomes.count(in: .safety)
+                    case .periodExpiry: total += outcomes.count(in: .periodExpiry)
+                    }
+                }
+            }
+        }
+        expectTVD(
+            metric: "drive-outcome distribution",
+            tier: tier,
+            abstracted: counts(sample.abstracted),
+            detailed: counts(sample.detailed)
+        )
+    }
+
+    for bucket in TargetUsageBucket.allCases {
+        test("target share agrees between the models — \(tierName), \(bucket.rawValue)") {
             expectAgreement(
-                metric: "yards per play",
-                margin: margin,
+                metric: "target share \(bucket.rawValue)",
+                margin: TwoTierConsistency.depthChartUsageMargin,
                 tier: tier,
-                abstracted: yardsPerPlay(sample.abstracted),
-                detailed: yardsPerPlay(sample.detailed)
+                abstracted: usageRates(
+                    sample.abstracted,
+                    buckets: sample.targetBuckets,
+                    bucket: bucket,
+                    count: \.targets
+                ),
+                detailed: usageRates(
+                    sample.detailed,
+                    buckets: sample.targetBuckets,
+                    bucket: bucket,
+                    count: \.targets
+                )
             )
         }
-    } else {
-        test("yards per play equivalence gap is documented — \(tierName)") {
-            let named = TwoTierConsistency.canonGaps.contains {
-                $0.metric == "yards per play" && $0.tier == tier
-            }
-            let message = "yards per play cannot be measured for \(tierName) and the gap is not "
-                + "named in canonGaps"
-            expect(named, message)
+    }
+
+    for bucket in CarryUsageBucket.allCases {
+        test("carry share agrees between the models — \(tierName), \(bucket.rawValue)") {
+            expectAgreement(
+                metric: "carry share \(bucket.rawValue)",
+                margin: TwoTierConsistency.depthChartUsageMargin,
+                tier: tier,
+                abstracted: usageRates(
+                    sample.abstracted,
+                    buckets: sample.carryBuckets,
+                    bucket: bucket,
+                    count: \.carries
+                ),
+                detailed: usageRates(
+                    sample.detailed,
+                    buckets: sample.carryBuckets,
+                    bucket: bucket,
+                    count: \.carries
+                )
+            )
         }
     }
 }
@@ -488,6 +906,9 @@ private func assertMetricAccounting() {
 }
 
 func runTwoTierConsistencyTests() {
+    let worldSeeds = CommandLine.arguments.contains("--two-tier-consistency-tuning")
+        ? TwoTierConsistency.tuningWorldSeeds
+        : TwoTierConsistency.holdoutWorldSeeds
     suite("Two-tier consistency") {
         assertMetricAccounting()
         for tier in Tier.allCases {
@@ -495,10 +916,7 @@ func runTwoTierConsistencyTests() {
             // sample, because bootstrapping and replaying seasons is the expensive part.
             assertTwoTierMetrics(
                 tier: tier,
-                sample: collectTwoTierSample(
-                    tier: tier,
-                    worldSeeds: TwoTierConsistency.holdoutWorldSeeds
-                )
+                sample: collectTwoTierSample(tier: tier, worldSeeds: worldSeeds)
             )
         }
     }
@@ -603,6 +1021,63 @@ func runTwoTierConsistencyTests() {
                 playerStatistics: []
             )
             expectEqual(summary.fourthQuarterPoints, 0)
+        }
+
+        test("game summaries project regulation points compatibly") {
+            let statistics = TeamGameStatistics(
+                points: 7,
+                offensiveYards: 75,
+                passingYards: 50,
+                rushingYards: 25,
+                turnovers: 0
+            )
+            let summary = GameSummary(
+                homeScore: 7,
+                awayScore: 3,
+                homeStatistics: statistics,
+                awayStatistics: TeamGameStatistics(
+                    points: 3,
+                    offensiveYards: 0,
+                    passingYards: 0,
+                    rushingYards: 0,
+                    turnovers: 0
+                ),
+                playerStatistics: []
+            )
+            expectEqual(summary.regulationPoints, 10)
+
+            let clamped = GameSummary(
+                homeScore: 7,
+                awayScore: 3,
+                homeStatistics: statistics,
+                awayStatistics: statistics,
+                regulationPoints: 99,
+                playerStatistics: []
+            )
+            expectEqual(clamped.regulationPoints, 10)
+
+            let lowerClamped = GameSummary(
+                homeScore: 7,
+                awayScore: 3,
+                homeStatistics: statistics,
+                awayStatistics: statistics,
+                regulationPoints: -1,
+                playerStatistics: []
+            )
+            expectEqual(lowerClamped.regulationPoints, 0)
+
+            var legacy = try! JSONSerialization.jsonObject(
+                with: JSONEncoder.stable().encode(summary)
+            ) as! [String: Any]
+            legacy.removeValue(forKey: "regulationPoints")
+            guard let decoded = try? JSONDecoder.stable().decode(
+                GameSummary.self,
+                from: JSONSerialization.data(withJSONObject: legacy)
+            ) else {
+                expect(false, "legacy game summary no longer decodes")
+                return
+            }
+            expectEqual(decoded.regulationPoints, 10)
         }
 
         test("legacy team statistics default new rate counters") {
