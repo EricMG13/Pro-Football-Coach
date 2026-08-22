@@ -177,6 +177,14 @@ final class ProFootballCoachUITests: XCTestCase {
         assertWeeklyPlanReceiptDoesNotCoverChoices()
     }
 
+    func testWeeklyPlanDominantEvidenceTracksSelectedCommitAtDefault() {
+        assertWeeklyPlanDominantEvidenceTracksSelectedCommit()
+    }
+
+    func testWeeklyPlanDominantEvidenceTracksSelectedCommitAtAX5() {
+        assertWeeklyPlanDominantEvidenceTracksSelectedCommit()
+    }
+
     func testWeeklyCommandContentStaysInsideTheViewportAtDefault() {
         assertWeeklyCommandContentStaysInsideTheViewport(usesAX5: false)
     }
@@ -324,6 +332,149 @@ final class ProFootballCoachUITests: XCTestCase {
             XCTAssertFalse(consequence.frame.intersects(commit.frame))
             commit.tap()
             XCTAssertFalse(commit.exists)
+            app.terminate()
+        }
+    }
+
+    /// Scrolls `scrollView` until `element` is vertically inside the viewport, and reports whether
+    /// it got there.
+    ///
+    /// Neither `isHittable` nor `swipeUp()` can drive this. XCUITest answers `isHittable` true for a
+    /// row that is inside the scroll *content* but below the visible bounds, so a hittability loop
+    /// breaks without scrolling and the tap is then synthesized off-screen and lands on nothing. A
+    /// swipe moves most of a viewport at once, so a swipe loop oscillates past a row that is only
+    /// ~120pt out of frame -- which is where the AX5 weekly command rows sit. Drag by the measured
+    /// remainder, and test the visible frame, which is the property the proof actually wants.
+    @discardableResult
+    private func scroll(
+        _ scrollView: XCUIElement,
+        toReveal element: XCUIElement,
+        attempts: Int = 8
+    ) -> Bool {
+        func revealed(_ viewport: CGRect, _ frame: CGRect) -> Bool {
+            viewport.minY <= frame.minY && frame.maxY <= viewport.maxY
+        }
+
+        for _ in 0..<attempts {
+            // Both frames are live queries against the app, so read each once per pass and judge
+            // the drag on the same geometry the check used.
+            let viewport = scrollView.frame
+            let frame = element.frame
+            if revealed(viewport, frame) { return true }
+            // Keep each drag inside the viewport so it cannot reach the screen edge and be taken
+            // for a system gesture; the loop covers the rest.
+            let limit = viewport.height * 0.4
+            let delta = min(max(frame.midY - viewport.midY, -limit), limit)
+            let start = scrollView.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            // Hold at the destination before lifting. Without it the drag imparts momentum, the
+            // content flings past the target, and the loop oscillates instead of converging.
+            start.press(
+                forDuration: 0.1,
+                thenDragTo: start.withOffset(CGVector(dx: .zero, dy: -delta)),
+                withVelocity: .slow,
+                thenHoldForDuration: 0.2
+            )
+        }
+        return revealed(scrollView.frame, element.frame)
+    }
+
+    private func assertWeeklyPlanDominantEvidenceTracksSelectedCommit() {
+        let fixtures = [
+            (
+                screenID: 11,
+                route: "Game Plan",
+                initialCommit: "Set Balanced Control",
+                choice: "Pressure the quarterback.",
+                commit: "Set Pressure the Quarterback",
+                dominant: "Tempo, Grind it",
+                evidence: ["Aggression, Aggressive", "Balance, Run heavy"]
+            ),
+            (
+                screenID: 12,
+                route: "Practice Plan",
+                initialCommit: "Set Balanced Week",
+                choice: "Install and sharpen.",
+                commit: "Set Install and Sharpen",
+                dominant: "Install and sharpen",
+                evidence: [
+                    "Install, 30 minutes of 60",
+                    "Conditioning, 10 minutes of 60",
+                    "Recovery, 5 minutes of 60",
+                    "Position focus, 15 minutes of 60",
+                ]
+            ),
+        ]
+
+        for fixture in fixtures {
+            let app = XCUIApplication()
+            app.launchEnvironment["PROOF_NEW_CAREER"] = "424242"
+            app.launchEnvironment["PROOF_SCREEN_NUMBER"] = "\(fixture.screenID)"
+            app.launch()
+
+            let initialCommit = app.buttons.matching(
+                NSPredicate(format: "label BEGINSWITH[c] %@", fixture.initialCommit)
+            ).firstMatch
+            XCTAssertTrue(initialCommit.waitForExistence(timeout: 20))
+            initialCommit.tap()
+
+            let route = app.buttons.matching(
+                NSPredicate(format: "label ==[c] %@", fixture.route)
+            ).firstMatch
+            XCTAssertTrue(route.waitForExistence(timeout: 10))
+            let hqScreenshot = XCTAttachment(screenshot: app.screenshot())
+            hqScreenshot.name = "HQ receipt after screen \(fixture.screenID) commit"
+            hqScreenshot.lifetime = .keepAlways
+            add(hqScreenshot)
+
+            let siblingStrip = app.scrollViews["top-navigator"].firstMatch
+            XCTAssertTrue(siblingStrip.exists)
+            for _ in 0..<8 {
+                if route.isHittable { break }
+                siblingStrip.swipeLeft()
+            }
+            XCTAssertTrue(route.isHittable)
+            route.tap()
+
+            let contentScroll = app.scrollViews.matching(
+                NSPredicate(format: "identifier != %@", "top-navigator")
+            ).firstMatch
+            XCTAssertTrue(contentScroll.waitForExistence(timeout: 10))
+            let choice = app.buttons.matching(
+                NSPredicate(format: "label BEGINSWITH[c] %@", fixture.choice)
+            ).firstMatch
+            XCTAssertTrue(choice.waitForExistence(timeout: 10))
+            XCTAssertTrue(scroll(contentScroll, toReveal: choice))
+            choice.tap()
+            XCTAssertTrue(choice.isSelected)
+
+            let dominant = app.descendants(matching: .any)["weekly-command-dominant"]
+            XCTAssertTrue(scroll(contentScroll, toReveal: dominant))
+            XCTAssertEqual(dominant.label, fixture.dominant)
+            for expectedEvidence in fixture.evidence {
+                XCTAssertTrue(
+                    app.descendants(matching: .any)
+                        .matching(NSPredicate(format: "label == %@", expectedEvidence))
+                        .firstMatch.exists,
+                    "Expected selected payload evidence: \(expectedEvidence)"
+                )
+            }
+            let selectedScreenshot = XCTAttachment(screenshot: app.screenshot())
+            selectedScreenshot.name = "Selected commit evidence screen \(fixture.screenID)"
+            selectedScreenshot.lifetime = .keepAlways
+            add(selectedScreenshot)
+
+            let commit = app.buttons.matching(
+                NSPredicate(format: "label BEGINSWITH[c] %@", fixture.commit)
+            ).firstMatch
+            XCTAssertTrue(commit.waitForExistence(timeout: 5))
+            XCTAssertTrue(scroll(contentScroll, toReveal: commit))
+            XCTAssertTrue(commit.label.localizedCaseInsensitiveContains(
+                fixture.choice.dropLast()
+            ))
+            let commitScreenshot = XCTAttachment(screenshot: app.screenshot())
+            commitScreenshot.name = "Selected commit target screen \(fixture.screenID)"
+            commitScreenshot.lifetime = .keepAlways
+            add(commitScreenshot)
             app.terminate()
         }
     }

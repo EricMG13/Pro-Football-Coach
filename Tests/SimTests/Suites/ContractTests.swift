@@ -1101,13 +1101,18 @@ func runContractTests() {
                        && gamePlan.contains("onSelect(selectedOption.plan)")
                        && gamePlan.contains("onClose()"),
                    "game-plan rows must select locally and its explicit action must commit the selected plan")
-            expect(practice.contains("Option preview")
-                       && practice.contains("Choose the week")
+            expect(practice.contains("Choose the week")
                        && !practice.contains("What a different week costs")
                        && !practice.contains("onSelect(option.plan)")
                        && practice.contains("onSelect(selectedOption.plan)")
                        && practice.contains("onClose()"),
                    "practice rows must select locally and its explicit action must commit the selected plan")
+            // The dominant readout has to describe the option the commit would send, not the plan
+            // already stored. A stored plan is the fallback for when nothing can be selected -- put
+            // it first and the screen shows last week's numbers under this week's chosen label.
+            expect(gamePlan.contains("selectedOption?.plan ?? model.currentPlan")
+                       && practice.contains("selectedOption?.plan ?? model.currentPlan"),
+                   "weekly plan dominants must read the selected option before the stored plan")
             expect(!depth.contains("onSelect(option.plan)")
                        && depth.contains("onSelect(selectedOption.plan)")
                        && depth.contains("selectedOption.map {")

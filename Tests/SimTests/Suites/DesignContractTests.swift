@@ -152,6 +152,51 @@ func runDesignContractTests() {
                 "HQ must reserve Before kickoff for a scheduled opponent"
             )
         }
+
+        test("HQ presents blocker or receipt after every weekly support region") {
+            let path = packageRoot()
+                .appendingPathComponent("Sources/ProFootballCoachUI/CoachingHQView.swift")
+            let source = strippingLineComments(
+                (try? String(contentsOf: path, encoding: .utf8)) ?? ""
+            )
+
+            let decisionStart = source.range(of: "private var decisionColumn")?.lowerBound
+            let choiceStart = source.range(of: "private func choiceRow")?.lowerBound
+            let decision = decisionStart.flatMap { start in
+                choiceStart.map { end in String(source[start..<end]) }
+            } ?? ""
+            expect(
+                !decision.contains("if let statusMessage"),
+                "HQ blocker/receipt must not compete inside the dominant decision panel"
+            )
+
+            let layouts = [
+                (start: "private var standardLayout", end: "private var kickoffCard"),
+                (start: "private var accessibleLayout", end: "private var identityRail"),
+            ]
+            let orderedMarkers = [
+                "weekAgendaColumn", "kickoffCard", "supportColumn", "if let statusMessage",
+            ]
+            for layout in layouts {
+                let start = source.range(of: layout.start)?.lowerBound
+                let end = source.range(of: layout.end)?.lowerBound
+                let region = start.flatMap { lower in
+                    end.map { upper in String(source[lower..<upper]) }
+                } ?? ""
+                let positions = orderedMarkers.compactMap { marker in
+                    region.range(of: marker)?.lowerBound
+                }
+                expectEqual(
+                    positions.count,
+                    orderedMarkers.count,
+                    "HQ layout is missing a required weekly support region"
+                )
+                expect(
+                    positions == positions.sorted(),
+                    "HQ blocker/receipt must follow obligations, kickoff, and health/stakeholders"
+                )
+            }
+        }
     }
 
     suite("One-band top navigator") {

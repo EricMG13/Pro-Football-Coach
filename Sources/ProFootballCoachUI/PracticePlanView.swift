@@ -78,10 +78,8 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.xs) {
                     HStack(spacing: CoachWorldTokens.Gap.xs) {
                         FloodlitLabel3(
-                            model.currentPlan == nil ? "Option preview"
-                                                     : "This week",
-                            palette: palette,
-                            tint: model.currentPlan == nil ? palette.stateWarning.color : nil
+                            selectedOption?.title ?? "Current plan",
+                            palette: palette
                         )
                         .accessibilityIdentifier("weekly-command-dominant")
                         Spacer(minLength: .zero)
@@ -110,13 +108,10 @@ public struct PracticePlanView: View, CoachWorldChromedSurface {
     }
 
 
-    /// The allocation the bars draw. Before the week is committed there is no stored plan, and the
-    /// reference's allocator is the whole point of the screen -- so it draws what the selected
-    /// option *would* allocate, labelled as not yet set rather than presented as the week.
+    /// The allocation the bars draw follows the local option selection, which is also the payload
+    /// the commit action sends. A stored plan is only the fallback when no option can be selected.
     private var allocatedPlan: TacticalPracticePlan? {
-        if let current = model.currentPlan { return current }
-        let selected = model.options.first { $0.id == selectedID } ?? model.options.first
-        return selected?.plan
+        selectedOption?.plan ?? model.currentPlan
     }
 
     private func session(_ name: String, minutes: Int) -> some View {

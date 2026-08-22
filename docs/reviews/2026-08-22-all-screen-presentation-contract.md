@@ -18,6 +18,39 @@ unsupported logo content; it does not authorize removing an existing supplied lo
 `onNavigateChrome` below is the existing optional shared-chrome callback accepted by conforming
 presentation roots. It does not authorize a second local navigation surface.
 
+## Amendments
+
+### Match Day / ID 14 is required (owner, 2026-08-22)
+
+The owner reversed the earlier instruction to skip Match Day. ID 14 is in scope, and
+`Match Day.dc.html` from the supplied reference package is its exact visual and layout target:
+hierarchy, spacing, field and broadcast furniture, control placement, depth, and typography are
+reproduced as drawn. Match Day is the one exception where the reference wins over the general
+management shell if the two conflict.
+
+Everything above still binds for its facts and behavior. Match Day presents the immutable
+`MatchDayReadModel`: all 22 retained actors, score and situation, field direction, line of
+scrimmage, first-down line, recorded commentary and playback, the five existing controls, and the
+existing interruption paths and callbacks. The mocks omit logos; production does not, so the real
+team and opponent logos remain visible exactly once. No second engine, control, fact, outcome, or
+callback behavior may be introduced to achieve the visual copy.
+
+ID 14 stays open until that exact-reference implementation is proven on a real production route. It
+is neither omitted nor complete, and the earlier Match Day evidence caveats in
+`.superpowers/sdd/all-screen-task-4-report.md` are historical context, not acceptance.
+
+### Weekly plan dominants read the selected option (review fix, 2026-08-22)
+
+On IDs 11 and 12 the dominant readout describes the option the committing action would send, not
+the plan already stored: `selectedOption?.plan ?? model.currentPlan`. A stored plan is the fallback
+for when no option can be selected. Put the stored plan first and the screen shows last week's
+values under this week's chosen label, beside a consequence and a committing action that name a
+different plan. On ID 8 the blocker/receipt (`statusMessage`) presents after obligations, kickoff,
+and health/stakeholders, never inside the dominant decision panel.
+
+This adds no field, route, callback, or state; it fixes which existing value the dominant reads.
+`ContractTests` and `DesignContractTests` pin both rules.
+
 ## Canonical destinations and evidence ledger
 
 | ID | Canonical destination | Presentation root | Archetype | Dominant question | Existing backing | Existing actions | Omitted/deferred |
