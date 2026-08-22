@@ -34,8 +34,9 @@ it**.
 
 1. There is **no `READOUT / DESTINATION` split** in this repository. Zero occurrences. Use the
    readout/action **attribute** in [`04`](04-INFORMATION-ARCHITECTURE.md) §4 instead.
-2. There is **no `SmallestDeviceLayoutTest`**. You will write `DensityBudgetTests` in
-   `Tests/SimTests/Suites/`, per [`06`](06-TOKENS-AND-DENSITY.md) §3.5.
+2. **`SmallestDeviceLayoutTest` exists** — on `codex/complete-game-loops`, not on the working
+   branch. **Port `Tests/SimTests/Suites/SmallestDeviceLayoutTests.swift` before stage 2 and extend
+   it; do not rewrite it.** See [`06`](06-TOKENS-AND-DENSITY.md) §3.5.
 3. **`CalibrationBands` is a simulation artefact**, at
    `Sources/FootballSimCore/Calibration/CalibrationBands.swift`. It is not a design token. **A view
    must never import it.** The UI's rating-band equivalent is `CoachWorldTokens.Heat`.

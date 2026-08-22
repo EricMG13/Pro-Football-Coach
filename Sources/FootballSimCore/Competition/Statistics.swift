@@ -130,7 +130,7 @@ public struct FieldGoalStatistics: Codable, Sendable, Equatable {
 public struct TeamGameStatistics: Codable, Sendable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case points, offensiveYards, passingYards, rushingYards, turnovers, offensivePlays
-        case passAttempts, passCompletions, sacks, explosivePlays, fieldGoals
+        case passAttempts, passCompletions, sacks, explosivePlays, explosiveRuns, explosivePasses, fieldGoals
     }
 
     public let points: Int
@@ -143,6 +143,8 @@ public struct TeamGameStatistics: Codable, Sendable, Equatable {
     public let passCompletions: Int
     public let sacks: Int
     public let explosivePlays: Int
+    public let explosiveRuns: Int
+    public let explosivePasses: Int
     public let fieldGoals: FieldGoalStatistics
 
     public init(
@@ -156,6 +158,8 @@ public struct TeamGameStatistics: Codable, Sendable, Equatable {
         passCompletions: Int = 0,
         sacks: Int = 0,
         explosivePlays: Int = 0,
+        explosiveRuns: Int = 0,
+        explosivePasses: Int = 0,
         fieldGoals: FieldGoalStatistics = FieldGoalStatistics()
     ) {
         self.points = max(0, points)
@@ -168,6 +172,8 @@ public struct TeamGameStatistics: Codable, Sendable, Equatable {
         self.passCompletions = min(self.passAttempts, max(0, passCompletions))
         self.sacks = max(0, sacks)
         self.explosivePlays = min(self.offensivePlays, max(0, explosivePlays))
+        self.explosiveRuns = min(self.offensivePlays, max(0, explosiveRuns))
+        self.explosivePasses = min(self.offensivePlays, max(0, explosivePasses))
         self.fieldGoals = fieldGoals
     }
 
@@ -184,6 +190,8 @@ public struct TeamGameStatistics: Codable, Sendable, Equatable {
             passCompletions: try container.decodeIfPresent(Int.self, forKey: .passCompletions) ?? 0,
             sacks: try container.decodeIfPresent(Int.self, forKey: .sacks) ?? 0,
             explosivePlays: try container.decodeIfPresent(Int.self, forKey: .explosivePlays) ?? 0,
+            explosiveRuns: try container.decodeIfPresent(Int.self, forKey: .explosiveRuns) ?? 0,
+            explosivePasses: try container.decodeIfPresent(Int.self, forKey: .explosivePasses) ?? 0,
             fieldGoals: try container.decodeIfPresent(FieldGoalStatistics.self, forKey: .fieldGoals)
                 ?? FieldGoalStatistics()
         )

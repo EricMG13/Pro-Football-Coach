@@ -18,7 +18,7 @@ public struct GameSummary: Codable, Sendable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case homeScore, awayScore, homeStatistics, awayStatistics
         case homeParticipantIDs, awayParticipantIDs, playerStatistics, source, evidence
-        case fourthQuarterPoints, driveOutcomes
+        case fourthQuarterPoints, regulationPoints, driveOutcomes
     }
 
     public let homeScore: Int
@@ -26,6 +26,7 @@ public struct GameSummary: Codable, Sendable, Equatable {
     public let homeStatistics: TeamGameStatistics
     public let awayStatistics: TeamGameStatistics
     public let fourthQuarterPoints: Int
+    public let regulationPoints: Int
     public let driveOutcomes: DriveOutcomeStatistics
     public let homeParticipantIDs: [UUID]
     public let awayParticipantIDs: [UUID]
@@ -41,6 +42,7 @@ public struct GameSummary: Codable, Sendable, Equatable {
         homeStatistics: TeamGameStatistics,
         awayStatistics: TeamGameStatistics,
         fourthQuarterPoints: Int = 0,
+        regulationPoints: Int? = nil,
         driveOutcomes: DriveOutcomeStatistics = DriveOutcomeStatistics(),
         homeParticipantIDs: [UUID] = [],
         awayParticipantIDs: [UUID] = [],
@@ -52,10 +54,12 @@ public struct GameSummary: Codable, Sendable, Equatable {
         self.awayScore = max(0, awayScore)
         self.homeStatistics = homeStatistics
         self.awayStatistics = awayStatistics
+        let totalPoints = self.homeScore + self.awayScore
         self.fourthQuarterPoints = min(
-            self.homeScore + self.awayScore,
+            totalPoints,
             max(0, fourthQuarterPoints)
         )
+        self.regulationPoints = min(totalPoints, max(0, regulationPoints ?? totalPoints))
         self.driveOutcomes = driveOutcomes
         let canonicalHome = Self.canonicalParticipantIDs(homeParticipantIDs)
         let homeSet = Set(canonicalHome)
@@ -123,6 +127,7 @@ public struct GameSummary: Codable, Sendable, Equatable {
                 Int.self,
                 forKey: .fourthQuarterPoints
             ) ?? 0,
+            regulationPoints: try container.decodeIfPresent(Int.self, forKey: .regulationPoints),
             driveOutcomes: try container.decodeIfPresent(
                 DriveOutcomeStatistics.self,
                 forKey: .driveOutcomes

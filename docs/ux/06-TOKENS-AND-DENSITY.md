@@ -153,15 +153,18 @@ Honest note: **no benchmark precedent was observed for a user-facing density con
 proposed because the 5:1 ratio makes one column set unable to serve both a phone-in-one-hand player
 and a player studying a roster. Recorded as **D-009**.
 
-### 3.5 Binding the tiers to a test — replacing the phantom `SmallestDeviceLayoutTest`
+### 3.5 Binding the tiers to a test — extending `SmallestDeviceLayoutTest`
 
-The brief's `SmallestDeviceLayoutTest` **does not exist** (`01` §0). The nearest real thing is
-`Tests/SimTests/Suites/AccessibilityReflowTests.swift`, which already enumerates screens by
-construction via `landedFamilies()`.
+**Correction: `SmallestDeviceLayoutTest` exists.** `Tests/SimTests/Suites/SmallestDeviceLayoutTests.swift`
+(247 lines) sits on `codex/complete-game-loops`, registered in `SuiteCatalog` as
+`SmallestDeviceLayoutTest`. It already pins `installFloor = CGSize(width: 844, height: 390)`,
+asserts `sensorHousing == 59` and `homeIndicator == 21`, checks the stage fits horizontally and
+vertically, checks furniture clears the physical insets, checks the same geometry at the promise
+floor, and scans `DesignTokens.swift` for stray `844`/`390` literals.
 
-**Write `DensityBudgetTests` in that suite, enumerating by construction from
-`CoachWorldScreenID.allCases`** — not from a hand-listed set of screens, because per `CLAUDE.md` a
-spot-check over hand-listed instances is a defect, not coverage.
+**Port it to the working branch first. Do not rewrite it.** Then add `DensityBudgetTests` beside it,
+enumerating by construction from `CoachWorldScreenID.allCases` — not from a hand-listed set, because
+per `CLAUDE.md` a spot-check over hand-listed instances is a defect, not coverage.
 
 Assertions:
 1. Every canonical surface declares a tier. A surface with no tier fails to compile.

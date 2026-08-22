@@ -698,9 +698,9 @@ func runGameLoopTests() {
                 )
             }
             let plays = [
-                play(.run, result: .gain, yards: 8),
+                play(.run, result: .gain, yards: 10),
                 play(.run, result: .gain, yards: -3),
-                play(.pass, result: .gain, yards: 12),
+                play(.pass, result: .gain, yards: 15),
                 play(.kneel, result: .kneel, yards: -1),
                 play(.punt, result: .punt, yards: 40),
                 play(.fieldGoal, result: .fieldGoalGood, yards: 0),
@@ -724,9 +724,12 @@ func runGameLoopTests() {
                 awayParticipantIDs: []
             )
             expectEqual(summary.homeStatistics.offensivePlays, 4)
-            expectEqual(summary.homeStatistics.offensiveYards, 16)
-            expectEqual(summary.homeStatistics.rushingYards, 4)
-            expectEqual(summary.homeStatistics.passingYards, 12)
+            expectEqual(summary.homeStatistics.offensiveYards, 21)
+            expectEqual(summary.homeStatistics.rushingYards, 6)
+            expectEqual(summary.homeStatistics.passingYards, 15)
+            expectEqual(summary.homeStatistics.explosiveRuns, 1)
+            expectEqual(summary.homeStatistics.explosivePasses, 1)
+            expectEqual(summary.homeStatistics.explosivePlays, 2)
         }
 
         test("player summaries expose targets and carries") {

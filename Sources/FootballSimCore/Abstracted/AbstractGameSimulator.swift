@@ -123,6 +123,7 @@ public enum AbstractGameSimulator {
             deviation: deviation + awayPlan.scoreDeviationAdjustment(),
             using: &rng
         )
+        let regulationPoints = homeScore + awayScore
         // Professional regular-season ties are an allowed outcome. College and every
         // postseason stage continue through bounded overtime so their summaries always
         // identify a winner.
@@ -158,7 +159,7 @@ public enum AbstractGameSimulator {
             using: &rng,
             rateRNG: &awayRateRNG
         )
-        let fourthQuarterPoints = (0..<(homeScore + awayScore)).reduce(into: 0) { total, _ in
+        let fourthQuarterPoints = (0..<regulationPoints).reduce(into: 0) { total, _ in
             if quarterRateRNG.chance(
                 CompetitionRules.baselineFourthQuarterScoringShare(for: tier)
             ) {
@@ -172,6 +173,7 @@ public enum AbstractGameSimulator {
             homeStatistics: homeStats,
             awayStatistics: awayStats,
             fourthQuarterPoints: fourthQuarterPoints,
+            regulationPoints: regulationPoints,
             driveOutcomes: driveOutcomes,
             homeParticipantIDs: home.roster.map(\.id),
             awayParticipantIDs: away.roster.map(\.id),
@@ -365,18 +367,27 @@ public enum AbstractGameSimulator {
                 }
             }
         )
-        let explosivePlays = (0..<plays).reduce(into: 0) { total, _ in
-            if rateRNG.chance(CompetitionRules.baselineExplosivePlayProbability(for: tier)) {
-                total += 1
-            }
-        }
         var fieldGoals = FieldGoalStatistics()
         for bucket in FieldGoalDistanceBucket.allCases {
             for _ in 0..<rateRNG.int(in: 0...1) {
                 fieldGoals.record(
                     bucket,
-                    made: rateRNG.chance(CompetitionRules.baselineFieldGoalAccuracy(for: bucket))
+                    made: rateRNG.chance(CompetitionRules.baselineFieldGoalAccuracy(
+                        for: bucket,
+                        tier: tier
+                    ))
                 )
+            }
+        }
+        let runPlays = max(0, plays - passAttempts - sacks)
+        let explosiveRuns = (0..<runPlays).reduce(into: 0) { total, _ in
+            if rateRNG.chance(CompetitionRules.baselineExplosiveRunProbability(for: tier)) {
+                total += 1
+            }
+        }
+        let explosivePasses = (0..<passAttempts).reduce(into: 0) { total, _ in
+            if rateRNG.chance(CompetitionRules.baselineExplosivePassProbability(for: tier)) {
+                total += 1
             }
         }
         return TeamGameStatistics(
@@ -389,7 +400,9 @@ public enum AbstractGameSimulator {
             passAttempts: passAttempts,
             passCompletions: passCompletions,
             sacks: sacks,
-            explosivePlays: explosivePlays,
+            explosivePlays: explosiveRuns + explosivePasses,
+            explosiveRuns: explosiveRuns,
+            explosivePasses: explosivePasses,
             fieldGoals: fieldGoals
         )
     }

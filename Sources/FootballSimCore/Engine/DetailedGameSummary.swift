@@ -23,6 +23,8 @@ public enum DetailedGameSummaryBuilder {
         var passCompletions = 0
         var sacks = 0
         var explosivePlays = 0
+        var explosiveRuns = 0
+        var explosivePasses = 0
         var fieldGoals = FieldGoalStatistics()
     }
 
@@ -61,6 +63,7 @@ public enum DetailedGameSummaryBuilder {
                     teams[side, default: TeamLine()].passCompletions += 1
                     if yards >= MatchupRules.explosivePassYards {
                         teams[side, default: TeamLine()].explosivePlays += 1
+                        teams[side, default: TeamLine()].explosivePasses += 1
                     }
                 case .sack, .safety:
                     teams[side, default: TeamLine()].sacks += 1
@@ -79,6 +82,7 @@ public enum DetailedGameSummaryBuilder {
                 if play.offensiveCall.playType == .run,
                    yards >= MatchupRules.explosiveRunYards {
                     teams[side, default: TeamLine()].explosivePlays += 1
+                    teams[side, default: TeamLine()].explosiveRuns += 1
                 }
                 if play.offensiveCall.playType == .run {
                     update(play.outcome.ballCarrierID) { $0.carries += 1 }
@@ -121,16 +125,22 @@ public enum DetailedGameSummaryBuilder {
                 passCompletions: line.passCompletions,
                 sacks: line.sacks,
                 explosivePlays: line.explosivePlays,
+                explosiveRuns: line.explosiveRuns,
+                explosivePasses: line.explosivePasses,
                 fieldGoals: line.fieldGoals
             )
         }
 
         let participants = Set(homeParticipantIDs + awayParticipantIDs)
         var fourthQuarterPoints = 0
+        var regulationPoints = 0
         var driveOutcomes = DriveOutcomeStatistics()
         for drive in record.drives {
-            if drive.plays.last?.situation.quarter == 4 {
-                fourthQuarterPoints += drive.pointsScored
+            if let quarter = drive.plays.last?.situation.quarter, quarter <= 4 {
+                regulationPoints += drive.pointsScored
+                if quarter == 4 {
+                    fourthQuarterPoints += drive.pointsScored
+                }
             }
             switch drive.ending {
             case .touchdown: driveOutcomes.record(.touchdown)
@@ -165,6 +175,7 @@ public enum DetailedGameSummaryBuilder {
             homeStatistics: teamStatistics(.home),
             awayStatistics: teamStatistics(.away),
             fourthQuarterPoints: fourthQuarterPoints,
+            regulationPoints: regulationPoints,
             driveOutcomes: driveOutcomes,
             homeParticipantIDs: homeParticipantIDs,
             awayParticipantIDs: awayParticipantIDs,

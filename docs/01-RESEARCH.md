@@ -6079,7 +6079,7 @@ Distributions to gate, with bins and τ:
 | Margin of victory | 1–3, 4–7, 8–10, 11–13, 14–16, 17–20, 21–27, 28–34, 35+ | 0.06 | both, **per context stratum** in college |
 | Team score | 0–9, 10–16, 17–20, 21–23, 24–27, 28–30, 31–34, 35–41, 42+ | 0.06 | both |
 | Combined game total | ≤37, 38–44, 45–51, 52–58, 59–65, 66+ | 0.06 | both |
-| Drive outcome | TD, FG, punt, turnover, downs, end-of-half | 0.05 | both |
+| Drive outcome | TD, FG attempt, punt, turnover, downs, safety, period expiry | 0.05 | both |
 | Play gain | loss, 0, 1–3, 4–6, 7–9, 10–14, 15–19, 20–29, 30+ | 0.05 | both |
 | FG accuracy by distance | <30, 30–39, 40–49, 50+ | 0.05 | both |
 
@@ -6097,11 +6097,19 @@ assertion that catches a model whose mean is right and whose distribution is a l
 with the test named. Specify it as:
 
 - Run **both** models over the **same fixture set**: the same 2,000 matchups, same seeds, same tier.
-- For every scalar metric in §6.5: `|θ̂_fast − θ̂_full| ≤ ½ · (U − L)` — the fast model must sit within
-  half the acceptance band's width of the detailed model.
+- For every scalar metric in §6.5: use §6.2's **TOST** procedure with a 90% CI for the paired
+  difference. Points per team-game uses ±0.75 and yards per play uses ±0.15 in both tiers; neither
+  margin is composed from a public-target band.
 - For every distribution in §6.3: `TVD(p̂_fast, p̂_full) ≤ τ`, the same τ.
 - **Both models must independently pass §6.2 and §6.3 against the public targets.** Agreeing with
   each other while both being wrong is a failure mode this test would otherwise miss.
+
+FG accuracy is a conditional distribution: for buckets `<30`, `30–39`, `40–49`, and `50+`, weight
+each bucket's Bernoulli TVD by its pooled attempts across the two models; buckets with no pooled
+attempts have zero weight and the sample fails when no attempts exist overall. The threshold is
+τ = 0.05. Drive outcomes canonicalize made and missed field goals into FG attempt, retain safety,
+and map end-of-half/game to period expiry. Fourth-quarter share always excludes overtime from both
+its numerator and denominator.
 
 This gives **D3** a concrete, named, implementable consistency requirement.
 
@@ -6162,6 +6170,13 @@ owner before the gate is treated as meaningful.
 | Offensive plays per team-game | `67 … 75` | **[ASSUMPTION]** — blocked on §4.2 |
 | Title-capable share of programmes | `0.10 … 0.15` | **[Q]** |
 | Completion %, pass/rush yards, sacks, INTs, points per drive | **unset** | see §4.9 |
+
+College Q4 share is calculated as aggregate fourth-quarter points divided by aggregate points in
+quarters 1–4, excluding overtime in both places. The downloadable [Sports Data Stuff CFB PBP
+dataset](https://www.sportsdatastuff.com/cfb_pbpdata) was filtered to completed FBS-vs-FBS games and
+`score_pts` was summed by `period`: 2022 = 8,657 / 32,435 = **26.690304%**; 2023 = 9,720 / 37,317 =
+**26.047110%**; 2024 = 10,102 / 38,438 = **26.281284%**. The public band is the annual min/max,
+**26.047110%…26.690304%**; half its width is the two-tier TOST margin, **±0.321597 pp**. **[Q]**
 
 #### 6.6 Definition of done for §6.4
 

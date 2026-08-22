@@ -5,8 +5,8 @@ public enum CompetitionRules {
         max(CollegeRules.rosterLimit, ProRules.activeRosterLimit)
     }
 
-    public static let collegeBaselinePoints = 27.5
-    public static let proBaselinePoints = 24.9
+    public static let collegeBaselinePoints = 25.5
+    public static let proBaselinePoints = 22.6
     public static let collegeScoreDeviation = 10.0
     public static let proScoreDeviation = 8.0
     public static let strengthPointScale = 0.24
@@ -66,11 +66,13 @@ public enum CompetitionRules {
     public static let strengthSackProbabilityScale = 0.001
     public static let baselineTurnoverProbability = 0.0333
     public static let collegeBaselineTurnoverProbability = 0.036
-    public static let proBaselineExplosivePlayProbability = 0.074
-    public static let collegeBaselineExplosivePlayProbability = 0.072
+    public static let proBaselineExplosiveRunProbability = 0.1175
+    public static let collegeBaselineExplosiveRunProbability = 0.15
+    public static let proBaselineExplosivePassProbability = 0.1375
+    public static let collegeBaselineExplosivePassProbability = 0.143
 
     public static let proBaselineOffensiveYards = 300.0
-    public static let collegeBaselineOffensiveYards = 350.0
+    public static let collegeBaselineOffensiveYards = 360.0
     public static let strengthYardScale = 4.0
     public static let offensiveYardDeviation = 70.0
     public static let offensiveYardRange: ClosedRange<Int> = 120...750
@@ -80,7 +82,7 @@ public enum CompetitionRules {
     public static let wr1TargetShare = 0.48
     public static let wr2TargetShare = 0.17
     public static let wr3PlusTargetShare = 0.03
-    public static let tightEndTargetShare = 0.24
+    public static let tightEndTargetShare = 0.23
     public static let runningBackTargetShare = 0.08
     public static let primaryBackCarryShare = 0.70
     public static let reserveBackCarryShare = 0.25
@@ -106,10 +108,16 @@ public enum CompetitionRules {
         tier == .college ? collegeHomeFieldPoints : proHomeFieldPoints
     }
 
-    public static func baselineExplosivePlayProbability(for tier: Tier) -> Double {
+    public static func baselineExplosiveRunProbability(for tier: Tier) -> Double {
         tier == .college
-            ? collegeBaselineExplosivePlayProbability
-            : proBaselineExplosivePlayProbability
+            ? collegeBaselineExplosiveRunProbability
+            : proBaselineExplosiveRunProbability
+    }
+
+    public static func baselineExplosivePassProbability(for tier: Tier) -> Double {
+        tier == .college
+            ? collegeBaselineExplosivePassProbability
+            : proBaselineExplosivePassProbability
     }
 
     public static func baselineCompletionProbability(for tier: Tier) -> Double {
@@ -125,7 +133,7 @@ public enum CompetitionRules {
     }
 
     public static func baselineFourthQuarterScoringShare(for tier: Tier) -> Double {
-        tier == .college ? 0.274 : 0.279
+        tier == .college ? 0.274 : 0.280
     }
 
     public static func baselineDriveCount(for tier: Tier) -> Int {
@@ -137,14 +145,23 @@ public enum CompetitionRules {
         bucket: DriveOutcomeBucket
     ) -> Double {
         let probabilities = tier == .college
-            ? [0.3034, 0.0965, 0.0200, 0.2714, 0.2276, 0.0088, 0.0010, 0.0713]
-            : [0.2975, 0.0963, 0.0197, 0.2662, 0.2288, 0.0092, 0.0010, 0.0813]
+            ? [0.2949, 0.0907, 0.0189, 0.3371, 0.1704, 0.0172, 0.0034, 0.0674]
+            : [0.2734, 0.0958, 0.0199, 0.3413, 0.1674, 0.0184, 0.0033, 0.0804]
         return probabilities[bucket.rawValue]
     }
 
     public static func baselineFieldGoalAccuracy(
-        for bucket: FieldGoalDistanceBucket
+        for bucket: FieldGoalDistanceBucket,
+        tier: Tier
     ) -> Double {
+        if tier == .college {
+            switch bucket {
+            case .under30: return 0.944
+            case .from30To39: return 0.856
+            case .from40To49: return 0.696
+            case .atLeast50: return 0.529
+            }
+        }
         switch bucket {
         case .under30: return 0.96
         case .from30To39: return 0.90

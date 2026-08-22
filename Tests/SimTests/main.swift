@@ -108,6 +108,8 @@ if CommandLine.arguments.contains("--catalog") {
     runCalibrationGateTests()
 } else if CommandLine.arguments.contains("--calibration") {
     runCalibrationTests()
+} else if CommandLine.arguments.contains("--two-tier-consistency-tuning") {
+    runTwoTierConsistencyTests()
 } else if CommandLine.arguments.contains("--two-tier-consistency") {
     runTwoTierConsistencyTests()
 } else if CommandLine.arguments.contains("--redshirt-only") {
