@@ -32,6 +32,9 @@ public enum CareerSessionError: Error, Sendable, Equatable {
     case matchNotStarted
     case staleMatchCheckpoint
     case matchActionFailed(MatchReducerError)
+    /// The career reached `SharedRules.maximumCareerSeasons`. Terminal, and the save stays
+    /// readable -- every screen still answers, the week simply cannot advance again.
+    case careerComplete
 }
 
 public struct CareerRecruitingProspectProjection: Sendable, Equatable, Identifiable {
@@ -100,7 +103,13 @@ public actor CareerSession {
                 || state.careerArc.currentJob?.tier == .professional else {
             throw CareerSessionError.missingControlledCareer
         }
-        let prepared = CareerMandatoryDecisionSystem.refresh(in: state)
+        var prepared = CareerMandatoryDecisionSystem.refresh(in: state)
+        // The recruiting cycle phase is derived from the week (`02` section 4.1), so recomputing it
+        // here costs nothing and carries no information loss. It exists because a root written
+        // before signing day was reachable carries `active` in the signing week, and the integrity
+        // check below would refuse it — turning an openable save into `invalidState`.
+        prepared.college.phase = CollegeRules
+            .recruitingCyclePhase(inWeek: prepared.calendar.week)
         guard WorldIntegrity.check(prepared).isValid else {
             throw CareerSessionError.invalidState
         }
@@ -187,6 +196,12 @@ public actor CareerSession {
                 )
             )
         case .advanceWeek:
+            // Translated here rather than left to propagate: `WorldSchedulerError` is not a
+            // `CareerSessionError`, so the app's exhaustive refusal switch would never see it and
+            // a finished career would read as "that action could not be completed".
+            guard state.calendar.season < SharedRules.maximumCareerSeasons else {
+                throw CareerSessionError.careerComplete
+            }
             guard state.matchSession == nil else { throw CareerSessionError.matchInProgress }
             var prepared = state
             let delegated = shouldDelegateControlledMatch(in: state)

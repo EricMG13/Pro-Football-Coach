@@ -1097,6 +1097,43 @@ func runReadModelProviderTests() {
             })
         }
 
+        test("a pro ranking's seed matches an independent re-derivation of the same algorithm") {
+            // Re-implements the selection PostseasonSystem.advance's own pro quarterfinal case
+            // uses (PostseasonSystem.swift): per conference, filter the whole-tier ranking down to
+            // that conference's members (preserving order) and take the top
+            // playoffSeedsPerConference. Written independently here rather than shared with the
+            // provider, so a typo in one is unlikely to appear in the other -- this cannot prove
+            // the provider matches what a live postseason transition actually pairs, only that its
+            // computation matches a clean restatement of the documented rule; the accompanying
+            // source-scan test below is what actually guards the provider and PostseasonSystem
+            // against drifting onto two different constants.
+            let (state, _) = try professionalCareer(seed: 4_017)
+            let overview = CoachWorldReadModelProvider.competitionOverview(tier: .pro, from: state)
+            let order = state.competition.rankings[.pro] ?? []
+            expect(!order.isEmpty, "a professional career produced no pro ranking to check")
+
+            var expectedSeeds: [UUID: Int] = [:]
+            for conference in state.league.conferences(in: .pro) {
+                let entrants = order.filter(conference.memberIDs.contains)
+                    .prefix(ProRules.playoffSeedsPerConference)
+                for (index, id) in entrants.enumerated() { expectedSeeds[id] = index + 1 }
+            }
+
+            for row in overview.rankings {
+                guard let id = UUID(uuidString: row.id) else {
+                    expect(false, "ranking row \(row.id) is not a valid UUID")
+                    continue
+                }
+                expectEqual(row.seed, expectedSeeds[id],
+                            "\(row.team.name)'s seed disagrees with PostseasonSystem's own selection")
+                expectEqual(row.isQualifying, expectedSeeds[id] != nil,
+                            "\(row.team.name)'s isQualifying disagrees with whether it actually seeded")
+                expectEqual(row.qualifyingSlots, ProRules.playoffSeedsPerConference)
+            }
+            expect(overview.rankings.contains { $0.isQualifying },
+                   "at least one team in a full pro league must qualify, or this test proves nothing")
+        }
+
         test("schedule rows preserve fixture identity and controlled-team context") {
             let (state, _) = try startedCareer(seed: 4_015)
             guard let control = state.career.college,
@@ -1663,6 +1700,112 @@ func runReadModelProviderTests() {
             )
         }
 
+        test("a prospect signed by a rival programme reads as elsewhere, not this "
+            + "programme's own") {
+            // Phase 4 review, 2026-08-20: statusLabel's .signed arm returned a bare "Signed"
+            // with no ownership check, so a rival's signed prospect left on this programme's
+            // board was indistinguishable from an actual own signee and inflated
+            // ClassOverviewView's committed count. This reproduces the real, reachable shape of
+            // the bug rather than a hand-built fixture: CollegeRecruitingAISystem.process(in:)
+            // explicitly excludes the career-controlled programme from its own lost-pursuit
+            // cleanup, so nothing but an explicit Withdraw ever prunes this board, and this test
+            // never calls that system at all.
+            var (state, careerProgramme) = try startedCareer(seed: 4_070)
+            guard let rivalProgrammeID = state.programmes.ids.first(where: {
+                $0 != careerProgramme.id
+            }), let prospectID = state.prospects.ids.first else {
+                expect(false, "a started career produced no rival programme or prospect to use")
+                return
+            }
+
+            let addToBoard = try CollegeRecruitingSystem.apply(
+                RecruitingActionRequest(
+                    programmeID: careerProgramme.id, prospectID: prospectID, action: .addToBoard
+                ),
+                in: state
+            )
+            state.college = addToBoard.college
+            state.scouting = addToBoard.scouting
+            expect(state.college.programmes[careerProgramme.id]!.boardIDs.contains(prospectID),
+                   "the prospect never landed on the career programme's own board")
+
+            state.calendar = CalendarState(
+                season: state.calendar.season, week: CollegeRules.minimumCommitmentWeek
+            )
+            for action in [
+                RecruitingAction.addToBoard,
+                .contact(points: 60),
+                .scheduleVisit,
+                .offerScholarship,
+                .setNILAllocation(amount: 500),
+            ] {
+                let transition = try CollegeRecruitingSystem.apply(
+                    RecruitingActionRequest(
+                        programmeID: rivalProgrammeID, prospectID: prospectID, action: action
+                    ),
+                    in: state
+                )
+                state.college = transition.college
+                state.scouting = transition.scouting
+            }
+            let market = CollegeRecruitingMarketSystem.process(at: state.calendar, in: state)
+            expectEqual(market.commitments.first?.programmeID, rivalProgrammeID,
+                        "the rival programme did not win the commitment this test needs")
+            state.college = market.college
+
+            // A fresh bootstrap's roster already sits at capacity, so CollegeSigningSystem would
+            // release this commitment for want of a roster/scholarship vacancy rather than sign
+            // it -- a real gate this test needs to clear, not something to route around. Frees
+            // exactly one slot by removing a player from the rival's single largest position
+            // group, which by construction sits well above SharedRules.minimumPlayableRosterByPosition's
+            // floor for every position (roster limit 105 against per-position floors of 1-3 across
+            // fifteen positions), so this cannot trip the minimum-position-coverage gate the way an
+            // arbitrarily chosen position could.
+            let rivalRoster = state.programmes[rivalProgrammeID]!.rosterIDs
+            let rivalPositionCounts = Dictionary(
+                grouping: rivalRoster.compactMap { state.players[$0]?.position }, by: { $0 }
+            ).mapValues(\.count)
+            guard let deepestPosition = rivalPositionCounts.max(by: { $0.value < $1.value })?.key,
+                  let departingID = rivalRoster.first(where: {
+                      state.players[$0]?.position == deepestPosition
+                  }) else {
+                expect(false, "could not find a rival roster player to free capacity with")
+                return
+            }
+            state.programmes.update(rivalProgrammeID) {
+                $0.rosterIDs.removeAll { $0 == departingID }
+                $0.scholarshipCount -= 1
+            }
+            state.college.reconcileScholarships(with: state.programmes)
+
+            let signing = try CollegeSigningSystem.signCommitted(in: state)
+            expect(
+                signing.resolutions.contains { $0.prospectID == prospectID && $0.outcome == .signed },
+                "the rival programme's commitment did not resolve to signed"
+            )
+            state.programmes = signing.programmes
+            state.players = signing.players
+            state.people = signing.people
+            state.college = signing.college
+
+            expect(state.college.programmes[careerProgramme.id]!.boardIDs.contains(prospectID),
+                   "the prospect left the career programme's board on its own -- this test's "
+                       + "premise (nothing but Withdraw prunes it) no longer holds")
+
+            guard let model = CoachWorldReadModelProvider.recruitingBoard(from: state),
+                  let row = model.prospects.first(where: { $0.stableID == prospectID.uuidString })
+            else {
+                expect(false, "the signed-elsewhere prospect did not resolve to a board row")
+                return
+            }
+            expectEqual(row.status, "Signed elsewhere")
+            expect(!row.isCommitted,
+                   "a rival's signee counted toward this programme's own committed figure")
+            let withdraw = row.choices.first { $0.intentID == CoachWorldIntentID(rawValue: "withdraw") }
+            expect(withdraw?.isAvailable == true,
+                   "a coach can no longer clear a rival's signee off their own board")
+        }
+
         test("discovery exposes an untracked prospect and add-to-board consumes it") {
             let (state, programme) = try startedCareer(seed: 4_068)
             guard let before = CoachWorldReadModelProvider.recruitingBoard(from: state),
@@ -2088,6 +2231,129 @@ func runReadModelProviderTests() {
             let (second, _) = try startedCareer(seed: 4_074)
             expectEqual(CoachWorldReadModelProvider.leagueMap(from: first),
                         CoachWorldReadModelProvider.leagueMap(from: second))
+        }
+    }
+}
+
+/// What the route map used to compute, kept here as the thing the cheap answer is measured against.
+///
+/// The switch is exhaustive on purpose. `availableScreens` answers each route from the root instead
+/// of by building the screen, which is what took the route map from 1.59 s to 1 ms — and the price
+/// of that is a second copy of each provider's guard. This table is what stops the copy drifting:
+/// a new `CoachWorldScreenID` will not compile until someone says which model backs it, and the
+/// suite below then holds the two answers together in every career shape.
+///
+/// `nil` means the registry number is an alias or an entry surface, so no route ever advertises it.
+private func modelBackedAvailability(
+    _ screen: CoachWorldScreenID,
+    in state: GameState,
+    selectedSubjectID: UUID? = nil
+) -> Bool? {
+    let provider = CoachWorldReadModelProvider.self
+    switch screen {
+    case .coachingHQ: return provider.coachingHQ(from: state) != nil
+    case .inbox: return provider.inbox(from: state) != nil
+    case .opponentReportFilmRoom: return provider.opponentFilm(from: state) != nil
+    case .gamePlan: return provider.gamePlan(from: state) != nil
+    case .practicePlan: return provider.practicePlan(from: state) != nil
+    case .teamHealth: return provider.teamHealth(from: state) != nil
+    case .matchDay: return provider.matchDay(from: state) != nil
+    case .aftermath, .gameDetailBoxScore: return provider.aftermath(from: state) != nil
+    case .roster, .developmentPlan: return provider.roster(from: state) != nil
+    case .playerProfile: return provider.roster(from: state)?.players.isEmpty == false
+    case .depthChart: return provider.depthChart(from: state) != nil
+    case .staffRoom: return provider.staffRoom(from: state) != nil
+    case .recruitingBoard, .prospectProfile, .shortlist, .contactVisitPlanner, .classOverview:
+        return provider.recruitingBoard(from: state) != nil
+    case .signingDay: return provider.collegeOffseason(from: state)?.cyclePhase == .signing
+    case .collegeOffseason: return provider.collegeOffseason(from: state) != nil
+    case .capContracts, .contractNegotiation, .rosterCutsTransactions:
+        return provider.proManagement(from: state) != nil
+    case .draftRoom: return provider.proOffseason(from: state)?.phase == .draft
+    case .proOffseason: return provider.proOffseason(from: state) != nil
+    case .leagueMap: return provider.leagueMap(from: state) != nil
+    case .teamProgrammeProfile:
+        let controlled = state.career.college?.programmeID
+            ?? state.careerArc.currentJob?.organisationID
+        guard let id = selectedSubjectID ?? controlled else { return false }
+        return provider.teamProgrammeProfile(id, from: state) != nil
+    case .standings:
+        return provider.standings(
+            tier: provider.controlledCompetitionTier(from: state),
+            from: state
+        ) != nil
+    case .schedule:
+        return provider.schedule(
+            tier: provider.controlledCompetitionTier(from: state),
+            from: state
+        ) != nil
+    case .rankingsPlayoffPicture, .bracketPostseason, .worldSearch: return true
+    case .statisticsLeaders: return provider.statisticsLeaders(from: state) != nil
+    case .awardsHonours: return provider.awardsHonours(from: state) != nil
+    case .news: return provider.news(from: state) != nil
+    case .realignmentEvent: return provider.realignment(from: state)?.event != nil
+    case .careerHub, .stakeholders: return provider.careerHub(from: state) != nil
+    case .promotionDecision:
+        return provider.careerHub(from: state)?.opportunities.contains { $0.canAccept } == true
+    case .recordBook, .rivalries, .careerLine, .coachingTree:
+        return provider.legacyHistory(from: state) != nil
+    case .titleContinue, .newCareerCoachIdentity, .jobBoard, .offer, .appointment,
+         .settingsAccessibility, .staffMarketProfile, .schemeBook, .personnelPackages,
+         .portalHub, .retentionDecisions, .portalMarket, .nilAllocation,
+         .proScoutingBoard, .draftBoard, .freeAgency, .jobSecurity, .coachingCarousel:
+        return nil
+    }
+}
+
+func runAvailabilityProviderTests() {
+    suite("Route availability") {
+        let worlds: [(String, GameState)] = [
+            ("no career", GameState.bootstrap(seed: 41_001)),
+            ("college career", (try? startedCareer(seed: 41_002).0) ?? GameState.bootstrap(seed: 41_002)),
+            ("professional career", (try? professionalCareer(seed: 41_003).0) ?? GameState.bootstrap(seed: 41_003))
+        ]
+
+        test("the cheap route map agrees with the models it replaced, on every screen") {
+            for (label, state) in worlds {
+                let available = CoachWorldReadModelProvider.availableScreens(from: state)
+                for screen in CoachWorldScreenID.allCases {
+                    guard let expected = modelBackedAvailability(screen, in: state) else {
+                        expect(!available.contains(screen),
+                               "\(label): \(screen.canonicalName) is an alias or entry surface and "
+                                   + "must never be advertised as a route")
+                        continue
+                    }
+                    expectEqual(available.contains(screen), expected,
+                                "\(label): \(screen.canonicalName) availability disagrees with its "
+                                    + "read model — a guard has drifted from the screen it gates")
+                }
+            }
+        }
+
+        test("a career with no coach advertises only the world surfaces") {
+            let available = CoachWorldReadModelProvider.availableScreens(from: worlds[0].1)
+            expectEqual(
+                available.sorted { $0.rawValue < $1.rawValue },
+                [.worldSearch, .standings, .schedule, .rankingsPlayoffPicture, .bracketPostseason]
+                    .sorted { $0.rawValue < $1.rawValue }
+            )
+        }
+
+        test("the route map is answered without building a screen") {
+            // The regression this guards is the one that made every render cost 1.59 s: answering
+            // "does this route exist" by building the model and testing it for nil. A world with a
+            // full college career resolves the whole map faster than one recruiting board takes.
+            let state = worlds[1].1
+            let clock = ContinuousClock()
+            let mapStarted = clock.now
+            _ = CoachWorldReadModelProvider.availableScreens(from: state)
+            let mapCost = mapStarted.duration(to: clock.now)
+            let modelStarted = clock.now
+            _ = CoachWorldReadModelProvider.recruitingBoard(from: state)
+            let modelCost = modelStarted.duration(to: clock.now)
+            expect(mapCost < modelCost,
+                   "the route map cost \(mapCost) against \(modelCost) for a single screen, so it "
+                       + "is building models again")
         }
     }
 }

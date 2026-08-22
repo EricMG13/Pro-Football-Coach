@@ -29,3 +29,7 @@ not yet, and a density-budget cost in the `04` §4.5 currencies.
 
 All identities are mechanical placeholders labelled *pending generator output*; sample content is
 fictional and original per the `CLAUDE.md` legal guardrail.
+
+Full-screen compositions of five first-example families (HQ, Roster, Player Profile, Recruiting
+Board, Match Day) live in `docs/proofs/screen-mockups/`. Those files consume this library; they do
+not replace it, they are not the full 62-family inventory, and they are not canon.

@@ -36,6 +36,31 @@ func runNewsFeedTests() {
                    "the professional champion is not named: \(headline)")
         }
 
+        test("a season-boundary headline displays the 1-indexed season, not the raw internal one") {
+            // `CalendarState.season` is 0-indexed internally; every other season-display call site
+            // (`CoachWorldReadModelProvider.seasonLabel`, and this same provider's own market-open
+            // headline) adds 1. These four headlines must match that convention, not contradict it.
+            let state = newsState(events: [
+                newsEvent(sequence: 93, season: 0, payload: .seasonCompleted(
+                    season: 0,
+                    collegeChampionID: UUID(uuidString: "00000000-0000-4000-8000-0000000000F0")!,
+                    proChampionID: UUID(uuidString: "00000000-0000-4000-8000-0000000000F1")!
+                )),
+                newsEvent(sequence: 94, season: 0, payload: .proMarketOpened(
+                    season: 0, draftClassCount: 1, freeAgentCount: 1
+                )),
+                newsEvent(sequence: 95, season: 0, payload: .proDraftStarted(season: 0)),
+                newsEvent(sequence: 96, season: 0, payload: .proMarketClosed(season: 0)),
+            ])
+            let headlines = NewsFeedReadModel.build(from: state).items.map(\.headline)
+            for headline in headlines {
+                expect(headline.contains("Season 1") || headline.contains("season 1"),
+                       "raw season 0 must display as Season 1: \(headline)")
+                expect(!headline.contains("Season 0") && !headline.contains("season 0"),
+                       "the raw internal season leaked into a headline: \(headline)")
+            }
+        }
+
         test("a transfer names the player and both programmes") {
             var state = GameState.bootstrap(seed: 97_002)
             let playerID = state.players.ids[0]

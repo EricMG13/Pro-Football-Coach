@@ -836,9 +836,13 @@ public enum WorldIntegrity {
         collegeRosterIDs: Set<UUID>,
         proRosterIDs: Set<UUID>
     ) -> Set<UUID> {
+        // One statement of the rule: `CollegeEligibilityInvariant` owns it. This sweeps it once
+        // per root so the shape loops below can ask a set rather than re-run it per player.
         var violations = Set(collegeRosterIDs.filter { id in
-            guard let eligibility = state.players[id]?.eligibility else { return true }
-            return eligibility.isExhausted || !eligibility.isValidForActiveCollegeRoot
+            !CollegeEligibilityInvariant.collegeFindings(
+                playerID: id,
+                eligibility: state.players[id]?.eligibility
+            ).isEmpty
         })
         violations.formUnion(proRosterIDs.filter { state.players[$0]?.eligibility != nil })
         return violations
@@ -1038,17 +1042,12 @@ public enum WorldIntegrity {
     }
 
     package static func collegeScholarshipViolations(in state: GameState) -> [UUID] {
-        Set(state.programmes.ids).union(state.college.programmes.keys)
-            .filter { id in
-                guard let programme = state.programmes[id],
-                      let recruiting = state.college.programmes[id] else { return true }
-                let holders = recruiting.scholarshipPlayerIDs
-                let holderSet = Set(holders)
-                return holders.count > CollegeRules.scholarshipLimit
-                    || holderSet.count != holders.count
-                    || !holderSet.isSubset(of: Set(programme.rosterIDs))
-                    || holders.count != programme.scholarshipCount
-            }
+        // One statement of the rule: `CollegeScholarshipInvariant` owns it, including the
+        // missing-counterpart limb that a programme without recruiting state trips.
+        var seen = Set<UUID>()
+        return CollegeScholarshipInvariant.findings(in: state)
+            .map(\.programmeID)
+            .filter { seen.insert($0).inserted }
             .sorted(by: uuidLessThan)
     }
 
@@ -1095,24 +1094,28 @@ public enum WorldIntegrity {
         let cityIDs = Set(state.map.cities.map(\.id))
         let scholarshipViolationIDs = Set(collegeScholarshipViolations(in: state))
 
+        // The transaction-independent limbs live in `CollegeRedshirtInvariant`, which the college
+        // acquisition suite asserts after every transaction. The two kept here are the ones only a
+        // root at rest can carry: agreement with the calendar, which the season boundary breaks on
+        // purpose for several transactions, and the player's lifecycle status.
+        let redshirtLegalityBreaches = Set(
+            CollegeRedshirtInvariant.findings(in: state).map(\.playerID)
+        )
         for playerID in state.college.redshirtPlans.keys.sorted(by: uuidLessThan) {
             guard let plan = state.college.redshirtPlans[playerID] else { continue }
-            let player = state.players[playerID]
             let lifecycle = state.people.playerLifecycle[playerID]
-            let eligibility = player?.eligibility
-            if playerID != plan.playerID
-                || !plan.isStructurallyValid
-                || plan.season != state.college.recruitingSeason
+            if redshirtLegalityBreaches.contains(playerID)
                 || plan.season != state.calendar.season
-                || state.programmes[plan.programmeID]?.rosterIDs.contains(playerID) != true
-                || state.college.programmes[plan.programmeID] == nil
-                || lifecycle?.status != .active
-                || eligibility.map(CollegeRedshirtSystem.hasSpareClockYear) != true {
+                || lifecycle?.status != .active {
                 issues.append(.invalidRedshirtPlan(playerID: playerID))
             }
         }
 
-        if state.college.phase != .active {
+        // The phase every week carries, not merely "not the two we never expected". `02` section
+        // 4.1 makes it a function of the week, so the check is the same function: an `active` root
+        // sitting in the signing week is exactly as wrong as a `signing` root outside it, and the
+        // older `!= .active` rule could only see one of those two.
+        if state.college.phase != CollegeRules.recruitingCyclePhase(inWeek: state.calendar.week) {
             issues.append(.invalidRecruitingCyclePhase(state.college.phase))
         }
         if state.college.recruitingSeason != state.calendar.season {
@@ -1162,10 +1165,8 @@ public enum WorldIntegrity {
                 || recruiting.nilState.remaining < 0 {
                 issues.append(.invalidProgrammeRecruitingState(programmeID: id))
             }
-            if commitmentCapacity.map({
-                $0.activeReservations > $0.maximumReservations
-                    || !$0.preservesMinimumPositionCoverage
-            }) ?? true {
+            if !CollegeCommitmentInvariant.capacityIsHonoured(commitmentCapacity)
+                || commitmentCapacity?.preservesMinimumPositionCoverage != true {
                 issues.append(.invalidProgrammeRecruitingState(programmeID: id))
             }
             for prospectID in boardSet.subtracting(prospectIDs).sorted(by: uuidLessThan) {
@@ -1329,17 +1330,8 @@ public enum WorldIntegrity {
         let hasPortalCareerHistory = state.people.playerCareers.values.contains {
             !$0.portalWindows.isEmpty
         }
-        let hasPortalEvents = state.history.recent.contains { event in
-            switch event.payload {
-            case .portalEntered,
-                 .portalRetentionResolved,
-                 .portalOfferMade,
-                 .playerTransferred,
-                 .portalWindowCompleted:
-                return true
-            default:
-                return false
-            }
+        let hasPortalEvents = state.history.recent.contains {
+            $0.payload.portalWindowReference != nil
         }
         if portal.entries.isEmpty,
            portal.summaries.isEmpty,
@@ -1520,7 +1512,42 @@ public enum WorldIntegrity {
         for playerID in repeatedTransferPlayerIDs {
             issues.append(.invalidPortalCareer(playerID: playerID))
         }
-        checkPortalCapacity(allCareerRecords, issues: &issues)
+        var completedOfferCountsByWindow: [String: Set<Int>] = [:]
+        for summary in portal.summaries {
+            completedOfferCountsByWindow[portalWindowKey(
+                targetSeason: summary.targetSeason,
+                window: summary.window
+            ), default: []].insert(summary.offerCount)
+        }
+        for event in state.history.recent {
+            guard case let .portalWindowCompleted(summary) = event.payload else { continue }
+            completedOfferCountsByWindow[portalWindowKey(
+                targetSeason: summary.targetSeason,
+                window: summary.window
+            ), default: []].insert(summary.offerCount)
+        }
+        for archive in state.history.archive {
+            for event in archive.notableEvents {
+                guard case let .portalWindowCompleted(summary) = event.payload else { continue }
+                completedOfferCountsByWindow[portalWindowKey(
+                    targetSeason: summary.targetSeason,
+                    window: summary.window
+                ), default: []].insert(summary.offerCount)
+            }
+        }
+        var offerCompleteWindowKeys: Set<String> = []
+        for (key, records) in recordsByWindow {
+            let retainedOfferCount = records.reduce(0) { $0 + $1.offers.count }
+            guard let completedCounts = completedOfferCountsByWindow[key],
+                  completedCounts.count == 1,
+                  completedCounts.contains(retainedOfferCount) else { continue }
+            offerCompleteWindowKeys.insert(key)
+        }
+        checkPortalCapacity(
+            allCareerRecords,
+            offerCompleteWindowKeys: offerCompleteWindowKeys,
+            issues: &issues
+        )
         checkPortalEvents(
             state.history.recent,
             recordsByKey: recordsByKey,
@@ -1544,6 +1571,7 @@ public enum WorldIntegrity {
 
     private static func checkPortalCapacity(
         _ records: [CollegePortalWindowRecord],
+        offerCompleteWindowKeys: Set<String>,
         issues: inout [IntegrityIssue]
     ) {
         var offersByCapacity: [String: [CollegePortalOffer]] = [:]
@@ -1586,11 +1614,18 @@ public enum WorldIntegrity {
                 CollegePortalPolicyV1.maximumOfferNIL,
                 capacity.nilRemaining / offers.count / 100 * 100
             )
+            let allOffersArePresent = offerCompleteWindowKeys.contains(portalWindowKey(
+                targetSeason: context.targetSeason,
+                window: context.window
+            ))
+            let reservationTermsMatch = !allOffersArePresent
+                || offers.allSatisfy { $0.nilReservation == exactTerm }
             let reservationTotal = offers.reduce(0) { $0 + $1.nilReservation }
             let acceptedPositions = acceptedPositionsByCapacity[key] ?? []
             if !offers.allSatisfy({
-                $0.fixedCapacity == capacity && $0.nilReservation == exactTerm
-            }) || reservationTotal > capacity.nilRemaining
+                $0.fixedCapacity == capacity
+            }) || !reservationTermsMatch
+                || reservationTotal > capacity.nilRemaining
                 || offers.count > min(
                     capacity.rosterOpenings,
                     capacity.scholarshipOpenings
@@ -1928,8 +1963,16 @@ public enum WorldIntegrity {
         _ state: GameState,
         issues: inout [IntegrityIssue]
     ) {
+        // A contract exists to be charged against a cap, and `capSnapshot` sums by roster: a
+        // contract held by a player no professional team owns is money nobody's cap counts.
+        // `docs/PORT-LOG.md` records the shape as one of the cap-laundering attacks the prior
+        // build's defences had to catch -- the practice squad as a place to hide a contract -- and
+        // this is that hole one step further out, where there is not even a squad to look in.
+        //
+        // Enumerated from the player table rather than from any roster, by construction: a check
+        // that walked rosters could never see the case it exists to catch.
         let ownedIDs = Set(state.proTeams.values.flatMap { $0.rosterIDs + $0.practiceSquadIDs })
-        for player in state.players.values.sorted(by: { $0.id.uuidString < $1.id.uuidString })
+        for player in state.players.values.sorted(by: { uuidLessThan($0.id, $1.id) })
         where player.contract != nil && !ownedIDs.contains(player.id) {
             issues.append(.unownedProfessionalContract(playerID: player.id))
         }
@@ -1981,6 +2024,9 @@ public enum WorldIntegrity {
         let archivedDraftIDSet = Set(market.archivedDraftProspectIDs)
         let ownedIDs = Set(state.programmes.values.flatMap(\.rosterIDs))
             .union(state.proTeams.values.flatMap { $0.rosterIDs + $0.practiceSquadIDs })
+        // The count-and-membership pair this replaced admitted an order in which one team held
+        // every pick: 224 entries, all of them pro teams, is a legal count and a legal membership
+        // and an illegal draft. `ProRules` owns the shape (`02` section 11.2).
         let draftOrderIsValid = market.phase == .closed
             ? market.draftOrder.isEmpty
             : ProRules.isLegalDraftOrder(market.draftOrder, teamIDs: proTeamIDs)
@@ -2248,7 +2294,7 @@ public enum WorldIntegrity {
             expected = Set(ranking.prefix(CollegeRules.bracketTeams))
         case .pro:
             expected = Set(state.league.conferences(in: .pro).flatMap { conference in
-                ranking.filter(conference.memberIDs.contains).prefix(4)
+                ranking.filter(conference.memberIDs.contains).prefix(ProRules.playoffSeedsPerConference)
             })
         }
         if games.count != 4

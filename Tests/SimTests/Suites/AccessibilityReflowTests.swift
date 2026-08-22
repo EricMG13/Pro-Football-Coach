@@ -22,6 +22,16 @@ struct FamilyView {
     let screen: CoachWorldScreenID
     let path: String
     let text: String
+    /// The union of this family's own source and every file its rendering chain wholly delegates
+    /// into, resolved to a fixpoint by `renderingClosures()`.
+    ///
+    /// S-1, 2026-08-19 adversarial review: a wrapper's own generic chrome modifiers can happen to
+    /// contain an accessibility marker while the substantive composition -- and any AX5 or
+    /// VoiceOver defect in it -- lives entirely in a delegate the wrapper's own text says nothing
+    /// about. `LegacyHistoryView` renders four families (`recordBook`, `rivalries`, `careerLine`,
+    /// `coachingTree`) and held zero of either marker while each of its four ~28-line wrappers
+    /// wrote both, so scanning `text` alone was scanning the wrong file for all four.
+    let renderedText: String
 }
 
 /// The view types that draw the Floodlit world, directly or by wholly delegating to one that does.
@@ -68,29 +78,102 @@ private func isFloodlitConverted(_ family: FamilyView) -> Bool {
     return floodlitConvertedTypes().contains(name)
 }
 
-/// Reused by `ReduceMotionContractTests` — the same partition, not a second one, so the two
-/// contracts cannot silently cover different sets of families.
-func landedFamilies() -> (landed: [FamilyView], pending: [CoachWorldScreenID]) {
+/// For every UI type, the full text of every file its own body renders through: itself, plus
+/// everything it wholly delegates to, resolved to a fixpoint because wrappers chain -- the same
+/// reason `floodlitConvertedTypes()` above resolves to a fixpoint rather than one hop, and the same
+/// delegation rule: a file delegates to `Target` by naming `Target`'s initialiser, unless it also
+/// draws a composition of its own (`ContentUnavailableView(` is the tell both functions use, for
+/// the same reason -- `SigningDayView` delegates on one branch and draws its own state on the
+/// other, so a mention alone is not delegation).
+private func renderingClosures() -> [String: String] {
     let sources = swiftFilesImportingUIFramework()
-    var landed: [FamilyView] = []
-    var pending: [CoachWorldScreenID] = []
-    for screen in CoachWorldScreenID.allCases {
-        let fileName = viewFileName(for: screen)
-        if let file = sources.first(where: { $0.path.hasSuffix("/" + fileName) }) {
-            landed.append(FamilyView(screen: screen, path: file.path, text: file.text))
-        } else {
-            pending.append(screen)
+    func typeName(of path: String) -> String {
+        String(path.split(separator: "/").last ?? "").replacingOccurrences(of: ".swift", with: "")
+    }
+
+    var closureFiles: [String: Set<String>] = Dictionary(
+        uniqueKeysWithValues: sources.map { (typeName(of: $0.path), Set([$0.path])) }
+    )
+    var changed = true
+    while changed {
+        changed = false
+        for file in sources {
+            let name = typeName(of: file.path)
+            let drawsItsOwnUnconvertedState = file.text.contains("ContentUnavailableView(")
+            guard !drawsItsOwnUnconvertedState else { continue }
+            for other in sources where other.path != file.path {
+                let otherName = typeName(of: other.path)
+                guard file.text.contains(otherName + "(") else { continue }
+                let addition = closureFiles[otherName] ?? []
+                let before = closureFiles[name] ?? []
+                let after = before.union(addition)
+                if after.count != before.count {
+                    closureFiles[name] = after
+                    changed = true
+                }
+            }
         }
     }
-    return (landed, pending)
+
+    let textByPath = Dictionary(uniqueKeysWithValues: sources.map { ($0.path, $0.text) })
+    return closureFiles.mapValues { paths in
+        paths.sorted().compactMap { textByPath[$0] }.joined(separator: "\n")
+    }
+}
+
+/// The three-way split every screen family falls into, by construction:
+/// - `landed` — a canonical, player-visible task with a view file. This is what the AX5 and
+///   VoiceOver clauses below check.
+/// - `pending` — no view file resolves by the naming convention yet.
+/// - `aliased` — a view file exists, but the screen is a retired route
+///   (`CoachWorldScreenID.routeDisposition == .alias`), not a visible task
+///   (`isCanonicalTask == false`). S-6, 2026-08-19 review: fifteen families are aliases whose
+///   root-switch branches cannot execute in production (`CoachWorldAppRootView` switches on
+///   `canonicalDestination`, which an alias never equals), so certifying their dead file as
+///   "landed" -- as this function did before -- certified accessibility for a file nobody renders.
+///   `ContractTests.swift`'s "the 62 legacy route numbers migrate through one canonical task table"
+///   already asserts the alias table and the 47-visible-task count by construction; this partition
+///   now agrees with it instead of silently recounting all 62.
+///
+/// Reused by `ReduceMotionContractTests` — the same partition, not a second one, so the two
+/// contracts cannot silently cover different sets of families.
+func landedFamilies() -> (landed: [FamilyView], pending: [CoachWorldScreenID], aliased: [FamilyView]) {
+    let sources = swiftFilesImportingUIFramework()
+    let renderedTextByType = renderingClosures()
+    func typeName(of path: String) -> String {
+        String(path.split(separator: "/").last ?? "").replacingOccurrences(of: ".swift", with: "")
+    }
+    var landed: [FamilyView] = []
+    var pending: [CoachWorldScreenID] = []
+    var aliased: [FamilyView] = []
+    for screen in CoachWorldScreenID.allCases {
+        let fileName = viewFileName(for: screen)
+        guard let file = sources.first(where: { $0.path.hasSuffix("/" + fileName) }) else {
+            pending.append(screen)
+            continue
+        }
+        let type = typeName(of: file.path)
+        let family = FamilyView(
+            screen: screen,
+            path: file.path,
+            text: file.text,
+            renderedText: renderedTextByType[type] ?? file.text
+        )
+        if screen.isCanonicalTask {
+            landed.append(family)
+        } else {
+            aliased.append(family)
+        }
+    }
+    return (landed, pending, aliased)
 }
 
 func runAccessibilityReflowTests() {
     suite("AX5 reflow contract") {
-        test("every screen family is either landed and checked or pending and named") {
-            let (landed, pending) = landedFamilies()
+        test("every screen family is landed, pending, or aliased, and the split is total") {
+            let (landed, pending, aliased) = landedFamilies()
             expectEqual(
-                landed.count + pending.count,
+                landed.count + pending.count + aliased.count,
                 CoachWorldScreenID.allCases.count,
                 "the partition lost a family, so some family is checked by nothing"
             )
@@ -99,40 +182,106 @@ func runAccessibilityReflowTests() {
                    "no family view was found — the scan would pass vacuously")
             // Reported rather than asserted at a number: production views land family by family
             // through P11–P15, and a count here would have to be edited by every one of them.
-            print("AX5 contract: \(landed.count) landed, \(pending.count) pending")
+            print("AX5 contract: \(landed.count) landed, \(pending.count) pending, "
+                + "\(aliased.count) aliased")
         }
 
-        test("every registered family declares an accessibility-size composition") {
+        test("every landed family declares an accessibility-size composition") {
             // `04` §7.1 clause 1. A screen with no AX5 branch has not had AX5 considered.
-            let (landed, pending) = landedFamilies()
-            expect(pending.isEmpty,
-                   "a registered family has no derived view file: \(pending.map(\.canonicalName))")
-            for family in landed {
-                expect(family.text.contains("dynamicTypeSize.isAccessibilitySize"),
+            // Checked against `renderedText`, not `text` — see FamilyView's doc comment (S-1).
+            for family in landedFamilies().landed {
+                expect(family.renderedText.contains("dynamicTypeSize.isAccessibilitySize"),
                        "\(family.path) (\(family.screen.canonicalName)) has no accessibility-size "
                            + "composition, so AX5 reflow was never decided for it (04 section 7.1)")
             }
         }
 
+        test("Depth Chart's position-group selector is reachable in the accessible "
+            + "composition, not only the standard layout") {
+            // 3.1, 2026-08-20 remediation: `groupSelector` replaced `openGroup`'s dependence on
+            // `fieldDiagram`'s token taps, which are `.accessibilityHidden(true)` at every type
+            // size and aren't constructed at all once `dynamicTypeSize.isAccessibilitySize` — so
+            // before this fix, an AX5 or VoiceOver coach could reach only the first group of
+            // whichever unit the pills last selected, never the other fourteen. A whole-file scan
+            // would pass whether `groupSelector` sits inside the accessible branch or only the
+            // standard one, so this isolates that branch's own text and checks it specifically —
+            // the same tautology risk the 2026-08-19 review named for other gates.
+            guard let depthChart = landedFamilies().landed.first(where: { $0.screen == .depthChart })
+            else {
+                expect(false, "Depth Chart did not resolve to a landed family")
+                return
+            }
+            guard let start = depthChart.renderedText.range(
+                of: "if dynamicTypeSize.isAccessibilitySize {"
+            ), let end = depthChart.renderedText.range(
+                of: "} else {",
+                range: start.upperBound..<depthChart.renderedText.endIndex
+            ) else {
+                expect(false, "could not locate the AX5/default composition split to scan it")
+                return
+            }
+            let accessibleBranch = String(depthChart.renderedText[start.upperBound..<end.lowerBound])
+            expect(accessibleBranch.contains("groupSelector"),
+                   "the accessible composition no longer calls groupSelector, so AX5 and "
+                       + "VoiceOver coaches are back to reaching only the first position group "
+                       + "of each unit (04 section 7.1)")
+        }
+
         test("every landed family declares deterministic VoiceOver order") {
             // `04` §7.1 clause 2: world context, dominant object, evidence, actions, navigation.
+            // Checked against `renderedText`, not `text` — see FamilyView's doc comment (S-1).
             for family in landedFamilies().landed {
-                expect(family.text.contains("accessibilitySortPriority"),
+                expect(family.renderedText.contains("accessibilitySortPriority"),
                        "\(family.path) (\(family.screen.canonicalName)) leaves VoiceOver order to "
                            + "layout accident (04 section 7)")
             }
         }
 
-        test("the family-to-file convention resolves every registered family") {
-            // Derive the expectation from the registry: a hand-picked sample can stay green while
-            // a later family silently becomes pending.
+        test("a family that wholly delegates is checked through the file that renders it") {
+            // The regression this guards: RecordBookView, RivalriesView, CareerLineView and
+            // CoachingTreeView are each a ~28-line wrapper around LegacyHistoryView, which is
+            // where all four families' actual compositions -- and any AX5/VoiceOver defect in
+            // them -- live. Before this fix, `family.text` was the wrapper alone, so
+            // LegacyHistoryView was never scanned by the two clauses above.
+            //
+            // The marker checked is "No team records recorded." — LegacyHistoryView's own empty
+            // state for the records section, not the wrapper's mere mention of the delegate's
+            // name. RecordBookView.swift's own text already contains the substring
+            // "LegacyHistoryView" (it names the initialiser it calls), so asserting on that alone
+            // would pass whether or not the union actually happened; this marker only appears
+            // inside LegacyHistoryView's own body.
+            guard let recordBook = landedFamilies().landed.first(where: { $0.screen == .recordBook })
+            else {
+                expect(false, "Record Book did not resolve to a landed family")
+                return
+            }
+            expect(!recordBook.text.contains("No team records recorded."),
+                   "the wrapper's own text unexpectedly contains LegacyHistoryView's internals — "
+                       + "this test's premise (the wrapper alone does not carry it) no longer holds")
+            expect(recordBook.renderedText.contains("No team records recorded."),
+                   "Record Book's rendering closure did not pull in LegacyHistoryView.swift, so a "
+                       + "shared-host defect there would still go unseen")
+        }
+
+        test("the family-to-file convention resolves the views that exist") {
+            // The guard against the enumeration silently finding nothing: if the naming convention
+            // drifts, every family becomes "pending" and the two clauses above pass over an empty
+            // set. These five are the production screens `05` records as built.
             let landed = Set(landedFamilies().landed.map(\.screen))
-            expectEqual(landed, Set(CoachWorldScreenID.allCases),
-                        "a registered family did not resolve to its derived view file")
+            for screen in [
+                CoachWorldScreenID.coachingHQ,
+                .matchDay,
+                .roster,
+                .playerProfile,
+                .recruitingBoard,
+            ] {
+                expect(landed.contains(screen),
+                       "\(screen.canonicalName) did not resolve to \(viewFileName(for: screen))")
+            }
         }
 
         test("the convention keeps the draft room family landed") {
-            let (_, pending) = landedFamilies()
+            let (_, pending, _) = landedFamilies()
             expect(!pending.contains(.draftRoom),
                    "Draft Room has a production wrapper and must not remain pending")
             expect(!pending.contains(.prospectProfile),
@@ -169,17 +318,27 @@ func runAccessibilityReflowTests() {
         // `.background(palette.page.color.ignoresSafeArea())` paints flat ground straight over the
         // backdrop it just asked for — the screen compiles, looks nearly right, and silently has no
         // Floodlit world at all. That is the defect worth a test.
+        // Conversion status is a question about a *file* — has it been reskinned onto
+        // CoachWorldFloodlitStage — not about whether the screen is currently a canonical,
+        // player-visible task. An aliased screen's file still exists and the codebase's own
+        // phase-completion claims below name several of them, so this suite runs over
+        // `landed + aliased` (everything with a file), not `landed` alone. The AX5/VoiceOver
+        // suite above is scoped to `landed` on purpose, for the opposite reason: accessibility
+        // is a question about what a player can reach, and an alias's own file is dead code no
+        // player ever sees (S-6).
         test("every family is either converted to the Floodlit stage or pending, and the split is total") {
-            let (landed, _) = landedFamilies()
-            let converted = landed.filter(isFloodlitConverted)
-            let pending = landed.filter { !isFloodlitConverted($0) }
-            expectEqual(converted.count + pending.count, landed.count,
+            let (landed, _, aliased) = landedFamilies()
+            let renderable = landed + aliased
+            let converted = renderable.filter(isFloodlitConverted)
+            let pending = renderable.filter { !isFloodlitConverted($0) }
+            expectEqual(converted.count + pending.count, renderable.count,
                         "the conversion partition lost a family, so some family is checked by nothing")
             print("Floodlit conversion: \(converted.count) converted, \(pending.count) pending")
         }
 
         test("no converted root paints its own ground under the stage backdrop") {
-            let converted = landedFamilies().landed.filter(isFloodlitConverted)
+            let (landed, _, aliased) = landedFamilies()
+            let converted = (landed + aliased).filter(isFloodlitConverted)
             for family in converted {
                 expect(!family.text.contains("palette.page.color.ignoresSafeArea()"),
                        "\(family.path) (\(family.screen.canonicalName)) wraps itself in "
@@ -193,7 +352,8 @@ func runAccessibilityReflowTests() {
             // count; this pins the specific claim each commit made, so a later phase cannot quietly
             // un-convert an earlier one. A phase adds its range here when it lands — a phase that
             // forgets asserts nothing, which is how Phases 4 to 6 originally slipped through.
-            let converted = Set(landedFamilies().landed.filter(isFloodlitConverted).map(\.screen))
+            let (landed, _, aliased) = landedFamilies()
+            let converted = Set((landed + aliased).filter(isFloodlitConverted).map(\.screen))
             let claimed: [(phase: String, screens: [CoachWorldScreenID])] = [
                 ("3 (entry, registry 1-7)",
                  [.titleContinue, .newCareerCoachIdentity, .jobBoard, .offer, .appointment,

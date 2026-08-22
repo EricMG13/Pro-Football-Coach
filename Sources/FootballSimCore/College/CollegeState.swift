@@ -145,6 +145,15 @@ public struct ProgrammeRecruitingState: Codable, Sendable, Equatable, Identifiab
         scholarshipPlayerIDs = reconciled
     }
 
+    /// Drops holders who are no longer on the roster.
+    ///
+    /// Unlike `reconcileScholarships` this never grants one to fill the gap it leaves: a departure
+    /// ends a scholarship, it does not move it to the next body on the roster.
+    mutating func retainScholarshipPlayers(on rosterIDs: [UUID]) {
+        let roster = Set(rosterIDs)
+        scholarshipPlayerIDs = scholarshipPlayerIDs.filter(roster.contains)
+    }
+
     mutating func addScholarshipPlayer(_ playerID: UUID) -> Bool {
         guard scholarshipPlayerIDs.count < CollegeRules.scholarshipLimit,
               !scholarshipPlayerIDs.contains(playerID) else { return false }
@@ -261,6 +270,21 @@ public enum RecruitingCyclePhase: String, Codable, Sendable, CaseIterable, Hasha
     case active
     case signing
     case closed
+
+    /// Whether a programme may still spend contact on the class: user requests, AI board growth,
+    /// AI investment.
+    ///
+    /// Signing day closes contact. `02` section 4.1: a recruiting cycle that kept signing people
+    /// after signing day would not be a deadline.
+    public var allowsRecruitingActions: Bool { self == .active }
+
+    /// Whether commitments may still form and resolve.
+    ///
+    /// Open on signing day, deliberately, and this is the distinction the phase exists to make:
+    /// contact closing is what makes the deadline, and the commitments closing is the ceremony. A
+    /// single `== .active` gate over both would have made signing day the week the class stopped
+    /// resolving, which is the opposite of what it is.
+    public var allowsCommitmentResolution: Bool { self != .closed }
 }
 
 public enum ProspectRecruitmentPhase: String, Codable, Sendable, CaseIterable, Hashable {
@@ -605,6 +629,13 @@ public struct CollegeState: Codable, Sendable, Equatable {
             [UUID: RedshirtPlan].self,
             forKey: .redshirtPlans
         )
+        // Counts every programme's live class in one pass, replacing a scan of the whole pool per
+        // programme. Equivalent to the per-programme form it replaces, and equivalent because the
+        // history limb below rejects any commitment naming a programme this payload does not
+        // carry — guard conditions short-circuit in order, so by the time the bound is read every
+        // counted programme is a decoded one. A programme with no live class is absent here and
+        // was zero there, and zero passed the bound.
+        let decodedClassCounts = Self.activeReservationCounts(in: decodedRecruitment)
         guard decodedSeason >= 0,
               decodedPortal.targetSeason == decodedSeason,
               decodedProgrammes.allSatisfy({ $0.key == $0.value.programmeID }),
@@ -629,11 +660,8 @@ public struct CollegeState: Codable, Sendable, Equatable {
                               }()
                       }
               }),
-              decodedProgrammes.keys.allSatisfy({ programmeID in
-                  decodedRecruitment.values.filter {
-                      $0.programmeID == programmeID
-                          && ($0.phase == .committed || $0.phase == .signed)
-                  }.count <= CollegeRules.initialSigningsPerClass
+              decodedClassCounts.values.allSatisfy({
+                  $0 <= CollegeRules.initialSigningsPerClass
               }),
               decodedArchive.count <= CollegeRules.maximumArchivedProspectIdentities,
               decodedArchive.allSatisfy({ $0.key == $0.value.id }),
@@ -723,6 +751,14 @@ public struct CollegeState: Codable, Sendable, Equatable {
         return true
     }
 
+    /// Drops every plan at once, for the transaction that resolves the season they were filed
+    /// for. A plan outlives its own resolution otherwise: the season rollover spends the clock
+    /// year the plan was asking for and leaves the plan behind, so between that transaction and
+    /// the cycle rollover that clears it the root holds plans no player could still legally have.
+    mutating func clearResolvedRedshirtPlans() {
+        redshirtPlans = [:]
+    }
+
     mutating func clearRedshirtPlan(playerID: UUID, programmeID: UUID) -> Bool {
         guard redshirtPlans[playerID]?.programmeID == programmeID else { return false }
         redshirtPlans.removeValue(forKey: playerID)
@@ -736,7 +772,12 @@ public struct CollegeState: Codable, Sendable, Equatable {
         reservationLimit: Int
     ) -> Bool {
         let programmeID = context.winner.programmeID
-        guard phase == .active,
+        // `allowsCommitmentResolution`, not `== .active`: signing day closes contact and leaves the
+        // commitments closing, and this is the mutation that closes them. Gating it on `.active`
+        // made the market compute contenders all through the signing week and then silently refuse
+        // every one of them — visible only as a calibration number, six points of class fill, with
+        // nothing failing.
+        guard phase.allowsCommitmentResolution,
               context.isValid,
               context.committedAt.week >= CollegeRules.minimumCommitmentWeek,
               programmes[programmeID] != nil,
@@ -761,7 +802,8 @@ public struct CollegeState: Codable, Sendable, Equatable {
         reservationLimit: Int
     ) -> Bool {
         let programmeID = context.winner.programmeID
-        guard phase == .active,
+        // Open on signing day for the same reason `commit` is: a flip is a commitment resolving.
+        guard phase.allowsCommitmentResolution,
               context.isValid,
               context.committedAt.week >= CollegeRules.minimumCommitmentWeek,
               programmes[programmeID] != nil,
@@ -823,9 +865,39 @@ public struct CollegeState: Codable, Sendable, Equatable {
         return true
     }
 
-    func activeReservationCount(for programmeID: UUID) -> Int {
+    /// Whether a recruitment row occupies a place in its programme's class.
+    ///
+    /// Stated once. The reservation guards in `commit` and `flip`, the capacity projection, the
+    /// decode bound and the integrity sweep all read this, so none of them can drift from the
+    /// others — and the rule was written out four times before this existed.
+    static func occupiesClassPlace(_ recruitment: ProspectRecruitmentState) -> Bool {
+        recruitment.phase == .committed || recruitment.phase == .signed
+    }
+
+    /// Every programme's live class count, in one pass over the pool.
+    ///
+    /// The per-programme form below is O(prospects), so asking all `programmeCount` of them costs
+    /// that many sweeps of a `annualProspectCount`-sized pool — at the shipped numbers, over half
+    /// a million steps, paid on every save decode and at every integrity check. This costs one
+    /// sweep. Programmes with no live class are absent rather than zero; read it with `?? 0`.
+    static func activeReservationCounts(
+        in recruitment: [UUID: ProspectRecruitmentState]
+    ) -> [UUID: Int] {
+        var counts: [UUID: Int] = [:]
+        for row in recruitment.values where occupiesClassPlace(row) {
+            guard let programmeID = row.programmeID else { continue }
+            counts[programmeID, default: 0] += 1
+        }
+        return counts
+    }
+
+    package func activeReservationCounts() -> [UUID: Int] {
+        Self.activeReservationCounts(in: prospectRecruitment)
+    }
+
+    package func activeReservationCount(for programmeID: UUID) -> Int {
         prospectRecruitment.values.filter {
-            $0.programmeID == programmeID && ($0.phase == .committed || $0.phase == .signed)
+            $0.programmeID == programmeID && Self.occupiesClassPlace($0)
         }.count
     }
 

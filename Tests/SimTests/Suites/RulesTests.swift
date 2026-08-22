@@ -202,6 +202,16 @@ func runRulesTests() {
         }
 
         test("the minimum playable roster covers the formation the engine actually fields") {
+            // Two rules-module constants that have to agree and were never checked against each
+            // other: `minimumPlayableRosterByPosition` is what `checkPositionalCoverage` calls a
+            // playable roster, and the depth-chart templates are what the engine puts on the field.
+            // A minimum that guarantees fewer bodies at a position than the formation starts is a
+            // minimum that does not make a roster playable -- it makes it fill that spot with
+            // somebody out of position on every snap.
+            //
+            // Enumerated over `Position.allCases` and both templates by construction, so a position
+            // added to a formation is covered the day it is added rather than the day someone
+            // remembers this test.
             for position in Position.allCases {
                 let fielded = max(
                     DepthChart.offensiveTemplate.filter { $0 == position }.count,
@@ -228,6 +238,8 @@ func runRulesTests() {
             expect(ProRules.isLegalDraftOrder(snake, teamIDs: teamIDs),
                    "the snake the market actually builds was refused")
 
+            // The order the old count-and-membership pair admitted: 224 entries, every one of them
+            // a real team, and one team holding two picks in a round while another holds none.
             var hoarded = straight
             hoarded[1] = teams[0]
             expect(!ProRules.isLegalDraftOrder(hoarded, teamIDs: teamIDs),
@@ -238,6 +250,9 @@ func runRulesTests() {
                    "a long order was accepted")
             expect(!ProRules.isLegalDraftOrder(straight, teamIDs: Set(teams.dropLast())),
                    "an order naming a team the league does not have was accepted")
+
+            // Without a team set — the decoder's case, which holds the market and not the league —
+            // the identity-free half of the rule still refuses the same shapes.
             expect(ProRules.isLegalDraftOrder(straight))
             expect(!ProRules.isLegalDraftOrder(hoarded))
         }

@@ -90,7 +90,7 @@ public struct WorldSearchView: View, CoachWorldChromedSurface {
         HStack(spacing: CoachWorldTokens.Gap.md) {
             TextField("Team, city or region", text: $query)
                 .textFieldStyle(.plain)
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.actionSmall))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.actionSmall)
                 .accessibilityLabel("Search current teams, cities or regions")
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             FloodlitLabel3(countLabel, palette: palette)
@@ -164,9 +164,9 @@ public struct WorldSearchView: View, CoachWorldChromedSurface {
     }
 
     private func resultRow(_ result: WorldSearchReadModel.Result) -> some View {
-        Button {
-            guard let id = UUID(uuidString: result.id) else { return }
-            onSelectTeam(id)
+        let teamID = UUID(uuidString: result.id)
+        return Button {
+            if let teamID { onSelectTeam(teamID) }
         } label: {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 CoachWorldTeamLogo(
@@ -176,11 +176,7 @@ public struct WorldSearchView: View, CoachWorldChromedSurface {
                     palette: palette
                 )
                 Text(result.team.name.uppercased())
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                        )
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     .lineLimit(1)
                     .frame(width: SearchMetric.nameColumn, alignment: .leading)
                 Text("\(result.cityName), \(result.regionName)")
@@ -197,6 +193,7 @@ public struct WorldSearchView: View, CoachWorldChromedSurface {
             .contentShape(CoachWorldCutCorner.row)
         }
         .buttonStyle(.plain)
+        .disabled(teamID == nil)
         .accessibilityLabel(
             "\(result.team.name), \(result.tier), \(result.cityName), \(result.regionName)"
         )

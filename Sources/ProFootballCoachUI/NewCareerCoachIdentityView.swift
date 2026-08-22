@@ -9,7 +9,6 @@ public struct NewCareerCoachIdentityView: View {
     public let onStart: (String, String, UInt64, String) -> Void
     public let onSeedChanged: (UInt64) -> Void
     public let onCancel: () -> Void
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(jobs: [StartingJobReadModel], defaultSeed: UInt64, isWorking: Bool = false,
                 errorMessage: String? = nil,
@@ -26,11 +25,11 @@ public struct NewCareerCoachIdentityView: View {
     }
 
     public var body: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            content.accessibilitySortPriority(100)
-        } else {
-            content.accessibilitySortPriority(100)
-        }
+        // Both arms of the old AX5 branch here were character-for-character identical -- an
+        // accessibility-size composition that was never actually decided (S-7, 2026-08-19 review).
+        // `content` delegates its whole composition to NewCareerSetupView, which is where AX5 is
+        // genuinely handled; collapsed to the one statement both arms already agreed on.
+        content.accessibilitySortPriority(100)
     }
 
     private var content: some View {

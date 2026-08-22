@@ -94,7 +94,7 @@ public struct ContactVisitPlannerView: View, CoachWorldChromedSurface {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
             FloodlitLabel3(label, palette: palette)
             Text(value)
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.lead, weight: .semibold))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.lead, weight: .semibold)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(label), \(value) left")
@@ -124,11 +124,7 @@ public struct ContactVisitPlannerView: View, CoachWorldChromedSurface {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                     Text(prospect.person.name.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                         .fixedSize(horizontal: false, vertical: true)
                     FloodlitLabel3(
                         "\(prospect.position) \u{00B7} \(prospect.status) \u{00B7} "
@@ -139,11 +135,7 @@ public struct ContactVisitPlannerView: View, CoachWorldChromedSurface {
             } else {
                 HStack(spacing: CoachWorldTokens.Gap.md) {
                     Text(prospect.person.name.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                         .lineLimit(1)
                         .frame(width: PlannerMetric.nameColumn, alignment: .leading)
                     FloodlitLabel3(
@@ -175,11 +167,7 @@ public struct ContactVisitPlannerView: View, CoachWorldChromedSurface {
                 : nil
         ) {
             let title = Text(choice.title.uppercased())
-                .font(
-                    CoachWorldTokens.display(
-                        CoachWorldTokens.DisplaySize.row, weight: .bold
-                    )
-                )
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                 .foregroundStyle(
                     choice.isAvailable
                         ? palette.contentPrimary.color

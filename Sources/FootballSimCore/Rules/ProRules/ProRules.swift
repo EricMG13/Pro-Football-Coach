@@ -27,6 +27,12 @@ public enum ProRules {
     /// season lands on `02` section 2.3's ~21 weeks exactly.
     public static let bracketTeams = 8
 
+    /// The per-conference half of `bracketTeams` -- named separately because the bracket is seeded
+    /// within each conference, not by overall rank (`PostseasonSystem.advance`'s pro quarterfinal
+    /// case takes the top `playoffSeedsPerConference` of each conference's own ranking, not the
+    /// top `bracketTeams` overall). `bracketTeams == conferenceCount * playoffSeedsPerConference`.
+    public static let playoffSeedsPerConference = 4
+
     public static var bracketRounds: Int { bracketTeams.trailingZeroBitCount }
 
     public static var seasonWeeks: Int { regularSeasonWeeks + bracketRounds }
@@ -129,7 +135,21 @@ public enum ProRules {
 
     public static var draftPickCount: Int { draftRounds * draftPicksPerRound }
 
-    /// Whether every draft round is a permutation of the professional teams (`02` §11.2).
+    /// Whether a draft order is the one `02` section 11.2 states: "7 rounds of 32 picks, 224
+    /// total". Each round is a permutation of every professional team, so no team holds two picks
+    /// in a round and none holds zero.
+    ///
+    /// Round-to-round ordering is deliberately *not* fixed here. `ProMarketSystem` currently builds
+    /// a snake — round 0 in ranking order, round 1 reversed — and canon does not say whether the
+    /// order snakes or repeats, so asserting a snake would encode a design decision only in code,
+    /// which `CLAUDE.md`'s doc-first amendment rule forbids. What canon *does* fix is the shape,
+    /// and the shape is what a root can be checked against: a total pick count alone admits an
+    /// order where one team drafts 224 times.
+    /// - Parameter teamIDs: the league's professional teams, when the caller knows them. A caller
+    ///   that does not — `ProMarketState`'s decoder holds the market and not the league — passes
+    ///   nil and gets the identity-free half of the same rule: every round is the same set of
+    ///   `draftPicksPerRound` distinct holders. `WorldIntegrity` then anchors that set to the real
+    ///   teams, so the two together are the whole rule and neither is a weaker restatement of it.
     public static func isLegalDraftOrder(_ order: [UUID], teamIDs: Set<UUID>? = nil) -> Bool {
         guard draftPicksPerRound > 0, order.count == draftPickCount else { return false }
         let rounds = stride(from: 0, to: order.count, by: draftPicksPerRound).map { start in

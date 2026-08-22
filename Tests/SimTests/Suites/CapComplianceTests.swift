@@ -20,8 +20,8 @@ func runCapComplianceTests() {
         test("season-boundary discharge clears every team's dead money") {
             var state = GameState.bootstrap(seed: 62_007)
             let teamIDs = Array(state.proTeams.ids.prefix(2))
-            state.proTeams.update(teamIDs[0]) { $0.deadMoney = 1 }
-            state.proTeams.update(teamIDs[1]) { $0.deadMoney = 25_000_000 }
+            _ = state.proTeams.update(teamIDs[0]) { $0.deadMoney = 1 }
+            _ = state.proTeams.update(teamIDs[1]) { $0.deadMoney = 25_000_000 }
 
             let discharged = ProManagementSystem.dischargeDeadMoney(in: state)
             expect(discharged.proTeams.values.allSatisfy { $0.deadMoney == 0 },
@@ -88,6 +88,11 @@ func runCapComplianceTests() {
         }
 
         test("compliance never releases a deal whose release costs more cap than it sheds") {
+            // A bonus-heavy deal releases *badly*: dead money accelerates every unamortised bonus
+            // dollar into this season, while the cap hit it sheds is one season's proration plus
+            // base. When the acceleration is the larger number the release moves the team further
+            // over the cap, and "cheapest dead money first" walks straight into it, because a deal
+            // with almost no bonus left to accelerate is also the cheapest dead money on the books.
             var state = GameState.bootstrap(seed: 62_005)
             let teamID = state.proTeams.ids[0]
             guard let team = state.proTeams[teamID], team.rosterIDs.count >= 2 else {
@@ -97,11 +102,13 @@ func runCapComplianceTests() {
             for playerID in team.rosterIDs + team.practiceSquadIDs {
                 state.players.update(playerID) { $0.contract = nil }
             }
-            state.proTeams.update(teamID) { $0.deadMoney = 0 }
+            _ = state.proTeams.update(teamID) { $0.deadMoney = 0 }
 
             let capLimit = ProRules.salaryCap(seasonsAfterBase: state.calendar.season)
             let trapID = team.rosterIDs[0]
             let payerID = team.rosterIDs[1]
+            // trap: no base, a 5-dollar bonus over five years. Cap hit 1, dead money 5 — the
+            // cheapest dead money on the roster, and releasing it *adds* 4 dollars of cap.
             state.players.update(trapID) {
                 $0.contract = Contract(
                     years: 5,
@@ -110,6 +117,8 @@ func runCapComplianceTests() {
                     signedSeason: state.calendar.season
                 )
             }
+            // payer: the deal that actually puts the team over, and the only one whose release
+            // sheds more than it accelerates.
             state.players.update(payerID) {
                 $0.contract = Contract(
                     years: 5,
@@ -153,7 +162,7 @@ func runCapComplianceTests() {
             for playerID in team.rosterIDs + team.practiceSquadIDs {
                 state.players.update(playerID) { $0.contract = nil }
             }
-            state.proTeams.update(teamID) { $0.deadMoney = 0 }
+            _ = state.proTeams.update(teamID) { $0.deadMoney = 0 }
 
             let capLimit = ProRules.salaryCap(seasonsAfterBase: state.calendar.season)
             state.players.update(kickerID) {

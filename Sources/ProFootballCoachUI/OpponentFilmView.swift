@@ -117,7 +117,7 @@ public struct OpponentFilmView: View, CoachWorldChromedSurface {
     ) -> some View {
         HStack(spacing: CoachWorldTokens.Gap.md) {
             Text(situation.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                 .lineLimit(1)
                 .frame(width: FilmMetric.situationColumn, alignment: .leading)
             FloodlitShareBar(
@@ -126,11 +126,11 @@ public struct OpponentFilmView: View, CoachWorldChromedSurface {
                 palette: palette
             )
             Text(split)
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.row, weight: .semibold))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.row, weight: .semibold)
                 .lineLimit(1)
                 .frame(width: FilmMetric.splitColumn, alignment: .trailing)
             Text(filmedLabel)
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill, weight: .regular))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.pill, weight: .regular)
                 .foregroundStyle(palette.contentQuiet.color)
                 .lineLimit(1)
                 .frame(width: FilmMetric.filmedColumn, alignment: .trailing)
@@ -180,7 +180,7 @@ public struct OpponentFilmView: View, CoachWorldChromedSurface {
                 .foregroundStyle(palette.contentSecondary.color)
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             Text(value)
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.panel, weight: .semibold))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.panel, weight: .semibold)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(label.capitalized), \(value)")
@@ -192,11 +192,7 @@ public struct OpponentFilmView: View, CoachWorldChromedSurface {
             Spacer(minLength: .zero)
             if chrome == nil {
                 Button("Back", action: onClose)
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                        )
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     .foregroundStyle(palette.contentQuiet.color)
                     .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
                            minHeight: CoachWorldTokens.Shape.minimumTarget)

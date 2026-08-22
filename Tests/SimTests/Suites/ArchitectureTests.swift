@@ -6,6 +6,25 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
     var value: Int
 }
 
+/// `NewsItem` is deliberately not `Codable` — "Derived, never stored" per its own doc comment, so a
+/// headline is never the source of truth a save persists. That means it cannot be handed to
+/// `architectureFingerprint` directly; this private, test-only DTO carries the same facts through
+/// `Encodable` so the read-model's *rendering* can be pinned without adding persistence surface to
+/// production `NewsItem`/`NewsFeedReadModel`.
+private struct NewsItemFingerprintDTO: Codable, Equatable {
+    let eventID: UUID
+    let occurredAt: CalendarState
+    let weight: Int
+    let headline: String
+
+    init(_ item: NewsItem) {
+        eventID = item.eventID
+        occurredAt = item.occurredAt
+        weight = item.weight
+        headline = item.headline
+    }
+}
+
 /// Both pins moved twice on 2026-08-12. First when schema 10 became schema 11: when
 /// `DomainEventLedger` gained its bounded season archive. The version and the ledger's shape are
 /// both inside the encoded root, so *every* root fingerprint moves — including a freshly
@@ -29,11 +48,110 @@ private struct MutableArchitectureEntity: Codable, Sendable, Equatable, Identifi
 /// The advanced pin moved again when completed summaries gained an explicit abstracted/detailed
 /// source discriminator, so the new controlled detailed path cannot be mistaken for an abstract
 /// result after reload.
-private let pinnedRootFingerprint: UInt64 = 12_741_583_388_755_685_037
+/// Both pins moved again on 2026-08-20, when `CareerArcState` gained a persisted
+/// `stakeholderLastMovement` field: `careerArc` is a required, non-optional property of `GameState`
+/// itself (not something that exists only once a career starts), so the new key appears in every
+/// encoded root's JSON body -- including a freshly bootstrapped one where the dictionary is empty --
+/// exactly the same class of move as the `DomainEventLedger` archive above, not a determinism
+/// regression. Unlike the moves above, these two values were not independently reproduced across
+/// two local processes before being written here -- no Swift toolchain exists in this environment
+/// (`CLAUDE.md`) -- they are copied verbatim from a single CI run's own actual output for this exact
+/// commit (`.github/workflows/tests.yml`, run 32319402462, job 96278385220). Cross-process
+/// reproduction of a hash over a fixed seed is precisely the property this test exists to check, so
+/// a second confirming run is what would actually validate that guarantee, not a second manual
+/// re-derivation of the same single number.
+///
+/// All five pins in this file moved again on 2026-08-20, merging `claude/tighten-calibration-bands`
+/// into this `stakeholderLastMovement` root: `WideReceiver`/`TightEnd` now rate `.vision` and
+/// `.elusiveness` (`03` §1.2's carrier-versus-pursuit row), so every generated roster's encoded
+/// shape changed alongside the field the other branch added. Root, advanced-root, negotiation-ledger
+/// and match-session all exercise `GameState.bootstrap` or personnel built from it and moved;
+/// `pinnedNewsFeedFingerprint` below does not touch a roster and did not move. Reproduced in this
+/// worktree's own Swift 6.3.3 toolchain, not copied from CI.
+///
+/// Moved a third time merging `claude/lifecycle-band-validation-a50138`: the college talent scale
+/// unified onto `RosterPopulationGenerator.baseRating`, and `.ironman`/`.volatile` joined
+/// `TraitPopulationGenerator.activeTraits` behind the new weekly `disciplineFile` step. Same class of
+/// move as every one above -- generated state changed, so the pin exists to notice it. Reproduced in
+/// two independent processes in this worktree.
+///
+/// Moved again on 2026-08-20 when PR #9 added 30 real NFL colour pairs to the trade-dress blocklist.
+/// Legitimate colour-collision retries shift the deterministic generation stream and therefore the
+/// encoded root and every populated fixture derived from it. Values below came from the merged
+/// PR #9/current-main release run.
+/// Moved once more after the lifecycle and generation changes merged into main; the values below
+/// matched in the GitHub release runner and an independent local release process.
+private let pinnedRootFingerprint: UInt64 = 10_960_318_349_979_879_734
 
-private let pinnedAdvancedRootFingerprint: UInt64 = 2_769_997_223_918_072_422
+/// Moved when abstracted summaries gained offensive-play counts and tier-specific calibration.
+/// Reproduced in two independent release processes before re-pinning.
+private let pinnedAdvancedRootFingerprint: UInt64 = 4_448_905_210_056_921_675
 
-private let pinnedArchivedLedgerFingerprint: UInt64 = 12_709_969_372_690_370_694
+/// The professional contract-negotiation ledger (`ProMarketState.contractNegotiations`) is part of
+/// the schema-13 root, but neither pin above ever exercises it: bootstrap starts with it empty, and
+/// `WorldScheduler.advanceWeek` never opens, counters or settles a negotiation on its own — only
+/// `ProManagementSystem` does, and that is a career-control action, not a scheduler step. A root
+/// that carried a corrupted offer history, a wrong negotiation status, or a mis-ordered ledger
+/// after decode would still satisfy both fingerprints above. This pin walks the ledger through
+/// open, counter and settle and hashes the result, so its cross-process byte-identity is actually
+/// asserted rather than assumed from the root pins. Reproduced in two independent processes before
+/// being written here.
+/// Moved on 2026-08-20 for the same reason the root pins did: `careerArc` is a required property of
+/// every `GameState`, so `CareerArcState`'s new `stakeholderLastMovement` field shifted this pin's
+/// JSON body too, not only the two above. Copied from a single CI run's own output (run 32322631469,
+/// job 96287645557), not independently reproduced -- no toolchain exists here to do that.
+/// It moved again in PR #9's merged tree because the blocklist's legitimate colour retries changed
+/// the generated inputs; the value below is from the same release run as the root pins.
+private let pinnedNegotiationLedgerFingerprint: UInt64 = 10_030_021_389_655_889_752
+
+/// `GameState.matchSession` is part of the schema-13 root, but neither pin above ever exercises a
+/// populated one: `bootstrap` leaves it `nil` by construction, and `WorldScheduler.advanceWeek`
+/// never calls `prepareControlledMatch`, so the advanced pin's session stays `nil` too. A root that
+/// carried a corrupted `SnapPersonnel`, a wrong in-drive `Situation`, or a mis-ordered call-in
+/// proposal after decode would still satisfy both fingerprints above. This pin drives a controlled
+/// fixture through `prepareControlledMatch` and one `.advance`, reaching the mid-match,
+/// pending-call-in shape, and hashes the result, so its cross-process byte-identity is actually
+/// asserted rather than assumed from the root pins. Reproduced in two independent processes before
+/// being written here.
+/// Moved on 2026-08-20 for the same reason as the negotiation-ledger pin above:
+/// `CareerArcState.stakeholderLastMovement`, copied verbatim from the same CI run, same caveat.
+/// PR #9's new trade-dress retries moved it again; this value came from the merged release run.
+private let pinnedMatchSessionFingerprint: UInt64 = 17_301_580_380_476_710_671
+
+/// `NewsFeedReadModel` is derived from `GameState.history`, not stored in it, so none of the three
+/// pins above ever exercise it: they hash the root or a projection of it, never the read-model
+/// built on top. The domain-event ledger's own byte-identity is covered by those root pins, but the
+/// *rendering* step — `NewsFeedReadModel.build`'s dedup, headline lookup and sort into `[NewsItem]`
+/// — is a separate piece of logic with its own determinism risk (a `Dictionary`-derived lookup used
+/// the wrong way, a sort comparator that stops being total) that no root fingerprint can see. This
+/// pin drives a small fixed ledger through `build(from:)` and hashes the resulting items, so the
+/// read-model's cross-process byte-identity is actually asserted rather than assumed from the root
+/// pins. Reproduced in two independent processes before being written here.
+/// Moved on 2026-08-20 for the same reason as the two pins above: `CareerArcState.stakeholderLastMovement`,
+/// copied verbatim from the same CI run, same caveat.
+/// PR #9's new trade-dress retries do not alter the read-model contract, but they do alter this
+/// generated fixture's event IDs and headlines; this value came from the merged release run.
+private let pinnedNewsFeedFingerprint: UInt64 = 9_887_564_372_083_494_882
+
+/// `DomainEventLedger` has carried a bounded `archive` of `SeasonHistoryDigest` since schema 11, and
+/// it sits inside the root every pin above hashes — but none of them ever exercises it non-empty.
+/// Bootstrap starts with a fresh, single-event ledger; `WorldScheduler.advanceWeek` from a fresh
+/// bootstrap doesn't emit enough events to overflow the default 4,096-event retention limit; and the
+/// negotiation-ledger, match-session and news-feed pins above either never touch `state.history` or
+/// replace it outright with a small ledger that stays well under retention. A root whose archived
+/// digest carried a corrupted `archivedCount`, a `notableEvents` entry that failed the
+/// `historicalWeight`-based notability filter, or an archive mis-ordered by season after decode would
+/// still satisfy every pin above. This pin builds a `DomainEventLedger(retentionLimit: 1)`, appends
+/// three events spanning two seasons so two are forced into a season-3 archive digest (one notable
+/// `.seasonCompleted`, one non-notable `.integrityChecked`) while the third stays in `recent`, and
+/// hashes the resulting root, so the archive path's cross-process byte-identity is actually asserted
+/// rather than assumed from the root pins. Reproduced in two independent processes before being
+/// written here.
+/// Moved on 2026-08-20 for the same reason as the three pins above: `CareerArcState.stakeholderLastMovement`,
+/// copied verbatim from the same CI run, same caveat.
+/// PR #9's new trade-dress retries moved this generated archive fixture again; this value came from
+/// the merged release run.
+private let pinnedArchivedLedgerFingerprint: UInt64 = 14_263_669_412_802_077_588
 
 /// Hashes the canonical JSON body, not the save envelope.
 ///
@@ -84,6 +202,188 @@ func runArchitectureTests() {
             let advanced = try WorldScheduler.advanceWeek(root)
             expectEqual(try architectureFingerprint(root), pinnedRootFingerprint)
             expectEqual(try architectureFingerprint(advanced), pinnedAdvancedRootFingerprint)
+        }
+
+        test("the professional negotiation ledger is pinned across processes") {
+            var state = GameState.bootstrap(seed: 20_260_819)
+            let teamID = state.proTeams.ids[0]
+            let playerID = state.proTeams[teamID]!.rosterIDs[0]
+            state.careerArc = CareerArcState(
+                currentJob: CareerJob(
+                    organisationID: teamID,
+                    tier: .professional,
+                    startedAt: state.calendar
+                ),
+                status: .employed
+            )
+            let current = state.players[playerID]!.contract!
+            let opened = try ProManagementSystem.beginNegotiation(
+                playerID: playerID,
+                teamID: teamID,
+                offer: current,
+                deadline: state.calendar.advancedWeek().advancedWeek(),
+                in: state
+            )
+            let countered = try ProManagementSystem.counterNegotiation(
+                negotiationID: opened.negotiation.id,
+                offer: current,
+                in: opened.state
+            )
+            let settled = try ProManagementSystem.settleNegotiation(
+                negotiationID: opened.negotiation.id,
+                as: .accepted,
+                in: countered.state
+            )
+            expectEqual(settled.state.proMarket.contractNegotiations.count, 1)
+            expectEqual(
+                try architectureFingerprint(settled.state),
+                pinnedNegotiationLedgerFingerprint
+            )
+        }
+
+        test("the match session is pinned across processes") {
+            let source = GameState.bootstrap(seed: 20_260_820)
+            guard let game = source.competition.currentSchedule.games.first(where: {
+                $0.season == source.calendar.season
+                    && $0.week == source.calendar.week
+                    && $0.result == nil
+                    && source.programmes[$0.homeID] != nil
+            }) else {
+                expect(false, "the generated fixture had no controlled college side")
+                return
+            }
+            let started = try CareerControlSystem.startCollegeCareer(at: game.homeID, in: source).state
+            var prepared = try WorldScheduler.prepareControlledMatch(in: started)
+            guard var checkpoint = prepared.matchSession else {
+                expect(false, "prepareControlledMatch did not install a match session")
+                return
+            }
+            while !checkpoint.completed {
+                let step = try MatchReducer.reduce(.advance, state: &checkpoint)
+                if step.proposal != nil { break }
+            }
+            prepared.matchSession = checkpoint
+
+            expectEqual(prepared.matchSession?.controlledSide, .home)
+            expectEqual(prepared.matchSession?.isTakeover, true)
+            expectEqual(prepared.matchSession?.pendingCallIn?.options.isEmpty, false)
+            expectEqual(prepared.matchSession?.home.offense.isEmpty, false)
+            expectEqual(prepared.matchSession?.away.defense.isEmpty, false)
+            expectEqual(
+                try architectureFingerprint(prepared),
+                pinnedMatchSessionFingerprint
+            )
+        }
+
+        test("the news feed is pinned across processes") {
+            var state = GameState.bootstrap(seed: 20_260_821)
+            let college = state.programmes.ids[0]
+            let otherCollege = state.programmes.ids[1]
+            let pro = state.proTeams.ids[0]
+            let staffID = state.staff.ids[0]
+            let playerID = state.players.ids[0]
+
+            var ledger = DomainEventLedger()
+            expect(ledger.append(contentsOf: [
+                DomainEvent(
+                    id: DomainEvent.deterministicID(rootSeed: 20_260_821, sequence: 0),
+                    sequence: 0,
+                    occurredAt: CalendarState(season: 3, week: 1),
+                    payload: .seasonCompleted(
+                        season: 3,
+                        collegeChampionID: college,
+                        proChampionID: pro
+                    )
+                ),
+                DomainEvent(
+                    id: DomainEvent.deterministicID(rootSeed: 20_260_821, sequence: 1),
+                    sequence: 1,
+                    occurredAt: CalendarState(season: 4, week: 1),
+                    payload: .staffHired(
+                        staffID: staffID,
+                        organisationID: college,
+                        role: .headCoach
+                    )
+                ),
+                DomainEvent(
+                    id: DomainEvent.deterministicID(rootSeed: 20_260_821, sequence: 2),
+                    sequence: 2,
+                    occurredAt: CalendarState(season: 4, week: 1),
+                    payload: .playerTransferred(
+                        playerID: playerID,
+                        sourceProgrammeID: college,
+                        destinationProgrammeID: otherCollege,
+                        targetSeason: 4,
+                        window: .postseason,
+                        sourceWasScholarship: true,
+                        finalNIL: 0
+                    )
+                ),
+            ]), "ledger construction for the news-feed fixture was rejected")
+            state.history = ledger
+
+            let items = NewsFeedReadModel.build(from: state).items
+            expectEqual(items.count, 3)
+            expectEqual(items.map(\.weight), [40, 35, 100],
+                        "within season 4 the transfer (40) must lead the hire (35)")
+            expectEqual(items.map(\.occurredAt.season), [4, 4, 3])
+            expect(!items[0].headline.isEmpty && !items[1].headline.isEmpty
+                    && items[0].headline != items[1].headline,
+                   "both season-4 headlines should resolve distinct real names")
+
+            let dtoItems = items.map(NewsItemFingerprintDTO.init)
+            expectEqual(try architectureFingerprint(dtoItems), pinnedNewsFeedFingerprint)
+        }
+
+        test("the archived-season ledger is pinned across processes") {
+            var state = GameState.bootstrap(seed: 20_260_822)
+            let college = state.programmes.ids[0]
+            let pro = state.proTeams.ids[0]
+            let staffID = state.staff.ids[0]
+
+            var ledger = DomainEventLedger(retentionLimit: 1)
+            expect(ledger.append(contentsOf: [
+                DomainEvent(
+                    id: DomainEvent.deterministicID(rootSeed: 20_260_822, sequence: 0),
+                    sequence: 0,
+                    occurredAt: CalendarState(season: 3, week: 1),
+                    payload: .seasonCompleted(
+                        season: 3,
+                        collegeChampionID: college,
+                        proChampionID: pro
+                    )
+                ),
+                DomainEvent(
+                    id: DomainEvent.deterministicID(rootSeed: 20_260_822, sequence: 1),
+                    sequence: 1,
+                    occurredAt: CalendarState(season: 3, week: 1),
+                    payload: .integrityChecked(issueCount: 0)
+                ),
+                DomainEvent(
+                    id: DomainEvent.deterministicID(rootSeed: 20_260_822, sequence: 2),
+                    sequence: 2,
+                    occurredAt: CalendarState(season: 4, week: 1),
+                    payload: .staffHired(
+                        staffID: staffID,
+                        organisationID: college,
+                        role: .headCoach
+                    )
+                ),
+            ]), "ledger construction for the archived-history fixture was rejected")
+            state.history = ledger
+
+            expectEqual(state.history.recent.count, 1)
+            expectEqual(state.history.archive.count, 1)
+            expectEqual(state.history.archive.first?.season, 3)
+            expectEqual(state.history.archive.first?.archivedCount, 2)
+            expectEqual(state.history.archive.first?.notableEvents.count, 1)
+            expectEqual(state.history.archivedCount, 2)
+            expectEqual(state.history.totalCount, 3)
+
+            expectEqual(
+                try architectureFingerprint(state),
+                pinnedArchivedLedgerFingerprint
+            )
         }
 
         test("the authoritative root survives the save envelope") {
@@ -167,41 +467,6 @@ func runArchitectureTests() {
     }
 
     suite("Domain event ledger") {
-        test("a constructed non-empty archive is pinned across processes") {
-            let championIDs = (
-                UUID(uuidString: "00000000-0000-4000-8000-00000000000A")!,
-                UUID(uuidString: "00000000-0000-4000-8000-00000000000B")!
-            )
-            let payloads: [DomainEventPayload] = [
-                .worldCreated(programmes: 130, proTeams: 32),
-                .integrityChecked(issueCount: 0),
-                .seasonCompleted(
-                    season: 1,
-                    collegeChampionID: championIDs.0,
-                    proChampionID: championIDs.1
-                ),
-                .weekAdvanced(
-                    completed: CalendarState(season: 1, week: 1),
-                    next: CalendarState(season: 1, week: 2)
-                ),
-            ]
-            var ledger = DomainEventLedger(retentionLimit: 1)
-            for (sequence, payload) in payloads.enumerated() {
-                expect(ledger.append(DomainEvent(
-                    id: DomainEvent.deterministicID(rootSeed: 20_260_821, sequence: sequence),
-                    sequence: sequence,
-                    occurredAt: CalendarState(season: sequence / 2, week: 1),
-                    payload: payload
-                )))
-            }
-
-            expectEqual(ledger.archive.map(\.season), [0, 1])
-            expectEqual(
-                try architectureFingerprint(ledger.archive),
-                pinnedArchivedLedgerFingerprint
-            )
-        }
-
         test("bootstrap emits structured world-created history") {
             let state = GameState.bootstrap(seed: 11)
             expectEqual(state.history.recent.count, 1)
@@ -283,6 +548,10 @@ func runArchitectureTests() {
             expectEqual(WorldScheduler.steps, [
                 .expiringInboundEvents,
                 .injuriesAndRecovery,
+                // Between recovery and practice on purpose: `processHealth` counts a served
+                // suspension down on the `injuriesAndRecovery` tick, so a suspension drawn before
+                // it would lose a week to the tick that issued it.
+                .disciplineFile,
                 .practiceAndDevelopment,
                 .scoutingKnowledge,
                 .marketInteractions,
@@ -312,6 +581,7 @@ func runArchitectureTests() {
                 transition.stepRecords.filter { $0.status == .executed }.map(\.step),
                 [
                     .injuriesAndRecovery,
+                    .disciplineFile,
                     .practiceAndDevelopment,
                     .scoutingKnowledge,
                     .marketInteractions,
@@ -327,7 +597,7 @@ func runArchitectureTests() {
             )
             expectEqual(
                 transition.stepRecords.filter { $0.status == .inactive }.count,
-                WorldScheduler.steps.count - 12
+                WorldScheduler.steps.count - 13
             )
         }
 
@@ -408,9 +678,16 @@ func runArchitectureTests() {
                             + CollegeRules.aiWeeklyInvestmentActionLimit
                     )
                 )
+                // Counted from the ledger rather than pinned as a literal, so the weekly
+                // disciplineFile step is accounted for by what it emits instead of by a number
+                // somebody remembers to bump. This read `+ 2` and broke the day a step was added.
+                let disciplineEvents = emittedEvents.filter {
+                    if case .playerSuspended = $0.payload { return true }
+                    return false
+                }.count
                 expectEqual(
                     emittedEvents.count,
-                    scheduledThisWeek + recruitingInteractions + 2
+                    scheduledThisWeek + recruitingInteractions + disciplineEvents + 2
                 )
             case .recruitingUpdated:
                 expect(false, "advance-week intent returned a recruiting result")

@@ -115,7 +115,7 @@ swift build
 ```bash
 swift run SimTests --career-arc
 swift run SimTests --history-read-model
-swift run SimTests --m7-gate
+swift run -c release SimTests --m7-gate
 swift run SimTests --design-contracts
 swift run SimTests --core-contracts
 swift build

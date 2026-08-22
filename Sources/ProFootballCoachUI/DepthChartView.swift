@@ -60,6 +60,7 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
                 if dynamicTypeSize.isAccessibilitySize {
                     // The diagram is a second reading of the list, never the only one, so at AX
                     // sizes the list stands alone rather than a 390pt field being scaled to nothing.
+                    groupSelector
                     positionList
                     optionList
                 } else {
@@ -67,6 +68,7 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
                         fieldDiagram
                             .frame(width: DepthMetric.fieldWidth, height: DepthMetric.fieldHeight)
                         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.md) {
+                            groupSelector
                             positionList
                             optionList
                         }
@@ -103,6 +105,27 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
 
     private var openGroup: DepthChartReadModel.PositionGroup? {
         visibleGroups.first { $0.id == openPositionID } ?? visibleGroups.first
+    }
+
+    /// The reachable position-group picker. `token(_:)`, below, sets `openPositionID` too, but it
+    /// draws inside `fieldDiagram`, which is `.accessibilityHidden(true)` at every type size and
+    /// is not constructed at all once `dynamicTypeSize.isAccessibilitySize` -- so before this, a
+    /// VoiceOver coach at any size, or any coach at AX5, could reach only the first group of
+    /// whichever unit the pills last selected, never the other fourteen. This renders in both
+    /// compositions so the same control works regardless of type size or assistive technology.
+    private var groupSelector: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: CoachWorldTokens.Gap.xs) {
+                ForEach(visibleGroups) { group in
+                    FloodlitPill(
+                        group.title,
+                        isSelected: openGroup?.id == group.id,
+                        palette: palette,
+                        action: { openPositionID = group.id }
+                    )
+                }
+            }
+        }
     }
 
     /// The handoff's field diagram: a token per position, placed where that position stands.
@@ -171,6 +194,14 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
         // The vacancy beam: a position whose starter cannot play is the thing this screen exists
         // to show, so it takes the warning tint rather than a quiet one.
         let vacant = starter == nil || starter?.isUnavailable == true
+        // This token stays undrawn by @ScaledMetric on purpose: it is drawn inside `fieldDiagram`,
+        // which is `.accessibilityHidden(true)` in its entirety and the caller fixes both
+        // dimensions (`token(...).frame(width:height:)` at fieldDiagram's call site), so scaling
+        // here would only risk clipping an already small field token for sighted low-vision users,
+        // without helping a VoiceOver user this diagram is inaccessible to either way. Group
+        // selection itself no longer depends on this diagram at all -- `groupSelector`, above, is
+        // the reachable control every type size and every accessibility technology can use; this
+        // token's own tap-to-select stays as a sighted-only shortcut into the same state.
         return Button {
             openPositionID = group.id
         } label: {
@@ -232,7 +263,7 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
         FloodlitRow(palette: palette) {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text(index == 0 ? "START" : "\(index + 1)")
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                     .foregroundStyle(
                         slot.isUnavailable
                             ? palette.stateWarning.color
@@ -241,11 +272,7 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
                     .frame(width: DepthMetric.rankColumn, alignment: .leading)
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                     Text(slot.playerName.uppercased())
-                        .font(
-                            CoachWorldTokens.display(
-                                CoachWorldTokens.DisplaySize.row, weight: .bold
-                            )
-                        )
+                        .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                         .lineLimit(1)
                     Text(slot.availability)
                         .font(CoachWorldTokens.TypeRole.caption)
@@ -279,11 +306,7 @@ public struct DepthChartView: View, CoachWorldChromedSurface {
                 ) {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                         Text(option.title.uppercased())
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.row, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                             .lineLimit(1)
                         // A sentence, not a cost phrase: `FloodlitCostLine` uppercases and
                         // tracks its cost slot, which turns prose into a tracked-capitals

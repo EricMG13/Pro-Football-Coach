@@ -297,7 +297,10 @@ private func m3NILPolicyFixture(
 
 private func m3FinalWeekClosingFixture(seed: UInt64) throws -> M3NILPolicyFixture {
     var finalWeekState = GameState.bootstrap(seed: seed)
-    while finalWeekState.calendar.week < SharedRules.inSeasonWeeks {
+    // The last week recruiting is open, which is the week before signing day rather than the last
+    // week of the calendar: `02` section 4.1 closes contact on signing day, so a recruiting request
+    // in week 21 is refused by design and this fixture would be asserting the gate, not the policy.
+    while finalWeekState.calendar.week < CollegeRules.signingDayWeek - 1 {
         finalWeekState = try WorldScheduler.advanceWeek(finalWeekState).state
     }
     let nilPriority = SharedRules.ratingRange.upperBound
@@ -1325,8 +1328,12 @@ func runM3RecruitingCalibrationTests() {
                     && $0.prospectID == fixture.prospectID
             })
 
-            let transition = try WorldScheduler.advanceWeek(fixture.state)
-            let relevantEvents = transition.emittedEvents.enumerated().compactMap {
+            let terminalTransition = try WorldScheduler.advanceWeek(fixture.state)
+            // Signing is the week-21 rollover boundary, so carry the week-20 commitment into the
+            // signing-week transition before asserting resolution and player intake.
+            let signingTransition = try WorldScheduler.advanceWeek(terminalTransition.state)
+            let emittedEvents = terminalTransition.emittedEvents + signingTransition.emittedEvents
+            let relevantEvents = emittedEvents.enumerated().compactMap {
                 index, event -> (Int, DomainEventPayload)? in
                 let prospectID: UUID?
                 switch event.payload {
@@ -1368,7 +1375,7 @@ func runM3RecruitingCalibrationTests() {
                 expect(commitmentIndex < resolutionIndex)
                 expect(resolutionIndex < joinIndex)
             }
-            let origin = transition.state.people.playerCareers[fixture.prospectID]?
+            let origin = signingTransition.state.people.playerCareers[fixture.prospectID]?
                 .recruitingOrigin
             expectEqual(origin?.programmeID, fixture.programmeID)
             expectEqual(origin?.commitmentHistory.count, 1)

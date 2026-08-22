@@ -91,8 +91,10 @@ grows a row that no test backs.
 | Reduce Motion honoured on every animation | `ReduceMotionContractTest` |
 | VoiceOver on every data row and control | `VoiceOverLabelTest` |
 | 44 pt touch targets | `TouchTargetTest` |
+| A save stays bounded across 20 seasons | `M1SoakTests` + `M2SoakTests` |
 | Same seed, same league, across app launches | `DeterminismTests` + source scan |
 | All identities fictional and original | `LegalTests` |
+| The simulation and the off-screen model agree | `TwoTierConsistencyTests` |
 
 ---
 
@@ -104,9 +106,8 @@ instruments pass on the required hardware and run in CI:
 | Target | Current evidence status |
 |---|---|
 | A season is completable in 6–8 hours | AgencyBudgetTests is not implemented; owner measurement remains open |
-| A save survives 20 seasons under 8 MB | `M3CollegeSoakTests` now asserts the ceiling, but the 20-season gate has not passed |
-| Week advance under 2.0 s at shipping league size | On 2026-08-21 a clean direct Release host run at 134 programmes measured recruiting AI at 1.045 s and full week advance at 2.965 s on a MacBook Pro (M1 Max, 10 cores, 64 GB, macOS 26.5.1); the 1.2 s target and 2.0 s ceiling are both exceeded, and the iPhone gate remains open |
-| The simulation and the off-screen model agree | TwoTierConsistencyTests is not implemented; calibration coverage remains open |
+| Week advance under 2.0 s at shipping league size | **Not met on the host.** On 2026-08-21 a clean direct Release run at 134 programmes measured recruiting AI at 1.045 s and full week advance at 2.965 s on a MacBook Pro (M1 Max, 10 cores, 64 GB, macOS 26.5.1), so the 1.2 s target and the 2.0 s ceiling are both exceeded. The host probe is evidence only; the device gate remains open |
+| A save survives 20 seasons under 8 MB | **Not met.** Measured 14.76 MB at season 20 on the soaks' own seed, against 3.67 MB at season 0. Departed-identity retention is now bounded — it was unbounded, and the save passed 8 MB at season 2 and reached about 26 MB at season 20 — and both soaks now assert a ceiling and a drift allowance rather than printing the sizes. Reaching 8 MB needs the portal and scouting duplication looked at, which is engine work and an owner call |
 
 ---
 

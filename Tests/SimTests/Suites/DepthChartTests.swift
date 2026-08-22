@@ -65,6 +65,16 @@ func runDepthChartTests() {
         }
 
         test("every professional team fields a complete lineup from its own roster") {
+            // Every prior test in this suite is college-tier (`state.programmes`); nothing had ever
+            // resolved a personnel lineup against a real professional roster. Pass 4 of the
+            // 2026-08-20 rules-compliance sweep raised `SharedRules.minimumPlayableRosterByPosition`
+            // so the floor covers what `DepthChart`'s formation fields at every position -- this is
+            // that fix's own falsifier, run against the roster shape the fix was written for.
+            //
+            // Enumerated over every professional team by construction, not one or two by index:
+            // `CLAUDE.md`'s "coverage boundary is not the quality boundary" rule is the reason a
+            // spot-checked version of this test would have missed exactly the gap pass 4 found, the
+            // day a future formation or floor change reintroduces it at a team a spot check skips.
             let state = GameState.bootstrap(seed: 87_006)
             for teamID in state.proTeams.ids.sorted(by: { $0.uuidString < $1.uuidString }) {
                 guard let team = state.proTeams[teamID] else { continue }

@@ -1640,6 +1640,12 @@ public struct CollegePortalState: Codable, Sendable, Equatable {
         try container.encode(summaries, forKey: .summaries)
     }
 
+    /// The shape invariant this type already enforces at its own decode and encode boundaries,
+    /// exposed so it can also be asserted after a transaction.
+    ///
+    /// `requiresStablePhase` is left off: a caller inside one portal window legitimately holds a
+    /// transactional phase. Whether the phase is a *boundary* phase is a separate question, asked
+    /// separately by `CollegePortalWindowInvariant`, because the answer differs by where you ask.
     package var isTransactionallyValid: Bool {
         Self.isValid(
             targetSeason: targetSeason,

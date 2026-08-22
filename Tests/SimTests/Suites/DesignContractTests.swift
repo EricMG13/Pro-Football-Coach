@@ -179,6 +179,86 @@ func runDesignContractTests() {
             expect(!found.subtracting(canonValues).isEmpty,
                    "a planted off-canon colour must not be reported as declared")
         }
+
+        // S-2, 2026-08-19 review: the two tests above only ever look at DesignTokens.swift, and
+        // only ever match a bare 0xRRGGBB hex literal. A view that constructs
+        // `Color(red:green:blue:)` directly was invisible on both counts -- wrong scope, wrong
+        // pattern -- and five confirmed sites did exactly that. CLAUDE.md: "A design-token literal
+        // in a view is a defect: spacings, radii, colours and font sizes come from the design
+        // system." The rule is that colour VALUES live only in the token file, not that every
+        // value must already be a canon hex, so this does not attempt to convert an RGB literal to
+        // hex and check membership -- constructing a Color outside DesignTokens.swift is the
+        // defect, whatever value it happens to hold.
+        //
+        // Two of the five confirmed sites were exact or near-exact matches for an existing token
+        // (MatchDayScoreBug's goldRule was precisely 0xD89713 = Floodlit.goldDeep;
+        // CoachingHQView's ink-on-gold was ~1/255 per channel off Floodlit.goldInk, used the same
+        // way elsewhere) and are fixed to reference them directly. The remaining three have no
+        // existing canon hex to reference, checked by hand against `04` section 6.1's table and
+        // DesignTokens.swift. Doc-first (CLAUDE.md) means a new hex value is a canon amendment the
+        // owner makes, not one this fix invents, so they are named exceptions rather than silently
+        // passed or left an unexplained failure -- the same shape as SuiteCatalog's unwritten
+        // gates. Pinned to an exact per-file count so a new site anywhere, including a fourth in
+        // one of these three files, still fails.
+        test("no view constructs a raw colour outside the token layer, beyond the named exceptions") {
+            let pendingCanonAmendment: [String: Int] = [
+                "CoachWorldDeskComponents.swift": 1,  // RadialGradient warm highlight, ~#FFF2C7
+                "MatchDayField.swift": 2,             // end-zone lettering ink, oursInk/theirsInk
+                "MatchDayScoreBug.swift": 1,           // .bowl kind's alternate ground, ~#0E0A06
+            ]
+            for file in swiftFiles(under: "Sources/ProFootballCoachUI")
+            where !file.path.hasSuffix("/DesignTokens.swift") {
+                // Stripped the same way the symbol scan strips prose that quotes its own pattern
+                // (this file's own comments explaining the fix below say "Color(red:green:blue:)"
+                // in prose, which the unstripped regex matched right back).
+                let hits = matches(of: "Color\\((red|hue):", in: strippingLineComments(file.text))
+                let fileName = String(file.path.split(separator: "/").last ?? "")
+                let allowed = pendingCanonAmendment[fileName] ?? 0
+                expect(hits.count == allowed,
+                       "\(file.path) constructs \(hits.count) raw Color(...) literal(s) outside "
+                           + "the token layer (expected \(allowed) pending-canon-amendment "
+                           + "exception(s)). Colour values come from CoachWorldTokens, never a "
+                           + "literal in a view — write a new one into 04 section 6.1 first if "
+                           + "this is genuinely new, or reference an existing token.")
+            }
+        }
+
+        test("the scan would notice a raw colour literal outside the token layer") {
+            let planted = "Color(red: 1, green: 0.95, blue: 0.78)"
+            expect(!matches(of: "Color\\((red|hue):", in: planted).isEmpty,
+                   "a planted raw Color(red:...) literal must be caught")
+        }
+
+        // S-2 follow-up, 2026-08-20 remediation: three independent rating-colour bandings
+        // (RosterView, DesignTokens.Heat, CoachWorldRatingRing) disagreed with each other and with
+        // this exact canon sentence. RosterView and CoachWorldRatingRing now delegate to
+        // `Heat.color(for:palette:)` rather than each carrying their own switch, so testing this one
+        // function against canon, across the whole rating range, is what makes all three agree by
+        // construction rather than by three people remembering to keep three copies in sync.
+        test("Heat.color's banding matches 04 section 6.4's stated heat scale, across the whole range") {
+            guard let steadyFloorText = matches(of: "red below (\\d+)", in: canon).first,
+                  let strongFloorText = matches(of: "green from (\\d+) upward", in: canon).first,
+                  let canonSteadyFloor = Int(steadyFloorText),
+                  let canonStrongFloor = Int(strongFloorText)
+            else {
+                expect(false, "could not parse 04 section 6.4's heat-scale sentence — "
+                    + "the parser, not the tokens, is what failed")
+                return
+            }
+            expectEqual(CoachWorldTokens.Heat.steadyFloor, canonSteadyFloor,
+                        "Heat.steadyFloor must match 04 section 6.4's stated amber floor")
+            expectEqual(CoachWorldTokens.Heat.strongFloor, canonStrongFloor,
+                        "Heat.strongFloor must match 04 section 6.4's stated green floor")
+
+            let palette = CoachWorldTokens.dark
+            for rating in CoachWorldTokens.Heat.scaleFloor...CoachWorldTokens.Heat.scaleCeiling {
+                let expected = rating >= canonStrongFloor ? palette.statePositive.color
+                    : rating >= canonSteadyFloor ? palette.stateWarning.color
+                    : palette.stateNegative.color
+                expectEqual(CoachWorldTokens.Heat.color(for: rating, palette: palette), expected,
+                            "rating \(rating) does not land in the band 04 section 6.4 describes")
+            }
+        }
     }
 
     suite("Team logo asset loading") {

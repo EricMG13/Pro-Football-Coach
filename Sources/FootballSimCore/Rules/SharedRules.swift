@@ -68,7 +68,29 @@ public enum SharedRules {
     /// college, or section 9 has nowhere to promote them to.
     public static let inSeasonWeeks = 21
 
+    /// `02` section 11.3.1. A career runs seasons 0 through 29; the calendar may reach season 30
+    /// week 1 and rests there, and the week cannot be advanced past it.
+    ///
+    /// Owner decision 2026-08-20, and the reason is save size rather than pacing. `D7`'s bounds
+    /// table never listed `DomainEventLedger.archive`, which appends one digest per season forever,
+    /// so save growth was linear in season count with no ceiling and no measurement could be a
+    /// worst case. This is the wall that makes one exist. `01-RESEARCH.md` section 2.2 records the
+    /// precedent it follows.
+    public static let maximumCareerSeasons = 30
+
     /// Minimum playable coverage checked after every AI roster pass.
+    ///
+    /// Every entry is at least what `DepthChart`'s formation fields at that position, and
+    /// `RulesTests` asserts that against both templates by construction rather than by inspection.
+    /// Linebacker read 2 until 2026-08-20 while the defence starts 3, so a roster sitting at the
+    /// "minimum playable" coverage put somebody out of position at linebacker on every snap and
+    /// carried a spare cornerback the formation never used. Nothing compared the two constants, so
+    /// nothing said so.
+    ///
+    /// Raised rather than resolved the other way: the formation is unchanged and cornerback keeps
+    /// its floor of 3. Which base defence the league plays is a design question `02` does not
+    /// answer — the 4-3 shape lives only in `DepthChart`'s templates — and it is flagged for the
+    /// owner rather than settled here.
     public static let minimumPlayableRosterByPosition: [Position: Int] = [
         .quarterback: 1, .runningBack: 1, .wideReceiver: 3, .tightEnd: 1,
         .leftTackle: 1, .guardPosition: 2, .center: 1, .rightTackle: 1,

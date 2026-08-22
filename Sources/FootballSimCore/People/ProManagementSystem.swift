@@ -176,12 +176,9 @@ public enum ProManagementSystem {
         guard Self.isValid(contract) else { throw ProManagementError.invalidContract }
         guard let player = state.players[playerID] else { throw ProManagementError.missingPlayer }
         guard let team = state.proTeams[teamID] else { throw ProManagementError.missingTeam }
-        guard !state.programmes.values.contains(where: { $0.rosterIDs.contains(playerID) }),
-              !state.proTeams.values.contains(where: {
-                  $0.rosterIDs.contains(playerID) || $0.practiceSquadIDs.contains(playerID)
-              }),
-              player.eligibility == nil,
-              player.contract == nil else {
+        let ownedIDs = Set(state.programmes.values.flatMap(\.rosterIDs))
+            .union(state.proTeams.values.flatMap { $0.rosterIDs + $0.practiceSquadIDs })
+        guard !ownedIDs.contains(playerID), player.eligibility == nil, player.contract == nil else {
             throw ProManagementError.playerIsNotProfessionalFreeAgent
         }
         guard team.rosterIDs.count < ProRules.activeRosterLimit else {
@@ -191,6 +188,15 @@ public enum ProManagementSystem {
         guard before.committedCap <= before.capLimit - contract.capHit(inYear: 0) else {
             throw ProManagementError.capExceeded
         }
+        // `signFreeAgent` and `draft` both stamp `signedSeason` before ever reaching this function,
+        // but `acquire` is `public` and is also the direct target of the controlled team's own
+        // `.acquire` intent action -- the path a player-facing free-agency or draft-pick UI action
+        // reaches, unmediated by either wrapper. A contract with no `signedSeason` is not a
+        // rejected shape: `Contract.year(atSeason:)` reads `nil` as "always year 0", so the deal
+        // would be charged at year 0 forever, and `expireContracts` explicitly skips a contract
+        // with no `signedSeason` ("left untouched because their start date is unknowable") -- so
+        // the seat could never be reclaimed by the turnover D16 depends on. Stamped here, at the
+        // one primitive every acquisition path shares, rather than trusted to every caller.
         guard contract.signedSeason == nil || contract.signedSeason == state.proMarket.season else {
             throw ProManagementError.invalidContract
         }
@@ -424,48 +430,57 @@ public enum ProManagementSystem {
                 guard let team = next.proTeams[teamID] else {
                     throw ProManagementError.missingTeam
                 }
+                // Positional coverage, counted over the active roster because that is what
+                // `WorldIntegrity.checkPositionalCoverage` counts. `expireContracts` has protected
+                // the last playable body at a position since 2026-08-13 (`02` section 4.2a) and
+                // compliance never did, so a forced release could take a team below the coverage
+                // the root gate requires and surface as `invalidRoot` from this function's own
+                // difference guard -- an error naming nothing. Latent only because the linebacker
+                // floor read 2 while the defence starts 3; raising it to match made it reachable.
+                //
+                // Practice-squad releases are unguarded on purpose: coverage does not count them,
+                // so releasing one cannot break it.
+                let rosterIDSet = Set(team.rosterIDs)
                 var rosterByPosition: [Position: Int] = [:]
                 for playerID in team.rosterIDs {
                     guard let position = next.players[playerID]?.position else { continue }
                     rosterByPosition[position, default: 0] += 1
                 }
-
-                var selected: (playerID: UUID, deadMoneyAdded: Int)?
-                func consider(_ playerID: UUID, isActive: Bool) {
+                let candidates = (team.rosterIDs + team.practiceSquadIDs).compactMap {
+                    playerID -> (UUID, Int)? in
                     guard let player = next.players[playerID],
-                          let contract = player.contract else { return }
-                    if isActive {
-                        let minimum = SharedRules.minimumPlayableRosterByPosition[player.position] ?? 0
+                          let contract = player.contract else { return nil }
+                    if rosterIDSet.contains(playerID) {
+                        let minimum = SharedRules
+                            .minimumPlayableRosterByPosition[player.position] ?? 0
                         guard rosterByPosition[player.position, default: 0] > minimum else {
-                            return
+                            return nil
                         }
                     }
                     let deadMoneyAdded = contract.deadMoney(ifReleasedAtSeason: calendar.season)
+                    // A release sheds one season's cap hit and accelerates every unamortised
+                    // bonus dollar into that same season. When the acceleration is the larger
+                    // number the release moves the team *further* over the cap, and it is
+                    // precisely the bonus-heavy deal with almost nothing left to accelerate that
+                    // also carries the cheapest dead money on the books — so "cheapest dead money
+                    // first", left unfiltered, walks into it, releases a player for nothing, and
+                    // comes back round the loop still over cap with one fewer contract to try.
+                    // Only a release that strictly sheds cap is compliance. Strictly, not weakly:
+                    // a release that leaves committed cap where it was is a loop that never ends.
                     guard deadMoneyAdded < contract.capHit(atSeason: calendar.season) else {
-                        return
+                        return nil
                     }
-
-                    guard let current = selected else {
-                        selected = (playerID, deadMoneyAdded)
-                        return
-                    }
-                    if deadMoneyAdded < current.deadMoneyAdded
-                        || (deadMoneyAdded == current.deadMoneyAdded
-                            && playerID.uuidString < current.playerID.uuidString) {
-                        selected = (playerID, deadMoneyAdded)
-                    }
-                }
-
-                for playerID in team.rosterIDs {
-                    consider(playerID, isActive: true)
-                }
-                for playerID in team.practiceSquadIDs {
-                    consider(playerID, isActive: team.rosterIDs.contains(playerID))
+                    return (playerID, deadMoneyAdded)
                 }
                 // Ties broken by identifier, the same rule every other deterministic ordering in
                 // this project uses, so two processes given the same root release the same player.
-                guard let (playerID, deadMoneyAdded) = selected else {
-                    // No remaining release strictly sheds cap, so no sequence reaches legality.
+                guard let (playerID, deadMoneyAdded) = candidates.min(by: { lhs, rhs in
+                    lhs.1 == rhs.1 ? lhs.0.uuidString < rhs.0.uuidString : lhs.1 < rhs.1
+                }) else {
+                    // Nothing left that sheds cap: no contracted player remains, every remaining
+                    // deal costs more to release than it saves, or the only ones that would are
+                    // the last playable bodies at their positions. Either way the overage is
+                    // structural and no sequence of legal releases reaches compliance.
                     throw ProManagementError.capExceeded
                 }
                 guard team.deadMoney <= Int.max - deadMoneyAdded else {
@@ -495,11 +510,22 @@ public enum ProManagementSystem {
         return ProCapComplianceReceipt(state: next, releases: releases)
     }
 
-    /// D16 (`02` §4.2a): dead money is a single-season charge.
+    /// D16 (`02` section 4.2a): dead money is a single-season charge, discharged at the season
+    /// boundary.
+    ///
+    /// `Contract.deadMoney` accelerates every unamortised bonus dollar into the season of release,
+    /// which is a statement that the charge belongs to that season. The scheduler discharges
+    /// between beat 1 and beat 2, so the season now ending has been paid for and the compliance
+    /// pass that immediately follows charges the season about to start.
+    ///
+    /// Before this, `deadMoney` had two write sites and both were `+=`: a dollar charged in season
+    /// 3 was still charged in season 20. Because releasing accelerates the whole remaining bonus,
+    /// the cap-shedding options shrink as the charge grows, so the end state was a team no release
+    /// could legalise and a week advance that failed outright.
     public static func dischargeDeadMoney(in state: GameState) -> GameState {
         var next = state
         for teamID in state.proTeams.ids {
-            next.proTeams.update(teamID) { $0.deadMoney = 0 }
+            _ = next.proTeams.update(teamID) { $0.deadMoney = 0 }
         }
         return next
     }

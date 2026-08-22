@@ -267,15 +267,109 @@ func runSaveDocumentTests() {
     }
 
     suite("Save coordinator") {
-        test("SaveOffMainActorTest keeps durable work behind the coordinator boundary") {
-            let source = try! String(
-                contentsOf: URL(fileURLWithPath: "Sources/CoachWorldApp/CoachWorldSaveStore.swift"),
-                encoding: .utf8
+        testAsync("SaveOffMainActorTest keeps durable work behind the coordinator boundary") {
+            // This used to grep the source for the literals "public actor SaveCoordinator" and
+            // "Task.detached(priority: .utility)", which proved that two strings existed. What the
+            // gate promises is that durable work does not run on the main actor, and the type
+            // system can prove that: the call below is made from a `nonisolated` context, so it
+            // compiles only while `SaveCoordinator` carries its own isolation. A `@MainActor`
+            // coordinator, or a synchronous one, fails to build rather than failing to grep.
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("pfc-save-\(UUID().uuidString)", isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let coordinator = SaveCoordinator(storage: CoachWorldSaveStore(directory: directory))
+            let document = CoachWorldSaveDocument(gameState: GameState.bootstrap(seed: 20_260_818))
+            try await coordinator.requestSave(document, reason: .newCareer)
+            try await coordinator.flush(reason: .explicit)
+            expectEqual(await coordinator.writeCount, 1,
+                        "the durable write did not reach the coordinator")
+        }
+
+        testAsync("SaveWriteBudgetTest holds writes to flushes, not to intents") {
+            // The budget this gate is named for: a burst of intents must cost one write, not one
+            // write each. It was registered with a runner and no test at all, which is how the app
+            // came to flush after every intent — including every match snap, at 2.9 s a snap —
+            // without anything noticing. Twenty requests, one flush, one write.
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("pfc-save-\(UUID().uuidString)", isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let storage = CoachWorldSaveStore(directory: directory)
+            let coordinator = SaveCoordinator(storage: storage)
+            let state = GameState.bootstrap(seed: 20_260_819)
+            for index in 1...20 {
+                try await coordinator.requestSave(
+                    CoachWorldSaveDocument(
+                        gameState: state,
+                        metadata: CareerSaveMetadata(generation: UInt64(index))
+                    ),
+                    reason: .userAction
+                )
+            }
+            expectEqual(await coordinator.writeCount, 0,
+                        "requesting a save must not write; only a flush writes")
+            try await coordinator.flush(reason: .explicit)
+            expectEqual(await coordinator.writeCount, 1,
+                        "twenty intents behind one flush must cost one durable write")
+            // And the write is the newest of them, not the first.
+            let written = try CoachWorldSaveDocument.decode(envelopeData: try storage.read())
+            expectEqual(written.metadata.generation, 20)
+
+            // A flush with nothing pending is free.
+            try await coordinator.flush(reason: .explicit)
+            expectEqual(await coordinator.writeCount, 1)
+        }
+
+        testAsync("a flush does not re-decode the save it is replacing") {
+            // The promotion of a good primary to backup used to be gated on decoding it again:
+            // 1.6 to 2.2 s at season 0, growing with the career, to re-establish what the previous
+            // write had already verified by reading back. The backup must still be the previous
+            // save, byte for byte -- that is what this asserts, without the decode.
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("pfc-save-\(UUID().uuidString)", isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let storage = CoachWorldSaveStore(directory: directory)
+            let coordinator = SaveCoordinator(storage: storage)
+            let state = GameState.bootstrap(seed: 20_260_820)
+            let first = CoachWorldSaveDocument(gameState: state, metadata: CareerSaveMetadata(generation: 1))
+            try await coordinator.requestSave(first, reason: .newCareer)
+            try await coordinator.flush(reason: .explicit)
+            let firstBytes = try storage.read()
+            try await coordinator.requestSave(
+                CoachWorldSaveDocument(gameState: state, metadata: CareerSaveMetadata(generation: 2)),
+                reason: .userAction
             )
-            expect(source.contains("public actor SaveCoordinator"),
-                   "save coordination is no longer actor-isolated")
-            expect(source.contains("Task.detached(priority: .utility)"),
-                   "encode and durable write work is not detached")
+            try await coordinator.flush(reason: .explicit)
+            expectEqual(try storage.readBackup(), firstBytes,
+                        "the previous save was not promoted to the backup slot")
+            expectEqual(
+                try CoachWorldSaveDocument.decode(envelopeData: try storage.read()).metadata.generation,
+                2
+            )
+        }
+
+        testAsync("a healthy save loads without decoding its backup") {
+            // Half the cold-launch cost was decoding the backup to confirm a primary that had
+            // already decoded. The flush order is backup-then-primary, so a primary at least as new
+            // as its backup is the current save. A backup that is deliberately newer is still read.
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("pfc-save-\(UUID().uuidString)", isDirectory: true)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let storage = CoachWorldSaveStore(directory: directory)
+            let state = GameState.bootstrap(seed: 20_260_821)
+            let current = CoachWorldSaveDocument(gameState: state, metadata: CareerSaveMetadata(generation: 5))
+            try storage.writeBackup(Data([0x00]))
+            try storage.write(try SaveEnvelope.encode(current))
+            // A corrupt backup older than the primary must not even be opened, so nothing is
+            // quarantined and the primary is returned.
+            let outcome = try await SaveCoordinator(storage: storage).load()
+            guard case let .loaded(document, source) = outcome else {
+                expect(false, "expected the primary to load")
+                return
+            }
+            expectEqual(source, .primary)
+            expectEqual(document.metadata.generation, 5)
+            expect(!FileManager.default.fileExists(atPath: storage.quarantineDirectory.path),
+                   "the backup was opened even though the primary was the newer file")
         }
 
         testAsync("coalesces and recovers from a corrupt primary") {

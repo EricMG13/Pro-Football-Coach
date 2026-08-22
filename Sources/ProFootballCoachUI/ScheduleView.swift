@@ -113,12 +113,13 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
     /// away-at-home order the sport states them, and the coach's own fixture takes the selected
     /// treatment. Deriving a venue from `isControlled` would have labelled every home game away.
     private func gameRow(_ game: ScheduleReadModel.GameRow) -> some View {
-        Button {
-            if let id = UUID(uuidString: game.home.stableID) { onSelectTeam(id) }
+        let homeID = UUID(uuidString: game.home.stableID)
+        return Button {
+            if let homeID { onSelectTeam(homeID) }
         } label: {
             HStack(spacing: CoachWorldTokens.Gap.md) {
                 Text(game.week.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                     .foregroundStyle(
                         game.score == nil ? palette.actionPrimary.color : palette.contentQuiet.color
                     )
@@ -133,10 +134,8 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
                             palette: palette
                         )
                         Text(game.away.name.uppercased())
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                                )
+                            .coachWorldDisplay(
+                                CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
                             )
                             .lineLimit(1)
                     }
@@ -148,29 +147,28 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
                             palette: palette
                         )
                         Text("at \(game.home.name)".uppercased())
-                            .font(
-                                CoachWorldTokens.display(
-                                    CoachWorldTokens.DisplaySize.flag, weight: .bold
-                                )
-                            )
+                            .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                             .foregroundStyle(palette.contentQuiet.color)
                             .lineLimit(1)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                Text(game.score ?? game.stage)
-                    .font(
-                        game.score == nil
-                            ? CoachWorldTokens.TypeRole.caption
-                            : CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.pill)
-                    )
-                    .foregroundStyle(
-                        game.score == nil ? palette.contentQuiet.color : palette.contentPrimary.color
-                    )
-                    .lineLimit(game.score == nil ? 2 : 1)
-                    .multilineTextAlignment(.trailing)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(width: ScheduleMetric.resultColumn, alignment: .trailing)
+                Group {
+                    if game.score == nil {
+                        Text(game.score ?? game.stage)
+                            .font(CoachWorldTokens.TypeRole.caption)
+                    } else {
+                        Text(game.score ?? game.stage)
+                            .coachWorldFigure(CoachWorldTokens.DisplaySize.pill)
+                    }
+                }
+                .foregroundStyle(
+                    game.score == nil ? palette.contentQuiet.color : palette.contentPrimary.color
+                )
+                .lineLimit(game.score == nil ? 2 : 1)
+                .multilineTextAlignment(.trailing)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: ScheduleMetric.resultColumn, alignment: .trailing)
             }
             .padding(.horizontal, CoachWorldTokens.Pad.row.h)
             .frame(minHeight: ScheduleMetric.rowHeight)
@@ -191,6 +189,7 @@ public struct ScheduleView: View, CoachWorldChromedSurface {
             .contentShape(CoachWorldCutCorner.row)
         }
         .buttonStyle(.plain)
+        .disabled(homeID == nil)
         .accessibilityLabel(
             "\(game.week), \(game.away.name) at \(game.home.name), "
                 + (game.score.map { "final \($0)" } ?? "not played")

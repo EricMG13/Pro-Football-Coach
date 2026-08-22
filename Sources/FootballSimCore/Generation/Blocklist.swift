@@ -45,8 +45,13 @@ public enum Blocklist {
     /// Cincinnati, Houston, Kansas City, Miami, Pittsburgh, Tulsa, Washington. They are
     /// refused as the name of a school and permitted as the name of the city it plays in, which is
     /// why callers must pick `blocks` or `blocksPlaceName` by what kind of name they hold.
+    ///
+    /// `marks` joined the institution-kind limbs on 2026-08-13: leagues, governing bodies,
+    /// postseason systems, rivalry trophies, broadcasts and competitors' products. None of them is
+    /// an institution, a nickname, a conference, a venue or a person, so before it existed each was
+    /// a name nothing checked.
     public static let entries: [[String]] = (institutions + nicknames + conferences + venues
-        + people).map(words)
+        + people + marks).map(words)
 
     /// What a *place* name may not be: a venue mark or an identifiable person.
     ///
@@ -166,19 +171,72 @@ public enum Blocklist {
         "Explorers", "Flames", "Friars", "Gaels", "Hilltoppers", "Hornets", "Jaspers", "Lobos",
         "Mavericks", "Mustangs", "Nighthawks", "Pilots", "Roadrunners", "Salukis", "Thundering Herd",
         "Toreros", "Vandals", "Waves", "Zips",
+        // Added 2026-08-13. Every one of these was a live word in `NameGrammar`'s nickname pools
+        // when it was added here, so the generator was emitting real college nicknames and both
+        // legal tests were green: the nickname limb was an FBS-and-NFL slice, and none of these
+        // schools is in that slice. Same shape as "Crimson", which was caught only because Harvard
+        // happened to be listed, and as the Southern and Frontier Conferences, which were caught by
+        // reading rather than by a gate. Sharpest of them is Beacons — Valparaiso is Division I.
+        //
+        // "Storm" was a nickname *adjective*, which is why it read as safe: it never appeared alone
+        // in a generated name. It does not have to. Simpson College plays Division III football as
+        // the Storm, and "Storm Wardens" contains it.
+        "Foresters", "Marauders", "Herons", "Otters", "Beacons", "Drovers", "Harriers", "Storm",
     ]
 
+    /// Conference marks, in every form the mark is actually written in.
+    ///
+    /// The numeral forms are not decoration. `normalised` keeps digits and drops nothing else, so
+    /// "Big Twelve" and "Big 12" are two different tokens and the entry for one does not block the
+    /// other — the list held the spelled form of three conferences whose own brand is the numeral.
+    /// Acronyms are here for the same reason: a mark is infringed in the form it is used in, and
+    /// "SEC" is the form almost everyone uses.
+    ///
+    /// The block beginning at `Southern Conference` is the non-FBS slice, added 2026-08-13, and it
+    /// is the larger of the two additions by some way. `NameGrammar` records
+    /// removing "Southern" and "Frontier" from the region pool because crossed with "Conference"
+    /// they spell two real bodies — and the removal was the whole fix, so the blocklist still did
+    /// not know either name was real. A pool word removed protects today's pool; a blocklist entry
+    /// protects every pool after it.
     private static let conferences = [
         "Southeastern Conference", "Big Ten", "Big Twelve", "Pac-Twelve", "Atlantic Coast",
         "American Athletic", "Mountain West", "Conference USA", "Sun Belt", "Mid-American",
         "Ivy League", "Big Sky", "Big East", "West Coast Conference", "Southland",
+        "Big 12", "Big XII", "Big 10", "B1G", "Pac-12", "Pac 12", "Pac-10", "Pac Ten",
+        "Pacific 12", "Pacific Twelve", "Atlantic Ten", "Empire Eight",
+        "SEC", "ACC", "AAC", "MAC", "MWC", "CUSA", "WAC",
+        "Southern Conference", "Frontier Conference", "Summit League", "Horizon League",
+        "Patriot League", "Colonial Athletic", "Coastal Athletic", "Missouri Valley",
+        "Ohio Valley", "Northeast Conference", "Metro Atlantic", "Western Athletic",
+        "Atlantic 10", "America East", "Big West", "Big South",
+        "Great Lakes Valley", "Great Lakes Intercollegiate", "Gulf South", "Lone Star",
+        "Peach Belt", "Sunshine State Conference", "Mountain East", "Northern Sun",
+        "Sooner Athletic", "Great Plains Athletic", "California Collegiate Athletic",
+        "Midwest Conference", "Central Intercollegiate Athletic",
+        "Southern Intercollegiate Athletic", "Southwestern Athletic", "Mid-Eastern Athletic",
+        "Pennsylvania State Athletic", "Old Dominion Athletic", "Centennial Conference",
+        "Liberty League", "Landmark Conference", "Empire 8", "Skyline Conference",
+        "American Rivers", "College Conference of Illinois", "Prairie College Conference",
+        "Heartland Conference",
     ]
 
+    /// Venue and bowl-game marks. Both kinds are here because a bowl's name is routinely also a
+    /// stadium's — Rose Bowl, Cotton Bowl and Sun Bowl each name a building — which is what makes
+    /// them place-kind, and what makes them the marks most likely to be mistaken for ordinary
+    /// nouns. `NameGrammar.venueWords` contains "Bowl", so `<Place> Bowl` is a shape the generator
+    /// produces on every save.
     private static let venues = [
         "Rose Bowl", "Cotton Bowl", "Orange Bowl", "Sugar Bowl", "Fiesta Bowl", "Peach Bowl",
         "Horseshoe", "Big House", "Death Valley", "Autzen", "Kinnick", "Camp Randall",
         "Neyland", "Sanford", "Bryant-Denny", "Kyle Field", "Jordan-Hare", "Beaver Stadium",
         "Lambeau", "Soldier Field", "Arrowhead", "Superdome", "Coliseum",
+        // Added 2026-08-13.
+        "Gator Bowl", "Citrus Bowl", "Sun Bowl", "Alamo Bowl", "Holiday Bowl", "Liberty Bowl",
+        "Outback Bowl", "ReliaQuest Bowl", "Music City Bowl", "Independence Bowl",
+        "Las Vegas Bowl", "Cactus Bowl", "Pinstripe Bowl", "Fenway Bowl", "Armed Forces Bowl",
+        "Gasparilla Bowl", "Birmingham Bowl", "Texas Bowl", "First Responder Bowl",
+        "Guaranteed Rate Bowl", "Super Bowl", "Pro Bowl", "Senior Bowl", "Shrine Bowl",
+        "East-West Shrine", "Hula Bowl",
     ]
 
     /// Real city names.
@@ -206,6 +264,65 @@ public enum Blocklist {
         "Knute Rockne", "Joe Paterno", "Bobby Bowden", "Tom Osborne", "Woody Hayes",
         "Tom Brady", "Peyton Manning", "Patrick Mahomes", "Joe Montana", "Jerry Rice",
         "Barry Sanders", "Walter Payton", "Lawrence Taylor", "Deion Sanders", "Bo Jackson",
+        // Award namesakes, added 2026-08-13. A trophy named after a person is two marks at once,
+        // and the person is the limb that also sweeps place names — so a generated city called
+        // Bednarik is refused here, while the award mark itself sits in `marks`.
+        "John Heisman", "Walter Camp", "Amos Alonzo Stagg", "Chuck Bednarik", "Dick Butkus",
+        "Bronko Nagurski", "Doak Walker", "Davey O'Brien", "Lou Groza", "Ray Guy",
+    ]
+
+    /// Marks that are none of the above: leagues, governing bodies, postseason systems, rivalry
+    /// trophies, broadcasts and the products of this game's competitors.
+    ///
+    /// **Added 2026-08-13, and the reason is the review that produced it.** An IP note offered to
+    /// this project proposed "safe alternatives" for the marks it named — "Southeastern Conference"
+    /// for SEC, "Atlantic Coast" for ACC, "National Collegiate Association" for NCAA, "National Pro
+    /// Football" for NFL. Two of those four were already on this list *as real names*, because they
+    /// are the marks themselves rather than alternatives to them. That is the failure this limb is
+    /// shaped around: the dangerous name is not the one nobody would reach for, it is the one a
+    /// careful person reaches for while trying to be safe. So the coinages are here beside the
+    /// registrations, and the two are not the same claim — "National Collegiate Association" is
+    /// refused because it is a near-miss of a mark, not because anyone registered it.
+    ///
+    /// Institution-kind only. None of these reads as a place, so `placeEntries` does not take them
+    /// and a generated city is not swept against them.
+    private static let marks = [
+        // Leagues and governing bodies, with the near-miss coinages beside them.
+        "National Football League", "National Football Conference", "American Football Conference",
+        "American Conference", "National Conference", "American Football League",
+        "All-America Football Conference", "United States Football League",
+        "United Football League", "Arena Football League", "Canadian Football League",
+        "National Collegiate Athletic Association", "Collegiate Athletic Association",
+        "National Collegiate Association", "National Pro Football", "Pro Football Hall of Fame",
+        "NFL", "NFC", "AFC", "NCAA", "USFL", "XFL", "CFL", "NAIA", "NJCAA",
+        // College postseason and governance.
+        "College Football Playoff", "Bowl Championship Series", "Football Bowl Subdivision",
+        "Football Championship Subdivision", "New Year's Six", "National Signing Day",
+        "National Letter of Intent", "Collegiate Licensing Company", "Learfield",
+        "CFP", "BCS", "FBS", "FCS", "Scouting Combine", "Hall of Fame Game",
+        // Rivalry and trophy marks. The generator emits names of exactly this shape — a rivalry
+        // adjective and a trophy noun — and until this limb existed nothing checked them, so the
+        // tradition sweep ran against a list with no trophy in it.
+        "Iron Bowl", "Egg Bowl", "Apple Cup", "Red River", "Holy War", "Backyard Brawl",
+        "Territorial Cup", "Little Brown Jug", "Old Oaken Bucket", "Victory Bell", "Golden Egg",
+        "Golden Hat", "Iron Skillet", "Jeweled Shillelagh", "Paul Bunyan's Axe",
+        "Floyd of Rosedale", "Commander-in-Chief's Trophy", "Land Grant Trophy", "Bayou Bucket",
+        "Governor's Cup", "Keg of Nails", "Illibuck", "Megaphone Trophy", "Sweet Sioux",
+        "Platypus Trophy", "Milk Can",
+        // Broadcast marks.
+        "College GameDay", "Monday Night Football", "Sunday Night Football",
+        "Thursday Night Football", "Big Noon Kickoff", "Hard Knocks", "Sunday Ticket", "ESPN",
+        // Award marks. The namesakes themselves are in `people`.
+        "Heisman", "Maxwell Award", "Bednarik Award", "Butkus Award", "Outland Trophy",
+        "Thorpe Award", "Biletnikoff", "Rimington Trophy", "Mackey Award", "Ray Guy Award",
+        "Wuerffel Trophy", "Broyles Award", "Lombardi Trophy",
+        // Competitor and adjacent products. These reach a player through shipped copy and a store
+        // listing rather than through the generator, and the shipped-copy scan is what catches
+        // them.
+        "Madden", "NCAA Football", "EA Sports College Football", "Football Manager",
+        "Out of the Park Baseball", "Front Office Football", "Draft Day Sports",
+        "Pro Strategy Football", "Retro Bowl", "Wolverine Studios", "Maximum Football",
+        "Axis Football", "Legend Bowl", "Backbreaker", "College Dynasty",
     ]
 
     private static let tradeDressHex: [(String, String)] = [
@@ -222,5 +339,18 @@ public enum Blocklist {
         ("CC0033", "000000"), ("D3A625", "0C2340"), ("500000", "FFFFFF"),
         ("EAAA00", "000000"), ("861F41", "E5751F"), ("C41230", "FFFFFF"),
         ("981E32", "5E6A71"), ("002855", "EAAA00"), ("6F263D", "236192"),
+        // The professional league's pairs, added 2026-08-13. The list above is a college slice, and
+        // the generator dresses both tiers — so every pro team in every save was checked against
+        // college trade dress only. Seventeen of these already sat inside a college entry's radius,
+        // which is why the omission was survivable rather than harmless; the fifteen that did not
+        // were unguarded.
+        ("203731", "FFB612"), ("FFB612", "101820"), ("003594", "869397"), ("E31837", "FFB81C"),
+        ("002244", "C60C30"), ("0B162A", "C83803"), ("FB4F14", "002244"), ("002244", "69BE28"),
+        ("000000", "A5ACAF"), ("008E97", "FC4C02"), ("4F2683", "FFC62F"), ("241773", "000000"),
+        ("004C54", "A5ACAF"), ("0B2265", "A71930"), ("125740", "FFFFFF"), ("FB4F14", "000000"),
+        ("311D00", "FF3C00"), ("00338D", "C60C30"), ("0076B6", "B0B7BC"), ("0C2340", "4B92DB"),
+        ("002C5F", "A2AAAD"), ("006778", "9F792C"), ("03202F", "A71930"), ("0080C6", "FFC20E"),
+        ("003594", "FFA300"), ("AA0000", "B3995D"), ("97233F", "000000"), ("A71930", "000000"),
+        ("0085CA", "101820"), ("D3BC8D", "101820"), ("D50A0A", "FF7900"), ("5A1414", "FFB612"),
     ]
 }

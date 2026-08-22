@@ -886,14 +886,120 @@ public struct StaffCareerAssignment: Codable, Sendable, Equatable {
     }
 }
 
+/// One season a coach worked, and what the team did while they held the job.
+///
+/// `02` section 9 makes this a recorded line rather than a computed one: standings hold only the
+/// current season, and a `SeasonArchive` keeps champions and rankings but no per-organisation
+/// win-loss, so there is nothing to compute a career record from once a season is archived.
+public struct CoachSeasonRecord: Codable, Sendable, Equatable {
+    private static var maximumGames: Int {
+        max(CollegeRules.maximumGamesPerSeason, ProRules.maximumGamesPerSeason)
+    }
+
+    public let season: Int
+    public let organisationID: UUID
+    public let wins: Int
+    public let losses: Int
+    public let ties: Int
+
+    public init(season: Int, organisationID: UUID, wins: Int, losses: Int, ties: Int) {
+        precondition(
+            season >= 0
+                && wins >= 0
+                && losses >= 0
+                && ties >= 0
+                && wins <= Self.maximumGames
+                && losses <= Self.maximumGames
+                && ties <= Self.maximumGames
+                && wins + losses + ties <= Self.maximumGames,
+            "Coach season records require a supported season and game total."
+        )
+        self.season = season
+        self.organisationID = organisationID
+        self.wins = wins
+        self.losses = losses
+        self.ties = ties
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let decodedSeason = try container.decode(Int.self, forKey: .season)
+        let decodedWins = try container.decode(Int.self, forKey: .wins)
+        let decodedLosses = try container.decode(Int.self, forKey: .losses)
+        let decodedTies = try container.decode(Int.self, forKey: .ties)
+        guard decodedSeason >= 0,
+              decodedWins >= 0,
+              decodedLosses >= 0,
+              decodedTies >= 0,
+              decodedWins <= Self.maximumGames,
+              decodedLosses <= Self.maximumGames,
+              decodedTies <= Self.maximumGames,
+              decodedWins + decodedLosses + decodedTies <= Self.maximumGames else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .season,
+                in: container,
+                debugDescription: "A coach season record holds a negative count."
+            )
+        }
+        season = decodedSeason
+        organisationID = try container.decode(UUID.self, forKey: .organisationID)
+        wins = decodedWins
+        losses = decodedLosses
+        ties = decodedTies
+    }
+}
+
 public struct StaffCareerRecord: Codable, Sendable, Equatable, Identifiable {
     public var id: UUID { staffID }
     public let staffID: UUID
     public private(set) var assignments: [StaffCareerAssignment]
+    /// Bounded beside the assignments and by the same limit. Written for the played coach only
+    /// (`02` section 9), so this is empty for everyone else.
+    public private(set) var seasonRecords: [CoachSeasonRecord]
 
-    public init(staffID: UUID, assignments: [StaffCareerAssignment] = []) {
+    public init(
+        staffID: UUID,
+        assignments: [StaffCareerAssignment] = [],
+        seasonRecords: [CoachSeasonRecord] = []
+    ) {
+        let boundedRecords = Array(
+            seasonRecords.suffix(PeopleRules.careerSeasonHistoryLimit)
+        )
+        precondition(
+            zip(boundedRecords, boundedRecords.dropFirst()).allSatisfy {
+                $0.season < $1.season
+            },
+            "Coach season records must be strictly chronological."
+        )
         self.staffID = staffID
         self.assignments = Array(assignments.suffix(PeopleRules.careerSeasonHistoryLimit))
+        self.seasonRecords = boundedRecords
+    }
+
+    mutating func record(_ assignment: StaffCareerAssignment) {
+        assignments = Array(
+            (assignments + [assignment]).suffix(PeopleRules.careerSeasonHistoryLimit)
+        )
+    }
+
+    /// One line per season. A season already recorded is replaced rather than appended, so a
+    /// scheduler that reaches season end twice cannot double a coach's career.
+    @discardableResult
+    mutating func record(_ seasonRecord: CoachSeasonRecord) -> Bool {
+        if let index = seasonRecords.firstIndex(where: { $0.season == seasonRecord.season }) {
+            guard index == seasonRecords.index(before: seasonRecords.endIndex) else {
+                return false
+            }
+            seasonRecords[index] = seasonRecord
+            return true
+        }
+        guard seasonRecords.last.map({ seasonRecord.season >= $0.season }) ?? true else {
+            return false
+        }
+        seasonRecords = Array(
+            (seasonRecords + [seasonRecord]).suffix(PeopleRules.careerSeasonHistoryLimit)
+        )
+        return true
     }
 
     public init(from decoder: any Decoder) throws {
@@ -915,9 +1021,28 @@ public struct StaffCareerRecord: Codable, Sendable, Equatable, Identifiable {
                 debugDescription: "Staff career history exceeds its bound."
             )
         }
+        // Decoded if present, so a save written before the career record existed still reads.
+        let decodedRecords = try container.decodeIfPresent(
+            [CoachSeasonRecord].self,
+            forKey: .seasonRecords
+        ) ?? []
+        var previousRecordSeason: Int?
+        let recordsAreOrdered = decodedRecords.allSatisfy { record in
+            defer { previousRecordSeason = record.season }
+            return previousRecordSeason.map { record.season > $0 } ?? true
+        }
+        guard decodedRecords.count <= PeopleRules.careerSeasonHistoryLimit,
+              recordsAreOrdered else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .seasonRecords,
+                in: container,
+                debugDescription: "Coach season records are out of order or exceed their bound."
+            )
+        }
         self.init(
             staffID: try container.decode(UUID.self, forKey: .staffID),
-            assignments: decodedAssignments
+            assignments: decodedAssignments,
+            seasonRecords: decodedRecords
         )
     }
 }
@@ -1176,9 +1301,95 @@ public struct PeopleState: Codable, Sendable, Equatable {
         )
     }
 
+    /// Writes one season's line onto a coach's career.
+    @discardableResult
+    public mutating func recordCoachSeason(
+        _ seasonRecord: CoachSeasonRecord,
+        for staffID: UUID
+    ) -> Bool {
+        guard var career = staffCareers[staffID] else { return false }
+        guard career.record(seasonRecord) else { return false }
+        staffCareers[staffID] = career
+        return true
+    }
+
+    @discardableResult
+    public mutating func removeStaffCareer(_ staffID: UUID) -> Bool {
+        staffCareers.removeValue(forKey: staffID) != nil
+    }
+
+    /// Appends one assignment to a staff career, creating the record if the coach has none.
+    ///
+    /// An out-of-order season is refused rather than written: the decoder rejects a
+    /// non-chronological record, and a caller must never be able to produce a save that cannot be
+    /// read back.
+    @discardableResult
+    public mutating func recordStaffAssignment(
+        _ assignment: StaffCareerAssignment,
+        for staff: Staff
+    ) -> Bool {
+        guard var career = staffCareers[staff.id] else {
+            staffCareers[staff.id] = StaffCareerRecord(
+                staffID: staff.id,
+                assignments: [assignment]
+            )
+            return true
+        }
+        guard career.assignments.last != assignment else { return true }
+        guard career.assignments.last.map({ assignment.season >= $0.season }) ?? true else {
+            return false
+        }
+        career.record(assignment)
+        staffCareers[staff.id] = career
+        return true
+    }
+
     public mutating func archive(player: Player, status: PlayerLifecycleStatus) {
         guard status != .active, playerLifecycle[player.id] != nil else { return }
         playerLifecycle.removeValue(forKey: player.id)
         departedPlayers[player.id] = DepartedPlayerIdentity(player: player, status: status)
+    }
+
+    /// Drops the oldest unprotected departed identities until the retained set is inside its bound.
+    ///
+    /// The identity and its career record leave together, because `WorldIntegrity` requires
+    /// `playerCareers` to be exactly `players` united with `departedPlayers`; evicting one without
+    /// the other trades a size defect for a corruption defect.
+    ///
+    /// `protectedIDs` is the set nothing may evict. The caller builds it from every place a
+    /// departed identity is still named — the retained event journal, archived award winners,
+    /// portal history — so a bound cannot make a retained reference dangle. Eviction order is
+    /// oldest departure first, with a stable identifier tiebreak, so the same save prunes the same
+    /// way in every process.
+    ///
+    /// Returns how many identities were evicted, so a caller can record it rather than guess.
+    @discardableResult
+    public mutating func pruneDepartedPlayers(
+        limit: Int = PeopleRules.departedPlayerRetentionLimit,
+        protecting protectedIDs: Set<UUID>
+    ) -> Int {
+        let excess = departedPlayers.count - max(0, limit)
+        guard excess > 0 else { return 0 }
+        let evictable = departedPlayers.keys
+            .filter { !protectedIDs.contains($0) }
+            .sorted { lhs, rhs in
+                let left = playerCareers[lhs]?.endedAt
+                let right = playerCareers[rhs]?.endedAt
+                if left != right {
+                    // A career with no recorded end is the least informative thing retained, so it
+                    // goes first rather than last.
+                    guard let left else { return true }
+                    guard let right else { return false }
+                    if left.season != right.season { return left.season < right.season }
+                    if left.week != right.week { return left.week < right.week }
+                }
+                return lhs.uuidString < rhs.uuidString
+            }
+            .prefix(excess)
+        for id in evictable {
+            departedPlayers.removeValue(forKey: id)
+            playerCareers.removeValue(forKey: id)
+        }
+        return evictable.count
     }
 }

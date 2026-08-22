@@ -15,6 +15,11 @@ public enum Leverage {
     /// draw count depended on the ratings would couple the stream to the roster — the defect that
     /// made P2's archetype sampling non-uniform — and would make a replay diverge the moment a
     /// player's rating changed.
+    /// - Parameter ratingWeight: how much of the outcome the rating difference is allowed to be.
+    ///   One for a matchup that *is* the rating difference — a blocker against a rusher. Less than
+    ///   one where `03` §1.1 names the rating as one input among several and the caller supplies the
+    ///   others through `situationModifier`, so that the curve's full ±1 range does not silently
+    ///   outweigh them.
     public static func score(
         attacker: Rating,
         defender: Rating,
@@ -22,9 +27,10 @@ public enum Leverage {
         attackerFatigue: Double = 0,
         defenderFatigue: Double = 0,
         situationModifier: Double = 0,
+        ratingWeight: Double = 1,
         rng: inout SeededRandom
     ) -> Double {
-        let base = logistic(Double(attacker.value - defender.value))
+        let base = logistic(Double(attacker.value - defender.value)) * ratingWeight
         let fit = clampUnit(schemeFit) * MatchupRules.schemeFitWeight
         let fatigue = (clampUnit(defenderFatigue) - clampUnit(attackerFatigue))
             * MatchupRules.fatigueWeight

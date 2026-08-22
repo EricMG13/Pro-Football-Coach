@@ -54,8 +54,11 @@ substitute. Flag anything borderline for the owner to take to counsel; never res
 **Two of these are tests, and they must stay green:**
 
 1. **Name collision test** — no generated school, team, conference, stadium, player or coach name
-   matches an entry in the maintained blocklist of real ones, at any seed, across N generated
-   leagues. Generated **place** names are swept too, against the venue and person limbs only, so a
+   matches an entry in the maintained blocklist, at any seed, across N generated leagues. Most
+   entries are real names. Some are **near-miss coinages nobody registered**, kept because the name
+   that gets a project sued is the one a careful person reaches for while trying to be safe — see
+   `02` §11.3.5's near-miss rule, and `docs/briefs/2026-08-13-name-equivalents.md` for the review
+   that produced it. Generated **place** names are swept too, against the venue and person limbs only, so a
    city called Rose Bowl or Nick Saban is still refused while a city called Columbus is not. The two
    sweeps must partition every generated name between them: a name that belongs to neither kind is
    a name nothing checks, and the suite asserts the partition.
@@ -80,7 +83,7 @@ at. **There is no archive as of 2026-08-10** — the superseded documents were d
 | `docs/03-MATCH-ENGINE.md` | Play resolution, seeding contract, off-screen model, calibration harness, soak |
 | `docs/03b-ARCHITECTURE.md` | Module layout, engine/UI boundary, save architecture, test architecture |
 | `docs/04-UX-AND-DESIGN-SYSTEM.md` | Design system, screens, match view, the accessibility contract |
-| `*-v3.dc.html` (8 root sheets) | **The definitive design references** (owner-approved 2026-08-12): composition and states for the `04` §6.5 registry. Renders and index in `docs/proofs/design-references/`. A rendering — `04` still owns every value |
+| `*-v3.dc.html` (8 root sheets) | **The definitive design references** (owner-approved 2026-08-12): composition and states for the `04` §6.5 registry. Renders and index in `docs/proofs/design-references/`. Five first-example screen mockups (HQ, Roster, Player Profile, Recruiting Board, Match Day): `docs/proofs/screen-mockups/` (not canon, not a ninth sheet, not the full 62). A rendering — `04` still owns every value |
 | `docs/04b-AUDIT-RUBRIC.md` | The audit rubric: five dimensions, 0–4 anchors, P0–P3 severities |
 | `docs/05-IMPLEMENTATION-PLAN.md` | Phased build with per-phase gates |
 | `docs/06-AUDIT-DISPOSITION.md` | Disposition of the prior audit's P0/P1s and systemic patterns |

@@ -179,6 +179,89 @@ func runCompetitionTests() {
                 ) <= 2, "pro byes collapsed for seed \(seed)")
             }
         }
+
+        test("the deterministic fallback preserves distributed byes") {
+            let world = LeagueGenerator.generate(seed: 70_116)
+            let college = ScheduleGenerator.roundRobinFallback(
+                seed: 70_116,
+                season: 0,
+                tier: .college,
+                members: world.programmes.map(\.id).sorted { $0.uuidString < $1.uuidString },
+                gamesPerTeam: CollegeRules.gamesPerRegularSeason,
+                weeks: CollegeRules.regularSeasonWeeks
+            )
+            assertSeasonSlate(
+                schedule: college,
+                tier: .college,
+                memberIDs: world.programmes.map(\.id),
+                gamesPerTeam: CollegeRules.gamesPerRegularSeason,
+                weeks: CollegeRules.regularSeasonWeeks,
+                maximumByesPerWeek: 12,
+                label: "college deterministic fallback"
+            )
+
+            let pro = ScheduleGenerator.roundRobinFallback(
+                seed: 70_116,
+                season: 0,
+                tier: .pro,
+                members: world.proTeams.map(\.id).sorted { $0.uuidString < $1.uuidString },
+                gamesPerTeam: ProRules.gamesPerRegularSeason,
+                weeks: ProRules.regularSeasonWeeks
+            )
+            assertSeasonSlate(
+                schedule: pro,
+                tier: .pro,
+                memberIDs: world.proTeams.map(\.id),
+                gamesPerTeam: ProRules.gamesPerRegularSeason,
+                weeks: ProRules.regularSeasonWeeks,
+                maximumByesPerWeek: 2,
+                label: "pro deterministic fallback"
+            )
+        }
+    }
+
+    /// Every assertion above runs against season 0, and the boundary does not reuse that slate.
+    /// `PostseasonSystem.completeSeason` regenerates the whole regular season for season N+1 from
+    /// the same league seed with a different season ordinal, and the ordinal reaches three separate
+    /// places: `scheduleSeed` derives every week's pairing seed through it, `makeGames` flips the
+    /// home/away parity on it, and the members handed in are whatever the boundary's realignment,
+    /// evolution and college cycle have just left behind. A slate that is exact at bootstrap
+    /// therefore says nothing at all about the slate a career actually plays in season 3.
+    ///
+    /// The coverage boundary was the quality boundary here: `assertScheduleShape` enumerates its
+    /// members by construction but was only ever handed season 0.
+    suite("Season-boundary schedule") {
+        test("every season boundary regenerates an exact slate") {
+            for seed in 72_100..<72_112 {
+                let world = LeagueGenerator.generate(seed: UInt64(seed))
+                for season in 0..<8 {
+                    let schedule = ScheduleGenerator.regularSeason(
+                        seed: UInt64(seed),
+                        season: season,
+                        programmes: world.programmes,
+                        proTeams: world.proTeams
+                    )
+                    assertSeasonSlate(
+                        schedule: schedule,
+                        tier: .college,
+                        memberIDs: world.programmes.map(\.id),
+                        gamesPerTeam: CollegeRules.gamesPerRegularSeason,
+                        weeks: CollegeRules.regularSeasonWeeks,
+                        maximumByesPerWeek: 12,
+                        label: "college seed \(seed) season \(season)"
+                    )
+                    assertSeasonSlate(
+                        schedule: schedule,
+                        tier: .pro,
+                        memberIDs: world.proTeams.map(\.id),
+                        gamesPerTeam: ProRules.gamesPerRegularSeason,
+                        weeks: ProRules.regularSeasonWeeks,
+                        maximumByesPerWeek: 2,
+                        label: "pro seed \(seed) season \(season)"
+                    )
+                }
+            }
+        }
     }
 
 
@@ -497,7 +580,7 @@ func runCompetitionTests() {
             state.competition = CompetitionReducer.rebuild(from: state)
 
             let rows = state.competition.standings.values.flatMap { $0 }
-            expectEqual(rows.reduce(0) { $0 + $1.wins + $1.losses + $1.ties }, selected.count * 2)
+            expectEqual(rows.reduce(0) { $0 + $1.wins + $1.losses }, selected.count * 2)
             expectEqual(rows.reduce(0) { $0 + $1.pointsFor },
                         selected.reduce(0) { total, game in
                             guard let result = state.competition.currentSchedule.games
@@ -970,19 +1053,98 @@ func runM1SoakTests(seasons: Int) {
             expect(Set(state.competition.archives.map(\.collegeChampionID)).count >= 3)
             expect(Set(state.competition.archives.map(\.proChampionID)).count >= 3)
 
+            assertSaveSizeIsBounded(checkpointSizes, seasons: seasons, label: "M1")
             let elapsed = started.duration(to: clock.now)
             print("M1 soak: \(seasons) seasons in \(elapsed); save checkpoints \(checkpointSizes)")
         }
     }
 }
 
+/// The whole structural shape of one tier's regular season, asserted from index maps rather than a
+/// filter per member so it stays cheap enough to run over a seed-by-season sweep.
+///
+/// Reports at most one failure per property per call: a degenerate slate breaks a property for
+/// every one of 134 members at once, and 134 identical lines bury the next property.
+private func assertSeasonSlate(
+    schedule: [ScheduledGame],
+    tier: Tier,
+    memberIDs: [UUID],
+    gamesPerTeam: Int,
+    weeks: Int,
+    maximumByesPerWeek: Int,
+    label: String
+) {
+    let games = schedule.filter { $0.tier == tier }
+    expectEqual(games.count, memberIDs.count * gamesPerTeam / 2, "\(label): slate size")
+
+    var weeksByMember: [UUID: Set<Int>] = [:]
+    var gamesByMember: [UUID: Int] = [:]
+    var doubleBooked: [String] = []
+    var repeatedPairings: [String] = []
+    var unresolvable: [String] = []
+    var outOfRange: [String] = []
+    var selfGames = 0
+    var byesByWeek = Array(repeating: memberIDs.count, count: weeks)
+    let known = Set(memberIDs)
+    var pairings: Set<[UUID]> = []
+
+    for game in games {
+        guard (1...weeks).contains(game.week) else {
+            outOfRange.append("week \(game.week)")
+            continue
+        }
+        byesByWeek[game.week - 1] -= 2
+        if game.homeID == game.awayID { selfGames += 1 }
+        for memberID in [game.homeID, game.awayID] {
+            if !known.contains(memberID) { unresolvable.append(memberID.uuidString) }
+            gamesByMember[memberID, default: 0] += 1
+            if !weeksByMember[memberID, default: []].insert(game.week).inserted {
+                doubleBooked.append("\(memberID) week \(game.week)")
+            }
+        }
+        let ordered = [game.homeID, game.awayID].sorted { $0.uuidString < $1.uuidString }
+        if !pairings.insert(ordered).inserted {
+            repeatedPairings.append("\(ordered[0]) v \(ordered[1])")
+        }
+    }
+
+    expectEqual(selfGames, 0, "\(label): a member was scheduled against itself")
+    expect(outOfRange.isEmpty,
+           "\(label): \(outOfRange.count) games outside weeks 1...\(weeks)")
+    expect(unresolvable.isEmpty,
+           "\(label): \(unresolvable.count) references to non-members")
+    expect(doubleBooked.isEmpty,
+           "\(label): \(doubleBooked.count) double-bookings, first \(doubleBooked.first ?? "")")
+    expect(repeatedPairings.isEmpty,
+           "\(label): \(repeatedPairings.count) repeated pairings, "
+               + "first \(repeatedPairings.first ?? "")")
+
+    let wrongCount = memberIDs.filter { gamesByMember[$0, default: 0] != gamesPerTeam }
+    expect(wrongCount.isEmpty,
+           "\(label): \(wrongCount.count) members off \(gamesPerTeam) games, first has "
+               + "\(gamesByMember[wrongCount.first ?? memberIDs[0], default: 0])")
+    let wrongByes = memberIDs.filter {
+        weeks - weeksByMember[$0, default: []].count != weeks - gamesPerTeam
+    }
+    expect(wrongByes.isEmpty,
+           "\(label): \(wrongByes.count) members without exactly "
+               + "\(weeks - gamesPerTeam) bye week(s)")
+
+    let worstByeWeek = byesByWeek.max() ?? memberIDs.count
+    expect(worstByeWeek <= maximumByesPerWeek,
+           "\(label): byes collapsed, worst week idles \(worstByeWeek) of "
+               + "\(memberIDs.count), bound is \(maximumByesPerWeek)")
+}
+
+/// The per-member half of the slate shape. Internal rather than private because
+/// `SeasonRolloverTests` asserts the same shape on a rolled-over schedule, and one statement of it
+/// is the point.
 func assertScheduleShape(
     games: [ScheduledGame],
     memberIDs: [UUID],
     gamesPerTeam: Int,
     regularSeasonWeeks: Int
 ) {
-    expectEqual(games.count, memberIDs.count * gamesPerTeam / 2)
     for memberID in memberIDs {
         let memberGames = games.filter { $0.homeID == memberID || $0.awayID == memberID }
         expectEqual(memberGames.count, gamesPerTeam)

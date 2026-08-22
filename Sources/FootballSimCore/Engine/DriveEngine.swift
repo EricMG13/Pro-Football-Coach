@@ -123,8 +123,13 @@ public struct BaselinePlayCaller: PlayCaller, Sendable {
         let depth: PassDepth
         if hurrying, situation.distance >= MatchupRules.deepShotDistance {
             depth = .deep
+        // `% 8`, not `% 4`. First-and-ten clears `deepShotDistance`, so a quarter of every early
+        // down was a deep shot and 31 percent of all attempts went deep — against roughly 12 percent
+        // in the real game. Deep balls complete 41 percent and are intercepted several times more
+        // often than short ones, so that one modulus was moving completion percentage, interception
+        // rate and explosive-pass rate at once.
         } else if situation.distance >= MatchupRules.deepShotDistance,
-                  situation.down >= 3 || situation.yardLine % 4 == 0 {
+                  situation.down >= 3 || situation.yardLine % 8 == 0 {
             depth = .deep
         } else if situation.distance >= MatchupRules.longYardage {
             depth = .mid

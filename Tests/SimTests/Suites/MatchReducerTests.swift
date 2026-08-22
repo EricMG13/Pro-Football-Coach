@@ -1,5 +1,5 @@
 import Foundation
-import FootballSimCore
+@testable import FootballSimCore
 import ProFootballCoachUI
 import CoachWorldApp
 
@@ -436,6 +436,21 @@ func runMatchReducerTests() {
                 expect(completion.record.winner != nil,
                        "\(tier.rawValue) \(stage.rawValue) overtime must produce a winner")
             }
+        }
+
+        test("a drive ending preserves the snap's clock state") {
+            let personnel = testPersonnel(offenseSkill: 70, defenseSkill: 70)
+            var state = MatchReducer.start(
+                tier: .pro,
+                home: personnel,
+                away: personnel,
+                seed: 8_112,
+                initialSituation: Situation(secondsRemainingInQuarter: 600)
+            )
+            _ = try! MatchReducer.reduce(.advance, state: &state,
+                                         callerOverride: PuntOnlyCaller())
+            expectEqual(state.drives.last?.ending, .punt)
+            expect(!state.clockRunning, "a punt's stopped clock was overwritten at drive end")
         }
 
         test("a drive-budget boundary cannot leave a winner-required tie") {

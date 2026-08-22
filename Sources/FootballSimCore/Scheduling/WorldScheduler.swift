@@ -3,6 +3,10 @@ import Foundation
 public enum WorldStep: String, Codable, Sendable, CaseIterable, Hashable {
     case expiringInboundEvents
     case injuriesAndRecovery
+    /// Ordered after `injuriesAndRecovery` because `PeopleLifecycleSystem.processHealth` counts a
+    /// served suspension down on that tick. A new suspension drawn before it would be shortened by
+    /// the same week it was issued in.
+    case disciplineFile
     case practiceAndDevelopment
     case scoutingKnowledge
     case marketInteractions
@@ -68,10 +72,14 @@ public enum WorldSchedulerError: Error, Equatable {
     /// A user-owned controlled fixture must be entered through `CareerSession` so its
     /// resumable MatchSessionState is persisted instead of being silently abstracted.
     case controlledMatchRequired(UUID)
+    /// The career reached `SharedRules.maximumCareerSeasons` and has ended. A terminal resting
+    /// state, not a failure: the root stays valid and readable, it simply cannot advance.
+    case careerComplete
     case integrityFailed([IntegrityIssue])
     case scheduledGameMissing(UUID)
     case scheduledGameResultMissing(UUID)
     case scheduleResultRecordingFailed(ScheduleResultRecordingError)
+    case coachSeasonRecordingFailed
     case eventAppendFailed
     case aiRecruitingActionFailed(RecruitingActionError)
     case collegeCycleFailed
@@ -88,10 +96,25 @@ public enum WorldScheduler {
     public static let steps: [WorldStep] = WorldStep.allCases
     private static let missingFixtureID = UUID(uuidString: "00000000-0000-4000-8000-000000000000")!
 
+    /// Test-only checkpoint after each committed transaction inside the weekly step loop, so an
+    /// invariant can be asserted **after every transaction** rather than only on the root the week
+    /// comes to rest on.
+    ///
+    /// `WorldIntegrity` runs once a week, at `.saveGrowthAndIntegrity`. Everything the season
+    /// boundary does — the people transition, scholarship reconciliation, the cycle rollover, both
+    /// portal windows, both walk-on windows — commits inside a single step, so a rule can be
+    /// breached and repaired between two consecutive transactions and the week still comes to rest
+    /// clean. That is not a hypothetical: `reconcileScholarships` exists precisely to repair one.
+    ///
+    /// `package`, so nothing outside this package can install one, and `nil` in every shipped
+    /// build: each checkpoint is then a null check.
     package nonisolated(unsafe) static var transactionObserver: (
         @Sendable (String, GameState) -> Void
     )?
 
+    /// The label is autoclosed so a shipped build never builds one: the per-step call site
+    /// interpolates, and interpolating sixteen strings a week to hand them to a `nil` observer is
+    /// a test seam charging the game for its own existence.
     @inline(__always)
     private static func checkpoint(
         _ label: @autoclosure () -> String,
@@ -360,6 +383,12 @@ public enum WorldScheduler {
     }
 
     public static func advanceWeek(_ state: GameState) throws -> WorldTransition {
+        // First, before any other refusal: a finished career is finished whatever else is pending.
+        // This is the one chokepoint every caller reaches -- app, tests and soaks alike -- so the
+        // cap is enforced here rather than in each of them.
+        guard state.calendar.season < SharedRules.maximumCareerSeasons else {
+            throw WorldSchedulerError.careerComplete
+        }
         if let session = state.matchSession, let fixtureID = session.fixtureID {
             throw WorldSchedulerError.controlledMatchRequired(fixtureID)
         }
@@ -378,6 +407,7 @@ public enum WorldScheduler {
         let next = completed.advancedWeek()
         var records: [WorldStepRecord] = []
         var events: [DomainEvent] = []
+        var pendingCoachSeason: (coachID: UUID, record: CoachSeasonRecord)?
 
         for step in steps {
             switch step {
@@ -510,6 +540,17 @@ public enum WorldScheduler {
                 )
                 records.append(WorldStepRecord(step: step, status: .executed))
 
+            case .disciplineFile:
+                let transition = try DisciplineAISystem.process(at: completed, in: nextState)
+                nextState = transition.state
+                try appendEvents(
+                    payloads: transition.eventPayloads,
+                    occurredAt: completed,
+                    to: &nextState,
+                    emittedEvents: &events
+                )
+                records.append(WorldStepRecord(step: step, status: .executed))
+
             case .practiceAndDevelopment:
                 let transition = DevelopmentSystem.practice(
                     at: completed,
@@ -632,16 +673,37 @@ public enum WorldScheduler {
 
             case .statisticsAndRecords:
                 nextState.competition = CompetitionReducer.rebuildStatistics(from: nextState)
+                let evaluatedCoachSeason = CareerControlSystem.pendingCoachSeason(
+                    after: completed,
+                    in: nextState
+                )
+                if completed.week == SharedRules.inSeasonWeeks {
+                    // Capture before the weekly or season-end evaluation can fire the coach and
+                    // clear the job that identifies the standings row to record.
+                    pendingCoachSeason = evaluatedCoachSeason
+                }
+                let coachWasEmployed = nextState.careerArc.status == .employed
                 CareerArcSystem.evaluateWeek(
                     after: completed,
                     in: nextState,
                     arc: &nextState.careerArc
                 )
                 if nextState.careerArc.status == .fired {
+                    if coachWasEmployed && completed.week != SharedRules.inSeasonWeeks {
+                        guard let evaluatedCoachSeason,
+                              nextState.people.recordCoachSeason(
+                                  evaluatedCoachSeason.record,
+                                  for: evaluatedCoachSeason.coachID
+                              ) else {
+                            throw WorldSchedulerError.coachSeasonRecordingFailed
+                        }
+                    }
                     // Firing revokes control in the same scheduler transaction. Leaving the
                     // college control record behind lets a fired coach keep advancing the old
-                    // team through the next screen.
+                    // team through the next screen, and leaving the chair behind leaves them
+                    // listed as the programme's head coach on every staff surface.
                     nextState.career.clearCollege()
+                    CareerControlSystem.vacateCurrentSeat(in: &nextState)
                 }
                 records.append(WorldStepRecord(step: step, status: .executed))
 
@@ -702,9 +764,10 @@ public enum WorldScheduler {
                             emittedEvents: &events
                         )
                     }
-                    // Resolve work performed after the ordinary pre-AI market before signing.
-                    // Appending immediately keeps commitment history causally ahead of the
-                    // resolution and join events emitted by the college cycle below.
+                }
+                if completed.week == CollegeRules.signingDayWeek - 1 {
+                    // Resolve the last open-week AI work before signing day. Appending immediately
+                    // keeps the reservation causally ahead of the signing-week rollover events.
                     let terminalMarket = CollegeRecruitingMarketSystem.process(
                         at: completed,
                         in: nextState
@@ -718,10 +781,6 @@ public enum WorldScheduler {
                         emittedEvents: &events
                     )
                 }
-                let peopleTransition = try SeasonLifecycleSystem.advance(
-                    after: completed,
-                    in: nextState
-                )
                 if completed.week == SharedRules.inSeasonWeeks {
                     CareerArcSystem.evaluateSeasonEnd(
                         after: completed,
@@ -729,8 +788,18 @@ public enum WorldScheduler {
                         arc: &nextState.careerArc
                     )
                     if nextState.careerArc.status == .fired {
+                        // Do this before the lifecycle snapshot so its replacement seat and
+                        // career record are carried forward instead of overwritten by the
+                        // transition's wholesale staff assignment.
                         nextState.career.clearCollege()
+                        CareerControlSystem.vacateCurrentSeat(in: &nextState)
                     }
+                }
+                let peopleTransition = try SeasonLifecycleSystem.advance(
+                    after: completed,
+                    in: nextState
+                )
+                if completed.week == SharedRules.inSeasonWeeks {
                     let completion = PostseasonSystem.completeSeason(
                         after: completed,
                         in: nextState
@@ -751,6 +820,14 @@ public enum WorldScheduler {
                 nextState.players = peopleTransition.players
                 nextState.staff = peopleTransition.staff
                 nextState.people = peopleTransition.people
+                if let pendingCoachSeason {
+                    guard nextState.people.recordCoachSeason(
+                        pendingCoachSeason.record,
+                        for: pendingCoachSeason.coachID
+                    ) else {
+                        throw WorldSchedulerError.coachSeasonRecordingFailed
+                    }
+                }
                 nextState.college = peopleTransition.college
                 checkpoint("seasonLifecycle", nextState)
                 if completed.week == SharedRules.inSeasonWeeks {
@@ -794,6 +871,11 @@ public enum WorldScheduler {
                     } catch let error as ProMarketError {
                         throw WorldSchedulerError.professionalMarketFailed(error)
                     }
+                    // D16 (`02` §4.2a): dead money is a single-season charge, so the season now
+                    // ending is discharged here -- after beat 1, before beat 2. The compliance
+                    // pass below then charges the season about to start, which makes each season's
+                    // dead money exactly that season's releases rather than every release the save
+                    // has ever made.
                     nextState = ProManagementSystem.dischargeDeadMoney(in: nextState)
                     // Beat 2 (`02` §4.2/§4.2a), right after beat 1's expiry and before anything
                     // takes the season-projected view a later step in this same block does (the
@@ -833,9 +915,16 @@ public enum WorldScheduler {
                             in: nextState
                         )
                     }
-                    // Realignment after evolution, and both before the college cycle rebuilds the
-                    // next season's schedule: the schedule is generated from conference membership,
-                    // so a swap has to land before it is read, not after.
+                    // Realignment sits here, after evolution and before the college cycle, and
+                    // it cannot be hoisted above the slate that reads it: `completeSeason` draws
+                    // the whole of next season from conference membership, and it runs earlier in
+                    // this same step because the season-completed event has to stay observable
+                    // ahead of lifecycle and cycle construction. So the slate is redrawn below
+                    // rather than the swap being moved above the event it must follow.
+                    //
+                    // Its own placement costs nothing either way — `bestSwap` scores a swap purely
+                    // on the distance from a programme's city to its conference's centroid, so
+                    // neither evolution nor the cycle can move its answer.
                     let realignment = ConferenceRealignmentSystem.processTransition(in: nextState)
                     nextState = realignment.state
                     if !realignment.swaps.isEmpty {
@@ -849,6 +938,32 @@ public enum WorldScheduler {
                             to: &nextState,
                             emittedEvents: &events
                         )
+                        // `completeSeason` drew the coming season from the map this swap has just
+                        // replaced, so every programme that moved was scheduled into the
+                        // conference it left. Redraw against the map that now exists.
+                        //
+                        // A redraw rather than a patch because `ScheduleGenerator` pairs a whole
+                        // tier at once: one changed membership shifts the preference filter for
+                        // every week, so there is no local edit that leaves the rest standing.
+                        // The professional slate is regenerated from unchanged inputs and so comes
+                        // back identical; only the college one moves. Nothing has to be rebuilt
+                        // behind it — standings and statistics read completed games, and a slate
+                        // this new has none.
+                        //
+                        // Guarded on the season having actually rolled: `completeSeason` declines
+                        // to roll one that finished without a champion, and must keep the slate it
+                        // declined on.
+                        if nextState.competition.currentSchedule.season == completed.season + 1 {
+                            nextState.competition.currentSchedule = SeasonSchedule(
+                                season: completed.season + 1,
+                                games: ScheduleGenerator.regularSeason(
+                                    seed: nextState.league.seed,
+                                    season: completed.season + 1,
+                                    programmes: nextState.programmes.values,
+                                    proTeams: nextState.proTeams.values
+                                )
+                            )
+                        }
                     }
                     nextState.college.reconcileScholarships(with: nextState.programmes)
                     checkpoint("reconcileScholarships", nextState)
@@ -923,7 +1038,7 @@ public enum WorldScheduler {
                 records.append(WorldStepRecord(step: step, status: .executed))
 
             case .saveGrowthAndIntegrity:
-                nextState = compactHistoryBoundState(nextState)
+                nextState.college = CollegeCycleSystem.pruningArchivedProspects(in: nextState)
                 var integrityProjection = nextState
                 if completed.week == SharedRules.inSeasonWeeks {
                     integrityProjection.calendar = next
@@ -940,7 +1055,7 @@ public enum WorldScheduler {
                     to: &nextState,
                     emittedEvents: &events
                 )
-                nextState = compactHistoryBoundState(nextState)
+                nextState.college = CollegeCycleSystem.pruningArchivedProspects(in: nextState)
                 records.append(WorldStepRecord(step: step, status: .executed))
 
             case .weekSnapshot:
@@ -949,6 +1064,13 @@ public enum WorldScheduler {
                 nextState.league.week = next.week
                 nextState.tactical.advance(to: next)
                 nextState.college.resetWeeklyContactPoints()
+                // Signing day (`02` section 4.1). Set here rather than in an earlier step because
+                // this is where the calendar itself moves: `saveGrowthAndIntegrity` has already
+                // checked the root against the week being *left*, so a phase written before it
+                // would be checked against the wrong week. Assigned unconditionally, not only on
+                // the boundary that opens it, so the phase cannot survive a week it does not
+                // belong to.
+                nextState.college.phase = CollegeRules.recruitingCyclePhase(inWeek: next.week)
                 guard nextState.competition.currentSchedule.season == next.season else {
                     throw WorldSchedulerError.integrityFailed([.calendarDisagreement])
                 }
@@ -958,7 +1080,7 @@ public enum WorldScheduler {
                     to: &nextState,
                     emittedEvents: &events
                 )
-                nextState = compactHistoryBoundState(nextState)
+                nextState.college = CollegeCycleSystem.pruningArchivedProspects(in: nextState)
                 records.append(WorldStepRecord(step: step, status: .executed))
 
             default:
@@ -978,41 +1100,6 @@ public enum WorldScheduler {
             stepRecords: records,
             emittedEvents: events
         )
-    }
-
-    private static func compactHistoryBoundState(_ state: GameState) -> GameState {
-        var retainedPlayerIDs = Set<UUID>()
-        var retainedStaffIDs = Set<UUID>()
-        for event in state.history.recent + state.history.archive.flatMap(\.notableEvents) {
-            let referencedIDs = event.payload.referencedEntityIDs
-            retainedPlayerIDs.formUnion(referencedIDs)
-            retainedStaffIDs.formUnion(referencedIDs)
-        }
-        for archive in state.competition.archives {
-            for award in archive.awards where award.kind == .playerOfTheYear {
-                retainedPlayerIDs.insert(award.winnerID)
-            }
-        }
-        for programme in state.programmes.values {
-            retainedStaffIDs.formUnion(programme.staffIDs)
-        }
-        for team in state.proTeams.values {
-            retainedStaffIDs.formUnion(team.staffIDs)
-        }
-        if let coachID = state.career.coachID {
-            retainedStaffIDs.insert(coachID)
-        }
-        var compacted = state
-        compacted.college = CollegeCycleSystem.pruningArchivedProspects(in: state)
-        compacted.people = state.people.compacted(
-            retainingPlayerIDs: retainedPlayerIDs,
-            staffIDs: retainedStaffIDs
-        )
-        let retainedStaff = state.staff.values.filter { retainedStaffIDs.contains($0.id) }
-        if retainedStaff.count != state.staff.count {
-            compacted.staff = EntityStore(retainedStaff)
-        }
-        return compacted
     }
 
     private static func appendEvents(

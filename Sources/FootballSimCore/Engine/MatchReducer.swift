@@ -278,7 +278,7 @@ public struct MatchSessionState: Codable, Sendable, Equatable {
         controlledSide: Side? = nil,
         homePlan: TacticalPlan = .balanced,
         awayPlan: TacticalPlan = .balanced,
-        homeFieldAdvantage: Double = MatchupRules.homeAdvantage,
+        homeFieldAdvantage: Double? = nil,
         initialSituation: Situation? = nil,
         fixtureID: UUID? = nil
     ) {
@@ -296,7 +296,7 @@ public struct MatchSessionState: Codable, Sendable, Equatable {
         self.home = home
         self.away = away
         self.seed = seed
-        self.homeFieldAdvantage = homeFieldAdvantage
+        self.homeFieldAdvantage = homeFieldAdvantage ?? tier.homeAdvantage
         self.controlledSide = controlledSide
         self.isTakeover = controlledSide != nil
         self.homePlan = homePlan
@@ -461,7 +461,7 @@ public enum MatchReducer {
         controlledSide: Side? = nil,
         homePlan: TacticalPlan = .balanced,
         awayPlan: TacticalPlan = .balanced,
-        homeFieldAdvantage: Double = MatchupRules.homeAdvantage,
+        homeFieldAdvantage: Double? = nil,
         initialSituation: Situation? = nil,
         fixtureID: UUID? = nil
     ) -> MatchSessionState {
@@ -549,7 +549,7 @@ public enum MatchReducer {
         home: SnapPersonnel,
         away: SnapPersonnel,
         caller: any PlayCaller = BaselinePlayCaller(),
-        homeFieldAdvantage: Double = MatchupRules.homeAdvantage,
+        homeFieldAdvantage: Double? = nil,
         seed: UInt64,
         initialSituation: Situation? = nil
     ) -> MatchCompletionReceipt {
@@ -678,7 +678,9 @@ public enum MatchReducer {
         state.nextDriveIndex += 1
         state.afterTurnover = finished.drive.ending == .turnover
             || finished.drive.ending == .downs
-        state.clockRunning = finished.drive.ending == .endOfQuarter
+        // Preserve the resolved snap's clock state. DriveEnding cannot distinguish an interception
+        // from a fumble, so reconstructing it here loses information.
+        state.clockRunning = drive.clockRunning
 
         let priorQuarter = state.situation.quarter
         var crossedHalf = false

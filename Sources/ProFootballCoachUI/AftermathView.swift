@@ -92,13 +92,11 @@ public struct AftermathView: View, CoachWorldChromedSurface {
     private func scoreLine(_ side: MatchDayReadModel.TeamScore, isLead: Bool) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: CoachWorldTokens.Gap.mdPlus) {
             Text(side.team.name.uppercased())
-                .font(
-                    CoachWorldTokens.display(
-                        isLead
-                            ? CoachWorldTokens.DisplaySize.figure
-                            : CoachWorldTokens.DisplaySize.screen,
-                        weight: .bold
-                    )
+                .coachWorldDisplay(
+                    isLead
+                        ? CoachWorldTokens.DisplaySize.figure
+                        : CoachWorldTokens.DisplaySize.screen,
+                    weight: .bold
                 )
                 .foregroundStyle(
                     isLead ? palette.contentPrimary.color : palette.contentSecondary.color
@@ -106,13 +104,11 @@ public struct AftermathView: View, CoachWorldChromedSurface {
                 .lineLimit(1)
                 .minimumScaleFactor(AftermathMetric.nameScaleFloor)
             Text("\(side.score)")
-                .font(
-                    CoachWorldTokens.figure(
-                        isLead
-                            ? CoachWorldTokens.DisplaySize.score
-                            : CoachWorldTokens.DisplaySize.scoreLive,
-                        weight: .semibold
-                    )
+                .coachWorldFigure(
+                    isLead
+                        ? CoachWorldTokens.DisplaySize.score
+                        : CoachWorldTokens.DisplaySize.scoreLive,
+                    weight: .semibold
                 )
                 .foregroundStyle(
                     isLead ? palette.contentPrimary.color : palette.contentSecondary.color
@@ -152,7 +148,7 @@ public struct AftermathView: View, CoachWorldChromedSurface {
         let tint = CoachWorldTokens.Heat.color(for: grade.rating, palette: palette)
         return HStack(spacing: CoachWorldTokens.Gap.md) {
             Text(grade.position.uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.pill, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.pill, weight: .bold)
                 .tracking(
                     CoachWorldTokens.DisplaySize.tracking(
                         AftermathMetric.positionTracking, at: CoachWorldTokens.DisplaySize.pill
@@ -162,12 +158,12 @@ public struct AftermathView: View, CoachWorldChromedSurface {
                 .lineLimit(1)
                 .frame(width: AftermathMetric.positionColumn, alignment: .leading)
             Text(grade.player.name)
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                 .lineLimit(1)
                 .frame(width: AftermathMetric.nameColumn, alignment: .leading)
             FloodlitShareBar(proportion: proportion(of: grade.rating), tint: tint, palette: palette)
             Text("\(grade.rating)")
-                .font(CoachWorldTokens.figure(CoachWorldTokens.DisplaySize.row, weight: .semibold))
+                .coachWorldFigure(CoachWorldTokens.DisplaySize.row, weight: .semibold)
                 .foregroundStyle(tint)
                 .frame(width: AftermathMetric.gradeColumn, alignment: .trailing)
         }
@@ -233,11 +229,7 @@ public struct AftermathView: View, CoachWorldChromedSurface {
             Spacer(minLength: CoachWorldTokens.Gap.xs)
             if let onOpenBoxScore {
                 Button("Box score", action: onOpenBoxScore)
-                    .font(
-                        CoachWorldTokens.display(
-                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                        )
-                    )
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                     .foregroundStyle(palette.contentQuiet.color)
                     .frame(minWidth: CoachWorldTokens.Shape.minimumTarget,
                            minHeight: CoachWorldTokens.Shape.minimumTarget)

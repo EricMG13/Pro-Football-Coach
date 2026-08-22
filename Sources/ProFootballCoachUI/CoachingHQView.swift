@@ -107,7 +107,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                 HStack(spacing: CoachWorldTokens.Space.sm) {
                     VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                         Text("COACH'S WORLD")
-                            .font(CoachWorldTokens.TypeRole.microLabel)
+                            .coachWorldDisplay(CoachWorldTokens.TypeRole.microLabelSize)
                             .tracking(CoachWorldTokens.TypeRole.microLabelTracking)
                             .foregroundStyle(palette.actionPrimary.color)
                         Text(model.team.name.uppercased())
@@ -254,7 +254,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                 "\(model.week.weekLabel) \u{00B7} \(model.week.currentDay)", palette: palette
             )
             Text("\(model.obligations.count) OPEN")
-                .font(CoachWorldTokens.display(HQMetric.heroSize, weight: .heavy))
+                .coachWorldDisplay(HQMetric.heroSize, weight: .heavy)
                 .foregroundStyle(palette.contentPrimary.color)
                 .lineLimit(1)
                 .minimumScaleFactor(HQMetric.heroScaleFloor)
@@ -263,11 +263,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                     FloodlitRow(palette: palette) {
                         HStack(spacing: CoachWorldTokens.Gap.xs) {
                             Text(obligation.title.uppercased())
-                                .font(
-                                    CoachWorldTokens.display(
-                                        CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                                    )
-                                )
+                                .coachWorldDisplay(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                                 .lineLimit(1)
                                 .minimumScaleFactor(HQMetric.rowScaleFloor)
                             Spacer(minLength: CoachWorldTokens.Gap.xxs)
@@ -301,7 +297,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                     FloodlitLabel3("You decide", palette: palette, tint: palette.actionPrimary.color)
                 }
                 Text(decision.title)
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.lead, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.lead, weight: .bold)
                     .fixedSize(horizontal: false, vertical: true)
                 if let evidence = decision.evidence.first {
                     Text(evidence)
@@ -341,7 +337,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
         ) {
             VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
                 Text(choice.title.uppercased())
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.row, weight: .bold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.row, weight: .bold)
                     .lineLimit(1)
                 FloodlitCostLine(
                     cost: choice.cost,
@@ -357,9 +353,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
     private func secondaryAction(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title.uppercased())
-                .font(
-                    CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold)
-                )
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                 .tracking(
                     CoachWorldTokens.DisplaySize.tracking(0.1, at: CoachWorldTokens.DisplaySize.flag)
                 )
@@ -387,11 +381,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                         ForEach(model.squadHealth) { row in
                             HStack(spacing: CoachWorldTokens.Gap.xs) {
                                 Text(row.slot.uppercased())
-                                    .font(
-                                        CoachWorldTokens.display(
-                                            CoachWorldTokens.DisplaySize.flag, weight: .bold
-                                        )
-                                    )
+                                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                                     .foregroundStyle(palette.stateInfo.color)
                                     .frame(width: HQMetric.slotColumn, alignment: .leading)
                                 Text(row.player)
@@ -399,11 +389,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                                     .lineLimit(1)
                                 Spacer(minLength: CoachWorldTokens.Gap.xxs)
                                 Text(row.status)
-                                    .font(
-                                        CoachWorldTokens.display(
-                                            CoachWorldTokens.DisplaySize.flag, weight: .bold
-                                        )
-                                    )
+                                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
                                     .foregroundStyle(
                                         row.isConcern
                                             ? palette.stateWarning.color
@@ -428,11 +414,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                                     .lineLimit(1)
                                 Spacer(minLength: CoachWorldTokens.Gap.xxs)
                                 Text("\(row.support)")
-                                    .font(
-                                        CoachWorldTokens.figure(
-                                            CoachWorldTokens.DisplaySize.actionSmall, weight: .bold
-                                        )
-                                    )
+                                    .coachWorldFigure(CoachWorldTokens.DisplaySize.actionSmall, weight: .bold)
                                 // Support is a proportion of a stated whole, so an arc is legitimate
                                 // here — and it is a second reading of the printed figure, never the
                                 // only one.
@@ -479,6 +461,14 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                     identityRail
                     deskWire
                 }
+                // Neither column takes a fixed width of its own -- standardLayout applies that at
+                // its call site -- so both flow full width here instead of the side-by-side
+                // columns standardLayout uses. Without these, accessibleLayout carried no way to
+                // advance the week at all (its only continueButton call sat inside worldStrip,
+                // itself gated on chrome == nil, which production's shared-chrome construction
+                // never satisfies) and silently dropped squad health and stakeholders too.
+                weekAgendaColumn
+                supportColumn
             }
             .padding(CoachWorldTokens.Space.sm)
         }
@@ -487,7 +477,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
     private var identityRail: some View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Space.sm) {
             Text("\(model.week.seasonLabel) · \(model.week.weekLabel)".uppercased())
-                .font(CoachWorldTokens.TypeRole.microLabel)
+                .coachWorldDisplay(CoachWorldTokens.TypeRole.microLabelSize)
                 .tracking(CoachWorldTokens.TypeRole.microLabelTracking)
                 .foregroundStyle(palette.actionPrimary.color)
             Text(model.week.currentDay.uppercased())
@@ -506,7 +496,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
             if let opponent = model.opponent {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xxs) {
                     Text("NEXT FIXTURE")
-                        .font(CoachWorldTokens.TypeRole.microLabel)
+                        .coachWorldDisplay(CoachWorldTokens.TypeRole.microLabelSize)
                         .tracking(CoachWorldTokens.TypeRole.microLabelTracking)
                         .foregroundStyle(palette.contentQuiet.color)
                     Text(opponent.name.uppercased())
@@ -588,6 +578,11 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
                                    minHeight: CoachWorldTokens.Shape.minimumTarget)
                             .background(day.isCurrent ? palette.actionPrimary.color : Color.clear)
                             .foregroundStyle(
+                                // S-2, 2026-08-19 review: was a hand-typed Color(red:green:blue:)
+                                // literal, ~1/255 per channel off the canon `goldInk` token
+                                // (0x150F02) that already exists for exactly this ink-on-gold
+                                // case -- FloodlitPatterns.swift:335 and MatchDayField.swift:651
+                                // use it the same way, ink on an isCurrent/isSelected gold ground.
                                 day.isCurrent ? CoachWorldTokens.Floodlit.goldInk.color
                                     : palette.contentPrimary.color
                             )
@@ -815,7 +810,7 @@ public struct CoachingHQView: View, CoachWorldChromedSurface {
 
             if let opponent = model.opponent {
                 VStack(alignment: .leading, spacing: CoachWorldTokens.Space.xs) {
-                    Text("NEXT FIXTURE · OPPONENT").font(.caption.weight(.heavy))
+                    Text("NEXT FIXTURE").font(.caption.weight(.heavy))
                     Text(opponent.name).font(.headline)
                     Text(model.venue?.name ?? "Venue not set")
                         .font(.caption)

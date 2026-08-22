@@ -817,27 +817,51 @@ public enum NameGrammar {
     // sweep found it: it is Harvard's nickname, so every "Crimson Lancers" the generator produced
     // was a collision. A rare pool word might not surface in 200 leagues at all, which is why the
     // pool is checked as a set and not only through its output.
+    // "Storm" was here and is gone. It is the nickname of Simpson College, which plays Division III
+    // football, and of Lake Erie College in Division II. An adjective is the hardest place to see
+    // this, because the word never appears alone in a generated name — but "Storm Wardens" contains
+    // it, and containment is what the blocklist evaluates. Replaced by another mineral, so the
+    // pool keeps its register and its count.
     private static let nicknameAdjectives = [
-        "Iron", "Amber", "Granite", "Silver", "Copper", "Slate", "Storm", "Frost", "Ember",
+        "Iron", "Amber", "Granite", "Silver", "Copper", "Slate", "Basalt", "Frost", "Ember",
         "Thunder", "River", "Harbor", "Timber", "Cinder", "Verdant", "Sable", "Kindled", "Hollow",
         // Added 2026-08-21 with the nouns below. Every member showed a nickname from that date --
         // college programmes had one all along and never displayed it -- so 18 by 22 was suddenly
         // 166 members drawing from 396 pairs, and the duplicates were on the glass.
-        "Basalt", "Flint", "Cobalt", "Tidal", "Bramble", "Cedar", "Gale", "Anvil", "Hearth",
+        "Obsidian", "Flint", "Cobalt", "Tidal", "Bramble", "Cedar", "Gale", "Anvil", "Hearth",
         "Kiln", "Meridian", "Marsh", "Peat", "Shale",
     ]
     // Miners, Lancers, Stags and Pioneers were here and are real Division I nicknames (UTEP,
     // Longwood, Fairfield, Denver). They are replaced one-for-one rather than deleted: the pool is
     // 22 nouns against 166 teams per save, and shrinking it makes the duplicate-nickname problem
     // worse, not better.
+    //
+    // Seven more went the same way on 2026-08-13, found by reading the pool against every division
+    // rather than against the FBS slice the blocklist held: Foresters (Lake Forest, III), Marauders
+    // (Mary, II), Herons (William Smith, III), Otters (Cal State Monterey Bay, II), Beacons
+    // (Valparaiso, **I**), Drovers (Science and Arts of Oklahoma, NAIA) and Harriers (Miami
+    // Hamilton, USCAA). Replaced in place, so the count stays 22 and `rng.pick` draws the same
+    // index it drew before — a swap changes the names in a save and nothing else about it.
     private static let nicknameNouns = [
-        "Wardens", "Drovers", "Delvers", "Sentinels", "Bulwarks", "Foresters", "Marauders",
-        "Prospectors", "Voyagers", "Reapers", "Anchors", "Wayfarers", "Wreckers", "Harriers",
-        "Stalkers", "Herons", "Colliers", "Otters", "Ironsides", "Quarrymen", "Beacons", "Kestrels",
+        // Seven of the originals are real programme nicknames and are replaced **in place**, as
+        // origin/main replaced them on 2026-08-13, found by reading the pool against every division
+        // rather than the FBS slice the blocklist then held: Foresters (Lake Forest, III),
+        // Marauders (Mary, II), Herons (William Smith, III), Otters (Cal State Monterey Bay, II),
+        // Beacons (Valparaiso, **I**), Drovers (Science and Arts of Oklahoma, NAIA) and Harriers
+        // (Miami Hamilton, USCAA). In place, and not deleted, because the count is a stream
+        // position: `nicknameNouns.count` sets the draw in `nickname(using:)`, so shortening the
+        // pool moves every identifier generated after it and de-keys the logo catalogue. A swap
+        // changes the names in a save and nothing else about it -- the mark briefed for the old
+        // name stays on the team that now carries the new one, which is a cosmetic mismatch for
+        // the owner to re-brief, not a broken save.
+        "Wardens", "Draymen", "Delvers", "Sentinels", "Bulwarks", "Wheelwrights", "Bitterns",
+        "Prospectors", "Voyagers", "Reapers", "Anchors", "Wayfarers", "Wreckers", "Lamplighters",
+        "Stalkers", "Millwrights", "Colliers", "Bargemen", "Ironsides", "Quarrymen", "Wainwrights",
+        "Kestrels",
         // Trades, defences and less-claimed wildlife, on the same principle as the originals: a
         // nickname a real programme already owns is refused however good it sounds. The full cross
         // product of 570 places, 11 school forms, 32 adjectives and 40 nouns -- 8,025,600 public
-        // names -- was swept against the blocklist before these landed, and none is blocked.
+        // names -- is swept against the blocklist by `LegalTests`.
         "Tanners", "Coopers", "Sawyers", "Riggers", "Ferrymen", "Smelters", "Chandlers",
         "Fletchers", "Bastions", "Ramparts", "Palisades", "Cairns", "Lodestars", "Shrikes",
         "Curlews", "Goshawks", "Martens", "Wyverns",

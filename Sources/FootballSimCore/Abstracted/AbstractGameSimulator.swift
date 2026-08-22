@@ -105,12 +105,10 @@ public enum AbstractGameSimulator {
         )
         let baseline = CompetitionRules.baselinePoints(for: tier)
         let deviation = CompetitionRules.scoreDeviation(for: tier)
-        let homeFieldPoints = CompetitionRules.homeFieldPoints(for: tier)
         var homeScore = score(
             expectation: baseline
                 + Double(home.offense - away.defense) * CompetitionRules.strengthPointScale
-                + CompetitionRules.homeFieldScoringOffset
-                + homeFieldPoints / 2
+                + CompetitionRules.homeFieldPoints(for: tier)
                 + homePlan.pointAdjustment(against: awayPlan),
             deviation: deviation + homePlan.scoreDeviationAdjustment(),
             using: &rng
@@ -118,8 +116,6 @@ public enum AbstractGameSimulator {
         var awayScore = score(
             expectation: baseline
                 + Double(away.offense - home.defense) * CompetitionRules.strengthPointScale
-                + CompetitionRules.homeFieldScoringOffset
-                - homeFieldPoints / 2
                 + awayPlan.pointAdjustment(against: homePlan),
             deviation: deviation + awayPlan.scoreDeviationAdjustment(),
             using: &rng
@@ -321,7 +317,8 @@ public enum AbstractGameSimulator {
         let plays = min(
             CompetitionRules.playCountRange.upperBound,
             max(CompetitionRules.playCountRange.lowerBound, Int(rng.gaussian(
-                mean: CompetitionRules.baselinePlays(for: tier),
+                mean: CompetitionRules.baselinePlays(for: tier)
+                    + tacticalPlan.playCountAdjustment(),
                 sd: CompetitionRules.playCountDeviation
             ).rounded()))
         )

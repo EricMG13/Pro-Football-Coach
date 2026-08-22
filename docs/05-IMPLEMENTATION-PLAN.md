@@ -366,27 +366,45 @@ P14's gate includes the per-family density-budget statement check from G-08.
 
 ### Insertion: P10c — Professional roster turnover (between P10b and P11)
 
-**Blocked on an owner decision, and that is the point of the entry.** `--pro-soak` and
-`--pro-draft-probe` are red for a real reason: bootstrap fills every professional team to exactly
-53/53 and issues no contracts, so nothing expires, nobody reaches free agency, and the 224-prospect
-draft class generated each season can never be taken — the first pick hits `activeRosterFull`.
-`ProRosterAISystem` (canon `02` §4.2) is built and correct; it has nothing to bite on. Both halves
-of professional intake are blocked by one missing mechanic.
+**Unblocked and largely landed — updated 2026-08-20.** This entry was written blocked on two owner
+questions, and canon `02` §4.2a answered both on 2026-08-12/13. (1) Bootstrap professionals do get
+contracts, rotated through `ProRules.bootstrapContractTermSpread` terms at
+`bootstrapPayrollPercentOfCap` of the cap, applied in `RosterPopulationGenerator`. (2) Cuts to 53
+are forced by cap compliance at the week-21 boundary, cheapest dead money first, in
+`ProManagementSystem.enforceCapCompliance` — inside the same `advanceWeek` transition that runs
+beat 1's expiry, so no persisted root is ever over the cap.
 
-Canon half-answers it: `02` §4.2 lists "retirements and expiring contracts" and "cap compliance — a
-hard date the player must be legal by" as the first two offseason beats, but bootstrap issues no
-contracts for anyone to expire and nothing implements the compliance date that would force cuts.
+*The paragraph this replaces said bootstrap "fills every professional team to exactly 53/53 and
+issues no contracts". That stopped being true and the entry did not say so, which is the failure
+mode `docs/STATUS.md` exists to prevent.*
 
-**The two owner questions.** (1) Do bootstrap professionals get contracts, and with what term
-spread? (2) What forces cuts to 53 — a cap-compliance date, incoming draft picks, or both? Deciding
-who gets cut and when is a design call, not an implementation detail, so it is not invented here.
+Turnover is now measured rather than argued. `--pro-draft-probe` is **green** — 327 contracts expire
+at the season rollover, roster seats open, and the first pick succeeds — and across ten soak seasons
+1,491 contracts expire and 1,476 free agents sign.
 
-**Gates:** G1, G2, G4, G6, plus `--pro-soak` and `--pro-draft-probe` turning green, which is the
-falsifier: if turnover lands and the draft still cannot make a pick, the diagnosis was wrong.
-Neither gate is in the default run, so `verify.sh` is unaffected while this is open.
+**This entry's falsifier fired, and it was right.** It read: "if turnover lands and the draft still
+cannot make a pick, the diagnosis was wrong." Turnover landed and the draft still made no pick. The
+`activeRosterFull` diagnosis was right about the symptom and wrong about the cause — the cause was
+not that nothing frees seats, it was that **free agency took every seat expiry freed before the
+draft opened**, at every seed. `02` §4.2 had free agency sign until the pool ran dry and start the
+draft on that same pass, and a dry pool is a full roster, so the draft always opened with nothing.
 
-**Blocks:** M6 completion, the professional draft, free agency, and every professional-tier surface
-that would read them.
+Free agency now reserves the seats the draft needs (`02` §4.2, owner decision 2026-08-20). Rosters
+settle at 46, the draft opens with 224 seats for 224 prospects, and **both gates are green** —
+`--pro-soak` records 1,557 draft picks across ten seasons where every previous run recorded zero.
+
+**What the fix surfaced, and did not fix.** The free-agent pool now sits pinned at its 512 bound
+rather than draining each season, and `openOffseason` truncates it in `uuidString` order, so which
+free agents the league can see is decided by identifier rather than by rating. `02` §4.2a picked the
+one-fifth term spread to leave "real headroom for carryover" and that premise no longer holds. A
+larger bound, a rating-ordered pool, or retirement removing the unattached are the candidates; the
+choice is an owner call. See `docs/STATUS.md`.
+
+**Gates:** G1, G2, G4, G6, plus `--pro-soak` and `--pro-draft-probe`, both now green. Neither is in
+the default run, so `verify.sh` is unaffected either way.
+
+**Blocks:** nothing further. M6 completion, the professional draft and free agency all clear this
+entry.
 
 ### Insertion: P11a — The M8 production-UI entry gate, as tests (immediately before P11)
 
@@ -436,3 +454,85 @@ paths carries no authority. Escalated as owner question Q6 in
 `docs/briefs/2026-08-12-gap-register.md` §4; **resolved by owner-approved import** — the pack lives
 at `docs/roadmap/` with manifest rows, and the header pointer above now resolves. These amendments
 remain phrased in both vocabularies.
+
+---
+
+## 2026-08-13 amendments — the near-miss name list (appended)
+
+Source: `docs/briefs/2026-08-13-name-equivalents.md`, and the canon it produced at `02` §11.3.5.
+**Insertions only; nothing above is renumbered.** Items are numbered `L-nn` so they do not collide
+with the 2026-08-12 gap register's `G-nn`.
+
+The work these amend is on `claude/game-name-equivalents-qczn9r` (PR #9) and is **unverified — never
+compiled**. `docs/STATUS.md` carries the entry. Everything below assumes it lands; L-01 is what makes
+that assumption checkable.
+
+### L-01 — compile and run the suite, and re-pin what the pool swap moved. **Blocks any later claim of green.**
+
+The blocklist additions, the eight nickname-pool replacements and six new `LegalTests` cases were
+written in an environment with no `swift` and no `xcodebuild`. The first session with a toolchain
+runs `./scripts/verify.sh` **in full**, not a focused legal run — the handoff's standing constraint
+already says why.
+
+**Expect two pins to move, and treat a pin that does not move as the finding.** `ArchitectureTests`
+holds `pinnedRootFingerprint` and `pinnedAdvancedRootFingerprint` as source literals over the
+bootstrapped world, and that world contains generated nicknames. Seven noun swaps and one adjective
+swap change those names, so both fingerprints should change and be re-pinned in the same commit that
+records the new values. If either is unchanged, the fingerprint does not cover generated names and
+the pin has been asserting less than it appears to — which is a defect in the pin, not a convenience.
+
+The RNG stream itself is unchanged: the swaps are one-for-one and `rng.pick` draws the same index, so
+nothing outside names should move. That is a prediction, and the run is what tests it.
+
+**Gates:** G1, G2, G4, both legal tests, `IdentityDistributionTests`, and the two re-pins.
+
+### L-02 — nickname morphemes, not a pool of real nouns. A P2 slice; **M1 generation** in milestone vocabulary.
+
+The durable fix for the class L-01 cleans up by hand. Every other name in the generator is assembled
+from invented morphemes precisely so that a name bank of plausible real words cannot exist; nicknames
+are the one pool that is still a list of real English nouns, and eight of the forty were real college
+nicknames. The blocklist caught none of them, because a denylist built from one division is silent
+about every other.
+
+Scope: a noun-and-adjective grammar in the register the pool already uses, sized so the
+duplicate-nickname pressure `NameGrammar` records (22 nouns against 166 teams) gets better rather than
+worse. **Gates:** G1, G2, G4, both legal tests, plus `IdentityDistributionTests` on duplicate rates,
+and the by-construction morpheme check must still enumerate the whole reachable set.
+
+Not blocked on a decision. Budget it as a slice with its own plan under `docs/plans/`.
+
+### L-03 — blocklist provenance and register check. P17, and a counsel action.
+
+No entry on the list has been checked against a trademark register by anyone. Three entries —
+"Collegiate Athletic Association", "National Collegiate Association", "National Pro Football" — are
+**not** claimed to be registrations at all; they are near-miss coinages, and the source says so. The
+pre-deployment pass labels each entry's basis or the list keeps asserting more than it knows.
+
+### L-04 — the title question. Owner and counsel, before any store listing.
+
+"Pro Football Coach" sits close to the Achi Jones "Football Coach" lineage that `01` §B is built on,
+and pairs "Pro Football" with a coaching sim. A working title cannot be blocklisted, so this is the
+one item here that no test can carry. Raise it before P17's store-listing review, not during it.
+
+### L-05 — the joint-identification review, as a written protocol. P17.
+
+The one limb of the guardrail that is not a test and never will be: a fictional programme in a real
+city wearing that city's real programme's colours can identify the real one although every part is
+individually clean. `CLAUDE.md`, `01` §7 and `02` §11.3.5 all record it as a review obligation, and
+none of them says *how* the review is run. P17 needs a protocol — what is sampled, by whom, against
+what — or the obligation is prose that has never been performed.
+
+### L-06 — trade-dress maintenance. P17.
+
+71 hand-maintained pairs against a sport with thousands of programmes, now covering both tiers. The
+refresh item exists in the checklist; what does not exist is a statement of what the list is *for* —
+which programmes are in scope and why that is the right boundary — so a future refresh has something
+to be complete against.
+
+### Amendment: P2's legal gate, and P17's
+
+P2's **both legal tests** gate is unchanged in name and larger in content: it now includes the
+near-miss cases, the numeral-form derivation over every entry, the trophy shape, the pool-purity
+check, and the counterweight test that the sport's own vocabulary stays sayable.
+`docs/PRE-DEPLOYMENT-CHECKLIST.md` §2 gained three items on the same date — refresh every limb, check
+each mark in each written form, and check that no generator pool word is itself a real name.

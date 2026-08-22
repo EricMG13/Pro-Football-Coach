@@ -29,7 +29,7 @@ assumptions, cheap to change. `ESCALATED` — blocking owner question, do not bu
 | D13 | Content volume | DECIDED |
 | D14 | Build order and league size | DECIDED (REVERSIBLE) — added in v4 execution |
 | D15 | Device floor, support promise and the design window | DECIDED 2026-08-12 — option (b) |
-| D16 | Dead money discharge | **DECIDED 2026-08-20** — single-season charge |
+| D16 | Dead money discharge | **DECIDED 2026-08-20** — option (a), single-season charge |
 
 ---
 
@@ -314,7 +314,31 @@ accumulated.
 
 ---
 
-## D7 — Save architecture and schema migration
+## D7 — Save architecture and schema migration — **CAREER LENGTH CAPPED 2026-08-20**
+
+> **Owner ruling, 2026-08-20: a career ends after thirty seasons.** Seasons 0 through 29 are played;
+> the calendar may reach season 30 week 1 and rests there permanently. `SharedRules.maximumCareerSeasons`
+> is the constant, `WorldScheduler.advanceWeek` is the single chokepoint that enforces it, and
+> `02-GAME-DESIGN.md` §11.3.1 is where the rule lives.
+>
+> **What this closes and what it does not.** It closes the *unbounded* half of the falsifier below:
+> before it, `DomainEventLedger.archive` appended one `SeasonHistoryDigest` per season forever, and
+> that array was the one growable collection this decision's own bounds table never listed. Growth
+> was linear in season count with no ceiling at all, so no measurement could ever be a worst case.
+> Now there is a worst case, and it is season 30.
+>
+> **It does not meet the 8 MB ceiling, and that half stays open.** Measured on 2026-08-20 via
+> `--m7-gate` (compressed, release): s1 = 6.70 MB, s20 = 26.71 MB, s30 = 37.11 MB. The cap makes
+> 37.11 MB the maximum a save can ever reach rather than an arbitrary point on an unbounded line.
+> Closing the remaining gap is `FSC-003`, which stays a release blocker.
+>
+> **The ceiling itself is now the open question, not the growth.** The 8 MB figure was inherited
+> from two sources, neither matching this project's scope: the prior build's own `< 5 MB` at ten
+> seasons, measured on a single-tier 32-team game; and FMM's console/Touch storage cap. This entry
+> already flagged that mismatch when it set the number ("~134 programmes plus recruiting history is
+> a materially larger object"). Whether 8 MB is the right number for a two-tier, 134-programme save
+> on current iPhone storage is an owner question that has not been asked yet.
+
 
 **Format:** a single versioned JSON document per save, gzip-compressed on disk, written off the main
 actor, with an atomic replace and one backup generation. No third-party dependency, human-inspectable
@@ -643,10 +667,63 @@ the 17e remain unsourced and are recorded as gaps, not guessed.
 medium after.** The churn is proof captures, the two-tier layout test, D4's baseline sentence and
 the `docs/STATUS.md` platform note. No save, engine or schema cost in any direction.
 
+---
+
 ## D16 — Dead money discharge
 
-**DECIDED 2026-08-20 — owner.** Dead money is a single-season charge, discharged at the season
-boundary between expiry and cap compliance. `Contract.deadMoney` accelerates the entire
-unamortised bonus into the release season; carrying that charge forever made the documented
-"bounded overage" unbounded and could eventually leave no legal release path. An amortised schedule
-remains a deliberate later option because it requires a save-schema change.
+**DECIDED 2026-08-20 — option (a), owner.** Dead money is a single-season charge, discharged at the
+season boundary between beat 1 and beat 2, so each season's dead money is exactly that season's
+releases. `02` §4.2a states the rule; `ProManagementSystem.dischargeDeadMoney` implements it. The
+rest of this entry is kept as the argument that produced the choice.
+
+**The question.** When, if ever, does a professional team's dead money leave its books?
+
+**What the build does today, read rather than assumed.** `ProTeam.deadMoney` is written in exactly
+two places — `ProManagementSystem.release` and `ProManagementSystem.enforceCapCompliance` — and both
+are `+=`. Nothing decrements it: no season rollover, no amortisation, no decay. `capSnapshot` seeds
+`committedCap` from it, so a dollar charged in season 3 is still charged in season 20.
+
+**Why it cannot stay unanswered.** Three things compound.
+
+1. `03` §6 states the soak's cap assertion as "bounded overage from dead money only". A
+   monotonically non-decreasing figure is not a bounded overage, so canon and the build disagree
+   about what the cap even means over time.
+2. A release accelerates the whole unamortised bonus into the release season, so releasing can
+   *raise* committed cap rather than lower it. Compliance now refuses those releases (2026-08-20),
+   which is correct and also means the cap-shedding options shrink as dead money grows.
+3. When no legal release reaches compliance, `enforceCapCompliance` throws `capExceeded` and
+   `WorldScheduler` turns that into a failed week advance. The end state of an unbounded charge is
+   therefore a save that cannot advance, not a league that plays badly.
+
+**The options.**
+
+(a) **A single-season charge, cleared at the season boundary.** `Contract.deadMoney` already
+accelerates the entire unamortised bonus into the release year, which is a statement that the charge
+belongs to *that year*. Under this reading `deadMoney` resets at rollover. Smallest change, no schema
+cost, and it makes `03` §6's "bounded" true — bounded by one season's releases. The cost is that
+releasing becomes cheap one season later, so the cap constrains churn less than a real one does.
+
+(b) **Amortised: keep the acceleration but spread the charge across the years the bonus covered.**
+Truest to the real mechanic and the strongest version of the cap as a constraint. It requires dead
+money to become a schedule rather than a scalar, which is a save-schema change under D7 and real
+work in every surface that reads the number.
+
+(c) **Never discharged — today's behaviour, made explicit.** Only tenable with a defined product
+answer for a team that cannot be made legal, because the week advance failing is not one.
+
+**Chosen: (a), owner 2026-08-20**, with (b) as a later slice if the cap needs more teeth. (a) is the
+smallest change that makes canon true and costs no migration; (b) is the better game and remains on
+the table as a deliberate choice rather than something to arrive at.
+
+**Falsifier — instruments, fixed in advance.**
+- `--pro-soak` reports `deadMoneyTotal` and `deadMoneyMax` against the season's cap, added
+  2026-08-20 for this entry. Under (a) `deadMoneyMax` must not trend upward across seasons; if it
+  does, the reset is not happening where it is claimed to.
+- Under (a) or (b), a soak assertion that no team's dead money exceeds the season's cap. That
+  assertion cannot be written at all under (c), which is itself the argument against (c).
+- `enforceCapCompliance` must never throw `capExceeded` on a root the scheduler produced. A failed
+  week advance in `--pro-soak` or `--pro-week-walk` falsifies whichever option is in force.
+
+**Cost of reversal: low between (a) and (c), medium to (b).** (a) and (c) differ by one reset at the
+rollover and the assertions above. (b) costs a save-schema migration once dead money carries a
+schedule, and is the only option that gets more expensive the longer it waits.

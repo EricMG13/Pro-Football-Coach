@@ -17,6 +17,15 @@ import Foundation
 /// `docs/STATUS.md`. They are not presented as verified, and P4's calibration is what will show
 /// whether they produce the right plays-per-game before anyone checks the book.
 public protocol ClockRules: Sendable {
+    /// Which tier these rules are.
+    ///
+    /// Carried here because `SnapResolver` already receives the tier's rules on every snap and
+    /// otherwise has no idea which tier it is resolving. Several resolution constants differ per
+    /// tier — `01` §6.5 bands field-goal percentage at 81–88 pro and 72–79 college, and explosive
+    /// run rate at 0.105–0.130 against 0.135–0.165 — so one shared value cannot satisfy both, and
+    /// the alternative to this property is threading a `Tier` through every resolver signature.
+    static var tier: Tier { get }
+
     /// Quarters in a regulation game.
     static var quarters: Int { get }
     /// Seconds in a quarter.
@@ -61,6 +70,7 @@ public enum OvertimeFormat: String, Codable, Sendable {
 
 /// College clock constants. **Unconfirmed against the rule book — see `ClockRules`.**
 public enum CollegeClockRules: ClockRules {
+    public static let tier = Tier.college
     public static let quarters = 4
     public static let quarterSeconds = 900
     public static let playClockSeconds = 40
@@ -69,6 +79,14 @@ public enum CollegeClockRules: ClockRules {
     public static let bleedTempoSnapSeconds = 36
     public static let inBoundsPlaySeconds = 6
     public static let stoppedPlaySeconds = 5
+    /// **Not a full pre-snap reset.** The college clock stops at the whistle and restarts when the
+    /// ball is spotted, so what the offence saves against a running clock is the few seconds it
+    /// takes to spot it — not the whole pre-snap. At 18 the saving was eight seconds on every
+    /// first down, roughly forty a game, which is about twelve extra plays and most of why this
+    /// tier read 78.4 offensive snaps a team-game against a band of 67 to 75.
+    ///
+    /// 22 rather than 24 because `normalTempoSnapSeconds` rose to 30 in the same pass; the two
+    /// together carry the snap count, and neither number means anything without the other.
     public static let readyForPlaySeconds = 22
 
     /// The tier difference. The college clock stops on a first down to reset the chains, which is
@@ -86,6 +104,7 @@ public enum CollegeClockRules: ClockRules {
 
 /// Pro clock constants. **Unconfirmed against the rule book — see `ClockRules`.**
 public enum ProClockRules: ClockRules {
+    public static let tier = Tier.pro
     public static let quarters = 4
     public static let quarterSeconds = 900
     public static let playClockSeconds = 40
@@ -105,6 +124,17 @@ public enum ProClockRules: ClockRules {
     public static let timeoutsPerHalf = 3
     public static let twoMinuteSeconds = 120
     public static let overtime = OvertimeFormat.timedPeriod
+}
+
+public extension Tier {
+    /// `MatchupRules`' per-tier home advantage. Lives here for the same reason `clockRules` does:
+    /// the tier is the thing that knows which constant it means.
+    var homeAdvantage: Double {
+        switch self {
+        case .college: return MatchupRules.collegeHomeAdvantage
+        case .pro: return MatchupRules.proHomeAdvantage
+        }
+    }
 }
 
 /// The tier's clock rules, as an existential-free lookup.

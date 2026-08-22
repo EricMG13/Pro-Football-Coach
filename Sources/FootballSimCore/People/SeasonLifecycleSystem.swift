@@ -37,6 +37,9 @@ public struct PeopleSeasonTransition: Sendable, Equatable {
     public let players: EntityStore<Player>
     public let staff: EntityStore<Staff>
     public let people: PeopleState
+    /// Carried because a departure ends a scholarship. Returning the roster without the college
+    /// state that records who holds one would leave the caller a root whose two scholarship
+    /// counters disagree until something else repairs it.
     public let college: CollegeState
     public let eventPayloads: [DomainEventPayload]
 
@@ -136,6 +139,19 @@ public enum SeasonLifecycleSystem {
             people: &people,
             payloads: &payloads
         )
+        if completed.week == SharedRules.inSeasonWeeks {
+            // The one unbounded inflow in people state, bounded at the only moment it grows.
+            // The protected set is read from the pre-transition root, so this season's departures
+            // are still active identities there and survive their first prune by construction.
+            people.pruneDepartedPlayers(protecting: retainedIdentityIDs(in: state))
+            pruneSeatlessStaff(
+                state: state,
+                programmes: &programmes,
+                proTeams: &proTeams,
+                staff: &staff,
+                people: &people
+            )
+        }
         return PeopleSeasonTransition(
             programmes: programmes,
             proTeams: proTeams,
@@ -145,6 +161,97 @@ public enum SeasonLifecycleSystem {
             college: college,
             eventPayloads: payloads
         )
+    }
+
+    private static func pruneSeatlessStaff(
+        state: GameState,
+        programmes: inout EntityStore<Programme>,
+        proTeams: inout EntityStore<ProTeam>,
+        staff: inout EntityStore<Staff>,
+        people: inout PeopleState
+    ) {
+        var projected = state
+        projected.programmes = programmes
+        projected.proTeams = proTeams
+        projected.staff = staff
+        projected.people = people
+        let tree = CoachingTreeReadModel.build(from: projected)
+        let namedByHistory = Set(
+            tree.branches.flatMap { branch in
+                [branch.mentorID] + branch.disciples.map(\.staffID)
+            }
+        )
+        let seated = Set(
+            programmes.values.flatMap(\.staffIDs)
+                + proTeams.values.flatMap(\.staffIDs)
+        )
+        let protectedIDs = namedByHistory
+            .union(seated)
+            .union(retainedIdentityIDs(in: state))
+            .union(state.career.coachID.map { [$0] } ?? [])
+        for staffID in staff.ids where !protectedIDs.contains(staffID) {
+            _ = staff.remove(staffID)
+            _ = people.removeStaffCareer(staffID)
+        }
+    }
+
+    /// Every identity a bounded departed set must keep, read from the authoritative root.
+    ///
+    /// Enumerated from the structures that name a person rather than from a hand-written list, so
+    /// a new reference is covered the day the structure gains it: the retained event journal (both
+    /// its generic entity references and its typed prospect references, which validate recruiting
+    /// history), archived award winners, everyone still on a roster, and everyone whose portal
+    /// window is still named by any live portal event — the last because `WorldIntegrity`
+    /// cross-checks live-window event counts, retained capacity snapshots, and scouting knowledge
+    /// against career records, and dropping one half of that pair would report as corruption.
+    private static func retainedIdentityIDs(in state: GameState) -> Set<UUID> {
+        var protectedIDs = Set(state.players.ids)
+        var survivingPortalWindows = Set<PortalWindowKey>()
+        for event in state.history.recent {
+            let payload = event.payload
+            protectedIDs.formUnion(payload.referencedEntityIDs)
+            protectedIDs.formUnion(payload.referencedProspectIDs)
+            if let portalWindow = payload.portalWindowReference {
+                survivingPortalWindows.insert(
+                    PortalWindowKey(
+                        targetSeason: portalWindow.targetSeason,
+                        window: portalWindow.window
+                    )
+                )
+            }
+        }
+        for archive in state.competition.archives {
+            for award in archive.awards {
+                protectedIDs.insert(award.winnerID)
+            }
+        }
+        // Every career with a record in a (season, window) that any surviving portal event still
+        // names — not any career that ever touched the portal.
+        //
+        // `WorldIntegrity` recomputes a live window's entrant and offer counts from career records,
+        // checks every retained offer's captured capacity, and checks exact NIL terms when a
+        // completion summary proves every offer is present. Protecting only the player named by a
+        // surviving event can therefore leave a partial live window whose aggregate no longer
+        // reconciles. This reads the same bounded journal as the integrity checks, so a window falls
+        // out of portal protection only once every portal event for it can no longer be consulted.
+        if !survivingPortalWindows.isEmpty {
+            for (playerID, career) in state.people.playerCareers {
+                let matchesSurvivingWindow = career.portalWindows.contains {
+                    survivingPortalWindows.contains(
+                        PortalWindowKey(targetSeason: $0.targetSeason, window: $0.window)
+                    )
+                }
+                if matchesSurvivingWindow {
+                    protectedIDs.insert(playerID)
+                }
+            }
+        }
+        return protectedIDs
+    }
+
+    private struct PortalWindowKey: Hashable {
+        let targetSeason: Int
+        let window: CollegePortalWindow
     }
 
     private static func advanceCollegePlayers(
@@ -214,15 +321,17 @@ public enum SeasonLifecycleSystem {
                     retained.append(id)
                 }
             }
-            let retainedIDSet = Set(retained)
-            _ = college.updateProgramme(programme.id) { recruiting in
-                let retainedScholarships = recruiting.scholarshipPlayerIDs
-                    .filter(retainedIDSet.contains).count
-                recruiting.reconcileScholarships(
-                    with: retained,
-                    targetCount: retainedScholarships
-                )
-                recruiting.reconcileNILRosterAllocations(with: retained)
+            // The transaction that drops a departing player from the roster drops the
+            // scholarship and the NIL allocation they were holding, in the same transaction.
+            //
+            // It used to leave both untouched and rely on `WorldScheduler` calling
+            // `reconcileScholarships` several transactions later. Between the two, the root said a
+            // graduated player still held a scholarship and the programme's own count disagreed
+            // with the list that backs it — a breach opened and closed inside one weekly step,
+            // which is exactly the interval a once-a-week integrity check cannot see.
+            _ = college.updateProgramme(programme.id) {
+                $0.retainScholarshipPlayers(on: retained)
+                $0.reconcileNILRosterAllocations(with: retained)
             }
             let retainedScholarships = college.programmes[programme.id]?
                 .scholarshipPlayerIDs.count ?? 0
@@ -231,6 +340,11 @@ public enum SeasonLifecycleSystem {
                 $0.scholarshipCount = retainedScholarships
             }
         }
+        // Every plan has now been resolved into a career season and an advanced clock, so the
+        // plans themselves are spent. `CollegeCycleSystem.closeAndOpen` cleared them several
+        // transactions later, which left an interval where the root held a redshirt plan for a
+        // player whose clock the very same step had just run out.
+        college.clearResolvedRedshirtPlans()
     }
 
     private static func advanceProPlayers(

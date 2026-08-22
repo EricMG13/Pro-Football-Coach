@@ -19,6 +19,7 @@ struct FloodlitLabel3: View {
     private let text: String
     private let palette: CoachWorldTokens.Palette
     private let tint: Color?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(
         _ text: String,
@@ -32,7 +33,7 @@ struct FloodlitLabel3: View {
 
     var body: some View {
         Text(text.uppercased())
-            .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+            .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
             .tracking(
                 CoachWorldTokens.DisplaySize.tracking(
                     CoachWorldTokens.DisplaySize.labelTracking,
@@ -40,7 +41,12 @@ struct FloodlitLabel3: View {
                 )
             )
             .foregroundStyle(tint ?? palette.contentQuiet.color)
-            .lineLimit(1)
+            // S-0, 2026-08-19 review: the drawn text now scales with Dynamic Type
+            // (`.coachWorldDisplay` above, CoachWorldScaledType.swift); a hard one-line clip would
+            // just cut the larger glyphs off instead of the small ones. `04` section 6.2 sanctions
+            // the reflow this produces: "AX5 scales these semantic roles and reflows... it does not
+            // preserve the dense multi-pane composition."
+            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
             // The uppercasing is presentation; the spoken form keeps the authored sentence.
             .accessibilityLabel(text)
     }
@@ -305,6 +311,7 @@ struct FloodlitPill: View {
     private let isSelected: Bool
     private let palette: CoachWorldTokens.Palette
     private let action: (() -> Void)?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(
         _ title: String,
@@ -330,11 +337,13 @@ struct FloodlitPill: View {
 
     private var label: some View {
         Text(title.uppercased())
-            .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.pill, weight: .bold))
+            .coachWorldDisplay(CoachWorldTokens.DisplaySize.pill, weight: .bold)
             .foregroundStyle(
                 isSelected ? CoachWorldTokens.Floodlit.goldInk.color : palette.contentSecondary.color
             )
-            .lineLimit(1)
+            // S-0, 2026-08-19 review: see FloodlitLabel3's identical comment above. Safe here
+            // because the frame below is a minHeight, not a fixed height -- it grows with the text.
+            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
             .padding(.horizontal, CoachWorldTokens.Gap.md)
             .frame(minHeight: CoachWorldTokens.Shape.minimumTarget)
             .background {
@@ -361,6 +370,7 @@ struct FloodlitFlag: View {
     private let title: String
     private let tint: Color
     private let palette: CoachWorldTokens.Palette
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(
         _ title: String,
@@ -374,10 +384,11 @@ struct FloodlitFlag: View {
 
     var body: some View {
         Text(title.uppercased())
-            .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+            .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
             .tracking(Pattern.flagTracking)
             .foregroundStyle(tint)
-            .lineLimit(1)
+            // S-0, 2026-08-19 review: see FloodlitLabel3's identical comment above.
+            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
             .padding(.horizontal, CoachWorldTokens.Gap.xs)
             .padding(.vertical, CoachWorldTokens.Gap.hair)
             .overlay {
@@ -438,7 +449,7 @@ struct FloodlitStaffVoice: View {
                     .foregroundStyle(palette.contentSecondary.color)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("\u{2014} \(staff.name), \(staff.role)")
-                    .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                    .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .semibold)
                     .foregroundStyle(palette.contentQuiet.color)
             }
         }
@@ -498,7 +509,7 @@ struct FloodlitCostLine: View {
         VStack(alignment: .leading, spacing: CoachWorldTokens.Gap.hair) {
             // The middle dot separates, always — never a pipe or a slash.
             Text([cost, exposure].compactMap { $0 }.joined(separator: " · ").uppercased())
-                .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .semibold))
+                .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .semibold)
                 .tracking(
                     CoachWorldTokens.DisplaySize.tracking(0.12, at: CoachWorldTokens.DisplaySize.flag)
                 )
@@ -607,6 +618,7 @@ struct CoachWorldConfidenceTag: View {
 
     let band: Band
     var palette: CoachWorldTokens.Palette = CoachWorldTokens.dark
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var text: String {
         switch band {
@@ -627,12 +639,13 @@ struct CoachWorldConfidenceTag: View {
 
     var body: some View {
         Text(text.uppercased())
-            .font(CoachWorldTokens.display(CoachWorldTokens.DisplaySize.flag, weight: .bold))
+            .coachWorldDisplay(CoachWorldTokens.DisplaySize.flag, weight: .bold)
             .tracking(
                 CoachWorldTokens.DisplaySize.tracking(0.12, at: CoachWorldTokens.DisplaySize.flag)
             )
             .foregroundStyle(tint)
-            .lineLimit(1)
+            // S-0, 2026-08-19 review: see FloodlitLabel3's identical comment above.
+            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
             .padding(.horizontal, CoachWorldTokens.Gap.xxs)
             .padding(.vertical, CoachWorldTokens.Gap.hair)
             .overlay {
