@@ -837,13 +837,17 @@ public enum SnapAnchors {
                     [ActorWaypoint(point: start, fraction: AnchorRules.snapFraction)]
                 )
             }
-            // Otherwise he finishes his drop and sets. The alignment template already stands him
-            // behind the line, so this is the drop and not the stance — and it is why he is no
-            // longer one of the frozen.
+            // Otherwise he drops and sets. The alignment template already stands him behind the
+            // line, so this is the drop and not the stance — and it is why he is no longer one of
+            // the frozen.
+            //
+            // Complete by `snapFraction`, which is when the ball reaches him, and then he holds.
+            // Not by the release: the ball's own legs leave his hands at `snapFraction`, so a drop
+            // still running at that moment throws the pass from a spot he has left.
             let set = FieldPoint(
                 yard: lineOfScrimmage - AnchorRules.passerDropDepth, lateral: start.lateral
             )
-            return (set, [ActorWaypoint(point: set, fraction: AnchorRules.releaseFraction)])
+            return (set, [ActorWaypoint(point: set, fraction: AnchorRules.snapFraction)])
 
         case .routeRunner:
             guard call.playType == .pass else {
@@ -897,8 +901,16 @@ public enum SnapAnchors {
             return (lead, [ActorWaypoint(point: lead, fraction: AnchorRules.releaseFraction)])
 
         case .coverage, .runFit:
+            // A man in coverage chases the ball only once it has crossed the line. On a sack the
+            // resting spot is *behind* it, and treating that as a pursuit sent both corners and
+            // both safeties fifteen to twenty-five yards upfield into the offensive backfield --
+            // an eleven-man collapse where `04` §5.3 asks for the protection duel that lost. He
+            // plays his coverage instead. A run fit still converges: closing on a sack is what a
+            // front seven does.
+            let chases = outcome.ballCarrierID != nil
+                && (role == .runFit || ballRestsAt.yard >= lineOfScrimmage)
             return pursuit(
-                from: start, to: ballRestsAt, carried: outcome.ballCarrierID != nil,
+                from: start, to: ballRestsAt, carried: chases,
                 carryBegins: carryBegins, lineOfScrimmage: lineOfScrimmage, role: role,
                 playType: call.playType
             )
@@ -972,7 +984,13 @@ public enum SnapAnchors {
             guard let id else { return nil }
             return actors.first(where: { $0.playerID == id })?.start
         }
-        let passerSpot = point(outcome.passerID)
+        // Where the passer *is* when the ball gets to him, not where he lined up. Since he began
+        // dropping back, those are 2.5 yards apart -- about seventeen points at the install floor --
+        // and reading the stance threw every pass and handed off every handoff from a spot he had
+        // already left. Evaluated through the anchor rather than recomputed from the drop constant,
+        // so a change to the drop's shape or timing cannot put them back out of step.
+        let passerSpot = actors.first { $0.playerID == outcome.passerID }
+            .map { position(of: $0, at: AnchorRules.snapFraction) }
             ?? FieldPoint(
                 yard: lineOfScrimmage - AnchorRules.passerDepth,
                 lateral: AnchorRules.centerLateral
