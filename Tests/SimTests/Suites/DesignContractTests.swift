@@ -176,6 +176,36 @@ func runDesignContractTests() {
             expect(source.contains("top-navigator"))
             expect(source.contains("Open all tasks,"))
         }
+
+        test("selection, context, and AX5 survive the compact visual band") {
+            let path = packageRoot()
+                .appendingPathComponent("Sources/ProFootballCoachUI/FloodlitChrome.swift")
+            let source = (try? String(contentsOf: path, encoding: .utf8)) ?? ""
+
+            expect(source.contains("siblingUnderlineInset"),
+                   "the current sibling needs a visible in-band rule")
+            expect(source.contains("contextViewportWidth"),
+                   "supplied context needs a protected truncating viewport")
+            expect(
+                source.contains(
+                    ".frame(height: dynamicTypeSize.isAccessibilitySize ? nil : CoachWorldTokens.Stage.headerHeight)"
+                ),
+                "AX5 must expand the header intrinsically instead of clipping it to 34 points"
+            )
+        }
+
+        test("unchromed Match Day keeps its broadcast top inset") {
+            let path = packageRoot()
+                .appendingPathComponent("Sources/ProFootballCoachUI/MatchDayView.swift")
+            let source = (try? String(contentsOf: path, encoding: .utf8)) ?? ""
+
+            expect(
+                source.contains(
+                    "chrome == nil ? CoachWorldTokens.Frame.topInset : CoachWorldTokens.Stage.contentTop"
+                ),
+                "PROOF_SCREEN=match must not reserve a blank navigator band"
+            )
+        }
     }
 
     suite("Orientation policy") {

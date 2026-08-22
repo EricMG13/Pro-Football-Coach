@@ -18,7 +18,18 @@ final class ProFootballCoachUITests: XCTestCase {
                 .matching(NSPredicate(format: "label == %@", "Sections")).count,
             0
         )
-        app.buttons["Open all tasks, This week"].tap()
+        let context = app.staticTexts
+            .matching(NSPredicate(format: "label BEGINSWITH %@", "WEEK 1 ·"))
+            .firstMatch
+        XCTAssertTrue(context.exists)
+        XCTAssertGreaterThan(context.frame.width, 0)
+        XCTAssertLessThan(context.frame.width, 132)
+        let family = app.buttons["Open all tasks, This week"]
+        let currentSibling = app.buttons["Coaching HQ"]
+        XCTAssertGreaterThanOrEqual(family.frame.height, 44)
+        XCTAssertGreaterThanOrEqual(currentSibling.frame.height, 44)
+        XCTAssertGreaterThanOrEqual(currentSibling.frame.minX, family.frame.maxX)
+        family.tap()
         app.buttons["Roster"].tap()
         XCTAssertTrue(app.otherElements["roster-screen"].waitForExistence(timeout: 10))
         app.buttons["roster-open-dossier"].tap()
@@ -35,6 +46,18 @@ final class ProFootballCoachUITests: XCTestCase {
         )
         app.buttons["Back to the roster"].tap()
         XCTAssertTrue(app.otherElements["roster-screen"].waitForExistence(timeout: 10))
+    }
+
+    func testUnchromedMatchProofKeepsBroadcastTopInset() {
+        let app = XCUIApplication()
+        app.launchEnvironment["PROOF_SCREEN"] = "match"
+        app.launch()
+
+        let scoreBug = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "Q3"))
+            .firstMatch
+        XCTAssertTrue(scoreBug.waitForExistence(timeout: 20))
+        XCTAssertLessThan(scoreBug.frame.minY, 30)
     }
 
     func testRedesignedJobBoardProofFlow() {

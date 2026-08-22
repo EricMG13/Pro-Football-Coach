@@ -60,6 +60,10 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
         CoachWorldTokens.dark
     }
 
+    private var furnitureTop: CGFloat {
+        chrome == nil ? CoachWorldTokens.Frame.topInset : CoachWorldTokens.Stage.contentTop
+    }
+
     private var speedMultiplier: Double {
         MatchMetric.speedMultipliers[speedIndex % MatchMetric.speedMultipliers.count]
     }
@@ -149,11 +153,11 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
 
                 scoreBug
                     .padding(.leading, CoachWorldTokens.Frame.leadingInset)
-                    .padding(.top, CoachWorldTokens.Stage.contentTop)
+                    .padding(.top, furnitureTop)
 
                 topRightStack
                     .padding(.trailing, CoachWorldTokens.Frame.gutter)
-                    .padding(.top, CoachWorldTokens.Stage.contentTop)
+                    .padding(.top, furnitureTop)
                     .frame(maxWidth: size.width, alignment: .trailing)
                     .background {
                         GeometryReader { stackGeometry in
@@ -192,12 +196,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                         // Below the persistent top-right furniture, never over it — MATCH-DAY.md
                         // section 5 states this panel starts at "top 122" specifically so the
                         // budget bug, control depth and halftime chip stay visible above it.
-                        .padding(
-                            .top,
-                            CoachWorldTokens.Stage.contentTop
-                                + topRightStackHeight
-                                + CoachWorldTokens.Gap.lg
-                        )
+                        .padding(.top, topRightStackHeight + CoachWorldTokens.Gap.lg)
                         .padding(.bottom, CoachWorldTokens.Frame.bottomInset)
                         .frame(width: size.width, height: size.height, alignment: .topTrailing)
                         .transition(
@@ -212,7 +211,7 @@ public struct MatchDayView: View, CoachWorldChromedSurface {
                         .padding(.horizontal, CoachWorldTokens.Space.sm)
                         .padding(.vertical, CoachWorldTokens.Space.xxs)
                         .background(.ultraThinMaterial, in: Capsule())
-                        .padding(.top, CoachWorldTokens.Stage.contentTop)
+                        .padding(.top, furnitureTop)
                         .frame(width: size.width, alignment: .top)
                 }
             }
